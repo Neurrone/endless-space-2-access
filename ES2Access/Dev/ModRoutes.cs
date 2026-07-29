@@ -29,9 +29,17 @@ namespace ES2Access.Dev
 
         public void Register()
         {
-            PrismSpeech.Observer = _speech.Add;
+            PrismSpeech.Observer = Spoken;
             _host.RegisterRoute("GET", "/status", Status);
             _host.RegisterRoute("GET", "/speech", Speech);
+        }
+
+        // The mod's own buffer is what /speech serves; the loader's outlives a hot reload, which
+        // is what lets POST /eval report the speech an evaluated call provoked.
+        private void Spoken(string text)
+        {
+            _speech.Add(text);
+            _host.NotifySpoken(text);
         }
 
         /// <summary>The routes themselves are dropped by the loader; this releases the tap on the

@@ -15,6 +15,11 @@ namespace ES2Access.Loader
     /// old ones stay in the process; this is a development loop, and leaking a few hundred
     /// kilobytes per reload is the price of not restarting the game.
     ///
+    /// A reload validates the new build completely before it touches the running one, so a mod
+    /// that does not compile into something loadable costs nothing: the old mod keeps speaking and
+    /// /loader/status reports why the swap was refused. Only once the new assembly is known good
+    /// is the old one stopped.
+    ///
     /// Nothing here is allowed to take the loader down. A mod that throws in Start, in Stop, or
     /// that is not there at all, leaves the dev server up and the failure readable from
     /// /loader/status.
@@ -45,10 +50,38 @@ namespace ES2Access.Loader
             get { return _assembly != null; }
         }
 
+        /// <summary>Reloads that actually swapped the mod out.</summary>
         public int ReloadCount { get; private set; }
+
+        /// <summary>Reloads refused because the new build did not validate. The mod that was
+        /// running at the time still is.</summary>
+        public int FailedReloadCount { get; private set; }
 
         /// <summary>Why the last load or reload failed, or null if it worked.</summary>
         public string LastReloadError { get; private set; }
+
+        /// <summary>When the file that produced the bytes now running was last written, or null
+        /// while no mod is loaded. Compared against <see cref="ModFileOnDiskWrittenUtc"/> it
+        /// answers "am I looking at the build I just made" without guessing.</summary>
+        public DateTime? ModFileWrittenUtc { get; private set; }
+
+        /// <summary>When the deployed file was last written, read now rather than remembered.</summary>
+        public DateTime? ModFileOnDiskWrittenUtc
+        {
+            get
+            {
+                try
+                {
+                    return File.Exists(_modPath)
+                        ? (DateTime?)File.GetLastWriteTimeUtc(_modPath)
+                        : null;
+                }
+                catch (Exception)
+                {
+                    return null;
+                }
+            }
+        }
 
         public Assembly ModAssembly
         {
@@ -57,8 +90,87 @@ namespace ES2Access.Loader
 
         public void Load()
         {
+            Prepared prepared = Prepare();
+            if (prepared == null)
+            {
+                LoaderLog.Error("Mod failed to load: " + LastReloadError);
+                return;
+            }
+
+            Activate(prepared);
+        }
+
+        public void Unload()
+        {
+            MethodInfo stop = _stop;
+            _assembly = null;
+            _stop = null;
+            ModFileWrittenUtc = null;
+
+            if (stop != null)
+            {
+                try
+                {
+                    Invoke(stop, null);
+                }
+                catch (Exception e)
+                {
+                    LastReloadError = e.ToString();
+                    LoaderLog.Error("Mod threw while stopping; unwinding it anyway: " + e);
+                }
+            }
+
+            // Whatever the mod did or did not take down itself, the loader now holds nothing of
+            // its; otherwise a route or a pump from the dead assembly would outlive it.
+            _host.UnregisterAllModRoutes();
+            _plugin.SetModUpdateHandler(null);
+            _plugin.StopModCoroutines();
+        }
+
+        /// <summary>
+        /// Swap in whatever is on disk now. The new build is read, loaded and inspected first: if
+        /// any of that fails the running mod is left alone, because a broken build is far more
+        /// common than a broken game and losing a working mod to it wastes a whole restart.
+        ///
+        /// Past that point the swap is committed. Start throwing still leaves no mod running -
+        /// the resources a mod holds (the speech backend, the route table, the frame pump) are
+        /// single-slot, so the old and new mod can never genuinely overlap - but the loader
+        /// survives it and says so.
+        /// </summary>
+        public void Reload()
+        {
+            Prepared prepared = Prepare();
+            if (prepared == null)
+            {
+                FailedReloadCount++;
+                LoaderLog.Error(
+                    "Reload refused, the running mod is untouched: " + LastReloadError
+                );
+                return;
+            }
+
+            ReloadCount++;
+            Unload();
+            Activate(prepared);
+        }
+
+        /// <summary>Everything the new mod needs, obtained without disturbing the old one.</summary>
+        private sealed class Prepared
+        {
+            public Assembly Assembly;
+            public MethodInfo Start;
+            public MethodInfo Stop;
+            public DateTime? WrittenUtc;
+        }
+
+        // Read-only with respect to the running mod: on failure it reports and nothing has moved.
+        private Prepared Prepare()
+        {
             try
             {
+                // Taken before the bytes, so a build landing mid-read shows up as stale rather
+                // than as the build we are about to run.
+                DateTime? writtenUtc = ModFileOnDiskWrittenUtc;
                 Assembly assembly = Assembly.Load(File.ReadAllBytes(_modPath));
                 Type entry = assembly.GetType(EntryTypeName);
                 if (entry == null)
@@ -89,53 +201,47 @@ namespace ES2Access.Loader
                     );
                 }
 
-                Invoke(start, new object[] { _host });
-                _assembly = assembly;
-                _stop = stop;
+                return new Prepared
+                {
+                    Assembly = assembly,
+                    Start = start,
+                    Stop = stop,
+                    WrittenUtc = writtenUtc,
+                };
+            }
+            catch (Exception e)
+            {
+                LastReloadError = e.ToString();
+                return null;
+            }
+        }
+
+        private void Activate(Prepared prepared)
+        {
+            try
+            {
+                Invoke(prepared.Start, new object[] { _host });
+                _assembly = prepared.Assembly;
+                _stop = prepared.Stop;
+                ModFileWrittenUtc = prepared.WrittenUtc;
                 LastReloadError = null;
-                _dev.ReferenceModAssembly(assembly);
+                _dev.ReferenceModAssembly(prepared.Assembly);
                 LoaderLog.Info("Mod loaded from " + _modPath);
             }
             catch (Exception e)
             {
                 _assembly = null;
                 _stop = null;
+                ModFileWrittenUtc = null;
                 LastReloadError = e.ToString();
-                LoaderLog.Error("Mod failed to load: " + e);
+                LoaderLog.Error("Mod failed to start: " + e);
+
+                // Start may have registered routes or the pump before throwing; a dead assembly
+                // must not keep serving them.
+                _host.UnregisterAllModRoutes();
+                _plugin.SetModUpdateHandler(null);
+                _plugin.StopModCoroutines();
             }
-        }
-
-        public void Unload()
-        {
-            MethodInfo stop = _stop;
-            _assembly = null;
-            _stop = null;
-
-            if (stop != null)
-            {
-                try
-                {
-                    Invoke(stop, null);
-                }
-                catch (Exception e)
-                {
-                    LastReloadError = e.ToString();
-                    LoaderLog.Error("Mod threw while stopping; unwinding it anyway: " + e);
-                }
-            }
-
-            // Whatever the mod did or did not take down itself, the loader now holds nothing of
-            // its; otherwise a route or a pump from the dead assembly would outlive it.
-            _host.UnregisterAllModRoutes();
-            _plugin.SetModUpdateHandler(null);
-            _plugin.StopModCoroutines();
-        }
-
-        public void Reload()
-        {
-            ReloadCount++;
-            Unload();
-            Load();
         }
 
         // Reflection wraps whatever the mod threw; the wrapper says nothing worth logging.

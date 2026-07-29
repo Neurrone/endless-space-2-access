@@ -32,7 +32,9 @@ namespace ES2Access
         /// mod anyway, so a game that never registers the service is not silent at startup.</summary>
         private const float LanguageWaitSeconds = 5f;
 
-        internal static PrismSpeech Speech;
+        /// <summary>Public so that code compiled by POST /eval can drive speech directly: the
+        /// REPL compiles against this assembly from outside it and cannot see internals.</summary>
+        public static PrismSpeech Speech;
 
         private static ModHost _host;
         private static ModRoutes _routes;

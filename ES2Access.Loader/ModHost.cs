@@ -59,9 +59,21 @@ namespace ES2Access.Loader
             get { return _dev.MainThread; }
         }
 
+        /// <summary>
+        /// Report a line the mod has just spoken. The loader keeps the last couple of hundred, so
+        /// POST /eval can answer "and here is what that made it say" - the buffer has to live on
+        /// this side because a hot reload takes the mod's own with it, and the point of the
+        /// question is usually to check what a freshly reloaded mod does.
+        /// </summary>
+        public void NotifySpoken(string text)
+        {
+            _dev.NotifySpoken(text);
+        }
+
         /// <summary>Answer <paramref name="method"/> <paramref name="path"/> on the dev server
-        /// until the mod is unloaded. The loader's own routes (/gui/game, /screenshot,
-        /// /loader/status, /reload, /eval, /quit) are fixed and cannot be taken over.</summary>
+        /// until the mod is unloaded. The loader's own routes (/gui/game, /screenshot, /log,
+        /// /loader/status, /reload, /eval, /wait, /quit) are fixed and cannot be taken
+        /// over.</summary>
         public void RegisterRoute(string method, string path, DevRouteHandler handler)
         {
             _dev.RegisterModRoute(method, path, handler);

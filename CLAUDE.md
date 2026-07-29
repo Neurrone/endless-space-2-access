@@ -41,10 +41,12 @@ While the game runs, `http://127.0.0.1:8771` serves:
 
 - `GET /status` — mod state; `GET /speech?since=N` — ring buffer of everything spoken (works even with speech muted; resets after a reload)
 - `GET /gui/game?path=&depth=` — live Unity hierarchy dump; `GET /screenshot` (PNG); `POST /quit`
-- `POST /eval` — C# REPL against the live game (body = code; persistent state across calls; runs on the main thread)
-- `POST /reload` — hot-swaps the mod assembly without restarting the game; `GET /loader/status` — reload count and last error
+- `POST /eval?settle=MS&speech=0` — C# REPL against the live game (body = code; persistent state; runs on the main thread). The response's `speech` array lists everything spoken as a result — the primary way to test announcements. REPL quirk: bare `Time` binds to Mono.CSharp's `InteractiveBase.Time(Action)`; write `UnityEngine.Time`.
+- `POST /wait?timeout=MS` — body is a C# bool expression, compiled once and evaluated every frame until true or timeout; catches single-frame states external polling misses
+- `GET /log?since=N&grep=TEXT` — BepInEx log ring buffer (no need to read LogOutput.log from disk while running)
+- `POST /reload` — hot-swaps the mod assembly; `GET /loader/status` — reload counts, last error, and `staleBuild` (true when the DLL on disk is newer than the loaded one — check after building to confirm a reload is actually needed, and after reloading to confirm it took). A broken build is refused and leaves the previous mod running (`failedReloadCount` + `lastReloadError` say why).
 
-Architecture: `ES2Access.Loader` is the actual BepInEx plugin and never reloads — it owns the dev server, `/eval` (vendored `mcs.dll`, a net35 Mono.CSharp), and the mod lifecycle. `ES2Access.dll` is loaded from bytes (never file-locked, so `dotnet build` works while the game runs) and must tear down fully in `ModEntry.Stop` — every feature must be reload-safe. The dev server survives a mod that throws on load; check `/loader/status`.
+Architecture: `ES2Access.Loader` is the actual BepInEx plugin and never reloads — it owns the dev server, `/eval` (vendored `mcs.dll`, a net35 Mono.CSharp), and the mod lifecycle. `ES2Access.dll` is loaded from bytes (never file-locked, so `dotnet build` works while the game runs) and must tear down fully in `ModEntry.Stop` — every feature must be reload-safe. Only `ES2Access.dll` hot-reloads; changes to the loader require a game restart. When Harmony patches arrive, create the Harmony instance with a unique-per-load id (fixed ids let a stale `UnpatchSelf` strip a newer load's patches).
 
 Test loop: `.\run-game.ps1 -NoSpeech -NoWait`, poll `/status` until it answers (boot can take up to a minute), exercise the feature, read `/speech` to verify announcements, `POST /quit` (process exits ~10 s later, poll at 1 s granularity). Iterating on code: `dotnet build ES2Access/ES2Access.csproj` then `POST /reload` — no restart needed. During boot/loading, frames can take >5 s, so main-thread routes (`/status`, `/eval`, `/gui/game`, `/screenshot`) may return 503 — retry, and confirm reloads via `/loader/status` rather than assuming failure.
 

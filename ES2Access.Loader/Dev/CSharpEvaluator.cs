@@ -8,6 +8,43 @@ using Mono.CSharp;
 namespace ES2Access.Loader.Dev
 {
     /// <summary>
+    /// A boolean expression compiled once by <see cref="CSharpEvaluator"/> and then invoked as
+    /// many times as POST /wait needs it - once per frame, for as long as the wait lasts.
+    /// Compiling per frame would cost more than the game does.
+    ///
+    /// A failed compile is still a <see cref="CompiledPredicate"/>, with <see cref="Error"/> set
+    /// and nothing to invoke, so the caller has one thing to inspect either way.
+    /// </summary>
+    internal sealed class CompiledPredicate
+    {
+        private readonly CompiledMethod _method;
+
+        internal CompiledPredicate(CompiledMethod method, string error)
+        {
+            _method = method;
+            Error = error;
+        }
+
+        /// <summary>Why the expression did not compile, or null when it did.</summary>
+        public string Error { get; private set; }
+
+        /// <summary>Main thread only, like everything else the evaluator produces.</summary>
+        public bool Invoke()
+        {
+            object value = null;
+            _method(ref value);
+            if (!(value is bool))
+            {
+                throw new InvalidOperationException(
+                    "the expression produced no boolean value; it is a statement, not a condition"
+                );
+            }
+
+            return (bool)value;
+        }
+    }
+
+    /// <summary>
     /// A C# REPL over the running game, behind POST /eval. One evaluator lives for the whole
     /// session, so variables and usings declared by one request are still there for the next, and
     /// a hot reload only adds the new mod assembly to what it can see.
@@ -138,6 +175,45 @@ namespace ES2Access.Loader.Dev
             }
 
             return new Result { Ok = true, Value = valueSet ? Describe(value) : null };
+        }
+
+        /// <summary>
+        /// Compile <paramref name="expression"/> into something POST /wait can ask every frame.
+        /// The cast pins the result to a bool at compile time, so a caller who sends a statement
+        /// or a non-boolean expression is told now rather than one frame at a time.
+        /// </summary>
+        public CompiledPredicate CompilePredicate(string expression)
+        {
+            Clear();
+
+            CompiledMethod method;
+            string incomplete;
+            try
+            {
+                incomplete = _evaluator.Compile(
+                    "(bool)(" + expression.Trim().TrimEnd(';') + ")",
+                    out method
+                );
+            }
+            catch (Exception e)
+            {
+                return new CompiledPredicate(null, e.ToString());
+            }
+
+            if (incomplete != null)
+            {
+                return new CompiledPredicate(
+                    null,
+                    "incomplete input: this is not a whole boolean expression"
+                );
+            }
+
+            if (method == null || _printer.ErrorsCount > 0)
+            {
+                return new CompiledPredicate(null, Messages("the expression did not compile"));
+            }
+
+            return new CompiledPredicate(method, null);
         }
 
         private static List<Assembly> Loaded()

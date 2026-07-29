@@ -104,10 +104,15 @@ namespace ES2Access.Loader.Dev
 
     /// <summary>
     /// Loopback-only HTTP front end for the dev routes. Bound to http://127.0.0.1:port/ so it is
-    /// reachable from this machine alone, and served from one background thread that hands every
-    /// request to the route table. A handler that throws answers 500 and the thread keeps
-    /// accepting; shutdown stops and closes the listener and joins the thread, so a hot reload or
-    /// game exit never hangs on it.
+    /// reachable from this machine alone. One background thread accepts, and each request is
+    /// answered on a pool thread: POST /wait can hold a connection for a minute and POST /eval for
+    /// its settle window, and neither may stop the caller from reading /speech or /log meanwhile.
+    /// Handlers therefore have to be thread-safe, which they are by construction - anything
+    /// touching the game goes through <see cref="MainThreadQueue"/>, and the buffers behind the
+    /// polled routes are locked.
+    ///
+    /// A handler that throws answers 500 and the server keeps accepting; shutdown stops and closes
+    /// the listener and joins the accept thread, so a hot reload or game exit never hangs on it.
     ///
     /// Unity's Mono implements HttpListener in managed code, so there is no http.sys URL
     /// reservation to register and no elevation needed for the loopback prefix.
@@ -189,7 +194,7 @@ namespace ES2Access.Loader.Dev
                     return;
                 }
 
-                Answer(context);
+                ThreadPool.QueueUserWorkItem(state => Answer((HttpListenerContext)state), context);
             }
         }
 
