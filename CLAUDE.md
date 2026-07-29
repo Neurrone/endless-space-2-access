@@ -65,6 +65,14 @@ Gates: the server is **off by default** — it runs only when `devServer = true`
 
 ## Workflow
 
+When a feature is ready: verify everything the dev server can verify, then hand over specific
+manual test instructions — the exact steps to perform and exactly what should be heard at each
+step. Perceptual behavior (focus, speech timing, how announcements feel) is only confirmed by
+that manual test.
+
+When introducing a new UI widget or interaction, ask which keys to bind unless the bindings
+were already specified.
+
 After implementing a feature or major change:
 
 1. Offer to check if the game accessibility modding documentation should be updated

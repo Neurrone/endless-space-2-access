@@ -28,6 +28,9 @@ Work through these in order for a new game; each milestone has an acceptance tes
 
 Then the first screen, then the navigation layer.
 
+Cross-cutting, read alongside any feature work: [performance.md](performance.md) — keeping
+per-frame cost invisible (no scene scans, snapshot+reconcile, allocation discipline).
+
 ## Planned (written once ES2 proves them)
 
 - `ui-navigation.md` — the accessible screen/widget/focus layer: immediate-mode tree rebuilt
@@ -38,3 +41,13 @@ Then the first screen, then the navigation layer.
   tile-signature skip navigation, fog-of-war discipline, spatial audio cues.
 - `event-narration.md` — turning engine event firehoses into coherent narration: condensation
   passes, buff-churn reconciliation, review buffers.
+- `input.md` — the mod-side keyboard layer, consolidating what is currently scattered:
+  claim chains, rewriting the game's own binding tables, typematic repeat, text-field
+  guarding.
+- `settings.md` — user-facing settings and key rebinding. Adopt wotr-access's declarative
+  settings tree: one declaration serves as persistence, the settings screen's data source,
+  and the rebinding UI.
+- `distribution.md` — release templates, a tester channel via committed build artifacts kept
+  fresh by a pre-commit hook (wotr-access), and accessible installers — both SoC and
+  wotr-access independently landed on Rust installers after antivirus false-positives killed
+  other packagers.
