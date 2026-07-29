@@ -134,6 +134,29 @@ POST /quit                             # exits within ~10s; poll at 1s
 Numbers worth knowing per game: boot-to-server time, quit-to-exit time, and that the speech
 ring resets on reload.
 
+## What this loop cannot verify
+
+Before handing a feature to the human tester, **list what the harness structurally cannot
+reproduce and reason each item through on paper — don't just skip it**. The recurring blind
+spots:
+
+- **Physical key timing.** Driving actions over HTTP dispatches them without pressing keys,
+  so anything that depends on real key-down/key-up frames never reproduces: held-key repeat,
+  chords, and above all interactions with the *game's own* raw-input scanning. Walk the full
+  physical sequence — key down → mod acts → key up → game's input handling reacts. (ES2's
+  rebind capture ended on the activating Enter's own release; both contributing facts were
+  known before handover, and the collision only surfaced in manual testing because HTTP
+  presses no keys.)
+- **Same-key double handling.** The mod and the game poll the same physical key; a
+  dispatched action exercises only the mod's half. See the one-key-two-listeners section in
+  [ui-navigation.md](ui-navigation.md).
+- **Perceptual invariants.** Re-check per screen with measured rects and screenshots: the
+  focused item is scrolled into view (long lists!), focus visuals track the cursor, speech
+  does not lag held-key repeat. Existence checks lie; rects don't.
+
+The manual test script then covers exactly this list — each entry becomes a step with what
+to press, what should be heard, and what a sighted observer should see.
+
 ## Source files
 
 [`src/dev-server/`](src/dev-server/) — server core (`DevServer.cs`, `DevHttpServer.cs`),

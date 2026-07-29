@@ -188,7 +188,9 @@ There is deliberately no tooltip key — see [tooltips.md](tooltips.md).
 4. Wire screen predicates: visibility + the game's "fully shown and interactive" gate.
 5. Add role words and state words to the localization table.
 6. Ship the first screen, verify announcements via the dev server, then hand the human the
-   perceptual test script (repeat cadence, interrupt feel, announcement shape).
+   perceptual test script (repeat cadence, interrupt feel, announcement shape) — built from
+   the list of what the harness cannot reproduce (see "What this loop cannot verify" in
+   [dev-server.md](dev-server.md)).
 
 ## Source files
 

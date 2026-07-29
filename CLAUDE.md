@@ -73,6 +73,15 @@ Visual claims must be verified with measured rects (`/gui/age`) and screenshots,
 existence checks — "the window appeared" can be true while the window renders in the wrong
 corner of the screen.
 
+Before handing over, explicitly list what the dev server structurally cannot reproduce and
+reason each item through instead of skipping it. `/eval` dispatches actions without pressing
+keys, so anything depending on real key-down/key-up frames is invisible to it: walk the full
+physical sequence (key down → mod acts → key up → game's own input handling reacts) on paper
+against what is known about the game's input scanning. (Found the hard way: the rebind
+capture ended on the activating Enter's own release — derivable in advance, shipped to manual
+test anyway.) Likewise re-check perceptual invariants per screen: the focused item must be
+scrolled into view, speech must not lag held-key repeat.
+
 When introducing a new UI widget or interaction, ask which keys to bind unless the bindings
 were already specified.
 
