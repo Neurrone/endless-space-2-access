@@ -31,6 +31,12 @@
       <HintPath>$(BepInExCore)\BepInEx.dll</HintPath>
       <Private>false</Private>
     </Reference>
+    <!-- Renames the mod assembly on every load; see ModLoader. BepInEx already has Cecil loaded,
+         so this is the copy the process is running either way. -->
+    <Reference Include="Mono.Cecil">
+      <HintPath>$(BepInExCore)\Mono.Cecil.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
     <!-- Mono.CSharp compiler-as-a-service, behind POST /eval. Deployed by DeployToGame rather
          than by the build, so the game folder is the only place it is ever copied to. -->
     <Reference Include="mcs">

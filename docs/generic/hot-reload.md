@@ -29,6 +29,22 @@ On CoreCLR, load into a collectible `AssemblyLoadContext` whose `Load` returns n
 shared dependencies resolve to the default context (DiscoAccess). On Mono there is no ALC —
 see the leak note below.
 
+**On Mono, rename the assembly before every load — or reload silently does nothing.** Mono
+resolves `Assembly.Load(byte[])` through the same identity cache as every other load: bytes
+whose assembly name and version match an assembly already loaded are discarded and the *old*
+assembly is handed back. Every reload then looks successful from every angle — the counter
+increments, stale-build clears, Stop/Start re-run — while the game keeps executing the
+previous build's code. Nothing errors, so nothing looks wrong; ES2 Access carried this bug
+until a reload was probe-tested. The fix (the same one BepInEx's ScriptEngine uses): rewrite
+the identity with Mono.Cecil before loading — read the bytes into an `AssemblyDefinition`,
+set `Name.Name` to `"<Mod>-r" + a per-process counter, write it back out, and load *those*
+bytes. Only the identity changes; the file on disk, namespaces and type names are untouched,
+so nothing else notices — unless code somewhere names the mod assembly by its simple string
+name, which is worth grepping for once. BepInEx ships `Mono.Cecil.dll` in its core, so the
+reference costs nothing. In any new project, prove reloading works before trusting it: add a
+probe field to a JSON endpoint, build, reload, and check the response — timestamps and reload
+counters cannot detect a deduplicated load.
+
 ## Reload sequence: validate before teardown
 
 A broken build must leave the previous mod running (a screen reader user loses *everything*
@@ -61,10 +77,11 @@ nothing and stays safe if ordering ever changes.
 ## Introspection
 
 `/loader/status` reports: `modLoaded`, `reloadCount`, `failedReloadCount`, `lastReloadError`,
-and **stale-build detection** — the DLL write time captured at load vs. the write time on
-disk right now (`staleBuild: true` = a newer build awaits reload). This answers the two
-questions an agent actually asks: "did my reload take?" and "am I testing the build I just
-made?"
+`modAssemblyName` (the per-load identity — a changed value is direct proof a swap reached the
+runtime), and **stale-build detection** — the DLL write time captured at load vs. the write
+time on disk right now (`staleBuild: true` = a newer build awaits reload). This answers the
+two questions an agent actually asks: "did my reload take?" and "am I testing the build I
+just made?"
 
 ## Runtime capability table
 
@@ -91,4 +108,6 @@ persists lives host-side by design (settings, host speech ring, native audio han
 [`src/hot-reload/ModLoader.cs`](src/hot-reload/ModLoader.cs) (prepare/activate/unload),
 [`ModHost.cs`](src/hot-reload/ModHost.cs), [`LoaderPlugin.cs`](src/hot-reload/LoaderPlugin.cs),
 [`ModEntry.cs`](src/hot-reload/ModEntry.cs) (the full Stop unwind). Verified behaviors: a
-corrupted DLL is refused with the old mod alive; `staleBuild` flips across build/reload.
+corrupted DLL is refused with the old mod alive; `staleBuild` flips across build/reload; a
+probe field added to an endpoint appears after build + reload, and appears renamed under a
+fresh `modAssemblyName` — the swap demonstrably replaces code, not just lifecycle state.

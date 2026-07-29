@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Reflection;
 using ES2Access.Loader.Dev;
+using Mono.Cecil;
 
 namespace ES2Access.Loader
 {
@@ -14,6 +15,16 @@ namespace ES2Access.Loader
     /// running - that is the whole point of the split. Mono cannot unload an assembly, so the
     /// old ones stay in the process; this is a development loop, and leaking a few hundred
     /// kilobytes per reload is the price of not restarting the game.
+    ///
+    /// Every load also renames the assembly - ES2Access-r1, -r2, one per attempt - before handing
+    /// the bytes to Mono. This is not cosmetic and it is not optional. Mono resolves
+    /// Assembly.Load(byte[]) through the same identity cache as everything else: a second image
+    /// whose name and version match one already loaded is discarded and the *old* assembly handed
+    /// back. Without the rename a reload looks like it worked from every angle - the count goes
+    /// up, staleBuild clears, nothing errors - while the game keeps running the code from the
+    /// previous build, and the only way out is a restart. A unique identity per load is what makes
+    /// Mono treat the new bytes as a new assembly. BepInEx's own ScriptEngine renames for the same
+    /// reason.
     ///
     /// A reload validates the new build completely before it touches the running one, so a mod
     /// that does not compile into something loadable costs nothing: the old mod keeps speaking and
@@ -28,6 +39,11 @@ namespace ES2Access.Loader
     {
         private const string ModFileName = "ES2Access.dll";
         private const string EntryTypeName = "ES2Access.ModEntry";
+        private const string ModAssemblyNamePrefix = "ES2Access-r";
+
+        // Per process, not per loader: two loaders would otherwise mint colliding identities and
+        // reintroduce exactly the deduplication the rename exists to avoid.
+        private static int _loadAttempts;
 
         private readonly LoaderPlugin _plugin;
         private readonly DevServer _dev;
@@ -86,6 +102,14 @@ namespace ES2Access.Loader
         public Assembly ModAssembly
         {
             get { return _assembly; }
+        }
+
+        /// <summary>The identity the running mod was loaded under, or null while no mod is loaded.
+        /// It changes with every successful swap, which is what makes the swap observable from
+        /// outside.</summary>
+        public string ModAssemblyName
+        {
+            get { return _assembly == null ? null : _assembly.GetName().Name; }
         }
 
         public void Load()
@@ -171,7 +195,7 @@ namespace ES2Access.Loader
                 // Taken before the bytes, so a build landing mid-read shows up as stale rather
                 // than as the build we are about to run.
                 DateTime? writtenUtc = ModFileOnDiskWrittenUtc;
-                Assembly assembly = Assembly.Load(File.ReadAllBytes(_modPath));
+                Assembly assembly = Assembly.Load(WithFreshIdentity(File.ReadAllBytes(_modPath)));
                 Type entry = assembly.GetType(EntryTypeName);
                 if (entry == null)
                 {
@@ -216,6 +240,25 @@ namespace ES2Access.Loader
             }
         }
 
+        /// <summary>
+        /// Rewrite the assembly name so Mono sees an image it has never loaded. Only the identity
+        /// changes: the file on disk, the namespaces and the type names are all untouched, and
+        /// nothing in the loader or the mod names the assembly by its simple name.
+        /// </summary>
+        private static byte[] WithFreshIdentity(byte[] bytes)
+        {
+            string name = ModAssemblyNamePrefix + ++_loadAttempts;
+            using (MemoryStream source = new MemoryStream(bytes))
+            using (AssemblyDefinition definition = AssemblyDefinition.ReadAssembly(source))
+            using (MemoryStream renamed = new MemoryStream())
+            {
+                definition.Name.Name = name;
+                definition.MainModule.Name = name + ".dll";
+                definition.Write(renamed);
+                return renamed.ToArray();
+            }
+        }
+
         private void Activate(Prepared prepared)
         {
             try
@@ -226,7 +269,7 @@ namespace ES2Access.Loader
                 ModFileWrittenUtc = prepared.WrittenUtc;
                 LastReloadError = null;
                 _dev.ReferenceModAssembly(prepared.Assembly);
-                LoaderLog.Info("Mod loaded from " + _modPath);
+                LoaderLog.Info("Mod loaded from " + _modPath + " as " + ModAssemblyName);
             }
             catch (Exception e)
             {

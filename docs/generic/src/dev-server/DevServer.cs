@@ -273,6 +273,9 @@ namespace ES2Access.Loader.Dev
                     json.WriteValue(LoaderPlugin.PluginVersion);
                     json.WritePropertyName("modLoaded");
                     json.WriteValue(Mods.ModLoaded);
+                    // Renamed per load, so a changed value here is proof the swap reached Mono.
+                    json.WritePropertyName("modAssemblyName");
+                    json.WriteValue(Mods.ModAssemblyName);
                     json.WritePropertyName("reloadCount");
                     json.WriteValue(Mods.ReloadCount);
                     json.WritePropertyName("failedReloadCount");
