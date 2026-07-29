@@ -20,11 +20,10 @@ This is an important but secondary goal, it is the test vehicle for implementing
 
 ## References
 
-- `decompiled/` — reference-only decompiled game code (gitignored, regenerable):
-  - Root `*.cs` files: `Assembly-CSharp` (ES2 game code — screens, orders, events, departments)
+- `decompiled/<Assembly>/` — reference-only decompiled game code (gitignored; regenerate with `.\decompile.ps1 [-Assemblies <names>]`):
+  - `Assembly-CSharp/`: ES2 game code — screens, orders, events, departments
   - `Assembly-CSharp-firstpass/`: the Amplitude engine, including the AGE GUI framework. Organized by namespace folder; global-namespace types (`AgeTransform.cs`, `AgeManager.cs`, `AgeControl*.cs`) sit at the folder root
   - `Amplitude/`: small utility assembly
-  - Regenerate with `ilspycmd -p "<Managed>\<Assembly>.dll" -o decompiled\<Assembly>` (Managed folder is `$(Managed)` in `GamePaths.props`)
 - `docs/` — ES2-specific research and design notes
 - `docs/generic/` — the game-agnostic accessibility modding documentation (the primary goal)
 - Reference mods to draw patterns from: `D:\source\songs-of-conquest-access`, `D:\source\wotr-access`, `D:\source\tangledeep_access`; Prism speech library source at `D:\source\prism`. Never use `D:\source\es2-mod*` or `D:\source\game-accessibility-skills`.
