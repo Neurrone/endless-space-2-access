@@ -33,6 +33,11 @@
       <HintPath>$(Managed)\Assembly-CSharp-firstpass.dll</HintPath>
       <Private>false</Private>
     </Reference>
+    <!-- The dev server writes JSON with the copy of Newtonsoft.Json the game already loads. -->
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>$(Managed)\Newtonsoft.Json.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
     <Reference Include="Amplitude">
       <HintPath>$(Managed)\Amplitude.dll</HintPath>
       <Private>false</Private>
