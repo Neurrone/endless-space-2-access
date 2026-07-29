@@ -13,9 +13,12 @@ namespace ES2Access.Dev
     ///
     ///   GET /status            mod version, speech backend, last spoken line, scene size
     ///   GET /speech?since=N    lines spoken after sequence N, plus the next cursor
+    ///   GET /gui/age?window=&amp;depth=&amp;visibleOnly=
+    ///                          the live AGE hierarchy read as accessible meaning (see AgeDump)
     ///
-    /// /speech reads the thread-safe buffer straight from the HTTP thread; /status touches the
-    /// scene, so it goes through the main-thread queue and answers 503 if the game is wedged.
+    /// /speech reads the thread-safe buffer straight from the HTTP thread; /status and /gui/age
+    /// touch the scene, so they go through the main-thread queue and answer 503 if the game is
+    /// wedged.
     /// </summary>
     internal sealed class ModRoutes
     {
@@ -32,6 +35,7 @@ namespace ES2Access.Dev
             PrismSpeech.Observer = Spoken;
             _host.RegisterRoute("GET", "/status", Status);
             _host.RegisterRoute("GET", "/speech", Speech);
+            _host.RegisterRoute("GET", "/gui/age", Age);
         }
 
         // The mod's own buffer is what /speech serves; the loader's outlives a hot reload, which
@@ -73,6 +77,17 @@ namespace ES2Access.Dev
                             json.WriteEndObject();
                         });
                     })
+            );
+        }
+
+        private DevResponse Age(DevRequest request)
+        {
+            string window = request.QueryValue("window");
+            int depth = request.QueryInt("depth", AgeDump.DefaultDepth);
+            bool visibleOnly = request.QueryInt("visibleOnly", 1) != 0;
+
+            return DevResponse.Json(
+                (string)_host.MainThread.Run(() => AgeDump.Dump(window, depth, visibleOnly))
             );
         }
 

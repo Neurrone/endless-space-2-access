@@ -37,13 +37,48 @@ The contract that has proven out (shapes are JSON):
 |---|---|
 | `GET /status` | Mod state: version, speech availability/backend, last spoken line |
 | `GET /speech?since=N` | Ring buffer of everything spoken; monotonic cursor (`{entries:[{seq,text}],next}`). The agent's ears. |
-| `GET /gui/game?path=&depth=` | Live scene hierarchy dump (names, components, text via reflection), depth- and node-capped. Later: a parallel *interpreted* dump of the mod's own accessible tree, designed to be diffed against the raw dump. |
+| `GET /gui/game?path=&depth=` | **Raw** scene hierarchy dump (names, components, text via reflection), depth- and node-capped. Game-agnostic; works before you understand anything. |
+| `GET /gui/<framework>?window=&depth=&visibleOnly=` | **Interpreted** dump of the game's own UI framework (below). ES2 Access: `/gui/age`. |
 | `GET /screenshot` | PNG of the rendered frame — for when visual context is needed |
 | `GET /log?since=N&grep=` | Loader-log ring buffer over HTTP; no grepping log files on disk |
 | `POST /eval?settle=MS&speech=0` | C# REPL (below). Response includes `speech: [...]` — everything the evaluated code caused to be spoken, gathered by waiting for a quiet settle window. The primary announcement-testing tool: drive an action, read what it said, one request. |
 | `POST /wait?timeout=MS` | Body = C# bool expression, compiled once, evaluated **every frame** until true/timeout (`{satisfied,frames,elapsedMs}`). Catches single-frame transients external polling cannot see. |
 | `POST /reload`, `GET /loader/status` | Hot reload — see [hot-reload.md](hot-reload.md) |
 | `POST /quit` | Clean exit (respond first, quit next frame) |
+
+## Two GUI dumps: raw, then interpreted
+
+The raw dump is the day-one tool: it needs zero knowledge of the game and is how the UI
+framework gets identified in the first place. Once the framework is understood, build a
+second, *interpreted* dump that walks the framework's own widget tree and answers the
+questions the raw dump can't: what does each node **say**, and what can the player
+**operate**. The two answer different questions; keep both.
+
+What the interpreted dump emits per node, and where each field proved to come from in ES2
+Access's `AgeDump` (adapt the sources per game, keep the shape):
+
+- **kind** — button/toggle/slider/dropdown/label/…, from the framework's control class, not
+  the Unity component list
+- **text** — the final *localized, markup-stripped* display string. Use the framework's own
+  localizer and its own markup cleaner rather than reimplementing either. A control's caption
+  is usually a child label — search a few levels down, but not into nested controls.
+- **tooltip** — read from the widget's tooltip component *without hovering*; frameworks
+  populate tooltip content at bind time. Games often append "why this is disabled" into the
+  same string — free narration for disabled controls.
+- **value** — control state as one readable string ("on", "0.8 of 0..1", "Beautiful (4 of 6)")
+- **interactable** — computed over the *ancestor chain*, not the leaf: one disabled/hidden
+  ancestor kills a whole subtree without any child's own flags changing
+- prune pure decoration (images/frames with no text, tooltip, control or surviving children) —
+  that is what turns a 3× oversized tree into a screen-reader-sized one
+
+Root selection mirrors what the player can actually reach, in the game's own input priority:
+topmost modal → visible screen → shown panels (filtered by *hierarchy-wide* visibility — UI
+managers keep panels on "shown" lists while an ancestor is hidden). A top-level `windows`
+summary (name, visible, readiness) plus a `window=<name>` override to dump anything by name,
+shown or not, completes it. The interpreted dump lives **mod-side** (it references game
+assemblies and iterates via hot reload), unlike the raw dump, which is loader-side and never
+changes. Later it doubles as the baseline to diff the mod's own accessible tree against, to
+find screens or widgets the mod has not covered.
 
 ## The REPL
 
@@ -79,6 +114,8 @@ ring resets on reload.
 ## Source files
 
 [`src/dev-server/`](src/dev-server/) — server core (`DevServer.cs`, `DevHttpServer.cs`),
-main-thread queue, evaluator, GUI dump, frame-exact waits (`PredicateWaits.cs`), log tap,
-ring buffer, and the mod-registered routes (`ModRoutes.cs`, `SpeechLog.cs`). Launch/test
+main-thread queue, evaluator, raw GUI dump (`GuiDump.cs`), frame-exact waits
+(`PredicateWaits.cs`), log tap, ring buffer, and the mod-registered routes (`ModRoutes.cs`,
+`SpeechLog.cs`). [`AgeDump.cs`](src/dev-server/AgeDump.cs) is ES2 Access's interpreted dump —
+game-specific by nature, included as the model to imitate, not code to copy. Launch/test
 script: [`src/bootstrap/run-game.ps1`](src/bootstrap/run-game.ps1).
