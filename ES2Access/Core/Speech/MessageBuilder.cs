@@ -10,6 +10,10 @@ namespace ES2Access.Core.Speech
     /// <see cref="ListItem"/> boundaries are joined with a comma. That lets a chain of
     /// collaborating functions each append its piece without coordinating spacing.
     ///
+    /// Every connective — the separators and the "N of M" and "x N" idioms — comes from
+    /// <see cref="ModStrings"/>, so a translation can change them all at once (a Japanese
+    /// table joins fragments with nothing and list items with "、").
+    ///
     /// Single-use: <see cref="Build"/> throws if the builder is reused.
     /// </summary>
     public sealed class MessageBuilder
@@ -52,9 +56,10 @@ namespace ES2Access.Core.Speech
         }
 
         /// <summary>
-        /// Append a text fragment. Fragments are separated from preceding content by a space;
-        /// the first fragment of a fresh list item is separated by a comma first. Null/empty
-        /// fragments are ignored so optional pieces can be appended blindly.
+        /// Append a text fragment. Fragments are separated from preceding content by the fragment
+        /// separator (a space in English); the first fragment of a fresh list item is separated by
+        /// the list separator instead (", " in English). Null/empty fragments are ignored so
+        /// optional pieces can be appended blindly.
         /// </summary>
         public MessageBuilder Fragment(string fragment)
         {
@@ -72,14 +77,12 @@ namespace ES2Access.Core.Speech
                 return this;
             }
 
-            // Opening a new list item: emit the comma between items (never before the first).
+            // Opening a new list item: the list separator replaces the fragment separator here
+            // (never before the first item).
+            bool opensListItem = false;
             if (_state == State.ListItem)
             {
-                if (!_isFirstListItem)
-                {
-                    _sb.Append(',');
-                }
-
+                opensListItem = !_isFirstListItem;
                 _isFirstListItem = false;
             }
 
@@ -88,10 +91,14 @@ namespace ES2Access.Core.Speech
                     ? State.FragmentInList
                     : State.Fragment;
 
-            // A space separates everything except the very first piece of content.
-            if (_sb.Length > 0)
+            if (opensListItem)
             {
-                _sb.Append(' ');
+                _sb.Append(ModStrings.Get(ModStrings.ListSeparator));
+            }
+            else if (_sb.Length > 0)
+            {
+                // Everything except the very first piece of content is separated.
+                _sb.Append(ModStrings.Get(ModStrings.FragmentSeparator));
             }
 
             _sb.Append(fragment);
@@ -135,18 +142,17 @@ namespace ES2Access.Core.Speech
         /// Append a fraction as "<paramref name="numerator"/> of <paramref name="denominator"/>"
         /// (e.g. "5 of 20"), with an optional trailing <paramref name="unit"/> ("5 of 20 charges").
         /// The single home for the spoken "N of M" idiom — health bars, "item 1 of 4", fleet
-        /// movement points — so the connective ("of") lives in one place for future translation
-        /// and every fraction reads identically. Behaves like <see cref="Fragment"/> for spacing
-        /// (the caller sets list boundaries with <see cref="ListItem"/>).
+        /// movement points — so the connective ("of") lives in one place, translated with the rest
+        /// of the mod's strings, and every fraction reads identically. Behaves like
+        /// <see cref="Fragment"/> for spacing (the caller sets list boundaries with
+        /// <see cref="ListItem"/>).
         /// </summary>
         public MessageBuilder PushFraction(int numerator, int denominator, string unit = null)
         {
             CheckNotBuilt();
-            string text = numerator + " of " + denominator;
-            if (!string.IsNullOrEmpty(unit))
-            {
-                text += " " + unit;
-            }
+            string text = string.IsNullOrEmpty(unit)
+                ? ModStrings.Format(ModStrings.Fraction, numerator, denominator)
+                : ModStrings.Format(ModStrings.FractionUnit, numerator, denominator, unit);
 
             return Fragment(text);
         }
@@ -161,7 +167,7 @@ namespace ES2Access.Core.Speech
         {
             if (count > 1)
             {
-                Fragment("x " + count);
+                Fragment(ModStrings.Format(ModStrings.Quantity, count));
             }
 
             return this;

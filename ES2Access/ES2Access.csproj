@@ -53,7 +53,12 @@
   </ItemGroup>
 
   <Target Name="DeployToGame" AfterTargets="Build" Condition="Exists('$(GameDir)')">
+    <ItemGroup>
+      <!-- Translation tables, named after the game's own language names (locale\french.json). -->
+      <LocaleFile Include="$(MSBuildThisFileDirectory)locale\*.json" />
+    </ItemGroup>
     <Copy SourceFiles="$(TargetPath);$(TargetDir)$(AssemblyName).pdb" DestinationFolder="$(GameDir)\BepInEx\plugins\ES2Access" />
+    <Copy SourceFiles="@(LocaleFile)" DestinationFolder="$(GameDir)\BepInEx\plugins\ES2Access\locale" SkipUnchangedFiles="true" />
     <Copy SourceFiles="$(MSBuildThisFileDirectory)..\vendor\prism\prism.dll" DestinationFiles="$(GameDir)\prism.dll" SkipUnchangedFiles="true" />
   </Target>
 </Project>

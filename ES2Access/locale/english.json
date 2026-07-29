@@ -1,0 +1,8 @@
+{
+  "startup.ready": "Endless Space 2 Access ready",
+  "speech.fragment-separator": " ",
+  "speech.list-separator": ", ",
+  "speech.fraction": "{0} of {1}",
+  "speech.fraction-unit": "{0} of {1} {2}",
+  "speech.quantity": "x {0}"
+}

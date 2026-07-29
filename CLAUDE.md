@@ -32,6 +32,7 @@ This is an important but secondary goal, it is the test vehicle for implementing
 
 - Build + deploy: `dotnet build ES2Access/ES2Access.csproj` — copies the plugin to `<game>\BepInEx\plugins\ES2Access` and `prism.dll` to the game root. Game location comes from `GamePaths.props` (gitignored; copy from `GamePaths.props.template`).
 - Run: `.\run-game.ps1 [-NoBuild] [-NoSpeech] [-NoDev] [-NoWait]`
+- Tests (offline, no game needed): `dotnet test ES2Access.Tests/ES2Access.Tests.csproj`
 - Game log: `<game>\BepInEx\LogOutput.log` (shows Prism backend selection and init errors)
 
 ## Autonomous testing via the dev server
@@ -50,7 +51,8 @@ Environment gates: `ES2ACCESS_NO_SPEECH=1` mutes voicing but `/speech` still cap
 - Prefer deterministic game actions over simulated input where the game exposes a reliable API.
 - Name behavior after what the player can do or perceive, not after incidental implementation details.
 - All speech goes through `PrismSpeech.Speak(MessageBuilder)` from the per-frame pump in `Plugin.Update`. Harmony hooks and watchers only set state or enqueue — they never speak.
-- `ES2Access/Core/` compiles against the BCL only (no Unity, BepInEx, or Harmony) so it stays unit-testable off-engine.
+- `ES2Access/Core/` compiles against the BCL only (no Unity, BepInEx, or Harmony) so it stays unit-testable off-engine; `ES2Access.Tests` build-enforces this by compiling `Core/` sources directly.
+- Mod-authored spoken phrases come from `ModStrings` keys (translations in `ES2Access/locale/<language>.json`, named after the game's own language names; `english.json` is the template). Never inline English literals in speech, and keep each translatable template a complete phrase — don't glue fragments that grammar would need to inflect. Game-authored text arrives already localized via `Gui.Localize`. `MessageBuilder` pulls its separators and fraction/quantity templates from `ModStrings`.
 
 ## Workflow
 
