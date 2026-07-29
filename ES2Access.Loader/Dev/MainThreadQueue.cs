@@ -2,11 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 
-namespace ES2Access.Dev
+namespace ES2Access.Loader.Dev
 {
     /// <summary>Raised when the game did not reach the queued work in time (game frozen, paused
     /// in a modal loop, or shutting down). Answered as HTTP 503.</summary>
-    internal sealed class MainThreadTimeoutException : Exception
+    public sealed class MainThreadTimeoutException : Exception
     {
         public MainThreadTimeoutException(string message)
             : base(message)
@@ -16,13 +16,14 @@ namespace ES2Access.Dev
 
     /// <summary>
     /// Hands work from HTTP handler threads to the Unity main thread. Every Unity API touch the
-    /// dev server makes goes through here: handlers enqueue a job and block on it, and
-    /// <see cref="Drain"/> (called once per frame from the plugin's Update) runs the queue.
+    /// dev server makes goes through here, the mod's route handlers included: handlers enqueue a
+    /// job and block on it, and <see cref="Drain"/> (called once per frame from the loader's
+    /// Update) runs the queue.
     ///
     /// net35 / Unity Mono: no Task, no ConcurrentQueue, no ManualResetEventSlim - a Queue&lt;T&gt;
     /// behind a lock plus a ManualResetEvent per job.
     /// </summary>
-    internal sealed class MainThreadQueue
+    public sealed class MainThreadQueue
     {
         public const int DefaultTimeoutMilliseconds = 5000;
 

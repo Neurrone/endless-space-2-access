@@ -5,12 +5,15 @@ using System.IO;
 using System.Net;
 using System.Text;
 using System.Threading;
-using ES2Access.Core.Util;
 using Newtonsoft.Json;
 
-namespace ES2Access.Dev
+namespace ES2Access.Loader.Dev
 {
-    internal sealed class DevRequest
+    /// <summary>Answers one dev route. Implemented by the loader's builtins and by whatever the
+    /// mod registers through <see cref="ES2Access.Loader.ModHost"/>.</summary>
+    public delegate DevResponse DevRouteHandler(DevRequest request);
+
+    public sealed class DevRequest
     {
         public string Method;
         public string Path;
@@ -35,7 +38,7 @@ namespace ES2Access.Dev
         }
     }
 
-    internal sealed class DevResponse
+    public sealed class DevResponse
     {
         public int StatusCode = 200;
         public string ContentType = "application/json; charset=utf-8";
@@ -63,7 +66,7 @@ namespace ES2Access.Dev
     /// deploying its own; the streaming writer is the part of that old build we can rely on, and
     /// it also keeps a 5000-node GUI dump from being materialised as an object graph first.
     /// </summary>
-    internal static class DevJson
+    public static class DevJson
     {
         public static string Write(Action<JsonTextWriter> body)
         {
@@ -111,17 +114,15 @@ namespace ES2Access.Dev
     /// </summary>
     internal sealed class DevHttpServer
     {
-        public delegate DevResponse RequestHandler(DevRequest request);
-
         private const int ShutdownJoinMilliseconds = 2000;
 
         private readonly string _address;
-        private readonly RequestHandler _handler;
+        private readonly DevRouteHandler _handler;
         private HttpListener _listener;
         private Thread _thread;
         private volatile bool _running;
 
-        public DevHttpServer(int port, RequestHandler handler)
+        public DevHttpServer(int port, DevRouteHandler handler)
         {
             _address = "http://127.0.0.1:" + port + "/";
             _handler = handler;
@@ -157,7 +158,7 @@ namespace ES2Access.Dev
                 }
                 catch (Exception e)
                 {
-                    Log.Warn("Dev server listener did not close cleanly: " + e.Message);
+                    LoaderLog.Warn("Dev server listener did not close cleanly: " + e.Message);
                 }
             }
 
@@ -182,7 +183,7 @@ namespace ES2Access.Dev
                 {
                     if (_running)
                     {
-                        Log.Warn("Dev server stopped accepting requests: " + e.Message);
+                        LoaderLog.Warn("Dev server stopped accepting requests: " + e.Message);
                     }
 
                     return;
@@ -201,7 +202,7 @@ namespace ES2Access.Dev
             }
             catch (Exception e)
             {
-                Log.Warn("Dev server request failed: " + e);
+                LoaderLog.Warn("Dev server request failed: " + e);
                 response = DevResponse.Json(500, DevJson.Error(e.Message));
             }
 
@@ -215,7 +216,7 @@ namespace ES2Access.Dev
             }
             catch (Exception e)
             {
-                Log.Warn("Dev server could not send a response: " + e.Message);
+                LoaderLog.Warn("Dev server could not send a response: " + e.Message);
             }
         }
 

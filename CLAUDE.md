@@ -37,9 +37,16 @@ This is an important but secondary goal, it is the test vehicle for implementing
 
 ## Autonomous testing via the dev server
 
-While the game runs, `http://127.0.0.1:8771` serves: `GET /status`, `GET /speech?since=N` (ring buffer of everything spoken — works even with speech muted), `GET /gui/game?path=&depth=` (live Unity hierarchy dump), `GET /screenshot` (PNG), `POST /quit`.
+While the game runs, `http://127.0.0.1:8771` serves:
 
-Test loop: `.\run-game.ps1 -NoSpeech -NoWait`, poll `/status` until it answers (boot can take up to a minute), exercise the feature, read `/speech` to verify announcements, `POST /quit` (process exits ~10 s later, poll at 1 s granularity).
+- `GET /status` — mod state; `GET /speech?since=N` — ring buffer of everything spoken (works even with speech muted; resets after a reload)
+- `GET /gui/game?path=&depth=` — live Unity hierarchy dump; `GET /screenshot` (PNG); `POST /quit`
+- `POST /eval` — C# REPL against the live game (body = code; persistent state across calls; runs on the main thread)
+- `POST /reload` — hot-swaps the mod assembly without restarting the game; `GET /loader/status` — reload count and last error
+
+Architecture: `ES2Access.Loader` is the actual BepInEx plugin and never reloads — it owns the dev server, `/eval` (vendored `mcs.dll`, a net35 Mono.CSharp), and the mod lifecycle. `ES2Access.dll` is loaded from bytes (never file-locked, so `dotnet build` works while the game runs) and must tear down fully in `ModEntry.Stop` — every feature must be reload-safe. The dev server survives a mod that throws on load; check `/loader/status`.
+
+Test loop: `.\run-game.ps1 -NoSpeech -NoWait`, poll `/status` until it answers (boot can take up to a minute), exercise the feature, read `/speech` to verify announcements, `POST /quit` (process exits ~10 s later, poll at 1 s granularity). Iterating on code: `dotnet build ES2Access/ES2Access.csproj` then `POST /reload` — no restart needed. During boot/loading, frames can take >5 s, so main-thread routes (`/status`, `/eval`, `/gui/game`, `/screenshot`) may return 503 — retry, and confirm reloads via `/loader/status` rather than assuming failure.
 
 Environment gates: `ES2ACCESS_NO_SPEECH=1` mutes voicing but `/speech` still captures; `ES2ACCESS_NO_DEV=1` disables the server; `ES2ACCESS_DEV_PORT` overrides the port.
 

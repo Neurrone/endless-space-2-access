@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Reflection;
 using Amplitude.Unity.Framework;
 using Amplitude.Unity.Localization;
 using ES2Access.Core.Speech;
@@ -22,7 +21,7 @@ namespace ES2Access.Localization
     ///
     /// The language is not known at plugin load: the game's localization manager registers its
     /// service only after its own load coroutine has read the language from Steam. So this polls
-    /// once per frame from Plugin.Update until the service appears, then keeps watching the
+    /// once per frame from the mod's pump until the service appears, then keeps watching the
     /// language cheaply so an in-game language change is picked up.
     ///
     /// A missing translation file is normal (English needs none); a malformed one is logged and
@@ -31,6 +30,10 @@ namespace ES2Access.Localization
     public static class ModLocale
     {
         private const string LocaleFolder = "locale";
+
+        /// <summary>Where the plugin was deployed, from the loader. The mod assembly is loaded
+        /// from bytes so it has no Location of its own to derive this from.</summary>
+        public static string PluginDirectory;
 
         private static string _language;
 
@@ -67,6 +70,7 @@ namespace ES2Access.Localization
         {
             _language = null;
             LanguageResolved = false;
+            PluginDirectory = null;
         }
 
         private static ILocalizationService LocalizationService()
@@ -119,17 +123,14 @@ namespace ES2Access.Localization
 
         private static string LocalePath(string language)
         {
-            string pluginDirectory = Path.GetDirectoryName(
-                Assembly.GetExecutingAssembly().Location
-            );
-            if (string.IsNullOrEmpty(pluginDirectory))
+            if (string.IsNullOrEmpty(PluginDirectory))
             {
-                Log.Warn("locale: cannot locate the plugin directory; translations disabled");
+                Log.Warn("locale: the plugin directory is not known; translations disabled");
                 return null;
             }
 
             return Path.Combine(
-                Path.Combine(pluginDirectory, LocaleFolder),
+                Path.Combine(PluginDirectory, LocaleFolder),
                 language + ".json"
             );
         }

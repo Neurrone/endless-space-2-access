@@ -4,7 +4,7 @@ using System.Reflection;
 using Newtonsoft.Json;
 using UnityEngine;
 
-namespace ES2Access.Dev
+namespace ES2Access.Loader.Dev
 {
     /// <summary>
     /// Dumps the live Unity object hierarchy as JSON so a developer or agent who cannot see the
