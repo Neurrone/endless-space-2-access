@@ -4,5 +4,16 @@
   "speech.list-separator": ", ",
   "speech.fraction": "{0} of {1}",
   "speech.fraction-unit": "{0} of {1} {2}",
-  "speech.quantity": "x {0}"
+  "speech.quantity": "x {0}",
+  "control.button": "button",
+  "control.group": "group",
+  "nav.expanded": "expanded",
+  "nav.collapsed": "collapsed",
+  "nav.disabled": "unavailable",
+  "nav.has-tooltip": "has tooltip",
+  "nav.no-details": "Nothing in here",
+  "buffer.ui": "UI",
+  "buffer.empty": "Buffer empty",
+  "buffer.line": "{0}. {1}",
+  "screen.main-menu": "Main menu"
 }

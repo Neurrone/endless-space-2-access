@@ -25,6 +25,25 @@ namespace ES2Access.Core.Speech
         public const string FractionUnit = "speech.fraction-unit";
         public const string Quantity = "speech.quantity";
 
+        // The role words that say what kind of control the player is on.
+        public const string ControlButton = "control.button";
+        public const string ControlGroup = "control.group";
+
+        // What navigation says about a control beyond its own text.
+        public const string NavExpanded = "nav.expanded";
+        public const string NavCollapsed = "nav.collapsed";
+        public const string NavDisabled = "nav.disabled";
+        public const string NavHasTooltip = "nav.has-tooltip";
+        public const string NavNoDetails = "nav.no-details";
+
+        // The review buffers - the text the player walks line by line.
+        public const string BufferUi = "buffer.ui";
+        public const string BufferEmpty = "buffer.empty";
+        public const string BufferLine = "buffer.line";
+
+        // Screen names, spoken on arrival.
+        public const string ScreenMainMenu = "screen.main-menu";
+
         private static readonly Dictionary<string, string> Defaults = new Dictionary<string, string>
         {
             { StartupReady, "Endless Space 2 Access ready" },
@@ -33,6 +52,17 @@ namespace ES2Access.Core.Speech
             { Fraction, "{0} of {1}" },
             { FractionUnit, "{0} of {1} {2}" },
             { Quantity, "x {0}" },
+            { ControlButton, "button" },
+            { ControlGroup, "group" },
+            { NavExpanded, "expanded" },
+            { NavCollapsed, "collapsed" },
+            { NavDisabled, "unavailable" },
+            { NavHasTooltip, "has tooltip" },
+            { NavNoDetails, "Nothing in here" },
+            { BufferUi, "UI" },
+            { BufferEmpty, "Buffer empty" },
+            { BufferLine, "{0}. {1}" },
+            { ScreenMainMenu, "Main menu" },
         };
 
         // Keys already complained about, so a per-frame readout warns once, not every frame.
