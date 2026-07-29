@@ -88,9 +88,16 @@ namespace ES2Access.Loader.Dev
         }
 
         /// <summary>Bring up the HTTP front end. The queue and the registry work either way, so
-        /// ES2ACCESS_NO_DEV=1 only takes away the remote control, not the mod.</summary>
-        public void Start()
+        /// leaving the server off only takes away the remote control, not the mod. Off unless the
+        /// devServer config setting opts in; ES2ACCESS_NO_DEV=1 forces it off regardless.</summary>
+        public void Start(bool enabled)
         {
+            if (!enabled)
+            {
+                LoaderLog.Info("Dev server disabled (devServer = false in config)");
+                return;
+            }
+
             if (Environment.GetEnvironmentVariable(DisableEnv) == "1")
             {
                 LoaderLog.Info("Dev server disabled (" + DisableEnv + "=1)");

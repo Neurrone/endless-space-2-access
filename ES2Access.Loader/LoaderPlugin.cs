@@ -36,10 +36,18 @@ namespace ES2Access.Loader
             string pluginDirectory = Path.GetDirectoryName(
                 Assembly.GetExecutingAssembly().Location
             );
+            var devServer = Config.Bind(
+                "Dev",
+                "devServer",
+                false,
+                "Enable the loopback developer HTTP server on http://127.0.0.1:8771 (REPL, hot "
+                    + "reload, remote control). Development only; leave off to play."
+            );
+
             _dev = new DevServer(this);
             _mods = new ModLoader(this, _dev, pluginDirectory);
             _dev.Mods = _mods;
-            _dev.Start();
+            _dev.Start(devServer.Value);
             _mods.Load();
         }
 

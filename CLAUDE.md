@@ -50,7 +50,7 @@ Architecture: `ES2Access.Loader` is the actual BepInEx plugin and never reloads 
 
 Test loop: `.\run-game.ps1 -NoSpeech -NoWait`, poll `/status` until it answers (boot can take up to a minute), exercise the feature, read `/speech` to verify announcements, `POST /quit` (process exits ~10 s later, poll at 1 s granularity). Iterating on code: `dotnet build ES2Access/ES2Access.csproj` then `POST /reload` — no restart needed. During boot/loading, frames can take >5 s, so main-thread routes (`/status`, `/eval`, `/gui/game`, `/screenshot`) may return 503 — retry, and confirm reloads via `/loader/status` rather than assuming failure.
 
-Environment gates: `ES2ACCESS_NO_SPEECH=1` mutes voicing but `/speech` still captures; `ES2ACCESS_NO_DEV=1` disables the server; `ES2ACCESS_DEV_PORT` overrides the port.
+Gates: the server is **off by default** — it runs only when `devServer = true` under `[Dev]` in `BepInEx\config\endless.space2.access.cfg` (`run-game.ps1` sets this true, or false with `-NoDev`, before launching). `ES2ACCESS_NO_DEV=1` forces it off regardless; `ES2ACCESS_DEV_PORT` overrides the port; `ES2ACCESS_NO_SPEECH=1` mutes voicing but `/speech` still captures.
 
 ## Conventions
 
