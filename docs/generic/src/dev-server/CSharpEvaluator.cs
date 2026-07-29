@@ -45,9 +45,10 @@ namespace ES2Access.Loader.Dev
     }
 
     /// <summary>
-    /// A C# REPL over the running game, behind POST /eval. One evaluator lives for the whole
-    /// session, so variables and usings declared by one request are still there for the next, and
-    /// a hot reload only adds the new mod assembly to what it can see.
+    /// A C# REPL over the running game, behind POST /eval. One evaluator lives for one mod load,
+    /// so variables and usings declared by one request are still there for the next, and a hot
+    /// reload replaces it wholesale - see DevServer.RebindModAssembly for why nothing less will
+    /// do, and note that REPL state does not survive a reload.
     ///
     /// Compiling is Mono.CSharp (vendor\mcs\mcs.dll, the sinai-dev/mcs-unity net35 build that
     /// UnityExplorer uses). Its diagnostics do not come back from the call: they are printed to a
@@ -74,13 +75,17 @@ namespace ES2Access.Loader.Dev
             }
         }
 
-        // What evaluated code can name. Everything here is already in the process; the REPL is
-        // for driving the live game, not for compiling against things it has never loaded.
+        // What evaluated code can name beyond the compiler's own defaults. Everything here is
+        // already in the process; the REPL is for driving the live game, not for compiling
+        // against things it has never loaded.
+        //
+        // The BCL is deliberately absent. Mono.CSharp imports mscorlib, System and System.Core
+        // itself on the first compile, and importing an assembly it has already taken registers
+        // every type in it a second time. Duplicate types go unnoticed - the namespace keeps the
+        // first - but duplicate *extension* methods all stay in scope, so every LINQ call came
+        // back as CS0121, ambiguous between two identical System.Linq.Enumerable overloads.
         private static readonly string[] ReferencedAssemblies =
         {
-            "mscorlib",
-            "System",
-            "System.Core",
             "UnityEngine",
             "UnityEngine.UI",
             "Assembly-CSharp",
@@ -129,6 +134,7 @@ namespace ES2Access.Loader.Dev
                 _evaluator.Run(directive);
             }
 
+            Warm();
             Clear();
         }
 
@@ -214,6 +220,31 @@ namespace ES2Access.Loader.Dev
             }
 
             return new CompiledPredicate(method, null);
+        }
+
+        /// <summary>
+        /// Take both routes' compile paths for a walk before anyone is waiting on them. Emitting a
+        /// value and emitting a method are separately expensive the first time an evaluator does
+        /// them - the dynamic assembly appears, and a good deal of the compiler gets jitted - and
+        /// this class is built during a hot reload, where a frame may run long but nothing is
+        /// blocked on a five-second budget. Left to the first request instead, that cost lands on
+        /// a main-thread job that answers 503 when it overruns.
+        /// </summary>
+        private void Warm()
+        {
+            try
+            {
+                object value;
+                bool valueSet;
+                _evaluator.Evaluate("0;", out value, out valueSet);
+
+                CompiledMethod method;
+                _evaluator.Compile("(bool)(true)", out method);
+            }
+            catch (Exception e)
+            {
+                LoaderLog.Warn("eval: warm-up failed, the first request will be slower: " + e.Message);
+            }
         }
 
         private static List<Assembly> Loaded()

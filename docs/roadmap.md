@@ -8,7 +8,7 @@ S (read + activate a list), M (multiple panels/state), L (novel interaction mode
 
 | Screen | Classes | Cx | Status | Notes |
 |---|---|---|---|---|
-| Main menu | `MainMenuScreen`, `MainMenuItem`/`SubItem` | S | ☐ next | Worked example in `es2-gui-framework.md`; flyout submenus |
+| Main menu | `MainMenuScreen`, `MainMenuItem`/`SubItem` | S | ✅ | First graph-UI screen: flyouts as expandable nodes, tooltips announced inline, review buffer, visual hover sync. Patterns now in `docs/generic/ui-navigation.md`/`buffers.md`/`tooltips.md` |
 | Options | `OptionsModalWindow` | M | ☐ | Tabbed; sliders/droplists/toggles — first full widget-set test |
 | Load / save | `LoadSaveModalWindow` | S | ☐ | Also reached in-game; needed early for test loops |
 | New game lobby | `NewGameScreen`, `FactionChoiceModalWindow`, `AdvancedSettingsModalWindow` | L | ☐ | Faction/empire slots (`CompetitorSlot`), galaxy settings; the gateway to everything |

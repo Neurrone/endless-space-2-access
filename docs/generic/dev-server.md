@@ -21,6 +21,9 @@ loader-side survival (see [hot-reload.md](hot-reload.md)).
 - Force `Application.runInBackground = true` when the server starts — unattended runs are
   driven from another process and the window never has focus.
 - A handler exception answers 500 and never kills the accept loop.
+- Operational quirk: `HttpListener` answers a bodyless POST with **411 Length Required**
+  before your handler ever runs — the request silently does nothing. Always send a body,
+  even an empty one (`curl -X POST --data ''`).
 
 ## Gating
 
@@ -91,11 +94,29 @@ Pick the evaluator by runtime:
 - **CoreCLR (BepInEx 6/IL2CPP)**: Roslyn scripting (`CSharpScript`) — Mono.CSharp's codegen
   throws under CoreCLR (DiscoAccess's documented finding).
 
-Evaluator facts (Mono.CSharp): persistent `Evaluator` across calls (variables survive);
-reference the game assemblies + your own at init and **re-reference the mod assembly after
-every reload**; run initial `using`s; success is "input complete AND error count zero", not
+Evaluator facts (Mono.CSharp): persistent `Evaluator` across calls (variables survive within
+one mod load); run initial `using`s; success is "input complete AND error count zero", not
 the return value. Quirk: bare `Time` binds to `InteractiveBase.Time(Action)` — fully qualify
-`UnityEngine.Time`. The first eval may 503 on cold JIT; retry succeeds.
+`UnityEngine.Time`.
+
+Two traps, both verified the hard way:
+
+- **Rebuild the evaluator on every mod reload — merely re-referencing the new assembly does
+  nothing.** The importer caches namespaces and type names from referenced assemblies and the
+  first registration of a name wins. With hot reload giving each load a fresh assembly
+  identity (see hot-reload.md) and old images never unloading, a long-lived evaluator keeps
+  resolving mod type names to the *oldest* copy — evals silently run stale code while
+  everything reports success. Discard the evaluator and build a fresh one referencing only
+  the newest mod assembly, at reload time. REPL variables reset per reload (like the speech
+  ring) — document that. Do the evaluator's warmup (one throwaway evaluate + compile) at
+  rebuild time, inside the reload frame: otherwise the first post-reload eval pays the
+  dynamic-assembly/JIT cost inside a request's main-thread budget and 503s.
+- **Do not explicitly reference the BCL** (`mscorlib`, `System`, `System.Core`): the compiler
+  imports those itself on first compile, and importing an assembly it has already taken
+  registers every type twice. Duplicate types go unnoticed (the namespace keeps the first),
+  but duplicate *extension* methods all stay in scope — every LINQ call fails with CS0121
+  "the call is ambiguous" between two identical `Enumerable` overloads. Reference only what
+  the defaults don't cover: game assemblies, UnityEngine, your loader and mod.
 
 ## The test loop
 

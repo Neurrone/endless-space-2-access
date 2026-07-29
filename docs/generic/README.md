@@ -25,25 +25,22 @@ Work through these in order for a new game; each milestone has an acceptance tes
 | 5 | [dev-server.md](dev-server.md) | `/status` answers; `/speech` shows the startup line |
 | 6 | [hot-reload.md](hot-reload.md) | `/reload` swaps a rebuilt mod; a broken build is refused |
 | 7 | [reverse-engineering.md](reverse-engineering.md) | The game's five chokepoints identified and documented |
-
-Then the first screen, then the navigation layer.
+| 8 | [ui-navigation.md](ui-navigation.md) | First screen keyboard-navigable; announcements verified via `/speech`, then by the user |
+| 9 | [buffers.md](buffers.md) + [tooltips.md](tooltips.md) | Focused element's details reviewable line by line; tooltip strategy decided per screen |
 
 Cross-cutting, read alongside any feature work: [performance.md](performance.md) — keeping
 per-frame cost invisible (no scene scans, snapshot+reconcile, allocation discipline).
 
 ## Planned (written once ES2 proves them)
 
-- `ui-navigation.md` — the accessible screen/widget/focus layer: immediate-mode tree rebuilt
-  from live state, tiered focus reconciliation, ancestor-path-diff announcements, input claim
-  chains. Sources: wotr-access's graph navigation engine (BCL-pure, unit-tested), SoC's
-  widget layer, Tangledeep's overlay dispatcher.
 - `world-navigation.md` — exploration cursor vs. categorized scanner (review cursor),
   tile-signature skip navigation, fog-of-war discipline, spatial audio cues.
 - `event-narration.md` — turning engine event firehoses into coherent narration: condensation
-  passes, buff-churn reconciliation, review buffers.
-- `input.md` — the mod-side keyboard layer, consolidating what is currently scattered:
-  claim chains, rewriting the game's own binding tables, typematic repeat, text-field
-  guarding.
+  passes, buff-churn reconciliation, event-log review buffers (the second sink pattern in
+  [buffers.md](buffers.md)).
+- `input.md` — what [ui-navigation.md](ui-navigation.md) doesn't yet cover: claim
+  chains/category shadowing between screens, and rewriting or suppressing the game's own
+  binding tables when mod keys collide with game shortcuts in-game.
 - `settings.md` — user-facing settings and key rebinding. Adopt wotr-access's declarative
   settings tree: one declaration serves as persistence, the settings screen's data source,
   and the rebinding UI.
