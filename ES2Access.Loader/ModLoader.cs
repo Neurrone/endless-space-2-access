@@ -261,6 +261,11 @@ namespace ES2Access.Loader
 
         private void Activate(Prepared prepared)
         {
+            // Before Start, and whether or not Start survives it: the REPL has to name this copy
+            // of the mod rather than a resident older one, and a mod that threw on the way up is
+            // exactly the one worth reaching from /eval.
+            _dev.RebindModAssembly(prepared.Assembly);
+
             try
             {
                 Invoke(prepared.Start, new object[] { _host });
@@ -268,7 +273,6 @@ namespace ES2Access.Loader
                 _stop = prepared.Stop;
                 ModFileWrittenUtc = prepared.WrittenUtc;
                 LastReloadError = null;
-                _dev.ReferenceModAssembly(prepared.Assembly);
                 LoaderLog.Info("Mod loaded from " + _modPath + " as " + ModAssemblyName);
             }
             catch (Exception e)

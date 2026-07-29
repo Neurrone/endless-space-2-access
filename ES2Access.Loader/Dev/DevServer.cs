@@ -178,13 +178,44 @@ namespace ES2Access.Loader.Dev
             }
         }
 
-        /// <summary>Let a REPL session that outlives a hot reload see the new mod assembly's
-        /// types. No-op until someone has actually used /eval.</summary>
-        public void ReferenceModAssembly(Assembly assembly)
+        /// <summary>
+        /// Point the REPL at the mod assembly that is now current, throwing away the evaluator
+        /// that was bound to the previous one.
+        ///
+        /// Every load takes a fresh identity (ES2Access-r1, -r2, ...) and Mono cannot unload, so
+        /// after a reload the process holds several assemblies that all declare
+        /// ES2Access.ModEntry. Mono.CSharp's importer caches the namespaces and types it has taken
+        /// from the assemblies it references, and the first registration of a name wins: merely
+        /// referencing the new assembly leaves ModEntry bound to the *oldest* copy, so eval keeps
+        /// driving code that stopped running several builds ago, silently and without an error.
+        /// Only an evaluator that has never seen the older copies binds the name correctly.
+        ///
+        /// The price is the REPL session - variables and usings declared before a reload are gone,
+        /// the same way the speech ring resets. Rebuilding here rather than on the next request
+        /// keeps Mono.CSharp's start-up cost out of the /eval main-thread job, which would
+        /// otherwise be liable to blow its timeout and answer 503.
+        ///
+        /// Main thread, like every other use of the evaluator: the mod lifecycle runs there too,
+        /// so no request can be inside the evaluator while it is being swapped. No-op until
+        /// someone has actually used /eval - there is nothing bound yet to be wrong.
+        /// </summary>
+        public void RebindModAssembly(Assembly assembly)
         {
-            if (_evaluator != null)
+            if (_evaluator == null)
             {
-                _evaluator.Reference(assembly);
+                return;
+            }
+
+            try
+            {
+                _evaluator = NewEvaluator(assembly);
+            }
+            catch (Exception e)
+            {
+                // Better no evaluator than one bound to the assembly that just went away; the
+                // next /eval builds one against whatever is loaded by then.
+                _evaluator = null;
+                LoaderLog.Warn("eval: could not rebuild the REPL for the new mod: " + e.Message);
             }
         }
 
@@ -312,6 +343,10 @@ namespace ES2Access.Loader.Dev
         /// speech it provokes usually lands a frame or two later, so by default the answer is held
         /// until speech has gone quiet for a settle window. ?speech=0 drops that wait, and the
         /// speech field with it, when the caller only wants the return value.
+        ///
+        /// The session - variables, usings, anything a request declared - lasts as long as the
+        /// mod load it was made against. A hot reload starts a fresh one, so that mod type names
+        /// resolve to the build now running; see <see cref="RebindModAssembly"/>.
         /// </summary>
         private DevResponse Eval(DevRequest request)
         {
@@ -532,14 +567,23 @@ namespace ES2Access.Loader.Dev
         {
             if (_evaluator == null)
             {
-                _evaluator = new CSharpEvaluator();
-                if (Mods.ModAssembly != null)
-                {
-                    _evaluator.Reference(Mods.ModAssembly);
-                }
+                _evaluator = NewEvaluator(Mods.ModAssembly);
             }
 
             return _evaluator;
+        }
+
+        // The mod assembly is passed in rather than read from the loader: a rebind happens while
+        // the load it belongs to is still going up, before the loader has adopted it.
+        private static CSharpEvaluator NewEvaluator(Assembly modAssembly)
+        {
+            CSharpEvaluator evaluator = new CSharpEvaluator();
+            if (modAssembly != null)
+            {
+                evaluator.Reference(modAssembly);
+            }
+
+            return evaluator;
         }
 
         private static int Clamp(int value, int min, int max)
