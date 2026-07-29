@@ -56,6 +56,12 @@ features (iteration speed compounds).
 - Anything perceptual — focus behavior, audio timing, how speech "feels" — is verified by the
   user, not by automated probes. Probes can pass by luck; a screen reader user's test is the
   ground truth.
+- **Visual claims need measurements, not existence checks.** "The tooltip appeared" verified
+  as true twice on ES2 while being wrong twice: once it appeared in the opposite screen
+  corner (rendered at the idle mouse), once "absent" was actually present. Verify *where*
+  and *what*: compare rects from the interpreted GUI dump against the element the visual
+  should attach to, and look at the `/screenshot`. Manual test scripts should carry an
+  "what an observer should see" column alongside "what you should hear".
 - Prefer the game's own deterministic APIs (orders, services, the handler a button invokes)
   over simulated input, everywhere, from the first feature on.
 - Keep a game-specific research doc per subsystem as it gets reverse-engineered ("documents

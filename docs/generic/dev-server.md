@@ -78,9 +78,11 @@ Root selection mirrors what the player can actually reach, in the game's own inp
 topmost modal → visible screen → shown panels (filtered by *hierarchy-wide* visibility — UI
 managers keep panels on "shown" lists while an ancestor is hidden). A top-level `windows`
 summary (name, visible, readiness) plus a `window=<name>` override to dump anything by name,
-shown or not, completes it. The interpreted dump lives **mod-side** (it references game
-assemblies and iterates via hot reload), unlike the raw dump, which is loader-side and never
-changes. Later it doubles as the baseline to diff the mod's own accessible tree against, to
+shown or not, completes it. The per-node `rect` is what turns visual verification into
+numbers — "the tooltip window's rect sits at the focused label's rect + offset" is checkable;
+"the tooltip window exists" is how false verifications happen. The interpreted dump lives
+**mod-side** (it references game assemblies and iterates via hot reload), unlike the raw
+dump, which is loader-side and never changes. Later it doubles as the baseline to diff the mod's own accessible tree against, to
 find screens or widgets the mod has not covered.
 
 ## The REPL

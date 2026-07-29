@@ -66,9 +66,12 @@ Gates: the server is **off by default** — it runs only when `devServer = true`
 ## Workflow
 
 When a feature is ready: verify everything the dev server can verify, then hand over specific
-manual test instructions — the exact steps to perform and exactly what should be heard at each
-step. Perceptual behavior (focus, speech timing, how announcements feel) is only confirmed by
-that manual test.
+manual test instructions — the exact steps to perform, exactly what should be heard at each
+step, and (for features with visual behavior) what a sighted observer should see. Perceptual
+behavior (focus, speech timing, how announcements feel) is only confirmed by that manual test.
+Visual claims must be verified with measured rects (`/gui/age`) and screenshots, never
+existence checks — "the window appeared" can be true while the window renders in the wrong
+corner of the screen.
 
 When introducing a new UI widget or interaction, ask which keys to bind unless the bindings
 were already specified.

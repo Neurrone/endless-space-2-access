@@ -98,7 +98,10 @@ identity and reconciliation is free.
   flyouts and hover zones, and an anchor under a stretched hit box floats far from the text
   (ES2: the featured menu entry's button was twice the height of its label). Real-mouse policy: keyboard focus
   wins on every focus change, but the physical mouse is not fought frame-by-frame — document
-  the tradeoff. Restore everything on teardown.
+  the tradeoff. Restore everything on teardown. Verify focus visuals with **measured rects
+  and screenshots**, never existence checks — both anchoring lessons above were found only
+  after "the tooltip appeared" passed automated verification while rendering somewhere
+  absurd.
 
 ## Default key bindings
 
