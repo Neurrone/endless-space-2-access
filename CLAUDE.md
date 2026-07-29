@@ -20,8 +20,28 @@ This is an important but secondary goal, it is the test vehicle for implementing
 
 ## References
 
-- Look at the `decompiled` for decompiled code
-- `docs/generic` for the documentation on game accessibility modding
+- `decompiled/` — reference-only decompiled game code (gitignored, regenerable):
+  - Root `*.cs` files: `Assembly-CSharp` (ES2 game code — screens, orders, events, departments)
+  - `Assembly-CSharp-firstpass/`: the Amplitude engine, including the AGE GUI framework. Organized by namespace folder; global-namespace types (`AgeTransform.cs`, `AgeManager.cs`, `AgeControl*.cs`) sit at the folder root
+  - `Amplitude/`: small utility assembly
+  - Regenerate with `ilspycmd -p "<Managed>\<Assembly>.dll" -o decompiled\<Assembly>` (Managed folder is `$(Managed)` in `GamePaths.props`)
+- `docs/` — ES2-specific research and design notes
+- `docs/generic/` — the game-agnostic accessibility modding documentation (the primary goal)
+- Reference mods to draw patterns from: `D:\source\songs-of-conquest-access`, `D:\source\wotr-access`, `D:\source\tangledeep_access`; Prism speech library source at `D:\source\prism`. Never use `D:\source\es2-mod*` or `D:\source\game-accessibility-skills`.
+
+## Commands
+
+- Build + deploy: `dotnet build ES2Access/ES2Access.csproj` — copies the plugin to `<game>\BepInEx\plugins\ES2Access` and `prism.dll` to the game root. Game location comes from `GamePaths.props` (gitignored; copy from `GamePaths.props.template`).
+- Run: `.\run-game.ps1 [-NoBuild] [-NoSpeech] [-NoDev] [-NoWait]`
+- Game log: `<game>\BepInEx\LogOutput.log` (shows Prism backend selection and init errors)
+
+## Autonomous testing via the dev server
+
+While the game runs, `http://127.0.0.1:8771` serves: `GET /status`, `GET /speech?since=N` (ring buffer of everything spoken — works even with speech muted), `GET /gui/game?path=&depth=` (live Unity hierarchy dump), `GET /screenshot` (PNG), `POST /quit`.
+
+Test loop: `.\run-game.ps1 -NoSpeech -NoWait`, poll `/status` until it answers (boot can take up to a minute), exercise the feature, read `/speech` to verify announcements, `POST /quit` (process exits ~10 s later, poll at 1 s granularity).
+
+Environment gates: `ES2ACCESS_NO_SPEECH=1` mutes voicing but `/speech` still captures; `ES2ACCESS_NO_DEV=1` disables the server; `ES2ACCESS_DEV_PORT` overrides the port.
 
 ## Conventions
 
@@ -30,6 +50,8 @@ This is an important but secondary goal, it is the test vehicle for implementing
 - Avoid redundant null checks and comments that do not add information.
 - Prefer deterministic game actions over simulated input where the game exposes a reliable API.
 - Name behavior after what the player can do or perceive, not after incidental implementation details.
+- All speech goes through `PrismSpeech.Speak(MessageBuilder)` from the per-frame pump in `Plugin.Update`. Harmony hooks and watchers only set state or enqueue — they never speak.
+- `ES2Access/Core/` compiles against the BCL only (no Unity, BepInEx, or Harmony) so it stays unit-testable off-engine.
 
 ## Workflow
 
