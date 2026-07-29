@@ -77,7 +77,22 @@ identity and reconciliation is free.
   keyboard — find the game's authoritative "typing now" signal (ES2:
   `FocusedControl.IsKeyExclusive`, the same check the game's shortcut dispatcher uses).
   Polling `UnityEngine.Input` from your own `Update` is never blocked by the game — every
-  game layer only reads the same static input state (verify once per game).
+  game layer only reads the same static input state (verify once per game). Two consequences
+  discovered on ES2's options screen, both general:
+  - **The exclusivity signal conflates "the player is typing" with "some widget owns the
+    keyboard."** When the *mod itself* parks the game's focus on a widget (to make the game
+    swallow a key — see below), the stand-down check silences the mod too. Add a narrow
+    ownership exemption — an injected predicate ("this focused control is mine"), never a
+    type test — and do NOT exempt genuine capture/typing widgets: during a key-rebind
+    capture the layer must stand down fully so arrows and Escape are bindable.
+  - **One physical key, two listeners.** The mod cannot consume a key the game polls, so
+    "the mod handled Escape" never stops the game also handling it. The deterministic fix is
+    to make the *game* swallow the key through its own authority: give the game's focus
+    system the widget the key concerns (a focused key-exclusive widget makes the game's
+    dispatcher consume Escape itself — its own mouse flows rely on this). And never depend on
+    same-frame ordering between the mod's handler and the game's: releasing focus in the
+    same frame the game would have consumed the key re-opens the leak intermittently, so
+    defer mod-side state changes that would un-arm the game's consume path by a frame.
 - **Node factories** (`GraphNodes`): per-widget-type constructors binding the game's widgets
   into vtables — label funcs through the game's text pipeline (localize, strip markup),
   activation through the game's own deterministic click path, tooltip surfacing per
@@ -102,6 +117,45 @@ identity and reconciliation is free.
   and screenshots**, never existence checks — both anchoring lessons above were found only
   after "the tooltip appeared" passed automated verification while rendering somewhere
   absurd.
+- **Scroll-into-view** (`ScrollIntoView.cs`): whenever focus lands on a control inside a
+  scrollable view, scroll minimally until it is fully visible. Hook the **single
+  focus-commit site** (beside the focus-visual application), resolve the container from the
+  node's backing object, and every screen — present and future — inherits it with nothing
+  declared. Scroll through the engine's **own scroll entry point** (ES2: replaying the
+  mouse-wheel handler) rather than writing offsets directly, so clamping, scrollbar state
+  and scroll notifications stay identical to a hand on the mouse. Only scroll when the
+  control is actually out of view, and never re-run per frame — a self-correcting loop would
+  fight a sighted helper's wheel, the same tradeoff as the real-mouse policy above. Verify
+  with measured rects: the row past the edge must land *at* the edge (a unit mismatch
+  between rect space and scroll space shows up as consistent under/overshoot).
+- **Discover controls, don't trust named references**: a reused window can carry duplicate
+  per-skin control sets (ES2's options window has two complete button bars) with the API's
+  named fields pointing at one skin — possibly the hidden one. And a widget's own visibility
+  flag is not **effective** visibility: containers hide whole ancestor chains while the
+  child still reports visible. Declare what is actually drawn — walk ancestors for
+  visibility, filter decorative click-shields (no activation wiring), order by measured
+  position so speech order matches the screen.
+
+## The confirmation-dialog screen
+
+Games funnel confirmations through one shared message-box window (quit?, discard changes?,
+countdown boxes). Make it a single high-layer screen registered once — every flow that dead-ends
+in a confirmation then speaks for free, and a silent confirmation is a soft-lock for a blind
+player. The shape (`src/graph-ui/MessageBoxScreen.cs`):
+
+- **Top layer**, above every ordinary screen; ordinary screens must yield while a modal is
+  visible so the hand-off is clean and their cursor survives underneath.
+- Speak the composed question **once, on arrival** (via `ScreenName`), buttons as a row,
+  message lines in the review buffer. Declare the buttons from **live visibility** each
+  rebuild, never from the API's nominal shape — dialog windows get reused with leftover
+  state from the previous dialog.
+- **Text the game rewrites every frame** (countdown timers) must never feed node identity or
+  per-frame announcements: a label-derived context id would re-announce the sentence every
+  frame. Read it once at the screen boundary; the review buffer keeps it re-readable, frozen
+  at the moment focus landed. No timer re-announcing.
+- Let Escape fall through to the game's own cancel path; poll the window's
+  "shown and fully ready" state rather than subscribing to visibility events, which fire
+  before the captions are written.
 
 ## Default key bindings
 
@@ -110,13 +164,17 @@ Proven across wotr-access/SoC and adopted for ES2 (make rebindable eventually):
 | Keys | Action |
 |---|---|
 | Arrows | Move (repeating); Left/Right adjust sliders, expand/collapse tree groups |
+| Shift+Left / Shift+Right | Coarse adjust, ~10 increments (repeating) — see [widgets.md](widgets.md) |
 | Tab / Shift+Tab | Cycle tab-stops, landing on the stop's remembered position |
-| Enter | Activate (primary) |
-| Backspace | Secondary action |
+| Enter | Activate (primary); on a key-binding row, start capturing the primary binding |
+| Backspace | Secondary action; on a key-binding row, start capturing the secondary binding |
 | Escape | Back / close |
 | Home / End | First / last |
 | Alt+Up / Alt+Down | Region jumps inside tables (repeating) |
 | Ctrl+Up/Down, Ctrl+Left/Right, Ctrl+Home/End | Review buffer — see [buffers.md](buffers.md) |
+
+Every new binding is approved by the project owner before it ships — a binding is UX surface
+a screen reader user must memorize, and there are no "obvious defaults".
 
 There is deliberately no tooltip key — see [tooltips.md](tooltips.md).
 
@@ -138,6 +196,8 @@ Engine (game-agnostic): [`src/graph-ui/`](src/graph-ui/) — `ControlId.cs`, `Gr
 `KeyGraph.cs`, `GraphBuilder.cs`, `GraphAnnouncer.cs`, `TooltipParts.cs`, `GraphSheet.cs`,
 `TypeAheadSearch.cs`, `TextUtil.cs`. Adapter exemplars (ES2-specific, models to imitate):
 `GraphNavigator.cs`, `ControlTypes.cs`, `GraphNodes.cs`, `AgeText.cs`, `PointerFocus.cs`,
-`Screen.cs`, `ScreenManager.cs`, `MainMenuScreen.cs`, and the input layer
-(`InputBinding.cs`, `KeyboardBinding.cs`, `OsKeyboard.cs`, `InputAction.cs`, `UiActions.cs`,
-`ModInput.cs`).
+`ScrollIntoView.cs`, `Screen.cs`, `ScreenManager.cs`, `MainMenuScreen.cs`,
+`DropListScreen.cs`, `MessageBoxScreen.cs`, and the input layer (`InputBinding.cs`,
+`KeyboardBinding.cs`, `OsKeyboard.cs`, `InputAction.cs`, `UiActions.cs`, `ModInput.cs`).
+Value-widget patterns (checkboxes, sliders, combo boxes, tabs, popups, key capture):
+[widgets.md](widgets.md).

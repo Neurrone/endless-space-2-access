@@ -207,6 +207,10 @@ namespace ES2Access.UI
                     return InRegion() && Region(-1);
                 case UiActions.RegionNext:
                     return InRegion() && Region(1);
+                case UiActions.CoarseIncrease:
+                    return Adjust(1, true);
+                case UiActions.CoarseDecrease:
+                    return Adjust(-1, true);
                 case UiActions.Activate:
                     return Activate();
                 case UiActions.Secondary:
@@ -315,6 +319,11 @@ namespace ES2Access.UI
         ///
         /// Alongside the announcement, in the same place and on the same comparison: whatever moved
         /// focus, the game's appearance follows it exactly once.
+        ///
+        /// Scrolling the focused control into view is done here rather than by the screens, and needs
+        /// nothing declared: a control that named the game object it came from can be found on screen,
+        /// and whether anything above it scrolls is a question about the game's own hierarchy. So it
+        /// costs a screen nothing and is never forgotten.
         /// </summary>
         private void SyncVisual(GraphNode node)
         {
@@ -326,6 +335,7 @@ namespace ES2Access.UI
             ClearVisual();
             _visualKey = node.Id;
             _visualNode = node;
+            ScrollIntoView.Reveal(node.Id.Reference);
             Safe(node.Vtable.OnFocusVisual, "OnFocusVisual");
         }
 
@@ -518,7 +528,7 @@ namespace ES2Access.UI
             }
 
             bool horizontal = dir == GraphDir.Left || dir == GraphDir.Right;
-            if (horizontal && Adjust(dir == GraphDir.Right ? 1 : -1))
+            if (horizontal && Adjust(dir == GraphDir.Right ? 1 : -1, false))
             {
                 return true;
             }
@@ -638,7 +648,11 @@ namespace ES2Access.UI
             return true;
         }
 
-        private bool Adjust(int sign)
+        // The one adjust path, fine or coarse: left and right take the small step, the same arrows
+        // with Shift the large one, and both report the new value the same way. A control with no value to
+        // adjust does not answer for either, so the coarse keys fall through to the game and the
+        // arrows go back to being navigation.
+        private bool Adjust(int sign, bool large)
         {
             GraphNode node = _graph.CurrentNode;
             if (node == null || node.Vtable.OnAdjust == null)
@@ -646,7 +660,7 @@ namespace ES2Access.UI
                 return false;
             }
 
-            _graph.TryAdjust(sign, false);
+            _graph.TryAdjust(sign, large);
             SpeakStateAfterChange();
             return true;
         }

@@ -7,7 +7,12 @@ infrastructure); starting with the seam costs nearly nothing.
 ## The three sources of spoken text
 
 1. **Game-authored text** (menu titles, tooltips, entity names) — the game already localizes
-   it; read it through the game's localization service and never re-translate it.
+   it; read it through the game's localization service and never re-translate it. Trap: only
+   *rendered* labels are reliably localized. Backing data tables may hold raw localization
+   keys even while every on-screen label shows translated text (ES2's droplist entry tables
+   hold `%`-prefixed keys). Anything spoken from data rather than from a rendered label must
+   pass through the game's localizer — and confirm that localizer passes plain,
+   non-key strings through unchanged, since the same table can mix both.
 2. **Mod-authored phrases** (role words like "button", status words, screen names, the
    startup line) — come from the mod's string table, never inline literals.
 3. **Connective structure** (list separators, "N of M", "x N") — also from the string table,

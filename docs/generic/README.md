@@ -27,6 +27,7 @@ Work through these in order for a new game; each milestone has an acceptance tes
 | 7 | [reverse-engineering.md](reverse-engineering.md) | The game's five chokepoints identified and documented |
 | 8 | [ui-navigation.md](ui-navigation.md) | First screen keyboard-navigable; announcements verified via `/speech`, then by the user |
 | 9 | [buffers.md](buffers.md) + [tooltips.md](tooltips.md) | Focused element's details reviewable line by line; tooltip strategy decided per screen |
+| 10 | [widgets.md](widgets.md) | A full settings-style screen operable: value widgets adjust and announce, popups open as sub-screens, the shared confirmation dialog speaks |
 
 Cross-cutting, read alongside any feature work: [performance.md](performance.md) — keeping
 per-frame cost invisible (no scene scans, snapshot+reconcile, allocation discipline).

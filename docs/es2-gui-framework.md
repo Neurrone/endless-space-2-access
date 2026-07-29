@@ -125,13 +125,86 @@ Two proven strategies:
 
 1. **Enumerate**: from any window root (`Gui.GuiService.GetWindow<T>().AgeTransform` or
    `GuiManager.VisibleScreen`), Unity's `GetComponentsInChildren<AgeControlButton>()` /
-   `<AgePrimitiveLabel>()` etc.; filter on `AgeTransform.Visible && Enable`.
+   `<AgePrimitiveLabel>()` etc.; filter on `AgeTransform.Visible && Enable`. Beware
+   per-skin duplicates and effective visibility (below).
 2. **Activate**: click handlers are wired in prefabs to `SendMessage("<HandlerName>", ...)` — the
    convention is `OnClickCb`-style private methods on the owning screen. Invoking the same
    handler method via reflection is byte-for-byte the mouse code path minus hover animation.
    Higher-fidelity simulation (`button.MouseEnter(...)` + `MouseDown(...)`) exists but is rarely
    needed. Prefer the underlying service/order call when identifiable (see
    `es2-architecture.md`).
+3. **Generic button press** (works for any AGE button, verified on the options and message-box
+   windows): replay the prefab wiring itself —
+   `button.OnActivateObject.SendMessage(button.OnActivateMethod, button.gameObject, ...)`,
+   which is verbatim what `AgeControlButton.HandleMouseUpOrDown` does. Buttons with an empty
+   `OnActivateMethod` are decorative click-shields (`BackgroundGroup*`); skip them.
+
+## Input ownership (`InputManager`, `AgeManager.FocusedControl`)
+
+`InputManager.HandleInput` (Assembly-CSharp, ~line 1210) is the game's keyboard gate: when
+`AgeManager.Instance.FocusedControl` is `IsKeyExclusive` (true for `AgeControlDropList`,
+`AgeControlKeyBindingField`, `AgeControlTextArea`/chat field) **and** `StandardCancel`
+(default true; only the chat field opts out), Escape and RightClick are consumed — focus is
+cleared and nothing propagates to the modal underneath. This is the mechanism to hand a
+widget when the mod must stop the game from acting on a key: park the game's focus on that
+widget, exactly as the game's own mouse flows do.
+
+- `AgeControlDropList`: `OpenPopupMenu`/`ClosePopupMenu(bool)` are private (reflection);
+  `PopupMenu.SetSelection(i)` moves the highlight only — it never writes `SelectedItem`;
+  `FocusLoss()` closes the popup; entry labels live in `LabelTable` as **raw `%` loc keys**
+  (only Resolution ships plain strings) — localize before speaking; per-entry enabled state
+  is `PopupMenu.Table.Children[i].Enable`.
+- `AgeControlKeyBindingField`: scans every `KeyCode` below the joystick range each focused
+  frame (only `Mouse0` forbidden — Escape IS bindable, hence a genuine engine-side race
+  between "cancel capture" and "bind Escape"); max 2 simultaneous keys; **capture ends on the
+  first key release** (`OnValidateCb` → focus cleared → `OnLoseFocusCb` applies if the combo
+  differs from both current bindings, raising `%OptionBindingAlreadyBindedConfirmation` on
+  conflicts). The activating keystroke's own release therefore kills a capture started
+  synchronously — defer the focus handover until two consecutive frames with no key held.
+- `AgeControlScrollView`: scroll by replaying `MouseWheel(increment)` (clamping via private
+  `ConstraintAndPlace`, scrollbar sync and `OnScrollObject` notify all included);
+  `VirtualArea.Y` units are 1:1 with `GetGlobalPosition()` pixels (measured); wheel constant
+  300 × `ScrollFactorVertical` per increment.
+
+## Options window (`OptionsModalWindow`)
+
+- Six categories (Video/Audio/Gameplay/Gui/Controls/Notifications), each an `OptionsTabPanel`
+  under `TabPanelsContainer`; rows are `OptionItem` subtypes under `OptionsTable`. The
+  deterministic tab switch is `GuiRadioGroup.OnToggleSwitchCb(toggle.gameObject)` — public,
+  verbatim the click path (selection tick, underline animation, `OnCategorySwitchCb`).
+- The `Option` wrapper (Amplitude.Unity.Options, firstpass) reflects over provider
+  properties: `Value`/`Changed`/`Store`/`Restore`/`Commit`; `Latent = true` options (video
+  display settings, UI scale) only hit the provider on Apply (`CommitSettings`), which for
+  Video also triggers `ChangeDisplaySettings()` and the 15 s
+  `%OptionYouHaveNSecondsToValidateDescription` countdown. **Cancelling that countdown
+  reverts the latent options and closes the whole window** (back to the menu) — the game's
+  own behaviour. `CheckConstraint()` (e.g. `VideoManager.CheckResolution`) disables/hides
+  rows cross-option.
+- **Two complete per-skin button bars** (`ButtonGroupInGame`/`ButtonGroupOutGame` under the
+  `InGameParts`/`OutGameParts` containers): the window's public `ApplyButton`/`CancelButton`/
+  `ResetButton`/`ResetInGameButton` fields all point at the **in-game** set, and the window
+  writes Apply's `Enable` flag and tooltip to those field instances regardless of skin — the
+  drawn out-game Apply never receives them. Discover the drawn buttons by ancestor-chain
+  visibility; read Apply's availability from the field instance, press through the drawn
+  button's own wiring.
+- Row change paths (set control state, then invoke the row's private mouse callback via
+  reflection; `parent.OnOptionChanged` keeps Apply and constraints in sync):
+  `OptionCheckboxItem.OnSwitchCb`, `OptionSliderItem.OnSliderReleasedCb`,
+  `OptionDropListItem.OnEntrySelectedCb` (protected). Slider display format: snap to the
+  increment grid, then `ToString(Slider.ValueFormat)` (`"#####0%"` for 0–1 percent sliders,
+  fallback `"######0"`). No ES2 option uses `OptionTextFieldItem`.
+
+## Message boxes (`MessageBoxWindow`, `GuiManager.ShowMessage*`)
+
+- No buttons enum: a button is shown iff its caption (`ValidateTitle`/`CancelTitle`/
+  `AlternativeTitle`) is non-empty; captions live in sibling labels, not on the buttons.
+  `ShowMessageWithTimeout` never clears `AlternativeTitle`, so a stale third button can leak
+  onto a countdown box — declare from live visibility.
+- `VisibilityChanged` fires (twice) before the captions are written; poll
+  `Shown && IsReady` instead. Timeout expiry auto-fires **Cancel**, not OK. The countdown
+  rewrites `MessageLabel.Text` every frame. `Gui.GuiService.HideWindow(w)` is the only legal
+  hide (`GuiWindow.Show/Hide` throw). `MessageBoxNonBlockingWindow` is a separate,
+  non-modal near-twin and is not covered by the modal-layer assumptions.
 
 ## Worked example: the main menu
 
