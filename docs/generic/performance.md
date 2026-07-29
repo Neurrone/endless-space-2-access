@@ -59,7 +59,11 @@ For code that runs every frame (pumps, watchers, claim checks):
   is rare on the frame scale. The sin is allocating on the *silent* frames.
 - Cache reflection lookups (`FieldInfo`/`PropertyInfo`/compiled accessors) at startup, never
   `GetField` per frame. Cache per-type results in dictionaries (the dev GUI dump memoizes its
-  text-property lookup per component type).
+  text-property lookup per component type). This is hot-reload-safe as long as the cache
+  lives on the same side of the reload boundary as the types it describes: mod-side caches of
+  game types are the normal case (game assemblies never reload, and the cache dies with the
+  mod assembly and rebuilds once per load). What must never exist is a *host*-side cache of
+  mod types or delegates — after a reload it would serve stale types from the dead assembly.
 - Watch hidden allocators: `foreach` over some non-generic collections, boxing value types
   into `object`, `params` arrays, `Enum.ToString`.
 

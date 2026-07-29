@@ -48,7 +48,9 @@ contract is belt and suspenders: the mod unwinds itself, the host unwinds it aga
 **Teardown checklist** every feature must satisfy (reload-safety is a per-feature invariant,
 not an afterthought): unregister routes; clear the update handler; stop coroutines; shut down
 speech/native handles; null static back-references so the old object graph collects;
-unpatch Harmony.
+unpatch Harmony. And on the host side: never hold mod types, `MemberInfo`s, or delegates in
+host caches — anything mod-shaped the host keeps must be cleared on unload, or it serves
+stale types from the dead assembly after the next reload.
 
 **Harmony rule**: create the Harmony instance with a **unique-per-load id**
 (`"<modid>." + Guid`). With a fixed id, an old module's `UnpatchSelf` (which removes by owner
