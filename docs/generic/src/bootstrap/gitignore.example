@@ -1,0 +1,11 @@
+# Decompiled game code: reference-only, regenerable, not distributed
+decompiled/
+
+# Machine-specific paths (copy GamePaths.props.template to GamePaths.props)
+GamePaths.props
+
+# Build output
+artifacts/
+bin/
+obj/
+*.user

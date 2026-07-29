@@ -1,0 +1,71 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="..\GamePaths.props" Condition="Exists('..\GamePaths.props')" />
+
+  <PropertyGroup>
+    <!-- ES2 runs Unity 5.5 / Mono with the .NET 2.0/3.5 API profile; the plugin must target net35. -->
+    <TargetFramework>net35</TargetFramework>
+    <AssemblyName>ES2Access</AssemblyName>
+    <RootNamespace>ES2Access</RootNamespace>
+    <LangVersion>7.3</LangVersion>
+    <Version>0.1.0</Version>
+    <DebugType>full</DebugType>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <PluginDir>$(GameDir)\BepInEx\plugins\ES2Access</PluginDir>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="UnityEngine">
+      <HintPath>$(Managed)\UnityEngine.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.UI">
+      <HintPath>$(Managed)\UnityEngine.UI.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Assembly-CSharp">
+      <HintPath>$(Managed)\Assembly-CSharp.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Assembly-CSharp-firstpass">
+      <HintPath>$(Managed)\Assembly-CSharp-firstpass.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <!-- The dev server writes JSON with the copy of Newtonsoft.Json the game already loads. -->
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>$(Managed)\Newtonsoft.Json.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Amplitude">
+      <HintPath>$(Managed)\Amplitude.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="0Harmony">
+      <HintPath>$(BepInExCore)\0Harmony.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The loader is the BepInEx plugin and deploys itself; this project only compiles against
+         its ModHost contract, so nothing of it is copied here. -->
+    <ProjectReference Include="..\ES2Access.Loader\ES2Access.Loader.csproj">
+      <Private>false</Private>
+    </ProjectReference>
+  </ItemGroup>
+
+  <Target Name="DeployToGame" AfterTargets="Build" Condition="Exists('$(GameDir)')">
+    <ItemGroup>
+      <!-- Translation tables, named after the game's own language names (locale\french.json). -->
+      <LocaleFile Include="$(MSBuildThisFileDirectory)locale\*.json" />
+    </ItemGroup>
+    <!-- Overwritten while the game is running: the loader holds no lock on it, so POST /reload
+         picks up whatever this last copied. -->
+    <Copy SourceFiles="$(TargetPath);$(TargetDir)$(AssemblyName).pdb" DestinationFolder="$(PluginDir)" />
+    <Copy SourceFiles="@(LocaleFile)" DestinationFolder="$(PluginDir)\locale" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="$(MSBuildThisFileDirectory)..\vendor\prism\prism.dll" DestinationFiles="$(GameDir)\prism.dll" SkipUnchangedFiles="true" />
+  </Target>
+</Project>

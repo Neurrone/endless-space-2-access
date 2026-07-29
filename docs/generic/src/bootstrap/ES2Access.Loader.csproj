@@ -1,0 +1,48 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="..\GamePaths.props" Condition="Exists('..\GamePaths.props')" />
+
+  <PropertyGroup>
+    <!-- ES2 runs Unity 5.5 / Mono with the .NET 2.0/3.5 API profile; the plugin must target net35. -->
+    <TargetFramework>net35</TargetFramework>
+    <AssemblyName>ES2Access.Loader</AssemblyName>
+    <RootNamespace>ES2Access.Loader</RootNamespace>
+    <LangVersion>7.3</LangVersion>
+    <Version>0.1.0</Version>
+    <DebugType>full</DebugType>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <PluginDir>$(GameDir)\BepInEx\plugins\ES2Access</PluginDir>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="UnityEngine">
+      <HintPath>$(Managed)\UnityEngine.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <!-- The dev server writes JSON with the copy of Newtonsoft.Json the game already loads. -->
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>$(Managed)\Newtonsoft.Json.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="BepInEx">
+      <HintPath>$(BepInExCore)\BepInEx.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <!-- Mono.CSharp compiler-as-a-service, behind POST /eval. Deployed by DeployToGame rather
+         than by the build, so the game folder is the only place it is ever copied to. -->
+    <Reference Include="mcs">
+      <HintPath>$(MSBuildThisFileDirectory)..\vendor\mcs\mcs.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <!-- The loader deploys itself and mcs; the mod project deploys the mod, its translations and
+       prism.dll. Building the mod builds the loader first, so that build lands the full set. -->
+  <Target Name="DeployToGame" AfterTargets="Build" Condition="Exists('$(GameDir)')">
+    <Copy SourceFiles="$(TargetPath);$(TargetDir)$(AssemblyName).pdb" DestinationFolder="$(PluginDir)" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="$(MSBuildThisFileDirectory)..\vendor\mcs\mcs.dll" DestinationFolder="$(PluginDir)" SkipUnchangedFiles="true" />
+  </Target>
+</Project>

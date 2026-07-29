@@ -63,9 +63,12 @@ Plurals: defer until the first plural-sensitive phrase, then adopt a gettext-sty
 plural-forms mechanism (SoC's `ModPluralString`/`JoinList` is the worked example). Note it;
 don't build it speculatively.
 
-## Reference implementations in this repo
+## Source files
 
-`ES2Access/Core/Speech/ModStrings.cs`, `MessageBuilder.cs`,
-`ES2Access/Localization/ModLocale.cs`, `ES2Access/locale/english.json`,
-`ES2Access.Tests/Speech/LocaleFileTests.cs` (the validator),
-`MessageBuilderTests.cs` (including the Japanese-style table cases).
+[`src/localization/ModStrings.cs`](src/localization/ModStrings.cs),
+[`MessageBuilder.cs`](src/localization/MessageBuilder.cs),
+[`ModLocale.cs`](src/localization/ModLocale.cs) (adapt the game-language lookup),
+[`english.json`](src/localization/english.json),
+[`LocaleFileTests.cs`](src/localization/LocaleFileTests.cs) (the validator),
+[`MessageBuilderTests.cs`](src/localization/MessageBuilderTests.cs) (including the
+Japanese-style table cases).

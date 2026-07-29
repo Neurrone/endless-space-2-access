@@ -6,9 +6,11 @@ building ES2 Access in this repository. The goal: given a new game, get from not
 blind player can operate this screen" with minimal direction — the human points at targets and
 decides genuinely high-level questions; these docs supply everything else.
 
-Prose lives here; working code is referenced, not duplicated. Each doc ends with the files in
-this repository that serve as its canonical implementation — many are designed to be copied
-into a new game's mod nearly verbatim.
+Prose lives in the docs; working code lives in [`src/`](src/) beside them, grouped by
+subsystem — snapshots taken from the ES2 Access implementation, designed to be copied into a
+new game's mod nearly verbatim (rename the `ES2Access` namespaces on copy). When the living
+implementation that a snapshot came from improves, refresh the snapshot as part of the
+doc-update workflow.
 
 ## Build order
 

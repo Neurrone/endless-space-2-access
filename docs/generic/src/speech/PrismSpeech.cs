@@ -1,0 +1,187 @@
+using System;
+using ES2Access.Core.Util;
+
+namespace ES2Access.Core.Speech
+{
+    /// <summary>
+    /// Managed lifetime wrapper over the Prism context plus a single owned backend. One
+    /// instance speaks for the whole mod. All native handles stay inside here; callers deal
+    /// only in <see cref="MessageBuilder"/>s.
+    ///
+    /// prism.dll must already be loaded into the process before <see cref="Initialize"/> runs
+    /// (the plugin preloads it by full path via NativeLoader), otherwise the first P/Invoke
+    /// throws DllNotFoundException.
+    /// </summary>
+    public sealed class PrismSpeech
+    {
+        /// <summary>
+        /// Optional tap invoked with every non-empty string sent to speech, before the
+        /// <see cref="Available"/> gate, so a dev server can read back spoken text even with no
+        /// screen reader running. Null in normal play. Lives here because Speak is the single
+        /// speech chokepoint.
+        /// </summary>
+        public static Action<string> Observer;
+
+        private IntPtr _ctx;
+        private IntPtr _backend;
+        private bool _useOutput;
+
+        /// <summary>True once a backend was created and initialized successfully.</summary>
+        public bool Available { get; private set; }
+
+        /// <summary>The most recent non-empty text sent to speech, for a repeat-last hotkey.</summary>
+        public string LastSpoken { get; private set; }
+
+        /// <summary>Name of the chosen backend (e.g. "NVDA", "SAPI"), once available.</summary>
+        public string BackendName { get; private set; }
+
+        /// <summary>
+        /// Stand up the Prism context and acquire the best available backend. On any failure it
+        /// logs the cause and leaves the instance unavailable rather than throwing, so a missing
+        /// screen reader degrades to silence instead of crashing the game.
+        /// </summary>
+        public void Initialize()
+        {
+            if (Available)
+            {
+                return;
+            }
+
+            PrismNative.PrismConfig cfg = new PrismNative.PrismConfig
+            {
+                Version = PrismNative.ConfigVersion,
+            };
+            _ctx = PrismNative.prism_init(ref cfg);
+            if (_ctx == IntPtr.Zero)
+            {
+                Log.Error("Prism: prism_init returned null context");
+                return;
+            }
+
+            // create_best hands back an OWNED backend (freed in Shutdown, unlike the
+            // acquire_best borrow). It picks the highest-priority backend usable at runtime:
+            // a running screen reader, else SAPI.
+            _backend = PrismNative.prism_registry_create_best(_ctx);
+            if (_backend == IntPtr.Zero)
+            {
+                Log.Error(
+                    "Prism: no speech backend available (prism_registry_create_best returned null)"
+                );
+                PrismNative.prism_shutdown(_ctx);
+                _ctx = IntPtr.Zero;
+                return;
+            }
+
+            PrismNative.PrismError err = PrismNative.prism_backend_initialize(_backend);
+            if (
+                err != PrismNative.PrismError.Ok
+                && err != PrismNative.PrismError.AlreadyInitialized
+            )
+            {
+                Log.Error("Prism: backend initialize failed: " + PrismNative.ErrorString(err));
+                PrismNative.prism_backend_free(_backend);
+                PrismNative.prism_shutdown(_ctx);
+                _backend = IntPtr.Zero;
+                _ctx = IntPtr.Zero;
+                return;
+            }
+
+            ulong features = PrismNative.prism_backend_get_features(_backend);
+            _useOutput = (features & (ulong)PrismNative.PrismBackendFeature.SupportsOutput) != 0;
+            BackendName =
+                PrismNative.FromUtf8(PrismNative.prism_backend_name(_backend)) ?? "unknown";
+            Available = true;
+            Log.Info(
+                "Prism speech ready, backend: "
+                    + BackendName
+                    + (_useOutput ? " (output)" : " (speak)")
+            );
+        }
+
+        /// <summary>
+        /// Speak <paramref name="message"/> through the screen-reader output path (speech plus
+        /// braille where the backend supports it), falling back to plain TTS on backends without
+        /// output. This is the mod's single speech entry point, and it deliberately takes a
+        /// <see cref="MessageBuilder"/>, not a raw string: every spoken message is composed
+        /// through the builder's separation discipline, so this one chokepoint can uniformly
+        /// post-process all speech without each call site building its own string. A null or
+        /// empty builder is a no-op. <paramref name="interrupt"/> cuts off current speech.
+        /// </summary>
+        public void Speak(MessageBuilder message, bool interrupt = true)
+        {
+            SpeakText(message == null ? null : message.Build(), interrupt);
+        }
+
+        /// <summary>
+        /// Re-speak the most recent non-empty line (the repeat-last hotkey). No-op until
+        /// something has been spoken. Re-emits the already-built text rather than rebuilding, so
+        /// it is the one path that legitimately speaks without a fresh builder.
+        /// </summary>
+        public void RepeatLast(bool interrupt = true)
+        {
+            SpeakText(LastSpoken, interrupt);
+        }
+
+        private void SpeakText(string text, bool interrupt)
+        {
+            if (string.IsNullOrEmpty(text))
+            {
+                return;
+            }
+
+            LastSpoken = text;
+
+            Action<string> observer = Observer;
+            if (observer != null)
+            {
+                observer(text);
+            }
+
+            if (!Available)
+            {
+                return;
+            }
+
+            byte[] utf8 = PrismNative.ToUtf8(text);
+            PrismNative.PrismError err = _useOutput
+                ? PrismNative.prism_backend_output(_backend, utf8, interrupt)
+                : PrismNative.prism_backend_speak(_backend, utf8, interrupt);
+            if (err != PrismNative.PrismError.Ok)
+            {
+                Log.Warn("Prism: speech failed: " + PrismNative.ErrorString(err));
+            }
+        }
+
+        /// <summary>Silence any in-progress speech.</summary>
+        public void Silence()
+        {
+            if (!Available)
+            {
+                return;
+            }
+
+            PrismNative.prism_backend_stop(_backend);
+        }
+
+        /// <summary>
+        /// Release the owned backend and the context. Safe to call twice, and safe if
+        /// <see cref="Initialize"/> never ran or failed.
+        /// </summary>
+        public void Shutdown()
+        {
+            if (_backend != IntPtr.Zero)
+            {
+                PrismNative.prism_backend_free(_backend);
+                _backend = IntPtr.Zero;
+            }
+
+            if (_ctx != IntPtr.Zero)
+            {
+                PrismNative.prism_shutdown(_ctx);
+                _ctx = IntPtr.Zero;
+            }
+
+            Available = false;
+        }
+    }
+}

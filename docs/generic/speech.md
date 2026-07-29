@@ -58,7 +58,7 @@ confirmed to do something — not on every keypress.
 
 Two placements, both shipped by real mods:
 
-- **Mod-side** (this repo): the speech pipeline lives in the reloadable mod and is torn down
+- **Mod-side** (ES2 Access): the speech pipeline lives in the reloadable mod and is torn down
   and re-created per reload. Simple; the loader log covers failure reporting.
 - **Host-side** (DiscoAccess): the pipeline lives in the never-reloaded host; the mod speaks
   through the host contract. Buys: spoken "mod failed to load" reporting, one native handle
@@ -75,8 +75,10 @@ The speech class exposes a static `Observer` callback invoked with every spoken 
 captures everything for the dev server's `/speech` endpoint and the `/eval` speech appendix.
 This is the mechanism that lets an agent verify announcements.
 
-## Reference implementations in this repo
+## Source files
 
-Copy nearly verbatim: `ES2Access/Core/Speech/PrismNative.cs`, `PrismSpeech.cs`,
-`ES2Access/Core/Native/NativeLoader.cs`, `vendor/prism/` (with license files).
-Pump ordering example: `ES2Access/ModEntry.cs`.
+Copy nearly verbatim: [`src/speech/PrismNative.cs`](src/speech/PrismNative.cs),
+[`src/speech/PrismSpeech.cs`](src/speech/PrismSpeech.cs),
+[`src/speech/NativeLoader.cs`](src/speech/NativeLoader.cs). Pump ordering example:
+[`src/hot-reload/ModEntry.cs`](src/hot-reload/ModEntry.cs). Obtain `prism.dll` itself from
+the Prism project's releases (ship its license files alongside).

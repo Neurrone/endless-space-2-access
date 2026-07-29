@@ -56,7 +56,7 @@ plugin's first log lines. That log is the primary diagnostic until the dev serve
 
 ## Decompilation
 
-`decompile.ps1` (repo root here) reads the Managed path from `GamePaths.props` and runs
+`decompile.ps1` reads the Managed path from `GamePaths.props` and runs
 `ilspycmd -p` per assembly into `decompiled/<Assembly>/` (project mode: one file per type,
 namespace folders, global-namespace types at the folder root). Decompile more than
 `Assembly-CSharp`: the engine/framework layer often lives in a *different* assembly
@@ -66,8 +66,8 @@ stderr suppressed — its update nag on stderr otherwise becomes a terminating P
 
 `decompiled/` is reference-only and gitignored: regenerable, not redistributable.
 
-## Reference implementations in this repo
+## Source files
 
-`ES2Access/ES2Access.csproj`, `ES2Access.Loader/ES2Access.Loader.csproj`,
-`ES2Access.Tests/ES2Access.Tests.csproj`, `decompile.ps1`, `run-game.ps1`,
-`GamePaths.props.template`, `.gitignore`.
+[`src/bootstrap/`](src/bootstrap/) — the mod, loader, and tests csprojs,
+`decompile.ps1`, `run-game.ps1`, `GamePaths.props.template`, and `gitignore.example`
+(rename to `.gitignore` on copy).

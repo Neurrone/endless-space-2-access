@@ -2,7 +2,7 @@
 
 An in-process loopback HTTP server is a *requirement*, not a nicety: the developer or agent
 building a screen reader mod cannot see the screen or hear the TTS. Both mature reference
-mods (tangledeep_access, DiscoAccess) converged on the same answer; this repo's version adds
+mods (tangledeep_access, DiscoAccess) converged on the same answer; ES2 Access's version adds
 loader-side survival (see [hot-reload.md](hot-reload.md)).
 
 ## Architecture
@@ -52,7 +52,7 @@ Pick the evaluator by runtime:
 - **Old Mono (net35)**: Mono.CSharp built for net35 — build `sinai-dev/mcs-unity`
   (`Release_net35` configuration; the UnityExplorer lineage), verify the output's
   `ImageRuntimeVersion` is `v2.0.50727`. Its MonoMod dependency is satisfied by BepInEx core.
-  Vendored here as `vendor/mcs/mcs.dll` with a provenance NOTICE.
+  Vendor the built DLL with a provenance NOTICE (source repo, commit, build configuration).
 - **CoreCLR (BepInEx 6/IL2CPP)**: Roslyn scripting (`CSharpScript`) — Mono.CSharp's codegen
   throws under CoreCLR (DiscoAccess's documented finding).
 
@@ -76,8 +76,9 @@ POST /quit                             # exits within ~10s; poll at 1s
 Numbers worth knowing per game: boot-to-server time, quit-to-exit time, and that the speech
 ring resets on reload.
 
-## Reference implementations in this repo
+## Source files
 
-`ES2Access.Loader/Dev/` (server core, queue, evaluator, GUI dump, waits, log tap),
-`ES2Access/Dev/` (mod-registered routes, speech log), `run-game.ps1`,
-`vendor/mcs/` (NOTICE documents the exact build recipe).
+[`src/dev-server/`](src/dev-server/) — server core (`DevServer.cs`, `DevHttpServer.cs`),
+main-thread queue, evaluator, GUI dump, frame-exact waits (`PredicateWaits.cs`), log tap,
+ring buffer, and the mod-registered routes (`ModRoutes.cs`, `SpeechLog.cs`). Launch/test
+script: [`src/bootstrap/run-game.ps1`](src/bootstrap/run-game.ps1).

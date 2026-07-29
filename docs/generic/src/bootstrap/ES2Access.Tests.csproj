@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Offline unit tests for the engine-agnostic core. No Unity, no BepInEx, no game launch.
+    There is no Core assembly to reference: the plugin's Core/ sources are LINKED and compiled
+    directly into this test assembly, so anything under Core/ that reached for Unity, BepInEx or
+    the game would break this build. That is the point — Core stays BCL-only, and the tests run
+    on a modern runtime without the game installed.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <IsPackable>false</IsPackable>
+    <AssemblyName>ES2Access.Tests</AssemblyName>
+    <RootNamespace>ES2Access.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\ES2Access\Core\**\*.cs" LinkBase="Core" />
+  </ItemGroup>
+</Project>

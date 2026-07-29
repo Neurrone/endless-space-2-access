@@ -1,7 +1,7 @@
 # Hot reload
 
 Swap rebuilt mod code into the running game — no quit/restart cycle. Two shipped designs
-exist (this repo on old Mono; DiscoAccess on CoreCLR) and they converged on the same shape.
+exist (ES2 Access on old Mono; DiscoAccess on CoreCLR) and they converged on the same shape.
 
 ## The loader/mod split
 
@@ -84,8 +84,9 @@ Best pattern: hold **no mod-side caches of game state** — re-derive from live 
 every frame/announcement. Then reload "just works" with no serialization. What legitimately
 persists lives host-side by design (settings, host speech ring, native audio handles).
 
-## Reference implementations in this repo
+## Source files
 
-`ES2Access.Loader/ModLoader.cs` (prepare/activate/unload), `ModHost.cs`, `LoaderPlugin.cs`,
-`ES2Access/ModEntry.cs` (the full Stop unwind). Verified behaviors: a corrupted DLL is
-refused with the old mod alive; `staleBuild` flips across build/reload.
+[`src/hot-reload/ModLoader.cs`](src/hot-reload/ModLoader.cs) (prepare/activate/unload),
+[`ModHost.cs`](src/hot-reload/ModHost.cs), [`LoaderPlugin.cs`](src/hot-reload/LoaderPlugin.cs),
+[`ModEntry.cs`](src/hot-reload/ModEntry.cs) (the full Stop unwind). Verified behaviors: a
+corrupted DLL is refused with the old mod alive; `staleBuild` flips across build/reload.
