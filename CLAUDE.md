@@ -31,7 +31,7 @@ This is an important but secondary goal, it is the test vehicle for implementing
 ## Commands
 
 - Build + deploy: `dotnet build ES2Access/ES2Access.csproj` — copies the plugin to `<game>\BepInEx\plugins\ES2Access` and `prism.dll` to the game root. Game location comes from `GamePaths.props` (gitignored; copy from `GamePaths.props.template`).
-- Run: `.\run-game.ps1 [-NoBuild] [-NoSpeech] [-NoDev] [-NoWait] [-Foreground]` — by default a watcher returns focus to your previous window while the game boots in the background (it keeps rendering and simulating); `-Foreground` lets the game keep focus for playing.
+- Run: `.\run-game.ps1 [-NoBuild] [-NoSpeech] [-NoDev] [-NoWait]`
 - Tests (offline, no game needed): `dotnet test ES2Access.Tests/ES2Access.Tests.csproj`
 - Game log: `<game>\BepInEx\LogOutput.log` (shows Prism backend selection and init errors)
 
