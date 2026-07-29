@@ -28,6 +28,22 @@ namespace ES2Access.UI.Input
         /// </summary>
         public Func<InputAction, bool> Dispatch;
 
+        /// <summary>
+        /// Asked about the control the game is currently giving the keyboard to, when there is one.
+        /// Returning true means "that control is ours" and the layer keeps its keys.
+        ///
+        /// It exists because <see cref="GameOwnsKeyboard"/> reads the game's exclusivity flag, and
+        /// that flag means two different things. On a text field it means what it says: the player is
+        /// typing. On a widget the mod is driving from the keyboard it means only that the game would
+        /// have wanted the keys had a mouse opened it - a drop list's popup reads no keys of its own,
+        /// and standing down for it would leave the player in a list they could not move in.
+        ///
+        /// Deliberately a predicate rather than a type test in here: which widgets the mod is driving
+        /// is the screens' business and changes as screens are added, and the input layer has no way
+        /// to know. Null means the game's flag is taken at face value.
+        /// </summary>
+        public Func<AgeControl, bool> DrivenByMod;
+
         public IList<InputAction> Actions
         {
             get { return _actions; }
@@ -60,15 +76,44 @@ namespace ES2Access.UI.Input
         /// </summary>
         public static bool GameOwnsKeyboard()
         {
+            return ExclusiveControl() != null;
+        }
+
+        /// <summary>The control the game says is taking the keyboard to itself, or null.</summary>
+        private static AgeControl ExclusiveControl()
+        {
             try
             {
                 AgeManager age = AgeManager.Instance;
                 AgeControl focused = age == null ? null : age.FocusedControl;
-                return focused != null && focused.IsKeyExclusive;
+                return focused != null && focused.IsKeyExclusive ? focused : null;
             }
             catch (Exception)
             {
+                return null;
+            }
+        }
+
+        // The same question as GameOwnsKeyboard, with the mod's own widgets excepted: a control the
+        // mod put the game's focus on is one the mod is working, not one the player is typing into.
+        private bool KeyboardIsElsewhere()
+        {
+            AgeControl focused = ExclusiveControl();
+            if (focused == null)
+            {
                 return false;
+            }
+
+            Func<AgeControl, bool> ours = DrivenByMod;
+            try
+            {
+                return ours == null || !ours(focused);
+            }
+            catch (Exception)
+            {
+                // A hook that cannot answer means standing down, which is the safe answer: the worst
+                // it costs is the mod's keys, and the alternative is stealing the player's typing.
+                return true;
             }
         }
 
@@ -76,7 +121,7 @@ namespace ES2Access.UI.Input
         /// screens tick, so a keypress and the announcement it causes land in the same frame.</summary>
         public void Tick()
         {
-            if (GameOwnsKeyboard())
+            if (KeyboardIsElsewhere())
             {
                 Disarm();
                 return;

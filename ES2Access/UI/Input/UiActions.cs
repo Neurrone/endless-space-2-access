@@ -17,5 +17,10 @@ namespace ES2Access.UI.Input
         public const string End = "ui.end";
         public const string RegionPrev = "ui.regionPrev";
         public const string RegionNext = "ui.regionNext";
+
+        // The coarse half of a slider: the same move left and right make, in the step size the
+        // control calls large.
+        public const string CoarseIncrease = "ui.coarseIncrease";
+        public const string CoarseDecrease = "ui.coarseDecrease";
     }
 }

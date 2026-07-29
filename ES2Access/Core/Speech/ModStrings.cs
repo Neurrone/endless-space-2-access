@@ -28,13 +28,27 @@ namespace ES2Access.Core.Speech
         // The role words that say what kind of control the player is on.
         public const string ControlButton = "control.button";
         public const string ControlGroup = "control.group";
+        public const string ControlTab = "control.tab";
+        public const string ControlCheckbox = "control.checkbox";
+        public const string ControlSlider = "control.slider";
+        public const string ControlComboBox = "control.combo-box";
 
-        // What navigation says about a control beyond its own text.
+        // What navigation says about a control beyond its own text. Each is a whole phrase: a
+        // language that negates with more than a leading word has somewhere to put it.
         public const string NavExpanded = "nav.expanded";
         public const string NavCollapsed = "nav.collapsed";
+        public const string NavChecked = "nav.checked";
+        public const string NavUnchecked = "nav.unchecked";
+        public const string NavSelected = "nav.selected";
         public const string NavDisabled = "nav.disabled";
         public const string NavHasTooltip = "nav.has-tooltip";
         public const string NavNoDetails = "nav.no-details";
+
+        // A key-binding row: the keys it is on, and the prompt while it is waiting for new ones.
+        public const string NavKeyBindingSecondary = "nav.key-binding-secondary";
+        public const string NavNotBound = "nav.not-bound";
+        public const string NavPressPrimaryKey = "nav.press-primary-key";
+        public const string NavPressSecondaryKey = "nav.press-secondary-key";
 
         // The review buffers - the text the player walks line by line.
         public const string BufferUi = "buffer.ui";
@@ -43,6 +57,8 @@ namespace ES2Access.Core.Speech
 
         // Screen names, spoken on arrival.
         public const string ScreenMainMenu = "screen.main-menu";
+        public const string ScreenMessageBox = "screen.message-box";
+        public const string ScreenOptions = "screen.options";
 
         private static readonly Dictionary<string, string> Defaults = new Dictionary<string, string>
         {
@@ -54,15 +70,28 @@ namespace ES2Access.Core.Speech
             { Quantity, "x {0}" },
             { ControlButton, "button" },
             { ControlGroup, "group" },
+            { ControlTab, "tab" },
+            { ControlCheckbox, "checkbox" },
+            { ControlSlider, "slider" },
+            { ControlComboBox, "combo box" },
             { NavExpanded, "expanded" },
             { NavCollapsed, "collapsed" },
+            { NavChecked, "checked" },
+            { NavUnchecked, "not checked" },
+            { NavSelected, "selected" },
             { NavDisabled, "unavailable" },
             { NavHasTooltip, "has tooltip" },
             { NavNoDetails, "Nothing in here" },
+            { NavKeyBindingSecondary, "secondary {0}" },
+            { NavNotBound, "not bound" },
+            { NavPressPrimaryKey, "Press the new key combination." },
+            { NavPressSecondaryKey, "Press the new secondary key combination." },
             { BufferUi, "UI" },
             { BufferEmpty, "Buffer empty" },
             { BufferLine, "{0}. {1}" },
             { ScreenMainMenu, "Main menu" },
+            { ScreenMessageBox, "Dialog" },
+            { ScreenOptions, "Options" },
         };
 
         // Keys already complained about, so a per-frame readout warns once, not every frame.

@@ -66,6 +66,30 @@ namespace ES2Access.UI
             return TooltipParts.Part(mode, TooltipDetails(tooltip));
         }
 
+        /// <summary>Speaks only while the control is the chosen one among its peers - the showing tab,
+        /// the entry a list is currently set to. Saying nothing when unselected is load-bearing: it is
+        /// what lets focus entering a stop land on the choice already in force rather than at the top
+        /// of the list.</summary>
+        public static NodeAnnouncement SelectedPart(Func<bool> selected)
+        {
+            return new NodeAnnouncement(
+                () =>
+                    selected != null && selected()
+                        ? ModStrings.Get(ModStrings.NavSelected)
+                        : null,
+                live: true,
+                kind: AnnouncementKinds.Selected
+            );
+        }
+
+        /// <summary>What the control currently holds. Watched live, so a value the game changes on
+        /// its own - a setting another control has just constrained, a volume the game clamped -
+        /// speaks under the cursor without the whole control being re-read.</summary>
+        public static NodeAnnouncement ValuePart(Func<string> value)
+        {
+            return new NodeAnnouncement(value, live: true, kind: AnnouncementKinds.Value);
+        }
+
         /// <summary>A control the player activates. An unavailable one stays focusable and readable -
         /// knowing that Join Game exists but is out of reach is the point - and simply swallows the
         /// activation.</summary>
@@ -82,18 +106,165 @@ namespace ES2Access.UI
                 ControlType = ControlTypes.Button,
                 Announcements = Parts(label, enabled, tooltip, tooltipMode),
                 DetailLines = TooltipDetails(tooltip),
-                OnActivate = () =>
+                OnActivate = Guarded(activate, enabled),
+            };
+        }
+
+        /// <summary>A setting the player turns on and off. Its state is both announced live - so a
+        /// box the game ticks on the player's behalf says so - and spoken immediately after a
+        /// toggle, which is what makes holding the key down readable.</summary>
+        public static NodeVtable Checkbox(
+            Func<string> label,
+            Func<bool> state,
+            Action toggle,
+            Func<bool> enabled = null,
+            AgeTooltip tooltip = null,
+            TooltipMode tooltipMode = TooltipMode.None
+        )
+        {
+            Func<string> stateText = () =>
+                ModStrings.Get(
+                    state != null && state() ? ModStrings.NavChecked : ModStrings.NavUnchecked
+                );
+
+            List<NodeAnnouncement> parts = Parts(label, enabled, tooltip, tooltipMode);
+            parts.Add(ValuePart(stateText));
+            return new NodeVtable
+            {
+                ControlType = ControlTypes.Checkbox,
+                Announcements = parts,
+                DetailLines = TooltipDetails(tooltip),
+                StateText = stateText,
+                OnActivate = Guarded(toggle, enabled),
+            };
+        }
+
+        /// <summary>A value the player moves along a range with left and right, and by a coarse step
+        /// with the same arrows held with Shift. <paramref name="valueText"/> is already in the form the player
+        /// should hear it - percent, decibels, a count - because only the screen knows what the
+        /// number means.</summary>
+        public static NodeVtable Slider(
+            Func<string> label,
+            Func<string> valueText,
+            Action<int, bool> adjust,
+            Func<bool> enabled = null,
+            AgeTooltip tooltip = null,
+            TooltipMode tooltipMode = TooltipMode.None
+        )
+        {
+            List<NodeAnnouncement> parts = Parts(label, enabled, tooltip, tooltipMode);
+            parts.Add(ValuePart(valueText));
+            return new NodeVtable
+            {
+                ControlType = ControlTypes.Slider,
+                Announcements = parts,
+                DetailLines = TooltipDetails(tooltip),
+                StateText = valueText,
+                // Declared even when the slider is refusing, so left and right stay the slider's
+                // keys rather than quietly turning back into navigation on a control that looks
+                // exactly like the one beside it.
+                OnAdjust = (sign, large) =>
                 {
                     if (enabled != null && !enabled())
                     {
                         return;
                     }
 
-                    if (activate != null)
+                    if (adjust != null)
                     {
-                        activate();
+                        adjust(sign, large);
                     }
                 },
+            };
+        }
+
+        /// <summary>A setting chosen from a list the control opens. Activating it is the screen's
+        /// business - what the list is and how it is navigated belongs to whoever declared it.</summary>
+        public static NodeVtable ComboBox(
+            Func<string> label,
+            Func<string> valueText,
+            Action open,
+            Func<bool> enabled = null,
+            AgeTooltip tooltip = null,
+            TooltipMode tooltipMode = TooltipMode.None
+        )
+        {
+            List<NodeAnnouncement> parts = Parts(label, enabled, tooltip, tooltipMode);
+            parts.Add(ValuePart(valueText));
+            return new NodeVtable
+            {
+                ControlType = ControlTypes.ComboBox,
+                Announcements = parts,
+                DetailLines = TooltipDetails(tooltip),
+                StateText = valueText,
+                OnActivate = Guarded(open, enabled),
+            };
+        }
+
+        /// <summary>One page of a screen. Only the showing tab says it is selected, and saying
+        /// nothing is how the rest stay quiet - which is also what lets focus entering the tab bar
+        /// land on the page the player is actually looking at rather than on the first tab.
+        ///
+        /// How a tab is switched to is the screen's business: set <c>OnActivate</c> on the returned
+        /// vtable if the game needs a click, leave it unset for a bar that changes page on focus.</summary>
+        public static NodeVtable Tab(
+            Func<string> label,
+            Func<bool> selected,
+            Func<bool> enabled = null,
+            AgeTooltip tooltip = null,
+            TooltipMode tooltipMode = TooltipMode.None
+        )
+        {
+            List<NodeAnnouncement> parts = Parts(label, enabled, tooltip, tooltipMode);
+            parts.Add(SelectedPart(selected));
+            return new NodeVtable
+            {
+                ControlType = ControlTypes.Tab,
+                Announcements = parts,
+                DetailLines = TooltipDetails(tooltip),
+            };
+        }
+
+        /// <summary>One entry of a list the player has opened to pick from. It carries no role word:
+        /// the control that opened the list has just been read as the combo box it is, and repeating
+        /// "list item" on every entry of a twenty-line resolution list only slows the reading down.
+        /// The entry the list is currently set to says so, which is also how focus lands on it.</summary>
+        public static NodeVtable Choice(
+            Func<string> label,
+            Func<bool> selected,
+            Action choose,
+            Func<bool> enabled = null,
+            Func<IList<string>> details = null
+        )
+        {
+            return new NodeVtable
+            {
+                Announcements = new List<NodeAnnouncement>
+                {
+                    LabelPart(label),
+                    SelectedPart(selected),
+                    DisabledPart(enabled),
+                },
+                DetailLines = details,
+                OnActivate = Guarded(choose, enabled),
+            };
+        }
+
+        // The swallow every unavailable control shares: it stays focusable and readable, and the
+        // action goes nowhere.
+        private static Action Guarded(Action action, Func<bool> enabled)
+        {
+            return () =>
+            {
+                if (enabled != null && !enabled())
+                {
+                    return;
+                }
+
+                if (action != null)
+                {
+                    action();
+                }
             };
         }
 

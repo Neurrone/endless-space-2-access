@@ -9,7 +9,7 @@ S (read + activate a list), M (multiple panels/state), L (novel interaction mode
 | Screen | Classes | Cx | Status | Notes |
 |---|---|---|---|---|
 | Main menu | `MainMenuScreen`, `MainMenuItem`/`SubItem` | S | ✅ | First graph-UI screen: flyouts as expandable nodes, tooltips announced inline, review buffer, visual hover sync. Patterns now in `docs/generic/ui-navigation.md`/`buffers.md`/`tooltips.md` |
-| Options | `OptionsModalWindow` | M | ☐ | Tabbed; sliders/droplists/toggles — first full widget-set test |
+| Options | `OptionsModalWindow` | M | ✅ | Full widget set: instant-switch tab bar, checkbox/slider/droplist rows, droplist popup as sub-screen (game's real popup driven, focus handed over so the game consumes Escape), key rebinding via the game's capture flow, buttons discovered by visibility (window has per-skin duplicate button bars). In-game skin unexercised until the esc-menu screen exists |
 | Load / save | `LoadSaveModalWindow` | S | ☐ | Also reached in-game; needed early for test loops |
 | New game lobby | `NewGameScreen`, `FactionChoiceModalWindow`, `AdvancedSettingsModalWindow` | L | ☐ | Faction/empire slots (`CompetitorSlot`), galaxy settings; the gateway to everything |
 | Tutorial choice | `TutorialSelectionModalWindow` | S | ☐ | Appears on new game |
@@ -19,6 +19,9 @@ S (read + activate a list), M (multiple panels/state), L (novel interaction mode
 
 Cross-cutting from day one: `ErrorModalWindow` and generic `GuiModalWindow` confirmations
 must always speak — a silent error dialog is a soft-lock for a blind player.
+`MessageBoxWindow` (all Ok/Cancel/Alternative confirmations, incl. the 15 s video-settings
+countdown and binding conflicts) is covered by `MessageBoxScreen`; `ErrorModalWindow` and
+`MessageBoxNonBlockingWindow` are still pending.
 
 ## Phase 2 — in-game core loop
 

@@ -94,8 +94,15 @@ namespace ES2Access
             Screens = new ScreenManager(Navigator);
             // Spelled out in full: the game has its own MainMenuScreen in the global namespace.
             Screens.Register(new global::ES2Access.Screens.MainMenuScreen());
+            Screens.Register(new OptionsScreen());
+            Screens.Register(new DropListScreen());
+            Screens.Register(new MessageBoxScreen());
             Input = new ModInput();
             Input.Dispatch = Dispatch;
+            // The one widget the mod puts the game's own keyboard focus on. The input layer would
+            // otherwise read that focus as "the player is typing" and stand down inside a list it is
+            // itself driving.
+            Input.DrivenByMod = DropListScreen.OwnsFocus;
             BindKeys(Input);
 
             _routes = new ModRoutes(host);
@@ -136,9 +143,9 @@ namespace ES2Access
         }
 
         /// <summary>
-        /// The default keys. Arrows and Tab repeat while held, at the player's own OS repeat rate;
-        /// the rest fire once, because nobody wants to activate a button eight times for leaning on
-        /// Enter.
+        /// The default keys. The keys that move something - arrows, Tab, and the coarse slider
+        /// steps - repeat while held, at the player's own OS repeat rate; the rest fire once,
+        /// because nobody wants to activate a button eight times for leaning on Enter.
         ///
         /// The review-buffer chords deliberately do NOT repeat: a line at a time, on purpose, is how
         /// you read something you are trying to understand.
@@ -158,6 +165,16 @@ namespace ES2Access
             input.Register(UiActions.End).Bind(KeyCode.End);
             input.Register(UiActions.RegionPrev).Bind(KeyCode.UpArrow, alt: true).Repeating();
             input.Register(UiActions.RegionNext).Bind(KeyCode.DownArrow, alt: true).Repeating();
+            // The coarse step is the same arrow with Shift on it, which is where a player already
+            // expects "the bigger version of this move" to live. Exact-modifier matching is what
+            // makes it safe: the plain arrow binding declares Shift off, so it stays silent while
+            // Shift is held and the chord never moves the cursor as well as the value.
+            input.Register(UiActions.CoarseIncrease)
+                .Bind(KeyCode.RightArrow, shift: true)
+                .Repeating();
+            input.Register(UiActions.CoarseDecrease)
+                .Bind(KeyCode.LeftArrow, shift: true)
+                .Repeating();
 
             input.Register(BufferActions.LineUp).Bind(KeyCode.UpArrow, ctrl: true);
             input.Register(BufferActions.LineDown).Bind(KeyCode.DownArrow, ctrl: true);
@@ -204,12 +221,18 @@ namespace ES2Access
                 Screens = null;
             }
 
-            // Whatever the mod made the game look like, the game looks like itself again.
+            // Whatever the mod made the game look like, the game looks like itself again. The screens
+            // shut down first, so a drop list left open has already been closed by its own OnPop and
+            // this only drops the record of it. A key capture has no such hook - the game holds the
+            // keyboard, not us - so it is ended here, binding nothing.
+            DropListScreen.Reset();
+            OptionsScreen.ReleaseCapture();
             PointerFocus.Shutdown();
 
             if (Input != null)
             {
                 Input.Dispatch = null;
+                Input.DrivenByMod = null;
                 Input = null;
             }
 
