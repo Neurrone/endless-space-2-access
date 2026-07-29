@@ -171,6 +171,8 @@ namespace ES2Access.Core.Speech
         {
             if (_backend != IntPtr.Zero)
             {
+                // Stop before free: freeing alone does not guarantee in-flight speech halts.
+                PrismNative.prism_backend_stop(_backend);
                 PrismNative.prism_backend_free(_backend);
                 _backend = IntPtr.Zero;
             }

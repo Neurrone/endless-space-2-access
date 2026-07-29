@@ -12,7 +12,7 @@ I will be pointing you to other game mods that have implemented various things w
 
 It should also help to ensure you know what questions to ask. The ideal goal is for this to help you make large parts of games accessible with direction from me only needed to point you to which screens and mechanics need to be made accessible, or if there are genuine high-level decisions that need to be made.
 
-These documents should be in the `docs/generic` folder. Please have source code in files and reference them from the markdown documentation in cases where it would be better than trying to explain something in pros
+These documents should be in the `docs/generic` folder. Please have source code in files and reference them from the markdown documentation in cases where it would be better than trying to explain something in pros. If referencing source files this way, they should also be in that folder so that it can be copied to a new game's mod.
 
 ### Making Endless Space 2 accessible
 
@@ -26,7 +26,7 @@ This is an important but secondary goal, it is the test vehicle for implementing
   - `Amplitude/`: small utility assembly
 - `docs/` — ES2-specific research and design notes
 - `docs/generic/` — the game-agnostic accessibility modding documentation (the primary goal)
-- Reference mods to draw patterns from: `D:\source\songs-of-conquest-access`, `D:\source\wotr-access`, `D:\source\tangledeep_access`; Prism speech library source at `D:\source\prism`. Never use `D:\source\es2-mod*` or `D:\source\game-accessibility-skills`.
+- Reference mods to draw patterns from: `D:\source\songs-of-conquest-access`, `D:\source\wotr-access`, `D:\source\DiscoAccess`, `D:\source\tangledeep_access`; Prism speech library source at `D:\source\prism`.
 
 ## Commands
 
