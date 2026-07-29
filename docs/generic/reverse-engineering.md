@@ -50,7 +50,7 @@ and where per-frame work can safely live.
 1. **Decompile everything relevant** (see [project-bootstrap.md](project-bootstrap.md)) —
    including engine/firstpass assemblies. IL2CPP variant: interop proxy assemblies give
    structure; Cpp2IL dummies give signatures; a Ghidra pipeline gives real method bodies
-   (DiscoAccess's `tools/re/` — "ground truth in one shot" beats live-probing one hypothesis
+   (DiscoAccess's approach — "ground truth in one shot" beats live-probing one hypothesis
    at a time).
 2. **Grep for the dispatch idioms.** High-yield patterns: `SendMessage(` (handler-name
    dispatch), `GetService<`/`Instance.` (locators), `Notify(`/`EventRaised` (buses),

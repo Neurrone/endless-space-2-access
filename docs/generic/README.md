@@ -30,8 +30,8 @@ Then the first screen, then the navigation layer.
 
 - `ui-navigation.md` — the accessible screen/widget/focus layer: immediate-mode tree rebuilt
   from live state, tiered focus reconciliation, ancestor-path-diff announcements, input claim
-  chains. Sources: wotr-access `src/UI/Graph` (BCL-pure, unit-tested), SoC's widget layer,
-  Tangledeep's overlay dispatcher.
+  chains. Sources: wotr-access's graph navigation engine (BCL-pure, unit-tested), SoC's
+  widget layer, Tangledeep's overlay dispatcher.
 - `world-navigation.md` — exploration cursor vs. categorized scanner (review cursor),
   tile-signature skip navigation, fog-of-war discipline, spatial audio cues.
 - `event-narration.md` — turning engine event firehoses into coherent narration: condensation
