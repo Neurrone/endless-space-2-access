@@ -26,8 +26,14 @@ Work through these in order for a new game; each milestone has an acceptance tes
 | 6 | [hot-reload.md](hot-reload.md) | `/reload` swaps a rebuilt mod; a broken build is refused |
 | 7 | [reverse-engineering.md](reverse-engineering.md) | The game's five chokepoints identified and documented |
 | 8 | [ui-navigation.md](ui-navigation.md) | First screen keyboard-navigable; announcements verified via `/speech`, then by the user |
-| 9 | [buffers.md](buffers.md) + [tooltips.md](tooltips.md) | Focused element's details reviewable line by line; tooltip strategy decided per screen |
-| 10 | [widgets.md](widgets.md) | A full settings-style screen operable: value widgets adjust and announce, popups open as sub-screens, the shared confirmation dialog speaks |
+| 9 | [input.md](input.md) | Mod keys work everywhere; the game's colliding bindings enumerated and suppressed (mod keys win, Escape delegated) |
+| 10 | [buffers.md](buffers.md) + [tooltips.md](tooltips.md) | Focused element's details reviewable line by line; the short/long tooltip rule wired once |
+| 11 | [widgets.md](widgets.md) | A full settings-style screen operable: value widgets adjust and announce, popups open as sub-screens, the shared confirmation dialog speaks |
+| 12 | [icons-and-symbols.md](icons-and-symbols.md) | Inline icons named from the enumerated table; no bare numbers or dropped nouns in spoken text |
+
+From step 8 onward, every screen runs through
+[making-screens-accessible.md](making-screens-accessible.md) — the per-screen loop: measure,
+propose the model, get approval, implement, verify with evidence, hand over the manual test.
 
 Cross-cutting, read alongside any feature work: [performance.md](performance.md) — keeping
 per-frame cost invisible (no scene scans, snapshot+reconcile, allocation discipline).
@@ -39,9 +45,6 @@ per-frame cost invisible (no scene scans, snapshot+reconcile, allocation discipl
 - `event-narration.md` — turning engine event firehoses into coherent narration: condensation
   passes, buff-churn reconciliation, event-log review buffers (the second sink pattern in
   [buffers.md](buffers.md)).
-- `input.md` — what [ui-navigation.md](ui-navigation.md) doesn't yet cover: claim
-  chains/category shadowing between screens, and rewriting or suppressing the game's own
-  binding tables when mod keys collide with game shortcuts in-game.
 - `settings.md` — user-facing settings and key rebinding. Adopt wotr-access's declarative
   settings tree: one declaration serves as persistence, the settings screen's data source,
   and the rebinding UI.

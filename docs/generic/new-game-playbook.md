@@ -35,40 +35,45 @@ distribution/release strategy, which mechanics are worth deep investment vs. a s
 
 Each has a cheap acceptance test; do not move on until it passes.
 
-| Milestone | Acceptance test |
-|---|---|
-| Skeleton plugin loads | Loader log shows the plugin; game unaffected |
-| Speech works | Startup line audible via screen reader; visible in the log |
-| Dev server up | `/status` answers; `/speech` shows the startup line with speech muted |
-| Hot reload works | Rebuild + `/reload` re-announces; a corrupted DLL is refused, old mod survives |
-| Chokepoints mapped | The five chokepoints documented with citations (game-specific docs) |
-| First screen reads | Screen's content announced; verified via `/speech`, then by the user |
+| Milestone             | Acceptance test                                                                |
+| --------------------- | ------------------------------------------------------------------------------ |
+| Skeleton plugin loads | Loader log shows the plugin; game unaffected                                   |
+| Speech works          | Startup line audible via screen reader; visible in the log                     |
+| Dev server up         | `/status` answers; `/speech` shows the startup line with speech muted          |
+| Hot reload works      | Rebuild + `/reload` re-announces; a corrupted DLL is refused, old mod survives |
+| Chokepoints mapped    | The five chokepoints documented with citations (game-specific docs)            |
+| First screen reads    | Screen's content announced; verified via `/speech`, then by the user           |
 
 The order matters: speech before dev server (the server's speech tap needs the pipeline),
 dev server before everything else (it is how all later work gets verified), reload before
-features (iteration speed compounds).
+features (iteration speed compounds). From the first screen on, every screen follows
+[making-screens-accessible.md](making-screens-accessible.md) — measure, propose the model,
+get approval, implement, verify with evidence, hand over the manual script.
 
-## Working method
+## Fixture saves
 
-- The dev server is the agent's eyes and ears: exercise features through it, read `/speech`
-  to verify announcements, `/eval` to probe live state, `/screenshot` when visual context
-  helps. See [dev-server.md](dev-server.md) for the loop and its gotchas.
-- Anything perceptual — focus behavior, audio timing, how speech "feels" — is verified by the
-  user, not by automated probes. Probes can pass by luck; a screen reader user's test is the
-  ground truth.
-- **Visual claims need measurements, not existence checks.** "The tooltip appeared" verified
-  as true twice on ES2 while being wrong twice: once it appeared in the opposite screen
-  corner (rendered at the idle mouse), once "absent" was actually present. Verify *where*
-  and *what*: compare rects from the interpreted GUI dump against the element the visual
-  should attach to, and look at the `/screenshot`. Manual test scripts should carry an
-  "what an observer should see" column alongside "what you should hear".
-- Prefer the game's own deterministic APIs (orders, services, the handler a button invokes)
-  over simulated input, everywhere, from the first feature on.
-- Keep a game-specific research doc per subsystem as it gets reverse-engineered ("documents
+- Make a **content-rich fixture save early** — the opening minutes of most games are
+  content-poor (one unit, locked buttons, empty lists), so early-game fixtures verify only
+  absences: list ordering, focus recipes, and state transitions all need a mid-game state.
+- Wire a boot-into-fixture path: a launch-script flag that polls the dev server and posts
+  the load ([dev-server.md](dev-server.md) `/loadsave`) — one command from cold start to
+  in-game. Drive the load from the mod once its services are ready; games' own command-line
+  load arguments tend to run before the save system exists and fail silently (ES2's did).
+- When handing a live game between work stages, note what is pending in it (queued dialogs,
+  notifications) — the next stage otherwise spends a round rediscovering it.
+
+## The repo's two living documents
+
+How to actually work — the dev server as eyes and ears, evidence over claims, deterministic
+APIs, the manual handover — is [making-screens-accessible.md](making-screens-accessible.md)
+and [dev-server.md](dev-server.md). What the playbook adds is the two documents each game
+repo maintains alongside the code:
+
+- A **game-specific research doc per subsystem** as it gets reverse-engineered ("documents
   the game, not the mod"), citing decompiled files and members.
-
-## Keeping these docs alive
-
-After each feature lands in a game mod, ask: did a pattern here prove wrong or incomplete?
-Did a new reusable pattern emerge? Update the generic docs in the same session while the
-evidence is fresh — that is their whole purpose.
+- A **living dev map** (ES2 Access: `docs/dev-loop.md`) — a short digest of the helper
+  inventory, layer budget, dev routes, and test recipes, with a chapter index into these
+  generic docs. It is the first read of every work session, and a change is not done until
+  the map reflects it — a map maintained as part of "done" is what keeps each session from
+  re-discovering the last one's tools. Game-agnostic lessons flow onward from there into
+  these docs, in the same session, while the evidence is fresh.

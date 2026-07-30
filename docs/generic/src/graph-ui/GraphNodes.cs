@@ -38,9 +38,20 @@ namespace ES2Access.UI
             );
         }
 
-        /// <summary>The control's review-buffer content, read from its tooltip: the game has already
-        /// put the description there, and for a control that is refusing, the reason it is refusing.
-        /// Resolved at review time, so the reason a button gives is the one it would give now.</summary>
+        /// <summary>
+        /// The control's review-buffer content, read from its tooltip - and, via
+        /// <see cref="TooltipPart"/>, the same lines a <see cref="TooltipMode.Announce"/> control
+        /// speaks and the same test a <see cref="TooltipMode.Indicate"/> control uses to decide
+        /// whether it has anything to indicate.
+        ///
+        /// A tooltip that carries its own words in <c>Content</c> - the game has already put the
+        /// description there, and for a control that is refusing, the reason it is refusing - reads
+        /// straight off it. One that names a CLASS has nothing in <c>Content</c> worth reading (see
+        /// <see cref="DrawnTooltip"/>'s own remarks on what that field holds instead), so it is read
+        /// back off the tooltip window's live drawing, which is what makes it exist at all. Resolved
+        /// at review time in both cases, so a refusing button's reason - or a resource's stat block
+        /// after another turn has changed it - is the one it would give now.
+        /// </summary>
         public static Func<IList<string>> TooltipDetails(AgeTooltip tooltip)
         {
             if (tooltip == null)
@@ -48,7 +59,21 @@ namespace ES2Access.UI
                 return null;
             }
 
-            return () => AgeText.Lines(AgeText.Tooltip(tooltip));
+            AgeTooltip it = tooltip;
+            return () =>
+                ContentBacked(it)
+                    ? AgeText.Lines(AgeText.Tooltip(it))
+                    : DrawnTooltip.Lines(it);
+        }
+
+        /// <summary>Whether a tooltip's words live in its <c>Content</c> field. True for no class at
+        /// all and for the "Simple" class, which is the plain text box: it renders exactly what
+        /// Content says (the main menu's one-sentence descriptions). Every other class assembles its
+        /// words at draw time and leaves Content holding authoring leftovers.</summary>
+        private static bool ContentBacked(AgeTooltip tooltip)
+        {
+            string cls = tooltip.Class;
+            return string.IsNullOrEmpty(cls) || cls == "Simple";
         }
 
         /// <summary>The same, for a control that carries its tooltip on its transform rather than
@@ -64,6 +89,40 @@ namespace ES2Access.UI
         public static NodeAnnouncement TooltipPart(TooltipMode mode, AgeTooltip tooltip)
         {
             return TooltipParts.Part(mode, TooltipDetails(tooltip));
+        }
+
+        /// <summary>
+        /// The deterministic choice of how a tooltip reaches the player, read off the tooltip itself
+        /// rather than decided per screen or by how long it happens to run.
+        ///
+        /// A tooltip that names a CLASS is assembled at draw time by the tooltip window from live
+        /// data - a resource's stat block, a trait's dossier, a screen icon's shortcut-and-status
+        /// panel - the kind of thing a player wants to walk at their own pace rather than have read
+        /// out whole every time focus passes over it: <see cref="TooltipMode.Indicate"/>. One that
+        /// carries its own words in <c>Content</c> is the single sentence the game wrote to explain
+        /// the control - or, for a refusing button, that sentence with the reason appended - short
+        /// enough that saying it outright is exactly what the control's own author intended:
+        /// <see cref="TooltipMode.Announce"/>. No tooltip at all is <see cref="TooltipMode.None"/>.
+        ///
+        /// One rule, so a screen never has to guess which of the two a tooltip it is handed turns out
+        /// to be; <see cref="DrawnTooltip"/> and the review buffer still carry a Class tooltip's full
+        /// text regardless of which mode this returns.
+        /// </summary>
+        public static TooltipMode ModeFor(AgeTooltip tooltip)
+        {
+            try
+            {
+                if (tooltip == null)
+                {
+                    return TooltipMode.None;
+                }
+
+                return ContentBacked(tooltip) ? TooltipMode.Announce : TooltipMode.Indicate;
+            }
+            catch (Exception)
+            {
+                return TooltipMode.None;
+            }
         }
 
         /// <summary>Speaks only while the control is the chosen one among its peers - the showing tab,

@@ -12,7 +12,8 @@ the game's own gate: an `IsReady` computed from visible+enabled+animation-done (
 `GuiWindow.IsReady`), an end-of-show callback every screen calls (`OnEndShow`), a coroutine
 that flips interactivity (SoC's "screen readiness hooks" discipline), or a window manager
 tracking visible screens/modals with events. A single base-class hook that fires for every
-window (ES2: `NotifyVisibilityChanged`) is gold.
+window (ES2: `NotifyVisibilityChanged`) is gold. This feeds the screen predicates in
+[ui-navigation.md](ui-navigation.md).
 
 **2. Input dispatch.** Where keys become actions: a central handler chain, a binding service,
 or raw polling. You need (a) a way to add your own keys without colliding (claim chains:
@@ -20,7 +21,8 @@ first claimant consumes, unclaimed keys pass through untouched), and (b) respect
 fields — check the framework's focused-control/key-exclusive state before claiming. Never
 synthesize OS-level key events. Some mods rewrite the game's own binding tables at startup to
 evacuate keys they need (Tangledeep's Rewired surgery) — self-healing, re-applied when the
-game rebuilds its map.
+game rebuilds its map. What to do with the findings — collisions, suppression, the mod's own
+layer — is [input.md](input.md).
 
 **3. Deterministic actions.** The layer where the UI's click handler actually *does* the
 thing: command/order objects posted to a queue (ES2: `Order` + `PostOrder` — validated,
@@ -34,12 +36,13 @@ mouse position, WotR's pointer patch) so all downstream game logic runs untouche
 **4. An event/narration stream.** Where the game announces to itself that things happened: a
 typed event bus (ES2: `IEventService.EventRaised`, ~280 event classes), a combat/game log
 sink every message funnels through (Tangledeep's `GameLogWrite` — "the biggest early win"),
-or a notification system feeding the game's own notification UI. This powers narration;
-expect to de-noise it later.
+or a notification system feeding the game's own notification UI. This powers narration
+(event-log buffers: [buffers.md](buffers.md)); expect to de-noise it later.
 
 **5. Localization service.** How a key becomes display text (and the key convention, e.g.
 `%`-prefixed), so the mod can localize the same strings the game does and detect
-not-yet-resolved keys when reading UI text.
+not-yet-resolved keys when reading UI text. Consumed by [localization.md](localization.md)'s
+text pipeline (and [icons-and-symbols.md](icons-and-symbols.md) for inline markup).
 
 Also worth mapping early: the service-locator/singleton pattern and its lifecycle (services
 may register asynchronously and tear down on returning to menu — re-acquire, never cache),
@@ -56,16 +59,35 @@ and where per-frame work can safely live.
    dispatch), `GetService<`/`Instance.` (locators), `Notify(`/`EventRaised` (buses),
    `OnClick`/`Cb` naming, `IsReady`/`VisibilityChanged`/`OnEndShow` (readiness),
    `PostOrder`/`Command` (action layer), `Localize`/`LocalizationKey`.
-3. **Corroborate live.** The dev server's `/gui/game` dump confirms the scene structure the
-   decompile implies; `/eval` probes services and calls candidate APIs against the running
-   game before you build on them. When raw dumps and the mod's interpreted view both exist,
+3. **Corroborate live** with the dev server ([dev-server.md](dev-server.md)): the raw GUI
+   dump confirms the scene structure the decompile implies; the REPL probes services and
+   calls candidate APIs against the running game before you build on them. When raw dumps and the mod's interpreted view both exist,
    diff them to find information the game exposes that the mod is dropping.
-4. **Mine the game's own debug tooling.** Games ship internal inspectors (ES2's
+   And know what each side can prove: **the decompile proves a mechanism exists; only the
+   live game proves it works in your calling context.** Two shipped ES2 failures came from
+   skipping that: a command-line load path that runs before the save service registers
+   (silently falls through on a retail boot), and the engine delivering keys to the focused
+   widget in `LateUpdate` — after the mod's `Update` had acted on the same key. Service
+   registration timing and frame position (`Update`/`LateUpdate`/coroutine order) are runtime
+   questions; check them live before building on a mechanism.
+4. **Ask "who writes this?" before interpreting any data collection.** A registry, binding
+   table, or symbol map you are tempted to interpret heuristically may be a **closed set**:
+   grep for its writers, and one writer loading static data means you can dump it live, diff
+   it against the source assets, and enumerate instead of infer. ES2's icon vocabulary went
+   through three failed naming heuristics before this ten-minute check showed 382 tokens
+   from one writer — see [icons-and-symbols.md](icons-and-symbols.md) for the worked case.
+5. **Mine the game's own debug tooling.** Games ship internal inspectors (ES2's
    `ImageInformationWindow` polls the hovered widget every frame) — proven, in-tree example
    code for exactly the introspection you need, no patching required.
-5. **Write it down as you go**: one game-specific research note per subsystem, stating
+6. **Write it down as you go**: one game-specific research note per subsystem, stating
    explicitly that it documents *the game*, not the mod. Cite decompiled paths and member
-   names — member names survive decompiler upgrades; line numbers don't.
+   names — member names survive decompiler upgrades; line numbers don't. Record the game's
+   **own call site** for a behavior, not a snippet you derived from it: the call site
+   encodes guards and ordering you would rediscover painfully (ES2's focus-a-fleet is a
+   five-step dance of camera, view level, cursor and panel; its in-session load must
+   disconnect first), it stays checkable as the code evolves, and a pre-derived expression
+   has to be re-derived anyway — and can be quietly wrong. When you need the behavior,
+   replay that call site verbatim.
 
 ## Worked chokepoint maps
 

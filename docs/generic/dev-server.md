@@ -48,6 +48,23 @@ The contract that has proven out (shapes are JSON):
 | `POST /wait?timeout=MS` | Body = C# bool expression, compiled once, evaluated **every frame** until true/timeout (`{satisfied,frames,elapsedMs}`). Catches single-frame transients external polling cannot see. |
 | `POST /reload`, `GET /loader/status` | Hot reload — see [hot-reload.md](hot-reload.md) |
 | `POST /quit` | Clean exit (respond first, quit next frame) |
+| `GET /gui/graph?edges=1&buffers=1` | **The accessible tree, wholesale**: the focused screen's whole graph in navigation order, one line per control reading exactly what arriving on it would speak, stop/region boundary markers, focus marker, node id per line; `edges=` adds each direction's destination label, `buffers=` each node's review lines. Side-effect-free (a throwaway render — no focus visuals run, the cursor does not move; two calls answer identically). Collapses walk-and-listen loops into one read. Compose each line by diffing against the previous line with the announcer itself — the dump then reads as the walk would sound, headings where they'd be heard. (Lineage: wotr-access's `/gui`, tangledeep's overlay dump with edges.) |
+| `POST /input` | One action key through the **production dispatch point** — a queue drained inside the input layer's tick, honoring the stand-down — never a direct navigator call. The response attributes the outcome (`consumed (navigator/buffers)` / `unconsumed` / `standing down: …`) and carries the speech it caused; an unknown key answers with every registered action (self-documenting). A screen that answers `/eval` but not `/input` is a screen whose keys don't reach it. |
+| `POST /loadsave` | Body = save title (empty = newest). Loads from the menu, or tears down a running session via the game's own in-session path; answers a retryable `[not ready] …` until it can act, so the launch script polls from cold boot straight into a fixture (tangledeep/wotr's convention). Two ready-states per game: "menu can start a load" and "session must disconnect first". |
+| `GET /speech?since=N&wait=MS` | Long-poll: blocks until the next spoken line (released on that frame; also released by a reload). Replaces every sleep-then-poll. |
+
+`/status` also carries the **patch tripwire** when the mod ships input-suppression patches:
+per-target prefix count + owner id (see [input.md](input.md) — a silently stripped patch is
+otherwise indistinguishable from a working one).
+
+**Compile-checked probe helpers beat REPL scripts** (wotr-access's `DevSurvey` pattern): the
+recurring questions — focused screen, screen stack, one-word game state, save list, camera,
+drawn-tooltip measurements — live as public static methods in the mod returning JSON, called
+as `/eval` one-liners. Logic is compiler-checked with full internals access; the REPL sends
+ten characters. A one-word `State()` (`menu|loading|ingame|dialog`) also powers wait scripts:
+poll it at 0.3 s with a **dead-process fail-fast** (a crashed game must be a distinct exit
+code within a second, not a timeout minutes later), and print the *current* state on timeout
+— the difference between a useful and a useless timeout message.
 
 ## Two GUI dumps: raw, then interpreted
 
@@ -134,6 +151,26 @@ POST /quit                             # exits within ~10s; poll at 1s
 Numbers worth knowing per game: boot-to-server time, quit-to-exit time, and that the speech
 ring resets on reload.
 
+**Loop economics, measured**: an autonomous verification session's tokens and wall time both
+scale near-linearly with **tool-call count** (each HTTP probe carries reasoning overhead
+around it), so the lever is fewer, bigger calls — the wholesale graph dump over per-control
+walks, probe helpers over probe chains, and repetitive checks batched into one script that
+prints a table. Images are the other measured sink: **never pull a full-resolution frame
+into an agent's context** — crop the screenshot to the region under discussion first (a
+40 KB crop versus a 600 KB frame, and the crop *is* the evidence's region indication).
+
+**Frame-by-frame transition probes**: to measure a delay or catch a transition, wait for the
+negative first and the positive second (after a focus move: wait `!tooltipShown`, then
+`tooltipShown` — the second wait's frame count is the delay). A negative that never
+satisfies is itself a result: the hide and re-show happened inside one frame.
+
+**Launcher discipline** (all learned from real failures): a single-instance lock (PID file;
+stale locks auto-cleared; **match same-session processes only** — an orphan in the services
+session blocks every launch forever and cannot be killed); wait for the old process *and*
+the dev port to free before relaunching (a kill returns before teardown, and two servers
+racing one port makes the loser's game silently server-less); build after the kill so the
+DLL is unlocked; abort the launch on build failure — never silently run a stale DLL.
+
 ## What this loop cannot verify
 
 Before handing a feature to the human tester, **list what the harness structurally cannot
@@ -148,8 +185,8 @@ spots:
   known before handover, and the collision only surfaced in manual testing because HTTP
   presses no keys.)
 - **Same-key double handling.** The mod and the game poll the same physical key; a
-  dispatched action exercises only the mod's half. See the one-key-two-listeners section in
-  [ui-navigation.md](ui-navigation.md).
+  dispatched action exercises only the mod's half. See [input.md](input.md) — the collision
+  checklist and the suppression doctrine.
 - **Perceptual invariants.** Re-check per screen with measured rects and screenshots: the
   focused item is scrolled into view (long lists!), focus visuals track the cursor, speech
   does not lag held-key repeat. Existence checks lie; rects don't.

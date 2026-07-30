@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using UnityEngine;
 
 namespace ES2Access.UI.Input
@@ -21,7 +22,17 @@ namespace ES2Access.UI.Input
     /// </summary>
     public sealed class ModInput
     {
+        /// <summary>
+        /// The one key the mod uses and still lets the game have. Screens delegate Escape back to
+        /// the game on purpose - closing a drop list, opening and closing the pause menu and
+        /// cancelling a message box are all the game's own Escape routes, and a screen claims the
+        /// key by returning true from its Back() instead.
+        /// </summary>
+        private const KeyCode DelegatedKey = KeyCode.Escape;
+
         private readonly List<InputAction> _actions = new List<InputAction>();
+        private readonly Queue<Injection> _injected = new Queue<Injection>();
+        private HashSet<KeyCode> _claimedKeys;
 
         /// <summary>Offered every triggered action; returning true consumes it. Null means nothing is
         /// listening, so every action falls through to its own <see cref="InputAction.Performed"/>.
@@ -44,6 +55,17 @@ namespace ES2Access.UI.Input
         /// </summary>
         public Func<AgeControl, bool> DrivenByMod;
 
+        /// <summary>
+        /// Asked whether the mod has a screen for what the player is looking at. The layer's keys
+        /// only mean anything then - see ModEntry.Dispatch, which turns every action down when no
+        /// screen of ours is focused - and it is also what decides whether the game has to keep its
+        /// hands off them; see <see cref="ClaimsKey"/>.
+        ///
+        /// A predicate rather than a reference to the screen stack, for the same reason
+        /// <see cref="DrivenByMod"/> is one: the input layer knows about keys, not screens.
+        /// </summary>
+        public Func<bool> HasFocusedScreen;
+
         public IList<InputAction> Actions
         {
             get { return _actions; }
@@ -53,6 +75,7 @@ namespace ES2Access.UI.Input
         {
             InputAction action = new InputAction(key);
             _actions.Add(action);
+            _claimedKeys = null;
             return action;
         }
 
@@ -67,6 +90,68 @@ namespace ES2Access.UI.Input
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// One action asked for over the dev server rather than pressed, and what became of it. The
+        /// requester blocks on <see cref="Done"/> because the answer - who consumed it, or why
+        /// nobody could - is only known once the frame's <see cref="ModInput.Tick"/> has run it.
+        /// </summary>
+        public sealed class Injection
+        {
+            public Injection(string actionKey)
+            {
+                ActionKey = actionKey;
+            }
+
+            public readonly string ActionKey;
+
+            /// <summary>Set once the action has been run (or refused, or abandoned).</summary>
+            public readonly ManualResetEvent Done = new ManualResetEvent(false);
+
+            /// <summary>Whether a listener took the action - <see cref="Dispatch"/> returned true.
+            /// </summary>
+            public bool Consumed;
+
+            /// <summary>Set when the action was not offered to anyone because a game text field held
+            /// the keyboard, which is the same answer a real keypress would have got.</summary>
+            public bool StoodDown;
+
+            /// <summary>What went wrong, when something did.</summary>
+            public string Error;
+
+            internal void Finish()
+            {
+                Done.Set();
+            }
+        }
+
+        /// <summary>
+        /// Ask for <paramref name="action"/> to run on the next <see cref="Tick"/> exactly as a
+        /// matched key binding would - same dispatch, same stand-down, same frame position - so a
+        /// test can drive the production input path without a keyboard. Repeat semantics are
+        /// deliberately not simulated: an injection is one press.
+        ///
+        /// Main thread only, like <see cref="Tick"/> itself; the dev route marshals onto it.
+        /// </summary>
+        public Injection Inject(InputAction action)
+        {
+            Injection injection = new Injection(action.Key);
+            _injected.Enqueue(injection);
+            return injection;
+        }
+
+        /// <summary>Release every injection still waiting - the mod is unloading, and the HTTP
+        /// threads blocked on them would otherwise wait out their whole budget against a queue that
+        /// will never be drained.</summary>
+        public void CancelInjections()
+        {
+            while (_injected.Count > 0)
+            {
+                Injection injection = _injected.Dequeue();
+                injection.Error = "the mod unloaded before the action ran";
+                injection.Finish();
+            }
         }
 
         /// <summary>
@@ -117,6 +202,62 @@ namespace ES2Access.UI.Input
             }
         }
 
+        /// <summary>
+        /// True while <paramref name="key"/> belongs to the mod and to nothing else. The game polls
+        /// UnityEngine.Input in parallel with us, so without this a key we act on ALSO fires the
+        /// game's own binding on it - Tab opens the chat box and takes the keyboard with it, Enter
+        /// answers a message box a second time, an arrow pans the galaxy camera under the cursor.
+        /// The game's key scans ask this and stand down when it says yes.
+        ///
+        /// Only while the layer is live: a screen of ours is focused and the game is not holding the
+        /// keyboard for something the player is typing into. Otherwise the game's keys are the only
+        /// ones there are and it must see everything, unchanged.
+        ///
+        /// Called from the game's per-frame scans, so it stays a set lookup and two flag reads.
+        /// </summary>
+        public bool ClaimsKey(KeyCode key)
+        {
+            if (key == DelegatedKey || !LayerIsLive())
+            {
+                return false;
+            }
+
+            return ClaimedKeys().Contains(key);
+        }
+
+        private bool LayerIsLive()
+        {
+            Func<bool> focused = HasFocusedScreen;
+            return focused != null && focused() && !KeyboardIsElsewhere();
+        }
+
+        // Built once and dropped whenever an action is added, which is the only way the bindings
+        // change today; a rebinding UI would have to drop it too.
+        private HashSet<KeyCode> ClaimedKeys()
+        {
+            if (_claimedKeys != null)
+            {
+                return _claimedKeys;
+            }
+
+            HashSet<KeyCode> keys = new HashSet<KeyCode>();
+            for (int i = 0; i < _actions.Count; i++)
+            {
+                IList<InputBinding> bindings = _actions[i].Bindings;
+                for (int j = 0; j < bindings.Count; j++)
+                {
+                    KeyboardBinding keyboard = bindings[j] as KeyboardBinding;
+                    if (keyboard != null)
+                    {
+                        keys.Add(keyboard.Key);
+                    }
+                }
+            }
+
+            _claimedKeys = keys;
+            return keys;
+        }
+
         /// <summary>Poll every action and dispatch what fired. Call once per frame, before the
         /// screens tick, so a keypress and the announcement it causes land in the same frame.</summary>
         public void Tick()
@@ -124,6 +265,7 @@ namespace ES2Access.UI.Input
             if (KeyboardIsElsewhere())
             {
                 Disarm();
+                RunInjected(true);
                 return;
             }
 
@@ -169,11 +311,58 @@ namespace ES2Access.UI.Input
                     continue;
                 }
 
-                Func<InputAction, bool> dispatch = Dispatch;
-                if (dispatch == null || !dispatch(action))
+                Deliver(action);
+            }
+
+            RunInjected(false);
+        }
+
+        // Where a triggered action goes: the listening layer first, and the action's own handler when
+        // nothing wanted it. True when a listener consumed it.
+        private bool Deliver(InputAction action)
+        {
+            Func<InputAction, bool> dispatch = Dispatch;
+            if (dispatch != null && dispatch(action))
+            {
+                return true;
+            }
+
+            action.InvokePerformed();
+            return false;
+        }
+
+        // The injected actions queued since the last frame, run through exactly the path a pressed
+        // key takes. Standing down is reported rather than worked around: an injection that arrives
+        // while a text field holds the keyboard must be as invisible as the keypress would have been.
+        private void RunInjected(bool standingDown)
+        {
+            while (_injected.Count > 0)
+            {
+                Injection injection = _injected.Dequeue();
+                try
                 {
-                    action.InvokePerformed();
+                    InputAction action = Find(injection.ActionKey);
+                    if (standingDown)
+                    {
+                        injection.StoodDown = true;
+                    }
+                    else if (action == null)
+                    {
+                        // Validated before queueing, so this only happens if the bindings changed in
+                        // between - worth saying rather than silently dropping.
+                        injection.Error = "no action named '" + injection.ActionKey + "' any more";
+                    }
+                    else
+                    {
+                        injection.Consumed = Deliver(action);
+                    }
                 }
+                catch (Exception e)
+                {
+                    injection.Error = e.ToString();
+                }
+
+                injection.Finish();
             }
         }
 

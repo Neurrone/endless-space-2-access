@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Text;
 using ES2Access.Loader.Dev;
+using ES2Access.UI;
 using Newtonsoft.Json;
 using UnityEngine;
 
@@ -57,8 +58,6 @@ namespace ES2Access.Dev
         // frame/backdrop wrappers AGE prefabs nest captions in, shallow enough not to adopt the
         // text of a whole panel.
         private const int CaptionSearchDepth = 4;
-
-        private static readonly StringBuilder CleanBuffer = new StringBuilder(512);
 
         private sealed class Budget
         {
@@ -697,24 +696,7 @@ namespace ES2Access.Dev
 
         private static string LabelText(AgeTransform transform)
         {
-            AgePrimitiveLabel label = Primitive(transform) as AgePrimitiveLabel;
-            if (label == null)
-            {
-                return null;
-            }
-
-            string text = null;
-            try
-            {
-                text = label.TranslatedText;
-                if (string.IsNullOrEmpty(text))
-                {
-                    text = label.Text;
-                }
-            }
-            catch (Exception) { }
-
-            return Clean(text);
+            return Shorten(AgeText.Label(Primitive(transform) as AgePrimitiveLabel));
         }
 
         // A control's caption is the first label under it. Labels inside a nested control belong to
@@ -826,37 +808,12 @@ namespace ES2Access.Dev
             return value.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture);
         }
 
-        /// <summary>Turn a raw AGE string into something worth reading aloud: resolve it if it is
-        /// still a %key, then run it through the engine's own cleaner, which expands the [Icon]
-        /// tokens and strips the 8-character #RRGGBBAA# colour codes the labels are marked up
-        /// with. The glyphs those tokens expand to live in the font's private use area and have no
-        /// meaning outside it, so they come out here too.</summary>
+        /// <summary>The spoken form of a raw AGE string (see <see cref="AgeText"/>), then made fit
+        /// for a one-line-per-node JSON dump: newlines escaped rather than kept, and long bodies
+        /// clipped so one verbose tooltip cannot dominate the output.</summary>
         private static string Clean(string raw)
         {
-            if (string.IsNullOrEmpty(raw))
-            {
-                return null;
-            }
-
-            string text = raw;
-            try
-            {
-                if (Gui.IsLocalizationKey(text))
-                {
-                    text = Gui.Localize(text);
-                }
-            }
-            catch (Exception) { }
-
-            try
-            {
-                StringBuilder buffer = CleanBuffer;
-                AgeUtils.CleanLine(text, ref buffer);
-                text = buffer.ToString();
-            }
-            catch (Exception) { }
-
-            return Shorten(text);
+            return Shorten(AgeText.Clean(raw));
         }
 
         private static string Shorten(string text)
@@ -873,18 +830,13 @@ namespace ES2Access.Dev
                 {
                     collapsed.Append("\\n");
                 }
-                else if (character >= ' ' && !(character >= '\uE000' && character <= '\uF8FF'))
+                else
                 {
                     collapsed.Append(character);
                 }
             }
 
-            string result = collapsed.ToString().Trim();
-            if (result.Length == 0)
-            {
-                return null;
-            }
-
+            string result = collapsed.ToString();
             return result.Length > MaxTextLength
                 ? result.Substring(0, MaxTextLength) + "..."
                 : result;

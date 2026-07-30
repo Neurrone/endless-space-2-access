@@ -86,10 +86,11 @@ namespace ES2Access.Screens
             get { return "screen.drop-list"; }
         }
 
-        /// <summary>Above the options page it belongs to, below the confirmation box.</summary>
+        /// <summary>Above the options window it belongs to - wherever that window was opened from -
+        /// and below the confirmation box.</summary>
         public override int Layer
         {
-            get { return 20; }
+            get { return 70; }
         }
 
         /// <summary>The setting being chosen, in the game's own words - so opening the list reads

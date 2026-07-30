@@ -53,6 +53,14 @@ split into lines at semantic boundaries — newlines first; if the game composes
 through a drawing interface, capture one line per drawing call rather than one blob (SoC's
 fake details-drawer pattern).
 
+The buffer holds the focused element's **own** content, never its container's: each dialog
+control carries its own tooltip, not the dialog's shared body text (the body is a focusable
+node with its own buffer); a table cell carries its heading, value, and the cell's own
+tooltip, not the whole row (the row is a walk away). And the buffer mirrors what the game
+shows for the element *in its current state*: a minimized notification the game draws as an
+icon buffers its title, not the expanded description — the full text belongs to the opened
+popup, where the game shows it.
+
 Cursor rules, all load-bearing:
 
 - Repopulate **only on a real focus change or when the element's spoken readout changed** —

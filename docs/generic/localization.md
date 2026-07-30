@@ -13,6 +13,14 @@ infrastructure); starting with the seam costs nearly nothing.
    hold `%`-prefixed keys). Anything spoken from data rather than from a rendered label must
    pass through the game's localizer — and confirm that localizer passes plain,
    non-key strings through unchanged, since the same table can mix both.
+   **And preserve it exactly.** Never insert the mod's separators or punctuation into game
+   text: multi-line game text joins with a space, not the list separator — "disabled., Once"
+   is a defect, and it appears the moment game *lines* are fed through a list-item builder
+   meant for mod-composed enumerations. Where the game shows something for a state (failure
+   tooltips, captions, placeholders), surface those words, never a mod paraphrase; where the
+   game shows nothing, invent nothing (no placeholder nodes for empty states, no spoken
+   position text where the game draws dots). Inline icon tokens in game text are named, not
+   stripped: [icons-and-symbols.md](icons-and-symbols.md).
 2. **Mod-authored phrases** (role words like "button", status words, screen names, the
    startup line) — come from the mod's string table, never inline literals.
 3. **Connective structure** (list separators, "N of M", "x N") — also from the string table,
@@ -48,8 +56,8 @@ infrastructure); starting with the seam costs nearly nothing.
 ## The message builder
 
 A fluent accumulator (`Fragment` space-joined, `ListItem` comma-joined, `PushFraction`,
-`PushQuantity`; single-use; `Build()` owned by the speech sink) — ported from Factorio
-Access via Tangledeep. Localized by pulling its connectives from the string table at append
+`PushQuantity`; single-use; `Build()` owned by the speech sink — the `Speak` chokepoint in
+[speech.md](speech.md)) — ported from Factorio Access via Tangledeep. Localized by pulling its connectives from the string table at append
 time: fragment separator (may be empty — CJK), list separator (`", "`, `"、"`, `"،"`), and
 the fraction/quantity templates. With that change the builder is language-neutral and English
 output stays byte-identical.

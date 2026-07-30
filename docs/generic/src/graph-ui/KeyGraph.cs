@@ -125,12 +125,18 @@ namespace ES2Access.Core.UI.Graph
                 }
             }
 
-            // Nothing matched (or first render): the start node — but prefer the SELECTED member of its
-            // stop (initial focus lands on the checked radio/tab, not the top of a long list).
+            // Nothing matched (or first render): the start node — but when the start is itself ONE OF A
+            // SET OF ALTERNATIVES (it declares a selected-kind part: a tab, a radio, a row of a list),
+            // prefer whichever of them is in force, so focus lands on the checked tab rather than the
+            // top of a long list. A start that declares no such part is not one of a set — it is a
+            // block of text a popup wants read first, with alternatives merely sharing its stop (the
+            // dots marking which page a tutorial is on) — and the screen's own choice stands.
             if (resolved == null)
             {
                 GraphNode startNode = render.Nodes.ContainsKey(render.StartKey) ? render.Nodes[render.StartKey] : null;
-                GraphNode sel = startNode != null ? SelectedNodeInStop(render, startNode.StopKey) : null;
+                GraphNode sel = startNode != null && Selectable(startNode)
+                    ? SelectedNodeInStop(render, startNode.StopKey)
+                    : null;
                 if (sel != null) resolved = sel.Id;
                 else if (startNode != null) resolved = startNode.Id;
                 else resolved = render.StartKey;
@@ -371,6 +377,17 @@ namespace ES2Access.Core.UI.Graph
             foreach (GraphNode n in render.Order)
                 if (Equals(n.StopKey, stopKey)) return n;
             return null;
+        }
+
+        /// <summary>Whether a node is one of a set of alternatives - it declares a selected-kind part,
+        /// whether or not it is the one currently in force.</summary>
+        private static bool Selectable(GraphNode node)
+        {
+            IList<NodeAnnouncement> anns = node.Vtable != null ? node.Vtable.Announcements : null;
+            if (anns == null) return false;
+            foreach (NodeAnnouncement a in anns)
+                if (a != null && a.Kind == AnnouncementKinds.Selected) return true;
+            return false;
         }
 
         /// <summary>The first node in a stop that reads as SELECTED — carries a non-empty selected-kind

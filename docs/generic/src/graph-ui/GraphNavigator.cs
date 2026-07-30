@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using ES2Access.Core.Speech;
 using ES2Access.Core.UI.Graph;
@@ -58,11 +58,14 @@ namespace ES2Access.UI
         private ControlId _liveKey;
         private readonly List<string> _liveValues = new List<string>();
 
-        // What the UI review buffer currently holds: the control it was filled from, and the readout
-        // it was filled at. A rebuild that produces the same readout for the same control leaves the
-        // player's place in the buffer alone.
+        // What the UI review buffer currently holds: the control it was filled from, the readout it was
+        // filled at, and the lines themselves. A rebuild that produces the same readout for the same
+        // control leaves the player's place in the buffer alone, and so does one whose lines come out
+        // the same - a buffer replaced with its own contents would still send the player back to the
+        // first line of what they were reading.
         private ControlId _bufferKey;
         private string _bufferReadout;
+        private List<string> _bufferLines;
 
         // Which control the game is currently being made to look hovered on, and the node whose
         // hooks will undo it. Kept by id, not by object: the graph is rebuilt every frame, so the
@@ -85,6 +88,24 @@ namespace ES2Access.UI
             get { return _graph == null ? null : _graph.CurrentNode; }
         }
 
+        /// <summary>Where the cursor is, without needing the render it points into - for a caller that
+        /// wants to mark the focused control without moving it.</summary>
+        public ControlId FocusedKey
+        {
+            get { return _state == null ? null : _state.CurKey; }
+        }
+
+        /// <summary>
+        /// A render of the focused screen built purely to be READ - the dev server's accessible-tree
+        /// dump. Exactly the build path navigation uses, so what the dump shows is what navigation
+        /// sees; and nothing else, so reading the screen cannot change it: the cursor is untouched, no
+        /// focus/blur visual runs, and the render goes away with the caller.
+        /// </summary>
+        public GraphRender InspectRender()
+        {
+            return _screen == null ? null : BuildRender(_screen, _state);
+        }
+
         /// <summary>Point the navigator at a screen (null when none is focused). The screen's cursor
         /// is restored if it has one, and the differ starts fresh so the arrival reads in full.</summary>
         public void Attach(Screen screen)
@@ -101,6 +122,7 @@ namespace ES2Access.UI
             _liveValues.Clear();
             _bufferKey = null;
             _bufferReadout = null;
+            _bufferLines = null;
             _pendingFocus = null;
             _pendingStop = null;
             ClearVisual();
@@ -146,6 +168,7 @@ namespace ES2Access.UI
             _liveValues.Clear();
             _bufferKey = null;
             _bufferReadout = null;
+            _bufferLines = null;
             ClearVisual();
         }
 
@@ -398,10 +421,46 @@ namespace ES2Access.UI
 
             _bufferKey = node.Id;
             _bufferReadout = readout;
-            _buffers.ReplaceUiLines(BufferLines(node));
+            List<string> lines = BufferLines(node);
+            if (Same(_bufferLines, lines))
+            {
+                return;
+            }
+
+            _bufferLines = lines;
+            _buffers.ReplaceUiLines(lines);
         }
 
-        private static List<string> BufferLines(GraphNode node)
+        /// <summary>Fill the focused control's buffer again as soon as anything asks. The control's
+        /// description is not always there the moment focus lands on it - a tooltip the game has to
+        /// draw before its words exist - so whoever notices it arrive says so here.</summary>
+        public void InvalidateBuffer()
+        {
+            _bufferKey = null;
+            _bufferReadout = null;
+        }
+
+        private static bool Same(List<string> left, List<string> right)
+        {
+            if (left == null || right == null || left.Count != right.Count)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < left.Count; i++)
+            {
+                if (!string.Equals(left[i], right[i]))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        /// <summary>The lines a control fills the UI review buffer with. Public so the dev server's
+        /// graph dump can show what a control has to say without focusing it.</summary>
+        public static List<string> BufferLines(GraphNode node)
         {
             List<string> lines = new List<string>();
             string label = GraphAnnouncer.FirstPartText(node);

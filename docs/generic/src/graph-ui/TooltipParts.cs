@@ -6,10 +6,15 @@ using ES2Access.Core.Util;
 namespace ES2Access.Core.UI.Graph
 {
     /// <summary>
-    /// How a control's tooltip reaches the player when focus lands on it. The choice belongs to the
-    /// screen that declares the control, not to a length heuristic: only the author knows whether a
-    /// tooltip is the one sentence that explains the control (say it) or a stat block the player will
-    /// want to walk at their own pace (mention that it is there).
+    /// How a control's tooltip reaches the player when focus lands on it.
+    ///
+    /// The choice is decided from the tooltip itself - <see cref="ES2Access.UI.GraphNodes.ModeFor"/>,
+    /// which every screen goes through - rather than picked per control: whether a tooltip is the one
+    /// sentence that explains the control (say it outright) or a stat block assembled at draw time
+    /// that the player will want to walk at their own pace (mention that it is there) is something the
+    /// tooltip itself already answers, by whether it names a CLASS or carries plain Content. A screen
+    /// only chooses directly in the rare case it has no <c>AgeTooltip</c> to hand <c>ModeFor</c> at
+    /// all - a control this mod invented rather than one the game drew.
     ///
     /// Either way the tooltip's full text still feeds the review buffer, so nothing is ever only
     /// available by hearing it go past.
@@ -22,7 +27,17 @@ namespace ES2Access.Core.UI.Graph
         /// <summary>Its text is spoken as part of the readout.</summary>
         Announce,
 
-        /// <summary>A short "has tooltip" is spoken in place of the text.</summary>
+        /// <summary>
+        /// A short "has tooltip" is spoken in place of the text - unconditionally, because the
+        /// control HAVING one is what this mode means and is already known by the time it is chosen.
+        ///
+        /// Asking whether the lines resolve to anything first would be asking the wrong question at
+        /// the wrong moment. The mode is only ever reached for a tooltip that names a CLASS, whose
+        /// words do not exist until the tooltip window draws them - a third of a second after focus
+        /// arrives, which is well after the readout that would mention it has been composed. So the
+        /// check answered "empty" every time and the indication was never spoken at all, on exactly
+        /// the controls that most needed it.
+        /// </summary>
         Indicate,
     }
 
@@ -34,8 +49,7 @@ namespace ES2Access.Core.UI.Graph
         /// <summary>The tooltip part for <paramref name="mode"/>, reading <paramref name="lines"/> at
         /// speak time - a control that is refusing appends its reason to its own tooltip, and the
         /// reason it gives has to be the one it would give now. Null when the mode is
-        /// <see cref="TooltipMode.None"/> or there is no tooltip to read; a tooltip that resolves
-        /// empty stays silent in both modes, so "has tooltip" never promises an empty buffer.</summary>
+        /// <see cref="TooltipMode.None"/> or there is no tooltip at all.</summary>
         public static NodeAnnouncement Part(TooltipMode mode, Func<IList<string>> lines)
         {
             if (mode == TooltipMode.None || lines == null)
@@ -45,7 +59,7 @@ namespace ES2Access.Core.UI.Graph
 
             bool announce = mode == TooltipMode.Announce;
             return new NodeAnnouncement(
-                () => announce ? Spoken(lines()) : Indication(lines()),
+                () => announce ? Spoken(lines()) : ModStrings.Get(ModStrings.NavHasTooltip),
                 kind: AnnouncementKinds.Tooltip
             );
         }
@@ -69,22 +83,6 @@ namespace ES2Access.Core.UI.Graph
             }
 
             return message.Build();
-        }
-
-        private static string Indication(IList<string> lines)
-        {
-            if (lines != null)
-            {
-                for (int i = 0; i < lines.Count; i++)
-                {
-                    if (!TextUtil.IsBlank(lines[i]))
-                    {
-                        return ModStrings.Get(ModStrings.NavHasTooltip);
-                    }
-                }
-            }
-
-            return null;
         }
     }
 }

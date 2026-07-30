@@ -30,27 +30,52 @@ worked example — method and full findings in the game-specific `es2-gui-framew
 
 ## Then: pick the surfacing strategy
 
-Three proven shapes. **Which elements get which treatment is a UX decision the human
-developer makes per declaration — not a length heuristic in code.** What reads as "short
-enough to announce" is a judgment call (a three-line quick-start blurb was fine by ear; a
-technology stat panel is not), so the API takes an explicit mode and the human decides.
+Three proven shapes:
 
 1. **Announce inline** — the tooltip text joins the focus announcement as a trailing part
    (its own announcement *kind*, so per-type filtering comes free once announcement settings
-   exist; placed after the state words, before the position). For short descriptions where
-   hearing it on focus beats asking for it. Resolve at speak time — appended disabled
-   reasons then arrive automatically.
+   exist; placed after the state words, before the position). For **short** tooltips — the
+   one-sentence description the game's author wrote to be read whole, including any appended
+   disabled reason. Resolve at speak time so those reasons arrive automatically.
 2. **Indicate + buffer** — the announcement says only "has tooltip"; the full content sits
-   in the review buffer ([buffers.md](buffers.md)) for line-by-line reading. For long/rich
-   tooltips. For render-composed rich tooltips, build the lines by querying the same
-   provider interfaces the game's tooltip renderer reads (headless — no window shown, no
-   hover), one line per semantic row. In **both** modes the full content also populates the
-   buffer, so review behaves identically everywhere.
+   in the review buffer ([buffers.md](buffers.md)) for line-by-line reading at the player's
+   own pace. For **long** tooltips — stat panels, dossiers, anything render-composed. In
+   **both** modes the full content also populates the buffer, so review behaves identically
+   everywhere.
 3. **A navigable tooltip reader** (wotr-access) — a modal child screen the user arrows
    through, with drill-in. This exists **only** because that game's tooltips form a link
    graph (glossary terms leading to further tooltips); the reader is how you follow links.
    If your research at step 3 above found no links, do not build this — the buffer is
    strictly simpler and reads the same content.
+
+**Short-vs-long is decided by a deterministic game-side marker, found once — not by a length
+heuristic in code and not per-declaration by hand.** (An earlier revision of this doc made it
+a per-declaration human call; that shipped a screen's worth of inconsistent modes and was
+replaced.) Every game that has both kinds distinguishes them somewhere, because its own
+renderer must: find the property that separates "renders the content string as-is" from
+"assembles a panel at display time" (ES2/AGE: the tooltip's class field — empty or the
+plain-text class means the content string *is* the tooltip → announce; any other class means
+renderer-assembled → indicate). One shared helper reads the marker and picks the mode;
+screens never choose. The human judgment moves up a level — approving the *rule* — and
+every future screen inherits it.
+
+Two rules that came out of shipping this:
+
+- **Indication must never gate on rendered content existing.** A render-composed tooltip's
+  words do not exist until the game draws them — a hover-delay *after* focus arrives — so
+  "say 'has tooltip' only if the lines are non-empty" is silent every single time. For a
+  renderer-assembled tooltip, having content is definitional: indicate unconditionally.
+- **Reading a render-composed tooltip back**: where provider interfaces are readable
+  headlessly, prefer them. Where they are not, make focus trigger the game's own tooltip
+  display (see focus visuals in [ui-navigation.md](ui-navigation.md)) and read the drawn
+  window's labels — what is drawn is exactly what should be spoken. Traps, all hit in
+  practice: check *which* tooltip the window is currently bound to before reading; the
+  window pools its child widgets, so a shrunk tooltip still carries the previous one's
+  labels (use the engine's own effective-visibility test); join labels drawn on one visual
+  line into one spoken line, in x-order, with the label's own alignment as the tiebreak when
+  caption and value occupy the same rect; and refill the review buffer when the drawn
+  tooltip lands (an invalidation hook), guarded by a lines-equality check so a refill with
+  identical content never resets the player's reading position.
 
 A dedicated speak-tooltip key is unnecessary under 1+2 (that was the ES2 call: no Space/F1
 tooltip key at all), and only justified under 3.
@@ -59,8 +84,14 @@ Nested tooltip-on-tooltip data (question 4) slots into strategy 2 as extra buffe
 "verbose" enhancement, never a navigation model, when the nesting is hover-replacement
 rather than a link graph.
 
+Icons written inline in tooltip text are their own subject:
+[icons-and-symbols.md](icons-and-symbols.md).
+
 ## Source files
 
 `TooltipParts.cs` in [`src/graph-ui/`](src/graph-ui/) — the mode enum and announcement-part
-factory (engine-side, game-agnostic). Per-game wiring exemplars: `GraphNodes.cs` (factories
-taking the mode + the tooltip source), `AgeText.cs` (localize + markup-strip + line split).
+factory (engine-side, game-agnostic). Per-game wiring exemplars: `GraphNodes.cs` (the
+mode-from-marker helper and the factories), `AgeText.cs` (localize + markup-strip + line
+split), `DrawnTooltip.cs` (reading the rendered tooltip window: bind-identity check, pooled
+widgets, row joining), `PointerFocus.cs` (making focus render the tooltip; the drawn-tooltip
+change hook).

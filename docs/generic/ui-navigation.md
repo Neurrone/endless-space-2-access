@@ -15,7 +15,9 @@ the focus cursor, per-tab-stop remembered positions, and the set of expanded gro
 buys the property that makes announcements reliable: **a focus change is announced exactly
 once, by one code path, regardless of what caused it** — a keypress, a rebuild, or the game
 yanking a widget out from under the cursor. The navigator diffs last-spoken focus against
-current focus once per frame after everything settles.
+current focus once per frame after everything settles. The cost side of this bargain —
+rebuilds proportional to the open screen, never the world — is
+[performance.md](performance.md)'s "bound immediate-mode rebuilds".
 
 Cursor survival across rebuilds is tiered (`KeyGraph.Reconcile`): follow the **backing
 object** if it moved (identity ride-along via `ControlId.Reference`); else the same
@@ -63,36 +65,16 @@ identity and reconciliation is free.
 - **Navigator** (`GraphNavigator`): binds input actions to KeyGraph operations; the single
   `EnsureFocus` site announces the focus diff, fills the review buffer, applies focus
   visuals, and baselines the live-part watch. Navigation moves interrupt speech (held-key
-  repeat reads where you land); screen-entry announcements queue.
+  repeat reads where you land); screen-entry announcements queue — the interrupt-policy
+  tiers in [speech.md](speech.md).
 - **Screens** (`Screen`/`ScreenManager`): poll-and-diff. Each screen declares `Key`, `Layer`,
   an `IsActive()` predicate re-evaluated every tick against live game state (window
   visibility + readiness gates + "is a sub-window covering me"), and `Build(GraphBuilder)`.
   The manager sorts active screens by layer, diffs against its stack, keeps one `GraphState`
   per live screen (a covered screen keeps its cursor), and speaks `ScreenName` on focus.
-- **Input** (`ModInput` + bindings): exact-modifier chord matching (Ctrl+A must not also
-  fire bare A — and releasing a modifier mid-hold must not convert the chord); key repeat
-  implemented mod-side from the **OS typematic settings** (`SystemParametersInfo`, with
-  fallbacks) so held-arrow cadence feels native; navigation actions repeat, buffer-review
-  actions are one-shot. The whole layer stands down while the game's own text input owns the
-  keyboard — find the game's authoritative "typing now" signal (ES2:
-  `FocusedControl.IsKeyExclusive`, the same check the game's shortcut dispatcher uses).
-  Polling `UnityEngine.Input` from your own `Update` is never blocked by the game — every
-  game layer only reads the same static input state (verify once per game). Two consequences
-  discovered on ES2's options screen, both general:
-  - **The exclusivity signal conflates "the player is typing" with "some widget owns the
-    keyboard."** When the *mod itself* parks the game's focus on a widget (to make the game
-    swallow a key — see below), the stand-down check silences the mod too. Add a narrow
-    ownership exemption — an injected predicate ("this focused control is mine"), never a
-    type test — and do NOT exempt genuine capture/typing widgets: during a key-rebind
-    capture the layer must stand down fully so arrows and Escape are bindable.
-  - **One physical key, two listeners.** The mod cannot consume a key the game polls, so
-    "the mod handled Escape" never stops the game also handling it. The deterministic fix is
-    to make the *game* swallow the key through its own authority: give the game's focus
-    system the widget the key concerns (a focused key-exclusive widget makes the game's
-    dispatcher consume Escape itself — its own mouse flows rely on this). And never depend on
-    same-frame ordering between the mod's handler and the game's: releasing focus in the
-    same frame the game would have consumed the key re-opens the leak intermittently, so
-    defer mod-side state changes that would un-arm the game's consume path by a frame.
+- **Input**: the whole subject — the mod's chord/repeat/stand-down layer, the default key
+  table, the game's colliding bindings and the suppression doctrine that resolves them —
+  lives in [input.md](input.md).
 - **Node factories** (`GraphNodes`): per-widget-type constructors binding the game's widgets
   into vtables — label funcs through the game's text pipeline (localize, strip markup),
   activation through the game's own deterministic click path, tooltip surfacing per
@@ -136,6 +118,43 @@ identity and reconciliation is free.
   visibility, filter decorative click-shields (no activation wiring), order by measured
   position so speech order matches the screen.
 
+## Patterns proven since the port
+
+- **Passive announcements** (things that change while no control is focused — loading
+  progress, a page the game advances, the turn number): a screen's per-frame update diffs a
+  tuple of live source values and speaks QUEUED, never interrupting. Baseline the diff when
+  the screen arrives (arrival already speaks via `ScreenName`; the two must not both fire),
+  reset it when the screen leaves, and keep all of it instance state so it is reload-safe by
+  construction. For a continuous 0..1 value, quantize into steps (quarters), announce upward
+  crossings only, only the highest when one frame crosses several, and re-arm when the value
+  drops so a restarted phase reports afresh. Worked sample: `src/graph-ui/LoadingScreen.cs`.
+- **Arriving and standing down are different questions.** Arrive only when the widget has
+  finished animating in (its labels may still hold the previous item's words); but never
+  stand down while merely *covered* — everything that hides your panel draws above your
+  layer, and a screen that blinks out mid-transition hands the player to whatever is
+  underneath for a frame (heard as a spurious announcement of the screen below). Games also
+  *unbind* data rather than hide windows during transitions, so "is my data attached" is not
+  the stay-active gate either — a small bounded linger covers a rebind that takes a frame.
+- **Initial focus and Tab clamping**: Tab does not wrap, so whichever stop the cursor starts
+  on must be the first stop, or Tab reads as broken. An explicit start node wins over the
+  "land on the selected alternative" rule unless the start node is itself one of the
+  alternatives (declares a selected-kind part).
+- **Layers are static.** A screen's layer must never change while it is up: other screens
+  (popups, confirmations) are placed *relative* to it, and a layer that slides underneath
+  them cannot be reliably placed under either value. Number with gaps; when a window can be
+  opened from pages at different layers, give it one number above the highest opener.
+- **Tables read as tables**: one graph row per data row with a shared row key (Up/Down keeps
+  the column), one node per cell announcing the drawn column heading then the drawn value,
+  entering the table announces its role once. Never drop an empty cell — the shared-column
+  invariant dies — speak its heading with an "empty" word. A cell's review buffer holds that
+  cell's own content (heading, value, the cell's own tooltip), not the whole row: the row is
+  a walk away. `GraphSheet` (above) is the raw-mode engine for this; the drawn-header pairing
+  is the adapter's job, by the game's own column names, never by index.
+- **Minimized is not gone**: when the game collapses a panel to a title bar rather than
+  hiding it, hand the keyboard to the surface beneath (the collapsed screen stands down) and
+  declare the leftover bar's controls where they are drawn — usually as a stop on the screen
+  below — because the game's restore affordance is mouse-only.
+
 ## The confirmation-dialog screen
 
 Games funnel confirmations through one shared message-box window (quit?, discard changes?,
@@ -145,38 +164,18 @@ player. The shape (`src/graph-ui/MessageBoxScreen.cs`):
 
 - **Top layer**, above every ordinary screen; ordinary screens must yield while a modal is
   visible so the hand-off is clean and their cursor survives underneath.
-- Speak the composed question **once, on arrival** (via `ScreenName`), buttons as a row,
-  message lines in the review buffer. Declare the buttons from **live visibility** each
-  rebuild, never from the API's nominal shape — dialog windows get reused with leftover
-  state from the previous dialog.
-- **Text the game rewrites every frame** (countdown timers) must never feed node identity or
-  per-frame announcements: a label-derived context id would re-announce the sentence every
-  frame. Read it once at the screen boundary; the review buffer keeps it re-readable, frozen
-  at the moment focus landed. No timer re-announcing.
+- The question is a **focusable text node** where focus lands on arrival — re-readable in
+  place by refocusing, walkable in the review buffer — with the answers as a row below it, in
+  **drawn order** (which button is left on screen is which button reads first). `ScreenName`
+  carries only the dialog's static heading, so arrival speaks heading then question exactly
+  once. Declare the buttons from **live visibility** each rebuild, never from the API's
+  nominal shape — dialog windows get reused with leftover state from the previous dialog.
+- **Text the game rewrites every frame** (countdown timers) must never feed node identity,
+  live announcement parts, or per-frame speech: the text node's label resolves live (a
+  refocus or buffer read gives the current second) but nothing re-announces on its own.
 - Let Escape fall through to the game's own cancel path; poll the window's
   "shown and fully ready" state rather than subscribing to visibility events, which fire
   before the captions are written.
-
-## Default key bindings
-
-Proven across wotr-access/SoC and adopted for ES2 (make rebindable eventually):
-
-| Keys | Action |
-|---|---|
-| Arrows | Move (repeating); Left/Right adjust sliders, expand/collapse tree groups |
-| Shift+Left / Shift+Right | Coarse adjust, ~10 increments (repeating) — see [widgets.md](widgets.md) |
-| Tab / Shift+Tab | Cycle tab-stops, landing on the stop's remembered position |
-| Enter | Activate (primary); on a key-binding row, start capturing the primary binding |
-| Backspace | Secondary action; on a key-binding row, start capturing the secondary binding |
-| Escape | Back / close |
-| Home / End | First / last |
-| Alt+Up / Alt+Down | Region jumps inside tables (repeating) |
-| Ctrl+Up/Down, Ctrl+Left/Right, Ctrl+Home/End | Review buffer — see [buffers.md](buffers.md) |
-
-Every new binding is approved by the project owner before it ships — a binding is UX surface
-a screen reader user must memorize, and there are no "obvious defaults".
-
-There is deliberately no tooltip key — see [tooltips.md](tooltips.md).
 
 ## Adapting to a new game
 
@@ -198,8 +197,11 @@ Engine (game-agnostic): [`src/graph-ui/`](src/graph-ui/) — `ControlId.cs`, `Gr
 `KeyGraph.cs`, `GraphBuilder.cs`, `GraphAnnouncer.cs`, `TooltipParts.cs`, `GraphSheet.cs`,
 `TypeAheadSearch.cs`, `TextUtil.cs`. Adapter exemplars (ES2-specific, models to imitate):
 `GraphNavigator.cs`, `ControlTypes.cs`, `GraphNodes.cs`, `AgeText.cs`, `PointerFocus.cs`,
-`ScrollIntoView.cs`, `Screen.cs`, `ScreenManager.cs`, `MainMenuScreen.cs`,
-`DropListScreen.cs`, `MessageBoxScreen.cs`, and the input layer (`InputBinding.cs`,
-`KeyboardBinding.cs`, `OsKeyboard.cs`, `InputAction.cs`, `UiActions.cs`, `ModInput.cs`).
-Value-widget patterns (checkboxes, sliders, combo boxes, tabs, popups, key capture):
-[widgets.md](widgets.md).
+`ScrollIntoView.cs`, `AgeLayout.cs` (reading drawn layout: row banding by mutual-centre
+containment — adjacent panels overlap by pixels, so span overlap misgroups — reading order,
+and the alignment tiebreak for co-located caption/value rects), `Screen.cs`,
+`ScreenManager.cs`, `MainMenuScreen.cs`, `DropListScreen.cs`, `MessageBoxScreen.cs`,
+`LoadingScreen.cs`. The input layer: [input.md](input.md). Value-widget patterns
+(checkboxes, sliders, combo boxes, tabs, popups, key capture): [widgets.md](widgets.md).
+The per-screen process (measure → model → approve → implement → verify → hand over):
+[making-screens-accessible.md](making-screens-accessible.md).
