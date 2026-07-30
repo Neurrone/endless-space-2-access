@@ -91,19 +91,32 @@ namespace ES2Access
             InstallAnnouncerWording();
             Buffers = new BufferController();
             Navigator = new GraphNavigator(Buffers);
+            // A tooltip the game has to draw before its words exist arrives after focus does, so the
+            // focused control's description is read again when it lands.
+            PointerFocus.DrawnTooltipChanged = Navigator.InvalidateBuffer;
             Screens = new ScreenManager(Navigator);
             // Spelled out in full: the game has its own MainMenuScreen in the global namespace.
             Screens.Register(new global::ES2Access.Screens.MainMenuScreen());
             Screens.Register(new OptionsScreen());
             Screens.Register(new DropListScreen());
             Screens.Register(new MessageBoxScreen());
+            Screens.Register(new LoadingScreen());
+            Screens.Register(new NotificationScreen());
+            Screens.Register(new TutorialScreen());
+            Screens.Register(new GameMenuScreen());
+            Screens.Register(new LoadSaveScreen());
+            Screens.Register(new GalaxyHudScreen());
             Input = new ModInput();
             Input.Dispatch = Dispatch;
             // The one widget the mod puts the game's own keyboard focus on. The input layer would
             // otherwise read that focus as "the player is typing" and stand down inside a list it is
             // itself driving.
             Input.DrivenByMod = DropListScreen.OwnsFocus;
+            Input.HasFocusedScreen = ScreenFocused;
             BindKeys(Input);
+            // Bindings first: the game's scans ask the layer which keys it has, so there must be
+            // something to answer with before they can be told to stand down.
+            GameKeyStandDown.Install();
 
             _routes = new ModRoutes(host);
             _routes.Register();
@@ -134,12 +147,20 @@ namespace ES2Access
         // Spelled out in full: the game has its own InputAction in the global namespace.
         private static bool Dispatch(ES2Access.UI.Input.InputAction action)
         {
-            if (Navigator.Screen == null)
+            if (!ScreenFocused())
             {
                 return false;
             }
 
             return Buffers.Dispatch(action.Key) || Navigator.Dispatch(action.Key);
+        }
+
+        /// <summary>Whether a screen of ours has the keyboard cursor - the question both the
+        /// dispatch and the game's stand-down turn on.</summary>
+        private static bool ScreenFocused()
+        {
+            GraphNavigator navigator = Navigator;
+            return navigator != null && navigator.Screen != null;
         }
 
         /// <summary>
@@ -228,11 +249,16 @@ namespace ES2Access
             DropListScreen.Reset();
             OptionsScreen.ReleaseCapture();
             PointerFocus.Shutdown();
+            GameKeyStandDown.Remove();
 
             if (Input != null)
             {
                 Input.Dispatch = null;
                 Input.DrivenByMod = null;
+                Input.HasFocusedScreen = null;
+                // A dev request waiting for an injected action to run is waiting for a frame that
+                // will never come now; it is told so rather than left to time out.
+                Input.CancelInjections();
                 Input = null;
             }
 
@@ -254,10 +280,32 @@ namespace ES2Access
             }
         }
 
+        /// <summary>
+        /// A screen reader user does not necessarily have the game window in front: a review window,
+        /// the screen reader's own settings, or a whole other application can hold focus while the game
+        /// is meant to keep going. Unity stops simulating an unfocused player unless this is set, which
+        /// would freeze the game mid-turn under someone who is still listening to it.
+        ///
+        /// The loader sets it once at startup; this re-asserts it because the setting is Unity's and
+        /// nothing tells us when the engine has reason to reset it (a resolution or fullscreen change
+        /// from the video options is the plausible one). Nothing in the game's own code ever writes it,
+        /// so there is no setting here to fight - and the write only happens if something turned it
+        /// off, which makes an actual write the interesting event rather than a per-frame cost.
+        /// </summary>
+        private static void KeepSimulatingUnfocused()
+        {
+            if (!Application.runInBackground)
+            {
+                Application.runInBackground = true;
+                Log.Info("something switched off background simulation; switched it back on");
+            }
+        }
+
         // Harmony hooks and watchers only set state; all speech happens from this pump,
         // once per frame, so ordering and interruption stay deterministic.
         private static void Update()
         {
+            KeepSimulatingUnfocused();
             ModLocale.Tick();
 
             // Keys first, screens second: a keypress and the announcement it causes then land in

@@ -21,16 +21,23 @@ namespace ES2Access.Screens
     /// every ordinary screen: a screen underneath that steps aside for modals (the main menu does)
     /// simply goes quiet, and one that does not is covered.
     ///
-    /// The question is spoken as the screen's name - once, on arrival - rather than declared as a
-    /// level of the hierarchy the buttons hang under. The timeout variant is why: it rewrites its
-    /// message every frame as the seconds count down, and a hierarchy level whose text keeps
-    /// changing is a new level every frame, which the path diff would dutifully announce every
-    /// frame. Said once and then left in the review buffer, the countdown reads as the sentence it
-    /// is and the player can go back over it at their own pace.
+    /// It is walked the way it is drawn, which is the same shape every popup in the game has: the
+    /// question is a block of text with a row of answers under it, so the text is a control in its own
+    /// right and the one focus lands on - it is what the player has to read before any button means
+    /// anything - and up and down move between it and the answers while left and right walk them.
+    ///
+    /// The box's heading is spoken as the screen's name on arrival and the question is not, because
+    /// the question is what focus is about to read: saying it as the screen's name too would say it
+    /// twice. The heading is the safe half to say that way - the timeout variant rewrites its MESSAGE
+    /// every frame as the seconds count down while its heading stands still, so the countdown is text
+    /// that resolves whenever it is read and is watched by nothing: refocusing the question, or reading
+    /// it out of the review buffer, says the seconds left at the moment the player asked.
     ///
     /// Every visible button is declared, reading the caption the game put on it, and pressing one
     /// runs the handler the game wired to it - so the answer the caller receives is the answer a
-    /// mouse would have given, and the window closes itself the way it always does.
+    /// mouse would have given, and the window closes itself the way it always does. A button the game
+    /// wrote a tooltip on carries that; the rest carry the question, so it is re-readable from
+    /// wherever the player is standing.
     /// </summary>
     public sealed class MessageBoxScreen : Screen
     {
@@ -46,11 +53,19 @@ namespace ES2Access.Screens
             get { return 100; }
         }
 
-        /// <summary>The question itself. Spoken on arrival, ahead of the button focus lands on.
-        /// </summary>
+        /// <summary>What the box is headed. Spoken on arrival, ahead of the question focus lands on,
+        /// so the two together read as the box reads and neither says the other's half twice. A box
+        /// the game gave no heading says only that something is standing between the player and the
+        /// screen they were on.</summary>
         public override string ScreenName
         {
-            get { return Prompt(); }
+            get
+            {
+                string title = Heading();
+                return string.IsNullOrEmpty(title)
+                    ? ModStrings.Get(ModStrings.ScreenMessageBox)
+                    : title;
+            }
         }
 
         /// <summary>Ours while the window is up and has finished animating in - the buttons are
@@ -91,37 +106,71 @@ namespace ES2Access.Screens
                 return;
             }
 
-            List<ControlId> ids = new List<ControlId>(choices.Count);
+            // Walked in the order they are drawn rather than the order the window declares its
+            // fields: the box puts Cancel on the left and the answer that goes ahead on the right, and
+            // left and right have to mean what they look like.
+            choices.Sort(ReadingOrder);
+
+            // Declared before the answers and outside their row, so the builder wires the row under
+            // it: the question is a block of text, not one answer among them, and it takes no place
+            // in their count.
+            AgePrimitiveLabel message = window.MessageLabel;
+            if (message != null)
+            {
+                ControlId id = ControlId.Referenced(message, "messagebox:question");
+                builder.AddNode(
+                    id,
+                    new NodeVtable
+                    {
+                        // No role word: the question is not a control the player works, it is what
+                        // they are being asked. Nothing about it is watched - the countdown variant
+                        // rewrites it every frame, and a part that spoke on every change would talk
+                        // over the answer the player is trying to choose.
+                        Announcements = new List<NodeAnnouncement>
+                        {
+                            GraphNodes.LabelPart(Question),
+                        },
+                        DetailLines = PromptLines,
+                        OnFocusVisual = ReleasePointer,
+                    }
+                );
+                builder.SetStart(id);
+            }
+
             builder.StartRow();
             for (int i = 0; i < choices.Count; i++)
             {
                 Choice choice = choices[i];
-                ControlId id = ControlId.Referenced(choice.Button, "messagebox:" + choice.Key);
+                AgeTooltip tooltip = TooltipOf(choice.Button);
                 NodeVtable vtable = GraphNodes.Button(
                     () => AgeText.Label(choice.Caption),
                     () => Click(choice),
-                    () => Enabled(choice.Button)
+                    () => Enabled(choice.Button),
+                    tooltip,
+                    GraphNodes.ModeFor(tooltip)
                 );
-                // The question, under every answer: whichever button the player is on, the text
-                // they are answering is the thing worth re-reading.
-                vtable.DetailLines = PromptLines;
-                vtable.OnFocusVisual = () => PointerFocus.MoveTo(choice.Button, null);
-                vtable.OnBlurVisual = ReleasePointer;
+                if (tooltip == null)
+                {
+                    // The question, under an answer the game said nothing else about: whichever
+                    // button the player is on, the text they are answering is worth re-reading.
+                    vtable.DetailLines = PromptLines;
+                }
 
-                ids.Add(id);
-                builder.AddItem(id, vtable);
+                vtable.OnFocusVisual = () => PointerFocus.MoveTo(choice.Button, tooltip);
+                vtable.OnBlurVisual = ReleasePointer;
+                builder.AddItem(
+                    ControlId.Referenced(choice.Button, "messagebox:" + choice.Key),
+                    vtable
+                );
             }
 
             builder.EndRow();
-
-            // The buttons sit in a row, so left and right walk them; up and down are wired to walk
-            // them too, because on a two-button question no one should have to guess the axis.
-            for (int i = 1; i < ids.Count; i++)
-            {
-                builder.Connect(ids[i - 1], GraphDir.Down, ids[i]);
-                builder.Connect(ids[i], GraphDir.Up, ids[i - 1]);
-            }
         }
+
+        private static readonly Comparison<Choice> ReadingOrder = delegate(Choice a, Choice b)
+        {
+            return AgeLayout.ReadingOrder(a.Button.AgeTransform, b.Button.AgeTransform);
+        };
 
         /// <summary>One answer the box is offering: the button, the label carrying its caption, and
         /// the window's own input route to the same answer for when the button turns out not to be
@@ -271,22 +320,45 @@ namespace ES2Access.Screens
             }
         }
 
-        /// <summary>The whole question as one spoken line. Falls back on saying that a dialog is
-        /// there, so a box that has not written its text yet still announces itself as something
-        /// standing between the player and the screen they were on.</summary>
-        private static string Prompt()
+        /// <summary>
+        /// The question as one spoken line, resolved every time it is asked for - the countdown
+        /// variant's message is a different sentence each frame.
+        ///
+        /// The game wraps a long question over as many lines as the box is wide, so its line breaks
+        /// are where the words ran out and not punctuation. They are joined with a space, which is the
+        /// sentence the game wrote; a comma between them would read a full stop as "lost., Continue".
+        /// </summary>
+        private static string Question()
         {
-            IList<string> lines = PromptLines();
-            MessageBuilder prompt = new MessageBuilder();
-            for (int i = 0; i < lines.Count; i++)
+            MessageBoxWindow window = Window();
+            if (window == null)
             {
-                prompt.ListItem(lines[i]);
+                return null;
             }
 
-            return prompt.Build() ?? ModStrings.Get(ModStrings.ScreenMessageBox);
+            MessageBuilder message = new MessageBuilder();
+            foreach (string line in AgeText.Lines(AgeText.Label(window.MessageLabel)))
+            {
+                message.Fragment(line);
+            }
+
+            return message.Build();
         }
 
-        /// <summary>The question as the review buffer holds it: its title, then its message a line
+        private static string Heading()
+        {
+            MessageBoxWindow window = Window();
+            try
+            {
+                return window == null ? null : AgeText.Label(window.TitleLabel);
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>The question as the review buffer holds it: its heading, then its message a line
         /// at a time - the game writes a long one (a key already in use, a list of what will be
         /// lost) as exactly those lines.</summary>
         private static IList<string> PromptLines()
@@ -317,6 +389,20 @@ namespace ES2Access.Screens
             }
 
             return lines;
+        }
+
+        private static AgeTooltip TooltipOf(AgeControlButton button)
+        {
+            try
+            {
+                return button == null || button.AgeTransform == null
+                    ? null
+                    : button.AgeTransform.AgeTooltip;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
         }
 
         private static bool Visible(AgeControlButton button)

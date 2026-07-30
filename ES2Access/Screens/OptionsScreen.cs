@@ -60,10 +60,21 @@ namespace ES2Access.Screens
             get { return "screen.options"; }
         }
 
-        /// <summary>Above the pages that open it, below the confirmation box it raises.</summary>
+        /// <summary>
+        /// Above every page that opens it, below the drop list it opens and the confirmation box it
+        /// raises.
+        ///
+        /// One number, above the highest of the pages that can open this window - the pause menu, at
+        /// 50 - rather than a number that depends on which of them did. The window is drawn over the
+        /// pause menu rather than instead of it (<c>GameMenuModalWindow</c> stays <c>Shown</c>
+        /// underneath), so it was tempting to read the game's own layering and report one above
+        /// whatever was found. That is a layer that changes while the screen is up, and a layer is
+        /// what the drop list and the message box are placed relative to: a screen that can move
+        /// underneath them is a screen they cannot be reliably placed above.
+        /// </summary>
         public override int Layer
         {
-            get { return 10; }
+            get { return 52; }
         }
 
         public override string ScreenName
@@ -153,7 +164,7 @@ namespace ES2Access.Screens
                     () => Selected(entry),
                     () => Enabled(entry.Toggle.AgeTransform),
                     tooltip,
-                    TooltipMode.Announce
+                    GraphNodes.ModeFor(tooltip)
                 );
                 // Focusing the tab IS switching to it. The hook runs once per focus change, after the
                 // readout has been composed, so the page changes without the tab announcing itself
@@ -294,7 +305,7 @@ namespace ES2Access.Screens
                     () => Flip(checkbox),
                     enabled,
                     tooltip,
-                    TooltipMode.Announce
+                    GraphNodes.ModeFor(tooltip)
                 );
             }
 
@@ -307,7 +318,7 @@ namespace ES2Access.Screens
                     (sign, large) => Slide(slider, sign, large),
                     enabled,
                     tooltip,
-                    TooltipMode.Announce
+                    GraphNodes.ModeFor(tooltip)
                 );
             }
 
@@ -320,7 +331,7 @@ namespace ES2Access.Screens
                     () => DropListScreen.Open(dropList),
                     enabled,
                     tooltip,
-                    TooltipMode.Announce
+                    GraphNodes.ModeFor(tooltip)
                 );
                 // Activating this one opens a list rather than changing the setting, so there is no
                 // new state to report: the list that opens says where it starts.
@@ -338,7 +349,7 @@ namespace ES2Access.Screens
                     () => StartCapture(binding, false),
                     enabled,
                     tooltip,
-                    TooltipMode.Announce
+                    GraphNodes.ModeFor(tooltip)
                 );
                 keys.Announcements.Add(GraphNodes.ValuePart(() => BindingText(binding)));
                 keys.OnSecondary = () => StartCapture(binding, true);
@@ -356,7 +367,7 @@ namespace ES2Access.Screens
                     () => Edit(field),
                     enabled,
                     tooltip,
-                    TooltipMode.Announce
+                    GraphNodes.ModeFor(tooltip)
                 );
             }
 
@@ -377,7 +388,7 @@ namespace ES2Access.Screens
                 GraphNodes.DisabledPart(enabled),
             };
 
-            NodeAnnouncement tooltipPart = GraphNodes.TooltipPart(TooltipMode.Announce, tooltip);
+            NodeAnnouncement tooltipPart = GraphNodes.TooltipPart(GraphNodes.ModeFor(tooltip), tooltip);
             if (tooltipPart != null)
             {
                 parts.Add(tooltipPart);
@@ -848,7 +859,7 @@ namespace ES2Access.Screens
                     () => Press(command),
                     () => Enabled(available),
                     tooltip,
-                    TooltipMode.Announce
+                    GraphNodes.ModeFor(tooltip)
                 );
                 vtable.OnFocusVisual = () =>
                     PointerFocus.MoveTo(command.Button, tooltip, AnchorOf(caption));

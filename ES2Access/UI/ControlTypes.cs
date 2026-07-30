@@ -78,6 +78,16 @@ namespace ES2Access.UI
             Common = () => RoleWord(ModStrings.ControlComboBox),
         };
 
+        /// <summary>Free text the player types into, worked through the game's own editor rather than
+        /// through this mod - activating it is what hands the game's keyboard focus to the field.
+        /// </summary>
+        public static readonly ControlType EditField = new ControlType
+        {
+            Key = "edit-field",
+            Order = StandardOrder,
+            Common = () => RoleWord(ModStrings.ControlEditField),
+        };
+
         private static IList<NodeAnnouncement> RoleWord(string stringKey)
         {
             return new[]

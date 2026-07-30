@@ -104,10 +104,26 @@ namespace ES2Access.Tests.UI
         }
 
         [Fact]
-        public void AnEmptyTooltipIsSilentInBothModes()
+        public void AnEmptyTooltipIsSilentWhenItsTextIsWhatWouldBeSpoken()
         {
             Assert.Equal("New Game, button, 2 of 3", Readout(TooltipMode.Announce, Tooltip()));
-            Assert.Equal("New Game, button, 2 of 3", Readout(TooltipMode.Indicate, Tooltip("", "   ")));
+        }
+
+        /// <summary>
+        /// The indication is about the tooltip EXISTING, and it exists whether or not it can be read
+        /// yet. Every control in this mode carries a tooltip whose words are assembled by the tooltip
+        /// window as it draws - a third of a second after focus arrives, and therefore never in time
+        /// for the readout that mentions it. Reading the lines first and staying quiet when they came
+        /// back empty silenced the indication on every one of them.
+        /// </summary>
+        [Fact]
+        public void IndicateModeSpeaksEvenBeforeTheTooltipHasAnyDrawnLinesToRead()
+        {
+            Assert.Equal("New Game, button, has tooltip, 2 of 3", Readout(TooltipMode.Indicate, Tooltip()));
+            Assert.Equal(
+                "New Game, button, has tooltip, 2 of 3",
+                Readout(TooltipMode.Indicate, Tooltip("", "   "))
+            );
         }
 
         [Fact]

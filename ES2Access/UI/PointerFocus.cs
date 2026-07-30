@@ -35,6 +35,11 @@ namespace ES2Access.UI
     /// re-declared as anchored to that control; the original anchor is put back when focus leaves,
     /// because the same tooltip belongs to the mouse again the moment the mouse returns to it.
     ///
+    /// Some of what a tooltip is for cannot be read off the widget at all: a tooltip that names a CLASS
+    /// has its words assembled by the renderer as it draws them. Showing it is therefore how those words
+    /// come to exist, so <see cref="DrawnTooltipChanged"/> says when the drawing changed and whoever is
+    /// holding the text reads it again.
+    ///
     /// The real mouse still wins where it lands: move it over another control and the engine will
     /// unhover ours and close the flyout behind our back, and it stays that way until focus moves
     /// again. Keyboard focus is not defended frame by frame, because doing so would mean fighting the
@@ -50,6 +55,7 @@ namespace ES2Access.UI
         private struct Spot
         {
             public AgeControlButton Button;
+            public AgeTransform Hover;
             public AgeTooltip Tooltip;
             public AgeTransform Anchor;
             public object FlyoutKey;
@@ -62,6 +68,15 @@ namespace ES2Access.UI
         private static AgeTooltip _anchored;
         private static AgeTransform _anchorWas;
         private static AgeTooltipAnchorMode _anchorModeWas;
+
+        private static AgeTooltip _drawn;
+        private static float _drawnHeight;
+
+        /// <summary>Told when the tooltip the game is DRAWING changes. A tooltip appears a fraction of
+        /// a second after the pointer arrives and a class-driven one has no words until it is drawn, so
+        /// whoever is holding those words - the review buffer - has to be told to read them again.
+        /// </summary>
+        public static Action DrawnTooltipChanged;
 
         /// <summary>Ask for <paramref name="button"/> to look hovered, with <paramref name="tooltip"/>
         /// shown for it. <paramref name="anchor"/> is what the tooltip is drawn under - the transform
@@ -88,6 +103,21 @@ namespace ES2Access.UI
             };
         }
 
+        /// <summary>Ask for the mouse to be treated as resting on <paramref name="widget"/>, which is
+        /// not a button: a running total or an icon the keyboard has landed on. Nothing lights up -
+        /// there is no button under it to light - but the game draws the tooltip it would draw for a
+        /// pointer over it, which for a class-driven tooltip is the only place its words ever exist.
+        /// </summary>
+        public static void MoveTo(AgeTransform widget, AgeTooltip tooltip, AgeTransform anchor = null)
+        {
+            _wanted = new Spot
+            {
+                Hover = widget,
+                Tooltip = tooltip,
+                Anchor = anchor,
+            };
+        }
+
         /// <summary>Nothing should look hovered. Takes effect on the next <see cref="Tick"/>, so a blur
         /// immediately followed by a new focus never closes and reopens the same menu.</summary>
         public static void Release()
@@ -110,21 +140,89 @@ namespace ES2Access.UI
                 Hover(_wanted.Button, true);
             }
 
-            if (!ReferenceEquals(_showing.Tooltip, _wanted.Tooltip))
+            if (
+                !ReferenceEquals(_showing.Tooltip, _wanted.Tooltip)
+                || !ReferenceEquals(_showing.Hover, _wanted.Hover)
+            )
             {
                 RestoreAnchor();
+                Unpoint(_showing);
                 AnchorToFocus(_wanted.Tooltip, _wanted.Anchor);
             }
 
             _showing = _wanted;
+            WatchDrawnTooltip();
+        }
+
+        /// <summary>Whether the tooltip window has changed what it is drawing since the last frame -
+        /// a different tooltip, or the same one rebuilt. The height is what says "rebuilt": the window
+        /// re-assembles a tooltip a few seconds in to add the detail the compact form left out, and
+        /// growing is what that looks like from outside.</summary>
+        private static void WatchDrawnTooltip()
+        {
+            AgeTooltip drawn = null;
+            float height = 0f;
+            try
+            {
+                GuiTooltipWindow window = Gui.GuiServiceAvailable
+                    ? Gui.GuiService.GetWindow<GuiTooltipWindow>(false)
+                    : null;
+                if (window != null && window.Shown && window.PanelFeaturesTable != null)
+                {
+                    drawn = window.AgeTooltip;
+                    height = window.PanelFeaturesTable.Height;
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("pointer: looking at the drawn tooltip threw: " + e);
+            }
+
+            if (ReferenceEquals(drawn, _drawn) && height == _drawnHeight)
+            {
+                return;
+            }
+
+            _drawn = drawn;
+            _drawnHeight = height;
+            if (DrawnTooltipChanged != null)
+            {
+                DrawnTooltipChanged();
+            }
+        }
+
+        /// <summary>Stop the engine pointing at a tooltip this mod aimed it at. Letting go has to be
+        /// said, not just stopped being said: the target is re-asserted every frame, and a control
+        /// focus has left whose tooltip nothing replaced would otherwise stay on screen - drawn in the
+        /// corner the engine parks a tooltip with nothing to hang under.</summary>
+        private static void Unpoint(Spot spot)
+        {
+            AgeTransform hover = HoverTarget(spot);
+            if (hover == null)
+            {
+                return;
+            }
+
+            try
+            {
+                AgeManager age = AgeManager.Instance;
+                if (age != null && age.OverrolledTransform == hover)
+                {
+                    age.OverrolledTransform = null;
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("pointer: releasing the tooltip target threw: " + e);
+            }
         }
 
         /// <summary>End of frame: re-assert the tooltip target the engine cleared during its own
         /// LateUpdate, so the tooltip controller sees it on the next Update.</summary>
         public static void LateTick()
         {
-            AgeTooltip tooltip = _showing.Tooltip;
-            if (tooltip == null)
+            AgeTransform hover = _showing.Tooltip == null ? null : HoverTarget(_showing);
+            if (hover == null)
             {
                 return;
             }
@@ -134,7 +232,7 @@ namespace ES2Access.UI
                 AgeManager age = AgeManager.Instance;
                 if (age != null)
                 {
-                    age.OverrolledTransform = tooltip.AgeTransform;
+                    age.OverrolledTransform = hover;
                 }
             }
             catch (Exception e)
@@ -143,28 +241,36 @@ namespace ES2Access.UI
             }
         }
 
+        /// <summary>What the engine is told the pointer is over. Named by the caller for a widget that
+        /// is not a button; otherwise it is the widget the tooltip itself sits on, which is where a
+        /// button's own hover target is.</summary>
+        private static AgeTransform HoverTarget(Spot spot)
+        {
+            try
+            {
+                if (spot.Hover != null)
+                {
+                    return spot.Hover;
+                }
+
+                return spot.Tooltip == null ? null : spot.Tooltip.AgeTransform;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
         /// <summary>Put everything back the way the game had it - the mod is going away, and a flyout
         /// left hanging open or a button left lit would outlive the code that knows why.</summary>
         public static void Shutdown()
         {
-            AgeTransform tooltip = _showing.Tooltip == null ? null : _showing.Tooltip.AgeTransform;
             Release();
             Tick();
-
-            try
-            {
-                AgeManager age = AgeManager.Instance;
-                if (tooltip != null && age != null && age.OverrolledTransform == tooltip)
-                {
-                    age.OverrolledTransform = null;
-                }
-            }
-            catch (Exception e)
-            {
-                Log.Warn("pointer: releasing the tooltip target threw: " + e);
-            }
-
             _showing = new Spot();
+            _drawn = null;
+            _drawnHeight = 0f;
+            DrawnTooltipChanged = null;
         }
 
         private static void OpenFlyout(Spot spot, bool open)

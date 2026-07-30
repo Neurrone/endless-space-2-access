@@ -139,12 +139,30 @@ namespace ES2Access.Tests.UI
             GraphState state = new GraphState();
             KeyGraph g = new KeyGraph(Renderer(b =>
             {
-                b.AddItem(Id("a"), Vt("A"));
+                b.AddItem(Id("a"), Vt("A", Part(null, AnnouncementKinds.Selected)));
                 b.AddItem(Id("b"), Vt("B", Part("selected", AnnouncementKinds.Selected)));
-                b.AddItem(Id("c"), Vt("C"));
+                b.AddItem(Id("c"), Vt("C", Part(null, AnnouncementKinds.Selected)));
             }), state);
             g.Rerender();
             Assert.Equal("b", Focused(g));
+        }
+
+        /// <summary>A start node that is not one of the alternatives keeps focus: a popup's block of
+        /// text is where the screen wants reading to begin, and the dots marking which page it is on
+        /// merely share its stop.</summary>
+        [Fact]
+        public void InitialFocusStaysOnAStartThatIsNotOneOfTheAlternatives()
+        {
+            GraphState state = new GraphState();
+            KeyGraph g = new KeyGraph(Renderer(b =>
+            {
+                b.AddNode(Id("text"), Vt("Some words"));
+                b.SetStart(Id("text"));
+                b.AddItem(Id("dot1"), Vt("Page 1", Part("selected", AnnouncementKinds.Selected)));
+                b.AddItem(Id("dot2"), Vt("Page 2", Part(null, AnnouncementKinds.Selected)));
+            }), state);
+            g.Rerender();
+            Assert.Equal("text", Focused(g));
         }
 
         // ---- regions ----
