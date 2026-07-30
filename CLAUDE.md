@@ -20,42 +20,33 @@ This is an important but secondary goal, it is the test vehicle for implementing
 
 ## References
 
-- `decompiled/<Assembly>/` — reference-only decompiled game code (gitignored; regenerate with `.\decompile.ps1 [-Assemblies <names>]`):
+- `decompiled/<Assembly>/` — reference-only decompiled game code (gitignored; regenerate with `.\decompile.ps1 [-Assemblies <names>]`; how to research it: `docs/generic/reverse-engineering.md`):
   - `Assembly-CSharp/`: ES2 game code — screens, orders, events, departments
   - `Assembly-CSharp-firstpass/`: the Amplitude engine, including the AGE GUI framework. Organized by namespace folder; global-namespace types (`AgeTransform.cs`, `AgeManager.cs`, `AgeControl*.cs`) sit at the folder root
   - `Amplitude/`: small utility assembly
 - `docs/` — ES2-specific research and design notes
 - `docs/generic/` — the game-agnostic accessibility modding documentation (the primary goal)
-- Reference mods to draw patterns from: `D:\source\songs-of-conquest-access`, `D:\source\wotr-access`, `D:\source\DiscoAccess`, `D:\source\tangledeep_access`; Prism speech library source at `D:\source\prism`.
+- Reference mods to draw patterns from: `D:\source\songs-of-conquest-access`, `D:\source\wotr-access`, `D:\source\DiscoAccess`, `D:\source\tangledeep_access`; Prism speech library source at `D:\source\prism`. Only look at reference mods when explicitly directed; the goal is to see how much the generic game mods documentation would help.
 
 ## Commands
 
 - Build + deploy: `dotnet build ES2Access/ES2Access.csproj` — copies the plugin to `<game>\BepInEx\plugins\ES2Access` and `prism.dll` to the game root. Game location comes from `GamePaths.props` (gitignored; copy from `GamePaths.props.template`).
-- Run: `.\run-game.ps1 [-NoBuild] [-NoSpeech] [-NoDev] [-NoWait]`
+- Run: `.\run-game.ps1 [-NoBuild] [-NoSpeech] [-NoDev] [-NoWait] [-LoadSave "<save title>"]` (the last boots straight into a save); `.\wait-game.ps1 <menu|ingame|loading|dialog>` blocks until the game reaches a state
 - Tests (offline, no game needed): `dotnet test ES2Access.Tests/ES2Access.Tests.csproj`
-- Game log: `<game>\BepInEx\LogOutput.log` (shows Prism backend selection and init errors)
+- Game log: `<game>\BepInEx\LogOutput.log`
 
 ## Autonomous testing via the dev server
 
-While the game runs, `http://127.0.0.1:8771` serves:
+While the game runs (dev server enabled), `http://127.0.0.1:8771` serves routes for state,
+speech, GUI inspection, a C# REPL, input injection, hot reload, and loading saves. **Read
+`docs/dev-loop.md` before testing** — it is the maintained map: full route reference, REPL
+gotchas, test recipes, helper inventory, and fixture etiquette.
 
-- `GET /status` — mod state; `GET /speech?since=N` — ring buffer of everything spoken (works even with speech muted; resets after a reload)
-- `GET /gui/game?path=&depth=` — live Unity hierarchy dump; `GET /screenshot` (PNG); `POST /quit`
-- `POST /eval?settle=MS&speech=0` — C# REPL against the live game (body = code; persistent state; runs on the main thread). The response's `speech` array lists everything spoken as a result — the primary way to test announcements. REPL quirk: bare `Time` binds to Mono.CSharp's `InteractiveBase.Time(Action)`; write `UnityEngine.Time`.
-- `POST /wait?timeout=MS` — body is a C# bool expression, compiled once and evaluated every frame until true or timeout; catches single-frame states external polling misses
-- `GET /log?since=N&grep=TEXT` — BepInEx log ring buffer (no need to read LogOutput.log from disk while running)
-- `POST /reload` — hot-swaps the mod assembly; `GET /loader/status` — reload counts, last error, and `staleBuild` (true when the DLL on disk is newer than the loaded one — check after building to confirm a reload is actually needed, and after reloading to confirm it took). A broken build is refused and leaves the previous mod running (`failedReloadCount` + `lastReloadError` say why).
-
-Architecture: `ES2Access.Loader` is the actual BepInEx plugin and never reloads — it owns the dev server, `/eval` (vendored `mcs.dll`, a net35 Mono.CSharp), and the mod lifecycle. `ES2Access.dll` is loaded from bytes (never file-locked, so `dotnet build` works while the game runs) and must tear down fully in `ModEntry.Stop` — every feature must be reload-safe. Only `ES2Access.dll` hot-reloads; changes to the loader require a game restart. When Harmony patches arrive, create the Harmony instance with a unique-per-load id (fixed ids let a stale `UnpatchSelf` strip a newer load's patches).
-
-Test loop: `.\run-game.ps1 -NoSpeech -NoWait`, poll `/status` until it answers (boot can take up to a minute), exercise the feature, read `/speech` to verify announcements, `POST /quit` (process exits ~10 s later, poll at 1 s granularity). Iterating on code: `dotnet build ES2Access/ES2Access.csproj` then `POST /reload` — no restart needed. During boot/loading, frames can take >5 s, so main-thread routes (`/status`, `/eval`, `/gui/game`, `/screenshot`) may return 503 — retry, and confirm reloads via `/loader/status` rather than assuming failure.
-
-Gates: the server is **off by default** — it runs only when `devServer = true` under `[Dev]` in `BepInEx\config\endless.space2.access.cfg` (`run-game.ps1` sets this true, or false with `-NoDev`, before launching). `ES2ACCESS_NO_DEV=1` forces it off regardless; `ES2ACCESS_DEV_PORT` overrides the port; `ES2ACCESS_NO_SPEECH=1` mutes voicing but `/speech` still captures.
+Architecture: `ES2Access.Loader` is the actual BepInEx plugin and never reloads — it owns the dev server, `/eval` (vendored `mcs.dll`, a net35 Mono.CSharp), and the mod lifecycle. `ES2Access.dll` is loaded from bytes (never file-locked, so `dotnet build` works while the game runs) and must tear down fully in `ModEntry.Stop` — every feature must be reload-safe. Only `ES2Access.dll` hot-reloads; changes to the loader require a game restart. Harmony instances are created with a unique-per-load id (fixed ids let a stale `UnpatchSelf` strip a newer load's patches).
 
 ## Conventions
 
 - Runtime code must stay compatible with Endless Space 2's Unity 5.5 / Mono environment. Assume .NET Framework 3.5 compatibility unless a project is explicitly for tools or tests.
-- Uses BepInEx to patch the game with an external command surface.
 - Avoid redundant null checks and comments that do not add information.
 - Prefer deterministic game actions over simulated input where the game exposes a reliable API.
 - Name behavior after what the player can do or perceive, not after incidental implementation details.
@@ -65,25 +56,15 @@ Gates: the server is **off by default** — it runs only when `devServer = true`
 
 ## Workflow
 
-When a feature is ready: verify everything the dev server can verify, then hand over specific
-manual test instructions — the exact steps to perform, exactly what should be heard at each
-step, and (for features with visual behavior) what a sighted observer should see. Perceptual
-behavior (focus, speech timing, how announcements feel) is only confirmed by that manual test.
-Visual claims must be verified with measured rects (`/gui/age`) and screenshots, never
-existence checks — "the window appeared" can be true while the window renders in the wrong
-corner of the screen.
+Read `docs/generic/making-screens-accessible.md` — measure, propose the
+model for my approval, implement, verify with evidence pairs, hand over the manual test —
+with the tools in `docs/dev-loop.md`. Repo-specific enforcement on top of that process:
 
-Before handing over, explicitly list what the dev server structurally cannot reproduce and
-reason each item through instead of skipping it. `/eval` dispatches actions without pressing
-keys, so anything depending on real key-down/key-up frames is invisible to it: walk the full
-physical sequence (key down → mod acts → key up → game's own input handling reacts) on paper
-against what is known about the game's input scanning. (Found the hard way: the rebind
-capture ended on the activating Enter's own release — derivable in advance, shipped to manual
-test anyway.) Likewise re-check perceptual invariants per screen: the focused item must be
-scrolled into view, speech must not lag held-key repeat.
-
-When introducing a new UI widget or interaction, ask which keys to bind unless the bindings
-were already specified.
+- Design approval and every new key binding come from me; an approved design counts as
+  measurement-settled for pipelining.
+- Evidence pairs use `crop-shot.ps1`; never read full-frame screenshots into context.
+- A stage is not done until `docs/dev-loop.md` reflects it (new helper, route, or recipe)
+  and `docs/roadmap.md` carries any screen-status change.
 
 After implementing a feature or major change:
 
@@ -95,6 +76,24 @@ After implementing a feature or major change:
 
 ## Delegation
 
-Do delegate to lower power subagents when appropriate especially for exploring code.
+Implementation and verification stages run on Opus only; exploration and read-only research
+may use Sonnet. If Opus is unavailable, wait or work in the main agent — never substitute a
+smaller model for a stage whose output is verification. Stage subagents spawn no subagents
+of their own and follow the stage-hygiene rules in `docs/dev-loop.md`.
 
-However, updating the game accessibility mod documentation should be done in the main agent.
+**If you are a subagent working on this repo:** before touching source, read
+`docs/dev-loop.md` and the `docs/generic` chapters its index maps to your task — even if
+your brief forgot to say so. The generic docs are the primary deliverable and each stage is
+a test of them: your report must include a "what the generic docs lacked or got wrong"
+section, or it is incomplete and comes back. Ad-hoc briefing files may supplement the
+generic docs, never replace them. Updating the generic docs themselves is main-agent work.
+
+Multi-stage implementation work runs as sequential subagent stages by default, because
+stages share the one live game instance and the design of a screen usually depends on live
+measurement (rects, frame probes) — an implementer without game access ships the wrong
+model. Pipeline two stages (stage N+1 implements in a worktree while stage N owns the live
+game for testing) only when N+1's design is already measurement-settled: engine/tooling
+work, refactors, or applying a design whose layout and behavior were measured in an earlier
+stage. When two stages do overlap, exactly one of them owns the shared hotspot files
+(`ModEntry.cs`, `Core/Speech/ModStrings.cs`, `locale/english.json`) and the other must not
+touch them; the main agent merges.
