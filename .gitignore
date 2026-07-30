@@ -9,3 +9,6 @@ artifacts/
 bin/
 obj/
 *.user
+
+# Session evidence (audit screenshots, crops)
+.scratch/
