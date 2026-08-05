@@ -507,7 +507,8 @@ namespace ES2Access.Dev
 
         /// <summary>
         /// The tooltip the game is drawing right now, as MEASURED - every label and every icon under
-        /// its panel, each with the rectangle it occupies, in the order the panel laid them out.
+        /// its panel, each with the rectangle it occupies, in the order the panel laid them out, plus
+        /// the panel FEATURES those widgets belong to and what each one was read as.
         ///
         /// It is the paired proof a tooltip claim needs. <c>/gui/graph</c> says what the mod would
         /// SPEAK for a control; a screenshot says what the player SEES; neither says why the two
@@ -515,6 +516,12 @@ namespace ES2Access.Dev
         /// and an icon the mod turned into a bare number is an entry here with an asset name and no
         /// text beside it. Both questions came up on the same tooltip and neither is answerable from
         /// the spoken form alone.
+        ///
+        /// The <c>features</c> array is the coverage answer. A tooltip is assembled from an ordered
+        /// list of feature prefabs and the mod reads each one on its own; a feature nobody has
+        /// written a reader for still reads, through the fallback, so the only place a gap can show
+        /// is here - the feature's class name beside <c>"default"</c>, with the lines it produced to
+        /// judge them by. Coverage belongs in a probe, never in the player's ears.
         ///
         /// An icon reports the name of the TEXTURE it is drawing, which is what the artist called the
         /// picture ("Food", "FIDS_Industry") and therefore what the column means - the only evidence
@@ -541,11 +548,36 @@ namespace ES2Access.Dev
                 json.WriteValue(
                     window.AgeTooltip == null ? null : window.AgeTooltip.Class
                 );
+
+                json.WritePropertyName("features");
+                json.WriteStartArray();
+                IList<TooltipFeatures.Reading> features = DrawnTooltip.Features(window.AgeTooltip);
+                for (int i = 0; i < features.Count; i++)
+                {
+                    json.WriteStartObject();
+                    json.WritePropertyName("feature");
+                    json.WriteValue(features[i].Feature);
+                    json.WritePropertyName("reader");
+                    json.WriteValue(features[i].Reader);
+                    json.WritePropertyName("lines");
+                    json.WriteStartArray();
+                    for (int line = 0; line < features[i].Lines.Count; line++)
+                    {
+                        json.WriteValue(features[i].Lines[line]);
+                    }
+
+                    json.WriteEndArray();
+                    json.WriteEndObject();
+                }
+
+                json.WriteEndArray();
+
                 List<AgeTransform> found = new List<AgeTransform>();
                 Gather(window.PanelFeaturesTable, found, 0);
 
-                // Grouped the way the mod groups it, so a row that reads wrong is visible here as the
-                // row it actually is rather than having to be inferred from a flat list of rectangles.
+                // Banded across the WHOLE window, which the reader deliberately no longer does: the
+                // rows here are the measurement, and a feature whose reading disagrees with them is
+                // the interesting case rather than a contradiction.
                 json.WritePropertyName("rows");
                 json.WriteStartArray();
                 foreach (List<AgeTransform> row in AgeLayout.Rows(found, Itself))

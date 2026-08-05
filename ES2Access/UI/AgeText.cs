@@ -112,6 +112,54 @@ namespace ES2Access.UI
             return Clean(text);
         }
 
+        /// <summary>
+        /// The whole of what a label says, for one the game has ellipsized to fit its box.
+        ///
+        /// <see cref="Label"/> reads <c>TranslatedText</c>, which is what FITS - a tile 96 pixels wide
+        /// draws "Colony Base" as "Colony Ba.", and speaking that is speaking a rendering artifact. The
+        /// untruncated words are the localization key the label still holds in <c>Text</c>, resolved
+        /// the same way the engine resolves it; the game itself shows them in full on the tile's
+        /// tooltip, so this is the game's own text either way.
+        ///
+        /// Only for labels MEASURED to truncate: everywhere else <see cref="Label"/> is the drawn
+        /// string and already correct.
+        /// </summary>
+        public static string FullLabel(AgePrimitiveLabel label)
+        {
+            if (label == null)
+            {
+                return null;
+            }
+
+            string raw = null;
+            try
+            {
+                raw = label.Text;
+            }
+            catch (Exception) { }
+
+            if (string.IsNullOrEmpty(raw))
+            {
+                return Label(label);
+            }
+
+            // Already-formatted text, icon tokens and all: there is no key left to resolve, and
+            // Clean is what turns the tokens into names.
+            if (raw.IndexOf('[') >= 0)
+            {
+                return Clean(raw);
+            }
+
+            try
+            {
+                return Clean(Gui.Localize(raw));
+            }
+            catch (Exception)
+            {
+                return Label(label);
+            }
+        }
+
         /// <summary>A widget's tooltip text. Populated at bind time, so it reads without ever
         /// showing the tooltip window; for a disabled control the game has already appended the
         /// reason it is disabled.</summary>
