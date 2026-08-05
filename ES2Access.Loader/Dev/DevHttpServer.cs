@@ -13,6 +13,88 @@ namespace ES2Access.Loader.Dev
     /// mod registers through <see cref="ES2Access.Loader.ModHost"/>.</summary>
     public delegate DevResponse DevRouteHandler(DevRequest request);
 
+    /// <summary>
+    /// A route and the query parameters it understands. Every route declares its parameters here -
+    /// the loader's builtins and the mod's registrations alike - and a parameter this route does
+    /// not name is answered 400 rather than ignored.
+    ///
+    /// That rule is worth the ceremony: a misspelt or misremembered parameter used to be dropped
+    /// in silence, which reads exactly like the feature it names being broken (a <c>?path=</c> sent
+    /// to /gui/age, whose filter is <c>?window=</c>, cost a whole session's work to the belief that
+    /// filtering did not work). Routes are few and their parameters change rarely, so the list is
+    /// cheap to keep honest; being wrong about it is not.
+    /// </summary>
+    internal sealed class DevRoute
+    {
+        public readonly DevRouteHandler Handler;
+        private readonly string[] _allowed;
+
+        public DevRoute(DevRouteHandler handler, params string[] allowed)
+        {
+            Handler = handler;
+            _allowed = allowed ?? new string[0];
+        }
+
+        /// <summary>The 400 for the first parameter this route does not understand, or null when
+        /// every parameter given is one of its own.</summary>
+        public DevResponse Reject(DevRequest request)
+        {
+            for (int i = 0; i < request.Query.Count; i++)
+            {
+                string name = request.Query.GetKey(i);
+                if (name == null)
+                {
+                    return Bad(
+                        request,
+                        "the query string has a value with no parameter name ('"
+                            + request.Query[i]
+                            + "')"
+                    );
+                }
+
+                if (!Knows(name))
+                {
+                    return Bad(request, "unknown query parameter '" + name + "'");
+                }
+            }
+
+            return null;
+        }
+
+        private bool Knows(string name)
+        {
+            foreach (string allowed in _allowed)
+            {
+                if (string.Compare(allowed, name, StringComparison.OrdinalIgnoreCase) == 0)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private DevResponse Bad(DevRequest request, string what)
+        {
+            return DevResponse.Json(
+                400,
+                DevJson.Error(
+                    what
+                        + " on "
+                        + request.Method
+                        + " "
+                        + request.Path
+                        + "; "
+                        + (
+                            _allowed.Length == 0
+                                ? "this route takes no query parameters"
+                                : "this route takes: " + string.Join(", ", _allowed)
+                        )
+                )
+            );
+        }
+    }
+
     public sealed class DevRequest
     {
         public string Method;

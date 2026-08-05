@@ -29,11 +29,29 @@ namespace ES2Access.Dev
     /// lookup misses, "windows" lists the whole registry instead so the caller can see the names.
     ///
     /// Query parameters:
-    ///   window=Name    dump this window instead, matched against its GuiWindow name, its type name
-    ///                  or its GameObject name, whether or not it is currently shown
-    ///   depth=N        levels below each root (default <see cref="DefaultDepth"/>)
+    ///   window=Name    dump this node instead of what the player is looking at. The name is
+    ///                  matched, in order, against every registered GuiWindow, then every shown
+    ///                  GuiPanel (each by its GuiWindow name, its type name or its GameObject
+    ///                  name), then breadth-first against the GameObject name of every
+    ///                  AgeTransform under those - so anything the dump can reach can be asked
+    ///                  for by name, including a banner or a panel that is not a window at all,
+    ///                  and whether or not it is currently shown. depth=, visibleOnly= and
+    ///                  fields= all apply relative to the node that matched. A name nothing
+    ///                  answers to is the error "no window named 'X'" - never silence - and a
+    ///                  match with nothing to report answers a "note" saying which of depth= or
+    ///                  visibleOnly= emptied it, so a window whose children are drawn is never
+    ///                  reported as nothing.
+    ///   depth=N        levels below each root (default <see cref="DefaultDepth"/>). A node sitting
+    ///                  on that cutoff is reported even when it is a bare container, carrying
+    ///                  "more": true - it has children this dump did not walk, and pruning it as
+    ///                  decoration would report an empty tree for a window that is fully drawn.
     ///   visibleOnly=0  include hidden roots and subtrees whose AgeTransform.Visible is false
     ///                  (default 1, skip them)
+    ///   fields=a,b,c   answer plain text instead of JSON: one line per widget in tree order,
+    ///                  indented by depth, carrying only these fields and only where they have
+    ///                  something to say (see <see cref="Fields"/>). The JSON dump of a whole window
+    ///                  is thousands of lines that a reader wanting "which label sits where" has to
+    ///                  wade through; this is that question answered directly.
     ///
     /// Per node: "name" (GameObject), "kind" (button/toggle/label/... from the AgeControl or
     /// AgePrimitive on the node, else "group"), "text", "tooltip", "value", "rect", "children", and
@@ -53,6 +71,10 @@ namespace ES2Access.Dev
         private const int MaxNodes = 4000;
         private const int MaxTextLength = 200;
         private const int MaxRegisteredWindowsListed = 300;
+
+        // How much of the hierarchy a window= lookup may sweep looking for a named widget. Large
+        // enough to reach the leaves of every ES2 window, bounded so a lookup can never hang.
+        private const int MaxSearchNodes = 20000;
 
         // How far under a control to look for the label that captions it. Deep enough for the
         // frame/backdrop wrappers AGE prefabs nest captions in, shallow enough not to adopt the
@@ -79,6 +101,7 @@ namespace ES2Access.Dev
             public bool Enabled = true;
             public bool Interactable;
             public bool HasControl;
+            public bool More;
             public bool HasRect;
             public int X;
             public int Y;
@@ -94,33 +117,86 @@ namespace ES2Access.Dev
                         || Text != null
                         || Tooltip != null
                         || Value != null
-                        || Children.Count > 0;
+                        || Children.Count > 0
+                        || More;
                 }
             }
         }
 
-        public static string Dump(string window, int depth, bool visibleOnly)
+        /// <summary>One walk of the hierarchy and everything an answer needs to describe it, so the
+        /// JSON dump and the plain-text projection report the same tree rather than two walks that
+        /// could disagree.</summary>
+        private sealed class Scan
         {
-            GuiManager gui = GuiService();
-            Budget budget = new Budget();
-            string source = null;
-            string error = null;
-            List<AgeTransform> roots = Roots(gui, window, visibleOnly, ref source, ref error);
-            List<Node> nodes = new List<Node>();
+            public GuiManager Gui;
+            public string Source;
+            public string Error;
+            public string Note;
+            public string Matched;
+            public readonly Budget Budget = new Budget();
+            public readonly List<Node> Nodes = new List<Node>();
+        }
+
+        private static Scan Walk(string window, int depth, bool visibleOnly)
+        {
+            Scan scan = new Scan();
+            scan.Gui = GuiService();
+            List<AgeTransform> roots = Roots(scan.Gui, window, visibleOnly, scan);
             foreach (AgeTransform root in roots)
             {
-                Node node = Build(root, depth, visibleOnly, true, budget);
+                Node node = Build(root, depth, visibleOnly, true, scan.Budget);
                 if (node != null)
                 {
-                    nodes.Add(node);
+                    scan.Nodes.Add(node);
                 }
             }
+
+            if (scan.Error == null && scan.Nodes.Count == 0)
+            {
+                scan.Note = EmptyReason(roots, depth, visibleOnly, scan.Matched);
+            }
+
+            return scan;
+        }
+
+        /// <summary>Why an answer came back empty. A dump that found its node and still reports
+        /// nothing is the dangerous case - the caller reads silence as "not drawn" - so it always
+        /// says which of depth= or visibleOnly= emptied it.</summary>
+        private static string EmptyReason(
+            List<AgeTransform> roots,
+            int depth,
+            bool visibleOnly,
+            string matched
+        )
+        {
+            string subject = matched == null ? "nothing is on screen" : "'" + matched + "' matched";
+            if (roots.Count == 0)
+            {
+                return matched == null ? "nothing is on screen to dump" : subject;
+            }
+
+            if (depth < 0)
+            {
+                return subject + ", but depth=" + depth + " walks nothing";
+            }
+
+            if (visibleOnly && !OnScreen(roots[0]))
+            {
+                return subject + ", but it is not visible; retry with visibleOnly=0";
+            }
+
+            return subject + ", but it holds no widget with anything to say at depth=" + depth;
+        }
+
+        public static string Dump(string window, int depth, bool visibleOnly)
+        {
+            Scan scan = Walk(window, depth, visibleOnly);
 
             return DevJson.Write(json =>
             {
                 json.WriteStartObject();
                 json.WritePropertyName("source");
-                json.WriteValue(source);
+                json.WriteValue(scan.Source);
                 if (!string.IsNullOrEmpty(window))
                 {
                     json.WritePropertyName("window");
@@ -131,19 +207,25 @@ namespace ES2Access.Dev
                 json.WriteValue(depth);
                 json.WritePropertyName("visibleOnly");
                 json.WriteValue(visibleOnly);
-                if (error != null)
+                if (scan.Error != null)
                 {
                     json.WritePropertyName("error");
-                    json.WriteValue(error);
+                    json.WriteValue(scan.Error);
+                }
+
+                if (scan.Note != null)
+                {
+                    json.WritePropertyName("note");
+                    json.WriteValue(scan.Note);
                 }
 
                 json.WritePropertyName("windows");
-                WriteWindowSummary(json, gui, error != null);
+                WriteWindowSummary(json, scan.Gui, scan.Error != null);
 
                 json.WritePropertyName("roots");
                 json.WriteStartArray();
                 int written = 0;
-                foreach (Node node in nodes)
+                foreach (Node node in scan.Nodes)
                 {
                     written += Write(json, node);
                 }
@@ -152,11 +234,163 @@ namespace ES2Access.Dev
                 json.WritePropertyName("nodeCount");
                 json.WriteValue(written);
                 json.WritePropertyName("visitedCount");
-                json.WriteValue(budget.Visited);
+                json.WriteValue(scan.Budget.Visited);
                 json.WritePropertyName("truncated");
-                json.WriteValue(budget.Truncated);
+                json.WriteValue(scan.Budget.Truncated);
                 json.WriteEndObject();
             });
+        }
+
+        /// <summary>The field names <c>?fields=</c> understands. A projection prints them in the
+        /// order the caller asked for, and prints none of them where the node has nothing to report
+        /// - an absent rect, a node with no control, a control that is enabled.</summary>
+        public static readonly string[] Fields =
+        {
+            "name",
+            "kind",
+            "text",
+            "tooltip",
+            "rect",
+            "interactable",
+            "enabled",
+        };
+
+        /// <summary>The field names in a <c>?fields=</c> value, trimmed and lower-cased; empty when
+        /// the caller asked for nothing.</summary>
+        public static List<string> ParseFields(string raw)
+        {
+            List<string> fields = new List<string>();
+            foreach (string part in (raw ?? string.Empty).Split(','))
+            {
+                string name = part.Trim().ToLowerInvariant();
+                if (name.Length > 0)
+                {
+                    fields.Add(name);
+                }
+            }
+
+            return fields;
+        }
+
+        /// <summary>The first requested field this dump cannot project, or null when all of them
+        /// are known.</summary>
+        public static string UnknownField(List<string> fields)
+        {
+            foreach (string field in fields)
+            {
+                if (Array.IndexOf(Fields, field) < 0)
+                {
+                    return field;
+                }
+            }
+
+            return null;
+        }
+
+        public static string KnownFields()
+        {
+            return string.Join(", ", Fields);
+        }
+
+        /// <summary>The same tree as <see cref="Dump"/>, projected onto the requested fields: one
+        /// line per widget in tree order, two spaces of indent per level. A node with none of the
+        /// requested fields prints no line at all, so asking for text= gives back the screen's
+        /// words and nothing else.</summary>
+        public static string Lines(string window, int depth, bool visibleOnly, List<string> fields)
+        {
+            Scan scan = Walk(window, depth, visibleOnly);
+            StringBuilder text = new StringBuilder();
+            if (scan.Error != null)
+            {
+                text.Append("error: ").Append(scan.Error).Append('\n');
+            }
+
+            if (scan.Note != null)
+            {
+                text.Append("note: ").Append(scan.Note).Append('\n');
+            }
+
+            foreach (Node node in scan.Nodes)
+            {
+                Flatten(text, node, 0, fields);
+            }
+
+            if (scan.Budget.Truncated)
+            {
+                text.Append("(truncated at ").Append(MaxNodes).Append(" nodes)\n");
+            }
+
+            return text.ToString();
+        }
+
+        private static void Flatten(StringBuilder text, Node node, int depth, List<string> fields)
+        {
+            bool wrote = false;
+            foreach (string field in fields)
+            {
+                string token = Token(node, field);
+                if (string.IsNullOrEmpty(token))
+                {
+                    continue;
+                }
+
+                if (!wrote)
+                {
+                    text.Append(' ', depth * 2);
+                    wrote = true;
+                }
+                else
+                {
+                    text.Append(' ');
+                }
+
+                text.Append(token);
+            }
+
+            if (wrote)
+            {
+                text.Append('\n');
+            }
+
+            foreach (Node child in node.Children)
+            {
+                Flatten(text, child, depth + 1, fields);
+            }
+        }
+
+        private static string Token(Node node, string field)
+        {
+            switch (field)
+            {
+                case "name":
+                    return node.Name;
+                case "kind":
+                    return node.Kind;
+                case "text":
+                    return node.Text == null ? null : "text=\"" + node.Text + "\"";
+                case "tooltip":
+                    return node.Tooltip == null ? null : "tooltip=\"" + node.Tooltip + "\"";
+                case "rect":
+                    return node.HasRect
+                        ? "rect=["
+                            + node.X
+                            + ","
+                            + node.Y
+                            + ","
+                            + node.Width
+                            + ","
+                            + node.Height
+                            + "]"
+                        : null;
+                case "interactable":
+                    return node.HasControl
+                        ? "interactable=" + (node.Interactable ? "true" : "false")
+                        : null;
+                case "enabled":
+                    return node.Enabled ? null : "enabled=false";
+                default:
+                    return null;
+            }
         }
 
         private static GuiManager GuiService()
@@ -176,29 +410,29 @@ namespace ES2Access.Dev
             GuiManager gui,
             string window,
             bool visibleOnly,
-            ref string source,
-            ref string error
+            Scan scan
         )
         {
             List<AgeTransform> roots = new List<AgeTransform>();
             if (gui == null)
             {
-                source = "none";
-                error = "the gui service is not available yet";
+                scan.Source = "none";
+                scan.Error = "the gui service is not available yet";
                 return roots;
             }
 
             if (!string.IsNullOrEmpty(window))
             {
-                source = "window";
-                Amplitude.Unity.Gui.GuiWindow found = FindWindow(gui, window);
+                scan.Source = "window";
+                AgeTransform found = Locate(gui, window, scan);
                 if (found == null)
                 {
-                    error = "no window named '" + window + "'; see windows[] for what is registered";
+                    scan.Error =
+                        "no window named '" + window + "'; see windows[] for what is registered";
                 }
                 else
                 {
-                    Add(roots, RootTransform(found));
+                    Add(roots, found);
                 }
 
                 return roots;
@@ -213,7 +447,7 @@ namespace ES2Access.Dev
 
             if (modal != null)
             {
-                source = "modal";
+                scan.Source = "modal";
                 Add(roots, RootTransform(modal));
                 return roots;
             }
@@ -227,7 +461,7 @@ namespace ES2Access.Dev
 
             if (screen != null)
             {
-                source = "screen";
+                scan.Source = "screen";
                 Add(roots, RootTransform(screen));
                 return roots;
             }
@@ -235,7 +469,7 @@ namespace ES2Access.Dev
             // A panel stays on the shown list while an ancestor of it is hidden - the options tab
             // panel sits there the whole time the main menu is up - so "shown" alone is not enough
             // to conclude the player can see it.
-            source = "shownPanels";
+            scan.Source = "shownPanels";
             foreach (Amplitude.Unity.Gui.GuiPanel panel in ShownPanels(gui))
             {
                 AgeTransform transform = RootTransform(panel);
@@ -354,8 +588,16 @@ namespace ES2Access.Dev
             return new List<Amplitude.Unity.Gui.GuiWindow>();
         }
 
-        private static Amplitude.Unity.Gui.GuiWindow FindWindow(GuiManager gui, string wanted)
+        /// <summary>The node <c>window=</c> means: a registered GuiWindow, else a shown GuiPanel
+        /// (both by GuiWindow name, type name or GameObject name), else - breadth-first, so the
+        /// shallowest wins - any AgeTransform under either whose GameObject carries that name. The
+        /// last step is what makes a name read off an earlier dump or off windows[] answer even
+        /// when it belongs to a banner rather than to a window. Visibility is not a filter here: a
+        /// hidden node is still found, and visibleOnly= then decides what its dump contains.
+        /// </summary>
+        private static AgeTransform Locate(GuiManager gui, string wanted, Scan scan)
         {
+            List<AgeTransform> searched = new List<AgeTransform>();
             foreach (Amplitude.Unity.Gui.GuiWindow window in RegisteredWindows(gui))
             {
                 if (
@@ -364,8 +606,60 @@ namespace ES2Access.Dev
                     || Matches(GameObjectName(window), wanted)
                 )
                 {
-                    return window;
+                    scan.Matched = WindowName(window) ?? GameObjectName(window);
+                    return RootTransform(window);
                 }
+
+                Add(searched, RootTransform(window));
+            }
+
+            foreach (Amplitude.Unity.Gui.GuiPanel panel in ShownPanels(gui))
+            {
+                if (
+                    Matches(WindowName(panel as Amplitude.Unity.Gui.GuiWindow), wanted)
+                    || Matches(panel.GetType().Name, wanted)
+                    || Matches(GameObjectName(panel), wanted)
+                )
+                {
+                    scan.Source = "panel";
+                    scan.Matched = GameObjectName(panel);
+                    return RootTransform(panel);
+                }
+
+                Add(searched, RootTransform(panel));
+            }
+
+            AgeTransform widget = FindNamed(searched, wanted);
+            if (widget != null)
+            {
+                scan.Source = "widget";
+                scan.Matched = GameObjectName(widget);
+            }
+
+            return widget;
+        }
+
+        // Breadth-first over every root's subtree at once, so the match closest to a root wins
+        // rather than whichever root happened to be listed first.
+        private static AgeTransform FindNamed(List<AgeTransform> roots, string wanted)
+        {
+            List<AgeTransform> level = roots;
+            int visited = 0;
+            while (level.Count > 0 && visited < MaxSearchNodes)
+            {
+                List<AgeTransform> next = new List<AgeTransform>();
+                foreach (AgeTransform transform in level)
+                {
+                    visited++;
+                    if (Matches(GameObjectName(transform), wanted))
+                    {
+                        return transform;
+                    }
+
+                    next.AddRange(Children(transform));
+                }
+
+                level = next;
             }
 
             return null;
@@ -533,9 +827,30 @@ namespace ES2Access.Dev
                     }
                 }
             }
+            else
+            {
+                // The depth cutoff, not decoration: this node has children the walk did not look
+                // at, so it says nothing yet. Pruning it here empties whole windows whose top
+                // layers are bare containers - which is how depth=1 on GameOverlayWindow used to
+                // answer an empty tree while its banners were drawn.
+                node.More = HasChildren(transform, visibleOnly);
+            }
 
             // Decoration: a frame, quad or empty container that says nothing and holds nothing.
             return node.Speaks ? node : null;
+        }
+
+        private static bool HasChildren(AgeTransform transform, bool visibleOnly)
+        {
+            foreach (AgeTransform child in Children(transform))
+            {
+                if (!visibleOnly || Flag(child, true))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static List<AgeTransform> Children(AgeTransform transform)
@@ -894,6 +1209,12 @@ namespace ES2Access.Dev
                 json.WriteValue(node.Width);
                 json.WriteValue(node.Height);
                 json.WriteEndArray();
+            }
+
+            if (node.More)
+            {
+                json.WritePropertyName("more");
+                json.WriteValue(true);
             }
 
             int written = 1;

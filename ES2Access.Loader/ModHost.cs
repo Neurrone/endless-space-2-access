@@ -70,13 +70,25 @@ namespace ES2Access.Loader
             _dev.NotifySpoken(text);
         }
 
-        /// <summary>Answer <paramref name="method"/> <paramref name="path"/> on the dev server
-        /// until the mod is unloaded. The loader's own routes (/gui/game, /screenshot, /log,
-        /// /loader/status, /reload, /eval, /wait, /quit) are fixed and cannot be taken
-        /// over.</summary>
-        public void RegisterRoute(string method, string path, DevRouteHandler handler)
+        /// <summary>
+        /// Answer <paramref name="method"/> <paramref name="path"/> on the dev server until the mod
+        /// is unloaded. The loader's own routes (/gui/game, /screenshot, /log, /loader/status,
+        /// /reload, /eval, /wait, /quit) are fixed and cannot be taken over.
+        ///
+        /// <paramref name="allowedQueryParameters"/> is the route's whole vocabulary: the server
+        /// answers 400 for any other parameter before the handler runs, so a caller never gets a
+        /// successful-looking answer that ignored what it asked for. Naming them here rather than
+        /// checking inside the handler is what lets the loader hold one rule for its own routes and
+        /// the mod's alike, without knowing anything about the mod.
+        /// </summary>
+        public void RegisterRoute(
+            string method,
+            string path,
+            DevRouteHandler handler,
+            params string[] allowedQueryParameters
+        )
         {
-            _dev.RegisterModRoute(method, path, handler);
+            _dev.RegisterModRoute(method, path, handler, allowedQueryParameters);
         }
 
         public void UnregisterAllModRoutes()

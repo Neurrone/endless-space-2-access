@@ -20,7 +20,7 @@ namespace ES2Access.Loader.Dev
     ///
     ///   GET  /gui/game?path=&amp;depth=    live Unity hierarchy as JSON (see GuiDump)
     ///   GET  /screenshot                the rendered frame as image/png
-    ///   GET  /log?since=&amp;grep=         everything BepInEx logged, cursor-polled
+    ///   GET  /log?since=&amp;grep=         everything BepInEx logged, cursor-polled (no since = tail)
     ///   GET  /loader/status             loader version, whether the mod is up, reload history
     ///   POST /reload                    rebuild-and-swap the mod assembly on the next frame
     ///   POST /eval?settle=&amp;speech=     run the C# in the body, and report what it made the mod say
@@ -30,6 +30,10 @@ namespace ES2Access.Loader.Dev
     /// Everything else comes from the route registry the mod fills in through
     /// <see cref="ModHost"/> (/status, /speech). Those answer 404 while the mod is down, which is
     /// the honest answer: there is nothing to report.
+    ///
+    /// Every route, builtin or mod-registered, declares the query parameters it understands; a
+    /// request naming any other is answered 400 (see <see cref="DevRoute"/>) rather than served an
+    /// answer that quietly ignored what was asked for.
     ///
     /// Requests arrive on the HTTP thread; anything that touches Unity is queued onto the main
     /// thread and waited for (503 when the game does not get to it). Not shipped to players.
@@ -57,6 +61,9 @@ namespace ES2Access.Loader.Dev
         private const int SpokenCapacity = 200;
         private const int LogCapacity = 2000;
 
+        // What GET /log answers when no cursor was given: the tail, not the whole ring.
+        private const int DefaultLogEntries = 100;
+
         // Long enough for the response to reach the client before the process goes away.
         private const float QuitDelaySeconds = 0.25f;
 
@@ -66,8 +73,9 @@ namespace ES2Access.Loader.Dev
         private readonly SeqLog _spoken = new SeqLog(SpokenCapacity);
         private readonly SeqLog _log = new SeqLog(LogCapacity);
         private readonly object _routeLock = new object();
-        private readonly Dictionary<string, DevRouteHandler> _modRoutes =
-            new Dictionary<string, DevRouteHandler>();
+        private readonly Dictionary<string, DevRoute> _modRoutes =
+            new Dictionary<string, DevRoute>();
+        private readonly Dictionary<string, DevRoute> _builtins;
 
         private DevHttpServer _http;
         private BepInExLogTap _logTap;
@@ -76,6 +84,20 @@ namespace ES2Access.Loader.Dev
         public DevServer(LoaderPlugin plugin)
         {
             _plugin = plugin;
+
+            // The routes the loader owns, each with the query parameters it understands: anything
+            // else is a 400 rather than a silent no-op (see DevRoute).
+            _builtins = new Dictionary<string, DevRoute>
+            {
+                { Key("GET", "/gui/game"), new DevRoute(Gui, "path", "depth") },
+                { Key("GET", "/screenshot"), new DevRoute(request => Screenshot()) },
+                { Key("GET", "/log"), new DevRoute(Log, "since", "grep") },
+                { Key("GET", "/loader/status"), new DevRoute(request => LoaderStatus()) },
+                { Key("POST", "/reload"), new DevRoute(request => Reload()) },
+                { Key("POST", "/eval"), new DevRoute(Eval, "settle", "speech") },
+                { Key("POST", "/wait"), new DevRoute(Wait, "timeout") },
+                { Key("POST", "/quit"), new DevRoute(request => Quit()) },
+            };
         }
 
         /// <summary>The mod lifecycle the /loader/status and /reload routes drive. Set once, by
@@ -162,11 +184,16 @@ namespace ES2Access.Loader.Dev
             _spoken.Add(text);
         }
 
-        public void RegisterModRoute(string method, string path, DevRouteHandler handler)
+        public void RegisterModRoute(
+            string method,
+            string path,
+            DevRouteHandler handler,
+            string[] allowedQueryParameters
+        )
         {
             lock (_routeLock)
             {
-                _modRoutes[Key(method, path)] = handler;
+                _modRoutes[Key(method, path)] = new DevRoute(handler, allowedQueryParameters);
             }
         }
 
@@ -224,61 +251,28 @@ namespace ES2Access.Loader.Dev
         {
             try
             {
-                if (request.Method == "GET" && request.Path == "/gui/game")
+                string key = Key(request.Method, request.Path);
+                DevRoute route;
+                if (!_builtins.TryGetValue(key, out route))
                 {
-                    return Gui(request);
+                    lock (_routeLock)
+                    {
+                        _modRoutes.TryGetValue(key, out route);
+                    }
                 }
 
-                if (request.Method == "GET" && request.Path == "/screenshot")
+                if (route == null)
                 {
-                    return Screenshot();
+                    return DevResponse.Json(
+                        404,
+                        DevJson.Error("no route for " + request.Method + " " + request.Path)
+                    );
                 }
 
-                if (request.Method == "GET" && request.Path == "/log")
-                {
-                    return Log(request);
-                }
-
-                if (request.Method == "GET" && request.Path == "/loader/status")
-                {
-                    return LoaderStatus();
-                }
-
-                if (request.Method == "POST" && request.Path == "/reload")
-                {
-                    return Reload();
-                }
-
-                if (request.Method == "POST" && request.Path == "/eval")
-                {
-                    return Eval(request);
-                }
-
-                if (request.Method == "POST" && request.Path == "/wait")
-                {
-                    return Wait(request);
-                }
-
-                if (request.Method == "POST" && request.Path == "/quit")
-                {
-                    return Quit();
-                }
-
-                DevRouteHandler handler;
-                lock (_routeLock)
-                {
-                    _modRoutes.TryGetValue(Key(request.Method, request.Path), out handler);
-                }
-
-                if (handler != null)
-                {
-                    return handler(request);
-                }
-
-                return DevResponse.Json(
-                    404,
-                    DevJson.Error("no route for " + request.Method + " " + request.Path)
-                );
+                // One chokepoint for every route, the mod's included: a parameter the route does
+                // not declare is answered, never dropped.
+                DevResponse rejected = route.Reject(request);
+                return rejected ?? route.Handler(request);
             }
             catch (MainThreadTimeoutException e)
             {
@@ -531,6 +525,15 @@ namespace ES2Access.Loader.Dev
             });
         }
 
+        /// <summary>
+        /// The log, cursor-polled. A caller that passes <c>since</c> is following the log and gets
+        /// exactly what is newer; a caller that passes none is opening it for the first time and
+        /// wants the end of it, not two thousand lines of boot - so that answer is capped at the
+        /// newest <see cref="DefaultLogEntries"/> and says so. <c>grep</c> is applied to the whole
+        /// ring first, so a search still reaches back through the history the cap hides, and
+        /// <c>next</c> is the ring's own cursor either way: polling with it resumes correctly
+        /// whatever the answer dropped.
+        /// </summary>
         private DevResponse Log(DevRequest request)
         {
             long next;
@@ -539,10 +542,22 @@ namespace ES2Access.Loader.Dev
                 request.QueryValue("grep")
             );
 
+            bool capped =
+                request.QueryValue("since") == null && entries.Count > DefaultLogEntries;
+            if (capped)
+            {
+                entries = entries.GetRange(
+                    entries.Count - DefaultLogEntries,
+                    DefaultLogEntries
+                );
+            }
+
             return DevResponse.Json(
                 DevJson.Write(json =>
                 {
                     json.WriteStartObject();
+                    json.WritePropertyName("capped");
+                    json.WriteValue(capped);
                     json.WritePropertyName("entries");
                     json.WriteStartArray();
                     foreach (SeqLog.Entry entry in entries)
