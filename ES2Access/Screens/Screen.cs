@@ -15,8 +15,9 @@ namespace ES2Access.Screens
     /// Declaring nothing is legal and means "nothing here yet"; the navigator simply retries next
     /// frame. That is the right answer while a window is still animating in.
     ///
-    /// Not implemented yet: child-screen chaining (a screen pushing a sub-screen for a dropdown's
-    /// option list or a confirmation box). The manager keeps a flat stack until a screen needs more.
+    /// A screen can also open a CHILD screen (see <see cref="PushChild"/>) - a menu of the actions a
+    /// control offers, a list to pick from. Children are pushed by their parent rather than polled,
+    /// because nothing in the game says they are open: they are the mod's own idea.
     /// </summary>
     public abstract class Screen
     {
@@ -65,9 +66,124 @@ namespace ES2Access.Screens
             return false;
         }
 
+        /// <summary>
+        /// Whether <see cref="Back"/> is going to claim the key, asked BEFORE it is pressed.
+        ///
+        /// The mod and the game read the keyboard in parallel, so a key the mod acts on also does
+        /// whatever the game has bound to it unless the game is told to stand down - and the game is
+        /// told by a predicate it asks during its own scan, which may run either side of the mod's.
+        /// Answering after the fact is therefore too late: by then the menu Escape closed is gone and
+        /// the same Escape has already reached the pause menu underneath.
+        ///
+        /// This is a DIFFERENT question from <see cref="Back"/>, not a copy of it. Back asks what the
+        /// mod does with the key; this asks whether the game must be denied it. The drop-list screen
+        /// answers true to the first and false to this one on purpose - it handles Escape and still
+        /// needs the engine to see it, because the engine's own cancel handling is what closes the
+        /// popup.
+        ///
+        /// Screens overwhelmingly answer false: Escape belongs to the game, layer by layer, and only a
+        /// surface the mod itself put on the screen - one the game knows nothing about and so cannot
+        /// close - has any business taking the key away from it.
+        /// </summary>
+        public virtual bool ConsumesBack
+        {
+            get { return false; }
+        }
+
         public virtual void OnPush() { }
 
         public virtual void OnPop() { }
+
+        // ---- child screens ----
+        //
+        // One linear chain: a screen has at most one child, which may have one of its own. The player
+        // is on the deepest of them, and the manager works that out rather than being told, so a push
+        // or a removal takes effect on the next tick with nothing else to keep in step.
+        //
+        // What this buys, and why it is worth a mechanism: a covered parent keeps its own GraphState,
+        // so closing a menu puts the cursor back on the control that opened it for free. Nothing has
+        // to remember where the player was, because nobody ever moved them.
+
+        /// <summary>The screen this one was opened from, or null for a screen the manager polls.
+        /// </summary>
+        public Screen ParentScreen { get; private set; }
+
+        /// <summary>The child this screen has open, or null.</summary>
+        public Screen ActiveChild { get; private set; }
+
+        /// <summary>Who to tell when a child closes, so its cursor can be dropped. Inherited by
+        /// children from the screen they are pushed onto.</summary>
+        internal ScreenManager Manager { get; set; }
+
+        /// <summary>The screen the player is actually on: this one, or the deepest thing open over it.
+        /// </summary>
+        public Screen Deepest()
+        {
+            Screen at = this;
+            // Bounded rather than "while": a chain is a handful deep by construction, and a cycle
+            // introduced by a bug should not hang the frame.
+            for (int depth = 0; depth < 16 && at.ActiveChild != null; depth++)
+            {
+                at = at.ActiveChild;
+            }
+
+            return at;
+        }
+
+        /// <summary>Open <paramref name="child"/> over this screen. Any child already open is closed
+        /// first - one chain, no branching.</summary>
+        public void PushChild(Screen child)
+        {
+            if (child == null || ReferenceEquals(child, ActiveChild))
+            {
+                return;
+            }
+
+            if (ActiveChild != null)
+            {
+                RemoveChild(ActiveChild);
+            }
+
+            child.ParentScreen = this;
+            child.Manager = Manager;
+            ActiveChild = child;
+            child.OnPush();
+        }
+
+        /// <summary>Close <paramref name="child"/>, and anything it had open, deepest first. Focus
+        /// falls back to this screen on the manager's next tick.</summary>
+        public void RemoveChild(Screen child)
+        {
+            if (child == null || !ReferenceEquals(ActiveChild, child))
+            {
+                return;
+            }
+
+            if (child.ActiveChild != null)
+            {
+                child.RemoveChild(child.ActiveChild);
+            }
+
+            ActiveChild = null;
+            child.OnPop();
+            ScreenManager manager = child.Manager;
+            child.ParentScreen = null;
+            child.Manager = null;
+            if (manager != null)
+            {
+                manager.ChildClosed(child);
+            }
+        }
+
+        /// <summary>Close this screen from the inside - what a child screen's own Escape does.</summary>
+        public void CloseSelf()
+        {
+            Screen parent = ParentScreen;
+            if (parent != null)
+            {
+                parent.RemoveChild(this);
+            }
+        }
 
         public virtual void OnFocus() { }
 

@@ -33,6 +33,7 @@ namespace ES2Access.Core.Speech
         public const string ControlSlider = "control.slider";
         public const string ControlComboBox = "control.combo-box";
         public const string ControlEditField = "control.edit-field";
+        public const string ControlMenuItem = "control.menu-item";
 
         // What navigation says about a control beyond its own text. Each is a whole phrase: a
         // language that negates with more than a leading word has somewhere to put it.
@@ -51,6 +52,10 @@ namespace ES2Access.Core.Speech
         public const string NavNotBound = "nav.not-bound";
         public const string NavPressPrimaryKey = "nav.press-primary-key";
         public const string NavPressSecondaryKey = "nav.press-secondary-key";
+
+        // A tooltip drew a bar split between two things and wrote no number on it. The bar's own
+        // caption names the two sides in this order, so the proportions follow it unnamed.
+        public const string TooltipBalance = "tooltip.balance";
 
         // The review buffers - the text the player walks line by line.
         public const string BufferUi = "buffer.ui";
@@ -101,6 +106,20 @@ namespace ES2Access.Core.Speech
         public const string GalaxyTurnsRemaining = "galaxy.turns-remaining";
         public const string GalaxyStockAndNet = "galaxy.stock-and-net";
         public const string GalaxySystemColonized = "galaxy.system-colonized";
+        public const string GalaxyOpenSystem = "galaxy.open-system";
+
+        // Where the camera is looking, as two things the player can ask for. The game has no words of
+        // its own for either: it moves the camera on a double-click and a right-click and never names
+        // the pair.
+        public const string GalaxyShowSystemView = "galaxy.show-system-view";
+        public const string GalaxyReturnToGalaxyView = "galaxy.return-to-galaxy-view";
+
+        // The lanes out of a system. The game draws these as lines and writes nothing on them, and
+        // where a line runs off into space it has no destination to name either.
+        public const string GalaxyStarlane = "galaxy.starlane";
+        public const string GalaxyStarlaneUnexplored = "galaxy.starlane-unexplored";
+        public const string GalaxyWormhole = "galaxy.wormhole";
+        public const string GalaxyWormholeUnexplored = "galaxy.wormhole-unexplored";
         public const string GalaxyFleetShips = "galaxy.fleet-ships";
         public const string GalaxyFleetMoving = "galaxy.fleet-moving";
         public const string GalaxyFleetMovement = "galaxy.fleet-movement";
@@ -117,6 +136,57 @@ namespace ES2Access.Core.Speech
         public const string LoadSaveCloud = "loadsave.cloud";
         public const string LoadSaveCellEmpty = "loadsave.cell-empty";
 
+        /// <summary>What a control with nothing to offer says instead of opening an empty menu.
+        /// </summary>
+        public const string MenuNoActions = "menu.no-actions";
+
+        // The star system management page. The panel names are the mod's, because the game draws the
+        // panels as unlabelled boxes with an icon in the corner; everything a panel CONTAINS is read
+        // in the game's own words.
+        public const string ScreenStarSystem = "screen.star-system";
+        public const string ScreenPlanet = "screen.planet";
+        public const string SystemPlanetsPanel = "system.planets-panel";
+        public const string SystemColonyPanel = "system.colony-panel";
+        public const string SystemPopulationPanel = "system.population-panel";
+        public const string SystemRepresentativesPanel = "system.representatives-panel";
+        public const string SystemConstructiblesPanel = "system.constructibles-panel";
+        public const string SystemQueuePanel = "system.queue-panel";
+        public const string SystemHangarPanel = "system.hangar-panel";
+
+        // The actions a control offers when Enter opens its menu, and the controls the game draws as
+        // bare icons.
+        public const string SystemColonize = "system.colonize";
+        public const string SystemViewPlanet = "system.view-planet";
+        public const string SystemRenamePlanet = "system.rename-planet";
+        public const string SystemRenameSystem = "system.rename-system";
+        public const string SystemMovePopulation = "system.move-population";
+        public const string SystemImprovements = "system.improvements";
+        public const string SystemLevel = "system.level";
+        public const string SystemSecurity = "system.security";
+        public const string SystemCancelConstruction = "system.cancel-construction";
+        public const string SystemBuyOut = "system.buy-out";
+        public const string SystemQueuePosition = "system.queue-position";
+        public const string SystemProgress = "system.progress";
+        public const string SystemIndustryCost = "system.industry-cost";
+        public const string SystemSelectAllShips = "system.select-all-ships";
+        public const string SystemCreateFleet = "system.create-fleet";
+        public const string SystemRepairShips = "system.repair-ships";
+        public const string SystemRetrofitShips = "system.retrofit-ships";
+        public const string SystemScrapShips = "system.scrap-ships";
+        public const string SystemSellShips = "system.sell-ships";
+        public const string SystemShipSelected = "system.ship-selected";
+
+        // The first-visit cutscene. It draws no heading of its own, so the mod says which system is
+        // being shown; everything about each planet comes from the card in the game's own words.
+        public const string ScreenSystemDiscovery = "screen.system-discovery";
+        public const string DiscoverySystem = "discovery.system";
+
+        /// <summary>The rename box the game opens over a page: what it is, and that typing has begun.
+        /// </summary>
+        public const string ScreenRename = "screen.rename";
+        public const string RenameTypePrompt = "rename.type-prompt";
+        public const string RenameConfirm = "rename.confirm";
+
         private static readonly Dictionary<string, string> Defaults = new Dictionary<string, string>
         {
             { StartupReady, "Endless Space 2 Access ready" },
@@ -132,6 +202,7 @@ namespace ES2Access.Core.Speech
             { ControlSlider, "slider" },
             { ControlComboBox, "combo box" },
             { ControlEditField, "edit field" },
+            { ControlMenuItem, "menu item" },
             { NavExpanded, "expanded" },
             { NavCollapsed, "collapsed" },
             { NavChecked, "checked" },
@@ -145,6 +216,7 @@ namespace ES2Access.Core.Speech
             { NavNotBound, "not bound" },
             { NavPressPrimaryKey, "Press the new key combination." },
             { NavPressSecondaryKey, "Press the new secondary key combination." },
+            { TooltipBalance, "{0} to {1}" },
             { BufferUi, "UI" },
             { BufferEmpty, "Buffer empty" },
             { BufferLine, "{0}. {1}" },
@@ -180,6 +252,13 @@ namespace ES2Access.Core.Speech
             { GalaxyTurnsRemaining, "{0} turns remaining" },
             { GalaxyStockAndNet, "{0}, {1} per turn" },
             { GalaxySystemColonized, "colonized" },
+            { GalaxyOpenSystem, "Open system" },
+            { GalaxyShowSystemView, "Show system view" },
+            { GalaxyReturnToGalaxyView, "Return to galaxy view" },
+            { GalaxyStarlane, "Starlane to {0}" },
+            { GalaxyStarlaneUnexplored, "Starlane to an unexplored system" },
+            { GalaxyWormhole, "Wormhole to {0}" },
+            { GalaxyWormholeUnexplored, "Wormhole to an unexplored system" },
             { GalaxyFleetShips, "{0} ships" },
             { GalaxyFleetMoving, "moving" },
             { GalaxyFleetMovement, "{0} movement points" },
@@ -189,6 +268,41 @@ namespace ES2Access.Core.Speech
             { LoadSaveEditName, "Type the save name, then press Enter." },
             { LoadSaveCloud, "Steam cloud saves" },
             { LoadSaveCellEmpty, "empty" },
+            { MenuNoActions, "Nothing to do here" },
+            { ScreenStarSystem, "Star system" },
+            { ScreenPlanet, "Planet" },
+            { SystemPlanetsPanel, "Planets" },
+            { SystemColonyPanel, "Colony" },
+            { SystemPopulationPanel, "Population" },
+            { SystemRepresentativesPanel, "Representatives" },
+            { SystemConstructiblesPanel, "Available constructions" },
+            { SystemQueuePanel, "Construction queue" },
+            { SystemHangarPanel, "Hangar" },
+            { SystemColonize, "Colonize" },
+            { SystemViewPlanet, "View planet" },
+            { SystemRenamePlanet, "Rename planet" },
+            { SystemRenameSystem, "Rename system" },
+            { SystemMovePopulation, "Move {0} to {1}" },
+            { SystemImprovements, "System improvements" },
+            { SystemLevel, "System level {0}" },
+            { SystemSecurity, "Security" },
+            { SystemCancelConstruction, "Cancel construction" },
+            { SystemBuyOut, "Buy out with {0}" },
+            { SystemQueuePosition, "position {0}" },
+            { SystemProgress, "{0} percent built" },
+            { SystemIndustryCost, "{0} industry" },
+            { SystemSelectAllShips, "Select all ships" },
+            { SystemCreateFleet, "Create fleet" },
+            { SystemRepairShips, "Repair ships" },
+            { SystemRetrofitShips, "Retrofit ships" },
+            { SystemScrapShips, "Scrap ships" },
+            { SystemSellShips, "Sell ships" },
+            { SystemShipSelected, "selected" },
+            { ScreenSystemDiscovery, "System discovery" },
+            { DiscoverySystem, "Discovering {0}" },
+            { ScreenRename, "Rename" },
+            { RenameTypePrompt, "Type the new name, then press Enter." },
+            { RenameConfirm, "Confirm" },
         };
 
         // Keys already complained about, so a per-frame readout warns once, not every frame.

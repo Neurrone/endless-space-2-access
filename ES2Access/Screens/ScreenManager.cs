@@ -31,10 +31,11 @@ namespace ES2Access.Screens
             _navigator = navigator;
         }
 
-        /// <summary>The screen the player is on, or null when none of ours is showing.</summary>
+        /// <summary>The screen the player is on, or null when none of ours is showing. The top of the
+        /// polled stack, or whatever that screen has opened over itself.</summary>
         public Screen Current
         {
-            get { return _stack.Count > 0 ? _stack[_stack.Count - 1] : null; }
+            get { return _stack.Count > 0 ? _stack[_stack.Count - 1].Deepest() : null; }
         }
 
         public IList<Screen> Stack
@@ -42,11 +43,43 @@ namespace ES2Access.Screens
             get { return _stack; }
         }
 
+        /// <summary>Every screen the mod knows about, active or not, in registration order.</summary>
+        public IList<Screen> Registered
+        {
+            get { return _registered; }
+        }
+
+        /// <summary>The registered screen with this key, or null. Case-insensitive: the keys are
+        /// typed by hand into dev-server requests.</summary>
+        public Screen Find(string key)
+        {
+            for (int i = 0; i < _registered.Count; i++)
+            {
+                if (string.Compare(_registered[i].Key, key, StringComparison.OrdinalIgnoreCase) == 0)
+                {
+                    return _registered[i];
+                }
+            }
+
+            return null;
+        }
+
         public void Register(Screen screen)
         {
             if (screen != null && !_registered.Contains(screen))
             {
+                screen.Manager = this;
                 _registered.Add(screen);
+            }
+        }
+
+        /// <summary>A child screen has closed: drop its cursor, so opening the same menu again starts
+        /// at the top rather than where the player left it last time.</summary>
+        internal void ChildClosed(Screen screen)
+        {
+            if (screen != null && !screen.KeepStateOnPop)
+            {
+                _navigator.ScreenClosed(screen);
             }
         }
 
@@ -129,8 +162,15 @@ namespace ES2Access.Screens
             _stack = desired;
         }
 
+        // A screen leaving takes whatever it had open with it: the game closed the page, so a menu
+        // over it is gone too, and it hears about that before the page does.
         private void Pop(Screen screen)
         {
+            if (screen.ActiveChild != null)
+            {
+                screen.RemoveChild(screen.ActiveChild);
+            }
+
             Safe(screen.OnPop, screen, "OnPop");
             if (!screen.KeepStateOnPop)
             {

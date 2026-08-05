@@ -328,7 +328,16 @@ namespace ES2Access.Screens
                 NodeVtable combo = GraphNodes.ComboBox(
                     label,
                     () => DropListText(dropList.DropList),
-                    () => DropListScreen.Open(dropList),
+                    () =>
+                        DropListScreen.Open(
+                            dropList.DropList,
+                            AgeText.Label(dropList.TitleLabel),
+                            index =>
+                            {
+                                dropList.DropList.SelectedItem = index;
+                                Call(EntrySelected, dropList, NoSender);
+                            }
+                        ),
                     enabled,
                     tooltip,
                     GraphNodes.ModeFor(tooltip)
@@ -1173,6 +1182,13 @@ namespace ES2Access.Screens
         private static readonly MethodInfo SliderReleased = Handler(
             typeof(OptionSliderItem),
             "OnSliderReleasedCb"
+        );
+
+        // The handler a click on one of the setting's list entries reaches: it stores the value and
+        // tells the window a setting changed.
+        private static readonly MethodInfo EntrySelected = Handler(
+            typeof(OptionDropListItem),
+            "OnEntrySelectedCb"
         );
 
         private static readonly Action ReleasePointer = PointerFocus.Release;

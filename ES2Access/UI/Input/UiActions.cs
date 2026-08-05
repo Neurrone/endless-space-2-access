@@ -22,5 +22,14 @@ namespace ES2Access.UI.Input
         // control calls large.
         public const string CoarseIncrease = "ui.coarseIncrease";
         public const string CoarseDecrease = "ui.coarseDecrease";
+
+        /// <summary>The other thing Enter could have meant on this control - the game's own
+        /// modified click, where it has one.</summary>
+        public const string Alternate = "ui.alternate";
+
+        // Move the focused ITEM rather than the cursor: a queue line up or down its queue. Distinct
+        // from navigation because the thing that moves is the row, and the cursor rides along with it.
+        public const string MoveItemUp = "ui.moveItemUp";
+        public const string MoveItemDown = "ui.moveItemDown";
     }
 }

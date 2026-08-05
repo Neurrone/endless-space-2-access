@@ -169,9 +169,41 @@ namespace ES2Access.UI
             };
         }
 
+        /// <summary>
+        /// A line the player reads but does not work: a name and a number.
+        ///
+        /// No role word - there is no control here to name, and "Empire Dust, 150, 38 per turn" is
+        /// the whole of what the banner says. The tooltip mode is asked for rather than hardcoded:
+        /// these are in practice always the renderer-assembled kind, and saying so by rule means a
+        /// readout whose tooltip the game ever authored as plain content would be read the way plain
+        /// content should be.
+        /// </summary>
+        public static NodeVtable Readout(
+            Func<string> label,
+            Func<string> value,
+            Func<IList<string>> details,
+            AgeTooltip tooltip
+        )
+        {
+            List<NodeAnnouncement> parts = new List<NodeAnnouncement>
+            {
+                LabelPart(label),
+                ValuePart(value),
+            };
+            NodeAnnouncement tooltipPart = TooltipPart(ModeFor(tooltip), tooltip);
+            if (tooltipPart != null)
+            {
+                parts.Add(tooltipPart);
+            }
+
+            return new NodeVtable { Announcements = parts, DetailLines = details };
+        }
+
         /// <summary>A setting the player turns on and off. Its state is both announced live - so a
         /// box the game ticks on the player's behalf says so - and spoken immediately after a
-        /// toggle, which is what makes holding the key down readable.</summary>
+        /// toggle, which is what makes holding the key down readable.
+        ///
+        /// A box that is REFUSING says nothing at all: see <see cref="ActedState"/>.</summary>
         public static NodeVtable Checkbox(
             Func<string> label,
             Func<bool> state,
@@ -193,7 +225,7 @@ namespace ES2Access.UI
                 ControlType = ControlTypes.Checkbox,
                 Announcements = parts,
                 DetailLines = TooltipDetails(tooltip),
-                StateText = stateText,
+                StateText = ActedState(stateText, enabled),
                 OnActivate = Guarded(toggle, enabled),
             };
         }
@@ -218,7 +250,7 @@ namespace ES2Access.UI
                 ControlType = ControlTypes.Slider,
                 Announcements = parts,
                 DetailLines = TooltipDetails(tooltip),
-                StateText = valueText,
+                StateText = ActedState(valueText, enabled),
                 // Declared even when the slider is refusing, so left and right stay the slider's
                 // keys rather than quietly turning back into navigation on a control that looks
                 // exactly like the one beside it.
@@ -255,7 +287,7 @@ namespace ES2Access.UI
                 ControlType = ControlTypes.ComboBox,
                 Announcements = parts,
                 DetailLines = TooltipDetails(tooltip),
-                StateText = valueText,
+                StateText = ActedState(valueText, enabled),
                 OnActivate = Guarded(open, enabled),
             };
         }
@@ -307,6 +339,45 @@ namespace ES2Access.UI
                 DetailLines = details,
                 OnActivate = Guarded(choose, enabled),
             };
+        }
+
+        /// <summary>One action in a menu the player has opened. Unlike a value list's entry it names
+        /// its kind, because the player has been taken somewhere and needs to hear that; and unlike a
+        /// button, an entry that is not on offer is never declared at all - a menu is built from what
+        /// can be done now, so there is nothing here to be unavailable.</summary>
+        public static NodeVtable MenuItem(
+            Func<string> label,
+            Action invoke,
+            Func<bool> selected = null,
+            Func<IList<string>> details = null
+        )
+        {
+            return new NodeVtable
+            {
+                ControlType = ControlTypes.MenuItem,
+                Announcements = new List<NodeAnnouncement>
+                {
+                    LabelPart(label),
+                    SelectedPart(selected),
+                },
+                DetailLines = details,
+                OnActivate = invoke,
+            };
+        }
+
+        // The other half of the swallow: what the control reports right after the player acted on it,
+        // which for a refused action is nothing at all. Re-reading the state after a keypress that
+        // changed nothing is heard as the keypress having worked ("not checked" from a box that would
+        // not untick), and a refusal word here would be the second "unavailable" in a row - the
+        // player heard the first on focus.
+        private static Func<string> ActedState(Func<string> state, Func<bool> enabled)
+        {
+            if (state == null || enabled == null)
+            {
+                return state;
+            }
+
+            return () => enabled() ? state() : null;
         }
 
         // The swallow every unavailable control shares: it stays focusable and readable, and the
