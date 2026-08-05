@@ -106,6 +106,12 @@ namespace ES2Access
             Screens.Register(new GameMenuScreen());
             Screens.Register(new LoadSaveScreen());
             Screens.Register(new GalaxyHudScreen());
+            Screens.Register(new SystemManagementScreen());
+            Screens.Register(new PlanetOverviewScreen());
+            Screens.Register(new SystemDiscoveryScreen());
+            Screens.Register(new ImprovementsModalScreen());
+            Screens.Register(new RenameModalScreen());
+            Screens.Register(new PlanetConstructiblesScreen());
             Input = new ModInput();
             Input.Dispatch = Dispatch;
             // The one widget the mod puts the game's own keyboard focus on. The input layer would
@@ -113,6 +119,9 @@ namespace ES2Access
             // itself driving.
             Input.DrivenByMod = DropListScreen.OwnsFocus;
             Input.HasFocusedScreen = ScreenFocused;
+            // Escape is the game's everywhere except over a surface the mod invented, which the game
+            // cannot close because it does not know it is there.
+            Input.ClaimsBackKey = BackKeyClaimed;
             BindKeys(Input);
             // Bindings first: the game's scans ask the layer which keys it has, so there must be
             // something to answer with before they can be told to stand down.
@@ -163,6 +172,15 @@ namespace ES2Access
             return navigator != null && navigator.Screen != null;
         }
 
+        /// <summary>Whether the screen the player is on is going to answer Escape itself - asked by
+        /// the game's own key scan, several times a frame, so it stays two field reads.</summary>
+        private static bool BackKeyClaimed()
+        {
+            ScreenManager screens = Screens;
+            ES2Access.Screens.Screen current = screens == null ? null : screens.Current;
+            return current != null && current.ConsumesBack;
+        }
+
         /// <summary>
         /// The default keys. The keys that move something - arrows, Tab, and the coarse slider
         /// steps - repeat while held, at the player's own OS repeat rate; the rest fire once,
@@ -180,7 +198,17 @@ namespace ES2Access
             input.Register(UiActions.Next).Bind(KeyCode.Tab).Repeating();
             input.Register(UiActions.Prev).Bind(KeyCode.Tab, shift: true).Repeating();
             input.Register(UiActions.Activate).Bind(KeyCode.Return).Bind(KeyCode.KeypadEnter);
+            // The other thing Enter could have meant, on the controls that have one - Alt and Enter,
+            // because Alt and a click is what the game itself puts it on.
+            input.Register(UiActions.Alternate)
+                .Bind(KeyCode.Return, alt: true)
+                .Bind(KeyCode.KeypadEnter, alt: true);
             input.Register(UiActions.Secondary).Bind(KeyCode.Backspace);
+            // Move the ITEM rather than the cursor: Shift and the arrow that says which way. Exact
+            // modifier matching keeps the plain arrows navigation, the way Shift and a sideways arrow
+            // is already the big version of a slider move.
+            input.Register(UiActions.MoveItemUp).Bind(KeyCode.UpArrow, shift: true).Repeating();
+            input.Register(UiActions.MoveItemDown).Bind(KeyCode.DownArrow, shift: true).Repeating();
             input.Register(UiActions.Back).Bind(KeyCode.Escape);
             input.Register(UiActions.Home).Bind(KeyCode.Home);
             input.Register(UiActions.End).Bind(KeyCode.End);
@@ -256,6 +284,7 @@ namespace ES2Access
                 Input.Dispatch = null;
                 Input.DrivenByMod = null;
                 Input.HasFocusedScreen = null;
+                Input.ClaimsBackKey = null;
                 // A dev request waiting for an injected action to run is waiting for a frame that
                 // will never come now; it is told so rather than left to time out.
                 Input.CancelInjections();

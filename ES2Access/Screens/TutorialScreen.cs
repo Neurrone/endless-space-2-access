@@ -327,7 +327,7 @@ namespace ES2Access.Screens
             }
 
             bar.Sort(ReadingOrder);
-            Strip(builder, bar, "galaxy:tutorial/");
+            Strip(builder, bar, "hud:tutorial/");
             return true;
         }
 

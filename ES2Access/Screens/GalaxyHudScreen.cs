@@ -54,10 +54,20 @@ namespace ES2Access.Screens
     /// it again. That is a worse place to be than here, and still better than not being told the screen
     /// exists.
     ///
-    /// Focusing a system or a fleet moves the camera to it exactly as the game's own "show me this"
-    /// routes do, and deliberately no further: the system management screen those routes would open
-    /// for a colony of yours is not navigable yet, so this stop takes the player to the system on the
-    /// map and stops there.
+    /// Focusing a system moves the camera to it exactly as the game's own "show me this" routes do, so
+    /// that anyone watching the screen is looking at whatever the keyboard is on. Opening a system up -
+    /// right arrow, the same key that opens anything else - walks what the map is drawing inside it:
+    /// its planets, then the starlanes leaving it. It changes no distance. How close the camera stands
+    /// is the player's own choice, asked for from the system's menu, and it decides how much there is
+    /// to read: from far off a planet is a circle with a name and a state, and from as close as the
+    /// game goes it is a card with its outputs, its anomalies and everything a fleet could do to it.
+    /// A key that quietly took the camera all the way in would have made the first of those two
+    /// unreachable.
+    ///
+    /// A starlane says where it goes only when the map draws the name of the system at the other end.
+    /// The game's own galaxy model will happily hand over the name of a system nobody has ever seen -
+    /// asking a node for its neighbours returns them whether or not they have been discovered - so
+    /// every name spoken here is gated on the same question the map asks before it draws one.
     ///
     /// The new turn is announced without anyone being on the End Turn button, because the turn
     /// changing is the one thing on this page that happens to the player rather than being done by
@@ -65,12 +75,13 @@ namespace ES2Access.Screens
     /// </summary>
     public sealed class GalaxyHudScreen : Screen
     {
-        private static readonly object TurnStop = "galaxy:turn";
-        private static readonly object EmpireStop = "galaxy:empire";
-        private static readonly object TutorialStop = "galaxy:tutorial";
-        private static readonly object NotificationStop = "galaxy:notifications";
         private static readonly object SystemStop = "galaxy:systems";
         private static readonly object FleetStop = "galaxy:fleets";
+
+        /// <summary>The clusters the game draws over every view level - what the empire is worth, the
+        /// notifications, a collapsed tutorial, the turn controls. This page is one of three that
+        /// declare them.</summary>
+        private readonly GlobalHud _hud = new GlobalHud();
 
         // Regions - what Alt and an arrow jump between - are declared only where a stop really has
         // two halves. A stop with one region swallows the key and moves nothing, which reads as the
@@ -82,8 +93,16 @@ namespace ES2Access.Screens
         /// <summary>How far up a parent chain to look before deciding it is not a chain.</summary>
         private const int MaxAncestors = 64;
 
-        private List<Fleet> _idleFleets = new List<Fleet>();
-        private int _turn = -1;
+        // Reused across builds rather than allocated per frame: the galaxy is walked whole to work
+        // out which systems the player can see, and Build runs every tick.
+        private readonly List<StarSystemNode> _owned = new List<StarSystemNode>();
+        private readonly List<StarSystemNode> _other = new List<StarSystemNode>();
+
+        /// <summary>Where the camera was standing when the player last asked to be taken into a
+        /// system, so that asking to come back out puts them at the same distance rather than at some
+        /// default. -1 when nobody has asked, which is what makes the map's own starting step the
+        /// answer instead.</summary>
+        private int _stepBeforeSystemView = -1;
 
         public override string Key
         {
@@ -117,15 +136,20 @@ namespace ES2Access.Screens
         /// player wants read out on arriving - what the empire is worth.</summary>
         public override object InitialFocusStop
         {
-            get { return EmpireStop; }
+            get { return GlobalHud.EmpireStop; }
         }
 
         /// <summary>
-        /// Ours while the game is showing the galaxy and nothing has replaced it. "Normal view" is the
-        /// game's own name for that: a game that is ready, not in a battle, not in the scan overlay,
-        /// not watching a system be discovered or a planet destroyed. A full screen or a modal on top
-        /// replaces the page rather than covering it, so those stand this screen down; a loading
-        /// window means the page is on its way out.
+        /// Ours while the game is showing the galaxy from above and nothing has replaced it. "Normal
+        /// view" is the game's own name for half of that: a game that is ready, not in a battle, not in
+        /// the scan overlay, not watching a system be discovered or a planet destroyed. A full screen
+        /// or a modal on top replaces the page rather than covering it, so those stand this screen
+        /// down; a loading window means the page is on its way out.
+        ///
+        /// The other half is the view level. Taking the camera into a system's management page leaves
+        /// "normal view" true while putting a completely different set of things in front of the
+        /// player, so this page has to give the keyboard up there rather than go on describing systems
+        /// that are no longer on the screen.
         /// </summary>
         public override bool IsActive()
         {
@@ -134,6 +158,7 @@ namespace ES2Access.Screens
                 GuiManager gui = GuiService();
                 return gui != null
                     && gui.IsInNormalView
+                    && GalaxyViewLevels.Overview
                     && !gui.IsAnyScreenVisible
                     && !gui.IsAnyModalVisible
                     && !gui.IsInLoadingWindow;
@@ -151,42 +176,28 @@ namespace ES2Access.Screens
             return false;
         }
 
-        /// <summary>Arrival starts the watch from the turn that is showing, so opening the page never
-        /// announces a turn nobody just took.</summary>
         public override void OnPush()
         {
-            _turn = Turn();
+            _hud.Baseline();
         }
 
-        /// <summary>The turn ends and the next one begins on the game's schedule, not the player's -
-        /// and while it does, the player is usually nowhere near the End Turn button.</summary>
+        public override void OnPop()
+        {
+            _hud.Forget();
+        }
+
         public override void OnUpdate()
         {
-            try
-            {
-                int turn = Turn();
-                if (turn < 0 || turn == _turn)
-                {
-                    return;
-                }
-
-                bool first = _turn < 0;
-                _turn = turn;
-                if (!first)
-                {
-                    Voice.Say(ModStrings.Format(ModStrings.GalaxyTurn, turn), false);
-                }
-            }
-            catch (Exception e)
-            {
-                Log.Warn("galaxy: watching the turn threw: " + e);
-            }
+            _hud.Update();
         }
 
+        /// <summary>Down the screen, which is also the order the galaxy screen has always read in:
+        /// the empire's banners across the top, then what the map is showing, then the right-hand
+        /// edge - the bar a collapsed tutorial leaves at the top of it and the notification icons
+        /// under that - and the turn controls in the bottom corner.</summary>
         public override void Build(GraphBuilder builder)
         {
-            builder.BeginStop(EmpireStop);
-            BuildEmpire(builder);
+            _hud.Empire(builder);
 
             builder.BeginStop(SystemStop);
             BuildSystems(builder);
@@ -194,654 +205,9 @@ namespace ES2Access.Screens
             builder.BeginStop(FleetStop);
             BuildFleets(builder);
 
-            // Down the right-hand edge, in the order it is drawn: the bar a collapsed tutorial leaves
-            // at the top, then the column of notification icons under it.
-            builder.BeginStop(TutorialStop);
-            TutorialScreen.BuildCollapsedBar(builder);
-
-            builder.BeginStop(NotificationStop);
-            BuildNotifications(builder);
-
-            builder.BeginStop(TurnStop);
-            BuildTurn(builder);
-        }
-
-        // ---- the turn ----
-
-        /// <summary>What the turn itself offers: end it, move everything that was told to move, walk
-        /// to the next fleet with nothing to do, and open the game menu.</summary>
-        private void BuildTurn(GraphBuilder builder)
-        {
-            EndTurnWindow window = TurnWindow();
-            if (window == null)
-            {
-                return;
-            }
-
-            List<ControlId> ids = new List<ControlId>();
-            builder.StartRow();
-
-            EndTurnWindow it = window;
-            AgeControlButton endTurn = window.EndTurnButton;
-            if (Visible(Transform(endTurn)))
-            {
-                NodeVtable vtable = GraphNodes.Button(
-                    () => EndTurnLabel(it),
-                    () => Press(endTurn),
-                    () => CanEndTurn(it),
-                    Tooltip(endTurn)
-                );
-                vtable.Announcements.Add(GraphNodes.ValuePart(() => TurnText(it)));
-                vtable.DetailLines = () => EndTurnReason(it);
-                Point(vtable, endTurn);
-                ControlId id = ControlId.Referenced(endTurn, "galaxy:end-turn");
-                ids.Add(id);
-                builder.AddItem(id, vtable);
-            }
-
-            AddTurnButton(
-                builder,
-                ids,
-                window.ApplyMovementsButton,
-                "apply-movements",
-                ModStrings.GalaxyApplyMovements,
-                null
-            );
-            AddTurnButton(
-                builder,
-                ids,
-                window.NextIdleFleetButton,
-                "next-idle-fleet",
-                ModStrings.GalaxyNextIdleFleet,
-                IdleFleetsText
-            );
-            AddTurnButton(
-                builder,
-                ids,
-                window.GameMenuButton,
-                "game-menu",
-                ModStrings.GalaxyGameMenu,
-                null
-            );
-
-            builder.EndRow();
-            WireVertically(builder, ids);
-        }
-
-        private static void AddTurnButton(
-            GraphBuilder builder,
-            List<ControlId> ids,
-            AgeControlButton button,
-            string key,
-            string nameKey,
-            Func<string> value
-        )
-        {
-            if (!Visible(Transform(button)))
-            {
-                return;
-            }
-
-            AgeControlButton it = button;
-            NodeVtable vtable = GraphNodes.Button(
-                () => ModStrings.Get(nameKey),
-                () => Press(it),
-                () => Enabled(Transform(it)),
-                Tooltip(it)
-            );
-            if (value != null)
-            {
-                vtable.Announcements.Add(GraphNodes.ValuePart(value));
-            }
-
-            Point(vtable, it);
-            ControlId id = ControlId.Referenced(it, "galaxy:" + key);
-            ids.Add(id);
-            builder.AddItem(id, vtable);
-        }
-
-        /// <summary>The button's own caption, which the game writes over two lines and rewrites while
-        /// a turn is being processed - so it says what the button is doing, not only what it is.
-        /// </summary>
-        private static string EndTurnLabel(EndTurnWindow window)
-        {
-            string caption = OneLine(AgeText.Label(window.EndTurnTitle));
-            return string.IsNullOrEmpty(caption)
-                ? ModStrings.Get(ModStrings.GalaxyEndTurn)
-                : caption;
-        }
-
-        /// <summary>Which turn it is. Read from the turn service rather than from the label beside the
-        /// button, which the game writes as an icon token followed by the number.</summary>
-        private static string TurnText(EndTurnWindow window)
-        {
-            int turn = Turn(window);
-            return turn < 0 ? null : ModStrings.Format(ModStrings.GalaxyTurn, turn);
-        }
-
-        /// <summary>
-        /// The three gates the game's own end-turn shortcut passes, in its own order: nothing is in
-        /// the way, the tutorial is not holding the turn back, and the session will accept it.
-        /// </summary>
-        private static bool CanEndTurn(EndTurnWindow window)
-        {
-            try
-            {
-                if (!Gui.GuiGameWindowService.CanEndTurnByShortcut)
-                {
-                    return false;
-                }
-
-                if (window.EndTurnDisabler != null && window.EndTurnDisabler.IsTargetDisabled())
-                {
-                    return false;
-                }
-
-                return window.EndTurnService != null
-                    && window.EndTurnService.Target != null
-                    && window.EndTurnService.Target.CanEndTurn();
-            }
-            catch (Exception)
-            {
-                return false;
-            }
-        }
-
-        /// <summary>Why the button is refusing, when the game says. It hangs no tooltip on this one
-        /// button, but the tutorial holding an element back is a thing the game has words for and puts
-        /// on every other element it holds back, so those are the words used here.</summary>
-        private static IList<string> EndTurnReason(EndTurnWindow window)
-        {
-            List<string> lines = new List<string>();
-            try
-            {
-                foreach (string line in AgeText.Lines(AgeText.Tooltip(Tooltip(window.EndTurnButton))))
-                {
-                    lines.Add(line);
-                }
-
-                if (window.EndTurnDisabler != null && window.EndTurnDisabler.IsTargetDisabled())
-                {
-                    string reason = AgeText.Clean("%TutorialDisabledElementDescription");
-                    if (!string.IsNullOrEmpty(reason))
-                    {
-                        lines.Add(reason);
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                Log.Warn("galaxy: reading the end-turn reason threw: " + e);
-            }
-
-            return lines;
-        }
-
-        /// <summary>How many fleets are waiting to be given something to do, counted the way the
-        /// button beside it counts them.</summary>
-        private string IdleFleetsText()
-        {
-            try
-            {
-                Empire empire = Gui.PlayerEmpire;
-                if (empire == null)
-                {
-                    return null;
-                }
-
-                FleetsScreen.GetIdleFleets(empire, ref _idleFleets);
-                return ModStrings.Format(ModStrings.GalaxyIdleFleets, _idleFleets.Count);
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        // ---- the empire ----
-
-        /// <summary>
-        /// What the empire is worth, in the rows the corner of the screen it comes from is drawn in:
-        /// the strip of icons that open the game's screens, the running totals under it, the research
-        /// line under those, and the stockpiles under that.
-        ///
-        /// The rows are worked out from the rectangles, which is why the whole cluster is gathered
-        /// before any of it is declared. Four panels contribute to it and none of them knows about the
-        /// others, so where their lines fall relative to each other is a question only the screen can
-        /// answer - and it answers it by looking.
-        /// </summary>
-        private static void BuildEmpire(GraphBuilder builder)
-        {
-            GameOverlayWindow window = OverlayWindow();
-            Empire empire = PlayerEmpire();
-            if (window == null || empire == null)
-            {
-                return;
-            }
-
-            List<Cell> cells = new List<Cell>();
-            AddScreenToggles(cells, window.ControlBanner);
-            AddTotals(cells, window.EmpireBanner, empire);
-            AddResearch(cells, window.EmpireBanner, empire);
-            AddStockpiles(cells, window.StrategicsBanner);
-
-            foreach (List<Cell> row in AgeLayout.Rows(cells, CellWidget))
-            {
-                builder.StartRow();
-                foreach (Cell cell in row)
-                {
-                    builder.AddItem(cell.Id, cell.Vtable);
-                }
-
-                builder.EndRow();
-            }
-        }
-
-        /// <summary>A control on its way into the graph, still carrying the widget it was read from:
-        /// the rows are worked out from the whole cluster at once, which cannot be done while
-        /// declaring it row by row.</summary>
-        private sealed class Cell
-        {
-            public AgeTransform Widget;
-            public ControlId Id;
-            public NodeVtable Vtable;
-        }
-
-        private static readonly Func<Cell, AgeTransform> CellWidget = cell => cell.Widget;
-
-        /// <summary>The strip of icons along the top, each of which opens one of the game's screens.
-        /// The game gives them no captions at all - the name of the screen and the key that opens it
-        /// are in the tooltip, which is where both are read from.</summary>
-        private static void AddScreenToggles(List<Cell> cells, ControlBanner banner)
-        {
-            if (banner == null || banner.TogglesTable == null)
-            {
-                return;
-            }
-
-            try
-            {
-                foreach (
-                    ControlBannerToggle toggle in banner.TogglesTable.GetChildren<ControlBannerToggle>(
-                        false
-                    )
-                )
-                {
-                    AgeTransform widget = toggle.AgeTransform;
-                    if (toggle.Screen == null || !Visible(widget))
-                    {
-                        continue;
-                    }
-
-                    ControlBanner strip = banner;
-                    GuiScreen screen = toggle.Screen;
-                    AgeTooltip tooltip = Raw(widget);
-                    NodeVtable vtable = GraphNodes.Button(
-                        () => ScreenTitle(screen),
-                        () => strip.OnControlBannerToggle(screen),
-                        () => Enabled(widget),
-                        tooltip,
-                        GraphNodes.ModeFor(tooltip)
-                    );
-                    vtable.DetailLines = TooltipLines(tooltip);
-                    PointAt(vtable, widget);
-                    cells.Add(
-                        new Cell
-                        {
-                            Widget = widget,
-                            Id = ControlId.Referenced(
-                                toggle,
-                                "galaxy:empire/screen/" + screen.GetType().Name
-                            ),
-                            Vtable = vtable,
-                        }
-                    );
-                }
-            }
-            catch (Exception e)
-            {
-                Log.Warn("galaxy: reading the screen icons threw: " + e);
-            }
-        }
-
-        /// <summary>What the game calls the screen an icon opens - the same title it writes as the
-        /// first line of the icon's own tooltip.</summary>
-        private static string ScreenTitle(GuiScreen screen)
-        {
-            try
-            {
-                return AgeText.Clean(Gui.GetLocalizedTitle(screen.GetType().Name));
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        /// <summary>The running totals the banner across the top carries.</summary>
-        private static void AddTotals(List<Cell> cells, EmpireBanner banner, Empire empire)
-        {
-            if (banner == null)
-            {
-                return;
-            }
-
-            Empire it = empire;
-            AddTotal(
-                cells,
-                banner.MoneyLabel,
-                "dust",
-                SimulationProperties.Empire.NetEmpireMoney,
-                () => Value(it, SimulationProperties.Empire.BankAccount),
-                () => Value(it, SimulationProperties.Empire.NetEmpireMoney)
-            );
-            AddTotal(
-                cells,
-                banner.ManpowerLabel,
-                "manpower",
-                SimulationProperties.Empire.EmpireManpower,
-                () => Value(it, SimulationProperties.Empire.EmpireManpowerStock),
-                () =>
-                    Value(it, SimulationProperties.Empire.EmpireManpower)
-                    - Value(it, SimulationProperties.Empire.EmpireManpowerUpkeep)
-            );
-            AddTotal(
-                cells,
-                banner.EmpirePointLabel,
-                "influence",
-                SimulationProperties.Empire.NetEmpireEmpirePoint,
-                () => Value(it, SimulationProperties.Empire.EmpireEmpirePointStock),
-                () => Value(it, SimulationProperties.Empire.NetEmpireEmpirePoint)
-            );
-        }
-
-        /// <summary>One of the banner's running totals: what it is called, what there is of it, and
-        /// what the next turn will add or take away.</summary>
-        private static void AddTotal(
-            List<Cell> cells,
-            AgePrimitiveLabel label,
-            string key,
-            StaticString property,
-            Func<float> stock,
-            Func<float> net
-        )
-        {
-            if (label == null || !Visible(label.AgeTransform))
-            {
-                return;
-            }
-
-            AgeTransform area = Area(label);
-            AgeTooltip tooltip = Raw(area);
-            NodeVtable vtable = Readout(
-                () => Gui.GetLocalizedTitle(property),
-                () => StockAndNet(stock(), net(), 0),
-                TooltipLines(tooltip),
-                tooltip
-            );
-            PointAt(vtable, area);
-            cells.Add(
-                new Cell
-                {
-                    Widget = area,
-                    Id = ControlId.Referenced(label, "galaxy:empire/" + key),
-                    Vtable = vtable,
-                }
-            );
-        }
-
-        /// <summary>What is being researched and how long is left, or the game's own words for having
-        /// queued nothing. Opening it is the banner's own click, which is what knows whether the
-        /// technology screen can be reached at all.</summary>
-        private static void AddResearch(List<Cell> cells, EmpireBanner banner, Empire empire)
-        {
-            AgeControlButton button = banner == null ? null : banner.ResearchButton;
-            // The tutorial hides the whole research area until it has taught the rest, and the game
-            // hides it outright for an empire that cannot research.
-            if (button == null || !Visible(banner.ResearchGroup) || !Visible(Transform(button)))
-            {
-                return;
-            }
-
-            AgeControlButton it = button;
-            Empire owner = empire;
-            // The banner hangs the technology's tooltip on the line of text, not on the button - which
-            // is stretched across the whole banner - so that is both what the game shows a tooltip for
-            // and what it should be drawn under.
-            AgeTransform line =
-                banner.ResearchLabel == null ? Transform(button) : banner.ResearchLabel.AgeTransform;
-            AgeTooltip tooltip = Raw(line);
-            NodeVtable vtable = GraphNodes.Button(
-                () => ModStrings.Get(ModStrings.GalaxyResearch),
-                () => Press(it),
-                () => Enabled(Transform(it)),
-                tooltip,
-                GraphNodes.ModeFor(tooltip)
-            );
-            vtable.Announcements.Add(GraphNodes.ValuePart(() => ResearchText(owner)));
-            vtable.DetailLines = TooltipLines(tooltip);
-            Point(vtable, it, tooltip, line);
-            cells.Add(
-                new Cell
-                {
-                    Widget = Transform(it),
-                    Id = ControlId.Referenced(it, "galaxy:empire/research"),
-                    Vtable = vtable,
-                }
-            );
-        }
-
-        private static string ResearchText(Empire empire)
-        {
-            try
-            {
-                DepartmentOfScience science = empire.GetAgency<DepartmentOfScience>();
-                Construction construction = science.ResearchQueue.Peek();
-                if (construction == null)
-                {
-                    return AgeText.Clean("%NoResearchQueued");
-                }
-
-                TechnologyDefinition definition =
-                    construction.ConstructibleElement as TechnologyDefinition;
-                GuiTechnology2 technology = Gui.GuiWrapperProviderService.GetGuiTechnology2(
-                    definition.Name
-                );
-                int turns = science.GetTechnologyRemainingTurn(definition);
-                string title = technology == null ? null : AgeText.Clean(technology.Title);
-                if (turns < 0 || turns == int.MaxValue)
-                {
-                    return title;
-                }
-
-                return new MessageBuilder()
-                    .ListItem(title)
-                    .ListItem(ModStrings.Format(ModStrings.GalaxyTurnsRemaining, turns))
-                    .Build();
-            }
-            catch (Exception e)
-            {
-                Log.Warn("galaxy: reading the research line threw: " + e);
-                return null;
-            }
-        }
-
-        /// <summary>The strategic and luxury resources the empire holds, in the order the strip beside
-        /// the banner shows them. A resource sitting at zero stays in the list - the strip dims it
-        /// rather than dropping it, and "we have none of that" is the answer to the question.</summary>
-        private static void AddStockpiles(List<Cell> cells, ResourcesPanel panel)
-        {
-            if (panel == null || panel.ResourceItemsTable == null)
-            {
-                return;
-            }
-
-            try
-            {
-                foreach (ResourceItem item in panel.ResourceItemsTable.GetChildren<ResourceItem>(false))
-                {
-                    GuiLocatedResource resource = item.GuiLocatedResource;
-                    if (resource == null || !Visible(item.AgeTransform))
-                    {
-                        continue;
-                    }
-
-                    GuiLocatedResource it = resource;
-                    // Small holdings of a strategic or a luxury are counted in tenths, which is how
-                    // the strip itself writes them.
-                    NodeVtable vtable = Readout(
-                        () => AgeText.Clean(it.Title),
-                        () =>
-                            StockAndNet(
-                                it.GetStockValueFromCache(),
-                                it.GetNetValueFromCache(),
-                                it.GetStockValueFromCache() < 10f ? 1 : 0
-                            ),
-                        TooltipLines(item.Tooltip),
-                        item.Tooltip
-                    );
-                    Point(vtable, item.Button, item.Tooltip, item.AgeTransform);
-                    cells.Add(
-                        new Cell
-                        {
-                            Widget = item.AgeTransform,
-                            Id = ControlId.Referenced(
-                                item,
-                                "galaxy:empire/resource/" + resource.Name
-                            ),
-                            Vtable = vtable,
-                        }
-                    );
-                }
-            }
-            catch (Exception e)
-            {
-                Log.Warn("galaxy: reading the resource strip threw: " + e);
-            }
-        }
-
-        // ---- notifications ----
-
-        /// <summary>
-        /// Everything the game is waiting to tell the player, as a list they can walk instead of a
-        /// column of icons they would have to click. Enter opens one - the popup that appears is a
-        /// screen of ours and takes over from here - and Backspace throws it away. With nothing
-        /// waiting the game shows an empty corner, so this stop is not there at all.
-        ///
-        /// What a stop here holds is what the strip holds: an icon and, on hovering it, its title.
-        /// Not the notification's description - the game does not show that until the popup is opened,
-        /// and opening it is what this stop's Enter is for. Putting the whole text in the buffer here
-        /// made the strip a second place to read the message, one that answered before the player had
-        /// asked and disagreed with the screen as drawn.
-        /// </summary>
-        private static void BuildNotifications(GraphBuilder builder)
-        {
-            int count = 0;
-            try
-            {
-                IGuiNotificationService service = Gui.GuiNotificationService;
-                if (service == null)
-                {
-                    return;
-                }
-
-                NotificationItem[] items = NotificationItems();
-                foreach (GuiNotification notification in service.GetPlayerEmpireGuiNotifications())
-                {
-                    GuiNotification it = notification;
-                    NodeVtable vtable = GraphNodes.Button(
-                        () => AgeText.Clean(it.GetTitle()),
-                        () => Open(it),
-                        null,
-                        null
-                    );
-                    vtable.OnSecondary = () => Dismiss(it);
-                    vtable.DetailLines = GraphNodes.TooltipDetails(IconTooltip(it, items));
-                    builder.AddItem(
-                        ControlId.Referenced(it, "galaxy:notification/" + count),
-                        vtable
-                    );
-                    count++;
-                }
-            }
-            catch (Exception e)
-            {
-                Log.Warn("galaxy: reading the notifications threw: " + e);
-            }
-        }
-
-        /// <summary>The tooltip the strip hangs on this notification's icon - read from the icon
-        /// rather than composed from the notification, so it stays whatever the game decides to put
-        /// there. Today the game binds it to the notification's title, and the buffer drops a first
-        /// line that only repeats the control's name, so the usual result is a buffer holding exactly
-        /// the one line the strip shows.</summary>
-        private static AgeTooltip IconTooltip(GuiNotification notification, NotificationItem[] items)
-        {
-            try
-            {
-                for (int i = 0; i < items.Length; i++)
-                {
-                    if (ReferenceEquals(items[i].GuiNotification, notification))
-                    {
-                        return items[i].Tootlip;
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                Log.Warn("galaxy: matching a notification to its icon threw: " + e);
-            }
-
-            return null;
-        }
-
-        private static readonly NotificationItem[] NoItems = new NotificationItem[0];
-
-        private static NotificationItem[] NotificationItems()
-        {
-            try
-            {
-                NotificationItemsWindow window = Gui.GuiServiceAvailable
-                    ? Gui.GuiService.GetWindow<NotificationItemsWindow>(false)
-                    : null;
-                return window == null
-                    ? NoItems
-                    : window.GetComponentsInChildren<NotificationItem>(true);
-            }
-            catch (Exception e)
-            {
-                Log.Warn("galaxy: finding the notification icons threw: " + e);
-                return NoItems;
-            }
-        }
-
-        private static void Open(GuiNotification notification)
-        {
-            try
-            {
-                Gui.GuiNotificationService.ToggleGuiNotification(notification);
-            }
-            catch (Exception e)
-            {
-                Log.Warn("galaxy: opening a notification threw: " + e);
-            }
-        }
-
-        /// <summary>Throw a notification away. One the game will not let go of stays, silently: the
-        /// key simply did nothing, which is what a key that does not apply here should do.</summary>
-        private static void Dismiss(GuiNotification notification)
-        {
-            try
-            {
-                if (notification.IsDismissible)
-                {
-                    Gui.GuiNotificationService.DismissGuiNotification(notification);
-                }
-            }
-            catch (Exception e)
-            {
-                Log.Warn("galaxy: dismissing a notification threw: " + e);
-            }
+            _hud.Tutorial(builder);
+            _hud.Notifications(builder);
+            _hud.Turn(builder);
         }
 
         // ---- systems ----
@@ -858,7 +224,7 @@ namespace ES2Access.Screens
         /// makes Alt and an arrow swallow the key and move nothing - which sounds like the key being
         /// broken rather than like there being nowhere else to go.
         /// </summary>
-        private static void BuildSystems(GraphBuilder builder)
+        private void BuildSystems(GraphBuilder builder)
         {
             try
             {
@@ -869,29 +235,31 @@ namespace ES2Access.Screens
                     return;
                 }
 
-                List<StarSystemNode> owned = new List<StarSystemNode>();
+                _owned.Clear();
+                _other.Clear();
                 DepartmentOfTheInterior interior = empire.GetAgency<DepartmentOfTheInterior>();
                 if (interior != null)
                 {
                     foreach (ColonizedStarSystem colony in interior.ColonizedStarSystems)
                     {
-                        if (colony.Node != null)
+                        // An empire can hold more than one thing in the same system - a colony and a
+                        // ghost of it - and the system is still one place on the map.
+                        if (colony.Node != null && !_owned.Contains(colony.Node))
                         {
-                            owned.Add(colony.Node);
+                            _owned.Add(colony.Node);
                         }
                     }
                 }
 
-                List<StarSystemNode> other = new List<StarSystemNode>();
                 foreach (StarSystemNode node in galaxy.StarSystemNodes)
                 {
-                    if (!owned.Contains(node) && Perceived(node, empire))
+                    if (!_owned.Contains(node) && Perceived(node, empire))
                     {
-                        other.Add(node);
+                        _other.Add(node);
                     }
                 }
 
-                bool split = owned.Count > 0 && other.Count > 0;
+                bool split = _owned.Count > 0 && _other.Count > 0;
                 if (split)
                 {
                     builder.SetRegion(OwnedSystemsRegion);
@@ -902,12 +270,9 @@ namespace ES2Access.Screens
                 // window serves every system this build declares.
                 StarSystemLabel[] labels = SystemLabels();
 
-                foreach (StarSystemNode node in galaxy.StarSystemNodes)
+                for (int i = 0; i < _owned.Count; i++)
                 {
-                    if (owned.Contains(node))
-                    {
-                        AddSystem(builder, node, true, labels);
-                    }
+                    AddSystem(builder, _owned[i], empire, true, labels);
                 }
 
                 if (split)
@@ -915,9 +280,9 @@ namespace ES2Access.Screens
                     builder.SetRegion(OtherSystemsRegion);
                 }
 
-                foreach (StarSystemNode node in other)
+                for (int i = 0; i < _other.Count; i++)
                 {
-                    AddSystem(builder, node, false, labels);
+                    AddSystem(builder, _other[i], empire, false, labels);
                 }
             }
             catch (Exception e)
@@ -926,9 +291,10 @@ namespace ES2Access.Screens
             }
         }
 
-        /// <summary>The map's own rule for whether a system's name is drawn: it has been explored, and
-        /// it is either remembered or in sight now.</summary>
-        private static bool Perceived(StarSystemNode node, Empire empire)
+        /// <summary>The map's own rule for whether a node's name is drawn: it has been explored, and
+        /// it is either remembered or in sight now. Everything this screen ever says the name of is
+        /// asked this first.</summary>
+        private static bool Perceived(GameNode node, Empire empire)
         {
             try
             {
@@ -946,9 +312,18 @@ namespace ES2Access.Screens
             }
         }
 
-        private static void AddSystem(
+        /// <summary>
+        /// One system on the map: what it is called, whether it is yours, and - once opened - what the
+        /// map draws inside its label.
+        ///
+        /// Enter is the game's own route into a colony of yours, the one the label's own button takes.
+        /// A system that is not yours has nowhere to be taken to, and does nothing rather than
+        /// inventing somewhere.
+        /// </summary>
+        private void AddSystem(
             GraphBuilder builder,
             StarSystemNode node,
+            Empire empire,
             bool owned,
             StarSystemLabel[] labels
         )
@@ -956,9 +331,8 @@ namespace ES2Access.Screens
             StarSystemNode it = node;
             StarSystemLabel label = LabelFor(node, labels);
             AgeTooltip tooltip = label == null ? null : label.StarTooltip;
-            NodeVtable vtable = GraphNodes.Button(
+            NodeVtable vtable = GraphNodes.Group(
                 () => it.LocalizedName,
-                () => Focus(it),
                 null,
                 tooltip,
                 GraphNodes.ModeFor(tooltip)
@@ -970,14 +344,862 @@ namespace ES2Access.Screens
                 );
             }
 
+            GalaxyHudScreen screen = this;
+            bool ours = owned;
+            vtable.OnActivate = () => screen.OpenSystemMenu(it, ours);
             vtable.DetailLines = TooltipLines(tooltip);
-            if (label != null)
+
+            // The camera goes where the cursor goes, so that whoever is watching the screen is looking
+            // at the system being read out. On the galaxy this only slides the camera across; it does
+            // not undo the zoom a system that has been opened up asked for.
+            //
+            // Once the camera is all the way in, the map pushes the system's own label off the top of
+            // the screen and draws a tooltip anchor on the star instead - so that is what the pointer
+            // is put on, or a tooltip meant for the system would be drawn where nobody can see it.
+            AgeTransform anchor = label == null ? null : label.AgeTransform;
+            AgeTooltip tip = tooltip;
+            vtable.OnFocusVisual = () =>
             {
-                vtable.OnFocusVisual = () => PointerFocus.MoveTo(null, tooltip, label.AgeTransform);
-                vtable.OnBlurVisual = ReleasePointer;
+                GalaxyViewLevels.PanTo(it);
+                AgeTooltip star = OrbitalStarTooltip(it);
+                if (star != null)
+                {
+                    PointerFocus.MoveTo(null, star, star.AgeTransform);
+                }
+                else if (anchor != null)
+                {
+                    PointerFocus.MoveTo(null, tip, anchor);
+                }
+            };
+            vtable.OnBlurVisual = ReleasePointer;
+
+            // Opening a system up moves NOTHING. Right means "tell me what is inside this", and what
+            // is inside it is whatever the map is drawing at the distance the player has chosen: the
+            // circles when the camera is out, the orbital cards when it is in. Making the key drag the
+            // camera to the closest step took that choice away - and with it every readout that only
+            // exists while the camera is out - so where the camera goes is asked for from the menu
+            // instead, and the engine keeps its own record of what is open.
+            ControlId id = ControlId.Referenced(it, "galaxy:system/" + it.GUID);
+            builder.BeginGroup(id, vtable);
+            // Only what is open costs anything: a galaxy of closed systems declares one node each.
+            if (builder.IsExpanded(id))
+            {
+                AddPlanets(builder, node, empire, owned, label);
+                AddStarlanes(builder, node, empire);
             }
 
-            builder.AddItem(ControlId.Referenced(it, "galaxy:system/" + it.GUID), vtable);
+            builder.EndGroup();
+        }
+
+        /// <summary>
+        /// What can be done with a system from the map: go into its management page, and choose how
+        /// close the camera stands to it.
+        ///
+        /// The two camera entries are one entry in two states, because the camera is either in on a
+        /// system or it is not - and offering the one that would do nothing is how a menu teaches a
+        /// player that half of it is decoration. Going in is the game's own double-click route; coming
+        /// back out returns to the step the player was standing at before they asked to go in.
+        /// </summary>
+        private void OpenSystemMenu(StarSystemNode node, bool owned)
+        {
+            List<string> labels = new List<string>();
+            List<Action> actions = new List<Action>();
+            StarSystemNode it = node;
+            GalaxyHudScreen screen = this;
+
+            if (owned)
+            {
+                labels.Add(ModStrings.Get(ModStrings.GalaxyOpenSystem));
+                actions.Add(() => GalaxyViewLevels.OpenSystem(it));
+            }
+
+            if (GalaxyViewLevels.AtOrbitalZoom)
+            {
+                labels.Add(ModStrings.Get(ModStrings.GalaxyReturnToGalaxyView));
+                actions.Add(() => screen.ReturnToGalaxyView(it));
+            }
+            else
+            {
+                labels.Add(ModStrings.Get(ModStrings.GalaxyShowSystemView));
+                actions.Add(() => screen.ShowSystemView(it));
+            }
+
+            List<Action> chosen = actions;
+            ChoiceSubmenuScreen.Open(
+                node.LocalizedName,
+                labels,
+                -1,
+                index =>
+                {
+                    if (index >= 0 && index < chosen.Count)
+                    {
+                        chosen[index]();
+                    }
+                }
+            );
+        }
+
+        private void ShowSystemView(StarSystemNode node)
+        {
+            _stepBeforeSystemView = GalaxyViewLevels.ZoomStep;
+            GalaxyViewLevels.ZoomTo(node);
+        }
+
+        private void ReturnToGalaxyView(StarSystemNode node)
+        {
+            int step =
+                _stepBeforeSystemView >= 0
+                    ? _stepBeforeSystemView
+                    : GalaxyViewLevels.DefaultZoomStep;
+            _stepBeforeSystemView = -1;
+            GalaxyViewLevels.ZoomToStep(node, step);
+        }
+
+        /// <summary>
+        /// The planets the map draws inside a system's label, in the order it draws them.
+        ///
+        /// Which planets those are is the label's own question, asked the same way: the system has been
+        /// identified, and this empire is allowed to see its planets at all. Until the system has been
+        /// properly surveyed the game draws grey circles and names nothing, and neither does this - the
+        /// planets are in the galaxy model the whole time, and reading their names off it would tell
+        /// the player things the map is deliberately not showing them.
+        ///
+        /// Opening a system brings the camera all the way in, and at that distance the map stops
+        /// drawing circles and draws a CARD in orbit for each planet - its name, what kind of world it
+        /// is, whether it can be colonized and why not, its outputs, its anomalies, and the buttons for
+        /// everything a fleet in the system could do to it. That card is what a sighted player browses
+        /// a system with, so where one is drawn it is what a planet here reads from and what its menu
+        /// offers. Where one is not - the camera is somewhere else, or has not arrived yet - the planet
+        /// falls back to the model's own thin answer rather than going silent.
+        /// </summary>
+        private static void AddPlanets(
+            GraphBuilder builder,
+            StarSystemNode node,
+            Empire empire,
+            bool owned,
+            StarSystemLabel label
+        )
+        {
+            try
+            {
+                if ((int)node.Exploration[empire] < 2 || !node.PlanetsVisibility[empire.Index])
+                {
+                    return;
+                }
+
+                AgeTransform table = label == null ? null : label.PlanetCirclesTable;
+                PlanetLabel_SystemOrbital[] cards = OrbitalLabels(node);
+                for (int i = 0; i < node.Planets.Count; i++)
+                {
+                    StarSystemNode system = node;
+                    Planet planet = node.Planets[i];
+                    Empire looking = empire;
+                    PlanetLabel_SystemOrbital card = CardFor(planet, cards);
+                    NodeVtable vtable;
+                    if (card != null)
+                    {
+                        vtable = OrbitalReadout(card, system, owned);
+                    }
+                    else
+                    {
+                        // The circle is what the player would hover to get the planet's panel;
+                        // without one the planet is still on the map, just with nothing to show
+                        // under the pointer.
+                        AgeTransform circle = Circle(table, i);
+                        AgeTooltip tooltip = Raw(circle);
+                        vtable = GraphNodes.Readout(
+                            () => PlanetName(system, planet, looking),
+                            () => PlanetStatus(system, planet, looking),
+                            TooltipLines(tooltip),
+                            tooltip
+                        );
+                        if (owned)
+                        {
+                            vtable.OnActivate = () => GalaxyViewLevels.OpenSystem(system);
+                        }
+
+                        if (circle != null)
+                        {
+                            PointAt(vtable, circle);
+                        }
+                    }
+
+                    builder.AddItem(
+                        ControlId.Referenced(
+                            planet,
+                            "galaxy:system/" + node.GUID + "/planet/" + i
+                        ),
+                        vtable
+                    );
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: reading a system's planets threw: " + e);
+            }
+        }
+
+        // ---- the orbital cards ----
+
+        private static readonly PlanetLabel_SystemOrbital[] NoCards =
+            new PlanetLabel_SystemOrbital[0];
+
+        /// <summary>The orbital cards the map is drawing right now. It draws them for ONE system - the
+        /// one the camera has come in on - so a system anywhere else on the map gets none, and asking
+        /// for another system's cards while this one's are up would hand out the wrong planets'
+        /// widgets.</summary>
+        private static PlanetLabel_SystemOrbital[] OrbitalLabels(StarSystemNode node)
+        {
+            try
+            {
+                PlanetLabelsWindow_SystemOrbital window = OrbitalWindow();
+                if (window == null || !ReferenceEquals(GalaxyViewLevels.FocusedSystem, node))
+                {
+                    return NoCards;
+                }
+
+                return window.GetComponentsInChildren<PlanetLabel_SystemOrbital>(true);
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: finding the orbital cards threw: " + e);
+                return NoCards;
+            }
+        }
+
+        private static PlanetLabel_SystemOrbital CardFor(
+            Planet planet,
+            PlanetLabel_SystemOrbital[] cards
+        )
+        {
+            try
+            {
+                for (int i = 0; i < cards.Length; i++)
+                {
+                    PlanetLabel_SystemOrbital card = cards[i];
+                    if (
+                        card != null
+                        && ReferenceEquals(card.Planet, planet)
+                        && Visible(card.AgeTransform)
+                    )
+                    {
+                        return card;
+                    }
+                }
+            }
+            catch (Exception) { }
+
+            return null;
+        }
+
+        /// <summary>The tooltip the orbital window draws on a system's star, which it keeps parked over
+        /// the star wherever the star is on screen. Null unless the camera is in on that system.
+        /// </summary>
+        private static AgeTooltip OrbitalStarTooltip(StarSystemNode node)
+        {
+            try
+            {
+                PlanetLabelsWindow_SystemOrbital window = OrbitalWindow();
+                if (window == null || !ReferenceEquals(GalaxyViewLevels.FocusedSystem, node))
+                {
+                    return null;
+                }
+
+                AgeTooltip star = window.StarTooltip;
+                return star != null && star.AgeTransform != null ? star : null;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        private static PlanetLabelsWindow_SystemOrbital OrbitalWindow()
+        {
+            try
+            {
+                PlanetLabelsWindow_SystemOrbital window = Gui.GuiServiceAvailable
+                    ? Gui.GuiService.GetWindow<PlanetLabelsWindow_SystemOrbital>(false)
+                    : null;
+                return window != null && window.Shown ? window : null;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// A planet as its orbital card reads it: the three lines the card writes - what it is called,
+        /// what kind of world it is, and what the game says about colonizing it - with everything the
+        /// card draws as icons and gauges in the review buffer, and its buttons in the action menu.
+        /// </summary>
+        private static NodeVtable OrbitalReadout(
+            PlanetLabel_SystemOrbital card,
+            StarSystemNode system,
+            bool owned
+        )
+        {
+            PlanetLabel_SystemOrbital it = card;
+            StarSystemNode node = system;
+            bool ours = owned;
+            AgeTooltip dossier = it.PlanetInfoTooltip;
+            NodeVtable vtable = new NodeVtable
+            {
+                Announcements = new List<NodeAnnouncement>
+                {
+                    GraphNodes.LabelPart(() => AgeText.Label(it.PlanetName)),
+                    GraphNodes.ValuePart(() => AgeText.Label(it.PlanetSizeAndType)),
+                    GraphNodes.ValuePart(() => AgeText.Label(it.ColonizeStatus)),
+                    GraphNodes.ValuePart(() => OutpostTimer(it)),
+                },
+                DetailLines = () => OrbitalDetails(it),
+                OnActivate = () => OpenOrbitalMenu(it, node, ours),
+            };
+            // The card's own dossier - the paragraph the game writes about a world of this kind, its
+            // size, its type - is the long panel behind the card, so it is indicated and read from the
+            // buffer rather than said on every pass.
+            NodeAnnouncement tooltipPart = GraphNodes.TooltipPart(
+                GraphNodes.ModeFor(dossier),
+                dossier
+            );
+            if (tooltipPart != null)
+            {
+                vtable.Announcements.Add(tooltipPart);
+            }
+
+            PointAt(vtable, it.PlanetOrbitalCardContainer ?? it.AgeTransform);
+            return vtable;
+        }
+
+        /// <summary>How long an outpost of ours has left before it becomes a colony - drawn on the card
+        /// only while there is one.</summary>
+        private static string OutpostTimer(PlanetLabel_SystemOrbital card)
+        {
+            try
+            {
+                return card.OutpostTimer != null && Visible(card.OutpostTimer.AgeTransform)
+                    ? AgeText.Label(card.OutpostTimer)
+                    : null;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// What the card shows that its written lines do not carry, and NOTHING ELSE: the outputs it
+        /// writes as numbers, the anomalies, curiosities and deposits it draws as icons, and last the
+        /// long panel it shows when the card itself is hovered. In the order the card draws them.
+        ///
+        /// The rule this obeys is that the buffer is the card's FACE. Anything read off the game's
+        /// model rather than off the card put words in the player's ear that no one looking at the
+        /// screen could see: the five outputs a colony has are drawn as numbers and belong here, and
+        /// the same five on a world nobody has settled are drawn as rows of pips standing for a
+        /// rating, so reading the simulation's raw values for them described a card that does not
+        /// exist. The game's refusal to colonize is not here either - it is an answer to a question,
+        /// and the place for it is the menu that asks it.
+        /// </summary>
+        private static IList<string> OrbitalDetails(PlanetLabel_SystemOrbital card)
+        {
+            List<string> lines = new List<string>();
+            try
+            {
+                AddFidsi(lines, card);
+                AddAnomalies(lines, card);
+                AddWidgetLines(lines, card.PlanetCuriositiesTable);
+                AddWidgetLines(lines, card.ResourceDepositsGroup);
+                AddTooltip(lines, card.PlanetInfoTooltip);
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: reading an orbital card threw: " + e);
+            }
+
+            return lines;
+        }
+
+        /// <summary>Whichever of the card's colonization buttons the game has put up and then refused
+        /// to act on - they are alternatives, one per faction's way of settling a planet - because the
+        /// sentence on it is where the game says why it is refusing. Null when nothing is refusing:
+        /// the game leaves a blocked button visible and clickable and turns the click into "here is
+        /// the technology you are missing", so being hinted is the only thing that tells the two
+        /// apart.</summary>
+        private static AgeTooltip ColonizeHint(PlanetLabel_SystemOrbital card)
+        {
+            AgeControlButton[] buttons = new AgeControlButton[]
+            {
+                card.ColonizeButton,
+                card.BuyOutpostButton,
+                card.VodyaniHintButton,
+                card.UmbralChoirHintButton,
+            };
+            for (int i = 0; i < buttons.Length; i++)
+            {
+                AgeTransform at = AgeWidgets.Transform(buttons[i]);
+                if (at != null && Visible(at) && Gui.IsHintActive(at))
+                {
+                    return Raw(at);
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// The one line the game is refusing on, in the game's own words - "Missing technology
+        /// Maximized Exploitation".
+        ///
+        /// The hint's tooltip is assembled by the game in three known parts: the button's own
+        /// description, then the failure, then - only ever for a missing technology - the sentence
+        /// telling a mouse how to jump to it. The button's description names the action, which the
+        /// menu entry beside it would already be named after, and the mouse instruction is for a
+        /// mouse; what is left is the refusal.
+        /// </summary>
+        private static string ColonizeRefusal(AgeTooltip hint)
+        {
+            try
+            {
+                if (Readable(hint) == null)
+                {
+                    return null;
+                }
+
+                return RefusalText.Compose(
+                    AgeText.Lines(AgeText.Tooltip(hint)),
+                    AgeText.Clean(Gui.Localize("%MissingTechnologyClickDescription"))
+                );
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: reading a colonize refusal threw: " + e);
+                return null;
+            }
+        }
+
+        /// <summary>What has been found on the planet. The card draws each anomaly as a coloured icon
+        /// with no words on it at all, so the names come from the game's own wrapper for the same
+        /// anomaly - the one whose title it writes wherever it does have room. Only while the card is
+        /// drawing the row: the planet knows its anomalies whether or not they are on screen.</summary>
+        private static void AddAnomalies(List<string> lines, PlanetLabel_SystemOrbital card)
+        {
+            try
+            {
+                Planet planet = card.Planet;
+                if (planet == null || !Visible(card.PlanetAnomaliesTable))
+                {
+                    return;
+                }
+
+                for (int i = 0; i < planet.Anomalies.Count; i++)
+                {
+                    Anomaly anomaly = planet.Anomalies[i];
+                    AddLine(
+                        lines,
+                        AgeText.Clean(
+                            new GuiAnomaly(anomaly.AnomalyDefinition, planet).Title
+                        )
+                    );
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: reading a planet's anomalies threw: " + e);
+            }
+        }
+
+        /// <summary>
+        /// The colony's five outputs, named by the game's own property titles and read off the same
+        /// simulation object the card reads them from.
+        ///
+        /// Only where the card WRITES them, which is only for a colony: on a world nobody has settled
+        /// the card hides this row and draws a table of pips instead - a rating, not a number - and
+        /// the numbers behind those pips are a thing the game is deliberately not showing.
+        /// </summary>
+        private static void AddFidsi(List<string> lines, PlanetLabel_SystemOrbital card)
+        {
+            try
+            {
+                FidsiEnumerator fidsi = card.FidsiEnumerator;
+                ColonizedPlanet colony = card.ColonizedPlanet;
+                if (
+                    fidsi == null
+                    || fidsi.FidsiProperties == null
+                    || colony == null
+                    || !Visible(fidsi.AgeTransform)
+                )
+                {
+                    return;
+                }
+
+                Amplitude.Unity.Simulation.SimulationObject simulation = colony.SimulationObject;
+                if (simulation == null)
+                {
+                    return;
+                }
+
+                int count = Math.Min(fidsi.DisplayedProperties, fidsi.FidsiProperties.Count);
+                for (int i = 0; i < count; i++)
+                {
+                    GuiSimulationProperty property = fidsi.FidsiProperties[i];
+                    if (property == null)
+                    {
+                        continue;
+                    }
+
+                    AddLine(
+                        lines,
+                        new MessageBuilder()
+                            .ListItem(AgeText.Clean(Gui.GetLocalizedTitle(property.Name)))
+                            .ListItem(Amount(simulation.GetPropertyValue(property.Name), false, 0))
+                            .Build()
+                    );
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: reading an orbital card's outputs threw: " + e);
+            }
+        }
+
+        /// <summary>
+        /// What can be done to this planet from the map, as a menu built from what the game is offering
+        /// right now.
+        ///
+        /// Opening the planet's own page comes first, because that is what a click on the card itself
+        /// does. Then the card's own buttons, each offered only when the game would really act on it:
+        /// the game leaves a refusing colonize button clickable so that clicking it jumps to the
+        /// technology that would unlock it, and that hint is not the action the entry is named after.
+        ///
+        /// The refusal itself is the last entry, and it does nothing. It is the one thing in any menu
+        /// in this mod that is not an action, and it is here because it is the answer to the question
+        /// the player opened the menu to ask: they came looking for Colonize, and "Missing technology
+        /// Maximized Exploitation" - the game's sentence, not the mod's - is where it went. A menu that
+        /// simply had no Colonize in it would have left them to guess.
+        /// </summary>
+        private static void OpenOrbitalMenu(
+            PlanetLabel_SystemOrbital card,
+            StarSystemNode system,
+            bool owned
+        )
+        {
+            List<string> labels = new List<string>();
+            List<Action> actions = new List<Action>();
+            List<Func<IList<string>>> details = new List<Func<IList<string>>>();
+            try
+            {
+                Planet planet = card.Planet;
+                if (planet != null)
+                {
+                    Planet it = planet;
+                    labels.Add(ModStrings.Get(ModStrings.SystemViewPlanet));
+                    details.Add(null);
+                    actions.Add(() => GalaxyViewLevels.OpenPlanet(it));
+                }
+
+                if (owned)
+                {
+                    StarSystemNode node = system;
+                    labels.Add(ModStrings.Get(ModStrings.GalaxyOpenSystem));
+                    details.Add(null);
+                    actions.Add(() => GalaxyViewLevels.OpenSystem(node));
+                }
+
+                AddOrbitalAction(
+                    card.ColonizeButton,
+                    ModStrings.Get(ModStrings.SystemColonize),
+                    labels,
+                    details,
+                    actions
+                );
+                AddOrbitalAction(card.BuyOutpostButton, null, labels, details, actions);
+                AddOrbitalAction(card.MinorFactionButton, null, labels, details, actions);
+
+                // The row of small round buttons under the card. The game draws them as bare icons
+                // and hangs an assembled stat block on each, so there is no caption and no first line
+                // of tooltip to name them by - but the game DOES name every one of them, on the fleet
+                // action each carries out, and those are the words a player reading the manual would
+                // meet. In the order the card draws them.
+                AddOrbitalAction(
+                    card.TerraformationButton,
+                    Localized("%InitiateTerraformPlanetFleetActionTitle"),
+                    labels,
+                    details,
+                    actions
+                );
+                AddOrbitalAction(
+                    card.RestorationButton,
+                    Localized("%InitiateRestorePlanetFleetActionTitle"),
+                    labels,
+                    details,
+                    actions
+                );
+                AddOrbitalAction(
+                    card.AnomalyReductionButton,
+                    Localized("%InitiateReduceAnomalyFleetActionTitle"),
+                    labels,
+                    details,
+                    actions
+                );
+                AddOrbitalAction(
+                    card.MiningProbeButton,
+                    Localized("%LaunchMiningProbeFleetActionTitle"),
+                    labels,
+                    details,
+                    actions
+                );
+                AddOrbitalAction(
+                    card.DestroyButton,
+                    Localized("%DestroyPlanetFleetActionTitle"),
+                    labels,
+                    details,
+                    actions
+                );
+
+                AddColonizeRefusal(card, labels, details, actions);
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: working out a planet's actions threw: " + e);
+            }
+
+            List<Action> chosen = actions;
+            ChoiceSubmenuScreen.Open(
+                AgeText.Label(card.PlanetName),
+                labels,
+                -1,
+                index =>
+                {
+                    if (index >= 0 && index < chosen.Count)
+                    {
+                        chosen[index]();
+                    }
+                },
+                details
+            );
+        }
+
+        /// <summary>One of the card's buttons, offered only if the game would act on it. A button whose
+        /// click has been turned into a hint - "here is the technology you are missing" - is not the
+        /// action it looks like, and is left out; the refusal it carries is added once, at the end, as
+        /// its own entry. <paramref name="name"/> is null for a button whose tooltip opens with a name
+        /// worth using, which is then the game's own sentence about itself.</summary>
+        private static void AddOrbitalAction(
+            AgeControlButton button,
+            string name,
+            List<string> labels,
+            List<Func<IList<string>>> details,
+            List<Action> actions
+        )
+        {
+            try
+            {
+                AgeTransform at = AgeWidgets.Transform(button);
+                if (
+                    at == null
+                    || !Visible(at)
+                    || !AgeWidgets.Operable(at)
+                    || Gui.IsHintActive(at)
+                )
+                {
+                    return;
+                }
+
+                AgeTooltip tooltip = Raw(at);
+                string label = name ?? FirstLine(tooltip);
+                if (string.IsNullOrEmpty(label))
+                {
+                    Log.Warn("galaxy: an orbital card button has no name to offer: " + at.name);
+                    return;
+                }
+
+                AgeControlButton press = button;
+                labels.Add(label);
+                details.Add(TooltipLines(tooltip));
+                actions.Add(() => AgeWidgets.Press(press));
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: reading an orbital card button threw: " + e);
+            }
+        }
+
+        /// <summary>
+        /// The entry that is not an action: the game's own sentence about why it will not colonize
+        /// this planet, carried into the menu so that the refusal is where the request was made.
+        ///
+        /// Choosing it does nothing except close the menu. That is deliberate - the drawn button
+        /// behind it would jump the player into the technology tree, which is a page this mod does not
+        /// yet describe, so following it would be a one-way door. The whole hint, that instruction
+        /// included, is in the entry's own buffer for anyone who wants it.
+        /// </summary>
+        private static void AddColonizeRefusal(
+            PlanetLabel_SystemOrbital card,
+            List<string> labels,
+            List<Func<IList<string>>> details,
+            List<Action> actions
+        )
+        {
+            AgeTooltip hint = ColonizeHint(card);
+            string refusal = ColonizeRefusal(hint);
+            if (string.IsNullOrEmpty(refusal))
+            {
+                return;
+            }
+
+            labels.Add(refusal);
+            details.Add(TooltipLines(hint));
+            actions.Add(DoNothing);
+        }
+
+        private static readonly Action DoNothing = () => { };
+
+        /// <summary>A phrase the game wrote, by the game's own key for it - for a control the game
+        /// draws as a wordless icon and names nowhere on the screen.</summary>
+        private static string Localized(string key)
+        {
+            try
+            {
+                return AgeText.Clean(Gui.Localize(key));
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>The circle the label draws for the planet at <paramref name="index"/>, or null if
+        /// the label has not been given one - the window pools its labels and grows the row as systems
+        /// are discovered, so a row can be short of a planet the model already has.</summary>
+        private static AgeTransform Circle(AgeTransform table, int index)
+        {
+            try
+            {
+                if (table == null || index >= table.Children.Count)
+                {
+                    return null;
+                }
+
+                AgeTransform circle = table.Children[index];
+                return circle != null && circle.Visible ? circle : null;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>What the map calls this planet. A system the player has not surveyed shows a circle
+        /// with no name on it and a panel that says only that the planet is unknown, so that word - the
+        /// game's own - is the whole of what a planet in one is called here.</summary>
+        private static string PlanetName(StarSystemNode system, Planet planet, Empire empire)
+        {
+            try
+            {
+                if (!Surveyed(system, empire))
+                {
+                    return AgeText.Clean(Gui.Localize("%PlanetStatusUnknownTitle"));
+                }
+
+                return AgeText.Clean(new GuiPlanet(planet).Title);
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>What the circle is saying about the planet by the colour it is drawn in - colonized,
+        /// an outpost, inhospitable - in the game's own words for each of those states. Nothing for a
+        /// planet in an unsurveyed system: the name has already said it is unknown.</summary>
+        private static string PlanetStatus(StarSystemNode system, Planet planet, Empire empire)
+        {
+            try
+            {
+                if (!Surveyed(system, empire))
+                {
+                    return null;
+                }
+
+                GuiPlanet.PlanetStatuses status = new GuiPlanet(planet).PlanetStatus;
+                return AgeText.Clean(Gui.Localize("%PlanetStatus" + status + "Title"));
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>Whether the game has let this empire see what the planets in a system actually are.
+        /// The circles switch from grey unknowns to real planets at the same threshold.</summary>
+        private static bool Surveyed(StarSystemNode system, Empire empire)
+        {
+            return (int)system.Exploration[empire] >= (int)EntityExploration.State.Revealed;
+        }
+
+        /// <summary>
+        /// The lanes leaving a system, and where each one goes.
+        ///
+        /// A lane says the name of the system at its far end only when the map draws that name.
+        /// Everything else is a lane into the unexplored, which is what the map shows: a line running
+        /// off into the dark. The galaxy model would answer either way - it holds every system's name
+        /// from the first turn - so the check, not the model, is what keeps this honest.
+        ///
+        /// A wormhole is a different thing from a starlane and is said to be one. An empire without the
+        /// technology to see them is shown none, exactly as the game's own neighbour search skips them.
+        /// </summary>
+        private static void AddStarlanes(GraphBuilder builder, StarSystemNode node, Empire empire)
+        {
+            try
+            {
+                for (int i = 0; i < node.Links.Count; i++)
+                {
+                    Link link = node.Links[i];
+                    bool wormhole = link is WormholeLink;
+                    if (wormhole && !empire.HasWormholeTechnology)
+                    {
+                        continue;
+                    }
+
+                    if (link.Exploration[empire] == EntityExploration.State.Unrevealed)
+                    {
+                        continue;
+                    }
+
+                    GameNode far = ReferenceEquals(link.ExtremityNode1, node)
+                        ? link.ExtremityNode2
+                        : link.ExtremityNode1;
+                    GameNode destination = far;
+                    bool named = Perceived(far, empire);
+                    string template = wormhole
+                        ? (named ? ModStrings.GalaxyWormhole : ModStrings.GalaxyWormholeUnexplored)
+                        : (named ? ModStrings.GalaxyStarlane : ModStrings.GalaxyStarlaneUnexplored);
+                    Func<string> text = named
+                        ? (Func<string>)(
+                            () => ModStrings.Format(template, destination.LocalizedName)
+                        )
+                        : () => ModStrings.Get(template);
+                    NodeVtable vtable = new NodeVtable
+                    {
+                        Announcements = new List<NodeAnnouncement>
+                        {
+                            GraphNodes.LabelPart(text),
+                        },
+                    };
+                    builder.AddItem(
+                        ControlId.Referenced(
+                            link,
+                            "galaxy:system/" + node.GUID + "/lane/" + link.GUID
+                        ),
+                        vtable
+                    );
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: reading a system's starlanes threw: " + e);
+            }
         }
 
         /// <summary>The on-map label carrying this system's tooltip - matched by the node reference
@@ -1034,22 +1256,6 @@ namespace ES2Access.Screens
             {
                 Log.Warn("galaxy: finding the system labels threw: " + e);
                 return NoLabels;
-            }
-        }
-
-        /// <summary>Take the camera to a system, the way every "show me where this happened" button in
-        /// the game does: back out to the galaxy and centre on it. Deliberately not the game's
-        /// select-this-system route, which drops a colony of yours straight into the system management
-        /// screen - a screen with no keyboard route out of it yet.</summary>
-        private static void Focus(StarSystemNode node)
-        {
-            try
-            {
-                Gui.GuiGameWindowService.RequestGalaxyOverviewViewLevel(node);
-            }
-            catch (Exception e)
-            {
-                Log.Warn("galaxy: focusing a system threw: " + e);
             }
         }
 
@@ -1158,80 +1364,11 @@ namespace ES2Access.Screens
 
         // ---- shared ----
 
-        /// <summary>A line the player reads but does not work: a name and a number. No role word -
-        /// there is no control here to name, and "Empire Dust, 150, 38 per turn" is the whole of what
-        /// the banner says. Its tooltip is always the class-assembled stat block behind the number, so
-        /// it is always the <see cref="TooltipMode.Indicate"/> half of the rule in practice - said here
-        /// as "whatever the rule decides" rather than as a hardcoded mode, so a resource whose tooltip
-        /// the game ever authored as plain Content would still be read the way the rule says plain
-        /// Content should be.</summary>
-        private static NodeVtable Readout(
-            Func<string> label,
-            Func<string> value,
-            Func<IList<string>> details,
-            AgeTooltip tooltip
-        )
-        {
-            List<NodeAnnouncement> parts = new List<NodeAnnouncement>
-            {
-                GraphNodes.LabelPart(label),
-                GraphNodes.ValuePart(value),
-            };
-            NodeAnnouncement tooltipPart = GraphNodes.TooltipPart(GraphNodes.ModeFor(tooltip), tooltip);
-            if (tooltipPart != null)
-            {
-                parts.Add(tooltipPart);
-            }
-
-            return new NodeVtable { Announcements = parts, DetailLines = details };
-        }
-
-        /// <summary>A stock and what the next turn does to it, in the game's own number formatting -
-        /// grouped, rounded down, and signed for the part that is a change.</summary>
-        private static string StockAndNet(float stock, float net, int decimals)
-        {
-            return ModStrings.Format(
-                ModStrings.GalaxyStockAndNet,
-                Amount(stock, false, decimals),
-                Amount(net, true, decimals)
-            );
-        }
-
         private static string Amount(float value, bool signed, int decimals)
         {
             try
             {
                 return Gui.FormatAmount(value, true, Gui.Rounding.Floor, signed, decimals);
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        private static float Value(Empire empire, StaticString property)
-        {
-            try
-            {
-                return empire.GetPropertyValue(property);
-            }
-            catch (Exception)
-            {
-                return 0f;
-            }
-        }
-
-        /// <summary>The banner hangs each total's tooltip on the group around the label rather than on
-        /// the label, because the icon beside it is part of the same hover target - and that group is
-        /// also the shape the player sees, so it is what the row model measures and what the tooltip is
-        /// drawn under.</summary>
-        private static AgeTransform Area(AgePrimitiveLabel label)
-        {
-            try
-            {
-                AgeTransform widget = label.AgeTransform;
-                AgeTransform group = widget.Parent;
-                return group != null && Raw(group) != null ? group : widget;
             }
             catch (Exception)
             {
@@ -1259,17 +1396,6 @@ namespace ES2Access.Screens
             }
         }
 
-        /// <summary>The controls sit in a cluster rather than along one axis, so up and down walk them
-        /// too and nobody has to guess which way they are laid out.</summary>
-        private static void WireVertically(GraphBuilder builder, List<ControlId> ids)
-        {
-            for (int i = 1; i < ids.Count; i++)
-            {
-                builder.Connect(ids[i - 1], GraphDir.Down, ids[i]);
-                builder.Connect(ids[i], GraphDir.Up, ids[i - 1]);
-            }
-        }
-
         /// <summary>Make the control look hovered while the cursor is on it. The tooltip handed over
         /// here is the widget's own, class-driven or not: a class tooltip has nothing to READ off the
         /// widget but plenty to SHOW, and showing it is the whole point of this hook.</summary>
@@ -1278,24 +1404,6 @@ namespace ES2Access.Screens
             AgeControlButton it = button;
             vtable.OnFocusVisual = () =>
                 PointerFocus.MoveTo(it, Transform(it).AgeTooltip, it.AgeTransform);
-            vtable.OnBlurVisual = ReleasePointer;
-        }
-
-        /// <summary>The same for a control whose tooltip the game hangs somewhere other than on the
-        /// button - a line of text inside a button stretched across a whole banner, a strip item whose
-        /// tooltip lives on the row. <paramref name="under"/> is what the tooltip is drawn beneath.
-        /// </summary>
-        private static void Point(
-            NodeVtable vtable,
-            AgeControlButton button,
-            AgeTooltip tooltip,
-            AgeTransform under
-        )
-        {
-            AgeControlButton it = button;
-            AgeTooltip tip = tooltip;
-            AgeTransform anchor = under;
-            vtable.OnFocusVisual = () => PointerFocus.MoveTo(it, tip, anchor);
             vtable.OnBlurVisual = ReleasePointer;
         }
 
@@ -1310,45 +1418,6 @@ namespace ES2Access.Screens
         }
 
         private static readonly Action ReleasePointer = PointerFocus.Release;
-
-        /// <summary>The game writes the End Turn caption over two lines. Spoken, that is one phrase.
-        /// </summary>
-        private static string OneLine(string text)
-        {
-            MessageBuilder message = new MessageBuilder();
-            foreach (string line in AgeText.Lines(text))
-            {
-                message.Fragment(line);
-            }
-
-            return message.Build();
-        }
-
-        private static int Turn()
-        {
-            return Turn(TurnWindow());
-        }
-
-        private static int Turn(EndTurnWindow window)
-        {
-            try
-            {
-                if (
-                    window == null
-                    || window.EndTurnService == null
-                    || window.EndTurnService.Target == null
-                )
-                {
-                    return -1;
-                }
-
-                return window.EndTurnService.Target.Turn + 1;
-            }
-            catch (Exception)
-            {
-                return -1;
-            }
-        }
 
         private static AgeTransform Transform(AgeControl control)
         {
@@ -1396,6 +1465,78 @@ namespace ES2Access.Screens
             try
             {
                 return tooltip != null && string.IsNullOrEmpty(tooltip.Class) ? tooltip : null;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        private static void AddLine(List<string> lines, string line)
+        {
+            if (!string.IsNullOrEmpty(line) && !lines.Contains(line))
+            {
+                lines.Add(line);
+            }
+        }
+
+        private static void AddTooltip(List<string> lines, AgeTooltip tooltip)
+        {
+            Func<IList<string>> source = TooltipLines(tooltip);
+            if (source == null)
+            {
+                return;
+            }
+
+            try
+            {
+                IList<string> from = source();
+                for (int i = 0; from != null && i < from.Count; i++)
+                {
+                    AddLine(lines, from[i]);
+                }
+            }
+            catch (Exception) { }
+        }
+
+        /// <summary>A table of things - anomalies, curiosities, deposits - reads one line per thing,
+        /// which is how it is drawn and how it is reviewed.</summary>
+        private static void AddWidgetLines(List<string> lines, AgeTransform widget)
+        {
+            if (widget == null || !Visible(widget))
+            {
+                return;
+            }
+
+            IList<AgeTransform> children = widget.Children;
+            if (children == null || children.Count == 0)
+            {
+                AddLine(lines, AgeWidgets.TextOf(widget));
+                return;
+            }
+
+            for (int i = 0; i < children.Count; i++)
+            {
+                if (Visible(children[i]))
+                {
+                    AddLine(lines, AgeWidgets.TextOf(children[i]));
+                }
+            }
+        }
+
+        /// <summary>The first thing a tooltip says - what a control with no caption of its own is
+        /// called, in the game's words.</summary>
+        private static string FirstLine(AgeTooltip tooltip)
+        {
+            try
+            {
+                if (Readable(tooltip) == null)
+                {
+                    return null;
+                }
+
+                IList<string> lines = AgeText.Lines(AgeText.Tooltip(tooltip));
+                return lines != null && lines.Count > 0 ? lines[0] : null;
             }
             catch (Exception)
             {
@@ -1499,20 +1640,6 @@ namespace ES2Access.Screens
             {
                 return Gui.GuiServiceAvailable
                     ? Gui.GuiService.GetWindow<EndTurnWindow>(false)
-                    : null;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        private static GameOverlayWindow OverlayWindow()
-        {
-            try
-            {
-                return Gui.GuiServiceAvailable
-                    ? Gui.GuiService.GetWindow<GameOverlayWindow>(false)
                     : null;
             }
             catch (Exception)
