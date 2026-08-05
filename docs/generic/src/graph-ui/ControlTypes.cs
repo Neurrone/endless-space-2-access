@@ -78,6 +78,18 @@ namespace ES2Access.UI
             Common = () => RoleWord(ModStrings.ControlComboBox),
         };
 
+        /// <summary>One line of a menu the player has opened to choose an action from. It says so on
+        /// every entry, unlike the entries of a value list: a menu is somewhere the player has been
+        /// taken, and the role word is what tells them the keyboard has moved somewhere new. (WotR's
+        /// port of this pattern reuses the value-list entry and says nothing; hearing "menu item" is
+        /// the screen-reader convention and was chosen over matching it.)</summary>
+        public static readonly ControlType MenuItem = new ControlType
+        {
+            Key = "menu-item",
+            Order = StandardOrder,
+            Common = () => RoleWord(ModStrings.ControlMenuItem),
+        };
+
         /// <summary>Free text the player types into, worked through the game's own editor rather than
         /// through this mod - activating it is what hands the game's keyboard focus to the field.
         /// </summary>

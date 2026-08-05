@@ -28,7 +28,12 @@ identity and reconciliation is free.
 ## Core engine (copy verbatim)
 
 - **`ControlId`** — two-tier identity: value-equatable structural key + optional object
-  reference.
+  reference. **The structural key is the uniqueness key** — the reference only rides along
+  for reconciliation. Derive a repeated node's key from its index in its parent, never from
+  a widget name: pooled/recycled widgets share names transiently, and a duplicate key
+  throws out of `Build`. The symptom of that throw is three layers from the cause — the
+  whole screen silently declares nothing — so the first diagnostic for an unexpectedly
+  empty screen is the log, not the model.
 - **`GraphTypes`** — `GraphNode` (4-way `Transitions`, `Parent` chain, stop/region keys,
   expandability, auto position) and `NodeVtable`: **behaviors as data**. Announcement parts
   (`NodeAnnouncement`, each a `Func<string>` resolved at speak time — read live, never cache),
@@ -43,7 +48,18 @@ identity and reconciliation is free.
   (`AddNode`/`Connect`) wires arbitrary topologies; `PushContext` adds non-focusable labeled
   levels (spoken once on entry via the path diff); `BeginStop` partitions a screen into
   Tab-cyclable stops with remembered positions; regions subdivide stops; expandable groups
-  give tree semantics to Left/Right.
+  give tree semantics to Left/Right. Two expansion rules: `IsExpanded` is the cost gate —
+  declaring children only when expanded is the whole of how a tree stays inside
+  [performance.md](performance.md)'s bounded-rebuild rule — and the `OnExpand`/`OnCollapse`
+  vtable hooks are **replacements** for the engine's own expansion bookkeeping, not add-on
+  callbacks (they exist for adapters driving a retained game-side container that owns its
+  expand state); a hook that only wants a side effect must flip the builder's expansion set
+  itself, or the tree refuses to stay open. Expansion also changes **no world state**: in a
+  game whose view distance decides what is drawn, "go in" (tree) and "get closer" (camera)
+  are different verbs, and binding a camera move to the expand key makes whichever
+  information tier the other zoom level shows unreachable — when different zoom levels show
+  different information, both sets must stay accessible, with the camera on its own
+  explicit control (wherever fits the screen's design).
 - **`GraphAnnouncer`** — composes speech by **diffing the old and new focus paths**: the
   common ancestor prefix stays silent, newly entered levels read outermost-first, duplicate
   labels dedupe. Injected delegates (`PartFilter`, `PositionText`, `ExpandedStateText`) keep
@@ -81,7 +97,9 @@ identity and reconciliation is free.
   [tooltips.md](tooltips.md), detail lines per [buffers.md](buffers.md).
 - **Focus visuals** (`PointerFocus`): make the game *look* pointed-at where focus is, so
   sighted bystanders can follow. Use the engine's own entry points, never OS cursor warping:
-  ES2 has `SimulateHover(bool)` on buttons and the same show/hide-submenu messages the game
+  ES2 has `SimulateHover(bool)` on buttons — on buttons *only*: a focusable non-button
+  widget gets tooltip parity via pointing but no highlight, so don't go hunting for a hover
+  API that isn't there — and the same show/hide-submenu messages the game
   itself sends; the native tooltip appears by feeding the engine's hover-authority field
   (`OverrolledTransform`) — written at **end of frame**, after the engine's own LateUpdate
   recompute would have clobbered it (a `WaitForEndOfFrame` coroutine; no patching needed).
@@ -123,18 +141,34 @@ identity and reconciliation is free.
 - **Passive announcements** (things that change while no control is focused — loading
   progress, a page the game advances, the turn number): a screen's per-frame update diffs a
   tuple of live source values and speaks QUEUED, never interrupting. Baseline the diff when
-  the screen arrives (arrival already speaks via `ScreenName`; the two must not both fire),
-  reset it when the screen leaves, and keep all of it instance state so it is reload-safe by
-  construction. For a continuous 0..1 value, quantize into steps (quarters), announce upward
+  the screen arrives (arrival already speaks via `ScreenName`; the two must not both fire) —
+  but only for a source that *outlives* the screen, like loading progress. For a source the
+  game itself clears on leave, baseline to **nothing** instead: an arrival baseline can
+  swallow the first event depending on frame timing, and the way to tell the two kinds
+  apart is to find where the game nulls the field. Commit the watermark **only on the path
+  that actually speaks**: a source can bind a frame before its UI draws, and consuming the
+  diff on an early-return frame loses the announcement permanently (a composer that returns
+  null for "nothing to say yet" is the natural signal). Reset it when the screen leaves,
+  and keep all of it instance state so it is reload-safe by construction. For a continuous 0..1 value, quantize into steps (quarters), announce upward
   crossings only, only the highest when one frame crosses several, and re-arm when the value
   drops so a restarted phase reports afresh. Worked sample: `src/graph-ui/LoadingScreen.cs`.
 - **Arriving and standing down are different questions.** Arrive only when the widget has
   finished animating in (its labels may still hold the previous item's words); but never
   stand down while merely *covered* — everything that hides your panel draws above your
   layer, and a screen that blinks out mid-transition hands the player to whatever is
-  underneath for a frame (heard as a spurious announcement of the screen below). Games also
-  *unbind* data rather than hide windows during transitions, so "is my data attached" is not
-  the stay-active gate either — a small bounded linger covers a rebind that takes a frame.
+  underneath for a frame (heard as a spurious announcement of the screen below). For
+  staying active *through* a transition, prefer a second, **non-blinking authority** over
+  any timer: games often answer "which page is up" from more than one place, and one blips
+  null on a same-page re-entry while another does not — picking the right source beats a
+  bounded linger, and a linger can be actively wrong (it keeps a screen alive while a
+  same-layer sibling wakes). For **leaving**, gate on the game's *unbind* — the data the
+  window was opened for going null — not on visibility: a window can stop reporting shown
+  at *begin*-hide while the page beneath re-enables only at *end*-hide, and a visibility
+  gate strands the player on a page that is not yet interactive. Where the game unbinds for
+  a single frame during a rebind, a small bounded linger is the last resort. Through all of
+  it, an empty `Build` is the safety valve: declaring nothing is legal — the render is
+  skipped and the cursor survives — which is what makes staying active through a
+  transition safe.
 - **Initial focus and Tab clamping**: Tab does not wrap, so whichever stop the cursor starts
   on must be the first stop, or Tab reads as broken. An explicit start node wins over the
   "land on the selected alternative" rule unless the start node is itself one of the
@@ -152,8 +186,48 @@ identity and reconciliation is free.
   is the adapter's job, by the game's own column names, never by index.
 - **Minimized is not gone**: when the game collapses a panel to a title bar rather than
   hiding it, hand the keyboard to the surface beneath (the collapsed screen stands down) and
-  declare the leftover bar's controls where they are drawn — usually as a stop on the screen
-  below — because the game's restore affordance is mouse-only.
+  declare the leftover bar's controls where they are drawn — as a stop on the screen below
+  (and note the screen below *changes*: see the persistent-overlay pattern next) — because
+  the game's restore affordance is mouse-only.
+- **A persistent overlay is a contributor, not a screen.** A HUD cluster drawn over several
+  pages (end-turn controls, resource banners, a collapsed tutorial bar) must not be declared
+  by whichever page first met it — when the player moves to another page under the same
+  overlay, those controls silently vanish from the tab order. Extract one contributor
+  object owning the cluster's stops and their passive announcers; each page calls it in its
+  own drawn order; stop keys are named after the cluster (not after any one page), and
+  per-screen cursor memory keeps working unchanged because the stops live in each page's
+  own `GraphState`.
+- **A control the game wires to a screen you haven't modelled yet** is a named tradeoff,
+  decided explicitly and reported: declare it read-only (the player loses an affordance but
+  hears no dead end), or declare the action and accept that it opens a silent screen until
+  that screen is modelled (the affordance kept, the dead end temporary). Either is
+  defensible; choosing silently is not.
+
+## Child screens and action menus
+
+A control with more than one action cannot spend Right on "show me the actions" — the
+arrows are world and tree navigation. The answer is a **modal vertical-list menu** opened
+from the control, holding its actions; destructive or drag-only defaults go in the menu,
+never on the activation key. The mechanism (wotr-access's choice submenu, ported to ES2
+Access):
+
+- **Child screens**: a screen can push one child (`PushChild`/`RemoveChild`, a single
+  linear chain — no branching); the manager's current screen is the deepest active child.
+  Per-screen state isolation is what returns focus to the opening control for free: the
+  covered parent's cursor is never touched, and a popped child's state is dropped.
+- **One `Open(title, options, current, onSelect)` entry point.** Options are a snapshot
+  built at open time from live predicates; invalid actions are simply not added — no
+  disabled entries to skip past. The empty case ("nothing to do here") is answered once,
+  inside the shared helper, never per caller. Enter invokes then closes, in that order;
+  `current = -1` lands on the first option; entries carry a "menu item" role word.
+- **This is not the native-popup wrapper.** Wrapping a game's own drop-list popup needs
+  game-focus handoff and a deferred close to dodge the engine's Escape race; a pure
+  mod-owned child screen needs none of that. Keep the two mechanisms separate.
+- **Menus are for controls with N actions.** When the game's own model is select-then-act
+  (toggle items, then one button acts on the selection), keep the game's model — do not
+  force a menu onto it.
+- Escape must close the menu and go **no further**: a mod-owned surface denies the game the
+  key — see the back-key ownership rules in [input.md](input.md).
 
 ## The confirmation-dialog screen
 
@@ -173,9 +247,11 @@ player. The shape (`src/graph-ui/MessageBoxScreen.cs`):
 - **Text the game rewrites every frame** (countdown timers) must never feed node identity,
   live announcement parts, or per-frame speech: the text node's label resolves live (a
   refocus or buffer read gives the current second) but nothing re-announces on its own.
-- Let Escape fall through to the game's own cancel path; poll the window's
-  "shown and fully ready" state rather than subscribing to visibility events, which fire
-  before the captions are written.
+- Let Escape fall through to the game's own cancel path — this is a *game-owned* surface;
+  a mod-owned child screen does the opposite ([input.md](input.md)'s back-key rules). Poll
+  the window's "shown and fully ready" state for **arrival** rather than subscribing to
+  visibility events, which fire before the captions are written — and remember that gate is
+  arrival-only; departure gates on the unbind (see "Arriving and standing down").
 
 ## Adapting to a new game
 
@@ -201,7 +277,7 @@ Engine (game-agnostic): [`src/graph-ui/`](src/graph-ui/) — `ControlId.cs`, `Gr
 containment — adjacent panels overlap by pixels, so span overlap misgroups — reading order,
 and the alignment tiebreak for co-located caption/value rects), `Screen.cs`,
 `ScreenManager.cs`, `MainMenuScreen.cs`, `DropListScreen.cs`, `MessageBoxScreen.cs`,
-`LoadingScreen.cs`. The input layer: [input.md](input.md). Value-widget patterns
+`ChoiceSubmenuScreen.cs` (the action menu), `LoadingScreen.cs`. The input layer: [input.md](input.md). Value-widget patterns
 (checkboxes, sliders, combo boxes, tabs, popups, key capture): [widgets.md](widgets.md).
 The per-screen process (measure → model → approve → implement → verify → hand over):
 [making-screens-accessible.md](making-screens-accessible.md).

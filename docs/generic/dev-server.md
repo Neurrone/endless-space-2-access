@@ -102,6 +102,31 @@ numbers — "the tooltip window's rect sits at the focused label's rect + offset
 dump, which is loader-side and never changes. Later it doubles as the baseline to diff the mod's own accessible tree against, to
 find screens or widgets the mod has not covered.
 
+Two rules keep a dump honest, both learned from silent wrong-negatives that misdirected
+whole sessions:
+
+- **Prune on what a node IS, never on what a cut-short walk did not find.** Any dump that
+  both prunes uninteresting nodes and truncates by depth has the bug latent: at the depth
+  frontier a node is judged "says nothing" with its children deliberately unread, and the
+  pruning cascades until a visibly drawn window answers empty. Keep frontier nodes and mark
+  the cutoff (`more: true`) as part of the dump format.
+- **A selector must match, or say it did not.** An empty body is never a valid answer to a
+  `window=`-style selector: a genuinely absent name gets a loud miss listing what exists,
+  and an answer emptied by other parameters says *which* parameter emptied it. Document
+  what the selector matches against and in what order (registered window → shown panel →
+  by-name subtree search is the proven ladder).
+
+## Route contracts
+
+Every route declares its query-parameter vocabulary at registration, and the server rejects
+anything undeclared — 400 naming the unknown parameter and listing the route's own. A
+silently ignored parameter is indistinguishable from a broken feature and can shape an
+entire session's workflow around a typo. Thread the vocabulary through the mod's route
+registration so the loader enforces it uniformly without depending on mod types. The same
+defect wears a second hat: **silent fallback on parameter parsing** (`QueryInt(name,
+fallback)` making `visibleOnly=false` mean true). Parse helpers are try-parse variants so
+the handler can 400 on an unparseable value, and flag parameters accept `1/0/true/false`.
+
 ## The REPL
 
 Pick the evaluator by runtime:
@@ -187,9 +212,16 @@ spots:
 - **Same-key double handling.** The mod and the game poll the same physical key; a
   dispatched action exercises only the mod's half. See [input.md](input.md) — the collision
   checklist and the suppression doctrine.
+- **Keys whose job is handing control back to the game.** An injected action is dropped
+  when no mod screen is focused, so any key that returns control to the game (Escape out of
+  a game view, back on a game-owned page) is structurally untestable in-harness: only the
+  *destination* can be proven, by calling the game's own handler directly. That routing
+  goes on the manual script as a category, not per-screen.
 - **Perceptual invariants.** Re-check per screen with measured rects and screenshots: the
   focused item is scrolled into view (long lists!), focus visuals track the cursor, speech
-  does not lag held-key repeat. Existence checks lie; rects don't.
+  does not lag held-key repeat. Existence checks lie; rects don't. One timing caveat for
+  tooltip evidence: pointer-anchored tooltips move between focus events, so capture the
+  crop rect in the same frame as the probe that measured it — a stale rect crops empty sky.
 
 The manual test script then covers exactly this list — each entry becomes a step with what
 to press, what should be heard, and what a sighted observer should see.

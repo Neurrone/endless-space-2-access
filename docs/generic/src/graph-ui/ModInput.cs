@@ -23,10 +23,14 @@ namespace ES2Access.UI.Input
     public sealed class ModInput
     {
         /// <summary>
-        /// The one key the mod uses and still lets the game have. Screens delegate Escape back to
+        /// The one key the mod uses and usually lets the game have. Screens delegate Escape back to
         /// the game on purpose - closing a drop list, opening and closing the pause menu and
-        /// cancelling a message box are all the game's own Escape routes, and a screen claims the
-        /// key by returning true from its Back() instead.
+        /// cancelling a message box are all the game's own Escape routes.
+        ///
+        /// The exception is a surface the mod itself put on the screen - an action menu - which the
+        /// game has never heard of and so cannot close. There Escape must not ALSO reach the game, or
+        /// one keystroke closes the menu and opens the pause screen behind it; see
+        /// <see cref="ClaimsBackKey"/>.
         /// </summary>
         private const KeyCode DelegatedKey = KeyCode.Escape;
 
@@ -65,6 +69,21 @@ namespace ES2Access.UI.Input
         /// <see cref="DrivenByMod"/> is one: the input layer knows about keys, not screens.
         /// </summary>
         public Func<bool> HasFocusedScreen;
+
+        /// <summary>
+        /// Asked whether the focused screen is about to take Escape for itself, so the game can be
+        /// told to stand down from it for that one press.
+        ///
+        /// It has to be a question asked BEFORE the key is delivered, because the game's own scan can
+        /// run either side of the mod's frame and by the time the key has been handled the screen that
+        /// claimed it has closed. Null means Escape is always the game's.
+        /// </summary>
+        public Func<bool> ClaimsBackKey;
+
+        // Set when a back action was actually consumed, cleared when the key comes up. It covers the
+        // other half of the race: the game's scan running AFTER the mod's frame, by which point the
+        // predicate above is answering for a menu that is already gone.
+        private bool _backClaimed;
 
         public IList<InputAction> Actions
         {
@@ -217,12 +236,32 @@ namespace ES2Access.UI.Input
         /// </summary>
         public bool ClaimsKey(KeyCode key)
         {
-            if (key == DelegatedKey || !LayerIsLive())
+            if (!LayerIsLive())
             {
                 return false;
             }
 
+            if (key == DelegatedKey)
+            {
+                return _backClaimed || ClaimsBack();
+            }
+
             return ClaimedKeys().Contains(key);
+        }
+
+        private bool ClaimsBack()
+        {
+            Func<bool> claims = ClaimsBackKey;
+            try
+            {
+                return claims != null && claims();
+            }
+            catch (Exception)
+            {
+                // Runs inside the game's own scan: leave the key to the game rather than throw into
+                // it, which is also the safe answer - a stuck claim would make Escape do nothing.
+                return false;
+            }
         }
 
         private bool LayerIsLive()
@@ -262,6 +301,13 @@ namespace ES2Access.UI.Input
         /// screens tick, so a keypress and the announcement it causes land in the same frame.</summary>
         public void Tick()
         {
+            // A claim on Escape lasts exactly as long as the press that earned it: the game's scan
+            // may still be looking at this frame's keyboard, but the next press is a new question.
+            if (_backClaimed && !UnityEngine.Input.GetKey(DelegatedKey))
+            {
+                _backClaimed = false;
+            }
+
             if (KeyboardIsElsewhere())
             {
                 Disarm();
@@ -324,6 +370,11 @@ namespace ES2Access.UI.Input
             Func<InputAction, bool> dispatch = Dispatch;
             if (dispatch != null && dispatch(action))
             {
+                if (action.Key == UiActions.Back)
+                {
+                    _backClaimed = true;
+                }
+
                 return true;
             }
 

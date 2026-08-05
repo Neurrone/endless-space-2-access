@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using ES2Access.Core.Speech;
@@ -52,6 +53,43 @@ namespace ES2Access.Tests.Speech
                         Placeholders(entry.Value.GetString())
                     );
                 }
+            }
+        }
+
+        /// <summary>
+        /// english.json is the template every other translation is written from, so a key the mod
+        /// speaks and the template does not is a phrase no translator will ever be offered.
+        /// </summary>
+        [Fact]
+        public void TheEnglishTemplateCarriesEveryKeyTheModSpeaks()
+        {
+            SortedSet<string> shipped = new SortedSet<string>();
+            using (
+                JsonDocument document = JsonDocument.Parse(
+                    File.ReadAllText(Path.Combine(LocaleDirectory(), "english.json"))
+                )
+            )
+            {
+                foreach (JsonProperty entry in document.RootElement.EnumerateObject())
+                {
+                    shipped.Add(entry.Name);
+                }
+            }
+
+            foreach (FieldInfo field in typeof(ModStrings).GetFields(
+                BindingFlags.Public | BindingFlags.Static
+            ))
+            {
+                if (!field.IsLiteral || field.FieldType != typeof(string))
+                {
+                    continue;
+                }
+
+                string key = (string)field.GetRawConstantValue();
+                Assert.True(
+                    shipped.Contains(key),
+                    "english.json: missing key '" + key + "' (ModStrings." + field.Name + ")"
+                );
             }
         }
 

@@ -61,6 +61,18 @@ shows for the element *in its current state*: a minimized notification the game 
 icon buffers its title, not the expanded description — the full text belongs to the opened
 popup, where the game shows it.
 
+**The buffer is the widget's face.** Populate it from what the drawn widget shows, never
+from the model behind it: the same model value can be drawn as a number (readable) or as
+pips/a rating, and reading the model then describes a control that does not exist on
+screen. The one deliberate extension of "face": the widget's own indicated tooltip is part
+of it — an indicated tooltip must be readable from the buffer — but simulation state the
+widget doesn't draw is not.
+
+**The "card" worked example**: a control whose readout is just name + state and whose
+entire substance lives in the buffer — type, traits, anomalies, outputs, refusal reasons.
+Cards (unit portraits, planet cards, item tiles) are the cleanest instance of "the buffer
+is where the rest of the control lives".
+
 Cursor rules, all load-bearing:
 
 - Repopulate **only on a real focus change or when the element's spoken readout changed** —

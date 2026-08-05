@@ -579,6 +579,26 @@ namespace ES2Access.Core.UI.Graph
             return true;
         }
 
+        /// <summary>Run the focused control's other activation. False = it has none.</summary>
+        public bool Alternate()
+        {
+            if (!Rerender()) return false;
+            GraphNode node = CurrentNode;
+            if (node == null || node.Vtable.OnAlternate == null) return false;
+            node.Vtable.OnAlternate();
+            return true;
+        }
+
+        /// <summary>Move the focused control's item within its list. False = it does not move.</summary>
+        public bool Reorder(int direction)
+        {
+            if (!Rerender()) return false;
+            GraphNode node = CurrentNode;
+            if (node == null || node.Vtable.OnReorder == null) return false;
+            node.Vtable.OnReorder(direction);
+            return true;
+        }
+
         /// <summary>Run the focused control's tooltip behavior. False = it has none.</summary>
         public bool Tooltip()
         {

@@ -106,6 +106,35 @@ namespace ES2Access.UI
             return _screen == null ? null : BuildRender(_screen, _state);
         }
 
+        /// <summary>
+        /// The same read-only render for a screen that is NOT the focused one - what the dev server
+        /// answers when asked what some other registered screen would offer. The screen's own
+        /// expansion state is used when it has one, so asking about the focused screen this way
+        /// gives exactly what <see cref="InspectRender()"/> gives; a screen the navigator has never
+        /// been attached to is built against a throwaway state, which nothing else can see.
+        ///
+        /// Unlike <see cref="InspectRender()"/> this lets a failure through instead of logging it:
+        /// a screen whose page the game has not bound throws here, and WHY it threw is the answer
+        /// the caller wanted.
+        /// </summary>
+        public GraphRender InspectRender(Screen screen)
+        {
+            if (screen == null)
+            {
+                return null;
+            }
+
+            GraphState state;
+            if (!_states.TryGetValue(screen, out state))
+            {
+                state = new GraphState();
+            }
+
+            GraphBuilder builder = new GraphBuilder(state.Expanded);
+            screen.Build(builder);
+            return builder.Build();
+        }
+
         /// <summary>Point the navigator at a screen (null when none is focused). The screen's cursor
         /// is restored if it has one, and the differ starts fresh so the arrival reads in full.</summary>
         public void Attach(Screen screen)
@@ -238,6 +267,12 @@ namespace ES2Access.UI
                     return Activate();
                 case UiActions.Secondary:
                     return Secondary();
+                case UiActions.Alternate:
+                    return Alternate();
+                case UiActions.MoveItemUp:
+                    return Reorder(-1);
+                case UiActions.MoveItemDown:
+                    return Reorder(1);
                 case UiActions.Back:
                     return _screen.Back();
                 default:
@@ -707,6 +742,43 @@ namespace ES2Access.UI
             return true;
         }
 
+        private bool Alternate()
+        {
+            GraphNode node = _graph.CurrentNode;
+            if (node == null)
+            {
+                return false;
+            }
+
+            if (node.Vtable.OnAlternate != null)
+            {
+                _graph.Alternate();
+                SpeakStateAfterChange();
+            }
+
+            // Claimed either way: a control that has no other activation must not let the chord
+            // through to the game, where the same keys mean something else entirely.
+            return true;
+        }
+
+        /// <summary>
+        /// Move the focused item within its list. The cursor stays on the item rather than on the
+        /// position - it rides along by reference through the rebuild - and the item is read out again
+        /// where it has landed, which is the only way the player learns the move happened.
+        /// </summary>
+        private bool Reorder(int direction)
+        {
+            GraphNode node = _graph.CurrentNode;
+            if (node == null || node.Vtable.OnReorder == null)
+            {
+                return false;
+            }
+
+            _graph.Reorder(direction);
+            SpeakFocusedState();
+            return true;
+        }
+
         // The one adjust path, fine or coarse: left and right take the small step, the same arrows
         // with Shift the large one, and both report the new value the same way. A control with no value to
         // adjust does not answer for either, so the coarse keys fall through to the game and the
@@ -726,7 +798,9 @@ namespace ES2Access.UI
 
         // The synchronous half of state feedback: an action the player just took reports its result
         // at once, interrupting, so holding a key down reads every step instead of falling behind.
-        // The control is re-read after the action, since acting on it re-rendered the graph.
+        // The control is re-read after the action, since acting on it re-rendered the graph. A
+        // control that answers with nothing - one that refused the action - is left alone entirely,
+        // live watch included: nothing changed, so there is nothing to re-baseline.
         private void SpeakStateAfterChange()
         {
             GraphNode node = _graph.CurrentNode;
@@ -736,7 +810,13 @@ namespace ES2Access.UI
                 return;
             }
 
-            Voice.Say(state(), true);
+            string text = state();
+            if (string.IsNullOrEmpty(text))
+            {
+                return;
+            }
+
+            Voice.Say(text, true);
 
             // The change has just been spoken; re-baseline so the live watch does not say it again.
             _liveKey = null;

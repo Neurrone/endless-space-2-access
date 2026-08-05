@@ -28,10 +28,14 @@ layer — is [input.md](input.md).
 thing: command/order objects posted to a queue (ES2: `Order` + `PostOrder` — validated,
 server-checked, identical to the mouse path), service calls (`IEndTurnService.TryToEndTurn`),
 MVVM commands (WotR: invoke the exact VM method the click handler is wired to), or named
-handler dispatch (ES2's `SendMessage("OnClick"+name)` → invoke the same method). Prefer this
+handler dispatch (ES2's `SendMessage("On<Event>")` to a client object — not just clicks:
+drag started/moved/completed, cancel, explore all use the same idiom, so grepping `OnClick`
+alone misses half of it). Prefer this
 over simulated clicks everywhere; simulate interaction state only when a mouse-built system
 demands it — and then prefer patching the *sensor* (make the game read your cursor as the
 mouse position, WotR's pointer patch) so all downstream game logic runs untouched.
+One reading caveat: handlers often open with a cheat/god-mode branch — read past the guard
+before concluding what a handler does for a real player.
 
 **4. An event/narration stream.** Where the game announces to itself that things happened: a
 typed event bus (ES2: `IEventService.EventRaised`, ~280 event classes), a combat/game log
@@ -46,7 +50,10 @@ text pipeline (and [icons-and-symbols.md](icons-and-symbols.md) for inline marku
 
 Also worth mapping early: the service-locator/singleton pattern and its lifecycle (services
 may register asynchronously and tear down on returning to menu — re-acquire, never cache),
-and where per-frame work can safely live.
+where per-frame work can safely live, and any **per-class XML/data config registry** the
+GUI resolves by name (ES2: `Gui.GetGuiElement(typeName)` — captions, legend text, icons
+live there, not in code); it is a chokepoint-adjacent closed set worth checking before
+concluding "the game never names this".
 
 ## Workflow
 
@@ -76,6 +83,10 @@ and where per-frame work can safely live.
    it against the source assets, and enumerate instead of infer. ES2's icon vocabulary went
    through three failed naming heuristics before this ten-minute check showed 382 tokens
    from one writer — see [icons-and-symbols.md](icons-and-symbols.md) for the worked case.
+   **And the writer may be the Unity Editor, not code at all**: behavior can live in
+   serialized component data on prefabs/scenes (ES2's per-zoom-layer label visibility is
+   alpha curves on a modifier component; C# only consumes them). No grep can recover such a
+   matrix — the only source of truth is a live GUI dump, or pixels, per state.
 5. **Mine the game's own debug tooling.** Games ship internal inspectors (ES2's
    `ImageInformationWindow` polls the hovered widget every frame) — proven, in-tree example
    code for exactly the introspection you need, no patching required.

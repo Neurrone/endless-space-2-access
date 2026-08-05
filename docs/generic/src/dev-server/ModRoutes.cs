@@ -22,10 +22,12 @@ namespace ES2Access.Dev
     ///   GET  /speech?since=N&amp;wait=MS
     ///                           lines spoken after sequence N, plus the next cursor; with wait, hold
     ///                           the connection open until there is one
-    ///   GET  /gui/age?window=&amp;depth=&amp;visibleOnly=
-    ///                           the live AGE hierarchy read as accessible meaning (see AgeDump)
-    ///   GET  /gui/graph?edges=1&amp;buffers=1
-    ///                           the focused screen's whole accessible tree (see GraphDump)
+    ///   GET  /gui/age?window=&amp;depth=&amp;visibleOnly=&amp;fields=
+    ///                           the live AGE hierarchy read as accessible meaning (see AgeDump);
+    ///                           fields= answers flat text with only those fields per widget
+    ///   GET  /gui/graph?edges=1&amp;buffers=1&amp;screen=KEY
+    ///                           the focused screen's whole accessible tree, or with screen=, what
+    ///                           another registered screen would offer (see GraphDump)
     ///   POST /input             body = an action key; run it as a keypress would (see ModInput)
     ///   POST /loadsave          body = a save title, or empty for the most recent save
     ///
@@ -59,10 +61,12 @@ namespace ES2Access.Dev
         public void Register()
         {
             PrismSpeech.Observer = Spoken;
+            // Each route names the query parameters it understands; the loader answers 400 for
+            // anything else before the handler runs, so a mistyped parameter is never ignored.
             _host.RegisterRoute("GET", "/status", Status);
-            _host.RegisterRoute("GET", "/speech", Speech);
-            _host.RegisterRoute("GET", "/gui/age", Age);
-            _host.RegisterRoute("GET", "/gui/graph", Graph);
+            _host.RegisterRoute("GET", "/speech", Speech, "since", "wait");
+            _host.RegisterRoute("GET", "/gui/age", Age, "window", "depth", "visibleOnly", "fields");
+            _host.RegisterRoute("GET", "/gui/graph", Graph, "edges", "buffers", "screen");
             _host.RegisterRoute("POST", "/input", Input);
             _host.RegisterRoute("POST", "/loadsave", LoadSave);
         }
@@ -123,29 +127,142 @@ namespace ES2Access.Dev
             );
         }
 
+        /// <summary>The live AGE hierarchy, as JSON - or, with <c>fields=</c>, as one plain-text line
+        /// per widget carrying only what was asked for.</summary>
         private DevResponse Age(DevRequest request)
         {
             string window = request.QueryValue("window");
-            int depth = request.QueryInt("depth", AgeDump.DefaultDepth);
-            bool visibleOnly = request.QueryInt("visibleOnly", 1) != 0;
+            // QueryInt falls back silently, so visibleOnly=false would have read as TRUE and the
+            // caller would never know: a declared parameter has to be rejected like an undeclared
+            // one when its value makes no sense.
+            string depthText = request.QueryValue("depth");
+            int depth = AgeDump.DefaultDepth;
+            if (depthText != null && (!int.TryParse(depthText, out depth) || depth < 0))
+            {
+                return DevResponse.Json(
+                    400,
+                    DevJson.Error("depth= expects a whole number of levels, not '" + depthText + "'")
+                );
+            }
 
-            return DevResponse.Json(
-                (string)_host.MainThread.Run(() => AgeDump.Dump(window, depth, visibleOnly))
+            bool visibleOnly;
+            string visibleText = request.QueryValue("visibleOnly");
+            if (!ParseFlag(visibleText, true, out visibleOnly))
+            {
+                return DevResponse.Json(
+                    400,
+                    DevJson.Error(
+                        "visibleOnly= expects 1/0 or true/false, not '" + visibleText + "'"
+                    )
+                );
+            }
+
+            string projection = request.QueryValue("fields");
+            if (projection == null)
+            {
+                return DevResponse.Json(
+                    (string)_host.MainThread.Run(() => AgeDump.Dump(window, depth, visibleOnly))
+                );
+            }
+
+            List<string> fields = AgeDump.ParseFields(projection);
+            if (fields.Count == 0)
+            {
+                return DevResponse.Json(
+                    400,
+                    DevJson.Error("fields= names no field; /gui/age can project: " + AgeDump.KnownFields())
+                );
+            }
+
+            string unknown = AgeDump.UnknownField(fields);
+            if (unknown != null)
+            {
+                return DevResponse.Json(
+                    400,
+                    DevJson.Error(
+                        "unknown field '" + unknown + "' in fields=; /gui/age can project: "
+                            + AgeDump.KnownFields()
+                    )
+                );
+            }
+
+            return Plain(
+                (string)_host.MainThread.Run(() => AgeDump.Lines(window, depth, visibleOnly, fields))
             );
         }
 
-        /// <summary>The focused screen's accessible tree in one answer. Text, not JSON: every line of
-        /// it is a sentence meant to be read.</summary>
+        /// <summary>A query flag written either way callers write one: 1/0 or true/false. False for
+        /// a value that is neither, so the route can say so rather than quietly using its default.
+        /// </summary>
+        private static bool ParseFlag(string text, bool fallback, out bool value)
+        {
+            value = fallback;
+            if (text == null)
+            {
+                return true;
+            }
+
+            if (text == "1" || string.Compare(text, "true", StringComparison.OrdinalIgnoreCase) == 0)
+            {
+                value = true;
+                return true;
+            }
+
+            if (
+                text == "0"
+                || string.Compare(text, "false", StringComparison.OrdinalIgnoreCase) == 0
+            )
+            {
+                value = false;
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>The focused screen's accessible tree in one answer - or, with <c>screen=</c>, what
+        /// another registered screen would offer without going there. Text, not JSON: every line of it
+        /// is a sentence meant to be read.</summary>
         private DevResponse Graph(DevRequest request)
         {
             bool edges = request.QueryInt("edges", 0) != 0;
             bool buffers = request.QueryInt("buffers", 0) != 0;
-            string dump = (string)
-                _host.MainThread.Run(() => GraphDump.Dump(edges, buffers));
+            string wanted = request.QueryValue("screen");
+            if (string.IsNullOrEmpty(wanted))
+            {
+                return Plain((string)_host.MainThread.Run(() => GraphDump.Dump(edges, buffers)));
+            }
+
+            // The screen registry belongs to the main thread, so resolving the key and dumping what
+            // it names happen in the same visit rather than across a gap a reload could fall into.
+            return (DevResponse)
+                _host.MainThread.Run(() =>
+                {
+                    // Spelled out in full: UnityEngine has a Screen of its own.
+                    ES2Access.Screens.ScreenManager screens = ModEntry.Screens;
+                    ES2Access.Screens.Screen screen =
+                        screens == null ? null : screens.Find(wanted);
+                    if (screen == null)
+                    {
+                        return DevResponse.Json(
+                            400,
+                            DevJson.Error(
+                                "no screen keyed '" + wanted + "'; the registered screens are: "
+                                    + GraphDump.KnownScreens(screens)
+                            )
+                        );
+                    }
+
+                    return Plain(GraphDump.DumpScreen(screen, edges, buffers));
+                });
+        }
+
+        private static DevResponse Plain(string text)
+        {
             return new DevResponse
             {
                 ContentType = "text/plain; charset=utf-8",
-                Body = Encoding.UTF8.GetBytes(dump),
+                Body = Encoding.UTF8.GetBytes(text),
             };
         }
 

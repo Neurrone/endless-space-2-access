@@ -42,14 +42,24 @@ namespace ES2Access.Screens
     /// </summary>
     public sealed class DropListScreen : Screen
     {
-        /// <summary>The setting whose list is open, or null. Static because opening it is a decision
-        /// the options page makes and this screen's existence is the consequence.</summary>
-        private static OptionDropListItem _open;
+        /// <summary>What a caller has to say about a list for it to be navigable: the widget, what to
+        /// call it, and what taking an entry means. Everything else is the same for every drop list in
+        /// the game.</summary>
+        private sealed class Request
+        {
+            public AgeControlDropList List;
+            public string Title;
+            public Action<int> Choose;
+        }
+
+        /// <summary>The list that is open, or null. Static because opening it is a decision the page
+        /// underneath makes and this screen's existence is the consequence.</summary>
+        private static Request _open;
 
         /// <summary>The list this screen is currently showing. Held separately from
         /// <see cref="_open"/> so that picking an entry can close the screen while leaving the popup
         /// for <see cref="OnPop"/> to shut down.</summary>
-        private OptionDropListItem _showing;
+        private Request _showing;
 
         /// <summary>The frame Escape was pressed on, or -1. The close happens after it; see
         /// <see cref="Back"/>.</summary>
@@ -59,11 +69,14 @@ namespace ES2Access.Screens
         /// because the input layer asks about it from outside any screen.</summary>
         private static AgeControl _focus;
 
-        /// <summary>Open <paramref name="item"/>'s list. Takes effect on the next tick, when the
-        /// screen manager notices this screen is now the one the player is on.</summary>
-        public static void Open(OptionDropListItem item)
+        /// <summary>Open <paramref name="list"/>. Takes effect on the next tick, when the screen
+        /// manager notices this screen is now the one the player is on. <paramref name="choose"/> is
+        /// what taking an entry means, which only the page that owns the list knows.</summary>
+        public static void Open(AgeControlDropList list, string title, Action<int> choose)
         {
-            _open = item;
+            _open = list == null
+                ? null
+                : new Request { List = list, Title = title, Choose = choose };
         }
 
         /// <summary>Whether <paramref name="control"/> is the widget this screen has the game's
@@ -97,7 +110,11 @@ namespace ES2Access.Screens
         /// "Resolution" and then the resolution currently set.</summary>
         public override string ScreenName
         {
-            get { return Title(_showing ?? _open); }
+            get
+            {
+                Request request = _showing ?? _open;
+                return request == null ? null : request.Title;
+            }
         }
 
         /// <summary>Ours while a list is open, its drop list still exists, and the window it lives on
@@ -107,23 +124,24 @@ namespace ES2Access.Screens
         /// focus. Then this screen goes with it and the cursor is back on the setting.</summary>
         public override bool IsActive()
         {
-            OptionDropListItem item = _open;
+            Request request = _open;
             try
             {
-                if (item == null || item.DropList == null)
+                if (request == null || request.List == null)
                 {
                     return false;
                 }
 
-                OptionsModalWindow window = OptionsScreen.Window();
-                if (window == null || !window.Shown)
+                // The page the list belongs to closing under us takes the list with it, whatever page
+                // that was: a widget nobody can see any more is not a list the player is standing in.
+                if (!AgeWidgets.Visible(request.List.AgeTransform))
                 {
                     return false;
                 }
 
                 // Only once we have opened it: on the tick this screen first becomes active the popup
                 // has not been opened yet - OnPush is what opens it.
-                return _showing == null || StillOpen(item.DropList);
+                return _showing == null || StillOpen(request.List);
             }
             catch (Exception)
             {
@@ -238,12 +256,12 @@ namespace ES2Access.Screens
         /// and picking one is already the entry we would restore.</summary>
         public override void OnPop()
         {
-            OptionDropListItem item = _showing;
+            Request request = _showing;
             _showing = null;
             _closeAfterFrame = -1;
             _open = null;
 
-            AgeControlDropList list = ListOf(item);
+            AgeControlDropList list = ListOf(request);
             if (list == null)
             {
                 ReleaseFocus();
@@ -275,22 +293,22 @@ namespace ES2Access.Screens
 
         public override void Build(GraphBuilder builder)
         {
-            OptionDropListItem item = _showing ?? _open;
-            AgeControlDropList list = ListOf(item);
+            Request request = _showing ?? _open;
+            AgeControlDropList list = ListOf(request);
             if (list == null)
             {
                 return;
             }
 
             int count = Count(list);
-            string key = "droplist:" + OptionName(item) + "/";
+            string key = "droplist:" + list.GetInstanceID() + "/";
             for (int i = 0; i < count; i++)
             {
                 int index = i;
                 NodeVtable vtable = GraphNodes.Choice(
                     () => EntryText(list, index),
                     () => Chosen(list, index),
-                    () => Choose(item, index),
+                    () => Choose(request, index),
                     () => EntryEnabled(list, index),
                     () => AgeText.Lines(EntryDetail(list, index))
                 );
@@ -308,16 +326,18 @@ namespace ES2Access.Screens
             }
         }
 
-        /// <summary>Take the entry the way clicking it does: the drop list's own selection first,
-        /// which rewrites the closed control's label, then the item's selection handler, which stores
-        /// the value and tells the window a setting changed. The screen closes itself on the next
-        /// tick, which is what shuts the popup.</summary>
-        private static void Choose(OptionDropListItem item, int index)
+        /// <summary>Take the entry the way clicking it does. What that means is the caller's - for
+        /// every list in the game it starts with the drop list's own selection, which is what rewrites
+        /// the closed control's label, and ends with whatever handler stores the answer. The screen
+        /// closes itself on the next tick, which is what shuts the popup.</summary>
+        private static void Choose(Request request, int index)
         {
             try
             {
-                item.DropList.SelectedItem = index;
-                OptionsScreen.Call(EntrySelected, item, OptionsScreen.NoSender);
+                if (request.Choose != null)
+                {
+                    request.Choose(index);
+                }
             }
             catch (Exception e)
             {
@@ -342,16 +362,23 @@ namespace ES2Access.Screens
             }
         }
 
-        /// <summary>An entry's text. The list holds localization keys rather than words - the labels
-        /// the popup renders are localized as they are drawn, and there is nothing drawn until the
-        /// popup is open - so the key is resolved here.</summary>
-        private static string EntryText(AgeControlDropList list, int index)
+        /// <summary>
+        /// An entry's text. The list holds localization keys rather than words - the labels the popup
+        /// renders are localized as they are drawn, and there is nothing drawn until the popup is open
+        /// - so the key is resolved here.
+        ///
+        /// Some lists have no labels at all: the system's automation policy is drawn as a row of icons,
+        /// and what each one MEANS is only in its tooltip. That tooltip is the entry's name for a
+        /// keyboard, because it is the only name the game has for it.
+        /// </summary>
+        public static string EntryText(AgeControlDropList list, int index)
         {
             try
             {
-                return index < list.LabelTable.Count
+                string label = index < list.LabelTable.Count
                     ? AgeText.Clean(list.LabelTable[index])
                     : null;
+                return string.IsNullOrEmpty(label) ? EntryDetail(list, index) : label;
             }
             catch (Exception)
             {
@@ -424,11 +451,14 @@ namespace ES2Access.Screens
             }
         }
 
+        /// <summary>How many entries the list has. Its own count, not the length of its label table:
+        /// a list drawn as icons has seven entries and one label, and counting labels showed the
+        /// player a one-entry list.</summary>
         private static int Count(AgeControlDropList list)
         {
             try
             {
-                return list.LabelTable.Count;
+                return list.ItemsCount;
             }
             catch (Exception)
             {
@@ -436,40 +466,11 @@ namespace ES2Access.Screens
             }
         }
 
-        private static string Title(OptionDropListItem item)
+        private static AgeControlDropList ListOf(Request request)
         {
             try
             {
-                return item == null ? null : AgeText.Label(item.TitleLabel);
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        private static string OptionName(OptionDropListItem item)
-        {
-            try
-            {
-                if (item == null)
-                {
-                    return "?";
-                }
-
-                return item.Option != null ? item.Option.PropertyName : item.name;
-            }
-            catch (Exception)
-            {
-                return "?";
-            }
-        }
-
-        private static AgeControlDropList ListOf(OptionDropListItem item)
-        {
-            try
-            {
-                return item == null ? null : item.DropList;
+                return request == null ? null : request.List;
             }
             catch (Exception)
             {
@@ -488,11 +489,6 @@ namespace ES2Access.Screens
         private static readonly MethodInfo ClosePopup = OptionsScreen.Handler(
             typeof(AgeControlDropList),
             "ClosePopupMenu"
-        );
-
-        private static readonly MethodInfo EntrySelected = OptionsScreen.Handler(
-            typeof(OptionDropListItem),
-            "OnEntrySelectedCb"
         );
     }
 }

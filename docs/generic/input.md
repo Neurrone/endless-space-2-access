@@ -78,10 +78,17 @@ patch site per input path (`src/graph-ui/GameKeyStandDown.cs`, an exemplar to im
   each private poller the grep above found (camera pan/zoom). A prefix returning
   "not pressed" when the mod claims the key covers every binding at once, honors the
   stand-down (a typing player's keys pass through untouched), and leaves mouse input alone.
-- **Escape is the standing carve-out.** Screens deliberately delegate it — dialog cancel,
-  menu close, popup dismiss are the game's own routes and better than reimplementations — so
-  Escape is never claimed. Make the carve-out one named constant in the input layer, not a
-  note in each patch.
+- **Escape is the standing carve-out — for the game's own surfaces.** Screens deliberately
+  delegate it — dialog cancel, menu close, popup dismiss are the game's own routes and
+  better than reimplementations — so Escape is never claimed there. Make the carve-out one
+  named constant in the input layer, not a note in each patch. **But a surface the game
+  cannot see — a mod-owned menu or panel — must DENY the game the key**, or closing the
+  menu also raises the game's pause screen. The denial is a predicate asked *before* the
+  press (both sides poll, and the game's scan can run either side of the mod's frame; by
+  the time the mod's back-handler has run, the menu is already gone — a release-latched
+  flag covers the other ordering). It is also a different question from "did I handle it":
+  a game-owned popup can need its back-handler run AND the key still visible to the
+  engine, so the deny-predicate is never a mirror of the handler's return value.
 - A key the mod deliberately leaves to the game can also be *made* to be consumed by the
   game's own authority: give the game's focus system a key-exclusive widget and its
   dispatcher swallows Escape itself (its mouse flows rely on this). Never depend on

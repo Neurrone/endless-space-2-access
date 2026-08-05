@@ -107,6 +107,16 @@ namespace ES2Access.Core.UI.Graph
         /// <summary>Optional. Secondary activation — the right-click equivalent.</summary>
         public Action OnSecondary;
 
+        /// <summary>Optional. The control's OTHER activation — what the game's own modified click does
+        /// (queue this at the head of the queue rather than the end). Distinct from
+        /// <see cref="OnSecondary"/>, which is the right-click.</summary>
+        public Action OnAlternate;
+
+        /// <summary>Optional. Move the ITEM this control stands for within its list: -1 towards the
+        /// front, +1 towards the back. The cursor rides along with the item, because the item is what
+        /// the player is holding.</summary>
+        public Action<int> OnReorder;
+
         /// <summary>Optional. Read / open the control's tooltip. The action owns the whole behavior
         /// (speak, or open the drill-in tooltip reader), so the core stays game-agnostic.</summary>
         public Action OnTooltip;

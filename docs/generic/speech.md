@@ -41,7 +41,11 @@ failed to start, because a blind player cannot distinguish "mod silent" from "mo
 — deliberately no string overload. The builder (see [localization.md](localization.md)) owns
 separators and formatting; `Speak` alone calls `Build()`. Null/empty builds no-op, so
 producers can compose optional content without guards. This gives one place for
-post-processing, the dev-server tap, and localization.
+post-processing, the dev-server tap, and localization. Corollary for composers over
+optional fields: return **null** when nothing survives, distinct from empty — a caller
+diffing state for passive announcement uses that null as "not filled in yet" and must not
+commit its watermark on it (the passive-announcement rules in
+[ui-navigation.md](ui-navigation.md)); an empty string would silently consume the event.
 
 **2. Never speak from a hook.** Harmony patches and event handlers only set state or enqueue.
 A single per-frame pump drains queues and speaks, in a deliberate, fixed order — e.g.

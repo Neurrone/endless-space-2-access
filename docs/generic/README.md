@@ -37,11 +37,14 @@ propose the model, get approval, implement, verify with evidence, hand over the 
 
 Cross-cutting, read alongside any feature work: [performance.md](performance.md) — keeping
 per-frame cost invisible (no scene scans, snapshot+reconcile, allocation discipline).
+World/map screens (a cursor over the game's own world graph, zoom tiers as information
+surfaces, fog discipline): [world-navigation.md](world-navigation.md).
 
 ## Planned (written once ES2 proves them)
 
-- `world-navigation.md` — exploration cursor vs. categorized scanner (review cursor),
-  tile-signature skip navigation, fog-of-war discipline, spatial audio cues.
+- `world-navigation.md`'s tile-world half — exploration cursor vs. categorized scanner,
+  tile-signature skip navigation, spatial audio cues (the graph-world half is written,
+  proven by ES2's galaxy map).
 - `event-narration.md` — turning engine event firehoses into coherent narration: condensation
   passes, buff-churn reconciliation, event-log review buffers (the second sink pattern in
   [buffers.md](buffers.md)).

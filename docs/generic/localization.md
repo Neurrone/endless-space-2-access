@@ -21,6 +21,14 @@ infrastructure); starting with the seam costs nearly nothing.
    game shows nothing, invent nothing (no placeholder nodes for empty states, no spoken
    position text where the game draws dots). Inline icon tokens in game text are named, not
    stripped: [icons-and-symbols.md](icons-and-symbols.md).
+   **"The game's words" means the words, not the line-fitting.** When a drawn string is an
+   ellipsized/truncated fit of a source string the game shows in full elsewhere (hover, a
+   tooltip), speak the source string, never the fitted one — tile grids and narrow columns
+   hit this in every game.
+   **When hunting the corpus for a control's name, grep for the ACTION it performs, not the
+   control**: wordless action buttons are routinely named by the game under the action's own
+   key family, nowhere near the widget — a "no game-authored name exists" conclusion is
+   often a wrong-noun search.
 2. **Mod-authored phrases** (role words like "button", status words, screen names, the
    startup line) — come from the mod's string table, never inline literals.
 3. **Connective structure** (list separators, "N of M", "x N") — also from the string table,

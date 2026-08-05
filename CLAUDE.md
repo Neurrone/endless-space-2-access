@@ -81,6 +81,17 @@ may use Sonnet. If Opus is unavailable, wait or work in the main agent — never
 smaller model for a stage whose output is verification. Stage subagents spawn no subagents
 of their own and follow the stage-hygiene rules in `docs/dev-loop.md`.
 
+Briefs state facts with file:line cites or mark them unverified — a wrong premise costs
+the stage a re-derivation; interaction designs are stated conditionally on the game's own
+model ("if the game's model is select-then-act, keep it"), never prescribed ahead of
+measurement. Research subagents get one required doc (`reverse-engineering.md`);
+implementation subagents get `docs/dev-loop.md` plus the chapters its index maps to the
+task. The main agent globs and pastes verified file lists into research briefs, and
+treats a subagent's negative existence claims as unverified. Every subagent report keeps
+two closing sections: what the generic docs lacked, and a token audit. Any known-stale
+doc line a stage might follow gets an explicit override in the brief until the doc is
+fixed.
+
 **If you are a subagent working on this repo:** before touching source, read
 `docs/dev-loop.md` and the `docs/generic` chapters its index maps to your task — even if
 your brief forgot to say so. The generic docs are the primary deliverable and each stage is

@@ -1,6 +1,8 @@
 # Value widgets — checkboxes, sliders, combo boxes, tabs, key capture
 
 How controls that _hold a value_ become operable, on top of the graph engine in
+[ui-navigation.md](ui-navigation.md). A control that carries several _actions_ instead of a
+value opens an action menu — the child-screen pattern in
 [ui-navigation.md](ui-navigation.md).
 
 ## The vocabulary
@@ -42,11 +44,44 @@ Two announcement parts do the heavy lifting:
   This is the synchronous feedback path that makes held-key adjustment feel right: each
   repeat speaks the new value ("99%", "89%") with no focus re-read. At a range end the value
   simply repeats — hearing the same number _is_ the boundary cue (same clamp-not-wrap rule
-  as the review buffers).
+  as the review buffers). On a *refused* activation it must produce nothing (the silence
+  rule below), and the enforcement is two-layered: the factory returns null while the
+  control is disabled, **and** the navigator treats "spoke nothing" as no reason to
+  re-baseline its live-value watch — an unconditional re-baseline there silently swallows
+  the next genuine change.
 - **`SelectedPart`** — a non-empty Selected part also marks the node as its stop's **landing
   node**: focus entering the stop lands there instead of on the first node. A tab bar lands
   on the active tab; a popup lands on the current value. Produce it on any "one of these is
   current" group.
+
+## Disabled is a spectrum
+
+- An unavailable control stays focusable and announces unavailable; activating it does
+  nothing — **in silence**. Never re-speak the control's state after a swallowed
+  activation: a checkbox answering Enter with "not checked" is indistinguishable from a
+  successful uncheck. The player already heard "unavailable" on focus.
+- Enablement is rarely one flag: control-level enable, transform-level enable and a
+  disabled ancestor are separate answers, and no single one is what the player sees. Ask an
+  effective-enablement helper that walks the chain, not the widget.
+- A refusing control may not be disabled at all: games repurpose blocked buttons as
+  "why not?" links — ES2's blocked Colonize stays clickable and jumps to the blocking
+  technology instead. An action offered to the player (in a menu or on activation) must be
+  gated on the game's own action predicate, never on visible-and-enabled.
+
+## Text that animates in
+
+A label revealed by a typewriter or fade usually already holds every word: engines commonly
+set the full string once and animate a draw cursor that only the renderer honours. Before
+rebuilding a panel's phrasing from the model to "beat the animation", compare the label's
+stored text with what the animation component was set up with — the words may all be there
+from frame one.
+
+## Charts
+
+A drawn graph — bars as clipped rectangles, gauges as fill ratios — often carries no text
+at all. Read the encoded values off the drawn geometry (fill percentages, clip heights),
+announce the non-trivial series in one line, put every series in the review buffer, and
+take the series names from the model's own ordered list: the bars themselves name nothing.
 
 ## Adjust granularity
 

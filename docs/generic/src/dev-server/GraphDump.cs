@@ -86,6 +86,107 @@ namespace ES2Access.Dev
             return sink.ToString();
         }
 
+        /// <summary>
+        /// What a named screen would offer, whether or not the player is on it: the same read-only
+        /// render, built off the live game without focusing anything. So "what does the planet page
+        /// declare, seen from the galaxy map" costs one request instead of a walk that would move
+        /// the player there - nothing is announced, no focus visual runs, and the navigator's cursor
+        /// is not so much as consulted unless this screen is the focused one, in which case the
+        /// answer is the same as the plain route's.
+        ///
+        /// A screen the game is not showing is entitled to answer nothing: its IsActive is false and
+        /// its Build may find no bound window and throw. Both are reported as the body - "screen
+        /// inactive" is the honest answer to the question asked, not a server error.
+        /// </summary>
+        public static string DumpScreen(Screen screen, bool wantEdges, bool wantBuffers)
+        {
+            Sink sink = new Sink();
+            GraphNavigator navigator = ModEntry.Navigator;
+            if (navigator == null)
+            {
+                sink.Line("screen: " + screen.Key + " | the mod's navigator is not up");
+                return sink.ToString();
+            }
+
+            bool focused = ReferenceEquals(navigator.Screen, screen);
+            bool active = Active(screen);
+            sink.Line(
+                "screen: "
+                    + screen.Key
+                    + " | "
+                    + (Name(screen) ?? "(unnamed)")
+                    + (focused ? "" : active ? " | active, not focused" : " | not active")
+            );
+
+            GraphRender render;
+            try
+            {
+                render = navigator.InspectRender(screen);
+            }
+            catch (Exception e)
+            {
+                sink.Line(
+                    (active ? "<err: building the screen threw: " : "screen inactive: building it threw ")
+                        + e.GetType().Name
+                        + ": "
+                        + e.Message
+                        + (active ? ">" : "")
+                );
+                return sink.ToString();
+            }
+
+            if (render == null || render.Nodes.Count == 0)
+            {
+                sink.Line(
+                    active
+                        ? "(no controls declared - the screen has nothing on it yet)"
+                        : "screen inactive: it declared no controls"
+                );
+                return sink.ToString();
+            }
+
+            WriteNodes(sink, render, focused ? navigator.FocusedKey : null, wantEdges, wantBuffers);
+            return sink.ToString();
+        }
+
+        /// <summary>Whether the screen says the game is showing it - a screen whose predicate throws
+        /// is not showing, the same judgement <see cref="ScreenManager"/> makes every frame.</summary>
+        private static bool Active(Screen screen)
+        {
+            try
+            {
+                return screen.IsActive();
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        /// <summary>The registered screen keys, for the answer to a key that is not one of
+        /// them.</summary>
+        public static string KnownScreens(ScreenManager screens)
+        {
+            if (screens == null)
+            {
+                return "(the mod is not running)";
+            }
+
+            StringBuilder keys = new StringBuilder();
+            IList<Screen> registered = screens.Registered;
+            for (int i = 0; i < registered.Count; i++)
+            {
+                if (keys.Length > 0)
+                {
+                    keys.Append(", ");
+                }
+
+                keys.Append(registered[i].Key);
+            }
+
+            return keys.ToString();
+        }
+
         private static void WriteNodes(
             Sink sink,
             GraphRender render,

@@ -200,6 +200,21 @@ namespace ES2Access.Core.UI.Graph
             return _expansion != null && id != null && _expansion.Contains(id);
         }
 
+        /// <summary>
+        /// The persistent expansion set this builder was constructed with (null when the screen
+        /// declares every group's state explicitly).
+        ///
+        /// For a group whose <see cref="NodeVtable.OnExpand"/>/<see cref="NodeVtable.OnCollapse"/> must
+        /// ADD an effect to expanding rather than REPLACE the engine's bookkeeping — a camera that
+        /// follows the player into the thing they just opened. Those hooks are overrides: setting one
+        /// stops the engine flipping the state itself, so a hook that only wants a side effect flips it
+        /// here and the tree keeps working.
+        /// </summary>
+        public HashSet<ControlId> Expansion
+        {
+            get { return _expansion; }
+        }
+
         /// <summary>Focus starts here when the graph has no prior position (defaults to the first node).</summary>
         public GraphBuilder SetStart(ControlId id)
         {

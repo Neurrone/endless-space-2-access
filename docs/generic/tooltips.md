@@ -68,14 +68,37 @@ Two rules that came out of shipping this:
 - **Reading a render-composed tooltip back**: where provider interfaces are readable
   headlessly, prefer them. Where they are not, make focus trigger the game's own tooltip
   display (see focus visuals in [ui-navigation.md](ui-navigation.md)) and read the drawn
-  window's labels — what is drawn is exactly what should be spoken. Traps, all hit in
-  practice: check *which* tooltip the window is currently bound to before reading; the
+  window's labels — what is drawn is exactly what should be spoken.
+  **Find the assembly unit first and scope the reading to it.** A tooltip system that
+  composes at render time composes from an ordered list of typed sub-panels (ES2: panel
+  features under one table). Reading by geometry *across* those units is what divorces
+  values from their captions and fuses adjacent blocks into nonsense lines. Read within
+  each unit, and give typed readers to the few structures geometry gets wrong — a
+  repeated-item grid pairs the Nth title with the Nth value by sibling index (its drawn
+  layout puts all titles above all values, so no row-banding can pair them); a textless
+  gauge reads as its drawn proportion. Two safety nets make a hundred-class surface
+  tractable: unknown unit types read through the generic scoped reader, and a dev probe
+  names which reader answered each unit — coverage gaps surface in tooling, not in speech.
+  Remaining traps, all hit in practice: check *which* tooltip the window is currently bound
+  to before reading; the
   window pools its child widgets, so a shrunk tooltip still carries the previous one's
   labels (use the engine's own effective-visibility test); join labels drawn on one visual
   line into one spoken line, in x-order, with the label's own alignment as the tiebreak when
   caption and value occupy the same rect; and refill the review buffer when the drawn
   tooltip lands (an invalidation hook), guarded by a lines-equality check so a refill with
   identical content never resets the player's reading position.
+- **Point at the widget that owns the tooltip, not its row.** A row's tooltip often hangs
+  off a child (the title label), and pointing at the container draws nothing — while the
+  tree dump still looks plausible and the readout still says "has tooltip". Verify tooltip
+  rendering with the drawn-tooltip probe, never with the tree dump.
+- **A row can carry more than one tooltip** (the heading's explanation and the value's
+  description): announce the value's — the last-drawn — by the short/long rule, and put
+  every tooltip in the row into the row's buffer.
+- **Captions for bare numbers come from the game's registries.** When a drawn value's only
+  name is a static icon, ask the game's element/property registry for its localized title
+  before inventing a mod word. Hazard: the registry can point at a translation key that no
+  longer exists — a title lookup needs the engine's naming-convention fallback and must
+  degrade to silence, never to a raw key.
 
 A dedicated speak-tooltip key is unnecessary under 1+2 (that was the ES2 call: no Space/F1
 tooltip key at all), and only justified under 3.
