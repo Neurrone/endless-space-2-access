@@ -65,6 +65,11 @@ with the tools in `docs/dev-loop.md`. Repo-specific enforcement on top of that p
 - Evidence pairs use `crop-shot.ps1`; never read full-frame screenshots into context.
 - A stage is not done until `docs/dev-loop.md` reflects it (new helper, route, or recipe)
   and `docs/roadmap.md` carries any screen-status change.
+- Each implementation round ends with the consolidated manual test handed to me in a
+  per-session `.md` file at the repo root, named after the session (e.g.
+  `galaxy-review-test-report.md`) and updated as that session's stages land — never left
+  buried in subagent reports. It carries the test steps with expected speech, the
+  fixture-blocked items, and any open judgment calls.
 
 After implementing a feature or major change:
 
