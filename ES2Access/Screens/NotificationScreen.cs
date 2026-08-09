@@ -231,7 +231,7 @@ namespace ES2Access.Screens
                         {
                             GraphNodes.LabelPart(() => Words(Current())),
                         },
-                        DetailLines = () => Content(Current()),
+                        Sections = GraphNodes.Sections(() => Content(Current()), null),
 
                         // Nothing is hovered while the player is on the words: there is no control
                         // under the cursor to light up, and no tooltip of a neighbouring one to leave
@@ -292,35 +292,18 @@ namespace ES2Access.Screens
                 List<Line> it = row;
                 AgeTooltip tooltip = it[0].Tooltip;
                 AgeTransform under = it[0].Owner;
-                List<NodeAnnouncement> parts = new List<NodeAnnouncement>
-                {
-                    GraphNodes.LabelPart(() => RowText(it)),
-                };
-                NodeAnnouncement tooltipPart = GraphNodes.TooltipPart(
-                    GraphNodes.ModeFor(tooltip),
-                    tooltip
-                );
-                if (tooltipPart != null)
-                {
-                    parts.Add(tooltipPart);
-                }
-
                 NodeVtable vtable = new NodeVtable
                 {
                     // No role word and no state: every one of these is something the game wrote down
                     // for the player to read, not a control they work.
-                    Announcements = parts,
+                    Announcements = new List<NodeAnnouncement>
+                    {
+                        GraphNodes.LabelPart(() => RowText(it)),
+                    },
+                    Sections = GraphNodes.Sections(null, tooltip),
                     OnFocusVisual = () => PointerFocus.MoveTo(null, tooltip, under),
                     OnBlurVisual = ReleasePointer,
                 };
-                if (tooltip != null)
-                {
-                    vtable.DetailLines = () =>
-                        string.IsNullOrEmpty(tooltip.Class)
-                            ? AgeText.Lines(AgeText.Tooltip(tooltip))
-                            : DrawnTooltip.Lines(tooltip);
-                }
-
                 builder.AddItem(
                     ControlId.Referenced(
                         it[0].Widget,
@@ -465,16 +448,14 @@ namespace ES2Access.Screens
                         () => Caption(it),
                         () => Press(it),
                         () => Enabled(it.Widget),
-                        it.Widget.AgeTooltip,
-                        GraphNodes.ModeFor(it.Widget.AgeTooltip)
+                        it.Widget.AgeTooltip
                     )
                     : GraphNodes.Checkbox(
                         () => Caption(it),
                         () => State(it.Toggle),
                         () => Press(it),
                         () => Enabled(it.Widget),
-                        it.Widget.AgeTooltip,
-                        GraphNodes.ModeFor(it.Widget.AgeTooltip)
+                        it.Widget.AgeTooltip
                     );
 
             vtable.OnFocusVisual = () =>

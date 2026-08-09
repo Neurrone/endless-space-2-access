@@ -84,8 +84,14 @@ Cursor rules, all load-bearing:
 - Content resolves live at populate time, so game-appended text (disabled reasons) is
   current.
 
-In the graph engine this hangs off `NodeVtable.DetailLines` (a `Func<IList<string>>`), and
-the navigator's single focus-commit site does the fill — one hook, no per-screen buffer code.
+In the graph engine this hangs off `NodeVtable.Sections` — ordered content blocks (each a
+live lines-func with a surfacing mode: a tooltip announced or indicated per the mode rule,
+or buffer-only for an aggregate face) — and the engine composes the buffer itself: an auto
+HEAD from the node's own readout (label + state words, so a node with **no** sections
+already buffers correctly — its label lines, for free), then the sections in declared
+order, with the first-line-duplicates-label dedup. The navigator's single focus-commit
+site does the fill — one hook, no per-screen buffer code, and no screen or factory
+constructs buffer content by hand.
 Announcement parts of the tooltip kind are excluded from the buffer's state-word section:
 details already carry that content, and the "has tooltip" indicator is meta, not content.
 

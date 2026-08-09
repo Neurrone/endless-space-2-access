@@ -367,7 +367,7 @@ namespace ES2Access.Screens
                 {
                     GraphNodes.LabelPart(() => Words(Panel())),
                 },
-                DetailLines = Content,
+                Sections = GraphNodes.Sections(Content, null),
 
                 // Nothing is hovered while the player is on the page: there is no control under the
                 // cursor to light up, and no tooltip of a neighbouring one to leave hanging over the
@@ -417,8 +417,7 @@ namespace ES2Access.Screens
                         () => ModStrings.Get(nameKey),
                         press,
                         () => Enabled(it.AgeTransform),
-                        it.AgeTransform.AgeTooltip,
-                        GraphNodes.ModeFor(it.AgeTransform.AgeTooltip)
+                        it.AgeTransform.AgeTooltip
                     ),
                 }
             );
@@ -447,8 +446,7 @@ namespace ES2Access.Screens
                         () => it.State,
                         () => Flip(it),
                         () => Enabled(it.AgeTransform),
-                        it.AgeTransform.AgeTooltip,
-                        GraphNodes.ModeFor(it.AgeTransform.AgeTooltip)
+                        it.AgeTransform.AgeTooltip
                     ),
                 }
             );

@@ -493,106 +493,13 @@ namespace ES2Access.UI
             return true;
         }
 
-        /// <summary>The lines a control fills the UI review buffer with. Public so the dev server's
-        /// graph dump can show what a control has to say without focusing it.</summary>
+        /// <summary>The lines a control fills the UI review buffer with - the buffer half of the
+        /// projection, in <see cref="NodeBuffer"/> so that both halves of it are testable off the
+        /// engine. Public here because the dev server's graph dump shows what a control has to say
+        /// without focusing it.</summary>
         public static List<string> BufferLines(GraphNode node)
         {
-            List<string> lines = new List<string>();
-            string label = GraphAnnouncer.FirstPartText(node);
-            Add(lines, label);
-
-            // The state words the focus readout appends - "unavailable", "expanded". The role word
-            // and the auto-stamped position are left out: they describe the control, and the buffer
-            // is for what the control has to say. So is the tooltip part - whether it announces the
-            // text or only says there is one, the tooltip's own lines follow below.
-            List<NodeAnnouncement> parts = GraphAnnouncer.EffectiveAnnouncements(node);
-            for (int i = 0; i < parts.Count; i++)
-            {
-                NodeAnnouncement part = parts[i];
-                if (
-                    part == null
-                    || part.Kind == AnnouncementKinds.Label
-                    || part.Kind == AnnouncementKinds.Role
-                    || part.Kind == AnnouncementKinds.Tooltip
-                )
-                {
-                    continue;
-                }
-
-                Add(lines, Resolve(part.Text));
-            }
-
-            if (
-                node.Expandable
-                && !node.Vtable.SpeaksOwnExpansion
-                && GraphAnnouncer.ExpandedStateText != null
-            )
-            {
-                Add(lines, GraphAnnouncer.ExpandedStateText(node.Expanded));
-            }
-
-            IList<string> details = ResolveDetails(node);
-            for (int i = 0; i < details.Count; i++)
-            {
-                // A tooltip whose first line is just the control's name again: the buffer already
-                // opened with it. Only an exact repeat is dropped, so a heading that adds anything
-                // still reads.
-                if (i == 0 && IsSameText(label, details[i]))
-                {
-                    continue;
-                }
-
-                Add(lines, details[i]);
-            }
-
-            return lines;
-        }
-
-        private static readonly List<string> NoDetails = new List<string>();
-
-        private static IList<string> ResolveDetails(GraphNode node)
-        {
-            Func<IList<string>> details = node.Vtable.DetailLines;
-            if (details == null)
-            {
-                return NoDetails;
-            }
-
-            try
-            {
-                return details() ?? NoDetails;
-            }
-            catch (Exception)
-            {
-                return NoDetails;
-            }
-        }
-
-        private static string Resolve(Func<string> text)
-        {
-            try
-            {
-                return text == null ? null : text();
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        private static bool IsSameText(string left, string right)
-        {
-            return !string.IsNullOrEmpty(left)
-                && !string.IsNullOrEmpty(right)
-                && string.Equals(left.Trim(), right.Trim(), StringComparison.OrdinalIgnoreCase);
-        }
-
-        private static void Add(List<string> lines, string line)
-        {
-            if (!string.IsNullOrEmpty(line))
-            {
-                lines.Add(line);
-            }
+            return NodeBuffer.Lines(node);
         }
 
         private GraphRender BuildRender(Screen screen, GraphState state)

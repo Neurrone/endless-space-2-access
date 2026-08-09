@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using ES2Access.Core.Speech;
 using ES2Access.Core.UI.Graph;
 using ES2Access.Core.Util;
 using ES2Access.UI;
@@ -261,6 +262,7 @@ namespace ES2Access.Screens
             _closeAfterFrame = -1;
             _open = null;
 
+            PointerFocus.Release();
             AgeControlDropList list = ListOf(request);
             if (list == null)
             {
@@ -305,18 +307,59 @@ namespace ES2Access.Screens
             for (int i = 0; i < count; i++)
             {
                 int index = i;
+                // The entry's own description is INDICATED rather than read out: on a thirteen-faction
+                // list it is a paragraph of lore each, which nobody wants recited while hunting for a
+                // name - but a list that never said an entry had anything to read left the player no
+                // reason to press Ctrl+Down. The words are drawn beside the list as well, because
+                // focus points at the entry.
                 NodeVtable vtable = GraphNodes.Choice(
                     () => EntryText(list, index),
                     () => Chosen(list, index),
                     () => Choose(request, index),
-                    () => EntryEnabled(list, index),
-                    () => AgeText.Lines(EntryDetail(list, index))
+                    () => EntryEnabled(list, index)
                 );
-                // The game's own highlight follows the cursor, so someone watching sees the entry
-                // being considered; what the setting is actually on does not move until Enter.
-                vtable.OnFocusVisual = () => Highlight(list, index);
+                // The entry's description, declared once: it is what the buffer holds and it is what
+                // the readout indicates. There is no AgeTooltip to read a mode off - the words come
+                // out of the list's own tooltip table - so the mode is stated, and it is stated
+                // against the SAME text the buffer will hold, which is what stops a list from
+                // indicating nothing or holding something it never mentioned.
+                vtable.Sections = GraphNodes.Sections(
+                    new NodeSection(
+                        () => AgeText.Lines(EntryDetail(list, index)),
+                        string.IsNullOrEmpty(EntryDetail(list, index))
+                            ? TooltipMode.None
+                            : TooltipMode.Indicate
+                    )
+                );
+                // An entry the game is refusing says WHY, which the entry's own tooltip carries after
+                // the description (Gui.FormatFailureInfo appends it): "unavailable" alone leaves the
+                // player guessing at a content pack they may not have. Only the refusal is spoken -
+                // the description ahead of it is the entry's own name again, and it stays in the
+                // review buffer with the rest.
+                vtable.Announcements.Add(
+                    new NodeAnnouncement(
+                        () => Refusal(list, index),
+                        live: true,
+                        kind: AnnouncementKinds.Tooltip
+                    )
+                );
 
                 AgeTransform entry = EntryTransform(list, index);
+
+                // The game's own highlight follows the cursor, so someone watching sees the entry
+                // being considered; what the setting is actually on does not move until Enter. The
+                // pointer follows it too, which is what DRAWS the entry's tooltip - a faction's
+                // description, a resolution's warning. It was in the review buffer all along and
+                // nowhere on the screen, so a sighted helper looking over the player's shoulder saw
+                // nothing at all.
+                AgeTransform under = entry;
+                vtable.OnFocusVisual = () =>
+                {
+                    Highlight(list, index);
+                    PointerFocus.MoveTo(under, AgeWidgets.Raw(under), under);
+                };
+                vtable.OnBlurVisual = AgeWidgets.ReleasePointer;
+
                 builder.AddItem(
                     entry != null
                         ? ControlId.Referenced(entry, key + index)
@@ -378,7 +421,31 @@ namespace ES2Access.Screens
                 string label = index < list.LabelTable.Count
                     ? AgeText.Clean(list.LabelTable[index])
                     : null;
-                return string.IsNullOrEmpty(label) ? EntryDetail(list, index) : label;
+                if (!string.IsNullOrEmpty(label))
+                {
+                    return label;
+                }
+
+                string detail = EntryDetail(list, index);
+                return string.IsNullOrEmpty(detail) ? ColorName(list, index) : detail;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>What a list drawn as bare colour swatches calls this one. The empire colour list
+        /// writes no label and no tooltip on any entry - the swatch IS the entry - so the colour it
+        /// drew is the only thing there is to read, and the game's own palette is where that colour is
+        /// named. See <see cref="EmpireColors"/>.</summary>
+        public static string ColorName(AgeControlDropList list, int index)
+        {
+            try
+            {
+                return list.ColorTable != null && index >= 0 && index < list.ColorTable.Count
+                    ? EmpireColors.Name(list.ColorTable[index])
+                    : null;
             }
             catch (Exception)
             {
@@ -402,6 +469,19 @@ namespace ES2Access.Screens
             {
                 return null;
             }
+        }
+
+        /// <summary>The reason an entry is not on offer, or null while it is. The tooltip is the
+        /// entry's description with the failure joined onto it, so the refusal is what is left once
+        /// the description is dropped.</summary>
+        private static string Refusal(AgeControlDropList list, int index)
+        {
+            if (EntryEnabled(list, index))
+            {
+                return null;
+            }
+
+            return RefusalText.Compose(AgeText.Lines(EntryDetail(list, index)), null);
         }
 
         private static bool Chosen(AgeControlDropList list, int index)

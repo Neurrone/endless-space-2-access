@@ -9,14 +9,11 @@ using static ES2Access.Tests.UI.Graphs;
 namespace ES2Access.Tests.UI
 {
     /// <summary>
-    /// What a control's tooltip does to its focus readout. The mode is the screen author's decision,
-    /// so the two modes have to differ only in what is spoken - never in what the review buffer gets,
-    /// which is the tooltip's lines either way.
-    ///
-    /// The buffer side itself lives in the engine-side navigator (it resolves live game text), so the
-    /// rule that the tooltip part is left out of the buffer is covered by the live test rather than
-    /// here; what is testable offline is that the part exists, reads, and carries the tooltip kind
-    /// the buffer filters on.
+    /// What a control's declared SECTIONS do to its focus readout. A section says what its lines are
+    /// and how loud they should be; the engine derives the spoken tooltip part from the modes alone,
+    /// and the review buffer from every section regardless of mode
+    /// (<see cref="NodeBufferTests"/>). Nothing here is a screen's decision any more, which is the
+    /// point: the two surfaces cannot drift apart if they come from one declaration.
     /// </summary>
     [Collection(ModStringsCollection.Name)]
     public class TooltipPartTests : IDisposable
@@ -37,24 +34,30 @@ namespace ES2Access.Tests.UI
             return () => new List<string>(lines);
         }
 
-        // A button carrying a tooltip in the given mode, in a list of three so it also reads a
-        // position - the shape a menu entry has.
-        private static string Readout(TooltipMode mode, Func<IList<string>> tooltip)
+        private static NodeSection Section(TooltipMode mode, params string[] lines)
+        {
+            return new NodeSection(Tooltip(lines), mode);
+        }
+
+        // A button carrying the given sections, in a list of three so it also reads a position - the
+        // shape a menu entry has.
+        private static string Readout(params NodeSection[] sections)
         {
             GraphAnnouncer.PositionText = (i, n) => i + " of " + n;
-            NodeAnnouncement part = TooltipParts.Part(mode, tooltip);
-            List<NodeAnnouncement> parts = new List<NodeAnnouncement>
-            {
-                Part("New Game", AnnouncementKinds.Label),
-            };
-            if (part != null)
-            {
-                parts.Add(part);
-            }
-
             GraphBuilder b = new GraphBuilder();
             b.AddItem(Id("a"), Vt("Before"));
-            b.AddItem(Id("t"), new NodeVtable { ControlType = Type("button", "button"), Announcements = parts });
+            b.AddItem(
+                Id("t"),
+                new NodeVtable
+                {
+                    ControlType = Type("button", "button"),
+                    Announcements = new List<NodeAnnouncement>
+                    {
+                        Part("New Game", AnnouncementKinds.Label),
+                    },
+                    Sections = sections,
+                }
+            );
             b.AddItem(Id("c"), Vt("After"));
             return GraphAnnouncer.LeafText(Node(b.Build(), "t"));
         }
@@ -64,7 +67,7 @@ namespace ES2Access.Tests.UI
         {
             Assert.Equal(
                 "New Game, button, Start a new game, 2 of 3",
-                Readout(TooltipMode.Announce, Tooltip("Start a new game"))
+                Readout(Section(TooltipMode.Announce, "Start a new game"))
             );
         }
 
@@ -74,8 +77,13 @@ namespace ES2Access.Tests.UI
             Assert.Equal(
                 "New Game, button, Quick start, Skips setup, Uses the last settings, 2 of 3",
                 Readout(
-                    TooltipMode.Announce,
-                    Tooltip("Quick start", "", "Skips setup", "Uses the last settings")
+                    Section(
+                        TooltipMode.Announce,
+                        "Quick start",
+                        "",
+                        "Skips setup",
+                        "Uses the last settings"
+                    )
                 )
             );
         }
@@ -85,28 +93,33 @@ namespace ES2Access.Tests.UI
         {
             Assert.Equal(
                 "New Game, button, has tooltip, 2 of 3",
-                Readout(TooltipMode.Indicate, Tooltip("A long stat block", "line two"))
+                Readout(Section(TooltipMode.Indicate, "A long stat block", "line two"))
             );
         }
 
         [Fact]
         public void NoneModeContributesNoPart()
         {
-            Assert.Null(TooltipParts.Part(TooltipMode.None, Tooltip("Start a new game")));
-            Assert.Equal("New Game, button, 2 of 3", Readout(TooltipMode.None, Tooltip("Start a new game")));
+            Assert.Null(TooltipParts.Part(new[] { Section(TooltipMode.None, "Start a new game") }));
+            Assert.Equal(
+                "New Game, button, 2 of 3",
+                Readout(Section(TooltipMode.None, "Start a new game"))
+            );
         }
 
         [Fact]
-        public void AControlWithNoTooltipContributesNoPart()
+        public void AControlWithNoSectionsContributesNoPart()
         {
-            Assert.Null(TooltipParts.Part(TooltipMode.Announce, null));
-            Assert.Null(TooltipParts.Part(TooltipMode.Indicate, null));
+            Assert.Null(TooltipParts.Part(null));
+            Assert.Null(TooltipParts.Part(new NodeSection[0]));
+            Assert.Null(TooltipParts.Part(new NodeSection[] { null }));
+            Assert.Null(TooltipParts.Part(new[] { new NodeSection(null, TooltipMode.Announce) }));
         }
 
         [Fact]
         public void AnEmptyTooltipIsSilentWhenItsTextIsWhatWouldBeSpoken()
         {
-            Assert.Equal("New Game, button, 2 of 3", Readout(TooltipMode.Announce, Tooltip()));
+            Assert.Equal("New Game, button, 2 of 3", Readout(Section(TooltipMode.Announce)));
         }
 
         /// <summary>
@@ -119,10 +132,74 @@ namespace ES2Access.Tests.UI
         [Fact]
         public void IndicateModeSpeaksEvenBeforeTheTooltipHasAnyDrawnLinesToRead()
         {
-            Assert.Equal("New Game, button, has tooltip, 2 of 3", Readout(TooltipMode.Indicate, Tooltip()));
             Assert.Equal(
                 "New Game, button, has tooltip, 2 of 3",
-                Readout(TooltipMode.Indicate, Tooltip("", "   "))
+                Readout(Section(TooltipMode.Indicate))
+            );
+            Assert.Equal(
+                "New Game, button, has tooltip, 2 of 3",
+                Readout(Section(TooltipMode.Indicate, "", "   "))
+            );
+        }
+
+        /// <summary>
+        /// A row carries the heading's explanation of what the measure IS and the value's description
+        /// of what it SAYS, in drawn order. The one the player asked for by landing there is the
+        /// value's - the last one drawn - so that is the one spoken.
+        /// </summary>
+        [Fact]
+        public void TheLastShortTooltipIsTheOneSpoken()
+        {
+            Assert.Equal(
+                "New Game, button, Currently 8 empires, 2 of 3",
+                Readout(
+                    Section(TooltipMode.Announce, "How many empires play"),
+                    Section(TooltipMode.Announce, "Currently 8 empires")
+                )
+            );
+        }
+
+        /// <summary>
+        /// Whichever section is long, the player has to be told there is something to review - the
+        /// buffer holds it either way, and an unindicated buffer is a buffer nobody presses Ctrl+Down
+        /// on. The short one's words are still said: they are the sentence the game's author wrote for
+        /// exactly this moment, and dropping them because something ELSE on the row is reviewable
+        /// would be losing information to say less.
+        /// </summary>
+        [Fact]
+        public void AnyLongTooltipIsIndicatedAlongsideTheShortOnesWords()
+        {
+            Assert.Equal(
+                "New Game, button, What this measures, has tooltip, 2 of 3",
+                Readout(
+                    Section(TooltipMode.Announce, "What this measures"),
+                    Section(TooltipMode.Indicate, "a stat block")
+                )
+            );
+            Assert.Equal(
+                "New Game, button, What it is set to, has tooltip, 2 of 3",
+                Readout(
+                    Section(TooltipMode.Indicate, "a stat block"),
+                    Section(TooltipMode.Announce, "What it is set to")
+                )
+            );
+        }
+
+        /// <summary>A buffer-only section is the control's drawn face: reviewable, and never a word in
+        /// the readout - not its text, and not an indication that it exists.</summary>
+        [Fact]
+        public void ABufferOnlySectionIsNeitherSpokenNorIndicated()
+        {
+            Assert.Equal(
+                "New Game, button, The description, 2 of 3",
+                Readout(
+                    Section(TooltipMode.None, "Food 12", "Industry 8"),
+                    Section(TooltipMode.Announce, "The description")
+                )
+            );
+            Assert.Equal(
+                "New Game, button, 2 of 3",
+                Readout(Section(TooltipMode.None, "Food 12", "Industry 8"))
             );
         }
 
@@ -130,7 +207,9 @@ namespace ES2Access.Tests.UI
         public void TheTooltipIsReadAtSpeakTimeSoAnAppendedReasonStaysCurrent()
         {
             List<string> lines = new List<string> { "Join a multiplayer game" };
-            NodeAnnouncement part = TooltipParts.Part(TooltipMode.Announce, () => lines);
+            NodeAnnouncement part = TooltipParts.Part(
+                new[] { new NodeSection(() => lines, TooltipMode.Announce) }
+            );
             Assert.Equal("Join a multiplayer game", part.Text());
 
             lines.Add("Steam is not running");
@@ -142,11 +221,11 @@ namespace ES2Access.Tests.UI
         {
             Assert.Equal(
                 AnnouncementKinds.Tooltip,
-                TooltipParts.Part(TooltipMode.Announce, Tooltip("Text")).Kind
+                TooltipParts.Part(new[] { Section(TooltipMode.Announce, "Text") }).Kind
             );
             Assert.Equal(
                 AnnouncementKinds.Tooltip,
-                TooltipParts.Part(TooltipMode.Indicate, Tooltip("Text")).Kind
+                TooltipParts.Part(new[] { Section(TooltipMode.Indicate, "Text") }).Kind
             );
         }
 
@@ -159,7 +238,7 @@ namespace ES2Access.Tests.UI
             });
             Assert.Equal(
                 "One / Two",
-                TooltipParts.Part(TooltipMode.Announce, Tooltip("One", "Two")).Text()
+                TooltipParts.Part(new[] { Section(TooltipMode.Announce, "One", "Two") }).Text()
             );
         }
 
@@ -172,7 +251,33 @@ namespace ES2Access.Tests.UI
             });
             Assert.Equal(
                 "info available",
-                TooltipParts.Part(TooltipMode.Indicate, Tooltip("Text")).Text()
+                TooltipParts.Part(new[] { Section(TooltipMode.Indicate, "Text") }).Text()
+            );
+        }
+
+        /// <summary>A screen may still declare a tooltip-kind part of its own for something no section
+        /// can express - a drop-list entry's live refusal - and the derived part must survive beside
+        /// it, or the rows with the most to review are the ones that stop saying so.</summary>
+        [Fact]
+        public void ASectionStillSpeaksBesideAPartTheScreenDeclaredItself()
+        {
+            GraphAnnouncer.PositionText = (i, n) => i + " of " + n;
+            GraphBuilder b = new GraphBuilder();
+            b.AddItem(
+                Id("t"),
+                new NodeVtable
+                {
+                    Announcements = new List<NodeAnnouncement>
+                    {
+                        Part("Vaulters", AnnouncementKinds.Label),
+                        Part("The content pack is not activated", AnnouncementKinds.Tooltip),
+                    },
+                    Sections = new[] { Section(TooltipMode.Indicate, "lore") },
+                }
+            );
+            Assert.Equal(
+                "Vaulters, The content pack is not activated, has tooltip",
+                GraphAnnouncer.LeafText(Node(b.Build(), "t"))
             );
         }
 
@@ -187,8 +292,8 @@ namespace ES2Access.Tests.UI
                 Announcements = new List<NodeAnnouncement>
                 {
                     Part("New Game", AnnouncementKinds.Label),
-                    TooltipParts.Part(TooltipMode.Announce, Tooltip("Start a new game")),
                 },
+                Sections = new[] { Section(TooltipMode.Announce, "Start a new game") },
             });
             b.EndGroup();
             Assert.Equal(

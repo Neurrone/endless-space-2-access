@@ -92,9 +92,16 @@ Two rules that came out of shipping this:
   tree dump still looks plausible and the readout still says "has tooltip". Verify tooltip
   rendering with the drawn-tooltip probe, never with the tree dump.
 - **A row can carry more than one tooltip** (the heading's explanation and the value's
-  description): announce the value's — the last-drawn — by the short/long rule, and put
-  every tooltip in the row into the row's buffer **in drawn order** (the heading's
-  explanation first, then the value's dossier), so review follows the screen.
+  description): announce the value's — the last-drawn — by the short/long rule, **and
+  indicate whenever any tooltip in the row is long**; put every tooltip in the row into
+  the row's buffer **in drawn order** (the heading's explanation first, then the value's
+  dossier), so review follows the screen. "Last-drawn speaks" is the caption-then-value
+  rule, not a universal: where the row is a card's own tooltip plus a badge's, the
+  important one is the card's — the screen names which tooltip speaks.
+- **One implementation of the short/long test, shared with the lines reader.** Two copies
+  of "are this tooltip's words on the widget" that disagree produce a tooltip announced
+  from one source and reviewed from another — and nothing in the spoken output reveals
+  it. The mode test and the content reader must ask the same helper.
 - **Captions for bare numbers come from the game's registries.** When a drawn value's only
   name is a static icon, ask the game's element/property registry for its localized title
   before inventing a mod word. Hazard: the registry can point at a translation key that no

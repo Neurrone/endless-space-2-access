@@ -140,7 +140,7 @@ namespace ES2Access.Screens
                         {
                             GraphNodes.LabelPart(Question),
                         },
-                        DetailLines = PromptLines,
+                        Sections = GraphNodes.Sections(PromptLines, null),
                         OnFocusVisual = ReleasePointer,
                     }
                 );
@@ -156,14 +156,13 @@ namespace ES2Access.Screens
                     () => AgeText.Label(choice.Caption),
                     () => Click(choice),
                     () => Enabled(choice.Button),
-                    tooltip,
-                    GraphNodes.ModeFor(tooltip)
+                    tooltip
                 );
                 if (tooltip == null)
                 {
                     // The question, under an answer the game said nothing else about: whichever
                     // button the player is on, the text they are answering is worth re-reading.
-                    vtable.DetailLines = PromptLines;
+                    vtable.Sections = GraphNodes.Sections(PromptLines, null);
                 }
 
                 vtable.OnFocusVisual = () => PointerFocus.MoveTo(choice.Button, tooltip);

@@ -163,8 +163,7 @@ namespace ES2Access.Screens
                     () => AgeText.Label(entry.TitleLabel),
                     () => Selected(entry),
                     () => Enabled(entry.Toggle.AgeTransform),
-                    tooltip,
-                    GraphNodes.ModeFor(tooltip)
+                    tooltip
                 );
                 // Focusing the tab IS switching to it. The hook runs once per focus change, after the
                 // readout has been composed, so the page changes without the tab announcing itself
@@ -304,8 +303,7 @@ namespace ES2Access.Screens
                     () => Checked(checkbox),
                     () => Flip(checkbox),
                     enabled,
-                    tooltip,
-                    GraphNodes.ModeFor(tooltip)
+                    tooltip
                 );
             }
 
@@ -317,8 +315,7 @@ namespace ES2Access.Screens
                     () => SliderText(slider.Slider),
                     (sign, large) => Slide(slider, sign, large),
                     enabled,
-                    tooltip,
-                    GraphNodes.ModeFor(tooltip)
+                    tooltip
                 );
             }
 
@@ -339,8 +336,7 @@ namespace ES2Access.Screens
                             }
                         ),
                     enabled,
-                    tooltip,
-                    GraphNodes.ModeFor(tooltip)
+                    tooltip
                 );
                 // Activating this one opens a list rather than changing the setting, so there is no
                 // new state to report: the list that opens says where it starts.
@@ -357,8 +353,7 @@ namespace ES2Access.Screens
                     label,
                     () => StartCapture(binding, false),
                     enabled,
-                    tooltip,
-                    GraphNodes.ModeFor(tooltip)
+                    tooltip
                 );
                 keys.Announcements.Add(GraphNodes.ValuePart(() => BindingText(binding)));
                 keys.OnSecondary = () => StartCapture(binding, true);
@@ -375,8 +370,7 @@ namespace ES2Access.Screens
                     () => FieldText(field),
                     () => Edit(field),
                     enabled,
-                    tooltip,
-                    GraphNodes.ModeFor(tooltip)
+                    tooltip
                 );
             }
 
@@ -397,16 +391,10 @@ namespace ES2Access.Screens
                 GraphNodes.DisabledPart(enabled),
             };
 
-            NodeAnnouncement tooltipPart = GraphNodes.TooltipPart(GraphNodes.ModeFor(tooltip), tooltip);
-            if (tooltipPart != null)
-            {
-                parts.Add(tooltipPart);
-            }
-
             return new NodeVtable
             {
                 Announcements = parts,
-                DetailLines = GraphNodes.TooltipDetails(tooltip),
+                Sections = GraphNodes.Sections(null, tooltip),
             };
         }
 
@@ -867,8 +855,7 @@ namespace ES2Access.Screens
                     () => ButtonText(caption, tooltip),
                     () => Press(command),
                     () => Enabled(available),
-                    tooltip,
-                    GraphNodes.ModeFor(tooltip)
+                    tooltip
                 );
                 vtable.OnFocusVisual = () =>
                     PointerFocus.MoveTo(command.Button, tooltip, AnchorOf(caption));

@@ -306,10 +306,9 @@ namespace ES2Access.Screens
                         GraphNodes.LabelPart(() => AgeText.Clean(Gui.GetLocalizedTitle(name))),
                         GraphNodes.ValuePart(() => Amount(it.GetPropertyValue(name))),
                     },
-                    DetailLines = AgeWidgets.TooltipLines(tooltip),
+                    Sections = GraphNodes.Sections(null, tooltip),
                 };
 
-                AddTooltipPart(vtable, tooltip);
                 PointAtTooltip(vtable, tooltip, item);
                 Add(cells, item, ControlId.Referenced(item, "planet:fidsi/" + name), vtable);
             }
@@ -368,10 +367,9 @@ namespace ES2Access.Screens
                     GraphNodes.LabelPart(() => TooltipTitle(tooltip)),
                     GraphNodes.ValuePart(() => AgeText.Label(count)),
                 },
-                DetailLines = AgeWidgets.TooltipLines(tooltip),
+                Sections = GraphNodes.Sections(null, tooltip),
             };
 
-            AddTooltipPart(vtable, tooltip);
             PointAtTooltip(vtable, tooltip, widget);
             Add(
                 cells,
@@ -481,11 +479,10 @@ namespace ES2Access.Screens
                 {
                     GraphNodes.LabelPart(() => AgeWidgets.TextOf(it)),
                 },
-                DetailLines = RowDetails(it),
+                Sections = RowSections(it, tooltip),
             };
 
-            AddTooltipPart(vtable, tooltip);
-            PointAtTooltip(vtable, tooltip, row);
+                        PointAtTooltip(vtable, tooltip, row);
             Add(cells, row, ControlId.Referenced(row, "planet:row/" + key), vtable);
         }
 
@@ -518,18 +515,37 @@ namespace ES2Access.Screens
             return null;
         }
 
-        private static Func<IList<string>> RowDetails(AgeTransform row)
+        /// <summary>Every tooltip drawn in a row as declared sections, in drawn order - and only the
+        /// one that explains what the row SAYS speaks, because what follows it on a card is a badge,
+        /// not a value.</summary>
+        private static IList<NodeSection> RowSections(AgeTransform row, AgeTooltip said)
         {
-            AgeTransform it = row;
-            return () =>
+            List<AgeTooltip> found = new List<AgeTooltip>();
+            CollectTooltips(row, found, TooltipDepth);
+            List<NodeSection> sections = null;
+            for (int i = 0; i < found.Count; i++)
             {
-                List<string> lines = new List<string>();
-                CollectTooltips(it, lines, TooltipDepth);
-                return lines;
-            };
+                NodeSection section = GraphNodes.TooltipSection(
+                    found[i],
+                    found[i] == said ? null : (TooltipMode?)TooltipMode.None
+                );
+                if (section == null)
+                {
+                    continue;
+                }
+
+                if (sections == null)
+                {
+                    sections = new List<NodeSection>(found.Count);
+                }
+
+                sections.Add(section);
+            }
+
+            return sections;
         }
 
-        private static void CollectTooltips(AgeTransform widget, List<string> lines, int depth)
+        private static void CollectTooltips(AgeTransform widget, List<AgeTooltip> found, int depth)
         {
             if (widget == null || depth < 0)
             {
@@ -548,20 +564,16 @@ namespace ES2Access.Screens
                 return;
             }
 
-            Func<IList<string>> read = AgeWidgets.TooltipLines(Meaningful(AgeWidgets.Raw(widget)));
-            IList<string> got = read == null ? null : read();
-            for (int i = 0; got != null && i < got.Count; i++)
+            AgeTooltip tooltip = Meaningful(AgeWidgets.Raw(widget));
+            if (tooltip != null)
             {
-                if (!string.IsNullOrEmpty(got[i]) && !lines.Contains(got[i]))
-                {
-                    lines.Add(got[i]);
-                }
+                found.Add(tooltip);
             }
 
             IList<AgeTransform> children = Children(widget);
             for (int i = 0; children != null && i < children.Count; i++)
             {
-                CollectTooltips(children[i], lines, depth - 1);
+                CollectTooltips(children[i], found, depth - 1);
             }
         }
 
@@ -620,11 +632,10 @@ namespace ES2Access.Screens
                 {
                     GraphNodes.LabelPart(() => AgeWidgets.TextOf(it)),
                 },
-                DetailLines = RowDetails(it),
+                Sections = RowSections(it, tooltip),
             };
 
-            AddTooltipPart(vtable, tooltip);
-            PointAtTooltip(vtable, tooltip, widget);
+                        PointAtTooltip(vtable, tooltip, widget);
             Add(cells, widget, ControlId.Referenced(widget, key), vtable);
         }
 
@@ -642,8 +653,7 @@ namespace ES2Access.Screens
                 () => AgeWidgets.TextOf(it),
                 () => AgeWidgets.Press(it),
                 () => AgeWidgets.Operable(it),
-                tooltip,
-                GraphNodes.ModeFor(tooltip)
+                tooltip
             );
             AgeWidgets.Point(vtable, button);
             Add(cells, widget, ControlId.Referenced(widget, key), vtable);
@@ -675,17 +685,7 @@ namespace ES2Access.Screens
             catch (Exception) { }
 
             AgeWidgets.PointAt(vtable, at);
-        }
-
-        private static void AddTooltipPart(NodeVtable vtable, AgeTooltip tooltip)
-        {
-            NodeAnnouncement part = GraphNodes.TooltipPart(GraphNodes.ModeFor(tooltip), tooltip);
-            if (part != null)
-            {
-                vtable.Announcements.Add(part);
-            }
-        }
-
+        }
         /// <summary>A tooltip only when there is something behind it. AGE hangs a tooltip component on
         /// widgets that never get one filled in, and an empty one would be picked as a row's
         /// explanation and then say nothing.</summary>

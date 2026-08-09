@@ -1,5 +1,10 @@
 # ES2 dev loop — the working map
 
+**THE FIXTURE SAVE IS GONE.** `Documents\Endless Space 2\Save Files` is empty and
+`DevProbe.Saves()` answers `[]`, so `POST /loadsave "[Beginner] access test"` 404s and NO
+in-game screen can be reached at all. Everything below that names the fixture is currently
+untestable; recreate the save before any in-game work.
+
 **Current state (2026-08-09):** phase 1 (out-game) is screen-complete: the new game lobby, the
 advanced settings, the faction chooser and the custom faction editor over it, and the tutorial
 picker all have screens; the lobby family has been through one manual review and its fixes. In-game esc menu, galaxy HUD, and
@@ -47,8 +52,14 @@ belongs in the generic docs or the source file's own doc comment.
 | `TooltipText` | What a row of tooltip parts SAYS — icon-as-heading vs decoration, caption+value, item strips | `ES2Access/Core/Speech/TooltipText.cs` |
 | `PointerFocus` | Hover/tooltip/flyout parity for keyboard focus; `MoveTo` (button or plain transform), `MoveToToggle` (a toggle has no `SimulateHover` — its own `MouseEnter`/`MouseLeave`), `Unpoint` | `ES2Access/UI/PointerFocus.cs` |
 | `GameKeyStandDown` | The input-suppression patches (mod keys win; Escape carved out); watch its counts on `/status` | `ES2Access/UI/Input/GameKeyStandDown.cs` |
+| `NodeVtable.Sections` | **A control's content, declared ONCE** — an ordered list of `NodeSection` (lines + a `TooltipMode`). The engine derives BOTH surfaces from it: `TooltipParts.Part` the spoken tooltip part, `NodeBuffer.Lines` the review buffer. There is no `DetailLines` any more, and no screen wires an announcement | `ES2Access/Core/UI/Graph/GraphTypes.cs` |
+| `TooltipParts.Part(sections)` | The spoken half: the LAST `Announce` section's words, plus "has tooltip" if ANY section is `Indicate`; `None` sections say nothing | `ES2Access/Core/UI/Graph/TooltipParts.cs` |
+| `NodeBuffer.Lines` | The buffer half: an AUTO HEAD off the node's own readout (label + state words, no role/position/tooltip), then every section in declared order, first line dropped if it only repeats the label. A node with NO sections still buffers correctly | `ES2Access/Core/UI/Graph/NodeBuffer.cs` |
 | `GraphNodes.ModeFor` | The tooltip short/long rule — never pick a `TooltipMode` by hand | `ES2Access/UI/GraphNodes.cs` |
-| `GraphNodes.*` factories | **Every node is built by one.** Each takes `(tooltip, mode)` and wires BOTH the announcement part and `DetailLines`; a screen that hand-builds a `NodeVtable` is how a row comes to have a tooltip in neither. `Radio`, `Choice` and `EditField` take them too — they did not, which is why three screens' rows announced no tooltip | `ES2Access/UI/GraphNodes.cs` |
+| `GraphNodes.TooltipSection` / `Sections` | A widget's tooltip as a section (mode from `ModeFor` unless overridden), and the null-dropping list builder every factory ends with | `ES2Access/UI/GraphNodes.cs` |
+| `SettingRows.RowSections` | Two shapes: `(caption, value, drawn?)` for a caption-then-value row (both speak by rule, the value's wins), and `(widget, said, mode?)` for a row whose tooltips are scattered over its children — only `said` speaks, the rest are reviewable; `said` null = none speaks | `ES2Access/Screens/SettingRows.cs` |
+| `AgeWidgets.Readable` | The ONE "are this tooltip's words on the widget" test (empty class or `Simple`). `ModeFor`, `TooltipLines` and every screen ask it; three private copies used to disagree about `Simple` | `ES2Access/UI/AgeWidgets.cs` |
+| `GraphNodes.*` factories | **Every node is built by one.** Each ends `(tooltip, tooltipMode?, details?)` and builds `Sections` from them — `tooltipMode` null means "ask `ModeFor`", so a screen passes the tooltip and nothing else. A screen may still SET `vtable.Sections` (that IS the declaration); it can no longer wire an announcement, which is how a row used to end up with a tooltip in one surface and not the other | `ES2Access/UI/GraphNodes.cs` |
 | `IconNames` + `IconTable` | Icon → `icon.*` key → name; the enumerated 382-token/407-texture table with variant aliases | `ES2Access/UI/IconNames.cs`, `ES2Access/Core/Speech/IconTable.cs` |
 | `GalaxyViewLevels` | Which `GalaxyViewLevel` is up (`At<T>()`, `Overview`, `Scanning`, `LevelThroughTransitions`, `FocusedSystem`) + where the camera is (`ZoomStep`, `AtOrbitalZoom`, `DefaultZoomStep`, all -1/false when the galaxy camera is not the live one) and the routes (`PanTo`, `ZoomTo` — the game's own `ZoomInOnNode`, `ZoomToStep` for coming back out, `OpenSystem`, `OpenPlanet`); stateless, so reload-safe | `ES2Access/UI/GalaxyViewLevels.cs` |
 | `AgeWidgets` | The per-widget questions every screen asks: `Visible`/`Enabled`/`Operable` (ancestor-walking), `Raw`/`Readable`/`TooltipLines`/`TooltipTitle` (the `GuiWrapper` name behind a wordless icon), `Press`/`Toggle`/`Choose` (replay the widget's own handler; `Choose` takes a drop-list entry through the list's own `OnSelectionObject`/`Method`), `Point`/`PointAt`, `TextOf` (a group's whole drawn phrase, icons named) | `ES2Access/UI/AgeWidgets.cs` |
@@ -293,6 +304,18 @@ container's first child.
 
 **Multi-row tables** need a real fixture with several saves/rows — do not mutate the game's
 data structures to fake one.
+
+**Proving a refactor changed no spoken or buffer line.** Walk every reachable screen family
+with `POST /input` and save `GET /gui/graph?buffers=1` per family to a scratchpad `before/`,
+make the change, walk the identical route into `after/`, and `diff`. Normalise the ids that
+carry an instance hash (`droplist:-138580/…`) before diffing. Two things make it work: the
+dump is text and stable, and unfocused Class-backed tooltips read EMPTY on both sides, so
+they cancel. For a family whose "before" you only realise you need afterwards,
+`git stash push -u -- ES2Access ES2Access.Tests` → build → `/reload` → capture → `git stash
+pop` → build → `/reload` costs about three minutes and is how `screen.game-menu` and
+`screen.rename` got baselines. `GET /gui/graph?screen=KEY&buffers=1` reaches screens whose
+window exists without a game running — out of a session `screen.game-menu` and
+`screen.rename` both declare real content, `screen.galaxy` and friends answer "not active".
 
 **Silence in `/speech` is only evidence for controls that would have spoken.** An enabled
 button's activation is also silent, so a transcript cannot distinguish "refused" from

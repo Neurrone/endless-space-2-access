@@ -59,21 +59,14 @@ namespace ES2Access.UI
                 return null;
             }
 
-            AgeTooltip it = tooltip;
-            return () =>
-                ContentBacked(it)
-                    ? AgeText.Lines(AgeText.Tooltip(it))
-                    : DrawnTooltip.Lines(it);
+            return AgeWidgets.TooltipLines(tooltip);
         }
 
-        /// <summary>Whether a tooltip's words live in its <c>Content</c> field. True for no class at
-        /// all and for the "Simple" class, which is the plain text box: it renders exactly what
-        /// Content says (the main menu's one-sentence descriptions). Every other class assembles its
-        /// words at draw time and leaves Content holding authoring leftovers.</summary>
+        /// <summary>Whether a tooltip's words live in its <c>Content</c> field - the one rule, asked of
+        /// <see cref="AgeWidgets.Readable"/>, which is also what reads the lines back.</summary>
         private static bool ContentBacked(AgeTooltip tooltip)
         {
-            string cls = tooltip.Class;
-            return string.IsNullOrEmpty(cls) || cls == "Simple";
+            return AgeWidgets.Readable(tooltip) != null;
         }
 
         /// <summary>The same, for a control that carries its tooltip on its transform rather than
@@ -83,12 +76,81 @@ namespace ES2Access.UI
             return transform == null ? null : TooltipDetails(transform.AgeTooltip);
         }
 
-        /// <summary>What, if anything, the tooltip contributes to the focus readout - the screen's
-        /// call, per control. Null when the control has no tooltip or the screen wants it read only
-        /// from the buffer.</summary>
-        public static NodeAnnouncement TooltipPart(TooltipMode mode, AgeTooltip tooltip)
+        /// <summary>
+        /// A widget's tooltip as a declared SECTION - the single place it is written down, from which
+        /// the engine derives both what the focus readout says about it and what the review buffer
+        /// holds. The mode comes from <see cref="ModeFor"/> unless the screen overrides it, which it
+        /// does only where the game drew something the rule cannot see (a wordless icon whose tooltip
+        /// IS its name, already spoken as the label).
+        ///
+        /// Null when there is no tooltip, so a caller can hand the result straight to
+        /// <see cref="Sections"/>.
+        /// </summary>
+        public static NodeSection TooltipSection(AgeTooltip tooltip, TooltipMode? mode = null)
         {
-            return TooltipParts.Part(mode, TooltipDetails(tooltip));
+            Func<IList<string>> lines = TooltipDetails(tooltip);
+            return lines == null
+                ? null
+                : new NodeSection(lines, mode.HasValue ? mode.Value : ModeFor(tooltip));
+        }
+
+        /// <summary>The same for a control that carries its tooltip on its transform.</summary>
+        public static NodeSection TooltipSection(AgeTransform transform, TooltipMode? mode = null)
+        {
+            return transform == null ? null : TooltipSection(transform.AgeTooltip, mode);
+        }
+
+        /// <summary>The declared sections of a control, in the order they read: what the control DRAWS
+        /// beyond its readout first, then its tooltip. Null when there is neither, which is a complete
+        /// declaration - the buffer still has the control's own name and state.</summary>
+        public static IList<NodeSection> Sections(
+            Func<IList<string>> details,
+            AgeTooltip tooltip,
+            TooltipMode? mode = null
+        )
+        {
+            NodeSection drawn = NodeSection.Buffer(details);
+            NodeSection tip = TooltipSection(tooltip, mode);
+            if (drawn == null && tip == null)
+            {
+                return null;
+            }
+
+            List<NodeSection> list = new List<NodeSection>(2);
+            if (drawn != null)
+            {
+                list.Add(drawn);
+            }
+
+            if (tip != null)
+            {
+                list.Add(tip);
+            }
+
+            return list;
+        }
+
+        /// <summary>The same, for a screen that has already built its sections (a row with a heading
+        /// tooltip and a value tooltip). Nulls are dropped, so every caller can pass what it has.</summary>
+        public static IList<NodeSection> Sections(params NodeSection[] sections)
+        {
+            List<NodeSection> list = null;
+            for (int i = 0; sections != null && i < sections.Length; i++)
+            {
+                if (sections[i] == null)
+                {
+                    continue;
+                }
+
+                if (list == null)
+                {
+                    list = new List<NodeSection>(sections.Length);
+                }
+
+                list.Add(sections[i]);
+            }
+
+            return list;
         }
 
         /// <summary>
@@ -157,14 +219,15 @@ namespace ES2Access.UI
             Action activate,
             Func<bool> enabled = null,
             AgeTooltip tooltip = null,
-            TooltipMode tooltipMode = TooltipMode.None
+            TooltipMode? tooltipMode = null,
+            Func<IList<string>> details = null
         )
         {
             return new NodeVtable
             {
                 ControlType = ControlTypes.Button,
-                Announcements = Parts(label, enabled, tooltip, tooltipMode),
-                DetailLines = TooltipDetails(tooltip),
+                Announcements = Parts(label, enabled),
+                Sections = Sections(details, tooltip, tooltipMode),
                 OnActivate = Guarded(activate, enabled),
             };
         }
@@ -185,18 +248,11 @@ namespace ES2Access.UI
             AgeTooltip tooltip
         )
         {
-            List<NodeAnnouncement> parts = new List<NodeAnnouncement>
+            return new NodeVtable
             {
-                LabelPart(label),
-                ValuePart(value),
+                Announcements = new List<NodeAnnouncement> { LabelPart(label), ValuePart(value) },
+                Sections = Sections(details, tooltip),
             };
-            NodeAnnouncement tooltipPart = TooltipPart(ModeFor(tooltip), tooltip);
-            if (tooltipPart != null)
-            {
-                parts.Add(tooltipPart);
-            }
-
-            return new NodeVtable { Announcements = parts, DetailLines = details };
         }
 
         /// <summary>A setting the player turns on and off. Its state is both announced live - so a
@@ -210,7 +266,8 @@ namespace ES2Access.UI
             Action toggle,
             Func<bool> enabled = null,
             AgeTooltip tooltip = null,
-            TooltipMode tooltipMode = TooltipMode.None
+            TooltipMode? tooltipMode = null,
+            Func<IList<string>> details = null
         )
         {
             Func<string> stateText = () =>
@@ -218,13 +275,13 @@ namespace ES2Access.UI
                     state != null && state() ? ModStrings.NavChecked : ModStrings.NavUnchecked
                 );
 
-            List<NodeAnnouncement> parts = Parts(label, enabled, tooltip, tooltipMode);
+            List<NodeAnnouncement> parts = Parts(label, enabled);
             parts.Add(ValuePart(stateText));
             return new NodeVtable
             {
                 ControlType = ControlTypes.Checkbox,
                 Announcements = parts,
-                DetailLines = TooltipDetails(tooltip),
+                Sections = Sections(details, tooltip, tooltipMode),
                 StateText = ActedState(stateText, enabled),
                 OnActivate = Guarded(toggle, enabled),
             };
@@ -246,19 +303,19 @@ namespace ES2Access.UI
             Func<bool> enabled = null,
             Func<IList<string>> details = null,
             AgeTooltip tooltip = null,
-            TooltipMode tooltipMode = TooltipMode.None
+            TooltipMode? tooltipMode = null
         )
         {
             Func<string> chosen = () =>
                 selected != null && selected() ? ModStrings.Get(ModStrings.NavSelected) : null;
 
-            List<NodeAnnouncement> parts = Parts(label, enabled, tooltip, tooltipMode);
+            List<NodeAnnouncement> parts = Parts(label, enabled);
             parts.Insert(1, SelectedPart(selected));
             return new NodeVtable
             {
                 ControlType = ControlTypes.RadioButton,
                 Announcements = parts,
-                DetailLines = details ?? TooltipDetails(tooltip),
+                Sections = Sections(details, tooltip, tooltipMode),
                 StateText = ActedState(chosen, enabled),
                 OnActivate = Guarded(choose, enabled),
             };
@@ -279,17 +336,17 @@ namespace ES2Access.UI
             Action edit,
             Func<bool> enabled = null,
             AgeTooltip tooltip = null,
-            TooltipMode tooltipMode = TooltipMode.None,
+            TooltipMode? tooltipMode = null,
             Func<IList<string>> details = null
         )
         {
-            List<NodeAnnouncement> parts = Parts(label, enabled, tooltip, tooltipMode);
+            List<NodeAnnouncement> parts = Parts(label, enabled);
             parts.Add(ValuePart(value));
             return new NodeVtable
             {
                 ControlType = ControlTypes.EditField,
                 Announcements = parts,
-                DetailLines = details ?? TooltipDetails(tooltip),
+                Sections = Sections(details, tooltip, tooltipMode),
                 OnActivate = Guarded(edit, enabled),
             };
         }
@@ -304,16 +361,17 @@ namespace ES2Access.UI
             Action<int, bool> adjust,
             Func<bool> enabled = null,
             AgeTooltip tooltip = null,
-            TooltipMode tooltipMode = TooltipMode.None
+            TooltipMode? tooltipMode = null,
+            Func<IList<string>> details = null
         )
         {
-            List<NodeAnnouncement> parts = Parts(label, enabled, tooltip, tooltipMode);
+            List<NodeAnnouncement> parts = Parts(label, enabled);
             parts.Add(ValuePart(valueText));
             return new NodeVtable
             {
                 ControlType = ControlTypes.Slider,
                 Announcements = parts,
-                DetailLines = TooltipDetails(tooltip),
+                Sections = Sections(details, tooltip, tooltipMode),
                 StateText = ActedState(valueText, enabled),
                 // Declared even when the slider is refusing, so left and right stay the slider's
                 // keys rather than quietly turning back into navigation on a control that looks
@@ -341,16 +399,17 @@ namespace ES2Access.UI
             Action open,
             Func<bool> enabled = null,
             AgeTooltip tooltip = null,
-            TooltipMode tooltipMode = TooltipMode.None
+            TooltipMode? tooltipMode = null,
+            Func<IList<string>> details = null
         )
         {
-            List<NodeAnnouncement> parts = Parts(label, enabled, tooltip, tooltipMode);
+            List<NodeAnnouncement> parts = Parts(label, enabled);
             parts.Add(ValuePart(valueText));
             return new NodeVtable
             {
                 ControlType = ControlTypes.ComboBox,
                 Announcements = parts,
-                DetailLines = TooltipDetails(tooltip),
+                Sections = Sections(details, tooltip, tooltipMode),
                 StateText = ActedState(valueText, enabled),
                 OnActivate = Guarded(open, enabled),
             };
@@ -367,16 +426,17 @@ namespace ES2Access.UI
             Func<bool> selected,
             Func<bool> enabled = null,
             AgeTooltip tooltip = null,
-            TooltipMode tooltipMode = TooltipMode.None
+            TooltipMode? tooltipMode = null,
+            Func<IList<string>> details = null
         )
         {
-            List<NodeAnnouncement> parts = Parts(label, enabled, tooltip, tooltipMode);
+            List<NodeAnnouncement> parts = Parts(label, enabled);
             parts.Add(SelectedPart(selected));
             return new NodeVtable
             {
                 ControlType = ControlTypes.Tab,
                 Announcements = parts,
-                DetailLines = TooltipDetails(tooltip),
+                Sections = Sections(details, tooltip, tooltipMode),
             };
         }
 
@@ -391,15 +451,15 @@ namespace ES2Access.UI
             Func<bool> enabled = null,
             Func<IList<string>> details = null,
             AgeTooltip tooltip = null,
-            TooltipMode tooltipMode = TooltipMode.None
+            TooltipMode? tooltipMode = null
         )
         {
-            List<NodeAnnouncement> parts = Parts(label, enabled, tooltip, tooltipMode);
+            List<NodeAnnouncement> parts = Parts(label, enabled);
             parts.Insert(1, SelectedPart(selected));
             return new NodeVtable
             {
                 Announcements = parts,
-                DetailLines = details ?? TooltipDetails(tooltip),
+                Sections = Sections(details, tooltip, tooltipMode),
                 OnActivate = Guarded(choose, enabled),
             };
         }
@@ -423,7 +483,7 @@ namespace ES2Access.UI
                     LabelPart(label),
                     SelectedPart(selected),
                 },
-                DetailLines = details,
+                Sections = Sections(details, null),
                 OnActivate = invoke,
             };
         }
@@ -467,39 +527,24 @@ namespace ES2Access.UI
             Func<string> label,
             Func<bool> enabled = null,
             AgeTooltip tooltip = null,
-            TooltipMode tooltipMode = TooltipMode.None
+            TooltipMode? tooltipMode = null,
+            Func<IList<string>> details = null
         )
         {
             return new NodeVtable
             {
                 ControlType = ControlTypes.Group,
-                Announcements = Parts(label, enabled, tooltip, tooltipMode),
-                DetailLines = TooltipDetails(tooltip),
+                Announcements = Parts(label, enabled),
+                Sections = Sections(details, tooltip, tooltipMode),
             };
         }
 
-        // The readout every control here is built from: what it is called, whether it is refusing,
-        // and as much of its tooltip as the screen asked to be spoken.
-        private static List<NodeAnnouncement> Parts(
-            Func<string> label,
-            Func<bool> enabled,
-            AgeTooltip tooltip,
-            TooltipMode tooltipMode
-        )
+        // The readout every control here is built from: what it is called and whether it is refusing.
+        // What it has to SAY is not here - that is declared once, as sections, and the announcer
+        // derives the tooltip part from them.
+        private static List<NodeAnnouncement> Parts(Func<string> label, Func<bool> enabled)
         {
-            List<NodeAnnouncement> parts = new List<NodeAnnouncement>
-            {
-                LabelPart(label),
-                DisabledPart(enabled),
-            };
-
-            NodeAnnouncement tooltipPart = TooltipPart(tooltipMode, tooltip);
-            if (tooltipPart != null)
-            {
-                parts.Add(tooltipPart);
-            }
-
-            return parts;
+            return new List<NodeAnnouncement> { LabelPart(label), DisabledPart(enabled) };
         }
     }
 }

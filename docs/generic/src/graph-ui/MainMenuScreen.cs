@@ -95,8 +95,7 @@ namespace ES2Access.Screens
                     () => AgeText.Label(entry.TitleLabel),
                     () => Click(name),
                     () => Enabled(entry.AgeTransform),
-                    entry.Tooltip,
-                    GraphNodes.ModeFor(entry.Tooltip)
+                    entry.Tooltip
                 );
                 vtable.OnFocusVisual = () =>
                     PointerFocus.MoveTo(
@@ -131,8 +130,7 @@ namespace ES2Access.Screens
                         () => AgeText.Label(sub.TitleLabel),
                         () => Click(subName),
                         () => Enabled(sub.AgeTransform),
-                        sub.Tooltip,
-                        GraphNodes.ModeFor(sub.Tooltip)
+                        sub.Tooltip
                     );
                     // The flyout being open is the parent's business, so a step between sub-entries
                     // leaves it standing rather than closing and reopening it.

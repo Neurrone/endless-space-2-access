@@ -42,8 +42,11 @@ which no dump reveals. Key such lines on the game's *data* object, never the wid
   expandability, auto position) and `NodeVtable`: **behaviors as data**. Announcement parts
   (`NodeAnnouncement`, each a `Func<string>` resolved at speak time — read live, never cache),
   `OnActivate`/`OnSecondary`/`OnAdjust` (adjust preempts Left/Right navigation),
-  `StateText` (spoken interrupting right after activate/adjust), `DetailLines` (feeds the
-  review buffer — see [buffers.md](buffers.md)), focus-visual hooks. `ControlType` is a
+  `StateText` (spoken interrupting right after activate/adjust), `Sections` (ordered
+  content blocks, each a live lines-func with a surfacing mode, from which the engine
+  derives BOTH the tooltip announcement part and the review buffer — one declaration, two
+  surfaces, so they cannot diverge; see [buffers.md](buffers.md) and
+  [tooltips.md](tooltips.md)), focus-visual hooks. `ControlType` is a
   **registry value, not a class** — it owns the localized role word and the speak order of
   part kinds. wotr-access migrated off a class-hierarchy proxy system to this; don't
   reintroduce classes.

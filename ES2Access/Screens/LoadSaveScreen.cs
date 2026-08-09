@@ -258,7 +258,7 @@ namespace ES2Access.Screens
                     GraphNodes.SelectedPart(selected),
                     GraphNodes.DisabledPart(() => Enabled(line.AgeTransform)),
                 },
-                DetailLines = () => CellFacts(header, cell),
+                Sections = GraphNodes.Sections(() => CellFacts(header, cell), null),
                 StateText = () =>
                     selected() ? ModStrings.Get(ModStrings.NavSelected) : null,
                 OnActivate = () => Select(window, line),
@@ -395,7 +395,7 @@ namespace ES2Access.Screens
                     GraphNodes.LabelPart(() => ModStrings.Get(ModStrings.LoadSaveSaveName)),
                     GraphNodes.ValuePart(() => Typing(owner) ? null : FieldText(owner)),
                 },
-                DetailLines = () => new List<string> { FieldText(owner) },
+                Sections = GraphNodes.Sections(() => new List<string> { FieldText(owner) }, null),
                 OnActivate = () => RequestEdit(owner),
                 // The other single-item row at this level: paired with the cloud toggle it would
                 // count as "2 of 2" of nothing either control is a member of.
@@ -581,8 +581,7 @@ namespace ES2Access.Screens
                     () => Caption(command),
                     () => Press(command),
                     () => Enabled(TransformOf(command)),
-                    tooltip,
-                    GraphNodes.ModeFor(tooltip)
+                    tooltip
                 );
                 vtable.OnFocusVisual = () => PointerFocus.MoveTo(command, tooltip);
                 vtable.OnBlurVisual = ReleasePointer;
@@ -765,7 +764,13 @@ namespace ES2Access.Screens
                 () => State(control),
                 () => Flip(control),
                 () => Enabled(TransformOf(control)),
-                window.CloudToggleTooltip
+                window.CloudToggleTooltip,
+                // Reviewable, not spoken. The short/long rule reads this as short because the game
+                // wrote it into Content, but what it wrote is two paragraphs about how Steam Cloud
+                // works - not the one sentence the rule assumes - and a tick box that recites them
+                // every time focus passes over it is unusable. Stated here rather than left to the
+                // rule, because it is the row that can see how long the sentence turned out.
+                TooltipMode.None
             );
             // The only checkbox at this level of the window: "1 of 2" with the name field below it
             // would be counting two unrelated controls that happen to share a Tab stop, not members

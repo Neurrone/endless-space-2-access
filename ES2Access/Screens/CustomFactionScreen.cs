@@ -390,11 +390,9 @@ namespace ES2Access.Screens
                 label ?? (() => AgeWidgets.TextOf(band)),
                 () => it.State,
                 () => AgeWidgets.Toggle(it),
-                () => AgeWidgets.Operable(band),
-                tooltip,
-                GraphNodes.ModeFor(tooltip)
+                () => AgeWidgets.Operable(band)
             );
-            vtable.DetailLines = SettingRows.RowDetails(band);
+            vtable.Sections = SettingRows.RowSections(band, AgeWidgets.Raw(band));
             AgeWidgets.Point(vtable, it);
             builder.AddItem(ControlId.Referenced(toggle, key), vtable);
         }
@@ -417,18 +415,9 @@ namespace ES2Access.Screens
                 () => AgeWidgets.TextOf(band),
                 () => it.State,
                 () => AgeWidgets.Toggle(it),
-                () => AgeWidgets.Operable(band),
-                SettingRows.RowDetails(band)
+                () => AgeWidgets.Operable(band)
             );
-            NodeAnnouncement said = GraphNodes.TooltipPart(
-                GraphNodes.ModeFor(AgeWidgets.Raw(band)),
-                AgeWidgets.Raw(band)
-            );
-            if (said != null)
-            {
-                vtable.Announcements.Add(said);
-            }
-
+            vtable.Sections = SettingRows.RowSections(band, AgeWidgets.Raw(band));
             AgeWidgets.Point(vtable, it);
             builder.AddItem(ControlId.Referenced(toggle, key), vtable);
         }
@@ -527,11 +516,9 @@ namespace ES2Access.Screens
                 NodeVtable vtable = GraphNodes.Button(
                     () => AgeWidgets.TextOf(line),
                     () => AgeWidgets.Toggle(it),
-                    () => AgeWidgets.Operable(line),
-                    AgeWidgets.Raw(line),
-                    GraphNodes.ModeFor(AgeWidgets.Raw(line))
+                    () => AgeWidgets.Operable(line)
                 );
-                vtable.DetailLines = SettingRows.RowDetails(line);
+                vtable.Sections = SettingRows.RowSections(line, AgeWidgets.Raw(line));
                 AgeWidgets.Point(vtable, it);
 
                 // Keyed by the TRAIT, never by the line. The table pools its lines and re-sorts them

@@ -316,12 +316,20 @@ namespace ES2Access.Screens
                     () => EntryText(list, index),
                     () => Chosen(list, index),
                     () => Choose(request, index),
-                    () => EntryEnabled(list, index),
-                    () => AgeText.Lines(EntryDetail(list, index)),
-                    AgeWidgets.Raw(EntryTransform(list, index)),
-                    string.IsNullOrEmpty(EntryDetail(list, index))
-                        ? TooltipMode.None
-                        : TooltipMode.Indicate
+                    () => EntryEnabled(list, index)
+                );
+                // The entry's description, declared once: it is what the buffer holds and it is what
+                // the readout indicates. There is no AgeTooltip to read a mode off - the words come
+                // out of the list's own tooltip table - so the mode is stated, and it is stated
+                // against the SAME text the buffer will hold, which is what stops a list from
+                // indicating nothing or holding something it never mentioned.
+                vtable.Sections = GraphNodes.Sections(
+                    new NodeSection(
+                        () => AgeText.Lines(EntryDetail(list, index)),
+                        string.IsNullOrEmpty(EntryDetail(list, index))
+                            ? TooltipMode.None
+                            : TooltipMode.Indicate
+                    )
                 );
                 // An entry the game is refusing says WHY, which the entry's own tooltip carries after
                 // the description (Gui.FormatFailureInfo appends it): "unavailable" alone leaves the

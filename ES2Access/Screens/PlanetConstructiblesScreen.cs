@@ -169,7 +169,7 @@ namespace ES2Access.Screens
                     GraphNodes.LabelPart(() => Name(it)),
                     GraphNodes.DisabledPart(() => AgeWidgets.Operable(it.AgeTransform)),
                 },
-                DetailLines = AgeWidgets.TooltipLines(tooltip),
+                Sections = GraphNodes.Sections(null, tooltip),
                 OnActivate = () => Choose(it),
             };
             AgeWidgets.PointAt(vtable, item.AgeTransform);

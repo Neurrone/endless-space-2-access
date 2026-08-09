@@ -218,11 +218,9 @@ namespace ES2Access.Screens
                 () => AgeText.Label(entry.FactionTitle),
                 () => pick.State,
                 () => AgeWidgets.Toggle(pick),
-                () => AgeWidgets.Operable(it),
-                SettingRows.RowDetails(it),
-                tooltip,
-                TooltipMode.Announce
+                () => AgeWidgets.Operable(it)
             );
+            vtable.Sections = SettingRows.RowSections(it, tooltip, TooltipMode.Announce);
 
             vtable.OnFocusVisual = () => PointerFocus.MoveToToggle(pick, tooltip, it);
             vtable.OnBlurVisual = AgeWidgets.ReleasePointer;

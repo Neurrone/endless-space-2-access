@@ -41,29 +41,81 @@ namespace ES2Access.Core.UI.Graph
         Indicate,
     }
 
-    /// <summary>Builds the tooltip announcement part a <see cref="TooltipMode"/> asks for. Kept beside
-    /// the graph types rather than in a game adapter so the wording and the empty-tooltip rule are the
-    /// same on every screen and testable without the game.</summary>
+    /// <summary>
+    /// The PROJECTION from a control's declared <see cref="NodeSection"/>s onto the focus readout.
+    ///
+    /// The buffer's half of the same declaration is the navigator's (<c>GraphNavigator.BufferLines</c>);
+    /// this half is one announcement part, composed from the sections' modes alone:
+    ///
+    /// - the LAST <see cref="TooltipMode.Announce"/> section is the one spoken outright. A row can carry
+    ///   more than one tooltip (the heading explains the measure, the value describes itself) and it is
+    ///   the value's - the last one drawn - that the player asked for by landing there.
+    /// - any <see cref="TooltipMode.Indicate"/> section adds "has tooltip", UNCONDITIONALLY. Its words do
+    ///   not exist until the game draws them, so a check for content would answer "empty" every time.
+    /// - <see cref="TooltipMode.None"/> sections say nothing here at all: they are the control's drawn
+    ///   face, already reviewable, and reading them on every pass is what buffers exist to avoid.
+    ///
+    /// Kept beside the graph types rather than in a game adapter so the wording and these rules are the
+    /// same on every screen and testable without the game.
+    /// </summary>
     public static class TooltipParts
     {
-        /// <summary>The tooltip part for <paramref name="mode"/>, reading <paramref name="lines"/> at
-        /// speak time - a control that is refusing appends its reason to its own tooltip, and the
-        /// reason it gives has to be the one it would give now. Null when the mode is
-        /// <see cref="TooltipMode.None"/> or there is no tooltip at all.</summary>
-        public static NodeAnnouncement Part(TooltipMode mode, Func<IList<string>> lines)
+        /// <summary>The tooltip part <paramref name="sections"/> project to, resolved at speak time - a
+        /// control that is refusing appends its reason to its own tooltip, and the reason it gives has
+        /// to be the one it would give now. Null when nothing in the list wants to be heard.</summary>
+        public static NodeAnnouncement Part(IList<NodeSection> sections)
         {
-            if (mode == TooltipMode.None || lines == null)
+            if (sections == null)
             {
                 return null;
             }
 
-            bool announce = mode == TooltipMode.Announce;
-            return new NodeAnnouncement(
-                () => announce ? Spoken(lines()) : ModStrings.Get(ModStrings.NavHasTooltip),
-                kind: AnnouncementKinds.Tooltip
-            );
+            // The modes are structural - they come from the tooltip's own class, decided when the node
+            // was declared - so which section speaks is settled here, once, rather than per readout.
+            Func<IList<string>> spoken = null;
+            bool indicate = false;
+            for (int i = 0; i < sections.Count; i++)
+            {
+                NodeSection section = sections[i];
+                if (section == null || section.Lines == null)
+                {
+                    continue;
+                }
+
+                if (section.Mode == TooltipMode.Indicate)
+                {
+                    indicate = true;
+                }
+                else if (section.Mode == TooltipMode.Announce)
+                {
+                    spoken = section.Lines;
+                }
+            }
+
+            if (spoken == null && !indicate)
+            {
+                return null;
+            }
+
+            Func<IList<string>> lines = spoken;
+            bool hasLong = indicate;
+            return new NodeAnnouncement(() => Compose(lines, hasLong), kind: AnnouncementKinds.Tooltip);
         }
 
+        /// <summary>The part a single tooltip projects to - for a control this mod invented, which has
+        /// no <c>AgeTooltip</c> to read a mode off.</summary>
+        public static NodeAnnouncement Part(TooltipMode mode, Func<IList<string>> lines)
+        {
+            return lines == null || mode == TooltipMode.None
+                ? null
+                : Part(new[] { new NodeSection(lines, mode) });
+        }
+
+        // What the player hears: the short tooltip's own words, and - when the row also carries a long
+        // one - that there is more waiting in the buffer. Both, when both are there: dropping the words
+        // because something else on the row is reviewable would lose the sentence the game's author
+        // wrote for exactly this moment.
+        //
         // A tooltip is written as lines - a name, a description, a reason - and read out as one
         // sentence, so the lines join the way any other list of parts does.
         //
@@ -73,23 +125,28 @@ namespace ES2Access.Core.UI.Graph
         // faction, This faction cannot be edited" is a comma splice the game never wrote. Changing
         // ListItem to Fragment fixes it and breaks three tests that encode the current rule by name
         // (TooltipPartTests). Left alone deliberately: it changes what every screen says.
-        private static string Spoken(IList<string> lines)
+        private static string Compose(Func<IList<string>> lines, bool indicate)
         {
-            if (lines == null)
+            MessageBuilder message = new MessageBuilder();
+            IList<string> spoken = lines != null ? lines() : null;
+            if (spoken != null)
             {
-                return null;
+                for (int i = 0; i < spoken.Count; i++)
+                {
+                    if (!TextUtil.IsBlank(spoken[i]))
+                    {
+                        message.ListItem(spoken[i].Trim());
+                    }
+                }
             }
 
-            MessageBuilder message = new MessageBuilder();
-            for (int i = 0; i < lines.Count; i++)
+            if (indicate)
             {
-                if (!TextUtil.IsBlank(lines[i]))
-                {
-                    message.ListItem(lines[i].Trim());
-                }
+                message.ListItem(ModStrings.Get(ModStrings.NavHasTooltip));
             }
 
             return message.Build();
         }
+
     }
 }

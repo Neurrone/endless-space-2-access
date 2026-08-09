@@ -109,15 +109,28 @@ namespace ES2Access.UI
             }
         }
 
-        /// <summary>A tooltip only if its words are on the widget. One that names a CLASS is assembled
+        /// <summary>
+        /// A tooltip only if its words are on the widget: no class at all, or the "Simple" class, which
+        /// is the plain text box and renders exactly what Content says. Every other class is assembled
         /// by a renderer at draw time and its content field holds authoring leftovers, so there is
         /// nothing there to read; <see cref="TooltipLines"/> reads those off the drawn window instead.
+        ///
+        /// This is the SAME question <c>GraphNodes.ModeFor</c> asks to pick a tooltip's mode, and it is
+        /// answered in one place: two copies of it disagreed about "Simple" for a while, which is how a
+        /// row came to announce its tooltip from the widget and review it from a window that had not
+        /// been drawn yet.
         /// </summary>
         public static AgeTooltip Readable(AgeTooltip tooltip)
         {
             try
             {
-                return tooltip != null && string.IsNullOrEmpty(tooltip.Class) ? tooltip : null;
+                if (tooltip == null)
+                {
+                    return null;
+                }
+
+                string cls = tooltip.Class;
+                return string.IsNullOrEmpty(cls) || cls == "Simple" ? tooltip : null;
             }
             catch (Exception)
             {

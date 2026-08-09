@@ -259,7 +259,7 @@ namespace ES2Access.Screens
                     GraphNodes.LabelPart(() => AgeText.Label(it.PlanetTitle)),
                     GraphNodes.ValuePart(() => AgeText.Label(it.PlanetStatus)),
                 },
-                DetailLines = () => PlanetDetails(it),
+                Sections = GraphNodes.Sections(() => PlanetDetails(it), null),
                 OnActivate = () => OpenPlanetMenu(it, window),
             };
             AgeWidgets.PointAt(vtable, status ?? label.AgeTransform);
@@ -660,10 +660,8 @@ namespace ES2Access.Screens
                     () => AgeText.Label(panel.SystemTitleLabel),
                     () => AgeWidgets.Press(it),
                     () => AgeWidgets.Operable(AgeWidgets.Transform(it)),
-                    tooltip,
-                    GraphNodes.ModeFor(tooltip)
+                    tooltip
                 );
-                vtable.DetailLines = AgeWidgets.TooltipLines(tooltip);
                 AgeWidgets.Point(vtable, it);
                 Add(_cells, AgeWidgets.Transform(rename), ControlId.Referenced(rename, "system:colony/rename"), vtable);
             }
@@ -691,10 +689,8 @@ namespace ES2Access.Screens
                     () => ModStrings.Get(ModStrings.SystemImprovements),
                     () => AgeWidgets.Press(it),
                     () => AgeWidgets.Operable(it),
-                    tooltip,
-                    GraphNodes.ModeFor(tooltip)
+                    tooltip
                 );
-                vtable.DetailLines = AgeWidgets.TooltipLines(tooltip);
                 AgeWidgets.PointAt(vtable, it);
                 Add(_cells, it, ControlId.Referenced(it, "system:colony/improvements"), vtable);
             }
@@ -885,7 +881,6 @@ namespace ES2Access.Screens
                 tooltip,
                 TooltipMode.None
             );
-            vtable.DetailLines = AgeWidgets.TooltipLines(tooltip);
             AgeWidgets.PointAt(vtable, filter.AgeTransform);
             Add(
                 cells,
@@ -923,7 +918,7 @@ namespace ES2Access.Screens
                     GraphNodes.ValuePart(() => ConstructibleCost(it, window)),
                     GraphNodes.DisabledPart(() => AgeWidgets.Operable(it.AgeTransform)),
                 },
-                DetailLines = () => ConstructibleDetails(it),
+                Sections = GraphNodes.Sections(() => ConstructibleDetails(it), null),
                 OnActivate = () => Queue(it, window, false),
                 OnAlternate = () => Queue(it, window, true),
             };
@@ -1185,7 +1180,7 @@ namespace ES2Access.Screens
                     GraphNodes.LabelPart(() => AgeText.Label(it.Title)),
                     GraphNodes.ValuePart(() => QueueLineState(it)),
                 },
-                DetailLines = AgeWidgets.TooltipLines(tooltip),
+                Sections = GraphNodes.Sections(null, tooltip),
                 OnActivate = () => OpenQueueMenu(it, panel),
                 OnReorder = direction => MoveLine(it, direction, window),
             };
@@ -1429,10 +1424,8 @@ namespace ES2Access.Screens
                 () => ModStrings.Get(nameKey),
                 () => AgeWidgets.Press(it),
                 () => AgeWidgets.Operable(AgeWidgets.Transform(it)),
-                tooltip,
-                GraphNodes.ModeFor(tooltip)
+                tooltip
             );
-            vtable.DetailLines = AgeWidgets.TooltipLines(tooltip);
             AgeWidgets.Point(vtable, it);
             Add(cells, widget, ControlId.Referenced(button, "system:hangar/" + key), vtable);
         }
@@ -1454,7 +1447,6 @@ namespace ES2Access.Screens
                 tooltip,
                 TooltipMode.None
             );
-            vtable.DetailLines = AgeWidgets.TooltipLines(tooltip);
             AgeWidgets.PointAt(vtable, ship.AgeTransform);
             Add(
                 cells,
@@ -1665,7 +1657,7 @@ namespace ES2Access.Screens
                     GraphNodes.LabelPart(() => AgeWidgets.TooltipTitle(tooltip)),
                     GraphNodes.ValuePart(() => AgeText.Label(count)),
                 },
-                DetailLines = AgeWidgets.TooltipLines(tooltip),
+                Sections = GraphNodes.Sections(null, tooltip),
             };
             AgeWidgets.PointAt(vtable, widget);
             return new Cell
@@ -1694,7 +1686,7 @@ namespace ES2Access.Screens
                     GraphNodes.LabelPart(() => AgeWidgets.TooltipTitle(tooltip)),
                     GraphNodes.ValuePart(() => AgeText.Label(count)),
                 },
-                DetailLines = AgeWidgets.TooltipLines(tooltip),
+                Sections = GraphNodes.Sections(null, tooltip),
             };
             AgeWidgets.PointAt(vtable, widget);
             return new Cell
@@ -1726,7 +1718,7 @@ namespace ES2Access.Screens
                     GraphNodes.ValuePart(() => AgeText.Label(it.HappinessValueLabel)),
                     GraphNodes.ValuePart(() => AgeText.Label(it.HappinessStatusLabel)),
                 },
-                DetailLines = () => ApprovalDetails(it, tooltip),
+                Sections = GraphNodes.Sections(() => ApprovalDetails(it, tooltip), null),
             };
             AgeWidgets.PointAt(vtable, widget);
             return new Cell
@@ -1795,7 +1787,7 @@ namespace ES2Access.Screens
                     GraphNodes.ValuePart(() => Drawn(it.TurnsBeforeNextPop)),
                     GraphNodes.ValuePart(() => Drawn(it.NextPopulationDestinationLabel)),
                 },
-                DetailLines = () => GrowthDetails(kind, when),
+                Sections = GraphNodes.Sections(() => GrowthDetails(kind, when), null),
             };
             AgeWidgets.PointAt(vtable, widget);
             return new Cell
@@ -1852,7 +1844,7 @@ namespace ES2Access.Screens
                     GraphNodes.LabelPart(() => FirstLine(tooltip)),
                     GraphNodes.ValuePart(() => SensitivityText(it, true)),
                 },
-                DetailLines = () => SensitivityDetails(it, tooltip),
+                Sections = GraphNodes.Sections(() => SensitivityDetails(it, tooltip), null),
             };
             AgeWidgets.PointAt(vtable, widget);
             return new Cell
@@ -1986,7 +1978,6 @@ namespace ES2Access.Screens
                 tooltip,
                 named ? GraphNodes.ModeFor(tooltip) : TooltipMode.None
             );
-            vtable.DetailLines = AgeWidgets.TooltipLines(tooltip);
             AgeWidgets.PointAt(vtable, widget);
             return new Cell
             {
@@ -2005,17 +1996,8 @@ namespace ES2Access.Screens
                 {
                     GraphNodes.LabelPart(() => AgeWidgets.TextOf(at)),
                 },
-                DetailLines = AgeWidgets.TooltipLines(tooltip),
+                Sections = GraphNodes.Sections(null, tooltip),
             };
-            NodeAnnouncement tooltipPart = GraphNodes.TooltipPart(
-                GraphNodes.ModeFor(tooltip),
-                tooltip
-            );
-            if (tooltipPart != null)
-            {
-                vtable.Announcements.Add(tooltipPart);
-            }
-
             AgeWidgets.PointAt(vtable, widget);
             return new Cell
             {
@@ -2078,20 +2060,11 @@ namespace ES2Access.Screens
             NodeVtable vtable = new NodeVtable
             {
                 Announcements = new List<NodeAnnouncement> { GraphNodes.LabelPart(label) },
-                DetailLines = AgeWidgets.TooltipLines(tooltip),
+                Sections = GraphNodes.Sections(null, tooltip),
             };
             if (value != null)
             {
                 vtable.Announcements.Add(GraphNodes.ValuePart(value));
-            }
-
-            NodeAnnouncement tooltipPart = GraphNodes.TooltipPart(
-                GraphNodes.ModeFor(tooltip),
-                tooltip
-            );
-            if (tooltipPart != null)
-            {
-                vtable.Announcements.Add(tooltipPart);
             }
 
             AgeWidgets.PointAt(vtable, widget);

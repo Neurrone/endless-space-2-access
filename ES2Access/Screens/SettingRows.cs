@@ -85,11 +85,9 @@ namespace ES2Access.Screens
                     label,
                     () => AgeText.Label(s.SelectedSettingItemLabel),
                     (sign, large) => Slide(s, sign, large),
-                    enabled,
-                    value,
-                    GraphNodes.ModeFor(value)
+                    enabled
                 );
-                vtable.DetailLines = Details(caption, value);
+                vtable.Sections = RowSections(caption, value);
                 PointAtTooltip(vtable, value);
                 builder.AddItem(id, vtable);
                 return;
@@ -111,11 +109,9 @@ namespace ES2Access.Screens
                     label,
                     () => b.Toggle.State,
                     () => AgeWidgets.Toggle(b.Toggle),
-                    enabled,
-                    value,
-                    GraphNodes.ModeFor(value)
+                    enabled
                 );
-                vtable.DetailLines = Details(caption, value);
+                vtable.Sections = RowSections(caption, value);
                 AgeWidgets.Point(vtable, box.Toggle);
                 builder.AddItem(id, vtable);
                 return;
@@ -139,7 +135,7 @@ namespace ES2Access.Screens
 
             // A kind of setting nothing here knows how to work: still named, still readable, and
             // silent about being something the player can do anything with.
-            NodeVtable readOnly = GraphNodes.Readout(label, () => null, Details(caption, null), caption);
+            NodeVtable readOnly = GraphNodes.Readout(label, () => null, null, caption);
             PointAtTooltip(readOnly, caption);
             builder.AddItem(id, readOnly);
         }
@@ -278,9 +274,10 @@ namespace ES2Access.Screens
                 () => AgeWidgets.Press(it),
                 () => AgeWidgets.Operable(AgeWidgets.Transform(it)),
                 tooltip,
-                wordless ? TooltipMode.None : GraphNodes.ModeFor(tooltip)
+                // A button the game drew as a symbol is NAMED by its tooltip, and the label has just
+                // said it: reviewable, never said twice.
+                wordless ? TooltipMode.None : (TooltipMode?)null
             );
-            vtable.DetailLines = AgeWidgets.TooltipLines(tooltip);
             AgeWidgets.Point(vtable, it);
             builder.AddItem(ControlId.Referenced(button, key), vtable);
         }
@@ -407,18 +404,15 @@ namespace ES2Access.Screens
             Func<bool> enabled = () => AgeWidgets.Operable(AgeWidgets.Transform(it));
 
             // The caption's tooltip and the field's own, the same way every other row here treats a
-            // pair: the one belonging to the VALUE is announced, and both go in the buffer.
+            // pair: declared in drawn order, and the projection says which of them speaks.
             AgeTooltip own = AgeWidgets.Raw(widget);
-            AgeTooltip said = own ?? tooltip;
             NodeVtable vtable = GraphNodes.EditField(
                 label,
                 () => TextFieldEditor.Typing(it) ? null : FieldText(it),
                 () => editing.Request(it, host, handler, row),
-                enabled,
-                said,
-                GraphNodes.ModeFor(said),
-                Details(tooltip, own, () => FieldText(it))
+                enabled
             );
+            vtable.Sections = RowSections(tooltip, own, () => FieldText(it));
             AgeWidgets.PointAt(vtable, widget);
             builder.AddItem(row, vtable);
         }
@@ -459,12 +453,8 @@ namespace ES2Access.Screens
 
             AgeTransform it = widget;
             AgeTooltip tooltip = LastTooltip(widget);
-            NodeVtable vtable = GraphNodes.Readout(
-                () => null,
-                () => AgeWidgets.TextOf(it),
-                RowDetails(it),
-                tooltip
-            );
+            NodeVtable vtable = GraphNodes.Readout(() => null, () => AgeWidgets.TextOf(it), null, null);
+            vtable.Sections = RowSections(it, tooltip);
             AgeWidgets.PointAt(vtable, tooltip != null ? TransformOf(tooltip) : it);
             builder.AddItem(ControlId.Referenced(widget, key), vtable);
         }
@@ -478,24 +468,52 @@ namespace ES2Access.Screens
             return Scratch.Count == 0 ? null : Scratch[Scratch.Count - 1];
         }
 
-        /// <summary>Every tooltip in a row, in the order the row was built, as review-buffer lines.
-        /// A row can carry more than one - the icon's explanation of what the line is and the value's
-        /// description of what it says - and only one of them is ever announced.</summary>
-        public static Func<IList<string>> RowDetails(AgeTransform widget)
+        /// <summary>Every tooltip in a row as declared sections, in the order the row was built. A row
+        /// can carry more than one - the icon's explanation of what the line is and the value's
+        /// description of what it says - and the projection decides which of them speaks; all of them
+        /// are reviewable. Collected at declare time because a section's MODE is structural, and the
+        /// row is declared afresh every frame anyway.</summary>
+        /// <summary>
+        /// Every tooltip drawn anywhere in a row, where exactly ONE of them is the one worth hearing
+        /// and the rest are what the buffer keeps: a faction card's refusal reason beside the
+        /// difficulty rating printed on it, a readout's value beside the icon that captions it.
+        ///
+        /// The row says which, because only the row knows. The projection's "the last short one
+        /// speaks" rule is right for a caption-then-value PAIR, where the value is the last thing
+        /// drawn; it is wrong for a card, where what comes after the important tooltip is a badge.
+        /// <paramref name="said"/> null - a row whose own widget carries no tooltip - means none of
+        /// them speaks and all of them are reviewable, which is the honest reading of a row that has
+        /// nothing at its own level to explain itself with.
+        /// </summary>
+        public static IList<NodeSection> RowSections(
+            AgeTransform widget,
+            AgeTooltip said,
+            TooltipMode? mode = null
+        )
         {
-            AgeTransform it = widget;
-            return () =>
+            List<AgeTooltip> found = new List<AgeTooltip>();
+            CollectTooltips(widget, found, TooltipDepth);
+            List<NodeSection> sections = null;
+            for (int i = 0; i < found.Count; i++)
             {
-                List<AgeTooltip> found = new List<AgeTooltip>();
-                CollectTooltips(it, found, TooltipDepth);
-                List<string> lines = new List<string>();
-                for (int i = 0; i < found.Count; i++)
+                NodeSection section = GraphNodes.TooltipSection(
+                    found[i],
+                    said != null && found[i] == said ? mode : (TooltipMode?)TooltipMode.None
+                );
+                if (section == null)
                 {
-                    Append(lines, AgeWidgets.TooltipLines(found[i]));
+                    continue;
                 }
 
-                return lines;
-            };
+                if (sections == null)
+                {
+                    sections = new List<NodeSection>(found.Count);
+                }
+
+                sections.Add(section);
+            }
+
+            return sections;
         }
 
         private static void CollectTooltips(AgeTransform widget, List<AgeTooltip> into, int depth)
@@ -558,14 +576,12 @@ namespace ES2Access.Screens
                 label ?? Nothing,
                 () => DropListText(it),
                 () => OpenList(it, label == null ? null : label()),
-                () => AgeWidgets.Operable(AgeWidgets.Transform(it)),
-                said,
-                GraphNodes.ModeFor(said)
+                () => AgeWidgets.Operable(AgeWidgets.Transform(it))
             );
             // Activating this one opens a list rather than changing the setting: the list that opens
             // says where it starts.
             vtable.StateText = null;
-            vtable.DetailLines = Details(caption, value);
+            vtable.Sections = RowSections(caption, value);
             AgeWidgets.PointAt(vtable, said != null ? TransformOf(said) : widget);
             builder.AddItem(ControlId.Referenced(list, key), vtable);
         }
@@ -610,30 +626,27 @@ namespace ES2Access.Screens
 
         // ---- shared plumbing ----
 
-        /// <summary>A row's review-buffer content: the setting's own description first, then the game's
-        /// sentence about the value it is currently on, then anything else the caller has to add.
+        /// <summary>
+        /// A row's content, declared once: what the row DRAWS (a text field's own text), then the
+        /// setting's own description, then the game's sentence about the value it is currently on -
+        /// drawn order, which is the order the buffer reads them in.
+        ///
+        /// Which of the two tooltips the focus readout says is not decided here and never was a
+        /// screen's business: the projection announces the last one that is short and mentions any
+        /// that is long (<see cref="TooltipParts"/>).
         /// </summary>
-        public static Func<IList<string>> Details(
-            AgeTooltip first,
-            AgeTooltip second,
-            Func<string> extra = null
+        public static IList<NodeSection> RowSections(
+            AgeTooltip caption,
+            AgeTooltip value,
+            Func<string> drawn = null
         )
         {
-            AgeTooltip a = first;
-            AgeTooltip b = second;
-            Func<string> more = extra;
-            return () =>
-            {
-                List<string> lines = new List<string>();
-                if (more != null)
-                {
-                    Append(lines, AgeText.Lines(more()));
-                }
-
-                Append(lines, AgeWidgets.TooltipLines(a));
-                Append(lines, AgeWidgets.TooltipLines(b));
-                return lines;
-            };
+            Func<string> text = drawn;
+            return GraphNodes.Sections(
+                text == null ? null : NodeSection.Buffer(() => AgeText.Lines(text())),
+                GraphNodes.TooltipSection(caption),
+                value == caption ? null : GraphNodes.TooltipSection(value)
+            );
         }
 
         public static void Append(List<string> lines, Func<IList<string>> source)

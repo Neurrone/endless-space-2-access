@@ -334,8 +334,7 @@ namespace ES2Access.Screens
             NodeVtable vtable = GraphNodes.Group(
                 () => it.LocalizedName,
                 null,
-                tooltip,
-                GraphNodes.ModeFor(tooltip)
+                tooltip
             );
             if (owned)
             {
@@ -347,7 +346,6 @@ namespace ES2Access.Screens
             GalaxyHudScreen screen = this;
             bool ours = owned;
             vtable.OnActivate = () => screen.OpenSystemMenu(it, ours);
-            vtable.DetailLines = TooltipLines(tooltip);
 
             // The camera goes where the cursor goes, so that whoever is watching the screen is looking
             // at the system being read out. On the galaxy this only slides the camera across; it does
@@ -510,7 +508,7 @@ namespace ES2Access.Screens
                         vtable = GraphNodes.Readout(
                             () => PlanetName(system, planet, looking),
                             () => PlanetStatus(system, planet, looking),
-                            TooltipLines(tooltip),
+                            null,
                             tooltip
                         );
                         if (owned)
@@ -653,21 +651,15 @@ namespace ES2Access.Screens
                     GraphNodes.ValuePart(() => AgeText.Label(it.ColonizeStatus)),
                     GraphNodes.ValuePart(() => OutpostTimer(it)),
                 },
-                DetailLines = () => OrbitalDetails(it),
                 OnActivate = () => OpenOrbitalMenu(it, node, ours),
             };
-            // The card's own dossier - the paragraph the game writes about a world of this kind, its
-            // size, its type - is the long panel behind the card, so it is indicated and read from the
-            // buffer rather than said on every pass.
-            NodeAnnouncement tooltipPart = GraphNodes.TooltipPart(
-                GraphNodes.ModeFor(dossier),
-                dossier
+            // What the card DRAWS first, then its dossier - the paragraph the game writes about a
+            // world of this kind, its size, its type. The dossier is the long panel behind the card,
+            // so the readout indicates it and the buffer is where it is read.
+            vtable.Sections = GraphNodes.Sections(
+                NodeSection.Buffer(() => OrbitalDetails(it)),
+                GraphNodes.TooltipSection(dossier)
             );
-            if (tooltipPart != null)
-            {
-                vtable.Announcements.Add(tooltipPart);
-            }
-
             PointAt(vtable, it.PlanetOrbitalCardContainer ?? it.AgeTransform);
             return vtable;
         }
@@ -710,7 +702,8 @@ namespace ES2Access.Screens
                 AddAnomalies(lines, card);
                 AddWidgetLines(lines, card.PlanetCuriositiesTable);
                 AddWidgetLines(lines, card.ResourceDepositsGroup);
-                AddTooltip(lines, card.PlanetInfoTooltip);
+                // The dossier is NOT read here: it is the card's tooltip section, declared beside
+                // this one, and reading it twice is what happens when two places both remember it.
             }
             catch (Exception e)
             {
@@ -1460,16 +1453,13 @@ namespace ES2Access.Screens
             }
         }
 
+        // One rule for "are this tooltip's words on the widget", shared with every other screen and
+        // with the mode the readout picks - a private copy of it here disagreed about the "Simple"
+        // class, which is how a tooltip came to be announced from Content and reviewed from a window
+        // that had not been drawn.
         private static AgeTooltip Readable(AgeTooltip tooltip)
         {
-            try
-            {
-                return tooltip != null && string.IsNullOrEmpty(tooltip.Class) ? tooltip : null;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
+            return AgeWidgets.Readable(tooltip);
         }
 
         private static void AddLine(List<string> lines, string line)
@@ -1573,16 +1563,7 @@ namespace ES2Access.Screens
         /// </summary>
         private static Func<IList<string>> TooltipLines(AgeTooltip tooltip)
         {
-            if (tooltip == null)
-            {
-                return null;
-            }
-
-            AgeTooltip it = tooltip;
-            return () =>
-                Readable(it) != null
-                    ? AgeText.Lines(AgeText.Tooltip(it))
-                    : DrawnTooltip.Lines(it);
+            return AgeWidgets.TooltipLines(tooltip);
         }
 
         // A control inside a group the window has collapsed is still marked visible itself, so the

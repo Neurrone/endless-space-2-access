@@ -116,10 +116,8 @@ namespace ES2Access.Screens
                     () => ModStrings.Get(ModStrings.RenameConfirm),
                     () => AgeWidgets.Press(press),
                     () => press.Enable,
-                    tooltip,
-                    GraphNodes.ModeFor(tooltip)
+                    tooltip
                 );
-                vtable.DetailLines = AgeWidgets.TooltipLines(tooltip);
                 AgeWidgets.Point(vtable, press);
                 builder.AddItem(ControlId.Referenced(validate, "rename:confirm"), vtable);
             }

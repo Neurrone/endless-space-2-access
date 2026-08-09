@@ -84,6 +84,44 @@ namespace ES2Access.Core.UI.Graph
     }
 
     /// <summary>
+    /// One block of a control's readable content, declared ONCE and surfaced everywhere it belongs.
+    ///
+    /// A control's content reaches the player through two channels — the focus readout and the review
+    /// buffer — and wiring them separately is how a row comes to announce a tooltip it cannot review, or
+    /// to review one it never mentions. It happened three times on the new-game screens before this type
+    /// existed. So a section says WHAT the lines are and HOW LOUD they should be, and the engine derives
+    /// both surfaces from that one declaration: every section feeds the buffer, in declared order, and
+    /// <see cref="Mode"/> alone decides what (if anything) the focus readout says about it.
+    ///
+    /// Sections are ordered as the screen draws them (a row's heading tooltip before its value's), which
+    /// is the order the buffer reads them in.
+    /// </summary>
+    public sealed class NodeSection
+    {
+        /// <summary>The block's lines, resolved live at read time — a refusing button's reason has to be
+        /// the one it would give now. Null or an empty list = the section contributes nothing.</summary>
+        public Func<IList<string>> Lines;
+
+        /// <summary>How the section reaches the focus readout. <see cref="TooltipMode.None"/> is a
+        /// buffer-only section: content the control DRAWS (a planet card's output rows, a chart's
+        /// series), never announced and never indicated, because the readout already named the control
+        /// and the substance is there to be walked.</summary>
+        public TooltipMode Mode;
+
+        public NodeSection(Func<IList<string>> lines, TooltipMode mode)
+        {
+            Lines = lines;
+            Mode = mode;
+        }
+
+        /// <summary>Content the control draws: reviewable, never spoken on focus.</summary>
+        public static NodeSection Buffer(Func<IList<string>> lines)
+        {
+            return lines == null ? null : new NodeSection(lines, TooltipMode.None);
+        }
+    }
+
+    /// <summary>
     /// The behaviors of a control, as data. <see cref="Announcements"/> is required (its parts compose the
     /// spoken focus readout; the first part is the control's label for search/dedupe purposes); the rest
     /// are optional — a null slot means the control doesn't have that behavior and the navigator speaks
@@ -121,13 +159,13 @@ namespace ES2Access.Core.UI.Graph
         /// (speak, or open the drill-in tooltip reader), so the core stays game-agnostic.</summary>
         public Action OnTooltip;
 
-        /// <summary>Optional. The control's DETAIL LINES — everything about it that is worth reading
-        /// but too long to speak on focus: the description under a menu entry, the reason a button is
-        /// refusing, a tooltip's stat block. This is the review buffer's content feed: the navigator
-        /// appends these under the control's name and state whenever focus lands on it, and the player
-        /// walks them line by line at their own pace. Resolved live, one spoken line per entry; null =
-        /// the control has nothing beyond its readout.</summary>
-        public Func<IList<string>> DetailLines;
+        /// <summary>Optional. Everything the control has to say beyond its readout, as ordered
+        /// <see cref="NodeSection"/>s — its tooltips (the heading's explanation, then the value's
+        /// dossier) and whatever else it draws. ONE declaration: the review buffer reads them all in
+        /// order under the control's name and state, and the focus readout's tooltip part is derived
+        /// from their modes (<see cref="TooltipParts.Part(IList{NodeSection})"/>). Null = the control
+        /// has nothing beyond its readout, which is a complete buffer in itself.</summary>
+        public IList<NodeSection> Sections;
 
         /// <summary>Optional. Horizontal value adjust (a slider): sign is -1 (decrease) / +1 (increase),
         /// large requests a coarse step. When set, left/right do NOT navigate.</summary>

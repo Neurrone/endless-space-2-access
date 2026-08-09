@@ -425,8 +425,7 @@ namespace ES2Access.Screens
                 () => it.State,
                 () => AgeWidgets.Toggle(it),
                 () => AgeWidgets.Operable(band),
-                tooltip,
-                GraphNodes.ModeFor(tooltip)
+                tooltip
             );
             AgeWidgets.PointAt(vtable, group);
             builder.AddItem(ControlId.Referenced(toggle, key), vtable);

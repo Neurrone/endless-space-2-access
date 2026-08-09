@@ -176,10 +176,8 @@ namespace ES2Access.Screens
                         () => ScreenTitle(screen),
                         () => strip.OnControlBannerToggle(screen),
                         () => AgeWidgets.Enabled(widget),
-                        tooltip,
-                        GraphNodes.ModeFor(tooltip)
+                        tooltip
                     );
-                    vtable.DetailLines = AgeWidgets.TooltipLines(tooltip);
                     AgeWidgets.PointAt(vtable, widget);
                     cells.Add(
                         new Cell
@@ -272,7 +270,7 @@ namespace ES2Access.Screens
             NodeVtable vtable = GraphNodes.Readout(
                 () => Gui.GetLocalizedTitle(property),
                 () => StockAndNet(stock(), net(), 0),
-                AgeWidgets.TooltipLines(tooltip),
+                null,
                 tooltip
             );
             AgeWidgets.PointAt(vtable, area);
@@ -317,11 +315,9 @@ namespace ES2Access.Screens
                 () => ModStrings.Get(ModStrings.GalaxyResearch),
                 () => AgeWidgets.Press(it),
                 () => AgeWidgets.Enabled(AgeWidgets.Transform(it)),
-                tooltip,
-                GraphNodes.ModeFor(tooltip)
+                tooltip
             );
             vtable.Announcements.Add(GraphNodes.ValuePart(() => ResearchText(owner)));
-            vtable.DetailLines = AgeWidgets.TooltipLines(tooltip);
             AgeWidgets.Point(vtable, it, tooltip, line);
             cells.Add(
                 new Cell
@@ -399,7 +395,7 @@ namespace ES2Access.Screens
                                 it.GetNetValueFromCache(),
                                 it.GetStockValueFromCache() < 10f ? 1 : 0
                             ),
-                        AgeWidgets.TooltipLines(item.Tooltip),
+                        null,
                         item.Tooltip
                     );
                     AgeWidgets.Point(vtable, item.Button, item.Tooltip, item.AgeTransform);
@@ -468,7 +464,7 @@ namespace ES2Access.Screens
                         null
                     );
                     vtable.OnSecondary = () => Dismiss(it);
-                    vtable.DetailLines = GraphNodes.TooltipDetails(IconTooltip(it, items));
+                    vtable.Sections = GraphNodes.Sections(GraphNodes.TooltipDetails(IconTooltip(it, items)), null);
                     builder.AddItem(ControlId.Referenced(it, "hud:notification/" + count), vtable);
                     count++;
                 }
@@ -573,11 +569,10 @@ namespace ES2Access.Screens
                 NodeVtable vtable = GraphNodes.Button(
                     () => EndTurnLabel(it),
                     () => AgeWidgets.Press(endTurn),
-                    () => CanEndTurn(it),
-                    AgeWidgets.Readable(AgeWidgets.Raw(AgeWidgets.Transform(endTurn)))
+                    () => CanEndTurn(it)
                 );
                 vtable.Announcements.Add(GraphNodes.ValuePart(() => TurnText(it)));
-                vtable.DetailLines = () => EndTurnReason(it);
+                vtable.Sections = GraphNodes.Sections(() => EndTurnReason(it), null);
                 AgeWidgets.Point(vtable, endTurn);
                 found.Add(
                     new Cell

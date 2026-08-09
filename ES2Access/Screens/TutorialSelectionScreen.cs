@@ -201,21 +201,17 @@ namespace ES2Access.Screens
                 () => Title(it),
                 () => it.State,
                 () => AgeWidgets.Toggle(it),
-                () => AgeWidgets.Operable(AgeWidgets.Transform(it)),
-                () => Description(it)
+                () => AgeWidgets.Operable(AgeWidgets.Transform(it))
             );
 
-            // The card's own explanation. It is drawn on the card permanently rather than offered on a
-            // hover, so it is announced outright the way a control's own sentence of description is -
-            // and the review buffer holds it either way.
-            NodeAnnouncement description = TooltipParts.Part(
-                TooltipMode.Announce,
-                () => Description(it)
+            // The card's own explanation - the one section this control has. It is drawn on the card
+            // permanently rather than offered on a hover, so it is announced outright the way a
+            // control's own sentence of description is, and the review buffer holds it either way.
+            // Declared with its mode rather than read off a tooltip, because there is no tooltip here:
+            // this is a control the mod made out of what the game painted on a card.
+            vtable.Sections = GraphNodes.Sections(
+                new NodeSection(() => Description(it), TooltipMode.Announce)
             );
-            if (description != null)
-            {
-                vtable.Announcements.Add(description);
-            }
 
             AgeWidgets.Point(vtable, card);
             Add(cells, widget, ControlId.Referenced(card, "tutorial-selection:choice/" + index), vtable);

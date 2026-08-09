@@ -125,8 +125,7 @@ namespace ES2Access.Screens
                     () => AgeText.Label(Caption(entry)),
                     () => Press(Button(entry)),
                     () => Enabled(entry),
-                    tooltip,
-                    GraphNodes.ModeFor(tooltip)
+                    tooltip
                 );
                 if (button != null)
                 {
@@ -269,8 +268,7 @@ namespace ES2Access.Screens
                         () => State(checkbox.Toggle),
                         () => FlipSetting(checkbox),
                         editable,
-                        tooltip,
-                        GraphNodes.ModeFor(tooltip)
+                        tooltip
                     ),
                     tooltip,
                     item
@@ -292,8 +290,7 @@ namespace ES2Access.Screens
                         chosen,
                         (sign, large) => StepSetting(panel, slider, sign, large),
                         editable,
-                        tooltip,
-                        GraphNodes.ModeFor(tooltip)
+                        tooltip
                     ),
                     tooltip,
                     item
@@ -333,36 +330,16 @@ namespace ES2Access.Screens
                 parts.Add(GraphNodes.ValuePart(value));
             }
 
-            NodeAnnouncement description = GraphNodes.TooltipPart(GraphNodes.ModeFor(tooltip), tooltip);
-            if (description != null)
-            {
-                parts.Add(description);
-            }
-
             return Detailed(new NodeVtable { Announcements = parts }, tooltip, item);
         }
 
-        /// <summary>The review buffer for a setting: what the game says the setting is for, and then
-        /// what it says about the value it is currently on - which is the half a player standing on
-        /// "Normal" actually wants.</summary>
+        /// <summary>A setting's content, the same pair every other page declares (SettingRows): what
+        /// the game says the setting is FOR, then what it says about the value it is currently ON -
+        /// which is the half a player standing on "Normal" actually wants, and which is therefore the
+        /// one the readout speaks.</summary>
         private static NodeVtable Detailed(NodeVtable vtable, AgeTooltip tooltip, SettingItem item)
         {
-            AgeTooltip current = CurrentValueTooltip(item);
-            vtable.DetailLines = () =>
-            {
-                List<string> lines = new List<string>();
-                foreach (string line in AgeText.Lines(AgeText.Tooltip(tooltip)))
-                {
-                    lines.Add(line);
-                }
-
-                foreach (string line in AgeText.Lines(AgeText.Tooltip(current)))
-                {
-                    lines.Add(line);
-                }
-
-                return lines;
-            };
+            vtable.Sections = SettingRows.RowSections(tooltip, CurrentValueTooltip(item));
             return vtable;
         }
 

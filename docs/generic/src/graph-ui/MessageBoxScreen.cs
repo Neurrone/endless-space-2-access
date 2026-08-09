@@ -111,6 +111,16 @@ namespace ES2Access.Screens
             // left and right have to mean what they look like.
             choices.Sort(ReadingOrder);
 
+            // The dialog's own heading, first, where it is drawn - a node the player can go back to
+            // rather than a line that only ever happened on arrival. It is still the screen's spoken
+            // name as well, so arriving says it once; focus starts on the question below it, which is
+            // what keeps it from being said twice.
+            SettingRows.AddReadout(
+                builder,
+                SettingRows.TransformOf(window.TitleLabel),
+                "messagebox:heading"
+            );
+
             // Declared before the answers and outside their row, so the builder wires the row under
             // it: the question is a block of text, not one answer among them, and it takes no place
             // in their count.
@@ -130,7 +140,7 @@ namespace ES2Access.Screens
                         {
                             GraphNodes.LabelPart(Question),
                         },
-                        DetailLines = PromptLines,
+                        Sections = GraphNodes.Sections(PromptLines, null),
                         OnFocusVisual = ReleasePointer,
                     }
                 );
@@ -146,14 +156,13 @@ namespace ES2Access.Screens
                     () => AgeText.Label(choice.Caption),
                     () => Click(choice),
                     () => Enabled(choice.Button),
-                    tooltip,
-                    GraphNodes.ModeFor(tooltip)
+                    tooltip
                 );
                 if (tooltip == null)
                 {
                     // The question, under an answer the game said nothing else about: whichever
                     // button the player is on, the text they are answering is worth re-reading.
-                    vtable.DetailLines = PromptLines;
+                    vtable.Sections = GraphNodes.Sections(PromptLines, null);
                 }
 
                 vtable.OnFocusVisual = () => PointerFocus.MoveTo(choice.Button, tooltip);

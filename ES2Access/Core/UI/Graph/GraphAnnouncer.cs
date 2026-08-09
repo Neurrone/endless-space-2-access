@@ -108,9 +108,14 @@ namespace ES2Access.Core.UI.Graph
 
         /// <summary>
         /// A node's EFFECTIVE announcement parts: the control type's common parts (the role word) merged
-        /// with the node's own — a node part overrides a common part of the same kind — sorted by the
-        /// type's kind order (unknown/kindless parts append in declaration order), then filtered by the
-        /// user's settings. This is the single list readouts and the live watch operate on.
+        /// with the node's own AND the tooltip part its <see cref="NodeVtable.Sections"/> project to — a
+        /// node part overrides a common part of the same kind — sorted by the type's kind order
+        /// (unknown/kindless parts append in declaration order), then filtered by the user's settings.
+        /// This is the single list readouts and the live watch operate on.
+        ///
+        /// The tooltip part is DERIVED here rather than declared by a screen: the sections are the one
+        /// place a control's content is written down, and a screen that also hand-built the part is how
+        /// the two used to drift apart.
         /// </summary>
         public static List<NodeAnnouncement> EffectiveAnnouncements(GraphNode node)
         {
@@ -126,6 +131,12 @@ namespace ES2Access.Core.UI.Graph
             if (vt.Announcements != null)
                 foreach (NodeAnnouncement a in vt.Announcements)
                     if (a != null) result.Add(a);
+            // Always, never "unless the node declared one of its own": a screen CAN still add a
+            // tooltip-kind part for something a section cannot express (a drop-list entry's live
+            // refusal), and suppressing the derived part when it does would silently take the
+            // indication away from exactly the rows that have the most to review.
+            NodeAnnouncement tooltip = TooltipParts.Part(vt.Sections);
+            if (tooltip != null) result.Add(tooltip);
 
             if (type != null && type.Order != null && type.Order.Length > 0 && result.Count > 1)
             {

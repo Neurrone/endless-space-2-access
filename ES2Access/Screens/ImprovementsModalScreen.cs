@@ -228,8 +228,7 @@ namespace ES2Access.Screens
                 () => toggle != null && toggle.State,
                 () => AgeWidgets.Toggle(toggle),
                 () => AgeWidgets.Operable(widget),
-                tooltip,
-                GraphNodes.ModeFor(tooltip)
+                tooltip
             );
             // What the tile draws over its picture, and the number the whole window is about.
             vtable.Announcements.Add(GraphNodes.ValuePart(() => AgeText.Label(upkeep)));
@@ -301,8 +300,7 @@ namespace ES2Access.Screens
                 () => AgeWidgets.TextOf(it),
                 () => AgeWidgets.Press(it),
                 () => AgeWidgets.Operable(it),
-                tooltip,
-                GraphNodes.ModeFor(tooltip)
+                tooltip
             );
             AgeWidgets.Point(vtable, button);
             Add(
@@ -388,14 +386,8 @@ namespace ES2Access.Screens
                 {
                     GraphNodes.LabelPart(() => AgeWidgets.TextOf(it)),
                 },
-                DetailLines = AgeWidgets.TooltipLines(its),
+                Sections = GraphNodes.Sections(null, its),
             };
-
-            NodeAnnouncement tooltipPart = GraphNodes.TooltipPart(GraphNodes.ModeFor(its), its);
-            if (tooltipPart != null)
-            {
-                vtable.Announcements.Add(tooltipPart);
-            }
 
             AgeWidgets.PointAt(vtable, widget);
             Add(cells, widget, ControlId.Referenced(widget, key), vtable);
