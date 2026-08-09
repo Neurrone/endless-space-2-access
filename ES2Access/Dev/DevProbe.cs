@@ -392,6 +392,112 @@ namespace ES2Access.Dev
         }
 
         /// <summary>
+        /// What the input layer is claiming from the game right now - the other end of the tripwire
+        /// <see cref="Patches"/> watches. The patches say the game is ASKING; this says what it is
+        /// being told, which is the only way to see a key leaking through a screen handover.
+        ///
+        /// <c>latched</c> is the consumed-key latch: a key the mod acted on stays the mod's until the
+        /// player lets go of it, because the game's scan runs after our frame and the screen that
+        /// consumed the key may be gone by then (see <see cref="ModInput.ClaimsKey"/>). An entry with
+        /// <c>held: false</c> is one the next <c>Tick</c> will drop - normal for an injected action,
+        /// which pressed no key; an entry that stays with <c>held: false</c> across calls is a stuck
+        /// claim, and the game is deaf to that key until it clears.
+        ///
+        /// <c>layerLive</c> is <see cref="ModInput.LayerIsLive"/>'s verdict, split into the two halves
+        /// that can answer no - no screen of ours (<c>screen: null</c>) or the game holding the
+        /// keyboard for a text field. A key that reads claimed while <c>layerLive</c> is false is
+        /// claimed by the latch alone, which is exactly the handover window the bug class lives in.
+        /// </summary>
+        public static string Claims()
+        {
+            return Claims(null);
+        }
+
+        /// <summary>
+        /// <see cref="Claims()"/> plus <see cref="ModInput.ClaimsKey"/>'s answer - side-effect-free, the
+        /// same call the game's key scans make - for each comma-separated <c>KeyCode</c> name in
+        /// <paramref name="keys"/> (<c>"Escape,Return,Tab"</c>).
+        /// </summary>
+        public static string Claims(string keys)
+        {
+            return Guarded(json =>
+            {
+                ModInput input = ModEntry.Input;
+                if (input == null)
+                {
+                    throw new InvalidOperationException("the input layer is not up");
+                }
+
+                GraphNavigator navigator = ModEntry.Navigator;
+                Screens.Screen screen = navigator == null ? null : navigator.Screen;
+                json.WritePropertyName("screen");
+                json.WriteValue(screen == null ? null : screen.Key);
+                json.WritePropertyName("screenFocused");
+                json.WriteValue(input.ScreenIsFocused());
+                json.WritePropertyName("keyboardElsewhere");
+                json.WriteValue(input.KeyboardIsElsewhere());
+                json.WritePropertyName("layerLive");
+                json.WriteValue(input.LayerIsLive());
+                json.WritePropertyName("backClaimed");
+                json.WriteValue(input.BackClaimed);
+                json.WritePropertyName("claimsBack");
+                json.WriteValue(input.ClaimsBack());
+
+                json.WritePropertyName("latched");
+                json.WriteStartArray();
+                IList<KeyCode> latched = input.ConsumedKeys;
+                for (int i = 0; i < latched.Count; i++)
+                {
+                    json.WriteStartObject();
+                    json.WritePropertyName("key");
+                    json.WriteValue(latched[i].ToString());
+                    json.WritePropertyName("held");
+                    json.WriteValue(UnityEngine.Input.GetKey(latched[i]));
+                    json.WriteEndObject();
+                }
+
+                json.WriteEndArray();
+
+                if (string.IsNullOrEmpty(keys))
+                {
+                    return;
+                }
+
+                json.WritePropertyName("asked");
+                json.WriteStartArray();
+                foreach (string name in keys.Split(','))
+                {
+                    string wanted = name.Trim();
+                    if (wanted.Length == 0)
+                    {
+                        continue;
+                    }
+
+                    json.WriteStartObject();
+                    json.WritePropertyName("key");
+                    json.WriteValue(wanted);
+                    try
+                    {
+                        KeyCode key = (KeyCode)Enum.Parse(typeof(KeyCode), wanted, true);
+                        json.WritePropertyName("claims");
+                        json.WriteValue(input.ClaimsKey(key));
+                        json.WritePropertyName("held");
+                        json.WriteValue(UnityEngine.Input.GetKey(key));
+                    }
+                    catch (Exception)
+                    {
+                        json.WritePropertyName("error");
+                        json.WriteValue("no KeyCode is named '" + wanted + "'");
+                    }
+
+                    json.WriteEndObject();
+                }
+
+                json.WriteEndArray();
+            });
+        }
+
+        /// <summary>
         /// Set the game's tooltip hover delay - normally 0.3 s - and return what it was.
         /// <see cref="RestoreTooltipDelay"/> (-1) puts the game's own value back.
         ///

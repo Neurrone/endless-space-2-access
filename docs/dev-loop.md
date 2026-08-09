@@ -1,11 +1,7 @@
 # ES2 dev loop — the working map
 
-**THE FIXTURE SAVE IS GONE.** `Documents\Endless Space 2\Save Files` is empty and
-`DevProbe.Saves()` answers `[]`, so `POST /loadsave "[Beginner] access test"` 404s and NO
-in-game screen can be reached at all. Everything below that names the fixture is currently
-untestable; recreate the save before any in-game work.
-
-**Current state (2026-08-09):** phase 1 (out-game) is screen-complete: the new game lobby, the
+**Current state (2026-08-09):** the fixture save is **`Beginner test`** (recreated on this
+VM — the old `[Beginner] access test` is gone with the previous machine). phase 1 (out-game) is screen-complete: the new game lobby, the
 advanced settings, the faction chooser and the custom faction editor over it, and the tutorial
 picker all have screens; the lobby family has been through one manual review and its fixes. In-game esc menu, galaxy HUD, and
 the popup family done and past manual screen-reader review; the galaxy map's system tree
@@ -71,8 +67,9 @@ belongs in the generic docs or the source file's own doc comment.
 | `DropListScreen.Open(list, title, choose)` | Any `AgeControlDropList` as a sub-screen; entries fall back to their tooltips when the list is drawn as icons, then to `EmpireColors` when it is drawn as bare swatches; the focused entry is POINTED at, so the game draws its tooltip | `ES2Access/Screens/DropListScreen.cs` |
 | `EmpireColors.Name(color)` | What the player's chosen palette (`Public/Mapping/Palettes.xml`) calls a drawn colour — matched by colour, not by list position; `ModStrings` `color.*` keys, falling back to the game's identifier split at its capitals | `ES2Access/UI/EmpireColors.cs` |
 | `SettingRows` + `TextFieldEditor` | One game `SettingItem` as a row (every `Gui.ControlType`, the slider's index-stepping write path, `Drawn` = visible AND alpha > 0), plus the shared row shapes every lobby-family screen builds through — `AddCombo`, `AddButton`/`AddButtonRow`, `AddTextField`, `AddReadout` — and the deferred keyboard hand-over to a text editor | `ES2Access/Screens/SettingRows.cs` |
-| `DevProbe` | Compile-checked one-liners: `Screen() Stack() State() Saves() Camera() Windows() Patches() TooltipDelay(s) Tooltip() UnknownIcons()` | `ES2Access/Dev/DevProbe.cs` |
-| `/input` queue | `ModInput.Inject` — actions at the production dispatch point | `ES2Access/UI/Input/ModInput.cs` |
+| `DevProbe` | Compile-checked one-liners: `Screen() Stack() State() Saves() Camera() Windows() Patches() Claims(keys?) TooltipDelay(s) Tooltip() UnknownIcons()` | `ES2Access/Dev/DevProbe.cs` |
+| `DevProbe.Claims("Escape,Return")` | What the input layer is claiming FROM the game: the consumed-key latch (key + still held), `backClaimed`/`claimsBack`, `layerLive` split into `screenFocused` and `keyboardElsewhere`, and `ClaimsKey`'s side-effect-free answer per named key | `ES2Access/Dev/DevProbe.cs` |
+| `/input` queue | `ModInput.Inject` — actions at the production dispatch point; touches no physical key state, so game-also-sees-the-key bugs need separate link-by-link probes (`DevProbe.Claims` is the layer's end of one) | `ES2Access/UI/Input/ModInput.cs` |
 
 ## 2. Layer budget
 
@@ -100,11 +97,12 @@ exempt Escape unconditionally, so an action menu's `Back()` closed the menu AND 
 reached the game's `InputsMatch` and raised the pause screen. A screen now answers
 `ConsumesBack` (a question asked BEFORE the press — the game's scan can run either side of the
 mod's frame, and by the time `Back()` has run the menu is gone), plus a latch in `ModInput` for
-the other ordering. `ConsumesBack` is NOT a copy of `Back()`: `DropListScreen` handles Escape
+the other ordering — generalized since to EVERY key the mod acts on, held until the player lets
+go. `ConsumesBack` is NOT a copy of `Back()`: `DropListScreen` handles Escape
 and still needs the engine to see it. Probe it live with
-`ES2Access.ModEntry.Input.ClaimsKey(UnityEngine.KeyCode.Escape)` — true only where a mod-owned
-surface is focused. That probe, not `/input ui.back`, is what proves the key does not fall
-through.
+`ES2Access.Dev.DevProbe.Claims("Escape")` — `claims` true only where a mod-owned
+surface is focused, and the latch says so when the surface has already gone. That probe, not
+`/input ui.back`, is what proves the key does not fall through.
 
 ES2 facts with no other home:
 
@@ -180,7 +178,10 @@ mutes voicing but `/speech` still captures.
 - `GET /gui/graph?edges=1&buffers=1` — the focused screen's whole accessible tree
 - `GET /gui/graph?screen=KEY` — what an UNFOCUSED registered screen would offer, built without
   focusing it; an inactive one answers `screen inactive: …`, a bogus key 400s with the key list
-- `POST /input` — body = one action key (`ui.down`, `buffer.lineDown`…)
+- `POST /input` — body = one action key (`ui.down`, `buffer.lineDown`…); its key-claim counterpart is
+  `/eval ES2Access.Dev.DevProbe.Claims("Escape")` — the latch only lives for the frame an injection
+  is consumed (no key was held), so catch it with `POST /wait` on the probe's own text, never a
+  second request
 - `GET /gui/game?path=&depth=` — Unity hierarchy; `GET /gui/age?window=&depth=&visibleOnly=` —
   AGE widgets with rects (`window=` is the filter; `/gui/game` is the one taking `path=`)
 - `window=` matches a registered window, a shown panel, then any named AgeTransform under them,
@@ -239,7 +240,7 @@ before interpreting live results. Repeated-node `ControlId` keys: index-in-paren
 widget names. Interim narration one line — findings go in the final report; never re-Read
 an image.
 
-**Session loop.** `.\run-game.ps1 -NoSpeech -NoWait -LoadSave "[Beginner] access test"` —
+**Session loop.** `.\run-game.ps1 -NoSpeech -NoWait -LoadSave "Beginner test"` —
 cold launch to in-game in one command; `.\wait-game.ps1 <menu|ingame|loading|dialog>` blocks
 on a state. Boot ≤ 1 min.
 
