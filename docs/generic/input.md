@@ -106,6 +106,29 @@ patch site per input path (`src/graph-ui/GameKeyStandDown.cs`, an exemplar to im
   the liveness gate, self-clearing on key release; the release-latched Escape flag above
   is the special case of this rule.
 
+## Typed text is not a chord
+
+Type-ahead search ([ui-navigation.md](ui-navigation.md)) reads *text*; everything above
+models "action = chord", and the two differ in every mechanism:
+
+- **The claim is over a class of keys** (letters, space), answered before the press like any
+  claim — but it needs **no release latch**. The liveness self-race exists because a
+  consumed action can mutate the state its own claim predicate reads; typing a character
+  into a search mutates nothing the predicate depends on, so the latch rule has a boundary
+  here, not an exception. Write that reasoning down where the claim lives.
+- **The cost is explicit and global**: claiming letters costs the game its letter hotkeys
+  wherever a mod screen is focused. Decide that once and deliberately, and put the escape
+  hatch — a per-key carve-out like Escape's — where the next collision will look for it.
+- **Characters come from the engine's accumulated-characters API** (Unity: `inputString`),
+  never from per-key scanning: layout, typematic repeat and dead keys come free, and a
+  chord (Ctrl/Alt held) is not typing. The read allocates per frame on old Mono — gate it
+  on the engine's any-key flag.
+- **Anything reading raw keys consults the deferred-handover state.** The stand-down above
+  covers "the game's text input owns the keyboard *now*"; its mirror is the frames where
+  the keyboard is *about to be* elsewhere — a deferred editor or capture handover (the
+  late-frame rule below). Both handovers set one screen-level flag, and every raw-key
+  reader — type-ahead first among them — asks it before touching a character.
+
 ## The engine hands the focused widget its keys late in the frame
 
 In Unity-style engines the GUI framework delivers key events to the focused control in

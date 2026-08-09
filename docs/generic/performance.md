@@ -22,6 +22,13 @@ If the game gives no event for something, poll a *single cheap field*, not the h
 Tangledeep's focus watcher edge-detects one pointer the game already maintains, precisely
 because the game fires no event when it goes stale.
 
+**And before declaring a lookup too expensive, check what the game already indexes.** A game
+that focuses, locates, or refreshes its own widgets keeps exactly the map an adapter needs
+(ES2's tech screen holds a public technology→widget dictionary — the one its own Ctrl+Click
+locate uses). A feature cut "because resolving it means an O(n) walk per frame" is often an
+unread public API away from O(1); the cost argument should dissolve before it becomes a
+design constraint.
+
 ## Prefer events; edge-trigger the rest
 
 Hook the game's own lifecycle signals (visibility changes, event buses, log sinks) and do
@@ -66,6 +73,11 @@ For code that runs every frame (pumps, watchers, claim checks):
   mod types or delegates — after a reload it would serve stale types from the dead assembly.
 - Watch hidden allocators: `foreach` over some non-generic collections, boxing value types
   into `object`, `params` arrays, `Enum.ToString`.
+- **Anything behind a live announcement part runs at 60 Hz on the focused control.** A live
+  part is re-evaluated and string-compared every frame to detect change, so a query, a scan,
+  or an allocation behind one is a steady per-frame cost no profiler run will obviously
+  attribute to the mod. Expensive lookups go behind on-demand parts (resolved on focus or on
+  request), never live ones.
 
 ## Stagger and cap everything unbounded
 

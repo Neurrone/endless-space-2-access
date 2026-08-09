@@ -55,6 +55,16 @@ state *enum*: grep the localization corpus for a key pattern built from the enum
 names — games with a status enum almost always ship a parallel string table, and it covers
 the states your fixture cannot reach.
 
+"Invent nothing" has one licensed exception: **gathering a scattered signal**. A game
+sometimes encodes a fact as decoration spread across a spatial layout — a "suggested" badge
+on one of hundreds of nodes, a highlight on scattered tiles — which a sighted player takes
+in at a glance and a blind player cannot recover by walking. A mod-arranged surface (a list
+stop of exactly those items) is then the only accessible rendering of something the game
+*does* show. The discriminator: is the fact drawn somewhere the player can walk to, or only
+encoded in position and decoration across the layout? The license has three conditions:
+every word in the aggregate is the game's own, the surface is approved by the project owner,
+and it is recorded as a deliberate deviation in the screen's doc comment.
+
 The same doctrine has a **fog-of-war corollary** in any game with partial information: the
 world model answers questions the renderer refuses to — adjacency APIs return
 never-discovered entities' names, and name lookups resolve for anything. Find the
@@ -147,6 +157,16 @@ opener's event/code chain with file:line cites recorded in the screen's own doc 
 unit-test whatever logic was extracted into the engine-free core; and hand the entire
 perceptual run to the human as a named blocked item. Never ship a plausible-but-unmeasured
 model silently — the blocked list is the honesty mechanism.
+
+The same rigor scales down from screens to features: **a fixture-blocked claim is a
+measurement, not an inference.** "The fixture cannot show X" in a report or blocked list
+needs a probe over the game's own predicate — one eval — never a chain of
+read-from-the-code plausibilities. A wrong entry in a blocked list is worse than a gap: it
+retires a feature from testing on a guess (measured instance: "no stage deeds at turn 2"
+was derived from preconditions, every link plausible, and 12 of 20 stages had one). And
+when the game *changes a rendering decision* on the same predicate your speech depends on —
+swapping a tooltip's class, an icon, a color — that switch is a **free oracle**: it
+confirms your state mapping independently, with no second probe.
 
 ## 5. Hand over the manual test
 

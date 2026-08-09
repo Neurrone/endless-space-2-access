@@ -28,7 +28,11 @@ infrastructure); starting with the seam costs nearly nothing.
    **When hunting the corpus for a control's name, grep for the ACTION it performs, not the
    control**: wordless action buttons are routinely named by the game under the action's own
    key family, nowhere near the widget — a "no game-authored name exists" conclusion is
-   often a wrong-noun search. **And search the game's DATA tables, not just the localization
+   often a wrong-noun search. **Grep for the STATE ENUM too, and read the legend's
+   key-building expression**: a game with a state or category enum almost always composes
+   its keys as prefix + enum member name, and the widget that draws the *legend* for the
+   thing being modelled contains the exact expression (`"DeedState" + state`) — read the
+   key recipe off the game's own display code instead of guessing at the corpus. **And search the game's DATA tables, not just the localization
    corpus**: a drawn value's name often lives with the value's definition (ES2: a palette XML
    naming every colour the renderer only ever paints) and never reaches the screen or the
    corpus — "the game's words" includes the words in its data.

@@ -26,7 +26,7 @@ This is an important but secondary goal, it is the test vehicle for implementing
   - `Amplitude/`: small utility assembly
 - `docs/` — ES2-specific research and design notes
 - `docs/generic/` — the game-agnostic accessibility modding documentation (the primary goal)
-- Reference mods to draw patterns from: `D:\source\songs-of-conquest-access`, `D:\source\wotr-access`, `D:\source\DiscoAccess`, `D:\source\tangledeep_access`; Prism speech library source at `D:\source\prism`. Only look at reference mods when explicitly directed; the goal is to see how much the generic game mods documentation would help.
+- Reference mods to draw patterns from: `../songs-of-conquest-access`, `../wotr-access`, `../DiscoAccess`, `../tangledeep_access`; Prism speech library source at `../prism`. Only look at reference mods when explicitly directed; the goal is to see how much the generic game mods documentation would help.
 
 ## Commands
 

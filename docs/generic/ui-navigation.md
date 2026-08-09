@@ -23,7 +23,13 @@ Cursor survival across rebuilds is tiered (`KeyGraph.Reconcile`): follow the **b
 object** if it moved (identity ride-along via `ControlId.Reference`); else the same
 **structural key**; else the **nearest survivor** walking the previous traversal order; else
 the start node. Give any node whose row/entity can move or vanish a `ControlId.Referenced`
-identity and reconciliation is free. The sharper case is not "the row moved" but **the
+identity and reconciliation is free — with one converse rule: **one object, one node**.
+Reference identity is followed *before* the structural key, so two nodes sharing a backing
+object are one control to the cursor, and focus teleports between the surfaces that share it
+(ES2: a research-queue row and its tech-wheel node shared the technology wrapper; queueing a
+technology threw focus into the queue panel). Where two surfaces show the same entity, at
+most one carries the object reference — the other keys structurally. The sharper case is not
+"the row moved" but **the
 widget stayed and its meaning changed**: a table that pools and re-sorts its line widgets
 reassigns them on every re-sort, so a cursor keyed on the widget acts on a different item
 a frame later — heard as a correct-sounding announcement attached to the wrong action,
@@ -94,8 +100,10 @@ which no dump reveals. Key such lines on the game's *data* object, never the wid
   caller to announce.
 - **`GraphSheet`** — screen-reader tables over raw mode: one stop, regions as sections,
   column-preserving rows, edge labels naming the crossed column, ragged rows falling back to
-  the primary cell.
-- **`TypeAheadSearch`** — tiered fuzzy matching (ported to WotR from OniAccess), engine-side.
+  the primary cell. It stamps each cell's column number on the node (`NodeVtable.Column`), so
+  row-shaped subsystems — type-ahead's one-result-per-row filter, anything else that must
+  tell a primary cell from its columns — ask the node instead of rediscovering table shape.
+- **`TypeAheadSearch`** — tiered fuzzy matching (ported to WotR from OniAccess), engine-side; the behavior contract is the "Type-ahead search" section below.
 
 ## The adapter (per game; imitate, don't copy)
 
@@ -158,6 +166,15 @@ which no dump reveals. Key such lines on the game's *data* object, never the wid
   fight a sighted helper's wheel, the same tradeoff as the real-mouse policy above. Verify
   with measured rects: the row past the edge must land *at* the edge (a unit mismatch
   between rect space and scroll space shows up as consistent under/overshoot).
+- **Camera-follows-focus** is the same problem in a world or zoomable view, and gets the
+  same shape of answer: when focus lands on something the camera is not looking at, move the
+  view through the game's **own camera entry points** (its zoom/pan/locate calls), never by
+  writing view offsets. The mechanism that keeps it from fighting anyone: **one coalesced
+  request slot** — focus changes and tree expansion *write* the slot (last writer wins) and
+  the per-frame update *applies* it only when no view animation is running. Never a move per
+  keystroke, never interrupting a running animation, and a request for something already in
+  view is a no-op. Verify with viewport rect probes: walking within an in-view group must
+  leave the view bit-identical.
 - **Discover controls, don't trust named references**: a reused window can carry duplicate
   per-skin control sets (ES2's options window has two complete button bars) with the API's
   named fields pointing at one skin — possibly the hidden one. And **no visibility flag can
@@ -166,7 +183,13 @@ which no dump reveals. Key such lines on the game's *data* object, never the wid
   stay "visible" with zero alpha, so a flag-trusting sweep declares rows the player cannot
   see (example: ES2's competitor-slot pool kept an eighth slot alive this way after the
   count came back down). Effective drawn-ness is the ancestor walk *plus* whatever render
-  test the engine itself honours (alpha, clipping). Declare what is actually drawn — walk
+  test the engine itself honours (alpha, clipping). And in a pannable or zoomable surface
+  there is a third answer that is neither: **a cull** — `Visible` recomputed per frame from
+  the screen rect, meaning "where the camera looks", not "what exists" (ES2's tech wheel
+  culls every off-screen node; 11 of 107 read visible at any pan position). Enumerate such a
+  surface by the model's own would-be-drawn flag, never the drawn one — and remember a
+  renderer-composed tooltip cannot exist until the camera has brought its widget on screen,
+  so reading one is a camera move plus a hover, in that order. Declare what is actually drawn — walk
   ancestors for visibility, test drawn-ness, filter decorative click-shields (no activation
   wiring), order by measured position so speech order matches the screen.
 
@@ -257,6 +280,37 @@ which no dump reveals. Key such lines on the game's *data* object, never the wid
   hears no dead end), or declare the action and accept that it opens a silent screen until
   that screen is modelled (the affordance kept, the dead end temporary). Either is
   defensible; choosing silently is not.
+
+## Type-ahead search
+
+Typing finds controls. There is deliberately **no key that starts a search** — the first
+printable character does (the input-layer cost of that choice — claiming the letter keys
+from the game — is [input.md](input.md)'s typed-text rule). The behavior contract, re-derived
+once from WotR source and now written down so the next game doesn't have to:
+
+- **Scope = the focused Tab stop's declared nodes.** A tabular row contributes ONE result
+  (non-primary columns are filtered out via the column number stamped on the node), and a
+  landing returns to the column the search began on — searching never yanks the player out
+  of the column they were scanning.
+- **While a search is live**: Up/Down step the matches (with key repeat), Home/End jump to
+  the first and last, Escape clears the search **and goes no further**, and any other
+  action (Tab, Enter, an arrow when no results are up) ends the search and then does its
+  ordinary job in the same press.
+- **Each keystroke lands and re-reads**, so holding a letter reads the matches as they
+  narrow. A keystroke that matches nothing drops the character and speaks a localized
+  "no match for {text}" — never silence.
+- **Staleness**: focus moving by any other means (a rebuild, the game, another key)
+  invalidates the results silently. Never act on a result list computed for a cursor
+  position that no longer holds; track where the last result landed and compare.
+- **Screens opt out with two flags**: one for "raw keys are (or are about to be) handed
+  elsewhere" — text editors, key-capture, including the deferred-handover frames — and one
+  for "no type-ahead on this screen". Every raw-key reader consults the first flag; see
+  [input.md](input.md).
+- **A screen may supply its own search scope and landing action** — `(count, textOf(i),
+  land(i))` — for items not declared in the graph (a collapsed tree's leaves). The landing
+  callback does the screen's own work (expand the ancestors) and *returns the id to focus*,
+  so the navigator still owns the announce-and-track step and the architecture's core
+  invariant holds: a focus change is announced exactly once, by one code path.
 
 ## Child screens and action menus
 

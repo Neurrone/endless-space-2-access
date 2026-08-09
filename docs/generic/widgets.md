@@ -33,8 +33,10 @@ parts, all text `Func<string>` resolved at speak time:
   the mod stands down while the game edits; the game's own commit/cancel keys end the edit
   and the field re-reads its new text when focus returns. **The handoff must not happen on
   the activating key's frame** — the engine would deliver that same Enter to the field — see
-  the late-frame rule in [input.md](input.md). Typed-character echo is the screen reader's
-  own, not the mod's.
+  the late-frame rule in [input.md](input.md). The pending handover is also a flag every
+  raw-key reader consults (input.md's typed-text rule) — typing meant for the field must
+  never feed a type-ahead search, including on the deferral frames. Typed-character echo is
+  the screen reader's own, not the mod's.
 - **Step indicators** (page dots, carousel marks) — the game draws position as a row of
   marks, not text: declare each mark as a read-only page indicator carrying the Selected
   part (never invent a spoken "N of M" the game doesn't show), and if the game's marks are
@@ -103,6 +105,12 @@ click path enforce what may be picked.
   "why not?" links — ES2's blocked Colonize stays clickable and jumps to the blocking
   technology instead. An action offered to the player (in a menu or on activation) must be
   gated on the game's own action predicate, never on visible-and-enabled.
+- **State that answers later is its own case.** When activation posts an order or command
+  the game applies frames later, the immediate re-read is stale by definition. The truthful
+  feedback is the **live value part** announcing the result when it lands; the tempting
+  alternative — speaking an optimistic prediction of the new state on the keypress — turns
+  a rejected or reordered command into a confident lie. Say nothing extra on the press; let
+  the live part say what actually happened.
 
 ## Text that animates in
 

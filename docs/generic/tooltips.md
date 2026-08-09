@@ -98,6 +98,11 @@ Rules that came out of shipping this, all hit in practice:
   dossier), so review follows the screen. "Last-drawn speaks" is the caption-then-value
   rule, not a universal: where the row is a card's own tooltip plus a badge's, the
   important one is the card's — the screen names which tooltip speaks.
+- **The mode is a per-frame answer — never store it.** A widget can swap its tooltip class
+  with its state (ES2's stage-deed marker: a plain-text placeholder while locked, a
+  class-composed dossier once its stage is researched), so one control's short/long mode
+  flips over its lifetime. Asking the marker at every declaration is what makes the shared
+  helper correct; a cached `TooltipMode` ships a bug that only appears after a state change.
 - **One implementation of the short/long test, shared with the lines reader.** Two copies
   of "are this tooltip's words on the widget" that disagree produce a tooltip announced
   from one source and reviewed from another — and nothing in the spoken output reveals
