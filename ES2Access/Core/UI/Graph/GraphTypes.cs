@@ -183,6 +183,12 @@ namespace ES2Access.Core.UI.Graph
         /// <summary>If true, type-ahead never matches this control.</summary>
         public bool ExcludeFromSearch;
 
+        /// <summary>Which column of a tabular row this control is - 0 (the default) for the row's
+        /// primary cell and for everything that is not in a table. Stamped by
+        /// <see cref="GraphSheet"/>, and read by type-ahead: a row contributes ONE result, its
+        /// primary, because every cell of it searches as the row's name.</summary>
+        public int Column;
+
         /// <summary>Optional (Expandable groups): override HOW expansion state changes. When null the
         /// engine mutates the persistent expansion set (<see cref="GraphState.Expanded"/>); an adapter
         /// wires these to a retained game-side container's Expand/Collapse instead.</summary>

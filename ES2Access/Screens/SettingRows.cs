@@ -752,6 +752,15 @@ namespace ES2Access.Screens
             Voice.Say(ModStrings.Get(ModStrings.RenameTypePrompt), true);
         }
 
+        /// <summary>Whether an editor has been asked for and the keyboard has not changed hands yet.
+        /// The screen that owns this editor answers <c>CapturesRawInput</c> with it: during the wait
+        /// the mod's keys are still live, and what the player types next is meant for the field.
+        /// </summary>
+        public bool Pending
+        {
+            get { return _field != null; }
+        }
+
         /// <summary>Called from the owning screen's per-frame update.</summary>
         public void Update()
         {

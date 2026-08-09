@@ -111,6 +111,14 @@ namespace ES2Access.Screens
             HandOverWhenReleased();
         }
 
+        /// <summary>A binding row is listening, or about to be: every key belongs to the field being
+        /// bound, and a letter that started a search instead would be a key the player could never
+        /// bind.</summary>
+        public override bool CapturesRawInput
+        {
+            get { return _pending != null || _capturing != null; }
+        }
+
         /// <summary>Something else has the player's attention - a confirmation, the drop list, or the
         /// window has gone. A capture that was asked for and not yet handed over is abandoned rather
         /// than left armed to fire under whatever comes next.</summary>

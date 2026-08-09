@@ -1,12 +1,14 @@
 # ES2 dev loop — the working map
 
-**Current state (2026-08-09):** the fixture save is **`Beginner test`** (recreated on this
-VM — the old `[Beginner] access test` is gone with the previous machine). The out-game
+**Current state (2026-08-09):** the fixture save is **`[Beginner] test`** (turn 2; the title
+`DevProbe.Saves()` reports — the old `[Beginner] access test` is gone with the previous machine). The out-game
 front — main menu through the whole new-game flow (lobby, advanced settings, faction
 chooser, custom faction editor, tutorial picker) — is implemented and past manual review;
 the in-game front is the galaxy family, where the system tree, management page and planet
-overview await manual review (the improvements modal has passed it). Screen-by-screen
-status, including what each fixture cannot show:
+overview await manual review (the improvements modal has passed it), plus the research screen
+(the technology wheel, implemented and live-verified — including the camera-follows-the-branch rule,
+the ring deeds and the recommended-technologies stop — awaiting manual review).
+Screen-by-screen status, including what each fixture cannot show:
 `docs/roadmap.md`. This file is the toolbox index: what exists in THIS repo and the exact
 commands. Patterns and doctrine live in `docs/generic/` — read the relevant chapters BEFORE
 touching source, and report what they lacked (CLAUDE.md requires both):
@@ -63,6 +65,10 @@ belongs in the generic docs or the source file's own doc comment.
 | `DevProbe` | Compile-checked one-liners: `Screen() Stack() State() Saves() Camera() Windows() Patches() Claims(keys?) TooltipDelay(s) Tooltip() UnknownIcons()` | `ES2Access/Dev/DevProbe.cs` |
 | `DevProbe.Claims("Escape,Return")` | What the input layer is claiming FROM the game: the consumed-key latch (key + still held), `backClaimed`/`claimsBack`, `layerLive` split into `screenFocused` and `keyboardElsewhere`, and `ClaimsKey`'s side-effect-free answer per named key | `ES2Access/Dev/DevProbe.cs` |
 | `/input` queue | `ModInput.Inject` — actions at the production dispatch point; touches no physical key state, so game-also-sees-the-key bugs need separate link-by-link probes (`DevProbe.Claims` is the layer's end of one) | `ES2Access/UI/Input/ModInput.cs` |
+| `TypeAhead` + `SearchScope` | Type-ahead as the player meets it: the letters typed, where the last result landed, and whether focus has `Strayed` off it; `SearchScope.OverStop` is the default scope (the focused stop, one result per tabular row via `NodeVtable.Column`), a screen overrides it with `Screen.TypeAheadScope` | `ES2Access/Core/UI/TypeAhead.cs`, `SearchScope.cs` |
+| `ResearchText` | The research screen's own phrases: an arc between two technologies said from the focused end (source vs target is the whole sentence), a ring's aggregate counts, the cost/turns/queue-position readout shared by a dot and a recommended row, and which of the game's four deed-state words a ring's marker is painted in | `ES2Access/Core/Speech/ResearchText.cs` |
+| `ResearchCamera` | Which view opening or closing a branch of the wheel leaves the player in — quadrant, ring, or the whole wheel (closing a stage lands in its quadrant, not at the overview); engine-free, so the rule is tested off-game | `ES2Access/Core/UI/ResearchCamera.cs` |
+| `TypedText.Frame` | The characters typed this frame — the keyboard half of `GraphNavigator.TypedCharacters`; nothing while Ctrl/Alt is held, and `Input.anyKey` gates the allocating `inputString` read | `ES2Access/UI/Input/TypedText.cs` |
 
 ## 2. Layer budget
 
@@ -77,6 +83,8 @@ view levels, never up together) · `20` planet-constructibles (the panel a plane
 out under itself) · `30` tutorial ·
 `40` notification · `50` game-menu · `52` options (one number, above the pause menu that can
 open it) · `55` load-save · `60` loading · `70` drop-list (above options, its owner) ·
+`15` research (the technology wheel — a GuiScreen overlay drawn over whichever view level is
+underneath, so above them and below the planet panel) ·
 `80` rename box · `85` improvements modal (over the star-system page, under its own
 confirmation) · `90` tutorial-selection modal (over the new game screen) · `100` message-box. Action menus are CHILD screens and have no layer: the
 manager focuses the deepest child of the top screen.
@@ -85,6 +93,14 @@ manager focuses the deepest child of the top screen.
 `docs/generic/input.md`). On top of arrows/Tab/Enter/Backspace/Escape/Home/End, Alt+arrows and
 the Ctrl review chords: **Shift+Left/Right** coarse slider step, **Shift+Up/Down** move the
 focused ITEM (queue reorder), **Alt+Enter** the control's other activation (queue at the head).
+
+**Typing a letter searches the focused stop** (no search key: the first printable character starts
+one; Up/Down step the matches, Home/End their ends, Escape clears it and goes no further, any other
+action ends it and then does its own job). So **A–Z are claimed from the game on every mod screen**
+(`GraphNavigator.TakesTypedKey` via `ModInput.ClaimsTypedKey`, asked before the press), and Space
+only while a search already has text. Screens opt out with `AllowsTypeahead` (the rename box) or
+`CapturesRawInput` (the frames between asking for a key capture / text editor and the game taking
+the keyboard).
 
 **Escape is the game's, except over a surface the mod invented.** A screen answers
 `ConsumesBack` (asked BEFORE the press), and `ModInput` latches EVERY consumed key until the
@@ -147,6 +163,40 @@ ES2 facts with no other home:
   `CurrentLine`/`CurrentCharInLine`, which only the RENDERER honours. So `AgeText.Label` on a
   mid-animation label is complete, and an announcer never has to rebuild the panel's phrasing
   from the model to beat the animation.
+- **On the technology wheel, `Visible` is a CAMERA answer.** `TechnologyItem2.UpdateVisibility`
+  clears it for anything off screen, so enumerate by `VisibleByDefinition` (107 of 385 in the
+  fixture) and move the camera before expecting a tooltip; the drawn LINK arcs are the opposite —
+  `TechnologyScreen.Refresh` sets `Visible` on exactly the arcs that apply to this empire, so that
+  flag IS the game's own link filter (22 of 162 at turn 2).
+- **The markers on the wheel's rings are DEEDS, and their state is a colour.**
+  `TechnologyStageItem.DeedItem` is drawn only while `guiTechnologyStage.GetDeed(empire)` found a
+  started quest (`DeedItem2.Refresh` :131-199 sets `Visible = deed != null`), and it paints itself in
+  one of the four technology-state colours, each of which the key panel names —
+  `%DeedState{Available,Researched,Disabled,NotAvailable}Title` = Available / Completed / Failed /
+  Locked, and `%CategoryDeedTitle` = "Deed". The wrapper the marker built is the private field
+  `guiDeed`; its own public predicates (`IsDeedAvailable`, `IsDeedVisible`) are the same tests the
+  marker makes. The empire that won a failed deed is found through
+  `IQuestManagementService.GetQuestsByInstanceId`, not on the deed itself. **The turn-2 fixture draws
+  12 of them** (all `InProgress`): measured `GetDeed(Gui.PlayerEmpire) != null` on 12 of 20 bound
+  stages, and Empire Development II's stage is already `Researched`, so that deed is *available* and
+  carries its full `DeedDescription` tooltip — the cheapest cross-check that a deed's state word is
+  right is that the game switches the tooltip's CLASS on the same predicate.
+- **What the game recommends researching is a list, not just a badge.**
+  `TechnologyScreen.SuggestedGuiTechnologies` (refilled in `Refresh` :393-398 from
+  `DepartmentOfScience.SuggestedTechnologies`) is what `UpdateSuggestionTop` badges the dots from
+  per frame; the game's word for one is `%SuggestedItemTitle` ("Suggested").
+  `TechnologyItem2.UpdateSuggestionBottom` belongs to the notification windows'
+  `SuggestedTechnologiesPanel` alone — nothing on the wheel calls it.
+- **Aiming the wheel's viewport** takes a point measured from the middle of the wheel in the
+  normalized (782-wide) space the stages place their dots in: `DoZoomIn(aim, 0.3f)` from the
+  overview, `DoTranslate(aim * 4, 0.3f)` once `Viewport.GetComponent<GuiValueController>()
+  .CurrentValue == 4` (both private; the controller is reachable off `Viewport`). A quadrant's own
+  aim already exists as the game's `OnSectorClick` — call it through `ITechnologyQuadrantClient`
+  rather than recomputing radius 195.5 at the sector's mid-angle.
+- **Two controls that name the same backing object are one control to the cursor.**
+  `ControlId.Reference` is followed before the structural key, so the research screen's queue row
+  and its wheel dot both keyed on `GuiTechnology2` teleported the player into the queue panel the
+  moment they queued something; the dot keys on `TechnologyDefinition` instead.
 - ES2's icon numbers, for re-verification: 382 registered tokens (single writer
   `AgeManager.CreateSpecialCharactersDictionary` → `AgePrimitiveLabel.SpecialCharacters`,
   keys `"[TOKEN]"` upper-cased), 371 named + 11 nameless colour directives; localization
@@ -168,6 +218,9 @@ mutes voicing but `/speech` still captures.
   `/eval ES2Access.Dev.DevProbe.Claims("Escape")` — the latch only lives for the frame an injection
   is consumed (no key was held), so catch it with `POST /wait` on the probe's own text, never a
   second request
+- `POST /type` — body = characters to TYPE at the focused screen (the type-ahead search), through the
+  same gates a keypress passes; answers `taken`/`searching`/`search`/`results`/`focus` plus the speech
+  it caused. `/input` cannot carry it: that queue is actions, and typing is text
 - `GET /gui/game?path=&depth=` — Unity hierarchy; `GET /gui/age?window=&depth=&visibleOnly=` —
   AGE widgets with rects (`window=` is the filter; `/gui/game` is the one taking `path=`)
 - `window=` matches a registered window, a shown panel, then any named AgeTransform under them,
@@ -226,7 +279,7 @@ before interpreting live results. Repeated-node `ControlId` keys: index-in-paren
 widget names. Interim narration one line — findings go in the final report; never re-Read
 an image.
 
-**Session loop.** `.\run-game.ps1 -NoSpeech -NoWait -LoadSave "Beginner test"` —
+**Session loop.** `.\run-game.ps1 -NoSpeech -NoWait -LoadSave "[Beginner] test"` —
 cold launch to in-game in one command; `.\wait-game.ps1 <menu|ingame|loading|dialog>` blocks
 on a state. Boot ≤ 1 min.
 
@@ -288,6 +341,22 @@ is the before/after probe (fixture: `FactionTerrans`). Selecting a card does NOT
 the same `OnCancelCb`); the lobby stands down while either is up. The advanced window builds a
 table per CATEGORY once and shows only `CurrentCategory`'s — read whichever is drawn, never the
 container's first child.
+
+**Testing a type-ahead search.** `POST /type` with the letters (`res`), read the `speech` array it
+answers with, then drive the results through `/input ui.down|ui.up|ui.home|ui.end` and end with
+`/input ui.back` ("Search cleared"). The key-claim half is `DevProbe.Claims("Escape,R,Space")`: with
+a search up, all three read `claims:true` and `claimsBack:true`; after Escape clears it, Escape goes
+back to the game (`claims:false`) while the letters stay claimed, because type-ahead is armed
+whenever a mod screen is focused. Each keystroke re-announces the landing, so `/type "res"` answers
+with three identical lines — that is the design, not a stutter.
+
+**Working the technology wheel.** Open/close it from `/eval` with
+`Gui.GuiService.GetWindow<GameOverlayWindow>().ControlBanner.ToggleScreen("TechnologyScreen")`
+(F4 does the same); the first open in a session raises the "Tech Savvy" tutorial popup. The
+permitted round trip is queue-then-cancel — probe with
+`Gui.PlayerEmpire.GetAgency<DepartmentOfScience>().ResearchQueue.Length` and
+`.PendingConstructions[i].ConstructibleElement.Name` before and after — but queueing fires
+`EventTutorial_TechnologySelected`, so do it LAST and restore with `POST /loadsave`.
 
 **Multi-row tables** need a real fixture with several saves/rows — do not mutate the game's
 data structures to fake one.

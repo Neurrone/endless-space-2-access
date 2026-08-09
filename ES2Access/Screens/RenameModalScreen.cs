@@ -68,6 +68,13 @@ namespace ES2Access.Screens
             return false;
         }
 
+        /// <summary>The box exists to be typed into: every letter is the name being written, and
+        /// none of them is a search over the two controls here.</summary>
+        public override bool AllowsTypeahead
+        {
+            get { return false; }
+        }
+
         /// <summary>
         /// The field, and the button that accepts it. The field is where focus lands and it reads the
         /// name that is in it - which is the name being changed, because the game fills it in - with

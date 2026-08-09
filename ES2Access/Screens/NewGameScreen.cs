@@ -134,6 +134,13 @@ namespace ES2Access.Screens
             _editor.Update();
         }
 
+        /// <summary>A text editor has been asked for and the keyboard has not changed hands yet:
+        /// what the player types next is meant for the field, not for a search.</summary>
+        public override bool CapturesRawInput
+        {
+            get { return _editor.Pending; }
+        }
+
         /// <summary>Something else has the player's attention - a modal, a drop list, or the page has
         /// gone. An editor that was asked for and not yet opened goes with them.</summary>
         public override void OnUnfocus()

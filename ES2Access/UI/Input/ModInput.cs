@@ -80,6 +80,17 @@ namespace ES2Access.UI.Input
         /// </summary>
         public Func<bool> ClaimsBackKey;
 
+        /// <summary>
+        /// Asked whether a key is one the focused surface is taking as TYPED TEXT - the type-ahead
+        /// search - rather than leaving to the game, which has letter hotkeys of its own.
+        ///
+        /// Asked BEFORE the press, like <see cref="ClaimsBackKey"/> and for the same reason: the
+        /// game's scan can run either side of the mod's frame. It needs no release latch, though,
+        /// because what it answers turns on the screen being focused and taking text - and typing a
+        /// letter changes neither. Null means every key is offered to the game as usual.
+        /// </summary>
+        public Func<KeyCode, bool> ClaimsTypedKey;
+
         // Set when a back action was actually consumed, cleared when the key comes up. It covers the
         // other half of the race: the game's scan running AFTER the mod's frame, by which point the
         // predicate above is answering for a menu that is already gone.
@@ -295,7 +306,24 @@ namespace ES2Access.UI.Input
                 return _backClaimed || ClaimsBack();
             }
 
-            return ClaimedKeys().Contains(key);
+            return ClaimedKeys().Contains(key) || ClaimsTyped(key);
+        }
+
+        /// <summary>Whether the focused surface is taking this key as typed text - the other
+        /// before-the-press question, asked after the bindings so a bound key stays bound.</summary>
+        public bool ClaimsTyped(KeyCode key)
+        {
+            Func<KeyCode, bool> claims = ClaimsTypedKey;
+            try
+            {
+                return claims != null && claims(key);
+            }
+            catch (Exception)
+            {
+                // Runs inside the game's own scan: leave the key to the game rather than throw into
+                // it, which is also the safe answer - the worst it costs is one letter.
+                return false;
+            }
         }
 
         /// <summary>What the focused screen answers to "are you about to take Escape" - asked before

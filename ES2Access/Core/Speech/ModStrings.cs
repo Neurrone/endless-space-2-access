@@ -51,6 +51,12 @@ namespace ES2Access.Core.Speech
         public const string NavNoDetails = "nav.no-details";
         public const string NavTable = "nav.table";
 
+        // Typing letters on a screen searches what is on it. Both are whole phrases: the text the
+        // player typed is quoted inside the sentence, so a language that frames a quotation
+        // differently has somewhere to do it.
+        public const string SearchNoMatch = "search.no-match";
+        public const string SearchCleared = "search.cleared";
+
         // A key-binding row: the keys it is on, and the prompt while it is waiting for new ones.
         public const string NavKeyBindingSecondary = "nav.key-binding-secondary";
         public const string NavNotBound = "nav.not-bound";
@@ -191,6 +197,37 @@ namespace ES2Access.Core.Speech
         public const string RenameTypePrompt = "rename.type-prompt";
         public const string RenameConfirm = "rename.confirm";
 
+        // The research screen - the wheel of technologies the game draws over the galaxy. The three
+        // panel names are the mod's, because the game labels none of them; the quadrants, the stages
+        // and every technology on them are named by the game.
+        public const string ScreenResearch = "screen.research";
+        public const string ResearchStatusPanel = "research.status-panel";
+        public const string ResearchKeyPanel = "research.key-panel";
+        public const string ResearchTreePanel = "research.tree-panel";
+
+        /// <summary>How much of a quadrant or a stage is done, over the technologies the game draws.
+        /// </summary>
+        public const string ResearchCounts = "research.counts";
+
+        /// <summary>Where a technology sits in the research queue, and how the queue is worked.
+        /// </summary>
+        public const string ResearchQueuePosition = "research.queue-position";
+        public const string ResearchRemoveFromQueue = "research.remove-from-queue";
+
+        // The arcs the wheel draws between two technologies. Each is a whole sentence because each
+        // says something different depending on which end of the arc the player is standing on.
+        public const string ResearchLinkReduces = "research.link-reduces";
+        public const string ResearchLinkReducedBy = "research.link-reduced-by";
+        public const string ResearchLinkExclusive = "research.link-exclusive";
+        public const string ResearchLinkUnlocks = "research.link-unlocks";
+        public const string ResearchLinkUnlockedBy = "research.link-unlocked-by";
+
+        /// <summary>Who got to a deed first, once the game has ruled the player out of it. The deed
+        /// itself, its four states and the word "Deed" are all the game's; only the sentence that
+        /// puts an empire's name to a failure is the mod's, because the game draws it as a logo.
+        /// </summary>
+        public const string ResearchDeedWinner = "research.deed-winner";
+
         /// <summary>The tutorial picker the game raises over a new game. Only ever spoken if the
         /// window has not written its own heading yet; the heading it draws is what is normally
         /// said.</summary>
@@ -243,6 +280,8 @@ namespace ES2Access.Core.Speech
             { NavHasTooltip, "has tooltip" },
             { NavNoDetails, "Nothing in here" },
             { NavTable, "table" },
+            { SearchNoMatch, "No match for {0}" },
+            { SearchCleared, "Search cleared" },
             { NavKeyBindingSecondary, "secondary {0}" },
             { NavNotBound, "not bound" },
             { NavPressPrimaryKey, "Press the new key combination." },
@@ -334,6 +373,19 @@ namespace ES2Access.Core.Speech
             { ScreenRename, "Rename" },
             { RenameTypePrompt, "Type the new name, then press Enter." },
             { RenameConfirm, "Confirm" },
+            { ScreenResearch, "Research" },
+            { ResearchStatusPanel, "Research status" },
+            { ResearchKeyPanel, "Research key" },
+            { ResearchTreePanel, "Technology tree" },
+            { ResearchCounts, "{0} available, {1} researched of {2}" },
+            { ResearchQueuePosition, "position {0}" },
+            { ResearchRemoveFromQueue, "Remove from queue" },
+            { ResearchLinkReduces, "Reduces the cost of {0}" },
+            { ResearchLinkReducedBy, "Cost reduced by {0}" },
+            { ResearchLinkExclusive, "Mutually exclusive with {0}" },
+            { ResearchLinkUnlocks, "Unlocks {0}" },
+            { ResearchLinkUnlockedBy, "Unlocked by {0}" },
+            { ResearchDeedWinner, "won by {0}" },
             { ScreenTutorialSelection, "Tutorial selection" },
             { ScreenNewGame, "New game" },
             { ScreenAdvancedSettings, "Advanced settings" },

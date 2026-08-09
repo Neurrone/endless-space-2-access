@@ -117,6 +117,7 @@ namespace ES2Access
             Screens.Register(new FactionChoiceScreen());
             Screens.Register(new CustomFactionScreen());
             Screens.Register(new PlanetConstructiblesScreen());
+            Screens.Register(new ResearchScreen());
             Input = new ModInput();
             Input.Dispatch = Dispatch;
             // The one widget the mod puts the game's own keyboard focus on. The input layer would
@@ -127,6 +128,11 @@ namespace ES2Access
             // Escape is the game's everywhere except over a surface the mod invented, which the game
             // cannot close because it does not know it is there.
             Input.ClaimsBackKey = BackKeyClaimed;
+            // Letters are the type-ahead search's while a screen of ours is taking them; the game
+            // has hotkeys on most of the alphabet and would otherwise act on every one of them.
+            Input.ClaimsTypedKey = TypedKeyClaimed;
+            Navigator.TypedCharacters = TypedText.Frame;
+            Navigator.KeyboardIsOurs = Input.LayerIsLive;
             BindKeys(Input);
             // Bindings first: the game's scans ask the layer which keys it has, so there must be
             // something to answer with before they can be told to stand down.
@@ -181,9 +187,25 @@ namespace ES2Access
         /// the game's own key scan, several times a frame, so it stays two field reads.</summary>
         private static bool BackKeyClaimed()
         {
+            GraphNavigator navigator = Navigator;
+            if (navigator != null && navigator.SearchIsActive)
+            {
+                // A search is a surface the mod invented too: Escape puts the keyboard back, and
+                // must not also close the screen the player was searching.
+                return true;
+            }
+
             ScreenManager screens = Screens;
             ES2Access.Screens.Screen current = screens == null ? null : screens.Current;
             return current != null && current.ConsumesBack;
+        }
+
+        /// <summary>Whether the focused screen is taking this key as typed text rather than leaving
+        /// it to the game - asked by the game's own key scan, several times a frame.</summary>
+        private static bool TypedKeyClaimed(KeyCode key)
+        {
+            GraphNavigator navigator = Navigator;
+            return navigator != null && navigator.TakesTypedKey(key);
         }
 
         /// <summary>
@@ -290,6 +312,7 @@ namespace ES2Access
                 Input.DrivenByMod = null;
                 Input.HasFocusedScreen = null;
                 Input.ClaimsBackKey = null;
+                Input.ClaimsTypedKey = null;
                 // A dev request waiting for an injected action to run is waiting for a frame that
                 // will never come now; it is told so rather than left to time out.
                 Input.CancelInjections();
@@ -345,6 +368,11 @@ namespace ES2Access
             // Keys first, screens second: a keypress and the announcement it causes then land in
             // the same frame, instead of the player hearing the result of the previous one.
             Input.Tick();
+
+            // Typed characters are not one of the mod's actions - they are text, and the focused
+            // screen's type-ahead search decides for itself whether it is listening for them.
+            Navigator.TypeAheadTick();
+
             Screens.Tick();
 
             // After the screens have settled: the game's own hover, flyout and tooltip follow the
