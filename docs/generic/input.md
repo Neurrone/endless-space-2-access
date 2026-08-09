@@ -95,6 +95,16 @@ patch site per input path (`src/graph-ui/GameKeyStandDown.cs`, an exemplar to im
   same-frame ordering between the mod's handler and the game's — releasing that focus in the
   same frame the game would have consumed the key re-opens the leak intermittently; defer
   such state changes by a frame.
+- **Liveness-gated suppression has a self-race — the law, not an Escape device: a key the
+  mod consumed stays claimed until it is RELEASED.** The claim predicate ("is a mod screen
+  focused?") depends on state the consuming action itself can mutate: consuming Enter to
+  open a modal stands the opener down mid-frame, the new screen has not arrived, the
+  predicate answers "not mine" for the rest of that frame — and the game acts on the very
+  key the mod already handled (a Return-bound chat grabbed the keyboard this way, and the
+  symptom of such a grab is indistinguishable from the mod crashing: total silence until
+  the grabbing key is pressed again). The fix is a consumed-keys latch checked *before*
+  the liveness gate, self-clearing on key release; the release-latched Escape flag above
+  is the special case of this rule.
 
 ## The engine hands the focused widget its keys late in the frame
 

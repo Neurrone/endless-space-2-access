@@ -41,7 +41,12 @@ tooltips, captions, placeholders — surface that text, never a mod paraphrase. 
 exactly: no mod separators or punctuation inserted (multi-line game text joins with a space,
 not a list comma — "disabled., Once" is a defect). Conversely, invent nothing the game does
 not show: no placeholder nodes for empty states, no spoken position text where the game shows
-dots — a stop with nothing in it does not exist that frame. The full text rules are in
+dots — a stop with nothing in it does not exist that frame. "Invent nothing" has a companion:
+**say everything the game always draws.** The discriminator is *always drawn* vs *revealed on
+hover* — permanently drawn text (a card's description paragraph) is spoken in full as part of
+the control's readout; hover-revealed text is announced or indicated by the tooltip rule
+([tooltips.md](tooltips.md)). Applying the tooltip rule to always-drawn text silences words
+that are on the player's screen. The full text rules are in
 [localization.md](localization.md). A recipe for finding those words when the game has a
 state *enum*: grep the localization corpus for a key pattern built from the enum member
 names — games with a status enum almost always ship a parallel string table, and it covers

@@ -49,7 +49,7 @@ The contract that has proven out (shapes are JSON):
 | `POST /reload`, `GET /loader/status` | Hot reload — see [hot-reload.md](hot-reload.md) |
 | `POST /quit` | Clean exit (respond first, quit next frame) |
 | `GET /gui/graph?edges=1&buffers=1` | **The accessible tree, wholesale**: the focused screen's whole graph in navigation order, one line per control reading exactly what arriving on it would speak, stop/region boundary markers, focus marker, node id per line; `edges=` adds each direction's destination label, `buffers=` each node's review lines. Side-effect-free (a throwaway render — no focus visuals run, the cursor does not move; two calls answer identically). Collapses walk-and-listen loops into one read. Compose each line by diffing against the previous line with the announcer itself — the dump then reads as the walk would sound, headings where they'd be heard. (Lineage: wotr-access's `/gui`, tangledeep's overlay dump with edges.) |
-| `POST /input` | One action key through the **production dispatch point** — a queue drained inside the input layer's tick, honoring the stand-down — never a direct navigator call. The response attributes the outcome (`consumed (navigator/buffers)` / `unconsumed` / `standing down: …`) and carries the speech it caused; an unknown key answers with every registered action (self-documenting). A screen that answers `/eval` but not `/input` is a screen whose keys don't reach it. |
+| `POST /input` | One action key through the **production dispatch point** — a queue drained inside the input layer's tick, honoring the stand-down — never a direct navigator call. The response attributes the outcome (`consumed (navigator/buffers)` / `unconsumed` / `standing down: …`) and carries the speech it caused; an unknown key answers with every registered action (self-documenting). A screen that answers `/eval` but not `/input` is a screen whose keys don't reach it. **What injection cannot reproduce**: it never touches the engine's physical key state, so any bug that depends on the game *also* seeing the pressed key (a leaked binding, key-up commit timing) cannot be reproduced or verified through it — those links are measured separately and the physical assembly goes on the human test script. |
 | `POST /loadsave` | Body = save title (empty = newest). Loads from the menu, or tears down a running session via the game's own in-session path; answers a retryable `[not ready] …` until it can act, so the launch script polls from cold boot straight into a fixture (tangledeep/wotr's convention). Two ready-states per game: "menu can start a load" and "session must disconnect first". |
 | `GET /speech?since=N&wait=MS` | Long-poll: blocks until the next spoken line (released on that frame; also released by a reload). Replaces every sleep-then-poll. |
 
@@ -188,6 +188,17 @@ into an agent's context** — crop the screenshot to the region under discussion
 negative first and the positive second (after a focus move: wait `!tooltipShown`, then
 `tooltipShown` — the second wait's frame count is the delay). A negative that never
 satisfies is itself a result: the hide and re-show happened inside one frame.
+
+**Proving a refactor changed nothing — the before/after dump-diff.** For an engine change
+that must not alter what any screen says: capture the accessible-tree dump with buffers
+(`/gui/graph?buffers=1`, plus by-key dumps for registered-but-unreachable screens) for every
+reachable screen family BEFORE touching code, re-capture the same set after, and diff. The
+contract is byte-identical output except an explicitly listed set of intentional diffs, each
+carried in the report with before/after lines. Two properties make it work: the dump is
+deterministic text, and unfocused renderer-composed tooltips read empty on both sides, so
+they cancel out of the diff instead of producing noise. To baseline a screen the OLD build
+must render, stash the refactor, rebuild, reload, capture, then pop — minutes, and it turns
+"trust me" into evidence.
 
 **Launcher discipline** (all learned from real failures): a single-instance lock (PID file;
 stale locks auto-cleared; **match same-session processes only** — an orphan in the services

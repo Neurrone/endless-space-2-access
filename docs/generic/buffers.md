@@ -65,8 +65,10 @@ popup, where the game shows it.
 from the model behind it: the same model value can be drawn as a number (readable) or as
 pips/a rating, and reading the model then describes a control that does not exist on
 screen. The one deliberate extension of "face": the widget's own indicated tooltip is part
-of it — an indicated tooltip must be readable from the buffer — but simulation state the
-widget doesn't draw is not.
+of it — an indicated tooltip must be readable from the buffer, an invariant that holds **by
+construction**: the indication and the buffer both derive from the same declared section
+(`NodeVtable.Sections`, [ui-navigation.md](ui-navigation.md)), never from two separately
+wired channels — but simulation state the widget doesn't draw is not.
 
 **The "card" worked example**: a control whose readout is just name + state and whose
 entire substance lives in the buffer — type, traits, anomalies, outputs, refusal reasons.

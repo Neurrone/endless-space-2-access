@@ -102,6 +102,12 @@ Two rules that came out of shipping this:
   of "are this tooltip's words on the widget" that disagree produce a tooltip announced
   from one source and reviewed from another — and nothing in the spoken output reveals
   it. The mode test and the content reader must ask the same helper.
+- **A hand-added announcement part of the tooltip kind is ADDITIVE, never a suppressor.**
+  A screen may speak its own live line under the tooltip kind (a refusal reason on a
+  blocked entry); the engine-derived part (the announced words or "has tooltip") still
+  contributes, and both read in the control type's kind order — "unavailable, ⟨reason⟩,
+  has tooltip". Suppressing derivation because a screen added a part would silently
+  un-indicate the buffer that section still fills.
 - **Captions for bare numbers come from the game's registries.** When a drawn value's only
   name is a static icon, ask the game's element/property registry for its localized title
   before inventing a mod word. Hazard: the registry can point at a translation key that no

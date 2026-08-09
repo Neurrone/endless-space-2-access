@@ -182,7 +182,12 @@ which no dump reveals. Key such lines on the game's *data* object, never the wid
   invisibly, because live parts only speak on change. A window can also be closed by the
   player's own *delegated* key — an exit key the mod let through that commits and hides in
   one frame; polling shown-state covers that for free, watching only the mod's own key
-  handling does not. But never
+  handling does not. **And name the handover gap**: between the opener standing down and
+  the new screen's arrival gate passing there is an interval — frames, not instants (~4
+  frames measured on ES2's improvements modal) — where NO screen is focused and the mod is
+  deaf. Keys the mod consumed are protected across it by the input layer's release latch
+  ([input.md](input.md)); keys it did not consume reach the game, so design modal opens
+  knowing the interval exists rather than discovering it as a bug. But never
   stand down while merely *covered* — everything that hides your panel draws above your
   layer, and a screen that blinks out mid-transition hands the player to whatever is
   underneath for a frame (heard as a spurious announcement of the screen below). For
