@@ -50,32 +50,37 @@ which no dump reveals. Key such lines on the game's *data* object, never the wid
   **registry value, not a class** — it owns the localized role word and the speak order of
   part kinds. wotr-access migrated off a class-hierarchy proxy system to this; don't
   reintroduce classes.
-- **`GraphBuilder`** — the per-render DSL. Menu mode (`StartRow`/`AddItem`) auto-wires rows
-  and gives rows sharing a `rowKey` column-preserving vertical navigation; raw mode
-  (`AddNode`/`Connect`) wires arbitrary topologies; `PushContext` adds non-focusable labeled
-  levels (spoken once on entry via the path diff) — its id derives from its label, so
-  sibling contexts sharing a drawn caption (seven slots all captioned "AI") silently
-  collapse in the path diff: disambiguate the label or key when the game repeats captions; `BeginStop` partitions a screen into
-  Tab-cyclable stops with remembered positions; regions subdivide stops — **two tiers, one
-  division of labor**: Tab moves between panels (stops), the region jump (WotR: Ctrl+arrows;
-  ES2 Access: Alt+arrows) moves between the sections *of the current panel*, landing on the
-  section's first node. Regions are scoped to their stop by construction (`MoveRegion`
-  filters on the stop key) — a screen that models its visual panels as stops has no region
-  jumps between them, and that is the intended model, not a gap (WotR's inventory: five
-  panels as stops; regions used inside a panel — quest groups within the journal list,
-  action-bar segments); expandable groups
-  give tree semantics to Left/Right. Two expansion rules: `IsExpanded` is the cost gate —
-  declaring children only when expanded is the whole of how a tree stays inside
-  [performance.md](performance.md)'s bounded-rebuild rule — and the `OnExpand`/`OnCollapse`
-  vtable hooks are **replacements** for the engine's own expansion bookkeeping, not add-on
-  callbacks (they exist for adapters driving a retained game-side container that owns its
-  expand state); a hook that only wants a side effect must flip the builder's expansion set
-  itself, or the tree refuses to stay open. Expansion also changes **no world state**: in a
-  game whose view distance decides what is drawn, "go in" (tree) and "get closer" (camera)
-  are different verbs, and binding a camera move to the expand key makes whichever
-  information tier the other zoom level shows unreachable — when different zoom levels show
-  different information, both sets must stay accessible, with the camera on its own
-  explicit control (wherever fits the screen's design).
+- **`GraphBuilder`** — the per-render DSL, in four parts:
+  - **Two modes.** Menu mode (`StartRow`/`AddItem`) auto-wires rows and gives rows sharing
+    a `rowKey` column-preserving vertical navigation; raw mode (`AddNode`/`Connect`) wires
+    arbitrary topologies.
+  - **`PushContext`** adds non-focusable labeled levels (spoken once on entry via the path
+    diff). Its id derives from its label, so sibling contexts sharing a drawn caption
+    (ES2's lobby: seven competitor slots all captioned "AI") silently collapse in the path
+    diff — disambiguate the label or key when the game repeats captions.
+  - **Stops and regions — two tiers, one division of labor.** `BeginStop` partitions a
+    screen into Tab-cyclable stops with remembered positions; regions subdivide a stop.
+    Tab moves between panels (stops); the region jump (WotR: Ctrl+arrows; ES2 Access:
+    Alt+Up/Down) moves between the sections *of the current panel*, landing on the
+    section's first node. Regions are scoped to their stop by construction (`MoveRegion`
+    filters on the stop key) — a screen that models its visual panels as stops has no
+    region jumps between them, and that is the intended model, not a gap (WotR's
+    inventory: five panels as stops; regions used inside a panel — quest groups within
+    the journal list, action-bar segments).
+  - **Expandable groups** give tree semantics to Left/Right, under two rules: `IsExpanded`
+    is the cost gate — declaring children only when expanded is the whole of how a tree
+    stays inside [performance.md](performance.md)'s bounded-rebuild rule — and the
+    `OnExpand`/`OnCollapse` vtable hooks are **replacements** for the engine's own
+    expansion bookkeeping, not add-on callbacks (they exist for adapters driving a
+    retained game-side container that owns its expand state); a hook that only wants a
+    side effect must flip the builder's expansion set itself, or the tree refuses to stay
+    open.
+- **Expansion changes no world state.** In a game whose view distance decides what is
+  drawn, "go in" (tree) and "get closer" (camera) are different verbs, and binding a
+  camera move to the expand key makes whichever information tier the other zoom level
+  shows unreachable — when different zoom levels show different information, both sets
+  must stay accessible, with the camera on its own explicit control (wherever fits the
+  screen's design).
 - **`GraphAnnouncer`** — composes speech by **diffing the old and new focus paths**: the
   common ancestor prefix stays silent, newly entered levels read outermost-first, duplicate
   labels dedupe. Injected delegates (`PartFilter`, `PositionText`, `ExpandedStateText`) keep
@@ -225,8 +230,8 @@ which no dump reveals. Key such lines on the game's *data* object, never the wid
   one row per card in drawn order — left-to-right, top-to-bottom — not as a 2D table: the
   cells are peers of one kind, so column-preserving vertical moves buy nothing and the
   grid's wrap points are a rendering accident. A card's permanently-drawn description
-  follows the always-shown-text rule ([widgets.md](widgets.md)); the card's substance
-  lives in its buffer ([buffers.md](buffers.md)'s card example).
+  follows the always-shown-text rule ([making-screens-accessible.md](making-screens-accessible.md)
+  §0); the card's substance lives in its buffer ([buffers.md](buffers.md)'s card example).
 - **Tables read as tables**: one graph row per data row with a shared row key (Up/Down keeps
   the column), one node per cell announcing the drawn column heading then the drawn value,
   entering the table announces its role once. Never drop an empty cell — the shared-column
@@ -288,12 +293,15 @@ player. The shape (`src/graph-ui/MessageBoxScreen.cs`):
 
 - **Top layer**, above every ordinary screen; ordinary screens must yield while a modal is
   visible so the hand-off is clean and their cursor survives underneath.
-- The question is a **focusable text node** where focus lands on arrival — re-readable in
-  place by refocusing, walkable in the review buffer — with the answers as a row below it, in
-  **drawn order** (which button is left on screen is which button reads first). `ScreenName`
-  carries only the dialog's static heading, so arrival speaks heading then question exactly
-  once. Declare the buttons from **live visibility** each rebuild, never from the API's
-  nominal shape — dialog windows get reused with leftover state from the previous dialog.
+- The dialog follows the three-part heading contract
+  ([making-screens-accessible.md](making-screens-accessible.md) §0): the drawn heading is a
+  focusable node first in reading order, `ScreenName` carries the same words, and the start
+  node is set **explicitly** on the question — the question is a **focusable text node**
+  where focus lands on arrival, re-readable in place by refocusing, walkable in the review
+  buffer — with the answers as a row below it, in **drawn order** (which button is left on
+  screen is which button reads first). Declare the buttons from **live visibility** each
+  rebuild, never from the API's nominal shape — dialog windows get reused with leftover
+  state from the previous dialog.
 - **Text the game rewrites every frame** (countdown timers) must never feed node identity,
   live announcement parts, or per-frame speech: the text node's label resolves live (a
   refocus or buffer read gives the current second) but nothing re-announces on its own.

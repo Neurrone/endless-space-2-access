@@ -59,7 +59,7 @@ renderer-assembled → indicate). One shared helper reads the marker and picks t
 screens never choose. The human judgment moves up a level — approving the *rule* — and
 every future screen inherits it.
 
-Two rules that came out of shipping this:
+Rules that came out of shipping this, all hit in practice:
 
 - **Indication must never gate on rendered content existing.** A render-composed tooltip's
   words do not exist until the game draws them — a hover-delay *after* focus arrives — so

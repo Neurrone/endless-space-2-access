@@ -45,13 +45,12 @@ All Ctrl-modified so they never collide with plain-arrow navigation, and all **o
 
 ## Population (the part that takes judgment)
 
-The UI buffer is a **curated list of short lines**, not a text dump: the element's label,
-its state words (disabled/expanded — as spoken), then its detail lines (tooltip content —
-see [tooltips.md](tooltips.md)), with the first detail line dropped when it exactly
-duplicates the label (native tooltips often repeat the control's name). Long native text is
-split into lines at semantic boundaries — newlines first; if the game composes details
-through a drawing interface, capture one line per drawing call rather than one blob (SoC's
-fake details-drawer pattern).
+The UI buffer is a **curated list of short lines**, not a text dump — the judgment lives in
+what a section's lines should hold (tooltip content per [tooltips.md](tooltips.md), a
+card's drawn face), not in assembling the buffer, which the engine does (mechanics below).
+Long native text is split into lines at semantic boundaries — newlines first; if the game
+composes a tooltip's content through a drawing interface, capture one line per drawing
+call rather than one blob (SoC's fake details-drawer pattern).
 
 The buffer holds the focused element's **own** content, never its container's: each dialog
 control carries its own tooltip, not the dialog's shared body text (the body is a focusable
@@ -64,11 +63,11 @@ popup, where the game shows it.
 **The buffer is the widget's face.** Populate it from what the drawn widget shows, never
 from the model behind it: the same model value can be drawn as a number (readable) or as
 pips/a rating, and reading the model then describes a control that does not exist on
-screen. The one deliberate extension of "face": the widget's own indicated tooltip is part
-of it — an indicated tooltip must be readable from the buffer, an invariant that holds **by
-construction**: the indication and the buffer both derive from the same declared section
+screen. The face deliberately extends to the widget's own indicated tooltip: an indicated
+tooltip must be readable from the buffer. That invariant holds **by construction** — the
+indication and the buffer both derive from the same declared section
 (`NodeVtable.Sections`, [ui-navigation.md](ui-navigation.md)), never from two separately
-wired channels — but simulation state the widget doesn't draw is not.
+wired channels. Simulation state the widget doesn't draw stays out.
 
 **The "card" worked example**: a control whose readout is just name + state and whose
 entire substance lives in the buffer — type, traits, anomalies, outputs, refusal reasons.
@@ -94,8 +93,8 @@ already buffers correctly — its label lines, for free), then the sections in d
 order, with the first-line-duplicates-label dedup. The navigator's single focus-commit
 site does the fill — one hook, no per-screen buffer code, and no screen or factory
 constructs buffer content by hand.
-Announcement parts of the tooltip kind are excluded from the buffer's state-word section:
-details already carry that content, and the "has tooltip" indicator is meta, not content.
+Announcement parts of the tooltip kind are excluded from the auto head: the sections
+already carry that content, and the "has tooltip" indicator is meta, not content.
 
 ## Reload safety
 

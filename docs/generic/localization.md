@@ -29,7 +29,7 @@ infrastructure); starting with the seam costs nearly nothing.
    control**: wordless action buttons are routinely named by the game under the action's own
    key family, nowhere near the widget — a "no game-authored name exists" conclusion is
    often a wrong-noun search. **And search the game's DATA tables, not just the localization
-   corpus**: a drawn value's name often lives with the value's definition (a palette XML
+   corpus**: a drawn value's name often lives with the value's definition (ES2: a palette XML
    naming every colour the renderer only ever paints) and never reaches the screen or the
    corpus — "the game's words" includes the words in its data.
 2. **Mod-authored phrases** (role words like "button", status words, screen names, the

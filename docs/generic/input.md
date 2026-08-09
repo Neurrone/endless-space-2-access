@@ -41,7 +41,7 @@ Proven across wotr-access/SoC/ES2 (make rebindable eventually):
 | Backspace | Secondary action; on a key-binding row, start capturing the secondary binding |
 | Escape | Back / close |
 | Home / End | First / last |
-| Alt+Up / Alt+Down | Region jumps between a screen's visual bands (repeating) |
+| Alt+Up / Alt+Down | Region jump between the current panel's sections (repeating; never crosses a panel — Tab does that): see [ui-navigation.md](ui-navigation.md) |
 | Ctrl+Up/Down, Ctrl+Left/Right, Ctrl+Home/End | Review buffer — see [buffers.md](buffers.md) |
 
 Every new binding is approved by the project owner before it ships — a binding is UX surface

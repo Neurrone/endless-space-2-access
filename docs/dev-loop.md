@@ -1,19 +1,12 @@
 # ES2 dev loop — the working map
 
 **Current state (2026-08-09):** the fixture save is **`Beginner test`** (recreated on this
-VM — the old `[Beginner] access test` is gone with the previous machine). phase 1 (out-game) is screen-complete: the new game lobby, the
-advanced settings, the faction chooser and the custom faction editor over it, and the tutorial
-picker all have screens; the lobby family has been through one manual review and its fixes. In-game esc menu, galaxy HUD, and
-the popup family done and past manual screen-reader review; the galaxy map's system tree
-(planets + starlanes, camera follow), the star system management page (7 stops, action
-menus, rename box), the improvements modal opened from it and the planet overview page
-landed and await manual review. The system-discovery cutscene has a passive announcer that
-the fixture cannot reach at all — its whole run is on the human test script. In the galaxy
-tree, expanding a system changes NO camera distance: the zoom is asked for from the system's
-action menu, and whichever distance the player chose is what its planet children read (thin
-circle readouts when out, drawn orbital cards when in). The panel those cards open
-(`PlanetConstructiblePanel`) has a screen the fixture cannot reach.
-Screen-by-screen status:
+VM — the old `[Beginner] access test` is gone with the previous machine). The out-game
+front — main menu through the whole new-game flow (lobby, advanced settings, faction
+chooser, custom faction editor, tutorial picker) — is implemented and past manual review;
+the in-game front is the galaxy family, where the system tree, management page and planet
+overview await manual review (the improvements modal has passed it). Screen-by-screen
+status, including what each fixture cannot show:
 `docs/roadmap.md`. This file is the toolbox index: what exists in THIS repo and the exact
 commands. Patterns and doctrine live in `docs/generic/` — read the relevant chapters BEFORE
 touching source, and report what they lacked (CLAUDE.md requires both):
@@ -75,8 +68,9 @@ belongs in the generic docs or the source file's own doc comment.
 
 Static per screen (doctrine: ui-navigation.md "Layers are static"):
 `0` main-menu and the new-game lobby (never up together — showing one hides the other) ·
-`5` advanced settings · `6` faction chooser · `7` custom faction editor (all over the lobby, their
-only opener, and never up together; well under the drop list a setting can open and the message
+`5` advanced settings · `6` faction chooser (both over the lobby, their only opener) ·
+`7` custom faction editor (over the chooser, whose own window hosts its panel; the three are
+never up together, and all sit well under the drop list a setting can open and the message
 box a Cancel or a Delete confirms in) ·
 `10` galaxy, star-system, planet-overview and system-discovery (the four
 view levels, never up together) · `20` planet-constructibles (the panel a planet card slides
@@ -92,16 +86,13 @@ manager focuses the deepest child of the top screen.
 the Ctrl review chords: **Shift+Left/Right** coarse slider step, **Shift+Up/Down** move the
 focused ITEM (queue reorder), **Alt+Enter** the control's other activation (queue at the head).
 
-**Escape is the game's, except over a surface the mod invented.** `ModInput.ClaimsKey` used to
-exempt Escape unconditionally, so an action menu's `Back()` closed the menu AND the same key
-reached the game's `InputsMatch` and raised the pause screen. A screen now answers
-`ConsumesBack` (a question asked BEFORE the press — the game's scan can run either side of the
-mod's frame, and by the time `Back()` has run the menu is gone), plus a latch in `ModInput` for
-the other ordering — generalized since to EVERY key the mod acts on, held until the player lets
-go. `ConsumesBack` is NOT a copy of `Back()`: `DropListScreen` handles Escape
-and still needs the engine to see it. Probe it live with
-`ES2Access.Dev.DevProbe.Claims("Escape")` — `claims` true only where a mod-owned
-surface is focused, and the latch says so when the surface has already gone. That probe, not
+**Escape is the game's, except over a surface the mod invented.** A screen answers
+`ConsumesBack` (asked BEFORE the press), and `ModInput` latches EVERY consumed key until the
+player lets go — the rationale for both is `docs/generic/input.md` (the back-key rules and
+the liveness self-race law). `ConsumesBack` is NOT a copy of `Back()`: `DropListScreen`
+handles Escape and still needs the engine to see it. Probe live with
+`ES2Access.Dev.DevProbe.Claims("Escape")` — `claims` true only where a mod-owned surface is
+focused, the latch shown when the surface has already gone. That probe, not
 `/input ui.back`, is what proves the key does not fall through.
 
 ES2 facts with no other home:
@@ -121,31 +112,26 @@ ES2 facts with no other home:
   children of a pooled table (a competitor slot an empire count no longer needs) flagged
   `Visible` with `Alpha == 0`. Ask about alpha too — but only `== 0`, since a read-only setting
   is faded to 0.5 and is still drawn.
-- **The click sound is not in the handler and not in the control.** It is an `AgeAudio` component
-  on the same transform, posting `MouseUpEventID` through the gui audio proxy (`AgeAudio.MouseUp`
-  :191-197) when the engine's mouse dispatch tells it about the press. Replaying a wired handler
-  reaches neither, so every control the mod worked was silent; `AgeWidgets.Click` posts the
-  component's own down/up before dispatching. Measured: main-menu buttons and the faction
-  chooser's hull arrows all carry a non-zero `MouseUpEventID` with a live `GuiAudioProxy`.
-- **A window's `AgeTransform.Enable` lags its `Shown`/`IsReady` by a frame or two**, both when a
-  modal opens (measured: `shown=True ready=False windowEnable=False`, both true two frames later)
-  and when one closes over a page underneath. The same lag exists one level down for a PANEL that
-  is swapped inside a window it never closes (the faction chooser under the custom faction
-  editor): gate on the panel's `Operable` too, or its controls read "unavailable" on arrival. Either way a screen gated only on shown/ready
-  declares its controls while the window root is still disabled, and `Operable`'s ancestor walk
-  then reads EVERY control as "unavailable" — including the one the arrival announcement lands on.
-  Gate arrival on `Operable` as well.
+- **The click sound is an `AgeAudio` component on the widget's own transform** (posts
+  `MouseUpEventID` via the gui audio proxy, `AgeAudio.MouseUp` :191-197, on the engine's
+  mouse dispatch — never from the handler). `AgeWidgets.Click` posts the component's down/up
+  before dispatching; the generic rule is widgets.md's "a click is more than its handler".
+- **A window's `AgeTransform.Enable` lags its `Shown`/`IsReady` by a frame or two** (measured:
+  `shown=True ready=False windowEnable=False`, both true two frames later), and the same lag
+  exists for a PANEL swapped inside a window that never closes (the faction chooser under the
+  custom faction editor). A screen whose arrival needs enablement gates on `Operable` — window
+  AND swapped panel — where it has shown the symptom (every control reading "unavailable" once);
+  the modal family's plain `Shown && IsReady` gate is otherwise correct as-is. Rationale:
+  ui-navigation.md's arrival-gates-on-enablement.
 - **A `GuiTable` line is a POOL SLOT, not a row.** `LineNNN` names (and positions) are reassigned
   whenever the table refreshes or re-sorts, so a cursor keyed on either sits on a different thing
   a frame later — measured: picking a trait in the custom-faction editor left the next Enter
   picking whatever the re-sort moved under the cursor. Key a line on `GuiTableLine.Data`; with it
   as `ControlId.Referenced` the cursor even follows an entry from one table into the other.
-- **`SendMessage(name, sender)` does not reach a zero-argument handler.** Most of the game's
-  widget callbacks take `(GameObject obj = null)`, but not all — `OnPreviousHullCb()` and
-  `OnNextHullCb()` take none — and with `DontRequireReceiver` the mismatch is silent, so the
-  button simply does nothing. `AgeWidgets.Press`/`Toggle`/`Choose` look the arity up on the
-  target's components (cached) and pick the overload; verify a new button by its EFFECT, never by
-  the absence of an error.
+- **`SendMessage(name, sender)` does not reach a zero-argument handler** — most game callbacks
+  take `(GameObject obj = null)`, but not all (`OnPreviousHullCb()`/`OnNextHullCb()`), and
+  `DontRequireReceiver` swallows the mismatch. `AgeWidgets.Press`/`Toggle`/`Choose` resolve the
+  arity (cached) and pick the overload; the generic rule is widgets.md's arity contract.
 - **Every tooltip is an ordered list of panel features.** `GuiTooltipWindow.DoBind` resolves
   the tooltip's `Class` through the description database and instantiates one prefab per
   feature under `PanelFeaturesTable`; a feature's SUB-features are added as further siblings in
@@ -410,21 +396,12 @@ predicate reads false at the galaxy overview, at the orbital zoom step with the 
 on the management page. Opening it from `/eval` is not worth it: `ShowConstructiblePanel` is
 private and indexes `fleetByActionDefinitionDictionary`, which at turn 1 holds no fleet.
 
-**What the turn-1 fixture cannot show on the planet overview**: no planet in Dusay has a
-curiosity, a resource deposit or any depletion, so those three rows of the card are code-verified
-only; and the game's `PopulationModalWindow`, which a population entry's own click opens, has no
-screen.
-
-**What the turn-1 fixture cannot show on that page**: the queue is empty (reorder, buyout and
-the queue action menu need a queued item), the hangar is empty (ship list, every toolbar
-button), there is one colonized planet (population transfer has no destination), colonize is
-tech-blocked on both other planets, the home planet is `IsUnique` so **planet rename is not
-reachable at all**, and the tutorial disables the representatives' details button. The one
-permitted state round-trip is Enter on a cheap constructible then Cancel from the queue line's
-menu — check `dust` and `queue=0` before and after (`ConstructionQueue.PendingConstructions`).
-The **improvements modal** holds exactly two tiles (Colony Base, Galactic HQ), neither
-destructible, so the toggle path, the Scrap button's enabled label and its confirmation, grid
-wrapping and scroll-into-view have no fixture. `StarSystemPopulationModalWindow`'s opener is
+**Per-screen blocked-at-turn-1 inventories live in `docs/roadmap.md`'s row notes** (planet
+overview, management page, improvements modal…) — one truth, updated with screen status.
+What a test SESSION needs here: **the one permitted state round-trip on the management page**
+is Enter on a cheap constructible then Cancel from the queue line's menu — check `dust` and
+`queue=0` before and after (`ConstructionQueue.PendingConstructions`); the home planet is
+`IsUnique` so planet rename is unreachable; `StarSystemPopulationModalWindow`'s opener is
 tutorial-locked.
 
 **The system-discovery cutscene has no fixture at all.** It only runs on a system's FIRST

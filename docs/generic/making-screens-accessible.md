@@ -21,10 +21,10 @@ Concretely:
   **focusable node** — usually where focus lands on arrival. The dialog's drawn heading is
   a node too — a three-part contract, jointly load-bearing: the heading is a focusable
   node first in reading order; the screen's spoken name carries the same words (arrival
-  announces it); and the start node is set explicitly on the first CONTROL below the
-  heading. The third part is not optional: the screen name is spoken outside the graph, so
-  the announcer's dedupe cannot save a screen whose focus lands on the heading node —
-  arrival would speak the title twice. A window's own heading is declared once, in the
+  announces it); and the start node is set explicitly on the first focusable node below
+  the heading (often the body text itself). The third part is not optional: the screen name
+  is spoken outside the graph, so the announcer's dedupe cannot save a screen whose focus
+  lands on the heading node — arrival would speak the title twice. A window's own heading is declared once, in the
   first stop — never repeated per band. And a caption the game draws over
   **several** controls is itself a navigable node; a caption tied to exactly one control
   folds into that control's readout instead.
@@ -34,7 +34,7 @@ Concretely:
   next to content are conditional stops or regions that exist only while open.
 - Two navigation tiers, one division of labor: the screen's visual panels are **Tab
   stops**; the sections *within* one panel are **regions**, jumped with the region chord
-  ([input.md](input.md)'s Alt+arrows) — the jump never crosses a panel, Tab does that.
+  ([input.md](input.md)'s Alt+Up/Down) — the jump never crosses a panel, Tab does that.
   Never declare a lone region — the jump key would swallow silently.
 - Each element's review buffer holds **its own** content (its tooltip, its cell), not the
   container's shared text — the container is a walk away.
@@ -42,7 +42,7 @@ Concretely:
 And the words are the game's words. Where the game shows something for a state — failure
 tooltips, captions, placeholders — surface that text, never a mod paraphrase. Preserve it
 exactly: no mod separators or punctuation inserted (multi-line game text joins with a space,
-not a list comma — "disabled., Once" is a defect). Conversely, invent nothing the game does
+not a list comma — worked examples in [localization.md](localization.md)). Conversely, invent nothing the game does
 not show: no placeholder nodes for empty states, no spoken position text where the game shows
 dots — a stop with nothing in it does not exist that frame. "Invent nothing" has a companion:
 **say everything the game always draws.** The discriminator is *always drawn* vs *revealed on

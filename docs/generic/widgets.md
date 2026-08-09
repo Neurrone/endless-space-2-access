@@ -39,6 +39,31 @@ parts, all text `Func<string>` resolved at speak time:
   marks, not text: declare each mark as a read-only page indicator carrying the Selected
   part (never invent a spoken "N of M" the game doesn't show), and if the game's marks are
   clickable, activating one jumps to that page.
+- **Always-drawn text is always spoken** — a permanently drawn paragraph is part of the
+  control's readout, never tooltip-ruled; the full rule and its discriminator live in
+  [making-screens-accessible.md](making-screens-accessible.md) §0.
+
+Two announcement parts do the heavy lifting:
+
+- **`StateText`** — the value re-spoken _interrupting_ immediately after activate/adjust.
+  This is the synchronous feedback path that makes held-key adjustment feel right: each
+  repeat speaks the new value ("99%", "89%") with no focus re-read. At a range end the value
+  simply repeats — hearing the same number _is_ the boundary cue (same clamp-not-wrap rule
+  as the review buffers). On a *refused* activation it must produce nothing (the silence
+  rule below), and the enforcement is two-layered: the factory returns null while the
+  control is disabled, **and** the navigator treats "spoke nothing" as no reason to
+  re-baseline its live-value watch — an unconditional re-baseline there silently swallows
+  the next genuine change.
+- **`SelectedPart`** — a non-empty Selected part also marks the node as its stop's **landing
+  node**: focus entering the stop lands there instead of on the first node. A tab bar lands
+  on the active tab; a popup lands on the current value. Produce it on any "one of these is
+  current" group.
+
+## Replaying activations
+
+Activation goes through the game's own deterministic handlers — and a real click is more
+than the handler, so replaying takes four rules, each shipped as a bug first:
+
 - **Toggles flip-then-notify**: replay a toggle the way its own click path runs — set the
   widget's state first, then invoke its wired switch handler, which reads the state it now
   finds. Calling the handler alone acts on the stale state.
@@ -57,31 +82,13 @@ parts, all text `Func<string>` resolved at speak time:
   engines haptics or particle feedback. Replay everything the dispatch does, not just the
   handler, or keyboard users get a silently different interaction — and the tell is that
   nothing errors.
-- **Budget screens: never re-compute what the game already displays.** Point pools, costs
-  and counts tempt an adapter into deriving them from the model — and then keeping up with
-  prerequisites, level rules and DLC. Declare the game's own drawn totals as live readouts
-  and let its own click path enforce what may be picked.
-- **Text the game always shows is always spoken.** A paragraph drawn permanently on a
-  control (a card's description under its title) is part of the control's readout — speak
-  it after the label and state, and keep it line-by-line in the review buffer. The
-  announce-vs-indicate choice exists for tooltips, which the game itself only shows on
-  demand ([tooltips.md](tooltips.md)); it does not apply to text that is always on screen.
 
-Two announcement parts do the heavy lifting:
+## Budget screens
 
-- **`StateText`** — the value re-spoken _interrupting_ immediately after activate/adjust.
-  This is the synchronous feedback path that makes held-key adjustment feel right: each
-  repeat speaks the new value ("99%", "89%") with no focus re-read. At a range end the value
-  simply repeats — hearing the same number _is_ the boundary cue (same clamp-not-wrap rule
-  as the review buffers). On a *refused* activation it must produce nothing (the silence
-  rule below), and the enforcement is two-layered: the factory returns null while the
-  control is disabled, **and** the navigator treats "spoke nothing" as no reason to
-  re-baseline its live-value watch — an unconditional re-baseline there silently swallows
-  the next genuine change.
-- **`SelectedPart`** — a non-empty Selected part also marks the node as its stop's **landing
-  node**: focus entering the stop lands there instead of on the first node. A tab bar lands
-  on the active tab; a popup lands on the current value. Produce it on any "one of these is
-  current" group.
+**Never re-compute what the game already displays.** Point pools, costs and counts tempt
+an adapter into deriving them from the model — and then keeping up with prerequisites,
+level rules and DLC. Declare the game's own drawn totals as live readouts and let its own
+click path enforce what may be picked.
 
 ## Disabled is a spectrum
 
