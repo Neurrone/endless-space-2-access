@@ -55,7 +55,14 @@ The contract that has proven out (shapes are JSON):
 
 `/status` also carries the **patch tripwire** when the mod ships input-suppression patches:
 per-target prefix count + owner id (see [input.md](input.md) — a silently stripped patch is
-otherwise indistinguishable from a working one).
+otherwise indistinguishable from a working one). The same mechanism's other end needs a
+probe too: **any state the mod keeps to suppress the game's own input** (claim predicates,
+consumed-key latches, stand-down flags) is unobservable from both `/gui/*` and `/speech`,
+so without a supported probe an agent ends up reflecting into private fields. And for a
+**single-frame transient** in that state (a latch set and cleared within two frames), every
+follow-up request reads empty and looks broken — the composable idiom is to start
+`POST /wait` on the probe's own output text (`Probe().Contains(...)`) BEFORE the injection
+that should trip it.
 
 **Compile-checked probe helpers beat REPL scripts** (wotr-access's `DevSurvey` pattern): the
 recurring questions — focused screen, screen stack, one-word game state, save list, camera,

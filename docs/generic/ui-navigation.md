@@ -110,7 +110,14 @@ which no dump reveals. Key such lines on the game's *data* object, never the wid
 - **Node factories** (`GraphNodes`): per-widget-type constructors binding the game's widgets
   into vtables — label funcs through the game's text pipeline (localize, strip markup),
   activation through the game's own deterministic click path, tooltip surfacing per
-  [tooltips.md](tooltips.md), detail lines per [buffers.md](buffers.md).
+  [tooltips.md](tooltips.md), content sections per [buffers.md](buffers.md). **A factory
+  whose signature omits a cross-cutting concern loses it screen by screen** — three
+  unrelated screens shipped rows with buffers and no tooltip indication because two
+  factories simply didn't take a tooltip parameter; nobody bypassed a rule deliberately.
+  The strong fix is making the concern *derived* from one declaration so the omission is
+  unrepresentable (what `Sections` did for tooltips); where a concern must stay a
+  parameter, every factory takes it uniformly even when a control kind rarely uses it,
+  and the review question is "which factories don't?", never "which screens forgot?".
 - **Focus visuals** (`PointerFocus`): make the game *look* pointed-at where focus is, so
   sighted bystanders can follow. Use the engine's own entry points, never OS cursor
   warping — and find the hover entry point **per control class**: one widget kind may

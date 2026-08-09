@@ -97,6 +97,11 @@ CoreCLR, changing a shared "Core" assembly loaded in the default context has the
 (DiscoAccess documents `/reload` "succeeding" and then every `Tick` throwing
 `TypeLoadException`). Keep the loader minimal precisely so this rarely matters.
 
+When new observability could live on either side of the boundary, the deciding question is
+not reloadability but **polled route vs called probe**: a route costs the loader a restart
+to add and pays on every poll, while a mod-side probe hot-reloads, takes arguments, and
+catches transients via a frame-polled wait on its own output.
+
 ## State across reloads
 
 Best pattern: hold **no mod-side caches of game state** — re-derive from live game objects

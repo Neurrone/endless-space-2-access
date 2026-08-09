@@ -51,6 +51,12 @@ parts, all text `Func<string>` resolved at speak time:
   one argument is never delivered to a zero-argument method, and the mismatch is
   swallowed). Resolve the handler's parameter count before dispatching, and **verify a
   replayed activation by its effect, never by the absence of an error**.
+- **A click is more than its handler.** The engine's dispatch does things around the
+  handler that the handler knows nothing about — audio components on the widget (ES2: the
+  click sound lives in an `AgeAudio` component the handler never touches), in other
+  engines haptics or particle feedback. Replay everything the dispatch does, not just the
+  handler, or keyboard users get a silently different interaction — and the tell is that
+  nothing errors.
 - **Budget screens: never re-compute what the game already displays.** Point pools, costs
   and counts tempt an adapter into deriving them from the model — and then keeping up with
   prerequisites, level rules and DLC. Declare the game's own drawn totals as live readouts

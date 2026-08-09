@@ -19,10 +19,13 @@ Concretely:
 
 - A dialog with controls above and below its text is rows, with the body text itself a
   **focusable node** — usually where focus lands on arrival. The dialog's drawn heading is
-  a node too: declare headings as focusable nodes in reading order, with the screen's
-  spoken name still carrying the title (arrival announces it; the announcer's duplicate
-  dedupe covers focus landing on the heading itself). A window's own heading is declared
-  once, in the first stop — never repeated per band. And a caption the game draws over
+  a node too — a three-part contract, jointly load-bearing: the heading is a focusable
+  node first in reading order; the screen's spoken name carries the same words (arrival
+  announces it); and the start node is set explicitly on the first CONTROL below the
+  heading. The third part is not optional: the screen name is spoken outside the graph, so
+  the announcer's dedupe cannot save a screen whose focus lands on the heading node —
+  arrival would speak the title twice. A window's own heading is declared once, in the
+  first stop — never repeated per band. And a caption the game draws over
   **several** controls is itself a navigable node; a caption tied to exactly one control
   folds into that control's readout instead.
 - A visual table is a table: cells announce the drawn column heading and value, Up/Down
