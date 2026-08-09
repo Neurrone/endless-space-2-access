@@ -23,7 +23,11 @@ Cursor survival across rebuilds is tiered (`KeyGraph.Reconcile`): follow the **b
 object** if it moved (identity ride-along via `ControlId.Reference`); else the same
 **structural key**; else the **nearest survivor** walking the previous traversal order; else
 the start node. Give any node whose row/entity can move or vanish a `ControlId.Referenced`
-identity and reconciliation is free.
+identity and reconciliation is free. The sharper case is not "the row moved" but **the
+widget stayed and its meaning changed**: a table that pools and re-sorts its line widgets
+reassigns them on every re-sort, so a cursor keyed on the widget acts on a different item
+a frame later — heard as a correct-sounding announcement attached to the wrong action,
+which no dump reveals. Key such lines on the game's *data* object, never the widget.
 
 ## Core engine (copy verbatim)
 
@@ -46,8 +50,17 @@ identity and reconciliation is free.
 - **`GraphBuilder`** — the per-render DSL. Menu mode (`StartRow`/`AddItem`) auto-wires rows
   and gives rows sharing a `rowKey` column-preserving vertical navigation; raw mode
   (`AddNode`/`Connect`) wires arbitrary topologies; `PushContext` adds non-focusable labeled
-  levels (spoken once on entry via the path diff); `BeginStop` partitions a screen into
-  Tab-cyclable stops with remembered positions; regions subdivide stops; expandable groups
+  levels (spoken once on entry via the path diff) — its id derives from its label, so
+  sibling contexts sharing a drawn caption (seven slots all captioned "AI") silently
+  collapse in the path diff: disambiguate the label or key when the game repeats captions; `BeginStop` partitions a screen into
+  Tab-cyclable stops with remembered positions; regions subdivide stops — **two tiers, one
+  division of labor**: Tab moves between panels (stops), the region jump (WotR: Ctrl+arrows;
+  ES2 Access: Alt+arrows) moves between the sections *of the current panel*, landing on the
+  section's first node. Regions are scoped to their stop by construction (`MoveRegion`
+  filters on the stop key) — a screen that models its visual panels as stops has no region
+  jumps between them, and that is the intended model, not a gap (WotR's inventory: five
+  panels as stops; regions used inside a panel — quest groups within the journal list,
+  action-bar segments); expandable groups
   give tree semantics to Left/Right. Two expansion rules: `IsExpanded` is the cost gate —
   declaring children only when expanded is the whole of how a tree stays inside
   [performance.md](performance.md)'s bounded-rebuild rule — and the `OnExpand`/`OnCollapse`
@@ -96,12 +109,14 @@ identity and reconciliation is free.
   activation through the game's own deterministic click path, tooltip surfacing per
   [tooltips.md](tooltips.md), detail lines per [buffers.md](buffers.md).
 - **Focus visuals** (`PointerFocus`): make the game *look* pointed-at where focus is, so
-  sighted bystanders can follow. Use the engine's own entry points, never OS cursor warping:
-  ES2 has `SimulateHover(bool)` on buttons — on buttons *only*: a focusable non-button
-  widget gets tooltip parity via pointing but no highlight, so don't go hunting for a hover
-  API that isn't there — and the same show/hide-submenu messages the game
-  itself sends; the native tooltip appears by feeding the engine's hover-authority field
-  (`OverrolledTransform`) — written at **end of frame**, after the engine's own LateUpdate
+  sighted bystanders can follow. Use the engine's own entry points, never OS cursor
+  warping — and find the hover entry point **per control class**: one widget kind may
+  expose an explicit hover-simulation call while another is only reachable through its
+  own mouse-enter/leave path. Verify the chosen target actually changes pixels — a widget
+  parked inside a card that *looks* like the hover target can be wired to nothing, and
+  only a screenshot pair proves the highlight moved. Send the same show/hide-submenu
+  messages the game itself sends; the native tooltip appears by feeding the engine's
+  hover-authority field — written at **end of frame**, after the engine's own LateUpdate
   recompute would have clobbered it (a `WaitForEndOfFrame` coroutine; no patching needed).
   Track wanted-vs-showing and apply only differences so stepping within a flyout never
   flickers it. Check tooltip **anchoring**: cursor-anchored ("free") tooltip modes render at
@@ -130,11 +145,15 @@ identity and reconciliation is free.
   between rect space and scroll space shows up as consistent under/overshoot).
 - **Discover controls, don't trust named references**: a reused window can carry duplicate
   per-skin control sets (ES2's options window has two complete button bars) with the API's
-  named fields pointing at one skin — possibly the hidden one. And a widget's own visibility
-  flag is not **effective** visibility: containers hide whole ancestor chains while the
-  child still reports visible. Declare what is actually drawn — walk ancestors for
-  visibility, filter decorative click-shields (no activation wiring), order by measured
-  position so speech order matches the screen.
+  named fields pointing at one skin — possibly the hidden one. And **no visibility flag can
+  be trusted on its own**: containers hide whole ancestor chains while the child still
+  reports visible, and pooled list containers do the reverse — surplus recycled children
+  stay "visible" with zero alpha, so a flag-trusting sweep declares rows the player cannot
+  see (example: ES2's competitor-slot pool kept an eighth slot alive this way after the
+  count came back down). Effective drawn-ness is the ancestor walk *plus* whatever render
+  test the engine itself honours (alpha, clipping). Declare what is actually drawn — walk
+  ancestors for visibility, test drawn-ness, filter decorative click-shields (no activation
+  wiring), order by measured position so speech order matches the screen.
 
 ## Patterns proven since the port
 
@@ -153,7 +172,14 @@ identity and reconciliation is free.
   crossings only, only the highest when one frame crosses several, and re-arm when the value
   drops so a restarted phase reports afresh. Worked sample: `src/graph-ui/LoadingScreen.cs`.
 - **Arriving and standing down are different questions.** Arrive only when the widget has
-  finished animating in (its labels may still hold the previous item's words); but never
+  finished animating in (its labels may still hold the previous item's words) — and
+  arrival also gates on **enablement**, not just visibility: an engine that disables the
+  page under a modal can re-enable it a frame *after* the modal reports itself gone, so a
+  screen arriving on "modal gone" alone reads every control "unavailable" exactly once —
+  invisibly, because live parts only speak on change. A window can also be closed by the
+  player's own *delegated* key — an exit key the mod let through that commits and hides in
+  one frame; polling shown-state covers that for free, watching only the mod's own key
+  handling does not. But never
   stand down while merely *covered* — everything that hides your panel draws above your
   layer, and a screen that blinks out mid-transition hands the player to whatever is
   underneath for a frame (heard as a spurious announcement of the screen below). For
@@ -176,7 +202,16 @@ identity and reconciliation is free.
 - **Layers are static.** A screen's layer must never change while it is up: other screens
   (popups, confirmations) are placed *relative* to it, and a layer that slides underneath
   them cannot be reliably placed under either value. Number with gaps; when a window can be
-  opened from pages at different layers, give it one number above the highest opener.
+  opened from pages at different layers, give it one number above the highest opener — and
+  **below anything its own controls can raise** (a modal whose combo boxes open the shared
+  drop-list popup must sit under the popup's layer). Getting that bound wrong is silent:
+  the popup renders, but the wrong screen keeps focus.
+- **A roster grid linearises.** A grid of cards (factions, loadouts, portraits) reads as
+  one row per card in drawn order — left-to-right, top-to-bottom — not as a 2D table: the
+  cells are peers of one kind, so column-preserving vertical moves buy nothing and the
+  grid's wrap points are a rendering accident. A card's permanently-drawn description
+  follows the always-shown-text rule ([widgets.md](widgets.md)); the card's substance
+  lives in its buffer ([buffers.md](buffers.md)'s card example).
 - **Tables read as tables**: one graph row per data row with a shared row key (Up/Down keeps
   the column), one node per cell announcing the drawn column heading then the drawn value,
   entering the table announces its role once. Never drop an empty cell — the shared-column

@@ -20,6 +20,11 @@ parts, all text `Func<string>` resolved at speak time:
   it is already localized — not from the backing data table.
 - **Tab** — carries a Selected part; the screen wires selection into focus (instant-switch
   tab bars) or activation, per design.
+- **Radio button** — N in-place alternatives where exactly one is in force and picking is
+  not doing (select-then-confirm dialogs, mode pickers). Only the chosen one speaks
+  "selected" — it inherits the tab's silence-when-unselected rule — and its Selected part
+  makes focus entering the group land on the current choice. Never model these as
+  checkboxes: that promises an untick the game does not have.
 - **Choice** — a popup entry: label + selected + position, deliberately **no role word**, so
   a 20-entry list doesn't say "list item" 20 times.
 - **Edit field** — the game's own text editor, announced with an edit-field role word and its
@@ -37,6 +42,24 @@ parts, all text `Func<string>` resolved at speak time:
 - **Toggles flip-then-notify**: replay a toggle the way its own click path runs — set the
   widget's state first, then invoke its wired switch handler, which reads the state it now
   finds. Calling the handler alone acts on the stale state.
+- **A handler the mod cannot replay**: when the game's own handler derives its value from
+  the pointer (a slider whose click path reads the drag cursor), replay the handler's
+  *tail* against an explicit index instead — and read the current index from the same
+  source the game's own refresh reads, never from the widget.
+- **The dispatch has an arity contract.** An engine's message-style dispatch can silently
+  drop a call whose argument count the handler doesn't match (Unity's `SendMessage` with
+  one argument is never delivered to a zero-argument method, and the mismatch is
+  swallowed). Resolve the handler's parameter count before dispatching, and **verify a
+  replayed activation by its effect, never by the absence of an error**.
+- **Budget screens: never re-compute what the game already displays.** Point pools, costs
+  and counts tempt an adapter into deriving them from the model — and then keeping up with
+  prerequisites, level rules and DLC. Declare the game's own drawn totals as live readouts
+  and let its own click path enforce what may be picked.
+- **Text the game always shows is always spoken.** A paragraph drawn permanently on a
+  control (a card's description under its title) is part of the control's readout — speak
+  it after the label and state, and keep it line-by-line in the review buffer. The
+  announce-vs-indicate choice exists for tooltips, which the game itself only shows on
+  demand ([tooltips.md](tooltips.md)); it does not apply to text that is always on screen.
 
 Two announcement parts do the heavy lifting:
 

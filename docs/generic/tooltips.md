@@ -93,7 +93,8 @@ Two rules that came out of shipping this:
   rendering with the drawn-tooltip probe, never with the tree dump.
 - **A row can carry more than one tooltip** (the heading's explanation and the value's
   description): announce the value's — the last-drawn — by the short/long rule, and put
-  every tooltip in the row into the row's buffer.
+  every tooltip in the row into the row's buffer **in drawn order** (the heading's
+  explanation first, then the value's dossier), so review follows the screen.
 - **Captions for bare numbers come from the game's registries.** When a drawn value's only
   name is a static icon, ask the game's element/property registry for its localized title
   before inventing a mod word. Hazard: the registry can point at a translation key that no

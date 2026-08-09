@@ -111,6 +111,16 @@ namespace ES2Access.Screens
             // left and right have to mean what they look like.
             choices.Sort(ReadingOrder);
 
+            // The dialog's own heading, first, where it is drawn - a node the player can go back to
+            // rather than a line that only ever happened on arrival. It is still the screen's spoken
+            // name as well, so arriving says it once; focus starts on the question below it, which is
+            // what keeps it from being said twice.
+            SettingRows.AddReadout(
+                builder,
+                SettingRows.TransformOf(window.TitleLabel),
+                "messagebox:heading"
+            );
+
             // Declared before the answers and outside their row, so the builder wires the row under
             // it: the question is a block of text, not one answer among them, and it takes no place
             // in their count.

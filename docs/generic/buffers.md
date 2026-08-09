@@ -71,7 +71,8 @@ widget doesn't draw is not.
 **The "card" worked example**: a control whose readout is just name + state and whose
 entire substance lives in the buffer — type, traits, anomalies, outputs, refusal reasons.
 Cards (unit portraits, planet cards, item tiles) are the cleanest instance of "the buffer
-is where the rest of the control lives".
+is where the rest of the control lives". A grid of such cards linearises to one row per
+card in drawn order — the roster-grid pattern in [ui-navigation.md](ui-navigation.md).
 
 Cursor rules, all load-bearing:
 

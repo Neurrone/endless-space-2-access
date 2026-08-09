@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using ES2Access.Core.UI.Graph;
 using ES2Access.Core.Util;
 using UnityEngine;
@@ -170,6 +171,7 @@ namespace ES2Access.UI
 
             try
             {
+                Click(Transform(button));
                 Send(button.OnActivateObject, button.OnActivateMethod, button.gameObject);
             }
             catch (Exception e)
@@ -209,6 +211,7 @@ namespace ES2Access.UI
 
             try
             {
+                Click(Transform(toggle));
                 toggle.State = !toggle.State;
                 Send(toggle.OnSwitchObject, toggle.OnSwitchMethod, toggle.gameObject);
             }
@@ -218,12 +221,134 @@ namespace ES2Access.UI
             }
         }
 
+        /// <summary>Take an entry of a drop list the way clicking it does: the list's own selection
+        /// first - it is what rewrites the closed control's label - then the handler the list itself is
+        /// wired to, which is what stores the answer. Every drop list in the game carries that wiring,
+        /// so no caller has to know which window owns the list.</summary>
+        public static void Choose(AgeControlDropList list, int index)
+        {
+            if (list == null)
+            {
+                return;
+            }
+
+            try
+            {
+                Click(Transform(list));
+                list.SelectedItem = index;
+                Send(list.OnSelectionObject, list.OnSelectionMethod, list.gameObject);
+            }
+            catch (Exception e)
+            {
+                Log.Warn("widgets: choosing a drop list entry threw: " + e);
+            }
+        }
+
+        /// <summary>
+        /// The sound a click makes.
+        ///
+        /// Replaying a widget's wired handler is not the whole of clicking it. The noise a control
+        /// makes is not in the handler and not in the control either: it is an <c>AgeAudio</c>
+        /// component sitting on the same transform, which the engine's mouse dispatch tells about the
+        /// press (<c>AgeAudio.MouseUp</c> :191-197, posting <c>MouseUpEventID</c> through the gui audio
+        /// proxy). Reaching the handler and not that component is why every control the mod worked was
+        /// silent while the same control clicked with a mouse answered - measured on the main menu:
+        /// every button carries an AgeAudio with a non-zero MouseUpEventID.
+        ///
+        /// Posted before the handler runs, because a handler is entitled to close the window the
+        /// component lives on.
+        /// </summary>
+        private static void Click(AgeTransform widget)
+        {
+            try
+            {
+                AgeAudio audio = widget == null ? null : widget.AgeAudio;
+                if (audio == null)
+                {
+                    return;
+                }
+
+                AgeMouseEventData click = new AgeMouseEventData { MouseButtonIndex = 0 };
+                audio.MouseDown(click);
+                audio.MouseUp(click);
+            }
+            catch (Exception e)
+            {
+                Log.Warn("widgets: playing a control's click threw: " + e);
+            }
+        }
+
+        /// <summary>
+        /// Run the handler a widget names, with the number of arguments that handler actually takes.
+        ///
+        /// The engine's own dispatch is <c>SendMessage(name, senderGameObject)</c>, and most of the
+        /// game's handlers are written to receive it - <c>OnClickStartCb(GameObject obj = null)</c>.
+        /// Some are not: the faction chooser's hull arrows are <c>OnPreviousHullCb()</c> and
+        /// <c>OnNextHullCb()</c>, with no parameter at all. Unity will not deliver a one-argument
+        /// SendMessage to a method that takes none, and with <c>DontRequireReceiver</c> it does not
+        /// complain either - the button simply did nothing, silently, on the one path a player has.
+        /// So the arity is looked up on the target's own components and the matching overload used.
+        /// </summary>
         private static void Send(GameObject target, string method, GameObject sender)
         {
-            if (target != null && !string.IsNullOrEmpty(method))
+            if (target == null || string.IsNullOrEmpty(method))
             {
-                target.SendMessage(method, sender, SendMessageOptions.DontRequireReceiver);
+                return;
             }
+
+            if (TakesNoArgument(target, method))
+            {
+                target.SendMessage(method, SendMessageOptions.DontRequireReceiver);
+                return;
+            }
+
+            target.SendMessage(method, sender, SendMessageOptions.DontRequireReceiver);
+        }
+
+        // Resolved per component type and handler name and then remembered: a widget's wiring never
+        // changes, and this is asked on every activation.
+        private static readonly Dictionary<string, bool> NoArgument = new Dictionary<string, bool>();
+
+        private static bool TakesNoArgument(GameObject target, string method)
+        {
+            try
+            {
+                MonoBehaviour[] components = target.GetComponents<MonoBehaviour>();
+                for (int i = 0; i < components.Length; i++)
+                {
+                    if (components[i] == null)
+                    {
+                        continue;
+                    }
+
+                    Type type = components[i].GetType();
+                    string key = type.FullName + "." + method;
+                    bool bare;
+                    if (!NoArgument.TryGetValue(key, out bare))
+                    {
+                        MethodInfo found = type.GetMethod(
+                            method,
+                            BindingFlags.Instance
+                                | BindingFlags.Public
+                                | BindingFlags.NonPublic
+                                | BindingFlags.FlattenHierarchy
+                        );
+                        bare = found != null && found.GetParameters().Length == 0;
+                        NoArgument[key] = bare;
+                    }
+
+                    if (bare)
+                    {
+                        return true;
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("widgets: reading a handler's arity threw: " + e);
+            }
+
+            return false;
         }
 
         /// <summary>Make a control look hovered while the cursor is on it, and show its tooltip.
@@ -251,6 +376,18 @@ namespace ES2Access.UI
             AgeTooltip tip = tooltip;
             AgeTransform anchor = under;
             vtable.OnFocusVisual = () => PointerFocus.MoveTo(it, tip, anchor);
+            vtable.OnBlurVisual = ReleasePointer;
+        }
+
+        /// <summary>The same for a control the game drew as a toggle - a card in a set the player picks
+        /// one of. The highlight is the toggle's own hover state rather than a button's, because a
+        /// toggle has no <c>SimulateHover</c> and the button the game parks inside the card for its
+        /// artwork is wired to nothing (measured: hovering it changes no pixel).</summary>
+        public static void Point(NodeVtable vtable, AgeControlToggle toggle)
+        {
+            AgeControlToggle it = toggle;
+            vtable.OnFocusVisual = () =>
+                PointerFocus.MoveToToggle(it, Raw(Transform(it)), Transform(it));
             vtable.OnBlurVisual = ReleasePointer;
         }
 

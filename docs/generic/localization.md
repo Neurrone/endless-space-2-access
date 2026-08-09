@@ -28,7 +28,10 @@ infrastructure); starting with the seam costs nearly nothing.
    **When hunting the corpus for a control's name, grep for the ACTION it performs, not the
    control**: wordless action buttons are routinely named by the game under the action's own
    key family, nowhere near the widget — a "no game-authored name exists" conclusion is
-   often a wrong-noun search.
+   often a wrong-noun search. **And search the game's DATA tables, not just the localization
+   corpus**: a drawn value's name often lives with the value's definition (a palette XML
+   naming every colour the renderer only ever paints) and never reaches the screen or the
+   corpus — "the game's words" includes the words in its data.
 2. **Mod-authored phrases** (role words like "button", status words, screen names, the
    startup line) — come from the mod's string table, never inline literals.
 3. **Connective structure** (list separators, "N of M", "x N") — also from the string table,

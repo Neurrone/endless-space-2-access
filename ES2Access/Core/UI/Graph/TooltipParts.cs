@@ -66,6 +66,13 @@ namespace ES2Access.Core.UI.Graph
 
         // A tooltip is written as lines - a name, a description, a reason - and read out as one
         // sentence, so the lines join the way any other list of parts does.
+        //
+        // NOTE (unresolved, raised by the faction chooser): localization.md says the opposite -
+        // "multi-line game text joins with a space, not the list separator" - and the game's refused
+        // custom-faction buttons show what that costs here: "Permanently deletes the selected custom
+        // faction, This faction cannot be edited" is a comma splice the game never wrote. Changing
+        // ListItem to Fragment fixes it and breaks three tests that encode the current rule by name
+        // (TooltipPartTests). Left alone deliberately: it changes what every screen says.
         private static string Spoken(IList<string> lines)
         {
             if (lines == null)

@@ -1,6 +1,8 @@
 # ES2 dev loop — the working map
 
-**Current state (2026-08-05):** phase 1 (out-game) done; in-game esc menu, galaxy HUD, and
+**Current state (2026-08-09):** phase 1 (out-game) is screen-complete: the new game lobby, the
+advanced settings, the faction chooser and the custom faction editor over it, and the tutorial
+picker all have screens; the lobby family has been through one manual review and its fixes. In-game esc menu, galaxy HUD, and
 the popup family done and past manual screen-reader review; the galaxy map's system tree
 (planets + starlanes, camera follow), the star system management page (7 stops, action
 menus, rename box), the improvements modal opened from it and the planet overview page
@@ -43,31 +45,38 @@ belongs in the generic docs or the source file's own doc comment.
 | `DrawnTooltip` | The rendered tooltip window, read one PANEL FEATURE at a time; `Features()` is the same reading with each feature's class and the reader that answered | `ES2Access/UI/DrawnTooltip.cs` |
 | `TooltipFeatures.Read` | One feature into lines: scoped row banding, repeated items, the ship stat block, separators skipped by the game's own flags, unknowns to the fallback | `ES2Access/UI/TooltipFeatures.cs` |
 | `TooltipText` | What a row of tooltip parts SAYS — icon-as-heading vs decoration, caption+value, item strips | `ES2Access/Core/Speech/TooltipText.cs` |
-| `PointerFocus` | Hover/tooltip/flyout parity for keyboard focus; `MoveTo` (button or plain transform), `Unpoint` | `ES2Access/UI/PointerFocus.cs` |
+| `PointerFocus` | Hover/tooltip/flyout parity for keyboard focus; `MoveTo` (button or plain transform), `MoveToToggle` (a toggle has no `SimulateHover` — its own `MouseEnter`/`MouseLeave`), `Unpoint` | `ES2Access/UI/PointerFocus.cs` |
 | `GameKeyStandDown` | The input-suppression patches (mod keys win; Escape carved out); watch its counts on `/status` | `ES2Access/UI/Input/GameKeyStandDown.cs` |
 | `GraphNodes.ModeFor` | The tooltip short/long rule — never pick a `TooltipMode` by hand | `ES2Access/UI/GraphNodes.cs` |
+| `GraphNodes.*` factories | **Every node is built by one.** Each takes `(tooltip, mode)` and wires BOTH the announcement part and `DetailLines`; a screen that hand-builds a `NodeVtable` is how a row comes to have a tooltip in neither. `Radio`, `Choice` and `EditField` take them too — they did not, which is why three screens' rows announced no tooltip | `ES2Access/UI/GraphNodes.cs` |
 | `IconNames` + `IconTable` | Icon → `icon.*` key → name; the enumerated 382-token/407-texture table with variant aliases | `ES2Access/UI/IconNames.cs`, `ES2Access/Core/Speech/IconTable.cs` |
 | `GalaxyViewLevels` | Which `GalaxyViewLevel` is up (`At<T>()`, `Overview`, `Scanning`, `LevelThroughTransitions`, `FocusedSystem`) + where the camera is (`ZoomStep`, `AtOrbitalZoom`, `DefaultZoomStep`, all -1/false when the galaxy camera is not the live one) and the routes (`PanTo`, `ZoomTo` — the game's own `ZoomInOnNode`, `ZoomToStep` for coming back out, `OpenSystem`, `OpenPlanet`); stateless, so reload-safe | `ES2Access/UI/GalaxyViewLevels.cs` |
-| `AgeWidgets` | The per-widget questions every screen asks: `Visible`/`Enabled`/`Operable` (ancestor-walking), `Raw`/`Readable`/`TooltipLines`/`TooltipTitle` (the `GuiWrapper` name behind a wordless icon), `Press`/`Toggle` (replay the widget's own handler), `Point`/`PointAt`, `TextOf` (a group's whole drawn phrase, icons named) | `ES2Access/UI/AgeWidgets.cs` |
+| `AgeWidgets` | The per-widget questions every screen asks: `Visible`/`Enabled`/`Operable` (ancestor-walking), `Raw`/`Readable`/`TooltipLines`/`TooltipTitle` (the `GuiWrapper` name behind a wordless icon), `Press`/`Toggle`/`Choose` (replay the widget's own handler; `Choose` takes a drop-list entry through the list's own `OnSelectionObject`/`Method`), `Point`/`PointAt`, `TextOf` (a group's whole drawn phrase, icons named) | `ES2Access/UI/AgeWidgets.cs` |
 | `FieldReadout.Compose` | A panel's fields as one spoken line, blanks dropped; null when there was nothing to say, which is a passive announcer's "not filled in yet" | `ES2Access/Core/Speech/FieldReadout.cs` |
 | `RefusalText.Compose` | A blocked button's tooltip trimmed to the refusal itself — leading description off, the game's mouse instruction dropped | `ES2Access/Core/Speech/RefusalText.cs` |
 | `GlobalHud` | The four clusters drawn over every view level (empire banners, collapsed tutorial bar, notifications, turn controls) + the turn watcher; every page under them calls `Empire`/`Tutorial`/`Notifications`/`Turn` in drawn order | `ES2Access/Screens/GlobalHud.cs` |
 | `Screen.PushChild` / `RemoveChild` | Mod-owned sub-screens: one linear chain, deepest is focused, a covered parent keeps its cursor | `ES2Access/Screens/Screen.cs` |
 | `ChoiceSubmenuScreen.Open` | The action menu — snapshot of what is possible now, "menu item" role, empty list answered once here | `ES2Access/Screens/ChoiceSubmenuScreen.cs` |
-| `DropListScreen.Open(list, title, choose)` | Any `AgeControlDropList` as a sub-screen; entries fall back to their tooltips when the list is drawn as icons | `ES2Access/Screens/DropListScreen.cs` |
+| `DropListScreen.Open(list, title, choose)` | Any `AgeControlDropList` as a sub-screen; entries fall back to their tooltips when the list is drawn as icons, then to `EmpireColors` when it is drawn as bare swatches; the focused entry is POINTED at, so the game draws its tooltip | `ES2Access/Screens/DropListScreen.cs` |
+| `EmpireColors.Name(color)` | What the player's chosen palette (`Public/Mapping/Palettes.xml`) calls a drawn colour — matched by colour, not by list position; `ModStrings` `color.*` keys, falling back to the game's identifier split at its capitals | `ES2Access/UI/EmpireColors.cs` |
+| `SettingRows` + `TextFieldEditor` | One game `SettingItem` as a row (every `Gui.ControlType`, the slider's index-stepping write path, `Drawn` = visible AND alpha > 0), plus the shared row shapes every lobby-family screen builds through — `AddCombo`, `AddButton`/`AddButtonRow`, `AddTextField`, `AddReadout` — and the deferred keyboard hand-over to a text editor | `ES2Access/Screens/SettingRows.cs` |
 | `DevProbe` | Compile-checked one-liners: `Screen() Stack() State() Saves() Camera() Windows() Patches() TooltipDelay(s) Tooltip() UnknownIcons()` | `ES2Access/Dev/DevProbe.cs` |
 | `/input` queue | `ModInput.Inject` — actions at the production dispatch point | `ES2Access/UI/Input/ModInput.cs` |
 
 ## 2. Layer budget
 
 Static per screen (doctrine: ui-navigation.md "Layers are static"):
-`0` main-menu · `10` galaxy, star-system, planet-overview and system-discovery (the four
+`0` main-menu and the new-game lobby (never up together — showing one hides the other) ·
+`5` advanced settings · `6` faction chooser · `7` custom faction editor (all over the lobby, their
+only opener, and never up together; well under the drop list a setting can open and the message
+box a Cancel or a Delete confirms in) ·
+`10` galaxy, star-system, planet-overview and system-discovery (the four
 view levels, never up together) · `20` planet-constructibles (the panel a planet card slides
 out under itself) · `30` tutorial ·
 `40` notification · `50` game-menu · `52` options (one number, above the pause menu that can
 open it) · `55` load-save · `60` loading · `70` drop-list (above options, its owner) ·
 `80` rename box · `85` improvements modal (over the star-system page, under its own
-confirmation) · `100` message-box. Action menus are CHILD screens and have no layer: the
+confirmation) · `90` tutorial-selection modal (over the new game screen) · `100` message-box. Action menus are CHILD screens and have no layer: the
 manager focuses the deepest child of the top screen.
 
 **ES2 key map, in one place** (defaults in `ModEntry.BindKeys`; the generic table is
@@ -94,6 +103,40 @@ ES2 facts with no other home:
   bar in `GlobalHud`'s `hud:tutorial` stop, on whichever view level is underneath. The game
   does NOT draw the bar on the planet overview, so that page has no such stop — measured, not
   assumed.
+- **A window's own `HandleInput` override can turn its Cancel button into a Confirm.**
+  `GuiModalWindow.OnCancelCb` is nothing but `HandleInput(InputAction.Exit)`, so any window that
+  overrides Exit to mean something other than "dismiss" silently changes what its Cancel button
+  does — and the game's tooltip on that button goes on saying the old thing. Read the override
+  before trusting either the key or the button.
+- **`Visible` is not "drawn".** `AgeTransform.RefreshChildrenIList/Array` leaves the surplus
+  children of a pooled table (a competitor slot an empire count no longer needs) flagged
+  `Visible` with `Alpha == 0`. Ask about alpha too — but only `== 0`, since a read-only setting
+  is faded to 0.5 and is still drawn.
+- **The click sound is not in the handler and not in the control.** It is an `AgeAudio` component
+  on the same transform, posting `MouseUpEventID` through the gui audio proxy (`AgeAudio.MouseUp`
+  :191-197) when the engine's mouse dispatch tells it about the press. Replaying a wired handler
+  reaches neither, so every control the mod worked was silent; `AgeWidgets.Click` posts the
+  component's own down/up before dispatching. Measured: main-menu buttons and the faction
+  chooser's hull arrows all carry a non-zero `MouseUpEventID` with a live `GuiAudioProxy`.
+- **A window's `AgeTransform.Enable` lags its `Shown`/`IsReady` by a frame or two**, both when a
+  modal opens (measured: `shown=True ready=False windowEnable=False`, both true two frames later)
+  and when one closes over a page underneath. The same lag exists one level down for a PANEL that
+  is swapped inside a window it never closes (the faction chooser under the custom faction
+  editor): gate on the panel's `Operable` too, or its controls read "unavailable" on arrival. Either way a screen gated only on shown/ready
+  declares its controls while the window root is still disabled, and `Operable`'s ancestor walk
+  then reads EVERY control as "unavailable" — including the one the arrival announcement lands on.
+  Gate arrival on `Operable` as well.
+- **A `GuiTable` line is a POOL SLOT, not a row.** `LineNNN` names (and positions) are reassigned
+  whenever the table refreshes or re-sorts, so a cursor keyed on either sits on a different thing
+  a frame later — measured: picking a trait in the custom-faction editor left the next Enter
+  picking whatever the re-sort moved under the cursor. Key a line on `GuiTableLine.Data`; with it
+  as `ControlId.Referenced` the cursor even follows an entry from one table into the other.
+- **`SendMessage(name, sender)` does not reach a zero-argument handler.** Most of the game's
+  widget callbacks take `(GameObject obj = null)`, but not all — `OnPreviousHullCb()` and
+  `OnNextHullCb()` take none — and with `DontRequireReceiver` the mismatch is silent, so the
+  button simply does nothing. `AgeWidgets.Press`/`Toggle`/`Choose` look the arity up on the
+  target's components (cached) and pick the overload; verify a new button by its EFFECT, never by
+  the absence of an error.
 - **Every tooltip is an ordered list of panel features.** `GuiTooltipWindow.DoBind` resolves
   the tooltip's `Class` through the description database and instantiates one prefab per
   feature under `PanelFeaturesTable`; a feature's SUB-features are added as further siblings in
@@ -192,7 +235,9 @@ on a state. Boot ≤ 1 min.
 **Reload loop.** `dotnet build ES2Access/ES2Access.csproj` → `POST /reload` →
 `GET /loader/status` (`staleBuild:false`, `modAssemblyName` incremented).
 
-**Evidence crop.** `.\crop-shot.ps1 -Rect x,y,w,h [-Out path]` — never Read a full-frame
+**Evidence crop.** A Class-backed tooltip's review buffer reads EMPTY in `/gui/graph?buffers=1`
+unless the node is focused first (its words only exist once the tooltip window draws them — see
+"Auditing a tooltip" below). `.\crop-shot.ps1 -Rect x,y,w,h [-Out path]` — never Read a full-frame
 screenshot into context. Invoke via the PowerShell tool or
 `powershell -Command "& './crop-shot.ps1' -Rect x,y,w,h"`; `powershell -File` mangles the
 `-Rect` array argument, and the Bash tool's quoting breaks it too.
@@ -226,6 +271,25 @@ for anything with a `GuiWrapper` on its tooltip, `Gui.GetLocalizedTitle(property
 the tooltip's first line for a control that explains itself on hover. Keys must include
 `widget.name` — a per-panel suffix alone collides across a repeated row and throws
 `Duplicate control id`, which silently empties the WHOLE screen.
+
+**The tutorial picker** is raised by `NewGameScreen.OnBeginShow` and only while
+`TutorialManager.IsPlayingForTheFirstTime()` (registry `GameSettings/HasAlreadyPlayedOnce`, which
+only `GameClientState_Introduction` ever sets — cancelling leaves it, so the box comes back). Back
+to the MAIN MENU is two Escapes, i.e. `window.HandleInput(InputAction.Exit)` on the modal and then
+on `NewGameScreen`. Never press Confirm or double-Enter a card in a test: both start a game.
+
+**Working the new game lobby.** Everything is lobby-local and reversible (restore what you
+change; `w.Session.GetLobbyData<string>("competitorcount")` etc. is the before/after probe).
+**Never press Start** (`OnClickStartCb` launches). **Every way out of `FactionChoiceModalWindow`
+COMMITS the highlighted faction** — Escape, Select, and the button labelled "Cancel", because
+`GuiModalWindow.OnCancelCb` is `HandleInput(InputAction.Exit)` and this window routes Exit to
+`OnValidateCb` (measured: picking Sophons and pressing Cancel left the lobby on Sophons). Opening
+it is safe if you put the selection back first; `Gui.GetPlayerLobbySlot(ng.Session).FactionName`
+is the before/after probe (fixture: `FactionTerrans`). Selecting a card does NOT commit.
+`AdvancedSettingsModalWindow` is a safe open + `HandleInput(InputAction.Exit)` (its Back button is
+the same `OnCancelCb`); the lobby stands down while either is up. The advanced window builds a
+table per CATEGORY once and shows only `CurrentCategory`'s — read whichever is drawn, never the
+container's first child.
 
 **Multi-row tables** need a real fixture with several saves/rows — do not mutate the game's
 data structures to fake one.

@@ -81,6 +81,14 @@ namespace ES2Access.Screens
                 return;
             }
 
+            // The box's own heading, where it is drawn: a node to come back to as well as the name
+            // arriving announces. Focus starts on the field below it, so it is not said twice.
+            SettingRows.AddReadout(
+                builder,
+                SettingRows.TransformOf(window.Title),
+                "rename:heading"
+            );
+
             RenameModalWindow it = window;
             AgeControlTextField field = window.TextField;
             if (field != null)
@@ -94,7 +102,9 @@ namespace ES2Access.Screens
                         GraphNodes.ValuePart(() => AgeText.Label(it.TextField.Label)),
                     },
                 };
-                builder.AddItem(ControlId.Referenced(field, "rename:field"), vtable);
+                ControlId id = ControlId.Referenced(field, "rename:field");
+                builder.AddItem(id, vtable);
+                builder.SetStart(id);
             }
 
             AgeControlButton validate = window.ValidateButton;

@@ -230,6 +230,70 @@ namespace ES2Access.UI
             };
         }
 
+        /// <summary>
+        /// One of a set where exactly one is in force - the game's own select-then-confirm model,
+        /// where picking is not yet doing.
+        ///
+        /// Only the chosen one says so, which is the same silence a tab bar keeps and is what lets
+        /// focus entering the group land on the choice already made rather than at the top. Activating
+        /// says "selected" at once, interrupting, because unlike a checkbox there is no other state
+        /// the keypress could have produced and the player needs to hear that it took.
+        /// </summary>
+        public static NodeVtable Radio(
+            Func<string> label,
+            Func<bool> selected,
+            Action choose,
+            Func<bool> enabled = null,
+            Func<IList<string>> details = null,
+            AgeTooltip tooltip = null,
+            TooltipMode tooltipMode = TooltipMode.None
+        )
+        {
+            Func<string> chosen = () =>
+                selected != null && selected() ? ModStrings.Get(ModStrings.NavSelected) : null;
+
+            List<NodeAnnouncement> parts = Parts(label, enabled, tooltip, tooltipMode);
+            parts.Insert(1, SelectedPart(selected));
+            return new NodeVtable
+            {
+                ControlType = ControlTypes.RadioButton,
+                Announcements = parts,
+                DetailLines = details ?? TooltipDetails(tooltip),
+                StateText = ActedState(chosen, enabled),
+                OnActivate = Guarded(choose, enabled),
+            };
+        }
+
+        /// <summary>
+        /// Free text the player types into the game's own editor. Hand-built vtables are how a row
+        /// comes to have no tooltip: everything else here routes its tooltip through
+        /// <see cref="Parts"/> and its buffer through <see cref="TooltipDetails"/>, so an edit field
+        /// that built its own parts list quietly had neither. It is a factory like the rest now.
+        ///
+        /// <paramref name="value"/> reports null while the game holds the keyboard - the screen reader
+        /// is already echoing the keys, and re-reading the whole field after every letter buries them.
+        /// </summary>
+        public static NodeVtable EditField(
+            Func<string> label,
+            Func<string> value,
+            Action edit,
+            Func<bool> enabled = null,
+            AgeTooltip tooltip = null,
+            TooltipMode tooltipMode = TooltipMode.None,
+            Func<IList<string>> details = null
+        )
+        {
+            List<NodeAnnouncement> parts = Parts(label, enabled, tooltip, tooltipMode);
+            parts.Add(ValuePart(value));
+            return new NodeVtable
+            {
+                ControlType = ControlTypes.EditField,
+                Announcements = parts,
+                DetailLines = details ?? TooltipDetails(tooltip),
+                OnActivate = Guarded(edit, enabled),
+            };
+        }
+
         /// <summary>A value the player moves along a range with left and right, and by a coarse step
         /// with the same arrows held with Shift. <paramref name="valueText"/> is already in the form the player
         /// should hear it - percent, decibels, a count - because only the screen knows what the
@@ -325,18 +389,17 @@ namespace ES2Access.UI
             Func<bool> selected,
             Action choose,
             Func<bool> enabled = null,
-            Func<IList<string>> details = null
+            Func<IList<string>> details = null,
+            AgeTooltip tooltip = null,
+            TooltipMode tooltipMode = TooltipMode.None
         )
         {
+            List<NodeAnnouncement> parts = Parts(label, enabled, tooltip, tooltipMode);
+            parts.Insert(1, SelectedPart(selected));
             return new NodeVtable
             {
-                Announcements = new List<NodeAnnouncement>
-                {
-                    LabelPart(label),
-                    SelectedPart(selected),
-                    DisabledPart(enabled),
-                },
-                DetailLines = details,
+                Announcements = parts,
+                DetailLines = details ?? TooltipDetails(tooltip),
                 OnActivate = Guarded(choose, enabled),
             };
         }

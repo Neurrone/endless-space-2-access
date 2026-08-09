@@ -18,13 +18,21 @@ screenshot before modeling; lay out stops and rows as drawn, in the page's readi
 Concretely:
 
 - A dialog with controls above and below its text is rows, with the body text itself a
-  **focusable node** — usually where focus lands on arrival.
+  **focusable node** — usually where focus lands on arrival. The dialog's drawn heading is
+  a node too: declare headings as focusable nodes in reading order, with the screen's
+  spoken name still carrying the title (arrival announces it; the announcer's duplicate
+  dedupe covers focus landing on the heading itself). A window's own heading is declared
+  once, in the first stop — never repeated per band. And a caption the game draws over
+  **several** controls is itself a navigable node; a caption tied to exactly one control
+  folds into that control's readout instead.
 - A visual table is a table: cells announce the drawn column heading and value, Up/Down
   preserves the column (see the table pattern in [ui-navigation.md](ui-navigation.md)).
 - A panel's bottom control row is its own Tab stop, walked Left/Right; side panels that open
   next to content are conditional stops or regions that exist only while open.
-- Regions ([input.md](input.md)'s Alt+arrows) map to the screen's visual bands, top to
-  bottom. Never declare a lone region — the jump key would swallow silently.
+- Two navigation tiers, one division of labor: the screen's visual panels are **Tab
+  stops**; the sections *within* one panel are **regions**, jumped with the region chord
+  ([input.md](input.md)'s Alt+arrows) — the jump never crosses a panel, Tab does that.
+  Never declare a lone region — the jump key would swallow silently.
 - Each element's review buffer holds **its own** content (its tooltip, its cell), not the
   container's shared text — the container is a walk away.
 
@@ -64,6 +72,12 @@ test, not the model.
   there; never freeze a number measured from one observation.
 - Find the screen's classes in the decompiled code: where its text lives, what its buttons
   are wired to, which service state drives it ([reverse-engineering.md](reverse-engineering.md)).
+  A data-driven screen can keep its **shape** and its **values** in separate registries —
+  one table saying which rows exist and their widget kind, another what each row can say.
+  Both are closed sets answering different questions; find both before modeling.
+- **A reused window is modelled off what is drawn, not what it was opened for.** A window
+  serving several modes may build every mode's content and hide all but one; "which mode
+  was I opened for" is opener-set state that can go stale, "which content is drawn" cannot.
 - Check the game's colliding key bindings for this screen ([input.md](input.md) — "The game
   hears your keys too"). A collision that can move the game's focus is a blocker.
 - Note what the screen shows for its empty/disabled/error states — those words are the model.
@@ -85,6 +99,9 @@ Imitate the adapter exemplars, don't invent: the screen shape from an existing s
 same kind, widgets per [widgets.md](widgets.md), tooltips per [tooltips.md](tooltips.md),
 buffers per [buffers.md](buffers.md), text through the shared pipeline
 ([localization.md](localization.md), icons per [icons-and-symbols.md](icons-and-symbols.md)).
+**Rows are shared, layout is not**: when a second screen shares the same row prefabs as an
+existing one, hoist the per-widget row builder out of the first screen instead of copying
+its shape — the second screen then inherits widget kinds its own fixture never draws.
 Activation goes through the game's own deterministic handlers; state the game manages stays
 the game's (select-then-act where the game distinguishes selection from action). Everything
 reload-safe ([hot-reload.md](hot-reload.md)) and per-frame cheap — `Build` runs every tick
@@ -107,7 +124,9 @@ reload-safe ([hot-reload.md](hot-reload.md)) and per-frame cheap — `Build` run
   Cropping is also what keeps image costs sane — never read full frames.
 - Exercise keys at the production dispatch point (input injection), not by calling the
   navigator directly — a screen that answers the navigator but not the injector is a screen
-  whose keys don't reach it.
+  whose keys don't reach it. The same trap exists one level down: calling the game's
+  handler from the REPL to "confirm the wiring" proves the handler, not the mod's route to
+  it — any step that verifies an *activation* must go through the mod's own activate path.
 - Then reason through what the harness structurally cannot reproduce — real key-down/key-up
   sequences, focus handoffs, perceptual timing — item by item, on paper
   ([dev-server.md](dev-server.md) "What this loop cannot verify").

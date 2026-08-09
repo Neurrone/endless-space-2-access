@@ -55,6 +55,7 @@ namespace ES2Access.UI
         private struct Spot
         {
             public AgeControlButton Button;
+            public AgeControlToggle Toggle;
             public AgeTransform Hover;
             public AgeTooltip Tooltip;
             public AgeTransform Anchor;
@@ -103,6 +104,25 @@ namespace ES2Access.UI
             };
         }
 
+        /// <summary>The same for a control the game drew as a TOGGLE - a card the player picks one of.
+        /// A toggle has no <c>SimulateHover</c>: its highlight is driven by the interaction state the
+        /// engine changes in <c>MouseEnter</c>, so that is what is called, which is also what makes any
+        /// mouse-enter wiring the card carries run exactly as it would for a hand on the mouse.
+        /// </summary>
+        public static void MoveToToggle(
+            AgeControlToggle toggle,
+            AgeTooltip tooltip,
+            AgeTransform anchor = null
+        )
+        {
+            _wanted = new Spot
+            {
+                Toggle = toggle,
+                Tooltip = tooltip,
+                Anchor = anchor,
+            };
+        }
+
         /// <summary>Ask for the mouse to be treated as resting on <paramref name="widget"/>, which is
         /// not a button: a running total or an icon the keyboard has landed on. Nothing lights up -
         /// there is no button under it to light - but the game draws the tooltip it would draw for a
@@ -138,6 +158,12 @@ namespace ES2Access.UI
             {
                 Hover(_showing.Button, false);
                 Hover(_wanted.Button, true);
+            }
+
+            if (!ReferenceEquals(_showing.Toggle, _wanted.Toggle))
+            {
+                HoverToggle(_showing.Toggle, false);
+                HoverToggle(_wanted.Toggle, true);
             }
 
             if (
@@ -338,6 +364,36 @@ namespace ES2Access.UI
             catch (Exception e)
             {
                 Log.Warn("pointer: putting a tooltip's anchor back threw: " + e);
+            }
+        }
+
+        /// <summary>
+        /// Enter and leave a toggle the way a mouse does. The cursor position is not decoration: the
+        /// engine reads it back on the way out, propagating the leave to the parent control only when
+        /// the cursor has left the parent too, so entering is told the middle of the card and leaving
+        /// is told a point off the screen - which is where the mouse effectively is.
+        /// </summary>
+        private static void HoverToggle(AgeControlToggle toggle, bool hovered)
+        {
+            try
+            {
+                if (toggle == null)
+                {
+                    return;
+                }
+
+                if (hovered)
+                {
+                    toggle.MouseEnter(toggle.AgeTransform.GetGlobalPosition().center);
+                }
+                else
+                {
+                    toggle.MouseLeave(new UnityEngine.Vector2(-1f, -1f));
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("pointer: hovering a toggle threw: " + e);
             }
         }
 

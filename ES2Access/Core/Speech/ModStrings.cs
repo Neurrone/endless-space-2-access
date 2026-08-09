@@ -35,6 +35,10 @@ namespace ES2Access.Core.Speech
         public const string ControlEditField = "control.edit-field";
         public const string ControlMenuItem = "control.menu-item";
 
+        // One of a set where exactly one is in force. Not a checkbox: activating it can only ever
+        // make it the chosen one, and the box the player would expect to untick does not exist.
+        public const string ControlRadioButton = "control.radio-button";
+
         // What navigation says about a control beyond its own text. Each is a whole phrase: a
         // language that negates with more than a leading word has somewhere to put it.
         public const string NavExpanded = "nav.expanded";
@@ -187,6 +191,32 @@ namespace ES2Access.Core.Speech
         public const string RenameTypePrompt = "rename.type-prompt";
         public const string RenameConfirm = "rename.confirm";
 
+        /// <summary>The tutorial picker the game raises over a new game. Only ever spoken if the
+        /// window has not written its own heading yet; the heading it draws is what is normally
+        /// said.</summary>
+        public const string ScreenTutorialSelection = "screen.tutorial-selection";
+
+        /// <summary>The single-player lobby. Only ever spoken if the window has not written its own
+        /// heading yet; the heading it draws is what is normally said.</summary>
+        public const string ScreenNewGame = "screen.new-game";
+
+        /// <summary>The advanced settings a category's Advanced button opens. Only ever spoken if the
+        /// window has not written its own heading yet; it normally names the category itself.</summary>
+        public const string ScreenAdvancedSettings = "screen.advanced-settings";
+
+        /// <summary>The faction chooser. Only ever spoken if the window has not written its own
+        /// heading yet.</summary>
+        public const string ScreenFactionChoice = "screen.faction-choice";
+
+        /// <summary>
+        /// What an empire colour is called. The game draws its colour lists as bare swatches and names
+        /// them only in its palette data, which is not translated anywhere in the corpus - so the
+        /// palette's own identifier picks the key and the English default is that identifier written
+        /// out. Anything the palette holds that is not listed here is read as the game's word split at
+        /// its capitals, so a modded palette still speaks.
+        /// </summary>
+        internal const string ColorPrefix = "color.";
+
         private static readonly Dictionary<string, string> Defaults = new Dictionary<string, string>
         {
             { StartupReady, "Endless Space 2 Access ready" },
@@ -203,6 +233,7 @@ namespace ES2Access.Core.Speech
             { ControlComboBox, "combo box" },
             { ControlEditField, "edit field" },
             { ControlMenuItem, "menu item" },
+            { ControlRadioButton, "radio button" },
             { NavExpanded, "expanded" },
             { NavCollapsed, "collapsed" },
             { NavChecked, "checked" },
@@ -303,6 +334,26 @@ namespace ES2Access.Core.Speech
             { ScreenRename, "Rename" },
             { RenameTypePrompt, "Type the new name, then press Enter." },
             { RenameConfirm, "Confirm" },
+            { ScreenTutorialSelection, "Tutorial selection" },
+            { ScreenNewGame, "New game" },
+            { ScreenAdvancedSettings, "Advanced settings" },
+            { ScreenFactionChoice, "Faction selection" },
+            { ColorPrefix + "marine-blue", "Marine blue" },
+            { ColorPrefix + "red", "Red" },
+            { ColorPrefix + "orange", "Orange" },
+            { ColorPrefix + "apple", "Apple green" },
+            { ColorPrefix + "green", "Green" },
+            { ColorPrefix + "skyblue", "Sky blue" },
+            { ColorPrefix + "purple", "Purple" },
+            { ColorPrefix + "pink", "Pink" },
+            { ColorPrefix + "yellow", "Yellow" },
+            { ColorPrefix + "blue-green", "Blue green" },
+            { ColorPrefix + "lavender", "Lavender" },
+            { ColorPrefix + "wine", "Wine" },
+            { ColorPrefix + "blue", "Blue" },
+            { ColorPrefix + "cyan", "Cyan" },
+            { ColorPrefix + "magenta", "Magenta" },
+            { ColorPrefix + "kaki", "Khaki" },
         };
 
         // Keys already complained about, so a per-frame readout warns once, not every frame.

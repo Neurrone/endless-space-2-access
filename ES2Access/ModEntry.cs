@@ -111,6 +111,11 @@ namespace ES2Access
             Screens.Register(new SystemDiscoveryScreen());
             Screens.Register(new ImprovementsModalScreen());
             Screens.Register(new RenameModalScreen());
+            Screens.Register(new TutorialSelectionScreen());
+            Screens.Register(new global::ES2Access.Screens.NewGameScreen());
+            Screens.Register(new AdvancedSettingsScreen());
+            Screens.Register(new FactionChoiceScreen());
+            Screens.Register(new CustomFactionScreen());
             Screens.Register(new PlanetConstructiblesScreen());
             Input = new ModInput();
             Input.Dispatch = Dispatch;
