@@ -75,7 +75,7 @@ namespace ES2Access.Tests.UI
         public void AnnounceModeJoinsTheTooltipsLinesIntoOneReadout()
         {
             Assert.Equal(
-                "New Game, button, Quick start, Skips setup, Uses the last settings, 2 of 3",
+                "New Game, button, Quick start Skips setup Uses the last settings, 2 of 3",
                 Readout(
                     Section(
                         TooltipMode.Announce,
@@ -213,7 +213,7 @@ namespace ES2Access.Tests.UI
             Assert.Equal("Join a multiplayer game", part.Text());
 
             lines.Add("Steam is not running");
-            Assert.Equal("Join a multiplayer game, Steam is not running", part.Text());
+            Assert.Equal("Join a multiplayer game Steam is not running", part.Text());
         }
 
         [Fact]
@@ -229,15 +229,17 @@ namespace ES2Access.Tests.UI
             );
         }
 
+        /// <summary>The lines are the game's prose - the translated LIST separator must never
+        /// appear between them, whatever it is; the pause belongs to the game's own punctuation.</summary>
         [Fact]
-        public void TheTooltipsLinesAreJoinedWithTheTranslatedListSeparator()
+        public void TheTooltipsLinesAreJoinedWithASpaceNeverTheListSeparator()
         {
             ModStrings.Install(new Dictionary<string, string>
             {
                 { ModStrings.ListSeparator, " / " },
             });
             Assert.Equal(
-                "One / Two",
+                "One Two",
                 TooltipParts.Part(new[] { Section(TooltipMode.Announce, "One", "Two") }).Text()
             );
         }

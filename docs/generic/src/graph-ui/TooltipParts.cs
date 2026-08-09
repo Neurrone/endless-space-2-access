@@ -116,26 +116,31 @@ namespace ES2Access.Core.UI.Graph
         // because something else on the row is reviewable would lose the sentence the game's author
         // wrote for exactly this moment.
         //
-        // A tooltip is written as lines - a name, a description, a reason - and read out as one
-        // sentence, so the lines join the way any other list of parts does.
-        //
-        // NOTE (unresolved, raised by the faction chooser): localization.md says the opposite -
-        // "multi-line game text joins with a space, not the list separator" - and the game's refused
-        // custom-faction buttons show what that costs here: "Permanently deletes the selected custom
-        // faction, This faction cannot be edited" is a comma splice the game never wrote. Changing
-        // ListItem to Fragment fixes it and breaks three tests that encode the current rule by name
-        // (TooltipPartTests). Left alone deliberately: it changes what every screen says.
+        // A tooltip's lines are the game's own prose: they join with a space, never the list
+        // separator (localization.md - "Permanently deletes the selected custom faction, This
+        // faction cannot be edited" was a comma splice the game never wrote; any pause belongs
+        // to the game's own punctuation). The has-tooltip indicator is mod text and stays its
+        // own list item.
         private static string Compose(Func<IList<string>> lines, bool indicate)
         {
             MessageBuilder message = new MessageBuilder();
             IList<string> spoken = lines != null ? lines() : null;
             if (spoken != null)
             {
+                bool first = true;
                 for (int i = 0; i < spoken.Count; i++)
                 {
                     if (!TextUtil.IsBlank(spoken[i]))
                     {
-                        message.ListItem(spoken[i].Trim());
+                        if (first)
+                        {
+                            message.ListItem(spoken[i].Trim());
+                            first = false;
+                        }
+                        else
+                        {
+                            message.Fragment(spoken[i].Trim());
+                        }
                     }
                 }
             }
