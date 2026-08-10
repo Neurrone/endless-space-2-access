@@ -78,6 +78,9 @@ with the tools in `docs/dev-loop.md`. Repo-specific enforcement on top of that p
   fixture-blocked items, and any open judgment calls.
   - Similarly, per-session documentation and suggested process improvements should be saved to a per-session file like `galaxy-review-proposals.md` and kept current during that session
 - Both of those session specific files are never committed
+- Quit the game (`POST /quit`, poll the process) once live testing is done — it is
+  CPU-taxing; leave it running only while the next stage or my own manual testing still
+  needs it.
 
 **Generic-docs bar.** The generic docs are optimized for total future reading cost, not
 completeness. A proposed change to `docs/generic/` must clear ALL of: (1) game-agnostic —

@@ -151,7 +151,17 @@ reload-safe ([hot-reload.md](hot-reload.md)) and per-frame cheap — `Build` run
   [dev-server.md](dev-server.md)) and read it against the screenshot.
 - Any claim that spoken output matches drawn output carries the **evidence pair**: a
   screenshot cropped to the claimed region (with its rect) beside the spoken/buffer lines.
-  Cropping is also what keeps image costs sane — never read full frames.
+  Cropping is also what keeps image costs sane — never read full frames. And the pair's
+  spoken half is judged **as a listener hears it**, not as a match: a number without its
+  caption in the same line, or a tooltip feature answered by the fallback reader, FAILS the
+  check even though it matches the pixels perfectly — "1500/1500" beside an unnamed icon
+  satisfies spoken-equals-drawn and tells the player nothing. Matching is necessary;
+  comprehensible is the bar.
+- **Exercise a gesture from states the test did not create.** A verification that always
+  arrives through its own setup path only proves that path's precondition — a zoom-restore
+  verified by zoom-in-then-restore never met a camera that was already zoomed by other
+  means, and shipped broken for exactly that player. Enumerate the states the game can be
+  in when the key is pressed, not the states the test script produces.
 - Exercise keys at the production dispatch point (input injection), not by calling the
   navigator directly — a screen that answers the navigator but not the injector is a screen
   whose keys don't reach it. The same trap exists one level down: calling the game's
