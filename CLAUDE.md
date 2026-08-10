@@ -39,8 +39,10 @@ This is an important but secondary goal, it is the test vehicle for implementing
 
 While the game runs (dev server enabled), `http://127.0.0.1:8771` serves routes for state,
 speech, GUI inspection, a C# REPL, input injection, hot reload, and loading saves. **Read
-`docs/dev-loop.md` before testing** — it is the maintained map: full route reference, REPL
-gotchas, test recipes, helper inventory, and fixture etiquette.
+`docs/dev-loop.md` before testing** — the loop itself: route reference, REPL gotchas, and
+the screen-agnostic verification patterns. Its index points at the per-need files: the
+helper inventory (`docs/helpers.md`), the ES2 interaction language — layers, keys, claims —
+(`docs/interaction.md`), and the per-screen test recipes (`docs/test-recipes.md`).
 
 Architecture: `ES2Access.Loader` is the actual BepInEx plugin and never reloads — it owns the dev server, `/eval` (vendored `mcs.dll`, a net35 Mono.CSharp), and the mod lifecycle. `ES2Access.dll` is loaded from bytes (never file-locked, so `dotnet build` works while the game runs) and must tear down fully in `ModEntry.Stop` — every feature must be reload-safe. Only `ES2Access.dll` hot-reloads; changes to the loader require a game restart. Harmony instances are created with a unique-per-load id (fixed ids let a stale `UnpatchSelf` strip a newer load's patches).
 
@@ -64,13 +66,15 @@ with the tools in `docs/dev-loop.md`. Repo-specific enforcement on top of that p
   measurement-settled for pipelining.
 - Evidence pairs use `crop-shot.ps1`; never read full-frame screenshots into context.
 - A stage is not done until each of its outputs has landed in the file whose charter fits
-  it: a new helper, route, recipe, or key binding in `docs/dev-loop.md` (the toolbox —
-  nothing else ever goes there); a game-mechanism finding or the mod-policy decision it
-  forces in `docs/es2-facts.md` (or another ES2-specific file under `docs/`); a
-  screen-status change or future-feature prep in `docs/roadmap.md`; a game-agnostic lesson
-  in the stage report for the proposals ledger, never written into `docs/generic/`
-  directly. When in doubt, a pointer line may sit in the convenient file — the content
-  goes where its charter says.
+  it: a new helper in `docs/helpers.md` (one row; the contract lives in its doc comment); a
+  new layer number or key binding in `docs/interaction.md`; a per-screen recipe or fixture
+  note in `docs/test-recipes.md`; a new route, REPL gotcha, or screen-agnostic verification
+  pattern in `docs/dev-loop.md` (ONLY the loop lives there, and it stays under ~300 lines);
+  a game-mechanism finding or the mod-policy decision it forces in `docs/es2-facts.md` (or
+  another ES2-specific file under `docs/`); a screen-status change or future-feature prep
+  in `docs/roadmap.md`; a game-agnostic lesson in the stage report for the proposals
+  ledger, never written into `docs/generic/` directly. When in doubt, a pointer line may
+  sit in the convenient file — the content goes where its charter says.
 - Each implementation round ends with the consolidated manual test handed to me in a
   per-session `.md` file at the repo root, named after the session (e.g.
   `galaxy-review-test-report.md`) and updated as that session's stages land — never left

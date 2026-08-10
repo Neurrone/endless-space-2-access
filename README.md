@@ -51,7 +51,7 @@ The repo has two deliverables:
 
 While the game runs, a dev server at `http://127.0.0.1:8771` provides state inspection,
 speech capture, a C# REPL, input injection, hot reload, and save loading. Read
-`docs/dev-loop.md` — it is the maintained map of routes, helpers, and test recipes.
+`docs/dev-loop.md` — it is the loop itself: routes, REPL, and verification patterns (helpers live in `docs/helpers.md`, per-screen recipes in `docs/test-recipes.md`).
 
 Only `ES2Access.dll` hot-reloads (`POST /reload` after a build); changes to
 `ES2Access.Loader` require a game restart.

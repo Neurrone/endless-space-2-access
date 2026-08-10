@@ -1,9 +1,10 @@
 # ES2 facts — reverse-engineered mechanisms
 
 Game-mechanism findings with no home in the code: how ES2/Amplitude actually behaves, each
-measured or cited. The dev loop itself (helpers, layers, keys, server, recipes) is
-`dev-loop.md`; game-agnostic doctrine is `docs/generic/`. A new fact lands here — never in
-the dev loop — and anything that turns out generic graduates to the generic docs.
+measured or cited. The loop itself is `dev-loop.md`; helpers are `helpers.md`; layers and
+keys are `interaction.md`; per-screen recipes are `test-recipes.md`; game-agnostic doctrine
+is `docs/generic/`. A new fact lands here — never in those — and anything that turns out
+generic graduates to the generic docs.
 
 
 - **A collapsed tutorial is a HUD stop, not a tutorial screen.** The game crops the popup
@@ -54,7 +55,12 @@ the dev loop — and anything that turns out generic graduates to the generic do
 - **`SendMessage(name, sender)` does not reach a zero-argument handler** — most game callbacks
   take `(GameObject obj = null)`, but not all (`OnPreviousHullCb()`/`OnNextHullCb()`), and
   `DontRequireReceiver` swallows the mismatch. `AgeWidgets.Press`/`Toggle`/`Choose` resolve the
-  arity (cached) and pick the overload; the generic rule is widgets.md's arity contract.
+  arity (cached) and pick the overload; the generic rule is widgets.md's arity contract. The
+  mismatch runs BOTH ways and a C# default argument does not save you: `SendMessage("Cb")` on a
+  handler declared `Cb(GameObject obj = null)` logs "Calling function … with no parameters but
+  the function requires 1" and does nothing (measured on
+  `OutpostInfoSidePanel.OnClickChangeColonyCb`). From `/eval`, invoking such a private handler
+  by reflection with an explicit `new object[]{ null }` is the reliable route.
 - **Every tooltip is an ordered list of panel features.** `GuiTooltipWindow.DoBind` resolves
   the tooltip's `Class` through the description database and instantiates one prefab per
   feature under `PanelFeaturesTable`; a feature's SUB-features are added as further siblings in
@@ -190,7 +196,7 @@ the dev loop — and anything that turns out generic graduates to the generic do
   stuck. Two selection stores exist (`FleetsScreen.SelectedGarrisons` and
   `IGuiSelectedGarrisonsRepositoryService` — the movement cursor reads the repository), so never
   wire a selection through only one. An order that names its initiator explicitly bypasses both,
-  which is why the fleet menu posts moves without selecting anything.
+  which is why the mod's explicit-initiator send (backslash) posts moves without needing the selection stores wired.
 - **A queue line's own click is the CANCEL, and the game asks its own question when it needs to.**
   `ConstructionLine.MainButton` → `OnCancelCb` (:378-393) sends `OnCancelConstruction` to the panel,
   and `StarSystemQueuePanel.OnCancelConstruction` (:425-442) branches on
@@ -414,3 +420,186 @@ the dev loop — and anything that turns out generic graduates to the generic do
   conditional claim it launched with: a screen-reader user reaching for a pickup must never flip the
   map into an unannounced mode. The lens keeps its Mouse2 route; `InputAction.ClaimedWhile` remains
   for a conditional hand-back once the lens is modelled and can announce itself.
+- **Everything an OUTPOST has, and how the game refuses it** (measured turn 4, Rigel; the
+  card's fields are `PlanetLabel_SystemManagement` :106-143):
+  - The management page draws the constructibles, queue and hangar panels for an outpost
+    **bound but hidden** (`StarSystemScreen.cs:565` binds them, `Visible=false`), so a
+    side-panel-per-stop model tracks the outpost/colony swap with nothing declared.
+  - `OutpostActionsTable` is **pooled and over-reserved** (7 children for 3 drawn actions).
+    An action the faction cannot have at all is hidden outright —
+    `FailureInfo.ContainsFlag("Discard", …)` in `OutpostActionItem.Bind` — which is what
+    hides the Hisshos/TimeLords/Vodyani variants; one merely refused *today* stays
+    `Visible` with `AgeTransform.Enable = false`. So "drawn" and "offered" are the two
+    separate questions, and the mod's `AddRefusable` shape is the right one.
+  - An item **names itself nowhere on the card**: it draws only a cost. The name, category,
+    description, duration, effects and cost all live on `GuiOutpostAction`, the wrapper hung
+    on the item's own tooltip, whose `Title` is readable at bind time (no drawing needed) and
+    whose `TooltipClass` is `"OutpostAction"` (renderer-assembled → indicated + buffered).
+  - **A renderer-assembled tooltip's refusal is computable without drawing it**:
+    `PanelFeatureFailureInfos.Bind` is literally
+    `Gui.FormatFailureInfos(((IFailureInfosProvider)target).FailureInfos)`, and the target is
+    filled in at bind time. Asking the wrapper gives the same sentence the panel would draw,
+    at once — measured: "There are no enemy Outposts on this star system.", "Cannot afford
+    75 Influence". (The drawn tooltip is the free oracle for it.)
+  - **The cancel window is the start turn only.** `OutpostActionItem.Bind` sets
+    `Enable = … && service.Turn == Action.StartTurn`; the click is
+    `OnOutpostActionSwitchCb` (:1566) — `OrderEntityAction` to start (no confirmation),
+    `OrderCancelEntityAction(refund: true)` to cancel. Live round trip: dust 253.81 → 103.81
+    → 253.81, entity actions 0 → 1 (`OutpostActionBoostGrowthWithDust`) → 0. A running item
+    swaps its cost for `DurationLabel` (`EndTurn - turn`), so the same drawn field reads
+    "150 Dust" or "10 Turn" depending on state.
+  - **Decolonize is a toggle whose handler flips the state again.** `OnDecolonizeToggleCb`
+    (:1587) starts with `DecolonizeToggle.State = !DecolonizeToggle.State` — i.e. it undoes
+    the flip the click itself made — then either posts `OrderCancelEntityAction` (already
+    scheduled: unschedules with NO confirmation) or raises the game's own
+    `%PlanetDecolonizeConfirmationDescription` message box. Replaying the click the ordinary
+    way (`AgeWidgets.Toggle`: state then handler) therefore lands on the right behaviour;
+    calling the handler alone would not. The toggle's drawn On label is the ellipsized
+    "Decolonizati." — the game's real words are `%PlanetDecolonizeTitle` / 
+    `%PlanetDecolonizingTitle`.
+  - **The orbital card's outpost tooltip is for FOREIGN outposts only.**
+    `PlanetLabel_SystemOrbital.RefreshOutpostStatus` (:490-525) blanks `OutpostTooltip.Content`
+    every refresh and re-fills it with `%OutpostColonizationTooltipDescription` **only** when
+    `ColonizedPlanet.Empire != Gui.PlayerEmpire`. On your own outpost the game deliberately
+    puts nothing on hover, so there is nothing to buffer — verified live (content empty on
+    Rigel I) and by forcing the content, which the buffer then carried.
+  - `OutpostInfoSidePanel` has **no header icon of its own**, so the generic "name a panel by
+    the first readable image tooltip in it" heuristic reached all the way down to
+    `HappinessIcon` and called the whole panel "The overall Approval level of people living in
+    this System". Its `ColonyGroup` row is also the one row of that panel with no title label:
+    the colony's name is the whole of what is drawn, and the row's meaning is only on the
+    group's own tooltip (`%OutpostSideColonyWhichProvidesGrowthDescription`). The corpus has
+    no `%OutpostSide*` panel title at all.
+  - `OutpostInfoSidePanel.ColonyChangeButton` opens `SystemSelectionModalWindow`
+    (`OnClickChangeColonyCb`), now modelled by `SystemSelectionScreen` — see the
+    system-selection block below.
+
+- **The COLONY side of migration is three count-only readouts, and the corpus titles none of
+  them.** `ColonyPopulationSidePanel.RefreshContent` (:197-240) draws `GrowthLine` as up to three
+  groups — `EmigrationGroup` (turns until the next migrant leaves), `ImmigrationGroup`
+  (`MigrationSourceSystems.Count`) and `OutpostsGroup`
+  (`OutpostMigrationDestinationSystems.Count`) — each a symbol beside a bare number, each shown
+  only while its own count is non-zero (`GrowthLine.Visible` is the OR of the three, so an
+  undrawn one is genuinely absent rather than blank). The only words are the sentence the game
+  writes onto each group's own tooltip, and it EXPLAINS the row rather than titling it:
+  `%StarSystemSideEmigrationDescription` / `%StarSystemSideImmigrationDescription` /
+  `%StarSystemSideOutpostsDescription` (the last naming the destination systems by
+  `ColonyInfoSidePanel.FormatSystemList`). Grepping `Public\Localization\english` for
+  `StarSystemSide(Outposts|Emigration|Immigration)*` returns only those descriptions and the
+  emigration `Format` — there is no `*Title` for any of the three. **Mod policy**: the row's name
+  is therefore the mod's own counted phrase, said off the MODEL
+  (`OutpostMigrationDestinationSystems.Count`, not the drawn digits, which are already a number
+  turned into text and cannot choose a plural form), with the game's sentence kept as the row's
+  detail under the ordinary tooltip rule. Only the outposts group is drawn in either fixture
+  (turn 4, Dusay feeding Rigel), so the other two are unnamed because they are fixture-blocked,
+  not because bareness was chosen for them.
+
+- **`SystemSelectionModalWindow` is a GENERIC "pick one of your systems" window, and its Exit
+  commits nothing.** Six panels open the one window with their own `Purpose` and their own
+  three delegates (`OutpostInfoSidePanel`, `SpaceportSidePanel`, `ShipsSpawnPointSidePanel`,
+  `AcademyScreen`, `MarketplaceBuyableItemsPanel`, `NamedShipInfoPanel`), so nothing about the
+  opener is visible in the window — model it off the drawn title, the drawn headers and the
+  drawn rows. What matters for a mod:
+  - **Cancel and Escape are safe here, unlike the faction chooser.** The class overrides
+    `OnCancelCb` only to raise its own `OnCanceled` event (:164-171) and declares NO
+    `HandleInput`, so Exit takes `GuiModalWindow`'s own `HideWindow` (:36-42). The commit lives
+    in `OnValidateCb` and `OnLineDoubleClick` alone (:184-201) — both call `SelectDelegate`.
+    That is the exact opposite of `FactionChoiceModalWindow`, whose overridden Exit routes to
+    its Validate handler; the two windows look identical and behave oppositely, so read the
+    override before trusting a Cancel.
+  - **The commit is a DOUBLE click, and it is destructive per opener.** For the outpost the
+    delegate posts `OrderChangeOutpostGrowthProvider` (`OutpostInfoSidePanel.SelectColony`
+    :150-157), which resets the outpost's ship timer even when the colony picked is the one
+    already set. A single click on a line only selects it (`OnLineSelection` :179-182 merely
+    re-weighs `ValidateButton.Enable`), which is why the mod wires Enter to the line's own
+    single click and leaves the double click to the Confirm button.
+  - **The window does not pre-select the system currently in force.** `OnBeginShow` →
+    `GuiTable.BeginShow()` sets `SelectedLine = null` every time, so Confirm opens disabled
+    even where the outpost already has a provider (measured: Rigel's `OutpostMigrationSource`
+    was Dusay and the Dusay row still opened "not selected").
+  - **A refused system stays in the list, disabled, with the opener's sentence as a `Simple`
+    tooltip on the LINE.** `GuiColonizedStarSystemObject.OnBind` (:34-44) writes
+    `failDescription` into `line.Tooltip.Content`, nulls its `Target` and forces the class to
+    `Simple` — i.e. the reason is readable off the widget, no drawn tooltip needed. On an
+    accepted line the tooltip is left empty (`GuiTableLine.Unbind` releases it), so declaring
+    it unconditionally costs nothing.
+  - **Cell tooltips are of both kinds in one row.** Measured on the `SystemListTable`: the five
+    income columns carry class `SimulationProperty` and Approval carries `StarSystemHappiness`
+    (renderer-assembled — indicate + buffer), while Policy and Hangar carry no class and a
+    `%…Description` key in `Content` (announce). Population and Construction carry no tooltip
+    on the cell at all and hang theirs on the icons inside. Two columns — `AssignedHero` and
+    `ResourcesIncome` — are drawn, visible and EMPTY for a plain colony.
+  - The header row is `TableGuiElement.Columns` in order and each header's caption is
+    `%<TableName><ColumnName>Title` with the tooltip `%…Description`
+    (`GuiTableHeader.Refresh`), so the five income headers draw as bare icon tokens
+    (`[foodColored]`) that only `AgeText.Clean` turns into "Food". Pair a cell with its header
+    by `GuiTableCell.ColumnInfo.Name == GuiTableHeader.PropertyName`, never by index —
+    `GuiTable.SetSort` re-sorts the LINES and leaves the columns alone, but the pairing by name
+    is what survives a table that ever reorders them.
+  - Sorting has no feedback of its own beyond the row order and a sort arrow's alpha
+    (`SortStatus`), and `GuiTable.CurrentSortPropertyName` is the only readable answer to
+    "which column is the list sorted by".
+
+- **A `PlanetLabel`'s show is camera-gated and can be dropped for good.** `PlanetLabel.OnBeginShow`
+  (PlanetLabel.cs:423-428) does not show anything: it sets `AgeTransform.Visible = false` and hands
+  the reveal to `ShowWhenTransitionFinished` (:443-473), which waits for the planet's screen position
+  to stop changing (i.e. for the camera to stop) before measuring where to draw the card. That
+  coroutine has two bare `yield break`s — one when the weak `ICameraService` reference is dead or
+  null, one when `ICameraService.Camera` is null (:451-459) — and **nothing retries**. So a show
+  issued while the camera is being swapped, which is exactly what `PlanetScreen.BindPlanet` (:100-112)
+  does on the way into the planet overview, can be lost outright: the label ends bound to its planet
+  and idle-hidden, and stays that way. Measured live on the planet page: `card.Shown=false`,
+  `Showing=false`, `Hiding=false`, `card.Planet != null`, with `PlanetScreen.Shown=true`,
+  `IsReady=true`, `Planet != null`, no modal and not scanning — the game drew the two left-hand side
+  panels and no card at all. **The stuck signature is unambiguous**: `GuiPanel.Shown` is
+  `(Visible && !Hiding) || Showing`, and the only thing that hides a bound label also unbinds it
+  (`PlanetScreen.UnbindPlanet` :114-121), so "bound and idle-hidden" is never a resting state the game
+  puts itself in. **The repair is the game's own call**: `GuiPanel.Show()` runs `OnBeginShow` again
+  whenever `Shown` is false, and once the camera is back the coroutine completes normally
+  (verified live). Two things make a retry delicate — the coroutine leaves `Showing` FALSE for its
+  whole wait, so a healthy pending show is indistinguishable from a lost one except by how long it
+  lasts, and the wait is unbounded while the camera moves, so a retry must be gated on the view
+  standing still (`GalaxyView.CanChangeGalaxyView`, i.e. no `GalaxyViewLevelTransitionCurrent`;
+  re-entering the same level with a new subject, which is how the page steps between planets, is a
+  transition too). `PlanetOverviewScreen.FinishArriving` is the mod's repair.
+  **All four subclasses share the base coroutine** — `PlanetLabel_PlanetOverview`,
+  `PlanetLabel_SystemOrbital`, `PlanetLabel_SystemManagement`,
+  `PlanetLabel_SystemManagementScanView`; none overrides `ShowWhenTransitionFinished`, and only the
+  last two override `OnBeginShow` at all (both call base). So the orbital and management cards can be
+  lost the same way; only the planet overview is repaired so far, because only there was it measured.
+
+- **`GuiManager.ShownGuiPanels` leaks (parked, unanalysed).** Measured on the turn-4 fixture while
+  the planet page was up: the collection held ~80 `FleetsScreen` entries and 2 `StarSystemScreen`
+  entries — panels shown without a matching hide, accumulating over a session. Nothing the mod does
+  reads that collection, and no symptom has been traced to it; noted here so the next investigation
+  starts from a measurement rather than from a fresh surprise.
+
+## Card and tooltip drawing mechanisms
+
+**A hint button's tooltip has three parts, in a fixed order**: the button's own description, then
+`"\n\n"` and the failure (`Gui.FormatFailure`, Gui.cs:1072), then — only for a missing technology —
+`"\n" + %MissingTechnologyClickDescription`, appended by `Gui.FormatButtonHint` (Gui.cs:1207).
+So the refusal alone is lines[1..] minus that instruction, which is what `RefusalText.Compose`
+does. Measured on Dusay I: "Colonize the planet…" / "Missing technology Maximized Exploitation" /
+"Hold Control+Click to locate this technology in the technology tree".
+
+**The card draws FIDSI two different ways** (`PlanetLabel_SystemOrbital.RefreshFIDSI` :1012-1028):
+a colony gets `FidsiEnumerator` with numbers, an unsettled world gets `FidsiScoreTable` with pips.
+`FidsiProperties` holds SIX entries and `DisplayedProperties` is 5 — the sixth is `Happiness`, not
+an output. Read the numbers only where the enumerator is visible, or the buffer describes a card
+nobody can see.
+- **The galaxy camera's 13 zoom steps, and only the LAST reaches orbital.**
+  `CanFocusGalaxyEntity()` is `zoomStep == ZoomStepsCount - 1`; until then
+  `FocusedStarSystemNode` stays null and `PlanetLabelsWindow_SystemOrbital` never shows, and
+  the camera must also be within `DistanceMinToCatchFocusOnNode` of the node. Step 3 draws a
+  system's name only, step 9 its whole label. `SetZoomStep()` alone swaps the drawn layer
+  WITHOUT moving the camera. At step 12 the focused system's own label is pushed off the top
+  of the screen (y ≈ -230). (Operational use: the camera recipe in `test-recipes.md`.)
+- **Stepping between planets re-enters the SAME view level with a NULL blink.**
+  `Gui.GuiGameWindowService.CurrentGalaxyViewLevel` goes null for a few frames and the window
+  unbinds its planet on every Previous/Next step; `GalaxyViewLevels.LevelThroughTransitions`
+  is the view's own non-blinking answer. (Why the planet screen gates on it: its doc comment.)
+- **A hint-blocked button stays `Visible` AND `Enable`.** The game turns its click into
+  "jump to the missing technology" instead of disabling it, so `Gui.IsHintActive(transform)`
+  is the ONLY discriminator between an offerable button and a blocked one — never gate on
+  `Enable`. (The hint tooltip's three-part structure: the card/tooltip mechanisms above.)
