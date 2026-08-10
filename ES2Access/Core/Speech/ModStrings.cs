@@ -123,6 +123,10 @@ namespace ES2Access.Core.Speech
         public const string GalaxyTurnsRemaining = "galaxy.turns-remaining";
         public const string GalaxyStockAndNet = "galaxy.stock-and-net";
         public const string GalaxySystemColonized = "galaxy.system-colonized";
+
+        // A system of the player's that is still an OUTPOST rather than a colony - a distinct label on
+        // the map, so a distinct word here.
+        public const string GalaxySystemOutpost = "galaxy.system-outpost";
         public const string GalaxyOpenSystem = "galaxy.open-system";
 
         // What the camera just did, said back because the player cannot see it move. The game has no
@@ -192,7 +196,7 @@ namespace ES2Access.Core.Speech
         public const string LoadSaveSaveName = "loadsave.save-name";
         public const string LoadSaveEditName = "loadsave.edit-name";
         public const string LoadSaveCloud = "loadsave.cloud";
-        public const string LoadSaveCellEmpty = "loadsave.cell-empty";
+        public const string NavCellEmpty = "nav.cell-empty";
 
         // Picking something up and putting it down somewhere else (a ship into another fleet). The
         // words are the DRAG's, because that is the gesture these keys stand in for and the one the
@@ -223,6 +227,7 @@ namespace ES2Access.Core.Speech
         public const string SystemColonyPanel = "system.colony-panel";
         public const string SystemPopulationPanel = "system.population-panel";
         public const string SystemRepresentativesPanel = "system.representatives-panel";
+        public const string SystemOutpostPanel = "system.outpost-panel";
         public const string SystemConstructiblesPanel = "system.constructibles-panel";
         public const string SystemQueuePanel = "system.queue-panel";
         public const string SystemHangarPanel = "system.hangar-panel";
@@ -236,6 +241,13 @@ namespace ES2Access.Core.Speech
         public const string SystemImprovements = "system.improvements";
         public const string SystemLevel = "system.level";
         public const string SystemSecurity = "system.security";
+
+        /// <summary>How many outposts this colony is feeding part of its growth to. The population
+        /// panel draws the number alone beside a symbol and says what it means nowhere but on the row's
+        /// tooltip, so the row's own name is the mod's - and it is a COUNTED phrase, hence a form per
+        /// number (see <see cref="Plural"/>) rather than a count glued to a noun.</summary>
+        public const string SystemSupplyingOutpost = "system.supplying-outpost";
+        public const string SystemSupplyingOutposts = "system.supplying-outposts";
 
         // The construction queue: what a buy-out button on a line is called, and what a line says
         // about where it is and how far along it is.
@@ -409,6 +421,7 @@ namespace ES2Access.Core.Speech
             { GalaxyTurnsRemaining, "{0} turns remaining" },
             { GalaxyStockAndNet, "{0}, {1} per turn" },
             { GalaxySystemColonized, "colonized" },
+            { GalaxySystemOutpost, "outpost" },
             { GalaxyOpenSystem, "Open system" },
             { GalaxyZoomedIn, "Zoomed in" },
             { GalaxyZoomedOut, "Zoomed out" },
@@ -443,7 +456,7 @@ namespace ES2Access.Core.Speech
             { LoadSaveSaveName, "Save name" },
             { LoadSaveEditName, "Type the save name, then press Enter." },
             { LoadSaveCloud, "Steam cloud saves" },
-            { LoadSaveCellEmpty, "empty" },
+            { NavCellEmpty, "empty" },
             { CarryCarrying, "Dragging {0}" },
             { CarryDropped, "Dropped {0}" },
             { CarryDropRefused, "{0} cannot go there" },
@@ -456,6 +469,7 @@ namespace ES2Access.Core.Speech
             { SystemColonyPanel, "Colony" },
             { SystemPopulationPanel, "Population" },
             { SystemRepresentativesPanel, "Representatives" },
+            { SystemOutpostPanel, "Outpost" },
             { SystemConstructiblesPanel, "Available constructions" },
             { SystemQueuePanel, "Construction queue" },
             { SystemHangarPanel, "Hangar" },
@@ -466,6 +480,8 @@ namespace ES2Access.Core.Speech
             { SystemImprovements, "System improvements" },
             { SystemLevel, "System level {0}" },
             { SystemSecurity, "Security" },
+            { SystemSupplyingOutpost, "Supplying {0} outpost" },
+            { SystemSupplyingOutposts, "Supplying {0} outposts" },
 
             { SystemBuyOut, "Buy out with {0}" },
             { SystemQueuePosition, "position {0}" },
@@ -610,6 +626,22 @@ namespace ES2Access.Core.Speech
             }
 
             return template;
+        }
+
+        /// <summary>
+        /// A counted phrase in the form its number calls for, the number filling the chosen
+        /// template's <c>{0}</c>.
+        ///
+        /// Each form is a WHOLE sentence of its own rather than a number glued to a noun, because the
+        /// noun agrees with the number in most languages and no template can inflect a fragment handed
+        /// to it. Two forms is what English needs and what a translator can always fill in - a language
+        /// with a single form writes the same sentence twice. A language that wants THREE or more
+        /// (Russian, Polish, Arabic) is the trigger for real plural rules carried by the locale file;
+        /// nothing here anticipates them, which is deliberate.
+        /// </summary>
+        public static string Plural(string oneKey, string manyKey, int count)
+        {
+            return Format(count == 1 ? oneKey : manyKey, count);
         }
 
         /// <summary>

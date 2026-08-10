@@ -96,5 +96,55 @@ namespace ES2Access.Tests.Speech
             Assert.Equal("several", ModStrings.Format(ModStrings.Quantity, 5));
             Assert.Empty(_warnings);
         }
+
+        [Fact]
+        public void ACountedPhrasePicksTheFormItsNumberCallsFor()
+        {
+            Assert.Equal(
+                "Supplying 1 outpost",
+                ModStrings.Plural(
+                    ModStrings.SystemSupplyingOutpost,
+                    ModStrings.SystemSupplyingOutposts,
+                    1
+                )
+            );
+            Assert.Equal(
+                "Supplying 3 outposts",
+                ModStrings.Plural(
+                    ModStrings.SystemSupplyingOutpost,
+                    ModStrings.SystemSupplyingOutposts,
+                    3
+                )
+            );
+        }
+
+        [Fact]
+        public void ALanguageWithOneFormWritesTheSameSentenceInBoth()
+        {
+            ModStrings.Install(
+                new Dictionary<string, string>
+                {
+                    { ModStrings.SystemSupplyingOutpost, "{0}個の前哨基地に供給中" },
+                    { ModStrings.SystemSupplyingOutposts, "{0}個の前哨基地に供給中" },
+                }
+            );
+
+            Assert.Equal(
+                "1個の前哨基地に供給中",
+                ModStrings.Plural(
+                    ModStrings.SystemSupplyingOutpost,
+                    ModStrings.SystemSupplyingOutposts,
+                    1
+                )
+            );
+            Assert.Equal(
+                "4個の前哨基地に供給中",
+                ModStrings.Plural(
+                    ModStrings.SystemSupplyingOutpost,
+                    ModStrings.SystemSupplyingOutposts,
+                    4
+                )
+            );
+        }
     }
 }

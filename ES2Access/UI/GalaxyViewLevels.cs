@@ -142,6 +142,53 @@ namespace ES2Access.UI
             }
         }
 
+        /// <summary>
+        /// Whether the view is in the middle of moving between levels - the seconds where the camera
+        /// is flying from wherever it was to wherever it is going.
+        ///
+        /// The view runs one transition at a time and holds it while it runs
+        /// (<c>GalaxyView.GalaxyViewLevelTransitionCurrent</c>), which is the game's own answer to
+        /// "is the camera still on its way". It matters to anything that measures where a thing is
+        /// DRAWN: mid-flight every screen position is a frame out of date, and re-entering the same
+        /// level with a different subject - how the page steps from one planet to the next - is a
+        /// transition like any other even though the level never changes.
+        /// </summary>
+        public static bool ChangingLevel
+        {
+            get
+            {
+                try
+                {
+                    IViewService views = Services.GetService<IViewService>();
+                    GalaxyView galaxy = views == null ? null : views.CurrentView as GalaxyView;
+                    return galaxy != null && !galaxy.CanChangeGalaxyView;
+                }
+                catch (Exception)
+                {
+                    return false;
+                }
+            }
+        }
+
+        /// <summary>Whether there is a camera drawing the world right now. The game's own labels
+        /// measure themselves against it, and give up outright when it is missing - which it is for
+        /// part of every view change.</summary>
+        public static bool CameraDrawing
+        {
+            get
+            {
+                try
+                {
+                    ICameraService service = Services.GetService<ICameraService>();
+                    return service != null && service.Camera != null;
+                }
+                catch (Exception)
+                {
+                    return false;
+                }
+            }
+        }
+
         /// <summary>Whether the game is showing a particular view level - the question a screen's
         /// IsActive asks.</summary>
         public static bool At<TLevel>()

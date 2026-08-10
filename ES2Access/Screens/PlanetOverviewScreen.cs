@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Amplitude.Unity.Gui;
 using ES2Access.Core.Speech;
+using ES2Access.Core.UI;
 using ES2Access.Core.UI.Graph;
 using ES2Access.Core.Util;
 using ES2Access.UI;
@@ -62,6 +63,33 @@ namespace ES2Access.Screens
         /// </summary>
         private bool _arrived;
 
+        /// <summary>
+        /// How long the card is given to draw itself before the page finishes arriving on its behalf,
+        /// and how long the game is left alone afterwards. Frames, because the poll that asks is
+        /// per-frame: about a third of a second and about a second at the rate the game runs at.
+        ///
+        /// The settle is what keeps the ordinary case untouched. The game's own show completes a frame
+        /// or two after the camera stops, and the whole time it is waiting the card looks exactly like
+        /// a card that will never come.
+        /// </summary>
+        private const int CardSettleFrames = 20;
+
+        private const int CardPauseFrames = 60;
+
+        /// <summary>
+        /// The card's own show, done for it when the game loses it.
+        ///
+        /// <c>PlanetScreen.BindPlanet</c> asks the card to show itself, and the card defers the reveal
+        /// to a coroutine that waits for the camera to stop moving before it measures where the planet
+        /// is on screen. That coroutine gives up outright when there is no camera to measure against
+        /// (PlanetLabel.cs:443 - two bare <c>yield break</c>s), which is the state the game is in for
+        /// part of every flight onto a planet, and NOTHING retries: the card ends up bound to the
+        /// planet and permanently hidden, so the page draws its left-hand panels and no card at all.
+        /// Asking the card to show itself again once the camera is back is the whole repair - it is
+        /// the game's own call, and it completes normally.
+        /// </summary>
+        private readonly Nudge _finishArriving = new Nudge(CardSettleFrames, CardPauseFrames);
+
         /// <summary>The planet the last announcement was about, so cycling says the new one once.
         /// </summary>
         private Planet _announced;
@@ -93,10 +121,16 @@ namespace ES2Access.Screens
         /// <summary>
         /// Ours while the camera is on a planet and nothing has replaced the page.
         ///
-        /// Arriving and leaving are different questions. We arrive when the window says it is shown and
-        /// ready AND the card is drawn: the side panels are up a frame or two before it, and a screen
-        /// that declared only the half that existed would seat the cursor on a panel and leave it
-        /// there.
+        /// Arriving and leaving are different questions. We arrive when the WINDOW says it is shown and
+        /// ready with a planet bound - the page, not any one piece of it.
+        ///
+        /// The card is deliberately not part of this. It is drawn a frame or two after the side panels
+        /// and the game can lose it altogether (see <see cref="_finishArriving"/>), and a page that
+        /// waited for it said NOTHING when it never came - the left-hand panels were on the screen,
+        /// the player heard silence, and there was no way out but the mouse. What the card being late
+        /// really costs is the cursor: it must not seat on the card and it must not seat on the HUD, so
+        /// the page declares its stops in drawn order and the card's simply joins on a later rebuild
+        /// when the card turns up. Either way the cursor starts on the info panel.
         ///
         /// We leave when the VIEW LEVEL stops being a planet - not when the window stops holding one,
         /// and not on the GUI's answer to which level is up. Stepping to the next planet is this same
@@ -134,8 +168,7 @@ namespace ES2Access.Screens
                         window != null
                         && window.Planet != null
                         && window.Shown
-                        && window.IsReady
-                        && Card(window) != null;
+                        && window.IsReady;
                 }
 
                 return _arrived;
@@ -161,12 +194,14 @@ namespace ES2Access.Screens
         {
             PlanetScreen window = Window();
             _announced = window == null ? null : window.Planet;
+            _finishArriving.Forget();
             _hud.Baseline();
         }
 
         public override void OnPop()
         {
             _announced = null;
+            _finishArriving.Forget();
             _hud.Forget();
         }
 
@@ -187,6 +222,8 @@ namespace ES2Access.Screens
                 {
                     return;
                 }
+
+                FinishArriving(window);
 
                 Planet planet = window.Planet;
                 PlanetLabel_PlanetOverview card = Card(window);
@@ -210,6 +247,60 @@ namespace ES2Access.Screens
             }
         }
 
+        /// <summary>
+        /// See that the page finishes arriving: the card the game bound to this planet and then never
+        /// drew is asked to show itself again, once the camera it measures itself against is back.
+        ///
+        /// The stuck state is exact and cannot be anything else. The card is bound to the same planet
+        /// the window is, and it is neither shown nor on its way in or out - and the game never leaves
+        /// a bound card resting hidden, because the only thing that hides one also unbinds it
+        /// (<c>PlanetScreen.UnbindPlanet</c>). What it does look like is a card whose show is still
+        /// waiting on the camera, which is why this waits (<see cref="CardSettleFrames"/>) before
+        /// deciding, only asks while the view is standing still, and then stands back
+        /// (<see cref="CardPauseFrames"/>): the reveal it asks for is deferred as well, so for a while
+        /// afterwards the card still reads exactly as it did before.
+        /// </summary>
+        private void FinishArriving(PlanetScreen window)
+        {
+            PlanetLabel_PlanetOverview card = Label(window);
+            if (card == null)
+            {
+                _finishArriving.Due(false, false);
+                return;
+            }
+
+            bool lost;
+            try
+            {
+                lost =
+                    card.Planet != null
+                    && ReferenceEquals(card.Planet, window.Planet)
+                    && !card.Shown
+                    && !card.Showing
+                    && !card.Hiding;
+            }
+            catch (Exception)
+            {
+                return;
+            }
+
+            bool ready = GalaxyViewLevels.CameraDrawing && !GalaxyViewLevels.ChangingLevel;
+            if (!_finishArriving.Due(lost, ready))
+            {
+                return;
+            }
+
+            Log.Info("planet: the card never drew itself - asking the game to show it again");
+            try
+            {
+                card.Show();
+            }
+            catch (Exception e)
+            {
+                Log.Warn("planet: showing the card again threw: " + e);
+            }
+        }
+
         public override void Build(GraphBuilder builder)
         {
             PlanetScreen window = Window();
@@ -221,7 +312,7 @@ namespace ES2Access.Screens
             PlanetLabel_PlanetOverview card = Card(window);
             PlanetInfoSidePanel info = Panel<PlanetInfoSidePanel>();
             PlanetPopulationSidePanel population = Panel<PlanetPopulationSidePanel>();
-            if (card == null || info == null)
+            if (info == null)
             {
                 return;
             }
@@ -238,8 +329,14 @@ namespace ES2Access.Screens
             builder.BeginStop(PopulationStop);
             BuildPopulation(builder, population);
 
-            builder.BeginStop(CardStop);
-            BuildCard(builder, card);
+            // Only while it is actually on the screen. A card the game has lost is not a stop that
+            // reads empty, it is a stop that does not exist yet - and it joins the page on whichever
+            // rebuild follows the card turning up.
+            if (card != null)
+            {
+                builder.BeginStop(CardStop);
+                BuildCard(builder, card);
+            }
 
             _hud.Quest(builder);
             _hud.Tutorial(builder);
@@ -759,6 +856,20 @@ namespace ES2Access.Screens
             try
             {
                 return widget == null ? null : widget.GetComponent<T>();
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>The card whether or not it is on the screen - what the window HAS, as against what
+        /// <see cref="Card"/> answers, which is what the player can see.</summary>
+        private static PlanetLabel_PlanetOverview Label(PlanetScreen window)
+        {
+            try
+            {
+                return window == null ? null : window.PlanetLabel;
             }
             catch (Exception)
             {

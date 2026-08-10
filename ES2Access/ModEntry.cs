@@ -123,6 +123,7 @@ namespace ES2Access
             Screens.Register(new PlanetOverviewScreen());
             Screens.Register(new SystemDiscoveryScreen());
             Screens.Register(new ImprovementsModalScreen());
+            Screens.Register(new SystemSelectionScreen());
             Screens.Register(new RenameModalScreen());
             Screens.Register(new TutorialSelectionScreen());
             Screens.Register(new global::ES2Access.Screens.NewGameScreen());
@@ -302,8 +303,8 @@ namespace ES2Access
         }
 
         /// <summary>
-        /// Teach the announcer the mod's own wording. These are static because every control's
-        /// readout passes through them; Stop drops them again.
+        /// Teach the announcer and the table emitter the mod's own wording. These are static because
+        /// every control's readout passes through them; Stop drops them again.
         ///
         /// PartFilter is deliberately left unset, which means every announcement part speaks. It is
         /// the hook for per-control-type announcement settings, and there is no settings UI yet.
@@ -314,6 +315,10 @@ namespace ES2Access
                 new MessageBuilder().PushFraction(index, count).Build();
             GraphAnnouncer.ExpandedStateText = expanded =>
                 ModStrings.Get(expanded ? ModStrings.NavExpanded : ModStrings.NavCollapsed);
+
+            GraphSheet.BlankText = () => ModStrings.Get(ModStrings.NavCellEmpty);
+            GraphSheet.TableRoleText = () => ModStrings.Get(ModStrings.NavTable);
+            GraphSheet.TextCellType = ControlTypes.Text;
         }
 
         public static void Stop()

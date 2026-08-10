@@ -286,6 +286,9 @@ namespace ES2Access.Screens
                 {
                     GraphNodes.LabelPart(() => AgeText.Label(it.PlanetTitle)),
                     GraphNodes.ValuePart(() => AgeText.Label(it.PlanetStatus)),
+                    // An outpost's card ends in the game's own sentence about how it is getting on
+                    // ("Colony in 24 Turn"), which is drawn on the card and so is spoken, not buffered.
+                    GraphNodes.ValuePart(() => Drawn(it.OutpostBottomCaption)),
                 },
                 Sections = GraphNodes.Sections(() => PlanetDetails(it), null),
                 OnActivate = () => GalaxyViewLevels.OpenPlanet(it.Planet),
@@ -310,8 +313,14 @@ namespace ES2Access.Screens
             List<CardActions.CardAction> rename = new List<CardActions.CardAction>(1);
             CardActions.AddNamedByMod(rename, label.PlanetRenameButton, ModStrings.SystemRenamePlanet);
             List<CardActions.CardAction> buttons = PlanetButtons(label);
+            List<CardActions.CardAction> outpost = OutpostActions(label);
             List<Population> populations = Populations(label);
-            if (rename.Count == 0 && buttons.Count == 0 && populations.Count == 0)
+            if (
+                rename.Count == 0
+                && buttons.Count == 0
+                && outpost.Count == 0
+                && populations.Count == 0
+            )
             {
                 builder.AddItem(id, vtable);
                 return;
@@ -326,6 +335,7 @@ namespace ES2Access.Screens
                 CardActions.Emit(builder, key + "/name", rename);
                 AddPopulations(builder, key, label, populations, canCarry);
                 CardActions.Emit(builder, key, buttons);
+                CardActions.Emit(builder, key + "/outpost", outpost);
             }
 
             builder.EndGroup();
@@ -349,6 +359,87 @@ namespace ES2Access.Screens
         }
 
         /// <summary>
+        /// What an OUTPOST's card offers, in the order the card draws it: the strip of outpost actions
+        /// along the top of the outpost group, then the decolonize tick under them.
+        ///
+        /// The game draws an action as a tick with a price on it and its name NOWHERE - the name, what
+        /// it does, how long it takes and what it costs all live in the wrapper on its own tooltip
+        /// (<c>GuiOutpostAction</c>) - so that wrapper's title is what the node is called and the
+        /// tooltip is the dossier behind it. An action the faction cannot have at all the game hides
+        /// outright (the <c>Discard</c> failure flag, <c>OutpostActionItem.Bind</c>), so those are not
+        /// here; one it is merely refusing today stays drawn and switched off, and is declared refusing
+        /// with the game's own reason. Enter is the tick's own click, which starts the action, or -
+        /// only on the turn it started, which is the whole of the game's cancel window - cancels it
+        /// with a refund (<c>PlanetLabel_SystemManagement.OnOutpostActionSwitchCb</c> :1566).
+        ///
+        /// Decolonize is the same shape: Enter is its click, and the game raises its own confirmation
+        /// box, which speaks through <c>MessageBoxScreen</c> like every other one. Ticked, it is
+        /// already scheduled and the click unschedules it with no confirmation at all (:1587).
+        /// </summary>
+        private static List<CardActions.CardAction> OutpostActions(
+            PlanetLabel_SystemManagement label
+        )
+        {
+            List<CardActions.CardAction> found = new List<CardActions.CardAction>(4);
+            try
+            {
+                if (label.OutpostGroup == null || !AgeWidgets.Visible(label.OutpostGroup))
+                {
+                    return found;
+                }
+
+                AgeTransform table = label.OutpostActionsTable;
+                IList<AgeTransform> items = table == null ? null : table.Children;
+                for (int i = 0; items != null && i < items.Count; i++)
+                {
+                    OutpostActionItem item =
+                        items[i] == null ? null : items[i].GetComponent<OutpostActionItem>();
+                    if (item == null)
+                    {
+                        continue;
+                    }
+
+                    OutpostActionItem it = item;
+                    CardActions.AddToggle(
+                        found,
+                        item.Toggle,
+                        CardActions.TitleOf(item.Toggle),
+                        () => OutpostActionValue(it)
+                    );
+                }
+
+                CardActions.AddToggle(
+                    found,
+                    label.DecolonizeToggle,
+                    CardActions.GameText("%PlanetDecolonizeTitle"),
+                    null
+                );
+            }
+            catch (Exception e)
+            {
+                Log.Warn("system: reading an outpost card's actions threw: " + e);
+            }
+
+            return found;
+        }
+
+        /// <summary>What the game writes on an outpost action: what it would cost while it is only on
+        /// offer, and how many turns it has left once it is running.</summary>
+        private static string OutpostActionValue(OutpostActionItem item)
+        {
+            try
+            {
+                return item.DurationGroup != null && item.DurationGroup.Visible
+                    ? Drawn(item.DurationLabel)
+                    : Drawn(item.CostLabel);
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
         /// Everything the card shows that the readout cannot carry: why the game is refusing to
         /// colonize it, what kind of world it is, what living there is like, what has been found on it,
         /// and its five outputs. In the order the card draws them, top to bottom.
@@ -368,6 +459,7 @@ namespace ES2Access.Screens
                 AddWidgetLines(lines, label.ResourceDepositsGroup);
                 AddWidgetLines(lines, label.ImprovementStatus);
                 AddFidsi(lines, label);
+                AddOutpost(lines, label);
             }
             catch (Exception e)
             {
@@ -375,6 +467,48 @@ namespace ES2Access.Screens
             }
 
             return lines;
+        }
+
+        /// <summary>
+        /// The lines an OUTPOST's card carries that nothing else on it says: who owns it (a plain
+        /// label the game only draws while the system is an outpost), when the next population unit
+        /// arrives and which kind it will be - both of which the card draws as a bare number and a
+        /// symbol, so the two sentences the game explains them with are what carries them - and last
+        /// the help behind the progress caption, whose own words are already spoken as the card's
+        /// state.
+        /// </summary>
+        private static void AddOutpost(List<string> lines, PlanetLabel_SystemManagement label)
+        {
+            if (label.OutpostGroup == null || !AgeWidgets.Visible(label.OutpostGroup))
+            {
+                return;
+            }
+
+            AddLine(lines, Drawn(label.OutpostOwnerLabel));
+            Add(lines, AgeWidgets.TooltipLines(Tooltip(label.OutpostOwnerLabel)));
+
+            GrowthGaugeItem growth = label.GrowthLine;
+            if (growth != null)
+            {
+                AddLine(lines, Drawn(growth.TurnsBeforeNextPop));
+                Add(lines, AgeWidgets.TooltipLines(Tooltip(growth.TurnsBeforeNextPop)));
+                Add(lines, AgeWidgets.TooltipLines(Tooltip(growth.NextPopulationIcon)));
+            }
+
+            Add(lines, AgeWidgets.TooltipLines(Tooltip(label.OutpostBottomCaption)));
+        }
+
+        /// <summary>The tooltip a drawn primitive carries, whatever kind of primitive it is.</summary>
+        private static AgeTooltip Tooltip(AgePrimitive primitive)
+        {
+            try
+            {
+                return primitive == null ? null : AgeWidgets.Raw(primitive.AgeTransform);
+            }
+            catch (Exception)
+            {
+                return null;
+            }
         }
 
         /// <summary>The planet's five outputs, named by the game's own property titles. Read off the
@@ -837,6 +971,11 @@ namespace ES2Access.Screens
             if (panel is RepresentativesStarSystemSidePanel)
             {
                 return ModStrings.Get(ModStrings.SystemRepresentativesPanel);
+            }
+
+            if (panel is OutpostInfoSidePanel)
+            {
+                return ModStrings.Get(ModStrings.SystemOutpostPanel);
             }
 
             string described = FirstLine(HeaderTooltip(panel));
@@ -1809,6 +1948,21 @@ namespace ES2Access.Screens
                 {
                     return GrowthCell(widget, growth, keyPrefix);
                 }
+
+                if (ReferenceEquals(widget, population2.OutpostsGroup))
+                {
+                    return OutpostsCell(widget, population2, keyPrefix);
+                }
+            }
+
+            OutpostInfoSidePanel outpost = panel as OutpostInfoSidePanel;
+            if (
+                outpost != null
+                && outpost.GrowthSourceName != null
+                && ReferenceEquals(widget, outpost.GrowthSourceName.AgeTransform)
+            )
+            {
+                return GrowthSourceCell(widget, outpost, keyPrefix);
             }
 
             RepresentativesStarSystemSidePanel representatives =
@@ -1861,6 +2015,39 @@ namespace ES2Access.Screens
             {
                 Widget = widget,
                 Id = ControlId.Referenced(widget, keyPrefix + widget.name + "/population"),
+                Vtable = vtable,
+            };
+        }
+
+        /// <summary>
+        /// Which colony is feeding this outpost. The panel's other rows are a caption and a value side
+        /// by side, so the ordinary walk names them; this one is the colony's NAME alone, with the
+        /// only words saying what that name is doing there sitting on the row's own tooltip - so the
+        /// name is the value and the game's sentence is the row's tooltip, exactly as the rows above it
+        /// read. The button beside it that changes the colony is left to the ordinary walk, which
+        /// already names it from its own tooltip.
+        /// </summary>
+        private static Cell GrowthSourceCell(
+            AgeTransform widget,
+            OutpostInfoSidePanel panel,
+            string keyPrefix
+        )
+        {
+            OutpostInfoSidePanel it = panel;
+            AgeTooltip tooltip = AgeWidgets.Raw(panel.ColonyGroup);
+            NodeVtable vtable = new NodeVtable
+            {
+                Announcements = new List<NodeAnnouncement>
+                {
+                    GraphNodes.LabelPart(() => AgeText.Label(it.GrowthSourceName)),
+                },
+                Sections = GraphNodes.Sections(null, tooltip),
+            };
+            AgeWidgets.PointAt(vtable, panel.ColonyGroup);
+            return new Cell
+            {
+                Widget = widget,
+                Id = ControlId.Referenced(widget, keyPrefix + widget.name + "/growth-source"),
                 Vtable = vtable,
             };
         }
@@ -2001,6 +2188,62 @@ namespace ES2Access.Screens
             Add(lines, AgeWidgets.TooltipLines(kind));
             Add(lines, AgeWidgets.TooltipLines(when));
             return lines;
+        }
+
+        /// <summary>
+        /// How many outposts this colony is feeding. The game draws the number alone beside a symbol
+        /// and writes no title for the row anywhere in its corpus - the only words about it are the
+        /// sentence on the row's own tooltip, which names the outposts and so belongs to the row as its
+        /// detail rather than as its name. So the count is said in the mod's own counted phrase and the
+        /// game's sentence follows it under the ordinary tooltip rule.
+        ///
+        /// The number comes from the system the panel is showing, not from the digits on the label: the
+        /// label is the count already turned into text for the eye, and the model is what a phrase that
+        /// has to choose a plural form needs.
+        /// </summary>
+        private static Cell OutpostsCell(
+            AgeTransform widget,
+            ColonyPopulationSidePanel panel,
+            string keyPrefix
+        )
+        {
+            ColonyPopulationSidePanel it = panel;
+            AgeTooltip tooltip = AgeWidgets.Raw(widget);
+            NodeVtable vtable = new NodeVtable
+            {
+                Announcements = new List<NodeAnnouncement>
+                {
+                    GraphNodes.LabelPart(() => OutpostsSupplied(it)),
+                },
+                Sections = GraphNodes.Sections(null, tooltip),
+            };
+            AgeWidgets.PointAt(vtable, widget);
+            return new Cell
+            {
+                Widget = widget,
+                Id = ControlId.Referenced(widget, keyPrefix + widget.name + "/outposts"),
+                Vtable = vtable,
+            };
+        }
+
+        private static string OutpostsSupplied(ColonyPopulationSidePanel panel)
+        {
+            try
+            {
+                ColonizedStarSystem system = panel == null ? null : panel.ColonizedStarSystem;
+                int count = system == null ? 0 : system.OutpostMigrationDestinationSystems.Count;
+                return count <= 0
+                    ? null
+                    : ModStrings.Plural(
+                        ModStrings.SystemSupplyingOutpost,
+                        ModStrings.SystemSupplyingOutposts,
+                        count
+                    );
+            }
+            catch (Exception)
+            {
+                return null;
+            }
         }
 
         private static string Drawn(AgePrimitiveLabel label)

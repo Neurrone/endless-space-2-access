@@ -22,12 +22,19 @@ namespace ES2Access.UI
     {
         /// <summary>One of the card's buttons and the words to call it by. <see cref="Offered"/> is
         /// what "would this act if it were pressed" means for this button - null for the usual hint
-        /// test, which is how this game leaves a blocked button clickable.</summary>
+        /// test, which is how this game leaves a blocked button clickable.
+        ///
+        /// <see cref="Toggle"/> is set where the card drew the action as a TICK rather than a button -
+        /// an outpost action that is either running or not, the decolonization the system is either
+        /// scheduled for or not - and turns the node into a checkbox that says which. <see cref="Value"/>
+        /// is a number written on the control itself beside its name.</summary>
         public struct CardAction
         {
             public AgeTransform Widget;
             public Func<string> Label;
             public Func<bool> Offered;
+            public AgeControlToggle Toggle;
+            public Func<string> Value;
         }
 
         /// <summary>A button named by a phrase of this mod's - for a control the game draws as a
@@ -88,6 +95,49 @@ namespace ES2Access.UI
             );
         }
 
+        /// <summary>
+        /// An action the card draws as a TICK, kept whenever it is drawn and offered only while the
+        /// game would dispatch it - the same "why not today" reasoning as <see cref="AddRefusable"/>,
+        /// because a blocked outpost action is exactly the thing the player opened the card to ask
+        /// about.
+        ///
+        /// <paramref name="label"/> is what to call it (these are drawn with a cost on them and no
+        /// name at all) and <paramref name="value"/> the number written on it.
+        /// </summary>
+        public static void AddToggle(
+            List<CardAction> found,
+            AgeControlToggle toggle,
+            Func<string> label,
+            Func<string> value
+        )
+        {
+            AgeTransform at = AgeWidgets.Transform(toggle);
+            if (at == null || !AgeWidgets.Visible(at))
+            {
+                return;
+            }
+
+            found.Add(
+                new CardAction
+                {
+                    Widget = at,
+                    Label = label,
+                    Offered = () => AgeWidgets.Operable(at),
+                    Toggle = toggle,
+                    Value = value,
+                }
+            );
+        }
+
+        /// <summary>The words the game keeps for a control on the WRAPPER hung on its tooltip - the
+        /// only place an outpost action is named, since the item itself draws nothing but a cost.
+        /// </summary>
+        public static Func<string> TitleOf(AgeControl control)
+        {
+            AgeTooltip tooltip = AgeWidgets.Raw(AgeWidgets.Transform(control));
+            return () => AgeWidgets.TooltipTitle(tooltip);
+        }
+
         /// <summary>A button the game names only in the sentence its own tooltip opens with.</summary>
         public static void AddNamedByTooltip(List<CardAction> found, AgeControl control)
         {
@@ -113,14 +163,26 @@ namespace ES2Access.UI
             {
                 CardAction action = actions[i];
                 AgeTransform at = action.Widget;
+                AgeControlToggle toggle = action.Toggle;
                 AgeTooltip tooltip = AgeWidgets.Raw(at);
                 Func<bool> offered = action.Offered ?? (() => !Gui.IsHintActive(at));
-                NodeVtable vtable = GraphNodes.Button(
-                    action.Label,
-                    () => AgeWidgets.Press(at),
-                    offered,
-                    tooltip
-                );
+                NodeVtable vtable = toggle != null
+                    ? GraphNodes.Checkbox(
+                        action.Label,
+                        () => toggle.State,
+                        () => AgeWidgets.Toggle(toggle),
+                        offered,
+                        tooltip,
+                        null,
+                        null,
+                        action.Value
+                    )
+                    : GraphNodes.Button(
+                        action.Label,
+                        () => AgeWidgets.Press(at),
+                        offered,
+                        tooltip
+                    );
                 // A refusing button's tooltip ends in an instruction to a MOUSE - hold Control and
                 // click to be shown the technology that is missing - which is reviewable and not
                 // spoken.
@@ -133,7 +195,15 @@ namespace ES2Access.UI
                     vtable.Announcements.Add(refusal);
                 }
 
-                AgeWidgets.PointAt(vtable, at);
+                if (toggle != null)
+                {
+                    AgeWidgets.Point(vtable, toggle, tooltip, at);
+                }
+                else
+                {
+                    AgeWidgets.PointAt(vtable, at);
+                }
+
                 builder.AddItem(ControlId.Structural(keyPrefix + "/action/" + i), vtable);
             }
         }
@@ -154,6 +224,12 @@ namespace ES2Access.UI
             {
                 return null;
             }
+        }
+
+        /// <summary>A phrase of the game's, resolved when it is spoken.</summary>
+        public static Func<string> GameText(string key)
+        {
+            return () => Localized(key);
         }
 
         private static string Localized(string key)

@@ -87,6 +87,28 @@ namespace ES2Access.Tests.UI
             );
         }
 
+        /// <summary>A control whose first part is not a label - a table cell, which leads with its
+        /// value because the column's caption is the edge the player crossed to reach it - opens its
+        /// buffer with that value ONCE.</summary>
+        [Fact]
+        public void AControlLeadingWithItsValueDoesNotBufferItTwice()
+        {
+            Assert.Equal(
+                new[] { "37", "selected" },
+                Buffer(
+                    new NodeVtable
+                    {
+                        ControlType = Type("text", null),
+                        Announcements = new List<NodeAnnouncement>
+                        {
+                            Part("37", AnnouncementKinds.Value),
+                            Part("selected", AnnouncementKinds.Selected),
+                        },
+                    }
+                )
+            );
+        }
+
         /// <summary>Every section is reviewable whatever its mode: that is what makes "announce and
         /// review" and "indicate and review" the same promise.</summary>
         [Fact]

@@ -85,7 +85,37 @@ namespace ES2Access.UI
         /// the sentence telling a mouse where to click.</summary>
         private static string Refusal(AgeTooltip tooltip)
         {
-            return RefusalText.Compose(AgeText.Lines(AgeText.Tooltip(tooltip)), MouseInstruction());
+            string written = RefusalText.Compose(
+                AgeText.Lines(AgeText.Tooltip(tooltip)),
+                MouseInstruction()
+            );
+            return written ?? TargetRefusal(tooltip);
+        }
+
+        /// <summary>
+        /// The refusal of a control whose tooltip the RENDERER assembles: there are no words in
+        /// <c>Content</c> to trim, and the sentence only exists once the tooltip window has drawn its
+        /// failure panel - which is a hover delay away, and gone the moment the pointer leaves.
+        ///
+        /// The panel reads it off the wrapper the game hangs on the tooltip
+        /// (<c>PanelFeatureFailureInfos.Bind</c> is exactly this expression), and that wrapper is
+        /// filled in at bind time, so asking it gives the same sentence the player would see, at once
+        /// and without the tooltip being drawn at all.
+        /// </summary>
+        private static string TargetRefusal(AgeTooltip tooltip)
+        {
+            try
+            {
+                IFailureInfosProvider failures =
+                    tooltip == null ? null : tooltip.Target as IFailureInfosProvider;
+                return failures == null
+                    ? null
+                    : AgeText.Clean(Gui.FormatFailureInfos(failures.FailureInfos));
+            }
+            catch (Exception)
+            {
+                return null;
+            }
         }
 
         /// <summary>
@@ -367,6 +397,10 @@ namespace ES2Access.UI
         /// box the game ticks on the player's behalf says so - and spoken immediately after a
         /// toggle, which is what makes holding the key down readable.
         ///
+        /// <paramref name="value"/> is a number the box itself DRAWS beside its tick - what an outpost
+        /// action costs, or how many turns the running one has left - and reads before the state, in
+        /// the order the box is read on screen.
+        ///
         /// A box that is REFUSING says nothing at all: see <see cref="ActedState"/>.</summary>
         public static NodeVtable Checkbox(
             Func<string> label,
@@ -375,7 +409,8 @@ namespace ES2Access.UI
             Func<bool> enabled = null,
             AgeTooltip tooltip = null,
             TooltipMode? tooltipMode = null,
-            Func<IList<string>> details = null
+            Func<IList<string>> details = null,
+            Func<string> value = null
         )
         {
             Func<string> stateText = () =>
@@ -384,6 +419,11 @@ namespace ES2Access.UI
                 );
 
             List<NodeAnnouncement> parts = Parts(label, enabled);
+            if (value != null)
+            {
+                parts.Add(ValuePart(value));
+            }
+
             parts.Add(ValuePart(stateText));
             return new NodeVtable
             {

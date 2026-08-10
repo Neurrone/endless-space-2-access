@@ -213,6 +213,10 @@ namespace ES2Access.Screens
 
                 LoadSaveModalWindow owner = window;
                 string save = Distinct(taken, SaveKey(Descriptor(row)));
+                // What the whole row is called, for the search: every cell of it is one save, so
+                // typing a save's title has to land on the row once rather than once per column.
+                AgeTransform title = cells[0];
+                Func<string> name = () => CellText(title);
                 builder.StartRow(SaveRowKey);
                 for (int i = 0; i < cells.Count; i++)
                 {
@@ -223,7 +227,12 @@ namespace ES2Access.Screens
                         "loadsave:cell/" + save + "/" + ColumnOf(cell, i)
                     );
                     first = first ?? id;
-                    builder.AddItem(id, CellVtable(owner, row, headers, cell, header));
+                    NodeVtable vtable = CellVtable(owner, row, headers, cell, header);
+                    // Which column a cell is in, so the search keeps one result per SAVE
+                    // (SearchScope.OverStop takes column 0 only) rather than one per cell.
+                    vtable.Column = i;
+                    vtable.SearchText = name;
+                    builder.AddItem(id, vtable);
                 }
 
                 builder.EndRow();
@@ -327,7 +336,7 @@ namespace ES2Access.Screens
             }
 
             string drawn = labels.Build() ?? tooltips.Build();
-            return drawn ?? ModStrings.Get(ModStrings.LoadSaveCellEmpty);
+            return drawn ?? ModStrings.Get(ModStrings.NavCellEmpty);
         }
 
         // Everything the player can see inside a cell, in the order it is laid out: its words, and

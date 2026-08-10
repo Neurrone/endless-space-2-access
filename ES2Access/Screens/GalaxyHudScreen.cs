@@ -565,9 +565,10 @@ namespace ES2Access.Screens
             );
             if (owned)
             {
-                vtable.Announcements.Add(
-                    GraphNodes.ValuePart(() => ModStrings.Get(ModStrings.GalaxySystemColonized))
-                );
+                // A system of yours is either a colony or still an OUTPOST, and the map draws the two
+                // differently - so they say different words rather than both saying "colonized".
+                Empire owner = empire;
+                vtable.Announcements.Add(GraphNodes.ValuePart(() => OwnedState(it, owner)));
             }
 
             // What the map draws parked here, in the game's own count phrase. Not watched: the answer
@@ -621,6 +622,50 @@ namespace ES2Access.Screens
             }
 
             builder.EndGroup();
+        }
+
+        /// <summary>What a system of the player's IS - taken from the state the game paints its label
+        /// from, so the word and the picture always agree. Anything other than an outpost is the colony
+        /// the word "colonized" has always meant.</summary>
+        private static string OwnedState(StarSystemNode node, Empire empire)
+        {
+            try
+            {
+                return ModStrings.Get(
+                    IsOutpost(node, empire)
+                        ? ModStrings.GalaxySystemOutpost
+                        : ModStrings.GalaxySystemColonized
+                );
+            }
+            catch (Exception)
+            {
+                return ModStrings.Get(ModStrings.GalaxySystemColonized);
+            }
+        }
+
+        /// <summary>Whether what this empire holds here is still an outpost. Read off the same list the
+        /// stop was built from - an empire can hold a colony and a GHOST of one in the same place, and
+        /// the ghost is not what the map's label is showing.</summary>
+        private static bool IsOutpost(StarSystemNode node, Empire empire)
+        {
+            DepartmentOfTheInterior interior =
+                empire == null ? null : empire.GetAgency<DepartmentOfTheInterior>();
+            if (interior == null)
+            {
+                return false;
+            }
+
+            IList<ColonizedStarSystem> systems = interior.ColonizedStarSystems;
+            for (int i = 0; systems != null && i < systems.Count; i++)
+            {
+                ColonizedStarSystem system = systems[i];
+                if (system != null && system.Node == node && system.State != StarSystemState.Ghost)
+                {
+                    return system.State == StarSystemState.Outpost;
+                }
+            }
+
+            return false;
         }
 
         /// <summary>The game's own left click on a system: the camera comes all the way in, which is
@@ -1006,6 +1051,10 @@ namespace ES2Access.Screens
             // so the readout indicates it and the buffer is where it is read.
             vtable.Sections = GraphNodes.Sections(
                 NodeSection.Buffer(() => OrbitalDetails(it)),
+                // The timer says a number and nothing else; the sentence the game explains it with is
+                // reviewable rather than spoken, because the card already speaks the number and
+                // hearing the paragraph again on every pass is what a buffer exists to avoid.
+                NodeSection.Buffer(() => OutpostTimerHelp(it)),
                 GraphNodes.TooltipSection(dossier)
             );
             PointAt(vtable, it.PlanetOrbitalCardContainer ?? it.AgeTransform);
@@ -1021,6 +1070,26 @@ namespace ES2Access.Screens
                 return card.OutpostTimer != null && Visible(card.OutpostTimer.AgeTransform)
                     ? AgeText.Label(card.OutpostTimer)
                     : null;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>What the game says the outpost timer means - written into the timer's own tooltip
+        /// while it is running, and emptied by the card's refresh when it is not.</summary>
+        private static IList<string> OutpostTimerHelp(PlanetLabel_SystemOrbital card)
+        {
+            try
+            {
+                if (card.OutpostTimer == null || !Visible(card.OutpostTimer.AgeTransform))
+                {
+                    return null;
+                }
+
+                Func<IList<string>> lines = AgeWidgets.TooltipLines(card.OutpostTooltip);
+                return lines == null ? null : lines();
             }
             catch (Exception)
             {
