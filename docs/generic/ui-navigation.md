@@ -312,31 +312,40 @@ once from WotR source and now written down so the next game doesn't have to:
   so the navigator still owns the announce-and-track step and the architecture's core
   invariant holds: a focus change is announced exactly once, by one code path.
 
-## Child screens and action menus
+## Gesture parity and child screens
 
-A control with more than one action cannot spend Right on "show me the actions" — the
-arrows are world and tree navigation. The answer is a **modal vertical-list menu** opened
-from the control, holding its actions; destructive or drag-only defaults go in the menu,
-never on the activation key. The mechanism (wotr-access's choice submenu, ported to ES2
-Access):
+The activation model is **mouse parity**: every gesture is one the game defines, and the
+mod invents none. (ES2 Access shipped an action-menu system first and then deleted every
+menu; the doctrine below is what replaced it, and it costs less than it looks — the game
+already has an answer for each case.)
 
-- **Child screens**: a screen can push one child (`PushChild`/`RemoveChild`, a single
-  linear chain — no branching); the manager's current screen is the deepest active child.
-  Per-screen state isolation is what returns focus to the opening control for free: the
-  covered parent's cursor is never touched, and a popped child's state is dropped.
-- **One `Open(title, options, current, onSelect)` entry point.** Options are a snapshot
-  built at open time from live predicates; invalid actions are simply not added — no
-  disabled entries to skip past. The empty case ("nothing to do here") is answered once,
-  inside the shared helper, never per caller. Enter invokes then closes, in that order;
-  `current = -1` lands on the first option; entries carry a "menu item" role word.
-- **This is not the native-popup wrapper.** Wrapping a game's own drop-list popup needs
-  game-focus handoff and a deferred close to dodge the engine's Escape race; a pure
-  mod-owned child screen needs none of that. Keep the two mechanisms separate.
-- **Menus are for controls with N actions.** When the game's own model is select-then-act
-  (toggle items, then one button acts on the selection), keep the game's model — do not
-  force a menu onto it.
-- Escape must close the menu and go **no further**: a mod-owned surface denies the game the
-  key — see the back-key ownership rules in [input.md](input.md).
+- **The activation key is the game's left click** on the focused thing. Where the click is
+  destructive, the guard is the game's OWN confirmation flow (funnelled through the
+  message-box screen) — never a mod menu in front of the click. A click the game answers
+  with silence stays silent on the keyboard too.
+- **A control's several actions are its DRAWN buttons, modeled as child nodes** — declared
+  while visible, refusing (reason in the tooltip part) while disabled, absent while the
+  game hides them. Two rules follow: a container with no drawn actions is a LEAF, never an
+  expandable dead end; and a refused action is a declared-refusing node, not a missing one.
+- **The alternate-activation chord is the game's modifier-click variant** where one exists
+  — replay the click and let the game's handler read the physically held modifier — and
+  nothing where the game has none.
+- **A right-click command key** mirrors the game's right-click at the focused thing, given
+  the current selection (move orders, zoom restore); its availability is computed on the
+  press, not per frame.
+- **Moving things — reorder, transfer — is the game's DRAG, modeled as a keyboard drag**
+  (`src/graph-ui/Carry.cs`): one key holds (pick up / swap on a new source / put back on
+  its own source), the activation key drops on a compatible target (overriding that
+  target's click only while dragging; drop on the held item's own row is a cancel, matching
+  the game's drag), Escape cancels — a mod-owned MODE takes the back key like a mod-owned
+  surface does ([input.md](input.md)). Validate and commit through the game's drag path
+  including its confirmations, and **read the game's drag handler for the landing rule** —
+  which index `OnDragCompleted` posts and what the collection's `Move` does with it is the
+  one thing an implementer guesses wrong.
+- **Child screens remain** (`PushChild`/`RemoveChild`, a single linear chain): the
+  native-popup wrapper (game-focus handoff, deferred close to dodge the engine's Escape
+  race) and the confirmation screen still need them. Per-screen state isolation returns
+  focus to the opener for free. What no longer exists is the action-menu use of them.
 
 ## The confirmation-dialog screen
 
@@ -389,7 +398,7 @@ Engine (game-agnostic): [`src/graph-ui/`](src/graph-ui/) — `ControlId.cs`, `Gr
 containment — adjacent panels overlap by pixels, so span overlap misgroups — reading order,
 and the alignment tiebreak for co-located caption/value rects), `Screen.cs`,
 `ScreenManager.cs`, `MainMenuScreen.cs`, `DropListScreen.cs`, `MessageBoxScreen.cs`,
-`ChoiceSubmenuScreen.cs` (the action menu), `LoadingScreen.cs`. The input layer: [input.md](input.md). Value-widget patterns
+`Carry.cs` (the keyboard drag), `LoadingScreen.cs`. The input layer: [input.md](input.md). Value-widget patterns
 (checkboxes, sliders, combo boxes, tabs, popups, key capture): [widgets.md](widgets.md).
 The per-screen process (measure → model → approve → implement → verify → hand over):
 [making-screens-accessible.md](making-screens-accessible.md).

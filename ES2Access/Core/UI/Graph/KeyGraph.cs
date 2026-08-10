@@ -589,13 +589,36 @@ namespace ES2Access.Core.UI.Graph
             return true;
         }
 
-        /// <summary>Move the focused control's item within its list. False = it does not move.</summary>
-        public bool Reorder(int direction)
+        /// <summary>Run the focused control's contextual command - the game's right click. False =
+        /// it has none, and the caller says so.</summary>
+        public bool Contextual()
         {
             if (!Rerender()) return false;
             GraphNode node = CurrentNode;
-            if (node == null || node.Vtable.OnReorder == null) return false;
-            node.Vtable.OnReorder(direction);
+            if (node == null || node.Vtable.OnContextual == null) return false;
+            node.Vtable.OnContextual();
+            return true;
+        }
+
+        /// <summary>Add the focused control's item to the game's selection, or take it out. False =
+        /// the control is not part of a selection.</summary>
+        public bool SelectToggle()
+        {
+            if (!Rerender()) return false;
+            GraphNode node = CurrentNode;
+            if (node == null || node.Vtable.OnSelectToggle == null) return false;
+            node.Vtable.OnSelectToggle();
+            return true;
+        }
+
+        /// <summary>Extend the game's selection to the focused control's item. False = the control
+        /// is not part of a selection.</summary>
+        public bool SelectRange()
+        {
+            if (!Rerender()) return false;
+            GraphNode node = CurrentNode;
+            if (node == null || node.Vtable.OnSelectRange == null) return false;
+            node.Vtable.OnSelectRange();
             return true;
         }
 

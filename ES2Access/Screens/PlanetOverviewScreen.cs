@@ -241,6 +241,7 @@ namespace ES2Access.Screens
             builder.BeginStop(CardStop);
             BuildCard(builder, card);
 
+            _hud.Quest(builder);
             _hud.Tutorial(builder);
             _hud.Notifications(builder);
             _hud.Turn(builder);
@@ -685,7 +686,7 @@ namespace ES2Access.Screens
             catch (Exception) { }
 
             AgeWidgets.PointAt(vtable, at);
-        }
+        }
         /// <summary>A tooltip only when there is something behind it. AGE hangs a tooltip component on
         /// widgets that never get one filled in, and an empty one would be picked as a row's
         /// explanation and then say nothing.</summary>

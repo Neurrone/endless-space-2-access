@@ -1,8 +1,9 @@
 using System;
 using System.Collections.Generic;
-using System.Reflection;
 using Amplitude;
+using Amplitude.Unity.Framework;
 using ES2Access.Core.Speech;
+using ES2Access.Core.UI;
 using ES2Access.Core.UI.Graph;
 using ES2Access.Core.Util;
 using ES2Access.UI;
@@ -25,13 +26,14 @@ namespace ES2Access.Screens
     /// ghost of one - so this screen declares a stop for each panel it finds drawn and gets the
     /// switching for free.
     ///
-    /// RIGHT IS NOT AN ACTION KEY here. The galaxy page taught the player that right opens a thing up,
-    /// and this page is reached by pressing it; a control that also used right for "and here are the
-    /// things you can do to me" would make the player know which of the two each control is. So a
-    /// control with more than one action answers ENTER with a menu of them
-    /// (<see cref="ChoiceSubmenuScreen"/>), and the menu is also where a control whose own click is
-    /// destructive - cancelling a construction - or impossible without a mouse - dragging a population
-    /// unit between planets - puts its actions, so that Enter is never a key you regret pressing.
+    /// EVERY control here takes the click the game itself puts on it, Enter for Enter, including the
+    /// queue line whose click cancels a construction - the game asks its own question where it wants
+    /// one, and where it does not the thing is reversible by queueing it again. Nothing is wrapped in
+    /// a menu of what could be done: a card's buttons and a queue line's buy-outs are child nodes,
+    /// opened with right the way the galaxy page taught. What the game only offers as a DRAG - a
+    /// population unit moving between planets, a queue line moving up the queue - is CARRIED: Space
+    /// picks it up and Enter on the destination puts it down, the same gesture a ship gets in the
+    /// fleet panel.
     ///
     /// A planet card holds far more than a control's readout can carry - its type, its traits, its
     /// anomalies, its five outputs, and the game's own sentence about why it cannot be colonized yet -
@@ -44,6 +46,9 @@ namespace ES2Access.Screens
         private static readonly object ConstructiblesStop = "system:constructibles";
         private static readonly object QueueStop = "system:queue";
         private static readonly object HangarStop = "system:hangar";
+
+        /// <summary>The prefix the shared ship rows key themselves under here.</summary>
+        private const string HangarKeys = "system:hangar";
 
         /// <summary>The clusters the game draws over every view level. They are drawn over this page
         /// too, and until they were declared here they were on the screen and out of reach.</summary>
@@ -193,6 +198,7 @@ namespace ES2Access.Screens
                 () => BuildHangar(builder, window)
             );
 
+            _hud.Quest(builder);
             _hud.Tutorial(builder);
             _hud.Notifications(builder);
             _hud.Turn(builder);
@@ -223,9 +229,14 @@ namespace ES2Access.Screens
         {
             try
             {
+                // Picking a population unit up is only offered where there is somewhere to put it
+                // down, which on this page means a SECOND colony of the player's in the system - the
+                // system with one colony draws the markers and offers no carry, exactly as the hangar
+                // page draws ship tiles and offers none.
+                bool canCarry = Settlements(window) > 1;
                 for (int i = 0; i < _planets.Count; i++)
                 {
-                    AddPlanet(builder, _planets[i], window);
+                    AddPlanet(builder, _planets[i], canCarry);
                 }
             }
             catch (Exception e)
@@ -234,10 +245,27 @@ namespace ES2Access.Screens
             }
         }
 
+        /// <summary>
+        /// One planet card.
+        ///
+        /// ENTER IS THE CARD'S OWN CLICK, which on this page is the planet's own page. The card is an
+        /// AGE overlay and carries no click of its own - the click the game answers is the one on the
+        /// PLANET behind it (<c>GalaxyPlanetCursorTarget.OnCursorClick</c> :30-53, which asks for
+        /// <c>GalaxyViewLevel_PlanetOverview</c> while this view level is up), and that is what
+        /// <see cref="GalaxyViewLevels.OpenPlanet"/> posts. Nothing is spoken for it: the page changes
+        /// and the page announces itself.
+        ///
+        /// Everything else the card offers is where the card draws it. The rename button beside the
+        /// title and the colonize button under it are child nodes; the population the card draws as a
+        /// ring of markers is a row per affinity, and a unit is moved to another planet by CARRYING it
+        /// (Space to pick up, Enter on the other card to put down) rather than by a menu entry per unit
+        /// and destination, which is the same gesture a ship gets in the fleet panel and the same drag
+        /// the mouse has here.
+        /// </summary>
         private void AddPlanet(
             GraphBuilder builder,
             PlanetLabel_SystemManagement label,
-            StarSystemScreen window
+            bool canCarry
         )
         {
             Planet planet = label.Planet;
@@ -260,13 +288,64 @@ namespace ES2Access.Screens
                     GraphNodes.ValuePart(() => AgeText.Label(it.PlanetStatus)),
                 },
                 Sections = GraphNodes.Sections(() => PlanetDetails(it), null),
-                OnActivate = () => OpenPlanetMenu(it, window),
+                OnActivate = () => GalaxyViewLevels.OpenPlanet(it.Planet),
             };
+
+            // A colony of the player's is where a carried population unit can be put down - the same
+            // set of cards the game's own drag offers as targets.
+            if (Settled(label) != null)
+            {
+                vtable.DropKind = PopulationKind;
+                vtable.OnDrop = item => DropPopulation(it, item);
+                if (ModEntry.Carry != null)
+                {
+                    vtable.Announcements.Add(ModEntry.Carry.DropTargetPart(PopulationKind));
+                }
+            }
+
             AgeWidgets.PointAt(vtable, status ?? label.AgeTransform);
-            builder.AddItem(
-                ControlId.Referenced(planet, "system:planet/" + planet.GUID),
-                vtable
-            );
+
+            string key = "system:planet/" + planet.GUID;
+            ControlId id = ControlId.Referenced(planet, key);
+            List<CardActions.CardAction> rename = new List<CardActions.CardAction>(1);
+            CardActions.AddNamedByMod(rename, label.PlanetRenameButton, ModStrings.SystemRenamePlanet);
+            List<CardActions.CardAction> buttons = PlanetButtons(label);
+            List<Population> populations = Populations(label);
+            if (rename.Count == 0 && buttons.Count == 0 && populations.Count == 0)
+            {
+                builder.AddItem(id, vtable);
+                return;
+            }
+
+            vtable.ControlType = ControlTypes.Group;
+            builder.BeginGroup(id, vtable);
+            if (builder.IsExpanded(id))
+            {
+                // Down the card, in the order it is drawn: the rename button beside the title, the
+                // population ring in the middle, the action buttons along the bottom.
+                CardActions.Emit(builder, key + "/name", rename);
+                AddPopulations(builder, key, label, populations, canCarry);
+                CardActions.Emit(builder, key, buttons);
+            }
+
+            builder.EndGroup();
+        }
+
+        /// <summary>Which of the card's own buttons the game is drawing. Rename is emitted separately
+        /// because the card draws it at the top, beside the title, and these along the bottom.</summary>
+        private static List<CardActions.CardAction> PlanetButtons(PlanetLabel_SystemManagement label)
+        {
+            List<CardActions.CardAction> found = new List<CardActions.CardAction>(1);
+            try
+            {
+                CardActions.AddNamedByMod(found, label.ColonizeButton, ModStrings.SystemColonize);
+            }
+            catch (Exception e)
+            {
+                Log.Warn("system: reading a planet card's buttons threw: " + e);
+            }
+
+            return found;
         }
 
         /// <summary>
@@ -336,154 +415,306 @@ namespace ES2Access.Screens
             }
         }
 
-        /// <summary>
-        /// What can be done to this planet, as a menu built from what the game is offering right now.
-        ///
-        /// Colonize and rename are the card's own two buttons. Moving a population unit has no button
-        /// at all - the game only offers it as a drag from one card to another - so the menu is the
-        /// only place a keyboard can reach it, one entry per unit and destination.
-        /// </summary>
-        private void OpenPlanetMenu(PlanetLabel_SystemManagement label, StarSystemScreen window)
+        /// <summary>What the carried thing IS here, so that a population unit cannot be dropped into a
+        /// fleet and a ship cannot be dropped onto a planet.</summary>
+        public const string PopulationKind = "population";
+
+        /// <summary>The colony this card is for, or null - the card of an unsettled world, or of
+        /// somebody else's colony, is neither a source nor a target.</summary>
+        private static ColonizedPlanet Settled(PlanetLabel_SystemManagement label)
         {
-            List<string> labels = new List<string>();
-            List<Action> actions = new List<Action>();
             try
             {
-                // First, because it is what a click on the card itself does: the game's own default
-                // for a planet is to open its page, and everything else here is a button drawn on top
-                // of it.
-                Planet planet = label.Planet;
-                if (planet != null)
-                {
-                    Planet it = planet;
-                    labels.Add(ModStrings.Get(ModStrings.SystemViewPlanet));
-                    actions.Add(() => GalaxyViewLevels.OpenPlanet(it));
-                }
-
-                // The game leaves the colonize button clickable when it is refusing: clicking it then
-                // points at the technology that would unlock it instead of colonizing anything. That
-                // is a HINT, not the action this entry is named after, so a button in that state is
-                // not offered - the reason is already in the card's own readout.
-                AgeControlButton colonize = label.ColonizeButton;
-                if (
-                    colonize != null
-                    && AgeWidgets.Visible(AgeWidgets.Transform(colonize))
-                    && colonize.Enable
-                    && !Gui.IsHintActive(colonize.AgeTransform)
-                )
-                {
-                    AgeControlButton it = colonize;
-                    labels.Add(ModStrings.Get(ModStrings.SystemColonize));
-                    actions.Add(() => AgeWidgets.Press(it));
-                }
-
-                AgeTransform rename = label.PlanetRenameButton;
-                if (rename != null && AgeWidgets.Visible(rename) && rename.Enable)
-                {
-                    AgeTransform it = rename;
-                    labels.Add(ModStrings.Get(ModStrings.SystemRenamePlanet));
-                    actions.Add(() => AgeWidgets.Press(it));
-                }
-
-                AddPopulationMoves(label, window, labels, actions);
+                ColonizedPlanet colony = label == null ? null : label.ColonizedPlanet;
+                return colony != null && colony.Empire == Gui.PlayerEmpire ? colony : null;
             }
-            catch (Exception e)
+            catch (Exception)
             {
-                Log.Warn("system: working out a planet's actions threw: " + e);
+                return null;
             }
+        }
 
-            List<Action> chosen = actions;
-            ChoiceSubmenuScreen.Open(
-                AgeText.Label(label.PlanetTitle),
-                labels,
-                -1,
-                index =>
+        /// <summary>How many colonies of the player's this system has - which is how many cards a
+        /// carried unit could be put down on.</summary>
+        private static int Settlements(StarSystemScreen window)
+        {
+            try
+            {
+                ColonizedStarSystem system = window == null ? null : window.ColonizedStarSystem;
+                if (system == null || system.Empire != Gui.PlayerEmpire)
                 {
-                    if (index >= 0 && index < chosen.Count)
-                    {
-                        chosen[index]();
-                    }
+                    return 0;
                 }
-            );
+
+                return system.PlanetsColonized.Count;
+            }
+            catch (Exception)
+            {
+                return 0;
+            }
         }
 
         /// <summary>
-        /// One entry per population unit on this planet and per other planet of ours in the system it
-        /// could go to. The game moves these by dragging a marker from one card to another; the order
-        /// posted here is the one that drag posts, a unit at a time - the smallest move the drag can
-        /// make, and the only quantity a menu can offer without inventing a number picker the game
-        /// does not have.
+        /// The populations the card is drawing, in the order the game's own enumerator lays their
+        /// markers out.
+        ///
+        /// The game draws one marker per unit and colours it by affinity; a row per AFFINITY is the
+        /// same information with the count said rather than counted, and it is what a carry can name
+        /// itself after. Read off the marker container rather than off the model, so a planet whose
+        /// ring the game is not drawing contributes nothing.
         /// </summary>
-        private static void AddPopulationMoves(
-            PlanetLabel_SystemManagement label,
-            StarSystemScreen window,
-            List<string> labels,
-            List<Action> actions
-        )
+        private static List<Population> Populations(PlanetLabel_SystemManagement label)
         {
-            ColonizedPlanet source = label.ColonizedPlanet;
-            ColonizedStarSystem system = window.ColonizedStarSystem;
-            if (source == null || system == null || source.Empire != Gui.PlayerEmpire)
+            List<Population> found = new List<Population>(2);
+            try
             {
-                return;
-            }
-
-            for (int p = 0; p < system.PlanetsColonized.Count; p++)
-            {
-                ColonizedPlanet destination = system.PlanetsColonized[p];
-                if (destination == null || ReferenceEquals(destination, source))
+                AgeTransform container = MarkerContainer(label);
+                if (container == null)
                 {
-                    continue;
+                    return found;
                 }
 
-                foreach (
-                    KeyValuePair<StaticString, Population> entry in source.PopulationsByAffinity
-                )
+                IList<AgeTransform> markers = container.Children;
+                for (int i = 0; markers != null && i < markers.Count; i++)
                 {
-                    if (entry.Value == null || entry.Value.Count <= 0)
+                    AgeTransform marker = markers[i];
+                    if (marker == null || !marker.Visible)
                     {
                         continue;
                     }
 
-                    ColonizedPlanet from = source;
-                    ColonizedPlanet to = destination;
-                    StaticString affinity = entry.Key;
-                    labels.Add(
-                        ModStrings.Format(
-                            ModStrings.SystemMovePopulation,
-                            AgeText.Clean(Gui.GetLocalizedTitle(affinity)),
-                            AgeText.Clean(to.LocalizedName)
-                        )
-                    );
-                    actions.Add(() => MovePopulation(from, to, affinity));
+                    PopulationMarker it = marker.GetComponent<PopulationMarker>();
+                    Population population =
+                        it == null || it.GuiPopulation == null ? null : it.GuiPopulation.Population;
+                    if (population != null && !found.Contains(population))
+                    {
+                        found.Add(population);
+                    }
                 }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("system: reading a planet's populations threw: " + e);
+            }
+
+            return found;
+        }
+
+        /// <summary>Whichever of the card's two population rings the game is drawing.</summary>
+        private static AgeTransform MarkerContainer(PlanetLabel_SystemManagement label)
+        {
+            if (label == null)
+            {
+                return null;
+            }
+
+            PlanetPopulationEnumerator drawn =
+                label.PlanetPopulationEnumeratorSimple != null
+                && label.PlanetPopulationEnumeratorSimple.Shown
+                    ? label.PlanetPopulationEnumeratorSimple
+                    : label.PlanetPopulationEnumeratorFocused;
+            return drawn == null || !drawn.Shown ? null : drawn.PopMarkersContainer;
+        }
+
+        /// <summary>
+        /// A row per population on the card: the game's own name for the affinity and how many of them
+        /// live here, which is what the ring of markers draws.
+        ///
+        /// <paramref name="canCarry"/> is where a unit can be picked up, which is only where there is
+        /// somewhere to put it down. One press carries ONE unit - the smallest move the game's own
+        /// drag makes - and the name is captured then, because the row is rebuilt every frame and the
+        /// affinity may have left the planet by the time it is dropped.
+        /// </summary>
+        private static void AddPopulations(
+            GraphBuilder builder,
+            string keyPrefix,
+            PlanetLabel_SystemManagement label,
+            List<Population> populations,
+            bool canCarry
+        )
+        {
+            ColonizedPlanet colony = Settled(label);
+            for (int i = 0; i < populations.Count; i++)
+            {
+                Population population = populations[i];
+                NodeVtable vtable = GraphNodes.Readout(
+                    () => PopulationName(population),
+                    () => new MessageBuilder().PushQuantity(population.Count).Build(),
+                    null,
+                    null
+                );
+                if (canCarry && colony != null)
+                {
+                    ColonizedPlanet source = colony;
+                    Population held = population;
+                    vtable.OnPickUp = () => Pick(source, held);
+                }
+
+                builder.AddItem(
+                    ControlId.Referenced(population, keyPrefix + "/population/" + i),
+                    vtable
+                );
             }
         }
 
-        private static void MovePopulation(
-            ColonizedPlanet source,
-            ColonizedPlanet destination,
-            StaticString affinity
-        )
+        /// <summary>The game's own word for an affinity - what its marker's tooltip is titled with.
+        /// </summary>
+        private static string PopulationName(Population population)
         {
             try
             {
-                PlayerController player = Gui.GetActivePlayerController();
-                player.PostOrder(
-                    new OrderTransferPopulationFromPlanetToPlanet(
-                        player.Empire.Index,
-                        source.GUID,
-                        destination.GUID,
-                        affinity,
-                        1,
-                        StaticString.Empty
+                return AgeText.Clean(Gui.GetLocalizedTitle(population.Affinity));
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>One unit of this population, picked up. Null where the game would not let the drag
+        /// start: its own two tests are the system's and the affinity's.</summary>
+        private static CarryItem Pick(ColonizedPlanet source, Population population)
+        {
+            try
+            {
+                IPopulationsManagementService populations =
+                    Services.GetService<IPopulationsManagementService>();
+                if (
+                    population.Count <= 0
+                    || !source.CanMovePopulation
+                    || populations == null
+                    || !populations.CanMovePopulation(population.Affinity)
+                )
+                {
+                    return null;
+                }
+
+                return new CarryItem(population, PopulationName(population), PopulationKind);
+            }
+            catch (Exception e)
+            {
+                Log.Warn("system: picking a population unit up threw: " + e);
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Put a carried population unit on this planet, the way the drag does it: the game's own
+        /// <c>PopulationEnumerator.DragInfo</c> is filled in exactly as
+        /// <c>PopulationEnumerator.OnPopulationMarkerDragStarted</c> fills it, the target's own
+        /// <c>CanAcceptPopulationDrop</c> decides, and the labels window's own
+        /// <c>IDragDropClient.ApplyDrop</c> posts the order - which is what keeps the sound the game
+        /// plays and the exact <c>OrderTransferPopulationFromPlanetToPlanet</c> it builds.
+        ///
+        /// The drag info is cleared again whatever happens: it is a static the game's own refresh
+        /// reads every frame to draw a unit as already gone, and a stale one would empty a marker the
+        /// player is still looking at.
+        /// </summary>
+        private static DropResult DropPopulation(PlanetLabel_SystemManagement label, CarryItem item)
+        {
+            Population population = item == null ? null : item.Cargo as Population;
+            ColonizedPlanet destination = Settled(label);
+            ColonizedPlanet source = SourceOf(destination, population);
+            if (population == null || destination == null || source == null)
+            {
+                return DropResult.Refused(null);
+            }
+
+            try
+            {
+                PlanetLabelsWindow_SystemManagement window =
+                    Gui.GuiService.GetWindow<PlanetLabelsWindow_SystemManagement>(false);
+                PopulationEnumerator.PopulationDragInfo drag = PopulationEnumerator.DragInfo;
+                drag.DragInProgress = true;
+                drag.SourcePopulationOwner = source;
+                drag.GuiPopulation = Wrap(source, population);
+                drag.Quantity = 1;
+                drag.TransitingPopulation = new TransitingPopulation(population.Affinity, 1);
+                drag.ReplacedPopulationAffinity = StaticString.Empty;
+                try
+                {
+                    if (window == null || !label.PlanetPopulationEnumeratorFocused.CanAcceptPopulationDrop())
+                    {
+                        return DropResult.Refused(null);
+                    }
+
+                    ((IDragDropClient)window).ApplyDrop(label);
+                }
+                finally
+                {
+                    drag.DragInProgress = false;
+                    drag.SourcePopulationOwner = null;
+                    drag.GuiPopulation = null;
+                    drag.Quantity = 0;
+                    drag.TransitingPopulation = null;
+                    drag.ReplacedPopulationAffinity = StaticString.Empty;
+                }
+
+                return DropResult.Done(
+                    ModStrings.Format(
+                        ModStrings.SystemPopulationMoved,
+                        item.Name,
+                        AgeText.Clean(destination.LocalizedName)
                     )
                 );
             }
             catch (Exception e)
             {
                 Log.Warn("system: moving a population unit threw: " + e);
+                return DropResult.Refused(null);
             }
+        }
+
+        /// <summary>Which planet of this system the carried unit came off. Found rather than
+        /// remembered: what is carried is the game's own <c>Population</c>, and the planet holding it
+        /// is the one whose own table it is in.</summary>
+        private static ColonizedPlanet SourceOf(ColonizedPlanet destination, Population population)
+        {
+            try
+            {
+                ColonizedStarSystem system =
+                    destination == null ? null : destination.ColonizedStarSystem;
+                if (system == null || population == null)
+                {
+                    return null;
+                }
+
+                for (int i = 0; i < system.PlanetsColonized.Count; i++)
+                {
+                    ColonizedPlanet planet = system.PlanetsColonized[i];
+                    if (planet == null || ReferenceEquals(planet, destination))
+                    {
+                        continue;
+                    }
+
+                    Population held;
+                    if (
+                        planet.PopulationsByAffinity.TryGetValue(population.Affinity, out held)
+                        && ReferenceEquals(held, population)
+                    )
+                    {
+                        return planet;
+                    }
+                }
+
+                return null;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>The game's own wrapper for a population, built the way its own enumerator builds
+        /// one - which is what <c>ApplyDrop</c> reads the affinity out of.</summary>
+        private static GuiPopulation Wrap(ColonizedPlanet source, Population population)
+        {
+            DepartmentOfTheInterior interior = source.Empire.GetAgency<DepartmentOfTheInterior>();
+            PopulationEmpire empire =
+                interior == null
+                    ? null
+                    : interior.GetPopulationByAffinity(population.Affinity) as PopulationEmpire;
+            return new GuiPopulation(population, empire, source.Empire);
         }
 
         private static AgeTransform StatusWidget(PlanetLabel_SystemManagement label)
@@ -1123,12 +1354,15 @@ namespace ES2Access.Screens
         }
 
         /// <summary>
-        /// What the system is building, in order. A line's own click CANCELS it, which is not a thing
-        /// Enter should ever do by itself, so Enter opens the line's menu instead - cancel, and buy the
-        /// rest of it with whichever currencies the game is willing to take today.
+        /// What the system is building, in order. Enter is the line's own click, which is the game's
+        /// cancel: instant while nothing has been invested in the thing, and its OWN confirmation box
+        /// once something has (<c>StarSystemQueuePanel.OnCancelConstruction</c> :425-442).
         ///
-        /// Shift and an arrow moves the line itself, which is the keyboard's version of dragging it up
-        /// or down the queue.
+        /// The queue is REORDERED by carrying: Space picks a line up, Enter on another line drops it
+        /// there, and it lands at that line's own position - which is what the game's drag does
+        /// (<c>StarSystemQueuePanel.OnDragCompleted</c> :302-320 posts <c>OrderMoveConstruction</c>
+        /// with the sibling index the line was dragged into, and <c>ConstructionQueue.Move</c>
+        /// :156-176 removes and re-inserts at that index).
         /// </summary>
         private void BuildQueue(GraphBuilder builder, StarSystemScreen window)
         {
@@ -1147,9 +1381,20 @@ namespace ES2Access.Screens
                 }
 
                 ConstructionLine[] lines = table.GetComponentsInChildren<ConstructionLine>(true);
+                int drawn = 0;
                 for (int i = 0; i < lines.Length; i++)
                 {
-                    AddQueueLine(builder, lines[i], panel, window);
+                    if (Queued(lines[i]))
+                    {
+                        drawn++;
+                    }
+                }
+
+                // A line can only be carried where there is another line to drop it on: one thing in
+                // the queue is not a thing that can be reordered, so it is not a pick-up either.
+                for (int i = 0; i < lines.Length; i++)
+                {
+                    AddQueueLine(builder, lines[i], window, drawn > 1);
                 }
             }
             catch (Exception e)
@@ -1158,14 +1403,21 @@ namespace ES2Access.Screens
             }
         }
 
+        private static bool Queued(ConstructionLine line)
+        {
+            return line != null
+                && AgeWidgets.Visible(line.AgeTransform)
+                && line.Construction != null;
+        }
+
         private static void AddQueueLine(
             GraphBuilder builder,
             ConstructionLine line,
-            StarSystemQueuePanel panel,
-            StarSystemScreen window
+            StarSystemScreen window,
+            bool canCarry
         )
         {
-            if (line == null || !AgeWidgets.Visible(line.AgeTransform) || line.Construction == null)
+            if (!Queued(line))
             {
                 return;
             }
@@ -1181,14 +1433,159 @@ namespace ES2Access.Screens
                     GraphNodes.ValuePart(() => QueueLineState(it)),
                 },
                 Sections = GraphNodes.Sections(null, tooltip),
-                OnActivate = () => OpenQueueMenu(it, panel),
-                OnReorder = direction => MoveLine(it, direction, window),
+                // The line's own click - the game's cancel, with the game's own confirmation where it
+                // wants one. Pressed through MainButton rather than through the panel's handler, so
+                // the god-mode branch and the mid-drag guard the game puts in front of it stay in.
+                OnActivate = () => AgeWidgets.Press(it.MainButton),
+                DropKind = QueueKind,
+                OnDrop = held => DropInQueue(it, window, held),
             };
+            if (canCarry)
+            {
+                vtable.OnPickUp = () => Pick(it);
+            }
+
+            if (ModEntry.Carry != null)
+            {
+                vtable.Announcements.Add(ModEntry.Carry.DropTargetPart(QueueKind));
+            }
+
             AgeWidgets.PointAt(vtable, line.AgeTransform);
-            builder.AddItem(
-                ControlId.Referenced(line.Construction, "system:queue/" + line.Construction.GUID),
-                vtable
-            );
+            string key = "system:queue/" + line.Construction.GUID;
+            ControlId id = ControlId.Referenced(line.Construction, key);
+            List<CardActions.CardAction> buyouts = BuyoutButtons(line);
+            if (buyouts.Count == 0)
+            {
+                builder.AddItem(id, vtable);
+                return;
+            }
+
+            vtable.ControlType = ControlTypes.Group;
+            builder.BeginGroup(id, vtable);
+            if (builder.IsExpanded(id))
+            {
+                CardActions.Emit(builder, key, buyouts);
+            }
+
+            builder.EndGroup();
+        }
+
+        /// <summary>
+        /// The buy-out buttons the line draws along its right-hand end, one per currency the game is
+        /// willing to consider. A refused one is left DRAWN and switched off with the reason in its own
+        /// tooltip (<c>ConstructionLine.RefreshBuyout</c> :272-343), so it is declared and refusing
+        /// rather than dropped - the player hears which currencies exist here and why today's answer is
+        /// no. One the game has hidden outright (missing technology, wrong affinity, another empire's
+        /// system) is not offered at all.
+        /// </summary>
+        private static List<CardActions.CardAction> BuyoutButtons(ConstructionLine line)
+        {
+            List<CardActions.CardAction> found = new List<CardActions.CardAction>(2);
+            try
+            {
+                BuyoutButton[] buyouts = line.BuyoutButtons;
+                for (int i = 0; buyouts != null && i < buyouts.Length; i++)
+                {
+                    BuyoutButton buyout = buyouts[i];
+                    if (buyout == null || !AgeWidgets.Visible(buyout.AgeTransform))
+                    {
+                        continue;
+                    }
+
+                    BuyoutButton it = buyout;
+                    CardActions.AddRefusable(
+                        found,
+                        buyout.AgeTransform,
+                        () =>
+                            ModStrings.Format(
+                                ModStrings.SystemBuyOut,
+                                AgeText.Clean(Gui.GetLocalizedTitle("Empire" + it.Resource))
+                            )
+                    );
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("system: reading a queue line's buy-out buttons threw: " + e);
+            }
+
+            return found;
+        }
+
+        /// <summary>Which cargo a construction queue line takes - its own queue's, so nothing else the
+        /// page can carry lands in it.</summary>
+        private const string QueueKind = "construction-queue";
+
+        /// <summary>The construction this line stands for, picked up.</summary>
+        private static CarryItem Pick(ConstructionLine line)
+        {
+            try
+            {
+                return new CarryItem(line.Construction, AgeText.Label(line.Title), QueueKind);
+            }
+            catch (Exception e)
+            {
+                Log.Warn("system: picking a queue line up threw: " + e);
+                return null;
+            }
+        }
+
+        /// <summary>Put a carried construction at this line's place in the queue - the index the game's
+        /// own drag posts when a line is dropped on this slot.</summary>
+        private static DropResult DropInQueue(
+            ConstructionLine target,
+            StarSystemScreen window,
+            CarryItem held
+        )
+        {
+            try
+            {
+                Construction construction = held.Cargo as Construction;
+                ConstructionQueue queue = Queue(window);
+                if (construction == null || queue == null)
+                {
+                    return DropResult.Refused();
+                }
+
+                int index = queue.IndexOf(target.Construction);
+                if (index < 0 || !queue.Contains(construction))
+                {
+                    return DropResult.Refused();
+                }
+
+                if (queue.IndexOf(construction) == index)
+                {
+                    // Dropped back where it started - the same case the game's own
+                    // <c>OnDragCompleted</c> answers by cancelling the drag without posting anything.
+                    return DropResult.Done(ModStrings.Get(ModStrings.CarryCancelled));
+                }
+
+                PlayerController player = Gui.GetActivePlayerController();
+                player.PostOrder(
+                    new OrderMoveConstruction(
+                        player.Empire.Index,
+                        window.ColonizedStarSystem.GUID,
+                        construction.GUID,
+                        index
+                    )
+                );
+                return DropResult.Done(
+                    ModStrings.Format(ModStrings.CarryMovedToPosition, held.Name, index + 1)
+                );
+            }
+            catch (Exception e)
+            {
+                Log.Warn("system: moving a construction in the queue threw: " + e);
+                return DropResult.Refused();
+            }
+        }
+
+        private static ConstructionQueue Queue(StarSystemScreen window)
+        {
+            ColonizedStarSystem system = window == null ? null : window.ColonizedStarSystem;
+            DepartmentOfIndustry industry =
+                system == null ? null : system.Empire.GetAgency<DepartmentOfIndustry>();
+            return industry == null ? null : industry.GetConstructionQueue(system);
         }
 
         /// <summary>Where the line is in the queue, how far along it is, and how long is left - the
@@ -1226,146 +1623,11 @@ namespace ES2Access.Screens
             return message.Build();
         }
 
-        private static void OpenQueueMenu(ConstructionLine line, StarSystemQueuePanel panel)
-        {
-            List<string> labels = new List<string>();
-            List<Action> actions = new List<Action>();
-            List<Func<System.Collections.Generic.IList<string>>> details =
-                new List<Func<System.Collections.Generic.IList<string>>>();
-            try
-            {
-                labels.Add(ModStrings.Get(ModStrings.SystemCancelConstruction));
-                details.Add(null);
-                ConstructionLine it = line;
-                StarSystemQueuePanel owner = panel;
-                actions.Add(() => Cancel(it, owner));
-
-                BuyoutButton[] buyouts = line.BuyoutButtons;
-                for (int i = 0; buyouts != null && i < buyouts.Length; i++)
-                {
-                    BuyoutButton buyout = buyouts[i];
-                    if (
-                        buyout == null
-                        || !AgeWidgets.Visible(buyout.AgeTransform)
-                        || !AgeWidgets.Operable(buyout.AgeTransform)
-                    )
-                    {
-                        continue;
-                    }
-
-                    BuyoutButton press = buyout;
-                    labels.Add(
-                        ModStrings.Format(
-                            ModStrings.SystemBuyOut,
-                            AgeText.Clean(Gui.GetLocalizedTitle("Empire" + buyout.Resource))
-                        )
-                    );
-                    details.Add(AgeWidgets.TooltipLines(buyout.Tooltip));
-                    actions.Add(() => AgeWidgets.Press(press.AgeTransform));
-                }
-            }
-            catch (Exception e)
-            {
-                Log.Warn("system: working out a queue line's actions threw: " + e);
-            }
-
-            List<Action> chosen = actions;
-            ChoiceSubmenuScreen.Open(
-                AgeText.Label(line.Title),
-                labels,
-                -1,
-                index =>
-                {
-                    if (index >= 0 && index < chosen.Count)
-                    {
-                        chosen[index]();
-                    }
-                },
-                details
-            );
-        }
-
-        /// <summary>Cancel through the panel's own handler, which is what knows to ask before throwing
-        /// away industry that has already gone into the thing.</summary>
-        private static void Cancel(ConstructionLine line, StarSystemQueuePanel panel)
-        {
-            try
-            {
-                if (CancelConstruction != null)
-                {
-                    CancelConstruction.Invoke(panel, new object[] { line });
-                }
-            }
-            catch (Exception e)
-            {
-                Log.Warn("system: cancelling a construction threw: " + e);
-            }
-        }
-
-        /// <summary>Move a line one place up or down its queue - the same order the game posts when a
-        /// line is dropped somewhere new.</summary>
-        private static void MoveLine(ConstructionLine line, int direction, StarSystemScreen window)
-        {
-            try
-            {
-                ColonizedStarSystem system = window.ColonizedStarSystem;
-                DepartmentOfIndustry industry =
-                    system == null ? null : system.Empire.GetAgency<DepartmentOfIndustry>();
-                ConstructionQueue queue =
-                    industry == null ? null : industry.GetConstructionQueue(system);
-                if (queue == null)
-                {
-                    return;
-                }
-
-                int at = queue.IndexOf(line.Construction);
-                int to = at + direction;
-                if (at < 0 || to < 0 || to >= queue.PendingConstructions.Count)
-                {
-                    return;
-                }
-
-                PlayerController player = Gui.GetActivePlayerController();
-                player.PostOrder(
-                    new OrderMoveConstruction(
-                        player.Empire.Index,
-                        system.GUID,
-                        line.Construction.GUID,
-                        to
-                    )
-                );
-            }
-            catch (Exception e)
-            {
-                Log.Warn("system: moving a construction threw: " + e);
-            }
-        }
-
-        private static readonly MethodInfo CancelConstruction = Handler(
-            typeof(StarSystemQueuePanel),
-            "OnCancelConstruction"
-        );
-
-        private static MethodInfo Handler(Type type, string name)
-        {
-            try
-            {
-                return type.GetMethod(
-                    name,
-                    BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public
-                );
-            }
-            catch (Exception e)
-            {
-                Log.Warn("system: looking up " + name + " threw: " + e);
-                return null;
-            }
-        }
-
         /// <summary>
         /// The ships parked in the system: the row of things that can be done to a selection, then the
-        /// ships themselves. Enter picks a ship up and puts it down again rather than doing anything to
-        /// it, because that is the game's own model here - you choose ships and then press a button.
+        /// ships themselves. Enter picks ships OUT rather than doing anything to them, because that is
+        /// the game's own model here - you choose ships and then press a button. Nothing is carried
+        /// here: this page draws no fleet lines, so a ship picked up would have nowhere to be put down.
         /// </summary>
         private void BuildHangar(GraphBuilder builder, StarSystemScreen window)
         {
@@ -1378,82 +1640,17 @@ namespace ES2Access.Screens
                 }
 
                 _cells.Clear();
-                AddToolbar(_cells, panel.SelectAllButton, ModStrings.SystemSelectAllShips, "select-all");
-                AddToolbar(_cells, panel.CreateButton, ModStrings.SystemCreateFleet, "create-fleet");
-                AddToolbar(_cells, panel.RepairButton, ModStrings.SystemRepairShips, "repair");
-                AddToolbar(_cells, panel.RetrofitButton, ModStrings.SystemRetrofitShips, "retrofit");
-                AddToolbar(_cells, panel.ScrapButton, ModStrings.SystemScrapShips, "scrap");
-                AddToolbar(_cells, panel.SellButton, ModStrings.SystemSellShips, "sell");
+                ShipRows.Toolbar(_cells, panel, HangarKeys);
                 Emit(builder, _cells);
 
                 _cells.Clear();
-                AgeTransform table = panel.GarrisonPanelsTable;
-                if (table != null)
-                {
-                    ShipItem[] ships = table.GetComponentsInChildren<ShipItem>(true);
-                    for (int i = 0; i < ships.Length; i++)
-                    {
-                        AddShip(_cells, ships[i]);
-                    }
-                }
-
+                ShipRows.Ships(_cells, panel, HangarKeys, false);
                 Emit(builder, _cells);
             }
             catch (Exception e)
             {
                 Log.Warn("system: reading the hangar threw: " + e);
             }
-        }
-
-        private static void AddToolbar(
-            List<Cell> cells,
-            AgeControlButton button,
-            string nameKey,
-            string key
-        )
-        {
-            AgeTransform widget = AgeWidgets.Transform(button);
-            if (button == null || !AgeWidgets.Visible(widget))
-            {
-                return;
-            }
-
-            AgeControlButton it = button;
-            AgeTooltip tooltip = AgeWidgets.Raw(widget);
-            NodeVtable vtable = GraphNodes.Button(
-                () => ModStrings.Get(nameKey),
-                () => AgeWidgets.Press(it),
-                () => AgeWidgets.Operable(AgeWidgets.Transform(it)),
-                tooltip
-            );
-            AgeWidgets.Point(vtable, it);
-            Add(cells, widget, ControlId.Referenced(button, "system:hangar/" + key), vtable);
-        }
-
-        private static void AddShip(List<Cell> cells, ShipItem ship)
-        {
-            if (ship == null || !AgeWidgets.Visible(ship.AgeTransform) || ship.GuiShip == null)
-            {
-                return;
-            }
-
-            ShipItem it = ship;
-            AgeTooltip tooltip = AgeWidgets.Raw(ship.AgeTransform);
-            NodeVtable vtable = GraphNodes.Checkbox(
-                () => AgeText.Label(it.Title),
-                () => it.SelectionToggle != null && it.SelectionToggle.State,
-                () => AgeWidgets.Toggle(it.SelectionToggle),
-                () => AgeWidgets.Operable(it.AgeTransform),
-                tooltip,
-                TooltipMode.None
-            );
-            AgeWidgets.PointAt(vtable, ship.AgeTransform);
-            Add(
-                cells,
-                ship.AgeTransform,
-                ControlId.Referenced(ship, "system:ship/" + ship.GetInstanceID()),
-                vtable
-            );
         }
 
         // ---- reading a panel nobody has modelled ----
@@ -2012,35 +2209,16 @@ namespace ES2Access.Screens
         /// <summary>A control on its way into the graph, still carrying the widget it was read from: the
         /// rows are worked out from a whole panel at once, which cannot be done while declaring it row
         /// by row.</summary>
-        private sealed class Cell
-        {
-            public AgeTransform Widget;
-            public ControlId Id;
-            public NodeVtable Vtable;
-        }
-
-        private static readonly Func<Cell, AgeTransform> CellWidget = cell => cell.Widget;
-
-        /// <summary>Declare a panel's controls in the rows they are drawn in, so up and down move
-        /// between lines and left and right along one - measured, so a strip the engine wraps onto a
-        /// second line is walked as two lines without anything being told.</summary>
+        /// <summary>Declare a panel's controls in the rows they are drawn in - shared with every other
+        /// screen that reads a panel that way (<see cref="Cells"/>).</summary>
         private static void Emit(GraphBuilder builder, List<Cell> cells)
         {
-            foreach (List<Cell> row in AgeLayout.Rows(cells, CellWidget))
-            {
-                builder.StartRow();
-                foreach (Cell cell in row)
-                {
-                    builder.AddItem(cell.Id, cell.Vtable);
-                }
-
-                builder.EndRow();
-            }
+            Cells.Emit(builder, cells);
         }
 
         private static void Add(List<Cell> cells, AgeTransform widget, ControlId id, NodeVtable vtable)
         {
-            cells.Add(new Cell { Widget = widget, Id = id, Vtable = vtable });
+            Cells.Add(cells, widget, id, vtable);
         }
 
         private static void AddReadout(

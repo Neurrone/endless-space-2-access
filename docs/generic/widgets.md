@@ -2,7 +2,7 @@
 
 How controls that _hold a value_ become operable, on top of the graph engine in
 [ui-navigation.md](ui-navigation.md). A control that carries several _actions_ instead of a
-value opens an action menu — the child-screen pattern in
+value exposes them as its drawn buttons — the gesture-parity pattern in
 [ui-navigation.md](ui-navigation.md).
 
 ## The vocabulary

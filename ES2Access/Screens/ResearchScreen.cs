@@ -179,6 +179,7 @@ namespace ES2Access.Screens
             BuildPanels(builder, window);
             BuildSuggestions(builder, window);
             BuildWheel(builder, window);
+            _hud.Quest(builder);
             _hud.Tutorial(builder);
             _hud.Notifications(builder);
             _hud.Turn(builder);
@@ -254,22 +255,44 @@ namespace ES2Access.Screens
                 panel.ResearchQueue == null
                     ? null
                     : panel.ResearchQueue.GetComponentsInChildren<ResearchQueueItem>(true);
+            int drawn = 0;
             for (int i = 0; items != null && i < items.Length; i++)
             {
-                AddQueueItem(builder, items[i]);
+                if (Queued(items[i]))
+                {
+                    drawn++;
+                }
+            }
+
+            // A technology can only be carried where there is another line to drop it on: with one
+            // technology queued the row is not a source, so the player is never put into a mode with
+            // nowhere to come out of.
+            for (int i = 0; items != null && i < items.Length; i++)
+            {
+                AddQueueItem(builder, items[i], drawn > 1);
             }
         }
 
-        /// <summary>One technology waiting its turn. Its own click throws it out of the queue, which
-        /// is not a thing Enter should do by itself, so Enter opens its menu; Shift and an arrow moves
-        /// it up or down the queue, which is the keyboard's version of dragging it.</summary>
-        private void AddQueueItem(GraphBuilder builder, ResearchQueueItem item)
+        private static bool Queued(ResearchQueueItem item)
         {
-            if (
-                item == null
-                || item.GuiTechnology == null
-                || !AgeWidgets.Visible(item.AgeTransform)
-            )
+            return item != null
+                && item.GuiTechnology != null
+                && AgeWidgets.Visible(item.AgeTransform);
+        }
+
+        /// <summary>
+        /// One technology waiting its turn. Enter is the item's own click, which is the game's dequeue
+        /// - no confirmation, and reversible by queueing it again.
+        ///
+        /// The queue is REORDERED by carrying: Space picks the technology up, Enter on another item
+        /// drops it there, and it lands at that item's own position - which is what the game's drag
+        /// does (<c>ResearchStatusSidePanel</c> :219-241 posts <c>OrderMoveResearch</c> with the
+        /// insertion slot the cursor is over, and <c>ConstructionQueue.Move</c> :156-176 removes and
+        /// re-inserts at that index).
+        /// </summary>
+        private void AddQueueItem(GraphBuilder builder, ResearchQueueItem item, bool canCarry)
+        {
+            if (!Queued(item))
             {
                 return;
             }
@@ -288,15 +311,95 @@ namespace ES2Access.Screens
                     GraphNodes.ValuePart(() => QueueItemState(technology)),
                 },
                 Sections = GraphNodes.Sections(null, item.Tooltip),
-                OnActivate = () => OpenQueueMenu(it),
-                OnReorder = direction =>
-                    MoveInQueue(technology, QueuePosition(technology) + direction),
+                OnActivate = () => AgeWidgets.Press(it.Button),
+                DropKind = QueueKind,
+                OnDrop = held => DropInQueue(technology, held),
             };
+            if (canCarry)
+            {
+                vtable.OnPickUp = () => Pick(technology);
+            }
+
+            if (ModEntry.Carry != null)
+            {
+                vtable.Announcements.Add(ModEntry.Carry.DropTargetPart(QueueKind));
+            }
+
             AgeWidgets.Point(vtable, item.Button, item.Tooltip, item.AgeTransform);
             builder.AddItem(
                 ControlId.Referenced(technology, "research:queue/" + technology.Name),
                 vtable
             );
+        }
+
+        /// <summary>Which cargo a research queue line takes - its own queue's, so a ship or a
+        /// population unit cannot be dropped into it.</summary>
+        private const string QueueKind = "research-queue";
+
+        /// <summary>The queued technology this line stands for, picked up. The game's own object is
+        /// the <c>Construction</c>, which is what the move order names.</summary>
+        private static CarryItem Pick(GuiTechnology2 technology)
+        {
+            try
+            {
+                DepartmentOfScience science = Science();
+                Construction construction =
+                    science == null
+                        ? null
+                        : science.ResearchQueue.Get(technology.TechnologyDefinition);
+                return construction == null
+                    ? null
+                    : new CarryItem(
+                        construction,
+                        AgeText.Clean(technology.Title),
+                        QueueKind
+                    );
+            }
+            catch (Exception e)
+            {
+                Log.Warn("research: picking a queued technology up threw: " + e);
+                return null;
+            }
+        }
+
+        /// <summary>Put a carried technology at this line's place in the queue - the index the game's
+        /// own drag posts when a technology is dropped on this slot.</summary>
+        private static DropResult DropInQueue(GuiTechnology2 target, CarryItem held)
+        {
+            try
+            {
+                Construction construction = held.Cargo as Construction;
+                DepartmentOfScience science = Science();
+                if (construction == null || science == null)
+                {
+                    return DropResult.Refused();
+                }
+
+                Construction landing = science.ResearchQueue.Get(target.TechnologyDefinition);
+                int index = landing == null ? -1 : science.ResearchQueue.IndexOf(landing);
+                if (index < 0 || !science.ResearchQueue.Contains(construction))
+                {
+                    return DropResult.Refused();
+                }
+
+                if (science.ResearchQueue.IndexOf(construction) == index)
+                {
+                    // Dropped back where it started, which is what the game's own drag does with a
+                    // line whose sibling index has not changed: no order, and the drag ended having
+                    // moved nothing.
+                    return DropResult.Done(ModStrings.Get(ModStrings.CarryCancelled));
+                }
+
+                MoveInQueue(construction, index);
+                return DropResult.Done(
+                    ModStrings.Format(ModStrings.CarryMovedToPosition, held.Name, index + 1)
+                );
+            }
+            catch (Exception e)
+            {
+                Log.Warn("research: moving a technology in the queue threw: " + e);
+                return DropResult.Refused();
+            }
         }
 
         /// <summary>Where the technology is in the queue and how long is left, the two things the
@@ -325,53 +428,6 @@ namespace ES2Access.Screens
             catch (Exception) { }
 
             return message.Build();
-        }
-
-        private static void OpenQueueMenu(ResearchQueueItem item)
-        {
-            List<string> labels = new List<string> { ModStrings.Get(ModStrings.ResearchRemoveFromQueue) };
-            ResearchQueueItem it = item;
-            ChoiceSubmenuScreen.Open(
-                AgeText.Clean(item.GuiTechnology.Title),
-                labels,
-                -1,
-                index =>
-                {
-                    if (index == 0)
-                    {
-                        AgeWidgets.Press(it.Button);
-                    }
-                }
-            );
-        }
-
-        /// <summary>Move a technology to another place in the queue - the same order the game posts
-        /// when an item is dropped somewhere new.</summary>
-        private static void MoveInQueue(GuiTechnology2 technology, int index)
-        {
-            try
-            {
-                DepartmentOfScience science = Science();
-                if (science == null || index < 0)
-                {
-                    return;
-                }
-
-                Construction construction = science.ResearchQueue.Get(technology.TechnologyDefinition);
-                if (construction == null || index >= science.ResearchQueue.Length)
-                {
-                    return;
-                }
-
-                PlayerController player = Gui.GetActivePlayerController();
-                player.PostOrder(
-                    new OrderMoveResearch(player.Empire.Index, construction.GUID, index)
-                );
-            }
-            catch (Exception e)
-            {
-                Log.Warn("research: moving a technology in the queue threw: " + e);
-            }
         }
 
         /// <summary>
@@ -1385,12 +1441,19 @@ namespace ES2Access.Screens
                 return;
             }
 
-            GuiTechnology2 technology = _moveToHead;
             _moveToHead = null;
             if (!ReferenceEquals(queue.Peek(), construction))
             {
-                MoveInQueue(technology, 0);
+                MoveInQueue(construction, 0);
             }
+        }
+
+        /// <summary>Move a queued technology to another place in the queue - the same order the game
+        /// posts when one is dropped somewhere new.</summary>
+        private static void MoveInQueue(Construction construction, int index)
+        {
+            PlayerController player = Gui.GetActivePlayerController();
+            player.PostOrder(new OrderMoveResearch(player.Empire.Index, construction.GUID, index));
         }
 
         /// <summary>Where the technology is in the queue the game is showing, or -1 for one that is
@@ -1596,7 +1659,7 @@ namespace ES2Access.Screens
         /// is rebuilt between this call and the focus landing, and the expansion set belongs to that
         /// rebuild.
         /// </summary>
-        public override SearchScope TypeAheadScope(GraphNode focused)
+        public override SearchScope TypeAheadScope(GraphNode focused, GraphRender render)
         {
             if (focused == null || !Equals(focused.StopKey, TreeStop))
             {

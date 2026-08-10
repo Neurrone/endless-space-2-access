@@ -229,6 +229,49 @@ namespace ES2Access.UI
         }
 
         /// <summary>
+        /// Whether the camera was brought in on something by a click rather than by the player's own
+        /// zooming - the map's own record of it, which is what makes its way back out possible.
+        ///
+        /// The overview level sets the flag in <c>ZoomInOnNode</c> and clears it when the camera is
+        /// moved by anything else, so it answers "is there a zoom to undo" without anything being
+        /// remembered here.
+        /// </summary>
+        public static bool ZoomForced
+        {
+            get
+            {
+                GalaxyViewLevel_GalaxyOverview overview = OverviewLevel();
+                return overview != null && overview.HasZoomBeenForced;
+            }
+        }
+
+        /// <summary>Put the camera back where it stood before the forced zoom - the game's own way out
+        /// of a system it was clicked into, right-click on the map. Does nothing where no zoom was
+        /// forced, which is the same answer the map gives a right-click there.</summary>
+        public static void RestoreZoom()
+        {
+            try
+            {
+                GalaxyViewLevel_GalaxyOverview overview = OverviewLevel();
+                if (overview != null)
+                {
+                    overview.RestoreZoom();
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: restoring the camera threw: " + e);
+            }
+        }
+
+        /// <summary>The galaxy-overview level itself, asked through the view rather than through the
+        /// GUI's copy so that it keeps answering across the frames a level change blinks.</summary>
+        private static GalaxyViewLevel_GalaxyOverview OverviewLevel()
+        {
+            return LevelThroughTransitions as GalaxyViewLevel_GalaxyOverview;
+        }
+
+        /// <summary>
         /// Put the camera on <paramref name="node"/> at a particular zoom step - how the player comes
         /// back OUT of a system without losing the system they were reading.
         ///

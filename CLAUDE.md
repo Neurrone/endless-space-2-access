@@ -63,13 +63,32 @@ with the tools in `docs/dev-loop.md`. Repo-specific enforcement on top of that p
 - Design approval and every new key binding come from me; an approved design counts as
   measurement-settled for pipelining.
 - Evidence pairs use `crop-shot.ps1`; never read full-frame screenshots into context.
-- A stage is not done until `docs/dev-loop.md` reflects it (new helper, route, or recipe)
-  and `docs/roadmap.md` carries any screen-status change.
+- A stage is not done until each of its outputs has landed in the file whose charter fits
+  it: a new helper, route, recipe, or key binding in `docs/dev-loop.md` (the toolbox —
+  nothing else ever goes there); a game-mechanism finding or the mod-policy decision it
+  forces in `docs/es2-facts.md` (or another ES2-specific file under `docs/`); a
+  screen-status change or future-feature prep in `docs/roadmap.md`; a game-agnostic lesson
+  in the stage report for the proposals ledger, never written into `docs/generic/`
+  directly. When in doubt, a pointer line may sit in the convenient file — the content
+  goes where its charter says.
 - Each implementation round ends with the consolidated manual test handed to me in a
   per-session `.md` file at the repo root, named after the session (e.g.
   `galaxy-review-test-report.md`) and updated as that session's stages land — never left
   buried in subagent reports. It carries the test steps with expected speech, the
   fixture-blocked items, and any open judgment calls.
+  - Similarly, per-session documentation and suggested process improvements should be saved to a per-session file like `galaxy-review-proposals.md` and kept current during that session
+- Both of those session specific files are never committed
+
+**Generic-docs bar.** The generic docs are optimized for total future reading cost, not
+completeness. A proposed change to `docs/generic/` must clear ALL of: (1) game-agnostic —
+provoked by a mechanism a second game plausibly shares; ES2-specific lessons go to
+`docs/es2-facts.md` or another ES2 doc; (2) paid for — a stage in this repo shipped a
+defect or re-derived something the line would have prevented; (3) not already covered —
+quote the nearest existing lines and check the reference mods before claiming a gap; a
+stage failing to APPLY an existing rule is evidence the rule works, not a gap; (4) cheapest
+form — tighten an existing line over adding one, and a rule about mod-framework code goes
+in that source file's doc comment. Subagents report every candidate; the main agent applies
+this filter and should expect to reject most.
 
 After implementing a feature or major change:
 

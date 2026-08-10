@@ -1,3 +1,4 @@
+using ES2Access.Core.UI;
 using ES2Access.Core.UI.Graph;
 
 namespace ES2Access.Screens
@@ -88,6 +89,50 @@ namespace ES2Access.Screens
         public virtual bool ConsumesBack
         {
             get { return false; }
+        }
+
+        // ---- type-ahead search ----
+        //
+        // Typing letters on a screen searches its controls and moves focus to the match. Every
+        // screen does it without asking; the two properties below are for the screens where the
+        // letters mean something else.
+
+        /// <summary>Whether typing searches this screen. False for a screen whose whole point is a
+        /// box the player types into - the letters are the box's, whether or not the game has taken
+        /// the keyboard for it yet.</summary>
+        public virtual bool AllowsTypeahead
+        {
+            get { return true; }
+        }
+
+        /// <summary>
+        /// Whether the screen is in the middle of handing the keyboard to the game - a key capture
+        /// or a text editor asked for and not yet given.
+        ///
+        /// The mod's input layer stands down on its own once the game HAS the keyboard; this covers
+        /// the frames before that, where the keys are still ours and the next thing typed is meant
+        /// for the field.
+        /// </summary>
+        public virtual bool CapturesRawInput
+        {
+            get { return false; }
+        }
+
+        /// <summary>
+        /// What a search on this screen looks through, given where the cursor is - null (the usual
+        /// answer) for the declared controls of the focused Tab-stop.
+        ///
+        /// A screen answers only when what the player is searching for is not declared: a tree
+        /// whose collapsed branches hold most of its items can offer them all here and open the
+        /// branch when one is landed on. The navigator still does the focusing and the speaking.
+        ///
+        /// <paramref name="render"/> is the graph as it stands, so a screen that only wants to ADD the
+        /// undeclared items can build the ordinary scope (<c>SearchScope.OverStop</c>) and extend it
+        /// rather than re-deriving everything the stop already declares.
+        /// </summary>
+        public virtual SearchScope TypeAheadScope(GraphNode focused, GraphRender render)
+        {
+            return null;
         }
 
         public virtual void OnPush() { }

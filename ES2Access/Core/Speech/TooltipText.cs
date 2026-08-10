@@ -14,10 +14,20 @@ namespace ES2Access.Core.Speech
         /// <see cref="TooltipText.AddRow"/>.</summary>
         public bool Icon;
 
+        /// <summary>Set for a part that is a whole fact of its own and only LANDED in this row. A
+        /// panel that draws a caption on one line and its value on the next leaves the value sharing
+        /// a row with something unrelated, and a typed reader that has put the caption back on to it
+        /// says so here rather than letting the row glue two facts into one sentence.</summary>
+        public bool OwnLine;
+
         public TooltipPart(string text, bool icon)
+            : this(text, icon, false) { }
+
+        public TooltipPart(string text, bool icon, bool ownLine)
         {
             Text = text;
             Icon = icon;
+            OwnLine = ownLine;
         }
     }
 
@@ -40,8 +50,50 @@ namespace ES2Access.Core.Speech
         /// sentence. A part whose OWN text still holds an embedded newline - a paragraph the window
         /// wrapped at its own width - keeps that break, which is what lets "one label, several
         /// physical lines" and "several labels, one shared line" share this one path.
+        ///
+        /// A part marked <see cref="TooltipPart.OwnLine"/> breaks the row where it sits, because it is
+        /// not part of the sentence the rest of the row is: a hero's level is drawn under its own
+        /// caption and lands in the row belonging to their class, and "Counselor Level 1" is a rank
+        /// nobody has.
         /// </summary>
         public static void AddRow(IList<string> lines, IList<TooltipPart> row)
+        {
+            int start = 0;
+            List<TooltipPart> run = new List<TooltipPart>();
+            for (int i = 0; i < row.Count; i++)
+            {
+                if (!row[i].OwnLine)
+                {
+                    continue;
+                }
+
+                AddSegment(lines, Segment(row, start, i, run));
+                AddSegment(lines, Segment(row, i, i + 1, run));
+                start = i + 1;
+            }
+
+            AddSegment(lines, Segment(row, start, row.Count, run));
+        }
+
+        private static List<TooltipPart> Segment(
+            IList<TooltipPart> row,
+            int from,
+            int to,
+            List<TooltipPart> run
+        )
+        {
+            run.Clear();
+            for (int i = from; i < to; i++)
+            {
+                run.Add(row[i]);
+            }
+
+            return run;
+        }
+
+        /// <summary>One spoken line's worth of parts - a whole drawn row, or the part of one that
+        /// belongs together.</summary>
+        private static void AddSegment(IList<string> lines, IList<TooltipPart> row)
         {
             string words = Words(row);
             if (words.Length == 0)

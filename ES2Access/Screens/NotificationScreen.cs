@@ -442,26 +442,60 @@ namespace ES2Access.Screens
         private static void Add(GraphBuilder builder, Control control)
         {
             Control it = control;
-            NodeVtable vtable =
-                it.Toggle == null
-                    ? GraphNodes.Button(
-                        () => Caption(it),
-                        () => Press(it),
-                        () => Enabled(it.Widget),
-                        it.Widget.AgeTooltip
-                    )
-                    : GraphNodes.Checkbox(
-                        () => Caption(it),
-                        () => State(it.Toggle),
-                        () => Press(it),
-                        () => Enabled(it.Widget),
-                        it.Widget.AgeTooltip
-                    );
+            NodeVtable vtable;
+            if (it.Toggle == null)
+            {
+                vtable = GraphNodes.Button(
+                    () => Caption(it),
+                    () => Press(it),
+                    () => Enabled(it.Widget),
+                    it.Widget.AgeTooltip
+                );
+            }
+            else if (InRadioGroup(it.Toggle))
+            {
+                vtable = GraphNodes.Radio(
+                    () => Caption(it),
+                    () => State(it.Toggle),
+                    () => Press(it),
+                    () => Enabled(it.Widget),
+                    null,
+                    it.Widget.AgeTooltip
+                );
+            }
+            else
+            {
+                vtable = GraphNodes.Checkbox(
+                    () => Caption(it),
+                    () => State(it.Toggle),
+                    () => Press(it),
+                    () => Enabled(it.Widget),
+                    it.Widget.AgeTooltip
+                );
+            }
 
             vtable.OnFocusVisual = () =>
                 PointerFocus.MoveTo(it.Button, it.Widget.AgeTooltip, it.Widget);
             vtable.OnBlurVisual = ReleasePointer;
             builder.AddItem(ControlId.Referenced(it.Widget, "notification:" + it.Key), vtable);
+        }
+
+        /// <summary>Whether a toggle is one of a set the game lets the player pick exactly one of -
+        /// the choice cards a quest offers - rather than a box of its own, like the one that pins the
+        /// quest. The game answers this itself: <c>GuiRadioGroup.Load</c> re-points every toggle it
+        /// owns at its own object, so a toggle whose switch target carries a <c>GuiRadioGroup</c> is a
+        /// member of that group, and one wired to anything else is not.</summary>
+        private static bool InRadioGroup(AgeControlToggle toggle)
+        {
+            try
+            {
+                return toggle.OnSwitchObject != null
+                    && toggle.OnSwitchObject.GetComponent<GuiRadioGroup>() != null;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
         }
 
         private static readonly Comparison<Control> ReadingOrder = delegate(Control a, Control b)

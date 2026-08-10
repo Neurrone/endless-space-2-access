@@ -11,12 +11,12 @@ namespace ES2Access.Screens
 {
     /// <summary>
     /// The bits of the game that are on the screen whatever the player is looking at: what the empire
-    /// is worth along the top, the notification icons and a collapsed tutorial down the right-hand
-    /// edge, and the turn controls in the bottom corner.
+    /// is worth along the top, the quest the game is tracking, the notification icons and a collapsed
+    /// tutorial down the right-hand edge, and the turn controls in the bottom corner.
     ///
     /// None of them belongs to a page. The galaxy, the star system's management page and a planet's
     /// overview are three different view levels of the same running game, and the game draws these
-    /// four clusters over all three - so a player who walked into a system could still see the End
+    /// clusters over all three - so a player who walked into a system could still see the End
     /// Turn button, the dust total and the tutorial bar and had no way to reach any of them. They
     /// were declared by the galaxy screen because the galaxy is where they were first met, which is
     /// not a reason for them to live there.
@@ -44,6 +44,7 @@ namespace ES2Access.Screens
     public sealed class GlobalHud
     {
         public static readonly object EmpireStop = "hud:empire";
+        public static readonly object QuestStop = "hud:quest";
         public static readonly object TutorialStop = "hud:tutorial";
         public static readonly object NotificationStop = "hud:notifications";
         public static readonly object TurnStop = "hud:turn";
@@ -52,25 +53,46 @@ namespace ES2Access.Screens
 
         private int _turn = -1;
 
+        /// <summary>The journal this page is listening to, kept so that the subscription can be given
+        /// back. Instance state, so a hot reload takes it with the page.</summary>
+        private QuestJournal _journal;
+
+        /// <summary>Set by the journal's own event and drained by <see cref="Update"/>: the watcher
+        /// only records that the pinned quest changed, and the per-frame pump is what speaks.</summary>
+        private bool _questChanged;
+
         // ---- the passive watch ----
 
         /// <summary>Start the watch from the turn that is showing, so arriving on a page never
-        /// announces a turn nobody just took.</summary>
+        /// announces a turn nobody just took. The pinned quest needs no such baseline - the game
+        /// raises an event when it changes, so there is nothing to compare against.</summary>
         public void Baseline()
         {
             _turn = Turn();
+            _questChanged = false;
+            WatchQuests();
         }
 
         /// <summary>Stop watching. The next arrival baselines afresh rather than comparing against
-        /// however many turns passed while the player was somewhere else.</summary>
+        /// however many turns passed while the player was somewhere else, and the journal gets its
+        /// subscription back - the page is not there to announce anything.</summary>
         public void Forget()
         {
             _turn = -1;
+            _questChanged = false;
+            ForgetQuests();
         }
 
         /// <summary>The turn ends and the next one begins on the game's schedule, not the player's -
-        /// and while it does, the player is usually nowhere near the End Turn button.</summary>
+        /// and while it does, the player is usually nowhere near the End Turn button. The same is
+        /// true of the quest the game is tracking: finishing one pins the next.</summary>
         public void Update()
+        {
+            AnnounceTurn();
+            AnnounceQuest();
+        }
+
+        private void AnnounceTurn()
         {
             try
             {
@@ -415,6 +437,251 @@ namespace ES2Access.Screens
             }
         }
 
+        // ---- the pinned quest ----
+
+        /// <summary>
+        /// The quest the game is tracking, as the panel in the top right corner shows it: what it is
+        /// called, how it is going, and what has to be done next.
+        ///
+        /// Three nodes at most, because the game draws three things to click: the panel itself, which
+        /// opens the journal on this quest, and the two bare icons on it - the marker that takes the
+        /// camera to wherever the quest is happening, and the pin that lets it go. They are drawn, so
+        /// they are walked; neither is captioned, so each is named by the mod and explains itself with
+        /// the game's own tooltip. An icon the game is not drawing is not a node: the marker is hidden
+        /// outright for a quest with nowhere to point at, and a node that took the camera nowhere would
+        /// teach the player that part of the panel is decoration.
+        ///
+        /// The stop is there only while the game draws the panel, which is two questions and not one:
+        /// the game hides the whole window behind any full screen it opens, and it draws nothing at
+        /// all while no quest is pinned. Neither state gets a placeholder - a stop saying "no quest"
+        /// is a stop the player walks past to learn what a glance would have told them.
+        /// </summary>
+        public void Quest(GraphBuilder builder)
+        {
+            PinnedQuestPanel panel = QuestPanel();
+            if (panel == null)
+            {
+                return;
+            }
+
+            PinnedQuestPanel it = panel;
+            AgeTooltip hint = panel.QuestObjectiveTooltip;
+            AgeControlButton open = AgeWidgets.Button(panel.AgeTransform);
+            NodeVtable vtable = GraphNodes.Button(
+                () => AgeText.FullLabel(it.QuestTitleLabel),
+                () => AgeWidgets.Press(open),
+                null,
+                hint
+            );
+            vtable.Announcements.Add(GraphNodes.ValuePart(() => QuestProgress(it)));
+            vtable.Announcements.Add(
+                GraphNodes.ValuePart(() => AgeText.FullLabel(it.QuestObjectiveLabel))
+            );
+            // The panel is the thing that lights up, but the tooltip worth reading hangs off the
+            // objective's own label inside it - pointing at the panel would leave the readout saying
+            // "has tooltip" over a tooltip the game never drew.
+            AgeWidgets.Point(
+                vtable,
+                open,
+                hint,
+                hint == null ? panel.AgeTransform : hint.AgeTransform
+            );
+
+            builder.BeginStop(QuestStop);
+            builder.AddItem(ControlId.Referenced(panel.PinnedQuest, "hud:quest"), vtable);
+            AddQuestButton(
+                builder,
+                panel.ShowLocationButton,
+                ModStrings.HudQuestShowLocation,
+                "hud:quest/location"
+            );
+            AddQuestButton(builder, panel.UnpinButton, ModStrings.HudQuestUnpin, "hud:quest/unpin");
+        }
+
+        /// <summary>One of the icons the panel draws on itself, where the game is drawing it. Drawn AND
+        /// enabled: the game hides the marker for a quest with nowhere to point at without ever
+        /// switching it off, so asking about enablement alone declares a control the player cannot see
+        /// and the game will not act on.</summary>
+        private static void AddQuestButton(
+            GraphBuilder builder,
+            AgeControlButton button,
+            string nameKey,
+            string key
+        )
+        {
+            AgeTransform widget = AgeWidgets.Transform(button);
+            if (widget == null || !AgeWidgets.Visible(widget) || !AgeWidgets.Operable(widget))
+            {
+                return;
+            }
+
+            AgeControlButton it = button;
+            NodeVtable vtable = GraphNodes.Button(
+                () => ModStrings.Get(nameKey),
+                () => AgeWidgets.Press(it),
+                null,
+                AgeWidgets.Raw(widget)
+            );
+            AgeWidgets.PointAt(vtable, widget);
+            builder.AddItem(ControlId.Structural(key), vtable);
+        }
+
+        /// <summary>How the quest is going, in the game's own word for it - "Ongoing", or the count of
+        /// what is done out of what is needed where the objective has one. The panel hides this label
+        /// outright while a quest is waiting on the player to choose between objectives.</summary>
+        private static string QuestProgress(PinnedQuestPanel panel)
+        {
+            try
+            {
+                return AgeWidgets.Visible(panel.QuestProgressLabel.AgeTransform)
+                    ? AgeText.FullLabel(panel.QuestProgressLabel)
+                    : null;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>Which quest the game is tracking has changed - a quest finished and the journal
+        /// pinned the next one, or the player let this one go. Said wherever they are standing,
+        /// because the panel is drawn over every page and nothing else reports the change.</summary>
+        private void AnnounceQuest()
+        {
+            if (!_questChanged)
+            {
+                return;
+            }
+
+            _questChanged = false;
+            try
+            {
+                Voice.Say(QuestAnnouncement(), false);
+            }
+            catch (Exception e)
+            {
+                Log.Warn("hud: announcing the pinned quest threw: " + e);
+            }
+        }
+
+        /// <summary>The panel's own words where the game is drawing them, and the quest's title on its
+        /// own where it is not - the journal can pin a quest while a full screen is covering the
+        /// panel. Nothing pinned is its own sentence rather than an empty one.</summary>
+        private string QuestAnnouncement()
+        {
+            PinnedQuestPanel panel = QuestPanel();
+            if (panel != null)
+            {
+                return ModStrings.Format(
+                    ModStrings.HudQuestPinned,
+                    new MessageBuilder()
+                        .ListItem(AgeText.FullLabel(panel.QuestTitleLabel))
+                        .ListItem(QuestProgress(panel))
+                        .Build()
+                );
+            }
+
+            Quest quest = ActiveQuest();
+            return quest == null
+                ? ModStrings.Get(ModStrings.HudQuestUnpinned)
+                : ModStrings.Format(
+                    ModStrings.HudQuestPinned,
+                    AgeText.Clean(new GuiQuest(quest).Title)
+                );
+        }
+
+        /// <summary>Listen to the player empire's journal for the tracked quest changing. Subscribed
+        /// when the page arrives and given back when it leaves, so the mod holds no subscription
+        /// nobody is listening to and a hot reload - which pops every page - leaves none behind.
+        /// </summary>
+        private void WatchQuests()
+        {
+            ForgetQuests();
+            try
+            {
+                Empire empire = PlayerEmpire();
+                DepartmentOfInternalAffairs affairs =
+                    empire == null ? null : empire.GetAgency<DepartmentOfInternalAffairs>();
+                QuestJournal journal = affairs == null ? null : affairs.QuestJournal;
+                if (journal == null)
+                {
+                    return;
+                }
+
+                _journal = journal;
+                journal.ActiveQuestChange += OnActiveQuestChange;
+            }
+            catch (Exception e)
+            {
+                Log.Warn("hud: watching the quest journal threw: " + e);
+            }
+        }
+
+        private void ForgetQuests()
+        {
+            try
+            {
+                if (_journal != null)
+                {
+                    _journal.ActiveQuestChange -= OnActiveQuestChange;
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("hud: releasing the quest journal threw: " + e);
+            }
+
+            _journal = null;
+        }
+
+        /// <summary>Only sets state: what the change should say is worked out - and said - from the
+        /// per-frame pump, which is also where the panel has finished rewriting itself.</summary>
+        private void OnActiveQuestChange(object sender, QuestJournalChangeEventArgs e)
+        {
+            _questChanged = true;
+        }
+
+        private Quest ActiveQuest()
+        {
+            try
+            {
+                return _journal == null ? null : _journal.ActiveQuest;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>The panel while the game is really showing a quest on it. Three answers have to
+        /// agree: the window is up at all (the game hides it behind every full screen it opens), the
+        /// panel still holds a quest (it drops it the moment it starts fading out), and nothing above
+        /// it in the tree has been hidden.</summary>
+        private static PinnedQuestPanel QuestPanel()
+        {
+            try
+            {
+                PinnedQuestWindow window = Gui.GuiServiceAvailable
+                    ? Gui.GuiService.GetWindow<PinnedQuestWindow>(false)
+                    : null;
+                if (window == null || !window.Shown)
+                {
+                    return null;
+                }
+
+                PinnedQuestPanel panel = window.PinnedQuestPanel;
+                return panel != null
+                    && panel.PinnedQuest != null
+                    && AgeWidgets.Visible(panel.AgeTransform)
+                    ? panel
+                    : null;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
         // ---- the collapsed tutorial ----
 
         /// <summary>The bar a collapsed tutorial leaves at the top of the right-hand edge - its title,
@@ -736,7 +1003,7 @@ namespace ES2Access.Screens
                     return null;
                 }
 
-                FleetsScreen.GetIdleFleets(empire, ref _idleFleets);
+                global::FleetsScreen.GetIdleFleets(empire, ref _idleFleets);
                 return ModStrings.Format(ModStrings.GalaxyIdleFleets, _idleFleets.Count);
             }
             catch (Exception)

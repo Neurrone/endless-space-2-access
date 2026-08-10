@@ -70,7 +70,9 @@ world model answers questions the renderer refuses to — adjacency APIs return
 never-discovered entities' names, and name lookups resolve for anything. Find the
 renderer's own visibility predicate and route every name and fact through it; never read
 the model directly for anything the player could not see. The *filter* is what needs the
-test, not the model.
+test, not the model. And the filter governs names and facts, not OFFERS: a game can hide a
+thing's identity while still letting the mouse act on its position, and withdrawing an
+affordance the mouse has is a separate, louder decision than withholding a name.
 
 ## 1. Research and measure
 
@@ -88,6 +90,11 @@ test, not the model.
   zoom step draws the full label") can be true and still wrong as a limit. When a numeric
   threshold matters, find the game code that *compares* against it and read the limit from
   there; never freeze a number measured from one observation.
+- **Take a state test from the code that DRAWS the state.** The model's best-named
+  property can be wrong (a fleet's `IsMoving`, public and named exactly right, reads false
+  the moment it spends its movement mid-route); the status column, icon switch or colour
+  swap the game renders the state from is the test the player's screen agrees with — and
+  it doubles as §4's free oracle.
 - Find the screen's classes in the decompiled code: where its text lives, what its buttons
   are wired to, which service state drives it ([reverse-engineering.md](reverse-engineering.md)).
   A data-driven screen can keep its **shape** and its **values** in separate registries —
@@ -110,6 +117,11 @@ project owner approves the design; new key bindings need their own approval
 the first in-game HUD), the first implemented screen goes to manual screen-reader review
 before sibling screens are batched — the calibration is cheap on one screen and unaffordable
 on five.
+
+Approval is not a second measurement: when implementation-time measurement contradicts the
+approved design — drawn order, a surface the design missed — ship the measured shape (a gap
+takes the sibling exemplar's treatment) and report the deviation with its evidence, rather
+than shipping the approved-but-contradicted shape or stalling to re-ask.
 
 ## 3. Implement
 

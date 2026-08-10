@@ -27,9 +27,16 @@ namespace ES2Access.UI.Input
         /// modified click, where it has one.</summary>
         public const string Alternate = "ui.alternate";
 
-        // Move the focused ITEM rather than the cursor: a queue line up or down its queue. Distinct
-        // from navigation because the thing that moves is the row, and the cursor rides along with it.
-        public const string MoveItemUp = "ui.moveItemUp";
-        public const string MoveItemDown = "ui.moveItemDown";
+        /// <summary>The command the game puts on a right click here.</summary>
+        public const string Contextual = "ui.contextual";
+
+        /// <summary>Pick the focused thing up, swap it for another, or put it back where it came
+        /// from. Where it is put DOWN is named with <see cref="Activate"/>.</summary>
+        public const string Carry = "ui.carry";
+
+        // The game's own two ways of changing a selection without replacing it: one item in or out,
+        // and everything from the last one to this one.
+        public const string SelectToggle = "ui.selectToggle";
+        public const string SelectRange = "ui.selectRange";
     }
 }

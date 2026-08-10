@@ -39,6 +39,108 @@ namespace ES2Access.UI
         }
 
         /// <summary>
+        /// The sentence the game gives for refusing, as an extra spoken part on a blocked control.
+        ///
+        /// A game writes the reason into the same tooltip as the description, so a control whose
+        /// tooltip is ANNOUNCED already says it and repeating it here would say it twice. It is the
+        /// control whose tooltip is only INDICATED - the renderer-assembled kind - that would
+        /// otherwise announce "unavailable" and leave the player to open the review buffer to find
+        /// out why. So this part speaks only in that case, and only while the control is refusing.
+        ///
+        /// Additive, never a suppressor: the mode-derived part still contributes, and the section it
+        /// comes from still fills the buffer.
+        /// </summary>
+        public static NodeAnnouncement RefusalPart(AgeTooltip tooltip, Func<bool> enabled)
+        {
+            if (tooltip == null)
+            {
+                return null;
+            }
+
+            AgeTooltip it = tooltip;
+            return new NodeAnnouncement(
+                () =>
+                {
+                    try
+                    {
+                        if (enabled != null && enabled())
+                        {
+                            return null;
+                        }
+
+                        return ModeFor(it) == TooltipMode.Announce ? null : Refusal(it);
+                    }
+                    catch (Exception)
+                    {
+                        return null;
+                    }
+                },
+                live: true,
+                kind: AnnouncementKinds.Tooltip
+            );
+        }
+
+        /// <summary>The refusal alone, out of the three parts the game assembles a blocked control's
+        /// tooltip from: its own description, the failure, and - only ever for a missing technology -
+        /// the sentence telling a mouse where to click.</summary>
+        private static string Refusal(AgeTooltip tooltip)
+        {
+            return RefusalText.Compose(AgeText.Lines(AgeText.Tooltip(tooltip)), MouseInstruction());
+        }
+
+        /// <summary>
+        /// The sections for a control whose tooltip the game may have appended a MOUSE INSTRUCTION to -
+        /// "hold Control and click to find the technology you are missing", which is the third part of
+        /// a blocked button's hint and the one part a keyboard player can do nothing with.
+        ///
+        /// It stays in the review buffer, because it is on the screen and someone may want it; it is
+        /// kept out of what is SPOKEN, because a refusal that ends in an instruction to click is a
+        /// refusal the player has to listen past every time they pass the control. Which is the same
+        /// split the announced and reviewed halves always have here - one declaration, two surfaces -
+        /// so the instruction is simply declared as its own reviewed-only section, after the words that
+        /// speak.
+        ///
+        /// A tooltip the renderer assembles has no such part and is left alone: it is only indicated,
+        /// and <see cref="RefusalPart"/> is what carries its refusal into speech.
+        /// </summary>
+        public static IList<NodeSection> HintSections(AgeTooltip tooltip)
+        {
+            Func<IList<string>> full = TooltipDetails(tooltip);
+            if (full == null || ModeFor(tooltip) != TooltipMode.Announce)
+            {
+                return Sections(null, tooltip);
+            }
+
+            return new List<NodeSection>
+            {
+                new NodeSection(() => Lines(full(), false), TooltipMode.Announce),
+                new NodeSection(() => Lines(full(), true), TooltipMode.None),
+            };
+        }
+
+        /// <summary>The tooltip's lines split at the mouse instruction: everything else, or the
+        /// instruction on its own.</summary>
+        private static IList<string> Lines(IList<string> lines, bool instructionOnly)
+        {
+            string instruction = MouseInstruction();
+            List<string> kept = new List<string>(lines == null ? 0 : lines.Count);
+            for (int i = 0; lines != null && i < lines.Count; i++)
+            {
+                if (string.Equals(lines[i], instruction) == instructionOnly)
+                {
+                    kept.Add(lines[i]);
+                }
+            }
+
+            return kept;
+        }
+
+        private static string MouseInstruction()
+        {
+            return AgeText.Clean(Gui.Localize("%MissingTechnologyClickDescription"));
+        }
+
+        /// <summary>
         /// The control's review-buffer content, read from its tooltip - and, via
         /// <see cref="TooltipPart"/>, the same lines a <see cref="TooltipMode.Announce"/> control
         /// speaks and the same test a <see cref="TooltipMode.Indicate"/> control uses to decide
@@ -203,12 +305,18 @@ namespace ES2Access.UI
             );
         }
 
-        /// <summary>What the control currently holds. Watched live, so a value the game changes on
-        /// its own - a setting another control has just constrained, a volume the game clamped -
-        /// speaks under the cursor without the whole control being re-read.</summary>
-        public static NodeAnnouncement ValuePart(Func<string> value)
+        /// <summary>What the control currently holds. Watched live by default, so a value the game
+        /// changes on its own - a setting another control has just constrained, a volume the game
+        /// clamped - speaks under the cursor without the whole control being re-read.
+        ///
+        /// A watched part is re-resolved every frame the control is focused, so a value whose answer
+        /// costs a walk of one of the game's repositories asks for <c>watch: false</c> and is resolved
+        /// when the control is read instead. The player hears the same words either way; what they lose
+        /// is the value announcing itself mid-focus, and what they gain is the scan not running at
+        /// 60 Hz.</summary>
+        public static NodeAnnouncement ValuePart(Func<string> value, bool watch = true)
         {
-            return new NodeAnnouncement(value, live: true, kind: AnnouncementKinds.Value);
+            return new NodeAnnouncement(value, live: watch, kind: AnnouncementKinds.Value);
         }
 
         /// <summary>A control the player activates. An unavailable one stays focusable and readable -
@@ -317,6 +425,57 @@ namespace ES2Access.UI
                 Announcements = parts,
                 Sections = Sections(details, tooltip, tooltipMode),
                 StateText = ActedState(chosen, enabled),
+                OnActivate = Guarded(choose, enabled),
+            };
+        }
+
+        /// <summary>
+        /// One row of a list the game lets the player pick SEVERAL things out of - a fleet line, a ship
+        /// tile - where a plain click still replaces the whole selection with this one.
+        ///
+        /// It is a <see cref="ControlTypes.RadioButton"/> because that is what the unmodified key does,
+        /// and it is not a checkbox for the same reason: Enter cannot untick. What makes it different
+        /// from <see cref="Radio"/> is that membership is the thing being read, so BOTH states are
+        /// spoken - a row that says nothing when it is out of the selection leaves the player counting
+        /// silences. The chords that put one row in or out (<see cref="NodeVtable.OnSelectToggle"/>) and
+        /// that extend the selection to here (<see cref="NodeVtable.OnSelectRange"/>) are the screen's
+        /// to wire, because only the screen knows what the game does with them.
+        ///
+        /// <paramref name="member"/> is asked live and so has to be a cheap state read; the screen
+        /// hands <paramref name="settled"/> separately when the widget's own flag lags the model by a
+        /// frame - what a row says AFTER an action has to be what the game now believes, not what the
+        /// panel has not yet redrawn.
+        /// </summary>
+        public static NodeVtable SelectionItem(
+            Func<string> label,
+            Func<bool> member,
+            Func<bool> settled,
+            Action choose,
+            Func<bool> enabled = null,
+            AgeTooltip tooltip = null,
+            TooltipMode? tooltipMode = null,
+            Func<IList<string>> details = null
+        )
+        {
+            Func<bool> acted = settled ?? member;
+            List<NodeAnnouncement> parts = Parts(label, enabled);
+            parts.Insert(
+                1,
+                new NodeAnnouncement(
+                    () => SelectionText.Membership(member != null && member()),
+                    live: true,
+                    kind: AnnouncementKinds.Selected
+                )
+            );
+            return new NodeVtable
+            {
+                ControlType = ControlTypes.RadioButton,
+                Announcements = parts,
+                Sections = Sections(details, tooltip, tooltipMode),
+                StateText = ActedState(
+                    () => SelectionText.Membership(acted != null && acted()),
+                    enabled
+                ),
                 OnActivate = Guarded(choose, enabled),
             };
         }

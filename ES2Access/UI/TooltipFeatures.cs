@@ -27,8 +27,9 @@ namespace ES2Access.UI
     /// So the reading is scoped: a feature's own subtree is banded, never the window. Two shapes the
     /// bands cannot express are recognised by what the game itself does rather than by a list of
     /// class names - a run of items spawned from one prefab, and a bar that draws a proportion and
-    /// writes no number - and one feature has a reader of its own because the game gives its stats
-    /// names that are nowhere in the panel. Everything else keeps the banding, which is what it was
+    /// writes no number - and four features have readers of their own because the game gives their
+    /// numbers names that are nowhere in the panel: a ship's stats, a fleet's, the two military power
+    /// figures, and a hero's card. Everything else keeps the banding, which is what it was
     /// always right about, and a feature nobody has written a reader for lands there too. Which
     /// reader each feature used is reported so a gap shows up in a probe rather than in the player's
     /// ears.
@@ -89,11 +90,31 @@ namespace ES2Access.UI
                 }
 
                 PanelFeatureShipInfo ship = feature as PanelFeatureShipInfo;
-                Dictionary<AgeTransform, string> named = null;
+                PanelFeatureGarrisonInfo garrison = feature as PanelFeatureGarrisonInfo;
+                PanelFeatureMilitaryPowerBalance power =
+                    feature as PanelFeatureMilitaryPowerBalance;
+                PanelFeatureHeroInfo hero = feature as PanelFeatureHeroInfo;
+
+                Dictionary<AgeTransform, Naming> named = null;
                 if (ship != null)
                 {
                     reading.Reader = "ship-stats";
                     named = ShipStatNames(ship);
+                }
+                else if (garrison != null)
+                {
+                    reading.Reader = "garrison-stats";
+                    named = GarrisonStatNames(garrison);
+                }
+                else if (power != null)
+                {
+                    reading.Reader = "power-balance";
+                    named = PowerBalanceNames(power);
+                }
+                else if (hero != null)
+                {
+                    reading.Reader = "hero-card";
+                    named = HeroCardNames(hero);
                 }
                 else
                 {
@@ -129,7 +150,7 @@ namespace ES2Access.UI
         /// </summary>
         private static void ReadScoped(
             AgeTransform root,
-            Dictionary<AgeTransform, string> named,
+            Dictionary<AgeTransform, Naming> named,
             List<string> lines,
             out bool items
         )
@@ -153,7 +174,7 @@ namespace ES2Access.UI
                 {
                     if (!spoken || !row[i].Icon)
                     {
-                        parts.Add(new TooltipPart(row[i].Text, row[i].Icon));
+                        parts.Add(new TooltipPart(row[i].Text, row[i].Icon, row[i].Alone));
                     }
                 }
 
@@ -172,6 +193,20 @@ namespace ES2Access.UI
 
             /// <summary>Set where a typed reader wrote this text rather than the panel.</summary>
             public bool Named;
+
+            /// <summary>Set where the text is a fact of its own that merely landed in this row.
+            /// </summary>
+            public bool Alone;
+        }
+
+        /// <summary>What a typed reader has decided a widget really says.</summary>
+        private struct Naming
+        {
+            public string Text;
+
+            /// <summary>Whether the row this widget was drawn in belongs to something else - see
+            /// <see cref="TooltipPart.OwnLine"/>.</summary>
+            public bool OwnLine;
         }
 
         private static readonly Func<Entry, AgeTransform> EntryWidget = entry => entry.Widget;
@@ -187,7 +222,7 @@ namespace ES2Access.UI
         /// </summary>
         private static void Gather(
             AgeTransform widget,
-            Dictionary<AgeTransform, string> named,
+            Dictionary<AgeTransform, Naming> named,
             List<Entry> entries,
             int depth,
             ref bool items
@@ -198,18 +233,19 @@ namespace ES2Access.UI
                 return;
             }
 
-            string replacement;
+            Naming replacement;
             if (named != null && named.TryGetValue(widget, out replacement))
             {
-                if (!string.IsNullOrEmpty(replacement))
+                if (!string.IsNullOrEmpty(replacement.Text))
                 {
                     entries.Add(
                         new Entry
                         {
                             Widget = widget,
-                            Text = replacement,
+                            Text = replacement.Text,
                             Icon = false,
                             Named = true,
+                            Alone = replacement.OwnLine,
                         }
                     );
                 }
@@ -240,7 +276,7 @@ namespace ES2Access.UI
             if (Repeated(shown))
             {
                 items = true;
-                AddItems(widget, shown, entries);
+                AddItems(widget, shown, named, entries);
                 return;
             }
 
@@ -330,6 +366,7 @@ namespace ES2Access.UI
         private static void AddItems(
             AgeTransform table,
             List<AgeTransform> items,
+            Dictionary<AgeTransform, Naming> named,
             List<Entry> entries
         )
         {
@@ -337,7 +374,7 @@ namespace ES2Access.UI
             List<AgeTransform> said = new List<AgeTransform>();
             for (int i = 0; i < items.Count; i++)
             {
-                string phrase = Phrase(items[i]);
+                string phrase = Phrase(items[i], named);
                 if (!string.IsNullOrEmpty(phrase))
                 {
                     phrases.Add(phrase);
@@ -372,12 +409,16 @@ namespace ES2Access.UI
         /// bands are then run together. Banding rather than sorting by position is what keeps the
         /// picture in front of its number: an icon and the value beside it are routinely offset by
         /// three pixels, and read down-then-across that offset puts the number first.
+        ///
+        /// A typed reader's names reach in here too, because what an item is drawn with is routinely
+        /// the only bare number in it: the four ship-size counts and the four hero masteries are each
+        /// an icon and a figure, and the word for the icon is in the game's data, not in the panel.
         /// </summary>
-        private static string Phrase(AgeTransform item)
+        private static string Phrase(AgeTransform item, Dictionary<AgeTransform, Naming> named)
         {
             List<string> lines = new List<string>();
             bool nested;
-            ReadScoped(item, null, lines, out nested);
+            ReadScoped(item, named, lines, out nested);
             return TooltipText.Phrase(lines);
         }
 
@@ -416,9 +457,9 @@ namespace ES2Access.UI
         /// reads correctly from its own rows, so the naming is a SUBSTITUTION and the rows are then
         /// read exactly as any other feature's.
         /// </summary>
-        private static Dictionary<AgeTransform, string> ShipStatNames(PanelFeatureShipInfo ship)
+        private static Dictionary<AgeTransform, Naming> ShipStatNames(PanelFeatureShipInfo ship)
         {
-            Dictionary<AgeTransform, string> named = new Dictionary<AgeTransform, string>();
+            Dictionary<AgeTransform, Naming> named = new Dictionary<AgeTransform, Naming>();
             Name(named, ship.HealthLabel, GuiShipDesign.ShipStatHealth);
             Name(named, ship.MovementPointsLabel, GuiShipDesign.ShipStatMovement);
             Name(named, ship.ManpowerLabel, GuiShipDesign.ShipStatManpower);
@@ -430,10 +471,130 @@ namespace ES2Access.UI
             return named;
         }
 
+        // ---- the fleet stat blocks ----
+
+        /// <summary>
+        /// A fleet's stats, each number given the name the game itself has for it.
+        ///
+        /// The same prefab shape as a ship's - a picture in one band and the figure it names in the
+        /// next - and the same six figures, because a fleet is what its ships add up to. Two of the
+        /// names are the fleet's own rather than a ship's: command points are what the fleet list
+        /// already calls them, and the four counts by hull size are named by the sizes themselves.
+        /// The size counts are drawn as a strip of items, so the names have to reach inside one.
+        ///
+        /// <c>PanelFeatureGarrisonInfoEmbedded</c> is this feature plus the two military power
+        /// figures, so it is read as this feature plus two more names.
+        /// </summary>
+        private static Dictionary<AgeTransform, Naming> GarrisonStatNames(
+            PanelFeatureGarrisonInfo garrison
+        )
+        {
+            Dictionary<AgeTransform, Naming> named = new Dictionary<AgeTransform, Naming>();
+            Name(named, garrison.CommandValue, Word(CommandPointsTitle));
+            Name(named, garrison.HealthLabel, GuiShipDesign.ShipStatHealth);
+            Name(named, garrison.MovementLabel, GuiShipDesign.ShipStatMovement);
+            Name(named, garrison.ActionPointLabel, DepartmentOfTheTreasury.Resources.ActionPoint);
+            CountsBySize(named, garrison.CountBySizeTable);
+
+            PanelFeatureGarrisonInfoEmbedded embedded =
+                garrison as PanelFeatureGarrisonInfoEmbedded;
+            if (embedded != null)
+            {
+                Name(
+                    named,
+                    embedded.OffensivePowerLabel,
+                    GuiShipDesign.ShipStatOffensiveMilitaryPower
+                );
+                Name(
+                    named,
+                    embedded.DefensivePowerLabel,
+                    GuiShipDesign.ShipStatDefensiveMilitaryPower
+                );
+            }
+
+            return named;
+        }
+
+        /// <summary>
+        /// How many ships of each hull size, each count named by its size.
+        ///
+        /// The table holds one duplet per size - a symbol and a figure - in the order the feature
+        /// fills it (<c>PanelFeatureGarrisonInfo.Initialize</c>), so the size a duplet stands for is
+        /// its position and nothing in the duplet itself. A size the fleet has none of is drawn faded
+        /// rather than dropped, which is why all four are read.
+        /// </summary>
+        private static void CountsBySize(
+            Dictionary<AgeTransform, Naming> named,
+            AgeTransform table
+        )
+        {
+            if (table == null)
+            {
+                return;
+            }
+
+            try
+            {
+                List<AgeTransform> children = table.Children;
+                for (int i = 0; i < children.Count && i < ShipSizes.Length; i++)
+                {
+                    ValueDuplet duplet =
+                        children[i] == null ? null : children[i].GetComponent<ValueDuplet>();
+                    if (duplet != null)
+                    {
+                        Name(named, duplet.Value, ShipSizes[i]);
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("tooltip: naming the ship counts threw: " + e);
+            }
+        }
+
+        /// <summary>The hull sizes a garrison feature counts by, in the order it fills its table with
+        /// them.</summary>
+        private static readonly Amplitude.StaticString[] ShipSizes =
+        {
+            Ship.ShipSizeSmall,
+            Ship.ShipSizeMedium,
+            Ship.ShipSizeLarge,
+            Ship.ShipSizeMothership,
+        };
+
+        /// <summary>
+        /// The two military power figures of the fleet a gauge is drawn for.
+        ///
+        /// The feature is the balance bars and these two numbers, and only the bars' shared caption is
+        /// written in words - so without this the panel says "74" and "123" under "Projectile-Energy
+        /// Balance". The bars themselves are left to the default reader, which says nothing for them:
+        /// they carry no text, and the split they draw is about which weapon types make up the power,
+        /// not about the power.
+        /// </summary>
+        private static Dictionary<AgeTransform, Naming> PowerBalanceNames(
+            PanelFeatureMilitaryPowerBalance power
+        )
+        {
+            Dictionary<AgeTransform, Naming> named = new Dictionary<AgeTransform, Naming>();
+            Name(named, power.OffenseLabel, GuiShipDesign.ShipStatOffensiveMilitaryPower);
+            Name(named, power.DefenseLabel, GuiShipDesign.ShipStatDefensiveMilitaryPower);
+            return named;
+        }
+
         private static void Name(
-            Dictionary<AgeTransform, string> named,
+            Dictionary<AgeTransform, Naming> named,
             AgePrimitiveLabel label,
             Amplitude.StaticString stat
+        )
+        {
+            Name(named, label, StatTitle(stat));
+        }
+
+        private static void Name(
+            Dictionary<AgeTransform, Naming> named,
+            AgePrimitiveLabel label,
+            string title,
+            bool ownLine = false
         )
         {
             if (label == null)
@@ -443,14 +604,15 @@ namespace ES2Access.UI
 
             try
             {
-                named[label.AgeTransform] = TooltipText.Captioned(
-                    StatTitle(stat),
-                    AgeText.Label(label)
-                );
+                named[label.AgeTransform] = new Naming
+                {
+                    Text = TooltipText.Captioned(title, AgeText.Label(label)),
+                    OwnLine = ownLine,
+                };
             }
             catch (Exception e)
             {
-                Log.Warn("tooltip: naming a ship stat threw: " + e);
+                Log.Warn("tooltip: naming a stat threw: " + e);
             }
         }
 
@@ -475,9 +637,144 @@ namespace ES2Access.UI
             return Unresolved(title) ? null : title;
         }
 
+        /// <summary>A word the game keeps under a translation key of its own rather than on an element
+        /// - a column heading, a card's caption. Silence rather than the key, for the same reason
+        /// <see cref="StatTitle"/> ends in silence.</summary>
+        private static string Word(string key)
+        {
+            string title = AgeText.Clean(key);
+            return Unresolved(title) ? null : title;
+        }
+
         private static bool Unresolved(string title)
         {
             return string.IsNullOrEmpty(title) || title[0] == '%';
+        }
+
+        /// <summary>What the fleet list calls a fleet's command points - preferred over the ship stat
+        /// of the same name so that a fleet is described in the words the fleet rows already use.
+        /// </summary>
+        private const string CommandPointsTitle = "%FleetListTableCommandPointsTitle";
+
+        /// <summary>The caption a hero's card draws ABOVE the level it belongs to, and the one it
+        /// draws beside a bare upkeep figure as a picture.</summary>
+        private const string HeroLevelTitle = "%HeroCardLevelTitle";
+
+        private const string HeroUpkeepTitle = "%HeroCardUpkeepTitle";
+
+        // ---- the hero card ----
+
+        /// <summary>
+        /// A hero's card, where three of the figures are drawn away from the words that name them.
+        ///
+        /// The level is the awkward one: its caption is a prefab of its own laid out one row ABOVE the
+        /// figure (<c>HeroDetailedCard.RefreshExperience</c>), so the drawn rows pair "Level" with the
+        /// affinity beside it and the level itself with the hero's class - two lines, neither of them
+        /// true. The pairing is therefore made here, by field, and the result is marked as a fact of
+        /// its own so the class's row does not swallow it.
+        ///
+        /// The masteries are the other: the row prefab has no label for the skill's name at all
+        /// (<c>HeroMasteryLine</c> leaves <c>ClassTitle</c> null in the tooltip's version of it), and
+        /// the name lives on the wrapper the row hands its own tooltip. That wrapper is where it is
+        /// read from - the alternative, walking the mastery database in the order the panel fills its
+        /// rows, gets the same four words by trusting two orders to agree.
+        /// </summary>
+        private static Dictionary<AgeTransform, Naming> HeroCardNames(PanelFeatureHeroInfo hero)
+        {
+            Dictionary<AgeTransform, Naming> named = new Dictionary<AgeTransform, Naming>();
+            HeroDetailedCard card = hero.Card;
+            if (card == null)
+            {
+                return named;
+            }
+
+            Name(named, card.LevelLabel, Word(HeroLevelTitle), true);
+            Silence(named, Caption(hero.AgeTransform, HeroLevelTitle, 0));
+            Name(named, card.UpkeepLabel, Word(HeroUpkeepTitle));
+            Masteries(named, card.HeroMasteryPanel);
+            return named;
+        }
+
+        /// <summary>The label a prefab drew a translation key into, which is how a caption with no
+        /// field of its own is found. The key is compared, not the translated words, so this holds in
+        /// every language.</summary>
+        private static AgeTransform Caption(AgeTransform widget, string key, int depth)
+        {
+            if (widget == null || depth > MaxDepth)
+            {
+                return null;
+            }
+
+            try
+            {
+                AgePrimitiveLabel label = widget.GetComponent<AgePrimitiveLabel>();
+                if (label != null && label.Text == key)
+                {
+                    return widget;
+                }
+
+                List<AgeTransform> children = widget.Children;
+                for (int i = 0; i < children.Count; i++)
+                {
+                    AgeTransform found = Caption(children[i], key, depth + 1);
+                    if (found != null)
+                    {
+                        return found;
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("tooltip: looking for a caption threw: " + e);
+            }
+
+            return null;
+        }
+
+        /// <summary>A widget whose words have been said somewhere better says nothing here.</summary>
+        private static void Silence(Dictionary<AgeTransform, Naming> named, AgeTransform widget)
+        {
+            if (widget != null)
+            {
+                named[widget] = new Naming();
+            }
+        }
+
+        /// <summary>Each mastery's level given the name of the skill it measures, taken off the
+        /// wrapper the row built for its own tooltip.</summary>
+        private static void Masteries(
+            Dictionary<AgeTransform, Naming> named,
+            HeroMasteryPanel panel
+        )
+        {
+            if (panel == null || panel.MasteryLinesContainer == null)
+            {
+                return;
+            }
+
+            try
+            {
+                List<AgeTransform> lines = panel.MasteryLinesContainer.Children;
+                for (int i = 0; i < lines.Count; i++)
+                {
+                    HeroMasteryLine line =
+                        lines[i] == null ? null : lines[i].GetComponent<HeroMasteryLine>();
+                    if (line == null || line.Tooltip == null)
+                    {
+                        continue;
+                    }
+
+                    GuiHeroSkillMastery mastery = line.Tooltip.Target as GuiHeroSkillMastery;
+                    if (mastery != null)
+                    {
+                        Name(named, line.LevelLabel, AgeText.Clean(mastery.Title));
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("tooltip: naming a hero's masteries threw: " + e);
+            }
         }
 
         /// <summary>
@@ -490,7 +787,7 @@ namespace ES2Access.UI
         /// is what names the two sides, and it names them in this order.
         /// </summary>
         private static void Balance(
-            Dictionary<AgeTransform, string> named,
+            Dictionary<AgeTransform, Naming> named,
             RepartitionHorizontalGauge gauge
         )
         {
@@ -508,11 +805,14 @@ namespace ES2Access.UI
                     return;
                 }
 
-                named[gauge.AgeTransform] = ModStrings.Format(
-                    ModStrings.TooltipBalance,
-                    Percent(left ? 50f - gauge.LeftGauge.PercentLeft : 0f),
-                    Percent(right ? gauge.RightGauge.PercentRight - 50f : 0f)
-                );
+                named[gauge.AgeTransform] = new Naming
+                {
+                    Text = ModStrings.Format(
+                        ModStrings.TooltipBalance,
+                        Percent(left ? 50f - gauge.LeftGauge.PercentLeft : 0f),
+                        Percent(right ? gauge.RightGauge.PercentRight - 50f : 0f)
+                    ),
+                };
             }
             catch (Exception e)
             {

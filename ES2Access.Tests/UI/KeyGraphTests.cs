@@ -490,6 +490,40 @@ namespace ES2Access.Tests.UI
             Assert.False(g.Tooltip());
         }
 
+        /// <summary>
+        /// The three keys that are not activation: the right-click command and the two selection
+        /// chords. Each runs its own slot and nothing else - a chord must never fall back to plain
+        /// activation on a control that does not have it, which would do something the player never
+        /// asked for. False is how the caller knows to say "nothing to do here" instead.
+        /// </summary>
+        [Fact]
+        public void TheContextualCommandAndTheSelectionChordsEachRunTheirOwnSlot()
+        {
+            GraphState state = new GraphState();
+            int activated = 0, contextual = 0, toggled = 0, ranged = 0;
+            NodeVtable row = Vt("Ship");
+            row.OnActivate = () => activated++;
+            row.OnContextual = () => contextual++;
+            row.OnSelectToggle = () => toggled++;
+            row.OnSelectRange = () => ranged++;
+
+            KeyGraph g = new KeyGraph(Renderer(b =>
+                b.AddItem(Id("a"), row).AddItem(Id("b"), Vt("Plain"))), state);
+            g.Rerender();
+            Assert.True(g.Contextual());
+            Assert.True(g.SelectToggle());
+            Assert.True(g.SelectRange());
+            Assert.Equal(0, activated);
+            Assert.Equal(1, contextual);
+            Assert.Equal(1, toggled);
+            Assert.Equal(1, ranged);
+
+            g.Move(GraphDir.Down);
+            Assert.False(g.Contextual());
+            Assert.False(g.SelectToggle());
+            Assert.False(g.SelectRange());
+        }
+
         [Fact]
         public void TryAdjustPreemptsHorizontalNavigation()
         {

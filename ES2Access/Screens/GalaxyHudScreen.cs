@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Reflection;
 using Amplitude;
 using ES2Access.Core.Speech;
+using ES2Access.Core.UI;
 using ES2Access.Core.UI.Graph;
 using ES2Access.Core.Util;
 using ES2Access.UI;
@@ -22,8 +24,16 @@ namespace ES2Access.Screens
     /// a covered screen keeps its cursor, so dismissing one puts the player back where they were.
     ///
     /// Tab moves between the places there are to be, in the order the corner of the screen they come
-    /// from reads: what the empire is worth, where the systems are, where the fleets are, what the game
-    /// is asking about, and what the turn itself offers.
+    /// from reads: what the empire is worth, where the systems are, the quest the game is tracking,
+    /// what the game is asking about, and what the turn itself offers.
+    ///
+    /// There is no separate stop for the fleets. A fleet is not somewhere else on the screen: it is
+    /// drawn AT a system or ON a lane, and that is where it is walked - as a child of the place it is
+    /// standing, after that place's planets and starlanes. A list of every fleet in the empire, in a
+    /// corner of its own, described a picture the map does not draw and made "where is it" a question
+    /// the player had to answer from a sentence rather than from the tree they were already in. This
+    /// is a DELIBERATE deviation from the game's own arrangement, approved as such: the map draws
+    /// fleets as lozenges anchored to places, and the tree now says the same thing.
     ///
     /// A tutorial the player has collapsed is one of those places. Collapsing it hands the keyboard
     /// back to this page, and the bar the game leaves at the top of the right-hand edge - its title,
@@ -57,12 +67,17 @@ namespace ES2Access.Screens
     /// Focusing a system moves the camera to it exactly as the game's own "show me this" routes do, so
     /// that anyone watching the screen is looking at whatever the keyboard is on. Opening a system up -
     /// right arrow, the same key that opens anything else - walks what the map is drawing inside it:
-    /// its planets, then the starlanes leaving it. It changes no distance. How close the camera stands
-    /// is the player's own choice, asked for from the system's menu, and it decides how much there is
-    /// to read: from far off a planet is a circle with a name and a state, and from as close as the
-    /// game goes it is a card with its outputs, its anomalies and everything a fleet could do to it.
-    /// A key that quietly took the camera all the way in would have made the first of those two
-    /// unreachable.
+    /// its planets, then the starlanes leaving it, then the fleets standing there. It changes no
+    /// distance. How close the camera stands is what ENTER on the system asks for, which is the game's
+    /// own left click on it, and it decides how much there is to read: from far off a planet is a
+    /// circle with a name and a state, and from as close as the game goes it is a card with its
+    /// outputs, its anomalies and everything a fleet could do to it. Going in and getting closer stay
+    /// different keys, so neither of those two readings is out of reach.
+    ///
+    /// Backslash is what the map puts on a right click. On a system with fleets selected it sends them
+    /// there; with nothing selected it undoes a zoom the player asked for, exactly as right-clicking
+    /// the map does. On a starlane it sends the selection out onto the lane - and onto the lane a
+    /// fleet is already flying, which is the game's own way of saying "stop at the next system".
     ///
     /// A starlane says where it goes only when the map draws the name of the system at the other end.
     /// The game's own galaxy model will happily hand over the name of a system nobody has ever seen -
@@ -76,12 +91,17 @@ namespace ES2Access.Screens
     public sealed class GalaxyHudScreen : Screen
     {
         private static readonly object SystemStop = "galaxy:systems";
-        private static readonly object FleetStop = "galaxy:fleets";
 
         /// <summary>The clusters the game draws over every view level - what the empire is worth, the
         /// notifications, a collapsed tutorial, the turn controls. This page is one of three that
         /// declare them.</summary>
         private readonly GlobalHud _hud = new GlobalHud();
+
+        /// <summary>The strip the game slides over the bottom of the map while a fleet is selected.
+        /// It is drawn OVER this page rather than instead of it, so it contributes stops here rather
+        /// than being a page of its own - selecting a fleet is how a player starts sending one
+        /// somewhere, and the somewhere is on this map.</summary>
+        private readonly FleetPanel _fleetPanel = new FleetPanel();
 
         // Regions - what Alt and an arrow jump between - are declared only where a stop really has
         // two halves. A stop with one region swallows the key and moves nothing, which reads as the
@@ -97,12 +117,6 @@ namespace ES2Access.Screens
         // out which systems the player can see, and Build runs every tick.
         private readonly List<StarSystemNode> _owned = new List<StarSystemNode>();
         private readonly List<StarSystemNode> _other = new List<StarSystemNode>();
-
-        /// <summary>Where the camera was standing when the player last asked to be taken into a
-        /// system, so that asking to come back out puts them at the same distance rather than at some
-        /// default. -1 when nobody has asked, which is what makes the map's own starting step the
-        /// answer instead.</summary>
-        private int _stepBeforeSystemView = -1;
 
         public override string Key
         {
@@ -179,16 +193,19 @@ namespace ES2Access.Screens
         public override void OnPush()
         {
             _hud.Baseline();
+            _fleetPanel.Baseline();
         }
 
         public override void OnPop()
         {
             _hud.Forget();
+            _fleetPanel.Forget();
         }
 
         public override void OnUpdate()
         {
             _hud.Update();
+            _fleetPanel.Update();
         }
 
         /// <summary>Down the screen, which is also the order the galaxy screen has always read in:
@@ -197,18 +214,221 @@ namespace ES2Access.Screens
         /// under that - and the turn controls in the bottom corner.</summary>
         public override void Build(GraphBuilder builder)
         {
+            ApplyPendingExpansions(builder);
             _hud.Empire(builder);
 
             builder.BeginStop(SystemStop);
             BuildSystems(builder);
 
-            builder.BeginStop(FleetStop);
-            BuildFleets(builder);
+            // The selected-fleet panel, where the game draws it: over the bottom of the map, between
+            // what the map shows and the clusters down its right-hand edge. Nothing at all while no
+            // fleet is selected.
+            _fleetPanel.Build(builder);
 
+            _hud.Quest(builder);
             _hud.Tutorial(builder);
             _hud.Notifications(builder);
             _hud.Turn(builder);
         }
+
+        /// <summary>
+        /// Typing on the map looks through the systems AND every fleet the map is drawing, wherever
+        /// each is buried.
+        ///
+        /// A fleet lives under the place it is standing now, and that place is usually closed - so the
+        /// only thing the ordinary scope (the stop's declared controls) could find is a fleet whose
+        /// system the player had already opened, which is not a search, it is a confirmation. Landing
+        /// on one opens the place it is in, so the branch the player is put into is the branch they can
+        /// then walk. The opening is recorded rather than done: the graph is rebuilt between this call
+        /// and the focus landing, and the expansion set belongs to that rebuild.
+        ///
+        /// Everything the stop already declares stays searchable - this EXTENDS the ordinary scope
+        /// rather than replacing it, so a planet or a starlane of an open system is still found by
+        /// name.
+        /// </summary>
+        public override SearchScope TypeAheadScope(GraphNode focused, GraphRender render)
+        {
+            if (focused == null || !Equals(focused.StopKey, SystemStop))
+            {
+                return null;
+            }
+
+            // Only the fleets the stop has NOT already declared: an open system declares its own, and a
+            // fleet offered twice would be two results with one name, which stepping the matches walks
+            // through twice.
+            List<FleetSite> sites = FleetIndex(Declared(render));
+            if (sites.Count == 0)
+            {
+                return null;
+            }
+
+            SearchScope basis = SearchScope.OverStop(render, SystemStop);
+            int already = basis.Count;
+            List<FleetSite> found = sites;
+            GalaxyHudScreen screen = this;
+            return new SearchScope(
+                already + found.Count,
+                index =>
+                    index < already
+                        ? basis.TextOf(index)
+                        : found[index - already].Fleet.LocalizedName,
+                index =>
+                    index < already ? basis.Land(index) : screen.Reveal(found[index - already])
+            );
+        }
+
+        /// <summary>One fleet and the branches that have to be open before it is a node: the system it
+        /// is parked at or whose lane it is flying, and - for a lane - the lane itself.</summary>
+        private struct FleetSite
+        {
+            public Fleet Fleet;
+            public ControlId System;
+            public ControlId Lane;
+            public string Key;
+        }
+
+        /// <summary>Every fleet the map is drawing and the place each is drawn at, minus the ones the
+        /// graph already holds. Built on demand: both repositories are walked once per lane, and the
+        /// only thing that ever wants this is one keystroke.</summary>
+        private List<FleetSite> FleetIndex(HashSet<ControlId> declared)
+        {
+            List<FleetSite> sites = new List<FleetSite>();
+            try
+            {
+                for (int i = 0; i < _owned.Count; i++)
+                {
+                    IndexPlace(_owned[i], sites, declared);
+                }
+
+                for (int i = 0; i < _other.Count; i++)
+                {
+                    IndexPlace(_other[i], sites, declared);
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: indexing the fleets for a search threw: " + e);
+            }
+
+            return sites;
+        }
+
+        /// <summary>What the graph is holding right now, so that nothing is offered to a search twice.
+        /// </summary>
+        private static HashSet<ControlId> Declared(GraphRender render)
+        {
+            HashSet<ControlId> ids = new HashSet<ControlId>();
+            if (render != null)
+            {
+                foreach (GraphNode node in render.Order)
+                {
+                    ids.Add(node.Id);
+                }
+            }
+
+            return ids;
+        }
+
+        /// <summary>The fleets one system holds, and the ones out on each of its lanes. A lane is
+        /// reached from both of its ends, so a fleet on one is indexed twice - which costs a duplicate
+        /// result and is the right way round: either end is a true answer to "where is it", and
+        /// dropping one would make the answer depend on which system the search happened to reach
+        /// first.</summary>
+        private static void IndexPlace(
+            StarSystemNode node,
+            List<FleetSite> sites,
+            HashSet<ControlId> declared
+        )
+        {
+            string systemKey = "galaxy:system/" + node.GUID;
+            ControlId system = ControlId.Referenced(node, systemKey);
+            Index(FleetPresence.FleetsAt(node), system, null, systemKey, sites, declared);
+            for (int i = 0; i < node.Links.Count; i++)
+            {
+                Link link = node.Links[i];
+                IList<Fleet> flying = FleetPresence.FleetsOn(link);
+                if (flying.Count == 0)
+                {
+                    continue;
+                }
+
+                string laneKey = systemKey + "/lane/" + link.GUID;
+                Index(
+                    flying,
+                    system,
+                    ControlId.Referenced(link, laneKey),
+                    laneKey,
+                    sites,
+                    declared
+                );
+            }
+        }
+
+        private static void Index(
+            IList<Fleet> fleets,
+            ControlId system,
+            ControlId lane,
+            string key,
+            List<FleetSite> sites,
+            HashSet<ControlId> declared
+        )
+        {
+            for (int i = 0; i < fleets.Count; i++)
+            {
+                ControlId id = ControlId.Structural(key + "/fleet/" + fleets[i].GUID);
+                if (declared.Contains(id))
+                {
+                    continue;
+                }
+
+                sites.Add(
+                    new FleetSite
+                    {
+                        Fleet = fleets[i],
+                        System = system,
+                        Lane = lane,
+                        Key = key,
+                    }
+                );
+            }
+        }
+
+        /// <summary>Open the place a fleet is standing in and answer with the fleet itself. The opening
+        /// is recorded rather than done: the expansion set belongs to the next rebuild.</summary>
+        private ControlId Reveal(FleetSite site)
+        {
+            _pendingExpand.Add(site.System);
+            if (site.Lane != null)
+            {
+                _pendingExpand.Add(site.Lane);
+            }
+
+            return ControlId.Structural(site.Key + "/fleet/" + site.Fleet.GUID);
+        }
+
+        /// <summary>Open the branches a search landed in. The expansion set is the engine's, and this is
+        /// the one moment a screen has anything to say about it.</summary>
+        private void ApplyPendingExpansions(GraphBuilder builder)
+        {
+            if (_pendingExpand.Count == 0)
+            {
+                return;
+            }
+
+            HashSet<ControlId> expansion = builder.Expansion;
+            if (expansion != null)
+            {
+                for (int i = 0; i < _pendingExpand.Count; i++)
+                {
+                    expansion.Add(_pendingExpand[i]);
+                }
+            }
+
+            _pendingExpand.Clear();
+        }
+
+        /// <summary>The groups a search has asked to be opened, applied on the next build.</summary>
+        private readonly List<ControlId> _pendingExpand = new List<ControlId>();
 
         // ---- systems ----
 
@@ -316,9 +536,14 @@ namespace ES2Access.Screens
         /// One system on the map: what it is called, whether it is yours, and - once opened - what the
         /// map draws inside its label.
         ///
-        /// Enter is the game's own route into a colony of yours, the one the label's own button takes.
-        /// A system that is not yours has nowhere to be taken to, and does nothing rather than
-        /// inventing somewhere.
+        /// Enter is the game's own left click on a system: it brings the camera all the way in, to the
+        /// step at which the map stops drawing circles and draws a card in orbit for every planet.
+        /// Backslash is the right click: with fleets selected it sends them here, and with none it puts
+        /// the camera back where the zoom took it from.
+        ///
+        /// The page a colony of yours has of its own is on neither key. The map draws a button for it
+        /// on the system's own label, beside the name, and that button is a node here - so the player
+        /// reaches it the way a mouse does, by going to the thing that opens it.
         /// </summary>
         private void AddSystem(
             GraphBuilder builder,
@@ -334,7 +559,9 @@ namespace ES2Access.Screens
             NodeVtable vtable = GraphNodes.Group(
                 () => it.LocalizedName,
                 null,
-                tooltip
+                tooltip,
+                null,
+                () => FleetPresence.LinesAt(it)
             );
             if (owned)
             {
@@ -343,9 +570,14 @@ namespace ES2Access.Screens
                 );
             }
 
-            GalaxyHudScreen screen = this;
-            bool ours = owned;
-            vtable.OnActivate = () => screen.OpenSystemMenu(it, ours);
+            // What the map draws parked here, in the game's own count phrase. Not watched: the answer
+            // costs a walk of the docking-slot repository, and a watched part walks it every frame the
+            // system is focused.
+            vtable.Announcements.Add(GraphNodes.ValuePart(() => FleetPresence.At(it), false));
+
+            // The two clicks the map itself puts on a system, and nothing invented on top of them.
+            vtable.OnActivate = () => ZoomIn(it);
+            vtable.OnContextual = () => SystemCommand(it);
 
             // The camera goes where the cursor goes, so that whoever is watching the screen is looking
             // at the system being read out. On the galaxy this only slides the camera across; it does
@@ -375,82 +607,196 @@ namespace ES2Access.Screens
             // is inside it is whatever the map is drawing at the distance the player has chosen: the
             // circles when the camera is out, the orbital cards when it is in. Making the key drag the
             // camera to the closest step took that choice away - and with it every readout that only
-            // exists while the camera is out - so where the camera goes is asked for from the menu
-            // instead, and the engine keeps its own record of what is open.
+            // exists while the camera is out - so how close the camera stands is Enter's business, and
+            // the engine keeps its own record of what is open.
             ControlId id = ControlId.Referenced(it, "galaxy:system/" + it.GUID);
             builder.BeginGroup(id, vtable);
             // Only what is open costs anything: a galaxy of closed systems declares one node each.
             if (builder.IsExpanded(id))
             {
-                AddPlanets(builder, node, empire, owned, label);
+                AddManagementView(builder, node, label);
+                AddPlanets(builder, node, empire, label);
                 AddStarlanes(builder, node, empire);
+                AddFleets(builder, "galaxy:system/" + node.GUID, FleetPresence.FleetsAt(node));
             }
 
             builder.EndGroup();
         }
 
-        /// <summary>
-        /// What can be done with a system from the map: go into its management page, and choose how
-        /// close the camera stands to it.
-        ///
-        /// The two camera entries are one entry in two states, because the camera is either in on a
-        /// system or it is not - and offering the one that would do nothing is how a menu teaches a
-        /// player that half of it is decoration. Going in is the game's own double-click route; coming
-        /// back out returns to the step the player was standing at before they asked to go in.
-        /// </summary>
-        private void OpenSystemMenu(StarSystemNode node, bool owned)
+        /// <summary>The game's own left click on a system: the camera comes all the way in, which is
+        /// also what swaps the system's planets from circles to cards. Said as well as done - the key
+        /// changes the whole screen and what the tree underneath reads, and a player who cannot see the
+        /// camera move has nothing else to go on. What it says is what the CAMERA did, not what a menu
+        /// used to be called: "Open system" is the system's own page, a different place entirely, and
+        /// the two must not sound alike.</summary>
+        private static void ZoomIn(StarSystemNode node)
         {
-            List<string> labels = new List<string>();
-            List<Action> actions = new List<Action>();
-            StarSystemNode it = node;
-            GalaxyHudScreen screen = this;
+            GalaxyViewLevels.ZoomTo(node);
+            Voice.Say(ModStrings.Get(ModStrings.GalaxyZoomedIn), true);
+        }
 
-            if (owned)
+        /// <summary>
+        /// The map's own right click on a system, which is two things and never both: while the cursor
+        /// is holding fleets it is where they are being sent, and while it is holding nothing it is the
+        /// way back out of a zoom.
+        ///
+        /// Asked only when the key is pressed. Working out whether a fleet could get here is a
+        /// pathfinding search per fleet, which is a thing to do on demand and never on a frame.
+        /// </summary>
+        private static void SystemCommand(StarSystemNode node)
+        {
+            List<Fleet> selected = FleetOrders.Selected();
+            if (selected.Count > 0)
             {
-                labels.Add(ModStrings.Get(ModStrings.GalaxyOpenSystem));
-                actions.Add(() => GalaxyViewLevels.OpenSystem(it));
+                SendAll(SendableTo(node, selected));
+                return;
             }
 
-            if (GalaxyViewLevels.AtOrbitalZoom)
+            // NOT the game's RestoreZoom, for the reason ZoomToStep's own doc comment records: the
+            // game restores the camera to wherever it stood BEFORE the click-zoom, which for a
+            // keyboard player is somewhere they have since navigated away from - and its
+            // hasZoomBeenForced gate makes it a talking no-op for a camera that reached orbital
+            // zoom any other way (the mouse wheel, a restore by step number). The keyboard's way
+            // out is the default view at the FOCUSED system, always.
+            if (GalaxyViewLevels.ZoomStep > GalaxyViewLevels.DefaultZoomStep)
             {
-                labels.Add(ModStrings.Get(ModStrings.GalaxyReturnToGalaxyView));
-                actions.Add(() => screen.ReturnToGalaxyView(it));
-            }
-            else
-            {
-                labels.Add(ModStrings.Get(ModStrings.GalaxyShowSystemView));
-                actions.Add(() => screen.ShowSystemView(it));
+                GalaxyViewLevels.ZoomToStep(node, GalaxyViewLevels.DefaultZoomStep);
+                Voice.Say(ModStrings.Get(ModStrings.GalaxyZoomedOut), true);
             }
 
-            List<Action> chosen = actions;
-            ChoiceSubmenuScreen.Open(
-                node.LocalizedName,
-                labels,
-                -1,
-                index =>
-                {
-                    if (index >= 0 && index < chosen.Count)
-                    {
-                        chosen[index]();
-                    }
-                }
+            // Nothing selected, nothing to unzoom: silent, like every other gesture key with
+            // nothing to do here.
+        }
+
+        /// <summary>The button the map draws on a colony's own label, beside its name - the one route
+        /// into the system's page, and the one the mouse takes. Declared only while the game is drawing
+        /// it and willing to act on it, which is its own answer to "is this a colony of mine".</summary>
+        private static void AddManagementView(
+            GraphBuilder builder,
+            StarSystemNode node,
+            StarSystemLabel label
+        )
+        {
+            AgeTransform button = label == null ? null : label.RequestManagementViewButton;
+            if (button == null || !Visible(button) || !AgeWidgets.Operable(button))
+            {
+                return;
+            }
+
+            AgeTransform it = button;
+            NodeVtable vtable = GraphNodes.Button(
+                () => ModStrings.Get(ModStrings.GalaxyOpenSystem),
+                () => AgeWidgets.Press(it),
+                null,
+                Raw(it)
+            );
+            PointAt(vtable, it);
+            builder.AddItem(
+                ControlId.Structural("galaxy:system/" + node.GUID + "/management"),
+                vtable
             );
         }
 
-        private void ShowSystemView(StarSystemNode node)
+        // ---- sending the selected fleets somewhere ----
+        //
+        // Moving a fleet is a DRAG in this game: you pick a fleet up and drop it on a place. A drag has
+        // no keyboard equivalent, so the two halves are separated - Enter on a fleet picks it up
+        // (selects it), and BACKSLASH on the destination drops it, because backslash is what the map
+        // itself puts a move on. Which is also the game's own model rather than a mod invention:
+        // selecting a fleet changes the cursor and nothing else, the map stays live underneath, and
+        // naming a destination moves everything the cursor is holding
+        // (`GalaxyGarrisonCursor.GetFleetsToMove`). One fleet or five, what is spoken back says which.
+        //
+        // Whether anything can go at all is the pathfinder's own answer, asked when the key is pressed -
+        // never per frame, and never guessed at from the map.
+
+        /// <summary>One selected fleet and the route that would take it to the destination the key was
+        /// pressed on.</summary>
+        private sealed class Sendable
         {
-            _stepBeforeSystemView = GalaxyViewLevels.ZoomStep;
-            GalaxyViewLevels.ZoomTo(node);
+            public Sendable(Fleet fleet, GalaxyPath path)
+            {
+                Fleet = fleet;
+                Path = path;
+            }
+
+            public readonly Fleet Fleet;
+
+            public readonly GalaxyPath Path;
         }
 
-        private void ReturnToGalaxyView(StarSystemNode node)
+        /// <summary>Which of the selected fleets could be sent to a system. A fleet already parked
+        /// there is not one of them: the game accepts the order and then does nothing about it, so
+        /// counting it would turn the key's answer into a report of something that did not happen.
+        /// </summary>
+        private static List<Sendable> SendableTo(GameNode node, List<Fleet> fleets)
         {
-            int step =
-                _stepBeforeSystemView >= 0
-                    ? _stepBeforeSystemView
-                    : GalaxyViewLevels.DefaultZoomStep;
-            _stepBeforeSystemView = -1;
-            GalaxyViewLevels.ZoomToStep(node, step);
+            List<Sendable> found = new List<Sendable>();
+            for (int i = 0; i < fleets.Count; i++)
+            {
+                GameNode orbit = FleetOrders.Orbit(fleets[i]);
+                if (orbit != null && orbit.GUID == node.GUID)
+                {
+                    continue;
+                }
+
+                AddSendable(found, fleets[i], FleetOrders.PathTo(fleets[i], node));
+            }
+
+            return found;
+        }
+
+        private static List<Sendable> SendableTo(Link link, List<Fleet> fleets)
+        {
+            List<Sendable> found = new List<Sendable>();
+            for (int i = 0; i < fleets.Count; i++)
+            {
+                AddSendable(found, fleets[i], FleetOrders.PathToLink(fleets[i], link));
+            }
+
+            return found;
+        }
+
+        private static void AddSendable(List<Sendable> found, Fleet fleet, GalaxyPath path)
+        {
+            if (path != null && FleetOrders.CanSend(fleet, path))
+            {
+                found.Add(new Sendable(fleet, path));
+            }
+        }
+
+        /// <summary>
+        /// Post one move per fleet, along the route worked out when the key was pressed - which is how
+        /// the game itself does a multi-fleet drag: one order each, and each one checked again as it is
+        /// posted.
+        ///
+        /// What went is said back, named after what would actually go: the fleet by name while there is
+        /// one, and how many while there are several. Where nothing could get there the key is SILENT -
+        /// the same answer as a control with no such command at all, because a refused order and an
+        /// absent one are the same to the player, and this key is pressed speculatively all over the
+        /// map.
+        /// </summary>
+        private static void SendAll(List<Sendable> sendable)
+        {
+            if (sendable.Count == 0)
+            {
+                return;
+            }
+
+            for (int i = 0; i < sendable.Count; i++)
+            {
+                FleetOrders.Send(sendable[i].Fleet, sendable[i].Path);
+            }
+
+            Voice.Say(
+                sendable.Count == 1
+                    ? ModStrings.Format(
+                        ModStrings.GalaxySendFleet,
+                        sendable[0].Fleet.LocalizedName
+                    )
+                    : ModStrings.Format(ModStrings.GalaxySendFleets, sendable.Count),
+                true
+            );
         }
 
         /// <summary>
@@ -466,15 +812,14 @@ namespace ES2Access.Screens
         /// drawing circles and draws a CARD in orbit for each planet - its name, what kind of world it
         /// is, whether it can be colonized and why not, its outputs, its anomalies, and the buttons for
         /// everything a fleet in the system could do to it. That card is what a sighted player browses
-        /// a system with, so where one is drawn it is what a planet here reads from and what its menu
-        /// offers. Where one is not - the camera is somewhere else, or has not arrived yet - the planet
-        /// falls back to the model's own thin answer rather than going silent.
+        /// a system with, so where one is drawn it is what a planet here reads from and what its own
+        /// buttons hang off. Where one is not - the camera is somewhere else, or has not arrived yet -
+        /// the planet falls back to the model's own thin answer rather than going silent.
         /// </summary>
         private static void AddPlanets(
             GraphBuilder builder,
             StarSystemNode node,
             Empire empire,
-            bool owned,
             StarSystemLabel label
         )
         {
@@ -493,42 +838,49 @@ namespace ES2Access.Screens
                     Planet planet = node.Planets[i];
                     Empire looking = empire;
                     PlanetLabel_SystemOrbital card = CardFor(planet, cards);
-                    NodeVtable vtable;
+                    string key = "galaxy:system/" + node.GUID + "/planet/" + i;
+                    ControlId id = ControlId.Referenced(planet, key);
                     if (card != null)
                     {
-                        vtable = OrbitalReadout(card, system, owned);
-                    }
-                    else
-                    {
-                        // The circle is what the player would hover to get the planet's panel;
-                        // without one the planet is still on the map, just with nothing to show
-                        // under the pointer.
-                        AgeTransform circle = Circle(table, i);
-                        AgeTooltip tooltip = Raw(circle);
-                        vtable = GraphNodes.Readout(
-                            () => PlanetName(system, planet, looking),
-                            () => PlanetStatus(system, planet, looking),
-                            null,
-                            tooltip
-                        );
-                        if (owned)
+                        // The card carries a row of buttons the game draws under it, so where the game
+                        // is drawing any the planet is a level of the tree rather than a leaf: it reads
+                        // as itself, and what could be done to it is one step in. Enter on the card is
+                        // the card's own click - the planet's page - and nothing else, because
+                        // everything else the old menu held is now drawn where the game draws it.
+                        List<CardActions.CardAction> actions = OrbitalActions(card);
+                        NodeVtable readout = OrbitalReadout(card);
+                        if (actions.Count == 0)
                         {
-                            vtable.OnActivate = () => GalaxyViewLevels.OpenSystem(system);
+                            builder.AddItem(id, readout);
+                            continue;
                         }
 
-                        if (circle != null)
+                        readout.ControlType = ControlTypes.Group;
+                        builder.BeginGroup(id, readout);
+                        if (builder.IsExpanded(id))
                         {
-                            PointAt(vtable, circle);
+                            CardActions.Emit(builder, key, actions);
                         }
+
+                        builder.EndGroup();
+                        continue;
                     }
 
-                    builder.AddItem(
-                        ControlId.Referenced(
-                            planet,
-                            "galaxy:system/" + node.GUID + "/planet/" + i
-                        ),
-                        vtable
+                    // The circle is what the player would hover to get the planet's panel; without one
+                    // the planet is still on the map, just with nothing to show under the pointer.
+                    AgeTransform circle = Circle(table, i);
+                    NodeVtable vtable = GraphNodes.Readout(
+                        () => PlanetName(system, planet, looking),
+                        () => PlanetStatus(system, planet, looking),
+                        null,
+                        Raw(circle)
                     );
+                    if (circle != null)
+                    {
+                        PointAt(vtable, circle);
+                    }
+
+                    builder.AddItem(id, vtable);
                 }
             }
             catch (Exception e)
@@ -630,17 +982,13 @@ namespace ES2Access.Screens
         /// <summary>
         /// A planet as its orbital card reads it: the three lines the card writes - what it is called,
         /// what kind of world it is, and what the game says about colonizing it - with everything the
-        /// card draws as icons and gauges in the review buffer, and its buttons in the action menu.
+        /// card draws as icons and gauges in the review buffer, and its buttons one step in.
+        ///
+        /// Enter is the card's own click: the planet's page. It is the only thing the card itself does.
         /// </summary>
-        private static NodeVtable OrbitalReadout(
-            PlanetLabel_SystemOrbital card,
-            StarSystemNode system,
-            bool owned
-        )
+        private static NodeVtable OrbitalReadout(PlanetLabel_SystemOrbital card)
         {
             PlanetLabel_SystemOrbital it = card;
-            StarSystemNode node = system;
-            bool ours = owned;
             AgeTooltip dossier = it.PlanetInfoTooltip;
             NodeVtable vtable = new NodeVtable
             {
@@ -651,7 +999,7 @@ namespace ES2Access.Screens
                     GraphNodes.ValuePart(() => AgeText.Label(it.ColonizeStatus)),
                     GraphNodes.ValuePart(() => OutpostTimer(it)),
                 },
-                OnActivate = () => OpenOrbitalMenu(it, node, ours),
+                OnActivate = () => GalaxyViewLevels.OpenPlanet(it.Planet),
             };
             // What the card DRAWS first, then its dossier - the paragraph the game writes about a
             // world of this kind, its size, its type. The dossier is the long panel behind the card,
@@ -690,8 +1038,9 @@ namespace ES2Access.Screens
         /// screen could see: the five outputs a colony has are drawn as numbers and belong here, and
         /// the same five on a world nobody has settled are drawn as rows of pips standing for a
         /// rating, so reading the simulation's raw values for them described a card that does not
-        /// exist. The game's refusal to colonize is not here either - it is an answer to a question,
-        /// and the place for it is the menu that asks it.
+        /// exist. The game's refusal to colonize is not here either - it belongs to the BUTTON the
+        /// game is refusing on, which is a child node of this card and carries it in the game's own
+        /// words.
         /// </summary>
         private static IList<string> OrbitalDetails(PlanetLabel_SystemOrbital card)
         {
@@ -711,64 +1060,6 @@ namespace ES2Access.Screens
             }
 
             return lines;
-        }
-
-        /// <summary>Whichever of the card's colonization buttons the game has put up and then refused
-        /// to act on - they are alternatives, one per faction's way of settling a planet - because the
-        /// sentence on it is where the game says why it is refusing. Null when nothing is refusing:
-        /// the game leaves a blocked button visible and clickable and turns the click into "here is
-        /// the technology you are missing", so being hinted is the only thing that tells the two
-        /// apart.</summary>
-        private static AgeTooltip ColonizeHint(PlanetLabel_SystemOrbital card)
-        {
-            AgeControlButton[] buttons = new AgeControlButton[]
-            {
-                card.ColonizeButton,
-                card.BuyOutpostButton,
-                card.VodyaniHintButton,
-                card.UmbralChoirHintButton,
-            };
-            for (int i = 0; i < buttons.Length; i++)
-            {
-                AgeTransform at = AgeWidgets.Transform(buttons[i]);
-                if (at != null && Visible(at) && Gui.IsHintActive(at))
-                {
-                    return Raw(at);
-                }
-            }
-
-            return null;
-        }
-
-        /// <summary>
-        /// The one line the game is refusing on, in the game's own words - "Missing technology
-        /// Maximized Exploitation".
-        ///
-        /// The hint's tooltip is assembled by the game in three known parts: the button's own
-        /// description, then the failure, then - only ever for a missing technology - the sentence
-        /// telling a mouse how to jump to it. The button's description names the action, which the
-        /// menu entry beside it would already be named after, and the mouse instruction is for a
-        /// mouse; what is left is the refusal.
-        /// </summary>
-        private static string ColonizeRefusal(AgeTooltip hint)
-        {
-            try
-            {
-                if (Readable(hint) == null)
-                {
-                    return null;
-                }
-
-                return RefusalText.Compose(
-                    AgeText.Lines(AgeText.Tooltip(hint)),
-                    AgeText.Clean(Gui.Localize("%MissingTechnologyClickDescription"))
-                );
-            }
-            catch (Exception e)
-            {
-                Log.Warn("galaxy: reading a colonize refusal threw: " + e);
-                return null;
-            }
         }
 
         /// <summary>What has been found on the planet. The card draws each anomaly as a coloured icon
@@ -856,210 +1147,41 @@ namespace ES2Access.Screens
             }
         }
 
-        /// <summary>
-        /// What can be done to this planet from the map, as a menu built from what the game is offering
-        /// right now.
-        ///
-        /// Opening the planet's own page comes first, because that is what a click on the card itself
-        /// does. Then the card's own buttons, each offered only when the game would really act on it:
-        /// the game leaves a refusing colonize button clickable so that clicking it jumps to the
-        /// technology that would unlock it, and that hint is not the action the entry is named after.
-        ///
-        /// The refusal itself is the last entry, and it does nothing. It is the one thing in any menu
-        /// in this mod that is not an action, and it is here because it is the answer to the question
-        /// the player opened the menu to ask: they came looking for Colonize, and "Missing technology
-        /// Maximized Exploitation" - the game's sentence, not the mod's - is where it went. A menu that
-        /// simply had no Colonize in it would have left them to guess.
-        /// </summary>
-        private static void OpenOrbitalMenu(
-            PlanetLabel_SystemOrbital card,
-            StarSystemNode system,
-            bool owned
-        )
+        /// <summary>Which of the card's buttons the game is drawing, in drawn order. Empty for a card
+        /// the game is offering nothing on, which is what keeps such a planet a leaf of the tree rather
+        /// than a branch that opens onto nothing. The treatment each one gets is
+        /// <see cref="CardActions"/>'s, shared with the management page's card.</summary>
+        private static List<CardActions.CardAction> OrbitalActions(PlanetLabel_SystemOrbital card)
         {
-            List<string> labels = new List<string>();
-            List<Action> actions = new List<Action>();
-            List<Func<IList<string>>> details = new List<Func<IList<string>>>();
+            List<CardActions.CardAction> found = new List<CardActions.CardAction>(4);
             try
             {
-                Planet planet = card.Planet;
-                if (planet != null)
-                {
-                    Planet it = planet;
-                    labels.Add(ModStrings.Get(ModStrings.SystemViewPlanet));
-                    details.Add(null);
-                    actions.Add(() => GalaxyViewLevels.OpenPlanet(it));
-                }
+                CardActions.AddNamedByMod(found, card.ColonizeButton, ModStrings.SystemColonize);
+                // The two faction-specific ways of settling a world, drawn in place of Colonize for the
+                // empires that have them. The game gives them no caption, so they are named by the
+                // sentence their own tooltip opens with.
+                CardActions.AddNamedByTooltip(found, card.VodyaniHintButton);
+                CardActions.AddNamedByTooltip(found, card.UmbralChoirHintButton);
+                CardActions.AddNamedByTooltip(found, card.BuyOutpostButton);
+                CardActions.AddNamedByTooltip(found, card.MinorFactionButton);
 
-                if (owned)
-                {
-                    StarSystemNode node = system;
-                    labels.Add(ModStrings.Get(ModStrings.GalaxyOpenSystem));
-                    details.Add(null);
-                    actions.Add(() => GalaxyViewLevels.OpenSystem(node));
-                }
-
-                AddOrbitalAction(
-                    card.ColonizeButton,
-                    ModStrings.Get(ModStrings.SystemColonize),
-                    labels,
-                    details,
-                    actions
-                );
-                AddOrbitalAction(card.BuyOutpostButton, null, labels, details, actions);
-                AddOrbitalAction(card.MinorFactionButton, null, labels, details, actions);
-
-                // The row of small round buttons under the card. The game draws them as bare icons
-                // and hangs an assembled stat block on each, so there is no caption and no first line
-                // of tooltip to name them by - but the game DOES name every one of them, on the fleet
+                // The row of small round buttons under the card. The game draws them as bare icons and
+                // hangs an assembled stat block on each, so there is no caption and no first line of
+                // tooltip to name them by - but the game DOES name every one of them, on the fleet
                 // action each carries out, and those are the words a player reading the manual would
                 // meet. In the order the card draws them.
-                AddOrbitalAction(
-                    card.TerraformationButton,
-                    Localized("%InitiateTerraformPlanetFleetActionTitle"),
-                    labels,
-                    details,
-                    actions
-                );
-                AddOrbitalAction(
-                    card.RestorationButton,
-                    Localized("%InitiateRestorePlanetFleetActionTitle"),
-                    labels,
-                    details,
-                    actions
-                );
-                AddOrbitalAction(
-                    card.AnomalyReductionButton,
-                    Localized("%InitiateReduceAnomalyFleetActionTitle"),
-                    labels,
-                    details,
-                    actions
-                );
-                AddOrbitalAction(
-                    card.MiningProbeButton,
-                    Localized("%LaunchMiningProbeFleetActionTitle"),
-                    labels,
-                    details,
-                    actions
-                );
-                AddOrbitalAction(
-                    card.DestroyButton,
-                    Localized("%DestroyPlanetFleetActionTitle"),
-                    labels,
-                    details,
-                    actions
-                );
-
-                AddColonizeRefusal(card, labels, details, actions);
+                CardActions.AddNamedByGame(found, card.TerraformationButton, "%InitiateTerraformPlanetFleetActionTitle");
+                CardActions.AddNamedByGame(found, card.RestorationButton, "%InitiateRestorePlanetFleetActionTitle");
+                CardActions.AddNamedByGame(found, card.AnomalyReductionButton, "%InitiateReduceAnomalyFleetActionTitle");
+                CardActions.AddNamedByGame(found, card.MiningProbeButton, "%LaunchMiningProbeFleetActionTitle");
+                CardActions.AddNamedByGame(found, card.DestroyButton, "%DestroyPlanetFleetActionTitle");
             }
             catch (Exception e)
             {
-                Log.Warn("galaxy: working out a planet's actions threw: " + e);
+                Log.Warn("galaxy: reading an orbital card's buttons threw: " + e);
             }
 
-            List<Action> chosen = actions;
-            ChoiceSubmenuScreen.Open(
-                AgeText.Label(card.PlanetName),
-                labels,
-                -1,
-                index =>
-                {
-                    if (index >= 0 && index < chosen.Count)
-                    {
-                        chosen[index]();
-                    }
-                },
-                details
-            );
-        }
-
-        /// <summary>One of the card's buttons, offered only if the game would act on it. A button whose
-        /// click has been turned into a hint - "here is the technology you are missing" - is not the
-        /// action it looks like, and is left out; the refusal it carries is added once, at the end, as
-        /// its own entry. <paramref name="name"/> is null for a button whose tooltip opens with a name
-        /// worth using, which is then the game's own sentence about itself.</summary>
-        private static void AddOrbitalAction(
-            AgeControlButton button,
-            string name,
-            List<string> labels,
-            List<Func<IList<string>>> details,
-            List<Action> actions
-        )
-        {
-            try
-            {
-                AgeTransform at = AgeWidgets.Transform(button);
-                if (
-                    at == null
-                    || !Visible(at)
-                    || !AgeWidgets.Operable(at)
-                    || Gui.IsHintActive(at)
-                )
-                {
-                    return;
-                }
-
-                AgeTooltip tooltip = Raw(at);
-                string label = name ?? FirstLine(tooltip);
-                if (string.IsNullOrEmpty(label))
-                {
-                    Log.Warn("galaxy: an orbital card button has no name to offer: " + at.name);
-                    return;
-                }
-
-                AgeControlButton press = button;
-                labels.Add(label);
-                details.Add(TooltipLines(tooltip));
-                actions.Add(() => AgeWidgets.Press(press));
-            }
-            catch (Exception e)
-            {
-                Log.Warn("galaxy: reading an orbital card button threw: " + e);
-            }
-        }
-
-        /// <summary>
-        /// The entry that is not an action: the game's own sentence about why it will not colonize
-        /// this planet, carried into the menu so that the refusal is where the request was made.
-        ///
-        /// Choosing it does nothing except close the menu. That is deliberate - the drawn button
-        /// behind it would jump the player into the technology tree, which is a page this mod does not
-        /// yet describe, so following it would be a one-way door. The whole hint, that instruction
-        /// included, is in the entry's own buffer for anyone who wants it.
-        /// </summary>
-        private static void AddColonizeRefusal(
-            PlanetLabel_SystemOrbital card,
-            List<string> labels,
-            List<Func<IList<string>>> details,
-            List<Action> actions
-        )
-        {
-            AgeTooltip hint = ColonizeHint(card);
-            string refusal = ColonizeRefusal(hint);
-            if (string.IsNullOrEmpty(refusal))
-            {
-                return;
-            }
-
-            labels.Add(refusal);
-            details.Add(TooltipLines(hint));
-            actions.Add(DoNothing);
-        }
-
-        private static readonly Action DoNothing = () => { };
-
-        /// <summary>A phrase the game wrote, by the game's own key for it - for a control the game
-        /// draws as a wordless icon and names nowhere on the screen.</summary>
-        private static string Localized(string key)
-        {
-            try
-            {
-                return AgeText.Clean(Gui.Localize(key));
-            }
-            catch (Exception)
-            {
-                return null;
-            }
+            return found;
         }
 
         /// <summary>The circle the label draws for the planet at <paramref name="index"/>, or null if
@@ -1141,11 +1263,18 @@ namespace ES2Access.Screens
         ///
         /// A wormhole is a different thing from a starlane and is said to be one. An empire without the
         /// technology to see them is shown none, exactly as the game's own neighbour search skips them.
+        ///
+        /// The game numbers no lane and the model's own order is whatever order the galaxy was
+        /// generated in, so the lanes are walked - and numbered - going clockwise from north, and each
+        /// one says the way it leaves. That is the mod's ordering, not the game's: a player who cannot
+        /// see the lines needs the same "which one is that" the picture gives everyone else, and a
+        /// number that moves between sessions would be worse than none.
         /// </summary>
         private static void AddStarlanes(GraphBuilder builder, StarSystemNode node, Empire empire)
         {
             try
             {
+                List<Lane> lanes = new List<Lane>();
                 for (int i = 0; i < node.Links.Count; i++)
                 {
                     Link link = node.Links[i];
@@ -1163,35 +1292,151 @@ namespace ES2Access.Screens
                     GameNode far = ReferenceEquals(link.ExtremityNode1, node)
                         ? link.ExtremityNode2
                         : link.ExtremityNode1;
-                    GameNode destination = far;
-                    bool named = Perceived(far, empire);
-                    string template = wormhole
+                    Lane lane = new Lane
+                    {
+                        Link = link,
+                        Far = far,
+                        Wormhole = wormhole,
+                        Bearing = CompassDirections.Bearing(
+                            far.GalaxyPosition.X - node.GalaxyPosition.X,
+                            far.GalaxyPosition.Y - node.GalaxyPosition.Y
+                        ),
+                    };
+                    lanes.Add(lane);
+                }
+
+                lanes.Sort(ClockwiseFromNorth);
+
+                for (int i = 0; i < lanes.Count; i++)
+                {
+                    Link link = lanes[i].Link;
+                    GameNode destination = lanes[i].Far;
+                    int number = i + 1;
+                    string direction = CompassDirections.KeyForBearing(lanes[i].Bearing);
+                    bool named = Perceived(destination, empire);
+                    string template = lanes[i].Wormhole
                         ? (named ? ModStrings.GalaxyWormhole : ModStrings.GalaxyWormholeUnexplored)
                         : (named ? ModStrings.GalaxyStarlane : ModStrings.GalaxyStarlaneUnexplored);
                     Func<string> text = named
                         ? (Func<string>)(
-                            () => ModStrings.Format(template, destination.LocalizedName)
+                            () =>
+                                ModStrings.Format(
+                                    template,
+                                    number,
+                                    destination.LocalizedName,
+                                    ModStrings.Get(direction)
+                                )
                         )
-                        : () => ModStrings.Get(template);
+                        : () => ModStrings.Format(template, number, ModStrings.Get(direction));
+                    Link lane = link;
                     NodeVtable vtable = new NodeVtable
                     {
                         Announcements = new List<NodeAnnouncement>
                         {
                             GraphNodes.LabelPart(text),
+                            // Whatever the map is drawing out on this lane, said the way the map's own
+                            // lozenge tooltip heads it. Read on focus rather than watched, for the same
+                            // reason a system's is.
+                            GraphNodes.ValuePart(() => FleetPresence.On(lane), false),
                         },
+                        Sections = GraphNodes.Sections(() => FleetPresence.LinesOn(lane), null),
                     };
-                    builder.AddItem(
-                        ControlId.Referenced(
-                            link,
-                            "galaxy:system/" + node.GUID + "/lane/" + link.GUID
-                        ),
-                        vtable
-                    );
+                    // A lane is a destination in its own right, not just a road to one: the game
+                    // accepts a link as a move target and flies the fleet out onto it
+                    // (`GalaxyGarrisonCursor.GetGalaxyPathToTargets` resolves either a node or a
+                    // link), which is how a fleet is parked between two systems or pointed down a
+                    // lane into the dark. So backslash - the map's own move click - sends here too.
+                    //
+                    // ENTER on a lane is the map's LEFT click on one, and the only thing that click
+                    // does is let go of whatever the cursor is holding
+                    // (`GalaxyGarrisonCursor.OnCursorClick` :88-95 changes back to the plain cursor for
+                    // a click that landed on a link and nothing else). With nothing selected the click
+                    // does nothing at all, and so does this - there is no action to invent.
+                    Link target = link;
+                    vtable.OnActivate = Deselect;
+                    vtable.OnContextual = () => LaneCommand(target);
+
+                    string key = "galaxy:system/" + node.GUID + "/lane/" + link.GUID;
+                    ControlId id = ControlId.Referenced(link, key);
+                    IList<Fleet> flying = FleetPresence.FleetsOn(link);
+                    if (flying.Count == 0)
+                    {
+                        builder.AddItem(id, vtable);
+                        continue;
+                    }
+
+                    vtable.ControlType = ControlTypes.Group;
+                    builder.BeginGroup(id, vtable);
+                    if (builder.IsExpanded(id))
+                    {
+                        AddFleets(builder, key, flying);
+                    }
+
+                    builder.EndGroup();
                 }
             }
             catch (Exception e)
             {
                 Log.Warn("galaxy: reading a system's starlanes threw: " + e);
+            }
+        }
+
+        /// <summary>One lane leaving a system, with the way it leaves already worked out.</summary>
+        private struct Lane
+        {
+            public Link Link;
+            public GameNode Far;
+            public bool Wormhole;
+            public double Bearing;
+        }
+
+        private static readonly Comparison<Lane> ClockwiseFromNorth = delegate(Lane a, Lane b)
+        {
+            return a.Bearing.CompareTo(b.Bearing);
+        };
+
+        /// <summary>
+        /// Send the selection out onto a lane.
+        ///
+        /// Onto the lane a fleet is ALREADY flying, the game answers with the route to the next system
+        /// on it (<c>GalaxyGarrisonCursor.GetGalaxyPathToLink</c> :352-361, ported in
+        /// <c>FleetOrders.PathToLink</c>), which is the game's own way of saying "stop when you get
+        /// there" - so a fleet is called off its long journey by asking it to fly the piece of lane it
+        /// is on, and there is no cancel to invent.
+        /// </summary>
+        private static void LaneCommand(Link link)
+        {
+            List<Fleet> selected = FleetOrders.Selected();
+            if (selected.Count == 0)
+            {
+                return;
+            }
+
+            SendAll(SendableTo(link, selected));
+        }
+
+        /// <summary>
+        /// Let go of whatever the map's cursor is holding, exactly as a click on empty space or on a
+        /// starlane does (<c>GalaxyGarrisonCursor.OnCursorClick</c>): the garrison cursor is swapped
+        /// back for the plain one, which is also what takes the fleet panel off the screen.
+        ///
+        /// Nothing is said here. The panel going is what the player is being told about, and the
+        /// panel's own watcher says it - one announcement, from the one place that knows.
+        /// </summary>
+        private static void Deselect()
+        {
+            try
+            {
+                Amplitude.Unity.View.ICursorService cursors =
+                    Amplitude.Unity.Framework.Services.GetService<Amplitude.Unity.View.ICursorService>();
+                if (cursors != null && Gui.GetCursor() is GalaxyGarrisonCursor)
+                {
+                    cursors.ChangeCursor(typeof(GalaxyCursor), Gui.GetCursor());
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: letting go of the selection threw: " + e);
             }
         }
 
@@ -1254,55 +1499,97 @@ namespace ES2Access.Screens
 
         // ---- fleets ----
 
-        /// <summary>The player's own fleets - what each is made of and whether it is under way.
-        /// Activating one takes the camera to it and selects it, which is the same thing the button
-        /// that walks the idle fleets does. An empire with no fleets has no stop here: the game shows
-        /// nothing for that state either.</summary>
-        private static void BuildFleets(GraphBuilder builder)
+
+        /// <summary>
+        /// The fleets standing at one place on the map - what each is made of, where it is, and where
+        /// it is going - as children of that place.
+        ///
+        /// Which fleets those are is never worked out here: they are the ones the map's own lozenge at
+        /// this system or on this lane is holding (<see cref="FleetPresence"/>), so a fleet nobody can
+        /// see is absent for the same reason it is absent from the picture, and the count the place
+        /// announces and the children it opens onto are the same answer read two ways.
+        ///
+        /// Focus points at whichever label the map is drawing the fleet with, so the game draws the
+        /// fleet's own dossier for it exactly as it would for a mouse resting there. Which label that
+        /// is is the map's answer, not this screen's: a fleet in orbit is drawn by the DOCK label of
+        /// the slot it is sitting in and a fleet under way by its own, and the windows that own them
+        /// bind exactly one of the two at a time. A dock label covers the whole slot, so where two
+        /// fleets are parked together its tooltip is the pair of them - which is what the game shows a
+        /// player hovering there, and reading it as anything narrower would be describing a tooltip
+        /// nobody can see.
+        ///
+        /// Enter SELECTS the fleet, and there is nothing else on it. Calling off a move is not here
+        /// either: the game has no cancel gesture on the map, and a fleet is turned round by being sent
+        /// somewhere else or stopped at the next system by being sent down the lane it is already on -
+        /// both of them backslash on a PLACE, which is where the map itself puts a move. Dropping it is
+        /// a deliberate deviation from what this screen used to offer, and it is approved as one.
+        /// </summary>
+        private static void AddFleets(GraphBuilder builder, string place, IList<Fleet> fleets)
         {
+            if (fleets.Count == 0)
+            {
+                return;
+            }
+
             try
             {
-                Empire empire = PlayerEmpire();
-                DepartmentOfDefense defense =
-                    empire == null ? null : empire.GetAgency<DepartmentOfDefense>();
-                if (defense != null)
+                // Fetched once for the whole place, like the system labels: both windows pool their
+                // labels rather than rebuilding them, so one walk of each serves every fleet here.
+                DockLabel[] docks = DockLabels();
+                FleetLabel[] flying = FleetLabels();
+
+                for (int i = 0; i < fleets.Count; i++)
                 {
-                    foreach (Fleet fleet in defense.Fleets)
+                    Fleet it = fleets[i];
+                    AgeTransform lozenge = FleetLozenge(it, docks, flying);
+                    NodeVtable vtable = GraphNodes.Button(
+                        () => it.LocalizedName,
+                        () => Select(it),
+                        null,
+                        Raw(lozenge)
+                    );
+                    vtable.Announcements.Add(GraphNodes.ValuePart(() => FleetText(it)));
+                    if (lozenge != null)
                     {
-                        Fleet it = fleet;
-                        NodeVtable vtable = GraphNodes.Button(
-                            () => it.LocalizedName,
-                            () => Select(it),
-                            null,
-                            null
-                        );
-                        vtable.Announcements.Add(GraphNodes.ValuePart(() => FleetText(it)));
-                        builder.AddItem(
-                            ControlId.Referenced(it, "galaxy:fleet/" + it.GUID),
-                            vtable
-                        );
+                        PointAt(vtable, lozenge);
                     }
+
+                    // Keyed on the fleet's own identity but NOT carrying the fleet as a reference:
+                    // the selected-fleet panel is declared on this same screen, and its fleet line is
+                    // keyed on the garrison - which for a fleet is this very object. Two nodes sharing
+                    // a backing object are ONE control to the cursor (reference identity is followed
+                    // before the structural key), so the panel's line teleported the player straight
+                    // back out to the map on the next rebuild. The line is the one that needs the
+                    // reference - its widget is a pool slot the game rebinds - and this key is a GUID,
+                    // which is stable without one.
+                    builder.AddItem(ControlId.Structural(place + "/fleet/" + it.GUID), vtable);
                 }
             }
             catch (Exception e)
             {
-                Log.Warn("galaxy: reading the fleets threw: " + e);
+                Log.Warn("galaxy: reading the fleets at a place threw: " + e);
             }
         }
 
+        /// <summary>What a fleet is made of, what it is doing, and how far it can still go this turn.
+        /// </summary>
         private static string FleetText(Fleet fleet)
         {
             try
             {
                 MessageBuilder message = new MessageBuilder();
                 message.ListItem(ModStrings.Format(ModStrings.GalaxyFleetShips, fleet.ShipsCount));
+                message.ListItem(FleetState(fleet));
+                if (fleet.IsGuarding)
+                {
+                    message.ListItem(ModStrings.Get(ModStrings.GalaxyFleetGuarding));
+                }
+
                 message.ListItem(
-                    fleet.IsMoving
-                        ? ModStrings.Get(ModStrings.GalaxyFleetMoving)
-                        : ModStrings.Format(
-                            ModStrings.GalaxyFleetMovement,
-                            Amount(fleet.CurrentMovementPoints, false, 0)
-                        )
+                    ModStrings.Format(
+                        ModStrings.GalaxyFleetMovement,
+                        Amount(fleet.CurrentMovementPoints, false, 0)
+                    )
                 );
                 return message.Build();
             }
@@ -1312,24 +1599,215 @@ namespace ES2Access.Screens
             }
         }
 
-        /// <summary>Take the camera to a fleet and select it, through the window's own routine for
-        /// exactly that - it knows to wait for the galaxy view to finish coming back before it hands
-        /// the fleet to the cursor, and getting that order wrong leaves the selection on nothing.
+        /// <summary>
+        /// Where the fleet is: at the system it is orbiting, or on its way to the one it is headed for.
+        ///
+        /// That pair is the game's own question, asked the game's own way - its fleet list draws one of
+        /// two icons on exactly this test and writes the name of the same node beside it. Whether the
+        /// fleet is MOVING is a different question and the wrong one: a fleet that has spent its
+        /// movement half way to somewhere has stopped for the turn and is still on its way, and asking
+        /// about movement leaves it describing itself as nowhere at all.
+        ///
+        /// A node the map has not named is not named here either, exactly as a starlane running into
+        /// the dark is not.
+        /// </summary>
+        private static string FleetState(Fleet fleet)
+        {
+            Empire empire = PlayerEmpire();
+            GameNode orbit = FleetOrders.Orbit(fleet);
+            if (orbit != null)
+            {
+                return empire != null && Perceived(orbit, empire)
+                    ? ModStrings.Format(ModStrings.GalaxyFleetDockedAt, orbit.LocalizedName)
+                    : ModStrings.Get(ModStrings.GalaxyFleetDocked);
+            }
+
+            GameNode heading = FleetOrders.Heading(fleet);
+            if (heading == null)
+            {
+                return ModStrings.Get(ModStrings.GalaxyFleetMoving);
+            }
+
+            return empire != null && Perceived(heading, empire)
+                ? ModStrings.Format(ModStrings.GalaxyFleetMovingTo, heading.LocalizedName)
+                : ModStrings.Get(ModStrings.GalaxyFleetMovingUnexplored);
+        }
+
+        /// <summary>
+        /// The lozenge the map is drawing this fleet on - the dock label's where the fleet is parked,
+        /// its own where it is under way, and null where the map is drawing neither.
+        ///
+        /// The lozenge rather than the label, because the tooltip that gets DRAWN is the one on
+        /// whatever the pointer is over, and both labels carry two: a CenterTooltip of their own and
+        /// the lozenge's, filled from the same fleet data. Declaring the label's while the engine draws
+        /// the lozenge's leaves the readout saying "has tooltip" over a review buffer that never fills,
+        /// because the buffer only reads a drawn tooltip it can recognise as the one it declared.
+        /// </summary>
+        private static AgeTransform FleetLozenge(
+            Fleet fleet,
+            DockLabel[] docks,
+            FleetLabel[] flying
+        )
+        {
+            try
+            {
+                for (int i = 0; i < docks.Length; i++)
+                {
+                    DockLabel dock = docks[i];
+                    if (dock.DockingSlot == null || !Visible(dock.AgeTransform))
+                    {
+                        continue;
+                    }
+
+                    ReadOnlyCollection<GalaxyFleet> docked = dock.DockingSlot.GalaxyFleets;
+                    for (int j = 0; j < docked.Count; j++)
+                    {
+                        if (docked[j] != null && docked[j].Fleet.GUID == fleet.GUID)
+                        {
+                            return Lozenge(dock.FleetLozenge);
+                        }
+                    }
+                }
+
+                for (int i = 0; i < flying.Length; i++)
+                {
+                    FleetLabel label = flying[i];
+                    if (
+                        label.GalaxyFleet != null
+                        && label.GalaxyFleet.Fleet.GUID == fleet.GUID
+                        && Visible(label.AgeTransform)
+                    )
+                    {
+                        return Lozenge(label.FleetLozenge);
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: matching a fleet to its map label threw: " + e);
+            }
+
+            return null;
+        }
+
+        private static readonly DockLabel[] NoDockLabels = new DockLabel[0];
+
+        private static readonly FleetLabel[] NoFleetLabels = new FleetLabel[0];
+
+        private static DockLabel[] DockLabels()
+        {
+            try
+            {
+                DockLabelsWindow window = Gui.GuiServiceAvailable
+                    ? Gui.GuiService.GetWindow<DockLabelsWindow>(false)
+                    : null;
+                return window == null
+                    ? NoDockLabels
+                    : window.GetComponentsInChildren<DockLabel>(true);
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: finding the dock labels threw: " + e);
+                return NoDockLabels;
+            }
+        }
+
+        private static FleetLabel[] FleetLabels()
+        {
+            try
+            {
+                FleetLabelsWindow window = Gui.GuiServiceAvailable
+                    ? Gui.GuiService.GetWindow<FleetLabelsWindow>(false)
+                    : null;
+                return window == null
+                    ? NoFleetLabels
+                    : window.GetComponentsInChildren<FleetLabel>(true);
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: finding the fleet labels threw: " + e);
+                return NoFleetLabels;
+            }
+        }
+
+        /// <summary>
+        /// Take the camera to a fleet and select it.
+        ///
+        /// A fleet PARKED somewhere goes through the turn window's own routine for exactly that: it
+        /// knows to wait for the galaxy view to finish coming back before it hands the fleet to the
+        /// cursor, and getting that order wrong leaves the selection on nothing.
+        ///
+        /// A fleet UNDER WAY cannot go that way, and the game's routine says so by doing nothing at
+        /// all: it finds the fleet's docking slot to aim the camera at, and a fleet between two systems
+        /// has none, so it falls through to handing the fleet to a window that is not shown - which
+        /// stashes it for the next time the window opens (<c>FleetsScreen.SelectIdleFleet</c> :672-682)
+        /// and there never is one, because opening that window is what selecting a fleet does. So a
+        /// moving fleet is selected the way every other "show me this fleet" in the game does it
+        /// (<c>MilitaryScreen</c>, <c>NamedShipInfoPanel</c>): hand its cursor target to the selection,
+        /// swap in the garrison cursor, and ask the camera for the fleet - in that order, because the
+        /// panel's own visibility is gated on that cursor.
         /// </summary>
         private static void Select(Fleet fleet)
         {
             try
             {
-                EndTurnWindow window = TurnWindow();
-                if (window != null && SelectIdleFleet != null)
+                if (FleetOrders.Orbit(fleet) != null)
                 {
-                    SelectIdleFleet.Invoke(window, new object[] { fleet });
+                    EndTurnWindow window = TurnWindow();
+                    if (window != null && SelectIdleFleet != null)
+                    {
+                        SelectIdleFleet.Invoke(window, new object[] { fleet });
+                        return;
+                    }
                 }
+
+                SelectOnMap(fleet);
             }
             catch (Exception e)
             {
                 Log.Warn("galaxy: selecting a fleet threw: " + e);
             }
+        }
+
+        /// <summary>Select a fleet wherever it is standing on the map, and take the camera to it.
+        /// </summary>
+        private static void SelectOnMap(Fleet fleet)
+        {
+            GalaxyFleet galaxyFleet = OnMap(fleet);
+            Amplitude.Unity.View.ICursorService cursors =
+                Amplitude.Unity.Framework.Services.GetService<Amplitude.Unity.View.ICursorService>();
+            if (galaxyFleet == null || galaxyFleet.CursorTarget == null || cursors == null)
+            {
+                return;
+            }
+
+            cursors.Select(galaxyFleet.CursorTarget);
+            cursors.ChangeCursor(typeof(GalaxyGarrisonCursor), galaxyFleet);
+            Gui.GuiGameWindowService.RequestGalaxyOverviewViewLevel(fleet);
+        }
+
+        /// <summary>The map's own object for a fleet - the thing that carries its cursor target. The
+        /// game keeps a repository of the ones it is drawing, which is the same list its other
+        /// "show me this fleet" routes look through.</summary>
+        private static GalaxyFleet OnMap(Fleet fleet)
+        {
+            IVisibleGalaxyFleetRepositoryService repository =
+                Amplitude.Unity.Framework.Services.GetService<IVisibleGalaxyFleetRepositoryService>();
+            if (repository == null || fleet == null)
+            {
+                return null;
+            }
+
+            ReadOnlyCollection<GalaxyFleet> fleets = repository.GalaxyFleets;
+            for (int i = 0; i < fleets.Count; i++)
+            {
+                if (fleets[i] != null && fleets[i].Fleet != null && fleets[i].Fleet.GUID == fleet.GUID)
+                {
+                    return fleets[i];
+                }
+            }
+
+            return null;
         }
 
         // The window keeps its "go to this fleet" routine to itself, and it is the only place the
@@ -1408,6 +1886,18 @@ namespace ES2Access.Screens
             AgeTransform it = widget;
             vtable.OnFocusVisual = () => PointerFocus.MoveTo(it, Raw(it), it);
             vtable.OnBlurVisual = ReleasePointer;
+        }
+
+        private static AgeTransform Lozenge(GarrisonsLabelButton button)
+        {
+            try
+            {
+                return button == null ? null : button.AgeTransform;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
         }
 
         private static readonly Action ReleasePointer = PointerFocus.Release;
@@ -1516,24 +2006,6 @@ namespace ES2Access.Screens
 
         /// <summary>The first thing a tooltip says - what a control with no caption of its own is
         /// called, in the game's words.</summary>
-        private static string FirstLine(AgeTooltip tooltip)
-        {
-            try
-            {
-                if (Readable(tooltip) == null)
-                {
-                    return null;
-                }
-
-                IList<string> lines = AgeText.Lines(AgeText.Tooltip(tooltip));
-                return lines != null && lines.Count > 0 ? lines[0] : null;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
         /// <summary>A widget's tooltip whatever kind it is - what a caller needs to SHOW one rather
         /// than to read it.</summary>
         private static AgeTooltip Raw(AgeTransform transform)

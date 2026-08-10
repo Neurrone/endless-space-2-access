@@ -35,6 +35,44 @@ namespace ES2Access.Tests.Speech
             return new TooltipPart(name, true);
         }
 
+        private static TooltipPart Elsewhere(string text)
+        {
+            return new TooltipPart(text, false, true);
+        }
+
+        [Fact]
+        public void AFactThatOnlyLandedInThisRowIsNotPartOfItsSentence()
+        {
+            Assert.Equal(
+                new[] { "Counselor", "Level 1" },
+                Row(Words("Counselor"), Elsewhere("Level 1"))
+            );
+        }
+
+        [Fact]
+        public void SuchAFactKeepsItsPlaceInTheRowItLandedIn()
+        {
+            Assert.Equal(
+                new[] { "Level 1", "Counselor" },
+                Row(Elsewhere("Level 1"), Words("Counselor"))
+            );
+        }
+
+        [Fact]
+        public void APictureIsWeighedAgainstTheWordsOfItsOwnLineOnly()
+        {
+            Assert.Equal(
+                new[] { "Level 1", "Food 36" },
+                Row(Elsewhere("Level 1"), Picture("Food"), Words("36"))
+            );
+        }
+
+        [Fact]
+        public void ARowThatIsNothingButSuchAFactIsStillOneLine()
+        {
+            Assert.Equal(new[] { "Level 1" }, Row(Elsewhere("Level 1")));
+        }
+
         [Fact]
         public void ACaptionAndItsValueAreOneLineJoinedAsProse()
         {

@@ -173,6 +173,11 @@ namespace ES2Access.Core.UI
 
         private void EmitCell(NodeVtable vt, int col)
         {
+            // Which column a cell is in is the sheet's own knowledge, and type-ahead needs it: a row
+            // whose every cell searches as the row's name must offer the player one result, not one
+            // per column. Stamped here so no caller can forget it.
+            vt.Column = col;
+
             // Identity keys when the row has a domain object: stable across reorders/removals (the
             // primary also carries the reference for tier-1 follow); positional only for static lines.
             string skey = _rowRef != null

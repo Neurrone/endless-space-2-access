@@ -57,6 +57,19 @@ namespace ES2Access
         /// navigate. Public for POST /eval.</summary>
         public static ScreenManager Screens;
 
+        /// <summary>What the player is carrying, if anything - what a screen's pick-up and drop
+        /// declarations read (see <see cref="CarryState"/>). The navigator owns it, because the key
+        /// that fills it is dispatched there and a carry lives and dies with the page it started on;
+        /// null only while the mod is not up.</summary>
+        public static CarryState Carry
+        {
+            get
+            {
+                GraphNavigator navigator = Navigator;
+                return navigator == null ? null : navigator.Carry;
+            }
+        }
+
         /// <summary>The mod's keys. Public for POST /eval.</summary>
         public static ModInput Input;
 
@@ -118,6 +131,7 @@ namespace ES2Access
             Screens.Register(new CustomFactionScreen());
             Screens.Register(new PlanetConstructiblesScreen());
             Screens.Register(new ResearchScreen());
+            Screens.Register(new QuestJournalScreen());
             Input = new ModInput();
             Input.Dispatch = Dispatch;
             // The one widget the mod puts the game's own keyboard focus on. The input layer would
@@ -188,16 +202,29 @@ namespace ES2Access
         private static bool BackKeyClaimed()
         {
             GraphNavigator navigator = Navigator;
-            if (navigator != null && navigator.SearchIsActive)
+            if (navigator != null && (navigator.SearchIsActive || navigator.Carry.IsCarrying))
             {
                 // A search is a surface the mod invented too: Escape puts the keyboard back, and
-                // must not also close the screen the player was searching.
+                // must not also close the screen the player was searching. So is carrying something:
+                // the key puts it down, and the page the player was carrying it across stays open.
                 return true;
             }
 
             ScreenManager screens = Screens;
             ES2Access.Screens.Screen current = screens == null ? null : screens.Current;
             return current != null && current.ConsumesBack;
+        }
+
+        /// <summary>Whether the carry key is the mod's - asked by the game's own key scan, several
+        /// times a frame. Claimed whenever a mod screen is focused, not just where a drag could
+        /// start: the game's Space is ToggleScanView (`InputManager.cs:233`, shared with Mouse2), a
+        /// whole-map lens mode the mod does not model yet, and a screen-reader user reaching for the
+        /// drag key must never flip the map into an unannounced mode. The lens keeps its Mouse2
+        /// route, and gets a deliberate keyboard route when it is modelled (docs/roadmap.md).</summary>
+        private static bool CarryKeyClaimed()
+        {
+            GraphNavigator navigator = Navigator;
+            return navigator != null && navigator.Screen != null;
         }
 
         /// <summary>Whether the focused screen is taking this key as typed text rather than leaving
@@ -231,11 +258,25 @@ namespace ES2Access
                 .Bind(KeyCode.Return, alt: true)
                 .Bind(KeyCode.KeypadEnter, alt: true);
             input.Register(UiActions.Secondary).Bind(KeyCode.Backspace);
-            // Move the ITEM rather than the cursor: Shift and the arrow that says which way. Exact
-            // modifier matching keeps the plain arrows navigation, the way Shift and a sideways arrow
-            // is already the big version of a slider move.
-            input.Register(UiActions.MoveItemUp).Bind(KeyCode.UpArrow, shift: true).Repeating();
-            input.Register(UiActions.MoveItemDown).Bind(KeyCode.DownArrow, shift: true).Repeating();
+            // The right click, which in this game is a command in its own right rather than a menu.
+            // Claimed on every screen of ours, because it always answers - with the control's command
+            // where there is one, and with a cue where there is not.
+            input.Register(UiActions.Contextual).Bind(KeyCode.Backslash);
+            // Pick something up, swap it, or put it back where it came from. Where it is put DOWN is
+            // named with Enter, on the control that will take it. The one key here the game keeps a
+            // share of: it is only taken where the cursor is standing on something that can be picked
+            // up, or while something is already being carried - see CarryKeyClaimed.
+            input.Register(UiActions.Carry).Bind(KeyCode.Space).ClaimedWhile(CarryKeyClaimed);
+            // The game's own two modified clicks on a list: Control adds one item to the selection or
+            // takes it out, Shift takes everything from the last one to this one. The physical
+            // modifier stays held while the control's own handler runs, which is how the game's own
+            // selection rules - not a copy of them - decide what happens.
+            input.Register(UiActions.SelectToggle)
+                .Bind(KeyCode.Return, ctrl: true)
+                .Bind(KeyCode.KeypadEnter, ctrl: true);
+            input.Register(UiActions.SelectRange)
+                .Bind(KeyCode.Return, shift: true)
+                .Bind(KeyCode.KeypadEnter, shift: true);
             input.Register(UiActions.Back).Bind(KeyCode.Escape);
             input.Register(UiActions.Home).Bind(KeyCode.Home);
             input.Register(UiActions.End).Bind(KeyCode.End);

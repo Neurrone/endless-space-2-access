@@ -306,7 +306,27 @@ namespace ES2Access.UI.Input
                 return _backClaimed || ClaimsBack();
             }
 
-            return ClaimedKeys().Contains(key) || ClaimsTyped(key);
+            return ClaimedKeys().Contains(key) || ClaimsConditionally(key) || ClaimsTyped(key);
+        }
+
+        /// <summary>
+        /// The keys of an action that only takes them from the game some of the time
+        /// (<see cref="InputAction.ClaimedWhen"/>) - Space, which is the game's own key except where
+        /// a control has something to pick up. Kept off the unconditional set above so that the
+        /// usual answer for such a key stays "the game's".
+        /// </summary>
+        private bool ClaimsConditionally(KeyCode key)
+        {
+            for (int i = 0; i < _actions.Count; i++)
+            {
+                InputAction action = _actions[i];
+                if (action.ClaimedWhen != null && action.BoundTo(key) && action.ClaimsItsKeys())
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         /// <summary>Whether the focused surface is taking this key as typed text - the other
@@ -364,6 +384,12 @@ namespace ES2Access.UI.Input
             HashSet<KeyCode> keys = new HashSet<KeyCode>();
             for (int i = 0; i < _actions.Count; i++)
             {
+                if (_actions[i].ClaimedWhen != null)
+                {
+                    // Claimed only while its own condition holds - ClaimsConditionally asks it.
+                    continue;
+                }
+
                 IList<InputBinding> bindings = _actions[i].Bindings;
                 for (int j = 0; j < bindings.Count; j++)
                 {

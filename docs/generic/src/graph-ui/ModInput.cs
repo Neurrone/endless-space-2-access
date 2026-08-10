@@ -80,14 +80,68 @@ namespace ES2Access.UI.Input
         /// </summary>
         public Func<bool> ClaimsBackKey;
 
+        /// <summary>
+        /// Asked whether a key is one the focused surface is taking as TYPED TEXT - the type-ahead
+        /// search - rather than leaving to the game, which has letter hotkeys of its own.
+        ///
+        /// Asked BEFORE the press, like <see cref="ClaimsBackKey"/> and for the same reason: the
+        /// game's scan can run either side of the mod's frame. It needs no release latch, though,
+        /// because what it answers turns on the screen being focused and taking text - and typing a
+        /// letter changes neither. Null means every key is offered to the game as usual.
+        /// </summary>
+        public Func<KeyCode, bool> ClaimsTypedKey;
+
         // Set when a back action was actually consumed, cleared when the key comes up. It covers the
         // other half of the race: the game's scan running AFTER the mod's frame, by which point the
         // predicate above is answering for a menu that is already gone.
         private bool _backClaimed;
 
+        /// <summary>
+        /// The keys the mod has already acted on this press, held until the player lets go of them.
+        ///
+        /// <see cref="ClaimsKey"/> otherwise answers for the layer as it is at the moment the game
+        /// asks, and the game asks at its own point in the frame - after ours. That is a race an
+        /// action can lose against ITSELF: Enter on a button that opens a modal is handled here, the
+        /// screens tick in the same frame, the page stands down for the modal and the modal's own
+        /// screen has not finished arriving, so by the time the game's scan runs there is no focused
+        /// screen and the very key we just consumed reads as unclaimed. The game then does what it
+        /// has bound to it - Enter and Tab are both StartChatting - and the chat panel takes the
+        /// engine's keyboard, which silences the whole layer until the player presses Enter again.
+        ///
+        /// So a key stops being the mod's when it comes UP, not when the layer next looks dead. A
+        /// key that was never down - an injected action - is therefore let go on the next tick,
+        /// which costs nothing: the game's own matchers ask about a key only while it is pressed.
+        /// </summary>
+        private readonly List<KeyCode> _consumed = new List<KeyCode>();
+
         public IList<InputAction> Actions
         {
             get { return _actions; }
+        }
+
+        /// <summary>
+        /// The latch above, as the dev probe reads it (<c>DevProbe.Claims</c>). Both halves of the
+        /// Escape/consumed-key machinery only ever misbehave BETWEEN the mod's frame and the game's
+        /// scan, so the only way to tell a leak from a stuck claim is to look at the latch itself -
+        /// which used to mean reflecting into these fields from the REPL.
+        /// </summary>
+        public IList<KeyCode> ConsumedKeys
+        {
+            get { return _consumed.AsReadOnly(); }
+        }
+
+        /// <summary>Whether Escape is still claimed from the press that consumed it.</summary>
+        public bool BackClaimed
+        {
+            get { return _backClaimed; }
+        }
+
+        /// <summary>Whether a screen of ours is focused at all - the first half of
+        /// <see cref="LayerIsLive"/>, split out so a probe can say WHICH half answered no.</summary>
+        public bool ScreenIsFocused()
+        {
+            Func<bool> focused = HasFocusedScreen;
+            return focused != null && focused();
         }
 
         public InputAction Register(string key)
@@ -198,9 +252,10 @@ namespace ES2Access.UI.Input
             }
         }
 
-        // The same question as GameOwnsKeyboard, with the mod's own widgets excepted: a control the
-        // mod put the game's focus on is one the mod is working, not one the player is typing into.
-        private bool KeyboardIsElsewhere()
+        /// <summary>The same question as <see cref="GameOwnsKeyboard"/>, with the mod's own widgets
+        /// excepted: a control the mod put the game's focus on is one the mod is working, not one the
+        /// player is typing into. The other half of <see cref="LayerIsLive"/>.</summary>
+        public bool KeyboardIsElsewhere()
         {
             AgeControl focused = ExclusiveControl();
             if (focused == null)
@@ -236,6 +291,11 @@ namespace ES2Access.UI.Input
         /// </summary>
         public bool ClaimsKey(KeyCode key)
         {
+            if (_consumed.Count > 0 && _consumed.Contains(key))
+            {
+                return true;
+            }
+
             if (!LayerIsLive())
             {
                 return false;
@@ -246,10 +306,50 @@ namespace ES2Access.UI.Input
                 return _backClaimed || ClaimsBack();
             }
 
-            return ClaimedKeys().Contains(key);
+            return ClaimedKeys().Contains(key) || ClaimsConditionally(key) || ClaimsTyped(key);
         }
 
-        private bool ClaimsBack()
+        /// <summary>
+        /// The keys of an action that only takes them from the game some of the time
+        /// (<see cref="InputAction.ClaimedWhen"/>) - Space, which is the game's own key except where
+        /// a control has something to pick up. Kept off the unconditional set above so that the
+        /// usual answer for such a key stays "the game's".
+        /// </summary>
+        private bool ClaimsConditionally(KeyCode key)
+        {
+            for (int i = 0; i < _actions.Count; i++)
+            {
+                InputAction action = _actions[i];
+                if (action.ClaimedWhen != null && action.BoundTo(key) && action.ClaimsItsKeys())
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>Whether the focused surface is taking this key as typed text - the other
+        /// before-the-press question, asked after the bindings so a bound key stays bound.</summary>
+        public bool ClaimsTyped(KeyCode key)
+        {
+            Func<KeyCode, bool> claims = ClaimsTypedKey;
+            try
+            {
+                return claims != null && claims(key);
+            }
+            catch (Exception)
+            {
+                // Runs inside the game's own scan: leave the key to the game rather than throw into
+                // it, which is also the safe answer - the worst it costs is one letter.
+                return false;
+            }
+        }
+
+        /// <summary>What the focused screen answers to "are you about to take Escape" - asked before
+        /// the press, and worth reading on its own: it is the half of the Escape story the
+        /// <see cref="BackClaimed"/> latch cannot explain.</summary>
+        public bool ClaimsBack()
         {
             Func<bool> claims = ClaimsBackKey;
             try
@@ -264,10 +364,12 @@ namespace ES2Access.UI.Input
             }
         }
 
-        private bool LayerIsLive()
+        /// <summary>Whether the mod's keys mean anything right now: a screen of ours is focused and
+        /// the game is not holding the keyboard for something the player is typing into. What
+        /// <see cref="ClaimsKey"/> asks before anything but the latch.</summary>
+        public bool LayerIsLive()
         {
-            Func<bool> focused = HasFocusedScreen;
-            return focused != null && focused() && !KeyboardIsElsewhere();
+            return ScreenIsFocused() && !KeyboardIsElsewhere();
         }
 
         // Built once and dropped whenever an action is added, which is the only way the bindings
@@ -282,6 +384,12 @@ namespace ES2Access.UI.Input
             HashSet<KeyCode> keys = new HashSet<KeyCode>();
             for (int i = 0; i < _actions.Count; i++)
             {
+                if (_actions[i].ClaimedWhen != null)
+                {
+                    // Claimed only while its own condition holds - ClaimsConditionally asks it.
+                    continue;
+                }
+
                 IList<InputBinding> bindings = _actions[i].Bindings;
                 for (int j = 0; j < bindings.Count; j++)
                 {
@@ -307,6 +415,8 @@ namespace ES2Access.UI.Input
             {
                 _backClaimed = false;
             }
+
+            ReleaseKeysNoLongerHeld();
 
             if (KeyboardIsElsewhere())
             {
@@ -375,11 +485,41 @@ namespace ES2Access.UI.Input
                     _backClaimed = true;
                 }
 
+                KeepKeysUntilReleased(action);
                 return true;
             }
 
             action.InvokePerformed();
             return false;
+        }
+
+        // The keys that could have made this action fire stay ours for the rest of the press - see
+        // _consumed. The action may well have just emptied the screen stack, and the game has not
+        // asked about the key yet.
+        private void KeepKeysUntilReleased(InputAction action)
+        {
+            IList<InputBinding> bindings = action.Bindings;
+            for (int i = 0; i < bindings.Count; i++)
+            {
+                KeyboardBinding keyboard = bindings[i] as KeyboardBinding;
+                if (keyboard == null || _consumed.Contains(keyboard.Key))
+                {
+                    continue;
+                }
+
+                _consumed.Add(keyboard.Key);
+            }
+        }
+
+        private void ReleaseKeysNoLongerHeld()
+        {
+            for (int i = _consumed.Count - 1; i >= 0; i--)
+            {
+                if (!UnityEngine.Input.GetKey(_consumed[i]))
+                {
+                    _consumed.RemoveAt(i);
+                }
+            }
         }
 
         // The injected actions queued since the last frame, run through exactly the path a pressed

@@ -125,8 +125,12 @@ namespace ES2Access.Screens
         /// A screen answers only when what the player is searching for is not declared: a tree
         /// whose collapsed branches hold most of its items can offer them all here and open the
         /// branch when one is landed on. The navigator still does the focusing and the speaking.
+        ///
+        /// <paramref name="render"/> is the graph as it stands, so a screen that only wants to ADD the
+        /// undeclared items can build the ordinary scope (<c>SearchScope.OverStop</c>) and extend it
+        /// rather than re-deriving everything the stop already declares.
         /// </summary>
-        public virtual SearchScope TypeAheadScope(GraphNode focused)
+        public virtual SearchScope TypeAheadScope(GraphNode focused, GraphRender render)
         {
             return null;
         }

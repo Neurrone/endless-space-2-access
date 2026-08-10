@@ -404,6 +404,23 @@ namespace ES2Access.UI
             vtable.OnBlurVisual = ReleasePointer;
         }
 
+        /// <summary>The same for a toggle whose tooltip the game hangs somewhere other than on the
+        /// toggle - an action item that shows a button or a tick depending on what the action is, and
+        /// keeps the one tooltip on the item that holds both.</summary>
+        public static void Point(
+            NodeVtable vtable,
+            AgeControlToggle toggle,
+            AgeTooltip tooltip,
+            AgeTransform under
+        )
+        {
+            AgeControlToggle it = toggle;
+            AgeTooltip tip = tooltip;
+            AgeTransform anchor = under;
+            vtable.OnFocusVisual = () => PointerFocus.MoveToToggle(it, tip, anchor);
+            vtable.OnBlurVisual = ReleasePointer;
+        }
+
         /// <summary>The same for a widget with no button under it - a readout, an icon. Nothing lights
         /// up because there is nothing there to light, and the tooltip appears, which for these is the
         /// whole of what the pointer was ever for.</summary>

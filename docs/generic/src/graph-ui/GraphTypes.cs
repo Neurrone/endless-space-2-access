@@ -150,10 +150,36 @@ namespace ES2Access.Core.UI.Graph
         /// <see cref="OnSecondary"/>, which is the right-click.</summary>
         public Action OnAlternate;
 
-        /// <summary>Optional. Move the ITEM this control stands for within its list: -1 towards the
-        /// front, +1 towards the back. The cursor rides along with the item, because the item is what
-        /// the player is holding.</summary>
-        public Action<int> OnReorder;
+        /// <summary>Optional. The command the game puts on a RIGHT-CLICK here - the one thing the
+        /// control does when the player asks it to do its obvious thing without opening anything.
+        /// Distinct from <see cref="OnActivate"/> (the left click) and from <see cref="OnAlternate"/>
+        /// (the modified left click); a control without one answers the key with a spoken cue rather
+        /// than with silence.</summary>
+        public Action OnContextual;
+
+        /// <summary>Optional. Add this control's item to the game's own selection, or take it out
+        /// again, leaving the rest of the selection alone - what the game's Ctrl+click does.</summary>
+        public Action OnSelectToggle;
+
+        /// <summary>Optional. Extend the game's own selection from wherever it last was to here -
+        /// what the game's Shift+click does.</summary>
+        public Action OnSelectRange;
+
+        /// <summary>Optional. What this control offers to PICK UP and carry (a ship out of a fleet,
+        /// a population unit off a planet). Returning null means it has nothing to give right now.
+        /// The carried thing's name is captured at that moment and never re-derived - see
+        /// <see cref="CarryItem"/>.</summary>
+        public Func<CarryItem> OnPickUp;
+
+        /// <summary>Optional. Which kind of cargo this control will TAKE (<see cref="CarryItem.Kind"/>).
+        /// Null takes nothing; the kind is what keeps a ship from being dropped into a population
+        /// list.</summary>
+        public string DropKind;
+
+        /// <summary>Optional. Take the carried thing, through the GAME's own can-do check - never a
+        /// rule the mod invented. A refusal carries the game's own words and leaves the player still
+        /// holding it.</summary>
+        public Func<CarryItem, DropResult> OnDrop;
 
         /// <summary>Optional. Read / open the control's tooltip. The action owns the whole behavior
         /// (speak, or open the drill-in tooltip reader), so the core stays game-agnostic.</summary>
@@ -182,6 +208,12 @@ namespace ES2Access.Core.UI.Graph
 
         /// <summary>If true, type-ahead never matches this control.</summary>
         public bool ExcludeFromSearch;
+
+        /// <summary>Which column of a tabular row this control is - 0 (the default) for the row's
+        /// primary cell and for everything that is not in a table. Stamped by
+        /// <see cref="GraphSheet"/>, and read by type-ahead: a row contributes ONE result, its
+        /// primary, because every cell of it searches as the row's name.</summary>
+        public int Column;
 
         /// <summary>Optional (Expandable groups): override HOW expansion state changes. When null the
         /// engine mutates the persistent expansion set (<see cref="GraphState.Expanded"/>); an adapter

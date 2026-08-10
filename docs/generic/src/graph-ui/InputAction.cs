@@ -62,6 +62,62 @@ namespace ES2Access.UI.Input
             return this;
         }
 
+        /// <summary>
+        /// When the action's keys are taken from the game, for an action whose key the game has a
+        /// use for too. Null - the usual case - means the key is the mod's for as long as one of its
+        /// screens is focused.
+        ///
+        /// Space is the case this exists for: it is the game's own key everywhere except on a
+        /// control that has something to pick up or while something is being carried. Claiming it
+        /// unconditionally would cost the player the game's use of it on every screen the mod knows.
+        /// </summary>
+        public Func<bool> ClaimedWhen { get; private set; }
+
+        /// <summary>Take this action's keys from the game only while <paramref name="when"/> says so;
+        /// see <see cref="ClaimedWhen"/>. Asked from the game's own key scans, several times a frame.
+        /// </summary>
+        public InputAction ClaimedWhile(Func<bool> when)
+        {
+            ClaimedWhen = when;
+            return this;
+        }
+
+        /// <summary>Whether this action's keys are the mod's at this moment.</summary>
+        internal bool ClaimsItsKeys()
+        {
+            Func<bool> when = ClaimedWhen;
+            if (when == null)
+            {
+                return true;
+            }
+
+            try
+            {
+                return when();
+            }
+            catch (Exception)
+            {
+                // Runs inside the game's own scan: leave the key to the game rather than throw into
+                // it, which is also the safe answer - the worst it costs is one press.
+                return false;
+            }
+        }
+
+        /// <summary>Whether one of this action's bindings is on <paramref name="key"/>.</summary>
+        internal bool BoundTo(KeyCode key)
+        {
+            for (int i = 0; i < _bindings.Count; i++)
+            {
+                KeyboardBinding keyboard = _bindings[i] as KeyboardBinding;
+                if (keyboard != null && keyboard.Key == key)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         public bool JustPressed
         {
             get

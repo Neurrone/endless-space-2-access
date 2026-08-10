@@ -75,11 +75,24 @@ namespace ES2Access.UI
         private ControlId _visualKey;
         private GraphNode _visualNode;
 
+        // What the player is holding, if anything. Owned here because the carry key is dispatched
+        // here and because a carry is scoped to the screen it started on, which is what this class
+        // already tracks; ModEntry.Carry is the same object, for the screens that declare what can be
+        // picked up and what will take a drop.
+        private readonly CarryState _carry = new CarryState();
+
         public GraphNavigator(BufferController buffers = null)
         {
             _buffers = buffers;
             _typeAhead.OnLand = LandOnSearchResult;
             _typeAhead.OnNoMatch = SayNoMatch;
+        }
+
+        /// <summary>What the player is carrying - see <see cref="CarryState"/>. Never null; an empty
+        /// carry is the normal state.</summary>
+        public CarryState Carry
+        {
+            get { return _carry; }
         }
 
         public Screen Screen
@@ -147,6 +160,11 @@ namespace ES2Access.UI
             {
                 return;
             }
+
+            // A carry belongs to the page it started on - that is where its drop targets are - but a
+            // menu opened over that page is still that page, so a player can pick something up, open
+            // an action menu and come back still holding it.
+            _carry.ScreenChanged(SameFamily(screen, _carry.Owner as Screen));
 
             _screen = screen;
             ClearSearch();
@@ -243,6 +261,13 @@ namespace ES2Access.UI
                 return false;
             }
 
+            if (actionKey == UiActions.Carry && _typeAhead.HasBuffer)
+            {
+                // A space typed into a search is TEXT, and the search takes it in TypeAheadTick.
+                // Claimed all the same, so the game does not also act on it.
+                return true;
+            }
+
             if (_typeAhead.IsActive && SearchAction(actionKey))
             {
                 return true;
@@ -280,12 +305,18 @@ namespace ES2Access.UI
                     return Secondary();
                 case UiActions.Alternate:
                     return Alternate();
-                case UiActions.MoveItemUp:
-                    return Reorder(-1);
-                case UiActions.MoveItemDown:
-                    return Reorder(1);
+                case UiActions.Contextual:
+                    return Contextual();
+                case UiActions.Carry:
+                    return CarryKey();
+                case UiActions.SelectToggle:
+                    return SelectChord(false);
+                case UiActions.SelectRange:
+                    return SelectChord(true);
                 case UiActions.Back:
-                    return _screen.Back();
+                    // Putting down what is being held comes before anything the screen does with the
+                    // key: the carry is the mode the player is in, and the screen underneath is not.
+                    return CancelCarry() || _screen.Back();
                 default:
                     return false;
             }
@@ -626,12 +657,39 @@ namespace ES2Access.UI
             return true;
         }
 
+        // Enter. While something is being carried this is also the key that PUTS IT DOWN: on a
+        // control that will take the cargo it drops there and nothing else happens, and on every
+        // other control it is the plain click it always was, with the carry still live underneath.
         private bool Activate()
         {
             GraphNode node = _graph.CurrentNode;
             if (node == null)
             {
                 return false;
+            }
+
+            if (_carry != null && _carry.IsCarrying)
+            {
+                if (!_graph.Rerender())
+                {
+                    return false;
+                }
+
+                node = _graph.CurrentNode;
+                CarryOutcome drop = CarryActions.Activate(
+                    node == null ? null : node.Vtable,
+                    _carry
+                );
+                if (drop.Handled)
+                {
+                    Voice.Say(drop.Speech, true);
+                    return true;
+                }
+
+                if (node == null)
+                {
+                    return false;
+                }
             }
 
             if (node.Vtable.OnActivate != null)
@@ -679,22 +737,138 @@ namespace ES2Access.UI
             return true;
         }
 
+        // The command the game puts on a right click here. Claimed either way - the key means
+        // something else entirely to the game - and SILENT where the control has no such command: the
+        // gesture keys are pressed speculatively all over a page, and a cue on every one of them is
+        // noise rather than reassurance.
+        private bool Contextual()
+        {
+            if (_graph.Contextual())
+            {
+                SpeakStateAfterChange();
+            }
+
+            return true;
+        }
+
+        // The two selection chords, which are the game's own modified clicks: one item in or out of
+        // the selection, and everything from the last one to this one. A control that is not part of
+        // a selection answers with silence rather than falling back to plain activation, which would
+        // do something the player did not ask for.
+        private bool SelectChord(bool range)
+        {
+            if (range ? _graph.SelectRange() : _graph.SelectToggle())
+            {
+                SpeakStateAfterChange();
+            }
+
+            return true;
+        }
+
         /// <summary>
-        /// Move the focused item within its list. The cursor stays on the item rather than on the
-        /// position - it rides along by reference through the rebuild - and the item is read out again
-        /// where it has landed, which is the only way the player learns the move happened.
+        /// Pick something up, put it down, or swap what is being held - the whole decision is
+        /// <see cref="CarryActions.Press"/>'s, so that it can be read (and tested) in one place. False
+        /// means the key was never ours here and the game should have it, which is the same answer
+        /// <see cref="TakesCarryKey"/> gave the game's own scan before the press.
         /// </summary>
-        private bool Reorder(int direction)
+        private bool CarryKey()
         {
             GraphNode node = _graph.CurrentNode;
-            if (node == null || node.Vtable.OnReorder == null)
+            if (!CarryActions.Claims(node == null ? null : node.Vtable, _carry))
+            {
+                // Not ours here, and answered off the standing render rather than by building one:
+                // Space is pressed on screens that have nothing to do with carrying.
+                return false;
+            }
+
+            if (!_graph.Rerender())
             {
                 return false;
             }
 
-            _graph.Reorder(direction);
-            SpeakFocusedState();
+            node = _graph.CurrentNode;
+            CarryOutcome outcome = CarryActions.Press(
+                node == null ? null : node.Vtable,
+                _carry,
+                _screen
+            );
+            if (!outcome.Handled)
+            {
+                return false;
+            }
+
+            Voice.Say(outcome.Speech, true);
             return true;
+        }
+
+        // The back key while something is held: put it down, and go no further - the screen the
+        // player was carrying across is not the thing they were trying to leave.
+        private bool CancelCarry()
+        {
+            CarryOutcome outcome = CarryActions.Cancel(_carry);
+            if (!outcome.Handled)
+            {
+                return false;
+            }
+
+            Voice.Say(outcome.Speech, true);
+            return true;
+        }
+
+        /// <summary>
+        /// Whether the carry key belongs to the mod where the cursor is standing - asked by the
+        /// game's own key scans BEFORE the press, like the back key and the typed letters, because
+        /// both sides poll and the game's scan can run either side of ours.
+        ///
+        /// Space is the game's own key everywhere else, so this is deliberately narrow: a search
+        /// already collecting text (the space is a character), a control with something to pick up,
+        /// or something already being carried. Reads the last render rather than building one - it is
+        /// asked several times a frame.
+        /// </summary>
+        public bool TakesCarryKey()
+        {
+            if (_screen == null || _graph == null)
+            {
+                return false;
+            }
+
+            if (_typeAhead.HasBuffer)
+            {
+                return true;
+            }
+
+            GraphNode node = _graph.CurrentNode;
+            return CarryActions.Claims(node == null ? null : node.Vtable, _carry);
+        }
+
+        // Whether two screens are the same page: the same screen, or one opened over the other (an
+        // action menu is a child screen of the page it was opened from).
+        private static bool SameFamily(Screen a, Screen b)
+        {
+            if (a == null || b == null)
+            {
+                return false;
+            }
+
+            return ReferenceEquals(a, b) || Descends(a, b) || Descends(b, a);
+        }
+
+        private static bool Descends(Screen child, Screen ancestor)
+        {
+            Screen at = child.ParentScreen;
+            // Bounded rather than "while", like Screen.Deepest: a chain is a handful deep, and a
+            // cycle introduced by a bug should not hang the frame.
+            for (int depth = 0; depth < 16 && at != null; depth++)
+            {
+                if (ReferenceEquals(at, ancestor))
+                {
+                    return true;
+                }
+
+                at = at.ParentScreen;
+            }
+
+            return false;
         }
 
         // The one adjust path, fine or coarse: left and right take the small step, the same arrows
@@ -1079,7 +1253,7 @@ namespace ES2Access.UI
             SearchScope declared = null;
             try
             {
-                declared = _screen.TypeAheadScope(focused);
+                declared = _screen.TypeAheadScope(focused, _graph.Current);
             }
             catch (Exception e)
             {
