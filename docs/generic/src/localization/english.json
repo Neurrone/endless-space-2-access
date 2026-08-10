@@ -100,7 +100,7 @@
   "loadsave.save-name": "Save name",
   "loadsave.edit-name": "Type the save name, then press Enter.",
   "loadsave.cloud": "Steam cloud saves",
-  "loadsave.cell-empty": "empty",
+  "nav.cell-empty": "empty",
   "carry.carrying": "Dragging {0}",
   "carry.dropped": "Dropped {0}",
   "carry.drop-refused": "{0} cannot go there",

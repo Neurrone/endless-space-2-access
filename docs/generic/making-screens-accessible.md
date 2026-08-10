@@ -28,8 +28,9 @@ Concretely:
   first stop — never repeated per band. And a caption the game draws over
   **several** controls is itself a navigable node; a caption tied to exactly one control
   folds into that control's readout instead.
-- A visual table is a table: cells announce the drawn column heading and value, Up/Down
-  preserves the column (see the table pattern in [ui-navigation.md](ui-navigation.md)).
+- A visual table is a table: a row identifies itself by name, a cell speaks its value with
+  the column heading spoken as the crossed edge, Up/Down preserves the column (see the table
+  pattern in [ui-navigation.md](ui-navigation.md)).
 - A panel's bottom control row is its own Tab stop, walked Left/Right; side panels that open
   next to content are conditional stops or regions that exist only while open.
 - Two navigation tiers, one division of labor: the screen's visual panels are **Tab
@@ -138,8 +139,11 @@ reload-safe ([hot-reload.md](hot-reload.md)) and per-frame cheap — `Build` run
 ([performance.md](performance.md)). Two implementation rules that recur:
 
 - **A page assembled from several independent windows**: the cursor seats on whichever half
-  arrived first and, once placed, never moves — declare nothing until the late half is
-  drawn.
+  arrived first and, once placed, never moves. That gate protects the SEATING, so hold back
+  only while the cursor is what is at stake: a page whose early half is already usable
+  declares it in drawn order and lets the late half join a later rebuild. A page-wide gate on
+  one piece turns a half the game drops — a show it defers and then loses — into permanent
+  silence.
 - **Reading a panel you haven't modelled in detail** (read-only side panels,
   out-of-fixture state variants): descend only into children that are themselves
   containers; a group whose children are all primitives is ONE line. This models whole

@@ -87,9 +87,11 @@ A build-time test walks every locale file and asserts: keys are a subset of the 
 English keys, and each value contains exactly the `{n}` placeholders of its English template.
 Broken community translations fail the build instead of producing silent wrong speech.
 
-Plurals: defer until the first plural-sensitive phrase, then adopt a gettext-style
-plural-forms mechanism (SoC's `ModPluralString`/`JoinList` is the worked example). Note it;
-don't build it speculatively.
+Plurals: defer until the first plural-sensitive phrase; the cheapest adequate start is a
+two-form key pair chosen by count, each key a complete sentence (ES2's `ModStrings.Plural`),
+escalating to a gettext-style plural-forms mechanism (SoC's `ModPluralString`/`JoinList` is
+the worked example) when a three-form language arrives. Note it; don't build it
+speculatively.
 
 ## Source files
 

@@ -237,7 +237,13 @@ which no dump reveals. Key such lines on the game's *data* object, never the wid
   a single frame during a rebind, a small bounded linger is the last resort. Through all of
   it, an empty `Build` is the safety valve: declaring nothing is legal — the render is
   skipped and the cursor survives — which is what makes staying active through a
-  transition safe.
+  transition safe. And an arrival the game LOSES may be finished for it: where part of a
+  page's reveal is deferred to a coroutine or animation that can abort silently, re-issue
+  the game's own show call — only after a settle long enough that a merely-slow arrival is
+  never pushed, only while the precondition the game's own attempt needed is already
+  satisfied, and then not again for a pause, because the re-issue is deferred too and the
+  stalled state reads the same for a while after it. `src/graph-ui/Nudge.cs` is that
+  discipline as an engine-free counter.
 - **Initial focus and Tab clamping**: Tab does not wrap, so whichever stop the cursor starts
   on must be the first stop, or Tab reads as broken. An explicit start node wins over the
   "land on the selected alternative" rule unless the start node is itself one of the
@@ -256,12 +262,18 @@ which no dump reveals. Key such lines on the game's *data* object, never the wid
   follows the always-shown-text rule ([making-screens-accessible.md](making-screens-accessible.md)
   §0); the card's substance lives in its buffer ([buffers.md](buffers.md)'s card example).
 - **Tables read as tables**: one graph row per data row with a shared row key (Up/Down keeps
-  the column), one node per cell announcing the drawn column heading then the drawn value,
-  entering the table announces its role once. Never drop an empty cell — the shared-column
-  invariant dies — speak its heading with an "empty" word. A cell's review buffer holds that
-  cell's own content (heading, value, the cell's own tooltip), not the whole row: the row is
-  a walk away. `GraphSheet` (above) is the raw-mode engine for this; the drawn-header pairing
-  is the adapter's job, by the game's own column names, never by index.
+  the column), one node per cell announcing the drawn value alone — the column heading is
+  spoken as the EDGE the player crosses to reach the cell, never repeated by the cell itself —
+  and entering the table announces its role once. A cell is role-less text: a control type is
+  two things, a reading order and a role word, and a metadata cell wants only the order. No
+  position phrases inside a table — neither rows nor cells say "N of M"; the row identifies
+  itself by name. Never drop an empty cell — the shared-column invariant dies — speak an
+  "empty" word in it. A cell's review buffer holds that cell's own content (heading, value,
+  the cell's own tooltip), not the whole row: the row is a walk away. `GraphSheet` (above) is
+  the raw-mode engine for all of this — headings as edge labels, no auto positions, and the
+  column stamp that type-ahead's one-result-per-row filter reads; a table built OUTSIDE it
+  must stamp each cell's `Column` by hand, or searching matches every cell of every row. The
+  drawn-header pairing is the adapter's job, by the game's own column names, never by index.
 - **Minimized is not gone**: when the game collapses a panel to a title bar rather than
   hiding it, hand the keyboard to the surface beneath (the collapsed screen stands down) and
   declare the leftover bar's controls where they are drawn — as a stop on the screen below

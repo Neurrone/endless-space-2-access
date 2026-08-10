@@ -192,7 +192,7 @@ namespace ES2Access.Core.Speech
         public const string LoadSaveSaveName = "loadsave.save-name";
         public const string LoadSaveEditName = "loadsave.edit-name";
         public const string LoadSaveCloud = "loadsave.cloud";
-        public const string LoadSaveCellEmpty = "loadsave.cell-empty";
+        public const string NavCellEmpty = "nav.cell-empty";
 
         // Picking something up and putting it down somewhere else (a ship into another fleet). The
         // words are the DRAG's, because that is the gesture these keys stand in for and the one the
@@ -443,7 +443,7 @@ namespace ES2Access.Core.Speech
             { LoadSaveSaveName, "Save name" },
             { LoadSaveEditName, "Type the save name, then press Enter." },
             { LoadSaveCloud, "Steam cloud saves" },
-            { LoadSaveCellEmpty, "empty" },
+            { NavCellEmpty, "empty" },
             { CarryCarrying, "Dragging {0}" },
             { CarryDropped, "Dropped {0}" },
             { CarryDropRefused, "{0} cannot go there" },

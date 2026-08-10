@@ -66,7 +66,10 @@ Rules that came out of shipping this, all hit in practice:
   "say 'has tooltip' only if the lines are non-empty" is silent every single time. For a
   renderer-assembled tooltip, having content is definitional: indicate unconditionally.
 - **Reading a render-composed tooltip back**: where provider interfaces are readable
-  headlessly, prefer them. Where they are not, make focus trigger the game's own tooltip
+  headlessly, prefer them — and the REFUSAL is the part that nearly always is: the failure
+  feature is typically one call over a provider on the tooltip's target, populated at bind
+  time, so a blocked control's reason can speak instantly with no hover, and the drawn
+  failure panel is the free oracle proving your expression matches it. Where they are not, make focus trigger the game's own tooltip
   display (see focus visuals in [ui-navigation.md](ui-navigation.md)) and read the drawn
   window's labels — what is drawn is exactly what should be spoken.
   **Find the assembly unit first and scope the reading to it.** A tooltip system that
