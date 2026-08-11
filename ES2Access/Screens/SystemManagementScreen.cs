@@ -356,6 +356,7 @@ namespace ES2Access.Screens
             try
             {
                 CardActions.AddNamedByMod(found, label.ColonizeButton, ModStrings.SystemColonize);
+                AddCuriosities(found, label);
             }
             catch (Exception e)
             {
@@ -363,6 +364,38 @@ namespace ES2Access.Screens
             }
 
             return found;
+        }
+
+        /// <summary>
+        /// The curiosities the card is drawing, each one the same wired button the map's own card
+        /// carries: a wordless icon kept CLICKABLE while refused, with the reason in its own tooltip
+        /// (<c>PlanetCuriosityItem.Refresh</c>). Named off the wrapper the game hangs on that tooltip,
+        /// which is the only place the thing in orbit has a name.
+        ///
+        /// This card mixes three kinds of item into one table, so the curiosity items are picked out by
+        /// their own component rather than by position; the rest of the table stays a line of the card's
+        /// (<see cref="PlanetDetails"/>).
+        /// </summary>
+        private static void AddCuriosities(
+            List<CardActions.CardAction> found,
+            PlanetLabel_SystemManagement label
+        )
+        {
+            AgeTransform table = label.PlanetCuriositiesTable;
+            if (table == null || !AgeWidgets.Visible(table))
+            {
+                return;
+            }
+
+            IList<AgeTransform> items = table.Children;
+            for (int i = 0; items != null && i < items.Count; i++)
+            {
+                AgeTransform item = items[i];
+                if (item != null && AgeWidgets.Visible(item) && SkipCuriosities(item))
+                {
+                    CardActions.AddRefusable(found, item, CardActions.TitleOf(item));
+                }
+            }
         }
 
         /// <summary>
@@ -462,7 +495,10 @@ namespace ES2Access.Screens
                 AddWidgetLines(lines, label.PlanetSizeGroup);
                 AddWidgetLines(lines, label.PlanetGameplayTypeTable);
                 AddWidgetLines(lines, label.PlanetAnomaliesTable);
-                AddWidgetLines(lines, label.PlanetCuriositiesTable);
+                // The card puts three kinds of thing in this one table - what sort of world it is, what
+                // was found on it, and the curiosities still to be looked into. The curiosities are
+                // buttons and are child nodes of their own, so only the rest of the table is read here.
+                AddWidgetLines(lines, label.PlanetCuriositiesTable, SkipCuriosities);
                 AddWidgetLines(lines, label.ResourceDepositsGroup);
                 AddWidgetLines(lines, label.ImprovementStatus);
                 AddFidsi(lines, label);
@@ -2551,7 +2587,11 @@ namespace ES2Access.Screens
             }
         }
 
-        private static void AddWidgetLines(List<string> lines, AgeTransform widget)
+        private static void AddWidgetLines(
+            List<string> lines,
+            AgeTransform widget,
+            Func<AgeTransform, bool> skip = null
+        )
         {
             if (widget == null || !AgeWidgets.Visible(widget))
             {
@@ -2561,18 +2601,33 @@ namespace ES2Access.Screens
             IList<AgeTransform> children = widget.Children;
             if (children == null || children.Count == 0)
             {
-                AddLine(lines, AgeWidgets.TextOf(widget));
+                AddLine(lines, AgeWidgets.ItemText(widget));
                 return;
             }
 
             // A table of things - the traits, the anomalies - reads one line per thing, which is how it
-            // is drawn and how it is reviewed.
+            // is drawn and how it is reviewed. What each item SAYS, not the text on it: a findings table
+            // is a row of bare icons, and reading it as text read nothing at all.
             for (int i = 0; i < children.Count; i++)
             {
-                if (AgeWidgets.Visible(children[i]))
+                if (AgeWidgets.Visible(children[i]) && (skip == null || !skip(children[i])))
                 {
-                    AddLine(lines, AgeWidgets.TextOf(children[i]));
+                    AddLine(lines, AgeWidgets.ItemText(children[i]));
                 }
+            }
+        }
+
+        /// <summary>A table item the card offers as a button of its own, and so is not a line of the
+        /// card's - the curiosities the game mixes into the findings table.</summary>
+        private static bool SkipCuriosities(AgeTransform item)
+        {
+            try
+            {
+                return item != null && item.GetComponent<PlanetCuriosityItem>() != null;
+            }
+            catch (Exception)
+            {
+                return false;
             }
         }
 

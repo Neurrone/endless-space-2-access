@@ -201,7 +201,12 @@ namespace ES2Access.Screens
 
         /// <summary>A row per thing the table holds, rather than the table's text in one lump: two
         /// worlds' worth of findings routinely repeat a word - two lines both rated "Poor" - and a
-        /// single readout of the whole table would drop the second as a duplicate.</summary>
+        /// single readout of the whole table would drop the second as a duplicate.
+        ///
+        /// What each item SAYS (<see cref="AgeWidgets.ItemText"/>), not the text drawn on it: the
+        /// anomalies, the curiosities and the deposits are rows of bare pictures, so reading them as
+        /// text left the survey's whole findings unspoken - the one thing the cutscene exists to
+        /// report.</summary>
         private void AddItems(AgeTransform table)
         {
             if (!AgeWidgets.Visible(table))
@@ -214,7 +219,7 @@ namespace ES2Access.Screens
             {
                 if (items[i] != null && AgeWidgets.Visible(items[i]))
                 {
-                    _fields.Add(AgeWidgets.TextOf(items[i]));
+                    _fields.Add(AgeWidgets.ItemText(items[i]));
                 }
             }
         }

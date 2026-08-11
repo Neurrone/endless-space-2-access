@@ -557,12 +557,16 @@ namespace ES2Access.Screens
             StarSystemNode it = node;
             StarSystemLabel label = LabelFor(node, labels);
             AgeTooltip tooltip = label == null ? null : label.StarTooltip;
-            NodeVtable vtable = GraphNodes.Group(
-                () => it.LocalizedName,
-                null,
-                tooltip,
-                null,
-                () => FleetPresence.LinesAt(it)
+            StarSystemLabel drawn = label;
+            NodeVtable vtable = GraphNodes.Group(() => it.LocalizedName);
+            // What is parked here, then everything the map writes on the label itself - the icons it
+            // flanks the name with, what is being built, what is in the ground - and last the dossier
+            // behind the star. The middle one is a page of detail drawn as pictures, so it is reviewed
+            // rather than spoken (<see cref="SystemLabelReadout"/>).
+            vtable.Sections = GraphNodes.Sections(
+                NodeSection.Buffer(() => FleetPresence.LinesAt(it)),
+                NodeSection.Buffer(() => SystemLabelReadout.Lines(drawn)),
+                GraphNodes.TooltipSection(tooltip)
             );
             if (owned)
             {
@@ -571,6 +575,17 @@ namespace ES2Access.Screens
                 Empire owner = empire;
                 vtable.Announcements.Add(GraphNodes.ValuePart(() => OwnedState(it, owner)));
             }
+
+            // The two numbers the label writes in front of the player: how many live there, and how
+            // many of them are the player's own agents (drawn only where there is one). Everything else
+            // the label says is a page of pictures and is reviewed, not spoken. Not watched - these are
+            // read off widgets the map pools and re-points at other systems as the camera moves.
+            vtable.Announcements.Add(
+                GraphNodes.ValuePart(() => SystemLabelReadout.Population(drawn), false)
+            );
+            vtable.Announcements.Add(
+                GraphNodes.ValuePart(() => SystemLabelReadout.Sleepers(drawn), false)
+            );
 
             // What the map draws parked here, in the game's own count phrase. Not watched: the answer
             // costs a walk of the docking-slot repository, and a watched part walks it every frame the
@@ -617,6 +632,7 @@ namespace ES2Access.Screens
             if (builder.IsExpanded(id))
             {
                 AddManagementView(builder, node, label);
+                AddLabelButtons(builder, node, label);
                 AddPlanets(builder, node, empire, label);
                 AddStarlanes(builder, node, empire);
                 AddFleets(builder, "galaxy:system/" + node.GUID, FleetPresence.FleetsAt(node));
@@ -775,6 +791,23 @@ namespace ES2Access.Screens
                 ControlId.Structural("galaxy:system/" + node.GUID + "/management"),
                 vtable
             );
+        }
+
+        /// <summary>The other buttons the map draws on a system's label - the diplomacy button under the
+        /// name, the two conversion buy-outs and the pirate mark beside it, the hacking beacon. Which of
+        /// them exists at all depends on who lives there and what is being done to the place, so the
+        /// list is whatever the game is drawing this frame; a system with none of them keeps whatever
+        /// children it had. The treatment each one gets is <see cref="SystemLabelReadout.Actions"/>'s.
+        /// </summary>
+        private static void AddLabelButtons(
+            GraphBuilder builder,
+            StarSystemNode node,
+            StarSystemLabel label
+        )
+        {
+            List<CardActions.CardAction> found = new List<CardActions.CardAction>(4);
+            SystemLabelReadout.Actions(found, label);
+            CardActions.Emit(builder, "galaxy:system/" + node.GUID + "/label", found);
         }
 
         // ---- sending the selected fleets somewhere ----
@@ -1153,7 +1186,10 @@ namespace ES2Access.Screens
             {
                 AddFidsi(lines, card);
                 AddAnomalies(lines, card);
-                AddWidgetLines(lines, card.PlanetCuriositiesTable);
+                // The curiosities are NOT read here: each one is a button of the card's and is a child
+                // node of its own (<see cref="AddCuriosities"/>). They were a line here only while the
+                // line was silent - the items draw no words - and naming them off their wrappers would
+                // have made the card say every curiosity twice.
                 AddWidgetLines(lines, card.ResourceDepositsGroup);
                 // The dossier is NOT read here: it is the card's tooltip section, declared beside
                 // this one, and reading it twice is what happens when two places both remember it.
@@ -2364,7 +2400,9 @@ namespace ES2Access.Screens
         }
 
         /// <summary>A table of things - anomalies, curiosities, deposits - reads one line per thing,
-        /// which is how it is drawn and how it is reviewed.</summary>
+        /// which is how it is drawn and how it is reviewed. Each line is what the item SAYS
+        /// (<see cref="AgeWidgets.ItemText"/>), which for a table of bare icons is the name off its own
+        /// wrapper: reading such a table as text read nothing at all.</summary>
         private static void AddWidgetLines(List<string> lines, AgeTransform widget)
         {
             if (widget == null || !Visible(widget))
@@ -2375,7 +2413,7 @@ namespace ES2Access.Screens
             IList<AgeTransform> children = widget.Children;
             if (children == null || children.Count == 0)
             {
-                AddLine(lines, AgeWidgets.TextOf(widget));
+                AddLine(lines, AgeWidgets.ItemText(widget));
                 return;
             }
 
@@ -2383,7 +2421,7 @@ namespace ES2Access.Screens
             {
                 if (Visible(children[i]))
                 {
-                    AddLine(lines, AgeWidgets.TextOf(children[i]));
+                    AddLine(lines, AgeWidgets.ItemText(children[i]));
                 }
             }
         }

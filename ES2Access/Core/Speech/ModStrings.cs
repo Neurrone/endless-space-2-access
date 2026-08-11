@@ -150,6 +150,27 @@ namespace ES2Access.Core.Speech
         // phrase because the name of a system is all that goes in it.
         public const string GalaxyLaneDestination = "galaxy.lane-destination";
 
+        // What the map writes on a system's own label. The numbers are the game's; the words around
+        // them are the mod's, because the label draws every one of them as a bare figure beside a
+        // picture and names none of them anywhere on itself. "Sleepers" is the game's own word for the
+        // agents it counts, taken from the sentence it explains the count with.
+        public const string GalaxySystemPopulation = "galaxy.system-population";
+        public const string GalaxySystemSleepers = "galaxy.system-sleepers";
+        public const string GalaxySystemBuilding = "galaxy.system-building";
+        public const string GalaxySystemNothingBuilding = "galaxy.system-nothing-building";
+        public const string GalaxySystemRebellion = "galaxy.system-rebellion";
+        public const string GalaxySystemPiratePower = "galaxy.system-pirate-power";
+        public const string GalaxySystemMinorRelation = "galaxy.system-minor-relation";
+
+        // The buttons the label draws on a system. Each is a wordless icon the game explains in a
+        // sentence rather than names - the sentence arrives with the node as its tooltip - so what to
+        // CALL each one is the mod's, kept as short as the thing it does.
+        public const string GalaxySystemDiplomacy = "galaxy.system-diplomacy";
+        public const string GalaxySystemPirateMarkBuyout = "galaxy.system-pirate-mark-buyout";
+        public const string GalaxySystemConversionBuyout = "galaxy.system-conversion-buyout";
+        public const string GalaxySystemAcademyBuyout = "galaxy.system-academy-buyout";
+        public const string GalaxySystemHackingBeacon = "galaxy.system-hacking-beacon";
+
         // Which way something on the map lies from somewhere else. The game writes no compass word
         // anywhere - it draws the map and expects it to be looked at - so all eight are the mod's.
         public const string DirectionNorth = "direction.north";
@@ -448,6 +469,18 @@ namespace ES2Access.Core.Speech
             { GalaxyWormhole, "Wormhole {0} to {1}, {2}" },
             { GalaxyWormholeUnexplored, "Wormhole {0} to an unexplored system, {1}" },
             { GalaxyLaneDestination, "Go to {0}" },
+            { GalaxySystemPopulation, "{0} population" },
+            { GalaxySystemSleepers, "{0} sleepers" },
+            { GalaxySystemBuilding, "Building {0}, {1} turns" },
+            { GalaxySystemNothingBuilding, "Nothing under construction" },
+            { GalaxySystemRebellion, "Rebellion at {0} percent, {1} to go" },
+            { GalaxySystemPiratePower, "Pirate power level {0}" },
+            { GalaxySystemMinorRelation, "Relations {0} percent" },
+            { GalaxySystemDiplomacy, "Diplomacy" },
+            { GalaxySystemPirateMarkBuyout, "Buy out pirate mark" },
+            { GalaxySystemConversionBuyout, "Buy out conversion" },
+            { GalaxySystemAcademyBuyout, "Buy out academy conversion" },
+            { GalaxySystemHackingBeacon, "Displace hacking beacon" },
             { DirectionNorth, "north" },
             { DirectionNorthEast, "northeast" },
             { DirectionEast, "east" },

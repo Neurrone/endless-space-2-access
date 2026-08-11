@@ -717,5 +717,62 @@ namespace ES2Access.UI
             }
             catch (Exception) { }
         }
+
+        /// <summary>
+        /// What one item of a table SAYS: the words it draws, or - for an item the game draws as a bare
+        /// icon and names nowhere on itself - the title of the wrapper it hangs on its own tooltip.
+        ///
+        /// Tables of findings (anomalies, curiosities, resource deposits) are rows of wordless pictures,
+        /// and reading them as text is silence: three panels contributed NOTHING at all until this asked
+        /// the wrapper. The wrapper is where the game keeps the name it would have written, so this is
+        /// the same answer <see cref="TooltipTitle"/> gives a control, extended down a couple of levels
+        /// because a table item routinely hangs its tooltip on the image inside it rather than on the
+        /// item.
+        /// </summary>
+        public static string ItemText(AgeTransform widget)
+        {
+            string drawn = TextOf(widget);
+            if (!string.IsNullOrEmpty(drawn))
+            {
+                return drawn;
+            }
+
+            return WrapperTitle(widget, 3);
+        }
+
+        private static string WrapperTitle(AgeTransform widget, int depth)
+        {
+            if (widget == null || depth < 0)
+            {
+                return null;
+            }
+
+            try
+            {
+                if (!widget.Visible)
+                {
+                    return null;
+                }
+
+                string title = TooltipTitle(Raw(widget));
+                if (!string.IsNullOrEmpty(title))
+                {
+                    return title;
+                }
+
+                IList<AgeTransform> children = widget.Children;
+                for (int i = 0; children != null && i < children.Count; i++)
+                {
+                    title = WrapperTitle(children[i], depth - 1);
+                    if (!string.IsNullOrEmpty(title))
+                    {
+                        return title;
+                    }
+                }
+            }
+            catch (Exception) { }
+
+            return null;
+        }
     }
 }
