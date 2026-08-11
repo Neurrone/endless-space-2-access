@@ -200,6 +200,174 @@ namespace ES2Access.UI
             Press(Button(widget));
         }
 
+        /// <summary>
+        /// Press a control the way the ENGINE presses it: the control's own wiring, and then the wiring
+        /// of every control it sits INSIDE.
+        ///
+        /// One control is ever the mouse's hit target (<c>AgeTransform.UpdateInteractivity</c>,
+        /// <c>firstpass/AgeTransform.cs:3446-3502</c>), and the way a nested control's parent also acts
+        /// on the same click is propagation: <c>AgeControlButton.MouseUp</c>
+        /// (<c>firstpass/AgeControlButton.cs:245-270</c>) and <c>AgeControlToggle.MouseUp</c>
+        /// (<c>:149-181</c>) handle the press and then call <c>base</c>, which walks to the nearest
+        /// ancestor <c>AgeControl</c> and re-delivers the event to it (<c>AgeControl.MouseUp</c>
+        /// <c>:170-192</c>, <c>FindParentControl</c> <c>:231-249</c>), gated on the CHILD's own
+        /// <c>PropagateInteraction</c> - which defaults true (<c>firstpass/AgeControl.cs:19</c>).
+        ///
+        /// <see cref="Press"/> replays one control's handler and stops, which is right for a button
+        /// standing on its own and WRONG wherever the game's design is the two-step: a table cell's own
+        /// button records which cell was clicked (<c>GuiTableCell.OnClickCb</c> -&gt;
+        /// <c>GuiTableLine.OnCellClick</c>, <c>GuiTableLine.cs:216-219</c>) and does nothing else, and
+        /// what opens the panel the cell stands for is the ROW's toggle firing next
+        /// (<c>GuiTableLine.OnLineSelectionCb</c> -&gt; the client's <c>OnLineSelection</c>, which reads
+        /// <c>ClickedCell</c> and then clears it). Press the cell alone and the click is recorded and
+        /// never acted on; press it here and the player gets the one gesture the mouse has.
+        ///
+        /// Two deliberate asymmetries with <see cref="Press"/>, both mirroring the engine:
+        /// the click SOUND is played only for the control the player aimed at, because the engine
+        /// delivers <c>MouseUp</c> to the hit target's GameObject by <c>SendMessage</c> (which reaches
+        /// its <c>AgeAudio</c> too, <c>AgeManager.cs:890</c>) and reaches every ancestor by a plain C#
+        /// call on the control alone; and an ancestor's activation honours its <c>UseLeftClick</c> flag,
+        /// which is the test <c>HandleMouseUpOrDown</c> itself applies. A double click is never
+        /// synthesized - one press is one click.
+        ///
+        /// A control kind with no click wiring of its own (a scroll view, a drop list) is stepped
+        /// THROUGH rather than stopped at, which is again the engine: <c>AgeControl.MouseUp</c>'s
+        /// default body is the propagation and nothing else.
+        /// </summary>
+        public static void PressPropagating(AgeControl control)
+        {
+            if (control == null)
+            {
+                return;
+            }
+
+            try
+            {
+                AgeControlToggle toggle = control as AgeControlToggle;
+                if (toggle != null)
+                {
+                    Toggle(toggle);
+                }
+                else
+                {
+                    AgeControlButton button = control as AgeControlButton;
+                    if (button != null)
+                    {
+                        Press(button);
+                    }
+                    else
+                    {
+                        Click(Transform(control));
+                    }
+                }
+
+                AgeControl at = control;
+                for (int depth = 0; depth < MaxAncestors; depth++)
+                {
+                    if (!Propagates(at))
+                    {
+                        return;
+                    }
+
+                    AgeControl parent = ParentControl(Transform(at));
+                    if (parent == null)
+                    {
+                        return;
+                    }
+
+                    FireAncestor(parent);
+                    at = parent;
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("widgets: pressing a control and its ancestors threw: " + e);
+            }
+        }
+
+        /// <summary>The same for a control the game hangs on a plain transform.</summary>
+        public static void PressPropagating(AgeTransform widget)
+        {
+            PressPropagating(Control(widget));
+        }
+
+        /// <summary>The control sitting on a transform, whatever kind it is.</summary>
+        public static AgeControl Control(AgeTransform widget)
+        {
+            try
+            {
+                return widget == null ? null : widget.AgeControl;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// The control a click on this widget would ALSO reach - the nearest control above it in the
+        /// widget chain, which is <c>AgeControl.FindParentControl</c>
+        /// (<c>firstpass/AgeControl.cs:231-249</c>) reproduced because the engine's own copy is
+        /// protected.
+        ///
+        /// Public because it is the audit question for every node the mod activates: a widget whose
+        /// answer here is a control carrying activation wiring is a widget the mouse works in two steps
+        /// and <see cref="Press"/> works in one. Whether that ancestor exists is PREFAB data, so the
+        /// answer can only be had from the running game.
+        /// </summary>
+        public static AgeControl ParentControl(AgeTransform widget)
+        {
+            try
+            {
+                AgeTransform at = widget == null ? null : widget.Parent;
+                for (int depth = 0; at != null && depth < MaxAncestors; depth++)
+                {
+                    AgeControl control = at.AgeControl;
+                    if (control != null)
+                    {
+                        return control;
+                    }
+
+                    at = at.Parent;
+                }
+            }
+            catch (Exception) { }
+
+            return null;
+        }
+
+        private static bool Propagates(AgeControl control)
+        {
+            try
+            {
+                return control != null && control.PropagateInteraction;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        // An ancestor's half of the click: its own wiring, no sound (the engine reaches an ancestor by
+        // a C# call on the control, so the AgeAudio on its transform never hears the press) and no
+        // double-click branch.
+        private static void FireAncestor(AgeControl control)
+        {
+            AgeControlToggle toggle = control as AgeControlToggle;
+            if (toggle != null)
+            {
+                toggle.State = !toggle.State;
+                Send(toggle.OnSwitchObject, toggle.OnSwitchMethod, toggle.gameObject);
+                return;
+            }
+
+            AgeControlButton button = control as AgeControlButton;
+            if (button != null && button.UseLeftClick)
+            {
+                Send(button.OnActivateObject, button.OnActivateMethod, button.gameObject);
+            }
+        }
+
         public static AgeControlButton Button(AgeTransform widget)
         {
             try
