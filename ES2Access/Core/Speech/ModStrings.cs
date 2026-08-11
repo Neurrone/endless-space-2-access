@@ -442,6 +442,39 @@ namespace ES2Access.Core.Speech
         public const string ShipDesignSlots = "ship-design.slots";
         public const string ShipDesignModuleFitted = "ship-design.module-fitted";
 
+        // The battle popups and the two cinematics. Everything a battle SAYS on screen is the game's
+        // own text; what is left here is the counting, the two sides' names and the things the game
+        // draws as arcs and bars with no number anywhere on them.
+        public const string ScreenBattle = "screen.battle";
+        public const string ScreenGroundBattle = "screen.ground-battle";
+        public const string ScreenAdvancedBattleReport = "screen.battle-report-advanced";
+        public const string BattleYourFleets = "battle.your-fleets";
+        public const string BattleEnemyFleets = "battle.enemy-fleets";
+        public const string BattleYourTroops = "battle.your-troops";
+        public const string BattleEnemyTroops = "battle.enemy-troops";
+        public const string BattleYourDamage = "battle.your-damage";
+        public const string BattleEnemyDamage = "battle.enemy-damage";
+        public const string BattleShowYourFleets = "battle.show-your-fleets";
+        public const string BattleShowEnemyFleets = "battle.show-enemy-fleets";
+        public const string BattleBalance = "battle.balance";
+        public const string BattleTimeLeft = "battle.time-left";
+        public const string BattleProgress = "battle.progress";
+        public const string BattleYourShipLost = "battle.your-ship-lost";
+        public const string BattleYourShipsLost = "battle.your-ships-lost";
+        public const string BattleEnemyShipLost = "battle.enemy-ship-lost";
+        public const string BattleEnemyShipsLost = "battle.enemy-ships-lost";
+        public const string BattleYourFlotillaLost = "battle.your-flotilla-lost";
+        public const string BattleYourFlotillasLost = "battle.your-flotillas-lost";
+        public const string BattleEnemyFlotillaLost = "battle.enemy-flotilla-lost";
+        public const string BattleEnemyFlotillasLost = "battle.enemy-flotillas-lost";
+        public const string GroundBattleRound = "ground-battle.round";
+        public const string GroundBattleBombardment = "ground-battle.bombardment";
+        public const string GroundBattleAssault = "ground-battle.assault";
+        public const string GroundBattleYourTroopLost = "ground-battle.your-troop-lost";
+        public const string GroundBattleYourTroopsLost = "ground-battle.your-troops-lost";
+        public const string GroundBattleEnemyTroopLost = "ground-battle.enemy-troop-lost";
+        public const string GroundBattleEnemyTroopsLost = "ground-battle.enemy-troops-lost";
+
         // A hero's own window. Its heading is the game's own and is declared where it is drawn, so the
         // screen name is only a fallback for the frames before the window has written one. The wheel of
         // skills the page draws with no caption over it needs a word, and a skill dot needs two: the game
@@ -710,6 +743,35 @@ namespace ES2Access.Core.Speech
             { HeroSkillPending, "level {0} pending" },
             { ScreenFleetSelection, "Fleet selection" },
             { TacticsSlotFilled, "Put {0} in your Tactics Set" },
+            { ScreenBattle, "Space battle" },
+            { ScreenGroundBattle, "Ground battle" },
+            { ScreenAdvancedBattleReport, "Advanced battle report" },
+            { BattleYourFleets, "Your fleets" },
+            { BattleEnemyFleets, "Enemy fleets" },
+            { BattleYourTroops, "Your troops" },
+            { BattleEnemyTroops, "Enemy troops" },
+            { BattleYourDamage, "Damage you caused" },
+            { BattleEnemyDamage, "Damage they caused" },
+            { BattleShowYourFleets, "Show your fleets" },
+            { BattleShowEnemyFleets, "Show enemy fleets" },
+            { BattleBalance, "Military power {0} against {1}" },
+            { BattleTimeLeft, "{0} percent of the time left" },
+            { BattleProgress, "Battle {0} percent fought" },
+            { BattleYourShipLost, "Your {0} is lost" },
+            { BattleYourShipsLost, "{0} of your ships lost" },
+            { BattleEnemyShipLost, "Enemy {0} is lost" },
+            { BattleEnemyShipsLost, "{0} enemy ships lost" },
+            { BattleYourFlotillaLost, "Your {0} is destroyed" },
+            { BattleYourFlotillasLost, "{0} of your flotillas destroyed" },
+            { BattleEnemyFlotillaLost, "Enemy {0} is destroyed" },
+            { BattleEnemyFlotillasLost, "{0} enemy flotillas destroyed" },
+            { GroundBattleRound, "Round {0}" },
+            { GroundBattleBombardment, "Orbital bombardment" },
+            { GroundBattleAssault, "Ground assault" },
+            { GroundBattleYourTroopLost, "One of your {0} is lost" },
+            { GroundBattleYourTroopsLost, "{0} of your troops lost" },
+            { GroundBattleEnemyTroopLost, "One enemy {0} is lost" },
+            { GroundBattleEnemyTroopsLost, "{0} enemy troops lost" },
             { ScreenAcademy, "Hero management" },
             { AcademyHeroActions, "Hero actions" },
             { ScreenHeroCompleteList, "Heroes in the galaxy" },

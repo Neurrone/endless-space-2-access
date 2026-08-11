@@ -271,7 +271,10 @@ namespace ES2Access.Screens
             AgeTransform words =
                 label != null && Visible(label.AgeTransform) ? label.AgeTransform : null;
 
-            List<Control> controls = Controls(window);
+            // A popup whose content is a MODEL rather than text writes its own body, and then it owns
+            // every control it added as well - so only the shared skeleton is collected here.
+            Action<NotificationBody> body = BodyOf(window);
+            List<Control> controls = Controls(window, body == null);
             List<Control> above = new List<Control>();
             List<Control> inside = new List<Control>();
             List<Control> below = new List<Control>();
@@ -325,24 +328,31 @@ namespace ES2Access.Screens
                 );
             }
 
-            // The words are already a row of their own, so they are not among the text the popup drew
-            // - to either reading of it. A popup that has nothing but its words to show draws no rows
-            // at all and is exactly what it was.
-            Sheet sheet = ReadSheet(window, controls, inside, words);
-            if (sheet == null)
+            if (body != null)
             {
-                // A popup whose lines the game stamped out of a prefab rather than scrolled: the same
-                // table, found from what the popup DECLARES it fills rather than from a scroll view.
-                sheet = ReadTableSheet(window, controls, inside, words);
-            }
-
-            if (sheet == null)
-            {
-                BuildDrawnBody(builder, window, controls, inside, words, TableLines(window));
+                Write(body, builder, window, lead);
             }
             else
             {
-                BuildSheet(builder, window, sheet, lead);
+                // The words are already a row of their own, so they are not among the text the popup drew
+                // - to either reading of it. A popup that has nothing but its words to show draws no rows
+                // at all and is exactly what it was.
+                Sheet sheet = ReadSheet(window, controls, inside, words);
+                if (sheet == null)
+                {
+                    // A popup whose lines the game stamped out of a prefab rather than scrolled: the same
+                    // table, found from what the popup DECLARES it fills rather than from a scroll view.
+                    sheet = ReadTableSheet(window, controls, inside, words);
+                }
+
+                if (sheet == null)
+                {
+                    BuildDrawnBody(builder, window, controls, inside, words, TableLines(window));
+                }
+                else
+                {
+                    BuildSheet(builder, window, sheet, lead);
+                }
             }
 
             builder.SetRegion(BottomRegion);
@@ -2204,8 +2214,12 @@ namespace ES2Access.Screens
         /// whether this kind should interrupt again - and whatever this particular one asks the player
         /// to decide. Found in no particular order, because where they are drawn is what decides
         /// where they are walked.
+        ///
+        /// <paramref name="own"/> is false for a popup that writes its own body: the skeleton is still the
+        /// screen's, and everything the popup added of its own is the body's - declaring both would give
+        /// the same button two nodes under two ids.
         /// </summary>
-        private static List<Control> Controls(NotificationWindow window)
+        private static List<Control> Controls(NotificationWindow window, bool own = true)
         {
             List<Control> controls = new List<Control>();
             try
@@ -2218,8 +2232,12 @@ namespace ES2Access.Screens
                 AgeControlToggle autoPopup = Toggle(window, AutoPopupToggle);
 
                 Add(controls, "dismiss", dismiss, ModStrings.NotifyDismiss);
-                List<AgeTransform> choices = ChoiceWidgets(window);
-                foreach (AgeControl extra in Extras(window))
+                List<AgeTransform> choices = own
+                    ? ChoiceWidgets(window)
+                    : new List<AgeTransform>();
+                foreach (
+                    AgeControl extra in own ? (IList<AgeControl>)Extras(window) : NoExtras
+                )
                 {
                     Add(
                         controls,
@@ -2265,7 +2283,7 @@ namespace ES2Access.Screens
 
                 // The button that puts the choice into effect, for a popup that drew it as a tick with
                 // no words on it: the game has a name for it even where it wrote none there.
-                AgeControl confirm = Confirm(window);
+                AgeControl confirm = own ? Confirm(window) : null;
                 if (confirm != null && !Has(controls, confirm.AgeTransform))
                 {
                     Add(
@@ -2381,6 +2399,10 @@ namespace ES2Access.Screens
             return extras;
         }
 
+        /// <summary>What a popup that owns its own body adds to the skeleton, as far as the shared
+        /// reading is concerned: nothing.</summary>
+        private static readonly AgeControl[] NoExtras = new AgeControl[0];
+
         private static AgeControl[] Declared(NotificationWindow window)
         {
             return new AgeControl[]
@@ -2422,6 +2444,14 @@ namespace ES2Access.Screens
         /// the message reads as one more thing drawn in the body rather than as what the player was
         /// interrupted to hear.
         ///
+        /// <see cref="Body"/>: the whole content, for a popup whose content is a MODEL rather than text.
+        /// The two battle popups are the case and are the reason it exists: a roster is fleets each
+        /// holding ships, a fleet's strength is a coloured arc with no number written on it, a ship's
+        /// health is a bar, and what became of a ship is a sentence the game wrote into the row's
+        /// tooltip. None of that is text drawn in a band, so no amount of measuring finds it. A popup
+        /// with a body owns every control it added as well (<see cref="NotificationBody"/>), because the
+        /// shared reading would otherwise declare the same buttons a second time.
+        ///
         /// A popup with no entry here is read entirely by the shared rules, which is the case for most
         /// of them. A stage adding a popup adds one entry and touches nothing else.
         /// </summary>
@@ -2431,6 +2461,7 @@ namespace ES2Access.Screens
             public Func<NotificationWindow, IList<AgeTransform>> Tables;
             public Func<NotificationWindow, IList<AgeTransform>> Choices;
             public Func<NotificationWindow, AgeControl> Confirm;
+            public Action<NotificationBody> Body;
         }
 
         private static readonly Dictionary<Type, Variant> Variants = Register();
@@ -2582,6 +2613,24 @@ namespace ES2Access.Screens
                     Confirm = w => ((HeroRecruitmentNotificationWindow)w).ValidateButton,
                 }
             );
+            // The four battle popups: everything they show is a model, so each writes its own body.
+            variants.Add(
+                typeof(BattleSetupNotificationWindow),
+                new Variant { Body = BattleNotifications.Setup }
+            );
+            variants.Add(
+                typeof(BattleReportNotificationWindow),
+                new Variant { Body = BattleNotifications.Report }
+            );
+            variants.Add(
+                typeof(GroundBattleSetupNotificationWindow),
+                new Variant { Body = BattleNotifications.GroundSetup }
+            );
+            variants.Add(
+                typeof(GroundBattleReportNotificationWindow),
+                new Variant { Body = BattleNotifications.GroundReport }
+            );
+
             variants.Add(
                 typeof(GroundBattleOutcomeSelectionNotificationWindow),
                 new Variant
@@ -2688,6 +2737,41 @@ namespace ES2Access.Screens
             }
 
             return null;
+        }
+
+        /// <summary>The body this popup writes for itself, or null where the shared reading answers for
+        /// it - which is every popup but the battles.</summary>
+        private static Action<NotificationBody> BodyOf(NotificationWindow window)
+        {
+            Variant variant = VariantOf(window);
+            return variant == null ? null : variant.Body;
+        }
+
+        /// <summary>Let the popup write its own content. It is given the builder mid-build, with the body
+        /// region already open and the popup's words already declared above it, and anything it throws
+        /// leaves the strips around it intact rather than losing the whole popup.</summary>
+        private static void Write(
+            Action<NotificationBody> body,
+            GraphBuilder builder,
+            NotificationWindow window,
+            ControlId lead
+        )
+        {
+            try
+            {
+                body(
+                    new NotificationBody
+                    {
+                        Builder = builder,
+                        Window = window,
+                        Lead = lead,
+                    }
+                );
+            }
+            catch (Exception e)
+            {
+                Log.Warn("notification: writing a popup's own body threw: " + e);
+            }
         }
 
         /// <summary>The lines of a hand-wired choice: the cards, outcomes or parameters the popup laid out

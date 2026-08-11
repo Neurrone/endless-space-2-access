@@ -152,6 +152,9 @@ namespace ES2Access
             Screens.Register(new GovernmentScreen());
             Screens.Register(new LawsScreen());
             Screens.Register(new PopulationScreen());
+            Screens.Register(new SpaceBattleScreen());
+            Screens.Register(new GroundBattleViewScreen());
+            Screens.Register(new AdvancedBattleReportScreen());
             Input = new ModInput();
             Input.Dispatch = Dispatch;
             // The one widget the mod puts the game's own keyboard focus on. The input layer would
