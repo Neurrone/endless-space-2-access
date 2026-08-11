@@ -396,6 +396,21 @@ namespace ES2Access.Core.Speech
         public const string EmpireDescriptionPanel = "empire.description-panel";
         public const string EmpireHeadingsBand = "empire.headings-band";
 
+        // The economy screen. The screen's own name is the game's; the name here is the fallback for
+        // the frames before the window has written its heading. The rest are for boxes the game draws
+        // with no heading at all - the marketplace's four panels and its two tickers - and for the one
+        // number the marketplace changes without ever captioning it, the quantity being traded.
+        public const string ScreenEconomy = "screen.economy";
+        public const string EconomyQuantity = "economy.quantity";
+        public const string EconomyBuyPanel = "economy.buy-panel";
+        public const string EconomySellPanel = "economy.sell-panel";
+        public const string EconomyTaxesPanel = "economy.taxes-panel";
+        public const string EconomyLogPanel = "economy.log-panel";
+        public const string EconomyAdsPanel = "economy.ads-panel";
+        public const string EconomyEventsPanel = "economy.events-panel";
+        public const string EconomyInflationPanel = "economy.inflation-panel";
+        public const string EconomyTradePanel = "economy.trade-panel";
+
         public const string ScreenGovernment = "screen.government";
         public const string ScreenLaws = "screen.laws";
         public const string ScreenPopulation = "screen.population";
@@ -631,6 +646,16 @@ namespace ES2Access.Core.Speech
             { SenateLockedLawSlot, "Locked law slot" },
             { SenateEmptySenatorSlot, "Empty senator slot" },
             { SenateLockedSenatorSlot, "Locked senator slot" },
+            { ScreenEconomy, "Economy" },
+            { EconomyQuantity, "Quantity {0}" },
+            { EconomyBuyPanel, "Buy" },
+            { EconomySellPanel, "Sell" },
+            { EconomyTaxesPanel, "Marketplace taxes" },
+            { EconomyLogPanel, "Recent transactions" },
+            { EconomyAdsPanel, "Advertisements" },
+            { EconomyEventsPanel, "Market events" },
+            { EconomyInflationPanel, "Inflation" },
+            { EconomyTradePanel, "Trade overview" },
             { ScreenGovernment, "Government selection" },
             { ScreenLaws, "Laws" },
             { ScreenPopulation, "Population overview" },

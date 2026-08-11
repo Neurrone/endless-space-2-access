@@ -390,10 +390,30 @@ namespace ES2Access.Screens
             TextFieldEditor editor
         )
         {
+            Cell cell = TextFieldCell(field, label, tooltip, owner, gainFocus, id, editor);
+            if (cell != null)
+            {
+                builder.AddItem(cell.Id, cell.Vtable);
+            }
+        }
+
+        /// <summary>The same field as a <see cref="Cell"/>, for a screen that gathers its controls and
+        /// emits them in the rows the game drew them in rather than one at a time. Null for a field the
+        /// game is not drawing.</summary>
+        public static Cell TextFieldCell(
+            AgeControlTextField field,
+            Func<string> label,
+            AgeTooltip tooltip,
+            object owner,
+            MethodInfo gainFocus,
+            ControlId id,
+            TextFieldEditor editor
+        )
+        {
             AgeTransform widget = AgeWidgets.Transform(field);
             if (field == null || id == null || editor == null || !Drawn(widget))
             {
-                return;
+                return null;
             }
 
             AgeControlTextField it = field;
@@ -414,7 +434,7 @@ namespace ES2Access.Screens
             );
             vtable.Sections = RowSections(tooltip, own, () => FieldText(it));
             AgeWidgets.PointAt(vtable, widget);
-            builder.AddItem(row, vtable);
+            return new Cell { Widget = widget, Id = row, Vtable = vtable };
         }
 
         public static string FieldText(AgeControlTextField field)

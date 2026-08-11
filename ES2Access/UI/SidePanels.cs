@@ -162,6 +162,26 @@ namespace ES2Access.UI
             return null;
         }
 
+        /// <summary>
+        /// The same reading, for a band that is NOT one of these panels.
+        ///
+        /// The rules above - a group of primitives is one drawn line, a group of groups is a band of
+        /// several, a clickable group is a control - are about how this game's prefabs are BUILT, not
+        /// about the left edge of the screen. A screen with a band whose prefab it cannot see (the
+        /// marketplace's price-and-quantity strip, a trading company's line) reads it the same way
+        /// rather than guessing which label captions which number.
+        /// </summary>
+        public static void Content(
+            List<Cell> cells,
+            AgeTransform root,
+            string keyPrefix,
+            SpecialCells special,
+            TransparentTest transparent
+        )
+        {
+            Collect(cells, root, keyPrefix, 0, null, special, transparent, null);
+        }
+
         /// <summary>A panel read as it is drawn: every group in it that says something becomes a line,
         /// in the rows the panel lays them out in.</summary>
         public static void Readouts(

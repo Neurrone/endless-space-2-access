@@ -139,6 +139,8 @@ namespace ES2Access
             Screens.Register(new QuestJournalScreen());
             Screens.Register(new global::ES2Access.Screens.EmpireScreen());
             Screens.Register(new global::ES2Access.Screens.SenateScreen());
+            Screens.Register(new global::ES2Access.Screens.EconomyScreen());
+            Screens.Register(new RecipeCreationScreen());
             Screens.Register(new GovernmentScreen());
             Screens.Register(new LawsScreen());
             Screens.Register(new PopulationScreen());
