@@ -423,6 +423,13 @@ namespace ES2Access.Core.Speech
         public const string MilitaryDesignActions = "military.design-actions";
         public const string ScreenFleetSelection = "screen.fleet-selection";
 
+        // The hero page and the galaxy-wide hero list its Academy box opens. Both screen names are
+        // fallbacks for the frames before the window has written its own heading. The third is for the
+        // band of hero actions the page draws along its bottom with no caption of its own.
+        public const string ScreenAcademy = "screen.academy";
+        public const string AcademyHeroActions = "academy.hero-actions";
+        public const string ScreenHeroCompleteList = "screen.hero-complete-list";
+
         // The ship designer. Its heading is the game's own and is declared where it is drawn, so the
         // only mod words here are for the band the game draws with no caption at all - the module slots
         // it draws over the rendered ship - and for a module having been fitted into one, which is the
@@ -683,6 +690,9 @@ namespace ES2Access.Core.Speech
             { ShipDesignSlots, "Module slots" },
             { ShipDesignModuleFitted, "Fitted {0}" },
             { ScreenFleetSelection, "Fleet selection" },
+            { ScreenAcademy, "Hero management" },
+            { AcademyHeroActions, "Hero actions" },
+            { ScreenHeroCompleteList, "Heroes in the galaxy" },
             { ScreenGovernment, "Government selection" },
             { ScreenLaws, "Laws" },
             { ScreenPopulation, "Population overview" },
