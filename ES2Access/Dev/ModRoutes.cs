@@ -119,9 +119,10 @@ namespace ES2Access.Dev
                             json.WriteValue(speech.LastSpoken);
                             json.WritePropertyName("gameObjectCount");
                             json.WriteValue(gameObjectCount);
-                            // The tripwire: three prefixes, one per key scan. A zero here means the
-                            // game is seeing the mod's keys as well as the mod is, which looks like a
-                            // test result rather than like a failure.
+                            // The tripwire: four prefixes - one per key scan, plus the focused
+                            // control's own key dispatch. A zero here means the game is seeing the
+                            // mod's keys as well as the mod is, which looks like a test result rather
+                            // than like a failure.
                             json.WritePropertyName("keyStandDown");
                             DevProbe.WritePatches(json);
                             json.WriteEndObject();

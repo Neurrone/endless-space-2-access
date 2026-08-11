@@ -313,8 +313,8 @@ namespace ES2Access.Dev
             });
         }
 
-        // Shared with /status, which must stay cheap: the target lookup is reflection over three
-        // signatures and is done once.
+        // Shared with /status, which must stay cheap: the target lookup is reflection over the four
+        // signatures - three key scans and the focused-control dispatch - and is done once.
         internal static void WritePatches(JsonTextWriter json)
         {
             json.WriteStartArray();
@@ -379,7 +379,12 @@ namespace ES2Access.Dev
             {
                 try
                 {
-                    _targets = GameKeyStandDown.KeyScans();
+                    MethodInfo[] scans = GameKeyStandDown.KeyScans();
+                    MethodInfo[] dispatches = GameKeyboardHandover.KeyDispatches();
+                    MethodInfo[] all = new MethodInfo[scans.Length + dispatches.Length];
+                    scans.CopyTo(all, 0);
+                    dispatches.CopyTo(all, scans.Length);
+                    _targets = all;
                 }
                 catch (Exception e)
                 {

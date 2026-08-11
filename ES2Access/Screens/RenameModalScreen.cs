@@ -62,10 +62,56 @@ namespace ES2Access.Screens
 
         /// <summary>Escape is the engine's: the field it focused is key-exclusive, so the game's own
         /// input manager answers the key and takes the box down without the page behind it hearing a
-        /// thing.</summary>
+        /// thing. It takes TWO presses - see <see cref="OnUpdate"/>.</summary>
         public override bool Back()
         {
             return false;
+        }
+
+        // Whether the field held the engine's keyboard on the previous frame, so the frame it lets go
+        // can be told from all the frames after it.
+        private bool _fieldHadKeyboard;
+
+        /// <summary>
+        /// Escape here takes two presses and the first one changes nothing anybody can see: the game's
+        /// input manager clears the engine's focus and consumes the key, so the field stops taking
+        /// letters while the box stays up. Silence at that moment reads as the box having gone - the
+        /// player types the next name into the page behind it - so the hand-back is said.
+        ///
+        /// Watched rather than hooked because there are several ways out of the field (Escape, Enter,
+        /// clicking off it) and only one thing worth saying: the keyboard came back.
+        /// </summary>
+        public override void OnUpdate()
+        {
+            bool holding = FieldHasKeyboard();
+            if (_fieldHadKeyboard && !holding)
+            {
+                Voice.Say(ModStrings.Get(ModStrings.RenameKeyboardReturned), true);
+            }
+
+            _fieldHadKeyboard = holding;
+        }
+
+        /// <summary>Focus lands on the field with the box, so the first frame is already "holding" and
+        /// the arrival is not heard as a hand-back.</summary>
+        public override void OnPush()
+        {
+            _fieldHadKeyboard = FieldHasKeyboard();
+        }
+
+        private static bool FieldHasKeyboard()
+        {
+            try
+            {
+                RenameModalWindow window = Window();
+                AgeControlTextField field = window == null ? null : window.TextField;
+                AgeManager age = AgeManager.Instance;
+                return field != null && age != null && ReferenceEquals(age.FocusedControl, field);
+            }
+            catch (Exception)
+            {
+                return false;
+            }
         }
 
         /// <summary>The box exists to be typed into: every letter is the name being written, and

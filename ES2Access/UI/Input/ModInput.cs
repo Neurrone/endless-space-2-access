@@ -136,6 +136,32 @@ namespace ES2Access.UI.Input
             get { return _backClaimed; }
         }
 
+        /// <summary>
+        /// Whether one of the keys going down THIS frame is a key the mod has already acted on during
+        /// this press - the <see cref="_consumed"/> latch, asked by key rather than for the whole layer.
+        ///
+        /// It exists for the other consumer of the frame's keys: the game's GUI hands its focused
+        /// control every key that went down, and it does that after the mod's tick, so a control the
+        /// mod's Enter has just put on screen hears that same Enter and acts on it too. Answering "the
+        /// mod already spent this press" is what lets that delivery be skipped without touching a key
+        /// the player really typed (see <c>GameKeyboardHandover</c>).
+        ///
+        /// A key that was never physically down - an injected action - is latched too and released on
+        /// the next tick, and is never GetKeyDown, so an injection cannot suppress anything.
+        /// </summary>
+        public bool ActedOnAKeyGoingDown()
+        {
+            for (int i = 0; i < _consumed.Count; i++)
+            {
+                if (UnityEngine.Input.GetKeyDown(_consumed[i]))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         /// <summary>Whether a screen of ours is focused at all - the first half of
         /// <see cref="LayerIsLive"/>, split out so a probe can say WHICH half answered no.</summary>
         public bool ScreenIsFocused()

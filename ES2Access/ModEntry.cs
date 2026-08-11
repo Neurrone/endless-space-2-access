@@ -152,6 +152,9 @@ namespace ES2Access
             // Bindings first: the game's scans ask the layer which keys it has, so there must be
             // something to answer with before they can be told to stand down.
             GameKeyStandDown.Install();
+            // And the same for the control the game has focused, which is handed the frame's keys after
+            // the mod has already acted on them.
+            GameKeyboardHandover.Install();
 
             _routes = new ModRoutes(host);
             _routes.Register();
@@ -351,6 +354,7 @@ namespace ES2Access
             OptionsScreen.ReleaseCapture();
             PointerFocus.Shutdown();
             GameKeyStandDown.Remove();
+            GameKeyboardHandover.Remove();
 
             if (Input != null)
             {
@@ -410,6 +414,10 @@ namespace ES2Access
         {
             KeepSimulatingUnfocused();
             ModLocale.Tick();
+
+            // Before the keys are polled: a window the game hid while its text field held the engine's
+            // keyboard would otherwise leave the whole layer standing down for a field nobody can see.
+            GameKeyboardHandover.Tick();
 
             // Keys first, screens second: a keypress and the announcement it causes then land in
             // the same frame, instead of the player hearing the result of the previous one.

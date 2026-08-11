@@ -228,6 +228,7 @@ namespace ES2Access.Core.Speech
         public const string SystemPopulationPanel = "system.population-panel";
         public const string SystemRepresentativesPanel = "system.representatives-panel";
         public const string SystemOutpostPanel = "system.outpost-panel";
+        public const string SystemGovernorPanel = "system.governor-panel";
         public const string SystemConstructiblesPanel = "system.constructibles-panel";
         public const string SystemQueuePanel = "system.queue-panel";
         public const string SystemHangarPanel = "system.hangar-panel";
@@ -289,6 +290,11 @@ namespace ES2Access.Core.Speech
         public const string ScreenRename = "screen.rename";
         public const string RenameTypePrompt = "rename.type-prompt";
         public const string RenameConfirm = "rename.confirm";
+
+        /// <summary>What the box says when the field lets go of the keyboard without the box closing -
+        /// the first of the two Escapes it takes to get out of here. Nothing on screen changes, so
+        /// without this the player is left pressing keys at a box that has gone quiet.</summary>
+        public const string RenameKeyboardReturned = "rename.keyboard-returned";
 
         // The research screen - the wheel of technologies the game draws over the galaxy. The three
         // panel names are the mod's, because the game labels none of them; the quadrants, the stages
@@ -470,6 +476,7 @@ namespace ES2Access.Core.Speech
             { SystemPopulationPanel, "Population" },
             { SystemRepresentativesPanel, "Representatives" },
             { SystemOutpostPanel, "Outpost" },
+            { SystemGovernorPanel, "Governor" },
             { SystemConstructiblesPanel, "Available constructions" },
             { SystemQueuePanel, "Construction queue" },
             { SystemHangarPanel, "Hangar" },
@@ -501,6 +508,10 @@ namespace ES2Access.Core.Speech
             { ScreenRename, "Rename" },
             { RenameTypePrompt, "Type the new name, then press Enter." },
             { RenameConfirm, "Confirm" },
+            {
+                RenameKeyboardReturned,
+                "The name box has let go of the keyboard; press Escape again to close it."
+            },
             { ScreenResearch, "Research" },
             { ResearchStatusPanel, "Research status" },
             { ResearchKeyPanel, "Research key" },

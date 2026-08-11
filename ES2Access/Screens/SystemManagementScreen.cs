@@ -276,9 +276,10 @@ namespace ES2Access.Screens
 
             PlanetLabel_SystemManagement it = label;
             // The card's own status button carries the game's sentence about the state - "too hostile
-            // to be colonized", and which technology would change that. It is read through the review
-            // buffer rather than announced on focus, so nothing is taken from it here beyond making
-            // sure the pointer lands on it and draws it.
+            // to be colonized", and which technology would change that. It is DECLARED as the card's
+            // tooltip, so the card says it has one and the buffer holds its words; what it is not is
+            // announced, which is this screen's one deliberate override of the short/long rule (the
+            // sentence runs to three lines and would be read out on every pass down the planets).
             AgeTransform status = StatusWidget(label);
             NodeVtable vtable = new NodeVtable
             {
@@ -290,7 +291,12 @@ namespace ES2Access.Screens
                     // ("Colony in 24 Turn"), which is drawn on the card and so is spoken, not buffered.
                     GraphNodes.ValuePart(() => Drawn(it.OutpostBottomCaption)),
                 },
-                Sections = GraphNodes.Sections(() => PlanetDetails(it), null),
+                // The status tooltip first, then the rest of the card, which is the order the card
+                // draws them in.
+                Sections = GraphNodes.Sections(
+                    GraphNodes.TooltipSection(AgeWidgets.Raw(status), TooltipMode.Indicate),
+                    NodeSection.Buffer(() => PlanetDetails(it))
+                ),
                 OnActivate = () => GalaxyViewLevels.OpenPlanet(it.Planet),
             };
 
@@ -440,17 +446,17 @@ namespace ES2Access.Screens
         }
 
         /// <summary>
-        /// Everything the card shows that the readout cannot carry: why the game is refusing to
-        /// colonize it, what kind of world it is, what living there is like, what has been found on it,
-        /// and its five outputs. In the order the card draws them, top to bottom.
+        /// Everything the card shows that the readout cannot carry: what kind of world it is, what
+        /// living there is like, what has been found on it, and its five outputs. In the order the card
+        /// draws them, top to bottom - under the status tooltip, which the card declares as a tooltip
+        /// section of its own rather than folding it in here (a tooltip read as "details" is a tooltip
+        /// nothing ever indicates).
         /// </summary>
         private static IList<string> PlanetDetails(PlanetLabel_SystemManagement label)
         {
             List<string> lines = new List<string>();
             try
             {
-                AgeTransform status = StatusWidget(label);
-                Add(lines, AgeWidgets.TooltipLines(AgeWidgets.Raw(status)));
                 AddWidgetLines(lines, label.PlanetTypeGroup);
                 AddWidgetLines(lines, label.PlanetSizeGroup);
                 AddWidgetLines(lines, label.PlanetGameplayTypeTable);
@@ -954,8 +960,10 @@ namespace ES2Access.Screens
         };
 
         /// <summary>What a side panel is called. The game writes no title on them - it marks each with
-        /// an icon in its corner and explains it in that icon's tooltip - so the three a colony has are
-        /// named here, and anything else takes the game's own sentence about itself.</summary>
+        /// an icon in its corner and explains it in that icon's tooltip - so the ones a system can draw
+        /// are named here, and anything else takes the game's own sentence about itself. Which is a
+        /// fallback and not a name: it is a whole sentence, and a stop is announced by its name on every
+        /// Tab into it, so a panel that ends up there is a panel to add a word for.</summary>
         private static string PanelName(SidePanel panel)
         {
             if (panel is ColonyInfoSidePanel)
@@ -976,6 +984,14 @@ namespace ES2Access.Screens
             if (panel is OutpostInfoSidePanel)
             {
                 return ModStrings.Get(ModStrings.SystemOutpostPanel);
+            }
+
+            // The hero panel is the fourth of the unlabelled boxes. Without a name of its own it fell
+            // through to its header tooltip, so the stop was called "Shows information concerning the
+            // Governor assigned to this star system" - a sentence, where every other stop is a word.
+            if (panel is ColonyHeroSidePanel)
+            {
+                return ModStrings.Get(ModStrings.SystemGovernorPanel);
             }
 
             string described = FirstLine(HeaderTooltip(panel));
@@ -1036,12 +1052,17 @@ namespace ES2Access.Screens
                 Add(_cells, AgeWidgets.Transform(rename), ControlId.Referenced(rename, "system:colony/rename"), vtable);
             }
 
+            // The garrison dossier - what the defence is, how efficient it is, which troops it is made
+            // of - is a tooltip the panel keeps in a field of its own and hangs on the GROUP around the
+            // number, not on the number: read from the number's own transform there is no tooltip at
+            // all, which is how this line came to say "240/240" and nothing else.
             AddReadout(
                 _cells,
                 panel.SecurityValue == null ? null : panel.SecurityValue.AgeTransform,
                 "system:colony/security",
                 () => ModStrings.Get(ModStrings.SystemSecurity),
-                () => AgeText.Label(panel.SecurityValue)
+                () => AgeText.Label(panel.SecurityValue),
+                panel.SecurityAndTroopsTooltip
             );
             AddReadout(
                 _cells,
@@ -1279,6 +1300,7 @@ namespace ES2Access.Screens
 
             StarSystemConstructibleItem it = item;
             AgeTooltip tooltip = AgeWidgets.Raw(item.AgeTransform);
+            Func<IList<string>> drawn = GraphNodes.TooltipDetails(tooltip);
             NodeVtable vtable = new NodeVtable
             {
                 ControlType = ControlTypes.Button,
@@ -1287,8 +1309,15 @@ namespace ES2Access.Screens
                     GraphNodes.LabelPart(() => ConstructibleName(it)),
                     GraphNodes.ValuePart(() => ConstructibleCost(it, window)),
                     GraphNodes.DisabledPart(() => AgeWidgets.Operable(it.AgeTransform)),
+                    // The tile's tooltip is the renderer-assembled kind, so it is only indicated - and
+                    // a tile the game is refusing would then say "unavailable" and nothing else. The
+                    // reason is read off the wrapper the tooltip carries, as its failure panel does.
+                    GraphNodes.RefusalPart(tooltip, () => AgeWidgets.Operable(it.AgeTransform)),
                 },
-                Sections = GraphNodes.Sections(() => ConstructibleDetails(it), null),
+                Sections = GraphNodes.Sections(
+                    GraphNodes.TooltipSection(tooltip),
+                    NodeSection.Buffer(() => ConstructibleFailures(it, drawn))
+                ),
                 OnActivate = () => Queue(it, window, false),
                 OnAlternate = () => Queue(it, window, true),
             };
@@ -1332,20 +1361,36 @@ namespace ES2Access.Screens
             }
         }
 
-        /// <summary>What the tile's tooltip says - its cost, what it does, and for a refusing one the
-        /// game's own reasons, which the game collects on the item as it works out whether to offer it.
+        /// <summary>
+        /// The game's own reasons for refusing this tile, which it collects on the item as it works out
+        /// whether to offer it. Read from the item rather than from the tooltip so the reasons are in
+        /// the buffer the moment focus lands, before the tooltip window has drawn its failure panel.
+        ///
+        /// <paramref name="drawn"/> is that tooltip's own lines, and a reason already among them is
+        /// dropped: once the panel is up it says the same sentence, and the tile's two sections would
+        /// otherwise put it into the buffer twice.
         /// </summary>
-        private static IList<string> ConstructibleDetails(StarSystemConstructibleItem item)
+        private static IList<string> ConstructibleFailures(
+            StarSystemConstructibleItem item,
+            Func<IList<string>> drawn
+        )
         {
             List<string> lines = new List<string>();
             try
             {
-                Add(lines, AgeWidgets.TooltipLines(AgeWidgets.Raw(item.AgeTransform)));
                 AddFailures(lines, item.FailureInfosProvider);
+                IList<string> already = drawn == null ? null : drawn();
+                for (int i = lines.Count - 1; already != null && i >= 0; i--)
+                {
+                    if (already.Contains(lines[i]))
+                    {
+                        lines.RemoveAt(i);
+                    }
+                }
             }
             catch (Exception e)
             {
-                Log.Warn("system: reading a constructible's details threw: " + e);
+                Log.Warn("system: reading a constructible's refusals threw: " + e);
             }
 
             return lines;
@@ -2094,6 +2139,9 @@ namespace ES2Access.Screens
             HappinessSidePanelItem it = approval;
             ColonyPopulationSidePanel owner = panel;
             AgeTooltip tooltip = AgeWidgets.Raw(widget);
+            AgeTooltip iconTooltip = AgeWidgets.Raw(
+                approval.HappinessIcon == null ? null : approval.HappinessIcon.AgeTransform
+            );
             NodeVtable vtable = new NodeVtable
             {
                 Announcements = new List<NodeAnnouncement>
@@ -2102,7 +2150,14 @@ namespace ES2Access.Screens
                     GraphNodes.ValuePart(() => AgeText.Label(it.HappinessValueLabel)),
                     GraphNodes.ValuePart(() => AgeText.Label(it.HappinessStatusLabel)),
                 },
-                Sections = GraphNodes.Sections(() => ApprovalDetails(it, tooltip), null),
+                // Two tooltips on one row, in the order they are drawn: the icon's one-line gloss on
+                // what Approval is, which is reviewed and not spoken (the row is walked past on the way
+                // to everything below it, and its own words already say what it is), and the row's
+                // renderer-assembled dossier, which is indicated by the ordinary rule.
+                Sections = GraphNodes.Sections(
+                    GraphNodes.TooltipSection(iconTooltip, TooltipMode.None),
+                    GraphNodes.TooltipSection(tooltip)
+                ),
             };
             AgeWidgets.PointAt(vtable, widget);
             return new Cell
@@ -2131,25 +2186,6 @@ namespace ES2Access.Screens
             }
         }
 
-        private static IList<string> ApprovalDetails(
-            HappinessSidePanelItem approval,
-            AgeTooltip tooltip
-        )
-        {
-            List<string> lines = new List<string>();
-            try
-            {
-                AgeTransform icon = approval.HappinessIcon == null
-                    ? null
-                    : approval.HappinessIcon.AgeTransform;
-                Add(lines, AgeWidgets.TooltipLines(AgeWidgets.Raw(icon)));
-                Add(lines, AgeWidgets.TooltipLines(tooltip));
-            }
-            catch (Exception) { }
-
-            return lines;
-        }
-
         /// <summary>Who is being born here next and when. The panel draws the kind as a symbol with a
         /// plus in front of it and the wait as a bare number of turns; the sentence the game explains
         /// the symbol with is the only thing on the panel that says what either of them means, so it is
@@ -2171,7 +2207,13 @@ namespace ES2Access.Screens
                     GraphNodes.ValuePart(() => Drawn(it.TurnsBeforeNextPop)),
                     GraphNodes.ValuePart(() => Drawn(it.NextPopulationDestinationLabel)),
                 },
-                Sections = GraphNodes.Sections(() => GrowthDetails(kind, when), null),
+                // The kind tooltip is a single sentence and that sentence is already the row's NAME, so
+                // it is reviewed and not said again; the wait's own tooltip is a second thing the panel
+                // says, and reads by the ordinary rule.
+                Sections = GraphNodes.Sections(
+                    GraphNodes.TooltipSection(kind, TooltipMode.None),
+                    GraphNodes.TooltipSection(when)
+                ),
             };
             AgeWidgets.PointAt(vtable, widget);
             return new Cell
@@ -2180,14 +2222,6 @@ namespace ES2Access.Screens
                 Id = ControlId.Referenced(widget, keyPrefix + widget.name + "/growth"),
                 Vtable = vtable,
             };
-        }
-
-        private static IList<string> GrowthDetails(AgeTooltip kind, AgeTooltip when)
-        {
-            List<string> lines = new List<string>();
-            Add(lines, AgeWidgets.TooltipLines(kind));
-            Add(lines, AgeWidgets.TooltipLines(when));
-            return lines;
         }
 
         /// <summary>
@@ -2284,7 +2318,14 @@ namespace ES2Access.Screens
                     GraphNodes.LabelPart(() => FirstLine(tooltip)),
                     GraphNodes.ValuePart(() => SensitivityText(it, true)),
                 },
-                Sections = GraphNodes.Sections(() => SensitivityDetails(it, tooltip), null),
+                // The graph's tooltip opens with the sentence that is already the row's NAME and then
+                // says what the sensitivity is for, so announcing it would read the name twice: it is
+                // indicated instead, which still tells the player there is more here and puts all of it
+                // in the buffer above the bars.
+                Sections = GraphNodes.Sections(
+                    GraphNodes.TooltipSection(tooltip, TooltipMode.Indicate),
+                    NodeSection.Buffer(() => SensitivityDetails(it))
+                ),
             };
             AgeWidgets.PointAt(vtable, widget);
             return new Cell
@@ -2311,13 +2352,9 @@ namespace ES2Access.Screens
             return message.Build();
         }
 
-        private static IList<string> SensitivityDetails(
-            RepresentativesStarSystemSidePanel panel,
-            AgeTooltip tooltip
-        )
+        private static IList<string> SensitivityDetails(RepresentativesStarSystemSidePanel panel)
         {
             List<string> lines = new List<string>();
-            Add(lines, AgeWidgets.TooltipLines(tooltip));
             Sensitivity(panel, false, lines);
             return lines;
         }
@@ -2464,12 +2501,20 @@ namespace ES2Access.Screens
             Cells.Add(cells, widget, id, vtable);
         }
 
+        /// <summary>
+        /// A line of the panel that the player reads rather than works. <paramref name="tooltip"/> is
+        /// for the readouts whose tooltip the panel does NOT hang on the widget the number is drawn in -
+        /// it keeps it in a field of its own and puts it on the group around the number - and it is the
+        /// pointer's target too, because the game draws a tooltip for the widget that owns it and
+        /// pointing at the number would draw nothing while the readout still said "has tooltip".
+        /// </summary>
         private static void AddReadout(
             List<Cell> cells,
             AgeTransform widget,
             string key,
             Func<string> label,
-            Func<string> value = null
+            Func<string> value = null,
+            AgeTooltip tooltip = null
         )
         {
             if (widget == null || !AgeWidgets.Visible(widget))
@@ -2477,19 +2522,32 @@ namespace ES2Access.Screens
                 return;
             }
 
-            AgeTooltip tooltip = AgeWidgets.Raw(widget);
+            AgeTooltip tip = tooltip ?? AgeWidgets.Raw(widget);
             NodeVtable vtable = new NodeVtable
             {
                 Announcements = new List<NodeAnnouncement> { GraphNodes.LabelPart(label) },
-                Sections = GraphNodes.Sections(null, tooltip),
+                Sections = GraphNodes.Sections(null, tip),
             };
             if (value != null)
             {
                 vtable.Announcements.Add(GraphNodes.ValuePart(value));
             }
 
-            AgeWidgets.PointAt(vtable, widget);
+            AgeWidgets.PointAt(vtable, TooltipOwner(tip) ?? widget);
             Add(cells, widget, ControlId.Referenced(widget, key), vtable);
+        }
+
+        /// <summary>The widget a tooltip is hung on, which is the one the game draws it for.</summary>
+        private static AgeTransform TooltipOwner(AgeTooltip tooltip)
+        {
+            try
+            {
+                return tooltip == null ? null : tooltip.AgeTransform;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
         }
 
         private static void AddWidgetLines(List<string> lines, AgeTransform widget)
