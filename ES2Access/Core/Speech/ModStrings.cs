@@ -388,6 +388,14 @@ namespace ES2Access.Core.Speech
         public const string SenateLockedLawSlot = "senate.locked-law-slot";
         public const string SenateEmptySenatorSlot = "senate.empty-senator-slot";
         public const string SenateLockedSenatorSlot = "senate.locked-senator-slot";
+        // The empire summary. The screen's own name is the game's and is what is normally spoken; the
+        // name here is the fallback for the frames before the window has written its heading. The two
+        // mod words are for boxes the game draws with no heading at all: the panel holding the empire's
+        // portrait and description, and the band of column headings over the systems table.
+        public const string ScreenEmpire = "screen.empire";
+        public const string EmpireDescriptionPanel = "empire.description-panel";
+        public const string EmpireHeadingsBand = "empire.headings-band";
+
         public const string ScreenGovernment = "screen.government";
         public const string ScreenLaws = "screen.laws";
         public const string ScreenPopulation = "screen.population";
@@ -612,6 +620,9 @@ namespace ES2Access.Core.Speech
             { ResearchDeedWinner, "won by {0}" },
             { ScreenQuests, "Quests Log" },
             { QuestsPinned, "pinned" },
+            { ScreenEmpire, "Empire summary" },
+            { EmpireDescriptionPanel, "Empire" },
+            { EmpireHeadingsBand, "Column headings" },
             { ScreenSenate, "Senate" },
             { SenateGovernmentPanel, "Government" },
             { SenateElectionPanel, "Next election" },
