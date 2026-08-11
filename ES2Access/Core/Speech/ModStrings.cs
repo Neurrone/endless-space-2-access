@@ -162,6 +162,16 @@ namespace ES2Access.Core.Speech
         public const string GalaxySystemPiratePower = "galaxy.system-pirate-power";
         public const string GalaxySystemMinorRelation = "galaxy.system-minor-relation";
 
+        // The stretch of sky a system stands in. The map writes the constellation's name across the
+        // region rather than on anything in it, and the tree has no level for a region, so the name is
+        // said on the system and the sentence around it is the mod's.
+        public const string GalaxySystemConstellation = "galaxy.system-constellation";
+
+        // The one thing the map draws in open space that the game names nowhere: the missile an
+        // obliterator fires at a star system. Everything else about it - where it is going and when it
+        // arrives - is the game's own sentence, which arrives with the node as its tooltip.
+        public const string GalaxyObliteratorProjectile = "galaxy.obliterator-projectile";
+
         // The buttons the label draws on a system. Each is a wordless icon the game explains in a
         // sentence rather than names - the sentence arrives with the node as its tooltip - so what to
         // CALL each one is the mod's, kept as short as the thing it does.
@@ -476,6 +486,8 @@ namespace ES2Access.Core.Speech
             { GalaxySystemRebellion, "Rebellion at {0} percent, {1} to go" },
             { GalaxySystemPiratePower, "Pirate power level {0}" },
             { GalaxySystemMinorRelation, "Relations {0} percent" },
+            { GalaxySystemConstellation, "In the {0} constellation" },
+            { GalaxyObliteratorProjectile, "Obliterator missile" },
             { GalaxySystemDiplomacy, "Diplomacy" },
             { GalaxySystemPirateMarkBuyout, "Buy out pirate mark" },
             { GalaxySystemConversionBuyout, "Buy out conversion" },

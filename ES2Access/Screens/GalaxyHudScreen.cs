@@ -110,6 +110,12 @@ namespace ES2Access.Screens
         private static readonly object OwnedSystemsRegion = "galaxy:systems/owned";
         private static readonly object OtherSystemsRegion = "galaxy:systems/other";
 
+        /// <summary>The third of the map's halves: what the game draws OUT BETWEEN the stars - a probe
+        /// drifting, a planet-killer crossing, a pin an ally has dropped. None of them stands at a place
+        /// (<see cref="Drifting"/>), so none of them can hang under one, and they are jumped to as a
+        /// region of their own rather than being left at the end of a list of a hundred systems.</summary>
+        private static readonly object OpenSpaceRegion = "galaxy:systems/space";
+
         /// <summary>How far up a parent chain to look before deciding it is not a chain.</summary>
         private const int MaxAncestors = 64;
 
@@ -117,6 +123,14 @@ namespace ES2Access.Screens
         // out which systems the player can see, and Build runs every tick.
         private readonly List<StarSystemNode> _owned = new List<StarSystemNode>();
         private readonly List<StarSystemNode> _other = new List<StarSystemNode>();
+
+        // The same, for the three things the map draws away from any star. Each holds the LABEL rather
+        // than the entity, because the label is what answers "is the game drawing this".
+        private readonly List<ProbeLabel> _probes = new List<ProbeLabel>();
+        private readonly List<ObliteratorProjectileLabel> _projectiles =
+            new List<ObliteratorProjectileLabel>();
+        private readonly List<CoordinationRequestLabel> _pins =
+            new List<CoordinationRequestLabel>();
 
         public override string Key
         {
@@ -480,8 +494,17 @@ namespace ES2Access.Screens
                     }
                 }
 
-                bool split = _owned.Count > 0 && _other.Count > 0;
-                if (split)
+                Drifting();
+                int drifting = _probes.Count + _projectiles.Count + _pins.Count;
+                // A region jump with one region to jump to swallows the key and moves nothing, which
+                // sounds like the key being broken - so the map declares its halves only while it
+                // really has more than one of them, whichever ones those are.
+                bool split =
+                    (_owned.Count > 0 ? 1 : 0)
+                        + (_other.Count > 0 ? 1 : 0)
+                        + (drifting > 0 ? 1 : 0)
+                    > 1;
+                if (split && _owned.Count > 0)
                 {
                     builder.SetRegion(OwnedSystemsRegion);
                 }
@@ -496,7 +519,7 @@ namespace ES2Access.Screens
                     AddSystem(builder, _owned[i], empire, true, labels);
                 }
 
-                if (split)
+                if (split && _other.Count > 0)
                 {
                     builder.SetRegion(OtherSystemsRegion);
                 }
@@ -505,6 +528,15 @@ namespace ES2Access.Screens
                 {
                     AddSystem(builder, _other[i], empire, false, labels);
                 }
+
+                if (split && drifting > 0)
+                {
+                    builder.SetRegion(OpenSpaceRegion);
+                }
+
+                AddProbes(builder);
+                AddProjectiles(builder);
+                AddPins(builder);
             }
             catch (Exception e)
             {
@@ -564,6 +596,7 @@ namespace ES2Access.Screens
             // behind the star. The middle one is a page of detail drawn as pictures, so it is reviewed
             // rather than spoken (<see cref="SystemLabelReadout"/>).
             vtable.Sections = GraphNodes.Sections(
+                NodeSection.Buffer(() => ConstellationLines(it, empire)),
                 NodeSection.Buffer(() => FleetPresence.LinesAt(it)),
                 NodeSection.Buffer(() => SystemLabelReadout.Lines(drawn)),
                 GraphNodes.TooltipSection(tooltip)
@@ -634,6 +667,7 @@ namespace ES2Access.Screens
                 AddManagementView(builder, node, label);
                 AddLabelButtons(builder, node, label);
                 AddPlanets(builder, node, empire, label);
+                AddWrecks(builder, node);
                 AddStarlanes(builder, node, empire);
                 AddFleets(builder, "galaxy:system/" + node.GUID, FleetPresence.FleetsAt(node));
                 AddHangars(builder, "galaxy:system/" + node.GUID, node);
@@ -808,6 +842,51 @@ namespace ES2Access.Screens
             List<CardActions.CardAction> found = new List<CardActions.CardAction>(4);
             SystemLabelReadout.Actions(found, label);
             CardActions.Emit(builder, "galaxy:system/" + node.GUID + "/label", found);
+        }
+
+        /// <summary>
+        /// The stretch of sky this system stands in, by the name the map writes across it.
+        ///
+        /// The map draws constellation names as labels of their own, floating over regions rather than
+        /// over anything in them (<c>ConstellationLabel</c>), and the tree has no level for a region: a
+        /// constellation is not a thing to walk into, it is where a system IS. So it is said on the
+        /// system, off the system's own membership - which is where the label gets the name too
+        /// (<c>Constellation.LocalizedName</c> is what <c>BindConstellation</c> writes into it), so the
+        /// two cannot say different words.
+        ///
+        /// Gated on the same question the label asks before it draws at all: a constellation nobody has
+        /// been into yet is nameless on the map, and naming it here would hand the player a name off the
+        /// simulation that nothing on the screen is showing. Reviewed rather than spoken - it is where
+        /// the system has always been, not news, and the systems stop is walked a hundred nodes at a
+        /// time.
+        /// </summary>
+        private static IList<string> ConstellationLines(GameNode node, Empire empire)
+        {
+            try
+            {
+                Constellation constellation = node == null ? null : node.Constellation;
+                if (
+                    constellation == null
+                    || empire == null
+                    || (int)constellation.Exploration[empire] <= 0
+                )
+                {
+                    return null;
+                }
+
+                return new string[]
+                {
+                    ModStrings.Format(
+                        ModStrings.GalaxySystemConstellation,
+                        constellation.LocalizedName
+                    ),
+                };
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: reading a system's constellation threw: " + e);
+                return null;
+            }
         }
 
         // ---- sending the selected fleets somewhere ----
@@ -1362,6 +1441,87 @@ namespace ES2Access.Screens
                 {
                     CardActions.AddRefusable(found, item, CardActions.TitleOf(item));
                 }
+            }
+        }
+
+        /// <summary>
+        /// The wrecked Arks drifting in this system, each one a button that starts repairing it.
+        ///
+        /// The game draws them where it draws the planet cards - in the ring around the star of the
+        /// system the camera has come in on (<c>WreckedMothershipLabelWindow</c>, bound to the FOCUSED
+        /// node), one wordless icon per wreck - so they are children of that system, after its planets,
+        /// and they exist for no other system on the map.
+        ///
+        /// The treatment is the curiosities': the item stays clickable while the game refuses it and
+        /// writes the reason into its own tooltip (<c>WreckedMothershipItem.Refresh</c>: no fleet of
+        /// yours in orbit, or the action's own failure list), which is exactly what a player who found
+        /// a wreck wants to hear. Pressing one posts the repair order; pressing one that is ALREADY
+        /// being repaired raises the game's own confirmation box for calling it off, which speaks
+        /// through the message-box screen like every other one.
+        /// </summary>
+        private static void AddWrecks(GraphBuilder builder, StarSystemNode node)
+        {
+            try
+            {
+                WreckedMothershipLabelWindow window = WreckWindow(node);
+                AgeTransform table = window == null ? null : window.CuriositiesTable;
+                IList<AgeTransform> items = table == null ? null : table.Children;
+                if (items == null || items.Count == 0)
+                {
+                    return;
+                }
+
+                List<CardActions.CardAction> found = new List<CardActions.CardAction>(items.Count);
+                for (int i = 0; i < items.Count; i++)
+                {
+                    AgeTransform item = items[i];
+                    if (item != null && Visible(item))
+                    {
+                        CardActions.AddRefusable(found, item, WreckName(item, window));
+                    }
+                }
+
+                CardActions.Emit(builder, "galaxy:system/" + node.GUID + "/wreck", found);
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: reading a system's wrecked motherships threw: " + e);
+            }
+        }
+
+        /// <summary>What to call one wreck: the name of the ship itself, which is what the game keeps on
+        /// the wrapper it hangs on the item's tooltip, and where that is empty the words the window
+        /// writes over the whole group.</summary>
+        private static Func<string> WreckName(AgeTransform item, WreckedMothershipLabelWindow window)
+        {
+            AgeTooltip tooltip = Raw(item);
+            AgePrimitiveLabel title = window.TitleLabel;
+            return () =>
+            {
+                string named = AgeWidgets.TooltipTitle(tooltip);
+                return string.IsNullOrEmpty(named) ? AgeText.Label(title) : named;
+            };
+        }
+
+        /// <summary>The wreck window, but only while it is drawing THIS system's wrecks - it holds one
+        /// system at a time, the one the camera has come in on, exactly as the orbital card window does
+        /// (<see cref="OrbitalLabels"/>).</summary>
+        private static WreckedMothershipLabelWindow WreckWindow(StarSystemNode node)
+        {
+            try
+            {
+                WreckedMothershipLabelWindow window = Gui.GuiServiceAvailable
+                    ? Gui.GuiService.GetWindow<WreckedMothershipLabelWindow>(false)
+                    : null;
+                return window != null
+                    && window.Shown
+                    && ReferenceEquals(GalaxyViewLevels.FocusedSystem, node)
+                    ? window
+                    : null;
+            }
+            catch (Exception)
+            {
+                return null;
             }
         }
 
@@ -2148,6 +2308,306 @@ namespace ES2Access.Screens
             {
                 Log.Warn("galaxy: selecting a hangar threw: " + e);
             }
+        }
+
+        // ---- what the map draws between the stars ----
+        //
+        // A fleet is somewhere: it orbits a system or flies a lane, and the game says so by storing a
+        // node or a leg on it, which is why the tree can hang it under the place the map draws it. A
+        // probe, an obliterator missile and an ally's pin are NOT: each one carries a bare
+        // `GalaxyPosition`, a point in space with no node and no link on it, and the map draws each one
+        // at that point, out where there is nothing else. So they are not children of anything - they
+        // are a third half of the map, walked beside the systems and jumped to as a region of their own.
+        //
+        // Which of them exist is never re-derived: the game's own label windows pool one label per
+        // entity and show or hide each by the empire's vision and the camera's culling
+        // (`VisibleEntityLabelsWindow.RefreshLabels*`), so the drawn label IS the answer to "can this be
+        // seen", and a walk of the container costs nothing per frame - a galaxy with no probes in sight
+        // has an empty container and this is a null check.
+
+        /// <summary>Gather what the map is drawing out in open space, once per build, from the windows
+        /// that draw it. No array is allocated: each container's children are walked in place and only a
+        /// child the game is really drawing is asked for its label.</summary>
+        private void Drifting()
+        {
+            _probes.Clear();
+            _projectiles.Clear();
+            _pins.Clear();
+            try
+            {
+                ProbeLabelsWindow probes = Window<ProbeLabelsWindow>();
+                Collect(probes == null ? null : probes.LabelsContainer, _probes);
+                ObliteratorProjectileLabelsWindow shots = Window<ObliteratorProjectileLabelsWindow>();
+                Collect(shots == null ? null : shots.LabelsContainer, _projectiles);
+                CoordinationRequestLabelsWindow pins = Window<CoordinationRequestLabelsWindow>();
+                Collect(pins == null ? null : pins.RequestLabelsContainer, _pins);
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: reading what the map draws in open space threw: " + e);
+            }
+        }
+
+        private static void Collect<TLabel>(AgeTransform container, List<TLabel> found)
+            where TLabel : Component
+        {
+            IList<AgeTransform> children = container == null ? null : container.Children;
+            for (int i = 0; children != null && i < children.Count; i++)
+            {
+                AgeTransform child = children[i];
+                if (child == null || !Visible(child))
+                {
+                    continue;
+                }
+
+                TLabel label = child.GetComponent<TLabel>();
+                if (label != null)
+                {
+                    found.Add(label);
+                }
+            }
+        }
+
+        private static TWindow Window<TWindow>()
+            where TWindow : Amplitude.Unity.Gui.GuiWindow
+        {
+            try
+            {
+                TWindow window = Gui.GuiServiceAvailable
+                    ? Gui.GuiService.GetWindow<TWindow>(false)
+                    : null;
+                return window != null && window.Shown ? window : null;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// The probes drifting through the map: whose each one is, and - for the player's own - how many
+        /// turns it has left before it burns out.
+        ///
+        /// The label is a countdown and nothing else, and the game draws that countdown only on a probe
+        /// of the player's own (<c>ProbeLabel.Refresh</c>), so that is the only number here. Everything
+        /// else about a probe is in the dossier the game hangs on it, which is assembled at draw time
+        /// and so is reviewed rather than spoken. The owner is named from the probe itself: the map
+        /// tells a sighted player whose it is by the colour of the mote it draws out there, and a colour
+        /// is the one thing a reader of this tree has no way to be told.
+        ///
+        /// There is nothing to activate. A probe is not a thing the game lets anyone click.
+        /// </summary>
+        private void AddProbes(GraphBuilder builder)
+        {
+            for (int i = 0; i < _probes.Count; i++)
+            {
+                ProbeLabel it = _probes[i];
+                Probe probe = it.Entity as Probe;
+                if (probe == null)
+                {
+                    continue;
+                }
+
+                NodeVtable vtable = new NodeVtable
+                {
+                    Announcements = new List<NodeAnnouncement>
+                    {
+                        GraphNodes.LabelPart(() => AgeWidgets.TooltipTitle(it.Tooltip)),
+                        GraphNodes.ValuePart(() => Owner(probe.Empire), false),
+                        GraphNodes.ValuePart(
+                            () => Countdown(it.DurationBackground, it.DurationLabel),
+                            false
+                        ),
+                    },
+                    Sections = GraphNodes.Sections(null, it.Tooltip),
+                };
+                Follow(vtable, probe, it.AgeTransform, it.Tooltip);
+                builder.AddItem(ControlId.Structural("galaxy:probe/" + probe.GUID), vtable);
+            }
+        }
+
+        /// <summary>
+        /// The obliterator missiles crossing the map - each one a system's death, in flight.
+        ///
+        /// The game writes the whole of it into the label's own tooltip as one sentence - which system
+        /// it is aimed at and how many turns it has left - and that tooltip is plain text, so it is
+        /// spoken on focus rather than only indicated. It writes it for the player's OWN missile only
+        /// (<c>ObliteratorProjectileLabel.Refresh</c> clears the tooltip and hides the countdown for
+        /// anyone else's), which is the game's own choice about what an empire may know and is left
+        /// exactly as it stands: someone else's missile is a thing on the map with no destination
+        /// attached, and inventing one from the model would tell the player something the game is
+        /// deliberately not showing.
+        ///
+        /// The missile has no name anywhere in the game's own words, so the phrase is the mod's.
+        /// </summary>
+        private void AddProjectiles(GraphBuilder builder)
+        {
+            for (int i = 0; i < _projectiles.Count; i++)
+            {
+                ObliteratorProjectileLabel it = _projectiles[i];
+                ObliteratorProjectile shot = it.Entity as ObliteratorProjectile;
+                if (shot == null)
+                {
+                    continue;
+                }
+
+                NodeVtable vtable = new NodeVtable
+                {
+                    Announcements = new List<NodeAnnouncement>
+                    {
+                        GraphNodes.LabelPart(
+                            () => ModStrings.Get(ModStrings.GalaxyObliteratorProjectile)
+                        ),
+                        GraphNodes.ValuePart(() => Owner(shot.Empire), false),
+                        GraphNodes.ValuePart(
+                            () => Countdown(it.DurationBackground, it.DurationLabel),
+                            false
+                        ),
+                    },
+                    Sections = GraphNodes.Sections(null, it.Tooltip),
+                };
+                Follow(vtable, shot, it.AgeTransform, it.Tooltip);
+                builder.AddItem(ControlId.Structural("galaxy:projectile/" + shot.GUID), vtable);
+            }
+        }
+
+        /// <summary>
+        /// The pins allies drop on the map to say "attack here", "defend this", "look at that".
+        ///
+        /// Only ever drawn in a game with allies in it, so nothing here can be tried outside one; it is
+        /// modelled from what the game draws (<c>CoordinationRequestLabel</c>) and kept to that. Each
+        /// pin says what KIND of request it is - the game's own word for the type - and reads back the
+        /// message its owner typed on it, with the sentence naming the sender reviewable underneath.
+        /// Letting go of one is the button the game draws on it, as a child, and only while it draws it.
+        ///
+        /// Editing the message is NOT offered: the game puts a live text field on the pin, and the mod's
+        /// text editing is a screen of its own rather than a node on a map.
+        /// </summary>
+        private void AddPins(GraphBuilder builder)
+        {
+            for (int i = 0; i < _pins.Count; i++)
+            {
+                CoordinationRequestLabel it = _pins[i];
+                CoordinationRequest request = it.CoordinationRequest;
+                if (request == null)
+                {
+                    continue;
+                }
+
+                NodeVtable vtable = new NodeVtable
+                {
+                    Announcements = new List<NodeAnnouncement>
+                    {
+                        GraphNodes.LabelPart(() => PinKind(request)),
+                        GraphNodes.ValuePart(() => PinMessage(it), false),
+                    },
+                    Sections = GraphNodes.Sections(
+                        NodeSection.Buffer(AgeWidgets.TooltipLines(it.SenderTooltip)),
+                        GraphNodes.TooltipSection(it.RequestTooltip)
+                    ),
+                };
+                Follow(vtable, request, it.AgeTransform, it.RequestTooltip);
+
+                string key = "galaxy:pin/" + request.GUID;
+                ControlId id = ControlId.Structural(key);
+                AgeTransform dismiss = it.DismissButtonContainer;
+                if (!Visible(dismiss))
+                {
+                    builder.AddItem(id, vtable);
+                    continue;
+                }
+
+                vtable.ControlType = ControlTypes.Group;
+                builder.BeginGroup(id, vtable);
+                if (builder.IsExpanded(id))
+                {
+                    List<CardActions.CardAction> found = new List<CardActions.CardAction>(1);
+                    CardActions.AddRefusable(found, dismiss, CardActions.NameFromTooltip(dismiss));
+                    CardActions.Emit(builder, key, found);
+                }
+
+                builder.EndGroup();
+            }
+        }
+
+        /// <summary>What the game calls this kind of request, in its own words.</summary>
+        private static string PinKind(CoordinationRequest request)
+        {
+            try
+            {
+                return AgeText.Clean(
+                    Gui.Localize(
+                        "%CoordinationTools" + request.RequestType + "CoordinationRequestTitle"
+                    )
+                );
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>The words on the pin, as its own field is drawing them.</summary>
+        private static string PinMessage(CoordinationRequestLabel label)
+        {
+            try
+            {
+                AgeControlTextField field = label.TextField;
+                return field == null || !Visible(field.AgeTransform)
+                    ? null
+                    : AgeText.Label(field.Label);
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>Whose a thing out in space is. A name, not a phrase: it sits beside the thing's own
+        /// name the way a fleet's does, and every empire in this game has one.</summary>
+        private static string Owner(Empire empire)
+        {
+            try
+            {
+                return empire == null ? null : AgeText.Clean(empire.LocalizedName);
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>The turns a thing in flight has left, but only where the map is drawing the number:
+        /// the game hides that background for anything that is not the player's own, and a hidden label
+        /// still holds whatever was written on it for the last thing that needed it.</summary>
+        private static string Countdown(AgeTransform background, AgePrimitiveLabel label)
+        {
+            return Visible(background) ? AgeText.Label(label) : null;
+        }
+
+        /// <summary>Focus follows the thing across the map, exactly as it follows a system: the camera is
+        /// asked for it - the game's own "show me this" route, which takes a thing with a position rather
+        /// than a place - and the pointer is put on its label so the game draws its dossier where it can
+        /// be read.</summary>
+        private static void Follow(
+            NodeVtable vtable,
+            IGameEntityWithGalaxyPosition entity,
+            AgeTransform widget,
+            AgeTooltip tooltip
+        )
+        {
+            IGameEntityWithGalaxyPosition it = entity;
+            AgeTransform anchor = widget;
+            AgeTooltip tip = tooltip;
+            vtable.OnFocusVisual = () =>
+            {
+                GalaxyViewLevels.PanTo(it);
+                if (anchor != null)
+                {
+                    PointerFocus.MoveTo(null, tip, anchor);
+                }
+            };
+            vtable.OnBlurVisual = ReleasePointer;
         }
 
         /// <summary>

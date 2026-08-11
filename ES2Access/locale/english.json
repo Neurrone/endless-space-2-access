@@ -80,6 +80,8 @@
   "galaxy.system-rebellion": "Rebellion at {0} percent, {1} to go",
   "galaxy.system-pirate-power": "Pirate power level {0}",
   "galaxy.system-minor-relation": "Relations {0} percent",
+  "galaxy.system-constellation": "In the {0} constellation",
+  "galaxy.obliterator-projectile": "Obliterator missile",
   "galaxy.system-diplomacy": "Diplomacy",
   "galaxy.system-pirate-mark-buyout": "Buy out pirate mark",
   "galaxy.system-conversion-buyout": "Buy out conversion",

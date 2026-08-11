@@ -157,6 +157,20 @@ namespace ES2Access.UI
             }
         }
 
+        /// <summary>The words to call a control the game names ONLY in the sentence its own tooltip
+        /// opens with, resolved when they are spoken - for a caller assembling its own node rather than
+        /// declaring one through <see cref="AddNamedByTooltip"/>.</summary>
+        public static Func<string> NameFromTooltip(AgeTransform widget)
+        {
+            return NameFromTooltip(AgeWidgets.Raw(widget));
+        }
+
+        public static Func<string> NameFromTooltip(AgeTooltip tooltip)
+        {
+            AgeTooltip it = tooltip;
+            return () => FirstLine(it);
+        }
+
         /// <summary>
         /// The collected buttons as one node each, in the order they were collected.
         ///
@@ -252,7 +266,9 @@ namespace ES2Access.UI
             }
         }
 
-        private static string FirstLine(AgeTooltip tooltip)
+        /// <summary>The first sentence of a tooltip whose words are on the widget - what the game wrote
+        /// to explain a control it named nowhere else.</summary>
+        public static string FirstLine(AgeTooltip tooltip)
         {
             try
             {
