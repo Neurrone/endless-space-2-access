@@ -338,10 +338,21 @@ namespace ES2Access.Core.UI.Graph
         // Where a stop mixes MENU rows with RAW content (search/sort/filter controls above a sheet),
         // the two wiring systems don't see each other: menu auto-wiring connects only menu rows, and
         // the raw content's explicit edges stop at its own borders — leaving a vertical gap arrows
-        // can't cross. Stitch it: at each menu→raw boundary (declaration order, same stop), the menu
-        // row's cells gain Down edges into the first raw node still missing an Up edge, and that node
-        // gains the Up back; at raw→menu boundaries the reverse. Only MISSING edges are filled — the
-        // raw content's own wiring is never overridden.
+        // can't cross. Stitch it, at each mode boundary in declaration order within a stop.
+        //
+        // The raw side of a seam is a RUN, not a node: the consecutive raw nodes with no edge of their
+        // own in the crossing direction, ending at the first that has one. For a sheet that is exactly
+        // the row nearest the seam — its cells are declared together and only its interior rows wire
+        // themselves vertically — and EVERY node of that run gets the edge back to the menu row,
+        // because the player crosses the seam from whichever column they happen to be standing in.
+        // Wiring only the run's first node (which is what this did originally) left every other column
+        // answering the crossing key with silence.
+        //
+        // The menu side keeps a single target, and it is the run's FIRST node in both directions: for a
+        // table that is the row's primary cell, whose readout is the whole row, rather than whichever
+        // column happened to be declared last. Only MISSING edges are filled, so raw content that wires
+        // its own seam — a paragraph a sheet was told to continue below — is never overridden, and the
+        // run stops at it by construction.
         private void StitchModeBoundaries()
         {
             Dictionary<object, List<GraphNode>> byStop = new Dictionary<object, List<GraphNode>>();
@@ -369,27 +380,36 @@ namespace ES2Access.Core.UI.Graph
                     bool curMenu = _rowOf.ContainsKey(cur);
                     if (prevMenu == curMenu) continue; // same mode — its own wiring covers it
 
-                    if (prevMenu) // menu row above raw content: row cells ↓ first raw node without an Up
+                    if (prevMenu) // menu row above raw content: the run of raw nodes with no Up
                     {
                         if (cur.Transitions.ContainsKey(GraphDir.Up)) continue;
                         Row row = _rowOf[prev];
+                        for (int j = i; j < nodes.Count && !_rowOf.ContainsKey(nodes[j]); j++)
+                        {
+                            if (nodes[j].Transitions.ContainsKey(GraphDir.Up)) break;
+                            nodes[j].Transitions[GraphDir.Up] = new Transition(row.Items[0].Id);
+                        }
+
                         foreach (GraphNode cell in row.Items)
                             if (!cell.Transitions.ContainsKey(GraphDir.Down))
                                 cell.Transitions[GraphDir.Down] = new Transition(cur.Id);
-                        cur.Transitions[GraphDir.Up] = new Transition(row.Items[0].Id);
                     }
-                    else // raw content above a menu row: last raw node without a Down ↕ the row
+                    else // raw content above a menu row: the trailing run of raw nodes with no Down
                     {
                         Row row = _rowOf[cur];
-                        // The raw side's bottom = the latest raw node (walking back) missing a Down.
-                        GraphNode bottom = null;
+                        int start = -1;
                         for (int j = i - 1; j >= 0 && !_rowOf.ContainsKey(nodes[j]); j--)
-                            if (!nodes[j].Transitions.ContainsKey(GraphDir.Down)) { bottom = nodes[j]; break; }
-                        if (bottom == null) continue;
-                        bottom.Transitions[GraphDir.Down] = new Transition(row.Items[0].Id);
+                        {
+                            if (nodes[j].Transitions.ContainsKey(GraphDir.Down)) break;
+                            start = j;
+                        }
+
+                        if (start < 0) continue;
+                        for (int j = start; j < i; j++)
+                            nodes[j].Transitions[GraphDir.Down] = new Transition(row.Items[0].Id);
                         foreach (GraphNode cell in row.Items)
                             if (!cell.Transitions.ContainsKey(GraphDir.Up))
-                                cell.Transitions[GraphDir.Up] = new Transition(bottom.Id);
+                                cell.Transitions[GraphDir.Up] = new Transition(nodes[start].Id);
                     }
                 }
             }

@@ -227,6 +227,116 @@ namespace ES2Access.Tests.UI
             Assert.Equal("f1", DestKey(Node(r, "cell"), GraphDir.Up));
         }
 
+        /// <summary>A menu row, then a raw ROW of three cells wired only to each other — the shape a
+        /// sheet's top row has under a strip of buttons.</summary>
+        private static GraphRender StripOverRawRow()
+        {
+            GraphBuilder b = new GraphBuilder();
+            b.StartRow().AddItem(Id("f1"), Vt("Filter")).AddItem(Id("f2"), Vt("Sort")).EndRow();
+            b.AddNode(Id("c0"), Vt("Alpha")).AddNode(Id("c1"), Vt("3")).AddNode(Id("c2"), Vt("5"));
+            b.Connect(Id("c0"), GraphDir.Right, Id("c1"));
+            b.Connect(Id("c1"), GraphDir.Left, Id("c0"));
+            b.Connect(Id("c1"), GraphDir.Right, Id("c2"));
+            b.Connect(Id("c2"), GraphDir.Left, Id("c1"));
+            return b.Build();
+        }
+
+        [Fact]
+        public void EveryCellOfARawTopRowReachesTheMenuRowAbove()
+        {
+            GraphRender r = StripOverRawRow();
+            Assert.Equal("f1", DestKey(Node(r, "c0"), GraphDir.Up));
+            Assert.Equal("f1", DestKey(Node(r, "c1"), GraphDir.Up));
+            Assert.Equal("f1", DestKey(Node(r, "c2"), GraphDir.Up));
+            Assert.Equal("c0", DestKey(Node(r, "f1"), GraphDir.Down));
+            Assert.Equal("c0", DestKey(Node(r, "f2"), GraphDir.Down));
+        }
+
+        [Fact]
+        public void TheRawTopRunEndsAtTheFirstNodeThatAlreadyHasAnUp()
+        {
+            GraphBuilder b = new GraphBuilder();
+            b.StartRow().AddItem(Id("f1"), Vt("Filter")).EndRow();
+            b.AddNode(Id("c0"), Vt("Alpha")).AddNode(Id("c1"), Vt("3"));
+            b.AddNode(Id("d0"), Vt("Beta")).AddNode(Id("d1"), Vt("2"));
+            b.Connect(Id("d0"), GraphDir.Up, Id("c0")); // a second table row wires itself
+            GraphRender r = b.Build();
+            Assert.Equal("f1", DestKey(Node(r, "c0"), GraphDir.Up));
+            Assert.Equal("f1", DestKey(Node(r, "c1"), GraphDir.Up));
+            Assert.Equal("c0", DestKey(Node(r, "d0"), GraphDir.Up));
+            Assert.Null(DestKey(Node(r, "d1"), GraphDir.Up));
+        }
+
+        [Fact]
+        public void EveryCellOfARawBottomRowReachesTheMenuRowBelow()
+        {
+            GraphBuilder b = new GraphBuilder();
+            b.AddNode(Id("c0"), Vt("Alpha")).AddNode(Id("c1"), Vt("3")).AddNode(Id("c2"), Vt("5"));
+            b.StartRow().AddItem(Id("ok"), Vt("OK")).AddItem(Id("no"), Vt("Cancel")).EndRow();
+            GraphRender r = b.Build();
+            Assert.Equal("ok", DestKey(Node(r, "c0"), GraphDir.Down));
+            Assert.Equal("ok", DestKey(Node(r, "c1"), GraphDir.Down));
+            Assert.Equal("ok", DestKey(Node(r, "c2"), GraphDir.Down));
+
+            // Back into the block lands on the run's FIRST node - a table row's primary cell, which
+            // reads the whole row - not on whichever column happened to be declared last.
+            Assert.Equal("c0", DestKey(Node(r, "ok"), GraphDir.Up));
+            Assert.Equal("c0", DestKey(Node(r, "no"), GraphDir.Up));
+        }
+
+        [Fact]
+        public void TheRawBottomRunEndsAtTheFirstNodeThatAlreadyHasADown()
+        {
+            GraphBuilder b = new GraphBuilder();
+            b.AddNode(Id("c0"), Vt("Alpha")).AddNode(Id("c1"), Vt("3"));
+            b.AddNode(Id("d0"), Vt("Beta")).AddNode(Id("d1"), Vt("2"));
+            b.Connect(Id("c0"), GraphDir.Down, Id("d0")); // the row above wires itself
+            b.StartRow().AddItem(Id("ok"), Vt("OK")).EndRow();
+            GraphRender r = b.Build();
+            Assert.Equal("d0", DestKey(Node(r, "c0"), GraphDir.Down));
+            Assert.Equal("ok", DestKey(Node(r, "c1"), GraphDir.Down));
+            Assert.Equal("ok", DestKey(Node(r, "d0"), GraphDir.Down));
+            Assert.Equal("ok", DestKey(Node(r, "d1"), GraphDir.Down));
+            Assert.Equal("c1", DestKey(Node(r, "ok"), GraphDir.Up));
+        }
+
+        [Fact]
+        public void ASingleRawNodeBetweenTwoMenuRowsIsStitchedBothWays()
+        {
+            GraphBuilder b = new GraphBuilder();
+            b.StartRow().AddItem(Id("f1"), Vt("Filter")).EndRow();
+            b.AddNode(Id("prose"), Vt("What happened"));
+            b.StartRow().AddItem(Id("ok"), Vt("OK")).AddItem(Id("no"), Vt("Cancel")).EndRow();
+            GraphRender r = b.Build();
+            Assert.Equal("prose", DestKey(Node(r, "f1"), GraphDir.Down));
+            Assert.Equal("f1", DestKey(Node(r, "prose"), GraphDir.Up));
+            Assert.Equal("ok", DestKey(Node(r, "prose"), GraphDir.Down));
+            Assert.Equal("prose", DestKey(Node(r, "ok"), GraphDir.Up));
+            Assert.Equal("prose", DestKey(Node(r, "no"), GraphDir.Up));
+        }
+
+        [Fact]
+        public void AStopOfMenuRowsOnlyIsLeftToItsOwnWiring()
+        {
+            GraphRender r = TwoByTwo(null);
+            Assert.Equal("c", DestKey(Node(r, "a"), GraphDir.Down));
+            Assert.Equal("a", DestKey(Node(r, "c"), GraphDir.Up));
+            Assert.Null(DestKey(Node(r, "a"), GraphDir.Up));
+            Assert.Null(DestKey(Node(r, "d"), GraphDir.Down));
+        }
+
+        [Fact]
+        public void AStopOfRawNodesOnlyIsNeverStitched()
+        {
+            GraphBuilder b = new GraphBuilder();
+            b.AddNode(Id("c0"), Vt("Alpha")).AddNode(Id("c1"), Vt("Beta"));
+            GraphRender r = b.Build();
+            Assert.Null(DestKey(Node(r, "c0"), GraphDir.Up));
+            Assert.Null(DestKey(Node(r, "c0"), GraphDir.Down));
+            Assert.Null(DestKey(Node(r, "c1"), GraphDir.Up));
+            Assert.Null(DestKey(Node(r, "c1"), GraphDir.Down));
+        }
+
         [Fact]
         public void BuildReturnsNullWhenNothingWasDeclared()
         {

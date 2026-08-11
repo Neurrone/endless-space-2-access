@@ -100,7 +100,9 @@ Rules that came out of shipping this, all hit in practice:
   the row's buffer **in drawn order** (the heading's explanation first, then the value's
   dossier), so review follows the screen. "Last-drawn speaks" is the caption-then-value
   rule, not a universal: where the row is a card's own tooltip plus a badge's, the
-  important one is the card's — the screen names which tooltip speaks.
+  important one is the card's — the screen names which tooltip speaks. And a tooltip whose
+  words are the row's own always-drawn text is not a second thing to say or buffer — the
+  game reused the printed paragraph as its hover copy; skip it.
 - **The mode is a per-frame answer — never store it.** A widget can swap its tooltip class
   with its state (ES2's stage-deed marker: a plain-text placeholder while locked, a
   class-composed dossier once its stage is researched), so one control's short/long mode

@@ -18,6 +18,67 @@ then dismiss with the window's own binding
 is on `Gui.GuiGameWindowService`, not on the notification service. Raising the quest popup also pops
 the "Tracking Quests" tutorial page, so re-minimize afterwards.
 
+**Working a popup that draws its own content** (the research family: "Research Complete",
+"Technology Stage unlocked", "Construction Complete" — reachable by pressing Next/Previous
+notification on a turn where research finished). Browsing between them is SAFE and reversible;
+`DismissButton`/`Done` is not, and neither are the CARD buttons — `CompletedTechnologyTitle` and
+`NextTechnologyTitle` dismiss the popup and open the technology screen (`OnTechnologyCompletedCb`,
+`OnTechnologyNextCb`). Which popup type is up: iterate
+`((GuiManager)Gui.GuiService).gameObject.GetComponentsInChildren<NotificationWindow>(true)` for
+`Shown` and read `GetType().Name` (index the array — a `foreach` over it poisons the REPL session);
+`/gui/age?window=<ThatTypeName>` is then the layout. The body rows are checked against that dump,
+not against the code: the tree lists `TechnologyStageUnlockedNotificationWindow`'s unlocks table
+BEFORE its title groups, and only the rects put them in reading order. Each unlock's tooltip is
+Class-backed (`Constructible`), so its buffer is empty until the row is focused — audit it with the
+tooltip pattern in `dev-loop.md` §2. **The drawn body is one region per CARD** where the popup drew
+cards — the research popup answers `ui.regionNext` with top strip → "Just Completed, Xenobiology" →
+"Next Research, Plasma Metallurgy" → "Minimize", while plain Down still walks all seven rows across
+the boundary — and stays a single `notification:body` region where it drew one thing (the stage
+popup, which draws no captioned control in the body). Checking a region change means
+dumping `/gui/graph` for the region HEADERS and walking `ui.regionNext`/`Prev`: the row list alone
+looks identical either way.
+
+**"Construction Complete" is a TABLE, not rows** (region `notification:table:reg:0`, keys
+`notification:table:row<hash>c<column>`). The regression shapes for its two neighbours are
+"Research Complete" = two card regions / 7 items and "Technology Stage unlocked" = one
+`notification:body` region / 5 rows — a change to the sheet detection that moves either of those
+has broken it (the research popup's lore scroll view is the near miss it must keep rejecting). The
+table's own shape on `[Beginner] test`: one row, "Dusay, button, Drone Networks, Cerebral Reality,
+3 turns remaining"; Right crosses "Completed" then "Next Construction" — the column names are
+spoken as the crossed edge and the drawn caption row is NOT a row of its own — and both figure
+cells indicate a Class-backed `Constructible` dossier and carry it in the buffer. **Never press
+Enter on a row while testing**: it is the game's own click (`OnSelectSystemCb`), which opens that
+system's management view and puts the notification away — two fixture changes at once. Prove it
+from `ConstructionCompletedNotificationWindow` :75-79 and leave the press to the manual test.
+**The seams around the table are the BUILDER's, not the screen's** (`StitchModeBoundaries`, unit-tested
+in `GraphBuilderTests`): every cell of the table's top row reaches the strip above and every cell of its
+bottom row reaches the strip below, and coming back lands on the row's primary — live-verified
+2026-08-11, all six crossings spoken. A `NotificationScreen` that grows hand-written `Connect` calls
+around its sheet again is a regression, not a fix; the engine rule is the place to change.
+**Multi-row is fixture-blocked**: the fixture finishes one construction on the turn it is saved
+at, so only one line is ever drawn, and the ragged path (a system with nothing queued draws
+`NoNextConstructionButton` in the third column instead) needs a save with several colonies
+finishing at once — no fixture in the repo has one. The remaining-turns label on this line is a
+bare integer or the `[infinite]` token ("Unlimited" once cleaned), never `-`
+(`ConstructionCompletedNotificationLine.RefreshNextConstruction` :140-148 is the writer, not its
+`FormatNumberOfTurns`).
+
+**The leading-prose rule cannot be seen on any live popup.** All three of the research family take
+the no-visible-words branch — Construction Complete's description is real but its label is parked
+under a hidden container, Technology Stage's is a localization key the files never answered, Research
+Complete's is an unfilled template — so a popup that both SAYS and DRAWS something is unreachable
+here. Test it as exact non-regression instead: snapshot `/gui/graph?edges=1&buffers=1` for all three
+along a fixed browse route (Previous, Previous, then left + Next + Next back to Construction
+Complete), change, reload, walk the identical route and `diff`. In one session the ids are stable
+objects, so the three files come out byte-identical and need no hash normalising.
+
+**The queue-empty states of the research popup have no fixture** (`[Beginner] test`, turn 4, has a
+research queue): `EmptyNextTechnologyGroup` (queue empty, nothing suggested) and
+`SuggestedTechnologiesPanel` (queue empty with suggestions — toggles with captions, which would
+arrive as body controls) are both drawn only when `DepartmentOfScience.ResearchQueue.Length == 0`
+(`TechnologyUnlockedNotificationWindow.Refresh` :131-159). Do not fake it by emptying the queue —
+that is a fixture change; reach it by playing a save whose queue has run dry.
+
 **World position → screen pixel.**
 `((GalaxyViewCameraController)Amplitude.Unity.Framework.Services.GetService
 <Amplitude.Unity.View.ICameraService>().CameraController).Camera.WorldToScreenPoint((Vector3)node.GalaxyPosition)`

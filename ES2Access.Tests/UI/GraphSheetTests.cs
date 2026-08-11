@@ -184,6 +184,92 @@ namespace ES2Access.Tests.UI
             Assert.Equal("Systems, Sol", GraphAnnouncer.Compose(g.Current.Order[0], jump.To));
         }
 
+        /// <summary>A popup's shape: a strip of buttons, the paragraph it opened with, its table, and
+        /// the buttons along the bottom - all in one Tab stop, so every seam is the builder's.</summary>
+        private GraphRender ProseOverTable(bool prose)
+        {
+            GraphBuilder b = new GraphBuilder();
+            b.StartRow().AddItem(Id("next"), Vt("Next")).AddItem(Id("prev"), Vt("Previous")).EndRow();
+            if (prose) b.AddNode(Id("words"), Vt("Something happened."));
+
+            GraphSheet s = new GraphSheet(b, "t:");
+            s.Region("Report", new[] { "Ships", "Move" });
+            if (prose) s.Follows(Id("words"));
+            s.Row(Vt("Alpha"), _rowA, () => "3", () => "5");
+            s.Row(Vt("Beta"), _rowB, () => "2", () => "4");
+            s.Finish();
+
+            b.StartRow().AddItem(Id("done"), Vt("Done")).EndRow();
+            return b.Build();
+        }
+
+        [Fact]
+        public void EveryCellOfTheTopRowReachesTheStripAboveIt()
+        {
+            GraphRender r = ProseOverTable(false);
+            Assert.Equal("next", DestKey(Node(r, "t:row" + _rowA.GetHashCode() + "c0"), GraphDir.Up));
+            Assert.Equal("next", DestKey(Node(r, "t:row" + _rowA.GetHashCode() + "c1"), GraphDir.Up));
+            Assert.Equal("next", DestKey(Node(r, "t:row" + _rowA.GetHashCode() + "c2"), GraphDir.Up));
+            Assert.Equal("t:row" + _rowA.GetHashCode() + "c0", DestKey(Node(r, "next"), GraphDir.Down));
+        }
+
+        [Fact]
+        public void EveryCellOfTheBottomRowReachesTheStripBelowIt()
+        {
+            GraphRender r = ProseOverTable(false);
+            Assert.Equal("done", DestKey(Node(r, "t:row" + _rowB.GetHashCode() + "c0"), GraphDir.Down));
+            Assert.Equal("done", DestKey(Node(r, "t:row" + _rowB.GetHashCode() + "c1"), GraphDir.Down));
+            Assert.Equal("done", DestKey(Node(r, "t:row" + _rowB.GetHashCode() + "c2"), GraphDir.Down));
+            Assert.Equal("t:row" + _rowB.GetHashCode() + "c0", DestKey(Node(r, "done"), GraphDir.Up));
+        }
+
+        [Fact]
+        public void ATableToldToFollowANodeMeetsItAsThoughItWereTheRowAbove()
+        {
+            GraphRender r = ProseOverTable(true);
+            string a0 = "t:row" + _rowA.GetHashCode() + "c0";
+            Assert.Equal("words", DestKey(Node(r, a0), GraphDir.Up));
+            Assert.Equal("words", DestKey(Node(r, "t:row" + _rowA.GetHashCode() + "c1"), GraphDir.Up));
+            Assert.Equal("words", DestKey(Node(r, "t:row" + _rowA.GetHashCode() + "c2"), GraphDir.Up));
+            Assert.Equal(a0, DestKey(Node(r, "words"), GraphDir.Down));
+
+            // and the strip above stops at the words rather than reaching over them into the table
+            Assert.Equal("words", DestKey(Node(r, "next"), GraphDir.Down));
+            Assert.Equal("next", DestKey(Node(r, "words"), GraphDir.Up));
+        }
+
+        [Fact]
+        public void CrossingUpOntoAFollowedNodeIsUnlabeled()
+        {
+            GraphState state = new GraphState();
+            KeyGraph g = new KeyGraph(() => ProseOverTable(true), state);
+            g.Rerender();
+            g.Move(GraphDir.Down); // the strip -> the words
+            g.Move(GraphDir.Down); // the words -> Alpha
+            g.Move(GraphDir.Right); // Alpha / Ships
+            MoveResult up = g.Move(GraphDir.Up);
+            Assert.True(up.Moved);
+            Assert.Null(up.TransitionLabel); // a followed node is nobody's row name
+            Assert.Equal("Something happened.", GraphAnnouncer.LeafText(up.To));
+        }
+
+        [Fact]
+        public void TheSheetNamesItsFirstRowSoAScreenNeverRebuildsAKey()
+        {
+            GraphBuilder b = new GraphBuilder();
+            GraphSheet s = new GraphSheet(b, "t:");
+            Assert.Null(s.FirstRow);
+            s.Region("Report");
+            s.Row(Vt("Alpha"), _rowA);
+            s.Row(Vt("Beta"), _rowB);
+            s.Finish();
+            Assert.Equal("t:row" + _rowA.GetHashCode() + "c0", s.FirstRow.StructuralKey);
+            Assert.Same(_rowA, s.FirstRow.Reference);
+
+            b.SetStart(s.FirstRow);
+            Assert.Equal(s.FirstRow.StructuralKey, b.Build().StartKey.StructuralKey);
+        }
+
         [Fact]
         public void ThePrimaryCellCarriesTheRowObjectSoFocusFollowsAReorder()
         {

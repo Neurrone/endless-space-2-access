@@ -7,6 +7,21 @@ is `docs/generic/`. A new fact lands here — never in those — and anything th
 generic graduates to the generic docs.
 
 
+- **A notification popup that draws its own content leaves the shared description UNWRITTEN, and
+  the game hides the label rather than clearing it.** `NotificationWindow.Refresh` (:247-251) writes
+  `NotificationDescription.Text = GuiNotification.GetDescription()` **only while that label is
+  visible**, and a window like `TechnologyUnlockedNotificationWindow` parks the label under a hidden
+  `Dummy` and draws cards of its own instead. `NotificationTechnologyUnlocked` overrides only
+  `GetTitle()` (:51-55), so both the parked label and `GetDescription()` answer
+  `%NotificationTechnologyUnlockedDescription`, which localizes to the template with its hole still
+  in it: "Research has been completed: {0}". A second form of the same thing:
+  `%NotificationTechnologyStageUnlockedDescription` has NO translation at all, so `Gui.Localize`
+  hands back the key (measured). **Mod policy** (`NotificationScreen.Text`): a description whose
+  label the player cannot see, or whose text is still a brace-digit template or a raw `%key`, is
+  ABSENT — never spoken, never a words node, never buffer content — and such a popup is read off
+  what it DRAWS instead. Titles are exempt: every measured popup formats its title properly, and the
+  one unfilled title seen (`"Research Complete: {0}"`, mid-browse) was a stale frame, which is why
+  the change watcher waits for `IsReady`.
 - **A collapsed tutorial is a HUD stop, not a tutorial screen.** The game crops the popup
   to its title bar and hides nothing, so `MinimizeToggle.State` is the only signal;
   `TutorialScreen` stands down while it is set and `BuildCollapsedBar` declares the leftover
@@ -413,6 +428,30 @@ generic graduates to the generic docs.
   `AgeManager.CreateSpecialCharactersDictionary` → `AgePrimitiveLabel.SpecialCharacters`,
   keys `"[TOKEN]"` upper-cased), 371 named + 11 nameless colour directives; localization
   corpus 25 821 strings, 1 861 with brackets.
+- **A few symbols are painted straight into a panel and so are missing from the element-derived
+  picture table.** `TurnSymbol` — the hourglass the construction-completed table draws in front of
+  a build's remaining turns — is drawn by an `AgePrimitiveImage` that no `GuiElement` carries a
+  token for, so the derivation that built `IconTable.PictureRows` never saw it and
+  `DevProbe.UnknownIcons` listed it under `pictures`. It is now a HAND-WRITTEN row
+  (`TURNSYMBOL=icon.turn`) and a regeneration must keep it: the picture is the only caption its
+  number has, and it is what tells the mod that "3" in that column means turns.
+- **A popup's own line handlers can take NO argument.** `ConstructionCompletedNotificationLine`'s
+  wired click is `OnSelectSystemCb()` with an empty parameter list, while `AgeControlButton` sends
+  `SendMessage(name, senderGameObject)`. Unity will not deliver a one-argument SendMessage to a
+  zero-argument method, and with `DontRequireReceiver` it says nothing either — the row simply does
+  nothing. `AgeWidgets.Press`/`Send` look the arity up first and are the only safe pressing route;
+  `NotificationScreen`'s own private `Send` (used for the shared skeleton buttons, all of which do
+  take the sender) does not, so anything new pressed from that screen goes through `AgeWidgets`.
+- **The construction-completed popup draws a real table**, and its rectangles pair by themselves:
+  the caption band (`CollumnNames`: "System" 264–504, "Completed" 502–822, "Next Construction"
+  825–1145) x-aligns with each line's three cell groups (`StarSystemInfo` 264–504,
+  `CompletedConstructionInfo` 502–812, `NextConstructionInfo` 825–1145), so columns can be paired by
+  x-overlap with no per-window knowledge. The line (`CompletedConstructionLine000`) is a wired
+  `AgeControlButton` under `ContentSW`'s scroll view, carries an EMPTY `AgeTooltip` of its own —
+  which is why the pre-table reading fused all four labels into one row — and hangs the two
+  `Constructible` dossiers off the `Icon` inside each figure cell, never on the cell or the line.
+  A system with an empty queue hides `NextConstructionInfo` and shows `NoNextConstructionButton`
+  (a group, no button component) in the same column instead.
 - **The game's Space is `ToggleScanView`** (`InputManager.cs:233`, one binding shared with Mouse2) —
   the strategic lens mode that sets `IsInScanView`, drops `IsInNormalView` (hiding the pinned quest
   and most HUD) and repaints the whole map, unmodelled by the mod (roadmap row). This is why the

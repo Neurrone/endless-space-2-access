@@ -65,7 +65,10 @@ concluding "the game never names this".
 2. **Grep for the dispatch idioms.** High-yield patterns: `SendMessage(` (handler-name
    dispatch), `GetService<`/`Instance.` (locators), `Notify(`/`EventRaised` (buses),
    `OnClick`/`Cb` naming, `IsReady`/`VisibilityChanged`/`OnEndShow` (readiness),
-   `PostOrder`/`Command` (action layer), `Localize`/`LocalizationKey`.
+   `PostOrder`/`Command` (action layer), `Localize`/`LocalizationKey`. And when a base
+   class anchors a family of sibling subclasses, survey the WHOLE family in one pass —
+   one regex for their own bound fields over the family's glob — before trusting that the
+   prototype generalizes: siblings diverge in shape, not just content.
 3. **Corroborate live** with the dev server ([dev-server.md](dev-server.md)): the raw GUI
    dump confirms the scene structure the decompile implies; the REPL probes services and
    calls candidate APIs against the running game before you build on them. When raw dumps and the mod's interpreted view both exist,

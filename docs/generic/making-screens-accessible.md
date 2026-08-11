@@ -36,12 +36,19 @@ Concretely:
 - Two navigation tiers, one division of labor: the screen's visual panels are **Tab
   stops**; the sections *within* one panel are **regions**, jumped with the region chord
   ([input.md](input.md)'s Alt+Up/Down) — the jump never crosses a panel, Tab does that.
-  Never declare a lone region — the jump key would swallow silently.
+  What counts as a section is the game's answer, not the mod's: content the game draws
+  as captioned groups is one region per group, never flattened into one — a row must be
+  heard in the group it belongs to. Never declare a lone region — the jump key would
+  swallow silently — and never a derived boundary the player cannot see: a derived
+  section needs a drawn caption to justify it.
 - Each element's review buffer holds **its own** content (its tooltip, its cell), not the
   container's shared text — the container is a walk away.
 
 And the words are the game's words. Where the game shows something for a state — failure
-tooltips, captions, placeholders — surface that text, never a mod paraphrase. Preserve it
+tooltips, captions, placeholders — surface that text, never a mod paraphrase. Only words
+the game finished writing count: text still holding an unfilled template slot ("… {0}") or
+a key the localizer hands back unchanged ("%SomeKey") is parked, not shown — treat it as
+absent, never speak it. Preserve it
 exactly: no mod separators or punctuation inserted (multi-line game text joins with a space,
 not a list comma — worked examples in [localization.md](localization.md)). Conversely, invent nothing the game does
 not show: no placeholder nodes for empty states, no spoken position text where the game shows
@@ -50,7 +57,10 @@ dots — a stop with nothing in it does not exist that frame. "Invent nothing" h
 hover* — permanently drawn text (a card's description paragraph) is spoken in full as part of
 the control's readout; hover-revealed text is announced or indicated by the tooltip rule
 ([tooltips.md](tooltips.md)). Applying the tooltip rule to always-drawn text silences words
-that are on the player's screen. The full text rules are in
+that are on the player's screen. And what a screen says and what it draws are not
+alternatives: a body composer written as "if there is a description, else the drawn
+content" silently drops one side — and no dump reveals it, because the result still reads
+fluently. A composer composes, it never chooses. The full text rules are in
 [localization.md](localization.md). A recipe for finding those words when the game has a
 state *enum*: grep the localization corpus for a key pattern built from the enum member
 names — games with a status enum almost always ship a parallel string table, and it covers

@@ -62,11 +62,45 @@ namespace ES2Access.Core.UI
         private Func<string> _rowName; // the current row's primary label (for vertical edge labels)
         private Func<string> _prevRowName;
         private object _rowRef;        // the current row's domain object (identity keys), or null
+        private ControlId _first;      // the first PRIMARY this sheet emitted
 
         public GraphSheet(GraphBuilder b, string keyPrefix)
         {
             _b = b;
             _key = keyPrefix;
+        }
+
+        /// <summary>
+        /// The primary cell of the first row this sheet emitted — where a screen whose content IS the
+        /// table sends focus (<see cref="GraphBuilder.SetStart"/>). Null until a row has been emitted.
+        ///
+        /// The one id a caller is given, deliberately. Cell keys are the sheet's own business, and a
+        /// screen that rebuilds one by hand is coupled to a private format that will silently stop
+        /// matching: the id it hands the builder simply names no node, and the graph falls back to
+        /// whatever was declared first with nothing said about it.
+        /// </summary>
+        public ControlId FirstRow
+        {
+            get { return _first; }
+        }
+
+        /// <summary>
+        /// Continue the table below a node that is NOT part of it — a paragraph the screen drew above
+        /// the first row, a heading it declared itself. The first row then meets that node exactly as
+        /// it would meet a row above it: every cell reaches it going up (a lone node is a row of one
+        /// column, so the ragged-row fallback sends the other columns there too) and it reaches the
+        /// first row's primary going down.
+        ///
+        /// Between <see cref="Region"/> and the first row. This is what keeps a screen from wiring its
+        /// own seam: hand-written seam edges are the same shape every time and get the direction or the
+        /// column coverage wrong.
+        /// </summary>
+        public GraphSheet Follows(ControlId node)
+        {
+            // Seeded as the row just finished, because that is what the next row wires itself against.
+            _rowIds = node == null ? null : new List<CellRef> { new CellRef { Col = 0, Id = node } };
+            _rowName = null;
+            return this;
         }
 
         /// <summary>Start a region: a Ctrl+arrow jump target and a context level ("Fleets, table").
@@ -187,6 +221,7 @@ namespace ES2Access.Core.UI
                 ? ControlId.Referenced(_rowRef, skey)
                 : ControlId.Structural(skey);
             _b.AddNode(id, vt);
+            if (col == 0 && _first == null) _first = id;
 
             // Left/right to the nearest EMITTED cell (sparse rows skip empty columns), labeled with the
             // destination column's header (none onto the primary, whose full readout identifies it).

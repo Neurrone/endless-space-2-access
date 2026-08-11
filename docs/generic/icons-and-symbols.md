@@ -20,7 +20,9 @@ heuristic.
 Sprite images drawn beside text (stat columns, panel icons) are the second universe, and it
 usually *cannot* be closed — any bitmap can be drawn anywhere. Restrict it honestly (ES2:
 textures the game's own data pairs with a registered token) and give the leftovers a
-detector, not a guess (below).
+detector, not a guess (below). The detector earns its keep even after enumeration wins: a
+symbol nothing in the game's data carries — one painted straight into a panel — escapes
+any data-derived table, and the unknown-pictures audit is the only thing that finds it.
 
 ## Name them in the mod's translation file
 

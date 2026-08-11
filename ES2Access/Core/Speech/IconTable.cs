@@ -29,6 +29,11 @@ namespace ES2Access.Core.Speech
     /// saying the two render the same concept. Portraits, mood art, loading screens and
     /// notification illustrations are left out - they are pictures OF a thing rather than
     /// symbols standing in for a word.
+    ///
+    /// A symbol no element draws is added BY HAND and kept across a regeneration: the game also
+    /// paints a few of them straight into a panel, where the picture is the only caption a number
+    /// has - <c>TurnSymbol</c>, the hourglass the construction table puts its remaining turns
+    /// beside.
     /// </summary>
     public static class IconTable
     {
@@ -372,7 +377,7 @@ namespace ES2Access.Core.Speech
             "STRATEGIC05LARGE=icon.orichalcix STRATEGIC05SMALL=icon.orichalcix STRATEGIC06=icon.quadrinix\n" +
             "STRATEGIC06LARGE=icon.quadrinix STRATEGIC06SMALL=icon.quadrinix\n" +
             "SYSTEMDEFENSE=icon.system-garrison TANK=icon.armor TANKICONMEDIUM=icon.armor\n" +
-            "TRACINGSPEEDLARGE=icon.hacking-speed UPKEEP=icon.upkeep";
+            "TRACINGSPEEDLARGE=icon.hacking-speed TURNSYMBOL=icon.turn UPKEEP=icon.upkeep";
 
         private static Dictionary<string, string> _tokens;
         private static Dictionary<string, string> _pictures;

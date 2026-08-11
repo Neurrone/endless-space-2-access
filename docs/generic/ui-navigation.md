@@ -59,7 +59,10 @@ which no dump reveals. Key such lines on the game's *data* object, never the wid
 - **`GraphBuilder`** — the per-render DSL, in four parts:
   - **Two modes.** Menu mode (`StartRow`/`AddItem`) auto-wires rows and gives rows sharing
     a `rowKey` column-preserving vertical navigation; raw mode (`AddNode`/`Connect`) wires
-    arbitrary topologies.
+    arbitrary topologies. The two may share a stop: the builder stitches each menu↔raw
+    seam itself, and a seam is a ROW, not a node — every cell of the raw side's edge row
+    reaches across. An adapter hand-wiring a seam it thinks is missing is the regression,
+    not the fix.
   - **`PushContext`** adds non-focusable labeled levels (spoken once on entry via the path
     diff). Its id derives from its label, so sibling contexts sharing a drawn caption
     (ES2's lobby: seven competitor slots all captioned "AI") silently collapse in the path
@@ -103,6 +106,9 @@ which no dump reveals. Key such lines on the game's *data* object, never the wid
   the primary cell. It stamps each cell's column number on the node (`NodeVtable.Column`), so
   row-shaped subsystems — type-ahead's one-result-per-row filter, anything else that must
   tell a primary cell from its columns — ask the node instead of rediscovering table shape.
+  Its node ids are private: a sheet names its first row (`FirstRow`, for the start node) and
+  can be told to continue below a node the screen declared (`Follows`) — an adapter
+  reconstructing a cell key is the defect those two exist to prevent.
 - **`TypeAheadSearch`** — tiered fuzzy matching (ported to WotR from OniAccess), engine-side; the behavior contract is the "Type-ahead search" section below.
 
 ## The adapter (per game; imitate, don't copy)
@@ -392,7 +398,10 @@ player. The shape (`src/graph-ui/MessageBoxScreen.cs`):
    focus is mouse-only; gamepad keycodes filtered out of the rebind UI). If one exists,
    consider piggybacking before building.
 2. Wire the text pipeline: final localized display string + the game's own markup cleaner.
-3. Wire activation: the deterministic handler a real click reaches (not synthesized input).
+3. Wire activation: the deterministic handler a real click reaches (not synthesized
+   input) — through the game's ONE pressing helper. A screen growing a private copy of
+   that wiring is a defect waiting: the copy misses what the helper has learned (handler
+   arity, click replay) and fails silently.
 4. Wire screen predicates: visibility + the game's "fully shown and interactive" gate.
 5. Add role words and state words to the localization table.
 6. Ship the first screen, verify announcements via the dev server, then hand the human the
