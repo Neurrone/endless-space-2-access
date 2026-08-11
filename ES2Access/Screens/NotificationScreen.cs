@@ -2180,6 +2180,26 @@ namespace ES2Access.Screens
                     );
                 }
 
+                // The buttons that leave the popup for a page of their own, for a popup that drew one with
+                // no words on it. Skipped where the shared rule already found it.
+                foreach (Gateway gateway in own ? Gateways(window) : NoGateways)
+                {
+                    AgeControlButton button = Clickable(gateway.Widget);
+                    if (button == null || Has(controls, button.AgeTransform))
+                    {
+                        continue;
+                    }
+
+                    Add(
+                        controls,
+                        "gateway/" + gateway.Widget.name,
+                        button,
+                        null,
+                        null,
+                        GatewayName(button.AgeTransform, gateway.NameKey)
+                    );
+                }
+
                 // The button that puts the choice into effect, for a popup that drew it as a tick with
                 // no words on it: the game has a name for it even where it wrote none there.
                 AgeControl confirm = own ? Confirm(window) : null;
@@ -2351,6 +2371,14 @@ namespace ES2Access.Screens
         /// with a body owns every control it added as well (<see cref="NotificationBody"/>), because the
         /// shared reading would otherwise declare the same buttons a second time.
         ///
+        /// <see cref="Gateways"/>: a button that leaves this popup for a page of its own - the negotiation
+        /// table, a minor faction's diplomacy, the score screen, the academy. It is the same shape as
+        /// <see cref="Confirm"/> and is listed for the same reason: the popup may have drawn it as a bare
+        /// icon, and the shared rule drops a control with no words on it. Unlike Confirm the game has no
+        /// single word for these, so each is named by whatever the popup DID write - the caption, else the
+        /// sentence its tooltip opens with - and the mod's own phrase only where the popup wrote neither.
+        /// A gateway the shared reading already found is not declared twice.
+        ///
         /// A popup with no entry here is read entirely by the shared rules, which is the case for most
         /// of them. A stage adding a popup adds one entry and touches nothing else.
         /// </summary>
@@ -2360,7 +2388,16 @@ namespace ES2Access.Screens
             public Func<NotificationWindow, IList<AgeTransform>> Tables;
             public Func<NotificationWindow, IList<AgeTransform>> Choices;
             public Func<NotificationWindow, AgeControl> Confirm;
+            public Func<NotificationWindow, IList<Gateway>> Gateways;
             public Action<NotificationBody> Body;
+        }
+
+        /// <summary>One button out of a popup and into a page of its own: the widget, and the mod's own
+        /// name for where it goes, used only where the popup named it nowhere at all.</summary>
+        private struct Gateway
+        {
+            public AgeTransform Widget;
+            public string NameKey;
         }
 
         private static readonly Dictionary<Type, Variant> Variants = Register();
@@ -2582,12 +2619,134 @@ namespace ES2Access.Screens
                 }
             );
 
+            // The popups that are a DOOR as well as a report. Each draws a button leading somewhere the
+            // player can act on what they have just been told, and each of those buttons is the only route
+            // there from here - so if the shared caption rule drops it for being drawn as a bare icon, the
+            // popup becomes a dead end. The lists a report draws are declared beside them.
+
+            // A relation changed. Where an ALLY dragged this empire into a war it did not agree to, the
+            // popup offers the way to renounce the alliance - straight into the negotiation table with the
+            // term already picked (OnNegotiationScreenCb). It also draws a line per member of each
+            // alliance involved, as cloned lines.
+            variants.Add(
+                typeof(DiplomaticRelationChangeNotificationWindow),
+                new Variant
+                {
+                    Tables = w =>
+                        Some(
+                            ((DiplomaticRelationChangeNotificationWindow)w).MyAllianceTable,
+                            ((DiplomaticRelationChangeNotificationWindow)w).TheirAllianceTable
+                        ),
+                    Gateways = w =>
+                        Out(
+                            To(
+                                ((DiplomaticRelationChangeNotificationWindow)w).DidNotAgreeWarButton,
+                                NegotiationGatewayKey
+                            )
+                        ),
+                }
+            );
+
+            // A minor faction has been met: the button opens its diplomacy, which is where it is bought,
+            // bribed or assimilated. The game hides it once the faction has been integrated, so a drawn
+            // button is always a live route.
+            variants.Add(
+                typeof(MinorEmpireMetNotificationWindow),
+                new Variant
+                {
+                    Gateways = w =>
+                        Out(
+                            To(
+                                ((MinorEmpireMetNotificationWindow)w).NegotiationButton,
+                                MinorFactionGatewayKey
+                            )
+                        ),
+                }
+            );
+
+            // An empire is out of the game - and where it is the PLAYER's, this popup is the end of their
+            // game: it refuses to be dismissed or minimised at all, and its one button ends the session
+            // and opens the score screen.
+            variants.Add(
+                typeof(EmpireEliminatedNotificationWindow),
+                new Variant
+                {
+                    Gateways = w =>
+                        Out(
+                            To(
+                                ((EmpireEliminatedNotificationWindow)w).ScoreScreenButton,
+                                ScoreScreenGatewayKey
+                            )
+                        ),
+                }
+            );
+
+            // The academy asking the player to decide something: a set of choices it keeps exclusive
+            // itself, a validate button drawn as a tick, the roles it has handed out as cloned lines, and
+            // the way into the academy's own screen.
+            variants.Add(
+                typeof(ContextualAcademyDiplomaticExchangeUpdateNotificationWindow),
+                new Variant
+                {
+                    Choices = w =>
+                        Some(
+                            ((ContextualAcademyDiplomaticExchangeUpdateNotificationWindow)w).ChoiceTable
+                        ),
+                    Confirm = w =>
+                        ((ContextualAcademyDiplomaticExchangeUpdateNotificationWindow)w).ValidateButton,
+                    Tables = w => Roles((ContextualAcademyDiplomaticExchangeUpdateNotificationWindow)w),
+                    Gateways = w =>
+                        Out(
+                            To(
+                                Transform(
+                                    (
+                                        (ContextualAcademyDiplomaticExchangeUpdateNotificationWindow)w
+                                    ).academyScreen
+                                ),
+                                AcademyGatewayKey
+                            )
+                        ),
+                }
+            );
+
             return variants;
         }
 
         private static IList<AgeTransform> Some(params AgeTransform[] widgets)
         {
             return widgets;
+        }
+
+        /// <summary>The mod's own names for where a gateway button goes, used only where the popup wrote no
+        /// caption and no tooltip on it. Asked for optionally, so a build without the phrase leaves the
+        /// button to whatever the game did write rather than reading a key aloud.</summary>
+        private const string NegotiationGatewayKey = "notify.open-negotiation";
+        private const string MinorFactionGatewayKey = "notify.open-minor-faction";
+        private const string ScoreScreenGatewayKey = "notify.open-score-screen";
+        private const string AcademyGatewayKey = "notify.open-academy";
+
+        /// <summary>The roles the academy has handed out, which its popup draws as cloned lines inside a
+        /// panel of its own - and only while the academy is in the state that shows them.</summary>
+        private static IList<AgeTransform> Roles(
+            ContextualAcademyDiplomaticExchangeUpdateNotificationWindow window
+        )
+        {
+            AcademyRolesReportPanel panel = window.RoleLineTable;
+            return Some(
+                panel == null || !Visible(window.RolesPanel) ? null : panel.RoleLineTable
+            );
+        }
+
+        private static AgeTransform Transform(AgeControl control)
+        {
+            try
+            {
+                return control == null ? null : control.AgeTransform;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
         }
 
         /// <summary>The terms of a diplomatic offer: the ones that bind both sides, then what each side
@@ -2729,6 +2888,73 @@ namespace ES2Access.Screens
             }
 
             return toggle != null && Visible(toggle.AgeTransform) ? toggle : null;
+        }
+
+        /// <summary>What a gateway button is called: the caption where the popup wrote one, else the
+        /// sentence its tooltip opens with, else the mod's own name for where it goes. Null is a complete
+        /// answer for the first two - the shared naming falls through to whatever is left.</summary>
+        private static string GatewayName(AgeTransform widget, string nameKey)
+        {
+            string caption = CaptionOf(widget);
+            if (!string.IsNullOrEmpty(caption))
+            {
+                return caption;
+            }
+
+            string hinted = CardActions.FirstLine(AgeWidgets.Raw(widget));
+            return string.IsNullOrEmpty(hinted) ? OptionalText.Phrase(nameKey) : hinted;
+        }
+
+        /// <summary>The clickable control a popup's gateway field stands on - its own, else the one inside
+        /// it, since these fields are plain transforms and the prefab decides which.</summary>
+        private static AgeControlButton Clickable(AgeTransform widget)
+        {
+            try
+            {
+                if (widget == null || !Visible(widget))
+                {
+                    return null;
+                }
+
+                AgeControlButton button =
+                    AgeWidgets.Button(widget) ?? widget.GetComponentInChildren<AgeControlButton>(true);
+                return button != null && Visible(button.AgeTransform) ? button : null;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        private static readonly Gateway[] NoGateways = new Gateway[0];
+
+        private static IList<Gateway> Gateways(NotificationWindow window)
+        {
+            Variant variant = VariantOf(window);
+            if (variant == null || variant.Gateways == null)
+            {
+                return NoGateways;
+            }
+
+            try
+            {
+                return variant.Gateways(window) ?? NoGateways;
+            }
+            catch (Exception e)
+            {
+                Log.Warn("notification: looking for a popup's gateways threw: " + e);
+                return NoGateways;
+            }
+        }
+
+        private static IList<Gateway> Out(params Gateway[] gateways)
+        {
+            return gateways;
+        }
+
+        private static Gateway To(AgeTransform widget, string nameKey)
+        {
+            return new Gateway { Widget = widget, NameKey = nameKey };
         }
 
         private static AgeControl Confirm(NotificationWindow window)
