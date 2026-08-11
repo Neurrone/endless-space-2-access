@@ -126,6 +126,7 @@ namespace ES2Access
             Screens.Register(new SystemSelectionScreen());
             Screens.Register(new SystemPoliticsScreen());
             Screens.Register(new HeroSelectionScreen());
+            Screens.Register(new ElectionScreen());
             Screens.Register(new RenameModalScreen());
             Screens.Register(new TutorialSelectionScreen());
             Screens.Register(new global::ES2Access.Screens.NewGameScreen());
