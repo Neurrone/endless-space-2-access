@@ -54,6 +54,35 @@ namespace ES2Access.Screens
     /// captions that nothing else in the content is outside of, and every line's pieces sit under
     /// one caption each.
     ///
+    /// The game builds those tables two ways and both read as tables. One is a scrolling list, found from
+    /// the screen. The other is a container the popup refills every turn by CLONING one line - the
+    /// inspector's report, the laws that lapsed, the systems that lost population - and that one cannot be
+    /// found from the screen at all: a stack of clones and a stack of hand-laid-out rows look the same, so
+    /// the popup's own code names its container (<see cref="Variant"/>). Whether the columns have NAMES is
+    /// then the prefab's decision rather than the code's, and it is asked of the screen: a single band of
+    /// captions drawn clear above the container, with nothing else of the popup's out there and every
+    /// line's pieces falling one to a caption, makes it a table with named columns; anything less leaves
+    /// each line as the one row it looks like, its pieces joined and every explanation hung inside it
+    /// carried along. What the popup wrote UNDER the lines - the inspector's report ends with what all of
+    /// it came to - is the table's footer and reads as the full-width row it is drawn as.
+    ///
+    /// A line of a table is one thing to the player, so text drawn inside one is that line's row rather
+    /// than a row of its own - unless the line drew a single thing, in which case it already is one and
+    /// the empires of an alliance, a line each drawn side by side, still read as the one row they look
+    /// like.
+    ///
+    /// Exclusivity is likewise something the screen cannot show. Some popups let the player pick one of
+    /// several and keep that exclusive by hand - unticking the others in their own code - rather than with
+    /// a <c>GuiRadioGroup</c>, and a hand-wired set is pixel-for-pixel a row of independent boxes. Those
+    /// sets are named the same way, and they are declared because the popup SAYS they are a choice rather
+    /// than because it wrote a caption on them: a card whose words are all nested inside it has no caption
+    /// to the shared rule, and dropping it would leave a keyboard player unable to choose at all. What is
+    /// written on the card, all of it, is its name. Picking is not doing - the popup wants the choice
+    /// confirmed - so the button that confirms is declared even where the game drew it as a bare tick
+    /// (under the game's own word for it), and where a popup draws no such button the game's own second
+    /// click on the choice is what confirms and takes Backslash, the key that is already every control's
+    /// other command.
+    ///
     /// The words are a control in their own right and the one focus starts on: what the notification
     /// says is the reason it interrupted, so arriving reads its title and then lands on its text.
     /// Every other control speaks its own tooltip on focus and carries it as review-buffer content -
@@ -61,9 +90,14 @@ namespace ES2Access.Screens
     /// is one sentence the game wrote for exactly that purpose - while the text carries the whole
     /// notification, so a long report can be re-read from where the words are.
     ///
+    /// Not every popup puts its words in the shared description: a diplomat's message is typed out into a
+    /// label of the popup's own. That label is named by the popup too, so the message leads the body and is
+    /// what arriving reads, rather than turning up as one more thing drawn in the middle.
+    ///
     /// A popup that can open a panel beside itself - the dossier behind Empire Information - gets a
     /// Tab stop for it while it is open, because that is what the panel is to the player: somewhere
-    /// else to be, there only while it is on screen.
+    /// else to be, there only while it is on screen. Its lines are that region's and nobody else's: they
+    /// are drawn level with the content, so a popup that draws its own content leaves them out of it.
     ///
     /// Walking to the next notification keeps the same screen up with different words in it, so the
     /// change is watched for and announced rather than being left silent.
@@ -233,8 +267,7 @@ namespace ES2Access.Screens
             // one that draws its own content instead may still answer the first from the notification
             // itself while drawing nothing that says it.
             string description = Description(window);
-            AgePrimitiveLabel label =
-                description == null ? null : Value(window, NotificationDescription) as AgePrimitiveLabel;
+            AgePrimitiveLabel label = description == null ? null : DescriptionLabel(window);
             AgeTransform words =
                 label != null && Visible(label.AgeTransform) ? label.AgeTransform : null;
 
@@ -298,7 +331,14 @@ namespace ES2Access.Screens
             Sheet sheet = ReadSheet(window, controls, inside, words);
             if (sheet == null)
             {
-                BuildDrawnBody(builder, window, controls, inside, words);
+                // A popup whose lines the game stamped out of a prefab rather than scrolled: the same
+                // table, found from what the popup DECLARES it fills rather than from a scroll view.
+                sheet = ReadTableSheet(window, controls, inside, words);
+            }
+
+            if (sheet == null)
+            {
+                BuildDrawnBody(builder, window, controls, inside, words, TableLines(window));
             }
             else
             {
@@ -472,13 +512,20 @@ namespace ES2Access.Screens
         /// so that the rows under "Next Research" audibly belong to the next technology rather than to
         /// the one that just finished. Which cards those are is the game's own grouping: see
         /// <see cref="Card"/>.
+        ///
+        /// <paramref name="lines"/> are the lines of a table the popup stamped out of a prefab, where it
+        /// has one (<see cref="TableLines"/>). Text drawn inside one of them is that LINE's row rather
+        /// than a row of its own, because a line of a table is one thing to the player - "Kepler, the
+        /// Inspector sold your Xenobiology Lab, saving 4 dust" - and the tooltip-then-band grouping
+        /// below would otherwise read one line as four.
         /// </summary>
         private static void BuildDrawnBody(
             GraphBuilder builder,
             NotificationWindow window,
             List<Control> controls,
             List<Control> inside,
-            AgeTransform words
+            AgeTransform words,
+            List<AgeTransform> lines = null
         )
         {
             List<Item> items = new List<Item>();
@@ -487,9 +534,12 @@ namespace ES2Access.Screens
                 items.Add(new Item { Widget = control.Widget, Control = control, IsControl = true });
             }
 
-            foreach (List<Line> row in DrawnRows(window, controls, words))
+            foreach (List<Line> row in DrawnRows(window, controls, words, lines))
             {
-                items.Add(new Item { Widget = Anchor(row), Lines = row });
+                AgeTransform group = GroupOf(row, lines);
+                items.Add(
+                    new Item { Widget = group ?? Anchor(row), Lines = row, Group = group }
+                );
             }
 
             if (items.Count == 0)
@@ -518,7 +568,7 @@ namespace ES2Access.Screens
                 }
                 else
                 {
-                    id = AddRow(builder, item.Lines, index);
+                    id = AddRow(builder, item.Lines, index, item.Group);
                 }
 
                 if (index == 0)
@@ -649,11 +699,31 @@ namespace ES2Access.Screens
         /// <summary>One drawn row of the content area: what it says, and the tooltip the game hung on
         /// it. A tooltip that only repeats the words already in the row - the lore paragraph, which the
         /// game both prints and offers on hover - is not a second thing to say and is dropped, so the
-        /// paragraph is read once.</summary>
-        private static ControlId AddRow(GraphBuilder builder, List<Line> row, int index)
+        /// paragraph is read once.
+        ///
+        /// <paramref name="group"/> is the table line the row was read out of, where it is one. A line
+        /// of a table hangs an explanation on each of its pieces - what the improvement that was sold
+        /// does, what the action it names means - and the row that reads the whole line carries ALL of
+        /// them, in the order the game drew them, because the row is now the only place those
+        /// explanations are reachable from.</summary>
+        private static ControlId AddRow(
+            GraphBuilder builder,
+            List<Line> row,
+            int index,
+            AgeTransform group = null
+        )
         {
             List<Line> it = row;
-            AgeTooltip tooltip = Explains(it[0].Tooltip, RowText(it));
+            List<AgeTooltip> explaining = group == null
+                ? Single(Explains(it[0].Tooltip, RowText(it)))
+                : Explaining(group, RowText(it));
+            NodeSection[] sections = new NodeSection[explaining.Count];
+            for (int i = 0; i < explaining.Count; i++)
+            {
+                sections[i] = GraphNodes.TooltipSection(explaining[i]);
+            }
+
+            AgeTooltip tooltip = explaining.Count == 0 ? null : explaining[explaining.Count - 1];
             AgeTransform hover = tooltip == null ? null : Holder(tooltip);
             NodeVtable vtable = new NodeVtable
             {
@@ -663,18 +733,46 @@ namespace ES2Access.Screens
                 {
                     GraphNodes.LabelPart(() => RowText(it)),
                 },
-                Sections = GraphNodes.Sections(null, tooltip),
+                Sections = GraphNodes.Sections(sections),
                 OnFocusVisual =
                     hover == null ? ReleasePointer : () => PointerFocus.MoveTo(hover, tooltip),
                 OnBlurVisual = ReleasePointer,
             };
 
+            AgeTransform named = group ?? it[0].Widget;
             ControlId id = ControlId.Referenced(
-                it[0].Widget,
-                "notification:body/" + index + "/" + it[0].Widget.name
+                named,
+                "notification:body/" + index + "/" + named.name
             );
             builder.AddItem(id, vtable);
             return id;
+        }
+
+        private static List<AgeTooltip> Single(AgeTooltip tooltip)
+        {
+            List<AgeTooltip> one = new List<AgeTooltip>();
+            if (tooltip != null)
+            {
+                one.Add(tooltip);
+            }
+
+            return one;
+        }
+
+        /// <summary>The tooltips inside one table line that say something the line does not already
+        /// say.</summary>
+        private static List<AgeTooltip> Explaining(AgeTransform group, string text)
+        {
+            List<AgeTooltip> kept = new List<AgeTooltip>();
+            foreach (AgeTooltip tooltip in Tooltips(group))
+            {
+                if (Explains(tooltip, text) != null)
+                {
+                    kept.Add(tooltip);
+                }
+            }
+
+            return kept;
         }
 
         /// <summary>The text the popup drew in its content area, grouped into the rows it reads as.
@@ -682,7 +780,8 @@ namespace ES2Access.Screens
         private static List<List<Line>> DrawnRows(
             NotificationWindow window,
             List<Control> controls,
-            AgeTransform words
+            AgeTransform words,
+            List<AgeTransform> tableLines = null
         )
         {
             List<List<Line>> rows = new List<List<Line>>();
@@ -697,20 +796,61 @@ namespace ES2Access.Screens
 
             List<AgeTransform> top = TopRails(window, controls);
             List<AgeTransform> bottom = BottomRails(controls);
+            AgeTransform dossier = Dossier(window);
             List<Line> loose = new List<Line>();
             List<AgeTooltip> explained = new List<AgeTooltip>();
             Dictionary<AgeTooltip, List<Line>> groups = new Dictionary<AgeTooltip, List<Line>>();
+            List<AgeTransform> banded = new List<AgeTransform>();
+            Dictionary<AgeTransform, List<Line>> byLine =
+                new Dictionary<AgeTransform, List<Line>>();
+            List<Line> rest = new List<Line>();
             foreach (Line line in lines)
             {
                 if (
                     !InBody(line.Widget, top, bottom)
                     || PartOf(line.Widget, controls)
                     || ReferenceEquals(line.Widget, words)
+                    || IsIn(line.Widget, dossier)
                 )
                 {
                     continue;
                 }
 
+                AgeTransform group = In(line.Widget, tableLines);
+                if (group == null)
+                {
+                    rest.Add(line);
+                    continue;
+                }
+
+                List<Line> pieces;
+                if (!byLine.TryGetValue(group, out pieces))
+                {
+                    pieces = new List<Line>();
+                    byLine.Add(group, pieces);
+                    banded.Add(group);
+                }
+
+                pieces.Add(line);
+            }
+
+            // A line that drew ONE thing is one thing wherever it sits: the empires in an alliance are
+            // a line each and are drawn side by side, and reading them a line at a time would say
+            // "Sophons" three rows running. Only a line that drew SEVERAL pieces is a row of its own,
+            // because those pieces are one fact between them.
+            for (int i = banded.Count - 1; i >= 0; i--)
+            {
+                List<Line> pieces = byLine[banded[i]];
+                if (pieces.Count < 2)
+                {
+                    rest.AddRange(pieces);
+                    byLine.Remove(banded[i]);
+                    banded.RemoveAt(i);
+                }
+            }
+
+            foreach (Line line in rest)
+            {
                 if (line.Tooltip == null)
                 {
                     loose.Add(line);
@@ -728,6 +868,13 @@ namespace ES2Access.Screens
                 group.Add(line);
             }
 
+            foreach (AgeTransform line in banded)
+            {
+                List<Line> pieces = byLine[line];
+                pieces.Sort(AcrossTheRow);
+                rows.Add(pieces);
+            }
+
             foreach (AgeTooltip tooltip in explained)
             {
                 List<Line> group = groups[tooltip];
@@ -743,6 +890,57 @@ namespace ES2Access.Screens
             return rows;
         }
 
+        /// <summary>The dossier the popup has open beside itself, where it has one open. Its lines are a
+        /// region of their own (<see cref="BuildEmpireInfo"/>), so the body must not read them a second
+        /// time: the panel is drawn level with the content, and a popup that draws its own content would
+        /// otherwise say the whole dossier twice.</summary>
+        private static AgeTransform Dossier(NotificationWindow window)
+        {
+            NegotiationEmpireInfoPanel panel = InfoPanel(window);
+            return panel == null || !Open(panel) ? null : panel.AgeTransform;
+        }
+
+        private static bool IsIn(AgeTransform widget, AgeTransform ancestor)
+        {
+            return ancestor != null && IsUnder(widget, ancestor);
+        }
+
+        /// <summary>Which of the table's lines this widget was drawn inside, or null where it was drawn
+        /// outside all of them - a caption band, a totals footer.</summary>
+        private static AgeTransform In(AgeTransform widget, List<AgeTransform> lines)
+        {
+            for (int i = 0; lines != null && i < lines.Count; i++)
+            {
+                if (IsUnder(widget, lines[i]))
+                {
+                    return lines[i];
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>The table line a whole row was read out of - all of its pieces and nothing else's.
+        /// A row of one piece is never one: see the reading in <see cref="DrawnRows"/>.</summary>
+        private static AgeTransform GroupOf(List<Line> row, List<AgeTransform> lines)
+        {
+            if (row.Count < 2)
+            {
+                return null;
+            }
+
+            AgeTransform group = In(row[0].Widget, lines);
+            for (int i = 1; group != null && i < row.Count; i++)
+            {
+                if (!ReferenceEquals(In(row[i].Widget, lines), group))
+                {
+                    return null;
+                }
+            }
+
+            return group;
+        }
+
         /// <summary>One thing drawn in the content area: a control the popup added there, or a row of
         /// text it wrote.</summary>
         private struct Item
@@ -751,6 +949,9 @@ namespace ES2Access.Screens
             public Control Control;
             public bool IsControl;
             public List<Line> Lines;
+
+            /// <summary>The table line this row was read out of, where the popup drew one.</summary>
+            public AgeTransform Group;
         }
 
         private static readonly Comparison<Item> DownThePage = delegate(Item a, Item b)
@@ -857,6 +1058,11 @@ namespace ES2Access.Screens
         {
             public List<Line> Headers;
             public List<SheetRow> Rows;
+
+            /// <summary>What the popup wrote UNDER the lines - the inspector's report ends with what all
+            /// of it came to. Not a line of the table: it stands outside the rows, and reads as the
+            /// full-width row it is drawn as.</summary>
+            public List<List<Line>> Footer;
         }
 
         /// <summary>One line of that table: the thing the game wired the click to, and its pieces
@@ -1180,6 +1386,21 @@ namespace ES2Access.Screens
                 table.RowAt(RowNode(row), row.Widget, cells);
             }
 
+            for (int i = 0; sheet.Footer != null && i < sheet.Footer.Count; i++)
+            {
+                List<Line> band = sheet.Footer[i];
+                table.Line(
+                    new NodeVtable
+                    {
+                        Announcements = new List<NodeAnnouncement>
+                        {
+                            GraphNodes.LabelPart(() => RowText(band)),
+                        },
+                        OnFocusVisual = ReleasePointer,
+                    }
+                );
+            }
+
             table.Finish();
             if (lead == null)
             {
@@ -1188,17 +1409,29 @@ namespace ES2Access.Screens
             }
         }
 
-        /// <summary>The row itself: what the line says, all of it, and the game's own click.</summary>
+        /// <summary>The row itself: what the line says, all of it, and the game's own click where the
+        /// game put one there. A table whose lines do nothing - what the inspector sold, which laws
+        /// lapsed - has rows the player reads rather than works, and says no role word for a button that
+        /// is not there.</summary>
         private static NodeVtable RowNode(SheetRow row)
         {
             AgeTransform widget = row.Widget;
             AgeTransform[] cells = row.Cells;
-            NodeVtable vtable = GraphNodes.Button(
-                () => CellText(cells[0]),
-                () => AgeWidgets.Press(widget),
-                () => AgeWidgets.Operable(widget),
-                AgeWidgets.Raw(widget)
-            );
+            NodeVtable vtable = Wired(widget)
+                ? GraphNodes.Button(
+                    () => CellText(cells[0]),
+                    () => AgeWidgets.Press(widget),
+                    () => AgeWidgets.Operable(widget),
+                    AgeWidgets.Raw(widget)
+                )
+                : new NodeVtable
+                {
+                    Announcements = new List<NodeAnnouncement>
+                    {
+                        GraphNodes.LabelPart(() => CellText(cells[0])),
+                    },
+                    Sections = GraphNodes.Sections(null, AgeWidgets.Raw(widget)),
+                };
 
             for (int c = 1; c < cells.Length; c++)
             {
@@ -1211,7 +1444,16 @@ namespace ES2Access.Screens
                 }
             }
 
-            AgeWidgets.Point(vtable, AgeWidgets.Button(widget));
+            AgeControlButton click = AgeWidgets.Button(widget);
+            if (click != null)
+            {
+                AgeWidgets.Point(vtable, click);
+            }
+            else
+            {
+                AgeWidgets.PointAt(vtable, widget);
+            }
+
             return vtable;
         }
 
@@ -1391,6 +1633,253 @@ namespace ES2Access.Screens
         {
             return AgeLayout.TopThenLeft(a, b);
         };
+
+        // ---- the table a popup stamped out of a prefab ----
+
+        /// <summary>
+        /// The table a popup filled by CLONING a line: the inspector's report, the laws that lapsed, the
+        /// systems that lost population.
+        ///
+        /// These are the same thing to the player as the scrolling table <see cref="ReadSheet"/> finds -
+        /// a list of things and a fact or two about each - but the game builds them the other way round:
+        /// no scroll view, and instead a container the popup names in its own code and refills every
+        /// refresh from one prefab. That container is what <see cref="TableWidgets"/> declares, per popup,
+        /// and its visible children are the lines.
+        ///
+        /// Whether the columns are NAMED is the prefab's decision rather than the code's: the popup
+        /// writes its captions into labels the prefab lays out above the container, and nothing in the
+        /// class says whether it has any. So this asks the screen: a single band of two or more words
+        /// drawn clear above the container, with nothing else of the popup's own drawn out there, and
+        /// every line's pieces falling one to a caption. Where that band exists the table reads as a
+        /// table, columns spoken as the edge crossed to reach them; where it does not, the popup keeps
+        /// the rows it always had, each line joined into the one row it looks like.
+        ///
+        /// What the popup wrote UNDER the container is the table's footer - the inspector's report ends
+        /// with what all of it came to - and reads as the full-width row it is drawn as, after the lines.
+        /// </summary>
+        private static Sheet ReadTableSheet(
+            NotificationWindow window,
+            List<Control> controls,
+            List<Control> inside,
+            AgeTransform words
+        )
+        {
+            try
+            {
+                List<AgeTransform> tables = TableWidgets(window, controls);
+
+                // One container, or the captions above one of them would be read as captions over all
+                // of them. A popup that drew two tables keeps its rows.
+                if (tables == null || tables.Count != 1)
+                {
+                    return null;
+                }
+
+                AgeTransform table = tables[0];
+
+                // A control the popup captioned and drew OUTSIDE the table is content a table reading
+                // would drop, exactly as for a scrolling one.
+                foreach (Control control in inside)
+                {
+                    if (!IsUnder(control.Widget, table))
+                    {
+                        return null;
+                    }
+                }
+
+                // And a line the popup wired a click to is a control in its own right, walked in the band
+                // it was drawn in. Where the popup HAS words, that band is a strip rather than the content
+                // - the words are what divides the popup then - and the lines are already declared there:
+                // reading them as a table too would declare every line twice. The rows stay.
+                foreach (Control control in controls)
+                {
+                    if (IsUnder(control.Widget, table) && !Has(inside, control.Widget))
+                    {
+                        return null;
+                    }
+                }
+
+                List<AgeTransform> lines = TableRows(table);
+                if (lines.Count == 0)
+                {
+                    return null;
+                }
+
+                List<Line> headers = null;
+                List<List<Line>> footer = null;
+                foreach (
+                    List<Line> band in AgeLayout.Rows(Outside(window, controls, words, table), LineWidget)
+                )
+                {
+                    int where = AgeLayout.Band(band[0].Widget, table);
+                    if (where < 0)
+                    {
+                        if (headers != null)
+                        {
+                            // Two bands above: one of them is a heading rather than a set of columns, and
+                            // nothing here can tell which. The rows are the safe reading.
+                            return null;
+                        }
+
+                        headers = band;
+                    }
+                    else if (where > 0)
+                    {
+                        if (footer == null)
+                        {
+                            footer = new List<List<Line>>();
+                        }
+
+                        footer.Add(band);
+                    }
+                    else
+                    {
+                        // Words drawn level with the lines but outside them would be dropped.
+                        return null;
+                    }
+                }
+
+                if (headers == null || headers.Count < 2)
+                {
+                    return null;
+                }
+
+                headers.Sort(AcrossTheRow);
+
+                List<SheetRow> rows = new List<SheetRow>();
+                foreach (AgeTransform line in lines)
+                {
+                    AgeTransform[] cells = Columns(line, headers);
+                    if (cells == null)
+                    {
+                        return null;
+                    }
+
+                    rows.Add(new SheetRow { Widget = line, Cells = cells });
+                }
+
+                return new Sheet { Headers = headers, Rows = rows, Footer = footer };
+            }
+            catch (Exception e)
+            {
+                Log.Warn("notification: looking for a prefab table threw: " + e);
+                return null;
+            }
+        }
+
+        /// <summary>The text the popup drew in its content area OUTSIDE its table - the captions over it,
+        /// the totals under it.</summary>
+        private static List<Line> Outside(
+            NotificationWindow window,
+            List<Control> controls,
+            AgeTransform words,
+            AgeTransform table
+        )
+        {
+            List<Line> outside = new List<Line>();
+            AgeTransform root = Root(window);
+            if (root == null)
+            {
+                return outside;
+            }
+
+            List<Line> drawn = new List<Line>();
+            Read(root, drawn, null, 0);
+
+            List<AgeTransform> top = TopRails(window, controls);
+            List<AgeTransform> bottom = BottomRails(controls);
+            AgeTransform dossier = Dossier(window);
+            foreach (Line line in drawn)
+            {
+                if (
+                    InBody(line.Widget, top, bottom)
+                    && !PartOf(line.Widget, controls)
+                    && !ReferenceEquals(line.Widget, words)
+                    && !IsUnder(line.Widget, table)
+                    && !IsIn(line.Widget, dossier)
+                )
+                {
+                    outside.Add(line);
+                }
+            }
+
+            return outside;
+        }
+
+        /// <summary>The lines of a prefab table: the children of the container the popup wrote something
+        /// in. A line the game refilled with nothing - a clone it keeps around for the next turn and has
+        /// hidden - is not a line.</summary>
+        private static List<AgeTransform> TableRows(AgeTransform table)
+        {
+            List<AgeTransform> rows = new List<AgeTransform>();
+            List<AgeTransform> children = table.Children;
+            for (int i = 0; children != null && i < children.Count; i++)
+            {
+                AgeTransform child = children[i];
+                if (child != null && Visible(child) && Draws(child, 0))
+                {
+                    rows.Add(child);
+                }
+            }
+
+            rows.Sort(DownTheTable);
+            return rows;
+        }
+
+        /// <summary>Every line of every prefab table this popup drew, for the reading that keeps rows: a
+        /// line is one row whichever table it came from, so a popup with two of them (the improvements
+        /// and the populations an obliterator destroyed) still reads a line at a time.</summary>
+        private static List<AgeTransform> TableLines(NotificationWindow window)
+        {
+            List<AgeTransform> tables = TableWidgets(window, null);
+            if (tables == null)
+            {
+                return null;
+            }
+
+            List<AgeTransform> lines = new List<AgeTransform>();
+            for (int i = 0; i < tables.Count; i++)
+            {
+                lines.AddRange(TableRows(tables[i]));
+            }
+
+            return lines.Count == 0 ? null : lines;
+        }
+
+        /// <summary>The containers this popup fills with cloned lines, as the popup's own code names
+        /// them, and only while the player can see them - a report panel a breakdown toggle has folded
+        /// away draws nothing.</summary>
+        private static List<AgeTransform> TableWidgets(
+            NotificationWindow window,
+            List<Control> controls
+        )
+        {
+            Variant variant = VariantOf(window);
+            if (variant == null || variant.Tables == null)
+            {
+                return null;
+            }
+
+            List<AgeTransform> tables = new List<AgeTransform>();
+            List<AgeTransform> top = controls == null ? null : TopRails(window, controls);
+            List<AgeTransform> bottom = controls == null ? null : BottomRails(controls);
+            foreach (AgeTransform table in variant.Tables(window))
+            {
+                if (table == null || !Visible(table))
+                {
+                    continue;
+                }
+
+                if (controls != null && !InBody(table, top, bottom))
+                {
+                    continue;
+                }
+
+                tables.Add(table);
+            }
+
+            return tables;
+        }
 
         // ---- the dossier a popup can open beside itself ----
 
@@ -1588,6 +2077,7 @@ namespace ES2Access.Screens
         private static void Add(GraphBuilder builder, Control control)
         {
             Control it = control;
+            AgeTooltip explains = Tip(it);
             NodeVtable vtable;
             if (it.Toggle == null)
             {
@@ -1595,10 +2085,10 @@ namespace ES2Access.Screens
                     () => Caption(it),
                     () => Press(it),
                     () => Enabled(it.Widget),
-                    it.Widget.AgeTooltip
+                    explains
                 );
             }
-            else if (InRadioGroup(it.Toggle))
+            else if (it.Radio || InRadioGroup(it.Toggle))
             {
                 vtable = GraphNodes.Radio(
                     () => Caption(it),
@@ -1606,8 +2096,22 @@ namespace ES2Access.Screens
                     () => Press(it),
                     () => Enabled(it.Widget),
                     null,
-                    it.Widget.AgeTooltip
+                    explains
                 );
+
+                // Picking is not doing: the popup wants the choice CONFIRMED, and where it draws no
+                // button for that the game's own second click is what confirms - so the choice takes
+                // Backslash for it, the key that is already every control's other command.
+                AgeControlToggle again = it.Toggle;
+                if (
+                    again.UseDoubleClick
+                    && again.OnDoubleClickObject != null
+                    && !string.IsNullOrEmpty(again.OnDoubleClickMethod)
+                )
+                {
+                    vtable.OnContextual = () =>
+                        Send(again.OnDoubleClickObject, again.OnDoubleClickMethod, again.gameObject);
+                }
             }
             else
             {
@@ -1616,13 +2120,22 @@ namespace ES2Access.Screens
                     () => State(it.Toggle),
                     () => Press(it),
                     () => Enabled(it.Widget),
-                    it.Widget.AgeTooltip
+                    explains
                 );
             }
 
-            vtable.OnFocusVisual = () =>
-                PointerFocus.MoveTo(it.Button, it.Widget.AgeTooltip, it.Widget);
-            vtable.OnBlurVisual = ReleasePointer;
+            if (it.Radio && it.Toggle != null)
+            {
+                // A card in a set has no button to light up: its own toggle carries the hover.
+                AgeWidgets.Point(vtable, it.Toggle, explains, it.Widget);
+            }
+            else
+            {
+                vtable.OnFocusVisual = () =>
+                    PointerFocus.MoveTo(it.Button, explains, it.Widget);
+                vtable.OnBlurVisual = ReleasePointer;
+            }
+
             builder.AddItem(IdOf(it), vtable);
         }
 
@@ -1663,6 +2176,26 @@ namespace ES2Access.Screens
             public AgeControlButton Button;
             public AgeControlToggle Toggle;
             public string NameKey;
+
+            /// <summary>The name the GAME has for this control where it wrote none on it - the confirm
+            /// button a choice popup draws as a tick.</summary>
+            public string Name;
+
+            /// <summary>One of a set the player picks exactly one of, where the popup wired that
+            /// exclusivity by hand instead of with a <c>GuiRadioGroup</c>.</summary>
+            public bool Radio;
+
+            /// <summary>The tooltip that explains this control where the game hung it somewhere other
+            /// than on the control - a choice card's reason for refusing sits on the CARD, and the switch
+            /// that refuses is a piece inside it.</summary>
+            public AgeTooltip Tip;
+        }
+
+        /// <summary>The tooltip a control speaks and carries: its own where it has one, else the one the
+        /// game hung on what the control is a piece of.</summary>
+        private static AgeTooltip Tip(Control control)
+        {
+            return control.Widget.AgeTooltip ?? control.Tip;
         }
 
         /// <summary>
@@ -1685,9 +2218,64 @@ namespace ES2Access.Screens
                 AgeControlToggle autoPopup = Toggle(window, AutoPopupToggle);
 
                 Add(controls, "dismiss", dismiss, ModStrings.NotifyDismiss);
+                List<AgeTransform> choices = ChoiceWidgets(window);
                 foreach (AgeControl extra in Extras(window))
                 {
-                    Add(controls, extra.name, extra as AgeControlButton, extra as AgeControlToggle, null);
+                    Add(
+                        controls,
+                        extra.name,
+                        extra as AgeControlButton,
+                        extra as AgeControlToggle,
+                        null,
+                        null,
+                        In(extra.AgeTransform, choices) != null
+                    );
+                }
+
+                // A choice the popup keeps exclusive itself is declared because the popup SAYS it is one,
+                // not because it wrote a caption on it: a card whose words are all nested inside it -
+                // a hero's name, class and politics each in its own group - has no caption to the shared
+                // rule, and dropping it would leave the player unable to choose at all. What is written
+                // on the card, all of it, is its name.
+                for (int i = 0; i < choices.Count; i++)
+                {
+                    AgeTransform choice = choices[i];
+                    AgeControlToggle switched = Switch(choice);
+                    if (switched == null || string.IsNullOrEmpty(switched.OnSwitchMethod))
+                    {
+                        continue;
+                    }
+
+                    if (Has(controls, switched.AgeTransform))
+                    {
+                        continue;
+                    }
+
+                    Add(
+                        controls,
+                        "choice/" + i + "/" + choice.name,
+                        null,
+                        switched,
+                        null,
+                        CardCaption(choice),
+                        true,
+                        choice.AgeTooltip
+                    );
+                }
+
+                // The button that puts the choice into effect, for a popup that drew it as a tick with
+                // no words on it: the game has a name for it even where it wrote none there.
+                AgeControl confirm = Confirm(window);
+                if (confirm != null && !Has(controls, confirm.AgeTransform))
+                {
+                    Add(
+                        controls,
+                        "confirm",
+                        confirm as AgeControlButton,
+                        confirm as AgeControlToggle,
+                        null,
+                        ConfirmName()
+                    );
                 }
 
                 Add(controls, "show-location", showLocation, ModStrings.NotifyShowLocation);
@@ -1719,7 +2307,10 @@ namespace ES2Access.Screens
             string key,
             AgeControlButton button,
             AgeControlToggle toggle,
-            string nameKey
+            string nameKey,
+            string name = null,
+            bool radio = false,
+            AgeTooltip tip = null
         )
         {
             AgeControl control = toggle == null ? (AgeControl)button : toggle;
@@ -1736,8 +2327,24 @@ namespace ES2Access.Screens
                     Button = button,
                     Toggle = toggle,
                     NameKey = nameKey,
+                    Name = name,
+                    Radio = radio,
+                    Tip = tip,
                 }
             );
+        }
+
+        private static bool Has(List<Control> controls, AgeTransform widget)
+        {
+            foreach (Control control in controls)
+            {
+                if (ReferenceEquals(control.Widget, widget))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         /// <summary>
@@ -1788,6 +2395,419 @@ namespace ES2Access.Screens
             };
         }
 
+        // ---- the few things about a popup that looking at the screen cannot answer ----
+
+        /// <summary>
+        /// What one kind of popup has that no amount of measuring will find. Everything else about all
+        /// sixty of them is read off what they draw; these four are the exceptions, and each is an
+        /// exception for the same reason - the screen shows the RESULT of a decision the popup's own code
+        /// made, and the result looks identical to something else.
+        ///
+        /// <see cref="Tables"/>: a container the popup refills every turn by cloning one line. On screen
+        /// that is a stack of rows, exactly like a stack of rows the popup laid out by hand, and only the
+        /// popup's code says which it is - so it says it (<see cref="ReadTableSheet"/>).
+        ///
+        /// <see cref="Choices"/>: a set the player picks exactly ONE of, wired by hand rather than with
+        /// a <c>GuiRadioGroup</c> - the popup's own code unticks the others. A hand-wired set is
+        /// indistinguishable on screen from a row of independent boxes, and calling a one-of-five choice
+        /// a set of tick boxes tells the player they may have none or all of them.
+        ///
+        /// <see cref="Confirm"/>: the button that puts the choice into effect where the popup drew it as
+        /// a bare tick. It is the same shape as every other unlabelled click-catcher a popup is built
+        /// out of, so the shared rule drops it - and dropping it leaves a keyboard player unable to
+        /// finish a choice at all.
+        ///
+        /// <see cref="Words"/>: the label holding what the popup SAYS, for one that did not use the
+        /// shared description - a diplomat's message is typed out into a label of its own. Without this
+        /// the message reads as one more thing drawn in the body rather than as what the player was
+        /// interrupted to hear.
+        ///
+        /// A popup with no entry here is read entirely by the shared rules, which is the case for most
+        /// of them. A stage adding a popup adds one entry and touches nothing else.
+        /// </summary>
+        private sealed class Variant
+        {
+            public Func<NotificationWindow, AgePrimitiveLabel> Words;
+            public Func<NotificationWindow, IList<AgeTransform>> Tables;
+            public Func<NotificationWindow, IList<AgeTransform>> Choices;
+            public Func<NotificationWindow, AgeControl> Confirm;
+        }
+
+        private static readonly Dictionary<Type, Variant> Variants = Register();
+
+        private static Dictionary<Type, Variant> Register()
+        {
+            Dictionary<Type, Variant> variants = new Dictionary<Type, Variant>();
+
+            // Reports the game fills by cloning a line. Where the prefab also draws a band of captions
+            // over them, each is read as a table; where it does not, a line at a time.
+            variants.Add(
+                typeof(BailiffReportNotificationWindow),
+                new Variant
+                {
+                    Tables = w => Some(((BailiffReportNotificationWindow)w).BailiffReportLinesTable),
+                }
+            );
+            variants.Add(
+                typeof(LawCancelledNotificationWindow),
+                new Variant
+                {
+                    Tables = w => Some(((LawCancelledNotificationWindow)w).LawCancelledLinesTable),
+                }
+            );
+            variants.Add(
+                typeof(PopulationChangeNotificationWindow),
+                new Variant
+                {
+                    Tables = w =>
+                        Some(((PopulationChangeNotificationWindow)w).PopulationChangeLinesTable),
+                }
+            );
+            variants.Add(
+                typeof(TradingBlockadeNotificationWindow),
+                new Variant
+                {
+                    Tables = w => Some(((TradingBlockadeNotificationWindow)w).TradingBlockadeLineTable),
+                }
+            );
+            variants.Add(
+                typeof(TreatiesCancelledNotificationWindow),
+                new Variant
+                {
+                    Tables = w =>
+                        Some(((TreatiesCancelledNotificationWindow)w).TreatyCancelledLinesTable),
+                }
+            );
+            variants.Add(
+                typeof(RelicsCollectionCompletedNotificationWindow),
+                new Variant
+                {
+                    Tables = w =>
+                        Some(
+                            ((RelicsCollectionCompletedNotificationWindow)w)
+                                .RelicsCollectionCompletedLinesTable
+                        ),
+                }
+            );
+            variants.Add(
+                typeof(RelicsCollectionCanceledNotificationWindow),
+                new Variant
+                {
+                    Tables = w =>
+                        Some(
+                            ((RelicsCollectionCanceledNotificationWindow)w)
+                                .RelicsCollectionCanceledLinesTable
+                        ),
+                }
+            );
+            variants.Add(
+                typeof(ConstructionQueueEmptyNotificationWindow),
+                new Variant
+                {
+                    Tables = w =>
+                        Some(
+                            ((ConstructionQueueEmptyNotificationWindow)w)
+                                .ConstructionQueueEmptyLinesTable
+                        ),
+                }
+            );
+            variants.Add(
+                typeof(ElectionSurveyNotificationWindow),
+                new Variant
+                {
+                    Tables = w => Some(((ElectionSurveyNotificationWindow)w).PoliticalSupportLinesTable),
+                }
+            );
+
+            // Reports whose tables sit behind a breakdown toggle: the toggle is the game's own box (it
+            // is in no radio group and turns one thing on and off), and what it unfolds is these.
+            variants.Add(
+                typeof(DisplacementReportNotificationWindow),
+                new Variant
+                {
+                    Tables = w =>
+                        Some(
+                            ((DisplacementReportNotificationWindow)w).ImprovementsTable,
+                            ((DisplacementReportNotificationWindow)w).PopulationsTable
+                        ),
+                }
+            );
+            variants.Add(
+                typeof(IonWaveReportNotificationWindow),
+                new Variant
+                {
+                    Tables = w => Some(((IonWaveReportNotificationWindow)w).ShipLinesTable),
+                }
+            );
+            variants.Add(
+                typeof(ObliteratorVictimReportNotificationWindow),
+                new Variant
+                {
+                    Tables = w =>
+                        Some(
+                            ((ObliteratorVictimReportNotificationWindow)w).ShipsTable,
+                            ((ObliteratorVictimReportNotificationWindow)w).ImprovementsTable,
+                            ((ObliteratorVictimReportNotificationWindow)w).PopulationsTable
+                        ),
+                }
+            );
+            variants.Add(
+                typeof(ForceTruceProposedNotificationWindow),
+                new Variant
+                {
+                    Tables = w =>
+                        Some(
+                            ((ForceTruceProposedNotificationWindow)w).WinnerBreakdownTable,
+                            ((ForceTruceProposedNotificationWindow)w).LooserBreakdownTable
+                        ),
+                }
+            );
+
+            // The quest popup draws who is racing for it and what it pays, both as cloned lines.
+            variants.Add(
+                typeof(QuestBegunNotificationWindow),
+                new Variant
+                {
+                    Tables = w => QuestTables((QuestBegunNotificationWindow)w),
+                    Confirm = w => ((QuestBegunNotificationWindow)w).ValidateButton,
+                }
+            );
+
+            // Choices the popup keeps exclusive itself.
+            variants.Add(
+                typeof(HeroRecruitmentNotificationWindow),
+                new Variant
+                {
+                    Choices = w => Some(((HeroRecruitmentNotificationWindow)w).HeroCardsTable),
+                    Confirm = w => ((HeroRecruitmentNotificationWindow)w).ValidateButton,
+                }
+            );
+            variants.Add(
+                typeof(GroundBattleOutcomeSelectionNotificationWindow),
+                new Variant
+                {
+                    Choices = w =>
+                        Some(((GroundBattleOutcomeSelectionNotificationWindow)w).OutcomesTable),
+                }
+            );
+            variants.Add(
+                typeof(HackingOperationOutcomeSelectionNotificationWindow),
+                new Variant
+                {
+                    // The outcome, and then the parameter it takes: the second set only exists while the
+                    // popup has unfolded it over the first.
+                    Choices = w =>
+                        Some(
+                            ((HackingOperationOutcomeSelectionNotificationWindow)w).OutcomesTable,
+                            ((HackingOperationOutcomeSelectionNotificationWindow)w).ParametersTable
+                        ),
+                    Confirm = w =>
+                        AgeWidgets.Button(
+                            ((HackingOperationOutcomeSelectionNotificationWindow)w).ValidateButton
+                        ),
+                }
+            );
+
+            // A deed pays out in the same cloned reward lines the quest popup uses.
+            variants.Add(
+                typeof(DeedCompletedNotificationWindow),
+                new Variant
+                {
+                    Tables = w =>
+                        Some(
+                            ((DeedCompletedNotificationWindow)w).RewardsTable == null
+                                ? null
+                                : ((DeedCompletedNotificationWindow)w).RewardsTable.RewardsTable
+                        ),
+                }
+            );
+
+            // A diplomat says their piece into a label of their own rather than into the shared one, and
+            // an offer is a list of terms - a line per thing each side gives - drawn in the same panel
+            // the negotiation table uses.
+            variants.Add(
+                typeof(DiplomaticInteractionNotificationWindow),
+                new Variant
+                {
+                    Words = w => ((DiplomaticInteractionNotificationWindow)w).MoodMessageLabel,
+                    Tables = w => Terms((DiplomaticInteractionNotificationWindow)w),
+                }
+            );
+
+            return variants;
+        }
+
+        private static IList<AgeTransform> Some(params AgeTransform[] widgets)
+        {
+            return widgets;
+        }
+
+        /// <summary>The terms of a diplomatic offer: the ones that bind both sides, then what each side
+        /// gives. Three tables of cloned lines rather than one, so they read a term at a time.</summary>
+        private static IList<AgeTransform> Terms(DiplomaticInteractionNotificationWindow window)
+        {
+            NegotiationContributionPanel panel = window.ContributionPanel;
+            return panel == null
+                ? Some()
+                : Some(panel.SymmetricalTermsTable, panel.MyTermsTable, panel.HisTermsTable);
+        }
+
+        /// <summary>The quest popup's cloned lines: who else is after this quest, what it pays, and the
+        /// standings where it is a race. Each panel is a component of its own, and a quest that has none
+        /// of them leaves the field unset.</summary>
+        private static IList<AgeTransform> QuestTables(QuestBegunNotificationWindow window)
+        {
+            return Some(
+                window.QuestParticipants == null ? null : window.QuestParticipants.ParticipantsTable,
+                window.RewardsTable == null ? null : window.RewardsTable.RewardsTable,
+                window.PodiumTable == null ? null : window.PodiumTable.PodiumLineTable
+            );
+        }
+
+        /// <summary>What this popup declares about itself, the popup's own kind first - a variant
+        /// registered against a base window serves every popup built on it (the two force-truce
+        /// popups, the obliterator reports).</summary>
+        private static Variant VariantOf(NotificationWindow window)
+        {
+            if (window == null)
+            {
+                return null;
+            }
+
+            for (
+                Type type = window.GetType();
+                type != null && type != typeof(NotificationWindow);
+                type = type.BaseType
+            )
+            {
+                Variant variant;
+                if (Variants.TryGetValue(type, out variant))
+                {
+                    return variant;
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>The lines of a hand-wired choice: the cards, outcomes or parameters the popup laid out
+        /// in the container it fills with them, and only the ones the player can currently see. The line
+        /// rather than the switch inside it, because the line is the whole of what is being chosen - the
+        /// words on it, and the reason the game gives for refusing it.</summary>
+        private static List<AgeTransform> ChoiceWidgets(NotificationWindow window)
+        {
+            List<AgeTransform> lines = new List<AgeTransform>();
+            Variant variant = VariantOf(window);
+            if (variant == null || variant.Choices == null)
+            {
+                return lines;
+            }
+
+            try
+            {
+                foreach (AgeTransform container in variant.Choices(window))
+                {
+                    if (container == null || !Visible(container))
+                    {
+                        continue;
+                    }
+
+                    List<AgeTransform> children = container.Children;
+                    for (int i = 0; children != null && i < children.Count; i++)
+                    {
+                        if (Switch(children[i]) != null)
+                        {
+                            lines.Add(children[i]);
+                        }
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("notification: reading a popup's choices threw: " + e);
+            }
+
+            return lines;
+        }
+
+        /// <summary>The toggle one line of a choice carries - the line itself where the game made the
+        /// whole card the switch, else the one inside it.</summary>
+        private static AgeControlToggle Switch(AgeTransform line)
+        {
+            if (line == null || !Visible(line))
+            {
+                return null;
+            }
+
+            AgeControlToggle toggle = line.GetComponent<AgeControlToggle>();
+            if (toggle == null)
+            {
+                toggle = line.GetComponentInChildren<AgeControlToggle>(true);
+            }
+
+            return toggle != null && Visible(toggle.AgeTransform) ? toggle : null;
+        }
+
+        private static AgeControl Confirm(NotificationWindow window)
+        {
+            Variant variant = VariantOf(window);
+            if (variant == null || variant.Confirm == null)
+            {
+                return null;
+            }
+
+            try
+            {
+                return variant.Confirm(window);
+            }
+            catch (Exception e)
+            {
+                Log.Warn("notification: looking for the confirm button threw: " + e);
+                return null;
+            }
+        }
+
+        /// <summary>What the game calls the button that puts a choice into effect. Its own word for it,
+        /// from its own localization - the mod invents nothing here, and a build whose localization has
+        /// no such word leaves the button to its tooltip.</summary>
+        private static string ConfirmName()
+        {
+            try
+            {
+                string title = AgeText.Clean(Gui.Localize(ConfirmTitleKey));
+                return string.IsNullOrEmpty(title) || Gui.IsLocalizationKey(title) ? null : title;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        private const string ConfirmTitleKey = "%NotificationValidateTitle";
+
+        /// <summary>The label the popup put its words in: its own where it named one, else the shared
+        /// description every notification has.</summary>
+        private static AgePrimitiveLabel DescriptionLabel(NotificationWindow window)
+        {
+            Variant variant = VariantOf(window);
+            AgePrimitiveLabel own = null;
+            if (variant != null && variant.Words != null)
+            {
+                try
+                {
+                    own = variant.Words(window);
+                }
+                catch (Exception e)
+                {
+                    Log.Warn("notification: looking for the popup's own words threw: " + e);
+                }
+            }
+
+            return own != null && Visible(own.AgeTransform) && !string.IsNullOrEmpty(AgeText.Label(own))
+                ? own
+                : Value(window, NotificationDescription) as AgePrimitiveLabel;
+        }
+
         /// <summary>The control's name: the caption the game wrote on it, else the name this mod has
         /// for the role it plays - the game draws the browsing arrows and the pop-up-again box as
         /// icons and never names them.</summary>
@@ -1797,6 +2817,11 @@ namespace ES2Access.Screens
             if (!string.IsNullOrEmpty(caption))
             {
                 return caption;
+            }
+
+            if (!string.IsNullOrEmpty(control.Name))
+            {
+                return control.Name;
             }
 
             return control.NameKey == null ? null : ModStrings.Get(control.NameKey);
@@ -1830,6 +2855,45 @@ namespace ES2Access.Screens
             {
                 Log.Warn("notification: reading a control's caption threw: " + e);
                 return null;
+            }
+        }
+
+        /// <summary>Everything written on a card, in the order it is laid out. The shared rule reads the
+        /// labels a control carries DIRECTLY, which is all of them for a control the game drew flat; a
+        /// card is built out of groups instead - a portrait block, a stats block - and the words are the
+        /// whole of what the player is choosing between.</summary>
+        private static string CardCaption(AgeTransform widget)
+        {
+            List<AgePrimitiveLabel> labels = new List<AgePrimitiveLabel>();
+            Labels(widget, labels, 0);
+            labels.Sort(AcrossTheControl);
+
+            MessageBuilder caption = new MessageBuilder();
+            foreach (AgePrimitiveLabel label in labels)
+            {
+                caption.ListItem(AgeText.Label(label));
+            }
+
+            return caption.Build();
+        }
+
+        private static void Labels(AgeTransform widget, List<AgePrimitiveLabel> into, int depth)
+        {
+            if (widget == null || depth > MaxAncestors || !widget.Visible)
+            {
+                return;
+            }
+
+            AgePrimitiveLabel label = widget.GetComponent<AgePrimitiveLabel>();
+            if (label != null && !string.IsNullOrEmpty(AgeText.Label(label)))
+            {
+                into.Add(label);
+            }
+
+            List<AgeTransform> children = widget.Children;
+            for (int i = 0; children != null && i < children.Count; i++)
+            {
+                Labels(children[i], into, depth + 1);
             }
         }
 
@@ -1953,7 +3017,9 @@ namespace ES2Access.Screens
 
             try
             {
-                AgePrimitiveLabel drawn = Value(window, label) as AgePrimitiveLabel;
+                AgePrimitiveLabel drawn = title
+                    ? Value(window, label) as AgePrimitiveLabel
+                    : DescriptionLabel(window);
                 string text =
                     title || (drawn != null && Visible(drawn.AgeTransform))
                         ? AgeText.Label(drawn)
