@@ -437,6 +437,16 @@ namespace ES2Access.Core.Speech
         public const string ShipDesignSlots = "ship-design.slots";
         public const string ShipDesignModuleFitted = "ship-design.module-fitted";
 
+        // A hero's own window. Its heading is the game's own and is declared where it is drawn, so the
+        // screen name is only a fallback for the frames before the window has written one. The wheel of
+        // skills the page draws with no caption over it needs a word, and a skill dot needs two: the game
+        // paints the level a skill stands at, and the level a pending pick would take it to, as a ring of
+        // coloured arcs round the dot and writes no number anywhere.
+        public const string ScreenHeroInspection = "screen.hero-inspection";
+        public const string HeroSkillTrees = "hero.skill-trees";
+        public const string HeroSkillLevel = "hero.skill-level";
+        public const string HeroSkillPending = "hero.skill-pending";
+
         public const string ScreenGovernment = "screen.government";
         public const string ScreenLaws = "screen.laws";
         public const string ScreenPopulation = "screen.population";
@@ -689,6 +699,10 @@ namespace ES2Access.Core.Speech
             { MilitaryDesignActions, "Ship design actions" },
             { ShipDesignSlots, "Module slots" },
             { ShipDesignModuleFitted, "Fitted {0}" },
+            { ScreenHeroInspection, "Hero inspection" },
+            { HeroSkillTrees, "Skill branches" },
+            { HeroSkillLevel, "level {0} of {1}" },
+            { HeroSkillPending, "level {0} pending" },
             { ScreenFleetSelection, "Fleet selection" },
             { ScreenAcademy, "Hero management" },
             { AcademyHeroActions, "Hero actions" },

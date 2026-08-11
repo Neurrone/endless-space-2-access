@@ -145,6 +145,7 @@ namespace ES2Access
             Screens.Register(new global::ES2Access.Screens.AcademyScreen());
             Screens.Register(new HeroCompleteListScreen());
             Screens.Register(new ShipDesignScreen());
+            Screens.Register(new HeroInspectionScreen());
             Screens.Register(new RecipeCreationScreen());
             Screens.Register(new GovernmentScreen());
             Screens.Register(new LawsScreen());
