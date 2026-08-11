@@ -411,6 +411,18 @@ namespace ES2Access.Core.Speech
         public const string EconomyInflationPanel = "economy.inflation-panel";
         public const string EconomyTradePanel = "economy.trade-panel";
 
+        // The military screen and the fleet picker the Academy raises over it. Both screen names are
+        // fallbacks for the frames before the window has written its heading. The rest are for bands
+        // the game draws with no heading of its own: the manpower box down the left edge, the three
+        // things that can be done to the selected fleet, the ships of that fleet, and the four things
+        // that can be done to the selected ship design.
+        public const string ScreenMilitary = "screen.military";
+        public const string MilitaryManpowerPanel = "military.manpower-panel";
+        public const string MilitaryFleetActions = "military.fleet-actions";
+        public const string MilitaryShipsPanel = "military.ships-panel";
+        public const string MilitaryDesignActions = "military.design-actions";
+        public const string ScreenFleetSelection = "screen.fleet-selection";
+
         public const string ScreenGovernment = "screen.government";
         public const string ScreenLaws = "screen.laws";
         public const string ScreenPopulation = "screen.population";
@@ -656,6 +668,12 @@ namespace ES2Access.Core.Speech
             { EconomyEventsPanel, "Market events" },
             { EconomyInflationPanel, "Inflation" },
             { EconomyTradePanel, "Trade overview" },
+            { ScreenMilitary, "Military status" },
+            { MilitaryManpowerPanel, "Manpower" },
+            { MilitaryFleetActions, "Fleet actions" },
+            { MilitaryShipsPanel, "Ships" },
+            { MilitaryDesignActions, "Ship design actions" },
+            { ScreenFleetSelection, "Fleet selection" },
             { ScreenGovernment, "Government selection" },
             { ScreenLaws, "Laws" },
             { ScreenPopulation, "Population overview" },

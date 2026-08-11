@@ -42,11 +42,35 @@ namespace ES2Access.UI
         /// <see cref="CarryItem.Kind"/>.</summary>
         public const string ShipKind = "ship";
 
-        /// <summary>The row of things that can be done to the selected ships, in drawn order.</summary>
-        public static void Toolbar(List<Cell> cells, ShipsManagementPanel panel, string keyPrefix)
+        /// <summary>
+        /// The row of things that can be done to the selected ships, in drawn order.
+        ///
+        /// <paramref name="createsFleets"/> is whether the panel's HOST does anything with the
+        /// Create-fleet button. The panel asks its host to make the fleet
+        /// (<c>IGuiGarrisonsHandler.CreateFleet</c>), and the Military screen's implementation of that is
+        /// an empty method body (<c>MilitaryScreen.cs:193-200</c>) - the button is drawn there, enables
+        /// itself and does nothing at all when pressed. A control the game answers with silence is not
+        /// declared, so that screen says false; every other host implements it.
+        /// </summary>
+        public static void Toolbar(
+            List<Cell> cells,
+            ShipsManagementPanel panel,
+            string keyPrefix,
+            bool createsFleets = true
+        )
         {
             Button(cells, panel.SelectAllButton, "%FleetSelectAllShipsTitle", keyPrefix, "select-all");
-            Button(cells, panel.CreateButton, "%FleetCreateFromShipsTitle", keyPrefix, "create-fleet");
+            if (createsFleets)
+            {
+                Button(
+                    cells,
+                    panel.CreateButton,
+                    "%FleetCreateFromShipsTitle",
+                    keyPrefix,
+                    "create-fleet"
+                );
+            }
+
             Button(cells, panel.RepairButton, "%FleetRepairTitle", keyPrefix, "repair");
             Button(cells, panel.RetrofitButton, "%FleetRetrofitTitle", keyPrefix, "retrofit");
             Button(cells, panel.ScrapButton, "%FleetScrapTitle", keyPrefix, "scrap");

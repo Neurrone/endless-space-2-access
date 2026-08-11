@@ -291,6 +291,39 @@ namespace ES2Access.UI
             PressPropagating(Control(widget));
         }
 
+        /// <summary>
+        /// Run the OTHER handler a control carries: the one its own second click inside the double-click
+        /// window would run (<c>AgeControlButton.HandleMouseUpOrDown</c>,
+        /// <c>firstpass/AgeControlButton.cs:336-338</c>). Nothing at all where the control was not wired
+        /// for it, which is how a table that leaves its double click unwired stays a single-gesture list.
+        ///
+        /// It goes through the same arity-resolving dispatch <see cref="Press"/> uses, and that is not a
+        /// nicety here: the engine sends this one with the sender as an argument, while the handler these
+        /// tables name (<c>GuiTableLine.OnLineDoubleClickCb</c>, <c>GuiTableLine.cs:211</c>) takes none.
+        /// The dispatch matches the overload the handler actually has, which is why replaying it works.
+        /// </summary>
+        public static void DoubleClick(AgeControlButton button)
+        {
+            if (button == null)
+            {
+                return;
+            }
+
+            try
+            {
+                if (!button.UseDoubleClick)
+                {
+                    return;
+                }
+
+                Send(button.OnDoubleClickObject, button.OnDoubleClickMethod, button.gameObject);
+            }
+            catch (Exception e)
+            {
+                Log.Warn("widgets: replaying a double click threw: " + e);
+            }
+        }
+
         /// <summary>The control sitting on a transform, whatever kind it is.</summary>
         public static AgeControl Control(AgeTransform widget)
         {
