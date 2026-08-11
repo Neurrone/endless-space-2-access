@@ -423,7 +423,10 @@ namespace ES2Access.Screens
             // roster-grid rule), and the six figures along the bottom are a grid again.
             _cells.Clear();
             AddPencil(box.AgeTransform, EditShipHandler, "overview/edit-ship");
-            AddLine(box.NameLabel, null, "overview/name");
+            // The name comes from the design and not from the box the game squeezed it into - see
+            // ShipDesignRows.OverviewName.
+            ShipDesignOverviewPanel it = box;
+            AddLine(box.NameLabel, null, "overview/name", () => ShipDesignRows.OverviewName(it));
             AddLine(box.HullLabel, box.HullTooltip, "overview/hull");
             AddLine(box.SizeLabel, box.SizeTooltip, "overview/size");
             AddLine(box.RoleLabel, box.RoleTooltip, "overview/role");
@@ -1059,8 +1062,20 @@ namespace ES2Access.Screens
             return vtable;
         }
 
-        /// <summary>What the game calls a skill. Off the wrapper the dot builds for it, which is what
-        /// the tooltip window heads its dossier with.</summary>
+        /// <summary>
+        /// What the game calls a skill. Off the wrapper the dot builds for it, which is what the tooltip
+        /// window heads its dossier with.
+        ///
+        /// The wrapper is right for a DOT and would be wrong for a starting skill, where it answers the
+        /// generic "Starting Skill" instead (<c>GuiHeroSkill.Title</c> :22-32) - but a dot is never a
+        /// starting skill (the panel builds those wrappers with the flag set, and only for the box in the
+        /// right-hand column: <see cref="Named"/>). Going to the skill's DEFINITION instead would be
+        /// worse in both places: <c>GuiWrapper.Title</c> reads the skill's gui element and answers empty
+        /// when there is none, while <c>Gui.GetTitle</c> on the definition's name answers the engine's
+        /// "(missing GuiElement)" debug string for one of this hero's skills and, for the other, a key
+        /// that resolves to the HERO's name (measured on Dmitri Lenko: "HeroSkill01Terrans04 (missing
+        /// GuiElement)" and "Dmitri Lenko").
+        /// </summary>
         private static string SkillName(HeroSkillTreeSkillItem skill)
         {
             try
@@ -1282,10 +1297,11 @@ namespace ES2Access.Screens
         /// For a starting skill that name is the game's own word for the KIND of thing - "Starting
         /// Skill" (<c>GuiHeroSkill.Title</c> :22-32 answers that for a starting skill and not the
         /// skill's own title) - so a hero with two of them has two rows saying the same words, and what
-        /// tells them apart is the dossier each draws. That is the game's own reading of its own icons:
-        /// the skills themselves have no title in the game's string table at all (measured -
-        /// <c>Gui.GetTitle</c> answers "missing GuiElement" for one of this hero's two and an unresolved
-        /// key for the other), so there is nothing else to say.
+        /// tells them apart is the dossier each draws. That is the game's own reading of its own icons,
+        /// and it was re-measured on Dmitri Lenko's two: <c>Gui.GetTitle</c> on their definitions answers
+        /// the engine's "HeroSkill01Terrans04 (missing GuiElement)" for one and, for the other, a key that
+        /// resolves to the HERO's own name ("Dmitri Lenko"). So there is nothing better to say, and both
+        /// alternatives would be worse than the game's own word for the kind.
         /// </summary>
         private static string Named(AgeTooltip tooltip)
         {
@@ -1527,7 +1543,12 @@ namespace ES2Access.Screens
 
         /// <summary>One line of a box - the words the game drew in it and the sentence explaining
         /// them.</summary>
-        private void AddLine(AgePrimitiveLabel label, AgeTooltip tooltip, string key)
+        private void AddLine(
+            AgePrimitiveLabel label,
+            AgeTooltip tooltip,
+            string key,
+            Func<string> name = null
+        )
         {
             AgeTransform widget = Widget(label);
             if (widget == null || !AgeWidgets.Visible(widget))
@@ -1536,12 +1557,10 @@ namespace ES2Access.Screens
             }
 
             AgeTransform at = widget;
+            Func<string> said = name ?? (() => AgeWidgets.TextOf(at));
             NodeVtable vtable = new NodeVtable
             {
-                Announcements = new List<NodeAnnouncement>
-                {
-                    GraphNodes.LabelPart(() => AgeWidgets.TextOf(at)),
-                },
+                Announcements = new List<NodeAnnouncement> { GraphNodes.LabelPart(said) },
                 Sections = GraphNodes.Sections(null, tooltip ?? AgeWidgets.Raw(widget)),
             };
             AgeWidgets.PointAt(vtable, widget);
@@ -1700,42 +1719,15 @@ namespace ES2Access.Screens
             return widget != null && AgeWidgets.Visible(widget) ? widget : null;
         }
 
-        /// <summary>
-        /// Whether a row of a pooled table is really on the screen.
-        ///
-        /// Every table on this window is built with <c>ReserveChildren</c>, and a row the game has
-        /// stopped using is left in the pool FADED rather than hidden - it keeps its old words, its old
-        /// position and <c>Visible == true</c>, and the game paints it at alpha 0 (measured: after a
-        /// Reset the bonuses box kept a whole extra effect block and two extra lines, all invisible on
-        /// screen and all reading <c>Visible</c>). Alpha is not inherited by the visibility test, so the
-        /// ancestors are walked too - a faded BLOCK's lines are each at alpha 1 inside it.
-        /// </summary>
+        /// <summary>Whether a row of a pooled table is really on the screen - every table on this window
+        /// is built with <c>ReserveChildren</c>, and a row the game has stopped using is left in the pool
+        /// FADED rather than hidden (measured: after a Reset the bonuses box kept a whole extra effect
+        /// block and two extra lines, all invisible on screen and all reading <c>Visible</c>). The test
+        /// itself is <see cref="AgeWidgets.Painted"/>, shared with every other pooled table in the
+        /// mod.</summary>
         private static bool Painted(AgeTransform widget)
         {
-            try
-            {
-                if (widget == null || !AgeWidgets.Visible(widget))
-                {
-                    return false;
-                }
-
-                AgeTransform at = widget;
-                for (int i = 0; at != null && i < 8; i++)
-                {
-                    if (at.Alpha <= 0f)
-                    {
-                        return false;
-                    }
-
-                    at = at.Parent;
-                }
-
-                return true;
-            }
-            catch (Exception)
-            {
-                return false;
-            }
+            return AgeWidgets.Painted(widget);
         }
 
         private static HeroInspectionModalWindow Window()

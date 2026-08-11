@@ -59,6 +59,32 @@ namespace ES2Access.UI
     /// </summary>
     public static class ShipDesignRows
     {
+        /// <summary>
+        /// A design's whole name, for the overview box the Military screen and a hero's ship page both
+        /// draw it in.
+        ///
+        /// Not off the drawn label: the panel writes <c>GetFullTitle(NameLabel)</c> into it
+        /// (<c>ShipDesignOverviewPanel.Refresh</c> :51), and that overload truncates to the label's width
+        /// with '.' as the ellipsis and glues the revision number on with no separator - the same reason
+        /// the Military screen's design tiles ask the model instead. Passing a null label asks the game
+        /// for the title untruncated and spaced.
+        /// </summary>
+        public static string OverviewName(ShipDesignOverviewPanel panel)
+        {
+            try
+            {
+                GuiShipDesign design = panel == null ? null : panel.GuiShipDesign;
+                string full = design == null ? null : AgeText.Clean(design.GetFullTitle(null));
+                return string.IsNullOrEmpty(full)
+                    ? AgeText.Label(panel == null ? null : panel.NameLabel)
+                    : full;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
         /// <summary>What a carried ship module is, for the slots that will take one - see
         /// <see cref="CarryItem.Kind"/>.</summary>
         public const string ModuleKind = "ship-module";

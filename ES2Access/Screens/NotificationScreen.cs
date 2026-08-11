@@ -2045,8 +2045,42 @@ namespace ES2Access.Screens
                 vtable.OnBlurVisual = ReleasePointer;
             }
 
+            HandBackOnMinimize(it, vtable);
             builder.AddItem(IdOf(it), vtable);
         }
+
+        /// <summary>
+        /// Putting the popup aside hands the player back to the icon it came from, not to wherever they
+        /// were standing when it arrived.
+        ///
+        /// A notification pops up on its own - the game raises it, most often on the turn the player has
+        /// just ended - so the cursor underneath is on whatever they last touched, and closing the popup
+        /// restores it. Measured: minimising put focus back on End Turn, one Enter from ending another
+        /// turn. Minimise is the one control here that means "not now": the popup goes to the strip of
+        /// icons and stays there, so the strip is where the player is now, and its own stop is what
+        /// remembers which icon. Every other exit - Done, Inspect, the buttons that open a page - is going
+        /// somewhere, and those keep the landing the page they opened chose.
+        /// </summary>
+        private static void HandBackOnMinimize(Control control, NodeVtable vtable)
+        {
+            if (control.Key != MinimizeKey || vtable.OnActivate == null)
+            {
+                return;
+            }
+
+            Action press = vtable.OnActivate;
+            vtable.OnActivate = () =>
+            {
+                press();
+                GraphNavigator navigator = ModEntry.Navigator;
+                if (navigator != null)
+                {
+                    navigator.LandOnStopAfterClose(GlobalHud.NotificationStop);
+                }
+            };
+        }
+
+        private const string MinimizeKey = "minimize";
 
         private static ControlId IdOf(Control control)
         {
@@ -2216,7 +2250,7 @@ namespace ES2Access.Screens
                 }
 
                 Add(controls, "show-location", showLocation, ModStrings.NotifyShowLocation);
-                Add(controls, "minimize", minimize, ModStrings.NotifyMinimize);
+                Add(controls, MinimizeKey, minimize, ModStrings.NotifyMinimize);
                 Add(controls, "previous", previous, ModStrings.NotifyPrevious);
                 Add(controls, "next", next, ModStrings.NotifyNext);
                 Add(controls, "auto-popup", null, autoPopup, ModStrings.NotifyAutoPopup);

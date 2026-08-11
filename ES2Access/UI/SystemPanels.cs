@@ -664,6 +664,10 @@ namespace ES2Access.UI
         /// the game's own model here - you choose ships and then press a button. Nothing is carried
         /// here: neither page that draws this panel draws a fleet line beside it, so a ship picked up
         /// would have nowhere to be put down.
+        ///
+        /// An EMPTY hangar says so, in the mod's own words. The game draws the toolbar over an empty area
+        /// with no placeholder of any kind, so all a player heard was a row of buttons refusing - and
+        /// "nothing here" and "here are five things you cannot do" are not the same news.
         /// </summary>
         public static void Hangar(GraphBuilder builder, ShipsManagementPanel panel, string keyPrefix)
         {
@@ -681,6 +685,20 @@ namespace ES2Access.UI
 
                 Scratch.Clear();
                 ShipRows.Ships(Scratch, panel, keys, false);
+                if (Scratch.Count == 0)
+                {
+                    builder.AddItem(
+                        ControlId.Structural(keys + "/empty"),
+                        GraphNodes.Readout(
+                            () => ModStrings.Get(ModStrings.SystemHangarEmpty),
+                            null,
+                            null,
+                            null
+                        )
+                    );
+                    return;
+                }
+
                 Cells.Emit(builder, Scratch);
             }
             catch (Exception e)

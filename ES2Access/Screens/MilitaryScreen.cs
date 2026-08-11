@@ -754,7 +754,15 @@ namespace ES2Access.Screens
             }
 
             _cells.Clear();
-            AddReadout(panel.NameLabel, null, "overview/name");
+            // The name comes from the design and not from the box the game squeezed it into - see
+            // ShipDesignRows.OverviewName.
+            ShipDesignOverviewPanel box = panel;
+            AddReadout(
+                panel.NameLabel,
+                null,
+                "overview/name",
+                () => ShipDesignRows.OverviewName(box)
+            );
             AddReadout(panel.HullLabel, panel.HullTooltip, "overview/hull");
             AddReadout(panel.SizeLabel, panel.SizeTooltip, "overview/size");
             AddReadout(panel.RoleLabel, panel.RoleTooltip, "overview/role");
@@ -775,7 +783,12 @@ namespace ES2Access.Screens
 
         /// <summary>One line of the overview box. The label and the sentence explaining it are separate
         /// fields on the panel, so the tooltip is named rather than looked for.</summary>
-        private void AddReadout(AgePrimitiveLabel label, AgeTooltip tooltip, string key)
+        private void AddReadout(
+            AgePrimitiveLabel label,
+            AgeTooltip tooltip,
+            string key,
+            Func<string> name = null
+        )
         {
             AgeTransform widget = label == null ? null : label.AgeTransform;
             if (widget == null || !AgeWidgets.Visible(widget))
@@ -784,12 +797,10 @@ namespace ES2Access.Screens
             }
 
             AgeTransform at = widget;
+            Func<string> said = name ?? (() => AgeWidgets.TextOf(at));
             NodeVtable vtable = new NodeVtable
             {
-                Announcements = new List<NodeAnnouncement>
-                {
-                    GraphNodes.LabelPart(() => AgeWidgets.TextOf(at)),
-                },
+                Announcements = new List<NodeAnnouncement> { GraphNodes.LabelPart(said) },
                 Sections = GraphNodes.Sections(null, tooltip),
             };
             AgeWidgets.PointAt(vtable, widget);

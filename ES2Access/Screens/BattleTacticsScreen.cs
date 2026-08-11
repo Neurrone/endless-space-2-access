@@ -435,14 +435,22 @@ namespace ES2Access.Screens
             }
         }
 
-        /// <summary>What the card draws under its artwork: the effects it would have in battle, which are
-        /// on the screen the whole time and so part of what the card says.</summary>
+        /// <summary>
+        /// What the card draws under its artwork: the effects it would have in battle, which are on the
+        /// screen the whole time and so part of what the card says.
+        ///
+        /// Read as <see cref="AgeWidgets.PaintedText"/>, because the effects block is a POOLED table
+        /// (<c>GuiEffectMapper.EffectLinesTable</c>) and a slot re-bound to a shorter tactic keeps the
+        /// previous one's surplus lines faded to nothing, visible and still holding their words. Measured
+        /// on the Turtle slot: its one effect followed by two rows at alpha 0 spelling out a fleet-wide
+        /// effect belonging to Plasma Distortion, which the card does not draw.
+        /// </summary>
         private static string Effects(BattlePlayCard card)
         {
             try
             {
                 AgeTransform effects = AgeWidgets.ChildNamed(card.AgeTransform, "Effects", 4);
-                return effects == null ? null : AgeWidgets.TextOf(effects);
+                return effects == null ? null : AgeWidgets.PaintedText(effects);
             }
             catch (Exception)
             {

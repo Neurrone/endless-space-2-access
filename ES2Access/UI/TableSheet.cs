@@ -637,7 +637,38 @@ namespace ES2Access.UI
                 return drawn;
             }
 
-            return tooltips.Count > 0 ? tooltips[0] : null;
+            return tooltips.Count > 0 ? tooltips[0] : SortKeyText(cell);
+        }
+
+        /// <summary>
+        /// What a cell the game draws as a PORTRAIT is showing, out of the value the game sorts the
+        /// column by.
+        ///
+        /// The assigned-hero column - the systems table's, the fleets table's, the fleet-selection
+        /// window's - is a picture and nothing else: no label, and a "Hero" tooltip the tooltip window
+        /// assembles, so there is nothing on the widget to read and the cell said the empty word whether a
+        /// hero was assigned or not. Which hero, or none, is the only thing the column exists to say.
+        ///
+        /// The game has already worked the answer out: it writes the assigned hero's own localized name
+        /// into the cell's <c>Comparable</c> so the header can sort on it, and the empty string when the
+        /// slot is free (<c>GuiTableCellAssignedHero.Refresh</c> :20-63). So that is what is read - the
+        /// game's words, kept in step with the portrait by the same Refresh that paints it. An empty
+        /// answer stays null, and the shared empty word covers it.
+        /// </summary>
+        private static string SortKeyText(AgeTransform cell)
+        {
+            try
+            {
+                GuiTableCellAssignedHero portrait =
+                    cell == null ? null : cell.GetComponent<GuiTableCellAssignedHero>();
+                string name =
+                    portrait == null ? null : AgeText.Clean(portrait.Comparable as string);
+                return string.IsNullOrEmpty(name) ? null : name;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
         }
 
         private void CollectDrawn(

@@ -55,6 +55,9 @@ namespace ES2Access.UI
         private bool _pendingAnnounce;
         private object _pendingStop;
 
+        // A stop the NEXT screen attached should land on - see LandOnStopAfterClose.
+        private object _landingStop;
+
         // The live-part watch: the focus it is baselined against, and the last resolved text of each
         // effective announcement part (index-parallel, with nulls where a part is not live).
         private ControlId _liveKey;
@@ -195,6 +198,31 @@ namespace ES2Access.UI
             Screen built = screen;
             GraphState state = _state;
             _graph = new KeyGraph(() => BuildRender(built, state), state);
+
+            if (_landingStop != null)
+            {
+                _pendingStop = _landingStop;
+                _landingStop = null;
+            }
+        }
+
+        /// <summary>
+        /// Ask for the cursor to land on a stop of whatever screen is focused NEXT - how a surface that
+        /// puts ITSELF away hands the player back to the control that opened it.
+        ///
+        /// A closing surface knows where the player came in from but not what page will be underneath when
+        /// it goes, and it cannot reach that page's cursor: every screen keeps its own. So it leaves the
+        /// request here and the next <see cref="Attach"/> spends it. The request is spent whether or not
+        /// the stop exists there, so it can never surface on a page nobody asked about; a page without the
+        /// stop simply keeps the cursor it had.
+        ///
+        /// Only for a surface the player DISMISSED. A control that closes the surface by going somewhere
+        /// else - a notification's Inspect, its link to a screen - wants the page it opened, not the list
+        /// it came from.
+        /// </summary>
+        public void LandOnStopAfterClose(object stopKey)
+        {
+            _landingStop = stopKey;
         }
 
         /// <summary>Forget a closed screen's cursor, so re-opening it starts at the top.</summary>
@@ -631,13 +659,42 @@ namespace ES2Access.UI
 
             MoveResult move = KeyGraph.InTree(node)
                 ? _graph.MoveToSiblingEdge(first)
-                : _graph.MoveToEdge(first ? GraphDir.Up : GraphDir.Down);
+                : _graph.MoveToEdge(EdgeDir(node, first));
             if (move.Moved)
             {
                 AnnounceMove(move);
             }
 
             return true;
+        }
+
+        /// <summary>
+        /// Which way "the start" and "the end" lie: along whichever axis this stop's nodes are actually
+        /// wired.
+        ///
+        /// Down the column where there is one, which is what a list and a table both want - Home in a
+        /// table goes to the top of the column the player is comparing. A stop laid out as a single ROW
+        /// has no vertical edges at all, and asking for one there simply did nothing: Home and End were
+        /// silent on every band of buttons in the mod (measured on the ship designer's Close / Auto Design
+        /// / Create row). So a node with nothing above or below it is asked sideways instead.
+        /// </summary>
+        private static GraphDir EdgeDir(GraphNode node, bool first)
+        {
+            bool vertical = Wired(node, GraphDir.Up) || Wired(node, GraphDir.Down);
+            if (vertical)
+            {
+                return first ? GraphDir.Up : GraphDir.Down;
+            }
+
+            return first ? GraphDir.Left : GraphDir.Right;
+        }
+
+        private static bool Wired(GraphNode node, GraphDir dir)
+        {
+            Transition transition;
+            return node.Transitions != null
+                && node.Transitions.TryGetValue(dir, out transition)
+                && transition != null;
         }
 
         private bool InRegion()
@@ -945,6 +1002,11 @@ namespace ES2Access.UI
         /// Watches the focused control's live parts and speaks the ones that change - a button that
         /// becomes unavailable, a value the game flips on its own. Nothing is spoken on the frame the
         /// baseline is taken: the focus readout has just said all of it.
+        ///
+        /// Nor while the screen says it cannot be worked (<see cref="Screen.IsWorkable"/>): a page being
+        /// switched off wholesale turns every control on it unavailable at once, and the control the
+        /// player just pressed saying "unavailable" is a fact about the page, not about the control. The
+        /// baseline is still taken, so nothing is announced late once the page comes back.
         /// </summary>
         private void WatchLive(GraphNode node)
         {
@@ -953,6 +1015,8 @@ namespace ES2Access.UI
             {
                 return;
             }
+
+            bool mute = !Workable();
 
             bool baseline =
                 _liveKey == null
@@ -997,8 +1061,24 @@ namespace ES2Access.UI
                 if (!string.Equals(_liveValues[i], text))
                 {
                     _liveValues[i] = text;
-                    Voice.Say(text, false);
+                    if (!mute)
+                    {
+                        Voice.Say(text, false);
+                    }
                 }
+            }
+        }
+
+        private bool Workable()
+        {
+            try
+            {
+                return _screen == null || _screen.IsWorkable;
+            }
+            catch (Exception e)
+            {
+                Log.Warn("nav: IsWorkable threw: " + e);
+                return true;
             }
         }
 

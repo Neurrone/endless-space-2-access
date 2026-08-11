@@ -183,7 +183,13 @@ namespace ES2Access.Screens
                     builder.BeginStop("senate:side/" + panel.GetType().Name);
                     builder.PushContext(PanelName(panel));
                     _cells.Clear();
-                    SidePanels.Readouts(_cells, panel, "senate:side/" + i + "/", null, null);
+                    SidePanels.Readouts(
+                        _cells,
+                        panel,
+                        "senate:side/" + i + "/",
+                        ElectionActionCell,
+                        null
+                    );
                     Cells.Emit(builder, _cells);
                     builder.PopContext();
                 }
@@ -191,6 +197,129 @@ namespace ES2Access.Screens
             catch (Exception e)
             {
                 Log.Warn("senate: reading the side panels threw: " + e);
+            }
+        }
+
+        /// <summary>
+        /// One of the actions the next election's panel lists - what this government lets the empire do
+        /// to bend the result, with what it would cost.
+        ///
+        /// The shape of the tree calls each one a line of drawn text, and it is a SWITCH: the game builds
+        /// the row from its <c>ElectionActionToggle</c> prefab, whose tick is what a mouse clicks and
+        /// whose handler passes the row on to whoever is hosting it
+        /// (<c>ElectionActionToggle.OnToggleCb</c> :38-45 sends <c>OnToggleAction</c> to the panel). So it
+        /// is declared as the box it is, and Enter is that same tick.
+        ///
+        /// Here it never ticks: this panel switches every action off as it binds it
+        /// (<c>NextElectionSidePanel.SetupElectionAction</c> :131-141 sets <c>State = false</c> and
+        /// <c>Enable = false</c>), because the choosing happens in the election window when an election is
+        /// actually running - the same rows, enabled, read by <see cref="ElectionScreen"/>. Reading
+        /// unavailable is therefore the truth about this copy of them, and the game writes no reason for
+        /// it anywhere: the row's tooltip is the action's own dossier, which the tooltip window assembles,
+        /// so it is indicated and the review buffer carries it.
+        ///
+        /// The name comes from the action's wrapper and not from the drawn label, which the game squeezes
+        /// into 164 pixels and truncates ("Reinforced intimidation o." for "Reinforced intimidation on
+        /// Citizens"). The table is pooled, so a retired row contributes nothing rather than the last
+        /// action's words.
+        /// </summary>
+        private static bool ElectionActionCell(
+            List<Cell> cells,
+            AgeTransform widget,
+            string keyPrefix,
+            SidePanel panel
+        )
+        {
+            ElectionActionToggle action = Component(widget);
+            if (action == null)
+            {
+                return false;
+            }
+
+            if (action.ElectionActionDefinition == null || !AgeWidgets.Painted(widget))
+            {
+                return true;
+            }
+
+            ElectionActionToggle it = action;
+            AgeTransform at = widget;
+            AgeTooltip tooltip = action.Tooltip ?? AgeWidgets.Raw(widget);
+            Func<bool> enabled = () => AgeWidgets.Offered(at);
+            NodeVtable vtable = GraphNodes.Checkbox(
+                () => ActionName(it),
+                () => it.Toggle != null && it.Toggle.State,
+                () => AgeWidgets.Toggle(it.Toggle),
+                enabled,
+                tooltip,
+                null,
+                null,
+                () => Cost(it)
+            );
+            // No refusal part: the game writes none for these rows, and the tooltip's content field holds
+            // the wrapper's NAME rather than words (measured: reading it aloud produced
+            // "ElectionActionEmpire01"). The renderer builds the dossier itself, and the review buffer
+            // carries what it draws.
+            AgeWidgets.Point(vtable, it.Toggle, tooltip, widget);
+            // Keyed on the ACTION the row was bound to: the rows share a pooled prefab and every one of
+            // them arrives at the same depth under the same table, so the shape-driven key the shared
+            // walk would build is the same string for all of them.
+            Cells.Add(
+                cells,
+                widget,
+                ControlId.Referenced(
+                    widget,
+                    keyPrefix + "election-action/" + action.ElectionActionDefinition.Name
+                ),
+                vtable
+            );
+            return true;
+        }
+
+        private static ElectionActionToggle Component(AgeTransform widget)
+        {
+            try
+            {
+                return widget == null ? null : widget.GetComponent<ElectionActionToggle>();
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>What the game calls an election action, asked of the wrapper the row was bound from
+        /// rather than read off the truncated label the row draws.</summary>
+        private static string ActionName(ElectionActionToggle action)
+        {
+            try
+            {
+                GuiElectionAction wrapper = Gui.GuiWrapperProviderService.GetGuiElectionAction(
+                    action.ElectionActionDefinition.Name
+                );
+                string title = wrapper == null ? null : AgeText.Clean(wrapper.Title);
+                return string.IsNullOrEmpty(title) ? AgeText.Label(action.TitleLabel) : title;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>What the action would cost, where the row draws it: the game hides the price on an
+        /// action that is a readout rather than a choice (<c>ElectionActionToggle.Bind</c> :22-27).
+        /// </summary>
+        private static string Cost(ElectionActionToggle action)
+        {
+            try
+            {
+                AgeTransform cost = Widget(action.CostLabel);
+                return cost == null || !AgeWidgets.Visible(cost)
+                    ? null
+                    : AgeText.Label(action.CostLabel);
+            }
+            catch (Exception)
+            {
+                return null;
             }
         }
 

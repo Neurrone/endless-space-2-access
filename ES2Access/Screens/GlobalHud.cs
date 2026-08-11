@@ -1627,6 +1627,7 @@ namespace ES2Access.Screens
             AddTurnButton(found, window.ApplyMovementsButton, "apply-movements", ModStrings.GalaxyApplyMovements, null);
             AddTurnButton(found, window.NextIdleFleetButton, "next-idle-fleet", ModStrings.GalaxyNextIdleFleet, IdleFleetsText);
             AddTurnButton(found, window.GameMenuButton, "game-menu", ModStrings.GalaxyGameMenu, null);
+            AddRequestToggle(found, window.RequestToggle);
 
             builder.BeginStop(TurnStop);
             builder.StartRow();
@@ -1679,6 +1680,49 @@ namespace ES2Access.Screens
                 {
                     Widget = AgeWidgets.Transform(it),
                     Id = ControlId.Referenced(it, "hud:" + key),
+                    Vtable = vtable,
+                }
+            );
+        }
+
+        /// <summary>
+        /// The switch tucked in beside the turn controls that shows what an ALLIANCE is coordinating: the
+        /// requests allies pin on the map, and the panel they are sent from - the game opens the list and
+        /// flips ping visibility together on one click
+        /// (<c>EndTurnWindow.OnToggleRequestCb</c> :1337-1354).
+        ///
+        /// It is drawn on every game and switched off for an empire in no alliance, with the game's own
+        /// sentence for why on its tooltip (<c>RequestToggleTooltipContent</c> :555-570) - which is the
+        /// whole reason to declare it while it refuses: a control nobody can find is a feature nobody
+        /// knows exists. The game writes no caption for it anywhere (a bare icon, whose tooltip is a
+        /// sentence about what a click would do rather than a name), so the name is the mod's.
+        /// </summary>
+        private void AddRequestToggle(List<Cell> found, AgeControlToggle toggle)
+        {
+            AgeTransform widget = AgeWidgets.Transform(toggle);
+            if (!AgeWidgets.Visible(widget))
+            {
+                return;
+            }
+
+            AgeControlToggle it = toggle;
+            AgeTransform at = widget;
+            AgeTooltip tooltip = AgeWidgets.Raw(widget);
+            Func<bool> enabled = () => AgeWidgets.Offered(at);
+            NodeVtable vtable = GraphNodes.Checkbox(
+                () => ModStrings.Get(ModStrings.GalaxyAllianceRequests),
+                () => it.State,
+                () => AgeWidgets.Toggle(it),
+                enabled,
+                tooltip
+            );
+            GraphNodes.AddRefusal(vtable, tooltip, enabled);
+            AgeWidgets.Point(vtable, it, tooltip, widget);
+            found.Add(
+                new Cell
+                {
+                    Widget = widget,
+                    Id = ControlId.Referenced(toggle, "hud:alliance-requests"),
                     Vtable = vtable,
                 }
             );

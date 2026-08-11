@@ -36,6 +36,28 @@ namespace ES2Access.Screens
         /// be operated.</summary>
         public abstract bool IsActive();
 
+        /// <summary>
+        /// Whether the page can still be WORKED, as opposed to standing there while the engine switches
+        /// it off - fading out after its own Close, or greyed under a confirmation it raised itself.
+        ///
+        /// This is the announcement side of a gap <see cref="IsActive"/> deliberately spans. A screen
+        /// stays active across that gap on purpose (the improvements modal outlives its window so the page
+        /// behind it is not handed back mid-fade), and in those frames the engine disables the whole
+        /// renderer stack above the window, so every control on the page flips to unavailable at once. The
+        /// live watch would then make the control the player has just pressed say "unavailable" as its
+        /// last word - measured on the improvements window's Close and on the ship designer's Close, whose
+        /// lose-your-changes box greys the window a frame before the box itself is up.
+        ///
+        /// Nothing about that is a fact about the control, so while this is false the live watch stays
+        /// silent (it still re-baselines, so a change made across the gap is not announced late). Nothing
+        /// else changes: the readouts, the refusals and the buffers are untouched, and a screen with no
+        /// such gap never overrides this.
+        /// </summary>
+        public virtual bool IsWorkable
+        {
+            get { return true; }
+        }
+
         /// <summary>Declare the screen's controls. Called on every navigation operation.</summary>
         public virtual void Build(GraphBuilder builder) { }
 

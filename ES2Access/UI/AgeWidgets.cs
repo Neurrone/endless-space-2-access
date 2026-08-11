@@ -57,6 +57,50 @@ namespace ES2Access.UI
             }
         }
 
+        /// <summary>
+        /// Whether a row of a POOLED table is really on the screen.
+        ///
+        /// A table the game fills with <c>ReserveChildren</c> + <c>RefreshChildrenIList</c> never
+        /// shrinks: the engine grows the pool to the largest list it has ever shown and, for a table
+        /// whose <c>StrictVisibility</c> is off, retires the leftovers by setting their ALPHA to zero
+        /// rather than hiding them (<c>firstpass/AgeTransform.cs:2382-2412</c>). A retired row keeps its
+        /// old words, its old position and <c>Visible == true</c>, so <see cref="Visible"/> says yes to
+        /// something the player cannot see - measured as 32 dead "Empty law slot" stops parked outside
+        /// the laws grid and as a second effects line on a battle-tactics slot.
+        ///
+        /// Alpha is not inherited by the visibility test, so the ancestors are walked too: a retired
+        /// BLOCK's own lines each sit at alpha 1 inside it. A fade the game is animating reads as
+        /// unpainted while it is transparent, which is the same answer <see cref="Visible"/> gives for a
+        /// group mid-collapse and is why this is asked of pooled tables rather than of everything.
+        /// </summary>
+        public static bool Painted(AgeTransform widget)
+        {
+            try
+            {
+                if (widget == null || !Visible(widget))
+                {
+                    return false;
+                }
+
+                AgeTransform at = widget;
+                for (int depth = 0; at != null && depth < MaxAncestors; depth++)
+                {
+                    if (at.Alpha <= 0f)
+                    {
+                        return false;
+                    }
+
+                    at = at.Parent;
+                }
+
+                return true;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
         public static bool Enabled(AgeTransform widget)
         {
             try
@@ -787,7 +831,29 @@ namespace ES2Access.UI
             return message.Build();
         }
 
-        private static void Collect(AgeTransform widget, List<string> parts, int depth)
+        /// <summary>The same reading, for a widget whose words come out of a POOLED table: the rows the
+        /// game retired by fading them to nothing are left out, so the phrase is what is on the screen.
+        /// See <see cref="Painted"/> for why <see cref="TextOf"/> cannot answer this on its own, and why
+        /// it is asked here rather than everywhere.</summary>
+        public static string PaintedText(AgeTransform widget, int maxDepth = 6)
+        {
+            List<string> parts = new List<string>();
+            Collect(widget, parts, maxDepth, true);
+            Core.Speech.MessageBuilder message = new Core.Speech.MessageBuilder();
+            for (int i = 0; i < parts.Count; i++)
+            {
+                message.Fragment(parts[i]);
+            }
+
+            return message.Build();
+        }
+
+        private static void Collect(
+            AgeTransform widget,
+            List<string> parts,
+            int depth,
+            bool paintedOnly = false
+        )
         {
             if (widget == null || depth < 0)
             {
@@ -796,7 +862,7 @@ namespace ES2Access.UI
 
             try
             {
-                if (!widget.Visible)
+                if (!widget.Visible || (paintedOnly && widget.Alpha <= 0f))
                 {
                     return;
                 }
@@ -819,7 +885,7 @@ namespace ES2Access.UI
 
                 for (int i = 0; i < children.Count; i++)
                 {
-                    Collect(children[i], parts, depth - 1);
+                    Collect(children[i], parts, depth - 1, paintedOnly);
                 }
             }
             catch (Exception) { }

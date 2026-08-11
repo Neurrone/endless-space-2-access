@@ -353,8 +353,15 @@ namespace ES2Access.Screens
         {
             _cells.Clear();
             AddReadout(_cells, Transform(panel.PlanetTitleLabel), "planet:name");
-            AddButton(_cells, panel.PreviousPlanetButton, "planet:previous");
-            AddButton(_cells, panel.NextPlanetButton, "planet:next");
+            // Named by the mod: the game gives these two arrows a sentence about what a click would do
+            // and no title at all, so without a name they read as a bare "button" and a description.
+            AddButton(
+                _cells,
+                panel.PreviousPlanetButton,
+                "planet:previous",
+                ModStrings.PlanetPrevious
+            );
+            AddButton(_cells, panel.NextPlanetButton, "planet:next", ModStrings.PlanetNext);
             AddFidsi(_cells, panel, planet);
             Emit(builder, _cells, null);
         }
@@ -738,7 +745,14 @@ namespace ES2Access.Screens
             Add(cells, widget, ControlId.Referenced(widget, key), vtable);
         }
 
-        private static void AddButton(List<Cell> cells, AgeControlButton button, string key)
+        /// <summary>A button the page draws. <paramref name="nameKey"/> is for one the game leaves
+        /// wordless and gives no title to; every other button reads the words it draws.</summary>
+        private static void AddButton(
+            List<Cell> cells,
+            AgeControlButton button,
+            string key,
+            string nameKey = null
+        )
         {
             AgeTransform widget = AgeWidgets.Transform(button);
             if (widget == null || !AgeWidgets.Visible(widget))
@@ -748,14 +762,24 @@ namespace ES2Access.Screens
 
             AgeTransform it = widget;
             AgeTooltip tooltip = Meaningful(AgeWidgets.Raw(widget));
+            string named = nameKey;
             NodeVtable vtable = GraphNodes.Button(
-                () => AgeWidgets.TextOf(it),
+                () => Name(it, named),
                 () => AgeWidgets.Press(it),
                 () => AgeWidgets.Operable(it),
                 tooltip
             );
             AgeWidgets.Point(vtable, button);
             Add(cells, widget, ControlId.Referenced(widget, key), vtable);
+        }
+
+        /// <summary>What the button draws, or the mod's word for one that draws nothing.</summary>
+        private static string Name(AgeTransform widget, string nameKey)
+        {
+            string drawn = AgeWidgets.TextOf(widget);
+            return !string.IsNullOrEmpty(drawn) || nameKey == null
+                ? drawn
+                : ModStrings.Get(nameKey);
         }
 
         /// <summary>

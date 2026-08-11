@@ -98,6 +98,20 @@ namespace ES2Access.Screens
             }
         }
 
+        /// <summary>False for the frames the game has greyed the window out while raising something over
+        /// it - the lose-your-changes box Close puts up, or the hull drop list - during which every
+        /// control here reads unavailable at once (measured: <c>Operable</c> on the window's own transform
+        /// goes false while the box is up, and the button the player pressed said "unavailable" as the box
+        /// arrived).</summary>
+        public override bool IsWorkable
+        {
+            get
+            {
+                ShipDesignModalWindow window = Window();
+                return window != null && AgeWidgets.Operable(window.AgeTransform);
+            }
+        }
+
         public override void OnPop()
         {
             _editor.Cancel();

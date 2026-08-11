@@ -103,6 +103,21 @@ namespace ES2Access.Screens
             }
         }
 
+        /// <summary>The other side of the gap <see cref="IsActive"/> deliberately spans: while the window
+        /// is fading out - or greyed under the confirmation Scrap raises - the engine has switched the
+        /// whole stack above it off, so every control here reads unavailable at once. Nothing on the page
+        /// changed; the page did.</summary>
+        public override bool IsWorkable
+        {
+            get
+            {
+                ImprovementsManagementModalWindow window = Window();
+                return window != null
+                    && window.Shown
+                    && AgeWidgets.Operable(window.AgeTransform);
+            }
+        }
+
         /// <summary>Escape is the game's: the window is an input handler of its own and answers the key
         /// by closing itself, which is the same route its Close button takes.</summary>
         public override bool Back()

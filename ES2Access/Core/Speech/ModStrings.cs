@@ -119,6 +119,12 @@ namespace ES2Access.Core.Speech
         public const string GalaxyNextIdleFleet = "galaxy.next-idle-fleet";
         public const string GalaxyIdleFleets = "galaxy.idle-fleets";
         public const string GalaxyGameMenu = "galaxy.game-menu";
+
+        /// <summary>The switch beside the turn controls that shows an alliance's coordination requests.
+        /// The game draws it as a bare icon and its tooltip is a sentence about what a click would do,
+        /// so there is no name of the game's to use.</summary>
+        public const string GalaxyAllianceRequests = "galaxy.alliance-requests";
+
         public const string GalaxyResearch = "galaxy.research";
         public const string GalaxyTurnsRemaining = "galaxy.turns-remaining";
         public const string GalaxyStockAndNet = "galaxy.stock-and-net";
@@ -266,6 +272,19 @@ namespace ES2Access.Core.Speech
         // in the game's own words.
         public const string ScreenStarSystem = "screen.star-system";
         public const string ScreenPlanet = "screen.planet";
+
+        /// <summary>The two arrows the planet page draws beside the planet's name, which walk the empire's
+        /// planets one at a time. The game gives them a DESCRIPTION and no title
+        /// (<c>%PlanetInfoSidePreviousDescription</c> is the whole of what it writes), so the names are the
+        /// mod's.</summary>
+        public const string PlanetPrevious = "planet.previous";
+        public const string PlanetNext = "planet.next";
+
+        /// <summary>What a star system's hangar says when it holds no ships. The game draws the toolbar
+        /// and an empty area, with no placeholder of its own anywhere
+        /// (<c>ShipsManagementPanel</c> has no such label), so the phrase is the mod's.</summary>
+        public const string SystemHangarEmpty = "system.hangar-empty";
+
         public const string SystemPlanetsPanel = "system.planets-panel";
         public const string SystemColonyPanel = "system.colony-panel";
         public const string SystemPopulationPanel = "system.population-panel";
@@ -680,6 +699,7 @@ namespace ES2Access.Core.Speech
             { GalaxyNextIdleFleet, "Next idle fleet" },
             { GalaxyIdleFleets, "{0} idle fleets" },
             { GalaxyGameMenu, "Game menu" },
+            { GalaxyAllianceRequests, "Alliance requests" },
             { GalaxyResearch, "Research" },
             { GalaxyTurnsRemaining, "{0} turns remaining" },
             { GalaxyStockAndNet, "{0}, {1} per turn" },
@@ -747,6 +767,9 @@ namespace ES2Access.Core.Speech
             { ScanOutput, "{0} {1}" },
             { ScreenStarSystem, "Star system" },
             { ScreenPlanet, "Planet" },
+            { PlanetPrevious, "Previous planet" },
+            { PlanetNext, "Next planet" },
+            { SystemHangarEmpty, "No ships in the hangar" },
             { SystemPlanetsPanel, "Planets" },
             { SystemColonyPanel, "Colony" },
             { SystemPopulationPanel, "Population" },

@@ -115,9 +115,36 @@ namespace ES2Access.Screens
                 "laws:title"
             );
             Cells.AddReadout(_cells, Widget(window.VotedLawSlotsLabel), "laws:slots-left");
-            Cells.AddReadout(_cells, Widget(window.CurrentPrestigeLabel), "laws:influence");
+            AddInfluence(_cells, window);
             Cells.Emit(builder, _cells);
         }
+
+        /// <summary>What the empire has to spend on laws, and what the next turn adds. The window draws
+        /// the two numbers beside a bare symbol and captions them nowhere ("0 +9" on its own), so the
+        /// caption is the game's own title for the property - the same words the banner across the top of
+        /// every page names it with.</summary>
+        private static void AddInfluence(List<Cell> cells, LawsManagementModalWindow window)
+        {
+            AgeTransform widget = Widget(window.CurrentPrestigeLabel);
+            if (widget == null || !AgeWidgets.Visible(widget))
+            {
+                return;
+            }
+
+            AgeTransform at = widget;
+            AgeTooltip tooltip = AgeWidgets.Raw(widget);
+            NodeVtable vtable = GraphNodes.Readout(
+                () => AgeText.Clean(Gui.GetLocalizedTitle(InfluenceProperty)),
+                () => AgeWidgets.TextOf(at),
+                null,
+                tooltip
+            );
+            AgeWidgets.PointAt(vtable, widget);
+            Cells.Add(cells, widget, ControlId.Referenced(widget, "laws:influence"), vtable);
+        }
+
+        private static readonly Amplitude.StaticString InfluenceProperty =
+            SimulationProperties.Empire.NetEmpireEmpirePoint;
 
         /// <summary>Which laws the grid shows: the ones that could be passed now, one filter per party
         /// in the senate, and all of them. Switching rebuilds the grid at once, so Enter does it.
