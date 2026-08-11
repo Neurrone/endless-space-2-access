@@ -300,7 +300,10 @@ namespace ES2Access.Screens
             CarryState carry = ModEntry.Carry;
             if (carry != null)
             {
-                vtable.Announcements.Add(carry.DropTargetPart(TacticKind));
+                // Guarded by the same test the drop makes: a LOCKED slot is not a place a tactic can go,
+                // and saying "drop target" on it and then refusing the Enter is the readout promising
+                // something the screen will not do.
+                vtable.Announcements.Add(carry.DropTargetPart(TacticKind, enabled));
             }
 
             AgeWidgets.PointAt(vtable, widget);

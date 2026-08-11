@@ -103,12 +103,19 @@ namespace ES2Access.Screens
         /// that held on would sit on top of the galaxy owning the keyboard with nothing on it the
         /// player can see. The bar itself stays reachable from the galaxy (<see
         /// cref="BuildCollapsedBar"/>), which is where it is drawn.
+        ///
+        /// Collapsed beats covered, and the order matters: the cover branch refreshes its own timer, so a
+        /// collapsed popup under a modal that stays up (the battle-tactics deck panel - measured:
+        /// <c>IsAnyModalVisible</c> true, panel bound and shown, toggle collapsed) renewed the linger
+        /// every frame and this screen owned the keyboard for as long as the modal did, with the modal
+        /// underneath unreachable. A collapsed popup is never worth holding the keyboard for, covered or
+        /// not.
         /// </summary>
         public override bool IsActive()
         {
             try
             {
-                if (Showing() || (_linger > 0 && Covered()))
+                if (Showing() || (_linger > 0 && Covered() && !Minimized(Panel())))
                 {
                     _linger = LingerFrames;
                     return true;

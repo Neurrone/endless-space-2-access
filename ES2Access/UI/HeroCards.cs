@@ -386,6 +386,14 @@ namespace ES2Access.UI
             return widget != null && AgeWidgets.Visible(widget);
         }
 
+        /// <summary>The game's word for a hero's level, for the other places that draw the number
+        /// bare - the system page's governor gauge among them. One caller of the key, so the two read
+        /// alike whatever language the game is in.</summary>
+        public static string LevelCaption()
+        {
+            return Localized(LevelTitle);
+        }
+
         private static string Localized(string key)
         {
             try

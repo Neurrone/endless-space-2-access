@@ -647,7 +647,17 @@ namespace ES2Access.Screens
 
         /// <summary>One design. Its own tooltip is the game's ship-design dossier, drawn by the tooltip
         /// window rather than written into the widget, and what the tile draws BESIDE the name is the
-        /// sentence explaining the role icon - so that is a line of the tile's own.</summary>
+        /// sentence explaining the role icon - so that is a line of the tile's own.
+        ///
+        /// The name does NOT come off the drawn label: the tile is 64 pixels wide and the game writes
+        /// an already-truncated string into it (<c>ShipDesignItem.Bind</c> :37 calls
+        /// <c>GuiShipDesign.GetFullTitle(Title)</c>, whose label overload runs the text through
+        /// <c>AgeUtils.TruncateString</c> with '.' as the ellipsis) - so a design the player named
+        /// "Accessible Colony" is drawn, and would be read, as "Accessible .". The same overload glues
+        /// the revision number on with no separator ("Settler2"). Passing a null label asks the game
+        /// for the same title untruncated and spaced, which is what <see cref="DesignName"/> does;
+        /// <see cref="AgeText.FullLabel"/> cannot help here because there is no key left in the label
+        /// to re-resolve.</summary>
         private void AddDesign(AgeTransform widget)
         {
             ShipDesignItem item =
@@ -659,7 +669,7 @@ namespace ES2Access.Screens
 
             ShipDesignItem it = item;
             NodeVtable vtable = GraphNodes.Radio(
-                () => AgeText.Label(it.Title),
+                () => DesignName(it),
                 () => it.SelectionToggle != null && it.SelectionToggle.State,
                 () => AgeWidgets.Toggle(it.SelectionToggle),
                 () => AgeWidgets.Operable(it.AgeTransform),
@@ -673,6 +683,26 @@ namespace ES2Access.Screens
                 ControlId.Referenced(item, Keys + "design/" + item.GetInstanceID()),
                 vtable
             );
+        }
+
+        /// <summary>A design's whole name, from the model the tile was bound to rather than the box the
+        /// game squeezed it into - see <see cref="AddDesign"/>.</summary>
+        private static string DesignName(ShipDesignItem item)
+        {
+            try
+            {
+                GuiShipDesign design = item.GuiShipDesign;
+                if (design != null)
+                {
+                    return AgeText.Clean(design.GetFullTitle(null));
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("military: reading a design's name threw: " + e);
+            }
+
+            return AgeText.Label(item.Title);
         }
 
         /// <summary>What the role icon beside a design's name says for itself.</summary>

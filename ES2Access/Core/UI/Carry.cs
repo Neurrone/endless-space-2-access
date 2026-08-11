@@ -1,3 +1,4 @@
+using System;
 using ES2Access.Core.Speech;
 using ES2Access.Core.UI.Graph;
 
@@ -136,8 +137,23 @@ namespace ES2Access.Core.UI
         /// </summary>
         public NodeAnnouncement DropTargetPart(string kind)
         {
+            return DropTargetPart(kind, null);
+        }
+
+        /// <summary>
+        /// The same, for a family of targets where SOME of them will refuse the drop - a locked deck
+        /// slot beside three live ones. The kind alone says the control is the right sort of place, and
+        /// on its own it promised a drop that the drop handler then refused; <paramref name="takes"/> is
+        /// the same test that handler makes, so the word and the outcome cannot disagree.
+        /// </summary>
+        public NodeAnnouncement DropTargetPart(string kind, Func<bool> takes)
+        {
+            Func<bool> test = takes;
             return new NodeAnnouncement(
-                () => Accepts(kind) ? ModStrings.Get(ModStrings.CarryDropTarget) : null,
+                () =>
+                    Accepts(kind) && (test == null || test())
+                        ? ModStrings.Get(ModStrings.CarryDropTarget)
+                        : null,
                 true
             );
         }

@@ -1309,7 +1309,87 @@ namespace ES2Access.Screens
                 return SensitivityCell(widget, representatives, keyPrefix);
             }
 
+            ColonyHeroSidePanel governor = panel as ColonyHeroSidePanel;
+            if (governor != null)
+            {
+                if (ReferenceEquals(widget, governor.HeroPortraitGroup))
+                {
+                    return GovernorPortraitCell(widget, governor, keyPrefix);
+                }
+
+                if (
+                    governor.ExperienceGauge != null
+                    && ReferenceEquals(widget, governor.ExperienceGauge.AgeTransform)
+                )
+                {
+                    return GovernorLevelCell(widget, governor, keyPrefix);
+                }
+            }
+
             return null;
+        }
+
+        /// <summary>
+        /// The governor's portrait, once a hero holds the post. The game hangs the hero's dossier on the
+        /// portrait IMAGE inside the group and leaves the clickable group itself textless and
+        /// tooltipless, so the shape walk declared it as a nameless "button" - the tooltip is the only
+        /// place the hero's name lives on this control, and the pointer has to be aimed at the child
+        /// that carries it or the dossier never draws.
+        ///
+        /// The click is <c>OnInspectCb</c>, the same click the panel's own Inspect button carries: two
+        /// controls, one command, both kept because the game draws both.
+        /// </summary>
+        private static Cell GovernorPortraitCell(
+            AgeTransform widget,
+            ColonyHeroSidePanel panel,
+            string keyPrefix
+        )
+        {
+            AgeTooltip tooltip = panel.HeroTooltip;
+            AgeControlButton button = widget.AgeControl as AgeControlButton;
+            NodeVtable vtable = GraphNodes.Button(
+                () => AgeWidgets.TooltipTitle(tooltip),
+                () => AgeWidgets.Press(button),
+                () => AgeWidgets.Operable(widget),
+                tooltip
+            );
+            AgeWidgets.Point(vtable, button, tooltip, widget);
+            return new Cell
+            {
+                Widget = widget,
+                Id = ControlId.Referenced(widget, keyPrefix + widget.name + "/governor-portrait"),
+                Vtable = vtable,
+            };
+        }
+
+        /// <summary>The governor's level. The gauge draws the number alone and explains what experience
+        /// is on its tooltip, so the digit arrived captionless ("1, Heroes gain experience through their
+        /// assignment..."); the word for it is the game's own, the one the hero cards put beside the
+        /// same number.</summary>
+        private static Cell GovernorLevelCell(
+            AgeTransform widget,
+            ColonyHeroSidePanel panel,
+            string keyPrefix
+        )
+        {
+            AgeTooltip tooltip = AgeWidgets.Raw(widget);
+            AgePrimitiveLabel level = panel.LevelLabel;
+            NodeVtable vtable = new NodeVtable
+            {
+                Announcements = new List<NodeAnnouncement>
+                {
+                    GraphNodes.LabelPart(() => HeroCards.LevelCaption()),
+                    GraphNodes.ValuePart(() => AgeText.Label(level)),
+                },
+                Sections = GraphNodes.Sections(null, tooltip),
+            };
+            AgeWidgets.PointAt(vtable, widget);
+            return new Cell
+            {
+                Widget = widget,
+                Id = ControlId.Referenced(widget, keyPrefix + widget.name + "/governor-level"),
+                Vtable = vtable,
+            };
         }
 
         /// <summary>Whether a group the game made clickable is really a band of readouts. The approval
