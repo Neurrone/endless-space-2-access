@@ -69,9 +69,11 @@ namespace ES2Access.UI
             }
         }
 
-        /// <summary>Whether the player could work this control: the widget is on and so is everything
-        /// it sits inside, since a panel the game has disabled kills the whole subtree under it.
-        /// </summary>
+        /// <summary>Whether the widget and everything it sits inside are switched on, since a panel the
+        /// game has disabled kills the whole subtree under it. This is the DRAWN state - right for
+        /// "is the game showing this at all" and for a whole window's arrival gate. A node's
+        /// availability asks <see cref="Offered"/> instead, because a button this game is refusing can
+        /// still have its enable flag set.</summary>
         public static bool Operable(AgeTransform widget)
         {
             try
@@ -88,6 +90,37 @@ namespace ES2Access.UI
                 }
 
                 return widget != null;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Whether the game is OFFERING this control - <see cref="Operable"/> plus the game's own test
+        /// for a button it has left switched ON only so that clicking it can explain itself.
+        ///
+        /// <c>Gui.FormatButtonHint</c> (<c>Gui.cs:1150-1204</c>) answers a missing-technology failure by
+        /// setting <c>Enable = true</c> and the DRAWN alpha to the engine's disabled fade, so a Ctrl+click
+        /// can jump to the technology in the research tree; the control's own handler then asks
+        /// <c>Gui.IsHintActive</c> (<c>Gui.cs:1249-1260</c>) first and returns without doing its job
+        /// (<c>PlanetCard.OnColonizeCb</c> :764-770, <c>FleetActionButton.OnClickCb</c> :20-30). So the
+        /// enable flag says available, the pixels say unavailable, and pressing it does nothing: this is
+        /// the question a node's availability has to ask, and <see cref="Operable"/> alone cannot answer
+        /// it. Sixteen prefabs use the trick, and where the game writes its own <c>Enable = false</c>
+        /// AFTER the hint call the extra test simply agrees.
+        ///
+        /// Availability, never visibility: a hinted control stays DECLARED and refuses with the game's
+        /// own reason (which the hint has already appended to its tooltip) rather than disappearing. So
+        /// <see cref="Operable"/> keeps its narrower meaning for the gates that decide whether a widget
+        /// is drawn at all, and for whole windows.
+        /// </summary>
+        public static bool Offered(AgeTransform widget)
+        {
+            try
+            {
+                return Operable(widget) && !Gui.IsHintActive(widget);
             }
             catch (Exception)
             {

@@ -72,7 +72,10 @@ namespace ES2Access.UI
             NodeVtable vtable = GraphNodes.Button(
                 () => caption,
                 () => AgeWidgets.Press(it),
-                () => AgeWidgets.Operable(at),
+                // The whole availability question rather than the enable flag: this game leaves a
+                // button blocked for a missing technology switched ON so a click can explain itself,
+                // and the government window's validate button is one of them.
+                () => AgeWidgets.Offered(at),
                 tooltip,
                 named ? GraphNodes.ModeFor(tooltip) : TooltipMode.None
             );

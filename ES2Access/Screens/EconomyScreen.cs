@@ -157,6 +157,10 @@ namespace ES2Access.Screens
             get { return _editor.Pending; }
         }
 
+        /// <summary>Arrival gates on the page being WORKABLE, not just on no modal being up: the renderer
+        /// switches the whole background stack off while a modal is showing and back on a frame or more
+        /// AFTER the modal reports itself gone, so coming back on "no modal" alone lands the cursor on a
+        /// page whose every control is still switched off and reads one passing "unavailable".</summary>
         public override bool IsActive()
         {
             try
@@ -168,7 +172,10 @@ namespace ES2Access.Screens
                 }
 
                 GuiManager gui = Gui.GuiServiceAvailable ? Gui.GuiService as GuiManager : null;
-                return gui != null && !gui.IsAnyModalVisible && !gui.IsInLoadingWindow;
+                return gui != null
+                    && !gui.IsAnyModalVisible
+                    && !gui.IsInLoadingWindow
+                    && AgeWidgets.Operable(window.AgeTransform);
             }
             catch (Exception)
             {
@@ -345,16 +352,19 @@ namespace ES2Access.Screens
             AgeControlToggle it = toggle;
             AgeTransform at = AgeWidgets.Transform(toggle);
             AgeTooltip tooltip = AgeWidgets.Raw(at);
+            // The marketplace tab is one the game blocks for a missing technology, which it does by
+            // leaving the toggle switched on to carry a "why not?" link, so availability is the shared
+            // test rather than the enable flag (AgeWidgets.Offered).
             NodeVtable vtable = GraphNodes.Tab(
                 () => AgeWidgets.TextOf(at),
                 () => it.State,
-                () => AgeWidgets.Operable(at),
+                () => AgeWidgets.Offered(at),
                 tooltip
             );
             vtable.Sections = GraphNodes.HintSections(tooltip);
             vtable.OnActivate = () =>
             {
-                if (AgeWidgets.Operable(at))
+                if (AgeWidgets.Offered(at))
                 {
                     AgeWidgets.Toggle(it);
                 }
@@ -968,7 +978,10 @@ namespace ES2Access.Screens
                 MarketTabRadio it = radio;
                 AgeTransform at = AgeWidgets.Transform(radio.Toggle);
                 AgeTooltip tooltip = radio.Tooltip ?? AgeWidgets.Raw(widget);
-                Func<bool> offered = () => AgeWidgets.Operable(at);
+                // A section the empire may not trade in is blocked the same way the marketplace tab is
+                // (<c>MarketTabRadio.Bind</c> :19-31), so the shared availability test rather than the
+                // enable flag alone.
+                Func<bool> offered = () => AgeWidgets.Offered(at);
                 NodeVtable vtable = GraphNodes.Radio(
                     () => AgeText.Label(it.Label),
                     () => it.Toggle.State,

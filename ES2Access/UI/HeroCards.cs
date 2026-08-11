@@ -128,8 +128,9 @@ namespace ES2Access.UI
         }
 
         /// <summary>
-        /// Everything the card is showing, band by band in the order <c>Refresh</c> writes them, for the
-        /// review buffer.
+        /// Everything the card is showing, band by band in the order the card DRAWS them - which is the
+        /// order <c>Refresh</c> writes them in everywhere but the definition band (see
+        /// <see cref="Definition"/>) - for the review buffer.
         ///
         /// A band whose tooltip the game wrote as plain words contributes those words too - the health
         /// band's explanation, the assignment's - because they are one sentence the game authored about a
@@ -198,9 +199,13 @@ namespace ES2Access.UI
             return lines;
         }
 
-        /// <summary>Who the hero is: the senator line when the game has drawn it, then affinity,
-        /// politics and class - three words the card writes with an icon each, whose dossiers are the
-        /// class-backed tooltips this reading cannot reach.</summary>
+        /// <summary>Who the hero is: the senator line when the game has drawn it, then affinity, class
+        /// and politics - three words the card writes with an icon each, whose dossiers are the
+        /// class-backed tooltips this reading cannot reach.
+        ///
+        /// In the order the card DRAWS them, which is not the order <c>Refresh</c> writes them in
+        /// (affinity, politics, class): the three labels' measured rects put class before politics, and
+        /// the buffer reads a card the way a sighted player reads it.</summary>
         private static void Definition(HeroDetailedCard card, List<string> lines)
         {
             if (Drawn(card.PoliticalLeaderLine))
@@ -210,8 +215,8 @@ namespace ES2Access.UI
             }
 
             Add(lines, null, AgeText.Label(card.AffinityLabel));
-            Add(lines, null, AgeText.Label(card.PoliticsLabel));
             Add(lines, null, AgeText.Label(card.ClassLabel));
+            Add(lines, null, AgeText.Label(card.PoliticsLabel));
         }
 
         /// <summary>How far along the hero is: experience out of what the next level needs, the level,

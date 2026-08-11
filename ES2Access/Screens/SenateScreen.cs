@@ -107,6 +107,10 @@ namespace ES2Access.Screens
             get { return false; }
         }
 
+        /// <summary>Arrival gates on the page being WORKABLE, not just on no modal being up: the renderer
+        /// switches the whole background stack off while a modal is showing and back on a frame or more
+        /// AFTER the modal reports itself gone, so coming back on "no modal" alone lands the cursor on a
+        /// page whose every control is still switched off and reads one passing "unavailable".</summary>
         public override bool IsActive()
         {
             try
@@ -118,7 +122,10 @@ namespace ES2Access.Screens
                 }
 
                 GuiManager gui = Gui.GuiServiceAvailable ? Gui.GuiService as GuiManager : null;
-                return gui != null && !gui.IsAnyModalVisible && !gui.IsInLoadingWindow;
+                return gui != null
+                    && !gui.IsAnyModalVisible
+                    && !gui.IsInLoadingWindow
+                    && AgeWidgets.Operable(window.AgeTransform);
             }
             catch (Exception)
             {

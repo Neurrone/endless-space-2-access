@@ -696,7 +696,7 @@ namespace ES2Access.Screens
         /// read as the name it is.
         ///
         /// Sell is the one button the game leaves ENABLED while it is refusing, and it is read as refusing
-        /// anyway - see <see cref="HintOnly"/>.
+        /// anyway - see <see cref="AgeWidgets.Offered"/>.
         /// </summary>
         private void BuildActions(GraphBuilder builder, global::AcademyScreen window)
         {
@@ -741,7 +741,7 @@ namespace ES2Access.Screens
             NodeVtable vtable = GraphNodes.Button(
                 () => AgeWidgets.TextOf(at),
                 () => AgeWidgets.Press(at),
-                () => AgeWidgets.Operable(at) && !HintOnly(at),
+                () => AgeWidgets.Offered(at),
                 AgeWidgets.Raw(widget)
             );
             AgeWidgets.Point(vtable, button);
@@ -751,34 +751,6 @@ namespace ES2Access.Screens
                 ControlId.Referenced(widget, Keys + "button/" + widget.name),
                 vtable
             );
-        }
-
-        /// <summary>
-        /// Whether the game has left this button enabled only to carry a "why not?" link.
-        ///
-        /// <c>Gui.FormatButtonHint</c> (<c>Gui.cs:1150-1204</c>) answers a MissingTechnology failure by
-        /// setting <c>Enable = true</c> and the DRAWN alpha to the engine's disabled fade, so that a
-        /// Ctrl+click can jump to the technology in the research tree - and the button's own handler then
-        /// asks <c>GuiButtonHint.IsActive()</c> first and returns without doing its job
-        /// (<c>OnSellCb</c> :577-583). So the enable flag says available, the pixels say unavailable, and
-        /// pressing it does nothing: the action is asked of the game's own predicate for it, which is that
-        /// hint. The reason and the Ctrl+click are already on the tooltip, in the game's words.
-        ///
-        /// The same trick is used by sixteen other prefabs (planet cards, fleet actions, the marketplace's
-        /// tabs, the government window): a shared test belongs with the effective-enablement helper, not
-        /// here.
-        /// </summary>
-        private static bool HintOnly(AgeTransform widget)
-        {
-            try
-            {
-                GuiButtonHint hint = widget.GetComponent<GuiButtonHint>();
-                return hint != null && hint.IsActive();
-            }
-            catch (Exception)
-            {
-                return false;
-            }
         }
 
         // ---- reading the window ----

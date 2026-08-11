@@ -21,8 +21,9 @@ namespace ES2Access.UI
     public static class CardActions
     {
         /// <summary>One of the card's buttons and the words to call it by. <see cref="Offered"/> is
-        /// what "would this act if it were pressed" means for this button - null for the usual hint
-        /// test, which is how this game leaves a blocked button clickable.
+        /// what "would this act if it were pressed" means for this button - null for the shared test
+        /// (<see cref="AgeWidgets.Offered"/>), which covers both a switched-off control and the one this
+        /// game leaves switched ON to carry a "why not?" link.
         ///
         /// <see cref="Toggle"/> is set where the card drew the action as a TICK rather than a button -
         /// an outpost action that is either running or not, the decolonization the system is either
@@ -90,7 +91,7 @@ namespace ES2Access.UI
                 {
                     Widget = at,
                     Label = label,
-                    Offered = () => AgeWidgets.Operable(at),
+                    Offered = () => AgeWidgets.Offered(at),
                 }
             );
         }
@@ -122,7 +123,7 @@ namespace ES2Access.UI
                 {
                     Widget = at,
                     Label = label,
-                    Offered = () => AgeWidgets.Operable(at),
+                    Offered = () => AgeWidgets.Offered(at),
                     Toggle = toggle,
                     Value = value,
                 }
@@ -187,7 +188,10 @@ namespace ES2Access.UI
                 AgeTransform at = action.Widget;
                 AgeControlToggle toggle = action.Toggle;
                 AgeTooltip tooltip = AgeWidgets.Raw(at);
-                Func<bool> offered = action.Offered ?? (() => !Gui.IsHintActive(at));
+                // The default asks the shared availability test rather than the hint alone: a button
+                // collected while the game was drawing it can be switched off between rebuilds, and the
+                // player standing on it should hear that.
+                Func<bool> offered = action.Offered ?? (() => AgeWidgets.Offered(at));
                 NodeVtable vtable = toggle != null
                     ? GraphNodes.Checkbox(
                         action.Label,
