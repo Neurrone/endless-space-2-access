@@ -206,6 +206,8 @@
   "military.fleet-actions": "Fleet actions",
   "military.ships-panel": "Ships",
   "military.design-actions": "Ship design actions",
+  "ship-design.slots": "Module slots",
+  "ship-design.module-fitted": "Fitted {0}",
   "screen.fleet-selection": "Fleet selection",
   "screen.government": "Government selection",
   "screen.laws": "Laws",

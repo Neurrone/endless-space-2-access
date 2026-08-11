@@ -423,6 +423,13 @@ namespace ES2Access.Core.Speech
         public const string MilitaryDesignActions = "military.design-actions";
         public const string ScreenFleetSelection = "screen.fleet-selection";
 
+        // The ship designer. Its heading is the game's own and is declared where it is drawn, so the
+        // only mod words here are for the band the game draws with no caption at all - the module slots
+        // it draws over the rendered ship - and for a module having been fitted into one, which is the
+        // mod's own drag ending and has no game sentence.
+        public const string ShipDesignSlots = "ship-design.slots";
+        public const string ShipDesignModuleFitted = "ship-design.module-fitted";
+
         public const string ScreenGovernment = "screen.government";
         public const string ScreenLaws = "screen.laws";
         public const string ScreenPopulation = "screen.population";
@@ -673,6 +680,8 @@ namespace ES2Access.Core.Speech
             { MilitaryFleetActions, "Fleet actions" },
             { MilitaryShipsPanel, "Ships" },
             { MilitaryDesignActions, "Ship design actions" },
+            { ShipDesignSlots, "Module slots" },
+            { ShipDesignModuleFitted, "Fitted {0}" },
             { ScreenFleetSelection, "Fleet selection" },
             { ScreenGovernment, "Government selection" },
             { ScreenLaws, "Laws" },
