@@ -475,6 +475,28 @@ namespace ES2Access.Core.Speech
         public const string GroundBattleEnemyTroopLost = "ground-battle.enemy-troop-lost";
         public const string GroundBattleEnemyTroopsLost = "ground-battle.enemy-troops-lost";
 
+        // The sweep screens: the error and non-blocking dialogs, the target pickers, the
+        // cutscenes, the cursor-mode watcher, the end-game pages and the main-menu
+        // destinations that had no name at all. The screens ask for these through
+        // OptionalText, so a translation that lacks one silences that line rather than
+        // speaking the key.
+        public const string ScreenError = "screen.error";
+        public const string ScreenTargetSelection = "screen.target-selection";
+        public const string ScreenGroundTargetSelection = "screen.ground-target-selection";
+        public const string ScreenCutscene = "screen.cutscene";
+        public const string CursorModeEnded = "cursor.mode-ended";
+        public const string ScreenVictory = "screen.victory";
+        public const string ScreenJournal = "screen.journal";
+        public const string ScreenDlc = "screen.dlc";
+        public const string ScreenCredits = "screen.credits";
+        public const string ScreenModding = "screen.modding";
+        public const string ScreenResourcesExport = "screen.resources-export";
+        public const string ScreenJoinGame = "screen.join-game";
+        public const string NotifyOpenNegotiation = "notify.open-negotiation";
+        public const string NotifyOpenMinorFaction = "notify.open-minor-faction";
+        public const string NotifyOpenScoreScreen = "notify.open-score-screen";
+        public const string NotifyOpenAcademy = "notify.open-academy";
+
         // A hero's own window. Its heading is the game's own and is declared where it is drawn, so the
         // screen name is only a fallback for the frames before the window has written one. The wheel of
         // skills the page draws with no caption over it needs a word, and a skill dot needs two: the game
@@ -844,6 +866,22 @@ namespace ES2Access.Core.Speech
             { GroundBattleYourTroopsLost, "{0} of your troops lost" },
             { GroundBattleEnemyTroopLost, "One enemy {0} is lost" },
             { GroundBattleEnemyTroopsLost, "{0} enemy troops lost" },
+            { ScreenError, "Error" },
+            { ScreenTargetSelection, "Choose a target" },
+            { ScreenGroundTargetSelection, "Choose a system to invade" },
+            { ScreenCutscene, "Cutscene" },
+            { CursorModeEnded, "Target selection ended" },
+            { ScreenVictory, "Score screen" },
+            { ScreenJournal, "Journal" },
+            { ScreenDlc, "Downloadable content" },
+            { ScreenCredits, "Credits" },
+            { ScreenModding, "Mods" },
+            { ScreenResourcesExport, "Export resources" },
+            { ScreenJoinGame, "Join game" },
+            { NotifyOpenNegotiation, "Open negotiation" },
+            { NotifyOpenMinorFaction, "Open minor faction diplomacy" },
+            { NotifyOpenScoreScreen, "Open score screen" },
+            { NotifyOpenAcademy, "Open the Academy" },
             { ScreenAcademy, "Hero management" },
             { AcademyHeroActions, "Hero actions" },
             { ScreenHeroCompleteList, "Heroes in the galaxy" },
