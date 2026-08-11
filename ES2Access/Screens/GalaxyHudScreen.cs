@@ -209,13 +209,14 @@ namespace ES2Access.Screens
         }
 
         /// <summary>Down the screen, which is also the order the galaxy screen has always read in:
-        /// the empire's banners across the top, then what the map is showing, then the right-hand
+        /// the empire's banners across the top and the name of the view beside them, then what the map
+        /// is showing, then the right-hand
         /// edge - the bar a collapsed tutorial leaves at the top of it and the notification icons
         /// under that - and the turn controls in the bottom corner.</summary>
         public override void Build(GraphBuilder builder)
         {
             ApplyPendingExpansions(builder);
-            _hud.Empire(builder);
+            _hud.Top(builder);
 
             builder.BeginStop(SystemStop);
             BuildSystems(builder);

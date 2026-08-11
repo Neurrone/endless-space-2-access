@@ -170,12 +170,13 @@ namespace ES2Access.Screens
 
             ApplyPendingExpansions(builder);
 
-            // Down and across the screen: the empire's banners along the top, the two panels down the
+            // Down and across the screen: the empire's banners along the top with this screen's own
+            // title beside them, the two panels down the
             // left edge, the wheel in the middle, then the right-hand edge and the turn controls -
             // the same order every page under these clusters declares them in. The recommended
             // technologies sit between the panels and the wheel because that is where they point:
             // they are a way into the wheel rather than a panel of their own.
-            _hud.Empire(builder);
+            _hud.Top(builder);
             BuildPanels(builder, window);
             BuildSuggestions(builder, window);
             BuildWheel(builder, window);

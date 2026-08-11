@@ -166,11 +166,12 @@ namespace ES2Access.Screens
                 return;
             }
 
-            // Down the screen: the empire's banners in the top-left corner, then the page itself,
+            // Down the screen: the empire's banners in the top-left corner and the name of the view in
+            // the centre, then the page itself,
             // then the right-hand edge - a collapsed tutorial's bar and the notification icons under
             // it - and the turn controls in the bottom corner. Same order as every other view level,
             // because the game draws them in the same places whichever one is up.
-            _hud.Empire(builder);
+            _hud.Top(builder);
 
             builder.BeginStop(PlanetStop);
             builder.PushContext(ModStrings.Get(ModStrings.SystemPlanetsPanel));

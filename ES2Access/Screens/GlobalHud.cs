@@ -11,8 +11,9 @@ namespace ES2Access.Screens
 {
     /// <summary>
     /// The bits of the game that are on the screen whatever the player is looking at: what the empire
-    /// is worth along the top, the quest the game is tracking, the notification icons and a collapsed
-    /// tutorial down the right-hand edge, and the turn controls in the bottom corner.
+    /// is worth along the top, the name of the view and its scan lens in the top centre, the quest the
+    /// game is tracking, the notification icons and a collapsed tutorial down the right-hand edge, and
+    /// the turn controls in the bottom corner.
     ///
     /// None of them belongs to a page. The galaxy, the star system's management page and a planet's
     /// overview are three different view levels of the same running game, and the game draws these
@@ -44,6 +45,7 @@ namespace ES2Access.Screens
     public sealed class GlobalHud
     {
         public static readonly object EmpireStop = "hud:empire";
+        public static readonly object ViewTitleStop = "hud:view-title";
         public static readonly object QuestStop = "hud:quest";
         public static readonly object TutorialStop = "hud:tutorial";
         public static readonly object NotificationStop = "hud:notifications";
@@ -153,6 +155,114 @@ namespace ES2Access.Screens
 
                 builder.EndRow();
             }
+        }
+
+        /// <summary>
+        /// The two clusters the game draws across the top of every page that is drawn over a view
+        /// level, in the order it draws them: what the empire is worth in the left corner, then what
+        /// the player is looking at in the centre.
+        ///
+        /// One call rather than two, because the top of the screen is the same on every such page and
+        /// the next page to be modelled should not be able to inherit half of it. A page that has to
+        /// put something of its own between them can still call the two halves separately.
+        /// </summary>
+        public void Top(GraphBuilder builder)
+        {
+            Empire(builder);
+            ViewTitle(builder);
+        }
+
+        /// <summary>
+        /// What the player is looking at, as the game writes it across the top centre: the name of the
+        /// view, and the lens that would X-ray it.
+        ///
+        /// The name is a BUTTON wherever there is somewhere to go back to. The game draws one widget
+        /// for both jobs - a plain label on the galaxy, which is the bottom of the game, and a Close
+        /// button carrying the same words on every page that is drawn over it and on every screen the
+        /// icon strip opens (<c>TopTitlePanel.Setup</c>). So a keyboard player leaves a system's page
+        /// the way a mouse does, by pressing the thing that says where they are.
+        ///
+        /// The lens is named by the game, and what it is named changes as the camera climbs: the map's
+        /// zoom step picks a layer descriptor and the descriptor picks the lens, so the same button
+        /// reads "Diplomacy scan" from far out and "System scan" up close. The label is read live for
+        /// exactly that reason, and the game hides the whole group on the pages that have no lens.
+        /// </summary>
+        public void ViewTitle(GraphBuilder builder)
+        {
+            GameOverlayWindow window = OverlayWindow();
+            TopTitlePanel panel = window == null ? null : window.TopTitlePanel;
+            if (panel == null || !panel.Shown || !AgeWidgets.Visible(panel.AgeTransform))
+            {
+                return;
+            }
+
+            // Side by side, which is how the game draws them, so left and right walk them.
+            builder.BeginStop(ViewTitleStop);
+            builder.StartRow();
+            AddViewName(builder, panel);
+            AddScanToggle(builder, panel);
+            builder.EndRow();
+        }
+
+        /// <summary>The name of the view: the Close button where the game has drawn one, a plain line
+        /// of text where it has not. Both carry the same words, which is why this is one node and not
+        /// two.</summary>
+        private static void AddViewName(GraphBuilder builder, TopTitlePanel panel)
+        {
+            AgeControlButton close = panel.CloseButton;
+            AgeTransform button = AgeWidgets.Transform(close);
+            if (button != null && AgeWidgets.Visible(button))
+            {
+                AgeControlButton it = close;
+                NodeVtable vtable = GraphNodes.Button(
+                    () => AgeText.Label(panel.CloseButtonLabel),
+                    () => AgeWidgets.Press(it),
+                    () => AgeWidgets.Operable(button),
+                    AgeWidgets.Raw(button)
+                );
+                AgeWidgets.Point(vtable, it);
+                builder.AddItem(ControlId.Referenced(close, "hud:view-title/name"), vtable);
+                return;
+            }
+
+            AgePrimitiveLabel title = panel.TitleLabel;
+            if (title == null || !AgeWidgets.Visible(title.AgeTransform))
+            {
+                return;
+            }
+
+            NodeVtable readout = GraphNodes.Readout(
+                () => AgeText.Label(title),
+                () => null,
+                null,
+                AgeWidgets.Raw(title.AgeTransform)
+            );
+            AgeWidgets.PointAt(readout, title.AgeTransform);
+            builder.AddItem(ControlId.Referenced(title, "hud:view-title/name"), readout);
+        }
+
+        /// <summary>The lens toggle. The tooltip explaining it is hung on the GROUP around the label
+        /// and the icon rather than on the button, which is what the game shows a tooltip for and so is
+        /// what the pointer is aimed at.</summary>
+        private static void AddScanToggle(GraphBuilder builder, TopTitlePanel panel)
+        {
+            AgeTransform group = panel.ScanGroup;
+            AgeControlButton button = panel.ScanButton;
+            if (group == null || button == null || !AgeWidgets.Visible(group))
+            {
+                return;
+            }
+
+            AgeControlButton it = button;
+            AgeTooltip tooltip = AgeWidgets.Raw(group);
+            NodeVtable vtable = GraphNodes.Button(
+                () => AgeText.Label(panel.ScanLabel),
+                () => AgeWidgets.Press(it),
+                () => AgeWidgets.Operable(group),
+                tooltip
+            );
+            AgeWidgets.Point(vtable, it, tooltip, group);
+            builder.AddItem(ControlId.Referenced(button, "hud:view-title/scan"), vtable);
         }
 
         /// <summary>A control on its way into the graph, still carrying the widget it was read from:

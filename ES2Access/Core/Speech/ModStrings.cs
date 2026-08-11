@@ -218,6 +218,13 @@ namespace ES2Access.Core.Speech
         /// <summary>What a control says while it would take the thing the player is holding.</summary>
         public const string CarryDropTarget = "carry.drop-target";
 
+        // The scan view. The lens names itself in the game's own words, so the only strings here are
+        // for the two boxes the game draws bare and the pairing of a number with the output it counts.
+        public const string ScreenScanView = "screen.scan-view";
+        public const string ScanSystemInfo = "scan.system-info";
+        public const string ScanLegend = "scan.legend";
+        public const string ScanOutput = "scan.output";
+
         // The star system management page. The panel names are the mod's, because the game draws the
         // panels as unlabelled boxes with an icon in the corner; everything a panel CONTAINS is read
         // in the game's own words.
@@ -469,6 +476,10 @@ namespace ES2Access.Core.Speech
             { CarryCancelled, "Cancelled drag" },
             { CarryMovedToPosition, "Moved {0} to position {1}" },
             { CarryDropTarget, "drop target" },
+            { ScreenScanView, "Scan view" },
+            { ScanSystemInfo, "System information" },
+            { ScanLegend, "Legend" },
+            { ScanOutput, "{0} {1}" },
             { ScreenStarSystem, "Star system" },
             { ScreenPlanet, "Planet" },
             { SystemPlanetsPanel, "Planets" },

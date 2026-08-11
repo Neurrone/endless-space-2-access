@@ -122,6 +122,7 @@ namespace ES2Access
             Screens.Register(new SystemManagementScreen());
             Screens.Register(new PlanetOverviewScreen());
             Screens.Register(new SystemDiscoveryScreen());
+            Screens.Register(new ScanViewScreen());
             Screens.Register(new ImprovementsModalScreen());
             Screens.Register(new SystemSelectionScreen());
             Screens.Register(new SystemPoliticsScreen());

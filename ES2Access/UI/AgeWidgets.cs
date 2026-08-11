@@ -601,6 +601,69 @@ namespace ES2Access.UI
 
         public static readonly Action ReleasePointer = PointerFocus.Release;
 
+        /// <summary>
+        /// Everything a panel the mod has NOT modelled widget by widget is showing, one line per thing
+        /// it says: the text of every label it draws, and the words of every tooltip whose words are on
+        /// the widget rather than composed by a renderer.
+        ///
+        /// For a read-only panel of a shape the mod has no model for - a lens's own overlay, an
+        /// out-of-fixture variant - this is the whole reading, and it costs nothing per screen. It is
+        /// deliberately NOT a substitute for modelling a panel the player has to work: it produces
+        /// lines, not controls, and it says nothing about which line belongs to which control.
+        ///
+        /// A line is dropped when it only repeats the line before it, which is what the game's habit of
+        /// drawing the same words on a group and on the label inside it would otherwise produce.
+        /// </summary>
+        public static IList<string> DrawnLines(AgeTransform widget, int maxDepth = 8)
+        {
+            List<string> lines = new List<string>();
+            CollectLines(widget, lines, maxDepth);
+            return lines;
+        }
+
+        private static void CollectLines(AgeTransform widget, List<string> lines, int depth)
+        {
+            if (widget == null || depth < 0)
+            {
+                return;
+            }
+
+            try
+            {
+                if (!widget.Visible)
+                {
+                    return;
+                }
+
+                AgePrimitiveLabel label = widget.GetComponent<AgePrimitiveLabel>();
+                Add(lines, label == null ? null : AgeText.Label(label));
+                AgeTooltip tooltip = Readable(Raw(widget));
+                if (tooltip != null)
+                {
+                    IList<string> words = AgeText.Lines(AgeText.Tooltip(tooltip));
+                    for (int i = 0; words != null && i < words.Count; i++)
+                    {
+                        Add(lines, words[i]);
+                    }
+                }
+
+                IList<AgeTransform> children = widget.Children;
+                for (int i = 0; children != null && i < children.Count; i++)
+                {
+                    CollectLines(children[i], lines, depth - 1);
+                }
+            }
+            catch (Exception) { }
+        }
+
+        private static void Add(List<string> lines, string line)
+        {
+            if (!string.IsNullOrEmpty(line) && (lines.Count == 0 || lines[lines.Count - 1] != line))
+            {
+                lines.Add(line);
+            }
+        }
+
         /// <summary>Every text a widget draws, in one phrase - the caption of a group whose words the
         /// game spreads over an icon, a number and a label. Icon tokens come back as their names.
         /// </summary>

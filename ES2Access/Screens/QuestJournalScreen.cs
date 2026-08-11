@@ -154,10 +154,11 @@ namespace ES2Access.Screens
                 return;
             }
 
-            // Down the screen: the empire's banners in the top left corner, the two side panels under
+            // Down the screen: the empire's banners in the top left corner and this screen's own title
+            // beside them, the two side panels under
             // them, then the journal's own two containers - the strip and its filter above, the
             // selected quest below.
-            _hud.Empire(builder);
+            _hud.Top(builder);
             BuildSidePanels(builder, window);
             BuildFilters(builder, window);
             BuildList(builder, window);
