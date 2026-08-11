@@ -372,6 +372,33 @@ namespace ES2Access.Tests.UI
         }
 
         [Fact]
+        public void TwoNodesSharingABackingObjectAreOneControlToTheCursor()
+        {
+            // The consequence of following the reference BEFORE the structural key, pinned here
+            // because it is the trap adapters keep walking into: two surfaces that show the same
+            // entity and both carry it as a reference are indistinguishable to reconciliation, so the
+            // cursor lands on whichever one comes first and the player is teleported off the surface
+            // they were reading. ES2 Access hit it twice - a research-queue row against its wheel
+            // node, and the two ends of one starlane, each declared under its own system. Where two
+            // nodes show one entity, at most one of them may carry the reference.
+            GraphState state = new GraphState();
+            object thing = new object();
+            KeyGraph g = new KeyGraph(() =>
+            {
+                GraphBuilder b = new GraphBuilder();
+                b.AddItem(ControlId.Referenced(thing, "here"), Vt("Here"));
+                b.AddItem(ControlId.Referenced(thing, "there"), Vt("There"));
+                return b.Build();
+            }, state);
+            g.Rerender();
+            g.Move(GraphDir.Down);
+            Assert.Equal("there", Focused(g));
+
+            g.Rerender();
+            Assert.Equal("here", Focused(g));
+        }
+
+        [Fact]
         public void AVanishedControlFallsBackToTheNearestSurvivor()
         {
             GraphState state = new GraphState();

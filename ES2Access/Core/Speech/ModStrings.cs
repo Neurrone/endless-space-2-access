@@ -145,6 +145,11 @@ namespace ES2Access.Core.Speech
         public const string GalaxyWormhole = "galaxy.wormhole";
         public const string GalaxyWormholeUnexplored = "galaxy.wormhole-unexplored";
 
+        // The place a lane leads to, offered inside the lane itself. The game draws no such control - a
+        // line on the map is the whole of what it draws - so the phrase is the mod's, and it is a whole
+        // phrase because the name of a system is all that goes in it.
+        public const string GalaxyLaneDestination = "galaxy.lane-destination";
+
         // Which way something on the map lies from somewhere else. The game writes no compass word
         // anywhere - it draws the map and expects it to be looked at - so all eight are the mod's.
         public const string DirectionNorth = "direction.north";
@@ -442,6 +447,7 @@ namespace ES2Access.Core.Speech
             { GalaxyStarlaneUnexplored, "Starlane {0} to an unexplored system, {1}" },
             { GalaxyWormhole, "Wormhole {0} to {1}, {2}" },
             { GalaxyWormholeUnexplored, "Wormhole {0} to an unexplored system, {1}" },
+            { GalaxyLaneDestination, "Go to {0}" },
             { DirectionNorth, "north" },
             { DirectionNorthEast, "northeast" },
             { DirectionEast, "east" },

@@ -72,6 +72,7 @@
   "galaxy.starlane-unexplored": "Starlane {0} to an unexplored system, {1}",
   "galaxy.wormhole": "Wormhole {0} to {1}, {2}",
   "galaxy.wormhole-unexplored": "Wormhole {0} to an unexplored system, {1}",
+  "galaxy.lane-destination": "Go to {0}",
   "direction.north": "north",
   "direction.northeast": "northeast",
   "direction.east": "east",

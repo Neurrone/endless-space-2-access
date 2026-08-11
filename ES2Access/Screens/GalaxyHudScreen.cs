@@ -620,6 +620,7 @@ namespace ES2Access.Screens
                 AddPlanets(builder, node, empire, label);
                 AddStarlanes(builder, node, empire);
                 AddFleets(builder, "galaxy:system/" + node.GUID, FleetPresence.FleetsAt(node));
+                AddHangars(builder, "galaxy:system/" + node.GUID, node);
             }
 
             builder.EndGroup();
@@ -642,6 +643,35 @@ namespace ES2Access.Screens
             {
                 return ModStrings.Get(ModStrings.GalaxySystemColonized);
             }
+        }
+
+        /// <summary>The word for what this empire holds at a place, or nothing at all where it holds
+        /// nothing - so that a system named anywhere in the tree reads the same way it reads at the root
+        /// of the systems stop, and the word cannot drift between the two places that say it.</summary>
+        private static string StateOf(GameNode node, Empire empire)
+        {
+            StarSystemNode system = node as StarSystemNode;
+            return system != null && Held(system, empire) ? OwnedState(system, empire) : null;
+        }
+
+        /// <summary>Whether this empire holds anything at all here - the same membership test the owned
+        /// half of the systems stop is built from (<see cref="BuildSystems"/>), a GHOST of a colony
+        /// included, because that is what the map's label is counting.</summary>
+        private static bool Held(GameNode node, Empire empire)
+        {
+            DepartmentOfTheInterior interior =
+                empire == null ? null : empire.GetAgency<DepartmentOfTheInterior>();
+            IList<ColonizedStarSystem> systems =
+                interior == null ? null : interior.ColonizedStarSystems;
+            for (int i = 0; systems != null && i < systems.Count; i++)
+            {
+                if (systems[i] != null && systems[i].Node == node)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         /// <summary>Whether what this empire holds here is still an outpost. Read off the same list the
@@ -674,8 +704,12 @@ namespace ES2Access.Screens
         /// changes the whole screen and what the tree underneath reads, and a player who cannot see the
         /// camera move has nothing else to go on. What it says is what the CAMERA did, not what a menu
         /// used to be called: "Open system" is the system's own page, a different place entirely, and
-        /// the two must not sound alike.</summary>
-        private static void ZoomIn(StarSystemNode node)
+        /// the two must not sound alike.
+        ///
+        /// Takes any node on the map rather than a system, because the far end of a starlane is offered
+        /// as a node of its own (<see cref="AddDestination"/>) and its Enter has to be this exact click
+        /// rather than a second copy of it.</summary>
+        private static void ZoomIn(GameNode node)
         {
             GalaxyViewLevels.ZoomTo(node);
             Voice.Say(ModStrings.Get(ModStrings.GalaxyZoomedIn), true);
@@ -1245,6 +1279,11 @@ namespace ES2Access.Screens
                 CardActions.AddNamedByGame(found, card.AnomalyReductionButton, "%InitiateReduceAnomalyFleetActionTitle");
                 CardActions.AddNamedByGame(found, card.MiningProbeButton, "%LaunchMiningProbeFleetActionTitle");
                 CardActions.AddNamedByGame(found, card.DestroyButton, "%DestroyPlanetFleetActionTitle");
+
+                // What has been found in orbit and not yet looked into. Each one is a button of the
+                // card's like any other, drawn in a ring around it rather than in the row, so they come
+                // after the row.
+                AddCuriosities(found, card);
             }
             catch (Exception e)
             {
@@ -1252,6 +1291,42 @@ namespace ES2Access.Screens
             }
 
             return found;
+        }
+
+        /// <summary>
+        /// The curiosities the card is drawing - each one a button that starts an expedition on it.
+        ///
+        /// The game draws one wordless icon per curiosity still to be looked into, keeps it CLICKABLE
+        /// while refusing, and writes the reason into its own tooltip
+        /// (<c>PlanetCuriosityItem.Refresh</c>: no fleet in orbit, one already queued, not enough
+        /// expedition power), which is the treatment <see cref="CardActions.AddRefusable"/> exists for -
+        /// what is in orbit and why it cannot be reached yet is exactly what the player opened the card
+        /// to ask. The icon has no caption at all, so the name comes off the wrapper the game hangs on
+        /// its tooltip, which is where it keeps the words it would have written.
+        ///
+        /// The table pools its items - a card that has run out of curiosities keeps the widgets and
+        /// hides them - so what is DRAWN is the gate, exactly as it is for the card's other buttons.
+        /// </summary>
+        private static void AddCuriosities(
+            List<CardActions.CardAction> found,
+            PlanetLabel_SystemOrbital card
+        )
+        {
+            AgeTransform table = card.PlanetCuriositiesTable;
+            if (table == null || !Visible(table))
+            {
+                return;
+            }
+
+            IList<AgeTransform> items = table.Children;
+            for (int i = 0; items != null && i < items.Count; i++)
+            {
+                AgeTransform item = items[i];
+                if (item != null && Visible(item))
+                {
+                    CardActions.AddRefusable(found, item, CardActions.TitleOf(item));
+                }
+            }
         }
 
         /// <summary>The circle the label draws for the planet at <paramref name="index"/>, or null if
@@ -1427,9 +1502,17 @@ namespace ES2Access.Screens
                     vtable.OnContextual = () => LaneCommand(target);
 
                     string key = "galaxy:system/" + node.GUID + "/lane/" + link.GUID;
-                    ControlId id = ControlId.Referenced(link, key);
+                    // Keyed on the pair of GUIDs and NOT carrying the link as a reference: ONE lane runs
+                    // between two systems, and once both ends are in the tree the same Link object backs
+                    // two nodes - which are one control to the cursor, because reference identity is
+                    // followed before the structural key. Measured with the fog lifted: focusing the
+                    // Hir end of the Xiu-Hir lane threw the cursor across to the Xiu end on the next
+                    // rebuild. Two GUIDs are stable without a reference, so nothing is lost.
+                    ControlId id = ControlId.Structural(key);
                     IList<Fleet> flying = FleetPresence.FleetsOn(link);
-                    if (flying.Count == 0)
+                    // A lane into the dark with nothing flying it is a leaf: there is neither a fleet
+                    // to walk nor a system to name at the far end.
+                    if (flying.Count == 0 && !named)
                     {
                         builder.AddItem(id, vtable);
                         continue;
@@ -1440,6 +1523,10 @@ namespace ES2Access.Screens
                     if (builder.IsExpanded(id))
                     {
                         AddFleets(builder, key, flying);
+                        if (named)
+                        {
+                            AddDestination(builder, key, destination, empire);
+                        }
                     }
 
                     builder.EndGroup();
@@ -1464,6 +1551,68 @@ namespace ES2Access.Screens
         {
             return a.Bearing.CompareTo(b.Bearing);
         };
+
+        /// <summary>
+        /// Where a lane goes, as a child of the lane - the place at its far end, offered here because
+        /// that is where the player asking "what is down this line" is standing.
+        ///
+        /// Only where the map draws the far end's name, which is the same question the lane's own
+        /// label asked: a lane into the dark has no destination to offer and stays a leaf.
+        ///
+        /// It says and does what the system's own node at the root of the tree says and does - the same
+        /// state word, the same count phrase for what is parked there, the same two clicks: ENTER is the
+        /// map's left click on that system (the camera goes in on it, <see cref="ZoomIn"/> - the very
+        /// call the root node makes, so the two cannot drift apart) and BACKSLASH sends the selection
+        /// all the way there, which is the distinction the game itself draws between a move ordered on a
+        /// node and one ordered on a link: the lane means "fly out onto this line", the system at its end
+        /// means "go there".
+        ///
+        /// A LEAF, deliberately: the system it names has lanes of its own, and one of them leads back
+        /// here. The tree would have no bottom.
+        ///
+        /// Keyed structurally and NEVER on the far node: that node is already a node of this screen at
+        /// the root of the systems stop, and two nodes sharing a backing object are one control to the
+        /// cursor - reference identity is followed before the structural key - so carrying the reference
+        /// here would teleport the player out of the lane the moment anything rebuilt (the same trap
+        /// <see cref="AddFleets"/> records).
+        /// </summary>
+        private static void AddDestination(
+            GraphBuilder builder,
+            string laneKey,
+            GameNode destination,
+            Empire empire
+        )
+        {
+            GameNode it = destination;
+            Empire looking = empire;
+            NodeVtable vtable = new NodeVtable
+            {
+                ControlType = ControlTypes.Button,
+                Announcements = new List<NodeAnnouncement>
+                {
+                    GraphNodes.LabelPart(
+                        () => ModStrings.Format(ModStrings.GalaxyLaneDestination, it.LocalizedName)
+                    ),
+                    GraphNodes.ValuePart(() => StateOf(it, looking)),
+                    // Read on focus rather than watched, for the reason a system's own count phrase is:
+                    // the answer costs a walk of the docking-slot repository.
+                    GraphNodes.ValuePart(() => FleetPresence.At(it), false),
+                },
+                Sections = GraphNodes.Sections(() => FleetPresence.LinesAt(it), null),
+                OnActivate = () => ZoomIn(it),
+                OnContextual = () => SendTo(it),
+            };
+            builder.AddItem(ControlId.Structural(laneKey + "/destination"), vtable);
+        }
+
+        /// <summary>Send the selected fleets to a place on the map, and nothing else. The system's own
+        /// node does more than this on the same key (<see cref="SystemCommand"/>): with nothing selected
+        /// it undoes a zoom, which from inside a lane would move a camera the player never asked about.
+        /// </summary>
+        private static void SendTo(GameNode node)
+        {
+            SendAll(SendableTo(node, FleetOrders.Selected()));
+        }
 
         /// <summary>
         /// Send the selection out onto a lane.
@@ -1797,6 +1946,171 @@ namespace ES2Access.Screens
             {
                 Log.Warn("galaxy: finding the fleet labels threw: " + e);
                 return NoFleetLabels;
+            }
+        }
+
+        /// <summary>
+        /// The system's own hangar, where the map is drawing one.
+        ///
+        /// A hangar is the ships a colony is holding at home. The map draws it as a lozenge of its own
+        /// beside the fleet lozenges (<c>HangarLabel</c>), and the mod already counts it in what a system
+        /// says is parked there - the count phrase comes from the dock label's own group, which includes
+        /// it - but it was not a place the player could go, and it is the one route to the button that
+        /// turns those ships into a fleet: clicking the lozenge selects the hangar garrison and swaps in
+        /// the garrison cursor, which is what puts the fleet panel on the screen with Create on it.
+        ///
+        /// WHICH hangars are drawn is the label window's own answer, taken from the same repository it
+        /// walks (<c>HangarLabelsWindow.ShowAllLabels</c> over
+        /// <c>IVisibleGalaxyHangarRepositoryService</c>) with the same test it draws on
+        /// (<c>ShowLabel</c>: the hangar is holding ships) - so a hangar nobody can see is absent here
+        /// for the reason it is absent from the picture, and no visibility rule is reimplemented.
+        ///
+        /// Last among a system's children, after the fleets: it is the thing at that system that is not
+        /// going anywhere.
+        /// </summary>
+        private static void AddHangars(GraphBuilder builder, string place, StarSystemNode node)
+        {
+            try
+            {
+                IVisibleGalaxyHangarRepositoryService repository =
+                    Amplitude.Unity.Framework.Services.GetService<IVisibleGalaxyHangarRepositoryService>();
+                if (repository == null)
+                {
+                    return;
+                }
+
+                HangarLabel[] labels = null;
+                ReadOnlyCollection<GalaxyHangar> hangars = repository.GalaxyHangars;
+                for (int i = 0; i < hangars.Count; i++)
+                {
+                    GalaxyHangar hangar = hangars[i];
+                    Hangar held = hangar == null ? null : hangar.Hangar;
+                    if (held == null || held.ShipsCount <= 0 || !IsAt(held, node))
+                    {
+                        continue;
+                    }
+
+                    if (labels == null)
+                    {
+                        labels = HangarLabels();
+                    }
+
+                    GalaxyHangar it = hangar;
+                    AgeTransform lozenge = HangarLozenge(hangar, labels);
+                    NodeVtable vtable = GraphNodes.Button(
+                        () => held.LocalizedName,
+                        () => SelectHangar(it),
+                        null,
+                        Raw(lozenge)
+                    );
+                    vtable.Announcements.Add(
+                        GraphNodes.ValuePart(
+                            () => ModStrings.Format(ModStrings.GalaxyFleetShips, held.ShipsCount)
+                        )
+                    );
+                    if (lozenge != null)
+                    {
+                        PointAt(vtable, lozenge);
+                    }
+
+                    builder.AddItem(
+                        ControlId.Structural(place + "/hangar/" + held.GUID),
+                        vtable
+                    );
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: reading a system's hangar threw: " + e);
+            }
+        }
+
+        /// <summary>Whether a hangar is the one belonging to this system. A hangar hangs off the node
+        /// itself rather than off the colony, which is what makes it survive the colony changing hands.
+        /// </summary>
+        private static bool IsAt(Hangar hangar, StarSystemNode node)
+        {
+            try
+            {
+                GameNode at = hangar.GetGameNode();
+                return at != null && at.GUID == node.GUID;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        private static readonly HangarLabel[] NoHangarLabels = new HangarLabel[0];
+
+        private static HangarLabel[] HangarLabels()
+        {
+            try
+            {
+                HangarLabelsWindow window = Gui.GuiServiceAvailable
+                    ? Gui.GuiService.GetWindow<HangarLabelsWindow>(false)
+                    : null;
+                return window == null
+                    ? NoHangarLabels
+                    : window.GetComponentsInChildren<HangarLabel>(true);
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: finding the hangar labels threw: " + e);
+                return NoHangarLabels;
+            }
+        }
+
+        /// <summary>The lozenge the map is drawing this hangar with - the same choice
+        /// <see cref="FleetLozenge"/> makes for a fleet, and for the same reason: the tooltip that gets
+        /// DRAWN is the one on whatever the pointer is over, and the label carries two.</summary>
+        private static AgeTransform HangarLozenge(GalaxyHangar hangar, HangarLabel[] labels)
+        {
+            try
+            {
+                for (int i = 0; i < labels.Length; i++)
+                {
+                    HangarLabel label = labels[i];
+                    if (
+                        label != null
+                        && ReferenceEquals(label.GalaxyHangar, hangar)
+                        && Visible(label.AgeTransform)
+                    )
+                    {
+                        return Lozenge(label.FleetLozenge);
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: matching a hangar to its map label threw: " + e);
+            }
+
+            return null;
+        }
+
+        /// <summary>Select the ships a colony is holding at home, exactly as clicking their lozenge does
+        /// (<c>HangarLabel.OnClickCb</c>): the hangar's cursor target becomes the selection and the
+        /// garrison cursor takes over, which is what draws the fleet panel and the Create button on it.
+        /// Nothing is said here - the panel's own watcher says the panel opened, from the one place that
+        /// knows.</summary>
+        private static void SelectHangar(GalaxyHangar hangar)
+        {
+            try
+            {
+                Amplitude.Unity.View.ICursorService cursors =
+                    Amplitude.Unity.Framework.Services.GetService<Amplitude.Unity.View.ICursorService>();
+                if (cursors == null || hangar == null || hangar.CursorTarget == null)
+                {
+                    return;
+                }
+
+                cursors.Select(hangar.CursorTarget);
+                cursors.ChangeCursor(typeof(GalaxyGarrisonCursor), hangar);
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: selecting a hangar threw: " + e);
             }
         }
 

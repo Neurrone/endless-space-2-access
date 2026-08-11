@@ -134,7 +134,15 @@ namespace ES2Access.UI
         /// </summary>
         public static Func<string> TitleOf(AgeControl control)
         {
-            AgeTooltip tooltip = AgeWidgets.Raw(AgeWidgets.Transform(control));
+            return TitleOf(AgeWidgets.Transform(control));
+        }
+
+        /// <summary>The same for a control the game hangs on a plain transform - a pooled table item
+        /// (the orbital card's curiosities), which the game exposes as a row of transforms rather than as
+        /// named button fields.</summary>
+        public static Func<string> TitleOf(AgeTransform widget)
+        {
+            AgeTooltip tooltip = AgeWidgets.Raw(widget);
             return () => AgeWidgets.TooltipTitle(tooltip);
         }
 
