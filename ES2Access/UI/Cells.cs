@@ -49,5 +49,94 @@ namespace ES2Access.UI
                 builder.EndRow();
             }
         }
+
+        /// <summary>A control the game drew, activated the way a mouse activates it - the shape every
+        /// page's plain buttons take, so a screen that has nothing to say about a button beyond "the
+        /// game drew it here" says exactly that.</summary>
+        public static Cell Control(
+            AgeTransform widget,
+            AgeControlButton button,
+            AgeTooltip tooltip,
+            string text,
+            string key
+        )
+        {
+            AgeControlButton it = button;
+            AgeTransform at = widget;
+            // A control the game draws as a bare icon has no caption of its own; the sentence it
+            // explains itself with on hover is what a sighted player reads, so it is the name here too
+            // - and then the tooltip must not be announced as well, or the control says the same
+            // sentence twice. The buffer still holds all of it.
+            bool named = !string.IsNullOrEmpty(text);
+            string caption = named ? text : CardActions.FirstLine(tooltip);
+            NodeVtable vtable = GraphNodes.Button(
+                () => caption,
+                () => AgeWidgets.Press(it),
+                () => AgeWidgets.Operable(at),
+                tooltip,
+                named ? GraphNodes.ModeFor(tooltip) : TooltipMode.None
+            );
+            AgeWidgets.PointAt(vtable, widget);
+            return new Cell
+            {
+                Widget = widget,
+                Id = ControlId.Referenced(widget, key),
+                Vtable = vtable,
+            };
+        }
+
+        /// <summary>The drawn control at <paramref name="widget"/>, if there is one to declare - a
+        /// widget the game is not drawing, or one with no button on it, contributes nothing.</summary>
+        public static void AddControl(List<Cell> cells, AgeTransform widget, string key)
+        {
+            if (widget == null || !AgeWidgets.Visible(widget))
+            {
+                return;
+            }
+
+            AgeControlButton button = AgeWidgets.Button(widget);
+            if (button != null)
+            {
+                cells.Add(
+                    Control(widget, button, AgeWidgets.Raw(widget), AgeWidgets.TextOf(widget), key)
+                );
+            }
+        }
+
+        /// <summary>The drawn readout at <paramref name="widget"/>, if it says anything - a band the
+        /// game has emptied contributes nothing rather than an unnamed node.</summary>
+        public static void AddReadout(List<Cell> cells, AgeTransform widget, string key)
+        {
+            if (
+                widget != null
+                && AgeWidgets.Visible(widget)
+                && !string.IsNullOrEmpty(AgeWidgets.TextOf(widget))
+            )
+            {
+                cells.Add(Readout(widget, AgeWidgets.Raw(widget), key));
+            }
+        }
+
+        /// <summary>A line the player reads rather than works: whatever words the game drew in it, and
+        /// its own tooltip.</summary>
+        public static Cell Readout(AgeTransform widget, AgeTooltip tooltip, string key)
+        {
+            AgeTransform at = widget;
+            NodeVtable vtable = new NodeVtable
+            {
+                Announcements = new List<NodeAnnouncement>
+                {
+                    GraphNodes.LabelPart(() => AgeWidgets.TextOf(at)),
+                },
+                Sections = GraphNodes.Sections(null, tooltip),
+            };
+            AgeWidgets.PointAt(vtable, widget);
+            return new Cell
+            {
+                Widget = widget,
+                Id = ControlId.Referenced(widget, key),
+                Vtable = vtable,
+            };
+        }
     }
 }

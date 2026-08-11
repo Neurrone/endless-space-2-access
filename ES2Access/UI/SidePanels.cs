@@ -1,0 +1,358 @@
+using System;
+using System.Collections.Generic;
+using System.Reflection;
+using ES2Access.Core.UI.Graph;
+using ES2Access.Core.Util;
+
+namespace ES2Access.UI
+{
+    /// <summary>
+    /// The column of boxes the game stacks down the left edge of the screen, read off what is drawn in
+    /// them.
+    ///
+    /// Every page that has a left column pushes its panels into the SAME window - the star system page,
+    /// the research wheel, the senate, the empire summary, the economy screen - so which panels are up
+    /// is a question about that one window, and it is answered by asking it rather than by each screen
+    /// keeping a list of the panels it believes it opened. One stop per panel, top to bottom, in the
+    /// order they are drawn.
+    ///
+    /// Most of these panels are readouts and no decisions, and each new page brings three or four more
+    /// of them. So the contents are read from the SHAPE of the widget tree rather than modelled field
+    /// by field: a group whose children are all PRIMITIVES - a number, an icon, a word - is one thing
+    /// the game has drawn out of several pieces ("3" beside a population icon beside "Imperials") and
+    /// reads as one line; a group that contains other GROUPS is a container, and each of those is a
+    /// line of its own. Taking the outermost group with any text at all instead collapses a whole panel
+    /// into one sentence, and descending to every leaf scatters a drawn line into its digits.
+    ///
+    /// Two escape hatches, because the shape of a tree cannot answer everything:
+    /// <see cref="SpecialCells"/> hands a screen the chance to answer for a widget the shape cannot name
+    /// - a bar chart, a number beside a bare symbol - and <see cref="TransparentTest"/> is for a group
+    /// the game made clickable that is really a band of readouts (a box that answers a click only in the
+    /// developers' god mode).
+    ///
+    /// The one thing read for its meaning rather than its shape is a <c>PanelFeatureEffects</c> block:
+    /// the game builds it as a caption over a table of effect lines, each a separate sentence about the
+    /// empire, and gluing those into one line is how "Effects:" comes to be followed by a paragraph.
+    /// </summary>
+    public static class SidePanels
+    {
+        /// <summary>A screen's answer for a widget the tree's shape cannot name. Add whatever cells the
+        /// widget stands for and return true to stop the walk descending into it; false is the ordinary
+        /// walk.</summary>
+        public delegate bool SpecialCells(
+            List<Cell> cells,
+            AgeTransform widget,
+            string keyPrefix,
+            SidePanel panel
+        );
+
+        /// <summary>Whether a group the game made clickable is really a band of readouts.</summary>
+        public delegate bool TransparentTest(AgeTransform widget, SidePanel panel);
+
+        public static SidePanelsWindow Window()
+        {
+            try
+            {
+                return Gui.GuiServiceAvailable
+                    ? Gui.GuiService.GetWindow<SidePanelsWindow>(false)
+                    : null;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>The panels the window is drawing, topmost first - which is the order the player
+        /// reads them in, and is not the order the window happens to hold them in.</summary>
+        public static void Drawn(List<SidePanel> into)
+        {
+            into.Clear();
+            try
+            {
+                SidePanelsWindow window = Window();
+                if (window == null)
+                {
+                    return;
+                }
+
+                SidePanel[] panels = window.GetComponentsInChildren<SidePanel>(true);
+                for (int i = 0; i < panels.Length; i++)
+                {
+                    if (panels[i] != null && AgeWidgets.Visible(panels[i].AgeTransform))
+                    {
+                        into.Add(panels[i]);
+                    }
+                }
+
+                into.Sort(ByDrawnY);
+            }
+            catch (Exception e)
+            {
+                Log.Warn("side panels: listing the drawn panels threw: " + e);
+            }
+        }
+
+        private static readonly Comparison<SidePanel> ByDrawnY = (left, right) =>
+        {
+            float a = left.AgeTransform.GetGlobalPosition().y;
+            float b = right.AgeTransform.GetGlobalPosition().y;
+            return a.CompareTo(b);
+        };
+
+        /// <summary>
+        /// What a panel is called, for the panels a screen has no name of its own for.
+        ///
+        /// Some of these boxes DO carry a drawn heading, and where one does it is the name a sighted
+        /// player reads - so it is taken first, and the walk then leaves that label out rather than
+        /// reading the stop's own name back as its first line. The rest are unlabelled boxes with an
+        /// icon in the corner explaining them on hover, and that sentence is a fallback and not a name:
+        /// a stop is announced by its name on every Tab into it, so a panel that ends up on a whole
+        /// sentence is a panel for its screen to add a word for.
+        /// </summary>
+        public static string Name(SidePanel panel)
+        {
+            string drawn = AgeText.Label(TitleLabel(panel));
+            if (!string.IsNullOrEmpty(drawn))
+            {
+                return drawn;
+            }
+
+            string described = CardActions.FirstLine(HeaderTooltip(panel));
+            return string.IsNullOrEmpty(described) ? panel.GetType().Name : described;
+        }
+
+        /// <summary>The heading a panel draws across its own top, where it has one. The field is looked
+        /// up by name because it is declared on the panels that have one rather than on the base class
+        /// they share.</summary>
+        private static AgePrimitiveLabel TitleLabel(SidePanel panel)
+        {
+            try
+            {
+                FieldInfo field = panel.GetType().GetField(
+                    "PanelTitle",
+                    BindingFlags.Instance | BindingFlags.Public
+                );
+                AgePrimitiveLabel label =
+                    field == null ? null : field.GetValue(panel) as AgePrimitiveLabel;
+                return label != null && AgeWidgets.Visible(label.AgeTransform) ? label : null;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        private static AgeTooltip HeaderTooltip(SidePanel panel)
+        {
+            try
+            {
+                AgePrimitiveImage[] images = panel.GetComponentsInChildren<AgePrimitiveImage>(true);
+                for (int i = 0; i < images.Length; i++)
+                {
+                    AgeTooltip tooltip = AgeWidgets.Raw(images[i].AgeTransform);
+                    if (tooltip != null && AgeWidgets.Readable(tooltip) != null)
+                    {
+                        return tooltip;
+                    }
+                }
+            }
+            catch (Exception) { }
+
+            return null;
+        }
+
+        /// <summary>A panel read as it is drawn: every group in it that says something becomes a line,
+        /// in the rows the panel lays them out in.</summary>
+        public static void Readouts(
+            List<Cell> cells,
+            SidePanel panel,
+            string keyPrefix,
+            SpecialCells special,
+            TransparentTest transparent
+        )
+        {
+            AgePrimitiveLabel title = TitleLabel(panel);
+            Collect(
+                cells,
+                panel.ContentGroup,
+                keyPrefix,
+                0,
+                panel,
+                special,
+                transparent,
+                title == null ? null : title.AgeTransform
+            );
+        }
+
+        private const int MaxScrapeDepth = 6;
+
+        private static void Collect(
+            List<Cell> cells,
+            AgeTransform widget,
+            string keyPrefix,
+            int depth,
+            SidePanel panel,
+            SpecialCells special,
+            TransparentTest transparent,
+            AgeTransform skip
+        )
+        {
+            if (
+                widget == null
+                || depth > MaxScrapeDepth
+                || !AgeWidgets.Visible(widget)
+                || ReferenceEquals(widget, skip)
+            )
+            {
+                return;
+            }
+
+            try
+            {
+                if (special != null && special(cells, widget, keyPrefix, panel))
+                {
+                    return;
+                }
+
+                if (Effects(cells, widget, keyPrefix, panel))
+                {
+                    return;
+                }
+
+                AgeControlButton button = AgeWidgets.Button(widget);
+                AgeTooltip tooltip = AgeWidgets.Raw(widget);
+                string text = AgeWidgets.TextOf(widget);
+                bool activatable =
+                    button != null
+                    && !string.IsNullOrEmpty(button.OnActivateMethod)
+                    && (transparent == null || !transparent(widget, panel));
+                if (!activatable && depth < MaxScrapeDepth && HasGroupChild(widget))
+                {
+                    IList<AgeTransform> children = widget.Children;
+                    for (int i = 0; children != null && i < children.Count; i++)
+                    {
+                        Collect(
+                            cells,
+                            children[i],
+                            keyPrefix,
+                            depth + 1,
+                            panel,
+                            special,
+                            transparent,
+                            skip
+                        );
+                    }
+
+                    return;
+                }
+
+                if (string.IsNullOrEmpty(text) && !activatable)
+                {
+                    return;
+                }
+
+                string key = keyPrefix + widget.name + "/" + depth;
+                cells.Add(
+                    activatable
+                        ? Cells.Control(widget, button, tooltip, text, key)
+                        : Cells.Readout(widget, tooltip, key)
+                );
+            }
+            catch (Exception e)
+            {
+                Log.Warn("side panels: reading a panel threw: " + e);
+            }
+        }
+
+        /// <summary>Whether anything inside this widget is itself a container - which is what makes the
+        /// widget a band of separate lines rather than one line drawn out of pieces.</summary>
+        private static bool HasGroupChild(AgeTransform widget)
+        {
+            IList<AgeTransform> children = widget.Children;
+            for (int i = 0; children != null && i < children.Count; i++)
+            {
+                AgeTransform child = children[i];
+                if (child == null || !AgeWidgets.Visible(child))
+                {
+                    continue;
+                }
+
+                IList<AgeTransform> grandchildren = child.Children;
+                for (int j = 0; grandchildren != null && j < grandchildren.Count; j++)
+                {
+                    if (grandchildren[j] != null && AgeWidgets.Visible(grandchildren[j]))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// The block of effect lines a panel hangs under a caption - what a government does, what a law
+        /// costs the empire, what a population is worth on a planet.
+        ///
+        /// The table's lines are all primitives, so the shape of the tree calls it one line; but each of
+        /// those lines is a separate sentence the game wrote about a separate effect, and the caption is
+        /// what says they belong together. So the caption is one line and each effect is a line of its
+        /// own.
+        /// </summary>
+        private static bool Effects(
+            List<Cell> cells,
+            AgeTransform widget,
+            string keyPrefix,
+            SidePanel panel
+        )
+        {
+            PanelFeatureEffects effects = widget.GetComponent<PanelFeatureEffects>();
+            if (effects == null)
+            {
+                return false;
+            }
+
+            AgeTransform caption =
+                effects.TitleLabel == null ? null : effects.TitleLabel.AgeTransform;
+            if (caption != null && AgeWidgets.Visible(caption))
+            {
+                cells.Add(Cells.Readout(caption, AgeWidgets.Raw(caption), keyPrefix + caption.name));
+            }
+
+            IList<AgeTransform> children = widget.Children;
+            for (int i = 0; children != null && i < children.Count; i++)
+            {
+                AgeTransform table = children[i];
+                if (table == null || ReferenceEquals(table, caption) || !AgeWidgets.Visible(table))
+                {
+                    continue;
+                }
+
+                IList<AgeTransform> lines = table.Children;
+                for (int j = 0; lines != null && j < lines.Count; j++)
+                {
+                    AgeTransform line = lines[j];
+                    if (
+                        line == null
+                        || !AgeWidgets.Visible(line)
+                        || string.IsNullOrEmpty(AgeWidgets.TextOf(line))
+                    )
+                    {
+                        continue;
+                    }
+
+                    cells.Add(
+                        Cells.Readout(
+                            line,
+                            AgeWidgets.Raw(line),
+                            keyPrefix + table.name + "/" + line.name
+                        )
+                    );
+                }
+            }
+
+            return true;
+        }
+    }
+}

@@ -72,11 +72,14 @@ namespace ES2Access.Screens
             get { return "screen.quests"; }
         }
 
-        /// <summary>Over the view levels it is drawn on top of, beside the technology wheel - the two
-        /// are never up together, because the same strip of icons opens both.</summary>
+        /// <summary>Over the view levels it is drawn on top of, beside the technology wheel and the
+        /// senate. Every page the strip of screen icons opens shares this number, because the engine
+        /// keeps them in an exclusive window stack: showing one hides every other instantly (measured -
+        /// the stack's own component on the renderer they all sit under), so no two of them are ever up
+        /// together and there is nothing for a number of its own to order.</summary>
         public override int Layer
         {
-            get { return 16; }
+            get { return 15; }
         }
 
         public override string ScreenName

@@ -375,6 +375,29 @@ namespace ES2Access.Core.Speech
         public const string ScreenQuests = "screen.quests";
         public const string QuestsPinned = "quests.pinned";
 
+        // The senate and the three windows it opens. The screens' own names are the game's and are
+        // what is normally spoken; the names here are the fallback for the frames before a window has
+        // written its heading. The three side panels and the two empty law-slot states are the mod's
+        // words, because the game draws those boxes and slots with no words on them at all - a corner
+        // icon and a sentence on hover for the panels, a bare picture for the slots.
+        public const string ScreenSenate = "screen.senate";
+        public const string SenateGovernmentPanel = "senate.government-panel";
+        public const string SenateElectionPanel = "senate.election-panel";
+        public const string SenateSupportPanel = "senate.support-panel";
+        public const string SenateEmptyLawSlot = "senate.empty-law-slot";
+        public const string SenateLockedLawSlot = "senate.locked-law-slot";
+        public const string SenateEmptySenatorSlot = "senate.empty-senator-slot";
+        public const string SenateLockedSenatorSlot = "senate.locked-senator-slot";
+        public const string ScreenGovernment = "screen.government";
+        public const string ScreenLaws = "screen.laws";
+        public const string ScreenPopulation = "screen.population";
+
+        /// <summary>The band of buttons a window draws along its bottom edge, and the pane one of these
+        /// windows writes the selected thing out in. The game gives neither a heading of its own.
+        /// </summary>
+        public const string SenateActionsBand = "senate.actions-band";
+        public const string SenateDetailPane = "senate.detail-pane";
+
         /// <summary>The tutorial picker the game raises over a new game. Only ever spoken if the
         /// window has not written its own heading yet; the heading it draws is what is normally
         /// said.</summary>
@@ -589,6 +612,19 @@ namespace ES2Access.Core.Speech
             { ResearchDeedWinner, "won by {0}" },
             { ScreenQuests, "Quests Log" },
             { QuestsPinned, "pinned" },
+            { ScreenSenate, "Senate" },
+            { SenateGovernmentPanel, "Government" },
+            { SenateElectionPanel, "Next election" },
+            { SenateSupportPanel, "Support history" },
+            { SenateEmptyLawSlot, "Empty law slot" },
+            { SenateLockedLawSlot, "Locked law slot" },
+            { SenateEmptySenatorSlot, "Empty senator slot" },
+            { SenateLockedSenatorSlot, "Locked senator slot" },
+            { ScreenGovernment, "Government selection" },
+            { ScreenLaws, "Laws" },
+            { ScreenPopulation, "Population overview" },
+            { SenateActionsBand, "Actions" },
+            { SenateDetailPane, "Details" },
             { ScreenTutorialSelection, "Tutorial selection" },
             { ScreenNewGame, "New game" },
             { ScreenAdvancedSettings, "Advanced settings" },

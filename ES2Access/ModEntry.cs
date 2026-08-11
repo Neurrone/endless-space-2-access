@@ -137,6 +137,10 @@ namespace ES2Access
             Screens.Register(new PlanetConstructiblesScreen());
             Screens.Register(new ResearchScreen());
             Screens.Register(new QuestJournalScreen());
+            Screens.Register(new global::ES2Access.Screens.SenateScreen());
+            Screens.Register(new GovernmentScreen());
+            Screens.Register(new LawsScreen());
+            Screens.Register(new PopulationScreen());
             Input = new ModInput();
             Input.Dispatch = Dispatch;
             // The one widget the mod puts the game's own keyboard focus on. The input layer would

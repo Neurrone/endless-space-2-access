@@ -946,25 +946,7 @@ namespace ES2Access.Screens
         {
             try
             {
-                SidePanelsWindow window = Gui.GuiServiceAvailable
-                    ? Gui.GuiService.GetWindow<SidePanelsWindow>(false)
-                    : null;
-                if (window == null)
-                {
-                    return;
-                }
-
-                _panels.Clear();
-                SidePanel[] panels = window.GetComponentsInChildren<SidePanel>(true);
-                for (int i = 0; i < panels.Length; i++)
-                {
-                    if (panels[i] != null && AgeWidgets.Visible(panels[i].AgeTransform))
-                    {
-                        _panels.Add(panels[i]);
-                    }
-                }
-
-                _panels.Sort(ByDrawnY);
+                SidePanels.Drawn(_panels);
                 for (int i = 0; i < _panels.Count; i++)
                 {
                     SidePanel panel = _panels[i];
@@ -989,18 +971,10 @@ namespace ES2Access.Screens
             }
         }
 
-        private static readonly Comparison<SidePanel> ByDrawnY = (left, right) =>
-        {
-            float a = left.AgeTransform.GetGlobalPosition().y;
-            float b = right.AgeTransform.GetGlobalPosition().y;
-            return a.CompareTo(b);
-        };
-
-        /// <summary>What a side panel is called. The game writes no title on them - it marks each with
-        /// an icon in its corner and explains it in that icon's tooltip - so the ones a system can draw
-        /// are named here, and anything else takes the game's own sentence about itself. Which is a
-        /// fallback and not a name: it is a whole sentence, and a stop is announced by its name on every
-        /// Tab into it, so a panel that ends up there is a panel to add a word for.</summary>
+        /// <summary>What a side panel is called. The game writes no title on the ones a system draws -
+        /// it marks each with an icon in its corner and explains it in that icon's tooltip - so they are
+        /// named here, and anything else falls through to the shared reader's own answer
+        /// (<see cref="SidePanels.Name"/>).</summary>
         private static string PanelName(SidePanel panel)
         {
             if (panel is ColonyInfoSidePanel)
@@ -1031,27 +1005,7 @@ namespace ES2Access.Screens
                 return ModStrings.Get(ModStrings.SystemGovernorPanel);
             }
 
-            string described = FirstLine(HeaderTooltip(panel));
-            return string.IsNullOrEmpty(described) ? panel.GetType().Name : described;
-        }
-
-        private static AgeTooltip HeaderTooltip(SidePanel panel)
-        {
-            try
-            {
-                AgePrimitiveImage[] images = panel.GetComponentsInChildren<AgePrimitiveImage>(true);
-                for (int i = 0; i < images.Length; i++)
-                {
-                    AgeTooltip tooltip = AgeWidgets.Raw(images[i].AgeTransform);
-                    if (tooltip != null && AgeWidgets.Readable(tooltip) != null)
-                    {
-                        return tooltip;
-                    }
-                }
-            }
-            catch (Exception) { }
-
-            return null;
+            return SidePanels.Name(panel);
         }
 
         /// <summary>
@@ -1877,115 +1831,38 @@ namespace ES2Access.Screens
         // ---- reading a panel nobody has modelled ----
 
         /// <summary>
-        /// A panel read as it is drawn: every group in it that says something becomes a line, in the
-        /// rows the panel lays them out in. The population and representative panels are all readouts
-        /// and no decisions, and the panels an outpost or a ghost gets instead are the same shape, so
-        /// they are all read this way rather than each having its own list of fields to keep in step
-        /// with the game.
+        /// A panel read as it is drawn, through the shared side-panel reader
+        /// (<see cref="SidePanels.Readouts"/>). The population and representative panels are all
+        /// readouts and no decisions, and the panels an outpost or a ghost gets instead are the same
+        /// shape, so they are all read that way rather than each having its own list of fields to keep
+        /// in step with the game.
         ///
-        /// Where to stop descending is the whole problem, and the answer is in the shape of the tree
-        /// rather than in the text: a group whose children are all PRIMITIVES - a number, an icon, a
-        /// word - is one thing the game has drawn out of several pieces ("3" beside a population icon
-        /// beside "Imperials"), and reads as one line. A group that contains other GROUPS is a
-        /// container, and each of those is a line of its own. Taking the outermost group that had any
-        /// text at all instead collapsed a whole side panel into a single sentence.
-        ///
-        /// Some of what these panels draw has no words on it at all - a number beside a symbol, a bar
-        /// chart - and the shape of the tree cannot name those. Each is answered by
-        /// <see cref="Special"/>, which hands back a whole control read from the game's own model, and
-        /// the walk continues around it.
+        /// The two hooks that reader takes are this page's own: <see cref="Special"/> for the readouts
+        /// the shape of a widget tree cannot name, and <see cref="Transparent"/> for a group the game
+        /// made clickable that is really a band of readouts.
         /// </summary>
         private void BuildReadouts(GraphBuilder builder, SidePanel panel, string keyPrefix)
         {
             _cells.Clear();
-            Collect(_cells, panel.ContentGroup, keyPrefix, 0, panel);
+            SidePanels.Readouts(_cells, panel, keyPrefix, SpecialCell, Transparent);
             Emit(builder, _cells);
         }
 
-        private const int MaxScrapeDepth = 6;
-
-        private static void Collect(
+        private static bool SpecialCell(
             List<Cell> cells,
             AgeTransform widget,
             string keyPrefix,
-            int depth,
             SidePanel panel
         )
         {
-            if (widget == null || depth > MaxScrapeDepth || !AgeWidgets.Visible(widget))
+            Cell special = Special(widget, keyPrefix, panel);
+            if (special == null)
             {
-                return;
+                return false;
             }
 
-            try
-            {
-                Cell special = Special(widget, keyPrefix, panel);
-                if (special != null)
-                {
-                    cells.Add(special);
-                    return;
-                }
-
-                AgeControlButton button = AgeWidgets.Button(widget);
-                AgeTooltip tooltip = AgeWidgets.Raw(widget);
-                string text = AgeWidgets.TextOf(widget);
-                bool activatable =
-                    button != null
-                    && !string.IsNullOrEmpty(button.OnActivateMethod)
-                    && !Transparent(widget, panel);
-                if (!activatable && depth < MaxScrapeDepth && HasGroupChild(widget))
-                {
-                    IList<AgeTransform> children = widget.Children;
-                    for (int i = 0; children != null && i < children.Count; i++)
-                    {
-                        Collect(cells, children[i], keyPrefix, depth + 1, panel);
-                    }
-
-                    return;
-                }
-
-                if (string.IsNullOrEmpty(text) && !activatable)
-                {
-                    return;
-                }
-
-                string key = keyPrefix + widget.name + "/" + depth;
-                cells.Add(
-                    activatable
-                        ? Control(widget, button, tooltip, text, key)
-                        : Readout(widget, tooltip, key)
-                );
-            }
-            catch (Exception e)
-            {
-                Log.Warn("system: reading a panel threw: " + e);
-            }
-        }
-
-        /// <summary>Whether anything inside this widget is itself a container - which is what makes the
-        /// widget a band of separate lines rather than one line drawn out of pieces.</summary>
-        private static bool HasGroupChild(AgeTransform widget)
-        {
-            IList<AgeTransform> children = widget.Children;
-            for (int i = 0; children != null && i < children.Count; i++)
-            {
-                AgeTransform child = children[i];
-                if (child == null || !AgeWidgets.Visible(child))
-                {
-                    continue;
-                }
-
-                IList<AgeTransform> grandchildren = child.Children;
-                for (int j = 0; grandchildren != null && j < grandchildren.Count; j++)
-                {
-                    if (grandchildren[j] != null && AgeWidgets.Visible(grandchildren[j]))
-                    {
-                        return true;
-                    }
-                }
-            }
-
-            return false;
+            cells.Add(special);
+            return true;
         }
 
         // ---- the readouts the tree's shape cannot name ----
@@ -2469,58 +2346,6 @@ namespace ES2Access.Screens
             return _parties;
         }
 
-        private static Cell Control(
-            AgeTransform widget,
-            AgeControlButton button,
-            AgeTooltip tooltip,
-            string text,
-            string key
-        )
-        {
-            AgeControlButton it = button;
-            AgeTransform at = widget;
-            // A control the game draws as a bare icon has no caption of its own; the sentence it
-            // explains itself with on hover is what a sighted player reads, so it is the name here too
-            // - and then the tooltip must not be announced as well, or the control says the same
-            // sentence twice. The buffer still holds all of it.
-            bool named = !string.IsNullOrEmpty(text);
-            string caption = named ? text : FirstLine(tooltip);
-            NodeVtable vtable = GraphNodes.Button(
-                () => caption,
-                () => AgeWidgets.Press(it),
-                () => AgeWidgets.Operable(at),
-                tooltip,
-                named ? GraphNodes.ModeFor(tooltip) : TooltipMode.None
-            );
-            AgeWidgets.PointAt(vtable, widget);
-            return new Cell
-            {
-                Widget = widget,
-                Id = ControlId.Referenced(widget, key),
-                Vtable = vtable,
-            };
-        }
-
-        private static Cell Readout(AgeTransform widget, AgeTooltip tooltip, string key)
-        {
-            AgeTransform at = widget;
-            NodeVtable vtable = new NodeVtable
-            {
-                Announcements = new List<NodeAnnouncement>
-                {
-                    GraphNodes.LabelPart(() => AgeWidgets.TextOf(at)),
-                },
-                Sections = GraphNodes.Sections(null, tooltip),
-            };
-            AgeWidgets.PointAt(vtable, widget);
-            return new Cell
-            {
-                Widget = widget,
-                Id = ControlId.Referenced(widget, key),
-                Vtable = vtable,
-            };
-        }
-
         // ---- shared ----
 
         /// <summary>A control on its way into the graph, still carrying the widget it was read from: the
@@ -2661,20 +2486,7 @@ namespace ES2Access.Screens
         /// called, in the game's words.</summary>
         private static string FirstLine(AgeTooltip tooltip)
         {
-            try
-            {
-                if (AgeWidgets.Readable(tooltip) == null)
-                {
-                    return null;
-                }
-
-                IList<string> lines = AgeText.Lines(AgeText.Tooltip(tooltip));
-                return lines != null && lines.Count > 0 ? lines[0] : null;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
+            return CardActions.FirstLine(tooltip);
         }
 
         /// <summary>The caption written beside a control - a drop list's own name, which the game draws
