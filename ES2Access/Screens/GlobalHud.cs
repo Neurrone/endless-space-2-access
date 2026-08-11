@@ -36,7 +36,9 @@ namespace ES2Access.Screens
     /// The turn changing is watched here for the same reason: it is the one thing on any of these
     /// pages that happens TO the player rather than being done by them, and it goes on happening
     /// wherever they are standing. The watch is instance state, so it is reload-safe by construction
-    /// and each page keeps its own.
+    /// and each page keeps its own. The pinned quest and the MODE THE CURSOR IS IN
+    /// (<see cref="AnnounceCursorMode"/>) are watched beside it, both for the same reason: they change
+    /// under the player, wherever the player is.
     ///
     /// Everything is read from the game's own model rather than from the labels on the banners. Every
     /// number up there is animated - the dust total counts up to its new value over a second or so -
@@ -63,15 +65,23 @@ namespace ES2Access.Screens
         /// only records that the pinned quest changed, and the per-frame pump is what speaks.</summary>
         private bool _questChanged;
 
+        /// <summary>The instruction the game is currently showing for the cursor's mode, or null while
+        /// the cursor is in no mode. Instance state, so each page keeps its own and a hot reload starts
+        /// the watch over.</summary>
+        private string _instruction;
+
         // ---- the passive watch ----
 
         /// <summary>Start the watch from the turn that is showing, so arriving on a page never
         /// announces a turn nobody just took. The pinned quest needs no such baseline - the game
-        /// raises an event when it changes, so there is nothing to compare against.</summary>
+        /// raises an event when it changes, so there is nothing to compare against. The cursor mode is
+        /// baselined for the same reason as the turn: walking onto a page while a mode is already up
+        /// must not announce it as though the player had just asked for it.</summary>
         public void Baseline()
         {
             _turn = Turn();
             _questChanged = false;
+            _instruction = Instruction();
             WatchQuests();
         }
 
@@ -82,16 +92,20 @@ namespace ES2Access.Screens
         {
             _turn = -1;
             _questChanged = false;
+            _instruction = null;
             ForgetQuests();
         }
 
         /// <summary>The turn ends and the next one begins on the game's schedule, not the player's -
         /// and while it does, the player is usually nowhere near the End Turn button. The same is
-        /// true of the quest the game is tracking: finishing one pins the next.</summary>
+        /// true of the quest the game is tracking: finishing one pins the next, and of the mode the
+        /// mouse cursor is in, which the game announces by writing an instruction across the screen.
+        /// </summary>
         public void Update()
         {
             AnnounceTurn();
             AnnounceQuest();
+            AnnounceCursorMode();
         }
 
         private void AnnounceTurn()
@@ -114,6 +128,93 @@ namespace ES2Access.Screens
             catch (Exception e)
             {
                 Log.Warn("hud: watching the turn threw: " + e);
+            }
+        }
+
+        // ---- the mode the cursor is in ----
+
+        /// <summary>
+        /// The game's own instruction for the mode the mouse is in, when it changes, and a word when the
+        /// mode ends.
+        ///
+        /// Some orders are given in two steps: pressing "launch a probe", "take this system", "fire the
+        /// obliterator", "start a hacking operation" does not act - it puts the CURSOR into a mode and
+        /// waits for the player to click a target. Eight cursors work this way, and the only thing on
+        /// screen saying so is a line of text the game writes across the top
+        /// (<c>UserInstructionsWindow</c>, shown by <c>GuiManager</c>:1552 exactly while
+        /// <c>CurrentCursor.HasUserInstructions</c>). Without this, pressing such a button reads as doing
+        /// nothing at all, and the player is left in a mode they cannot see, whose only escape is a key
+        /// they have not been told about.
+        ///
+        /// It is announced and nothing more: entering the mode says what the game says, and leaving it
+        /// says that it is over. Whether the galaxy tree grows a "confirm the target here" gesture for
+        /// these modes is an open design question and deliberately not answered here - the modes stay
+        /// operable exactly as the game made them (Escape or a right-click cancels, a click on the map
+        /// confirms).
+        ///
+        /// Watched through the WINDOW rather than through the cursor service: the window's caption is the
+        /// finished, localized sentence the player would read, the game has already decided whether the
+        /// mode is one worth showing (a mode with no instruction draws nothing), and it is two field
+        /// reads per frame against a service subscription that would have to be given back on every page
+        /// change.
+        /// </summary>
+        private void AnnounceCursorMode()
+        {
+            try
+            {
+                string instruction = Instruction();
+                if (instruction == _instruction)
+                {
+                    return;
+                }
+
+                bool ended = string.IsNullOrEmpty(instruction);
+                _instruction = instruction;
+                Voice.Say(
+                    ended ? OptionalText.Phrase(ModeEndedKey) : instruction,
+                    false
+                );
+            }
+            catch (Exception e)
+            {
+                Log.Warn("hud: watching the cursor mode threw: " + e);
+            }
+        }
+
+        /// <summary>The mod's own word for a mode ending, which the game marks by simply taking its
+        /// instruction off the screen. Optional: a build without the phrase says nothing rather than
+        /// reading the key.</summary>
+        private const string ModeEndedKey = "cursor.mode-ended";
+
+        /// <summary>What the game is instructing the player to do with the cursor, or null while it is
+        /// instructing nothing. The window is hidden whenever there is no mode, so its own visibility is
+        /// the whole test.</summary>
+        private static string Instruction()
+        {
+            UserInstructionsWindow window = InstructionsWindow();
+            try
+            {
+                return window == null || !window.Shown
+                    ? null
+                    : AgeText.Label(window.UserIntructionCaption);
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        private static UserInstructionsWindow InstructionsWindow()
+        {
+            try
+            {
+                return Gui.GuiServiceAvailable
+                    ? Gui.GuiService.GetWindow<UserInstructionsWindow>(false)
+                    : null;
+            }
+            catch (Exception)
+            {
+                return null;
             }
         }
 
