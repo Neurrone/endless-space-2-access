@@ -658,14 +658,42 @@ namespace ES2Access.UI
                     bool bare;
                     if (!NoArgument.TryGetValue(key, out bare))
                     {
-                        MethodInfo found = type.GetMethod(
-                            method,
-                            BindingFlags.Instance
-                                | BindingFlags.Public
-                                | BindingFlags.NonPublic
-                                | BindingFlags.FlattenHierarchy
-                        );
-                        bare = found != null && found.GetParameters().Length == 0;
+                        // GetMethod(name, flags) THROWS on an overloaded handler
+                        // (AmbiguousMatchException), and one ambiguous component must not
+                        // abort the scan for its siblings - so the lookup enumerates and
+                        // answers "no argument" only when a zero-parameter overload exists,
+                        // which is also the overload SendMessage would prefer.
+                        bare = false;
+                        try
+                        {
+                            MethodInfo[] methods = type.GetMethods(
+                                BindingFlags.Instance
+                                    | BindingFlags.Public
+                                    | BindingFlags.NonPublic
+                                    | BindingFlags.FlattenHierarchy
+                            );
+                            for (int m = 0; m < methods.Length; m++)
+                            {
+                                if (
+                                    methods[m].Name == method
+                                    && methods[m].GetParameters().Length == 0
+                                )
+                                {
+                                    bare = true;
+                                    break;
+                                }
+                            }
+                        }
+                        catch (Exception e)
+                        {
+                            Log.Warn(
+                                "widgets: reading the arity of "
+                                    + key
+                                    + " threw: "
+                                    + e.GetType().Name
+                            );
+                        }
+
                         NoArgument[key] = bare;
                     }
 

@@ -244,7 +244,12 @@ namespace ES2Access.UI
                 return;
             }
 
-            string key = prefix + "/" + widget.name;
+            // Index-in-parent joins the name because a scraped window can draw the same
+            // pooled prefab several times over ("BuyButton" four times on the DLC page),
+            // and a name-only key throws Duplicate control id, which empties the WHOLE
+            // page - the repeated-node rule, applied here because no screen author ever
+            // sees the keys a scraper makes.
+            string key = prefix + "/" + widget.name + "/" + IndexInParent(widget);
             if (toggle == null)
             {
                 cells.Add(Cells.Control(widget, button, tooltip, caption, key));
@@ -289,6 +294,20 @@ namespace ES2Access.UI
             catch (Exception)
             {
                 return false;
+            }
+        }
+
+        /// <summary>Where this widget sits among its siblings - the stable half of a pooled
+        /// prefab clone's identity, since every clone shares one name.</summary>
+        private static int IndexInParent(AgeTransform widget)
+        {
+            try
+            {
+                return widget.transform.GetSiblingIndex();
+            }
+            catch (Exception)
+            {
+                return 0;
             }
         }
     }
