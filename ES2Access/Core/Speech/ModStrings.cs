@@ -489,6 +489,78 @@ namespace ES2Access.Core.Speech
         public const string ScreenLaws = "screen.laws";
         public const string ScreenPopulation = "screen.population";
 
+        // ---- the diplomacy family ----
+        // Every window in this family writes its own heading, so each screen name here is only ever
+        // spoken in the frames before the game has filled its title in. What the family really needs mod
+        // words for is the bands the game draws with no caption at all.
+
+        public const string ScreenDiplomacy = "screen.diplomacy";
+
+        /// <summary>The ring of empires, and the tick box and two window buttons drawn under it. The game
+        /// captions neither group.</summary>
+        public const string DiplomacyEmpires = "diplomacy.empires";
+        public const string DiplomacyControls = "diplomacy.controls";
+
+        /// <summary>The badge the diplomacy ring paints on an empire with NOTHING written on it: either a
+        /// truce can be forced with them now, or terms the player has not seen yet have become available.
+        /// A wordless mark needs words, and the game has none for it anywhere.</summary>
+        public const string DiplomacyNewOptions = "diplomacy.new-options";
+
+        /// <summary>Why an empire refuses to be negotiated with while the ring is centred on somebody
+        /// else's relations. The game has a sentence for an unmet empire and for an eliminated one and
+        /// says nothing at all about this case, which is reachable only through its own swap mode.
+        /// </summary>
+        public const string DiplomacyNotYourRing = "diplomacy.not-your-ring";
+
+        public const string ScreenNegotiation = "screen.negotiation";
+
+        /// <summary>The negotiation table's eight bands. The game titles the pressure gauge and writes
+        /// real column headers over the term tables, but captions none of the bands themselves.</summary>
+        public const string NegotiationHeader = "negotiation.header";
+        public const string NegotiationDossier = "negotiation.dossier";
+        public const string NegotiationPressure = "negotiation.pressure";
+        public const string NegotiationMyTerms = "negotiation.my-terms";
+        public const string NegotiationTheirTerms = "negotiation.their-terms";
+        public const string NegotiationFilters = "negotiation.filters";
+        public const string NegotiationTerms = "negotiation.terms";
+        public const string NegotiationContract = "negotiation.contract";
+        public const string NegotiationContractBoth = "negotiation.contract-both";
+        public const string NegotiationContractMine = "negotiation.contract-mine";
+        public const string NegotiationContractTheirs = "negotiation.contract-theirs";
+        public const string NegotiationApproval = "negotiation.approval";
+
+        /// <summary>Where the deal-approval bar STANDS, which is what that band draws and all it draws:
+        /// the computer sends written reasons with its evaluation and the window throws them away, so a
+        /// number is the honest reading.</summary>
+        public const string NegotiationApprovalValue = "negotiation.approval-value";
+        public const string NegotiationActions = "negotiation.actions";
+
+        /// <summary>The stepper a resource term draws beside its name. The game writes the number in the
+        /// box and nothing else, so the box needs naming.</summary>
+        public const string NegotiationQuantity = "negotiation.quantity";
+
+        public const string ScreenMinorDiplomacy = "screen.minor-diplomacy";
+        public const string MinorIdentity = "minor.identity";
+        public const string MinorRelation = "minor.relation";
+        public const string MinorGains = "minor.gains";
+
+        public const string ScreenPirateDiplomacy = "screen.pirate-diplomacy";
+        public const string PiratePower = "pirate.power";
+        public const string PirateStanding = "pirate.standing";
+        public const string PirateNextFleet = "pirate.next-fleet";
+
+        public const string ScreenAcademyDiplomacy = "screen.academy-diplomacy";
+        public const string ScreenAcademyModal = "screen.academy-modal";
+        public const string AcademyRelation = "academy-diplomacy.relation";
+        public const string AcademyNamedShips = "academy.named-ships";
+
+        /// <summary>The band of actions, and the pair of stock figures along the bottom edge, that the
+        /// minor-faction, pirate and Academy windows all draw. The pirate window captions its actions
+        /// ("Actions") and the other two do not, so the mod's caption is used for all three rather than
+        /// one band being named differently from its twins.</summary>
+        public const string DiplomacyActionsBand = "diplomacy.actions-band";
+        public const string DiplomacyTreasury = "diplomacy.treasury";
+
         /// <summary>The band of buttons a window draws along its bottom edge, and the pane one of these
         /// windows writes the selected thing out in. The game gives neither a heading of its own.
         /// </summary>
@@ -778,6 +850,41 @@ namespace ES2Access.Core.Speech
             { ScreenGovernment, "Government selection" },
             { ScreenLaws, "Laws" },
             { ScreenPopulation, "Population overview" },
+            { ScreenDiplomacy, "Diplomatic status" },
+            { DiplomacyEmpires, "Empires" },
+            { DiplomacyControls, "Screen controls" },
+            { DiplomacyNewOptions, "new diplomatic options" },
+            { DiplomacyNotYourRing, "You can only negotiate from your own empire's ring" },
+            { ScreenNegotiation, "Negotiation" },
+            { NegotiationHeader, "The two empires" },
+            { NegotiationDossier, "Empire information" },
+            { NegotiationPressure, "Pressure" },
+            { NegotiationMyTerms, "Terms you can offer" },
+            { NegotiationTheirTerms, "Terms you can ask for" },
+            { NegotiationFilters, "Categories" },
+            { NegotiationTerms, "Terms" },
+            { NegotiationContract, "The deal" },
+            { NegotiationContractBoth, "Both empires" },
+            { NegotiationContractMine, "You give" },
+            { NegotiationContractTheirs, "They give" },
+            { NegotiationApproval, "Deal approval" },
+            { NegotiationApprovalValue, "{0} percent" },
+            { NegotiationActions, "Offer" },
+            { NegotiationQuantity, "Quantity" },
+            { ScreenMinorDiplomacy, "Minor faction diplomacy" },
+            { MinorIdentity, "The faction" },
+            { MinorRelation, "Relation" },
+            { MinorGains, "What you gain" },
+            { ScreenPirateDiplomacy, "Pirate diplomacy" },
+            { PiratePower, "Pirate power" },
+            { PirateStanding, "Standing" },
+            { PirateNextFleet, "Next pirate fleet" },
+            { ScreenAcademyDiplomacy, "Academy diplomacy" },
+            { ScreenAcademyModal, "The Academy" },
+            { AcademyRelation, "Relation" },
+            { AcademyNamedShips, "Named ships" },
+            { DiplomacyActionsBand, "Actions" },
+            { DiplomacyTreasury, "Treasury" },
             { SenateActionsBand, "Actions" },
             { SenateDetailPane, "Details" },
             { ScreenTutorialSelection, "Tutorial selection" },

@@ -7,6 +7,7 @@ using ES2Access.Core.UI.Graph;
 using ES2Access.Core.Util;
 using ES2Access.UI;
 using UnityEngine;
+using Line = ES2Access.UI.EmpireDossier.DrawnLine;
 
 namespace ES2Access.Screens
 {
@@ -1918,83 +1919,25 @@ namespace ES2Access.Screens
         private static void BuildEmpireInfo(GraphBuilder builder, NotificationWindow window)
         {
             NegotiationEmpireInfoPanel panel = InfoPanel(window);
-            if (panel == null || !Open(panel))
+            if (!Open(panel))
             {
                 return;
             }
 
-            List<Line> lines = new List<Line>();
-            Read(panel.AgeTransform, lines, null, 0);
-            if (lines.Count == 0)
-            {
-                return;
-            }
-
-            builder.SetRegion(InfoRegion);
-            int index = 0;
-            foreach (List<Line> row in AgeLayout.Rows(lines, LineWidget))
-            {
-                List<Line> it = row;
-                AgeTooltip tooltip = it[0].Tooltip;
-                AgeTransform under = it[0].Owner;
-                NodeVtable vtable = new NodeVtable
-                {
-                    // No role word and no state: every one of these is something the game wrote down
-                    // for the player to read, not a control they work.
-                    Announcements = new List<NodeAnnouncement>
-                    {
-                        GraphNodes.LabelPart(() => RowText(it)),
-                    },
-                    Sections = GraphNodes.Sections(null, tooltip),
-                    OnFocusVisual = () => PointerFocus.MoveTo(null, tooltip, under),
-                    OnBlurVisual = ReleasePointer,
-                };
-                builder.AddItem(
-                    ControlId.Referenced(
-                        it[0].Widget,
-                        "notification:empire-info/" + index + "/" + it[0].Widget.name
-                    ),
-                    vtable
-                );
-                index++;
-            }
+            EmpireDossier.Build(builder, panel, "notification:empire-info/", InfoRegion);
         }
 
-        /// <summary>One line the panel draws: the label's own transform - which is the rectangle the
-        /// rows are worked out from, and what has to be scrolled into view - and the widget the game
-        /// hung the explaining tooltip on, which for a table row is the row rather than its
-        /// label.</summary>
-        private struct Line
-        {
-            public AgeTransform Widget;
-            public AgeTransform Owner;
-            public AgeTooltip Tooltip;
-            public string Text;
-        }
+        private static readonly Func<Line, AgeTransform> LineWidget = EmpireDossier.LineWidget;
 
-        private static readonly Func<Line, AgeTransform> LineWidget = line => line.Widget;
-
-        /// <summary>What one drawn line says. A line the game wrote as prose keeps the prose - its own
-        /// wrapping is where the words ran out, not punctuation - while two labels drawn side by side
-        /// (an empire and how it gets on with you) are two facts, and read as two.</summary>
+        /// <summary>What one drawn line says - <see cref="EmpireDossier.RowText"/>, which is where the
+        /// rule lives now that the dossier reader is shared with the negotiation table.</summary>
         private static string RowText(List<Line> row)
         {
-            MessageBuilder message = new MessageBuilder();
-            for (int i = 0; i < row.Count; i++)
-            {
-                message.ListItem();
-                foreach (string line in AgeText.Lines(row[i].Text))
-                {
-                    message.Fragment(line);
-                }
-            }
-
-            return message.Build();
+            return EmpireDossier.RowText(row);
         }
 
-        /// <summary>Everything the panel is showing, in the order it is laid out. A hidden branch is
-        /// skipped rather than read: the panel keeps a block per kind of empire and hides the ones this
-        /// one has nothing to say for.</summary>
+        /// <summary>Everything a subtree is showing, in the order it is laid out - hoisted to
+        /// <see cref="EmpireDossier.Read"/>, which the popup body and the dossier both walk with.</summary>
         private static void Read(
             AgeTransform widget,
             List<Line> lines,
@@ -2002,63 +1945,19 @@ namespace ES2Access.Screens
             int depth
         )
         {
-            if (depth > MaxAncestors)
-            {
-                return;
-            }
-
-            AgeTooltip tooltip = widget.AgeTooltip ?? inherited;
-            AgeTransform owner = widget.AgeTooltip != null ? widget : null;
-            string text = AgeText.Label(widget.GetComponent<AgePrimitiveLabel>());
-            if (!string.IsNullOrEmpty(text))
-            {
-                lines.Add(
-                    new Line
-                    {
-                        Widget = widget,
-                        Owner = owner ?? widget,
-                        Tooltip = tooltip,
-                        Text = text,
-                    }
-                );
-            }
-
-            List<AgeTransform> children = widget.Children;
-            for (int i = 0; i < children.Count; i++)
-            {
-                AgeTransform child = children[i];
-                if (child != null && child.Visible)
-                {
-                    Read(child, lines, tooltip, depth + 1);
-                }
-            }
+            EmpireDossier.Read(widget, lines, inherited, depth);
         }
 
         /// <summary>The dossier panel a popup carries, whichever popup it is - the same panel serves
         /// the introduction, a diplomatic offer and the negotiation table.</summary>
         private static NegotiationEmpireInfoPanel InfoPanel(NotificationWindow window)
         {
-            try
-            {
-                return window.gameObject.GetComponentInChildren<NegotiationEmpireInfoPanel>(true);
-            }
-            catch (Exception e)
-            {
-                Log.Warn("notification: looking for the empire panel threw: " + e);
-                return null;
-            }
+            return EmpireDossier.Panel(window == null ? null : window.gameObject);
         }
 
         private static bool Open(NegotiationEmpireInfoPanel panel)
         {
-            try
-            {
-                return panel.Shown && Visible(panel.AgeTransform);
-            }
-            catch (Exception)
-            {
-                return false;
-            }
+            return EmpireDossier.Open(panel);
         }
 
         /// <summary>One strip of controls: left and right walk it, and up and down reach the strips

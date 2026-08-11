@@ -118,6 +118,55 @@ namespace ES2Access.UI
             }
         }
 
+        /// <summary>
+        /// The same, for a control the game refuses WITHOUT writing the reason anywhere on it.
+        ///
+        /// A game usually explains a blocked control on the control's own tooltip, and
+        /// <see cref="AddRefusal(NodeVtable, AgeTooltip, Func{bool})"/> reads it from there. Some do not:
+        /// the diplomacy ring's empire sectors carry no tooltip at all (measured - zero
+        /// <c>AgeTooltip</c> components on the sector), and the sentence the game would say lives only in
+        /// its own localization file. So the caller supplies the sentence - the GAME's own string, resolved
+        /// through <c>Gui.Localize</c>, never a phrase this mod invented for it - and it is spoken under
+        /// exactly the same conditions: only while the control is refusing, and never when it only repeats
+        /// the control's name.
+        /// </summary>
+        public static void AddRefusal(
+            NodeVtable vtable,
+            Func<string> reason,
+            Func<bool> enabled
+        )
+        {
+            if (vtable == null || vtable.Announcements == null || reason == null)
+            {
+                return;
+            }
+
+            Func<string> name = NamePart(vtable);
+            vtable.Announcements.Add(
+                new NodeAnnouncement(
+                    () =>
+                    {
+                        try
+                        {
+                            if (enabled != null && enabled())
+                            {
+                                return null;
+                            }
+
+                            string said = reason();
+                            return Repeats(said, name) ? null : said;
+                        }
+                        catch (Exception)
+                        {
+                            return null;
+                        }
+                    },
+                    live: true,
+                    kind: AnnouncementKinds.Tooltip
+                )
+            );
+        }
+
         /// <summary>The control's own name, out of the parts it has already declared.</summary>
         private static Func<string> NamePart(NodeVtable vtable)
         {
