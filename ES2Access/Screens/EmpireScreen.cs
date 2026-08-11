@@ -406,11 +406,7 @@ namespace ES2Access.Screens
                     }
                 },
             };
-            NodeAnnouncement refusal = GraphNodes.RefusalPart(reason, operable);
-            if (refusal != null)
-            {
-                vtable.Announcements.Add(refusal);
-            }
+            GraphNodes.AddRefusal(vtable, reason, operable);
 
             return vtable;
         }

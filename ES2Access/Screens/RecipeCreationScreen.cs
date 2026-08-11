@@ -291,11 +291,7 @@ namespace ES2Access.Screens
                     }
                 },
             };
-            NodeAnnouncement refusal = GraphNodes.RefusalPart(tooltip, offered);
-            if (refusal != null)
-            {
-                vtable.Announcements.Add(refusal);
-            }
+            GraphNodes.AddRefusal(vtable, tooltip, offered);
 
             AgeWidgets.PointAt(vtable, widget);
             Cells.Add(
@@ -418,11 +414,7 @@ namespace ES2Access.Screens
                 );
             }
 
-            NodeAnnouncement refusal = GraphNodes.RefusalPart(tooltip, offered);
-            if (refusal != null)
-            {
-                vtable.Announcements.Add(refusal);
-            }
+            GraphNodes.AddRefusal(vtable, tooltip, offered);
 
             AgeWidgets.PointAt(vtable, widget);
             Cells.Add(cells, widget, ControlId.Referenced(widget, "recipe:slot/" + index), vtable);

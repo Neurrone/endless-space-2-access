@@ -209,6 +209,7 @@
   "ship-design.slots": "Module slots",
   "ship-design.module-fitted": "Fitted {0}",
   "screen.fleet-selection": "Fleet selection",
+  "tactics.slot-filled": "Put {0} in your Tactics Set",
   "screen.academy": "Hero management",
   "academy.hero-actions": "Hero actions",
   "screen.hero-complete-list": "Heroes in the galaxy",

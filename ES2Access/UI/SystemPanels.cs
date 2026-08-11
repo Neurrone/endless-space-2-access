@@ -150,10 +150,6 @@ namespace ES2Access.UI
                     GraphNodes.LabelPart(() => ConstructibleName(it)),
                     GraphNodes.ValuePart(() => ConstructibleCost(it, owner)),
                     GraphNodes.DisabledPart(() => AgeWidgets.Operable(it.AgeTransform)),
-                    // The tile's tooltip is the renderer-assembled kind, so it is only indicated - and
-                    // a tile the game is refusing would then say "unavailable" and nothing else. The
-                    // reason is read off the wrapper the tooltip carries, as its failure panel does.
-                    GraphNodes.RefusalPart(tooltip, () => AgeWidgets.Operable(it.AgeTransform)),
                 },
                 Sections = GraphNodes.Sections(
                     GraphNodes.TooltipSection(tooltip),
@@ -162,6 +158,10 @@ namespace ES2Access.UI
                 OnActivate = () => QueueConstruction(it, owner, false),
                 OnAlternate = () => QueueConstruction(it, owner, true),
             };
+            // The tile's tooltip is the renderer-assembled kind, so it is only indicated - and a tile the
+            // game is refusing would then say "unavailable" and nothing else. The reason is read off the
+            // wrapper the tooltip carries, as its failure panel does.
+            GraphNodes.AddRefusal(vtable, tooltip, () => AgeWidgets.Operable(it.AgeTransform));
             AgeWidgets.PointAt(vtable, item.AgeTransform);
             Cells.Add(
                 cells,

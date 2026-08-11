@@ -380,11 +380,7 @@ namespace ES2Access.UI
                 AgeWidgets.PointAt(vtable, widget);
             }
 
-            NodeAnnouncement refusal = GraphNodes.RefusalPart(line.Tooltip, enabled);
-            if (refusal != null)
-            {
-                vtable.Announcements.Add(refusal);
-            }
+            GraphNodes.AddRefusal(vtable, line.Tooltip, enabled);
 
             if (Decorate != null)
             {

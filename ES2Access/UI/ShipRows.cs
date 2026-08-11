@@ -281,11 +281,7 @@ namespace ES2Access.UI
                 enabled,
                 tooltip
             );
-            NodeAnnouncement refusal = GraphNodes.RefusalPart(tooltip, enabled);
-            if (refusal != null)
-            {
-                vtable.Announcements.Add(refusal);
-            }
+            GraphNodes.AddRefusal(vtable, tooltip, enabled);
 
             AgeWidgets.Point(vtable, it);
             Cells.Add(cells, widget, ControlId.Referenced(button, keyPrefix + "/" + key), vtable);

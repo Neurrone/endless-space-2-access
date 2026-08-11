@@ -423,6 +423,11 @@ namespace ES2Access.Core.Speech
         public const string MilitaryDesignActions = "military.design-actions";
         public const string ScreenFleetSelection = "screen.fleet-selection";
 
+        /// <summary>A tactic having landed in a slot of the battle deck. The window's own headings, its
+        /// cards and its refusals are all the game's words; a drop is the MOD's drag ending and the game
+        /// answers it in silence, so this is the one phrase the deck editor needs.</summary>
+        public const string TacticsSlotFilled = "tactics.slot-filled";
+
         // The hero page and the galaxy-wide hero list its Academy box opens. Both screen names are
         // fallbacks for the frames before the window has written its own heading. The third is for the
         // band of hero actions the page draws along its bottom with no caption of its own.
@@ -704,6 +709,7 @@ namespace ES2Access.Core.Speech
             { HeroSkillLevel, "level {0} of {1}" },
             { HeroSkillPending, "level {0} pending" },
             { ScreenFleetSelection, "Fleet selection" },
+            { TacticsSlotFilled, "Put {0} in your Tactics Set" },
             { ScreenAcademy, "Hero management" },
             { AcademyHeroActions, "Hero actions" },
             { ScreenHeroCompleteList, "Heroes in the galaxy" },

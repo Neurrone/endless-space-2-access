@@ -577,11 +577,7 @@ namespace ES2Access.UI
                 OnAlternate = () => AutoEquip(it, enabled),
                 OnPickUp = () => PickModule(it),
             };
-            NodeAnnouncement refusal = GraphNodes.RefusalPart(tooltip, enabled);
-            if (refusal != null)
-            {
-                vtable.Announcements.Add(refusal);
-            }
+            GraphNodes.AddRefusal(vtable, tooltip, enabled);
 
             AgeWidgets.PointAt(vtable, item.AgeTransform);
             Cells.Add(

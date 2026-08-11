@@ -521,11 +521,7 @@ namespace ES2Access.Screens
                     null,
                     tooltip
                 );
-                NodeAnnouncement refusal = GraphNodes.RefusalPart(tooltip, offered);
-                if (refusal != null)
-                {
-                    vtable.Announcements.Add(refusal);
-                }
+                GraphNodes.AddRefusal(vtable, tooltip, offered);
 
                 AgeWidgets.Point(vtable, toggle, tooltip, Anchor(tooltip, widget));
                 Cells.Add(cells, widget, ControlId.Structural("election:action/" + i), vtable);
@@ -851,11 +847,7 @@ namespace ES2Access.Screens
                 tooltip,
                 ModeOf(widget)
             );
-            NodeAnnouncement refusal = GraphNodes.RefusalPart(tooltip, offered);
-            if (refusal != null)
-            {
-                vtable.Announcements.Add(refusal);
-            }
+            GraphNodes.AddRefusal(vtable, tooltip, offered);
 
             AgeWidgets.Point(vtable, AgeWidgets.Button(widget), tooltip, widget);
             Cells.Add(cells, widget, ControlId.Structural("election:button/" + name), vtable);

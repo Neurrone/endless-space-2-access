@@ -141,6 +141,8 @@ namespace ES2Access
             Screens.Register(new global::ES2Access.Screens.SenateScreen());
             Screens.Register(new global::ES2Access.Screens.EconomyScreen());
             Screens.Register(new global::ES2Access.Screens.MilitaryScreen());
+            Screens.Register(new TroopManagementScreen());
+            Screens.Register(new BattleTacticsScreen());
             Screens.Register(new FleetSelectionScreen());
             Screens.Register(new global::ES2Access.Screens.AcademyScreen());
             Screens.Register(new HeroCompleteListScreen());

@@ -50,7 +50,11 @@ namespace ES2Access.UI
         /// Additive, never a suppressor: the mode-derived part still contributes, and the section it
         /// comes from still fills the buffer.
         /// </summary>
-        public static NodeAnnouncement RefusalPart(AgeTooltip tooltip, Func<bool> enabled)
+        public static NodeAnnouncement RefusalPart(
+            AgeTooltip tooltip,
+            Func<bool> enabled,
+            Func<string> name = null
+        )
         {
             if (tooltip == null)
             {
@@ -58,6 +62,7 @@ namespace ES2Access.UI
             }
 
             AgeTooltip it = tooltip;
+            Func<string> label = name;
             return new NodeAnnouncement(
                 () =>
                 {
@@ -68,7 +73,13 @@ namespace ES2Access.UI
                             return null;
                         }
 
-                        return ModeFor(it) == TooltipMode.Announce ? null : Refusal(it);
+                        if (ModeFor(it) == TooltipMode.Announce)
+                        {
+                            return null;
+                        }
+
+                        string refusal = Refusal(it);
+                        return Repeats(refusal, label) ? null : refusal;
                     }
                     catch (Exception)
                     {
@@ -78,6 +89,60 @@ namespace ES2Access.UI
                 live: true,
                 kind: AnnouncementKinds.Tooltip
             );
+        }
+
+        /// <summary>
+        /// Append the game's own refusal sentence to a control, where there is one to say.
+        ///
+        /// The node's own name is read back out of the parts already declared rather than passed in, so
+        /// that no screen can forget it - and it is needed, because a "reason" that only repeats the
+        /// control's name is not a reason. That happens whenever the game's tooltip for a disabled
+        /// control is a bare DESCRIPTION on one line: <see cref="RefusalText.Compose"/> reads a lone
+        /// line as the whole of what the game said (it has nothing to trim a description away from), and
+        /// a read-only ship-design module - whose tooltip content is just the module's name - then reads
+        /// "⟨name⟩, unavailable, ⟨name⟩".
+        ///
+        /// Call this instead of adding <see cref="RefusalPart"/> by hand.
+        /// </summary>
+        public static void AddRefusal(NodeVtable vtable, AgeTooltip tooltip, Func<bool> enabled)
+        {
+            if (vtable == null || vtable.Announcements == null)
+            {
+                return;
+            }
+
+            NodeAnnouncement refusal = RefusalPart(tooltip, enabled, NamePart(vtable));
+            if (refusal != null)
+            {
+                vtable.Announcements.Add(refusal);
+            }
+        }
+
+        /// <summary>The control's own name, out of the parts it has already declared.</summary>
+        private static Func<string> NamePart(NodeVtable vtable)
+        {
+            IList<NodeAnnouncement> parts = vtable.Announcements;
+            for (int i = 0; i < parts.Count; i++)
+            {
+                if (parts[i] != null && parts[i].Kind == AnnouncementKinds.Label)
+                {
+                    return parts[i].Text;
+                }
+            }
+
+            return null;
+        }
+
+        private static bool Repeats(string refusal, Func<string> name)
+        {
+            if (string.IsNullOrEmpty(refusal) || name == null)
+            {
+                return false;
+            }
+
+            string label = name();
+            return !string.IsNullOrEmpty(label)
+                && string.Equals(label.Trim(), refusal.Trim(), StringComparison.Ordinal);
         }
 
         /// <summary>The refusal alone, out of the three parts the game assembles a blocked control's
@@ -132,13 +197,23 @@ namespace ES2Access.UI
         ///
         /// A tooltip the renderer assembles has no such part and is left alone: it is only indicated,
         /// and <see cref="RefusalPart"/> is what carries its refusal into speech.
+        ///
+        /// Every control in the mod gets this, because <see cref="Sections"/> is what calls it: a screen
+        /// that builds its own vtable rather than going through the shared cell helpers used to keep the
+        /// instruction in its spoken refusal, and the Academy's blocked Sell button is how that was found.
         /// </summary>
-        public static IList<NodeSection> HintSections(AgeTooltip tooltip)
+        public static IList<NodeSection> HintSections(AgeTooltip tooltip, TooltipMode? mode = null)
         {
-            Func<IList<string>> full = TooltipDetails(tooltip);
-            if (full == null || ModeFor(tooltip) != TooltipMode.Announce)
+            NodeSection whole = TooltipSection(tooltip, mode);
+            if (whole == null || whole.Mode != TooltipMode.Announce)
             {
-                return Sections(null, tooltip);
+                return whole == null ? null : new List<NodeSection> { whole };
+            }
+
+            Func<IList<string>> full = TooltipDetails(tooltip);
+            if (full == null)
+            {
+                return new List<NodeSection> { whole };
             }
 
             return new List<NodeSection>
@@ -242,21 +317,21 @@ namespace ES2Access.UI
         )
         {
             NodeSection drawn = NodeSection.Buffer(details);
-            NodeSection tip = TooltipSection(tooltip, mode);
+            IList<NodeSection> tip = HintSections(tooltip, mode);
             if (drawn == null && tip == null)
             {
                 return null;
             }
 
-            List<NodeSection> list = new List<NodeSection>(2);
+            List<NodeSection> list = new List<NodeSection>(3);
             if (drawn != null)
             {
                 list.Add(drawn);
             }
 
-            if (tip != null)
+            for (int i = 0; tip != null && i < tip.Count; i++)
             {
-                list.Add(tip);
+                list.Add(tip[i]);
             }
 
             return list;

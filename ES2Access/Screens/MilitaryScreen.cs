@@ -45,6 +45,13 @@ namespace ES2Access.Screens
     /// <c>IGuiGarrisonsHandler</c> hooks throw or do nothing, :168-200), and the panel's Create-fleet
     /// button is not declared at all, because the method it calls on this host is empty.
     ///
+    /// The two boxes down the left edge each hand the shared side-panel reader one correction of their
+    /// own. The battle-tactics box draws its six deck slots as wordless artwork with the title label
+    /// hidden, so the shape walk finds nothing to say in them and they are read off the wrapper the panel
+    /// binds (<see cref="DeckSlot"/>); the box's Open button raises the window where the set is actually
+    /// changed (<see cref="BattleTacticsScreen"/>), and its Manage sibling in the manpower box raises
+    /// <see cref="TroopManagementScreen"/>.
+    ///
     /// The manpower box down the left edge is read by the shared side-panel reader, with one correction:
     /// seven of its groups are wired to a click handler that only does anything in the developers' god
     /// mode (<c>MilitaryManPowerSidePanel.OnClickManPowerCb</c> :225-232), and a click the game answers
@@ -213,7 +220,7 @@ namespace ES2Access.Screens
                         _cells,
                         panel,
                         "military:side/" + i + "/",
-                        SkipDrawnHeading,
+                        PanelCell,
                         GodModeClick
                     );
                     Cells.Emit(builder, _cells);
@@ -261,9 +268,10 @@ namespace ES2Access.Screens
             return label == null ? null : AgeWidgets.TextOf(label);
         }
 
-        /// <summary>The one thing in these boxes the walk must not read: the heading the battle-tactics
-        /// box draws, which is already the name of the stop the player just entered.</summary>
-        private static bool SkipDrawnHeading(
+        /// <summary>What the shape of these boxes cannot answer: the heading the battle-tactics box
+        /// draws, which is already the name of the stop the player just entered, and the six deck slots
+        /// it draws as wordless artwork.</summary>
+        private static bool PanelCell(
             List<Cell> cells,
             AgeTransform widget,
             string keyPrefix,
@@ -271,9 +279,91 @@ namespace ES2Access.Screens
         )
         {
             AgeTransform heading = DeckHeadingLabel(panel);
-            return heading != null
+            if (
+                heading != null
                 && ReferenceEquals(heading, widget)
-                && !string.IsNullOrEmpty(AgeWidgets.TextOf(heading));
+                && !string.IsNullOrEmpty(AgeWidgets.TextOf(heading))
+            )
+            {
+                return true;
+            }
+
+            return DeckSlot(cells, widget, keyPrefix);
+        }
+
+        /// <summary>
+        /// One of the six battle-tactics slots the box draws along its own top.
+        ///
+        /// The mini card is ARTWORK and nothing else: the game hides the title label the full-size card
+        /// draws (measured - <c>PlayTitle</c> is invisible in this prefab and still holds the words), so
+        /// the shape walk finds a drag area with no text in it and declares nothing. What the slot holds
+        /// is on the wrapper the game binds to it (<c>MilitaryPlayCardDeckSidePanel.Refresh</c> :168-190),
+        /// which is the same title the drawn tooltip's own header shows.
+        ///
+        /// A readout, because there is nothing to press: the panel binds these cards with no client and
+        /// no drag (<c>BindDeckBattlePlayCard</c> :233-241), so a click reaches
+        /// <c>BattlePlayCard.OnClickCb</c> and does nothing at all. The set is CHANGED in the window the
+        /// Open button below raises (<see cref="BattleTacticsScreen"/>).
+        /// </summary>
+        private static bool DeckSlot(List<Cell> cells, AgeTransform widget, string keyPrefix)
+        {
+            BattlePlayCard card = widget == null ? null : widget.GetComponent<BattlePlayCard>();
+            if (card == null || !card.IsBound || card.GuiBattlePlaySlot == null)
+            {
+                return false;
+            }
+
+            BattlePlayCard it = card;
+            AgeTooltip tooltip = card.Tooltip ?? AgeWidgets.Raw(widget);
+            // A slot with no tactic in it has no name of its own anywhere, so the sentence the game
+            // explains it with becomes its name - and is then not announced as a tooltip as well, which
+            // is the same trade every bare-icon control in the mod makes. The buffer still holds all of
+            // it.
+            bool named = !string.IsNullOrEmpty(Title(card));
+            NodeVtable vtable = new NodeVtable
+            {
+                Announcements = new List<NodeAnnouncement>
+                {
+                    GraphNodes.LabelPart(() => DeckSlotName(it, tooltip)),
+                },
+                Sections = GraphNodes.Sections(
+                    null,
+                    tooltip,
+                    named ? GraphNodes.ModeFor(tooltip) : TooltipMode.None
+                ),
+            };
+            AgeWidgets.PointAt(vtable, widget);
+            Cells.Add(
+                cells,
+                widget,
+                ControlId.Structural(keyPrefix + widget.name),
+                vtable
+            );
+            return true;
+        }
+
+        /// <summary>The tactic in a slot, in the game's own words - and for a slot with nothing in it, the
+        /// sentence the game explains the empty or locked slot with, because the wrapper for those has no
+        /// title at all.</summary>
+        private static string DeckSlotName(BattlePlayCard card, AgeTooltip tooltip)
+        {
+            string title = Title(card);
+            return string.IsNullOrEmpty(title) ? CardActions.FirstLine(tooltip) : title;
+        }
+
+        /// <summary>The tactic a slot is holding, in the game's own words - the same title the drawn
+        /// tooltip writes across its own top. Empty for a slot with nothing in it.</summary>
+        private static string Title(BattlePlayCard card)
+        {
+            try
+            {
+                GuiBattlePlaySlot slot = card.GuiBattlePlaySlot;
+                return slot == null ? null : AgeText.Clean(slot.Title);
+            }
+            catch (Exception)
+            {
+                return null;
+            }
         }
 
         /// <summary>
@@ -362,11 +452,7 @@ namespace ES2Access.Screens
                     }
                 },
             };
-            NodeAnnouncement refusal = GraphNodes.RefusalPart(tooltip, operable);
-            if (refusal != null)
-            {
-                vtable.Announcements.Add(refusal);
-            }
+            GraphNodes.AddRefusal(vtable, tooltip, operable);
 
             return vtable;
         }

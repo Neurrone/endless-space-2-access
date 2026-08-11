@@ -209,17 +209,9 @@ namespace ES2Access.UI
                         offered,
                         tooltip
                     );
-                // A refusing button's tooltip ends in an instruction to a MOUSE - hold Control and
-                // click to be shown the technology that is missing - which is reviewable and not
-                // spoken.
-                vtable.Sections = GraphNodes.HintSections(tooltip);
                 // The refusal in the game's own words, for a button whose tooltip is the assembled kind
                 // and so is only indicated. A button whose tooltip is plain text already says it.
-                NodeAnnouncement refusal = GraphNodes.RefusalPart(tooltip, offered);
-                if (refusal != null)
-                {
-                    vtable.Announcements.Add(refusal);
-                }
+                GraphNodes.AddRefusal(vtable, tooltip, offered);
 
                 if (toggle != null)
                 {

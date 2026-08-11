@@ -861,11 +861,7 @@ namespace ES2Access.Screens
 
         private static void AddRefusal(NodeVtable vtable, AgeTooltip tooltip, Func<bool> enabled)
         {
-            NodeAnnouncement refusal = GraphNodes.RefusalPart(tooltip, enabled);
-            if (refusal != null)
-            {
-                vtable.Announcements.Add(refusal);
-            }
+            GraphNodes.AddRefusal(vtable, tooltip, enabled);
         }
 
         private static global::FleetsScreen Window()

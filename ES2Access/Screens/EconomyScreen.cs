@@ -361,7 +361,6 @@ namespace ES2Access.Screens
                 () => AgeWidgets.Offered(at),
                 tooltip
             );
-            vtable.Sections = GraphNodes.HintSections(tooltip);
             vtable.OnActivate = () =>
             {
                 if (AgeWidgets.Offered(at))
@@ -764,11 +763,7 @@ namespace ES2Access.Screens
                     }
                 },
             };
-            NodeAnnouncement refusal = GraphNodes.RefusalPart(tooltip, offered);
-            if (refusal != null)
-            {
-                vtable.Announcements.Add(refusal);
-            }
+            GraphNodes.AddRefusal(vtable, tooltip, offered);
 
             AgeWidgets.PointAt(vtable, widget);
             Cells.Add(cells, widget, ControlId.Referenced(widget, "economy:recipe/" + index), vtable);
@@ -990,12 +985,7 @@ namespace ES2Access.Screens
                     null,
                     tooltip
                 );
-                vtable.Sections = GraphNodes.HintSections(tooltip);
-                NodeAnnouncement refusal = GraphNodes.RefusalPart(tooltip, offered);
-                if (refusal != null)
-                {
-                    vtable.Announcements.Add(refusal);
-                }
+                GraphNodes.AddRefusal(vtable, tooltip, offered);
 
                 AgeWidgets.Point(vtable, radio.Toggle, tooltip, widget);
                 Cells.Add(
