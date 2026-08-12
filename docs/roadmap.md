@@ -77,17 +77,12 @@ files above.
 
 ## To decide (owner)
 
-- Space over-claim → conditional hand-back, now the scan lens is modelled and announces
-  itself (`InputAction.ClaimedWhile` was kept for exactly this).
-- Tab-at-edge silence: edge cue or wrap.
-- Cutscene keys: the passive announcer claims keys the page's own press-anything
-  affordance needs (Enter-to-skip lost).
-- Click parity when the game's own click is a bug: stated exception path or strict parity.
-- The galaxy's remaining world-navigation model — lanes as routes and an answer to "what is
-  near me" — still wanted, or does the map-as-tree cover it?
-- Cursor target modes have no keyboard confirm (GlobalHud announces the mode and stops):
-  one gesture would serve probe launch, take-system, obliterator fire, pirate mark, time
-  bubble and the hacking cursors. Needs an owner-approved binding.
+- Click parity when the game's own click is a bug: stated exception path or strict parity
+  (enemy battle-play cards — explanation given, awaiting ruling).
+- Backspace as a table cell's second button (journal Details cell) — awaiting ruling.
+- Cursor target modes: Enter-as-click while a targeting mode is active is the likely
+  answer (measure whether the game's cursor intercepts the click; else a binding choice
+  returns to the owner).
 
 ## Shipped (pointers only)
 
