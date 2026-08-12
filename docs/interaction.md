@@ -39,10 +39,17 @@ alone, which is complete rather than a gap: entering a system swaps the cursor t
 `docs/generic/input.md`). On top of arrows/Tab/Enter/Backspace/Escape/Home/End, Alt+arrows and
 the Ctrl review chords: **Shift+Left/Right** coarse slider step, **Alt+Enter** the control's other
 activation (queue at the head), **Backslash** the control's right-click command
-(`NodeVtable.OnContextual`), **Space** pick up / swap / put back what is being dragged (`OnPickUp`),
+(`NodeVtable.OnContextual`), **Ctrl+Alt+Enter** the control's DOUBLE click (`OnDoubleClick`),
+**Space** pick up / swap / put back what is being dragged (`OnPickUp`),
 **Enter** drop it where it will be taken (`DropKind` + `OnDrop`), **Ctrl+Enter** one item into or out
 of the game's own selection (`OnSelectToggle`), **Shift+Enter** extend that selection to here
 (`OnSelectRange`). There is NO reorder chord: moving an item within its list is a drag like any other.
+**Each of those keys means the game's own gesture and nothing else** — Backslash is the right click,
+Alt+Enter the Alt-click, Ctrl+Enter the Ctrl-click, Ctrl+Alt+Enter the second click — and a screen
+whose control lacks that gesture leaves the key silent rather than lending it to another one. The
+double-click chord is free because no handler in the game combines Ctrl and Alt with a click and its
+own binding matcher is exact-modifier (`InputManager.InputsMatch`); a mod screen replaying a double
+click checks that the game's handler does not read the modifiers the player is still holding.
 The Enter chords pass the PHYSICAL modifier through to the game's handler, which
 is how the game's own selection rules apply rather than a copy of them. Which screens have the
 chords and which cargo kinds the drag carries (ships, population, both queues) is coverage
@@ -56,7 +63,7 @@ is). There are no mod-invented action menus left; a control's extra buttons are 
 with right. The one thing that displaces a node's click is a live drag landing on a control that
 takes the cargo, which is what makes Enter the drop key.
 
-Backslash, both Enter chords and **Space** are claimed on every mod screen and are **SILENT where
+Backslash, every Enter chord and **Space** are claimed on every mod screen and are **SILENT where
 the control has no such command** — they are pressed speculatively all over a page, and a cue on
 every one of them is noise. Silent but still consumed, and never a fall back to plain activation.
 Space while something is carried is the same: consumed on a control that will not take it, silent,

@@ -335,6 +335,8 @@ namespace ES2Access.UI
                     return Alternate();
                 case UiActions.Contextual:
                     return Contextual();
+                case UiActions.DoubleClick:
+                    return DoubleClick();
                 case UiActions.Carry:
                     return CarryKey();
                 case UiActions.SelectToggle:
@@ -801,6 +803,21 @@ namespace ES2Access.UI
         private bool Contextual()
         {
             if (_graph.Contextual())
+            {
+                SpeakStateAfterChange();
+            }
+
+            return true;
+        }
+
+        // The game's own second click, which several of this game's controls answer with a command of
+        // their own. Claimed either way and SILENT where the control has no such command, for the
+        // same reason the right click is: the gesture keys are pressed speculatively along a row. It
+        // never falls back to the single click - the whole point of the control having a double click
+        // is that the two do different things.
+        private bool DoubleClick()
+        {
+            if (_graph.DoubleClick())
             {
                 SpeakStateAfterChange();
             }

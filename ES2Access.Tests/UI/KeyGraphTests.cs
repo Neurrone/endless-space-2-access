@@ -551,6 +551,40 @@ namespace ES2Access.Tests.UI
             Assert.False(g.SelectRange());
         }
 
+        /// <summary>
+        /// The double click is a slot of its own: a control that has one runs it and NOT its single
+        /// click, and a control that has none answers false so the caller stays silent instead of
+        /// clicking. The two are different commands wherever the game bothers to wire both - a module
+        /// tile answers a single click with nothing at all and its double click fits the module - so a
+        /// fall back to activation would do something the player never asked for.
+        /// </summary>
+        [Fact]
+        public void TheDoubleClickRunsItsOwnSlotAndNothingWhereThereIsNone()
+        {
+            GraphState state = new GraphState();
+            int activated = 0, doubled = 0, contextual = 0;
+            NodeVtable tile = Vt("Kinetic module");
+            tile.OnActivate = () => activated++;
+            tile.OnDoubleClick = () => doubled++;
+            NodeVtable other = Vt("Fleet");
+            other.OnActivate = () => activated++;
+            other.OnContextual = () => contextual++;
+
+            KeyGraph g = new KeyGraph(Renderer(b =>
+                b.AddItem(Id("a"), tile).AddItem(Id("b"), other)), state);
+            g.Rerender();
+            Assert.True(g.DoubleClick());
+            Assert.Equal(1, doubled);
+            Assert.Equal(0, activated);
+
+            // A control with every other behavior and no double click: false, and nothing ran.
+            g.Move(GraphDir.Down);
+            Assert.False(g.DoubleClick());
+            Assert.Equal(1, doubled);
+            Assert.Equal(0, activated);
+            Assert.Equal(0, contextual);
+        }
+
         [Fact]
         public void TryAdjustPreemptsHorizontalNavigation()
         {

@@ -214,6 +214,8 @@
   "ship-design.module-fitted": "Fitted {0}",
   "screen.fleet-selection": "Fleet selection",
   "tactics.slot-filled": "Put {0} in your Tactics Set",
+  "tactics.slot-emptied": "Took {0} out of your Tactics Set",
+  "tactics.remove-target": "Drop a tactic here to take it out of your Tactics Set",
   "screen.battle": "Space battle",
   "screen.ground-battle": "Ground battle",
   "screen.battle-report-advanced": "Advanced battle report",

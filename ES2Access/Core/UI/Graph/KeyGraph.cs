@@ -600,6 +600,18 @@ namespace ES2Access.Core.UI.Graph
             return true;
         }
 
+        /// <summary>Run the focused control's double-click command - the game's own second click.
+        /// False = it has none, and the caller says nothing rather than falling back to the single
+        /// click.</summary>
+        public bool DoubleClick()
+        {
+            if (!Rerender()) return false;
+            GraphNode node = CurrentNode;
+            if (node == null || node.Vtable.OnDoubleClick == null) return false;
+            node.Vtable.OnDoubleClick();
+            return true;
+        }
+
         /// <summary>Add the focused control's item to the game's selection, or take it out. False =
         /// the control is not part of a selection.</summary>
         public bool SelectToggle()

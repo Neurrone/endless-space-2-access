@@ -308,6 +308,14 @@ namespace ES2Access
             // Claimed on every screen of ours, because it always answers - with the control's command
             // where there is one, and with a cue where there is not.
             input.Register(UiActions.Contextual).Bind(KeyCode.Backslash);
+            // The game's own DOUBLE click, on the one Enter chord the game itself never uses: no
+            // handler in the game combines Control and Alt with a click, and its own binding matcher
+            // is exact-modifier (`InputManager.InputsMatch`), so Control+Alt+Enter cannot trip a
+            // binding on plain Return either. Claimed on every screen of ours like the rest, and
+            // silent on a control that has no second click.
+            input.Register(UiActions.DoubleClick)
+                .Bind(KeyCode.Return, ctrl: true, alt: true)
+                .Bind(KeyCode.KeypadEnter, ctrl: true, alt: true);
             // Pick something up, swap it, or put it back where it came from. Where it is put DOWN is
             // named with Enter, on the control that will take it. The one key here the game keeps a
             // share of: it is only taken where the cursor is standing on something that can be picked

@@ -442,10 +442,15 @@ namespace ES2Access.Core.Speech
         public const string MilitaryDesignActions = "military.design-actions";
         public const string ScreenFleetSelection = "screen.fleet-selection";
 
-        /// <summary>A tactic having landed in a slot of the battle deck. The window's own headings, its
-        /// cards and its refusals are all the game's words; a drop is the MOD's drag ending and the game
-        /// answers it in silence, so this is the one phrase the deck editor needs.</summary>
+        /// <summary>A tactic having landed in a slot of the battle deck, one having been taken out
+        /// again, and the name of the place a tactic is dropped to take it out - a node the mod draws
+        /// because the mouse's own way out is releasing the card over nothing, which a keyboard cannot
+        /// aim at. The window's own headings, its cards and its refusals are all the game's words; a
+        /// drag ending is the MOD's and the game answers it in silence, so these are the phrases the
+        /// deck editor needs.</summary>
         public const string TacticsSlotFilled = "tactics.slot-filled";
+        public const string TacticsSlotEmptied = "tactics.slot-emptied";
+        public const string TacticsRemoveTarget = "tactics.remove-target";
 
         // The hero page and the galaxy-wide hero list its Academy box opens. Both screen names are
         // fallbacks for the frames before the window has written its own heading. The third is for the
@@ -860,6 +865,8 @@ namespace ES2Access.Core.Speech
             { HeroSkillPending, "level {0} pending" },
             { ScreenFleetSelection, "Fleet selection" },
             { TacticsSlotFilled, "Put {0} in your Tactics Set" },
+            { TacticsSlotEmptied, "Took {0} out of your Tactics Set" },
+            { TacticsRemoveTarget, "Drop a tactic here to take it out of your Tactics Set" },
             { ScreenBattle, "Space battle" },
             { ScreenGroundBattle, "Ground battle" },
             { ScreenAdvancedBattleReport, "Advanced battle report" },
