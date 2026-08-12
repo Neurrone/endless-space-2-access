@@ -19,9 +19,9 @@ namespace ES2Access.Screens
     /// page had to be told (measured): the window binds the table selectable, so a clicked row
     /// highlights, and then implements neither <c>OnLineSelection</c> nor <c>OnLineDoubleClick</c> - the
     /// highlight leads nowhere. What a row can DO is in its last column, where the game draws two buttons
-    /// per row (<see cref="DetailsCell"/>): the score screen of that finished game, and delete. So the
-    /// rows read as lines (<see cref="TableSheet.RowsAreLines"/>) and the Details cell is the row's
-    /// action.
+    /// per row (<see cref="DetailsCells"/>): the score screen of that finished game, and delete. So the
+    /// rows read as lines (<see cref="TableSheet.RowsAreLines"/>) and that one cell is read as two
+    /// columns, which is where the row's actions are.
     ///
     /// The empty case is the one worth naming: a fresh installation has finished no games, and the window
     /// swaps the table for a line saying so. That line is read where the table would have been, because
@@ -49,7 +49,7 @@ namespace ES2Access.Screens
         {
             _table = new TableSheet("journal:", SummaryOf);
             _table.RowName = SummaryName;
-            _table.ReadCell = DetailsCell;
+            _table.SplitCell = DetailsCells;
             _table.RowsAreLines = true;
         }
 
@@ -143,26 +143,30 @@ namespace ES2Access.Screens
 
         /// <summary>
         /// The last column, where the game draws the row's two BUTTONS rather than a figure: open the
-        /// score screen of that finished game, and delete the entry.
+        /// score screen of that finished game, and delete the entry. It is read as TWO columns, one per
+        /// button, in the order they are drawn (<see cref="TableSheet.SplitCell"/>).
         ///
         /// This is the only door there is to a past game's score screen, and until it was declared the
         /// journal was a list a keyboard player could read and do nothing with: the row's own click goes
         /// nowhere (<see cref="TableSheet.RowsAreLines"/>) and the cell read as an ordinary figure.
         ///
-        /// Enter opens the score screen, which is the button the column exists for and the one the cell
-        /// is named after - the game wrote no caption on either button, so each is named by the sentence
-        /// its own tooltip opens with, and the cell's review buffer holds both of them
-        /// (<c>%VictoryScreenScoreScreenButtonDescription</c> and
-        /// <c>%JournalModalWindowDeleteEntryDescription</c>), which is where the second button is
-        /// discovered. Backspace is the other button, the way the notification strip's icons put dismiss
-        /// there: a delete cannot share Enter with the thing the player came to open, and it is behind
-        /// the game's OWN confirmation box either way (<c>GuiTableCellScoreScreenButton.OnDeleteEntryCb</c>
-        /// :39-45).
+        /// Two columns rather than one cell with two keys, because a button the player has to guess a
+        /// second key for is a button they never find: each is walked into with right like every other
+        /// column, and each keeps a plain Enter, which is the click the game itself puts on it. The
+        /// delete is not made safer by hiding it - it is behind the game's OWN confirmation box
+        /// (<c>GuiTableCellScoreScreenButton.OnDeleteEntryCb</c> :39-45), which is what asks the
+        /// question.
+        ///
+        /// The game wrote no caption on either button, so each is named by the sentence its own tooltip
+        /// says - the whole of it, since both are one line
+        /// (<c>%VictoryScreenScoreScreenButtonDescription</c>,
+        /// <c>%JournalModalWindowDeleteEntryDescription</c>) - and each cell's review buffer holds its
+        /// own button's line and not the other's.
         ///
         /// The buttons are found by the handler the game wired to them rather than by their names in the
         /// prefab: what a button DOES is the thing being declared here.
         /// </summary>
-        private NodeVtable DetailsCell(
+        private IList<NodeVtable> DetailsCells(
             GuiTableLine line,
             AgeTransform cell,
             GuiTableHeader header,
@@ -176,62 +180,66 @@ namespace ES2Access.Screens
                 return null;
             }
 
+            List<NodeVtable> controls = new List<NodeVtable>(2);
+            Add(controls, open, cell, enabled);
+            Add(controls, remove, cell, enabled);
+            return controls;
+        }
+
+        /// <summary>One of the cell's buttons as a column of its own: named by its own tooltip, pressed
+        /// by Enter, and refusing in the game's own words.</summary>
+        private void Add(
+            List<NodeVtable> controls,
+            AgeControlButton button,
+            AgeTransform cell,
+            Func<bool> enabled
+        )
+        {
+            if (button == null)
+            {
+                return;
+            }
+
             AgeTransform it = cell;
-            GuiTableHeader heading = header;
-            AgeControlButton primary = open ?? remove;
-            AgeControlButton secondary = open == null ? null : remove;
-            AgeTooltip tooltip = AgeWidgets.Raw(primary.AgeTransform);
+            AgeControlButton press = button;
+            AgeTooltip tooltip = AgeWidgets.Raw(button.AgeTransform);
             Func<bool> rowEnabled = enabled;
             Func<bool> operable = () =>
-                rowEnabled() && AgeWidgets.Operable(primary.AgeTransform) && AgeWidgets.Enabled(it);
+                rowEnabled() && AgeWidgets.Operable(press.AgeTransform) && AgeWidgets.Enabled(it);
             NodeVtable vtable = new NodeVtable
             {
-                // Named as a button, unlike the figures beside it: the whole point of the column is what
-                // pressing it opens, and the role word is the only thing that says the cell can be
-                // pressed at all.
+                // Named as a button, unlike the figures beside it: this column is a thing to press, and
+                // the role word is the only thing that says so.
                 ControlType = ControlTypes.Button,
                 Announcements = new List<NodeAnnouncement>
                 {
-                    GraphNodes.ValuePart(() => CellName(tooltip, it)),
+                    GraphNodes.ValuePart(() => CellName(tooltip, press.AgeTransform)),
                     GraphNodes.DisabledPart(operable),
                 },
-                Sections = GraphNodes.Sections(
-                    () => _table.CellFacts(heading, it),
-                    TableSheet.TooltipOf(it)
-                ),
+
+                // Nothing behind it: the button's one line of tooltip is already the name, its column is
+                // said by the edge the player crossed to get here, and there is nothing else drawn in it.
+                // A cell-wide fact line here would read the OTHER button's sentence as well.
                 OnActivate = () =>
                 {
                     if (operable())
                     {
-                        AgeWidgets.PressPropagating(primary);
+                        AgeWidgets.PressPropagating(press);
                     }
                 },
             };
-            if (secondary != null)
-            {
-                AgeControlButton other = secondary;
-                Func<bool> offered = () =>
-                    rowEnabled() && AgeWidgets.Operable(other.AgeTransform) && AgeWidgets.Enabled(it);
-                vtable.OnSecondary = () =>
-                {
-                    if (offered())
-                    {
-                        AgeWidgets.PressPropagating(other);
-                    }
-                };
-            }
 
             GraphNodes.AddRefusal(vtable, tooltip, operable);
-            AgeWidgets.Point(vtable, primary, tooltip, it);
-            return vtable;
+            AgeWidgets.Point(vtable, press);
+            controls.Add(vtable);
         }
 
-        /// <summary>What the cell is called: the sentence the button it opens explains itself with, else
-        /// whatever the cell is drawing - the game writes no caption on either button.</summary>
-        private string CellName(AgeTooltip tooltip, AgeTransform cell)
+        /// <summary>What one of the buttons is called: the sentence it explains itself with, else
+        /// whatever it is drawing - the game writes no caption on either.</summary>
+        private string CellName(AgeTooltip tooltip, AgeTransform button)
         {
             string described = CardActions.FirstLine(tooltip);
-            return string.IsNullOrEmpty(described) ? _table.CellText(cell) : described;
+            return string.IsNullOrEmpty(described) ? _table.CellText(button) : described;
         }
 
         /// <summary>The button inside a cell that the game wired to one named handler - which is what the

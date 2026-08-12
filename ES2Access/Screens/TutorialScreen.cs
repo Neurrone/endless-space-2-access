@@ -37,9 +37,9 @@ namespace ES2Access.Screens
     /// what it does - while the text carries the whole page, so a long objective can be re-read from
     /// where the words are.
     ///
-    /// It sits above everything else of ours bar the confirmation box, because the game draws most
-    /// tutorial popups over its own windows and a tutorial nobody can reach is worse than no tutorial at
-    /// all. Minimising it is what gives the keyboard back.
+    /// It sits above everything else of ours bar the error box and the confirmation box, because the game
+    /// draws most tutorial popups over its own windows and a tutorial nobody can reach is worse than no
+    /// tutorial at all. Minimising it is what gives the keyboard back.
     ///
     /// Pages are turned through the selector the popup itself turns them with, rather than by
     /// pressing its arrows, because the selector is the thing that actually holds the page number and
@@ -66,21 +66,22 @@ namespace ES2Access.Screens
         }
 
         /// <summary>
-        /// Above every screen of ours except the confirmation box, because the game itself draws most
-        /// tutorial popups above its own windows: of the game's tutorial definitions, 49 declare
-        /// <c>AboveModalWindows</c> and 16 <c>AboveNotifications</c>
+        /// Above every screen of ours except the two boxes that have to be answerable, because the game
+        /// itself draws most tutorial popups above its own windows: of the game's tutorial definitions,
+        /// 49 declare <c>AboveModalWindows</c> and 16 <c>AboveNotifications</c>
         /// (<c>Public\Tutorials\TutorialDefinitions*.xml</c>), and the popup this screen reads is the
         /// one the game has chosen to put on top. A tutorial buried under the window it was raised over
         /// is unreadable and unclosable, which is the worst thing this mod can do to a page.
         ///
-        /// What makes the top of the stack livable is that a COLLAPSED tutorial stands down (<see
+        /// What makes so high a place livable is that a COLLAPSED tutorial stands down (<see
         /// cref="IsActive"/>): minimising the box hands the keyboard straight back to whatever is
-        /// underneath. Only the message box at 100 stays above, so the question the Close button raises
-        /// is still the page the player is on.
+        /// underneath. The error box at 99 and the message box at 100 stay above, because a popup that
+        /// can be minimised is not the same as a question that must be answered - and the question this
+        /// screen's own Close button raises is one of them, so it is still the page the player is on.
         /// </summary>
         public override int Layer
         {
-            get { return 99; }
+            get { return 98; }
         }
 
         /// <summary>What the page is called. Spoken on arrival, ahead of the page text focus lands
@@ -124,7 +125,7 @@ namespace ES2Access.Screens
         /// Collapsing it IS the tutorial being over, for as long as it stays collapsed: the box is
         /// cropped to its title bar, everything this screen declares is behind the crop, and a screen
         /// that held on would own the keyboard with nothing on it the player can see. That is what makes
-        /// layer 99 livable - minimising hands everything underneath the keyboard back. The bar itself
+        /// layer 98 livable - minimising hands everything underneath the keyboard back. The bar itself
         /// stays reachable from the galaxy (<see cref="BuildCollapsedBar"/>), which is where it is drawn.
         /// </summary>
         public override bool IsActive()

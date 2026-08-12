@@ -45,12 +45,20 @@ namespace ES2Access.Screens
             get { return "screen.error"; }
         }
 
-        /// <summary>Above every ordinary screen and above the non-blocking box, and below the
-        /// confirmation box alone - the one thing the game can raise over anything, including over an
-        /// error.</summary>
+        /// <summary>
+        /// Above every ordinary screen, above the non-blocking box, and above the tutorial popup,
+        /// with the confirmation box alone above it - the one thing the game can raise over anything,
+        /// including over an error.
+        ///
+        /// Above the TUTORIAL specifically because this box is the only way out of itself: the window
+        /// handles no input, so nothing but its own three buttons dismisses it, and a tutorial popup
+        /// drawn over it would own the keyboard while the thing waiting to be answered sat
+        /// unreachable underneath. The tutorial can be minimised and come back; an error the tutorial
+        /// buries is unanswerable, and the game behind it has already stopped responding.
+        /// </summary>
         public override int Layer
         {
-            get { return 98; }
+            get { return 99; }
         }
 
         public override string ScreenName

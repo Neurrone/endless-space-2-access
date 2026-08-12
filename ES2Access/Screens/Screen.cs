@@ -61,6 +61,32 @@ namespace ES2Access.Screens
         /// <summary>Declare the screen's controls. Called on every navigation operation.</summary>
         public virtual void Build(GraphBuilder builder) { }
 
+        /// <summary>
+        /// What every page of ours declares beyond its own content, added after <see cref="Build"/>.
+        ///
+        /// Just one thing: the bar a COLLAPSED tutorial leaves on screen. Collapsing the popup hands the
+        /// keyboard back to the page underneath, so the bar belongs to whatever page that is - and the
+        /// game draws it over pages, modals and notifications alike, because a tutorial page declares for
+        /// itself what it may be drawn above (measured: of the game's definitions 106 of 233 stay drawn
+        /// while a screen is up, and an <c>AboveModalWindows</c> page keeps its bar clickable over a
+        /// modal). Declaring it here rather than page by page is what stops a player who minimised a
+        /// tutorial over a modal from having no way back to it.
+        ///
+        /// A page that reads the bar among its OWN stops - the galaxy, which puts it down the right-hand
+        /// edge above the notification icons, where it is drawn - keeps the place it chose; every other
+        /// page gets it last.
+        /// </summary>
+        public void BuildShared(GraphBuilder builder)
+        {
+            if (builder.DeclaredStop(GlobalHud.TutorialStop))
+            {
+                return;
+            }
+
+            builder.BeginStop(GlobalHud.TutorialStop);
+            TutorialScreen.BuildCollapsedBar(builder);
+        }
+
         /// <summary>Spoken when the player arrives on the screen, before the focused control reads.
         /// Null for a screen whose content already says where you are.</summary>
         public virtual string ScreenName

@@ -75,7 +75,7 @@ namespace ES2Access.Screens
         ///
         /// Measured: this window lives in <c>ModalRenderer</c> (<c>AgeScreen.SortingOrder</c> 5) and the
         /// tutorial popup in <c>OverlayRenderer</c> (6) - and the game raised a tutorial page over this
-        /// very window while it was being measured - so it has to sit under the tutorial's 99. The
+        /// very window while it was being measured - so it has to sit under the tutorial's 98. The
         /// message box its Confirm can raise is at 100, well above.
         /// </summary>
         public override int Layer

@@ -92,6 +92,25 @@ namespace ES2Access.UI
             Func<bool> enabled
         );
 
+        /// <summary>
+        /// A cell the screen reads as SEVERAL columns, for a column the game drew more than one control
+        /// in - the journal's Details cell, which holds the button that opens a finished game's score
+        /// screen and the button that deletes the entry. Each answer becomes a column of its own, walked
+        /// with left and right like any other, so every control keeps a plain Enter of its own.
+        ///
+        /// Null - and an empty or one-item answer - leaves the cell to <see cref="ReadCell"/> and the
+        /// shared value reading. Every row must answer with the same COUNT for a column: the sheet takes
+        /// its column captions from the first row that has cells, and each part is captioned with the
+        /// heading of the cell it came out of, so a row that splits a column differently from its
+        /// neighbours would walk crooked.
+        /// </summary>
+        public delegate IList<NodeVtable> CellControls(
+            GuiTableLine line,
+            AgeTransform cell,
+            GuiTableHeader header,
+            Func<bool> enabled
+        );
+
         /// <summary>What Enter does on a cell, for a table whose cells carry their own buttons. Null
         /// means the row's own click, which is what Enter does on the name.</summary>
         public delegate Action CellActivation(GuiTableLine line, AgeTransform cell);
@@ -142,6 +161,10 @@ namespace ES2Access.UI
 
         /// <summary>See <see cref="CellReader"/>.</summary>
         public CellReader ReadCell;
+
+        /// <summary>See <see cref="CellControls"/>. Asked first: a cell it answers for is not read by
+        /// <see cref="ReadCell"/> as well.</summary>
+        public CellControls SplitCell;
 
         /// <summary>See <see cref="CellActivation"/>.</summary>
         public CellActivation ActivateCell;
@@ -305,15 +328,31 @@ namespace ES2Access.UI
 
                 List<KeyValuePair<int, NodeVtable>> cells =
                     new List<KeyValuePair<int, NodeVtable>>();
+                int column = 0;
                 for (int i = 1; i < _cells.Count; i++)
                 {
                     AgeTransform cell = _cells[i];
-                    cells.Add(
-                        new KeyValuePair<int, NodeVtable>(
-                            i,
-                            CellVtable(table, line, cell, HeaderFor(cell, i))
-                        )
-                    );
+                    GuiTableHeader header = HeaderFor(cell, i);
+                    IList<NodeVtable> parts = Split(line, cell, header, Operable(table, line));
+                    if (parts == null)
+                    {
+                        cells.Add(
+                            new KeyValuePair<int, NodeVtable>(
+                                ++column,
+                                CellVtable(table, line, cell, header)
+                            )
+                        );
+                        continue;
+                    }
+
+                    for (int p = 0; p < parts.Count; p++)
+                    {
+                        // The part aimed the pointer at the control it declared, so the cell-wide aim is
+                        // not applied over the top of it, and it answered for that control's own
+                        // availability, so the row's is not said as well.
+                        Adorn(table, line, parts[p], false);
+                        cells.Add(new KeyValuePair<int, NodeVtable>(++column, parts[p]));
+                    }
                 }
 
                 sheet.RowAt(PrimaryVtable(table, line, _cells[0]), _rowRef(line), cells);
@@ -326,7 +365,9 @@ namespace ES2Access.UI
         /// <summary>The captions the sheet speaks when the player crosses into a column, read off a
         /// real row: which heading is over which column is the pairing <see cref="HeaderFor"/> makes,
         /// and it survives a re-sort. Every row of one table has the same columns, so the first one
-        /// that has any answers for all of them.</summary>
+        /// that has any answers for all of them. A cell read as several columns
+        /// (<see cref="SplitCell"/>) gives each of them the heading it came out of - they ARE that one
+        /// column of the game's table, and there is no other caption for them to have.</summary>
         private string[] Columns(List<GuiTableLine> lines)
         {
             for (int l = 0; l < lines.Count; l++)
@@ -337,16 +378,53 @@ namespace ES2Access.UI
                     continue;
                 }
 
-                string[] columns = new string[cells.Count - 1];
+                List<string> columns = new List<string>(cells.Count - 1);
                 for (int i = 1; i < cells.Count; i++)
                 {
-                    columns[i - 1] = Caption(HeaderFor(cells[i], i));
+                    GuiTableHeader header = HeaderFor(cells[i], i);
+                    string caption = Caption(header);
+                    IList<NodeVtable> parts = Split(lines[l], cells[i], header, AlwaysOn);
+                    for (int p = 0; p < (parts == null ? 1 : parts.Count); p++)
+                    {
+                        columns.Add(caption);
+                    }
                 }
 
-                return columns;
+                return columns.ToArray();
             }
 
             return null;
+        }
+
+        private static readonly Func<bool> AlwaysOn = delegate
+        {
+            return true;
+        };
+
+        /// <summary>The several controls the screen reads a cell as, or null where it reads the cell as
+        /// one thing - which is every cell of every other table.</summary>
+        private IList<NodeVtable> Split(
+            GuiTableLine line,
+            AgeTransform cell,
+            GuiTableHeader header,
+            Func<bool> enabled
+        )
+        {
+            if (SplitCell == null)
+            {
+                return null;
+            }
+
+            try
+            {
+                IList<NodeVtable> parts = SplitCell(line, cell, header, enabled);
+                return parts == null || parts.Count == 0 ? null : parts;
+            }
+            catch (Exception e)
+            {
+                Log.Warn("table: reading a cell's own controls threw: " + e);
+                return null;
+            }
         }
 
         /// <summary>
@@ -472,15 +550,41 @@ namespace ES2Access.UI
                 }
             }
 
-            if (Choosable(table))
-            {
-                vtable.Announcements.Add(GraphNodes.SelectedPart(selected));
-            }
-
-            vtable.Announcements.Add(GraphNodes.DisabledPart(enabled));
-            vtable.SearchText = () => RowText(row, null);
+            Adorn(table, line, vtable, true);
             AgeWidgets.PointAt(vtable, it);
             return vtable;
+        }
+
+        /// <summary>
+        /// What every cell of a row says beyond its own words, however the cell was read: whether the row
+        /// it belongs to is the one taken, whether the row is refused, and the row's name as what a typed
+        /// letter searches - so one row is one search result whichever column the player is standing in.
+        ///
+        /// The pointer is deliberately not here: a cell the screen read itself has already aimed it at the
+        /// control it declared. <paramref name="availability"/> is off for a cell read as SEVERAL controls
+        /// (<see cref="SplitCell"/>), each of which says whether its own button is refused - a closer
+        /// answer than the row's, and a second one would say "unavailable" twice.
+        /// </summary>
+        private void Adorn(
+            GuiTable table,
+            GuiTableLine line,
+            NodeVtable vtable,
+            bool availability
+        )
+        {
+            GuiTable owner = table;
+            GuiTableLine row = line;
+            if (Choosable(table))
+            {
+                vtable.Announcements.Add(GraphNodes.SelectedPart(() => Selected(owner, row)));
+            }
+
+            if (availability)
+            {
+                vtable.Announcements.Add(GraphNodes.DisabledPart(Operable(table, line)));
+            }
+
+            vtable.SearchText = () => RowText(row, null);
         }
 
         /// <summary>The row for the review buffer: one line per column, empties included - a buffer is
