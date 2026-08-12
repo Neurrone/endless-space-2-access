@@ -26,6 +26,12 @@ files above.
 - Skill-tree type-ahead: a TypeAheadScope so search reaches skills in collapsed branches.
 - Modal-return cursor: closing any modal over the star system page lands on the planets
   stop's start node, not the opening button (pre-existing; improvements/rename too).
+- Notification arrival-focus race: a popup's first build can run before its description
+  label is visible, landing arrival focus on the first control instead of the words (why
+  the elimination sentence had to ride the screen name).
+- `screen.empire.Build threw: Cannot begin a stop inside an open row`
+  (`EmpireScreen.BuildTabs`) — seen once in an earlier session's ring; empties the whole
+  empire page when it fires. Reproduce and fix.
 - Departing-fade stand-down: the spurious "unavailable" frame when a game confirmation
   opens over a mod screen (general fix).
 - SidePanels drops the panel title's own explanatory tooltip (generic fix, three screens).
