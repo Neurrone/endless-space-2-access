@@ -461,11 +461,12 @@ generic graduates to the generic docs.
   (a group, no button component) in the same column instead.
 - **The game's Space is `ToggleScanView`** (`InputManager.cs:233`, one binding shared with Mouse2) —
   the strategic lens mode that sets `IsInScanView`, drops `IsInNormalView` (hiding the pinned quest
-  and most HUD) and repaints the whole map, modelled by `ScanViewScreen`. This is why the
-  mod's drag key over-claims Space on every mod screen (owner decision 2026-08-11) instead of the
-  conditional claim it launched with: a screen-reader user reaching for a pickup must never flip the
-  map into an unannounced mode. The lens keeps its Mouse2 route; `InputAction.ClaimedWhile` remains
-  for a conditional hand-back once the lens is modelled and can announce itself.
+  and most HUD) and repaints the whole map, modelled by `ScanViewScreen`. The mod's drag key
+  therefore claims Space only where it can act — a pick-up on the focused control, a live carry,
+  or a search collecting the space as text (`ModEntry.CarryKeyClaimed` →
+  `GraphNavigator.TakesCarryKey`, owner decision 2026-08-12, after the blanket claim of
+  2026-08-11). Everywhere else the key reaches the game and `ScanViewScreen` announces the lens,
+  which is what made the hand-back safe; the lens keeps its Mouse2 route.
 - **Everything an OUTPOST has, and how the game refuses it** (measured turn 4, Rigel; the
   card's fields are `PlanetLabel_SystemManagement` :106-143):
   - The management page draws the constructibles, queue and hangar panels for an outpost

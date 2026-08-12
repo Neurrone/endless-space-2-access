@@ -272,10 +272,12 @@ which no dump reveals. Key such lines on the game's *data* object, never the wid
   arrive on the mode's first drawn-and-operable surface and gate one-way on the mode itself
   thereafter — and a mode the game can drop the player into needs at least a watcher
   announcing entry and exit, or the player is in an unannounced world.
-- **Initial focus and Tab clamping**: Tab does not wrap, so whichever stop the cursor starts
-  on must be the first stop, or Tab reads as broken. An explicit start node wins over the
-  "land on the selected alternative" rule unless the start node is itself one of the
-  alternatives (declares a selected-kind part).
+- **Tab wraps; initial focus still matters.** Tab cycles round both ways — a player who cannot
+  see the panels reads a dead key as broken — and a page with one stop consumes the key
+  silently. Wrapping does not excuse a bad landing: an ordering where the cursor starts
+  mid-page still reads as arbitrary, so the start stop should be the first one. An explicit
+  start node wins over the "land on the selected alternative" rule unless the start node is
+  itself one of the alternatives (declares a selected-kind part).
 - **Layers are static.** A screen's layer must never change while it is up: other screens
   (popups, confirmations) are placed *relative* to it, and a layer that slides underneath
   them cannot be reliably placed under either value. Number with gaps; when a window can be

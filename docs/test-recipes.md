@@ -220,8 +220,9 @@ fall-backs, never the modified semantics — those are code-trace plus the manua
 provable live: flip the panel's model from `/eval` and watch the row's live membership part
 (`ShipsManagementPanel.DeselectShips()` plus `Dirty = true` makes a tile read "not selected" under a
 standing cursor), then press the chord and read the state the row speaks back. The drag needs no
-modifier and so is fully injectable: `DevProbe.Claims("Space")` reads true on EVERY mod screen
-(the over-claim — es2-facts' scan-view fact) so it proves nothing about a pickup;
+modifier and so is fully injectable: `DevProbe.Claims("Space")` reads true exactly where a
+pick-up, a carry or a live search is, so it IS the claim-side proof of a drag source (measured:
+false on a one-item construction queue line, true once the line reads "draggable");
 `ModEntry.Carry.IsCarrying`/`.Held.Name`/`.Held.Kind` is the
 state probe, a compatible row's readout grows "drop target" while something is held, `ui.carry`
 answers "Dragging …" on a source and SILENCE everywhere else — including on a drop target that is not
@@ -254,10 +255,9 @@ reachable transfer would destroy a fleet.
 
 **Moving population between planets** (management page). The drag is offered only where the system
 has a SECOND colony of the player's (`ColonizedStarSystem.PlanetsColonized.Count > 1`) — with one, the
-population rows are declared read-only and there is no pick-up (measured live under the
-launch-era conditional Space claim; under today's over-claim only the second half still
-discriminates — `ui.carry` answers `unconsumed` while `Claims("Space")` reads true on every
-mod screen), which is what both fixtures show
+population rows are declared read-only and there is no pick-up (measured live: with one colony
+`Claims("Space")` reads false on the population rows and `ui.carry` answers `unconsumed`),
+which is what both fixtures show
 (Dusay: `planetsColonized=1`, `GetSpaceportSidePanel()` not shown). What IS testable with one colony:
 push a drag by hand — `ES2Access.ModEntry.Carry.PickUp(new ES2Access.Core.UI.CarryItem(pop, "Imperials",
 "population"), ES2Access.ModEntry.Navigator.Screen)` — and watch the card's readout grow "drop target",

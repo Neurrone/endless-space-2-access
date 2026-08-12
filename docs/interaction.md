@@ -98,18 +98,27 @@ is). There are no mod-invented action menus left; a control's extra buttons are 
 with right. The one thing that displaces a node's click is a live drag landing on a control that
 takes the cargo, which is what makes Enter the drop key.
 
-Backslash, every Enter chord and **Space** are claimed on every mod screen and are **SILENT where
+**Tab and Shift+Tab wrap** (owner decision 2026-08-12): the last stop's Tab lands on the first,
+the first stop's Shift+Tab on the last. On a page with exactly ONE stop the key is consumed and
+says nothing — coming round to the panel the player is already on is not a move. **A screen where
+every key means one thing** answers `Screen.AnyKey` before the review chords and before
+navigation: the cutscene's arrows, Tab, Enter and review chords all become the game's own
+press-anything skip, because a claimed key is invisible to the game's binding matcher and would
+otherwise do nothing at all. Escape is never offered to it and stays the game's.
+
+Backslash and every Enter chord are claimed on every mod screen and are **SILENT where
 the control has no such command** — they are pressed speculatively all over a page, and a cue on
 every one of them is noise. Silent but still consumed, and never a fall back to plain activation.
 Space while something is carried is the same: consumed on a control that will not take it, silent,
-carry kept. (Why Space is claimed even where nothing is draggable: the scan-view fact in
-`es2-facts.md`.)
-**Space is claimed wherever a mod screen is focused** — an over-claim by design (owner
-decision 2026-08-11; the scan-view fact in `es2-facts.md`): the game's Space is the strategic
-lens, and a player reaching for a pickup must never flip the map into an unannounced mode.
-`InputAction.ClaimedWhile` remains the mechanism (`ModEntry.CarryKeyClaimed` — any focused mod
-screen) so the claim can become conditional again once the lens is modelled and announces
-itself; every other binding is claimed outright. While something is carried, **Escape puts it
+carry kept.
+**Space is claimed only where it can act** — the focused control has something to pick up,
+something is already being carried, or a live type-ahead search is taking the space as text
+(`ModEntry.CarryKeyClaimed` → `GraphNavigator.TakesCarryKey`, through `InputAction.ClaimedWhile`;
+owner decision 2026-08-12, reversing the blanket claim of 2026-08-11). Everywhere else it falls
+through to the game, whose Space is the strategic lens (`ToggleScanView`) — modelled now by
+`ScanViewScreen`, which announces the lens on arrival and the view again on the way out, so
+handing the key back cannot drop the player into an unannounced mode. Every other binding is
+claimed outright. While something is carried, **Escape puts it
 down and goes no further** (`claimsBack` reads true only then), and the carry dies silently when the
 player leaves the page it started on — a menu opened over that page is still that page.
 
@@ -117,9 +126,10 @@ player leaves the page it started on — a menu opened over that page is still t
 one; Up/Down step the matches, Home/End their ends, Escape clears it and goes no further, any other
 action ends it and then does its own job). So **A–Z are claimed from the game on every mod screen**
 (`GraphNavigator.TakesTypedKey` via `ModInput.ClaimsTypedKey`, asked before the press), and a
-space typed into a LIVE search is text — the carry key stands aside for it (Space's claim
-itself is unconditional, above). Screens opt out with `AllowsTypeahead` (the key-rebind capture
-rows) or `CapturesRawInput` (the frames between asking for a key capture / text editor and the
+space typed into a LIVE search is text — the carry key takes it for the search (a live search
+is one of the three conditions of Space's claim, above). Screens opt out with `AllowsTypeahead`
+(the key-rebind capture rows, and the cutscene where letters belong to the game's skip) or
+`CapturesRawInput` (the frames between asking for a key capture / text editor and the
 game taking the keyboard). Edit fields are entered explicitly: Enter on the field hands the
 keyboard over, and Escape steps back OUT of editing before a second Escape closes the surface —
 both halves the engine's own gestures (the rename box is the worked example).

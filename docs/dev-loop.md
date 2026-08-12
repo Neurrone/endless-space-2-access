@@ -183,7 +183,8 @@ pop` → build → `/reload` costs about three minutes and is how `screen.game-m
 session: `GraphSheet` row keys derive from `GetHashCode()`, which survives a hot reload but not
 a process restart — the stash loop, never two launches. For a purely ADDITIVE announcement
 change there is a cheaper before: null the injected dependency that produces the new part
-(`GraphAnnouncer.Carry = null`) and dump, instead of stashing the source.
+(`GraphAnnouncer.Carry = null`) and dump, instead of stashing the source. The stash loop is
+UNSAFE while another stage edits the same trees — the push takes their in-flight files too.
 `GET /gui/graph?screen=KEY&buffers=1` reaches screens whose
 window exists without a game running — out of a session `screen.game-menu` and
 `screen.rename` both declare real content, `screen.galaxy` and friends answer "not active".

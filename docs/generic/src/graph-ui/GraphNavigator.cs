@@ -55,6 +55,9 @@ namespace ES2Access.UI
         private bool _pendingAnnounce;
         private object _pendingStop;
 
+        // A stop the NEXT screen attached should land on - see LandOnStopAfterClose.
+        private object _landingStop;
+
         // The live-part watch: the focus it is baselined against, and the last resolved text of each
         // effective announcement part (index-parallel, with nulls where a part is not live).
         private ControlId _liveKey;
@@ -195,6 +198,31 @@ namespace ES2Access.UI
             Screen built = screen;
             GraphState state = _state;
             _graph = new KeyGraph(() => BuildRender(built, state), state);
+
+            if (_landingStop != null)
+            {
+                _pendingStop = _landingStop;
+                _landingStop = null;
+            }
+        }
+
+        /// <summary>
+        /// Ask for the cursor to land on a stop of whatever screen is focused NEXT - how a surface that
+        /// puts ITSELF away hands the player back to the control that opened it.
+        ///
+        /// A closing surface knows where the player came in from but not what page will be underneath when
+        /// it goes, and it cannot reach that page's cursor: every screen keeps its own. So it leaves the
+        /// request here and the next <see cref="Attach"/> spends it. The request is spent whether or not
+        /// the stop exists there, so it can never surface on a page nobody asked about; a page without the
+        /// stop simply keeps the cursor it had.
+        ///
+        /// Only for a surface the player DISMISSED. A control that closes the surface by going somewhere
+        /// else - a notification's Inspect, its link to a screen - wants the page it opened, not the list
+        /// it came from.
+        /// </summary>
+        public void LandOnStopAfterClose(object stopKey)
+        {
+            _landingStop = stopKey;
         }
 
         /// <summary>Forget a closed screen's cursor, so re-opening it starts at the top.</summary>
@@ -250,6 +278,12 @@ namespace ES2Access.UI
             Voice.Say(GraphAnnouncer.ComposeFull(node), true);
             _lastSpokenKey = node.Id;
             _lastSpokenNode = node;
+
+            // Everything live has just been read out; re-baseline so the live watch does not say any
+            // of it a second time. A caller asks for this while the control is CHANGING under it -
+            // the rename box's field, whose value is withheld while the game holds the keyboard and
+            // reappears the moment it lets go - which is exactly when the watch would.
+            _liveKey = null;
         }
 
         /// <summary>Run an action by name. The input layer calls this; so can the dev server, which is
@@ -307,6 +341,8 @@ namespace ES2Access.UI
                     return Alternate();
                 case UiActions.Contextual:
                     return Contextual();
+                case UiActions.DoubleClick:
+                    return DoubleClick();
                 case UiActions.Carry:
                     return CarryKey();
                 case UiActions.SelectToggle:
@@ -610,9 +646,19 @@ namespace ES2Access.UI
             return KeyGraph.InTree(focused);
         }
 
+        /// <summary>
+        /// Tab and Shift+Tab, which WRAP: the last stop's Tab lands on the first and the first stop's
+        /// Shift+Tab on the last (owner decision 2026-08-12). A player who cannot see the panels has no
+        /// way to know a page has run out of them, so stopping dead at an end reads as a broken key -
+        /// and coming round is how every other stop-cycling reader behaves.
+        ///
+        /// A page with exactly ONE stop is where wrapping would be a lie: coming round to the panel the
+        /// player is already on is not a move, so the key is consumed and says nothing rather than
+        /// re-reading the same control (<see cref="KeyGraph.MoveStop"/> answers not-moved there).
+        /// </summary>
         private bool Stop(int step)
         {
-            MoveResult move = _graph.MoveStop(step, false);
+            MoveResult move = _graph.MoveStop(step, true);
             if (move.Moved)
             {
                 AnnounceMove(move);
@@ -631,13 +677,42 @@ namespace ES2Access.UI
 
             MoveResult move = KeyGraph.InTree(node)
                 ? _graph.MoveToSiblingEdge(first)
-                : _graph.MoveToEdge(first ? GraphDir.Up : GraphDir.Down);
+                : _graph.MoveToEdge(EdgeDir(node, first));
             if (move.Moved)
             {
                 AnnounceMove(move);
             }
 
             return true;
+        }
+
+        /// <summary>
+        /// Which way "the start" and "the end" lie: along whichever axis this stop's nodes are actually
+        /// wired.
+        ///
+        /// Down the column where there is one, which is what a list and a table both want - Home in a
+        /// table goes to the top of the column the player is comparing. A stop laid out as a single ROW
+        /// has no vertical edges at all, and asking for one there simply did nothing: Home and End were
+        /// silent on every band of buttons in the mod (measured on the ship designer's Close / Auto Design
+        /// / Create row). So a node with nothing above or below it is asked sideways instead.
+        /// </summary>
+        private static GraphDir EdgeDir(GraphNode node, bool first)
+        {
+            bool vertical = Wired(node, GraphDir.Up) || Wired(node, GraphDir.Down);
+            if (vertical)
+            {
+                return first ? GraphDir.Up : GraphDir.Down;
+            }
+
+            return first ? GraphDir.Left : GraphDir.Right;
+        }
+
+        private static bool Wired(GraphNode node, GraphDir dir)
+        {
+            Transition transition;
+            return node.Transitions != null
+                && node.Transitions.TryGetValue(dir, out transition)
+                && transition != null;
         }
 
         private bool InRegion()
@@ -744,6 +819,21 @@ namespace ES2Access.UI
         private bool Contextual()
         {
             if (_graph.Contextual())
+            {
+                SpeakStateAfterChange();
+            }
+
+            return true;
+        }
+
+        // The game's own second click, which several of this game's controls answer with a command of
+        // their own. Claimed either way and SILENT where the control has no such command, for the
+        // same reason the right click is: the gesture keys are pressed speculatively along a row. It
+        // never falls back to the single click - the whole point of the control having a double click
+        // is that the two do different things.
+        private bool DoubleClick()
+        {
+            if (_graph.DoubleClick())
             {
                 SpeakStateAfterChange();
             }
@@ -945,6 +1035,11 @@ namespace ES2Access.UI
         /// Watches the focused control's live parts and speaks the ones that change - a button that
         /// becomes unavailable, a value the game flips on its own. Nothing is spoken on the frame the
         /// baseline is taken: the focus readout has just said all of it.
+        ///
+        /// Nor while the screen says it cannot be worked (<see cref="Screen.IsWorkable"/>): a page being
+        /// switched off wholesale turns every control on it unavailable at once, and the control the
+        /// player just pressed saying "unavailable" is a fact about the page, not about the control. The
+        /// baseline is still taken, so nothing is announced late once the page comes back.
         /// </summary>
         private void WatchLive(GraphNode node)
         {
@@ -953,6 +1048,8 @@ namespace ES2Access.UI
             {
                 return;
             }
+
+            bool mute = !Workable();
 
             bool baseline =
                 _liveKey == null
@@ -997,8 +1094,24 @@ namespace ES2Access.UI
                 if (!string.Equals(_liveValues[i], text))
                 {
                     _liveValues[i] = text;
-                    Voice.Say(text, false);
+                    if (!mute)
+                    {
+                        Voice.Say(text, false);
+                    }
                 }
+            }
+        }
+
+        private bool Workable()
+        {
+            try
+            {
+                return _screen == null || _screen.IsWorkable;
+            }
+            catch (Exception e)
+            {
+                Log.Warn("nav: IsWorkable threw: " + e);
+                return true;
             }
         }
 
