@@ -76,7 +76,12 @@ namespace ES2Access.Screens
         /// <summary>
         /// What a page declares beyond its own content, added after <see cref="Build"/>.
         ///
-        /// Just one thing: the bar a COLLAPSED tutorial leaves on screen. Collapsing the popup hands the
+        /// Two things, and both for the same reason: the game draws them OVER whatever the player is
+        /// looking at, so they belong to whatever page that is rather than to the page they were first met
+        /// on. The second is the chat panel's recipient tabs (<see cref="ChatCluster"/>), which exist only
+        /// in a multiplayer session.
+        ///
+        /// The first is the bar a COLLAPSED tutorial leaves on screen. Collapsing the popup hands the
         /// keyboard back to the page underneath, so the bar belongs to whatever page that is - and it is
         /// declared exactly where the game is DRAWING it, which is the gate
         /// <see cref="TutorialScreen.BuildCollapsedBar"/> asks: a tutorial page declares for itself what
@@ -94,13 +99,21 @@ namespace ES2Access.Screens
         /// </summary>
         public void BuildShared(GraphBuilder builder)
         {
-            if (AnswersOnly || builder.DeclaredStop(GlobalHud.TutorialStop))
+            if (AnswersOnly)
             {
                 return;
             }
 
-            builder.BeginStop(GlobalHud.TutorialStop);
-            TutorialScreen.BuildCollapsedBar(builder);
+            if (!builder.DeclaredStop(GlobalHud.TutorialStop))
+            {
+                builder.BeginStop(GlobalHud.TutorialStop);
+                TutorialScreen.BuildCollapsedBar(builder);
+            }
+
+            if (!builder.DeclaredStop(ChatCluster.Stop))
+            {
+                ChatCluster.Build(builder);
+            }
         }
 
         /// <summary>Spoken when the player arrives on the screen, before the focused control reads.

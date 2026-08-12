@@ -38,8 +38,12 @@ namespace ES2Access.UI
 
         /// <summary>The heading this window has written across its top, or null where it drew none.
         /// Found where it is DRAWN rather than in a field, because a window class overwhelmingly
-        /// exposes its contents and not its own title.</summary>
-        public static string Title(GuiWindow window)
+        /// exposes its contents and not its own title.
+        ///
+        /// <paramref name="alsoNamed"/> is for a FAMILY of windows whose prefabs agree on a name of their
+        /// own - the out-game pages write their heading in a "WindowTitleLabel" - tried after the shared
+        /// names so that adding one can never rename a window that already answers.</summary>
+        public static string Title(GuiWindow window, string[] alsoNamed = null)
         {
             try
             {
@@ -53,6 +57,17 @@ namespace ES2Access.UI
                 {
                     string text = AgeWidgets.TextOf(
                         AgeWidgets.ChildNamed(root, TitleNames[i], TitleDepth)
+                    );
+                    if (!string.IsNullOrEmpty(text))
+                    {
+                        return text;
+                    }
+                }
+
+                for (int i = 0; alsoNamed != null && i < alsoNamed.Length; i++)
+                {
+                    string text = AgeWidgets.TextOf(
+                        AgeWidgets.ChildNamed(root, alsoNamed[i], TitleDepth)
                     );
                     if (!string.IsNullOrEmpty(text))
                     {

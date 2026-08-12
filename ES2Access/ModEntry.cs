@@ -193,6 +193,7 @@ namespace ES2Access
             Screens.Register(new global::ES2Access.Screens.VictoryScreen());
             Screens.Register(new JournalScreen());
             Screens.Register(new AdvancedEncounterPlayScreen());
+            Screens.Register(new DisclaimerScreen());
             Screens.Register(new DLCScreen());
             Screens.Register(new CreditsScreen());
             Screens.Register(new ModdingConfigScreen());

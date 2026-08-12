@@ -92,6 +92,12 @@ namespace ES2Access.Core.Speech
         // keyboard back.
         public const string ChatTyping = "chat.typing";
 
+        // The chat panel's own controls. The tab bar is the game's, and what the game draws on it is a
+        // name per tab and a bare dot for a tab holding something unseen - so the dot needs words and the
+        // cluster needs a name to be entered under.
+        public const string ChatPanel = "chat.panel";
+        public const string ChatUnread = "chat.unread";
+
         // Screen names, spoken on arrival.
         public const string ScreenMainMenu = "screen.main-menu";
         public const string ScreenMessageBox = "screen.message-box";
@@ -605,6 +611,24 @@ namespace ES2Access.Core.Speech
         public const string ScreenModding = "screen.modding";
         public const string ScreenResourcesExport = "screen.resources-export";
         public const string ScreenJoinGame = "screen.join-game";
+        public const string ScreenDisclaimer = "screen.disclaimer";
+
+        /// <summary>The credit roll: a name for the one thing on the page, and how much of it there is.
+        /// The page itself writes neither - it is six hundred lines of prose and nothing else.</summary>
+        public const string CreditsRoll = "credits.roll";
+        public const string CreditsLine = "credits.line";
+        public const string CreditsLines = "credits.lines";
+
+        /// <summary>What the content browser expresses as the SHAPE of a row - a tick to activate what you
+        /// own, a store button for what you do not - and what the tick itself is called, since the game
+        /// draws it as a bare box.</summary>
+        public const string DlcOwned = "dlc.owned";
+        public const string DlcNotOwned = "dlc.not-owned";
+        public const string DlcActivated = "dlc.activated";
+
+        /// <summary>The mod manager's activation box, which the game draws as a bare tick beside the mod's
+        /// name.</summary>
+        public const string ModdingActivated = "modding.activated";
 
         /// <summary>What the list of multiplayer games says when the Steam search comes back. The search
         /// is asynchronous - the page opens empty and fills seconds later - so its arrival is the only
@@ -816,6 +840,8 @@ namespace ES2Access.Core.Speech
             { ChatWhispered, "{0} whispers: {1}" },
             { ChatToAlliance, "{0}, to the alliance: {1}" },
             { ChatTyping, "Chat. Type a message, Enter sends it, Escape leaves." },
+            { ChatPanel, "Chat" },
+            { ChatUnread, "unread messages" },
             { ScreenMainMenu, "Main menu" },
             { ScreenMessageBox, "Dialog" },
             { ScreenOptions, "Options" },
@@ -1078,6 +1104,14 @@ namespace ES2Access.Core.Speech
             { ScreenModding, "Mods" },
             { ScreenResourcesExport, "Export resources" },
             { ScreenJoinGame, "Join game" },
+            { ScreenDisclaimer, "Disclaimer" },
+            { CreditsRoll, "Credit roll" },
+            { CreditsLine, "{0} line" },
+            { CreditsLines, "{0} lines" },
+            { DlcOwned, "owned" },
+            { DlcNotOwned, "not owned" },
+            { DlcActivated, "Activated" },
+            { ModdingActivated, "Activated" },
             { JoinGameNoGames, "No multiplayer games found" },
             { JoinGameGameFound, "{0} multiplayer game found" },
             { JoinGameGamesFound, "{0} multiplayer games found" },

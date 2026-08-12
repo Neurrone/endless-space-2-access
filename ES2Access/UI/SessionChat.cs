@@ -320,8 +320,12 @@ namespace ES2Access.UI
         }
 
         /// <summary>Whether there is a session other players can be in. The chat panel asks the same
-        /// question the same way (<c>ChatPanel.SessionService_SessionChange</c> :248-262).</summary>
-        private static bool InMultiplayer()
+        /// question the same way (<c>ChatPanel.SessionService_SessionChange</c> :248-262).
+        ///
+        /// Shared with <see cref="Screens.ChatCluster"/>, which gates the panel's own controls on it: one
+        /// answer, so the review buffer and the recipient tabs can never disagree about whether this
+        /// session has chat at all.</summary>
+        internal static bool InMultiplayer()
         {
             try
             {
