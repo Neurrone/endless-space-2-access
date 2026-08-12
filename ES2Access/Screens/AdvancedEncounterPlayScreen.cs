@@ -33,6 +33,9 @@ namespace ES2Access.Screens
     /// (<c>PlayerEncounterGroup.SetSetupPlay</c>). Reproducing that would let a player's Enter silently
     /// replace their battle plan with the enemy's while reading what the enemy tends to do. The cards are
     /// what they look like - a record of the opponent's habits - so they read as such.
+    /// OWNER-RATIFIED (2026-08-12): a click that is a game bug is not given a key. Do not restore
+    /// parity here; if the game ever fixes the handler to ignore enemy-card clicks, these can become
+    /// plain refused controls instead.
     ///
     /// The sorting buttons and the stats switches are declared with the words the game explains them with,
     /// because it draws them as icons and gives them no titles at all (its localization has a description
