@@ -902,10 +902,13 @@ namespace ES2Access.Screens
                 }
 
                 HeroSkillTreeStageItem it = stage;
+                int ring = i;
+                int rings = stages.Count;
                 NodeVtable vtable = GraphNodes.Group(
-                    () => StageName(it),
+                    () => StageName(ring, rings),
                     () => AgeWidgets.Operable(it.AgeTransform)
                 );
+                vtable.Announcements.Add(GraphNodes.ValuePart(() => StageRequirement(it), false));
                 builder.BeginGroup(
                     ControlId.Referenced(
                         stage.SkillTreeStage,
@@ -918,28 +921,52 @@ namespace ES2Access.Screens
             }
         }
 
-        /// <summary>What the game calls a ring: the words it writes beside the rings down the right-hand
-        /// column, composed the way the page composes them
-        /// (<c>SkillTreeEditionPanel.RefreshLevelLabels</c> :363-382 writes
-        /// <c>Gui.Localize("%SkillTreeStageLevelTitle") + RequiredLevel</c>). Composed rather than read
-        /// off those labels because the page draws one set of them for all three branches and one fewer
-        /// than there are rings. Composed BEFORE the text is cleaned, because the game's own string ends
-        /// in the space that separates it from the number.</summary>
-        private static string StageName(HeroSkillTreeStageItem stage)
+        /// <summary>
+        /// Which ring this is, counted out from the middle.
+        ///
+        /// The game has no name for a ring. The only words it writes anywhere near one are the three
+        /// legends down the right-hand column, each a threshold with a leader line pointing at the ring
+        /// it unlocks ("Used Skill Points 4":
+        /// <c>SkillTreeEditionPanel.RefreshLevelLabels</c> :363-382 writes
+        /// <c>Gui.Localize("%SkillTreeStageLevelTitle") + RequiredLevel</c>). Naming the ring from that
+        /// was reading the leader line as a caption: every ring of every branch announced itself as
+        /// "Used skill points 0" and nothing said what the figure was about. So the ring is named for
+        /// where it is - which is the one thing a sighted player can see about it without following a
+        /// line - and the threshold is said as the sentence it means, in
+        /// <see cref="StageRequirement"/>.
+        /// </summary>
+        private static string StageName(int ring, int rings)
+        {
+            return ModStrings.Format(ModStrings.HeroSkillRing, ring + 1, rings);
+        }
+
+        /// <summary>
+        /// How many points have to have been spent anywhere in the wheel before this ring opens - the
+        /// figure the page draws in its right-hand legend, said as what it means.
+        ///
+        /// Taken from the ring's own definition rather than from the legend labels, because the page
+        /// draws one set of them for all three branches and one fewer than there are rings: the outermost
+        /// ring's threshold is drawn nowhere at all. The innermost ring asks for nothing, and says so by
+        /// saying nothing.
+        /// </summary>
+        private static string StageRequirement(HeroSkillTreeStageItem stage)
         {
             try
             {
-                return AgeText.Clean(
-                    Gui.Localize(StageLevelTitle) + stage.SkillTreeStage.RequiredLevel
-                );
+                int required = stage.SkillTreeStage.RequiredLevel;
+                return required <= 0
+                    ? null
+                    : ModStrings.Plural(
+                        ModStrings.HeroSkillRingPoint,
+                        ModStrings.HeroSkillRingPoints,
+                        required
+                    );
             }
             catch (Exception)
             {
                 return null;
             }
         }
-
-        private const string StageLevelTitle = "%SkillTreeStageLevelTitle";
 
         /// <summary>The dots along one ring's arc, in the order the ring's definition lists them.
         /// </summary>
@@ -1177,6 +1204,11 @@ namespace ES2Access.Screens
                 {
                     AgeTransform box = boxes[i];
                     if (!Painted(box))
+                    {
+                        continue;
+                    }
+
+                    if (HoldsLegends(box, panel))
                     {
                         continue;
                     }
@@ -1610,6 +1642,29 @@ namespace ES2Access.Screens
             {
                 return null;
             }
+        }
+
+        /// <summary>
+        /// Whether a box of the right-hand column is the one holding the ring legends - the three
+        /// thresholds the page draws with a leader line each into the wheel.
+        ///
+        /// It is skipped, alone among the boxes. As lines of their own they are three bare figures in
+        /// the order the page stacked them, with nothing saying which ring each line points at and no
+        /// line at all for the outermost ring; the figures are said where they belong instead, on the
+        /// rings (<see cref="StageRequirement"/>).
+        /// </summary>
+        private static bool HoldsLegends(AgeTransform box, SkillTreeEditionPanel panel)
+        {
+            AgePrimitiveLabel[] legends = panel.StageLevelLabels;
+            for (int i = 0; legends != null && i < legends.Length; i++)
+            {
+                if (Holds(box, Widget(legends[i])))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         /// <summary>Whether a box of a column is the one holding a table.</summary>

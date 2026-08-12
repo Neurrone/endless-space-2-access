@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using ES2Access.Core.Speech;
 using ES2Access.Core.UI.Graph;
 using ES2Access.UI;
@@ -316,17 +317,23 @@ namespace ES2Access.Screens
                 return;
             }
 
-            // In the order the box draws them along its bottom edge, which is Cancel at the left and
-            // Confirm at the right (measured: x 340 and x 856 of a 600-wide box). Cancel is the button
+            // The two buttons along the bottom edge, emitted through the layout so that the row the box
+            // draws them in is the row the player walks: Cancel at the left and Confirm at the right
+            // (measured: x 340 and x 856, both at y 424, of a 600-wide box), one row, Left and Right
+            // between them. Adding them straight to the builder made each its own row, which is how a
+            // pair of buttons drawn side by side came to need Down between them. Cancel is the button
             // the window keeps no field for, so it is found by the name the prefab gives it.
+            _buttons.Clear();
             AddButton(
-                builder,
                 AgeWidgets.Button(AgeWidgets.ChildNamed(window.AgeTransform, "CancelButton", 3)),
-                null,
                 "rename:cancel"
             );
-            AddButton(builder, window.ValidateButton, ModStrings.RenameConfirm, "rename:confirm");
+            AddButton(window.ValidateButton, "rename:confirm");
+            Cells.Emit(builder, _buttons);
         }
+
+        // Reused across builds rather than allocated per frame: Build runs every tick.
+        private readonly List<Cell> _buttons = new List<Cell>();
 
         /// <summary>
         /// One of the two buttons along the bottom of the box, pressed the way a click presses it - which
@@ -334,16 +341,11 @@ namespace ES2Access.Screens
         /// (<c>GuiModalWindow.OnCancelCb</c> :102-105), so leaving by it throws the typed name away
         /// exactly as the game would.
         ///
-        /// Named by the game's own caption unless <paramref name="nameKey"/> gives the mod's own word for
-        /// it: both captions are localization keys the game resolves (<c>%MessageBoxCancelTitle</c>,
-        /// <c>%MessageBoxValidateTitle</c>), so neither button is named in English by this mod.
+        /// Named by the game's own caption, for both of them: the prefab writes each as a localization
+        /// key the game resolves (<c>%MessageBoxCancelTitle</c>, <c>%MessageBoxValidateTitle</c>), so
+        /// neither button is named in English by this mod and both are named in the same voice.
         /// </summary>
-        private static void AddButton(
-            GraphBuilder builder,
-            AgeControlButton button,
-            string nameKey,
-            string key
-        )
+        private void AddButton(AgeControlButton button, string key)
         {
             AgeTransform widget = AgeWidgets.Transform(button);
             if (button == null || !AgeWidgets.Visible(widget))
@@ -353,16 +355,14 @@ namespace ES2Access.Screens
 
             AgeControlButton press = button;
             AgeTransform at = widget;
-            string named = nameKey;
             NodeVtable vtable = GraphNodes.Button(
-                () =>
-                    string.IsNullOrEmpty(named) ? AgeWidgets.TextOf(at) : ModStrings.Get(named),
+                () => AgeWidgets.TextOf(at),
                 () => AgeWidgets.Press(press),
                 () => press.Enable,
                 AgeWidgets.Raw(widget)
             );
             AgeWidgets.Point(vtable, press);
-            builder.AddItem(ControlId.Referenced(button, key), vtable);
+            Cells.Add(_buttons, widget, ControlId.Referenced(button, key), vtable);
         }
 
         private static RenameModalWindow Window()

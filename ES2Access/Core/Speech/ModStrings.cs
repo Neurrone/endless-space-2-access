@@ -433,7 +433,6 @@ namespace ES2Access.Core.Speech
         /// </summary>
         public const string ScreenRename = "screen.rename";
         public const string RenameTypePrompt = "rename.type-prompt";
-        public const string RenameConfirm = "rename.confirm";
 
         // The research screen - the wheel of technologies the game draws over the galaxy. The three
         // panel names are the mod's, because the game labels none of them; the quadrants, the stages
@@ -650,6 +649,14 @@ namespace ES2Access.Core.Speech
         public const string HeroSkillTrees = "hero.skill-trees";
         public const string HeroSkillLevel = "hero.skill-level";
         public const string HeroSkillPending = "hero.skill-pending";
+
+        /// <summary>A ring of the wheel, which the game names nowhere: it draws the rings as concentric
+        /// arcs and writes only the threshold each one opens at, as a legend with a leader line pointing
+        /// into the wheel. So the mod says which ring it is, and says the threshold as the sentence the
+        /// leader line makes for anyone who can follow it.</summary>
+        public const string HeroSkillRing = "hero.skill-ring";
+        public const string HeroSkillRingPoint = "hero.skill-ring-point";
+        public const string HeroSkillRingPoints = "hero.skill-ring-points";
 
         public const string ScreenGovernment = "screen.government";
         public const string ScreenLaws = "screen.laws";
@@ -973,7 +980,6 @@ namespace ES2Access.Core.Speech
                 RenameTypePrompt,
                 "Type the new name, then press Enter to confirm or Escape to stop editing."
             },
-            { RenameConfirm, "Confirm" },
             { ScreenResearch, "Research" },
             { ResearchStatusPanel, "Research status" },
             { ResearchKeyPanel, "Research key" },
@@ -1024,6 +1030,9 @@ namespace ES2Access.Core.Speech
             { HeroSkillTrees, "Skill branches" },
             { HeroSkillLevel, "level {0} of {1}" },
             { HeroSkillPending, "level {0} pending" },
+            { HeroSkillRing, "Ring {0} of {1}" },
+            { HeroSkillRingPoint, "opens once 1 skill point has been spent" },
+            { HeroSkillRingPoints, "opens once {0} skill points have been spent" },
             { ScreenFleetSelection, "Fleet selection" },
             { TacticsSlotFilled, "Put {0} in your Tactics Set" },
             { TacticsSlotEmptied, "{0} removed" },

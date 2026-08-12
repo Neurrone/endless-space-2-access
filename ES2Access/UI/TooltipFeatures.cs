@@ -160,26 +160,32 @@ namespace ES2Access.UI
             Gather(root, named, entries, 0, ref items);
             foreach (List<Entry> row in AgeLayout.Rows(entries, EntryWidget))
             {
-                // A picture beside a value that has just been given its name in words says the same
-                // thing twice: the manpower symbol is only there because the panel wrote no word for
-                // "30/30", and once the reader has written one it is decoration.
-                bool spoken = false;
-                for (int i = 0; i < row.Count; i++)
-                {
-                    spoken |= row[i].Named;
-                }
-
-                List<TooltipPart> parts = new List<TooltipPart>();
-                for (int i = 0; i < row.Count; i++)
-                {
-                    if (!spoken || !row[i].Icon)
-                    {
-                        parts.Add(new TooltipPart(row[i].Text, row[i].Icon, row[i].Alone));
-                    }
-                }
-
-                TooltipText.AddRow(lines, parts);
+                ReadRow(row, lines);
             }
+        }
+
+        /// <summary>One drawn row of a feature said as the line it is.</summary>
+        private static void ReadRow(List<Entry> row, IList<string> lines)
+        {
+            // A picture beside a value that has just been given its name in words says the same
+            // thing twice: the manpower symbol is only there because the panel wrote no word for
+            // "30/30", and once the reader has written one it is decoration.
+            bool spoken = false;
+            for (int i = 0; i < row.Count; i++)
+            {
+                spoken |= row[i].Named;
+            }
+
+            List<TooltipPart> parts = new List<TooltipPart>();
+            for (int i = 0; i < row.Count; i++)
+            {
+                if (!spoken || !row[i].Icon)
+                {
+                    parts.Add(new TooltipPart(row[i].Text, row[i].Icon, row[i].Alone));
+                }
+            }
+
+            TooltipText.AddRow(lines, parts);
         }
 
         /// <summary>One thing a feature drew that a reader has to account for, still carrying its
@@ -276,7 +282,7 @@ namespace ES2Access.UI
             if (Repeated(shown))
             {
                 items = true;
-                AddItems(widget, shown, named, entries);
+                AddItems(widget, shown, named, entries, depth);
                 return;
             }
 
@@ -355,30 +361,43 @@ namespace ES2Access.UI
         }
 
         /// <summary>
-        /// A run of identical items, each read as the one phrase it is drawn as.
+        /// A run of identical items, each read as the one phrase it is drawn as - unless it is drawn
+        /// as several lines, in which case it is read as those.
         ///
         /// A strip laid out ACROSS the panel is one fact with several parts - three range bands, a
         /// row of costs - and reads as one line with the items separated. Items STACKED down the
         /// panel are several facts and read one to a line, which the banding does for free once each
         /// item is a single entry. Which it is comes from where the game put them, so nothing has to
         /// be declared per feature.
+        ///
+        /// The item that breaks that is the one the repeated prefab is a whole SECTION: a module's
+        /// effects are one group prefab per section (<c>PanelFeatureModuleEffects.RefreshTooltip</c>
+        /// reserves its children from one <c>GroupPrefab</c>), and a section is a heading over half a
+        /// dozen caption-and-value rows. Running an item like that together made "Damages Damage per
+        /// Second 22 Critical Hit Chance 5% Weapon Type Projectile …" one line for a player who can see
+        /// seven. So an item that is itself drawn over several rows is left to the ordinary banding,
+        /// which reads the rows it drew; the phrase is kept for the item that really is one line.
         /// </summary>
         private static void AddItems(
             AgeTransform table,
             List<AgeTransform> items,
             Dictionary<AgeTransform, Naming> named,
-            List<Entry> entries
+            List<Entry> entries,
+            int depth
         )
         {
             List<string> phrases = new List<string>();
             List<AgeTransform> said = new List<AgeTransform>();
+            List<int> drawn = new List<int>();
             for (int i = 0; i < items.Count; i++)
             {
-                string phrase = Phrase(items[i], named);
+                int rows;
+                string phrase = Phrase(items[i], named, out rows);
                 if (!string.IsNullOrEmpty(phrase))
                 {
                     phrases.Add(phrase);
                     said.Add(items[i]);
+                    drawn.Add(rows);
                 }
             }
 
@@ -397,6 +416,13 @@ namespace ES2Access.UI
 
             for (int i = 0; i < phrases.Count; i++)
             {
+                if (drawn[i] > 1)
+                {
+                    bool nested = false;
+                    Gather(said[i], named, entries, depth + 1, ref nested);
+                    continue;
+                }
+
                 entries.Add(new Entry { Widget = said[i], Text = phrases[i], Icon = false });
             }
         }
@@ -413,12 +439,28 @@ namespace ES2Access.UI
         /// A typed reader's names reach in here too, because what an item is drawn with is routinely
         /// the only bare number in it: the four ship-size counts and the four hero masteries are each
         /// an icon and a figure, and the word for the icon is in the game's data, not in the panel.
+        ///
+        /// <paramref name="rows"/> is how many lines the item was DRAWN over, which is what decides
+        /// whether running it together is a fair reading of it at all - see <see cref="AddItems"/>.
         /// </summary>
-        private static string Phrase(AgeTransform item, Dictionary<AgeTransform, Naming> named)
+        private static string Phrase(
+            AgeTransform item,
+            Dictionary<AgeTransform, Naming> named,
+            out int rows
+        )
         {
+            List<Entry> entries = new List<Entry>();
+            bool nested = false;
+            Gather(item, named, entries, 0, ref nested);
+            List<List<Entry>> banded = AgeLayout.Rows(entries, EntryWidget);
+            rows = banded.Count;
+
             List<string> lines = new List<string>();
-            bool nested;
-            ReadScoped(item, named, lines, out nested);
+            for (int i = 0; i < banded.Count; i++)
+            {
+                ReadRow(banded[i], lines);
+            }
+
             return TooltipText.Phrase(lines);
         }
 
