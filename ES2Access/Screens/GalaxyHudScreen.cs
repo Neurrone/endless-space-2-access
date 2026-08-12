@@ -72,9 +72,14 @@ namespace ES2Access.Screens
     /// reading out: from far off a planet is a circle with a name and a state, and from as close as the
     /// game goes it is a card with its outputs, its anomalies and everything a fleet could do to it. So
     /// the distance follows the branch rather than being a separate thing to remember - going in and
-    /// looking closer are the same gesture. ENTER still asks for the same distance on its own, because
-    /// it is the game's own left click on a system, and closing the branch leaves the camera where it
-    /// is: coming back out is the map's own right click, which is BACKSLASH here.
+    /// looking closer are the same gesture, and closing the branch takes the camera back out again while
+    /// the camera is still there to take out. ENTER still asks for the same distance on its own, because
+    /// it is the game's own left click on a system, and BACKSLASH is still the map's own right click.
+    ///
+    /// The far end of a starlane opens the same way. A lane that leads somewhere the map has drawn the
+    /// name of offers that system as a child, and opening it goes there and reads what is in it - so "what
+    /// is down this line" is answered where the player is standing rather than by walking back to a list of
+    /// a hundred systems.
     ///
     /// Backslash is what the map puts on a right click. On a system with fleets selected it sends them
     /// there; with nothing selected it undoes a zoom the player asked for, exactly as right-clicking
@@ -98,6 +103,12 @@ namespace ES2Access.Screens
         /// notifications, a collapsed tutorial, the turn controls. This page is one of three that
         /// declare them.</summary>
         private readonly GlobalHud _hud = new GlobalHud();
+
+        /// <summary>How close the camera is looking, offered beside the name of the view because that is
+        /// where the game writes what the player is looking AT. The same control the scan view carries
+        /// (<see cref="ZoomLadder"/>) - here the top of its ladder crosses out of this page, into the
+        /// system's own and then a planet's, which is exactly what the map's own wheel does.</summary>
+        private readonly ZoomLadder _zoom = new ZoomLadder();
 
         /// <summary>The strip the game slides over the bottom of the map while a fleet is selected.
         /// It is drawn OVER this page rather than instead of it, so it contributes stops here rather
@@ -235,6 +246,7 @@ namespace ES2Access.Screens
 
         public override void OnPop()
         {
+            _zoom.Forget();
             _hud.Forget();
             _fleetPanel.Forget();
         }
@@ -243,6 +255,7 @@ namespace ES2Access.Screens
         {
             _hud.Update();
             _fleetPanel.Update();
+            _zoom.Update();
             FollowCamera();
         }
 
@@ -295,7 +308,14 @@ namespace ES2Access.Screens
         public override void Build(GraphBuilder builder)
         {
             ApplyPendingExpansions(builder);
-            _hud.Top(builder);
+            _hud.Empire(builder);
+            // Under the name of the view rather than beside it: the two the game draws there are a row,
+            // and left and right on the zoom are the zoom's own keys - a slider in that row would take
+            // the only keys that walk it.
+            if (_hud.ViewTitle(builder))
+            {
+                _zoom.Build(builder, "hud:view-title/zoom");
+            }
 
             builder.BeginStop(SystemStop);
             BuildSystems(builder);
@@ -740,20 +760,84 @@ namespace ES2Access.Screens
                 // camera moving is what opening it means.
                 GalaxyViewLevels.ZoomTo(it);
             };
+            vtable.OnCollapse = () => Collapse(expansion, group, it);
             builder.BeginGroup(id, vtable);
             // Only what is open costs anything: a galaxy of closed systems declares one node each.
             if (builder.IsExpanded(id))
             {
-                AddManagementView(builder, node, label);
-                AddLabelButtons(builder, node, label);
-                AddPlanets(builder, node, empire, label);
-                AddWrecks(builder, node);
-                AddStarlanes(builder, node, empire);
-                AddFleets(builder, "galaxy:system/" + node.GUID, FleetPresence.FleetsAt(node));
-                AddHangars(builder, "galaxy:system/" + node.GUID, node);
+                AddInside(builder, "galaxy:system/" + node.GUID, node, empire, label, true, labels);
             }
 
             builder.EndGroup();
+        }
+
+        /// <summary>
+        /// Closing a system's branch takes the camera back out, because opening it brought the camera in -
+        /// one gesture, undone by its opposite, which is what makes going in and looking closer the same
+        /// key in the first place.
+        ///
+        /// Only while the camera is still looking at THIS system. Focus moves the camera about the map
+        /// freely, so by the time a branch is closed the player may be reading somewhere else entirely,
+        /// and flying the camera home from over there would move a view nobody asked about - so a collapse
+        /// anywhere but here moves nothing at all.
+        ///
+        /// Silent, like the expansion: the engine says the group closed, and the camera going back out is
+        /// what closing it MEANS rather than a second thing that happened. The bookkeeping is by hand
+        /// because OnCollapse is an override - declaring it stops the engine flipping the state itself.
+        /// </summary>
+        private static void Collapse(
+            HashSet<ControlId> expansion,
+            ControlId group,
+            StarSystemNode node
+        )
+        {
+            if (expansion != null)
+            {
+                expansion.Remove(group);
+            }
+
+            if (ReferenceEquals(GalaxyViewLevels.FocusedSystem, node))
+            {
+                ZoomOut(node);
+            }
+        }
+
+        /// <summary>
+        /// What the map draws inside a system, as the children of whichever node is standing for that
+        /// system.
+        ///
+        /// TWO nodes stand for a system: its own, at the root of the stop, and the far end of a lane
+        /// leading to it (<see cref="AddDestination"/>). Both open onto the same things through these same
+        /// builders, so what a system holds cannot come to depend on which way the player reached it.
+        ///
+        /// Two things differ at a lane's end, and <paramref name="root"/> is which of the two nodes this
+        /// is. Its planets are keyed under the LANE rather than carrying the planet they were read from:
+        /// the root's planet nodes carry the planet itself, and a second node carrying the same object
+        /// would BE that node as far as the cursor is concerned - reference identity is followed before the
+        /// structural key - so the copies are keyed structurally instead. And a lane's end offers no lanes
+        /// of its own: one of them leads straight back here, and the tree would have no bottom.
+        /// </summary>
+        private static void AddInside(
+            GraphBuilder builder,
+            string key,
+            StarSystemNode node,
+            Empire empire,
+            StarSystemLabel label,
+            bool root,
+            StarSystemLabel[] labels
+        )
+        {
+            AddManagementView(builder, key, label);
+            AddLabelButtons(builder, key, label);
+            AddPlanets(builder, key, node, empire, label, root);
+            AddWrecks(builder, key, node);
+            if (root)
+            {
+                AddStarlanes(builder, key, node, empire, labels);
+            }
+
+            AddFleets(builder, key, FleetPresence.FleetsAt(node));
+            AddHangars(builder, key, node);
         }
 
         /// <summary>What a system of the player's IS - taken from the state the game paints its label
@@ -872,20 +956,38 @@ namespace ES2Access.Screens
                 return;
             }
 
-            // NOT the game's RestoreZoom, for the reason ZoomToStep's own doc comment records: the
-            // game restores the camera to wherever it stood BEFORE the click-zoom, which for a
-            // keyboard player is somewhere they have since navigated away from - and its
-            // hasZoomBeenForced gate makes it a talking no-op for a camera that reached orbital
-            // zoom any other way (the mouse wheel, a restore by step number). The keyboard's way
-            // out is the default view at the FOCUSED system, always.
-            if (GalaxyViewLevels.ZoomStep > GalaxyViewLevels.DefaultZoomStep)
-            {
-                GalaxyViewLevels.ZoomToStep(node, GalaxyViewLevels.DefaultZoomStep);
-                Voice.Say(ModStrings.Get(ModStrings.GalaxyZoomedOut), true);
-            }
-
             // Nothing selected, nothing to unzoom: silent, like every other gesture key with
             // nothing to do here.
+            if (ZoomOut(node))
+            {
+                Voice.Say(ModStrings.Get(ModStrings.GalaxyZoomedOut), true);
+            }
+        }
+
+        /// <summary>
+        /// Put the camera back out at the default view, still looking at this system. Answers whether it
+        /// moved anything - a camera already out has no zoom to undo.
+        ///
+        /// Says nothing itself: the same move is a keypress of its own on a system (<see
+        /// cref="SystemCommand"/>, which reports it) and the far side of closing a branch (<see
+        /// cref="Collapse"/>, where the branch closing is the news and a second sentence about the camera
+        /// would be one too many).
+        ///
+        /// NOT the game's RestoreZoom, for the reason ZoomToStep's own doc comment records: the game
+        /// restores the camera to wherever it stood BEFORE the click-zoom, which for a keyboard player is
+        /// somewhere they have since navigated away from - and its hasZoomBeenForced gate makes it a
+        /// talking no-op for a camera that reached orbital zoom any other way (the mouse wheel, a restore
+        /// by step number). The keyboard's way out is the default view at the system in question, always.
+        /// </summary>
+        private static bool ZoomOut(StarSystemNode node)
+        {
+            if (GalaxyViewLevels.ZoomStep <= GalaxyViewLevels.DefaultZoomStep)
+            {
+                return false;
+            }
+
+            GalaxyViewLevels.ZoomToStep(node, GalaxyViewLevels.DefaultZoomStep);
+            return true;
         }
 
         /// <summary>The button the map draws on a colony's own label, beside its name - the one route
@@ -893,7 +995,7 @@ namespace ES2Access.Screens
         /// it and willing to act on it, which is its own answer to "is this a colony of mine".</summary>
         private static void AddManagementView(
             GraphBuilder builder,
-            StarSystemNode node,
+            string key,
             StarSystemLabel label
         )
         {
@@ -911,10 +1013,7 @@ namespace ES2Access.Screens
                 Raw(it)
             );
             PointAt(vtable, it);
-            builder.AddItem(
-                ControlId.Structural("galaxy:system/" + node.GUID + "/management"),
-                vtable
-            );
+            builder.AddItem(ControlId.Structural(key + "/management"), vtable);
         }
 
         /// <summary>The other buttons the map draws on a system's label - the diplomacy button under the
@@ -923,15 +1022,11 @@ namespace ES2Access.Screens
         /// list is whatever the game is drawing this frame; a system with none of them keeps whatever
         /// children it had. The treatment each one gets is <see cref="SystemLabelReadout.Actions"/>'s.
         /// </summary>
-        private static void AddLabelButtons(
-            GraphBuilder builder,
-            StarSystemNode node,
-            StarSystemLabel label
-        )
+        private static void AddLabelButtons(GraphBuilder builder, string key, StarSystemLabel label)
         {
             List<CardActions.CardAction> found = new List<CardActions.CardAction>(4);
             SystemLabelReadout.Actions(found, label);
-            CardActions.Emit(builder, "galaxy:system/" + node.GUID + "/label", found);
+            CardActions.Emit(builder, key + "/label", found);
         }
 
         /// <summary>
@@ -1100,9 +1195,11 @@ namespace ES2Access.Screens
         /// </summary>
         private static void AddPlanets(
             GraphBuilder builder,
+            string place,
             StarSystemNode node,
             Empire empire,
-            StarSystemLabel label
+            StarSystemLabel label,
+            bool referenced
         )
         {
             try
@@ -1120,8 +1217,12 @@ namespace ES2Access.Screens
                     Planet planet = node.Planets[i];
                     Empire looking = empire;
                     PlanetLabel_SystemOrbital card = CardFor(planet, cards);
-                    string key = "galaxy:system/" + node.GUID + "/planet/" + i;
-                    ControlId id = ControlId.Referenced(planet, key);
+                    string key = place + "/planet/" + i;
+                    // Carrying the planet only where this is the planet's ONE node (AddInside): a second
+                    // node on the same object is the same control to the cursor.
+                    ControlId id = referenced
+                        ? ControlId.Referenced(planet, key)
+                        : ControlId.Structural(key);
                     if (card != null)
                     {
                         // The card carries a row of buttons the game draws under it, so where the game
@@ -1628,7 +1729,7 @@ namespace ES2Access.Screens
         /// being repaired raises the game's own confirmation box for calling it off, which speaks
         /// through the message-box screen like every other one.
         /// </summary>
-        private static void AddWrecks(GraphBuilder builder, StarSystemNode node)
+        private static void AddWrecks(GraphBuilder builder, string key, StarSystemNode node)
         {
             try
             {
@@ -1650,7 +1751,7 @@ namespace ES2Access.Screens
                     }
                 }
 
-                CardActions.Emit(builder, "galaxy:system/" + node.GUID + "/wreck", found);
+                CardActions.Emit(builder, key + "/wreck", found);
             }
             catch (Exception e)
             {
@@ -1780,7 +1881,13 @@ namespace ES2Access.Screens
         /// see the lines needs the same "which one is that" the picture gives everyone else, and a
         /// number that moves between sessions would be worse than none.
         /// </summary>
-        private static void AddStarlanes(GraphBuilder builder, StarSystemNode node, Empire empire)
+        private static void AddStarlanes(
+            GraphBuilder builder,
+            string place,
+            StarSystemNode node,
+            Empire empire,
+            StarSystemLabel[] labels
+        )
         {
             try
             {
@@ -1866,7 +1973,7 @@ namespace ES2Access.Screens
                     vtable.OnActivate = Deselect;
                     vtable.OnContextual = () => LaneCommand(target);
 
-                    string key = "galaxy:system/" + node.GUID + "/lane/" + link.GUID;
+                    string key = place + "/lane/" + link.GUID;
                     // Keyed on the pair of GUIDs and NOT carrying the link as a reference: ONE lane runs
                     // between two systems, and once both ends are in the tree the same Link object backs
                     // two nodes - which are one control to the cursor, because reference identity is
@@ -1890,7 +1997,7 @@ namespace ES2Access.Screens
                         AddFleets(builder, key, flying);
                         if (named)
                         {
-                            AddDestination(builder, key, destination, empire);
+                            AddDestination(builder, key, destination, empire, labels);
                         }
                     }
 
@@ -1932,20 +2039,26 @@ namespace ES2Access.Screens
         /// node and one ordered on a link: the lane means "fly out onto this line", the system at its end
         /// means "go there".
         ///
-        /// A LEAF, deliberately: the system it names has lanes of its own, and one of them leads back
-        /// here. The tree would have no bottom.
+        /// And it OPENS, on the same key and with the same meaning as the system's own node: right brings
+        /// the camera in on that system and walks what the map is drawing there - its planets, its label's
+        /// buttons, what is parked in it (<see cref="AddInside"/>) - and closing it takes the camera back
+        /// out again (<see cref="Collapse"/>). Which is the whole point of a lane leading somewhere
+        /// explored: "what is down this line" is answered where the player is standing, without walking
+        /// back to a list of a hundred systems to find the one they were just told the name of. Only the
+        /// LANES are left off, or one of them would lead back here and the tree would have no bottom.
         ///
-        /// Keyed structurally and NEVER on the far node: that node is already a node of this screen at
-        /// the root of the systems stop, and two nodes sharing a backing object are one control to the
-        /// cursor - reference identity is followed before the structural key - so carrying the reference
-        /// here would teleport the player out of the lane the moment anything rebuilt (the same trap
-        /// <see cref="AddFleets"/> records).
+        /// Keyed structurally and NEVER on the far node, and neither is anything under it: that node is
+        /// already a node of this screen at the root of the systems stop, and two nodes sharing a backing
+        /// object are one control to the cursor - reference identity is followed before the structural key -
+        /// so carrying the reference here would teleport the player out of the lane the moment anything
+        /// rebuilt (the same trap <see cref="AddFleets"/> records).
         /// </summary>
         private static void AddDestination(
             GraphBuilder builder,
             string laneKey,
             GameNode destination,
-            Empire empire
+            Empire empire,
+            StarSystemLabel[] labels
         )
         {
             GameNode it = destination;
@@ -1967,7 +2080,47 @@ namespace ES2Access.Screens
                 OnActivate = () => ZoomIn(it),
                 OnContextual = () => SendTo(it),
             };
-            builder.AddItem(ControlId.Structural(laneKey + "/destination"), vtable);
+
+            string key = laneKey + "/destination";
+            ControlId id = ControlId.Structural(key);
+            StarSystemNode system = destination as StarSystemNode;
+            if (system == null)
+            {
+                // Whatever else the galaxy hangs a lane off is not a place with planets in it.
+                builder.AddItem(id, vtable);
+                return;
+            }
+
+            StarSystemNode inside = system;
+            HashSet<ControlId> expansion = builder.Expansion;
+            vtable.ControlType = ControlTypes.Group;
+            vtable.OnExpand = () =>
+            {
+                if (expansion != null)
+                {
+                    expansion.Add(id);
+                }
+
+                // The same silent zoom the system's own node opens with, and NOT ZoomIn: opening a branch
+                // is not a click and must never confirm a target.
+                GalaxyViewLevels.ZoomTo(inside);
+            };
+            vtable.OnCollapse = () => Collapse(expansion, id, inside);
+            builder.BeginGroup(id, vtable);
+            if (builder.IsExpanded(id))
+            {
+                AddInside(
+                    builder,
+                    key,
+                    inside,
+                    empire,
+                    LabelFor(inside, labels),
+                    false,
+                    labels
+                );
+            }
+
+            builder.EndGroup();
         }
 
         /// <summary>Send the selected fleets to a place on the map, and nothing else. The system's own

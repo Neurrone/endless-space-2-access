@@ -368,14 +368,18 @@ namespace ES2Access.Screens
         /// zoom step picks a layer descriptor and the descriptor picks the lens, so the same button
         /// reads "Diplomacy scan" from far out and "System scan" up close. The label is read live for
         /// exactly that reason, and the game hides the whole group on the pages that have no lens.
+        ///
+        /// Answers whether the cluster is on the screen and its stop therefore begun, so that a page with
+        /// something of its own to add HERE - the map's zoom (<see cref="ZoomLadder"/>) - can add it
+        /// without guessing at the same visibility question twice.
         /// </summary>
-        public void ViewTitle(GraphBuilder builder)
+        public bool ViewTitle(GraphBuilder builder)
         {
             GameOverlayWindow window = OverlayWindow();
             TopTitlePanel panel = window == null ? null : window.TopTitlePanel;
             if (panel == null || !panel.Shown || !AgeWidgets.Visible(panel.AgeTransform))
             {
-                return;
+                return false;
             }
 
             // Side by side, which is how the game draws them, so left and right walk them.
@@ -384,6 +388,7 @@ namespace ES2Access.Screens
             AddViewName(builder, panel);
             AddScanToggle(builder, panel);
             builder.EndRow();
+            return true;
         }
 
         /// <summary>The name of the view: the Close button where the game has drawn one, a plain line

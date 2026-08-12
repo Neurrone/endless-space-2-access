@@ -516,7 +516,10 @@ namespace ES2Access.Core.UI.Graph
         }
 
         /// <summary>Home/End inside a tree: the first/last node sharing the focused node's parent (its
-        /// siblings at the current depth).</summary>
+        /// siblings at the current depth) — and its STOP, always. A root-level node has no parent to
+        /// compare, so parent alone made every root-level node on the page a sibling and End on a
+        /// top-level group walked out of the panel onto another stop's last control. Home and End never
+        /// leave the stop they were pressed in, in a tree exactly as anywhere else.</summary>
         public MoveResult MoveToSiblingEdge(bool first)
         {
             MoveResult result = default(MoveResult);
@@ -530,6 +533,7 @@ namespace ES2Access.Core.UI.Graph
             foreach (GraphNode n in _current.Order)
             {
                 if (!ReferenceEquals(n.Parent, node.Parent)) continue;
+                if (!Equals(n.StopKey, node.StopKey)) continue;
                 if (first) { target = n; break; }
                 target = n; // last match wins
             }

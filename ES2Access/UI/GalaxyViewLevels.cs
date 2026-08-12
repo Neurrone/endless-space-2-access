@@ -131,9 +131,8 @@ namespace ES2Access.UI
         /// is WORTH here is which layer of the map it draws, and on a 13-step ladder ten steps would be
         /// the whole range.
         ///
-        /// Answers whether anything moved. False is a clamp - the galaxy's furthest out, a planet's page
-        /// with nothing closer, or a system's page whose deeper rung the game only reaches through a
-        /// planet under the pointer (which is what a planet card's own Enter is for).
+        /// Answers whether anything moved. False is a clamp - the galaxy's furthest out, or a planet's
+        /// page with nothing closer, which are the ladder's two real ends.
         /// </summary>
         public static bool StepZoom(int sign, bool coarse)
         {
@@ -215,37 +214,118 @@ namespace ES2Access.UI
             return true;
         }
 
-        /// <summary>Back out of the system's or the planet's page - each level's own camera answers its
-        /// zoom-out, which is the same call its wheel makes.</summary>
+        /// <summary>
+        /// Back out of the system's or the planet's page - the same view-level change each level's own
+        /// wheel makes, asked of the VIEW rather than handed to the level's camera controller.
+        ///
+        /// Not through <c>ICameraController.HandleInput</c>, which both of those controllers gate on
+        /// <c>AgeManager.IsMouseCovered</c> and on their own camera still being bound
+        /// (<c>SystemManagementCameraController.HandleInput</c> :60-75,
+        /// <c>PlanetOverviewCameraController.HandleInput</c> :63-75): a physical mouse resting anywhere
+        /// over the game's own interface - which a keyboard player never touches and cannot see - made
+        /// the whole way back down the ladder a silent refusal, and the system controller answers false
+        /// even when it acted, so a caller cannot tell the two apart. The requests below are the exact
+        /// calls those handlers make once past their gates (their private
+        /// <c>MoveToGalaxyOverviewViewLevel</c> / <c>MoveToSystemManagementViewLevel</c>), so the route
+        /// is the game's own and the mouse has no say in it.
+        /// </summary>
         private static bool LeaveLevel()
         {
-            ICameraController controller = Controller();
-            SystemManagementCameraController system = controller as SystemManagementCameraController;
-            if (system != null)
+            GalaxyView galaxy = GalaxyViewOf();
+            if (galaxy == null)
             {
-                // The controller acts and then answers false regardless (its own HandleInput never
-                // reports the level change), so the move is reported here rather than passed through.
-                system.HandleInput(InputAction.ZoomOut);
+                return false;
+            }
+
+            GalaxyViewLevel_PlanetOverview planet =
+                LevelThroughTransitions as GalaxyViewLevel_PlanetOverview;
+            if (planet != null)
+            {
+                GalaxyStarSystem around =
+                    planet.Planet == null ? null : planet.Planet.GalaxyStarSystem;
+                if (around == null)
+                {
+                    return false;
+                }
+
+                galaxy.RequestGalaxyViewLevelChange(
+                    typeof(GalaxyViewLevel_SystemManagement),
+                    around
+                );
                 return true;
             }
 
-            PlanetOverviewCameraController planet = controller as PlanetOverviewCameraController;
-            return planet != null && planet.HandleInput(InputAction.ZoomOut);
-        }
-
-        /// <summary>Deeper than a system's page is one PLANET, and the game only knows which one from
-        /// whatever the pointer is over - so the gesture is offered to the game and reported as a clamp,
-        /// leaving the planet cards' own Enter as the keyboard's way in.</summary>
-        private static bool GoDeeper()
-        {
-            SystemManagementCameraController system =
-                Controller() as SystemManagementCameraController;
-            if (system != null)
+            GalaxyViewLevel_SystemManagement system =
+                LevelThroughTransitions as GalaxyViewLevel_SystemManagement;
+            if (system == null || system.StarSystem == null)
             {
-                system.HandleInput(InputAction.ZoomIn);
+                return false;
             }
 
-            return false;
+            // The game lets go of whatever the map's cursor had selected inside the system before it
+            // leaves (the controller's own UnselectAll), or a planet stays selected under a cursor that
+            // is no longer looking at it.
+            UnselectAll();
+            galaxy.RequestGalaxyViewLevelChange(
+                typeof(GalaxyViewLevel_GalaxyOverview),
+                false,
+                system.StarSystem
+            );
+            return true;
+        }
+
+        /// <summary>Let go of everything the map's cursor is holding selected - ported from
+        /// <c>SystemManagementCameraController.UnselectAll</c> (:106-123), which the game runs on its own
+        /// way out of a system's page. Bounded by the count going down, as the game's own loop is.
+        /// </summary>
+        private static void UnselectAll()
+        {
+            try
+            {
+                ICursorTargetService cursors = Services.GetService<ICursorTargetService>();
+                if (cursors == null)
+                {
+                    return;
+                }
+
+                while (cursors.SelectedCursorTargets.Count > 0)
+                {
+                    int count = cursors.SelectedCursorTargets.Count;
+                    cursors.UnselectSilent(cursors.SelectedCursorTargets[0]);
+                    if (count <= cursors.SelectedCursorTargets.Count)
+                    {
+                        return;
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: unselecting the map's cursor targets threw: " + e);
+            }
+        }
+
+        /// <summary>
+        /// Deeper than a system's page is one PLANET - the system's first, which is the rung the ladder
+        /// would otherwise stop one short of.
+        ///
+        /// The game's own gesture here (<c>SystemManagementCameraController.MoveToPlanetOverviewViewLevel</c>)
+        /// asks which planet the POINTER is highlighting and does nothing at all when the answer is none,
+        /// which for a keyboard is always. So the keyboard names a planet instead - the first the system
+        /// has - through the same call a planet card's own Enter makes (<see cref="OpenPlanet"/>), and the
+        /// ladder's last rung becomes reachable rather than being a clamp the value has to lie about.
+        /// </summary>
+        private static bool GoDeeper()
+        {
+            GalaxyViewLevel_SystemManagement system =
+                LevelThroughTransitions as GalaxyViewLevel_SystemManagement;
+            GalaxyStarSystem drawn = system == null ? null : system.StarSystem;
+            StarSystemNode node = drawn == null ? null : drawn.StarSystemNode;
+            if (node == null || node.Planets.Count == 0)
+            {
+                return false;
+            }
+
+            return OpenPlanet(node.Planets[0]);
         }
 
         /// <summary>The step the map starts a session on - where "the galaxy from above" means, when
@@ -556,8 +636,9 @@ namespace ES2Access.UI
         /// planet takes from a system's management page. The view level is asked for by type and
         /// handed the galaxy's own object for the planet, which is not the planet the rest of the game
         /// talks about: the map keeps a separate entity per thing it draws, and the factory is where
-        /// the two are matched up.</summary>
-        public static void OpenPlanet(Planet planet)
+        /// the two are matched up. Answers whether the page was asked for - false where the map has
+        /// drawn nothing for the planet, which is the ladder's clamp.</summary>
+        public static bool OpenPlanet(Planet planet)
         {
             try
             {
@@ -566,7 +647,7 @@ namespace ES2Access.UI
                     Services.GetService<IGalaxyEntityFactoryService>();
                 if (galaxy == null || entities == null || planet == null)
                 {
-                    return;
+                    return false;
                 }
 
                 GameObject entity = entities[planet.GUID];
@@ -574,14 +655,16 @@ namespace ES2Access.UI
                     entity == null ? null : entity.GetComponent<AbstractGalaxyPlanet>();
                 if (drawn == null)
                 {
-                    return;
+                    return false;
                 }
 
                 galaxy.RequestGalaxyViewLevelChange(typeof(GalaxyViewLevel_PlanetOverview), drawn);
+                return true;
             }
             catch (Exception e)
             {
                 Log.Warn("galaxy: opening a planet's page threw: " + e);
+                return false;
             }
         }
 

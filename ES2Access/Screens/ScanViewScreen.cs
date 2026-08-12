@@ -20,9 +20,10 @@ namespace ES2Access.Screens
     /// changes: a sighted player reads the lens's name across the top of the screen, and a player who
     /// zoomed one step would otherwise be reading trade figures believing them to be diplomacy.
     ///
-    /// Which is why the mode carries a zoom of its own (<see cref="BuildZoom"/>). Every other page can
-    /// leave the camera to the mouse; here the camera is what decides WHICH of the six lenses the player
-    /// is reading, so a page with no zoom is a page with five lenses and a system's planets missing.
+    /// Which is why the mode carries a zoom of its own (<see cref="ZoomLadder"/>) - the same control the
+    /// map offers, and needed harder here: on the map the zoom decides how much is drawn, here it decides
+    /// WHICH of the six lenses the player is reading, so a page with no zoom is a page with five lenses
+    /// and a system's planets missing.
     ///
     /// Before this screen the mod was silent here. Every other page gates on the game's "normal view",
     /// which the scan view turns off, and the game hides the window each of those pages is built from -
@@ -74,14 +75,9 @@ namespace ES2Access.Screens
         /// arrival gate, held until the mode ends.</summary>
         private bool _arrived;
 
-        /// <summary>How long the zoom's value waits for a view level the game has been asked for - about
-        /// half a second, which is longer than the game takes to begin a transition and short enough that
-        /// a refused request is not left mute.</summary>
-        private const int ZoomSettleFrames = 30;
-
-        /// <summary>The rung the last zoom press was made from, and what is left of its wait.</summary>
-        private int _zoomFrom = -1;
-        private int _zoomWait;
+        /// <summary>How close the game is looking, which on this page is also WHICH LENS is being read -
+        /// the same control the map itself offers (<see cref="ZoomLadder"/>).</summary>
+        private readonly ZoomLadder _zoom = new ZoomLadder();
 
         /// <summary>The title strip each lens window draws for itself. The windows live for the whole
         /// session and instantiate their sections once, so these are found once per showing rather than
@@ -209,8 +205,7 @@ namespace ES2Access.Screens
 
         public override void OnPop()
         {
-            _zoomWait = 0;
-            _zoomFrom = -1;
+            _zoom.Forget();
             _hud.Forget();
             _headers = null;
             _fidsi = null;
@@ -222,7 +217,7 @@ namespace ES2Access.Screens
         {
             _hud.Update();
             AnnounceLens();
-            WatchZoom();
+            _zoom.Update();
         }
 
         /// <summary>The lens has changed under the player - they zoomed, or they walked into a system -
@@ -260,7 +255,7 @@ namespace ES2Access.Screens
         {
             builder.BeginStop(TitleStop);
             BuildTitle(builder);
-            BuildZoom(builder);
+            _zoom.Build(builder, "scan:zoom");
 
             builder.BeginStop(ContentStop);
             BuildDiplomacy(builder);
@@ -300,89 +295,6 @@ namespace ES2Access.Screens
             builder.AddItem(ControlId.Referenced(header, "scan:title/lens"), vtable);
         }
 
-        // ---- the zoom ----
-
-        /// <summary>
-        /// How close the game is looking, as something the player can move.
-        ///
-        /// This lens is the one page where the zoom is not a matter of how much is drawn: the map's zoom
-        /// step picks the layer, the layer picks the lens, and so zooming changes the SUBJECT. The game's
-        /// own answer for a keyboard is two keys HELD down (PageUp and PageDown, polled while pressed -
-        /// a tap moves nothing) and nothing at all once the game is inside a system, which left the whole
-        /// zoom-dependent surface - every lens but the one the camera happened to be on, and the planets
-        /// of a system - out of reach. So the mode carries the zoom as an adjustable of its own, on the
-        /// arrows the mod already spends on a value, and the ladder runs all the way from the whole
-        /// galaxy to one planet (<see cref="GalaxyViewLevels.StepZoom"/>).
-        ///
-        /// The value is the rung and nothing else: what a rung MEANS is the lens's name, which the screen
-        /// announces whenever it changes, and repeating it here would say it twice. While the game is
-        /// flying between two view levels there is no rung to report - the answer is a step behind - so
-        /// the value says nothing and the lens announcement carries the news.
-        /// </summary>
-        private void BuildZoom(GraphBuilder builder)
-        {
-            if (GalaxyViewLevels.ZoomRung < 0)
-            {
-                return;
-            }
-
-            NodeVtable vtable = GraphNodes.Slider(
-                () => ModStrings.Get(ModStrings.ScanZoom),
-                ZoomText,
-                Zoom
-            );
-            builder.AddItem(ControlId.Structural("scan:zoom"), vtable);
-        }
-
-        /// <summary>One rung, and then the wait for a rung the game has not moved to yet. A press that
-        /// asks for a VIEW LEVEL is deferred - the game starts flying a frame or two later - so the rung
-        /// read straight afterwards is still the one the player has just left, and saying it answers
-        /// "nothing happened" to a press that did something.</summary>
-        private void Zoom(int sign, bool coarse)
-        {
-            int before = GalaxyViewLevels.ZoomRung;
-            if (!GalaxyViewLevels.StepZoom(sign, coarse) || GalaxyViewLevels.ZoomRung != before)
-            {
-                return;
-            }
-
-            _zoomFrom = before;
-            _zoomWait = ZoomSettleFrames;
-        }
-
-        private string ZoomText()
-        {
-            int rung = GalaxyViewLevels.ZoomRung;
-            int rungs = GalaxyViewLevels.ZoomRungs;
-            if (
-                rung < 0
-                || rungs <= 0
-                || GalaxyViewLevels.ChangingLevel
-                || (_zoomWait > 0 && rung == _zoomFrom)
-            )
-            {
-                return null;
-            }
-
-            return new MessageBuilder().PushFraction(rung + 1, rungs).Build();
-        }
-
-        /// <summary>Counts the wait above down, and ends it the moment the rung moves - so the value
-        /// speaks itself as soon as it is true, and a request the game refused goes quiet again instead of
-        /// staying silent for good.</summary>
-        private void WatchZoom()
-        {
-            if (_zoomWait <= 0)
-            {
-                return;
-            }
-
-            _zoomWait--;
-            if (GalaxyViewLevels.ZoomRung != _zoomFrom)
-            {
-                _zoomWait = 0;
-            }
-        }
 
         // ---- the diplomacy lens ----
 
@@ -571,7 +483,7 @@ namespace ES2Access.Screens
         ///
         /// It is a lens about one system and NOT about its planets - those belong to the system
         /// management lens a rung further in, which is why the zoom carries on past the closest step
-        /// (<see cref="BuildZoom"/>).
+        /// (<see cref="ZoomLadder"/>).
         ///
         /// What the tick reveals is read here as well, because the panel it shows is a SIBLING of the
         /// name rather than a child of it: the system's name again, the remains standing on one of its

@@ -307,6 +307,79 @@ namespace ES2Access.Tests.UI
             Assert.False(g.Current.NodeAt(Id("g")).Expanded);
         }
 
+        /// <summary>Two panels, each with a group at the top level: Home and End inside one of them are
+        /// about that panel and never reach into the other. The trap is that a top-level node has no
+        /// parent, so "same parent" alone made every root-level node on the page a sibling.</summary>
+        private static KeyGraph TwoStopTrees(GraphState state)
+        {
+            return new KeyGraph(Renderer(b =>
+            {
+                b.BeginStop("s1");
+                b.AddItem(Id("a1"), Vt("A1"));
+                b.BeginGroup(Id("g"), Vt("Group"));
+                b.AddItem(Id("c1"), Vt("Child 1"));
+                b.AddItem(Id("c2"), Vt("Child 2"));
+                b.EndGroup();
+                b.AddItem(Id("a2"), Vt("A2"));
+                b.BeginStop("s2");
+                b.AddItem(Id("b1"), Vt("B1"));
+                b.AddItem(Id("b2"), Vt("B2"));
+            }, state), state);
+        }
+
+        [Fact]
+        public void EndOnAnExpandedGroupStaysInItsOwnStop()
+        {
+            GraphState state = new GraphState();
+            KeyGraph g = TwoStopTrees(state);
+            g.Rerender();
+            g.Move(GraphDir.Down);
+            Assert.Equal("g", Focused(g));
+            Assert.Equal(KeyGraph.TreeMove.Expanded, g.TreeRight().Kind);
+
+            MoveResult end = g.MoveToSiblingEdge(false);
+            Assert.True(end.Moved);
+            Assert.Equal("a2", Key(end.To));
+
+            MoveResult home = g.MoveToSiblingEdge(true);
+            Assert.True(home.Moved);
+            Assert.Equal("a1", Key(home.To));
+        }
+
+        [Fact]
+        public void EndOnAChildStaysAmongItsSiblings()
+        {
+            GraphState state = new GraphState();
+            KeyGraph g = TwoStopTrees(state);
+            g.Rerender();
+            g.Move(GraphDir.Down);
+            g.TreeRight();
+            g.TreeRight();
+            Assert.Equal("c1", Focused(g));
+
+            Assert.Equal("c2", Key(g.MoveToSiblingEdge(false).To));
+            Assert.Equal("c1", Key(g.MoveToSiblingEdge(true).To));
+        }
+
+        [Fact]
+        public void SiblingEdgesInAOneNodeStopMoveNothing()
+        {
+            GraphState state = new GraphState();
+            KeyGraph g = new KeyGraph(Renderer(b =>
+            {
+                b.BeginStop("s1");
+                b.BeginGroup(Id("g"), Vt("Group"));
+                b.AddItem(Id("c1"), Vt("Child"));
+                b.EndGroup();
+                b.BeginStop("s2").AddItem(Id("z"), Vt("Z"));
+            }, state), state);
+            g.Rerender();
+            Assert.Equal("g", Focused(g));
+            Assert.False(g.MoveToSiblingEdge(false).Moved);
+            Assert.False(g.MoveToSiblingEdge(true).Moved);
+            Assert.Equal("g", Focused(g));
+        }
+
         [Fact]
         public void TreeMovesOutsideATreeReportNone()
         {

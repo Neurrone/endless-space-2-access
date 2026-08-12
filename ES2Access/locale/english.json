@@ -155,7 +155,7 @@
   "scan.system-info": "System information",
   "scan.legend": "Legend",
   "scan.output": "{0} {1}",
-  "scan.zoom": "Zoom",
+  "zoom": "Zoom",
   "scan.synergy": "{0} for {1}",
   "screen.star-system": "Star system",
   "screen.planet": "Planet",
