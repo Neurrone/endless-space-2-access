@@ -386,6 +386,44 @@ namespace ES2Access.UI
             return list;
         }
 
+        /// <summary>
+        /// The declared sections of a line the game built out of several pieces, each carrying its own
+        /// explanation - an icon that says what the row IS beside a label that says what its value
+        /// MEANS. Every tooltip in <paramref name="tooltips"/> reads, in the order they were drawn,
+        /// each by its own short/long mode: the line is the only place any of them is reachable from.
+        ///
+        /// <paramref name="details"/> is what the line draws beyond its readout, and reads first.
+        /// <paramref name="lastMode"/> overrides the mode of the LAST tooltip - the one the line is
+        /// named after where it has no drawn caption, which must then not be announced twice.
+        /// </summary>
+        public static IList<NodeSection> SectionsFor(
+            IList<AgeTooltip> tooltips,
+            Func<IList<string>> details = null,
+            TooltipMode? lastMode = null
+        )
+        {
+            List<NodeSection> list = new List<NodeSection>(2);
+            NodeSection drawn = NodeSection.Buffer(details);
+            if (drawn != null)
+            {
+                list.Add(drawn);
+            }
+
+            for (int i = 0; tooltips != null && i < tooltips.Count; i++)
+            {
+                IList<NodeSection> tip = HintSections(
+                    tooltips[i],
+                    i == tooltips.Count - 1 ? lastMode : null
+                );
+                for (int j = 0; tip != null && j < tip.Count; j++)
+                {
+                    list.Add(tip[j]);
+                }
+            }
+
+            return list.Count == 0 ? null : list;
+        }
+
         /// <summary>The same, for a screen that has already built its sections (a row with a heading
         /// tooltip and a value tooltip). Nulls are dropped, so every caller can pass what it has.</summary>
         public static IList<NodeSection> Sections(params NodeSection[] sections)

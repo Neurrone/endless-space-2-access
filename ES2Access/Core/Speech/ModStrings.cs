@@ -500,6 +500,11 @@ namespace ES2Access.Core.Speech
         public const string EmpireRelicSlotAssign = "empire.relic-slot-assign";
         public const string EmpireRelicSlotRemove = "empire.relic-slot-remove";
 
+        /// <summary>What happened when a population unit was dropped on ANOTHER system's row: the game
+        /// does not move it there, it points the home system's spaceport at that system and sends a ship,
+        /// so this is a different sentence from a move between two planets of one system.</summary>
+        public const string EmpirePopulationSent = "empire.population-sent";
+
         // The economy screen. The screen's own name is the game's; the name here is the fallback for
         // the frames before the window has written its heading. The rest are for boxes the game draws
         // with no heading at all - the marketplace's four panels and its two tickers - and for the one
@@ -989,6 +994,7 @@ namespace ES2Access.Core.Speech
             { EmpireHeadingsBand, "Column headings" },
             { EmpireRelicSlotAssign, "Assign relics" },
             { EmpireRelicSlotRemove, "Remove relics" },
+            { EmpirePopulationSent, "Sent {0} to {1} by spaceport" },
             { ScreenSenate, "Senate" },
             { SenateGovernmentPanel, "Government" },
             { SenateElectionPanel, "Next election" },

@@ -249,6 +249,47 @@ namespace ES2Access.UI
             }
         }
 
+        /// <summary>
+        /// Every tooltip the game hung inside a widget, in the order it drew them: the widget's own
+        /// first, then its children's, left to right as the prefab lays them out.
+        ///
+        /// For a line the mod reads as ONE thing that the game built out of several pieces - an icon
+        /// captioning a label, each with its own explanation - the line is the only place any of those
+        /// explanations is reachable from, so it carries all of them. Asking the container alone finds
+        /// nothing when the words hang on the piece inside it, and the readout still says "has tooltip"
+        /// while the buffer stays empty (see <see cref="PointAt(NodeVtable, AgeTransform, AgeTooltip)"/>
+        /// for the other half of that failure).
+        /// </summary>
+        public static void Tooltips(AgeTransform widget, List<AgeTooltip> into, int maxDepth = 4)
+        {
+            CollectTooltips(widget, into, 0, maxDepth);
+        }
+
+        private static void CollectTooltips(
+            AgeTransform widget,
+            List<AgeTooltip> into,
+            int depth,
+            int maxDepth
+        )
+        {
+            if (widget == null || depth > maxDepth || !Visible(widget))
+            {
+                return;
+            }
+
+            AgeTooltip tooltip = Raw(widget);
+            if (tooltip != null && !into.Contains(tooltip))
+            {
+                into.Add(tooltip);
+            }
+
+            IList<AgeTransform> children = widget.Children;
+            for (int i = 0; children != null && i < children.Count; i++)
+            {
+                CollectTooltips(children[i], into, depth + 1, maxDepth);
+            }
+        }
+
         /// <summary>Press a control the way the engine presses it: every AGE control carries the object
         /// and the method name its own mouse handler sends to, so replaying that pair runs the window's
         /// own handler with no click that could land on whatever the mouse is over.</summary>

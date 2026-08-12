@@ -219,6 +219,7 @@
   "empire.headings-band": "Column headings",
   "empire.relic-slot-assign": "Assign relics",
   "empire.relic-slot-remove": "Remove relics",
+  "empire.population-sent": "Sent {0} to {1} by spaceport",
   "screen.senate": "Senate",
   "senate.government-panel": "Government",
   "senate.election-panel": "Next election",

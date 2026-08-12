@@ -182,8 +182,16 @@ namespace ES2Access.UI
             Collect(cells, root, keyPrefix, 0, null, special, transparent, null);
         }
 
-        /// <summary>A panel read as it is drawn: every group in it that says something becomes a line,
-        /// in the rows the panel lays them out in.</summary>
+        /// <summary>
+        /// A panel read as it is drawn: every group in it that says something becomes a line, in the rows
+        /// the panel lays them out in.
+        ///
+        /// The drawn heading is the STOP's name and is normally not read back as a line of its own. Where
+        /// the game hung an explanation of the whole panel on that heading
+        /// (<c>EmpireStatusSidePanel.Refresh</c> :131-132), the heading becomes the panel's first line so
+        /// that explanation is reachable: the stop's name is a spoken phrase and carries no buffer, so
+        /// there is nowhere else for it to go.
+        /// </summary>
         public static void Readouts(
             List<Cell> cells,
             SidePanel panel,
@@ -193,16 +201,27 @@ namespace ES2Access.UI
         )
         {
             AgePrimitiveLabel title = TitleLabel(panel);
-            Collect(
-                cells,
-                panel.ContentGroup,
-                keyPrefix,
-                0,
-                panel,
-                special,
-                transparent,
-                title == null ? null : title.AgeTransform
-            );
+            AgeTransform titled = title == null ? null : title.AgeTransform;
+            if (titled != null && Explained(AgeWidgets.Raw(titled)))
+            {
+                cells.Add(Cells.Readout(titled, keyPrefix + titled.name + "/title"));
+            }
+
+            Collect(cells, panel.ContentGroup, keyPrefix, 0, panel, special, transparent, titled);
+        }
+
+        /// <summary>Whether a tooltip has anything for the player: words the game wrote into it, or a
+        /// class, which means the tooltip window assembles it and having content is definitional.
+        /// </summary>
+        private static bool Explained(AgeTooltip tooltip)
+        {
+            if (tooltip == null)
+            {
+                return false;
+            }
+
+            return AgeWidgets.Readable(tooltip) == null
+                || !string.IsNullOrEmpty(CardActions.FirstLine(tooltip));
         }
 
         private const int MaxScrapeDepth = 6;
@@ -241,7 +260,6 @@ namespace ES2Access.UI
                 }
 
                 AgeControlButton button = AgeWidgets.Button(widget);
-                AgeTooltip tooltip = AgeWidgets.Raw(widget);
                 string text = AgeWidgets.TextOf(widget);
                 bool activatable =
                     button != null
@@ -272,11 +290,14 @@ namespace ES2Access.UI
                     return;
                 }
 
+                // Read with every tooltip the game hung on the PIECES of the line, not just the one on
+                // the group: these panels caption a line with an icon and put the description on the
+                // label, and the line is the only node either is reachable from.
                 string key = keyPrefix + widget.name + "/" + depth;
                 cells.Add(
                     activatable
-                        ? Cells.Control(widget, button, tooltip, text, key)
-                        : Cells.Readout(widget, tooltip, key)
+                        ? Cells.Control(widget, button, text, key)
+                        : Cells.Readout(widget, key)
                 );
             }
             catch (Exception e)

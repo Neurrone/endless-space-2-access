@@ -88,6 +88,89 @@ namespace ES2Access.UI
             };
         }
 
+        /// <summary>
+        /// A line the mod reads as ONE thing that the game DREW out of several pieces, with every
+        /// explanation it hung on those pieces - the empire's faction line, whose name is on the label
+        /// and whose description is on that label's own tooltip while the icon beside it explains what
+        /// the line is.
+        ///
+        /// The pieces are not separate nodes, so nothing else can reach their tooltips; the line reads
+        /// them in the order the game drew them and the pointer is aimed at the last one's owner, which
+        /// is what makes it DRAW (aiming at the container draws nothing at all).
+        /// </summary>
+        public static Cell Readout(AgeTransform widget, string key)
+        {
+            List<AgeTooltip> tooltips = Gathered(widget);
+            AgeTransform at = widget;
+            NodeVtable vtable = new NodeVtable
+            {
+                Announcements = new List<NodeAnnouncement>
+                {
+                    GraphNodes.LabelPart(() => AgeWidgets.TextOf(at)),
+                },
+                Sections = GraphNodes.SectionsFor(tooltips),
+            };
+            AgeWidgets.PointAt(vtable, widget, Last(tooltips));
+            return new Cell
+            {
+                Widget = widget,
+                Id = ControlId.Referenced(widget, key),
+                Vtable = vtable,
+            };
+        }
+
+        /// <summary>The same for a line the game made CLICKABLE. The words it is called by are its own
+        /// caption where it drew one and the sentence the last-drawn tooltip opens with otherwise, which
+        /// is then not announced a second time.</summary>
+        public static Cell Control(
+            AgeTransform widget,
+            AgeControlButton button,
+            string text,
+            string key
+        )
+        {
+            List<AgeTooltip> tooltips = Gathered(widget);
+            AgeTooltip last = Last(tooltips);
+            AgeControlButton it = button;
+            AgeTransform at = widget;
+            bool named = !string.IsNullOrEmpty(text);
+            string caption = named ? text : CardActions.FirstLine(last);
+            NodeVtable vtable = GraphNodes.Button(
+                () => caption,
+                () => AgeWidgets.Press(it),
+                () => AgeWidgets.Offered(at)
+            );
+            vtable.Sections = GraphNodes.SectionsFor(
+                tooltips,
+                null,
+                named ? (TooltipMode?)null : TooltipMode.None
+            );
+            AgeWidgets.Point(vtable, button, last, widget);
+            return new Cell
+            {
+                Widget = widget,
+                Id = ControlId.Referenced(widget, key),
+                Vtable = vtable,
+            };
+        }
+
+        // Reused rather than allocated per line: these run inside a per-frame panel walk. Safe as one
+        // buffer because a caller consumes it before the next line is read - the sections built from it
+        // capture the tooltips, never the list.
+        private static readonly List<AgeTooltip> Scratch = new List<AgeTooltip>(4);
+
+        private static List<AgeTooltip> Gathered(AgeTransform widget)
+        {
+            Scratch.Clear();
+            AgeWidgets.Tooltips(widget, Scratch);
+            return Scratch;
+        }
+
+        private static AgeTooltip Last(List<AgeTooltip> tooltips)
+        {
+            return tooltips.Count == 0 ? null : tooltips[tooltips.Count - 1];
+        }
+
         /// <summary>The drawn control at <paramref name="widget"/>, if there is one to declare - a
         /// widget the game is not drawing, or one with no button on it, contributes nothing.</summary>
         public static void AddControl(List<Cell> cells, AgeTransform widget, string key)

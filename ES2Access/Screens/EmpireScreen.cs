@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using Amplitude;
+using Amplitude.Unity.Framework;
 using ES2Access.Core.Speech;
 using ES2Access.Core.UI;
 using ES2Access.Core.UI.Graph;
@@ -34,10 +36,15 @@ namespace ES2Access.Screens
     ///
     /// The panel a cell opens is a second instance of the prefabs the star system page draws along its
     /// own bottom edge, so the planet cards, the constructibles, the queue and the hangar are read by
-    /// the shared readers rather than modelled twice (<see cref="SystemPanels"/>). The one thing the
-    /// player cannot do here that they can there is MOVE a population unit between planets: the drag
-    /// this page's cards accept runs through a different drop client, so the markers are readouts and
-    /// the move stays on the star system page.
+    /// the shared readers rather than modelled twice (<see cref="SystemPanels"/>).
+    ///
+    /// Population MOVES here, and this page offers one the star system page does not. The panel holding
+    /// the cards is its own drop client (<c>StarSystemPlanetCardsPanel.UpdateDrag</c> :167-205) and takes
+    /// a dropped unit two ways: onto another CARD, which is the move between two planets of this system,
+    /// and onto the population cell of ANOTHER SYSTEM's row in the table, which points this system's
+    /// spaceport at that system and ships the unit there. Both are offered as the mod's carry - Space to
+    /// pick a unit up off a card, Enter to put it down - so the population rows are sources and both
+    /// kinds of target say so.
     ///
     /// Nothing closes a detail panel: the game itself has no gesture for it - clicking the same cell
     /// again leaves it open (measured) - and it goes when another cell is clicked or the page is left.
@@ -542,6 +549,7 @@ namespace ES2Access.Screens
                 rowEnabled() && AgeWidgets.Operable(press.AgeTransform) && AgeWidgets.Enabled(it);
             AgeTooltip tooltip = TableSheet.TooltipOf(cell);
             AgeTooltip reason = RefusalTooltip(cell) ?? tooltip;
+            GuiTableCellSystemPopulation population = PopulationCell(cell);
             NodeVtable vtable = new NodeVtable
             {
                 // Named as the button it is, unlike the figures beside it: the game draws a click target
@@ -563,8 +571,29 @@ namespace ES2Access.Screens
                 },
             };
             GraphNodes.AddRefusal(vtable, reason, operable);
+            // The population column of another system is where a carried unit is SENT: the game's own
+            // drag drops it here and the source system's spaceport ships it over.
+            if (population != null)
+            {
+                GuiTableCellSystemPopulation at = population;
+                vtable.DropKind = PopulationKind;
+                vtable.DropAccepts = held => Shippable(at, held) != null;
+                vtable.OnDrop = held => Ship(at, held);
+            }
 
             return vtable;
+        }
+
+        private static GuiTableCellSystemPopulation PopulationCell(AgeTransform cell)
+        {
+            try
+            {
+                return cell == null ? null : cell.GetComponent<GuiTableCellSystemPopulation>();
+            }
+            catch (Exception)
+            {
+                return null;
+            }
         }
 
         /// <summary>
@@ -734,8 +763,8 @@ namespace ES2Access.Screens
         /// card. Measured rather than assumed.
         ///
         /// The card is a readout with its own buttons as child nodes, the same shape the star system
-        /// page's cards have. Its population markers are readouts here: the drag that moves a unit
-        /// between planets runs through the labels window on that page, so the move stays there.
+        /// page's cards have, and its population markers are a row per affinity that a unit can be
+        /// carried off - the same gesture, through this panel's own drop client.
         /// </summary>
         private void BuildCards(GraphBuilder builder, StarSystemPlanetCardsPanel panel)
         {
@@ -783,6 +812,15 @@ namespace ES2Access.Screens
                     AgeWidgets.Raw(it.AgeTransform)
                 ),
             };
+            // A colony of the player's is where a carried population unit can be put down - the same set
+            // of cards the game's own drag offers as targets.
+            if (Settled(card) != null)
+            {
+                vtable.DropKind = PopulationKind;
+                vtable.DropAccepts = held => Accepts(it, held);
+                vtable.OnDrop = held => DropOnCard(it, held);
+            }
+
             AgeWidgets.PointAt(vtable, card.AgeTransform);
 
             string key = "empire:planet/" + card.Planet.GUID;
@@ -799,7 +837,7 @@ namespace ES2Access.Screens
             builder.BeginGroup(id, vtable);
             if (builder.IsExpanded(id))
             {
-                AddPopulations(builder, key, populations);
+                AddPopulations(builder, key, card, populations, CanCarry(card));
                 CardActions.Emit(builder, key, buttons);
             }
 
@@ -914,8 +952,7 @@ namespace ES2Access.Screens
         }
 
         /// <summary>Who lives on the planet, off the ring of markers the card draws in its population
-        /// mode. Readouts: the game's own drag between cards runs through a drop client this page does
-        /// not have.</summary>
+        /// mode.</summary>
         private static List<Population> Populations(PlanetCard card)
         {
             List<Population> found = new List<Population>(2);
@@ -954,25 +991,498 @@ namespace ES2Access.Screens
             return found;
         }
 
+        /// <summary>
+        /// A row per population on the card: the game's own name for the affinity and how many of them
+        /// live here, which is what the ring of markers draws.
+        ///
+        /// <paramref name="canCarry"/> is where the game would let a drag start off this card AND this
+        /// page has somewhere to put the unit down. One press carries ONE unit - the smallest move the
+        /// game's own drag makes - and the name is captured then, because the row is rebuilt every frame.
+        /// </summary>
         private static void AddPopulations(
             GraphBuilder builder,
             string keyPrefix,
-            List<Population> populations
+            PlanetCard card,
+            List<Population> populations,
+            bool canCarry
         )
         {
+            ColonizedPlanet colony = Settled(card);
             for (int i = 0; i < populations.Count; i++)
             {
                 Population population = populations[i];
                 NodeVtable vtable = GraphNodes.Readout(
-                    () => AgeText.Clean(Gui.GetLocalizedTitle(population.Affinity)),
+                    () => PopulationName(population),
                     () => new MessageBuilder().PushQuantity(population.Count).Build(),
                     null,
                     null
                 );
+                if (canCarry && colony != null)
+                {
+                    ColonizedPlanet source = colony;
+                    Population held = population;
+                    vtable.OnPickUp = () => Pick(source, held);
+                }
+
                 builder.AddItem(
                     ControlId.Referenced(population, keyPrefix + "/population/" + i),
                     vtable
                 );
+            }
+        }
+
+        // ---- moving a population unit ----
+
+        /// <summary>What the carried thing IS, shared with the star system page so a unit picked up
+        /// there can be put down here.</summary>
+        private const string PopulationKind = SystemManagementScreen.PopulationKind;
+
+        /// <summary>The game's own word for an affinity.</summary>
+        private static string PopulationName(Population population)
+        {
+            try
+            {
+                return AgeText.Clean(Gui.GetLocalizedTitle(population.Affinity));
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>The colony this card is for, or null - the card of an unsettled world, or of somebody
+        /// else's colony, is neither a source nor a target.</summary>
+        private static ColonizedPlanet Settled(PlanetCard card)
+        {
+            try
+            {
+                ColonizedPlanet colony = card == null ? null : card.ColonizedPlanet;
+                return colony != null && colony.Empire == Gui.PlayerEmpire ? colony : null;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Whether a unit can be picked up off this card.
+        ///
+        /// Two questions, both the game's. Would the drag START here: the markers are interactive only
+        /// while the system may move population at all (<c>PlanetPopulationEnumerator.Bind</c> :46) and the
+        /// drag itself is refused unless the colony is the player's and may move population
+        /// (<c>PopulationEnumerator.OnPopulationMarkerDragStarted</c> :240-252). And is there anywhere on
+        /// THIS page to put it: another colony of the same system - the cards beside this one - or another
+        /// colonized system in the table, which the source system's spaceport ships it to
+        /// (<c>StarSystemPlanetCardsPanel.UpdateDrag</c> :167-205 does both).
+        /// </summary>
+        private static bool CanCarry(PlanetCard card)
+        {
+            try
+            {
+                ColonizedPlanet colony = Settled(card);
+                PlanetPopulationEnumerator markers =
+                    card == null ? null : card.PlanetCardPopulationEnumerator;
+                AgeTransform container = markers == null ? null : markers.PopMarkersContainer;
+                if (
+                    colony == null
+                    || !colony.CanMovePopulation
+                    || container == null
+                    || !container.Enable
+                )
+                {
+                    return false;
+                }
+
+                return Elsewhere(colony.ColonizedStarSystem);
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        /// <summary>Whether this page offers anywhere to put a unit taken off <paramref name="from"/>: a
+        /// second colony in the same system, or a spaceport with another colony to send it to.</summary>
+        private static bool Elsewhere(ColonizedStarSystem from)
+        {
+            if (from == null)
+            {
+                return false;
+            }
+
+            if (from.PlanetsColonized.Count > 1)
+            {
+                return true;
+            }
+
+            Spaceport port = from.Spaceport;
+            if (port == null || !port.IsAvailable())
+            {
+                return false;
+            }
+
+            DepartmentOfTheInterior interior =
+                Gui.PlayerEmpire.GetAgency<DepartmentOfTheInterior>();
+            for (int i = 0; interior != null && i < interior.ColonizedStarSystems.Count; i++)
+            {
+                ColonizedStarSystem other = interior.ColonizedStarSystems[i];
+                if (
+                    other != null
+                    && other.GUID != from.GUID
+                    && other.State == StarSystemState.Colony
+                )
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>One unit of this population, picked up. Null where the game would not let the drag
+        /// start: its own two tests are the colony's and the affinity's.</summary>
+        private static CarryItem Pick(ColonizedPlanet source, Population population)
+        {
+            try
+            {
+                IPopulationsManagementService populations =
+                    Services.GetService<IPopulationsManagementService>();
+                if (
+                    population.Count <= 0
+                    || !source.CanMovePopulation
+                    || populations == null
+                    || !populations.CanMovePopulation(population.Affinity)
+                )
+                {
+                    return null;
+                }
+
+                return new CarryItem(population, PopulationName(population), PopulationKind);
+            }
+            catch (Exception e)
+            {
+                Log.Warn("empire: picking a population unit up threw: " + e);
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Whether this card would take the carried unit - the same three questions the game's own
+        /// <c>PlanetPopulationEnumerator.CanAcceptPopulationDrop</c> asks, asked WITHOUT touching the
+        /// static drag info it reads (that call throws with no drag in progress, and filling the static in
+        /// to ask a speculative question would empty a marker the player is still looking at). So the
+        /// planet a unit came OFF does not offer itself as a target.
+        /// </summary>
+        private static bool Accepts(PlanetCard card, CarryItem held)
+        {
+            try
+            {
+                ColonizedPlanet destination = Settled(card);
+                Population population = held == null ? null : held.Cargo as Population;
+                ColonizedPlanet source = Owner(population);
+                if (
+                    destination == null
+                    || population == null
+                    || source == null
+                    || ReferenceEquals(destination, source)
+                )
+                {
+                    return false;
+                }
+
+                return destination.CanWelcomeSomeOfPopulation(
+                    new TransitingPopulation(population.Affinity, 1)
+                );
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Put a carried unit on this card, the way the game's own drag does it: its
+        /// <c>PopulationEnumerator.DragInfo</c> is filled in exactly as
+        /// <c>OnPopulationMarkerDragStarted</c> fills it, the target card's own
+        /// <c>CanAcceptPopulationDrop</c> decides, and the panel's own
+        /// <c>TransferDraggedPopulationToPlanet</c> posts the order - which is what keeps the exact
+        /// <c>OrderTransferPopulationFromPlanetToPlanet</c> the game builds
+        /// (<c>StarSystemPlanetCardsPanel</c> :245-260, private, so it is reached by reflection).
+        ///
+        /// The drag info is cleared whatever happens: it is a static the game's own refresh reads every
+        /// frame to draw a unit as already gone, and a stale one would empty a marker the player is
+        /// still looking at.
+        /// </summary>
+        private static DropResult DropOnCard(PlanetCard card, CarryItem item)
+        {
+            Population population = item == null ? null : item.Cargo as Population;
+            ColonizedPlanet destination = Settled(card);
+            ColonizedPlanet source = Owner(population);
+            PlanetPopulationEnumerator markers =
+                card == null ? null : card.PlanetCardPopulationEnumerator;
+            StarSystemPlanetCardsPanel panel = Cards(card);
+            if (
+                population == null
+                || destination == null
+                || source == null
+                || markers == null
+                || panel == null
+            )
+            {
+                return DropResult.Refused(null);
+            }
+
+            try
+            {
+                PopulationEnumerator.PopulationDragInfo drag = PopulationEnumerator.DragInfo;
+                drag.DragInProgress = true;
+                drag.SourcePopulationOwner = source;
+                drag.GuiPopulation = Wrap(source, population);
+                drag.Quantity = 1;
+                drag.TransitingPopulation = new TransitingPopulation(population.Affinity, 1);
+                drag.ReplacedPopulationAffinity = StaticString.Empty;
+                try
+                {
+                    if (!markers.CanAcceptPopulationDrop())
+                    {
+                        return DropResult.Refused(null);
+                    }
+
+                    Transfer(panel, destination);
+                }
+                finally
+                {
+                    drag.DragInProgress = false;
+                    drag.SourcePopulationOwner = null;
+                    drag.GuiPopulation = null;
+                    drag.Quantity = 0;
+                    drag.TransitingPopulation = null;
+                    drag.ReplacedPopulationAffinity = StaticString.Empty;
+                }
+
+                return DropResult.Done(
+                    ModStrings.Format(
+                        ModStrings.SystemPopulationMoved,
+                        item.Name,
+                        AgeText.Clean(destination.LocalizedName)
+                    )
+                );
+            }
+            catch (Exception e)
+            {
+                Log.Warn("empire: moving a population unit threw: " + e);
+                return DropResult.Refused(null);
+            }
+        }
+
+        private static void Transfer(
+            StarSystemPlanetCardsPanel panel,
+            ColonizedPlanet destination
+        )
+        {
+            MethodInfo method = typeof(StarSystemPlanetCardsPanel).GetMethod(
+                "TransferDraggedPopulationToPlanet",
+                BindingFlags.Instance | BindingFlags.NonPublic
+            );
+            if (method == null)
+            {
+                throw new MissingMethodException("TransferDraggedPopulationToPlanet");
+            }
+
+            method.Invoke(panel, new object[] { destination });
+        }
+
+        private static StarSystemPlanetCardsPanel Cards(PlanetCard card)
+        {
+            try
+            {
+                return card == null
+                    ? null
+                    : card.GetComponentInParent<StarSystemPlanetCardsPanel>();
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>The <c>GuiPopulation</c> the game's own drag carries, which is what the transfer reads
+        /// the affinity out of.</summary>
+        private static GuiPopulation Wrap(ColonizedPlanet source, Population population)
+        {
+            DepartmentOfTheInterior interior = source.Empire.GetAgency<DepartmentOfTheInterior>();
+            PopulationEmpire empire =
+                interior == null
+                    ? null
+                    : interior.GetPopulationByAffinity(population.Affinity) as PopulationEmpire;
+            return new GuiPopulation(population, empire, source.Empire);
+        }
+
+        /// <summary>Which colony of the empire the carried unit lives on. Found rather than remembered:
+        /// what is carried is the game's own <c>Population</c>, and a unit picked up on the star system
+        /// page and dropped here has to be found from scratch.</summary>
+        private static ColonizedPlanet Owner(Population population)
+        {
+            try
+            {
+                DepartmentOfTheInterior interior =
+                    population == null
+                        ? null
+                        : Gui.PlayerEmpire.GetAgency<DepartmentOfTheInterior>();
+                for (int i = 0; interior != null && i < interior.ColonizedStarSystems.Count; i++)
+                {
+                    ColonizedStarSystem system = interior.ColonizedStarSystems[i];
+                    for (int p = 0; system != null && p < system.PlanetsColonized.Count; p++)
+                    {
+                        ColonizedPlanet planet = system.PlanetsColonized[p];
+                        Population held;
+                        if (
+                            planet != null
+                            && planet.PopulationsByAffinity.TryGetValue(
+                                population.Affinity,
+                                out held
+                            )
+                            && ReferenceEquals(held, population)
+                        )
+                        {
+                            return planet;
+                        }
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("empire: finding a carried unit's planet threw: " + e);
+            }
+
+            return null;
+        }
+
+        /// <summary>Where a carried unit would be SENT by dropping it on this system's population cell,
+        /// or null where the game would not take it: its own drop asks for a colonized system of the
+        /// player's other than the one the unit is on, and a spaceport at that one able to ship
+        /// (<c>StarSystemPlanetCardsPanel.UpdateDrag</c> :183-199).</summary>
+        private static ColonizedStarSystem Shippable(
+            GuiTableCellSystemPopulation cell,
+            CarryItem item
+        )
+        {
+            try
+            {
+                Population population = item == null ? null : item.Cargo as Population;
+                GuiColonizedStarSystem wrapper = cell == null ? null : cell.GuiColonizedStarSystem;
+                ColonizedStarSystem destination =
+                    wrapper == null ? null : wrapper.ColonizedStarSystem;
+                ColonizedPlanet source = Owner(population);
+                ColonizedStarSystem from = source == null ? null : source.ColonizedStarSystem;
+                if (
+                    destination == null
+                    || from == null
+                    || destination.GUID == from.GUID
+                    || destination.State != StarSystemState.Colony
+                )
+                {
+                    return null;
+                }
+
+                Spaceport port = from.Spaceport;
+                return port != null && port.IsAvailable() ? destination : null;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Send the carried unit to this system, which is what the game's own drop on this cell does: the
+        /// source system's spaceport is pointed at the destination and then ordered to ship
+        /// (<c>StarSystemPlanetCardsPanel.UpdateDrag</c> :183-199).
+        ///
+        /// The game sets the destination BEFORE asking whether a ship can leave, so a refusal there
+        /// leaves the spaceport pointed somewhere new. The three reasons that have nothing to do with the
+        /// destination (frozen, besieged, blockaded) are therefore asked FIRST and refuse in the game's
+        /// own words, changing nothing; the destination is only set once the answer is yes.
+        /// </summary>
+        private static DropResult Ship(GuiTableCellSystemPopulation cell, CarryItem item)
+        {
+            ColonizedStarSystem destination = Shippable(cell, item);
+            Population population = item == null ? null : item.Cargo as Population;
+            ColonizedPlanet source = Owner(population);
+            Spaceport port =
+                source == null || source.ColonizedStarSystem == null
+                    ? null
+                    : source.ColonizedStarSystem.Spaceport;
+            if (destination == null || port == null)
+            {
+                return DropResult.Refused(null);
+            }
+
+            try
+            {
+                StaticString failure;
+                if (!port.CanCreateAutomatedShip(out failure) && !IsNoDestination(failure))
+                {
+                    return DropResult.Refused(FailureText(failure));
+                }
+
+                port.SetDestination(destination);
+                if (!port.CanCreateAutomatedShip(out failure))
+                {
+                    return DropResult.Refused(FailureText(failure));
+                }
+
+                PlayerController controller = Gui.GetActivePlayerController();
+                controller.PostOrder(
+                    new OrderTransferSpaceportPopulation(
+                        controller.Empire.Index,
+                        population.Affinity,
+                        1,
+                        source.GUID
+                    )
+                );
+                return DropResult.Done(
+                    ModStrings.Format(
+                        ModStrings.EmpirePopulationSent,
+                        item.Name,
+                        AgeText.Clean(destination.LocalizedName)
+                    )
+                );
+            }
+            catch (Exception e)
+            {
+                Log.Warn("empire: sending a population unit threw: " + e);
+                return DropResult.Refused(null);
+            }
+        }
+
+        private static bool IsNoDestination(StaticString failure)
+        {
+            return !StaticString.IsNullOrEmpty(failure)
+                && failure == FailureFlags.SpaceportNoDestination;
+        }
+
+        /// <summary>The game's own sentence for one of its failure flags, in the shape the game itself
+        /// builds it (<c>AvailableModItem.Refresh</c> :77) - and nothing at all for a flag the string
+        /// files never answered, which is parked text rather than a reason.</summary>
+        private static string FailureText(StaticString failure)
+        {
+            try
+            {
+                if (StaticString.IsNullOrEmpty(failure))
+                {
+                    return null;
+                }
+
+                string said = AgeText.Clean(
+                    Gui.Localize("%Failure" + failure.ToString() + "Description")
+                );
+                return string.IsNullOrEmpty(said) || said[0] == '%' ? null : said;
+            }
+            catch (Exception)
+            {
+                return null;
             }
         }
 
