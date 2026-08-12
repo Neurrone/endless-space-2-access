@@ -37,6 +37,21 @@ files above.
 - Real models for the minimum-pass pages: Mods, Credits/DLC/disclaimer, export, multiplayer
   join (multiplayer deferred until single-player is solid).
 - Rebindable mod keys (long-standing, from input.md).
+- **Expansion surfaces — UNSIGHTABLE here until the DLCs are installed** (2026-08-12 audit,
+  `audit-dlc-mechanics.md` at the repo root; none of the four expansions has a depot in
+  this install, so every item below is code-verified at best):
+  - Behemoth family (Supremacy): a WindowShape floor for
+    `JuggernautSpecializationModalWindow` NOW (its opener is already a declared button —
+    pressing it strands the keyboard today); the real model, the status side panel's
+    proper name (`MilitaryJuggernautStatusSidePanel` has no PanelTitle and would announce
+    its class name), and the rest of the family when sightable.
+  - Hacking subsystem (Penumbra): dashboard, processing-power/operations banner, traitors
+    banner, program panel, operation route-building — one large stage, NOT to be written
+    blind; wait for the DLC.
+  - Traitor victim-side actions (Reveal/Kill/Remove in the population side panel) +
+    pirate-lair and destroyed-planet orbital labels — small, shares the fixture wait.
+  - Notification variants: pirate mission report, obliterator attacker report, academy
+    role, defense-program-encountered — mechanical registry entries, safe to write now.
 
 ## To decide (owner)
 
@@ -48,6 +63,9 @@ files above.
 - Click parity when the game's own click is a bug: stated exception path or strict parity.
 - The galaxy's remaining world-navigation model — lanes as routes and an answer to "what is
   near me" — still wanted, or does the map-as-tree cover it?
+- Cursor target modes have no keyboard confirm (GlobalHud announces the mode and stops):
+  one gesture would serve probe launch, take-system, obliterator fire, pirate mark, time
+  bubble and the hacking cursors. Needs an owner-approved binding.
 
 ## Shipped (pointers only)
 
