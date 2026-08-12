@@ -40,21 +40,18 @@ files above.
 - **Expansion surfaces — UNSIGHTABLE here until the DLCs are installed** (2026-08-12 audit,
   `audit-dlc-mechanics.md` at the repo root; none of the four expansions has a depot in
   this install, so every item below is code-verified at best):
-  - Behemoth family (Supremacy): a WindowShape floor for
-    `JuggernautSpecializationModalWindow` NOW (its opener is already a declared button —
-    pressing it strands the keyboard today); the real model, the status side panel's
-    proper name (`MilitaryJuggernautStatusSidePanel` has no PanelTitle and would announce
-    its class name), and the rest of the family when sightable.
+  - Behemoth family (Supremacy): the specialization modal's REAL model when sightable
+    (floor shipped at layer 29 — cards as radios, resources as readouts; deferred there:
+    cards-as-one-row vs several, strategic-resource naming, the GuiButtonHint on a
+    blocked card); the rest of the family when sightable.
   - Hacking subsystem (Penumbra): dashboard, processing-power/operations banner, traitors
     banner, program panel, operation route-building — one large stage, NOT to be written
     blind; wait for the DLC.
   - Traitor victim-side actions (Reveal/Kill/Remove in the population side panel) +
     pirate-lair and destroyed-planet orbital labels — small, shares the fixture wait.
-  - Notification variants: pirate mission report, obliterator attacker report, academy
-    role, defense-program-encountered — mechanical registry entries, safe to write now.
-  - Nakalim relic slots (Awakening): the slot flips invisibly between assign and remove
-    (icon swap only) and names itself with a symbol token — announce the mode and a real
-    name; verify the locked/empty refusal sentences survive the shape walk.
+  - The report-family breakdown toggle (Damage/Displacement/IonWave/ObliteratorVictim/
+    PirateMission reports): a caption-less icon the shared caption rule drops — harmless
+    only if the collapsed panel keeps its tables Visible, UNVERIFIED with a real report.
   - Umbral Choir ghost-system page (Penumbra): the Ghost state is a THIRD mode of the
     star system page beside Outpost and Colony — two side panels of bare-icon controls +
     a growth gauge.
