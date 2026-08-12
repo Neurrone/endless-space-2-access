@@ -342,7 +342,7 @@ namespace ES2Access.Tests.UI
         public void ATargetSaysSoOnlyWhileSomethingItTakesIsBeingCarried()
         {
             CarryState carry = new CarryState();
-            NodeAnnouncement part = carry.DropTargetPart(Ship);
+            NodeAnnouncement part = carry.DropTargetPart(Target(DropResult.Done()));
 
             Assert.True(part.Live);
             Assert.Null(part.Text());
@@ -352,6 +352,58 @@ namespace ES2Access.Tests.UI
 
             carry.PickUp(new CarryItem(new object(), "Explorer", Ship), "galaxy");
             Assert.Equal("drop target", part.Text());
+        }
+
+        [Fact]
+        public void ATargetThatWouldRefuseThisCargoSaysNothingButStillRefusesInTheGamesWords()
+        {
+            CarryState carry = new CarryState();
+            NodeVtable locked = Target(DropResult.Refused("This tactic is locked"));
+            locked.DropAccepts = held => false;
+            NodeAnnouncement part = carry.DropTargetPart(locked);
+            carry.PickUp(new CarryItem(new object(), "Explorer", Ship), "tactics");
+
+            Assert.Null(part.Text());
+
+            // The drop is still the target's, so a player who presses anyway hears the game's reason
+            // rather than the control's own click.
+            CarryOutcome outcome = CarryActions.Activate(locked, carry);
+            Assert.True(outcome.Handled);
+            Assert.Equal("This tactic is locked", outcome.Speech);
+        }
+
+        [Fact]
+        public void ASourceSaysDraggableOnlyWhileNothingIsCarried()
+        {
+            CarryState carry = new CarryState();
+            NodeAnnouncement part = carry.DraggablePart(Source(new object(), "Explorer"));
+
+            // Not live: the word is composed with the readout, and one appearing on its own after a
+            // cancelled drag would be noise on top of the gesture that already said what happened.
+            Assert.False(part.Live);
+            Assert.Equal("draggable", part.Text());
+
+            carry.PickUp(new CarryItem(new object(), "Hunter", Ship), "fleets");
+            Assert.Null(part.Text());
+        }
+
+        [Fact]
+        public void AControlWithNothingToGiveDoesNotSayDraggable()
+        {
+            CarryState carry = new CarryState();
+            NodeVtable empty = Vt("Empty slot");
+            empty.OnPickUp = () => null;
+
+            Assert.Null(carry.DraggablePart(empty).Text());
+        }
+
+        [Fact]
+        public void AControlThatIsNeitherSourceNorTargetSaysNothingAboutDragging()
+        {
+            CarryState carry = new CarryState();
+
+            Assert.Null(carry.DraggablePart(Vt("Button")));
+            Assert.Null(carry.DropTargetPart(Vt("Button")));
         }
 
         [Fact]
@@ -372,6 +424,7 @@ namespace ES2Access.Tests.UI
             Assert.True(ModStrings.TryGetDefault(ModStrings.CarryCancelled, out template));
             Assert.True(ModStrings.TryGetDefault(ModStrings.CarryMovedToPosition, out template));
             Assert.True(ModStrings.TryGetDefault(ModStrings.CarryDropTarget, out template));
+            Assert.True(ModStrings.TryGetDefault(ModStrings.CarryDraggable, out template));
             Assert.True(ModStrings.TryGetDefault(ModStrings.NavNotSelected, out template));
         }
     }

@@ -42,6 +42,13 @@ namespace ES2Access.Screens
     {
         private const string ActionsStop = "newgame:actions";
 
+        private const string ConnectingStop = "newgame:connecting";
+
+        /// <summary>How long the launch lock has to hold before it is worth saying. The lock arrives from
+        /// a static session event and a state the game passes THROUGH would otherwise announce itself
+        /// twice for nothing.</summary>
+        private const int LockSettleFrames = 10;
+
 
         /// <summary>The game's own names for the two controls the lobby draws without a caption: the
         /// faction list beside a portrait and the wordless colour swatch next to it. Both are named in
@@ -57,6 +64,15 @@ namespace ES2Access.Screens
 
         /// <summary>The deferred keyboard hand-over for this page's text boxes.</summary>
         private readonly TextFieldEditor _editor = new TextFieldEditor();
+
+        /// <summary>Whether the "connecting" cover has been announced, and the two halves of the launch
+        /// lock: what the game reports now, what was last said about it, and how long the current answer
+        /// has held.</summary>
+        private bool _connectingTold;
+
+        private bool _lockSeen;
+        private bool _lockTold;
+        private int _lockSettling;
 
         private static readonly Func<AgeTransform, AgeTransform> Itself = widget => widget;
 
@@ -132,6 +148,74 @@ namespace ES2Access.Screens
         public override void OnUpdate()
         {
             _editor.Update();
+            AnnounceLobbyStates();
+        }
+
+        /// <summary>
+        /// The two things a multiplayer lobby does to the whole page rather than to a control.
+        ///
+        /// A joiner's lobby is covered by <c>AfterJoinLoadingPanel</c> until the host's slots replicate
+        /// (<c>OnBeginShow</c> :363-366, hidden by <c>ILobbySlotProvider_OnCollectionChange</c>
+        /// :609-614). It is a plain panel, so nothing about it makes the page inactive and both slot
+        /// panels quietly draw nothing underneath it while there are fewer than two slots - a page that
+        /// says nothing at all unless the cover is announced in the game's own words.
+        ///
+        /// <c>GuiLocked</c> arrives from the static <c>SessionState.OnLockLobbyUI</c> event five seconds
+        /// before the game launches (:555-559) and switches off the empire panel and every slot's Join,
+        /// Lock and Invite at once. Without a word for it, thirty controls turn into thirty
+        /// "unavailable"s with no reason given. Measured: a session REOPENED by a setting change - the
+        /// Session Mode drop list - does not raise it, so the state does not flicker under an ordinary
+        /// edit; the settle is there for the states the game passes through on the way out of a lobby.
+        /// </summary>
+        private void AnnounceLobbyStates()
+        {
+            GameNewGame window = Window();
+            if (window == null)
+            {
+                return;
+            }
+
+            AgeTransform connecting = Transform(window.AfterJoinLoadingPanel);
+            if (connecting == null || !SettingRows.Drawn(connecting))
+            {
+                _connectingTold = false;
+            }
+            else if (!_connectingTold)
+            {
+                _connectingTold = true;
+                Voice.Say(AgeWidgets.TextOf(connecting), false);
+            }
+
+            bool locked = Locked(window);
+            if (locked != _lockSeen)
+            {
+                _lockSeen = locked;
+                _lockSettling = LockSettleFrames;
+                return;
+            }
+
+            if (_lockSettling > 0 && --_lockSettling == 0 && locked != _lockTold)
+            {
+                _lockTold = locked;
+                Voice.Say(
+                    ModStrings.Get(
+                        locked ? ModStrings.NewGameLobbyLocked : ModStrings.NewGameLobbyUnlocked
+                    ),
+                    false
+                );
+            }
+        }
+
+        private static bool Locked(GameNewGame window)
+        {
+            try
+            {
+                return window.GuiLocked;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
         }
 
         /// <summary>A text editor has been asked for and the keyboard has not changed hands yet:
@@ -156,6 +240,8 @@ namespace ES2Access.Screens
                 return;
             }
 
+            BuildConnecting(builder, window);
+
             IList<AgeTransform> categories = Children(window.CategoryPanelsContainer);
             for (int i = 0; categories != null && i < categories.Count; i++)
             {
@@ -164,6 +250,22 @@ namespace ES2Access.Screens
 
             builder.BeginStop(ActionsStop);
             BuildActions(builder, window);
+        }
+
+        /// <summary>The cover a joiner's lobby sits behind until the host's slots arrive, as a line of its
+        /// own at the top of the page - the game writes "Connecting to lobby…" on it. The panels under it
+        /// are still declared: each row of them is drawn-gated, so a lobby that has nothing yet
+        /// contributes nothing and the page grows into itself as the slots land.</summary>
+        private static void BuildConnecting(GraphBuilder builder, GameNewGame window)
+        {
+            AgeTransform panel = Transform(window.AfterJoinLoadingPanel);
+            if (panel == null || !SettingRows.Drawn(panel))
+            {
+                return;
+            }
+
+            builder.BeginStop(ConnectingStop);
+            SettingRows.AddReadout(builder, panel, "newgame:connecting");
         }
 
         // ---- one panel per category ----
@@ -354,9 +456,158 @@ namespace ES2Access.Screens
 
             string key = "newgame:competitor/" + index;
             SettingRows.AddTextField(builder, slot.PlayerNameTextField, key + "/name", _editor);
-            SettingRows.AddReadout(builder, slot.DifficultyAgainstGroup, key + "/difficulty");
+
+            // The crown is drawn to the LEFT of the name and so before it, but it is a mark ON the name
+            // rather than a thing of its own: a player entering a slot needs to hear whose slot it is
+            // before hearing what is true of them.
+            AddStateIcon(
+                builder,
+                Transform(slot.HostIcon),
+                () => ModStrings.Get(ModStrings.NewGameHost),
+                key + "/host"
+            );
+            BuildSlotStates(builder, slot, key);
             AddDropList(builder, slot.FactionDropList, FactionTitleKey, key + "/faction");
             AddDropList(builder, slot.EmpireColorDropList, ColorTitleKey, key + "/color");
+        }
+
+        /// <summary>
+        /// The strip of marks and buttons the game draws beside a slot's name, in the order it draws them
+        /// - which is the order the widgets sit in the strip, because that is what the game's own
+        /// <c>ArrangeChildren</c> lays them out by. Each is recognized by which of the slot's widgets it
+        /// IS, so the reading of one never lands on another, and each is drawn-gated: in single player
+        /// only the difficulty rating is ever there, and the multiplayer five appear exactly when
+        /// <c>CompetitorSlot.RefreshStates</c> :226-254 shows them.
+        ///
+        /// What each of them is:
+        /// - Join, on a free slot - and every AI slot IS free (<c>LobbySlot.IsFree</c> is
+        ///   <c>IsAI</c>) - takes the local player to that empire.
+        /// - Kick, host-only and only on another human's slot.
+        /// - Lock, host-only, keeps anybody else off a free slot. A tick rather than a button: the game
+        ///   draws it as a toggle carrying the slot's locked state.
+        /// - Ready and eliminated are readouts, and the game's own tooltips are complete sentences about
+        ///   the player ("This player is ready"), so they are what the marks SAY rather than something
+        ///   hanging off them.
+        /// </summary>
+        private void BuildSlotStates(GraphBuilder builder, CompetitorSlot slot, string key)
+        {
+            IList<AgeTransform> states = Children(slot.StatesTable);
+            for (int i = 0; states != null && i < states.Count; i++)
+            {
+                AgeTransform widget = states[i];
+                if (widget == null || !SettingRows.Drawn(widget))
+                {
+                    continue;
+                }
+
+                if (widget == slot.DifficultyAgainstGroup)
+                {
+                    SettingRows.AddReadout(builder, widget, key + "/difficulty");
+                }
+                else if (widget == Transform(slot.JoinButton))
+                {
+                    SettingRows.AddButton(builder, slot.JoinButton, key + "/join");
+                }
+                else if (widget == Transform(slot.KickButton))
+                {
+                    // Named by the mod for the same reason the lock is: the game draws a symbol whose
+                    // only words are the mouse instruction on its tooltip, and "Click to kick this
+                    // player" is what the button DOES, not what it is called.
+                    AddNamedButton(
+                        builder,
+                        slot.KickButton,
+                        () => ModStrings.Get(ModStrings.NewGameKick),
+                        key + "/kick"
+                    );
+                }
+                else if (widget == Transform(slot.LockToggle))
+                {
+                    AddLockToggle(builder, slot.LockToggle, key + "/lock");
+                }
+                else if (widget == slot.ReadyIconGroup || widget == slot.EliminatedGroup)
+                {
+                    AgeTransform mark = widget;
+                    AddStateIcon(
+                        builder,
+                        widget,
+                        () => AgeText.Tooltip(AgeWidgets.Raw(mark)),
+                        key + (widget == slot.ReadyIconGroup ? "/ready" : "/eliminated")
+                    );
+                }
+            }
+        }
+
+        /// <summary>A mark the game draws as a picture and explains in words somewhere else: the words are
+        /// the readout's value, so the line says the one thing the picture is there to say and says it
+        /// once.</summary>
+        private static void AddStateIcon(
+            GraphBuilder builder,
+            AgeTransform widget,
+            Func<string> text,
+            string key
+        )
+        {
+            if (widget == null || !SettingRows.Drawn(widget))
+            {
+                return;
+            }
+
+            NodeVtable vtable = GraphNodes.Readout(() => null, text, null, null);
+            AgeWidgets.PointAt(vtable, widget);
+            builder.AddItem(ControlId.Referenced(widget, key), vtable);
+        }
+
+        /// <summary>A button the game drew as a symbol that its own tooltip does not name, so the mod
+        /// supplies the name and the tooltip still says what pressing it does.</summary>
+        private static void AddNamedButton(
+            GraphBuilder builder,
+            AgeControlButton button,
+            Func<string> label,
+            string key
+        )
+        {
+            AgeTransform widget = Transform(button);
+            if (button == null || !SettingRows.Drawn(widget))
+            {
+                return;
+            }
+
+            AgeControlButton it = button;
+            NodeVtable vtable = GraphNodes.Button(
+                label,
+                () => AgeWidgets.Press(it),
+                () => AgeWidgets.Operable(widget),
+                AgeWidgets.Raw(widget)
+            );
+            AgeWidgets.Point(vtable, it);
+            builder.AddItem(ControlId.Referenced(button, key), vtable);
+        }
+
+        /// <summary>The host's lock on a free slot. Named by the mod: the toggle draws no words and its
+        /// tooltip is a mouse instruction ("Click to prevent any player from switching to this empire"),
+        /// which explains what ticking it does but does not name the thing being ticked.</summary>
+        private static void AddLockToggle(
+            GraphBuilder builder,
+            AgeControlToggle toggle,
+            string key
+        )
+        {
+            AgeTransform widget = Transform(toggle);
+            if (toggle == null || !SettingRows.Drawn(widget))
+            {
+                return;
+            }
+
+            AgeControlToggle it = toggle;
+            NodeVtable vtable = GraphNodes.Checkbox(
+                () => ModStrings.Get(ModStrings.NewGameLockEmpire),
+                () => it.State,
+                () => AgeWidgets.Toggle(it),
+                () => AgeWidgets.Operable(widget),
+                AgeWidgets.Raw(widget)
+            );
+            AgeWidgets.Point(vtable, it);
+            builder.AddItem(ControlId.Referenced(toggle, key), vtable);
         }
 
         // ---- the bottom row ----
@@ -566,6 +817,30 @@ namespace ES2Access.Screens
         private static AgeTransform Transform(AgePrimitiveLabel label)
         {
             return SettingRows.TransformOf(label);
+        }
+
+        private static AgeTransform Transform(GuiPanel panel)
+        {
+            try
+            {
+                return panel == null ? null : panel.AgeTransform;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        private static AgeTransform Transform(AgePrimitiveImage image)
+        {
+            try
+            {
+                return image == null ? null : image.AgeTransform;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
         }
 
         private static AgeTransform Transform(CompetitorSlot slot)

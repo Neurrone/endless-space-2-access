@@ -524,6 +524,27 @@ namespace ES2Access.Core.Speech
         public const string ScreenModding = "screen.modding";
         public const string ScreenResourcesExport = "screen.resources-export";
         public const string ScreenJoinGame = "screen.join-game";
+
+        /// <summary>What the list of multiplayer games says when the Steam search comes back. The search
+        /// is asynchronous - the page opens empty and fills seconds later - so its arrival is the only
+        /// thing that says the list is the list, and the empty answer is a line on the page as well as
+        /// the sentence a finished search speaks.</summary>
+        public const string JoinGameNoGames = "join-game.no-games";
+        public const string JoinGameGameFound = "join-game.game-found";
+        public const string JoinGameGamesFound = "join-game.games-found";
+
+        // The lobby's multiplayer marks. The game draws the crown, the kick button and the lock as
+        // pictures with no words: the crown carries no tooltip at all, and the other two explain what
+        // clicking them DOES ("Click to kick this player") without naming the thing being clicked. The
+        // ready and eliminated marks do explain themselves in the game's words and take nothing from
+        // here. The launch lock is a state with no widget of its own - it switches thirty controls off
+        // at once, five seconds before the game starts.
+        public const string NewGameHost = "new-game.host";
+        public const string NewGameKick = "new-game.kick";
+        public const string NewGameLockEmpire = "new-game.lock-empire";
+        public const string NewGameLobbyLocked = "new-game.lobby-locked";
+        public const string NewGameLobbyUnlocked = "new-game.lobby-unlocked";
+
         public const string NotifyOpenNegotiation = "notify.open-negotiation";
         public const string NotifyOpenMinorFaction = "notify.open-minor-faction";
         public const string NotifyOpenScoreScreen = "notify.open-score-screen";
@@ -931,6 +952,14 @@ namespace ES2Access.Core.Speech
             { ScreenModding, "Mods" },
             { ScreenResourcesExport, "Export resources" },
             { ScreenJoinGame, "Join game" },
+            { JoinGameNoGames, "No multiplayer games found" },
+            { JoinGameGameFound, "{0} multiplayer game found" },
+            { JoinGameGamesFound, "{0} multiplayer games found" },
+            { NewGameHost, "Host" },
+            { NewGameKick, "Kick" },
+            { NewGameLockEmpire, "Lock empire" },
+            { NewGameLobbyLocked, "The lobby is locked while the game launches" },
+            { NewGameLobbyUnlocked, "The lobby is unlocked" },
             { NotifyOpenNegotiation, "Open negotiation" },
             { NotifyOpenMinorFaction, "Open minor faction diplomacy" },
             { NotifyOpenScoreScreen, "Open score screen" },

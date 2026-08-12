@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using ES2Access.Core.Speech;
+using ES2Access.Core.UI;
 using ES2Access.Core.UI.Graph;
 using ES2Access.Tests.Speech;
 using Xunit;
@@ -165,6 +166,47 @@ namespace ES2Access.Tests.UI
             b.AddItem(Id("a"), vt);
             Assert.Equal("Colonize, button, first extra, second extra",
                 GraphAnnouncer.LeafText(Node(b.Build(), "a")));
+        }
+
+        // ---- the drag ----
+        //
+        // No screen composes these words: the announcer derives them from the control's own pick-up and
+        // drop declarations, so a screen written tomorrow says them too.
+
+        [Fact]
+        public void AControlThatCanBeDraggedSaysSoAtTheTailOfItsReadout()
+        {
+            CarryState carry = new CarryState();
+            GraphAnnouncer.Carry = carry;
+            ControlType button = Type("button", "button");
+            NodeVtable vt = new NodeVtable
+            {
+                ControlType = button,
+                Announcements = new[] { Part("Explorer", AnnouncementKinds.Label) },
+                Sections = new[] { new NodeSection(() => new[] { "A ship" }, TooltipMode.Indicate) },
+                OnPickUp = () => new CarryItem(new object(), "Explorer", "ship"),
+                DropKind = "ship",
+                OnDrop = held => DropResult.Done(),
+            };
+            GraphBuilder b = new GraphBuilder();
+            b.AddItem(Id("a"), vt);
+            GraphNode node = Node(b.Build(), "a");
+
+            Assert.Equal("Explorer, button, has tooltip, draggable", GraphAnnouncer.LeafText(node));
+
+            // Mid-drag the useful fact is where the thing can GO, so the same control swaps one word for
+            // the other rather than saying both.
+            carry.PickUp(new CarryItem(new object(), "Hunter", "ship"), "fleets");
+            Assert.Equal("Explorer, button, has tooltip, drop target", GraphAnnouncer.LeafText(node));
+        }
+
+        [Fact]
+        public void AControlWithNoDragDeclarationsSaysNothingAboutDragging()
+        {
+            GraphAnnouncer.Carry = new CarryState();
+            GraphBuilder b = new GraphBuilder();
+            b.AddItem(Id("a"), Vt("Colonize"));
+            Assert.Equal("Colonize", GraphAnnouncer.LeafText(Node(b.Build(), "a")));
         }
 
         [Fact]
