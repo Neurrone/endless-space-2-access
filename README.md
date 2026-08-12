@@ -16,8 +16,10 @@ The repo has two deliverables:
 
 ### Prerequisites
 
-- **Endless Space 2** installed (Steam). The game runs Unity 5.5 / Mono, so the mod
-  targets .NET Framework 3.5.
+- **Endless Space 2** installed — any desktop store (Steam, GOG). The game runs
+  Unity 5.5 / Mono, so the mod targets .NET Framework 3.5. (The game itself has no
+  store-specific code paths beyond Steam-present vs Steam-absent, and the mod calls no
+  Steam API — see `docs/es2-facts.md`.)
 - **.NET SDK 8** — builds the mod and runs the offline tests (`net8.0`).
 - **.NET SDK 10** (or newer) — only needed to run `ilspycmd` 10.x for decompiling.
 - **ilspycmd** ≥ 10: `dotnet tool install -g ilspycmd`.

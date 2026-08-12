@@ -879,6 +879,20 @@ generic graduates to the generic docs.
 
 ## Multiplayer, session and the install
 
+- **The game has NO store code besides Steam** — no GOG/Galaxy/Epic assemblies or branches
+  anywhere; the single branch is "did `SteamAPI_Init()` succeed", and the failure path is
+  hardcoded on (`enableOfflineModeWhenSteamClientIsDown = true`): services register with
+  `IsSteamRunning == false`, all DLC unowned, language forced to English, Join Game refused
+  with `SteamNotRunning`. Launching `EndlessSpace2.exe` with Steam closed reproduces the
+  whole store-less profile — a free test fixture. The mod calls no Steam API anywhere.
+- **DLC ownership has exactly one source**: `DownloadableContent.IsSubscribed` →
+  `SteamApps.BIsSubscribedApp` (no subclass overrides it). The 367 `*_DLC*` data files
+  ship with the base install; only flags gate them. To unhide at runtime, add
+  `Subscribed|Installed|Activated` via `AddAccessibility` — NOT `Shared`, which
+  `RuntimeState_Lobby:400-430` wipes and re-derives at session creation.
+- **"Steam cloud" saves are not a Steam API**: the toggle writes a registry key that
+  redirects the save directory to `<saves>\Cloud` — identical on any store.
+
 - **A lobby has chat history the moment it becomes multiplayer**: switching Session Mode posts
   `%LobbyChatRenamed` through the chat service, so the log is never empty in a session that was
   ever MP.

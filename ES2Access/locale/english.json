@@ -140,7 +140,7 @@
   "gamemenu.read-only-settings": "read only",
   "loadsave.save-name": "Save name",
   "loadsave.edit-name": "Type the save name, then press Enter.",
-  "loadsave.cloud": "Steam cloud saves",
+  "loadsave.cloud": "Cloud saves",
   "nav.cell-empty": "empty",
   "save.started": "Saving the game",
   "save.finished": "Save finished",

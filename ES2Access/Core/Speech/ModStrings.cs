@@ -917,7 +917,7 @@ namespace ES2Access.Core.Speech
             { GameMenuReadOnlySettings, "read only" },
             { LoadSaveSaveName, "Save name" },
             { LoadSaveEditName, "Type the save name, then press Enter." },
-            { LoadSaveCloud, "Steam cloud saves" },
+            { LoadSaveCloud, "Cloud saves" },
             { NavCellEmpty, "empty" },
             { SaveStarted, "Saving the game" },
             { SaveFinished, "Save finished" },
