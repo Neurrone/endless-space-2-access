@@ -90,6 +90,25 @@ namespace ES2Access.Screens
         }
 
         /// <summary>
+        /// An action fired on a screen where every key means the SAME one thing - the game's own "press
+        /// anything to skip", which a cutscene answers with. Offered before the review chords and before
+        /// navigation, because the point is that nothing else gets the press; return true when the screen
+        /// acted on it.
+        ///
+        /// It exists because the mod cannot decline a key after the fact: the keys it claims are hidden
+        /// from the game's binding matcher (`GameKeyStandDown`), so on a screen whose whole interaction is
+        /// the game's press-anything handler, every claimed key EATS the skip. A screen with something to
+        /// navigate never wants this, which is why it is opt-in per screen rather than a mode.
+        ///
+        /// Escape is not offered - it stays the game's like everywhere else (<see cref="ConsumesBack"/>),
+        /// so the screen underneath keeps whatever the engine's own cancel does.
+        /// </summary>
+        public virtual bool AnyKey(string actionKey)
+        {
+            return false;
+        }
+
+        /// <summary>
         /// Whether <see cref="Back"/> is going to claim the key, asked BEFORE it is pressed.
         ///
         /// The mod and the game read the keyboard in parallel, so a key the mod acts on also does

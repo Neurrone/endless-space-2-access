@@ -119,6 +119,33 @@ namespace ES2Access.Tests.UI
         }
 
         [Fact]
+        public void MoveStopWrapsBackwardsFromTheFirstStop()
+        {
+            GraphState state = new GraphState();
+            KeyGraph g = TwoStops(state);
+            g.Rerender();
+            Assert.True(g.MoveStop(-1, true).Moved);
+            Assert.Equal("b1", Focused(g));
+        }
+
+        // What Tab does on a page with one panel: nothing. Wrapping round to the stop the player is
+        // already on is not a move, so the key is consumed and says nothing rather than re-reading the
+        // same control (GraphNavigator.Stop).
+        [Fact]
+        public void MoveStopWithOnlyOneStopNeverMoves()
+        {
+            GraphState state = new GraphState();
+            KeyGraph g = new KeyGraph(Renderer(b =>
+                b.BeginStop("s1").AddItem(Id("a1"), Vt("A1")).AddItem(Id("a2"), Vt("A2"))), state);
+            g.Rerender();
+            g.Move(GraphDir.Down);
+            Assert.Equal("a2", Focused(g));
+            Assert.False(g.MoveStop(1, true).Moved);
+            Assert.False(g.MoveStop(-1, true).Moved);
+            Assert.Equal("a2", Focused(g));
+        }
+
+        [Fact]
         public void ReturningToAStopLandsOnItsRememberedPosition()
         {
             GraphState state = new GraphState();

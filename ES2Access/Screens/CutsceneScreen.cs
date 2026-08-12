@@ -13,13 +13,14 @@ namespace ES2Access.Screens
     ///
     /// Like the loading screen this is something that HAPPENS to the player, so there is nothing to
     /// navigate and every word comes from the per-frame update. The game's own keys are the whole of the
-    /// interaction - any input action or click cuts the video short (<c>HandleInput</c> takes anything) -
-    /// and no key of the mod's is bound: a skip of our own would duplicate one the game already answers.
+    /// interaction - any input action or click cuts the video short (<c>HandleInput</c> takes anything).
     ///
-    /// One consequence of being a screen at all, inherited from <see cref="SystemDiscoveryScreen"/> and
-    /// spelled out here because it is a cost: while a mod screen is focused the mod claims Enter, so ENTER
-    /// no longer cuts the scene short. Escape and the mouse still do, and Escape is the key the game's own
-    /// prompt is about, so the affordance survives - but it is narrower than it was.
+    /// So EVERY key the mod takes here means that skip (<see cref="AnyKey"/>, owner decision
+    /// 2026-08-12). Being a screen at all is what makes this necessary rather than a nicety: the keys a
+    /// mod screen claims are hidden from the game's own binding matcher, so while a cutscene played, Tab,
+    /// Enter and the arrows did nothing at all - the mod had nothing to navigate and the game never saw
+    /// the press. The cost is that review keys cannot be used to re-read a subtitle while the video
+    /// plays; the player pressed a key at a video, and skipping is what they meant.
     ///
     /// What it says is the SUBTITLE, as the game brings each one up, and only while the player has
     /// subtitles turned on - which is the game's own <c>DisplaySubtitles</c> option and the only reason the
@@ -90,6 +91,47 @@ namespace ES2Access.Screens
         public override bool Back()
         {
             return false;
+        }
+
+        /// <summary>Nothing here to search - the screen declares no controls at all - and a letter the
+        /// mod claimed for a search that cannot match anything is a letter the game never sees. So the
+        /// alphabet stays the game's, and a letter it has a binding for cuts the scene short through the
+        /// game's own matcher, exactly as it does with no mod loaded.</summary>
+        public override bool AllowsTypeahead
+        {
+            get { return false; }
+        }
+
+        /// <summary>
+        /// Any key but Escape, which is the game's own: cut the video short, exactly as the game does for
+        /// a key it has no special answer to.
+        ///
+        /// <c>InputAction.None</c> rather than <c>Exit</c> on purpose - it is what any ORDINARY key
+        /// amounts to at this window. Exit is one of the two the base window answers itself by hiding,
+        /// and the difference shows on the scene the victory screen plays: shown with
+        /// <c>autoHide: false</c>, its own key path unloads the video and leaves the window standing for
+        /// the screen behind it to finish with (<c>CutsceneModalWindow.HandleInput</c>,
+        /// <c>VictoryScreen.cs:262</c>), which hiding it would skip.
+        /// </summary>
+        public override bool AnyKey(string actionKey)
+        {
+            // Spelled out, like ModEntry's: the game has an InputAction of its own in the global
+            // namespace, so this file cannot take a using on the mod's input namespace.
+            if (actionKey == ES2Access.UI.Input.UiActions.Back)
+            {
+                return false;
+            }
+
+            try
+            {
+                CutsceneModalWindow window = Showing();
+                return window != null && window.HandleInput(InputAction.None);
+            }
+            catch (Exception e)
+            {
+                Log.Warn("cutscene: skipping the scene threw: " + e);
+                return false;
+            }
         }
 
         public override void OnPush()

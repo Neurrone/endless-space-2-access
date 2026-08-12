@@ -646,9 +646,19 @@ namespace ES2Access.UI
             return KeyGraph.InTree(focused);
         }
 
+        /// <summary>
+        /// Tab and Shift+Tab, which WRAP: the last stop's Tab lands on the first and the first stop's
+        /// Shift+Tab on the last (owner decision 2026-08-12). A player who cannot see the panels has no
+        /// way to know a page has run out of them, so stopping dead at an end reads as a broken key -
+        /// and coming round is how every other stop-cycling reader behaves.
+        ///
+        /// A page with exactly ONE stop is where wrapping would be a lie: coming round to the panel the
+        /// player is already on is not a move, so the key is consumed and says nothing rather than
+        /// re-reading the same control (<see cref="KeyGraph.MoveStop"/> answers not-moved there).
+        /// </summary>
         private bool Stop(int step)
         {
-            MoveResult move = _graph.MoveStop(step, false);
+            MoveResult move = _graph.MoveStop(step, true);
             if (move.Moved)
             {
                 AnnounceMove(move);

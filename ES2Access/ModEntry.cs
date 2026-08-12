@@ -249,6 +249,15 @@ namespace ES2Access
                 return false;
             }
 
+            // A screen where every key means one thing answers first, before the review chords and
+            // before navigation: on a playing cutscene ANY key is the game's own skip, and a mod that
+            // spent the press on a review buffer would have eaten it - see Screen.AnyKey.
+            ES2Access.Screens.Screen focused = Navigator.Screen;
+            if (focused != null && focused.AnyKey(action.Key))
+            {
+                return true;
+            }
+
             return Buffers.Dispatch(action.Key) || Navigator.Dispatch(action.Key);
         }
 
@@ -279,15 +288,17 @@ namespace ES2Access
         }
 
         /// <summary>Whether the carry key is the mod's - asked by the game's own key scan, several
-        /// times a frame. Claimed whenever a mod screen is focused, not just where a drag could
-        /// start: the game's Space is ToggleScanView (`InputManager.cs:233`, shared with Mouse2), a
-        /// whole-map lens mode the mod does not model yet, and a screen-reader user reaching for the
-        /// drag key must never flip the map into an unannounced mode. The lens keeps its Mouse2
-        /// route, and gets a deliberate keyboard route when it is modelled (docs/roadmap.md).</summary>
+        /// times a frame. Claimed only where it can DO something: a control with something to pick up,
+        /// something already being carried, or a live search the space is a character of
+        /// (<see cref="GraphNavigator.TakesCarryKey"/>). Everywhere else Space is the game's, which is
+        /// ToggleScanView (`InputManager.cs:233`, shared with Mouse2) - the strategic lens, now a
+        /// screen of the mod's own (<see cref="ES2Access.Screens.ScanViewScreen"/>) that announces
+        /// itself on arrival, so handing the key back no longer drops the player into an unannounced
+        /// mode (owner decision 2026-08-12, reversing the blanket claim of 2026-08-11).</summary>
         private static bool CarryKeyClaimed()
         {
             GraphNavigator navigator = Navigator;
-            return navigator != null && navigator.Screen != null;
+            return navigator != null && navigator.TakesCarryKey();
         }
 
         /// <summary>Whether the focused screen is taking this key as typed text rather than leaving
