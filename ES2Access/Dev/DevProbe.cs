@@ -463,6 +463,18 @@ namespace ES2Access.Dev
 
                 json.WriteEndArray();
 
+                // The chords that stay the game's whatever the key set says - ask about one with
+                // Chord(), which is the only probe that can tell them apart.
+                json.WritePropertyName("leftToGame");
+                json.WriteStartArray();
+                IList<ES2Access.UI.Input.KeyboardBinding> chords = input.ChordsLeftToGame;
+                for (int i = 0; i < chords.Count; i++)
+                {
+                    json.WriteValue(chords[i].DisplayName);
+                }
+
+                json.WriteEndArray();
+
                 if (string.IsNullOrEmpty(keys))
                 {
                     return;
@@ -499,6 +511,53 @@ namespace ES2Access.Dev
                 }
 
                 json.WriteEndArray();
+            });
+        }
+
+        /// <summary>
+        /// What the game's own key scans are told about one CHORD - <c>"Ctrl+Tab"</c>, <c>"Tab"</c>,
+        /// <c>"Shift+Tab"</c>, parsed by the game's own <c>KeyCombination.FromString</c>.
+        ///
+        /// <see cref="Claims(string)"/> cannot answer this: it asks per <c>KeyCode</c>, exactly as
+        /// <see cref="ModInput.ClaimsKey"/> is asked, so it says "claimed" for Tab and has no way to
+        /// speak about Ctrl+Tab. This calls the prefix's own decision
+        /// (<see cref="GameKeyStandDown.Claimed"/>) on a combination built here, which is what proves a
+        /// game binding is reachable without holding three keys down while an HTTP request arrives.
+        ///
+        /// <c>suppressed: true</c> means the game is told the chord is not pressed, so whatever it has
+        /// bound to it never runs. A chord handed back (<see cref="ModInput.LeaveToGame"/>) reads false
+        /// while its bare key reads true.
+        /// </summary>
+        public static string Chord(string chord)
+        {
+            return Guarded(json =>
+            {
+                if (string.IsNullOrEmpty(chord))
+                {
+                    throw new InvalidOperationException("no chord was asked about");
+                }
+
+                Amplitude.Unity.Input.KeyCombination combination =
+                    Amplitude.Unity.Input.KeyCombination.FromString(chord, "+");
+                json.WritePropertyName("chord");
+                json.WriteValue(chord);
+                json.WritePropertyName("parsed");
+                json.WriteValue(combination.ToString("+"));
+                json.WritePropertyName("keys");
+                json.WriteStartArray();
+                for (int i = 0; i < combination.KeyCodes.Count; i++)
+                {
+                    json.WriteStartObject();
+                    json.WritePropertyName("key");
+                    json.WriteValue(combination.KeyCodes[i].ToString());
+                    json.WritePropertyName("held");
+                    json.WriteValue(UnityEngine.Input.GetKey(combination.KeyCodes[i]));
+                    json.WriteEndObject();
+                }
+
+                json.WriteEndArray();
+                json.WritePropertyName("suppressed");
+                json.WriteValue(ES2Access.UI.Input.GameKeyStandDown.Claimed(combination));
             });
         }
 

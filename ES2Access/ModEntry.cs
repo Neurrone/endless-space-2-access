@@ -81,6 +81,11 @@ namespace ES2Access
         /// screen because it has to be listening in the lobby and in the game alike.</summary>
         private static SessionChat _chat;
 
+        /// <summary>The game's own in-game chat box, announced as the keyboard goes into it and comes
+        /// back. Like the chat log it belongs to no screen: the box is opened from wherever the player
+        /// is standing.</summary>
+        private static ChatField _chatField;
+
         /// <summary>The wordless spinner the game shows while it writes a save, said out loud. Like the
         /// chat, it lives here rather than on a screen: a save is started from the game menu, from the
         /// save page, from a quick-save key and by the game itself at the turn's end, and the player has
@@ -117,6 +122,7 @@ namespace ES2Access
             // Registered right after the UI buffer, so the chat log is the buffer Ctrl+Right reaches
             // from a control's description while a multiplayer session is up.
             _chat = new SessionChat(Buffers);
+            _chatField = new ChatField();
             _saving = new SaveProgress();
             Navigator = new GraphNavigator(Buffers);
             InstallAnnouncerWording();
@@ -381,6 +387,9 @@ namespace ES2Access
             input.Register(BufferActions.Next).Bind(KeyCode.RightArrow, ctrl: true);
             input.Register(BufferActions.First).Bind(KeyCode.Home, ctrl: true);
             input.Register(BufferActions.Last).Bind(KeyCode.End, ctrl: true);
+
+            // The chord the game's chat key sits on is handed back to the game rather than declared
+            // here, because it follows a binding the player can change - see GameChatKey.
         }
 
         /// <summary>
@@ -433,6 +442,12 @@ namespace ES2Access
             {
                 _chat.Stop();
                 _chat = null;
+            }
+
+            if (_chatField != null)
+            {
+                _chatField.Stop();
+                _chatField = null;
             }
 
             // And the same for the saving watcher: the window service outlives the mod, so the
@@ -512,6 +527,10 @@ namespace ES2Access
             KeepSimulatingUnfocused();
             ModLocale.Tick();
 
+            // Before the keys are polled, and idempotent: the game's chat key has to be off the mod's
+            // keys for the layer's suppression to leave a way into chat at all.
+            GameChatKey.Tick();
+
             // Before the keys are polled: a window the game hid while its text field held the engine's
             // keyboard would otherwise leave the whole layer standing down for a field nobody can see.
             GameKeyboardHandover.Tick();
@@ -525,6 +544,10 @@ namespace ES2Access
             Navigator.TypeAheadTick();
 
             Screens.Tick();
+
+            // After the screens, so that reading the cursor's control back on the way out of the chat
+            // box reads the graph as the screens have just left it.
+            _chatField.Tick();
 
             // After the screens: a screen's arrival announcement interrupts, and a chat line queued
             // before it would be thrown away. Chat lines queue behind whatever the player asked for.

@@ -87,6 +87,11 @@ namespace ES2Access.Core.Speech
         public const string ChatWhispered = "chat.whispered";
         public const string ChatToAlliance = "chat.to-alliance";
 
+        // Said when the game's own chat box takes the keyboard, which it does silently. The keys are
+        // named because they are the game's, not the mod's: Enter posts the line and Escape hands the
+        // keyboard back.
+        public const string ChatTyping = "chat.typing";
+
         // Screen names, spoken on arrival.
         public const string ScreenMainMenu = "screen.main-menu";
         public const string ScreenMessageBox = "screen.message-box";
@@ -763,6 +768,7 @@ namespace ES2Access.Core.Speech
             { ChatSaid, "{0}: {1}" },
             { ChatWhispered, "{0} whispers: {1}" },
             { ChatToAlliance, "{0}, to the alliance: {1}" },
+            { ChatTyping, "Chat. Type a message, Enter sends it, Escape leaves." },
             { ScreenMainMenu, "Main menu" },
             { ScreenMessageBox, "Dialog" },
             { ScreenOptions, "Options" },

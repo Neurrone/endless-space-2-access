@@ -38,6 +38,7 @@
   "chat.said": "{0}: {1}",
   "chat.whispered": "{0} whispers: {1}",
   "chat.to-alliance": "{0}, to the alliance: {1}",
+  "chat.typing": "Chat. Type a message, Enter sends it, Escape leaves.",
   "screen.main-menu": "Main menu",
   "screen.message-box": "Dialog",
   "screen.options": "Options",
