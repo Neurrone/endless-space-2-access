@@ -2,6 +2,7 @@ using System;
 using System.Reflection;
 using ES2Access.Core.Util;
 using HarmonyLib;
+using UnityEngine;
 
 namespace ES2Access.UI.Input
 {
@@ -28,11 +29,28 @@ namespace ES2Access.UI.Input
     /// then hides the window around it without taking the keyboard back. The control is still the
     /// engine's focused control and still key-exclusive, so the mod stands down for a field nobody can
     /// see or type into, and every key in the mod goes dead with no way back.
+    ///
+    /// The third thing this seam is good for is telling the two ways a field lets go of the keyboard
+    /// apart. The engine unfocuses a field on Return (its validate) and on Escape
+    /// (<c>InputManager.HandleInput</c> :1212-1227, for a control whose <c>StandardCancel</c> is set),
+    /// and a watcher downstream sees the same thing either way - a field that was holding the keyboard
+    /// and is not any more. Whether the box around it should be finished or fixed depends on which key
+    /// did it, so <see cref="TookTheValidateKey"/> reports the Return the engine is about to turn into
+    /// a validate, which is the one moment where the two are distinguishable.
     /// </summary>
     internal static class GameKeyboardHandover
     {
         private static Harmony _harmony;
         private static bool _reportedFailure;
+
+        // The field the engine is delivering a validate key to, and the frame it was delivered on. One
+        // field, not a set: only the focused control is ever sent KeyDown.
+        //
+        // Frame-stamped rather than held until someone asks, because the asker is a screen that may
+        // have gone by then - a Return that COMMITTED closes the box, and nothing is left to consume
+        // the record of it. A stale one would then answer for the next Return the box ever sees.
+        private static AgeControl _handedTheValidateKey;
+        private static int _handedTheValidateKeyOnFrame;
 
         public static void Install()
         {
@@ -81,6 +99,7 @@ namespace ES2Access.UI.Input
             Harmony harmony = _harmony;
             _harmony = null;
             _reportedFailure = false;
+            _handedTheValidateKey = null;
             if (harmony == null)
             {
                 return;
@@ -126,12 +145,33 @@ namespace ES2Access.UI.Input
             return new[] { keyDown };
         }
 
-        private static bool SkipWhenTheModAlreadyUsedTheKey()
+        private static bool SkipWhenTheModAlreadyUsedTheKey(AgeControlTextField __instance)
         {
             try
             {
                 ModInput input = ModEntry.Input;
-                return input == null || !input.ActedOnAKeyGoingDown();
+                if (input != null && input.ActedOnAKeyGoingDown())
+                {
+                    return false;
+                }
+
+                if (
+                    __instance != null
+                    && __instance.UseValidateCallback
+                    && __instance.OnValidateObject != null
+                    && (
+                        UnityEngine.Input.GetKeyDown(KeyCode.Return)
+                        || UnityEngine.Input.GetKeyDown(KeyCode.KeypadEnter)
+                    )
+                )
+                {
+                    // Stamped before the engine acts, because acting is what clears the focus this
+                    // records the reason for.
+                    _handedTheValidateKey = __instance;
+                    _handedTheValidateKeyOnFrame = Time.frameCount;
+                }
+
+                return true;
             }
             catch (Exception e)
             {
@@ -148,6 +188,26 @@ namespace ES2Access.UI.Input
 
                 return true;
             }
+        }
+
+        /// <summary>
+        /// Whether <paramref name="field"/> was just handed the key the engine turns into a validate -
+        /// which is to say: the focus it has since lost was lost to Return, not to Escape.
+        ///
+        /// "Just" is a frame's grace: the engine delivers the key from LateUpdate and the pump asks on
+        /// the next frame's Update, so one frame is the ordinary answer and two is the margin. A Return
+        /// the mod already spent never reaches here at all - the prefix above turns back first - so this
+        /// cannot be tripped by the press that OPENED the box.
+        /// </summary>
+        public static bool TookTheValidateKey(AgeControl field)
+        {
+            if (field == null || !ReferenceEquals(_handedTheValidateKey, field))
+            {
+                return false;
+            }
+
+            _handedTheValidateKey = null;
+            return Time.frameCount - _handedTheValidateKeyOnFrame <= 2;
         }
 
         /// <summary>

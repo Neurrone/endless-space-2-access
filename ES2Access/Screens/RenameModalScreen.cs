@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using ES2Access.Core.Speech;
 using ES2Access.Core.UI.Graph;
 using ES2Access.UI;
+using ES2Access.UI.Input;
 
 namespace ES2Access.Screens
 {
@@ -61,8 +62,8 @@ namespace ES2Access.Screens
         }
 
         /// <summary>Escape is the engine's: the field it focused is key-exclusive, so the game's own
-        /// input manager answers the key and takes the box down without the page behind it hearing a
-        /// thing. It takes TWO presses - see <see cref="OnUpdate"/>.</summary>
+        /// input manager answers the key without the page behind it hearing a thing. What that answer
+        /// leaves half-done is finished in <see cref="OnUpdate"/>.</summary>
         public override bool Back()
         {
             return false;
@@ -73,23 +74,93 @@ namespace ES2Access.Screens
         private bool _fieldHadKeyboard;
 
         /// <summary>
-        /// Escape here takes two presses and the first one changes nothing anybody can see: the game's
-        /// input manager clears the engine's focus and consumes the key, so the field stops taking
-        /// letters while the box stays up. Silence at that moment reads as the box having gone - the
-        /// player types the next name into the page behind it - so the hand-back is said.
+        /// The box exists to be typed into, so while it is up the field holds the engine's keyboard.
+        /// The moment the field lets go, the box is over - and it is this screen that has to say so,
+        /// because the engine's own answer to Escape stops halfway.
         ///
-        /// Watched rather than hooked because there are several ways out of the field (Escape, Enter,
-        /// clicking off it) and only one thing worth saying: the keyboard came back.
+        /// What the engine does with Escape on a key-exclusive control is unfocus it and eat the key
+        /// (<c>InputManager.HandleInput</c> :1212-1227). The window around the field is left standing:
+        /// a box that still looks like a text prompt, no longer takes text, and cannot be typed into
+        /// again, because nothing on it can hand a game field the keyboard back. That is the trap the
+        /// player fell into - not a dead key layer, but a live one on a surface with nothing left to do.
+        /// So the cancel is finished here, on the frame the keyboard comes back, and one Escape closes
+        /// the box.
+        ///
+        /// Return unfocuses the field too, and means the opposite. Usually the box is already going
+        /// (<c>RenameModalWindow.OnValidateCb</c> hides it), and a box on its way out is left alone.
+        /// When it is NOT going, the game refused the name - and cancelling on the player's behalf
+        /// would throw away what they typed, so the keyboard goes back into the field with the game's
+        /// own reason for the refusal. <c>GameKeyboardHandover.TookTheValidateKey</c> is what tells the
+        /// two keys apart; without it, "Escape on a name the game would refuse" and "Enter on one" look
+        /// identical and one of them has to be wrong.
+        ///
+        /// Watched rather than hooked because there are several ways out of the field - Escape, Enter,
+        /// clicking off it - and all of them mean the same thing to this box.
         /// </summary>
         public override void OnUpdate()
         {
             bool holding = FieldHasKeyboard();
             if (_fieldHadKeyboard && !holding)
             {
-                Voice.Say(ModStrings.Get(ModStrings.RenameKeyboardReturned), true);
+                FinishWhatLetGoOfTheKeyboard();
             }
 
-            _fieldHadKeyboard = holding;
+            _fieldHadKeyboard = FieldHasKeyboard();
+        }
+
+        /// <summary>
+        /// Only when the keyboard went NOWHERE: a control that took it from the field - a message box
+        /// raised over this one, the game's own chat - is holding it for a reason of its own, and the
+        /// box the player was typing into is still theirs to come back to.
+        /// </summary>
+        private void FinishWhatLetGoOfTheKeyboard()
+        {
+            try
+            {
+                RenameModalWindow window = Window();
+                if (window == null || !window.Shown)
+                {
+                    return;
+                }
+
+                AgeManager age = AgeManager.Instance;
+                if (age == null || age.FocusedControl != null)
+                {
+                    return;
+                }
+
+                AgeControlTextField field = window.TextField;
+                if (GameKeyboardHandover.TookTheValidateKey(field))
+                {
+                    age.FocusedControl = field;
+                    string refusal = Refusal(window);
+                    if (!string.IsNullOrEmpty(refusal))
+                    {
+                        Voice.Say(refusal, true);
+                    }
+
+                    return;
+                }
+
+                // The same route the engine's own second Escape takes: GuiModalWindow.HandleInput
+                // hides the window, which is what puts the page behind it back with the cursor on the
+                // control that opened the box.
+                window.HandleInput(InputAction.Exit);
+            }
+            catch (Exception)
+            {
+                // Nothing here is worth a throw into the pump: the worst a failure costs is the box
+                // staying up for the player to press Escape again.
+            }
+        }
+
+        /// <summary>The game's own words for why it will not take this name - written onto the accept
+        /// button's tooltip by <c>RenameModalWindow.CheckButtons</c>, already localized.</summary>
+        private static string Refusal(RenameModalWindow window)
+        {
+            AgeControlButton validate = window.ValidateButton;
+            AgeTooltip tooltip = AgeWidgets.Raw(AgeWidgets.Transform(validate));
+            return tooltip == null ? null : AgeText.Clean(tooltip.Content);
         }
 
         /// <summary>Focus lands on the field with the box, so the first frame is already "holding" and
@@ -122,9 +193,14 @@ namespace ES2Access.Screens
         }
 
         /// <summary>
-        /// The field, and the button that accepts it. The field is where focus lands and it reads the
-        /// name that is in it - which is the name being changed, because the game fills it in - with
-        /// the prompt that says the keyboard is already in the box.
+        /// The field, and - only while the keys could actually reach them - the heading above it and the
+        /// button that accepts it.
+        ///
+        /// While the field holds the engine's keyboard the arrows are the caret's and Tab is eaten by
+        /// the game, so nothing on this box is reachable but the field itself. Declaring three stops
+        /// there is a promise the keys cannot keep: the field announced itself as "2 of 3" and the
+        /// player pressed the arrows looking for the other two. So the box declares what it can be
+        /// walked over, which while the player is typing is one stop and no position at all.
         /// </summary>
         public override void Build(GraphBuilder builder)
         {
@@ -134,13 +210,18 @@ namespace ES2Access.Screens
                 return;
             }
 
+            bool walkable = !FieldHasKeyboard();
+
             // The box's own heading, where it is drawn: a node to come back to as well as the name
             // arriving announces. Focus starts on the field below it, so it is not said twice.
-            SettingRows.AddReadout(
-                builder,
-                SettingRows.TransformOf(window.Title),
-                "rename:heading"
-            );
+            if (walkable)
+            {
+                SettingRows.AddReadout(
+                    builder,
+                    SettingRows.TransformOf(window.Title),
+                    "rename:heading"
+                );
+            }
 
             RenameModalWindow it = window;
             AgeControlTextField field = window.TextField;
@@ -161,7 +242,7 @@ namespace ES2Access.Screens
             }
 
             AgeControlButton validate = window.ValidateButton;
-            if (validate != null && AgeWidgets.Visible(AgeWidgets.Transform(validate)))
+            if (walkable && validate != null && AgeWidgets.Visible(AgeWidgets.Transform(validate)))
             {
                 AgeControlButton press = validate;
                 AgeTooltip tooltip = AgeWidgets.Raw(AgeWidgets.Transform(validate));
