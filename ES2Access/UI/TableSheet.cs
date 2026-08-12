@@ -39,7 +39,9 @@ namespace ES2Access.UI
     ///   single Enter that both picked and committed would make every pass over the list a decision. A
     ///   table bound <c>canSelect: false</c> (<c>GuiTable.Bind</c> :130, which is the flag
     ///   <c>LinesTable.Enable</c> records) has rows that are not choices at all: they read as plain
-    ///   lines, not radios, and Enter does nothing, because that is what a click does.
+    ///   lines, not radios, and Enter does nothing, because that is what a click does. A window that
+    ///   binds the flag ON and then wires nothing to the pick says so itself
+    ///   (<see cref="RowsAreLines"/>) - the flag cannot see that.
     /// - <b>A refused row</b> - one the opener will not accept - is drawn with its line transform
     ///   switched off and the game's sentence for why on the line's tooltip
     ///   (<c>GuiTable.Refresh(objects, disabledObjects)</c> :246-278 and the
@@ -122,6 +124,22 @@ namespace ES2Access.UI
         /// draws the name.</summary>
         public RowLabel RowName;
 
+        /// <summary>
+        /// The rows are lines to READ rather than choices to make - the one thing the table's own
+        /// <c>canSelect</c> flag cannot see.
+        ///
+        /// The flag says whether a click would pick a row out, and for every table but one that is the
+        /// same question as whether picking MEANS anything. The journal is the exception: it is bound
+        /// selectable, so the game highlights a clicked line, while the window wired nothing to the pick
+        /// at all - <c>GuiTableLine</c> sends "OnLineSelection" to a client that does not implement it
+        /// (<c>GuiTableLine.cs:204-214</c>) and the page has no Confirm for a pick to enable - so the
+        /// row's own actions are the buttons inside its cells and the highlight leads nowhere. Rows that
+        /// say "not selected" there offer a choice the window does not have.
+        ///
+        /// Unset - the ordinary case - leaves the table's flag to answer.
+        /// </summary>
+        public bool RowsAreLines;
+
         /// <summary>See <see cref="CellReader"/>.</summary>
         public CellReader ReadCell;
 
@@ -137,7 +155,7 @@ namespace ES2Access.UI
         /// See <see cref="ColumnCaption"/>. Unset is the ordinary case.
         ///
         /// It exists because a column's caption is not always IN the heading: the politics table draws a
-        /// population's portrait and nothing else, and leaves the raw <c>%…Title</c> key in the label for
+        /// population's portrait and nothing else, and leaves the raw <c>%â€¦Title</c> key in the label for
         /// a string the game never wrote - parked text, which is not a caption to speak. Whether a
         /// heading's picture has a name and where, is the screen's knowledge, so the screen answers it.
         /// </summary>
@@ -350,7 +368,7 @@ namespace ES2Access.UI
             AgeTransform name = cell;
             Func<bool> enabled = Operable(table, line);
             NodeVtable vtable;
-            if (Selectable(table))
+            if (Choosable(table))
             {
                 vtable = GraphNodes.SelectionItem(
                     () => RowText(row, name),
@@ -436,7 +454,7 @@ namespace ES2Access.UI
                         }
                     };
                 }
-                else if (Selectable(table))
+                else if (Choosable(table))
                 {
                     vtable.OnActivate = () =>
                     {
@@ -447,14 +465,14 @@ namespace ES2Access.UI
                     };
                 }
 
-                if (Selectable(table))
+                if (Choosable(table))
                 {
                     vtable.StateText = () =>
                         selected() ? ModStrings.Get(ModStrings.NavSelected) : null;
                 }
             }
 
-            if (Selectable(table))
+            if (Choosable(table))
             {
                 vtable.Announcements.Add(GraphNodes.SelectedPart(selected));
             }
@@ -793,6 +811,14 @@ namespace ES2Access.UI
             {
                 return false;
             }
+        }
+
+        /// <summary>Whether picking a row is a CHOICE the player is being offered: the table's flag, and
+        /// the screen's own answer where the flag is on while nothing is wired to the pick
+        /// (<see cref="RowsAreLines"/>).</summary>
+        private bool Choosable(GuiTable table)
+        {
+            return !RowsAreLines && Selectable(table);
         }
 
         /// <summary>Whether the game would act on this row: the line's own flag - which is where a

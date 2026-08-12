@@ -11,10 +11,17 @@ namespace ES2Access.Screens
     /// page a score screen opened from it goes back to (<c>JournalModalWindow</c>).
     ///
     /// One table and one box. The table is the game's own <c>EndGameSummaryTable</c> column set, read by
-    /// the shared table reading (<see cref="TableSheet"/>) - which also decides whether its rows are
-    /// selectable, off the table's own flag, so a row here offers a choice exactly if the window gave it
-    /// one. The box filters out games that were played with mods, and it is the game's own box: ticking it
-    /// writes the preference to the registry and refreshes the list.
+    /// the shared table reading (<see cref="TableSheet"/>). The box filters out games that were played
+    /// with mods, and it is the game's own box: ticking it writes the preference to the registry and
+    /// refreshes the list.
+    ///
+    /// Where a row is a LINE rather than a choice, and where its actions actually are, is the thing this
+    /// page had to be told (measured): the window binds the table selectable, so a clicked row
+    /// highlights, and then implements neither <c>OnLineSelection</c> nor <c>OnLineDoubleClick</c> - the
+    /// highlight leads nowhere. What a row can DO is in its last column, where the game draws two buttons
+    /// per row (<see cref="DetailsCell"/>): the score screen of that finished game, and delete. So the
+    /// rows read as lines (<see cref="TableSheet.RowsAreLines"/>) and the Details cell is the row's
+    /// action.
     ///
     /// The empty case is the one worth naming: a fresh installation has finished no games, and the window
     /// swaps the table for a line saying so. That line is read where the table would have been, because
@@ -42,6 +49,8 @@ namespace ES2Access.Screens
         {
             _table = new TableSheet("journal:", SummaryOf);
             _table.RowName = SummaryName;
+            _table.ReadCell = DetailsCell;
+            _table.RowsAreLines = true;
         }
 
         public override string Key
@@ -128,6 +137,126 @@ namespace ES2Access.Screens
                 builder.BeginStop(ActionsStop);
                 Cells.Emit(builder, _cells);
             }
+        }
+
+        // ---- the Details column ----
+
+        /// <summary>
+        /// The last column, where the game draws the row's two BUTTONS rather than a figure: open the
+        /// score screen of that finished game, and delete the entry.
+        ///
+        /// This is the only door there is to a past game's score screen, and until it was declared the
+        /// journal was a list a keyboard player could read and do nothing with: the row's own click goes
+        /// nowhere (<see cref="TableSheet.RowsAreLines"/>) and the cell read as an ordinary figure.
+        ///
+        /// Enter opens the score screen, which is the button the column exists for and the one the cell
+        /// is named after - the game wrote no caption on either button, so each is named by the sentence
+        /// its own tooltip opens with, and the cell's review buffer holds both of them
+        /// (<c>%VictoryScreenScoreScreenButtonDescription</c> and
+        /// <c>%JournalModalWindowDeleteEntryDescription</c>), which is where the second button is
+        /// discovered. Backspace is the other button, the way the notification strip's icons put dismiss
+        /// there: a delete cannot share Enter with the thing the player came to open, and it is behind
+        /// the game's OWN confirmation box either way (<c>GuiTableCellScoreScreenButton.OnDeleteEntryCb</c>
+        /// :39-45).
+        ///
+        /// The buttons are found by the handler the game wired to them rather than by their names in the
+        /// prefab: what a button DOES is the thing being declared here.
+        /// </summary>
+        private NodeVtable DetailsCell(
+            GuiTableLine line,
+            AgeTransform cell,
+            GuiTableHeader header,
+            Func<bool> enabled
+        )
+        {
+            AgeControlButton open = Wired(cell, "OnScoreScreenCb");
+            AgeControlButton remove = Wired(cell, "OnDeleteEntryCb");
+            if (open == null && remove == null)
+            {
+                return null;
+            }
+
+            AgeTransform it = cell;
+            GuiTableHeader heading = header;
+            AgeControlButton primary = open ?? remove;
+            AgeControlButton secondary = open == null ? null : remove;
+            AgeTooltip tooltip = AgeWidgets.Raw(primary.AgeTransform);
+            Func<bool> rowEnabled = enabled;
+            Func<bool> operable = () =>
+                rowEnabled() && AgeWidgets.Operable(primary.AgeTransform) && AgeWidgets.Enabled(it);
+            NodeVtable vtable = new NodeVtable
+            {
+                // Named as a button, unlike the figures beside it: the whole point of the column is what
+                // pressing it opens, and the role word is the only thing that says the cell can be
+                // pressed at all.
+                ControlType = ControlTypes.Button,
+                Announcements = new List<NodeAnnouncement>
+                {
+                    GraphNodes.ValuePart(() => CellName(tooltip, it)),
+                    GraphNodes.DisabledPart(operable),
+                },
+                Sections = GraphNodes.Sections(
+                    () => _table.CellFacts(heading, it),
+                    TableSheet.TooltipOf(it)
+                ),
+                OnActivate = () =>
+                {
+                    if (operable())
+                    {
+                        AgeWidgets.PressPropagating(primary);
+                    }
+                },
+            };
+            if (secondary != null)
+            {
+                AgeControlButton other = secondary;
+                Func<bool> offered = () =>
+                    rowEnabled() && AgeWidgets.Operable(other.AgeTransform) && AgeWidgets.Enabled(it);
+                vtable.OnSecondary = () =>
+                {
+                    if (offered())
+                    {
+                        AgeWidgets.PressPropagating(other);
+                    }
+                };
+            }
+
+            GraphNodes.AddRefusal(vtable, tooltip, operable);
+            AgeWidgets.Point(vtable, primary, tooltip, it);
+            return vtable;
+        }
+
+        /// <summary>What the cell is called: the sentence the button it opens explains itself with, else
+        /// whatever the cell is drawing - the game writes no caption on either button.</summary>
+        private string CellName(AgeTooltip tooltip, AgeTransform cell)
+        {
+            string described = CardActions.FirstLine(tooltip);
+            return string.IsNullOrEmpty(described) ? _table.CellText(cell) : described;
+        }
+
+        /// <summary>The button inside a cell that the game wired to one named handler - which is what the
+        /// button DOES, and the only thing about it that is not a prefab naming accident.</summary>
+        private static AgeControlButton Wired(AgeTransform cell, string handler)
+        {
+            try
+            {
+                AgeControlButton[] buttons =
+                    cell == null ? null : cell.GetComponentsInChildren<AgeControlButton>(true);
+                for (int i = 0; buttons != null && i < buttons.Length; i++)
+                {
+                    AgeControlButton button = buttons[i];
+                    if (
+                        button.OnActivateMethod == handler
+                        && AgeWidgets.Visible(button.AgeTransform)
+                    )
+                    {
+                        return button;
+                    }
+                }
+            }
+            catch (Exception) { }
+
+            return null;
         }
 
         // ---- reading the window ----

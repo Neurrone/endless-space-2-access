@@ -151,15 +151,23 @@ namespace ES2Access.Screens
 
         /// <summary>What happened. Spoken on arrival, ahead of the text focus lands on, which says
         /// what it means - so the two together read as the popup reads, and neither says the other's
-        /// half twice.</summary>
+        /// half twice. The one popup that is the end of the player's game says so here
+        /// (<see cref="OwnElimination"/>), because arriving is when that has to be heard and the
+        /// popup's own words do not say it.</summary>
         public override string ScreenName
         {
             get
             {
-                string title = Title(Current());
-                return string.IsNullOrEmpty(title)
-                    ? ModStrings.Get(ModStrings.ScreenNotification)
-                    : title;
+                NotificationWindow window = Current();
+                string title = Title(window);
+                return new MessageBuilder()
+                    .ListItem(
+                        string.IsNullOrEmpty(title)
+                            ? ModStrings.Get(ModStrings.ScreenNotification)
+                            : title
+                    )
+                    .ListItem(OwnElimination(window))
+                    .Build();
             }
         }
 
@@ -2722,7 +2730,12 @@ namespace ES2Access.Screens
 
             // An empire is out of the game - and where it is the PLAYER's, this popup is the end of their
             // game: it refuses to be dismissed or minimised at all, and its one button ends the session
-            // and opens the score screen.
+            // and opens the score screen. Nothing has to be done about the two buttons the game neuters
+            // (its Dismiss and Minimize handlers return without acting, :67-81): measured, the prefab
+            // HIDES them in that case along with the browsing arrows and the pop-up-again box, so the
+            // shared reading drops them for being undrawn and the popup offers the one route it has. What
+            // the popup cannot say for itself is that the empire is the player's own - see
+            // OwnElimination.
             variants.Add(
                 typeof(EmpireEliminatedNotificationWindow),
                 new Variant
@@ -3247,7 +3260,10 @@ namespace ES2Access.Screens
         }
 
         /// <summary>The notification as the review buffer holds it: its title, then its description a
-        /// line at a time - a battle report is written as exactly those lines.</summary>
+        /// line at a time - a battle report is written as exactly those lines - and, for the popup that
+        /// ends the player's game, what that means (<see cref="OwnElimination"/>): arriving speaks it as
+        /// part of the screen's name, so it is here to be re-read and nowhere in the spoken readout,
+        /// which would otherwise say it twice.</summary>
         private static IList<string> Content(NotificationWindow window)
         {
             List<string> lines = new List<string>();
@@ -3262,7 +3278,69 @@ namespace ES2Access.Screens
                 lines.Add(line);
             }
 
+            string ending = OwnElimination(window);
+            if (!string.IsNullOrEmpty(ending))
+            {
+                lines.Add(ending);
+            }
+
             return lines;
+        }
+
+        /// <summary>
+        /// The one thing this popup family cannot say for itself: that the empire just knocked out is the
+        /// PLAYER's, so the game is over and the score screen is the only way on.
+        ///
+        /// The game writes one sentence for both cases - <c>%NotificationEmpireEliminatedDescriptionKnown</c>,
+        /// "The empire of {0} has been eliminated", with the player's own leader and empire in the hole - and
+        /// nothing else. Measured: the two prefab group sets the window swaps
+        /// (<c>EmpireEliminatedNotificationWindow.Refresh</c> :52-65) hold no text at all. Elimination shows
+        /// <c>ScoreScreenButton</c> and the full-screen <c>BackgroundGroup</c>; the normal case shows the
+        /// minimize and dismiss buttons, the pop-up-again box and the browsing arrows. So on the player's own
+        /// defeat the difference a sighted player sees is which BUTTONS are there - and the mod's reading
+        /// already drops the hidden ones - while the words say the same thing either way. This sentence is
+        /// the mod's, because the game has none.
+        ///
+        /// Both halves of the gate are asked. The game's own test says whose elimination it is
+        /// (<c>NotificationEmpireEliminated.EliminatedEmpire</c>, which is what <c>Refresh</c> decides with),
+        /// and the DRAWN test says the window has already changed character - announcing the end of a game
+        /// one frame before the popup swaps its buttons would be reading a decision the player cannot see yet.
+        /// </summary>
+        private static string OwnElimination(NotificationWindow window)
+        {
+            try
+            {
+                EmpireEliminatedNotificationWindow elimination =
+                    window as EmpireEliminatedNotificationWindow;
+                if (elimination == null || !AnyDrawn(elimination.EliminationGroups))
+                {
+                    return null;
+                }
+
+                NotificationEmpireEliminated notification = elimination.NotificationEmpireEliminated;
+                return notification != null && notification.EliminatedEmpire == Gui.PlayerEmpire
+                    ? ModStrings.Get(ModStrings.NotifyOwnElimination)
+                    : null;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>Whether the popup is drawing any of a group set it switches on and off as a set.
+        /// </summary>
+        private static bool AnyDrawn(AgeTransform[] groups)
+        {
+            for (int i = 0; groups != null && i < groups.Length; i++)
+            {
+                if (Visible(groups[i]))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         /// <summary>The label the popup is showing, else the notification's own title - a popup that

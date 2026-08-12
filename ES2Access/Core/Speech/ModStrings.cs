@@ -524,6 +524,11 @@ namespace ES2Access.Core.Speech
         public const string NotifyOpenScoreScreen = "notify.open-score-screen";
         public const string NotifyOpenAcademy = "notify.open-academy";
 
+        /// <summary>What the elimination popup means when the empire knocked out is the player's own: the
+        /// game writes the same sentence for their defeat as for an AI's, and the only difference on screen
+        /// is which buttons it draws.</summary>
+        public const string NotifyOwnElimination = "notify.own-elimination";
+
         // A hero's own window. Its heading is the game's own and is declared where it is drawn, so the
         // screen name is only a fallback for the frames before the window has written one. The wheel of
         // skills the page draws with no caption over it needs a word, and a skill dot needs two: the game
@@ -924,6 +929,10 @@ namespace ES2Access.Core.Speech
             { NotifyOpenMinorFaction, "Open minor faction diplomacy" },
             { NotifyOpenScoreScreen, "Open score screen" },
             { NotifyOpenAcademy, "Open the Academy" },
+            {
+                NotifyOwnElimination,
+                "your empire is out of the game: the score screen is the only way on"
+            },
             { ScreenAcademy, "Hero management" },
             { AcademyHeroActions, "Hero actions" },
             { ScreenHeroCompleteList, "Heroes in the galaxy" },

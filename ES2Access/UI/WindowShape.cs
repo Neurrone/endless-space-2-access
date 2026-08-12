@@ -117,6 +117,13 @@ namespace ES2Access.UI
         /// ones that do not apply. <paramref name="maxDepth"/> bounds the walk, which is also what bounds
         /// the cost - a page that draws hundreds of lines declares hundreds of nodes, and a caller with
         /// such a page should be reading a model of it instead.
+        ///
+        /// Each line is keyed by WHERE it was drawn - its position under each parent between it and the
+        /// root - and not by its name. Measured on the score screen, which is the page with the most of
+        /// them: a panel of scores is rows of clones and every label in it is called "Label", so a name
+        /// key made two lines the same control and the duplicate emptied the WHOLE page (the builder
+        /// throws, the screen declares nothing). A page laid out as clones is the normal case for this
+        /// reader, so the key has to be unique by construction.
         /// </summary>
         public static void Readouts(
             List<Cell> cells,
@@ -127,7 +134,7 @@ namespace ES2Access.UI
         {
             try
             {
-                Lines(cells, root, prefix, maxDepth, 0);
+                Lines(cells, root, prefix, maxDepth, 0, string.Empty);
             }
             catch (Exception e)
             {
@@ -140,7 +147,8 @@ namespace ES2Access.UI
             AgeTransform widget,
             string prefix,
             int maxDepth,
-            int depth
+            int depth,
+            string path
         )
         {
             if (widget == null || depth > maxDepth || !widget.Visible)
@@ -160,18 +168,23 @@ namespace ES2Access.UI
                 // name, and reading it here as well would say it twice - once as the button and once as a
                 // line of prose beside it. This is what makes the two halves of a shape reading safe to
                 // use together on the same window.
-                // Keyed on the LABEL's own transform (through Referenced) with its name only as a
-                // readable suffix: a position in the collected list would move under the cursor the
-                // moment a line above it appeared or went.
+                // Keyed on the LABEL's own transform (through Referenced) and on where it is drawn, with
+                // its name only as a readable suffix: a position in the collected list would move under
+                // the cursor the moment a line above it appeared or went, and the name alone is not
+                // unique on a page built out of clones.
                 cells.Add(
-                    Cells.Readout(widget, AgeWidgets.Raw(widget), prefix + "/line/" + widget.name)
+                    Cells.Readout(
+                        widget,
+                        AgeWidgets.Raw(widget),
+                        prefix + "/line" + path + "/" + widget.name
+                    )
                 );
             }
 
             List<AgeTransform> children = widget.Children;
             for (int i = 0; children != null && i < children.Count; i++)
             {
-                Lines(cells, children[i], prefix, maxDepth, depth + 1);
+                Lines(cells, children[i], prefix, maxDepth, depth + 1, path + "/" + i);
             }
         }
 
