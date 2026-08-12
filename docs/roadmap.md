@@ -19,12 +19,13 @@ files above.
   DiplomaticInteractionNotificationWindow (MoodMessageLabel, NegotiationContributionPanel).
 - Galaxy-label gaps: AcademyGroup bottom readout; KOTH score value; deposit
   exploited-state; constellation ownership bonus; pin-message editing.
-- Targeting-cursor remainder: `HonorActionCursor` fleet/docking targets need a `ConfirmAt`
-  overload for fleet cursor-targets; `HackingOperationCursor` route building rides the
-  Penumbra wait; `TakeSystemCursor` has no Escape route in the game (right-click only) —
-  decide whether the mod should offer one; the instruction banner can speak the previous
-  mode's caption for a frame (cheap fix: skip an instruction that is not the current
-  cursor's).
+- Targeting-cursor remainder: `TakeSystemCursor` gets Escape-to-cancel (owner-ruled
+  2026-08-12, awaiting go-ahead to implement); Backslash while a mode is armed should be
+  the mode's right-click (cancel / waypoint removal — follows from the owner's
+  any-click-parity correction); `HonorActionCursor` fleet/docking targets need a
+  `ConfirmAt` overload for fleet cursor-targets; `HackingOperationCursor` route building
+  rides the Penumbra wait; the instruction banner can speak the previous mode's caption
+  for a frame (cheap fix: skip an instruction that is not the current cursor's).
 - Chat: the alliance tab's SENDING is pointer-only (incoming lines narrate); MP-fixture
   verification outstanding.
 - Assigned-governor side panel: `Special` case for its three bare readouts (needs a save
@@ -92,8 +93,7 @@ files above.
 
 ## To decide (owner)
 
-- `TakeSystemCursor` has no Escape route in the game (right-click is its only cancel;
-  every other targeting cursor cancels on Escape) — strict parity, or offer Escape?
+(nothing pending)
 
 ## Shipped (pointers only)
 
