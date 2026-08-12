@@ -157,6 +157,15 @@ namespace ES2Access.Core.UI.Graph
         /// than with silence.</summary>
         public Action OnContextual;
 
+        /// <summary>Optional. The command the game puts on a DOUBLE click here - the second click
+        /// inside its own double-click window, which several of this game's controls answer with a
+        /// command of their own (a fleet row shows that fleet on the map, a picked choice is
+        /// confirmed, a module tile fits itself). Distinct from <see cref="OnActivate"/> (the single
+        /// click, which such a control may answer with nothing at all), from
+        /// <see cref="OnAlternate"/> (the click with a modifier held) and from
+        /// <see cref="OnContextual"/> (the right click).</summary>
+        public Action OnDoubleClick;
+
         /// <summary>Optional. Add this control's item to the game's own selection, or take it out
         /// again, leaving the rest of the selection alone - what the game's Ctrl+click does.</summary>
         public Action OnSelectToggle;

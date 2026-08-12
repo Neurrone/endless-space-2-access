@@ -81,8 +81,7 @@ namespace ES2Access.Screens
     /// written on the card, all of it, is its name. Picking is not doing - the popup wants the choice
     /// confirmed - so the button that confirms is declared even where the game drew it as a bare tick
     /// (under the game's own word for it), and where a popup draws no such button the game's own second
-    /// click on the choice is what confirms and takes Backslash, the key that is already every control's
-    /// other command.
+    /// click on the choice is what confirms and takes the double-click chord (Ctrl+Alt+Enter).
     ///
     /// The words are a control in their own right and the one focus starts on: what the notification
     /// says is the reason it interrupted, so arriving reads its title and then lands on its text.
@@ -2010,7 +2009,11 @@ namespace ES2Access.Screens
 
                 // Picking is not doing: the popup wants the choice CONFIRMED, and where it draws no
                 // button for that the game's own second click is what confirms - so the choice takes
-                // Backslash for it, the key that is already every control's other command.
+                // the double-click chord for it. None of the four handlers it can reach
+                // (<c>NarrativeEventBegunNotificationWindow.OnChoiceDoubleClick</c> :322-329,
+                // <c>QuestBegunNotificationWindow.OnObjectiveValidated</c> :410-413 and the two
+                // contextual-exchange windows' <c>OnChoiceDoubleClick</c>) reads the modifiers the
+                // player is still holding while it runs.
                 AgeControlToggle again = it.Toggle;
                 if (
                     again.UseDoubleClick
@@ -2018,7 +2021,7 @@ namespace ES2Access.Screens
                     && !string.IsNullOrEmpty(again.OnDoubleClickMethod)
                 )
                 {
-                    vtable.OnContextual = () =>
+                    vtable.OnDoubleClick = () =>
                         Send(again.OnDoubleClickObject, again.OnDoubleClickMethod, again.gameObject);
                 }
             }

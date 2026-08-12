@@ -41,7 +41,12 @@ namespace ES2Access.UI
     ///   click does NOTHING at all, and the double click is <c>OnDoubleClickCb</c> ->
     ///   <c>OnModuleAutoEquip</c>, which drops the module into the first slot that will take it. So
     ///   Enter on a module row is silent (click parity: the game answers a single click with silence)
-    ///   and Alt+Enter - the control's other activation - is the auto-equip.
+    ///   and the double-click chord (Ctrl+Alt+Enter) is the auto-equip. Alt+Enter on a tile is silent:
+    ///   the game wires no modified click here. <c>OnModuleAutoEquip</c> (:1489-1502) reads no
+    ///   modifiers, so the Control and Alt the player is still holding change nothing about it - the
+    ///   panel's two Control reads are elsewhere (<c>ApplyDropDraggedFromSlotItem</c> :1459, a
+    ///   slot-to-slot drop, and <c>ShipDesignEditionSlotItem</c> :64, which only runs inside a real
+    ///   <c>DragDropWindow</c> drag the mod never starts).
     /// - a slot's drawn button, empty or filled, is wired to <c>OnSlotUnequipCb</c>. So Enter on a slot
     ///   is that click: it takes the module out, and on an empty slot the game's own handler finds
     ///   nothing to take and does nothing.
@@ -600,7 +605,7 @@ namespace ES2Access.UI
                 Sections = GraphNodes.Sections(null, tooltip),
                 // A single click on a module tile does nothing at all (UseLeftClick is false, measured),
                 // so Enter does nothing either; the double click is the auto-equip.
-                OnAlternate = () => AutoEquip(it, enabled),
+                OnDoubleClick = () => AutoEquip(it, enabled),
                 OnPickUp = () => PickModule(it),
             };
             GraphNodes.AddRefusal(vtable, tooltip, enabled);

@@ -27,12 +27,17 @@ namespace ES2Access.Screens
     /// - Space on a filled slot picks that card up, so Enter on another slot SWAPS them - the same thing
     ///   the mouse does (<c>PlayCardDeckModalWindow.OnDeckChanged</c> :361-386 reads which of the two
     ///   sides is a deck slot and swaps, replaces or empties accordingly).
-    /// - Ctrl+Enter on a filled slot takes that tactic OUT of the set. The game has no click for this
-    ///   either: its only route is dragging a slot's card out and releasing it over nothing, which
-    ///   reaches <c>OnApplyDrop(.., Provider, success: false)</c> and empties the slot - so this is that
-    ///   call, on the chord whose meaning everywhere else is "one item out of the game's own selection",
-    ///   and the deck IS the game's selection of tactics. It refuses on the last filled slot because the
-    ///   game's own handler does (:376-380 keeps at least one).
+    /// - Taking a tactic OUT of the set is a drag too, and the mod draws the place to drop it: a node of
+    ///   its own at the end of the set, always there so it can be found by walking the set. Carry a
+    ///   filled slot's card to it and Enter empties the slot, through the same call a released mouse
+    ///   makes when it drags a card out and lets go over nothing
+    ///   (<c>OnApplyDrop(.., Provider, success: false)</c>, <c>BattlePlayCard</c> :122-125). With nothing
+    ///   carried the node is a line to read, and Enter on it is consumed in silence like any other drop
+    ///   key with nothing to put down. The set keeps at least one tactic because the game's own handler
+    ///   does (<c>OnDeckChanged</c> :338, :356-359 acts only while more than one slot is filled) - and
+    ///   that count is read BEFORE the call rather than after, because the window only marks itself
+    ///   dirty and the slot still reads as filled until its next refresh, so a removal the game
+    ///   swallowed would otherwise be announced as done.
     ///
     /// Nothing is committed until Confirm, which posts <c>OrderUpdatePlayDeck</c> behind the game's own
     /// confirmation box while a battle is running (:388-397); its refusals - a battle in progress, no
@@ -201,6 +206,48 @@ namespace ES2Access.Screens
             }
 
             Cells.Emit(builder, _cells);
+            AddRemoveTarget(builder, table);
+        }
+
+        /// <summary>
+        /// Where a tactic is dropped to take it out of the set - the mod's own node, at the end of the
+        /// set, and the only gesture on this screen that has no widget of its own behind it.
+        ///
+        /// Always declared, even while nothing is being carried, because a place a player has to already
+        /// know about is a place they will never find: walking to the end of the set is how the removal
+        /// announces that it exists. The mouse's equivalent is aiming at nothing in particular, which is
+        /// not somewhere a keyboard can point.
+        /// </summary>
+        private static void AddRemoveTarget(GraphBuilder builder, AgeTransform table)
+        {
+            AgeTransform deck = table;
+            NodeVtable vtable = new NodeVtable
+            {
+                Announcements = new List<NodeAnnouncement>
+                {
+                    GraphNodes.LabelPart(() => ModStrings.Get(ModStrings.TacticsRemoveTarget)),
+                },
+                DropKind = TacticKind,
+                OnDrop = held => RemoveHeld(deck, held),
+            };
+
+            CarryState carry = ModEntry.Carry;
+            if (carry != null)
+            {
+                // The same test the drop makes, so the word and the outcome cannot disagree: a tactic
+                // carried off the LIST above was never in the set, and the last one in the set cannot
+                // leave it.
+                vtable.Announcements.Add(
+                    carry.DropTargetPart(
+                        TacticKind,
+                        () => Removable(deck, carry.Held == null ? null : carry.Held.Cargo)
+                    )
+                );
+            }
+
+            builder.StartRow();
+            builder.AddItem(ControlId.Structural("tactics:remove-target"), vtable);
+            builder.EndRow();
         }
 
         private void BuildActions(GraphBuilder builder, PlayCardDeckModalWindow window)
@@ -293,7 +340,6 @@ namespace ES2Access.Screens
                 DropKind = TacticKind,
                 OnDrop = held => Drop(it, held),
                 OnPickUp = () => Pick(it),
-                OnSelectToggle = () => Remove(it),
             };
             GraphNodes.AddRefusal(vtable, tooltip, enabled);
 
@@ -517,20 +563,18 @@ namespace ES2Access.Screens
             }
         }
 
-        /// <summary>Take this slot's tactic out of the set - the game's own drag-it-out-and-let-go, which
-        /// is the only route it has. Its handler keeps the last one, so the last filled slot refuses in
-        /// silence the way every swallowed activation does.</summary>
-        private static void Remove(BattlePlayCard slot)
+        /// <summary>Take the carried tactic out of the set - the game's own drag-it-out-and-let-go,
+        /// which is the only route it has. A tactic carried off the list above was never in the set,
+        /// and the game keeps the last one in it; both refuse and the player is still holding the
+        /// card.</summary>
+        private static DropResult RemoveHeld(AgeTransform deck, CarryItem held)
         {
             try
             {
-                if (
-                    slot.Client == null
-                    || !slot.IsDeckSlot
-                    || Status(slot) != EncounterPlayDeckSlot.SlotState.Filled
-                )
+                BattlePlayCard slot = held.Cargo as BattlePlayCard;
+                if (!Removable(deck, slot))
                 {
-                    return;
+                    return DropResult.Refused(null);
                 }
 
                 slot.OnApplyDrop(
@@ -538,11 +582,52 @@ namespace ES2Access.Screens
                     DraggableItem.DragDropItemStatus.Provider,
                     false
                 );
+                return DropResult.Done(
+                    ModStrings.Format(ModStrings.TacticsSlotEmptied, held.Name)
+                );
             }
             catch (Exception e)
             {
                 Log.Warn("tactics: taking a tactic out threw: " + e);
+                return DropResult.Refused(null);
             }
+        }
+
+        /// <summary>Whether the game would take <paramref name="cargo"/> out of the set: a filled slot
+        /// of the deck, and not the only filled one left - which is the game's own rule, read off the
+        /// deck the game is drawing rather than reimplemented (<c>OnDeckChanged</c> :338, :356).</summary>
+        private static bool Removable(AgeTransform deck, object cargo)
+        {
+            try
+            {
+                BattlePlayCard slot = cargo as BattlePlayCard;
+                return slot != null
+                    && slot.Client != null
+                    && slot.IsDeckSlot
+                    && Status(slot) == EncounterPlayDeckSlot.SlotState.Filled
+                    && Filled(deck) > 1;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        /// <summary>How many of the set's slots hold a tactic.</summary>
+        private static int Filled(AgeTransform deck)
+        {
+            int filled = 0;
+            IList<AgeTransform> slots = deck == null ? null : deck.Children;
+            for (int i = 0; slots != null && i < slots.Count; i++)
+            {
+                BattlePlayCard card = Card(slots[i]);
+                if (card != null && Status(card) == EncounterPlayDeckSlot.SlotState.Filled)
+                {
+                    filled++;
+                }
+            }
+
+            return filled;
         }
 
         private static PlayCardDeckModalWindow Window()
