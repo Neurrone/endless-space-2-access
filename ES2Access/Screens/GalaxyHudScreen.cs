@@ -64,15 +64,17 @@ namespace ES2Access.Screens
     /// it again. That is a worse place to be than here, and still better than not being told the screen
     /// exists.
     ///
-    /// Focusing a system moves the camera to it exactly as the game's own "show me this" routes do, so
-    /// that anyone watching the screen is looking at whatever the keyboard is on. Opening a system up -
-    /// right arrow, the same key that opens anything else - walks what the map is drawing inside it:
-    /// its planets, then the starlanes leaving it, then the fleets standing there. It changes no
-    /// distance. How close the camera stands is what ENTER on the system asks for, which is the game's
-    /// own left click on it, and it decides how much there is to read: from far off a planet is a
-    /// circle with a name and a state, and from as close as the game goes it is a card with its
-    /// outputs, its anomalies and everything a fleet could do to it. Going in and getting closer stay
-    /// different keys, so neither of those two readings is out of reach.
+    /// Focusing a system slides the camera across to it exactly as the game's own "show me this" routes
+    /// do, so that anyone watching the screen is looking at whatever the keyboard is on. Opening one up -
+    /// right arrow, the same key that opens anything else - walks what the map is drawing inside it: its
+    /// planets, then the starlanes leaving it, then the fleets standing there. And it brings the camera
+    /// all the way IN, because that is what makes the map draw the things the branch has just started
+    /// reading out: from far off a planet is a circle with a name and a state, and from as close as the
+    /// game goes it is a card with its outputs, its anomalies and everything a fleet could do to it. So
+    /// the distance follows the branch rather than being a separate thing to remember - going in and
+    /// looking closer are the same gesture. ENTER still asks for the same distance on its own, because
+    /// it is the game's own left click on a system, and closing the branch leaves the camera where it
+    /// is: coming back out is the map's own right click, which is BACKSLASH here.
     ///
     /// Backslash is what the map puts on a right click. On a system with fleets selected it sends them
     /// there; with nothing selected it undoes a zoom the player asked for, exactly as right-clicking
@@ -241,7 +243,49 @@ namespace ES2Access.Screens
         {
             _hud.Update();
             _fleetPanel.Update();
+            FollowCamera();
         }
+
+        /// <summary>
+        /// Keep the game's own pointer feedback pointed at whatever the map is drawing for the focused
+        /// system NOW.
+        ///
+        /// Which tooltip a focused system asks the game to draw depends on where the camera is - the
+        /// label's while the label is what the map draws, the orbital window's once the camera is in on
+        /// the system (<see cref="AddSystem"/>) - and the camera moves without focus moving at all:
+        /// Enter zooms, and so does opening a system up. The focus visual is committed once per focus
+        /// CHANGE, so nothing would ever ask again: the tooltip stayed aimed at a label the map had
+        /// meanwhile pushed off the top of the screen, and the game went on drawing the system's dossier
+        /// clamped into a corner beside nothing.
+        ///
+        /// So the camera's own answer is watched and the visual dropped when it changes. The navigator
+        /// re-commits it later in the same frame, which is why nothing flickers and no tooltip is closed
+        /// and reopened (<c>ScreenManager.Tick</c> runs OnUpdate before EnsureFocus, and
+        /// <c>PointerFocus.Tick</c> after both).
+        /// </summary>
+        private void FollowCamera()
+        {
+            StarSystemNode focused = GalaxyViewLevels.FocusedSystem;
+            bool orbital = OrbitalWindow() != null;
+            if (ReferenceEquals(focused, _cameraSystem) && orbital == _cameraOrbital)
+            {
+                return;
+            }
+
+            _cameraSystem = focused;
+            _cameraOrbital = orbital;
+            GraphNavigator navigator = ModEntry.Navigator;
+            if (navigator != null)
+            {
+                navigator.ClearVisual();
+            }
+        }
+
+        /// <summary>What the camera was showing last frame - the two things the choice of a focused
+        /// system's tooltip is made from.</summary>
+        private StarSystemNode _cameraSystem;
+
+        private bool _cameraOrbital;
 
         /// <summary>Down the screen, which is also the order the galaxy screen has always read in:
         /// the empire's banners across the top and the name of the view beside them, then what the map
@@ -620,7 +664,7 @@ namespace ES2Access.Screens
                 NodeSection.Buffer(() => ConstellationLines(it, empire)),
                 NodeSection.Buffer(() => FleetPresence.LinesAt(it)),
                 NodeSection.Buffer(() => SystemLabelReadout.Lines(drawn)),
-                GraphNodes.TooltipSection(tooltip)
+                StarDossier(it, tooltip)
             );
             if (owned)
             {
@@ -674,13 +718,28 @@ namespace ES2Access.Screens
             };
             vtable.OnBlurVisual = ReleasePointer;
 
-            // Opening a system up moves NOTHING. Right means "tell me what is inside this", and what
-            // is inside it is whatever the map is drawing at the distance the player has chosen: the
-            // circles when the camera is out, the orbital cards when it is in. Making the key drag the
-            // camera to the closest step took that choice away - and with it every readout that only
-            // exists while the camera is out - so how close the camera stands is Enter's business, and
-            // the engine keeps its own record of what is open.
+            // Right means "tell me what is inside this", and what is inside it is whatever the map is
+            // drawing there: the circles when the camera is out, the orbital cards when it is in...
             ControlId id = ControlId.Referenced(it, "galaxy:system/" + it.GUID);
+            // ...except that opening a system is also the one gesture that says "this is the place I am
+            // reading now", so the camera comes in on it - owner-ruled, and it is what makes the map draw
+            // the very things the branch is about to read out. The bookkeeping is done by hand because
+            // OnExpand is an OVERRIDE: setting it stops the engine flipping the state itself.
+            HashSet<ControlId> expansion = builder.Expansion;
+            ControlId group = id;
+            vtable.OnExpand = () =>
+            {
+                if (expansion != null)
+                {
+                    expansion.Add(group);
+                }
+
+                // NOT ZoomIn: that is the map's left CLICK, which while a targeting mode is armed means
+                // "confirm the target here". Opening a branch is not a click and must never post an
+                // order. Nothing is said either - the engine already says the group opened, and the
+                // camera moving is what opening it means.
+                GalaxyViewLevels.ZoomTo(it);
+            };
             builder.BeginGroup(id, vtable);
             // Only what is open costs anything: a galaxy of closed systems declares one node each.
             if (builder.IsExpanded(id))
@@ -1163,6 +1222,50 @@ namespace ES2Access.Screens
             catch (Exception) { }
 
             return null;
+        }
+
+        /// <summary>
+        /// The dossier behind the star - what the system IS, in the game's own stat block.
+        ///
+        /// The map keeps TWO of these for one system and swaps them as the camera moves: the one on the
+        /// system's label while the label is what the map draws, and the one the orbital window parks
+        /// over the star once the camera is all the way in - at that distance the label is pushed off
+        /// the top of the screen. Both are assembled by the tooltip window as it draws them, so only
+        /// the one being drawn has any words in it at all.
+        ///
+        /// Which is why the section asks for whichever is up rather than remembering the label's:
+        /// remembering it left the buffer of a system the player had zoomed into holding everything the
+        /// LABEL says - what it is building, what is in the ground - and nothing about the system
+        /// itself, while the picture on screen showed the dossier the whole time.
+        /// </summary>
+        private static NodeSection StarDossier(StarSystemNode node, AgeTooltip label)
+        {
+            AgeTooltip either = OrbitalStarTooltip(node) ?? label;
+            if (either == null)
+            {
+                return null;
+            }
+
+            StarSystemNode it = node;
+            AgeTooltip onTheLabel = label;
+            return new NodeSection(
+                () => StarDossierLines(it, onTheLabel),
+                GraphNodes.ModeFor(either)
+            );
+        }
+
+        /// <summary>Whichever of a system's two star tooltips the game is drawing. One at most can be up,
+        /// so the first of them with anything to say is the one on the screen.</summary>
+        private static IList<string> StarDossierLines(StarSystemNode node, AgeTooltip label)
+        {
+            IList<string> words = TooltipWords(OrbitalStarTooltip(node));
+            return words != null && words.Count > 0 ? words : TooltipWords(label);
+        }
+
+        private static IList<string> TooltipWords(AgeTooltip tooltip)
+        {
+            Func<IList<string>> lines = AgeWidgets.TooltipLines(tooltip);
+            return lines == null ? null : lines();
         }
 
         /// <summary>The tooltip the orbital window draws on a system's star, which it keeps parked over

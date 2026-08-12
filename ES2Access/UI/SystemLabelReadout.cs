@@ -113,7 +113,9 @@ namespace ES2Access.UI
                 Say(lines, label.MinorRelationQuestStartedGroup);
                 AddMinorRelation(lines, label);
                 AddTable(lines, label.HauntCirclesTable);
+                AddGarrisons(lines, label);
                 AddPirates(lines, label);
+                AddAcademy(lines, label);
             }
             catch (Exception e)
             {
@@ -259,7 +261,10 @@ namespace ES2Access.UI
         }
 
         /// <summary>A line per team racing for the system, named by the wrapper the game hangs on the
-        /// team's own icon.</summary>
+        /// team's own icon - and then the score, which the row draws as a strip of lit gauge parts with
+        /// the figure written nowhere on it. The game keeps that figure in the sentence it writes into
+        /// the row's OWN tooltip (<c>KingOfTheHillScoreLine.RefreshTooltip</c>), which also says who is
+        /// winning and how many turns are left, so the sentence is the reading.</summary>
         private static void AddKingOfTheHill(List<string> lines, StarSystemLabel label)
         {
             AgeTransform table = label.KingOfTheHillTable;
@@ -274,12 +279,16 @@ namespace ES2Access.UI
                 if (AgeWidgets.Visible(rows[i]))
                 {
                     Add(lines, AgeWidgets.ItemText(rows[i]));
+                    AddContent(lines, rows[i]);
                 }
             }
         }
 
-        /// <summary>What has been found in the ground here. The label draws one tinted picture per kind
-        /// of deposit and nothing else, and the kind's name is on the wrapper behind it.</summary>
+        /// <summary>What has been found in the ground here, and whether the system is working it. The
+        /// label draws one tinted picture per kind of deposit and nothing else: the kind's name is on
+        /// the wrapper behind it, and whether it is being exploited is the LIT-or-faded state the game
+        /// paints that picture in (<see cref="Exploited"/>). A deposit whose item the game drew some
+        /// other way keeps the bare name rather than being called idle on a guess.</summary>
         private static void AddDeposits(List<string> lines, AgeTransform table)
         {
             if (!AgeWidgets.Visible(table))
@@ -290,10 +299,180 @@ namespace ES2Access.UI
             IList<AgeTransform> items = table.Children;
             for (int i = 0; items != null && i < items.Count; i++)
             {
-                if (AgeWidgets.Visible(items[i]))
+                if (!AgeWidgets.Visible(items[i]))
                 {
-                    Add(lines, AgeWidgets.ItemText(items[i]));
+                    continue;
                 }
+
+                string name = AgeWidgets.ItemText(items[i]);
+                if (string.IsNullOrEmpty(name))
+                {
+                    continue;
+                }
+
+                int exploited = Exploited(items[i]);
+                Add(
+                    lines,
+                    exploited < 0
+                        ? name
+                        : ModStrings.Format(
+                            exploited > 0
+                                ? ModStrings.GalaxySystemDepositExploited
+                                : ModStrings.GalaxySystemDepositIdle,
+                            name
+                        )
+                );
+            }
+        }
+
+        /// <summary>Whether the system is working a deposit - read off the same flag the label paints
+        /// the picture from (<c>StarSystemLabelDepositItem.Bind</c> sets the image's Enable from
+        /// <c>GuiResourceDepositGroup.IsExploited</c>), so the word and the picture cannot disagree.
+        /// -1 where the item is not one of those, which is the only honest answer: the game's reasons
+        /// for not exploiting a deposit are drawn in a tooltip nobody is hovering.</summary>
+        private static int Exploited(AgeTransform item)
+        {
+            try
+            {
+                StarSystemLabelDepositItem deposit =
+                    item == null ? null : item.GetComponent<StarSystemLabelDepositItem>();
+                AgeTransform image =
+                    deposit == null || deposit.ResourceImage == null
+                        ? null
+                        : deposit.ResourceImage.AgeTransform;
+                return image == null ? -1 : (image.Enable ? 1 : 0);
+            }
+            catch (Exception)
+            {
+                return -1;
+            }
+        }
+
+        /// <summary>
+        /// How many ships are standing at the system, split the way the label splits them: one lozenge
+        /// for the player's own side and one for everyone else's
+        /// (<c>DualGarrisonsLabelButtons.Bind</c>), each drawn only where that side has any.
+        ///
+        /// The count phrase for the FLEETS parked here is said on the system itself
+        /// (<c>FleetPresence.At</c>) and each fleet is a node of its own, so these two numbers are the
+        /// one thing the buttons say that nothing else does - and they are ship counts, not fleet
+        /// counts. The buttons themselves are deliberately not offered: their click selects the first
+        /// garrison of the side, which is what the per-fleet nodes already do properly.
+        /// </summary>
+        private static void AddGarrisons(List<string> lines, StarSystemLabel label)
+        {
+            DualGarrisonsLabelButtons buttons = label.DualGarrisonsButtons;
+            if (buttons == null || !AgeWidgets.Visible(buttons.AgeTransform))
+            {
+                return;
+            }
+
+            AddShipCount(
+                lines,
+                buttons.FriendlyGarrisonsButton,
+                ModStrings.GalaxySystemFriendlyShip,
+                ModStrings.GalaxySystemFriendlyShips
+            );
+            AddShipCount(
+                lines,
+                buttons.HostileGarrisonsButton,
+                ModStrings.GalaxySystemHostileShip,
+                ModStrings.GalaxySystemHostileShips
+            );
+        }
+
+        private static void AddShipCount(
+            List<string> lines,
+            GarrisonsLabelButton button,
+            string oneKey,
+            string manyKey
+        )
+        {
+            if (button == null || !AgeWidgets.Visible(button.AgeTransform))
+            {
+                return;
+            }
+
+            string drawn = AgeText.Label(button.ShipCountLabel);
+            if (string.IsNullOrEmpty(drawn))
+            {
+                return;
+            }
+
+            int count;
+            Add(
+                lines,
+                int.TryParse(drawn, out count)
+                    ? ModStrings.Plural(oneKey, manyKey, count)
+                    : ModStrings.Format(manyKey, drawn)
+            );
+        }
+
+        /// <summary>
+        /// What the Academy is at a system it has been given: the level it has reached, how far the
+        /// next one is, and what it is counting down to.
+        ///
+        /// The level is a bare number and the progress is a ring with no figure on it at all, so the
+        /// sentence around both is the mod's and the ring is read as the proportion it is drawn at. The
+        /// countdown is the other way round: the game writes what the number MEANS into the
+        /// countdown's own tooltip - a different sentence per state
+        /// (<c>AcademyGroup.RefreshTimerLabel</c>) - so its own words are used, with the number it
+        /// draws beside them.
+        ///
+        /// The group's own tooltip is NOT read: the label binds the whole system's dossier onto it
+        /// (<c>StarSystemLabel</c> :1777), which the system's star tooltip already carries.
+        /// </summary>
+        private static void AddAcademy(List<string> lines, StarSystemLabel label)
+        {
+            AcademyGroup academy = label.AcademyGroup;
+            if (academy == null || !AgeWidgets.Visible(academy.AgeTransform))
+            {
+                return;
+            }
+
+            if (AgeWidgets.Visible(academy.AcademyPowerTracker))
+            {
+                Add(
+                    lines,
+                    ModStrings.Format(
+                        ModStrings.GalaxySystemAcademyLevel,
+                        AgeText.Label(academy.AcademyPowerLabel),
+                        Percent(academy.AcademyPowerGauge)
+                    )
+                );
+            }
+
+            if (!AgeWidgets.Visible(academy.AcademyRolesCountdown))
+            {
+                return;
+            }
+
+            string says = First(academy.AcademyRolesCountdown);
+            if (string.IsNullOrEmpty(says))
+            {
+                return;
+            }
+
+            Add(
+                lines,
+                new MessageBuilder()
+                    .ListItem(says)
+                    .ListItem(AgeText.Label(academy.AcademyRolesCountdownLabel))
+                    .Build()
+            );
+        }
+
+        /// <summary>Every line a widget carries in its OWN tooltip, where the words are on the widget.
+        /// A class-backed tooltip is left alone: its text only exists while the tooltip window is
+        /// drawing it, and nothing on a label is drawn while a buffer is being filled.</summary>
+        private static void AddContent(List<string> lines, AgeTransform widget)
+        {
+            AgeTooltip tooltip = AgeWidgets.Readable(AgeWidgets.Raw(widget));
+            IList<string> words =
+                tooltip == null ? null : AgeText.Lines(AgeText.Tooltip(tooltip));
+            for (int i = 0; words != null && i < words.Count; i++)
+            {
+                Add(lines, words[i]);
             }
         }
 

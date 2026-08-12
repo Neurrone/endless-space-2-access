@@ -203,6 +203,25 @@ namespace ES2Access.Core.Speech
         public const string GalaxySystemPiratePower = "galaxy.system-pirate-power";
         public const string GalaxySystemMinorRelation = "galaxy.system-minor-relation";
 
+        // What has been found in the ground, and whether the system is working it. The label says the
+        // second half by drawing the deposit's picture lit or faded and writes no word for either
+        // state, so both phrases are the mod's and each carries the deposit's own name.
+        public const string GalaxySystemDepositExploited = "galaxy.system-deposit-exploited";
+        public const string GalaxySystemDepositIdle = "galaxy.system-deposit-idle";
+
+        // How many ships are sitting at a system, split the way the label splits them: the two
+        // lozenges it draws under the name, one for the player's side and one for everyone else's.
+        // The label writes a bare number in each and names neither side.
+        public const string GalaxySystemFriendlyShip = "galaxy.system-friendly-ship";
+        public const string GalaxySystemFriendlyShips = "galaxy.system-friendly-ships";
+        public const string GalaxySystemHostileShip = "galaxy.system-hostile-ship";
+        public const string GalaxySystemHostileShips = "galaxy.system-hostile-ships";
+
+        // The Academy's standing, drawn on a system it holds: a bare number for the level and a ring
+        // for how far the next one is. The ring carries no figure at all, so it is read as the
+        // proportion it is drawn at, and the sentence around both is the mod's.
+        public const string GalaxySystemAcademyLevel = "galaxy.system-academy-level";
+
         // The stretch of sky a system stands in. The map writes the constellation's name across the
         // region rather than on anything in it, and the tree has no level for a region, so the name is
         // said on the system and the sentence around it is the mod's.
@@ -830,6 +849,13 @@ namespace ES2Access.Core.Speech
             { GalaxySystemRebellion, "Rebellion at {0} percent, {1} to go" },
             { GalaxySystemPiratePower, "Pirate power level {0}" },
             { GalaxySystemMinorRelation, "Relations {0} percent" },
+            { GalaxySystemDepositExploited, "{0}, exploited" },
+            { GalaxySystemDepositIdle, "{0}, not exploited" },
+            { GalaxySystemFriendlyShip, "{0} friendly ship" },
+            { GalaxySystemFriendlyShips, "{0} friendly ships" },
+            { GalaxySystemHostileShip, "{0} hostile ship" },
+            { GalaxySystemHostileShips, "{0} hostile ships" },
+            { GalaxySystemAcademyLevel, "Academy level {0}, {1} percent to the next level" },
             { GalaxySystemConstellation, "In the {0} constellation" },
             { GalaxyObliteratorProjectile, "Obliterator missile" },
             { GalaxySystemDiplomacy, "Diplomacy" },
