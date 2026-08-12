@@ -157,6 +157,8 @@
   "scan.output": "{0} {1}",
   "zoom": "Zoom",
   "scan.synergy": "{0} for {1}",
+  "scan.battle": "Battle between {0}",
+  "scan.battle-here": "Battle",
   "screen.star-system": "Star system",
   "screen.planet": "Planet",
   "planet.previous": "Previous planet",

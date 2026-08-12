@@ -343,6 +343,12 @@ namespace ES2Access.Core.Speech
         /// side by side and writes no words at all.</summary>
         public const string ScanSynergy = "scan.synergy";
 
+        /// <summary>A fight in orbit, which the diplomacy lens draws as the two sides' emblems and no
+        /// words - so the empires are named from the fleets and the fact of the battle is the mod's word.
+        /// The second form is for a line the game is drawing while the fleets have already gone.</summary>
+        public const string ScanBattle = "scan.battle";
+        public const string ScanBattleHere = "scan.battle-here";
+
         // The star system management page. The panel names are the mod's, because the game draws the
         // panels as unlabelled boxes with an icon in the corner; everything a panel CONTAINS is read
         // in the game's own words.
@@ -916,6 +922,8 @@ namespace ES2Access.Core.Speech
             { ScanOutput, "{0} {1}" },
             { Zoom, "Zoom" },
             { ScanSynergy, "{0} for {1}" },
+            { ScanBattle, "Battle between {0}" },
+            { ScanBattleHere, "Battle" },
             { ScreenStarSystem, "Star system" },
             { ScreenPlanet, "Planet" },
             { PlanetPrevious, "Previous planet" },

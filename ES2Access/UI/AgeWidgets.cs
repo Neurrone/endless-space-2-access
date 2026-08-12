@@ -841,11 +841,28 @@ namespace ES2Access.UI
         public static IList<string> DrawnLines(AgeTransform widget, int maxDepth = 8)
         {
             List<string> lines = new List<string>();
-            CollectLines(widget, lines, maxDepth);
+            CollectLines(widget, lines, maxDepth, false);
             return lines;
         }
 
-        private static void CollectLines(AgeTransform widget, List<string> lines, int depth)
+        /// <summary>The same reading for a panel whose lines the game FADES rather than hides - the scan
+        /// view's map labels, where a whole line of a label is switched off for the layer the camera is on
+        /// by animating its alpha to nothing and leaving it marked visible. Reading such a panel by
+        /// visibility alone announces a line the player cannot see; see <see cref="Painted"/> for the same
+        /// rule applied to pooled tables and <see cref="PaintedText"/> for the one-phrase form.</summary>
+        public static IList<string> PaintedLines(AgeTransform widget, int maxDepth = 8)
+        {
+            List<string> lines = new List<string>();
+            CollectLines(widget, lines, maxDepth, true);
+            return lines;
+        }
+
+        private static void CollectLines(
+            AgeTransform widget,
+            List<string> lines,
+            int depth,
+            bool paintedOnly
+        )
         {
             if (widget == null || depth < 0)
             {
@@ -854,7 +871,7 @@ namespace ES2Access.UI
 
             try
             {
-                if (!widget.Visible)
+                if (!widget.Visible || (paintedOnly && widget.Alpha <= 0f))
                 {
                     return;
                 }
@@ -874,7 +891,7 @@ namespace ES2Access.UI
                 IList<AgeTransform> children = widget.Children;
                 for (int i = 0; children != null && i < children.Count; i++)
                 {
-                    CollectLines(children[i], lines, depth - 1);
+                    CollectLines(children[i], lines, depth - 1, paintedOnly);
                 }
             }
             catch (Exception) { }

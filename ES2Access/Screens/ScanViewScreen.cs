@@ -307,6 +307,13 @@ namespace ES2Access.Screens
         /// system is the place the label is standing on. A keyboard player has no such place, so the row
         /// is named by the system and says the label's words as its value - a deliberate deviation from
         /// what is drawn, and the only one here.
+        ///
+        /// The label draws ONE line, and that line is a toggle: switching it points the whole lens at
+        /// that empire's diplomacy instead of the player's. So the row IS the toggle wherever the game
+        /// will let it be switched, and a plain readout wherever it will not - which on the player's own
+        /// home system is always, because there is nobody else there to watch. It was a group with the
+        /// toggle inside it, and on the only label this save draws that made a row promising a child and
+        /// delivering a switched-off copy of its own words (owner-reported).
         /// </summary>
         private void BuildDiplomacy(GraphBuilder builder)
         {
@@ -348,46 +355,145 @@ namespace ES2Access.Screens
             ScanViewDiplomacyLabel it = label;
             GameNode node = label.GameNode;
             ControlId id = ControlId.Referenced(node, "scan:diplomacy/" + node.GUID);
-            NodeVtable vtable = new NodeVtable
-            {
-                Announcements = new List<NodeAnnouncement>
-                {
-                    GraphNodes.LabelPart(() => node.LocalizedName),
-                    GraphNodes.ValuePart(() => AgeWidgets.TextOf(it.MainLinesContainer)),
-                },
-                Sections = GraphNodes.Sections(
-                    NodeSection.Buffer(() => AgeWidgets.DrawnLines(it.MainLinesContainer))
-                ),
-            };
-            AgeWidgets.PointAt(vtable, label.AgeTransform);
-
             AgeControlToggle swap = label.SwapToggle;
             AgeTransform line = AgeWidgets.Transform(swap);
-            if (line == null || !AgeWidgets.Visible(line))
+            bool switchable =
+                line != null && AgeWidgets.Painted(line) && AgeWidgets.Operable(line);
+            NodeVtable vtable;
+            if (switchable)
             {
-                builder.AddItem(id, vtable);
-                return;
+                AgeControlToggle toggle = swap;
+                vtable = GraphNodes.Checkbox(
+                    () => node.LocalizedName,
+                    () => toggle.State,
+                    () => AgeWidgets.Toggle(toggle),
+                    // Asked live as well as at build time: the game switches the line off the moment the
+                    // lens is already watching somebody else, and the row must not go on offering it.
+                    () => AgeWidgets.Operable(line),
+                    AgeWidgets.Raw(line),
+                    null,
+                    null,
+                    () => DiplomacyLines(it)
+                );
+                AgeWidgets.Point(vtable, toggle);
+            }
+            else
+            {
+                vtable = new NodeVtable
+                {
+                    Announcements = new List<NodeAnnouncement>
+                    {
+                        GraphNodes.LabelPart(() => node.LocalizedName),
+                        GraphNodes.ValuePart(() => DiplomacyLines(it)),
+                    },
+                    // No section: the label draws ONE line of words and the readout is already all of
+                    // it, so a buffer section could only say the leader's name a second time.
+                };
+                AgeWidgets.PointAt(vtable, label.AgeTransform);
             }
 
-            // The toggle IS the empire's name line, so it is named by the words the game wrote on it.
-            // Switching it points the whole lens at that empire's diplomacy instead of the player's; the
-            // game switches it off, with no words at all, wherever there is nobody else to watch.
-            AgeControlToggle toggle = swap;
-            NodeVtable child = GraphNodes.Checkbox(
-                () => AgeText.Label(it.EmpireNameLabel),
-                () => toggle.State,
-                () => AgeWidgets.Toggle(toggle),
-                () => AgeWidgets.Operable(line),
-                AgeWidgets.Raw(line)
-            );
-            AgeWidgets.PointAt(child, line);
+            builder.AddItem(id, vtable);
+        }
 
-            builder.BeginGroup(id, vtable);
-            builder.AddItem(
-                ControlId.Referenced(swap, "scan:diplomacy/" + node.GUID + "/watch"),
-                child
-            );
-            builder.EndGroup();
+        /// <summary>
+        /// Everything the label is saying about the system, in the order it is stacked: the leader whose
+        /// home this is, how the watching empire stands with them, and whether there is a fight in orbit.
+        ///
+        /// Only the first of the three is words. The relation is a single tinted icon and the battle is a
+        /// pair of empire emblems, so both are read from the model the game drew them from - the same
+        /// answer, and the same idiom as <see cref="Status"/> on a planet card.
+        /// </summary>
+        private static string DiplomacyLines(ScanViewDiplomacyLabel label)
+        {
+            MessageBuilder message = new MessageBuilder();
+            message.Fragment(AgeWidgets.PaintedText(label.MainLinesContainer));
+            message.Fragment(RelationText(label));
+            message.Fragment(BattleText(label));
+            return message.Build();
+        }
+
+        /// <summary>How the empire the lens is watching stands with the empire whose home this is, in the
+        /// game's own word for that state. Drawn as one tinted icon beside the name and nothing else, and
+        /// not drawn at all where the two are the same empire - which is every label in a save where the
+        /// player has met nobody, so this is verified by code rather than measured.</summary>
+        private static string RelationText(ScanViewDiplomacyLabel label)
+        {
+            try
+            {
+                if (!AgeWidgets.Painted(label.RelationGroup))
+                {
+                    return null;
+                }
+
+                ColonizedStarSystem system = label.MainColonizedStarSystem;
+                DiplomacyScanViewWindow window = label.Parent;
+                Empire owner = system == null ? null : system.Empire;
+                Empire watching = window == null ? null : window.WatchingEmpire;
+                if (owner == null || watching == null)
+                {
+                    return null;
+                }
+
+                GuiEmpire theirs = Gui.GuiWrapperProviderService.GetGuiEmpire(owner);
+                GuiEmpire ours = Gui.GuiWrapperProviderService.GetGuiEmpire(watching);
+                DiplomaticRelationState state = ours.GetRelationStateWith(theirs);
+                return state == null
+                    ? null
+                    : AgeText.Clean(Gui.GetLocalizedTitle(state.Name));
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>Who is fighting in orbit, where the label is drawing its battle line - two empire
+        /// emblems and no words at all, so the names come from the same fleets the label asks about
+        /// (<c>ScanViewDiplomacyLabel.CollectFightingEmpires</c>: a docked fleet still alive and in an
+        /// encounter). No save without a battle in it can draw the line, so this too is verified by code.
+        /// </summary>
+        private static string BattleText(ScanViewDiplomacyLabel label)
+        {
+            try
+            {
+                if (!AgeWidgets.Painted(label.BattleLine))
+                {
+                    return null;
+                }
+
+                MessageBuilder empires = new MessageBuilder();
+                IList<Fleet> docked = label.GameNode.DockedEntities;
+                List<int> said = new List<int>();
+                for (int i = 0; docked != null && i < docked.Count; i++)
+                {
+                    Fleet fleet = docked[i];
+                    if (fleet == null || fleet.IsDestroyed || !fleet.IsInEncounter)
+                    {
+                        continue;
+                    }
+
+                    Empire empire = fleet.DisplayedEmpire;
+                    if (empire == null || said.Contains(empire.Index))
+                    {
+                        continue;
+                    }
+
+                    said.Add(empire.Index);
+                    empires.ListItemForcedComma(
+                        Gui.GuiWrapperProviderService.GetGuiEmpire(empire)
+                            .GetLeaderName(Gui.PlayerEmpire)
+                    );
+                }
+
+                string names = empires.Build();
+                return string.IsNullOrEmpty(names)
+                    ? ModStrings.Get(ModStrings.ScanBattleHere)
+                    : ModStrings.Format(ModStrings.ScanBattle, names);
+            }
+            catch (Exception)
+            {
+                return null;
+            }
         }
 
         // ---- the trade and economy lenses ----
@@ -395,13 +501,26 @@ namespace ES2Access.Screens
         /// <summary>
         /// One row per label the trade and economy lenses draw, which is one per node the camera is
         /// looking at and the empire can see (<c>ScanNodeLabelsWindow.RefreshLabelsVisibilityAndPosition</c>
-        /// - culling first, then the empire's own visibility). Both lenses draw the same labels; what
-        /// separates them is which lines inside each label the layer fades up, so there is nothing here
-        /// to tell them apart and nothing that should.
+        /// - culling first, then the empire's own visibility).
         ///
-        /// The label's own name goes in the readout and its figures - the trading company, the traitor
-        /// count, the ratings - are the value. Everything else it draws is an icon with a tooltip, which
-        /// is what the buffer is for.
+        /// Both lenses draw the same label. What was supposed to separate them is which of the label's
+        /// lines the layer fades up (<c>LabelMetaModifier</c> per line, an alpha per camera layer), and
+        /// measured on the drawn label that comes to almost nothing: only the trading company's income
+        /// strip is faded away on the economy band. The planet circles declare an alpha of zero for the
+        /// trade band and are drawn at full anyway - the label collects its modifiers in <c>Awake</c> and
+        /// the circles are instantiated later, so nothing ever animates them. Both bands therefore read
+        /// the same, which is what the player sees.
+        ///
+        /// Every line the label carries is drawn WITHOUT words: four planet circles, a trade-quality dial,
+        /// a best-system star, a traitor count as a bare number. The words are all in the tooltips, and
+        /// the two that matter name a CLASS - the tooltip window assembles them from the model at draw
+        /// time - so reading the label's text gave the name and nothing else, and the trade figures the
+        /// player asked after were not missing but never fetched (owner-reported).
+        ///
+        /// So the row is the system's name with the trade dossier as its tooltip - the node is pointed at
+        /// the DIAL rather than at the label, because a class-backed tooltip only has words once the game
+        /// has drawn it and the game draws it for the widget it is hung on - and the planets the label
+        /// rings it with are its children, each with the same dossier the game gives that circle.
         /// </summary>
         private void BuildNodes(GraphBuilder builder)
         {
@@ -422,37 +541,196 @@ namespace ES2Access.Screens
                         label == null
                         || label.GameNode == null
                         || !AgeWidgets.Visible(label.AgeTransform)
+                        || !AgeWidgets.Painted(label.ContentTable)
                     )
                     {
                         continue;
                     }
 
-                    ScanNodeLabel it = label;
-                    GameNode node = label.GameNode;
-                    NodeVtable vtable = new NodeVtable
-                    {
-                        Announcements = new List<NodeAnnouncement>
-                        {
-                            GraphNodes.LabelPart(() => NodeName(it)),
-                            GraphNodes.ValuePart(
-                                () => AgeWidgets.TextOf(it.TraitorAndTradeLine)
-                            ),
-                        },
-                        Sections = GraphNodes.Sections(
-                            NodeSection.Buffer(() => AgeWidgets.DrawnLines(it.ContentTable))
-                        ),
-                    };
-                    AgeWidgets.PointAt(vtable, label.AgeTransform);
-                    builder.AddItem(
-                        ControlId.Referenced(node, "scan:node/" + node.GUID),
-                        vtable
-                    );
+                    AddNodeRow(builder, label);
                 }
             }
             catch (Exception e)
             {
                 Log.Warn("scan: reading the node labels threw: " + e);
             }
+        }
+
+        private static void AddNodeRow(GraphBuilder builder, ScanNodeLabel label)
+        {
+            ScanNodeLabel it = label;
+            GameNode node = label.GameNode;
+            AgeTooltip trade = TradeTooltip(label);
+            NodeVtable vtable = new NodeVtable
+            {
+                Announcements = new List<NodeAnnouncement>
+                {
+                    GraphNodes.LabelPart(() => NodeName(it)),
+                },
+                Sections = GraphNodes.Sections(
+                    NodeSection.Buffer(() => NodeLines(it)),
+                    GraphNodes.TooltipSection(trade)
+                ),
+            };
+            AgeWidgets.PointAt(vtable, label.AgeTransform, trade);
+
+            ControlId id = ControlId.Referenced(node, "scan:node/" + node.GUID);
+            if (Circles(label) == 0)
+            {
+                builder.AddItem(id, vtable);
+                return;
+            }
+
+            vtable.ControlType = ControlTypes.Group;
+            builder.BeginGroup(id, vtable);
+            AddCircles(builder, label);
+            builder.EndGroup();
+        }
+
+        /// <summary>The dial's own tooltip, and only while the dial is drawn: the game shows it for a
+        /// system that is the player's colony and hides it for everybody else's
+        /// (<c>ScanNodeLabel.RefreshTradingScore</c>). It is where the trade figures live - the trading
+        /// structure, the neighbours, the system's level and population, the improvement modifier and the
+        /// governor (<c>PanelFeatureTradeEfficiencyFactors</c>) - none of which the label writes down.
+        /// </summary>
+        private static AgeTooltip TradeTooltip(ScanNodeLabel label)
+        {
+            try
+            {
+                StarSystemManagementScanViewItemRating rating = label.TradeRatingGroup;
+                return rating == null || !AgeWidgets.Painted(rating.AgeTransform)
+                    ? null
+                    : label.TradeEfficiencyTooltip;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>Every word the label draws around its name: the icons whose tooltips carry their own
+        /// text - the best-system star, a blackout, the traitor count - and the trading company, which the
+        /// game hangs OUTSIDE the label's content table and whose income strip it fades away on the
+        /// economy band. Read painted rather than visible for exactly that reason.</summary>
+        private static IList<string> NodeLines(ScanNodeLabel label)
+        {
+            List<string> lines = new List<string>();
+            AddPainted(lines, label.ContentTable);
+            AddPainted(lines, label.TradeCompanyGroup);
+            return lines;
+        }
+
+        private static void AddPainted(List<string> lines, AgeTransform widget)
+        {
+            if (widget == null || !AgeWidgets.Painted(widget))
+            {
+                return;
+            }
+
+            IList<string> drawn = AgeWidgets.PaintedLines(widget);
+            for (int i = 0; drawn != null && i < drawn.Count; i++)
+            {
+                AddLine(lines, drawn[i]);
+            }
+        }
+
+        /// <summary>How many planet circles the label is ringing the star with. The table is a pool that
+        /// keeps the widgets a bigger system needed, so the count is the system's own planets and the
+        /// widgets are read in that order - the order they were bound in.</summary>
+        private static int Circles(ScanNodeLabel label)
+        {
+            int count = 0;
+            IList<AgeTransform> children = CircleWidgets(label);
+            for (int i = 0; children != null && i < children.Count; i++)
+            {
+                if (Circle(label, children, i) != null)
+                {
+                    count++;
+                }
+            }
+
+            return count;
+        }
+
+        private static IList<AgeTransform> CircleWidgets(ScanNodeLabel label)
+        {
+            AgeTransform table = label.PlanetCirclesTable;
+            return table == null || !AgeWidgets.Painted(table) ? null : table.Children;
+        }
+
+        /// <summary>The planet the Nth circle stands for, or null where the circle is a pooled leftover -
+        /// one the game faded out, or one past the end of this system's planets.</summary>
+        private static Planet Circle(ScanNodeLabel label, IList<AgeTransform> children, int index)
+        {
+            try
+            {
+                AgeTransform widget = children[index];
+                PlanetCircleItem item =
+                    widget == null ? null : widget.GetComponent<PlanetCircleItem>();
+                if (item == null || !item.IsBound || !AgeWidgets.Painted(widget))
+                {
+                    return null;
+                }
+
+                StarSystemNode system = label.StarSystemNode;
+                IList<Planet> planets = system == null ? null : system.Planets;
+                return planets == null || index >= planets.Count ? null : planets[index];
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>One child per planet the label draws a circle for. The circle is a coloured dot with
+        /// no words, so it is named by the planet and says the dossier the game hangs on that dot - which
+        /// for a planet the empire has not surveyed is the game's own sentence about not knowing, and is
+        /// then all there is to say.</summary>
+        private static void AddCircles(GraphBuilder builder, ScanNodeLabel label)
+        {
+            IList<AgeTransform> children = CircleWidgets(label);
+            for (int i = 0; children != null && i < children.Count; i++)
+            {
+                Planet planet = Circle(label, children, i);
+                if (planet == null)
+                {
+                    continue;
+                }
+
+                AgeTransform widget = children[i];
+                AgeTooltip tooltip = AgeWidgets.Raw(widget);
+                NodeVtable vtable = new NodeVtable
+                {
+                    Announcements = new List<NodeAnnouncement>
+                    {
+                        GraphNodes.LabelPart(() => CircleName(widget, tooltip)),
+                    },
+                    Sections = GraphNodes.Sections(GraphNodes.TooltipSection(tooltip)),
+                };
+                AgeWidgets.PointAt(vtable, widget);
+                builder.AddItem(
+                    ControlId.Referenced(planet, "scan:node/planet/" + planet.GUID),
+                    vtable
+                );
+            }
+        }
+
+        /// <summary>What the circle stands for: the planet's name, which the game keeps on the wrapper it
+        /// hangs on the dot rather than anywhere on the dot itself. For an unsurveyed planet there is no
+        /// wrapper and the game puts a sentence in the tooltip instead, which becomes the name - the dot
+        /// says that much and no more, and the row would otherwise be nameless.</summary>
+        private static string CircleName(AgeTransform widget, AgeTooltip tooltip)
+        {
+            string named = AgeWidgets.ItemText(widget);
+            if (!string.IsNullOrEmpty(named))
+            {
+                return named;
+            }
+
+            AgeTooltip readable = AgeWidgets.Readable(tooltip);
+            IList<string> words =
+                readable == null ? null : AgeText.Lines(AgeText.Tooltip(readable));
+            return words == null || words.Count == 0 ? null : words[0];
         }
 
         /// <summary>What the label calls the place, falling back on the model's name for a node whose
