@@ -75,6 +75,12 @@ the tripwire caught this session.
   asset name is the ground truth for what each column means), resolved through the same
   table.
 
+A third universe: a table of **icon-only items**, each carrying its data wrapper on its own
+tooltip. A drawn-text reader over such a table produces silently empty output — and silence is
+the one defect a transcript cannot show — so any buffer section fed by drawn text needs one
+check that the widgets draw text at all; the items' names come from the wrappers, not the
+pixels.
+
 ## Verifying
 
 Icon fixes are text-pipeline fixes: push the game's entire localization corpus through the

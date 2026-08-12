@@ -68,7 +68,16 @@ concluding "the game never names this".
    `PostOrder`/`Command` (action layer), `Localize`/`LocalizationKey`. And when a base
    class anchors a family of sibling subclasses, survey the WHOLE family in one pass —
    one regex for their own bound fields over the family's glob — before trusting that the
-   prototype generalizes: siblings diverge in shape, not just content.
+   prototype generalizes: siblings diverge in shape, not just content. **Enumerate a UI
+   framework's whole window universe by transitive subclass CLOSURE** over every class
+   declaration, then diff it against the framework's own live registration list: the registry
+   being a subset of the closure proves the closure complete, and closure-minus-registry
+   isolates the dead code. A direct-base grep under-reports badly (ES2: 45 direct subclasses,
+   191 transitive) — and sweep for a SECOND, non-framework UI system while you are there (ES2
+   has an immediate-mode debug family none of the window machinery knows about). For anything
+   that ENDS a session (victory, defeat, disconnection), find the single server/client state
+   that terminates it and enumerate its outcomes from there — the losing path is often a
+   different window class from the winning one.
 3. **Corroborate live** with the dev server ([dev-server.md](dev-server.md)): the raw GUI
    dump confirms the scene structure the decompile implies; the REPL probes services and
    calls candidate APIs against the running game before you build on them. When raw dumps and the mod's interpreted view both exist,

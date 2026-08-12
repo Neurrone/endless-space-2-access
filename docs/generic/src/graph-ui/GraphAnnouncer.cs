@@ -81,7 +81,13 @@ namespace ES2Access.Core.UI.Graph
             PartFilter = null;
             PositionText = null;
             ExpandedStateText = null;
+            Carry = null;
         }
+
+        /// <summary>The live drag (<see cref="CarryState"/>) - the same object the carry keys act on, so
+        /// what a control SAYS about dragging and what the keys do to it cannot disagree. Null (tests,
+        /// boot, a game with no drags) = no control says anything about dragging.</summary>
+        public static CarryState Carry;
 
         private static readonly List<GraphNode> EmptyPath = new List<GraphNode>();
 
@@ -137,6 +143,19 @@ namespace ES2Access.Core.UI.Graph
             // indication away from exactly the rows that have the most to review.
             NodeAnnouncement tooltip = TooltipParts.Part(vt.Sections);
             if (tooltip != null) result.Add(tooltip);
+
+            // The drag indication ("draggable" / "drop target"), derived for the same reason and in the
+            // same place: which controls can be picked up and which will take a drop is already written
+            // down in the vtable, so no screen composes the word and every screen with a drag has it.
+            // Kindless, so it sits at the tail of the readout beside "has tooltip" - what a control has
+            // to SAY about itself, after everything it IS.
+            if (Carry != null)
+            {
+                NodeAnnouncement source = Carry.DraggablePart(vt);
+                if (source != null) result.Add(source);
+                NodeAnnouncement target = Carry.DropTargetPart(vt);
+                if (target != null) result.Add(target);
+            }
 
             if (type != null && type.Order != null && type.Order.Length > 0 && result.Count > 1)
             {

@@ -18,7 +18,9 @@ roads), the keyboard model is a cursor over the game's *own* graph, not a 2D gri
 - Each node is **expandable**: its children are the things the map draws *at* that node, in
   drawn categories (ES2: the system's planets, then its outgoing lanes), walked with the
   ordinary tree keys. Position text and category order come from what is drawn, per the
-  standing doctrine.
+  standing doctrine. A thing's **parent is the place the game's model stores it** (a fleet
+  keeps its lane; a probe keeps only a coordinate); where the model gives no place, give it a
+  sibling row or region of its own — never a child of whatever is drawn nearest.
 - **Edges are spoken as the map draws them.** An edge to an unrevealed node reads as
   leading somewhere unexplored — a complete phrase from the mod's string table — and is not
   traversable or activatable; a named destination is spoken only when the game draws that
@@ -69,13 +71,15 @@ name and fact through the renderer's own visibility predicate — the same doctr
 [making-screens-accessible.md](making-screens-accessible.md) §0, load-bearing here because
 the map is where the model's omniscience leaks first. The filter is what needs the test.
 
-## Overlay / scan modes (design only — not yet proven in ES2)
+## Overlay / scan modes (proven on ES2's scan view)
 
 Strategy maps ship information overlays (ownership, trade, economy views) that recolor the
 same map. Model them as a **mode flag plus a content-source swap on the existing
 screens**, never as new screen models per mode; where the overlay's content varies with the
 zoom layer, the mod selects an overlay type by driving the game's own layer/zoom state
-deterministically. Overlay legends ("caption" panels) become a reviewable stop.
+deterministically. Overlay legends ("caption" panels) become a reviewable stop. One screen
+serves every lens, and the lens's own **drawn header** is the reliable mode signal — the
+captions and legend data can go stale while every lens's window reports itself shown.
 
 ## Tile worlds (planned — unproven)
 

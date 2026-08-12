@@ -48,7 +48,9 @@ And the words are the game's words. Where the game shows something for a state �
 tooltips, captions, placeholders — surface that text, never a mod paraphrase. Only words
 the game finished writing count: text still holding an unfilled template slot ("… {0}") or
 a key the localizer hands back unchanged ("%SomeKey") is parked, not shown — treat it as
-absent, never speak it. Preserve it
+absent, never speak it. The same trap has a prefab form: a widget HIDDEN today may already
+carry its text from the prefab, so a tooltip-fed readout gated on anything but the game's own
+drawn flag ships a false statement about every healthy object. Preserve it
 exactly: no mod separators or punctuation inserted (multi-line game text joins with a space,
 not a list comma — worked examples in [localization.md](localization.md)). Conversely, invent nothing the game does
 not show: no placeholder nodes for empty states, no spoken position text where the game shows

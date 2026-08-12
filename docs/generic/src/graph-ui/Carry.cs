@@ -74,7 +74,9 @@ namespace ES2Access.Core.UI
     /// the rules below are unit-tested off the game. The screens declare which controls can be
     /// picked up and which will take a drop (<see cref="NodeVtable.OnPickUp"/>,
     /// <see cref="NodeVtable.OnDrop"/>); everything about what a key press MEANS is decided in
-    /// <see cref="CarryActions"/>.
+    /// <see cref="CarryActions"/>, and what a control SAYS about dragging is derived from those same two
+    /// declarations (<see cref="DraggablePart"/>, <see cref="DropTargetPart"/>, added to every control's
+    /// readout by <c>GraphAnnouncer.EffectiveAnnouncements</c>) - no screen writes the words.
     ///
     /// The carry belongs to the screen it started on (<see cref="Owner"/>): its drop targets are
     /// there, so a player who walks off to another page is no longer carrying anything. A menu
@@ -129,15 +131,66 @@ namespace ES2Access.Core.UI
         }
 
         /// <summary>
-        /// The state word a control that would TAKE the carried thing says while focused. Live, so
-        /// it appears and disappears under a cursor left standing on the target while the player
-        /// picks something up or puts it down. Says nothing when nothing compatible is being
-        /// carried, which is every other moment of the game.
+        /// Whether a control would TAKE what is being held right now: the right sort of place for this
+        /// cargo, and - where the screen declared a test of its own for the targets among a family that
+        /// will refuse - that test too (<see cref="NodeVtable.DropAccepts"/>).
         /// </summary>
-        public NodeAnnouncement DropTargetPart(string kind)
+        public bool Takes(NodeVtable vtable)
         {
+            return vtable != null
+                && vtable.OnDrop != null
+                && Accepts(vtable.DropKind)
+                && (vtable.DropAccepts == null || vtable.DropAccepts(Held));
+        }
+
+        /// <summary>
+        /// What a control the player could pick something up from says while NOTHING is being carried -
+        /// the drag's half of "has tooltip", and the only announcement of the pick-up key there is.
+        ///
+        /// It goes quiet the moment something is held: the player is then hunting for somewhere to put
+        /// that thing down, and being told the control under the cursor could also be picked up is noise.
+        /// A control that is both source and target therefore says "drop target" mid-drag and nothing
+        /// else.
+        ///
+        /// The pick-up command answers for itself whether there is anything to give right now - an empty
+        /// slot, a foreign ship, a population the game will not let leave - so the word cannot promise a
+        /// gesture that would do nothing. That is why the command must be a pure query
+        /// (<see cref="NodeVtable.OnPickUp"/>) and why this part is NOT live: it is asked when a readout
+        /// is composed, never per frame, and a word appearing on its own after a drag was cancelled
+        /// would be noise on top of the gesture that already said what happened.
+        /// </summary>
+        public NodeAnnouncement DraggablePart(NodeVtable vtable)
+        {
+            if (vtable == null || vtable.OnPickUp == null)
+            {
+                return null;
+            }
+
+            NodeVtable it = vtable;
             return new NodeAnnouncement(
-                () => Accepts(kind) ? ModStrings.Get(ModStrings.CarryDropTarget) : null,
+                () =>
+                    Held == null && it.OnPickUp() != null
+                        ? ModStrings.Get(ModStrings.CarryDraggable)
+                        : null
+            );
+        }
+
+        /// <summary>
+        /// The state word a control that would TAKE the carried thing says while focused. Live, so it
+        /// appears and disappears under a cursor left standing on the target while the player picks
+        /// something up or puts it down. Says nothing when nothing compatible is being carried, which is
+        /// every other moment of the game.
+        /// </summary>
+        public NodeAnnouncement DropTargetPart(NodeVtable vtable)
+        {
+            if (vtable == null || vtable.OnDrop == null)
+            {
+                return null;
+            }
+
+            NodeVtable it = vtable;
+            return new NodeAnnouncement(
+                () => Takes(it) ? ModStrings.Get(ModStrings.CarryDropTarget) : null,
                 true
             );
         }

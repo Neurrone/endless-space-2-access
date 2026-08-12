@@ -132,7 +132,11 @@ namespace ES2Access.Core.UI.Graph
         /// <summary>Required, at least one part. The control's spoken focus readout. Parts marked
         /// <see cref="NodeAnnouncement.Live"/> re-speak on change while focused. When
         /// <see cref="ControlType"/> is set, the type's common parts merge in and the type's kind order
-        /// applies; otherwise parts speak in declaration order.</summary>
+        /// applies; otherwise parts speak in declaration order.
+        ///
+        /// A node's announcement-part list must keep its SHAPE across rebuilds: the live-part watch
+        /// re-baselines when the list changes shape and swallows exactly the change it should have
+        /// spoken - represent absent state as an empty part, never a missing one.</summary>
         public IList<NodeAnnouncement> Announcements;
 
         /// <summary>The control's type (registry value) — supplies the role word, the speak order, and the

@@ -7,31 +7,61 @@ number or key binding lands here (bindings themselves need owner approval first)
 
 ## Layer budget
 
-Static per screen (doctrine: ui-navigation.md "Layers are static"):
-`0` main-menu and the new-game lobby (never up together — showing one hides the other) ·
+Static per screen (doctrine: ui-navigation.md "Layers are static"). **A layer number is
+allocated by the main agent when a stage is briefed, never claimed inside a stage** —
+pipelined stages cannot see each other's claims, and three of them once picked the same
+number independently.
+
+`0` main menu, the new-game lobby, and the menu-replacing out-game pages (Credits/DLC/Mods/
+Export/Join — registered after `MainMenuScreen`, and equal layers tie-break by registration
+order; never up together, since showing one hides the others) ·
 `5` advanced settings · `6` faction chooser (both over the lobby, their only opener) ·
 `7` custom faction editor (over the chooser, whose own window hosts its panel; the three are
 never up together, and all sit well under the drop list a setting can open and the message
 box a Cancel or a Delete confirms in) ·
-`10` galaxy, star-system, planet-overview and system-discovery (the four
-view levels, never up together) · `20` planet-constructibles (the panel a planet card slides
-out under itself) · `25` system-selection modal (over the star-system page that opens it and
-under BOTH things it can raise itself: the tutorial page it registers a key for, and the
-drop list its policy column opens) ·
-`15` research (the technology wheel — a GuiScreen overlay drawn over whichever view level is
-underneath, so above them and below the planet panel) · `16` quest journal (the other GuiScreen
-overlay; the same strip of screen icons opens both, so the two are never up together) ·
+`10` the view levels — galaxy, star-system, planet-overview, system-discovery, plus the two
+battle view levels (the space cinematic and the ground battle) — never up together ·
+`11` scan view (over the view levels, under everything they raise; one number for every lens,
+which are never up together) ·
+`15` **every icon-strip screen, shared deliberately** — research, quest journal, senate,
+empire, economy, military, academy, diplomacy — because the engine enforces the exclusivity
+itself (`BackgroundRenderer` carries `GuiWindowsStackExclusive`, measured), so no two of them
+can be shown at once ·
 `18` notification (the engine's own ladder: above the screens, below every modal) ·
-`50` game-menu · `52` options (one number, above the pause menu that can
-open it) · `55` load-save · `60` loading · `70` drop-list (above options, its owner) ·
+`20` planet-constructibles (the panel a planet card slides out under itself) ·
+`21` troop management · `22` battle-tactics deck (both measured below the tutorial popup via
+`AgeScreen.SortingOrder` — ModalRenderer 5 < OverlayRenderer 6) ·
+`23`/`24` target pickers · `25` system-selection modal (over the star-system page that opens it
+and under BOTH things it can raise itself: the tutorial page it registers a key for, and the
+drop list its policy column opens) · `26` fleet-selection · `27` hero list ·
+`28` hero-selection (under the hero-inspection window its own Inspect raises) ·
+`29` juggernaut specialization ·
+`33` government · `34` laws · `35` ship designer (under the hull drop list 70 and the
+lose-changes box 100) ·
+`36` election, population **and** recipe-creation — a deliberate three-way share: all sit on
+the game's exclusive modal stack behind different openers, so no two can be up together, and
+a window on such a stack voids any layer constraint against its stack-mates
+(ui-navigation.md; owner rule 2026-08-12: mutually exclusive screens may share a number) ·
+`41` negotiation · `42` advanced battle report · `43` minor-faction diplomacy · `44` pirate
+diplomacy · `45` hero inspection (under rename 80 and the message box 100) · `46` the academy
+pair (shared — the two DLC modals, never up together) · `47` cutscenes · `48` advanced battle
+setup · `49` victory-achieved ·
+`50` game-menu · `51` end-game journal · `52` options (one number, above the pause menu that
+can open it) · `55` load-save · `60` loading · `70` drop-list (above options, its owner) ·
 `80` rename box · `85` improvements modal (over the star-system page, under its own
-confirmation) · `90` tutorial-selection modal (over the new game screen) ·
-`99` tutorial popup (above EVERYTHING but the message box: the game itself draws most tutorial
-popups over its own screens, modals and notifications, so any lower number buries one of them —
-what keeps 99 livable is that a collapsed popup stands down, and that the mod follows the panel's
-own visibility, so a popup the game has hidden holds nothing) · `100` message-box.
+confirmation) · `86` system-politics modal · `90` tutorial-selection modal (over the new game
+screen) · `96` free · `97` non-blocking box · `98` tutorial popup · `99` error box ·
+`100` message-box.
 Mod-owned CHILD screens (`Screen.PushChild`) have no layer: the manager focuses the deepest
 child of the top screen.
+
+**The tutorial popup sits at 98 — above everything except the two boxes that must be
+answerable.** The game itself draws most tutorial popups over its own screens, modals and
+notifications (`TutorialPopupLayer`, per page — es2-facts), so any lower number buries one of
+them; what keeps 98 livable is that a collapsed popup stands down and that the mod follows the
+panel's own visibility, so a popup the game has hidden holds nothing. The error box (99) and
+the message box (100) go ABOVE it, because an error or a confirmation the tutorial buries is
+unanswerable.
 
 **The selected-fleet panel has NO layer** — it is a contributor to the galaxy page
 (`FleetPanel` — `docs/helpers.md`), not a screen, because selecting a fleet changes only the cursor and the

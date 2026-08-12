@@ -188,7 +188,11 @@ which no dump reveals. Key such lines on the game's *data* object, never the wid
   reports visible, and pooled list containers do the reverse — surplus recycled children
   stay "visible" with zero alpha, so a flag-trusting sweep declares rows the player cannot
   see (example: ES2's competitor-slot pool kept an eighth slot alive this way after the
-  count came back down). Effective drawn-ness is the ancestor walk *plus* whatever render
+  count came back down). Zero alpha is only one retirement style: pools also park surplus
+  children fully visible with stale content arranged outside the parent's extents, and retire
+  rows by fading. So take counts and enumeration from the data the game BOUND, never from the
+  widget pool, and gate every per-widget read on effective drawn-ness. Effective drawn-ness is
+  the ancestor walk *plus* whatever render
   test the engine itself honours (alpha, clipping). And in a pannable or zoomable surface
   there is a third answer that is neither: **a cull** — `Visible` recomputed per frame from
   the screen rect, meaning "where the camera looks", not "what exists" (ES2's tech wheel
@@ -202,8 +206,13 @@ which no dump reveals. Key such lines on the game's *data* object, never the wid
 ## Patterns proven since the port
 
 - **Passive announcements** (things that change while no control is focused — loading
-  progress, a page the game advances, the turn number): a screen's per-frame update diffs a
-  tuple of live source values and speaks QUEUED, never interrupting. Baseline the diff when
+  progress, a page the game advances, the turn number): a per-frame watcher — the screen's own
+  update where the source belongs to one page, a pump-scoped watcher where it does not —
+  diffs a tuple of live source values and speaks QUEUED, never interrupting.
+  A **textless** indicator (a spinner, a throbber, a colour swap) never shows up as a missing
+  announcement in any text audit, so a census has to hunt zero-text windows and ask what
+  boolean drives each one; that state belongs to a pump-scoped watcher, because the surface
+  it lives on is often not a screen the player can be on at all. Baseline the diff when
   the screen arrives (arrival already speaks via `ScreenName`; the two must not both fire) —
   but only for a source that *outlives* the screen, like loading progress. For a source the
   game itself clears on leave, baseline to **nothing** instead: an arrival baseline can
@@ -231,7 +240,14 @@ which no dump reveals. Key such lines on the game's *data* object, never the wid
   knowing the interval exists rather than discovering it as a bug. But never
   stand down while merely *covered* — everything that hides your panel draws above your
   layer, and a screen that blinks out mid-transition hands the player to whatever is
-  underneath for a frame (heard as a spurious announcement of the screen below). For
+  underneath for a frame (heard as a spurious announcement of the screen below). That
+  reasoning holds only while your layer is *below* everything that can cover you: a screen
+  placed at the top of the stack has nothing above it to blame, so it gates on its own
+  surface's visibility instead. **Covered is not withdrawn**: an exclusive modal stack HIDES
+  the window underneath (shown goes false), and there the screen below must stand down — ask
+  the engine's own topmost-modal record which case you are in, never your window's flag; the
+  two disagree exactly on the closing frame. A window on such a stack also voids any layer
+  constraint against its stack-mates, which can never be up together. For
   staying active *through* a transition, prefer a second, **non-blinking authority** over
   any timer: games often answer "which page is up" from more than one place, and one blips
   null on a same-page re-entry while another does not — picking the right source beats a
@@ -243,13 +259,19 @@ which no dump reveals. Key such lines on the game's *data* object, never the wid
   a single frame during a rebind, a small bounded linger is the last resort. Through all of
   it, an empty `Build` is the safety valve: declaring nothing is legal — the render is
   skipped and the cursor survives — which is what makes staying active through a
-  transition safe. And an arrival the game LOSES may be finished for it: where part of a
+  transition safe. It is also the answer for a DEPARTING screen: the game disables a fading
+  page's controls before the unbind, so live parts fire "unavailable" during the fade unless
+  the screen declares nothing once it stops being shown. And an arrival the game LOSES may be finished for it: where part of a
   page's reveal is deferred to a coroutine or animation that can abort silently, re-issue
   the game's own show call — only after a settle long enough that a merely-slow arrival is
   never pushed, only while the precondition the game's own attempt needed is already
   satisfied, and then not again for a pause, because the re-issue is deferred too and the
   stalled state reads the same for a while after it. `src/graph-ui/Nudge.cs` is that
-  discipline as an engine-free counter.
+  discipline as an engine-free counter. **A mode with no window at all** (a strategic lens, a
+  targeting cursor) has nothing to bind: its predicate flips frames before anything draws, so
+  arrive on the mode's first drawn-and-operable surface and gate one-way on the mode itself
+  thereafter — and a mode the game can drop the player into needs at least a watcher
+  announcing entry and exit, or the player is in an unannounced world.
 - **Initial focus and Tab clamping**: Tab does not wrap, so whichever stop the cursor starts
   on must be the first stop, or Tab reads as broken. An explicit start node wins over the
   "land on the selected alternative" rule unless the start node is itself one of the
@@ -260,18 +282,28 @@ which no dump reveals. Key such lines on the game's *data* object, never the wid
   opened from pages at different layers, give it one number above the highest opener — and
   **below anything its own controls can raise** (a modal whose combo boxes open the shared
   drop-list popup must sit under the popup's layer). Getting that bound wrong is silent:
-  the popup renders, but the wrong screen keeps focus.
+  the popup renders, but the wrong screen keeps focus. Before numbering a surface at all,
+  look for the game's **own per-instance draw-order declaration** (a sorting-order field, a
+  renderer bucket): where the engine already ranks its windows, the mod's numbers are copying
+  a table that exists, and guessing contradicts it. And a screen placed above EVERYTHING is
+  only safe where the player can dismiss or collapse it and the mod stands down on that —
+  otherwise it buries every popup the game draws over it.
 - **A roster grid linearises.** A grid of cards (factions, loadouts, portraits) reads as
   one row per card in drawn order — left-to-right, top-to-bottom — not as a 2D table: the
   cells are peers of one kind, so column-preserving vertical moves buy nothing and the
   grid's wrap points are a rendering accident. A card's permanently-drawn description
   follows the always-shown-text rule ([making-screens-accessible.md](making-screens-accessible.md)
   §0); the card's substance lives in its buffer ([buffers.md](buffers.md)'s card example).
+  A **sparse grid** is not a table either: when the game keeps the full lattice and hides most
+  cells, column-preserving moves pair wrong across the holes — linearise the drawn cells and
+  let the drawn headers become a walkable legend.
 - **Tables read as tables**: one graph row per data row with a shared row key (Up/Down keeps
   the column), one node per cell announcing the drawn value alone — the column heading is
   spoken as the EDGE the player crosses to reach the cell, never repeated by the cell itself —
   and entering the table announces its role once. A cell is role-less text: a control type is
-  two things, a reading order and a role word, and a metadata cell wants only the order. No
+  two things, a reading order and a role word, and a metadata cell wants only the order —
+  except a cell the game draws a real CONTROL into: that cell keeps the control's role word
+  and click, and its availability is asked of the control, not of the row. No
   position phrases inside a table — neither rows nor cells say "N of M"; the row identifies
   itself by name. Never drop an empty cell — the shared-column invariant dies — speak an
   "empty" word in it. A cell's review buffer holds that cell's own content (heading, value,
@@ -293,11 +325,18 @@ which no dump reveals. Key such lines on the game's *data* object, never the wid
   own drawn order; stop keys are named after the cluster (not after any one page), and
   per-screen cursor memory keeps working unchanged because the stops live in each page's
   own `GraphState`.
+- **When one screen swaps whole PAGES in place**, announce the new page and blur the cursor so
+  seating re-runs: reconciliation's nearest-survivor tier would otherwise keep a node of the
+  old page alive and read its business over the new one.
 - **A control the game wires to a screen you haven't modelled yet** is a named tradeoff,
   decided explicitly and reported: declare it read-only (the player loses an affordance but
   hears no dead end), or declare the action and accept that it opens a silent screen until
   that screen is modelled (the affordance kept, the dead end temporary). Either is
-  defensible; choosing silently is not.
+  defensible; choosing silently is not. Find such controls by grepping the declared controls'
+  handlers for the engine's open-window calls — a gateway nobody noticed is a dead end the
+  player cannot diagnose. And the "silent screen" arm has a cheap floor — a **minimum pass**
+  where the page names itself on arrival, reads its drawn controls, and Escape is verified —
+  so even a deferred screen is never an entry into silence.
 
 ## Type-ahead search
 
@@ -363,7 +402,14 @@ already has an answer for each case.)
   NOTHING" (drag out of the container to remove), there is no widget to drop on: declare an
   always-visible mod-authored drop-target node at the end of the container, labelled as a
   complete instruction, reading as a plain line while nothing is carried — discoverable
-  before it is ever needed.
+  before it is ever needed. **Say what the drag can do here, from the vtable, in the
+  announcer**: a source appends "draggable" while nothing is held, a target appends "drop
+  target" while something it takes is held, and a node that is both says only the drop word
+  mid-drag. Derive both where the tooltip indication is derived, never per screen. The source
+  word asks the pick-up command itself (which is why that command must be a pure QUERY), so
+  it is never said on an empty slot; and a target family where some members refuse needs an
+  acceptance predicate consulted by the INDICATION only — the drop still goes through the
+  game's own check, whose refusal carries the game's reason for a player who presses anyway.
 - **Child screens remain** (`PushChild`/`RemoveChild`, a single linear chain): the
   native-popup wrapper (game-focus handoff, deferred close to dodge the engine's Escape
   race) and the confirmation screen still need them. Per-screen state isolation returns

@@ -102,7 +102,8 @@ Rules that came out of shipping this, all hit in practice:
   rule, not a universal: where the row is a card's own tooltip plus a badge's, the
   important one is the card's — the screen names which tooltip speaks. And a tooltip whose
   words are the row's own always-drawn text is not a second thing to say or buffer — the
-  game reused the printed paragraph as its hover copy; skip it.
+  game reused the printed paragraph as its hover copy; skip it; when only its FIRST LINE
+  repeats the label and more follows, indicate instead — the label is not the tooltip.
 - **The mode is a per-frame answer — never store it.** A widget can swap its tooltip class
   with its state (ES2's stage-deed marker: a plain-text placeholder while locked, a
   class-composed dossier once its stage is researched), so one control's short/long mode
@@ -118,11 +119,15 @@ Rules that came out of shipping this, all hit in practice:
   contributes, and both read in the control type's kind order — "unavailable, ⟨reason⟩,
   has tooltip". Suppressing derivation because a screen added a part would silently
   un-indicate the buffer that section still fills.
-- **Captions for bare numbers come from the game's registries.** When a drawn value's only
-  name is a static icon, ask the game's element/property registry for its localized title
-  before inventing a mod word. Hazard: the registry can point at a translation key that no
-  longer exists — a title lookup needs the engine's naming-convention fallback and must
-  degrade to silence, never to a raw key.
+- **Captions for bare numbers come from the game's registries — the tooltip is not the name.**
+  A widget whose drawn text is a bare value is named from the caption the game keeps
+  elsewhere (a `%…Title` key, the element/property title, a sibling caption), asked before
+  inventing a mod word; the tooltip's sentence stays a sentence. Hazard: the registry can
+  point at a translation key that no longer exists — a title lookup needs the engine's
+  naming-convention fallback and must degrade to silence, never to a raw key. Measure first
+  with hidden widgets included: some prefabs already draw the caption, and adding one there
+  double-names the row — a prefab-only Title key does NOT prove the caption is missing, only
+  a tree dump taken with visible-only OFF settles it.
 
 A dedicated speak-tooltip key is unnecessary under 1+2 (that was the ES2 call: no Space/F1
 tooltip key at all), and only justified under 3.

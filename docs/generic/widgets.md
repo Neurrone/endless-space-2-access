@@ -110,7 +110,9 @@ click path enforce what may be picked.
   feedback is the **live value part** announcing the result when it lands; the tempting
   alternative — speaking an optimistic prediction of the new state on the keypress — turns
   a rejected or reordered command into a confident lie. Say nothing extra on the press; let
-  the live part say what actually happened.
+  the live part say what actually happened. A page whose WHOLE content arrives after it opens
+  owes an arrival announcement of its own, and that watcher arms per VISIT, not per observed
+  transition — the answer can land before the page's first frame.
 
 ## Text that animates in
 

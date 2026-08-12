@@ -35,7 +35,8 @@ Gates: off by default — `devServer = true` under `[Dev]` in
 `ES2ACCESS_NO_DEV=1` forces off; `ES2ACCESS_DEV_PORT` overrides; `ES2ACCESS_NO_SPEECH=1`
 mutes voicing but `/speech` still captures.
 
-- `GET /status` — mod state, `modAssemblyName`, the `keyStandDown` patch tripwire
+- `GET /status` — mod state, `modAssemblyName`, the `keyStandDown` patch tripwire (FOUR
+  prefixes now: the three key scans plus `AgeControlTextField.KeyDown`)
 - `GET /speech?since=N&wait=MS` — spoken ring buffer (resets on reload); `wait` long-polls
 - `GET /gui/graph?edges=1&buffers=1` — the focused screen's whole accessible tree
 - `GET /gui/graph?screen=KEY` — what an UNFOCUSED registered screen would offer, built without
@@ -46,7 +47,9 @@ mutes voicing but `/speech` still captures.
   second request
 - `POST /type` — body = characters to TYPE at the focused screen (the type-ahead search), through the
   same gates a keypress passes; answers `taken`/`searching`/`search`/`results`/`focus` plus the speech
-  it caused. `/input` cannot carry it: that queue is actions, and typing is text
+  it caused. `/input` cannot carry it: that queue is actions, and typing is text. Neither reaches a
+  field the GAME owns — the letters queue against the mod's own type-ahead and fire as a search the
+  moment the field lets go, so a game-owned edit is driven by writing its text from `/eval`
 - `GET /gui/game?path=&depth=` — Unity hierarchy; `GET /gui/age?window=&depth=&visibleOnly=` —
   AGE widgets with rects (`window=` is the filter; `/gui/game` is the one taking `path=`)
 - `window=` matches a registered window, a shown panel, then any named AgeTransform under them,
@@ -55,8 +58,10 @@ mutes voicing but `/speech` still captures.
 - `GET /gui/age?...&fields=name,kind,text,tooltip,rect,interactable,enabled` — flat text, one
   indented line per widget, only those fields, empties omitted
 - `POST /eval?settle=MS&speech=0` — C# REPL (gotchas below); response carries caused speech
-- `POST /wait?timeout=MS` — body = bool expression, evaluated every frame
-- `POST /loadsave` — body = save title (empty = newest); retryable `[not ready]` until it acts
+- `POST /wait?timeout=MS` — body = bool expression, evaluated every frame; the wait is capped at
+  ~60 s whatever is asked for, so a longer silence is proved by repeating the poll
+- `POST /loadsave` — body = save title (empty = newest); retryable `[not ready]` until it acts —
+  except from a LOBBY, where not-ready is the answer until the lobby is left, never a retry
 - `GET /log?since=N&grep=TEXT` — no `since` answers only the last 100 entries (`capped:true`);
   `grep` still searches the whole ring; `GET /screenshot`; `POST /quit` — shutdown takes
   20–60 s: poll the PROCESS (not the port) every 2 s and only conclude a hang past 60 s
@@ -174,9 +179,32 @@ dump is text and stable, and unfocused Class-backed tooltips read EMPTY on both 
 they cancel. For a family whose "before" you only realise you need afterwards,
 `git stash push -u -- ES2Access ES2Access.Tests` → build → `/reload` → capture → `git stash
 pop` → build → `/reload` costs about three minutes and is how `screen.game-menu` and
-`screen.rename` got baselines. `GET /gui/graph?screen=KEY&buffers=1` reaches screens whose
+`screen.rename` got baselines. A **sheet** refactor's baseline must be captured in ONE game
+session: `GraphSheet` row keys derive from `GetHashCode()`, which survives a hot reload but not
+a process restart — the stash loop, never two launches. For a purely ADDITIVE announcement
+change there is a cheaper before: null the injected dependency that produces the new part
+(`GraphAnnouncer.Carry = null`) and dump, instead of stashing the source.
+`GET /gui/graph?screen=KEY&buffers=1` reaches screens whose
 window exists without a game running — out of a session `screen.game-menu` and
 `screen.rename` both declare real content, `screen.galaxy` and friends answer "not active".
+
+**Sighting a surface the fixture never draws.** Three tiers, cheapest first: `Show()` the
+game's own pooled widget, read, `Hide()` — the game's next visibility pass restores truth by
+itself; or set the game's OWN `Visible` flags and private fields from `/eval`, dump, restore,
+and re-diff the dump against the untouched one to prove nothing was left behind (this is how a
+whole DLC feature branch gets sighted); or, for a window with data, `Bind` + `Show`, read, then
+`Unbind` + hide. A forced-show proves STRUCTURE, never content, and a half-bind can outlive the
+probe — restore a monotonic setter through its backing field or private setter, and re-issue
+`POST /loadsave` if a window wedges. Never force-show a DLC modal without its data.
+
+**Proving a watcher stays silent** is a long poll on the watched flag, not a scan of `/speech`:
+`POST /wait` on the game's own condition, then read `/speech?since=N` for the window that
+elapsed. Because the wait caps at ~60 s, a claim of "silent for minutes" is several polls.
+
+**Splitting one buffer section into two loses `AddLine`'s cross-list dedupe** — nothing
+de-duplicates ACROSS sections. After moving a tooltip out of a details function, re-read the
+node's buffer FOCUSED: a drawn tooltip repeating a computed line is invisible in the unfocused
+dump.
 
 **Multi-row tables** need a real fixture with several saves/rows — do not mutate the game's
 data structures to fake one.

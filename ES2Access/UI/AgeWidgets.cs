@@ -414,14 +414,6 @@ namespace ES2Access.UI
             }
         }
 
-        /// <summary>
-        /// A widget the game is drawing, by the name its prefab gave it - breadth first, so the
-        /// outermost of two things wearing the same name wins.
-        ///
-        /// The last resort for a band a window draws and does not expose: several of the game's own
-        /// windows name their heading groups in the prefab and bind neither the group nor the label
-        /// inside it, so there is nothing to ask for them by except the name on screen.
-        /// </summary>
         /// <summary>Where this widget sits among its siblings - the stable half of a pooled prefab clone's
         /// identity, since a set of clones can share one name and a position in a collected list moves the
         /// moment a sibling appears or goes. The repeated-node key rule
@@ -438,6 +430,14 @@ namespace ES2Access.UI
             }
         }
 
+        /// <summary>
+        /// A widget the game is drawing, by the name its prefab gave it - breadth first, so the
+        /// outermost of two things wearing the same name wins.
+        ///
+        /// The last resort for a band a window draws and does not expose: several of the game's own
+        /// windows name their heading groups in the prefab and bind neither the group nor the label
+        /// inside it, so there is nothing to ask for them by except the name on screen.
+        /// </summary>
         public static AgeTransform ChildNamed(AgeTransform widget, string name, int depth)
         {
             if (widget == null || depth < 0)

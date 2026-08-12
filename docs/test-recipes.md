@@ -7,6 +7,11 @@ per-need — grep for the screen you are touching; the screen-agnostic verificat
 A new per-screen recipe or fixture limit lands HERE; `docs/roadmap.md` holds only work remaining
 plus a pointer index of shipped screens.
 
+**A third fixture exists**: the owner's **"unlocked" save** — every screen unlocked, the
+TECHNOLOGIES not (turn 1; the gate table is in the stage-8 report). Recipes below that say "this
+save" without naming one mean that save, and it is why so many screens read structurally right
+and content-poor.
+
 **Raising a notification on demand** (the fixture has none pending):
 `Amplitude.Unity.Framework.Services.GetService<Amplitude.Unity.Event.IEventService>().Notify(new EventEmpireIntroduction(Gui.PlayerEmpire))`
 — dismiss afterwards (`Gui.GuiNotificationService.DismissGuiNotification(...)`); minimizing
@@ -406,3 +411,134 @@ ONE colony, so the table draws one row): multi-row navigation, up/down between r
 reordering, a REFUSED row's sentence, the scroll view, and an operable policy drop list — the fixture
 draws it `interactable=false`, so the combo-box branch and the `DropListScreen` it opens are
 code-verified only.
+**Without an outpost at all** the same window is still reachable through a different opener: build
+the `ShipsSpawnPointSidePanel` validator delegate with `CreateDelegate` and show the window with it.
+Same warning, doubled — **never press Confirm** on that purpose either: it NPEs.
+
+**The rename box.** Its openers are the star-system name line, the planet card's rename button
+(unreachable on a unique home planet) and the fleet panel; close it with
+`window.HandleInput(InputAction.Exit)`, which is the route the key takes. The one-Escape contract —
+the first Escape steps OUT of editing, the second closes the box — is proved in halves, because
+Escape itself cannot be injected: simulate the FIRST one with
+`AgeManager.Instance.FocusedControl = null` and prove the mod's consumption with
+`DevProbe.Claims("Escape")`. The same-frame commit bug is not provable through `/input ui.activate`
+(no physical key exists), but the latch half is: `POST /wait` on
+`ModEntry.Input.ConsumedKeys.Count > 0`. Reaching a mod internal from `/eval` at all needs the
+loaded-from-bytes assembly by name — scan `AppDomain.CurrentDomain.GetAssemblies()` for the
+`modAssemblyName` that `/status` reports, then `GetType` off it; the plain type name does not
+resolve.
+
+**The assigned-governor side panel** is measurable without a save that has a governor: flip the
+`Visible` flags `ColonyHeroSidePanel.Refresh` (:157-240) writes, read, and put them back. The
+unassigned prefab holds STALE hero text, so what the flip proves is the variant's SHAPE, never its
+words.
+
+**The system-politics modal.** Open it from the star-system page's own node. "Show all events" is
+persistent WINDOW state — restore it — while the party pick is not. The table binds
+`canSelect:false`, so nothing in it commits.
+
+**Hero selection and the hero list.** The pickers are reachable from the academy family. **Never
+press Confirm and never press the card's own Content button**; selecting a card commits nothing,
+but `Refresh` wipes `SelectedHero` (es2-facts), so a cached selection is meaningless. Note the
+**modal-return cursor**: closing any modal over the star system page lands on the planets stop's
+start node rather than on the button that opened it — pre-existing, and true of improvements and
+rename too.
+
+**The election modal** is a 12-step wizard walked entirely read-only: every step's Next/Previous is
+non-committing, and the outcomes are never drawn (es2-facts).
+`GovernmentAction_ForceElections` is the game's own way to raise a real one and is UNVERIFIED — do
+not spend a fixture on it without the owner's say-so.
+
+**The scan view.** Entry is Enter on the lens toggle. Drive the camera with
+`cam.ForceZoomingOnPosition(step, position)` — `SetZoomStep` alone leaves the labels culled — and
+read the zoom table 0-1 Diplomacy / 2-5 Trade / 6-9 Economy / 10-12 System, plus the system and
+planet layers. **All four lens windows report `Shown` at once**, so the drawn `ScanViewWindowHeader`
+is the only reliable lens signal and `CaptionsPanel.ScanViewGuiElement` goes stale. Restore
+`ShowScanViewCaptions` and `ShowScanViewSystemInfos` afterwards.
+
+**Galaxy: the fog-off smoke pattern.** Forcing a world-state predicate TRUE in code, rebuilding,
+walking read-only and reverting is the sanctioned alternative to mutating a save — it is what proved
+the shared-`Link` teleport. In the unlocked save the map draws 1 perceived system, 0 hangars and a
+Signal curiosity that refuses, so nothing else on it can be sighted there.
+
+**The system-label batch.** Most of it is fixture-blocked; the escape hatch is the force-content
+trick in two variants — write the game's own `%…Description` into a label's tooltip `Content`, or
+assign the WRAPPER the label reads its name off — then focus the node, read
+`/gui/graph?buffers=1`, and let the next refresh blank it. Every read must be gated on
+ancestor-walked visibility, because the hidden pooled widgets hold the previous system's values.
+
+**Probes and faction panels (the other galaxy labels).** The unlocked save draws NONE of this
+surface. A probe row is exercisable with `probeLabel.Show()` then `Hide(true)` — self-healing. The
+faction panels need `Bind` + `Show`, then `Hide` + `Unbind` **and** `InspectedEmpire` restored
+through its private setter: `Unbind` leaves the game's own `Refreshed` handler live, which NREs on
+the next refresh otherwise.
+
+**The senate family** (senate, government, laws, population). Open it from `/eval` with
+`ControlBanner.OnControlBannerToggle`; reach the modals through the mod's own nodes. **NEVER press
+Validate, Pass, Abolish, a boost, or Assimilate.** The selection resets on every show, so nothing
+carries between visits. Expect a ~1 s `unavailable` on the page under a just-closed modal — that is
+the game's fade, not a defect; re-read. **Save-blocked**: the gene hunter, assimilation, relics, a
+real election, an enabled Abolish, a drawn history graph, an empty senator slot, and the outpost
+panel.
+
+**The empire page.** The interactive cells are columns 1/2/4/11/13. Nothing closes an opened band
+except leaving the page. The tab switch and the panel instances are both probeable from `/eval`;
+`SidePanels`' `PanelTitle` branch first got exercised here.
+
+**The economy page and the recipe modal.** Which rows draw at all is the stage-8 gate table (this
+save is screen-unlocked, not tech-unlocked). The recipe modal is reachable with zero slots via
+`new GuiRecipeSlot(0,false)` + `ShowWindow`. **NEVER press Confirm** — it is enabled even with an
+empty recipe and posts `OrderCreateRecipe` — and note Reset does NOT clear `RecipeModified`.
+
+**Military and fleet-selection.** **Never press Retrofit**: it is immediate, with no confirmation.
+A force-shown fleet-selection window must never have a row SELECTED — `ProcessSelection` NREs on a
+null `CheckValidity`. Create raises the Architects tutorial page in this save, so minimize it
+afterwards. Restore the camera when done.
+
+**The ship designer.** Open it by reflection on the private `Cb`s, and take the panel instance with
+`GetComponentInChildren` on the WINDOW — the hero window hosts a second one, and grabbing the wrong
+instance reads a page nobody is on. **Never press Create or Apply.** Only civilian hulls exist in
+this save. Restore `SelectedGuiShipDesign` and the toggles: `ShowDetailedStatsToggle` persists
+across opens, the category filter does not.
+
+**Hero inspection.** Bind, open, switch pages and close from `/eval`. An unrecruited `GuiHero` is
+the read-only fixture. For a skill point, set `Level = 2` and `Refresh`, then restore by reloading
+the save. Page switches raise tutorial popups — minimize them.
+
+**Troops and the tactics deck** are both non-committing until Confirm, which makes them safe to walk
+whole. A refusal is provable from BOTH sides by injecting one: force the game's own refusal state,
+read the spoken reason, and put it back.
+
+**The battle fixture** is a 14-step script (in the session report) because a battle cannot be
+created from `/eval` — it needs two hostile fleets meeting. Everything before the meeting is
+read-only; from the setup popup onward the run is destructive, so it goes LAST and ends with
+`POST /loadsave`.
+
+**Diplomacy, the academy pair and the sweep** are largely forced-show work: bind what the window
+needs, set `Visible=true`, read, then `Unbind` and hide, and re-diff the graph dump to prove nothing
+was left behind. A forced show proves STRUCTURE, not content. **Never press** any diplomacy action,
+any negotiation button (closing an unsigned negotiation still posts an order — es2-facts), or
+anything on the pirate page while there are no pirate systems (its `Refresh` throws). **The
+`AcademyModalWindow` Bind wedge**: a half-bind survives the probe and leaves the window unusable —
+recover with `Unbind` plus a re-issued `POST /loadsave`, and never force-show a DLC modal without
+its data.
+
+**Forcing a DLC side panel without the DLC.** The prefab INSTANCES exist regardless: bind the panel,
+set `Visible=true`, read the graph, then `Unbind` + hide and re-diff. The same holds for every
+`NotificationWindow` instance — all of them exist whether or not the DLC that raises them is
+installed, so notification variants are readable structurally even when they are unsightable.
+
+**The elimination popup and the journal.** `OrderEliminateEmpire` writes a REAL `EndGameSummary`,
+which is what makes the journal's ending entries readable; delete the entry afterwards through the
+journal's own cell rather than by editing the summary. The popup's groups hold no text and it hides
+Dismiss and Minimize (es2-facts), so its sentence rides the screen name.
+
+**A solo multiplayer session** — the only fixture for the MP-only states, correcting the older claim
+that they have none at all. Switch the lobby's Session Mode to Protected, which makes it a
+multiplayer session with one player. The safe start/stop is `LocalPlayerReady` true then false, never
+Start. Send a chat line with `ReplaceInputText` plus the reflected `OnTextFieldValidateCb`. Leave the
+lobby before any `POST /loadsave`: from a lobby that route answers not-ready forever.
+
+**Notification regression capture.** Any change to the notification family is checked by walking a
+fixed browse route over all three research-family popups and diffing `/gui/graph?edges=1&buffers=1`
+per popup, per the exact-non-regression pattern above.

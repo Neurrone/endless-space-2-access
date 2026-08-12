@@ -75,7 +75,11 @@ generic graduates to the generic docs.
   handler declared `Cb(GameObject obj = null)` logs "Calling function … with no parameters but
   the function requires 1" and does nothing (measured on
   `OutpostInfoSidePanel.OnClickChangeColonyCb`). From `/eval`, invoking such a private handler
-  by reflection with an explicit `new object[]{ null }` is the reliable route.
+  by reflection with an explicit `new object[]{ null }` is the reliable route. A double-click
+  handler is the same trap the other way round: `OnLineDoubleClickCb` takes NO argument while
+  the engine dispatches with one, so arity resolution is required — and
+  `MilitaryScreen.OnLineDoubleClick` then acts on `SelectedFleet`, not on the line it was
+  passed, so the row must be selected first for the replay to mean anything.
 - **Every tooltip is an ordered list of panel features.** `GuiTooltipWindow.DoBind` resolves
   the tooltip's `Class` through the description database and instantiates one prefab per
   feature under `PanelFeaturesTable`; a feature's SUB-features are added as further siblings in
@@ -97,7 +101,10 @@ generic graduates to the generic docs.
 - **`Gui.GetTitle` can hand back a key that has no translation.** `ShipStatCommandPoints`
   declares `%ShipStatCommandsTitle`, which the corpus no longer has; the engine's own naming
   convention (`"%" + name + "Title"`) resolves it. Anything reading a title through the element
-  database needs that fallback, and silence rather than a `%key` as the last resort.
+  database needs that fallback, and silence rather than a `%key` as the last resort. The same
+  hazard has a second face: `Gui.GetLocalizedTitle` answers for a missing element with a PINK
+  DESIGNER PLACEHOLDER or the raw `%Key` rather than failing, so every title read this way is
+  tested before it is spoken (the measured list of offenders is in the stage-5c report).
 - **A typewriter label already holds all its words.** `AgeModifierTypewriter` does not write
   text a character at a time: it sets the whole string once and advances the label's
   `CurrentLine`/`CurrentCharInLine`, which only the RENDERER honours. So `AgeText.Label` on a
@@ -613,6 +620,213 @@ generic graduates to the generic docs.
   reads that collection, and no symptom has been traced to it; noted here so the next investigation
   starts from a measurement rather than from a fresh surprise.
 
+## Focus, text fields and the engine's own keyboard
+
+- **The engine delivers keys to the focused control in `LateUpdate`.** `AgeManager.LateUpdate`
+  (:919-923) sends `KeyDown` to `FocusedControl` on any `anyKeyDown` frame, and
+  `AgeControlTextField.KeyDown` (:76-81) polls `GetKeyDown` itself on top of that. With
+  `RenameModalWindow.OnBeginShow` (:74-82) taking focus SYNCHRONOUSLY, one physical Enter could
+  open the box, be delivered to the field, validate and hide it — a rename that committed
+  nothing. `GameKeyboardHandover` is the answer (helpers.md).
+- **A text field stands the WHOLE mod layer down.** `AgeControlTextArea.IsKeyExclusive` true is
+  the signal; `AgeControlDropList` and the key-binding field are the only other exclusive
+  controls in the game.
+- **The engine's Escape for a key-exclusive field only UNFOCUSES it** (`InputManager.cs`
+  :1210-1241) — it never closes the surface around it — and while a field is exclusive the
+  engine swallows every other game hotkey (the camera excepted). So the mod owns the exit from
+  any keyboard it hands over.
+- **Hiding an AGE window does NOT unfocus its text field** (measured: field `Visible=True`,
+  `activeInHierarchy=True`, window `Visible=False`), which kills the mod's key layer
+  permanently — and it happens on the rename box's own hide path.
+  `AgeManager.FocusedControl`'s setter runs FocusLoss/FocusGain (:277-301), so clearing it is
+  the game's own hand-back.
+
+## Windows, layers and the modal stack
+
+- **`GuiManager.ModalOnTop` is the game's record of the topmost SHOWN modal** (:310, written
+  :1750-1765). An exclusive stack WITHDRAWS the window underneath (its `Shown` goes false), and
+  `ModalOnTop` is null during a modal's own close — the frame on which a window's own flag and
+  this record disagree.
+- **The icon-strip screens are engine-exclusive.** `BackgroundRenderer` carries
+  `GuiWindowsStackExclusive` — a prefab component, no code assigns it — so no two strip screens
+  can be shown at once, which is what lets them share one mod layer.
+- **`AgeScreen.SortingOrder` is the engine's own draw ladder** (Label 0 … ModalRenderer 5 …
+  OverlayRenderer 6). It puts a NOTIFICATION under a modal, which is why the mod's notification
+  layer sits below every modal rather than above them.
+- **Tutorial pages declare their own draw layer**: `TutorialPopupLayer` is per-page, and 49 of
+  233 pages declare one ABOVE modals — so the tutorial screen has to sit near the top of the
+  mod's ladder, with only the error and message boxes above it.
+
+## Tables, pools and clicks
+
+- **`GuiTable`'s can-select flag is recorded as `LinesTable.Enable`** (`GuiTable.Bind` :130, its
+  only writer), so an ancestor-walking "is it operable" test conflates read-only with refused. A
+  refused ROW is the line's own `AgeTransform.Enable` (`GuiTableEntry.OnBind` :22-27).
+- **`GuiTableLine.OnLineSelectionCb` clears `ClickedCell` AFTER notifying** — read the cell,
+  then the line, in that order, or the cell is already gone.
+- **AGE clicks PROPAGATE.** `propagateInteraction` defaults true (`AgeControl.cs:19`) and
+  `MouseUp` re-delivers up the chain (:170-192); the engine reaches the hit target by
+  `SendMessage` (`AgeManager.cs:890` — where the click audio comes from) and the ancestors by a
+  plain C# call, with no audio.
+- **AGE `ReserveChildren` tables retire rows by FADING** (alpha 0, `Visible` still true) — the
+  third retirement style, beside the surplus-child alpha 0 of "`Visible` is not 'drawn'" and the
+  scan view's pool that parks stale children fully visible outside the table's extents. Every
+  per-row read gates on painted-ness.
+- **`GuiRadioGroup` rewires its child toggles and ignores `State`** — the group is the authority,
+  not the toggle it holds.
+- `SystemSelectionModalWindow` binds `interactiveCells: false`, so its shipped table has no
+  interactive cell at all.
+
+## The icon-strip screens (senate, empire, economy, research)
+
+- Senate: **`GuiPolitics.Title` contains the party SYMBOL** — `GetLocalizedTitle(Name)` is the
+  bare word. An emptied `SenatorCard` keeps its old words, so a card is gated on the model, not
+  on its labels. And costs and totals live INSIDE the control they belong to: `LawsWindow`'s
+  `InfluenceCostLabel` is a child of `VoteButton`.
+- Empire: **`SystemListTable`'s five interactive cells all `PropagateInteraction` with an
+  `OnClickCb`** — a two-step gesture where the cell records `ClickedCell` and the propagated
+  toggle opens the panel; the resources column carries a handler-less `DummyButton`.
+  `EmpireStatusSidePanel.HappinessAndRebellionGroup` is wired to a method that exists nowhere,
+  and `EmpirePerformanceTracker` titles can be parked (the game itself draws "?").
+  `EmpireBanner` draws exactly ONE buy-out button (Influence) for the UE at turn 1.
+- Economy: **`GuiLocatedResource.TargetEffect` always throws** (its ctor never assigns the
+  element — go through `Gui.GetGuiElement`). `ResourcesPanel.RefreshResourceItem` decays a
+  soft-hidden item's alpha by ×0.3 per refresh and never restores it, so alpha is the only drawn
+  test there. A tooltip's CLASS is rebind-fresh while its TARGET can be stale (slots, resources,
+  salables) — take a name from the target only when the class says the rich variant is bound.
+  `AdCreationModalWindow` is a dead stub (unregistered, its opener never shown);
+  `EconomyScreen.ToggleSystems` is null live, so the tab strip is read off the drawn table;
+  `%TargetEffectIndustryTitle` contains the game's own icon typo (spoken faithfully); and
+  `ResourceItem.OnClickCb` is god-mode-only.
+- Research: **254 of 385 technologies carry an affinity badge** — a majority, so the badge is
+  ordinary content rather than an exception.
+- Politics: `PoliticalEventsPopulationPanel`'s table binds `canSelect:false`, has per-system
+  columns, keeps names only on the tooltip WRAPPERS and values only as cell tooltips, and its
+  `%SystemPopulationPoliticsTable*Title` keys are parked.
+- Election: **the action outcomes are never drawn** (`ElectionFinalPanel.Refresh` :180-181 hides
+  both branches unconditionally), the modal nulls `OverrolledTransform`/`FocusedControl` on every
+  step change (:71-77) so a hover highlight must be re-armed, and `%ElectionScreenTitle` is a
+  parked key.
+
+## Military, ships and the designer
+
+- **`EnrollButton` is invisible early game** — the button actually drawn there is
+  `UpgradeButton`, which opens the ground-troop modal — and `OnClickManPowerCb` is entirely
+  god-mode (7 groups, so they are declared transparent).
+- **Module tiles are double-click-only** (`UseLeftClick=false`), and the slots wire
+  `OnSlotUnequipCb` to BOTH the empty frame and the fitted button. The category filter DIMS
+  slots, so enabled ≠ will-take-this-module — `CanModuleBeBound` is the test, and the game's own
+  drag re-enables the compatible ones.
+- **A drag can be COMMITTED without starting one**: fill
+  `DragDropWindow.ShipDesignModuleDraggedItem` and call `ApplyDrop` — never `StartDragDrop`.
+- `ShipDesignItem.OnToggleCb` forces `State=true`, so there is no de-select click (null the
+  panel's property instead); costs, stats and the module list are hidden while a design is
+  invalid (the fresh-Create state); and the designer's resource items are god-mode readouts
+  named through `TooltipTitle`.
+- **"Behemoth" in the game's fiction is `Juggernaut` in the code** — grep both spellings or half
+  the family is invisible.
+- Fleet actions and columns are named twice over in the game's data: the action buttons resolve
+  through `Gui.GetTitle(definitionName)`, the toolbar has its own `%Fleet*Title` keys, and
+  `%FleetListTable{CommandPoints,MovementPoints,Health}Title` name the columns.
+
+## Heroes and the academy
+
+- **A hero's `SkillPoints` is Level − 1** (a simulation property); `SpentSkillPoints` is what the
+  save serializes.
+- **`HeroSkillTreeSkillItem` writes then DESTROYS both halves of its prerequisite feedback**
+  (:113/:142 enable, :119/:159 tooltip) — which only bites the Nakalim and Templar trees, since
+  no base-game skill declares a `RequiredSkill`.
+- The inspection hub's slide is ONE 0.3 s offset interpolation, and the engine re-enables the
+  arriving panel only AFTER `ModifiersRunning` ends.
+- The game's own `%SkillTreeAvailableSkillPointsTitle` is abbreviated, and every starting skill
+  titles as "Starting Skill" (only the dossiers differ).
+- Hero-card figure captions are `%HeroCardExperienceTitle` and friends; unspent points, cooldown
+  and relics borrow `%HeroInspectionRemainingSkillPointsTitle`,
+  `%AssignmentCooldownBaseDurationTitle` and `%HeroRelicTitle`.
+- `HeroSelectionModalWindow.Refresh` (:74-77) wipes `SelectedHero` through an inverted
+  `Contains` — never cache it.
+
+## Battles
+
+- **There is no battle HISTORY**: the encounter records are `SkipSerialization`, and
+  `PastEncounter` is a marker COUNT, not a list. Anything the player wants to re-read has to be
+  read while the battle's own surfaces are up.
+- `GroundTroopUpgrade` leaves its tooltip EMPTY while locked (the reasons had to be reproduced by
+  hand), and manpower upgrades have no `GuiElement` names at all.
+- The mini battle cards hide `PlayTitle` and their tooltip omits the name —
+  `GuiBattlePlaySlot.Title` is the only source.
+- Nine `EndBattleStatus` words; the realization labels are subjectless; the WatchBattle opt-outs
+  are the game's own; the pre-roll is a raw-input gate; battle-speed keys are
+  Plus/Minus/Asterisk/Pause, none of which the mod claims.
+- `ShowOtherCards` does not clamp; clicking an already-selected card IS the validation; and the
+  ENEMY play cards set YOUR plan.
+
+## Diplomacy and the sweep
+
+- The diplomacy ring draws UNMET majors; `LeaderCard` wires no control at all; the sector has no
+  tooltip and a god-mode branch.
+- **Closing an unsigned negotiation still posts an order**, and `EvaluationAnnotation` is
+  discarded on the way.
+- `AcademyModalWindow`'s Bind can WEDGE the window (recovery in test-recipes), and
+  `PirateDiplomacy.Refresh` throws outright when there are no pirate systems.
+- `Gui.FormatFailureInfos` returns the BASE text when every failure is ignorable — an empty-looking
+  refusal that is really "nothing to report".
+- The non-blocking box's countdown lives in the MESSAGE, not in a field of its own.
+
+## Galaxy labels, probes and the scan view
+
+- **A starlane is ONE `Link` shared by both end systems**, so per-system nodes built from a link
+  must key STRUCTURALLY (measured as a focus teleport on a fog-off build).
+- `PlanetCuriosityItem` is Class-backed yet its `Content` holds real words (`FormatFailureInfos`,
+  written in `Refresh`), so the refusal reads off `Content` while the name comes from the wrapper
+  (there is no Title label).
+- Hangar labels are drawn from `IVisibleGalaxyHangarRepositoryService` gated on `ShipsCount > 0`;
+  the click is `Select(CursorTarget)` + `ChangeCursor(GalaxyGarrisonCursor)`, and
+  `Hangar.LocalizedName` is `"%HangarTitle (⟨node⟩)"`.
+- **`StarSystemLabel` prefab-authors a `%…Description` into every contextual icon's tooltip
+  `Content`** and rewrites it at refresh, so a drawn-gated reader always has the game's own
+  sentence — but some icons' content only fills once they are drawn.
+- **Pooled label widgets keep the PREVIOUS system's values** (a hidden `TraitorCountLabel` read a
+  stale "1"), so every label read is gated on ancestor-walked visibility.
+  `DualGarrisonsLabelButtons.OnClick` selects `garrisons[0]` only — a duplicate affordance,
+  deliberately omitted.
+- **Probe, obliterator projectile and coordination request carry a bare `GalaxyPosition`** — no
+  node, no link; `Fleet` alone stores a leg. `ProbeLabel` draws a countdown only for your OWN
+  probe, and `ObliteratorProjectileLabel` writes destination and ETA only for yours.
+  `WreckedMothershipLabelWindow` binds `FocusedGameNode` and its items follow the curiosity
+  pattern. Constellation exploration is an aggregate recomputed on node-exploration events.
+- **The scan view is a MODE, not a view level**: `IsInNormalView` goes false and only
+  `EndTurnWindow` survives, while `TopTitlePanel` keeps the lens-naming label even hidden.
+  `ScanViewWindowCaptionsPanel` is a pool that does not clean up (surplus children stay fully
+  visible with stale words, arranged past the table's extents), so counts come from the lens's
+  own `GuiElement` data through `Prerequisite.Check`. `BattleScanViewWindow` has no header (fall
+  back to `Shown`), and `StarSystemOrbitalScanViewWindow` is an unregistered stub.
+- `ColonyInfoSidePanel.SecurityAndTroopsTooltip` (:60, filled :549-555) hangs on
+  `SecurityGroup` — `SecurityValue`'s own transform tooltip is null. `ColonyHeroSidePanel` swaps
+  variants by `Visible` flags only (:157-240), the unassigned prefab keeps STALE hero text, and
+  the unassign button is spelled `UnssignButton`.
+
+## Endings, notifications and the journal
+
+- **The elimination popup's groups hold no text**, and it hides Dismiss and Minimize — so its
+  sentence has to ride something else (the mod puts it on the screen name).
+- **`EndGameSummary` is written at popup-SHOW time**, which is what makes the journal's ending
+  entries readable at all.
+- `AgeModifierTypewriter`'s labels are complete from frame one (see the typewriter fact above);
+  AGE also localizes label text itself, so assigning a raw `%key` still DRAWS localized
+  (`AgePrimitiveLabel.cs:702-717`) — which means a drawn label is no evidence that the mod's own
+  lookup would have resolved.
+
+## Multiplayer, session and the install
+
+- **A lobby has chat history the moment it becomes multiplayer**: switching Session Mode posts
+  `%LobbyChatRenamed` through the chat service, so the log is never empty in a session that was
+  ever MP.
+- **Game chat text carries `#RRGGBB#` colour markup** — cleaned like any other game text before
+  speaking.
+- `EnableFactionIntroductionVideos` is FALSE in this install, so the faction intro cutscenes
+  cannot be sighted here at all.
+
 ## Card and tooltip drawing mechanisms
 
 **A hint button's tooltip has three parts, in a fixed order**: the button's own description, then
@@ -642,3 +856,6 @@ nobody can see.
   "jump to the missing technology" instead of disabling it, so `Gui.IsHintActive(transform)`
   is the ONLY discriminator between an offerable button and a blocked one — never gate on
   `Enable`. (The hint tooltip's three-part structure: the card/tooltip mechanisms above.)
+  `Gui.FormatButtonHint` FORCES `Enable = true` as it writes the hint, and only 6 of the 16
+  prefabs using the mechanism happen to be honest about their own flag — so the question is
+  asked per site, never inherited from a prefab that looked right.

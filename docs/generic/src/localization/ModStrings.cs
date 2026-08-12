@@ -79,6 +79,14 @@ namespace ES2Access.Core.Speech
         public const string BufferEmpty = "buffer.empty";
         public const string BufferLine = "buffer.line";
 
+        // The multiplayer session's own stream: everything said in the lobby and in the game, plus
+        // every session event the game posts as a system message - joins, kicks, the launch
+        // countdown, the network clock. Spoken as it arrives and kept here to be re-read.
+        public const string BufferChat = "buffer.chat";
+        public const string ChatSaid = "chat.said";
+        public const string ChatWhispered = "chat.whispered";
+        public const string ChatToAlliance = "chat.to-alliance";
+
         // Screen names, spoken on arrival.
         public const string ScreenMainMenu = "screen.main-menu";
         public const string ScreenMessageBox = "screen.message-box";
@@ -119,10 +127,42 @@ namespace ES2Access.Core.Speech
         public const string GalaxyNextIdleFleet = "galaxy.next-idle-fleet";
         public const string GalaxyIdleFleets = "galaxy.idle-fleets";
         public const string GalaxyGameMenu = "galaxy.game-menu";
+
+        /// <summary>The switch beside the turn controls that shows an alliance's coordination requests.
+        /// The game draws it as a bare icon and its tooltip is a sentence about what a click would do,
+        /// so there is no name of the game's to use.</summary>
+        public const string GalaxyAllianceRequests = "galaxy.alliance-requests";
+
+        // The multiplayer half of the turn controls, none of which the game names in words: the sync
+        // mark is an icon whose whole meaning is on its tooltip, the desync button is an icon that
+        // sends everybody back to the lobby, the ready ring is eight pictures, and the timers are
+        // arcs drawn around the End Turn button with no caption anywhere. All of them are absent in
+        // single player, where the game does not draw them at all.
+        public const string GalaxySyncState = "galaxy.sync-state";
+        public const string GalaxyReturnToLobby = "galaxy.return-to-lobby";
+        public const string GalaxyPlayers = "galaxy.players";
+        public const string GalaxyPlayersAllReady = "galaxy.players-all-ready";
+        public const string GalaxyPlayerPlaying = "galaxy.player-playing";
+        public const string GalaxyPlayersPlaying = "galaxy.players-playing";
+        public const string GalaxyGlobalTimer = "galaxy.global-timer";
+        public const string GalaxyTurnTimer = "galaxy.turn-timer";
+        public const string GalaxyOvertimeTimer = "galaxy.overtime-timer";
+        public const string GalaxyLastPlayerTimer = "galaxy.last-player-timer";
+        public const string GalaxyTimerSeconds = "galaxy.timer-seconds";
+
+        /// <summary>The turn is over for the player and the game is waiting on everybody else - the
+        /// state the game itself shows by rewriting the End Turn caption to "Pending", which nothing
+        /// announces because the turn number does not change while it lasts.</summary>
+        public const string GalaxyTurnWaiting = "galaxy.turn-waiting";
+
         public const string GalaxyResearch = "galaxy.research";
         public const string GalaxyTurnsRemaining = "galaxy.turns-remaining";
         public const string GalaxyStockAndNet = "galaxy.stock-and-net";
         public const string GalaxySystemColonized = "galaxy.system-colonized";
+
+        // A system of the player's that is still an OUTPOST rather than a colony - a distinct label on
+        // the map, so a distinct word here.
+        public const string GalaxySystemOutpost = "galaxy.system-outpost";
         public const string GalaxyOpenSystem = "galaxy.open-system";
 
         // What the camera just did, said back because the player cannot see it move. The game has no
@@ -140,6 +180,42 @@ namespace ES2Access.Core.Speech
         public const string GalaxyStarlaneUnexplored = "galaxy.starlane-unexplored";
         public const string GalaxyWormhole = "galaxy.wormhole";
         public const string GalaxyWormholeUnexplored = "galaxy.wormhole-unexplored";
+
+        // The place a lane leads to, offered inside the lane itself. The game draws no such control - a
+        // line on the map is the whole of what it draws - so the phrase is the mod's, and it is a whole
+        // phrase because the name of a system is all that goes in it.
+        public const string GalaxyLaneDestination = "galaxy.lane-destination";
+
+        // What the map writes on a system's own label. The numbers are the game's; the words around
+        // them are the mod's, because the label draws every one of them as a bare figure beside a
+        // picture and names none of them anywhere on itself. "Sleepers" is the game's own word for the
+        // agents it counts, taken from the sentence it explains the count with.
+        public const string GalaxySystemPopulation = "galaxy.system-population";
+        public const string GalaxySystemSleepers = "galaxy.system-sleepers";
+        public const string GalaxySystemBuilding = "galaxy.system-building";
+        public const string GalaxySystemNothingBuilding = "galaxy.system-nothing-building";
+        public const string GalaxySystemRebellion = "galaxy.system-rebellion";
+        public const string GalaxySystemPiratePower = "galaxy.system-pirate-power";
+        public const string GalaxySystemMinorRelation = "galaxy.system-minor-relation";
+
+        // The stretch of sky a system stands in. The map writes the constellation's name across the
+        // region rather than on anything in it, and the tree has no level for a region, so the name is
+        // said on the system and the sentence around it is the mod's.
+        public const string GalaxySystemConstellation = "galaxy.system-constellation";
+
+        // The one thing the map draws in open space that the game names nowhere: the missile an
+        // obliterator fires at a star system. Everything else about it - where it is going and when it
+        // arrives - is the game's own sentence, which arrives with the node as its tooltip.
+        public const string GalaxyObliteratorProjectile = "galaxy.obliterator-projectile";
+
+        // The buttons the label draws on a system. Each is a wordless icon the game explains in a
+        // sentence rather than names - the sentence arrives with the node as its tooltip - so what to
+        // CALL each one is the mod's, kept as short as the thing it does.
+        public const string GalaxySystemDiplomacy = "galaxy.system-diplomacy";
+        public const string GalaxySystemPirateMarkBuyout = "galaxy.system-pirate-mark-buyout";
+        public const string GalaxySystemConversionBuyout = "galaxy.system-conversion-buyout";
+        public const string GalaxySystemAcademyBuyout = "galaxy.system-academy-buyout";
+        public const string GalaxySystemHackingBeacon = "galaxy.system-hacking-beacon";
 
         // Which way something on the map lies from somewhere else. The game writes no compass word
         // anywhere - it draws the map and expects it to be looked at - so all eight are the mod's.
@@ -194,6 +270,13 @@ namespace ES2Access.Core.Speech
         public const string LoadSaveCloud = "loadsave.cloud";
         public const string NavCellEmpty = "nav.cell-empty";
 
+        // The save the game is writing right now - a manual one, a quick save, or the autosave at the
+        // end of a turn. The game marks the whole of it with a spinning icon and no words at all, so
+        // both halves are the mod's own sentences, and whole sentences: the fact a player needs is that
+        // the game is busy writing and then that it is safe to leave.
+        public const string SaveStarted = "save.started";
+        public const string SaveFinished = "save.finished";
+
         // Picking something up and putting it down somewhere else (a ship into another fleet). The
         // words are the DRAG's, because that is the gesture these keys stand in for and the one the
         // game's own tooltips name. The carried thing is named in the mod's sentence but in the game's
@@ -214,15 +297,42 @@ namespace ES2Access.Core.Speech
         /// <summary>What a control says while it would take the thing the player is holding.</summary>
         public const string CarryDropTarget = "carry.drop-target";
 
+        /// <summary>What a control the player could pick something up from says while nothing is being
+        /// carried - the drag's half of "has tooltip". Not said while something IS held: the useful fact
+        /// about a control then is whether the thing can go there.</summary>
+        public const string CarryDraggable = "carry.draggable";
+
+        // The scan view. The lens names itself in the game's own words, so the only strings here are
+        // for the two boxes the game draws bare and the pairing of a number with the output it counts.
+        public const string ScreenScanView = "screen.scan-view";
+        public const string ScanSystemInfo = "scan.system-info";
+        public const string ScanLegend = "scan.legend";
+        public const string ScanOutput = "scan.output";
+
         // The star system management page. The panel names are the mod's, because the game draws the
         // panels as unlabelled boxes with an icon in the corner; everything a panel CONTAINS is read
         // in the game's own words.
         public const string ScreenStarSystem = "screen.star-system";
         public const string ScreenPlanet = "screen.planet";
+
+        /// <summary>The two arrows the planet page draws beside the planet's name, which walk the empire's
+        /// planets one at a time. The game gives them a DESCRIPTION and no title
+        /// (<c>%PlanetInfoSidePreviousDescription</c> is the whole of what it writes), so the names are the
+        /// mod's.</summary>
+        public const string PlanetPrevious = "planet.previous";
+        public const string PlanetNext = "planet.next";
+
+        /// <summary>What a star system's hangar says when it holds no ships. The game draws the toolbar
+        /// and an empty area, with no placeholder of its own anywhere
+        /// (<c>ShipsManagementPanel</c> has no such label), so the phrase is the mod's.</summary>
+        public const string SystemHangarEmpty = "system.hangar-empty";
+
         public const string SystemPlanetsPanel = "system.planets-panel";
         public const string SystemColonyPanel = "system.colony-panel";
         public const string SystemPopulationPanel = "system.population-panel";
         public const string SystemRepresentativesPanel = "system.representatives-panel";
+        public const string SystemOutpostPanel = "system.outpost-panel";
+        public const string SystemGovernorPanel = "system.governor-panel";
         public const string SystemConstructiblesPanel = "system.constructibles-panel";
         public const string SystemQueuePanel = "system.queue-panel";
         public const string SystemHangarPanel = "system.hangar-panel";
@@ -236,6 +346,13 @@ namespace ES2Access.Core.Speech
         public const string SystemImprovements = "system.improvements";
         public const string SystemLevel = "system.level";
         public const string SystemSecurity = "system.security";
+
+        /// <summary>How many outposts this colony is feeding part of its growth to. The population
+        /// panel draws the number alone beside a symbol and says what it means nowhere but on the row's
+        /// tooltip, so the row's own name is the mod's - and it is a COUNTED phrase, hence a form per
+        /// number (see <see cref="Plural"/>) rather than a count glued to a noun.</summary>
+        public const string SystemSupplyingOutpost = "system.supplying-outpost";
+        public const string SystemSupplyingOutposts = "system.supplying-outposts";
 
         // The construction queue: what a buy-out button on a line is called, and what a line says
         // about where it is and how far along it is.
@@ -314,6 +431,271 @@ namespace ES2Access.Core.Speech
         public const string ScreenQuests = "screen.quests";
         public const string QuestsPinned = "quests.pinned";
 
+        // The senate and the three windows it opens. The screens' own names are the game's and are
+        // what is normally spoken; the names here are the fallback for the frames before a window has
+        // written its heading. The three side panels and the two empty law-slot states are the mod's
+        // words, because the game draws those boxes and slots with no words on them at all - a corner
+        // icon and a sentence on hover for the panels, a bare picture for the slots.
+        public const string ScreenSenate = "screen.senate";
+        public const string SenateGovernmentPanel = "senate.government-panel";
+        public const string SenateElectionPanel = "senate.election-panel";
+        public const string SenateSupportPanel = "senate.support-panel";
+        public const string SenateEmptyLawSlot = "senate.empty-law-slot";
+        public const string SenateLockedLawSlot = "senate.locked-law-slot";
+        public const string SenateEmptySenatorSlot = "senate.empty-senator-slot";
+        public const string SenateLockedSenatorSlot = "senate.locked-senator-slot";
+        // The empire summary. The screen's own name is the game's and is what is normally spoken; the
+        // name here is the fallback for the frames before the window has written its heading. The two
+        // mod words are for boxes the game draws with no heading at all: the panel holding the empire's
+        // portrait and description, and the band of column headings over the systems table.
+        public const string ScreenEmpire = "screen.empire";
+        public const string EmpireDescriptionPanel = "empire.description-panel";
+        public const string EmpireHeadingsBand = "empire.headings-band";
+
+        /// <summary>Which of the two opposite things pressing an empire relic slot will do (Nakalim only).
+        /// The slot flips between them on its own as the empire's relic stock changes
+        /// (<c>RelicSlotItem.Update</c>), and the ONLY sign on screen is which of two pictures is drawn -
+        /// so a blind player would otherwise press a button that silently means the opposite thing.
+        /// </summary>
+        public const string EmpireRelicSlotAssign = "empire.relic-slot-assign";
+        public const string EmpireRelicSlotRemove = "empire.relic-slot-remove";
+
+        // The economy screen. The screen's own name is the game's; the name here is the fallback for
+        // the frames before the window has written its heading. The rest are for boxes the game draws
+        // with no heading at all - the marketplace's four panels and its two tickers - and for the one
+        // number the marketplace changes without ever captioning it, the quantity being traded.
+        public const string ScreenEconomy = "screen.economy";
+        public const string EconomyQuantity = "economy.quantity";
+        public const string EconomyBuyPanel = "economy.buy-panel";
+        public const string EconomySellPanel = "economy.sell-panel";
+        public const string EconomyTaxesPanel = "economy.taxes-panel";
+        public const string EconomyLogPanel = "economy.log-panel";
+        public const string EconomyAdsPanel = "economy.ads-panel";
+        public const string EconomyEventsPanel = "economy.events-panel";
+        public const string EconomyInflationPanel = "economy.inflation-panel";
+        public const string EconomyTradePanel = "economy.trade-panel";
+
+        // The military screen and the fleet picker the Academy raises over it. Both screen names are
+        // fallbacks for the frames before the window has written its heading. The rest are for bands
+        // the game draws with no heading of its own: the manpower box down the left edge, the three
+        // things that can be done to the selected fleet, the ships of that fleet, and the four things
+        // that can be done to the selected ship design.
+        public const string ScreenMilitary = "screen.military";
+        public const string MilitaryManpowerPanel = "military.manpower-panel";
+        public const string MilitaryFleetActions = "military.fleet-actions";
+        public const string MilitaryShipsPanel = "military.ships-panel";
+        public const string MilitaryDesignActions = "military.design-actions";
+        public const string ScreenFleetSelection = "screen.fleet-selection";
+
+        /// <summary>A tactic having landed in a slot of the battle deck, one having been taken out
+        /// again, and the name of the place a tactic is dropped to take it out - a node the mod draws
+        /// because the mouse's own way out is releasing the card over nothing, which a keyboard cannot
+        /// aim at. The window's own headings, its cards and its refusals are all the game's words; a
+        /// drag ending is the MOD's and the game answers it in silence, so these are the phrases the
+        /// deck editor needs.</summary>
+        public const string TacticsSlotFilled = "tactics.slot-filled";
+        public const string TacticsSlotEmptied = "tactics.slot-emptied";
+        public const string TacticsRemoveTarget = "tactics.remove-target";
+
+        // The hero page and the galaxy-wide hero list its Academy box opens. Both screen names are
+        // fallbacks for the frames before the window has written its own heading. The third is for the
+        // band of hero actions the page draws along its bottom with no caption of its own.
+        public const string ScreenAcademy = "screen.academy";
+        public const string AcademyHeroActions = "academy.hero-actions";
+        public const string ScreenHeroCompleteList = "screen.hero-complete-list";
+
+        // The ship designer. Its heading is the game's own and is declared where it is drawn, so the
+        // only mod words here are for the band the game draws with no caption at all - the module slots
+        // it draws over the rendered ship - and for a module having been fitted into one, which is the
+        // mod's own drag ending and has no game sentence.
+        public const string ShipDesignSlots = "ship-design.slots";
+        public const string ShipDesignModuleFitted = "ship-design.module-fitted";
+
+        // The battle popups and the two cinematics. Everything a battle SAYS on screen is the game's
+        // own text; what is left here is the counting, the two sides' names and the things the game
+        // draws as arcs and bars with no number anywhere on them.
+        public const string ScreenBattle = "screen.battle";
+        public const string ScreenGroundBattle = "screen.ground-battle";
+        public const string ScreenAdvancedBattleReport = "screen.battle-report-advanced";
+        public const string BattleYourFleets = "battle.your-fleets";
+        public const string BattleEnemyFleets = "battle.enemy-fleets";
+        public const string BattleYourTroops = "battle.your-troops";
+        public const string BattleEnemyTroops = "battle.enemy-troops";
+        public const string BattleYourDamage = "battle.your-damage";
+        public const string BattleEnemyDamage = "battle.enemy-damage";
+        public const string BattleShowYourFleets = "battle.show-your-fleets";
+        public const string BattleShowEnemyFleets = "battle.show-enemy-fleets";
+        public const string BattleBalance = "battle.balance";
+        public const string BattleTimeLeft = "battle.time-left";
+        public const string BattleProgress = "battle.progress";
+        public const string BattleYourShipLost = "battle.your-ship-lost";
+        public const string BattleYourShipsLost = "battle.your-ships-lost";
+        public const string BattleEnemyShipLost = "battle.enemy-ship-lost";
+        public const string BattleEnemyShipsLost = "battle.enemy-ships-lost";
+        public const string BattleYourFlotillaLost = "battle.your-flotilla-lost";
+        public const string BattleYourFlotillasLost = "battle.your-flotillas-lost";
+        public const string BattleEnemyFlotillaLost = "battle.enemy-flotilla-lost";
+        public const string BattleEnemyFlotillasLost = "battle.enemy-flotillas-lost";
+        public const string GroundBattleRound = "ground-battle.round";
+        public const string GroundBattleBombardment = "ground-battle.bombardment";
+        public const string GroundBattleAssault = "ground-battle.assault";
+        public const string GroundBattleYourTroopLost = "ground-battle.your-troop-lost";
+        public const string GroundBattleYourTroopsLost = "ground-battle.your-troops-lost";
+        public const string GroundBattleEnemyTroopLost = "ground-battle.enemy-troop-lost";
+        public const string GroundBattleEnemyTroopsLost = "ground-battle.enemy-troops-lost";
+
+        // The sweep screens: the error and non-blocking dialogs, the target pickers, the
+        // cutscenes, the cursor-mode watcher, the end-game pages and the main-menu
+        // destinations that had no name at all. The screens ask for these through
+        // OptionalText, so a translation that lacks one silences that line rather than
+        // speaking the key.
+        public const string ScreenError = "screen.error";
+        public const string ScreenTargetSelection = "screen.target-selection";
+        public const string ScreenGroundTargetSelection = "screen.ground-target-selection";
+        public const string ScreenCutscene = "screen.cutscene";
+        public const string CursorModeEnded = "cursor.mode-ended";
+        public const string ScreenVictory = "screen.victory";
+        public const string ScreenJournal = "screen.journal";
+        public const string ScreenDlc = "screen.dlc";
+        public const string ScreenCredits = "screen.credits";
+        public const string ScreenModding = "screen.modding";
+        public const string ScreenResourcesExport = "screen.resources-export";
+        public const string ScreenJoinGame = "screen.join-game";
+
+        /// <summary>What the list of multiplayer games says when the Steam search comes back. The search
+        /// is asynchronous - the page opens empty and fills seconds later - so its arrival is the only
+        /// thing that says the list is the list, and the empty answer is a line on the page as well as
+        /// the sentence a finished search speaks.</summary>
+        public const string JoinGameNoGames = "join-game.no-games";
+        public const string JoinGameGameFound = "join-game.game-found";
+        public const string JoinGameGamesFound = "join-game.games-found";
+
+        // The lobby's multiplayer marks. The game draws the crown, the kick button and the lock as
+        // pictures with no words: the crown carries no tooltip at all, and the other two explain what
+        // clicking them DOES ("Click to kick this player") without naming the thing being clicked. The
+        // ready and eliminated marks do explain themselves in the game's words and take nothing from
+        // here. The launch lock is a state with no widget of its own - it switches thirty controls off
+        // at once, five seconds before the game starts.
+        public const string NewGameHost = "new-game.host";
+        public const string NewGameKick = "new-game.kick";
+        public const string NewGameLockEmpire = "new-game.lock-empire";
+        public const string NewGameLobbyLocked = "new-game.lobby-locked";
+        public const string NewGameLobbyUnlocked = "new-game.lobby-unlocked";
+
+        /// <summary>The lobby's chat history, which the game draws as a scrolling list of lines with no
+        /// heading of its own.</summary>
+        public const string NewGameChatLog = "new-game.chat-log";
+
+        public const string NotifyOpenNegotiation = "notify.open-negotiation";
+        public const string NotifyOpenMinorFaction = "notify.open-minor-faction";
+        public const string NotifyOpenScoreScreen = "notify.open-score-screen";
+        public const string NotifyOpenAcademy = "notify.open-academy";
+
+        /// <summary>What the elimination popup means when the empire knocked out is the player's own: the
+        /// game writes the same sentence for their defeat as for an AI's, and the only difference on screen
+        /// is which buttons it draws.</summary>
+        public const string NotifyOwnElimination = "notify.own-elimination";
+
+        // A hero's own window. Its heading is the game's own and is declared where it is drawn, so the
+        // screen name is only a fallback for the frames before the window has written one. The wheel of
+        // skills the page draws with no caption over it needs a word, and a skill dot needs two: the game
+        // paints the level a skill stands at, and the level a pending pick would take it to, as a ring of
+        // coloured arcs round the dot and writes no number anywhere.
+        public const string ScreenHeroInspection = "screen.hero-inspection";
+        public const string HeroSkillTrees = "hero.skill-trees";
+        public const string HeroSkillLevel = "hero.skill-level";
+        public const string HeroSkillPending = "hero.skill-pending";
+
+        public const string ScreenGovernment = "screen.government";
+        public const string ScreenLaws = "screen.laws";
+        public const string ScreenPopulation = "screen.population";
+
+        /// <summary>The two markers the population screen draws on a people's row for a gene hunter
+        /// (Horatio) and nowhere else: one says this people has already been spliced into the empire's
+        /// own, the other that there are now enough of them to splice. The game draws both as bare
+        /// pictures with no text and no tooltip on them (<c>PopulationAffinityFilter</c>
+        /// :87-99 only flips <c>Visible</c>), so these are the only words there are for them.</summary>
+        public const string PopulationAssimilated = "population.assimilated";
+        public const string PopulationReadyForAssimilation = "population.ready-for-assimilation";
+
+        // ---- the diplomacy family ----
+        // Every window in this family writes its own heading, so each screen name here is only ever
+        // spoken in the frames before the game has filled its title in. What the family really needs mod
+        // words for is the bands the game draws with no caption at all.
+
+        public const string ScreenDiplomacy = "screen.diplomacy";
+
+        /// <summary>The ring of empires, and the tick box and two window buttons drawn under it. The game
+        /// captions neither group.</summary>
+        public const string DiplomacyEmpires = "diplomacy.empires";
+        public const string DiplomacyControls = "diplomacy.controls";
+
+        /// <summary>The badge the diplomacy ring paints on an empire with NOTHING written on it: either a
+        /// truce can be forced with them now, or terms the player has not seen yet have become available.
+        /// A wordless mark needs words, and the game has none for it anywhere.</summary>
+        public const string DiplomacyNewOptions = "diplomacy.new-options";
+
+        /// <summary>Why an empire refuses to be negotiated with while the ring is centred on somebody
+        /// else's relations. The game has a sentence for an unmet empire and for an eliminated one and
+        /// says nothing at all about this case, which is reachable only through its own swap mode.
+        /// </summary>
+        public const string DiplomacyNotYourRing = "diplomacy.not-your-ring";
+
+        public const string ScreenNegotiation = "screen.negotiation";
+
+        /// <summary>The negotiation table's eight bands. The game titles the pressure gauge and writes
+        /// real column headers over the term tables, but captions none of the bands themselves.</summary>
+        public const string NegotiationHeader = "negotiation.header";
+        public const string NegotiationDossier = "negotiation.dossier";
+        public const string NegotiationPressure = "negotiation.pressure";
+        public const string NegotiationMyTerms = "negotiation.my-terms";
+        public const string NegotiationTheirTerms = "negotiation.their-terms";
+        public const string NegotiationFilters = "negotiation.filters";
+        public const string NegotiationTerms = "negotiation.terms";
+        public const string NegotiationContract = "negotiation.contract";
+        public const string NegotiationContractBoth = "negotiation.contract-both";
+        public const string NegotiationContractMine = "negotiation.contract-mine";
+        public const string NegotiationContractTheirs = "negotiation.contract-theirs";
+        public const string NegotiationApproval = "negotiation.approval";
+
+        /// <summary>Where the deal-approval bar STANDS, which is what that band draws and all it draws:
+        /// the computer sends written reasons with its evaluation and the window throws them away, so a
+        /// number is the honest reading.</summary>
+        public const string NegotiationApprovalValue = "negotiation.approval-value";
+        public const string NegotiationActions = "negotiation.actions";
+
+        /// <summary>The stepper a resource term draws beside its name. The game writes the number in the
+        /// box and nothing else, so the box needs naming.</summary>
+        public const string NegotiationQuantity = "negotiation.quantity";
+
+        public const string ScreenMinorDiplomacy = "screen.minor-diplomacy";
+        public const string MinorIdentity = "minor.identity";
+        public const string MinorRelation = "minor.relation";
+        public const string MinorGains = "minor.gains";
+
+        public const string ScreenPirateDiplomacy = "screen.pirate-diplomacy";
+        public const string PiratePower = "pirate.power";
+        public const string PirateStanding = "pirate.standing";
+        public const string PirateNextFleet = "pirate.next-fleet";
+
+        public const string ScreenAcademyDiplomacy = "screen.academy-diplomacy";
+        public const string ScreenAcademyModal = "screen.academy-modal";
+        public const string AcademyRelation = "academy-diplomacy.relation";
+        public const string AcademyNamedShips = "academy.named-ships";
+
+        /// <summary>The band of actions, and the pair of stock figures along the bottom edge, that the
+        /// minor-faction, pirate and Academy windows all draw. The pirate window captions its actions
+        /// ("Actions") and the other two do not, so the mod's caption is used for all three rather than
+        /// one band being named differently from its twins.</summary>
+        public const string DiplomacyActionsBand = "diplomacy.actions-band";
+        public const string DiplomacyTreasury = "diplomacy.treasury";
+
+        /// <summary>The band of buttons a window draws along its bottom edge, and the pane one of these
+        /// windows writes the selected thing out in. The game gives neither a heading of its own.
+        /// </summary>
+        public const string SenateActionsBand = "senate.actions-band";
+        public const string SenateDetailPane = "senate.detail-pane";
+
         /// <summary>The tutorial picker the game raises over a new game. Only ever spoken if the
         /// window has not written its own heading yet; the heading it draws is what is normally
         /// said.</summary>
@@ -377,6 +759,10 @@ namespace ES2Access.Core.Speech
             { BufferUi, "UI" },
             { BufferEmpty, "Buffer empty" },
             { BufferLine, "{0}. {1}" },
+            { BufferChat, "Chat" },
+            { ChatSaid, "{0}: {1}" },
+            { ChatWhispered, "{0} whispers: {1}" },
+            { ChatToAlliance, "{0}, to the alliance: {1}" },
             { ScreenMainMenu, "Main menu" },
             { ScreenMessageBox, "Dialog" },
             { ScreenOptions, "Options" },
@@ -405,10 +791,24 @@ namespace ES2Access.Core.Speech
             { GalaxyNextIdleFleet, "Next idle fleet" },
             { GalaxyIdleFleets, "{0} idle fleets" },
             { GalaxyGameMenu, "Game menu" },
+            { GalaxyAllianceRequests, "Alliance requests" },
+            { GalaxySyncState, "Multiplayer synchronization" },
+            { GalaxyReturnToLobby, "Return all players to the lobby" },
+            { GalaxyPlayers, "Players" },
+            { GalaxyPlayersAllReady, "every player has ended their turn" },
+            { GalaxyPlayerPlaying, "{0} player is still playing" },
+            { GalaxyPlayersPlaying, "{0} players are still playing" },
+            { GalaxyGlobalTimer, "Game time remaining" },
+            { GalaxyTurnTimer, "Turn time remaining" },
+            { GalaxyOvertimeTimer, "Overtime remaining" },
+            { GalaxyLastPlayerTimer, "Last player time remaining" },
+            { GalaxyTimerSeconds, "{0} seconds" },
+            { GalaxyTurnWaiting, "Turn ended, waiting for the other players" },
             { GalaxyResearch, "Research" },
             { GalaxyTurnsRemaining, "{0} turns remaining" },
             { GalaxyStockAndNet, "{0}, {1} per turn" },
             { GalaxySystemColonized, "colonized" },
+            { GalaxySystemOutpost, "outpost" },
             { GalaxyOpenSystem, "Open system" },
             { GalaxyZoomedIn, "Zoomed in" },
             { GalaxyZoomedOut, "Zoomed out" },
@@ -416,6 +816,21 @@ namespace ES2Access.Core.Speech
             { GalaxyStarlaneUnexplored, "Starlane {0} to an unexplored system, {1}" },
             { GalaxyWormhole, "Wormhole {0} to {1}, {2}" },
             { GalaxyWormholeUnexplored, "Wormhole {0} to an unexplored system, {1}" },
+            { GalaxyLaneDestination, "Go to {0}" },
+            { GalaxySystemPopulation, "{0} population" },
+            { GalaxySystemSleepers, "{0} sleepers" },
+            { GalaxySystemBuilding, "Building {0}, {1} turns" },
+            { GalaxySystemNothingBuilding, "Nothing under construction" },
+            { GalaxySystemRebellion, "Rebellion at {0} percent, {1} to go" },
+            { GalaxySystemPiratePower, "Pirate power level {0}" },
+            { GalaxySystemMinorRelation, "Relations {0} percent" },
+            { GalaxySystemConstellation, "In the {0} constellation" },
+            { GalaxyObliteratorProjectile, "Obliterator missile" },
+            { GalaxySystemDiplomacy, "Diplomacy" },
+            { GalaxySystemPirateMarkBuyout, "Buy out pirate mark" },
+            { GalaxySystemConversionBuyout, "Buy out conversion" },
+            { GalaxySystemAcademyBuyout, "Buy out academy conversion" },
+            { GalaxySystemHackingBeacon, "Displace hacking beacon" },
             { DirectionNorth, "north" },
             { DirectionNorthEast, "northeast" },
             { DirectionEast, "east" },
@@ -444,18 +859,30 @@ namespace ES2Access.Core.Speech
             { LoadSaveEditName, "Type the save name, then press Enter." },
             { LoadSaveCloud, "Steam cloud saves" },
             { NavCellEmpty, "empty" },
+            { SaveStarted, "Saving the game" },
+            { SaveFinished, "Save finished" },
             { CarryCarrying, "Dragging {0}" },
             { CarryDropped, "Dropped {0}" },
             { CarryDropRefused, "{0} cannot go there" },
             { CarryCancelled, "Cancelled drag" },
             { CarryMovedToPosition, "Moved {0} to position {1}" },
             { CarryDropTarget, "drop target" },
+            { CarryDraggable, "draggable" },
+            { ScreenScanView, "Scan view" },
+            { ScanSystemInfo, "System information" },
+            { ScanLegend, "Legend" },
+            { ScanOutput, "{0} {1}" },
             { ScreenStarSystem, "Star system" },
             { ScreenPlanet, "Planet" },
+            { PlanetPrevious, "Previous planet" },
+            { PlanetNext, "Next planet" },
+            { SystemHangarEmpty, "No ships in the hangar" },
             { SystemPlanetsPanel, "Planets" },
             { SystemColonyPanel, "Colony" },
             { SystemPopulationPanel, "Population" },
             { SystemRepresentativesPanel, "Representatives" },
+            { SystemOutpostPanel, "Outpost" },
+            { SystemGovernorPanel, "Governor" },
             { SystemConstructiblesPanel, "Available constructions" },
             { SystemQueuePanel, "Construction queue" },
             { SystemHangarPanel, "Hangar" },
@@ -466,6 +893,8 @@ namespace ES2Access.Core.Speech
             { SystemImprovements, "System improvements" },
             { SystemLevel, "System level {0}" },
             { SystemSecurity, "Security" },
+            { SystemSupplyingOutpost, "Supplying {0} outpost" },
+            { SystemSupplyingOutposts, "Supplying {0} outposts" },
 
             { SystemBuyOut, "Buy out with {0}" },
             { SystemQueuePosition, "position {0}" },
@@ -483,7 +912,10 @@ namespace ES2Access.Core.Speech
             { ScreenSystemDiscovery, "System discovery" },
             { DiscoverySystem, "Discovering {0}" },
             { ScreenRename, "Rename" },
-            { RenameTypePrompt, "Type the new name, then press Enter." },
+            {
+                RenameTypePrompt,
+                "Type the new name, then press Enter to confirm or Escape to stop editing."
+            },
             { RenameConfirm, "Confirm" },
             { ScreenResearch, "Research" },
             { ResearchStatusPanel, "Research status" },
@@ -500,6 +932,147 @@ namespace ES2Access.Core.Speech
             { ResearchDeedWinner, "won by {0}" },
             { ScreenQuests, "Quests Log" },
             { QuestsPinned, "pinned" },
+            { ScreenEmpire, "Empire summary" },
+            { EmpireDescriptionPanel, "Empire" },
+            { EmpireHeadingsBand, "Column headings" },
+            { EmpireRelicSlotAssign, "Assign relics" },
+            { EmpireRelicSlotRemove, "Remove relics" },
+            { ScreenSenate, "Senate" },
+            { SenateGovernmentPanel, "Government" },
+            { SenateElectionPanel, "Next election" },
+            { SenateSupportPanel, "Support history" },
+            { SenateEmptyLawSlot, "Empty law slot" },
+            { SenateLockedLawSlot, "Locked law slot" },
+            { SenateEmptySenatorSlot, "Empty senator slot" },
+            { SenateLockedSenatorSlot, "Locked senator slot" },
+            { ScreenEconomy, "Economy" },
+            { EconomyQuantity, "Quantity {0}" },
+            { EconomyBuyPanel, "Buy" },
+            { EconomySellPanel, "Sell" },
+            { EconomyTaxesPanel, "Marketplace taxes" },
+            { EconomyLogPanel, "Recent transactions" },
+            { EconomyAdsPanel, "Advertisements" },
+            { EconomyEventsPanel, "Market events" },
+            { EconomyInflationPanel, "Inflation" },
+            { EconomyTradePanel, "Trade overview" },
+            { ScreenMilitary, "Military status" },
+            { MilitaryManpowerPanel, "Manpower" },
+            { MilitaryFleetActions, "Fleet actions" },
+            { MilitaryShipsPanel, "Ships" },
+            { MilitaryDesignActions, "Ship design actions" },
+            { ShipDesignSlots, "Module slots" },
+            { ShipDesignModuleFitted, "Fitted {0}" },
+            { ScreenHeroInspection, "Hero inspection" },
+            { HeroSkillTrees, "Skill branches" },
+            { HeroSkillLevel, "level {0} of {1}" },
+            { HeroSkillPending, "level {0} pending" },
+            { ScreenFleetSelection, "Fleet selection" },
+            { TacticsSlotFilled, "Put {0} in your Tactics Set" },
+            { TacticsSlotEmptied, "{0} removed" },
+            { TacticsRemoveTarget, "Drop tactic here to remove" },
+            { ScreenBattle, "Space battle" },
+            { ScreenGroundBattle, "Ground battle" },
+            { ScreenAdvancedBattleReport, "Advanced battle report" },
+            { BattleYourFleets, "Your fleets" },
+            { BattleEnemyFleets, "Enemy fleets" },
+            { BattleYourTroops, "Your troops" },
+            { BattleEnemyTroops, "Enemy troops" },
+            { BattleYourDamage, "Damage you caused" },
+            { BattleEnemyDamage, "Damage they caused" },
+            { BattleShowYourFleets, "Show your fleets" },
+            { BattleShowEnemyFleets, "Show enemy fleets" },
+            { BattleBalance, "Military power {0} against {1}" },
+            { BattleTimeLeft, "{0} percent of the time left" },
+            { BattleProgress, "Battle {0} percent fought" },
+            { BattleYourShipLost, "Your {0} is lost" },
+            { BattleYourShipsLost, "{0} of your ships lost" },
+            { BattleEnemyShipLost, "Enemy {0} is lost" },
+            { BattleEnemyShipsLost, "{0} enemy ships lost" },
+            { BattleYourFlotillaLost, "Your {0} is destroyed" },
+            { BattleYourFlotillasLost, "{0} of your flotillas destroyed" },
+            { BattleEnemyFlotillaLost, "Enemy {0} is destroyed" },
+            { BattleEnemyFlotillasLost, "{0} enemy flotillas destroyed" },
+            { GroundBattleRound, "Round {0}" },
+            { GroundBattleBombardment, "Orbital bombardment" },
+            { GroundBattleAssault, "Ground assault" },
+            { GroundBattleYourTroopLost, "One of your {0} is lost" },
+            { GroundBattleYourTroopsLost, "{0} of your troops lost" },
+            { GroundBattleEnemyTroopLost, "One enemy {0} is lost" },
+            { GroundBattleEnemyTroopsLost, "{0} enemy troops lost" },
+            { ScreenError, "Error" },
+            { ScreenTargetSelection, "Choose a target" },
+            { ScreenGroundTargetSelection, "Choose a system to invade" },
+            { ScreenCutscene, "Cutscene" },
+            { CursorModeEnded, "Target selection ended" },
+            { ScreenVictory, "Score screen" },
+            { ScreenJournal, "Journal" },
+            { ScreenDlc, "Downloadable content" },
+            { ScreenCredits, "Credits" },
+            { ScreenModding, "Mods" },
+            { ScreenResourcesExport, "Export resources" },
+            { ScreenJoinGame, "Join game" },
+            { JoinGameNoGames, "No multiplayer games found" },
+            { JoinGameGameFound, "{0} multiplayer game found" },
+            { JoinGameGamesFound, "{0} multiplayer games found" },
+            { NewGameHost, "Host" },
+            { NewGameKick, "Kick" },
+            { NewGameLockEmpire, "Lock empire" },
+            { NewGameLobbyLocked, "The lobby is locked while the game launches" },
+            { NewGameLobbyUnlocked, "The lobby is unlocked" },
+            { NewGameChatLog, "Chat log" },
+            { NotifyOpenNegotiation, "Open negotiation" },
+            { NotifyOpenMinorFaction, "Open minor faction diplomacy" },
+            { NotifyOpenScoreScreen, "Open score screen" },
+            { NotifyOpenAcademy, "Open the Academy" },
+            {
+                NotifyOwnElimination,
+                "your empire is out of the game: the score screen is the only way on"
+            },
+            { ScreenAcademy, "Hero management" },
+            { AcademyHeroActions, "Hero actions" },
+            { ScreenHeroCompleteList, "Heroes in the galaxy" },
+            { ScreenGovernment, "Government selection" },
+            { ScreenLaws, "Laws" },
+            { ScreenPopulation, "Population overview" },
+            { PopulationAssimilated, "Assimilated" },
+            { PopulationReadyForAssimilation, "Ready for assimilation" },
+            { ScreenDiplomacy, "Diplomatic status" },
+            { DiplomacyEmpires, "Empires" },
+            { DiplomacyControls, "Screen controls" },
+            { DiplomacyNewOptions, "new diplomatic options" },
+            { DiplomacyNotYourRing, "You can only negotiate from your own empire's ring" },
+            { ScreenNegotiation, "Negotiation" },
+            { NegotiationHeader, "The two empires" },
+            { NegotiationDossier, "Empire information" },
+            { NegotiationPressure, "Pressure" },
+            { NegotiationMyTerms, "Terms you can offer" },
+            { NegotiationTheirTerms, "Terms you can ask for" },
+            { NegotiationFilters, "Categories" },
+            { NegotiationTerms, "Terms" },
+            { NegotiationContract, "The deal" },
+            { NegotiationContractBoth, "Both empires" },
+            { NegotiationContractMine, "You give" },
+            { NegotiationContractTheirs, "They give" },
+            { NegotiationApproval, "Deal approval" },
+            { NegotiationApprovalValue, "{0} percent" },
+            { NegotiationActions, "Offer" },
+            { NegotiationQuantity, "Quantity" },
+            { ScreenMinorDiplomacy, "Minor faction diplomacy" },
+            { MinorIdentity, "The faction" },
+            { MinorRelation, "Relation" },
+            { MinorGains, "What you gain" },
+            { ScreenPirateDiplomacy, "Pirate diplomacy" },
+            { PiratePower, "Pirate power" },
+            { PirateStanding, "Standing" },
+            { PirateNextFleet, "Next pirate fleet" },
+            { ScreenAcademyDiplomacy, "Academy diplomacy" },
+            { ScreenAcademyModal, "The Academy" },
+            { AcademyRelation, "Relation" },
+            { AcademyNamedShips, "Named ships" },
+            { DiplomacyActionsBand, "Actions" },
+            { DiplomacyTreasury, "Treasury" },
+            { SenateActionsBand, "Actions" },
+            { SenateDetailPane, "Details" },
             { ScreenTutorialSelection, "Tutorial selection" },
             { ScreenNewGame, "New game" },
             { ScreenAdvancedSettings, "Advanced settings" },
@@ -610,6 +1183,22 @@ namespace ES2Access.Core.Speech
             }
 
             return template;
+        }
+
+        /// <summary>
+        /// A counted phrase in the form its number calls for, the number filling the chosen
+        /// template's <c>{0}</c>.
+        ///
+        /// Each form is a WHOLE sentence of its own rather than a number glued to a noun, because the
+        /// noun agrees with the number in most languages and no template can inflect a fragment handed
+        /// to it. Two forms is what English needs and what a translator can always fill in - a language
+        /// with a single form writes the same sentence twice. A language that wants THREE or more
+        /// (Russian, Polish, Arabic) is the trigger for real plural rules carried by the locale file;
+        /// nothing here anticipates them, which is deliberate.
+        /// </summary>
+        public static string Plural(string oneKey, string manyKey, int count)
+        {
+            return Format(count == 1 ? oneKey : manyKey, count);
         }
 
         /// <summary>
