@@ -537,11 +537,18 @@ namespace ES2Access.Screens
             AddPanelTitle(_cells, panel);
             int firstBar = _cells.Count;
             AddSupportGauges(_cells, panel);
+            // The empire's running total is a bare "37" on its own label: the words for it are the two
+            // captions the prefab draws BESIDE it in the same group - "Overall Empire" above and "Total
+            // representatives" below (measured on the prefab; neither the label nor the group carries a
+            // tooltip, and %TotalElectorsTitle appears nowhere in the game's code). So the group is the
+            // line, which is also what puts its header on the page - nothing else here reads it.
+            AgeTransform total = Widget(panel.TotalElectorsValue);
+            AgeTransform box = total == null ? null : total.Parent;
             AddReadout(
                 _cells,
-                Widget(panel.TotalElectorsValue),
+                box ?? total,
                 "election:total-electors",
-                Raw(panel.TotalElectorsValue)
+                Raw(box) ?? Raw(panel.TotalElectorsValue)
             );
             Cells.Emit(builder, _cells);
             bool started = _cells.Count > firstBar;

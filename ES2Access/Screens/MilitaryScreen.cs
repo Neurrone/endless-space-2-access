@@ -828,12 +828,7 @@ namespace ES2Access.Screens
             AddReadout(panel.RoleLabel, panel.RoleTooltip, "overview/role");
             AddReadout(panel.Bonus1Label, panel.Bonus1Tooltip, "overview/bonus1");
             AddReadout(panel.Bonus2Label, panel.Bonus2Tooltip, "overview/bonus2");
-            AddStat(panel.HealthLabel, "%ShipStatHealthTitle", "overview/health");
-            AddStat(panel.ManPowerLabel, "%ShipStatManpowerTitle", "overview/manpower");
-            AddStat(panel.OffensivePowerLabel, "%ShipStatOffensiveMilitaryPowerTitle", "overview/offence");
-            AddStat(panel.DefensivePowerLabel, "%ShipStatDefensiveMilitaryPowerTitle", "overview/defence");
-            AddStat(panel.MovementPointsLabel, "%ShipStatMovementTitle", "overview/movement");
-            AddStat(panel.CommandPointsLabel, "%ShipStatCommandPointsTitle", "overview/command-points");
+            ShipDesignRows.AddSimpleStats(_cells, panel, Keys + "overview/");
             Cells.Emit(builder, _cells);
             if (named)
             {
@@ -863,36 +858,6 @@ namespace ES2Access.Screens
                 Announcements = new List<NodeAnnouncement> { GraphNodes.LabelPart(said) },
                 Sections = GraphNodes.Sections(null, tooltip),
             };
-            AgeWidgets.PointAt(vtable, widget);
-            Cells.Add(_cells, widget, ControlId.Referenced(widget, Keys + key), vtable);
-        }
-
-        /// <summary>
-        /// One of the six figures along the bottom of the overview box - health, troops, the two military
-        /// powers, movement, command points.
-        ///
-        /// The game draws each as a number beside a bare symbol and names it nowhere on screen, so the
-        /// caption is the game's OWN title for the statistic (<c>%ShipStat…Title</c>) rather than a mod
-        /// paraphrase. The sentence explaining it is on the group AROUND the number, which is where the
-        /// panel itself writes it (<c>ShipDesignBasePanel.Refresh</c> :120-123) - and only four of the six
-        /// get one, so the other two are a caption and a number and nothing else.
-        /// </summary>
-        private void AddStat(AgePrimitiveLabel label, string titleKey, string key)
-        {
-            AgeTransform widget = label == null ? null : label.AgeTransform;
-            if (widget == null || !AgeWidgets.Visible(widget))
-            {
-                return;
-            }
-
-            AgeTransform at = widget;
-            string caption = AgeText.Clean(titleKey);
-            NodeVtable vtable = GraphNodes.Readout(
-                () => caption,
-                () => AgeWidgets.TextOf(at),
-                null,
-                AgeWidgets.Raw(widget.Parent) ?? AgeWidgets.Raw(widget)
-            );
             AgeWidgets.PointAt(vtable, widget);
             Cells.Add(_cells, widget, ControlId.Referenced(widget, Keys + key), vtable);
         }

@@ -120,6 +120,69 @@ namespace ES2Access.UI
             }
         }
 
+        /// <summary>
+        /// A figure the game draws as a number beside a bare symbol, named at declaration time.
+        ///
+        /// The caption is the game's OWN title for the statistic (<paramref name="titleKey"/>, a
+        /// <c>%…Title</c> string), because the only thing on screen is the value: the sentence the game
+        /// hangs on the row is a gloss it wrote IN ADDITION to the word, and a node named from it says
+        /// what the number means without ever saying what it is. Where the game keeps no title at all,
+        /// that sentence becomes the name as a last resort - and is then not announced a second time.
+        ///
+        /// The tooltip is the label's own where it has one and the group's around it otherwise, which is
+        /// where these panels put it (<c>ShipDesignBasePanel.Refresh</c> writes it with
+        /// <c>GetComponentInParent</c>), and the pointer is aimed at whichever of the two owns it so the
+        /// drawn tooltip appears.
+        ///
+        /// <paramref name="row"/> is what the figure is laid out and keyed by, and defaults to the group
+        /// the game drew it in - which is the rect a reader sees it occupy. A strip of columns drawn as
+        /// several labels of ONE group (the ship designer's range figures) has to pass its own label
+        /// instead, or the columns collide on one id and one rect.
+        /// </summary>
+        public static void AddStat(
+            List<Cell> cells,
+            AgePrimitiveLabel label,
+            string titleKey,
+            string key,
+            AgeTransform row = null
+        )
+        {
+            AgeTransform widget = label == null ? null : label.AgeTransform;
+            if (widget == null || !AgeWidgets.Visible(widget))
+            {
+                return;
+            }
+
+            AgeTooltip own = AgeWidgets.Raw(widget);
+            AgeTransform group = widget.Parent;
+            AgeTooltip tooltip = own ?? AgeWidgets.Raw(group);
+            AgeTransform owner = own != null || group == null ? widget : group;
+            AgeTransform laid = row ?? group ?? widget;
+            string caption = AgeText.Clean(titleKey);
+            bool named = !string.IsNullOrEmpty(caption) && caption[0] != '%';
+            AgeTooltip tip = tooltip;
+            AgeTransform at = widget;
+            NodeVtable vtable = new NodeVtable
+            {
+                Announcements = new List<NodeAnnouncement>
+                {
+                    GraphNodes.LabelPart(
+                        named ? (Func<string>)(() => caption) : (() => CardActions.FirstLine(tip))
+                    ),
+                    GraphNodes.ValuePart(() => AgeWidgets.TextOf(at)),
+                },
+                Sections = GraphNodes.Sections(
+                    null,
+                    tooltip,
+                    named ? (TooltipMode?)null : TooltipMode.None
+                ),
+            };
+            AgeWidgets.PointAt(vtable, owner);
+            cells.Add(
+                new Cell { Widget = laid, Id = ControlId.Referenced(laid, key), Vtable = vtable }
+            );
+        }
+
         /// <summary>A line the player reads rather than works: whatever words the game drew in it, and
         /// its own tooltip.</summary>
         public static Cell Readout(AgeTransform widget, AgeTooltip tooltip, string key)

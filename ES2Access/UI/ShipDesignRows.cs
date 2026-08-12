@@ -90,6 +90,88 @@ namespace ES2Access.UI
             }
         }
 
+        /// <summary>
+        /// The six figures every host of the ship-design panel draws along its bottom - health, troops,
+        /// the two military powers, movement, command points - each named from the game's own title for
+        /// the statistic.
+        ///
+        /// <c>ShipDesignBasePanel.Refresh</c> (:113-119) writes the numbers into the six labels and
+        /// writes no caption anywhere: measured on all three hosts of the prefab, the group around each
+        /// number holds the label and the explaining sentence and nothing else. So the caption is the
+        /// game's <c>%ShipStat…Title</c> string, and it lives here rather than in each host - the
+        /// Military screen's overview box, a hero's ship page and the designer's own statistics table
+        /// all draw the SAME panel, and the map was duplicated in two of them while the third read the
+        /// numbers bare.
+        ///
+        /// <paramref name="declared"/> collects the groups these numbers were drawn in, for a host that
+        /// also reads the band by SHAPE and must leave them to this.
+        /// </summary>
+        public static void AddSimpleStats(
+            List<Cell> cells,
+            ShipDesignBasePanel panel,
+            string keyPrefix,
+            List<AgeTransform> declared = null
+        )
+        {
+            AddStat(cells, panel.HealthLabel, "%ShipStatHealthTitle", keyPrefix + "health", declared);
+            AddStat(
+                cells,
+                panel.ManPowerLabel,
+                "%ShipStatManpowerTitle",
+                keyPrefix + "manpower",
+                declared
+            );
+            AddStat(
+                cells,
+                panel.OffensivePowerLabel,
+                "%ShipStatOffensiveMilitaryPowerTitle",
+                keyPrefix + "offence",
+                declared
+            );
+            AddStat(
+                cells,
+                panel.DefensivePowerLabel,
+                "%ShipStatDefensiveMilitaryPowerTitle",
+                keyPrefix + "defence",
+                declared
+            );
+            AddStat(
+                cells,
+                panel.MovementPointsLabel,
+                "%ShipStatMovementTitle",
+                keyPrefix + "movement",
+                declared
+            );
+            AddStat(
+                cells,
+                panel.CommandPointsLabel,
+                "%ShipStatCommandPointsTitle",
+                keyPrefix + "command-points",
+                declared
+            );
+        }
+
+        /// <summary>One captioned figure, remembering the group it was drawn in so the shape walk can
+        /// skip it. <paramref name="column"/> marks a figure whose group is SHARED with its neighbours,
+        /// which is then laid out by its own label instead.</summary>
+        private static void AddStat(
+            List<Cell> cells,
+            AgePrimitiveLabel label,
+            string titleKey,
+            string key,
+            List<AgeTransform> declared,
+            bool column = false
+        )
+        {
+            AgeTransform at = label == null ? null : label.AgeTransform;
+            Cells.AddStat(cells, label, titleKey, key, column ? at : null);
+            AgeTransform group = at == null ? null : at.Parent;
+            if (declared != null && group != null && !declared.Contains(group))
+            {
+                declared.Add(group);
+            }
+        }
+
         /// <summary>What a carried ship module is, for the slots that will take one - see
         /// <see cref="CarryItem.Kind"/>.</summary>
         public const string ModuleKind = "ship-module";
@@ -671,6 +753,13 @@ namespace ES2Access.UI
         /// with the sentence explaining it on its own group, and not one of them a control. The two
         /// exceptions are declared for it: the switch itself is a checkbox, and a gauge carries its
         /// value in the width of a bar.
+        ///
+        /// The shape alone is not enough to NAME them, though: the game draws a caption beside some of
+        /// these numbers (the range accuracies, the two military powers' icons, the mining rates) and
+        /// none at all beside the rest, so every figure whose caption exists only in the game's string
+        /// table is declared by name FIRST and its group is then skipped by the walk. Declaration order
+        /// does not affect reading order - <see cref="Cells.Emit"/> puts every cell back in the rows the
+        /// panel drew them in.
         /// </summary>
         private static void BuildStats(
             GraphBuilder builder,
@@ -689,8 +778,12 @@ namespace ES2Access.UI
 
                 cells.Clear();
                 _statsPanel = panel;
+                _namedStats.Clear();
+                AddSimpleStats(cells, panel, prefix + "/stat/", _namedStats);
+                AddEditionStats(cells, panel, prefix + "/stat/", _namedStats);
                 SidePanels.Content(cells, table, prefix + "/stat/", Stats, null);
                 _statsPanel = null;
+                _namedStats.Clear();
                 if (cells.Count == 0)
                 {
                     return;
@@ -702,6 +795,7 @@ namespace ES2Access.UI
             catch (Exception e)
             {
                 _statsPanel = null;
+                _namedStats.Clear();
                 Log.Warn("ship design: reading the statistics threw: " + e);
             }
         }
@@ -711,6 +805,136 @@ namespace ES2Access.UI
         /// only across the one call.</summary>
         private static ShipDesignEditionPanel _statsPanel;
 
+        /// <summary>The groups whose figures were already declared with the caption the game keeps in
+        /// its string table, so the shape walk leaves them alone rather than reading the number on its
+        /// own. Refilled per band, main-thread only.</summary>
+        private static readonly List<AgeTransform> _namedStats = new List<AgeTransform>();
+
+        /// <summary>
+        /// The figures this panel adds to the six the base panel draws, each named from the game's own
+        /// title for it.
+        ///
+        /// Measured on the live prefab, with the hidden rows included: NOT ONE of these groups holds a
+        /// caption label (<c>DetailedOffensiveStatsPanel</c>, <c>DetailedDefensiveStatsPanel</c> and
+        /// <c>DetailedRangeDPSGroup</c> contain a single value label each and nothing else), while the
+        /// range ACCURACIES above them do draw their own <c>…RangeTitle</c> and are left to the shape
+        /// walk. So every row here is a bare number today - the panel writes them all with
+        /// <c>FloatExtensions.ToString</c> (<c>ShipDesignEditionPanel.RefreshOffensiveAndDefensiveStats</c>
+        /// :1146-1188, <c>RefreshRangeEfficiency</c> :1082-1087) and explains each with a
+        /// <c>%…Description</c> SENTENCE, which is a gloss and not a name.
+        ///
+        /// Four of the titles are not <c>%ShipStat…</c> keys because the game does not keep one under
+        /// that name: the four weapon powers are titled as module CATEGORIES
+        /// (<c>%CategoryWeaponKineticTitle</c> = "Kinetic", the same registry entry the module strip's
+        /// toggles are named from), the two absorptions have a percentage-specific title
+        /// (<c>%…AbsorptionPercentTitle</c>, "Hull Plating absorption", rather than the sentence-length
+        /// <c>%…AbsorptionTitle</c>), and the shield capacity is titled after the property it reads
+        /// (<c>%ShieldTitle</c> = "Shield power", from <c>SimulationProperties.Ship.Shield</c>).
+        ///
+        /// Three rows have NO title anywhere in the game's strings - the plating health bonus and the
+        /// two squadron counts - so those pass a null key and are named by the first line of their own
+        /// description, which is then not announced twice. A mod paraphrase is not an option, and
+        /// <c>%ShipHealthTitle</c> (the plating bonus's property title) is the word "Health", which is
+        /// already the caption of the ship's own health two rows up.
+        /// </summary>
+        private static void AddEditionStats(
+            List<Cell> cells,
+            ShipDesignEditionPanel panel,
+            string keyPrefix,
+            List<AgeTransform> declared
+        )
+        {
+            AddStat(
+                cells,
+                panel.KineticPowerLabel,
+                "%CategoryWeaponKineticTitle",
+                keyPrefix + "kinetic",
+                declared
+            );
+            AddStat(
+                cells,
+                panel.MissilePowerLabel,
+                "%CategoryWeaponMissileTitle",
+                keyPrefix + "missile",
+                declared
+            );
+            AddStat(
+                cells,
+                panel.LaserPowerLabel,
+                "%CategoryWeaponLaserTitle",
+                keyPrefix + "laser",
+                declared
+            );
+            AddStat(
+                cells,
+                panel.BeamPowerLabel,
+                "%CategoryWeaponBeamTitle",
+                keyPrefix + "beam",
+                declared
+            );
+            AddStat(cells, panel.FighterCountLabel, null, keyPrefix + "fighters", declared);
+            AddStat(cells, panel.BomberCountLabel, null, keyPrefix + "bombers", declared);
+            AddStat(
+                cells,
+                panel.AccuracyLevelLabel,
+                "%AccuracyTitle",
+                keyPrefix + "accuracy",
+                declared
+            );
+            AddStat(cells, panel.EvasionLevelLabel, "%EvasionTitle", keyPrefix + "evasion", declared);
+            AddStat(cells, panel.PlatingHealthBonusLabel, null, keyPrefix + "plating-health", declared);
+            AddStat(
+                cells,
+                panel.PlatingAbsorptionLabel,
+                "%HullPlatingAbsorptionPercentTitle",
+                keyPrefix + "plating-absorption",
+                declared
+            );
+            AddStat(
+                cells,
+                panel.ShieldCapacityLabel,
+                "%ShieldTitle",
+                keyPrefix + "shield-capacity",
+                declared
+            );
+            AddStat(
+                cells,
+                panel.ShieldAbsorptionLabel,
+                "%ShieldAbsorptionPercentTitle",
+                keyPrefix + "shield-absorption",
+                declared
+            );
+
+            // The three damage-per-second figures are three labels of ONE group, so the Nth of them is
+            // paired with the Nth range title - the same title the accuracy column above it draws for
+            // itself. Reading the group instead is what produced three identical "(0)"s with nothing
+            // saying which range each belonged to.
+            AddStat(
+                cells,
+                panel.LongRangeDPSLabel,
+                "%ShipStatRangeLongTitle",
+                keyPrefix + "dps-long",
+                declared,
+                true
+            );
+            AddStat(
+                cells,
+                panel.MediumRangeDPSLabel,
+                "%ShipStatRangeMediumTitle",
+                keyPrefix + "dps-medium",
+                declared,
+                true
+            );
+            AddStat(
+                cells,
+                panel.ShortRangeDPSLabel,
+                "%ShipStatRangeShortTitle",
+                keyPrefix + "dps-short",
+                declared,
+                true
+            );
+        }
+
         private static bool Stats(
             List<Cell> cells,
             AgeTransform widget,
@@ -719,6 +943,11 @@ namespace ES2Access.UI
         )
         {
             ShipDesignEditionPanel owner = _statsPanel;
+            if (_namedStats.Contains(widget))
+            {
+                return true;
+            }
+
             if (
                 owner != null
                 && owner.ShowDetailedStatsToggle != null
@@ -733,25 +962,6 @@ namespace ES2Access.UI
             if (gauge != null)
             {
                 AddGauge(cells, gauge, keyPrefix + widget.name);
-                return true;
-            }
-
-            // The three damage-per-second figures the game draws under the three range accuracies, one
-            // to a column. They are all labels of one group, so the shape walk would make them one line
-            // - and three identical "(0)"s at that, with the sentence saying which range each belongs to
-            // left on its own label. One line each instead.
-            if (
-                owner != null
-                && owner.LongRangeDPSLabel != null
-                && ReferenceEquals(widget, owner.LongRangeDPSLabel.AgeTransform.Parent)
-            )
-            {
-                IList<AgeTransform> columns = widget.Children;
-                for (int i = 0; columns != null && i < columns.Count; i++)
-                {
-                    Cells.AddReadout(cells, columns[i], keyPrefix + widget.name + "/" + i);
-                }
-
                 return true;
             }
 

@@ -218,9 +218,17 @@ namespace ES2Access.Screens
             try
             {
                 Cells.AddReadout(_cells, Of(window.NextFleetCooldownLabel), Keys + "cooldown");
-                Line(window.NextFleetHealthLabel, "health");
-                Line(window.NextFleetOffenseLabel, "offense");
-                Line(window.NextFleetDefenseLabel, "defense");
+                Line(window.NextFleetHealthLabel, "%ShipStatHealthTitle", "health");
+                Line(
+                    window.NextFleetOffenseLabel,
+                    "%ShipStatOffensiveMilitaryPowerTitle",
+                    "offense"
+                );
+                Line(
+                    window.NextFleetDefenseLabel,
+                    "%ShipStatDefensiveMilitaryPowerTitle",
+                    "defense"
+                );
                 Thresholds(window);
                 AddToggle(window.NextFleetInfoToggle);
                 Detail(window);
@@ -234,18 +242,18 @@ namespace ES2Access.Screens
             builder.PopContext();
         }
 
-        /// <summary>One of the three totals. Each is a number in a group whose ICON carries the sentence
-        /// saying what the number is, so the group is the line rather than the label.</summary>
-        private void Line(AgePrimitiveLabel label, string key)
+        /// <summary>
+        /// One of the five figures the window draws for the fleet that is coming.
+        ///
+        /// Each is a number and an icon in a group, and the group carries the sentence saying what the
+        /// number is of ("The total Health of all Ships in the next Pirate Fleet" - measured on the
+        /// prefab, which puts the tooltip on the group and not on the icon inside it). That sentence is a
+        /// gloss, not a name: these are the same six ship statistics the design panels draw, so the
+        /// caption is the game's own <c>%ShipStat…Title</c> for each.
+        /// </summary>
+        private void Line(AgePrimitiveLabel label, string titleKey, string key)
         {
-            AgeTransform at = Of(label);
-            AgeTransform group = at == null ? null : at.Parent;
-            if (group == null || !AgeWidgets.Visible(group))
-            {
-                return;
-            }
-
-            _cells.Add(Cells.Readout(group, AgeWidgets.Raw(group), Keys + key));
+            Cells.AddStat(_cells, label, titleKey, Keys + key);
         }
 
         private void Thresholds(PirateDiplomacyModalWindow window)
@@ -319,10 +327,13 @@ namespace ES2Access.Screens
                 return;
             }
 
-            // The same shape as the three totals above: a number whose caption is the sentence on the
-            // group around it, so the group is the line.
-            Line(window.NextFleetCommandPointsLabel, "command-points");
-            Line(window.NextFleetMovementLabel, "movement");
+            // The same shape as the three totals above.
+            Line(
+                window.NextFleetCommandPointsLabel,
+                "%ShipStatCommandPointsTitle",
+                "command-points"
+            );
+            Line(window.NextFleetMovementLabel, "%ShipStatMovementTitle", "movement");
             AgeTransform ships = window.NextFleetEstimatedShipsTable;
             IList<AgeTransform> children = ships == null || !AgeWidgets.Visible(ships)
                 ? null

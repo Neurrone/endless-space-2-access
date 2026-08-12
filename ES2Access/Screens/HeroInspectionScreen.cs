@@ -524,25 +524,11 @@ namespace ES2Access.Screens
             }
         }
 
-        /// <summary>The six figures along the bottom of the box. The game draws each as a number beside
-        /// a bare symbol and names it nowhere on screen, so the caption is the game's own title for that
-        /// statistic.</summary>
+        /// <summary>The six figures along the bottom of the box - named by the one map every host of this
+        /// panel shares (<see cref="ShipDesignRows.AddSimpleStats"/>).</summary>
         private void AddStats(ShipDesignOverviewPanel box)
         {
-            AddStat(box.HealthLabel, "%ShipStatHealthTitle", "overview/health");
-            AddStat(box.ManPowerLabel, "%ShipStatManpowerTitle", "overview/manpower");
-            AddStat(
-                box.OffensivePowerLabel,
-                "%ShipStatOffensiveMilitaryPowerTitle",
-                "overview/offence"
-            );
-            AddStat(
-                box.DefensivePowerLabel,
-                "%ShipStatDefensiveMilitaryPowerTitle",
-                "overview/defence"
-            );
-            AddStat(box.MovementPointsLabel, "%ShipStatMovementTitle", "overview/movement");
-            AddStat(box.CommandPointsLabel, "%ShipStatCommandPointsTitle", "overview/command");
+            ShipDesignRows.AddSimpleStats(_cells, box, Keys + "overview/");
         }
 
         /// <summary>
@@ -1565,31 +1551,6 @@ namespace ES2Access.Screens
             };
             AgeWidgets.PointAt(vtable, widget);
             Cells.Add(_cells, widget, ControlId.Referenced(widget, Keys + key), vtable);
-        }
-
-        /// <summary>A figure the game draws as a number beside a bare symbol: the number, captioned with
-        /// the game's own title for the statistic, since the screen writes no word for it anywhere.
-        /// </summary>
-        private void AddStat(AgePrimitiveLabel label, string titleKey, string key)
-        {
-            AgeTransform widget = Widget(label);
-            if (widget == null || !AgeWidgets.Visible(widget))
-            {
-                return;
-            }
-
-            AgeTransform row = widget.Parent ?? widget;
-            AgeTransform at = widget;
-            string caption = AgeText.Clean(Gui.Localize(titleKey));
-            AgeTooltip tooltip = AgeWidgets.Raw(row);
-            NodeVtable vtable = GraphNodes.Readout(
-                () => caption,
-                () => AgeWidgets.TextOf(at),
-                null,
-                tooltip
-            );
-            AgeWidgets.PointAt(vtable, row);
-            Cells.Add(_cells, row, ControlId.Referenced(row, Keys + key), vtable);
         }
 
         /// <summary>The caption a box draws over a table buried some way inside it - the scroll view the

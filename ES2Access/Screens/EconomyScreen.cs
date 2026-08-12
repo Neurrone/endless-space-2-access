@@ -645,6 +645,11 @@ namespace ES2Access.Screens
         /// <summary>
         /// One resource in a grid: what it is, how much of it there is and what it is earning per turn.
         ///
+        /// The holding and the per-turn change are two adjacent numbers ("0", "+0") with nothing on the
+        /// row saying which is which (<c>ResourceItem.Refresh</c> :124-142), so they read as ONE value
+        /// through the same template the empire banner's own stocks use - the game leaves the net label
+        /// empty for a resource it has no figure for, and then the holding reads alone.
+        ///
         /// A resource the empire has not located yet has NO name here. The game draws a question mark
         /// for it and, instead of the resource's own dossier, hangs the one sentence saying it has not
         /// been found (<c>ResourceItem.SetTooltipProperties</c> - the target is set only for a resource
@@ -675,8 +680,7 @@ namespace ES2Access.Screens
                 Announcements = new List<NodeAnnouncement>
                 {
                     GraphNodes.LabelPart(() => label),
-                    GraphNodes.ValuePart(() => AgeText.Label(it.StockLabel)),
-                    GraphNodes.ValuePart(() => AgeText.Label(it.NetLabel)),
+                    GraphNodes.ValuePart(() => StockAndNet(it.StockLabel, it.NetLabel)),
                 },
                 Sections = GraphNodes.Sections(
                     null,
@@ -686,6 +690,21 @@ namespace ES2Access.Screens
             };
             AgeWidgets.PointAt(vtable, widget);
             Cells.Add(cells, widget, ControlId.Referenced(widget, stop + "/item/" + index), vtable);
+        }
+
+        /// <summary>A stock and what the next turn does to it, as the game drew the two numbers - the
+        /// same phrasing the empire banner reads its own stocks with, so the second figure is heard as a
+        /// rate rather than as a second holding.</summary>
+        private static string StockAndNet(AgePrimitiveLabel stock, AgePrimitiveLabel net)
+        {
+            string held = AgeText.Label(stock);
+            string rate = AgeText.Label(net);
+            if (string.IsNullOrEmpty(rate))
+            {
+                return held;
+            }
+
+            return ModStrings.Format(ModStrings.GalaxyStockAndNet, held, rate);
         }
 
         /// <summary>
