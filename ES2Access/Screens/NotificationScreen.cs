@@ -137,8 +137,10 @@ namespace ES2Access.Screens
             get { return "screen.notification"; }
         }
 
-        /// <summary>Over the game's own view and the tutorial that annotates it, under the
-        /// confirmation box.</summary>
+        /// <summary>Over the game's own view, under the confirmation box, and under the tutorial popup
+        /// at 99: a tutorial the game draws above notifications has to be readable, and one it hides
+        /// behind them stands down, so the higher number never buries a popup the player can see.
+        /// </summary>
         public override int Layer
         {
             get { return 40; }

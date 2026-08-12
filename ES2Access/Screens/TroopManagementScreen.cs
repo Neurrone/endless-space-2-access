@@ -79,7 +79,7 @@ namespace ES2Access.Screens
         /// Measured: this window is drawn in <c>ModalRenderer</c> (<c>AgeScreen.SortingOrder</c> 5) and
         /// the tutorial popup in <c>OverlayRenderer</c> (6), so a tutorial page really does draw over
         /// this window and has to be able to take the keyboard from it - which puts this under the
-        /// tutorial's 30. Nothing this window's own controls can raise sits lower: Confirm posts an
+        /// tutorial's 99. Nothing this window's own controls can raise sits lower: Confirm posts an
         /// order without a confirmation box, and there are no drop lists.
         /// </summary>
         public override int Layer

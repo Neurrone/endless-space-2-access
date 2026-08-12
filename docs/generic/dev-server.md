@@ -235,6 +235,11 @@ spots:
   a game view, back on a game-owned page) is structurally untestable in-harness: only the
   *destination* can be proven, by calling the game's own handler directly. That routing
   goes on the manual script as a category, not per-screen.
+- **Prove the key, not the effect.** Simulating a game key's *effect* (writing the state
+  the key would have written) proves a path the physical key may never take; the honest
+  pair is the claim probe plus the game's OWN handler for that key. And OS-level key
+  injection may be unavailable entirely (the game's foreground window unreachable from the
+  harness), so a physical-key bug must be settled structurally, not by injection.
 - **Perceptual invariants.** Re-check per screen with measured rects and screenshots: the
   focused item is scrolled into view (long lists!), focus visuals track the cursor, speech
   does not lag held-key repeat. Existence checks lie; rects don't. One timing caveat for

@@ -17,14 +17,18 @@ box a Cancel or a Delete confirms in) ·
 view levels, never up together) · `20` planet-constructibles (the panel a planet card slides
 out under itself) · `25` system-selection modal (over the star-system page that opens it and
 under BOTH things it can raise itself: the tutorial page it registers a key for, and the
-drop list its policy column opens) · `30` tutorial ·
+drop list its policy column opens) ·
 `15` research (the technology wheel — a GuiScreen overlay drawn over whichever view level is
 underneath, so above them and below the planet panel) · `16` quest journal (the other GuiScreen
 overlay; the same strip of screen icons opens both, so the two are never up together) ·
 `40` notification · `50` game-menu · `52` options (one number, above the pause menu that can
 open it) · `55` load-save · `60` loading · `70` drop-list (above options, its owner) ·
 `80` rename box · `85` improvements modal (over the star-system page, under its own
-confirmation) · `90` tutorial-selection modal (over the new game screen) · `100` message-box.
+confirmation) · `90` tutorial-selection modal (over the new game screen) ·
+`99` tutorial popup (above EVERYTHING but the message box: the game itself draws most tutorial
+popups over its own screens, modals and notifications, so any lower number buries one of them —
+what keeps 99 livable is that a collapsed popup stands down, and that the mod follows the panel's
+own visibility, so a popup the game has hidden holds nothing) · `100` message-box.
 Mod-owned CHILD screens (`Screen.PushChild`) have no layer: the manager focuses the deepest
 child of the top screen.
 

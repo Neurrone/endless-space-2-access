@@ -37,8 +37,9 @@ namespace ES2Access.Screens
     /// what it does - while the text carries the whole page, so a long objective can be re-read from
     /// where the words are.
     ///
-    /// It sits below the notification popups, which are shown over it, and above nothing: it
-    /// annotates the game's own view rather than replacing it.
+    /// It sits above everything else of ours bar the confirmation box, because the game draws most
+    /// tutorial popups over its own windows and a tutorial nobody can reach is worse than no tutorial at
+    /// all. Minimising it is what gives the keyboard back.
     ///
     /// Pages are turned through the selector the popup itself turns them with, rather than by
     /// pressing its arrows, because the selector is the thing that actually holds the page number and
@@ -64,11 +65,22 @@ namespace ES2Access.Screens
             get { return "screen.tutorial"; }
         }
 
-        /// <summary>Under the notification popups that are drawn over it, above the game's own
-        /// view.</summary>
+        /// <summary>
+        /// Above every screen of ours except the confirmation box, because the game itself draws most
+        /// tutorial popups above its own windows: of the game's tutorial definitions, 49 declare
+        /// <c>AboveModalWindows</c> and 16 <c>AboveNotifications</c>
+        /// (<c>Public\Tutorials\TutorialDefinitions*.xml</c>), and the popup this screen reads is the
+        /// one the game has chosen to put on top. A tutorial buried under the window it was raised over
+        /// is unreadable and unclosable, which is the worst thing this mod can do to a page.
+        ///
+        /// What makes the top of the stack livable is that a COLLAPSED tutorial stands down (<see
+        /// cref="IsActive"/>): minimising the box hands the keyboard straight back to whatever is
+        /// underneath. Only the message box at 100 stays above, so the question the Close button raises
+        /// is still the page the player is on.
+        /// </summary>
         public override int Layer
         {
-            get { return 30; }
+            get { return 99; }
         }
 
         /// <summary>What the page is called. Spoken on arrival, ahead of the page text focus lands
@@ -86,45 +98,55 @@ namespace ES2Access.Screens
         }
 
         /// <summary>
-        /// Ours while the popup is showing a tutorial, and for as long as the game is only borrowing
-        /// it. The window is always there while a game is running; the panel inside it is what appears
-        /// and disappears.
+        /// Ours exactly while the popup is drawing a tutorial at full size, which is the only state in
+        /// which there is anything here to read. The window is always there while a game is running;
+        /// the panel inside it is what appears and disappears.
         ///
-        /// The popup going away is not the same as the tutorial being over. While anything is drawn
-        /// over it - a notification popup, a modal - the game takes the tutorial off the popup
-        /// altogether and puts it back afterwards, one frame later. A screen that stood down for that
-        /// would hand the player to the galaxy underneath and announce it, twice, around a
-        /// notification they were reading. So the tutorial stays ours while something is drawn over it
-        /// - all of which is drawn over this screen too, so nothing is claimed that is not covered -
-        /// and for the few frames the game takes to hand the popup back.
+        /// Whether the popup survives a window opening over it is the tutorial's own decision, not
+        /// something to be guessed at: each definition declares a popup layer, and the game hides the
+        /// panel for the whole time a window it is not allowed above is up
+        /// (<c>TutorialPopupPanel.UpdateLayerAndVisibilityAccordingToOtherWindows</c>). So an
+        /// <c>UnderScreens</c> tutorial goes away for any screen, modal or notification, an
+        /// <c>AboveModalWindows</c> one stays drawn over all of them, and following the panel follows
+        /// the game.
+        ///
+        /// Which is why a hidden popup is never held onto. This screen sits above everything else of
+        /// ours, so a screen that kept the keyboard while the panel was hidden would leave the player on
+        /// a page they cannot see with the window that hid it unreachable underneath - the same defect
+        /// as the burial this layer exists to fix, upside down. The cost is the announcement of whatever
+        /// is underneath when the popup goes and comes back, which is the truth of what happened.
+        ///
+        /// The linger only bridges the frames between a covering window closing and the game putting the
+        /// panel back, so it is kept - not spent - while something is covering it, and it bridges only
+        /// while the popup is still bound to a tutorial: once the game has unbound it there is nothing
+        /// coming back.
         ///
         /// Collapsing it IS the tutorial being over, for as long as it stays collapsed: the box is
         /// cropped to its title bar, everything this screen declares is behind the crop, and a screen
-        /// that held on would sit on top of the galaxy owning the keyboard with nothing on it the
-        /// player can see. The bar itself stays reachable from the galaxy (<see
-        /// cref="BuildCollapsedBar"/>), which is where it is drawn.
-        ///
-        /// Collapsed beats covered, and the order matters: the cover branch refreshes its own timer, so a
-        /// collapsed popup under a modal that stays up (the battle-tactics deck panel - measured:
-        /// <c>IsAnyModalVisible</c> true, panel bound and shown, toggle collapsed) renewed the linger
-        /// every frame and this screen owned the keyboard for as long as the modal did, with the modal
-        /// underneath unreachable. A collapsed popup is never worth holding the keyboard for, covered or
-        /// not.
+        /// that held on would own the keyboard with nothing on it the player can see. That is what makes
+        /// layer 99 livable - minimising hands everything underneath the keyboard back. The bar itself
+        /// stays reachable from the galaxy (<see cref="BuildCollapsedBar"/>), which is where it is drawn.
         /// </summary>
         public override bool IsActive()
         {
             try
             {
-                if (Showing() || (_linger > 0 && Covered() && !Minimized(Panel())))
+                if (Showing())
                 {
                     _linger = LingerFrames;
                     return true;
                 }
 
+                if (Covered())
+                {
+                    return false;
+                }
+
                 if (_linger > 0)
                 {
                     _linger--;
-                    return true;
+                    TutorialPopupPanel panel = Panel();
+                    return panel != null && panel.IsBound;
                 }
 
                 return false;
@@ -168,13 +190,20 @@ namespace ES2Access.Screens
             }
         }
 
-        /// <summary>Whether something the game draws over the tutorial is up - which is the reason it
-        /// takes the tutorial off the popup, and every one of them is drawn over this screen as
-        /// well.</summary>
+        /// <summary>Whether a window the game weighs the tutorial popup against is up - which is why the
+        /// panel may be hidden, and asked only once it is: a popup allowed above the window is still
+        /// showing, and answers before this is reached. The three the game weighs are the three it
+        /// passes to the panel (<c>UpdateLayerAndVisibilityAccordingToOtherWindows</c>): a full screen,
+        /// a modal, a notification.</summary>
         private static bool Covered()
         {
             GuiManager gui = Gui.GuiServiceAvailable ? Gui.GuiService as GuiManager : null;
-            return gui != null && (gui.IsAnyNotificationVisible || gui.IsAnyModalVisible);
+            return gui != null
+                && (
+                    gui.IsAnyScreenVisible
+                    || gui.IsAnyNotificationVisible
+                    || gui.IsAnyModalVisible
+                );
         }
 
         /// <summary>Escape belongs to the game here - the popup is drawn over the galaxy, and the key
@@ -190,9 +219,11 @@ namespace ES2Access.Screens
             Remember();
         }
 
+        /// <summary>The linger is deliberately not cleared: standing down for a window that covered the
+        /// popup is what leaves it armed, and it is the frames after that window closes that it is for.
+        /// </summary>
         public override void OnPop()
         {
-            _linger = 0;
             _page = -1;
             _title = null;
             _description = null;

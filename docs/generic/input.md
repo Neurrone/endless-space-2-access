@@ -19,6 +19,11 @@ either working with that fact or defeating it.
 - **Stand-down**: the whole layer goes quiet while the game's own text input owns the
   keyboard. Find the game's authoritative "typing now" signal (ES2:
   `FocusedControl.IsKeyExclusive` — the same check the game's shortcut dispatcher uses).
+- **The exit contract is the mod's job**: an engine's cancel for a focused field typically
+  only UNFOCUSES it — the surface around the field stays open, promising controls the keys
+  cannot reach. When the field lets go without handing the keyboard anywhere, the mod must
+  close or re-seat that surface itself, or the player is left on a live layer with nothing
+  to do.
 - **The exclusivity signal conflates "the player is typing" with "some widget owns the
   keyboard."** When the mod itself parks the game's focus on a widget (to make the game
   swallow a key — see Escape below), the stand-down check would silence the mod too. Add a
@@ -59,6 +64,9 @@ time, not at manual test:
   `anyKeyDown`) and classify each hit: reached through the game's shared binding dispatcher,
   or a private per-frame poll (camera controllers usually poll privately — and typically
   **ignore modifier keys**, so the mod's Ctrl/Shift/Alt chords hit them too).
+- The collision runs the other way too: before binding a chord that REPLAYS a game handler,
+  grep that handler's reachable code for physical-modifier reads (`IsControlKeyDown` and
+  kin) — the player is still holding the chord when the handler runs.
 - Find every default binding sharing the mod's keys. The recurring offenders: Enter/Tab bound
   to chat or console (ES2 binds StartChatting to both, live even in single-player),
   KeypadEnter to end-turn, bare Up/Down piggybacked by popups for next/previous.

@@ -359,7 +359,11 @@ already has an answer for each case.)
   surface does ([input.md](input.md)). Validate and commit through the game's drag path
   including its confirmations, and **read the game's drag handler for the landing rule** —
   which index `OnDragCompleted` posts and what the collection's `Move` does with it is the
-  one thing an implementer guesses wrong.
+  one thing an implementer guesses wrong. Where the mouse's gesture is "release over
+  NOTHING" (drag out of the container to remove), there is no widget to drop on: declare an
+  always-visible mod-authored drop-target node at the end of the container, labelled as a
+  complete instruction, reading as a plain line while nothing is carried — discoverable
+  before it is ever needed.
 - **Child screens remain** (`PushChild`/`RemoveChild`, a single linear chain): the
   native-popup wrapper (game-focus handoff, deferred close to dodge the engine's Escape
   race) and the confirmation screen still need them. Per-screen state isolation returns
