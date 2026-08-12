@@ -66,6 +66,188 @@ namespace ES2Access.UI
             }
         }
 
+        /// <summary>The two rungs that sit ABOVE the galaxy's own zoom ladder: a system's page and then
+        /// one planet's page. The game reaches them with the same gesture that moves the zoom - the wheel
+        /// at the closest step goes INTO the system, and one more notch into a planet - so as far as a
+        /// player is concerned they are the top of one ladder rather than a different control.</summary>
+        private const int LevelRungs = 2;
+
+        /// <summary>
+        /// How many rungs "how close am I looking" has: every zoom step of the galaxy camera, then the
+        /// system's page and the planet's page above them.
+        ///
+        /// Zero when there is no galaxy camera at all, which is a game that has not started.
+        /// </summary>
+        public static int ZoomRungs
+        {
+            get
+            {
+                GalaxyViewCameraController camera = GalaxyCamera();
+                return camera == null ? 0 : camera.ZoomStepsCount + LevelRungs;
+            }
+        }
+
+        /// <summary>
+        /// Which rung of that ladder the game is on, or -1 where the question does not apply (a battle,
+        /// the system-discovery view, no game).
+        ///
+        /// Asked through <see cref="LevelThroughTransitions"/> rather than <see cref="Level"/> so that
+        /// the answer does not blink while the game is flying between two levels.
+        /// </summary>
+        public static int ZoomRung
+        {
+            get
+            {
+                GalaxyViewCameraController camera = GalaxyCamera();
+                if (camera == null)
+                {
+                    return -1;
+                }
+
+                GalaxyViewLevel level = LevelThroughTransitions;
+                if (level is GalaxyViewLevel_PlanetOverview)
+                {
+                    return camera.ZoomStepsCount + 1;
+                }
+
+                if (level is GalaxyViewLevel_SystemManagement)
+                {
+                    return camera.ZoomStepsCount;
+                }
+
+                return level is GalaxyViewLevel_GalaxyOverview ? camera.ZoomStepCurrent : -1;
+            }
+        }
+
+        /// <summary>
+        /// Move one rung in (<paramref name="sign"/> positive) or out, the way the game's own wheel does
+        /// - which is the only zoom gesture the game has for a keyboard beyond holding its PageUp and
+        /// PageDown down (<c>IInputOptionsService.InputBindingsZoomIn</c>, polled while HELD by
+        /// <c>GalaxyViewCameraController.CheckInputs</c>, and answered by nothing at all once the game is
+        /// inside a system).
+        ///
+        /// A COARSE press moves to the next boundary in the map's own layer table
+        /// (<c>LayerDescriptorNamesByZoomIndex</c>) rather than by a fixed number of steps: what a step
+        /// is WORTH here is which layer of the map it draws, and on a 13-step ladder ten steps would be
+        /// the whole range.
+        ///
+        /// Answers whether anything moved. False is a clamp - the galaxy's furthest out, a planet's page
+        /// with nothing closer, or a system's page whose deeper rung the game only reaches through a
+        /// planet under the pointer (which is what a planet card's own Enter is for).
+        /// </summary>
+        public static bool StepZoom(int sign, bool coarse)
+        {
+            try
+            {
+                GalaxyViewCameraController camera = GalaxyCamera();
+                int rung = ZoomRung;
+                if (camera == null || sign == 0 || rung < 0)
+                {
+                    return false;
+                }
+
+                int last = camera.ZoomStepsCount - 1;
+                if (rung > last)
+                {
+                    return sign < 0 ? LeaveLevel() : GoDeeper();
+                }
+
+                if (sign > 0 && rung == last)
+                {
+                    return EnterSystem();
+                }
+
+                int wanted = coarse ? BandStep(camera, rung, sign) : rung + sign;
+                wanted = Math.Max(0, Math.Min(last, wanted));
+                if (wanted == rung)
+                {
+                    return false;
+                }
+
+                // The wheel's own no-hover branch recentres on wherever the camera is already looking,
+                // so the step changes and the view does not slide sideways under the player.
+                camera.ForceZoomingOnPosition(wanted, camera.TargetPositionCurrent);
+                return true;
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: stepping the zoom threw: " + e);
+                return false;
+            }
+        }
+
+        /// <summary>The first step on either side of <paramref name="rung"/> that draws a DIFFERENT layer
+        /// of the map, or the end of the ladder where there is no further boundary.</summary>
+        private static int BandStep(GalaxyViewCameraController camera, int rung, int sign)
+        {
+            string[] layers = camera.LayerDescriptorNamesByZoomIndex;
+            if (layers == null || rung >= layers.Length)
+            {
+                return rung + sign;
+            }
+
+            string here = layers[rung];
+            for (int step = rung + sign; step >= 0 && step < layers.Length; step += sign)
+            {
+                if (layers[step] != here)
+                {
+                    return step;
+                }
+            }
+
+            return sign > 0 ? camera.ZoomStepsCount - 1 : 0;
+        }
+
+        /// <summary>Into the system the camera is closest to, which is what the wheel does at the closest
+        /// step: the map's own click path, so a colony of the player's opens its page and anything else
+        /// is merely zoomed at.</summary>
+        private static bool EnterSystem()
+        {
+            StarSystemNode node = FocusedSystem;
+            GalaxyNode drawn = node == null ? null : Drawn(node);
+            GalaxyView galaxy = GalaxyViewOf();
+            if (galaxy == null || drawn == null)
+            {
+                return false;
+            }
+
+            galaxy.SelectGameNode(drawn);
+            return true;
+        }
+
+        /// <summary>Back out of the system's or the planet's page - each level's own camera answers its
+        /// zoom-out, which is the same call its wheel makes.</summary>
+        private static bool LeaveLevel()
+        {
+            ICameraController controller = Controller();
+            SystemManagementCameraController system = controller as SystemManagementCameraController;
+            if (system != null)
+            {
+                // The controller acts and then answers false regardless (its own HandleInput never
+                // reports the level change), so the move is reported here rather than passed through.
+                system.HandleInput(InputAction.ZoomOut);
+                return true;
+            }
+
+            PlanetOverviewCameraController planet = controller as PlanetOverviewCameraController;
+            return planet != null && planet.HandleInput(InputAction.ZoomOut);
+        }
+
+        /// <summary>Deeper than a system's page is one PLANET, and the game only knows which one from
+        /// whatever the pointer is over - so the gesture is offered to the game and reported as a clamp,
+        /// leaving the planet cards' own Enter as the keyboard's way in.</summary>
+        private static bool GoDeeper()
+        {
+            SystemManagementCameraController system =
+                Controller() as SystemManagementCameraController;
+            if (system != null)
+            {
+                system.HandleInput(InputAction.ZoomIn);
+            }
+
+            return false;
+        }
+
         /// <summary>The step the map starts a session on - where "the galaxy from above" means, when
         /// nobody remembers where the player had the camera before they came in on a system.</summary>
         public static int DefaultZoomStep
@@ -129,16 +311,8 @@ namespace ES2Access.UI
         {
             get
             {
-                try
-                {
-                    IViewService views = Services.GetService<IViewService>();
-                    GalaxyView galaxy = views == null ? null : views.CurrentView as GalaxyView;
-                    return galaxy == null ? null : galaxy.GalaxyViewLevelCurrent;
-                }
-                catch (Exception)
-                {
-                    return null;
-                }
+                GalaxyView galaxy = GalaxyViewOf();
+                return galaxy == null ? null : galaxy.GalaxyViewLevelCurrent;
             }
         }
 
@@ -157,16 +331,8 @@ namespace ES2Access.UI
         {
             get
             {
-                try
-                {
-                    IViewService views = Services.GetService<IViewService>();
-                    GalaxyView galaxy = views == null ? null : views.CurrentView as GalaxyView;
-                    return galaxy != null && !galaxy.CanChangeGalaxyView;
-                }
-                catch (Exception)
-                {
-                    return false;
-                }
+                GalaxyView galaxy = GalaxyViewOf();
+                return galaxy != null && !galaxy.CanChangeGalaxyView;
             }
         }
 
@@ -395,8 +561,7 @@ namespace ES2Access.UI
         {
             try
             {
-                IViewService views = Services.GetService<IViewService>();
-                GalaxyView galaxy = views == null ? null : views.CurrentView as GalaxyView;
+                GalaxyView galaxy = GalaxyViewOf();
                 IGalaxyEntityFactoryService entities =
                     Services.GetService<IGalaxyEntityFactoryService>();
                 if (galaxy == null || entities == null || planet == null)
@@ -422,12 +587,73 @@ namespace ES2Access.UI
 
         private static GalaxyViewCameraController Camera()
         {
+            return Controller() as GalaxyViewCameraController;
+        }
+
+        /// <summary>Whichever camera the game is driving - one per view level, swapped as the level
+        /// changes.</summary>
+        private static ICameraController Controller()
+        {
             try
             {
                 ICameraService service = Services.GetService<ICameraService>();
-                return service == null
+                return service == null ? null : service.CameraController;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// The galaxy's own camera, live or not.
+        ///
+        /// Inside a system or on a planet the game is driving that level's camera instead, and the galaxy
+        /// camera keeps the zoom step it was left on - which is what the way back out returns to. The
+        /// overview level owns the controller, so it is asked rather than remembered here.
+        /// </summary>
+        private static GalaxyViewCameraController GalaxyCamera()
+        {
+            GalaxyViewCameraController live = Camera();
+            if (live != null)
+            {
+                return live;
+            }
+
+            try
+            {
+                GalaxyView galaxy = GalaxyViewOf();
+                GalaxyViewLevel overview = null;
+                if (
+                    galaxy == null
+                    || galaxy.GalaxyViewLevelsByType == null
+                    || !galaxy.GalaxyViewLevelsByType.TryGetValue(
+                        typeof(GalaxyViewLevel_GalaxyOverview),
+                        out overview
+                    )
+                )
+                {
+                    return null;
+                }
+
+                return overview == null
                     ? null
-                    : service.CameraController as GalaxyViewCameraController;
+                    : overview.CameraController as GalaxyViewCameraController;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>The view the galaxy is drawn by, or null when the game is showing something else.
+        /// </summary>
+        private static GalaxyView GalaxyViewOf()
+        {
+            try
+            {
+                IViewService views = Services.GetService<IViewService>();
+                return views == null ? null : views.CurrentView as GalaxyView;
             }
             catch (Exception)
             {

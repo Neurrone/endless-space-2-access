@@ -333,6 +333,15 @@ namespace ES2Access.Core.Speech
         public const string ScanLegend = "scan.legend";
         public const string ScanOutput = "scan.output";
 
+        /// <summary>The zoom the lens hangs off. The game draws no such control - the map's zoom is a
+        /// wheel gesture and two keys held down - so the name is the mod's.</summary>
+        public const string ScanZoom = "scan.zoom";
+
+        /// <summary>One of the icon pairs a planet's card lines up under its ring: which of the empire's
+        /// populations does well on that planet, and what they get out of it. The game draws two pictures
+        /// side by side and writes no words at all.</summary>
+        public const string ScanSynergy = "scan.synergy";
+
         // The star system management page. The panel names are the mod's, because the game draws the
         // panels as unlabelled boxes with an icon in the corner; everything a panel CONTAINS is read
         // in the game's own words.
@@ -904,6 +913,8 @@ namespace ES2Access.Core.Speech
             { ScanSystemInfo, "System information" },
             { ScanLegend, "Legend" },
             { ScanOutput, "{0} {1}" },
+            { ScanZoom, "Zoom" },
+            { ScanSynergy, "{0} for {1}" },
             { ScreenStarSystem, "Star system" },
             { ScreenPlanet, "Planet" },
             { PlanetPrevious, "Previous planet" },

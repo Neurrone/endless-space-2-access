@@ -20,6 +20,10 @@ namespace ES2Access.Screens
     /// changes: a sighted player reads the lens's name across the top of the screen, and a player who
     /// zoomed one step would otherwise be reading trade figures believing them to be diplomacy.
     ///
+    /// Which is why the mode carries a zoom of its own (<see cref="BuildZoom"/>). Every other page can
+    /// leave the camera to the mouse; here the camera is what decides WHICH of the six lenses the player
+    /// is reading, so a page with no zoom is a page with five lenses and a system's planets missing.
+    ///
     /// Before this screen the mod was silent here. Every other page gates on the game's "normal view",
     /// which the scan view turns off, and the game hides the window each of those pages is built from -
     /// so entering the lens took the keyboard away entirely and left only the End Turn button. That is
@@ -69,6 +73,15 @@ namespace ES2Access.Screens
         /// <summary>Whether the lens has finished showing itself since the mode was entered - the
         /// arrival gate, held until the mode ends.</summary>
         private bool _arrived;
+
+        /// <summary>How long the zoom's value waits for a view level the game has been asked for - about
+        /// half a second, which is longer than the game takes to begin a transition and short enough that
+        /// a refused request is not left mute.</summary>
+        private const int ZoomSettleFrames = 30;
+
+        /// <summary>The rung the last zoom press was made from, and what is left of its wait.</summary>
+        private int _zoomFrom = -1;
+        private int _zoomWait;
 
         /// <summary>The title strip each lens window draws for itself. The windows live for the whole
         /// session and instantiate their sections once, so these are found once per showing rather than
@@ -196,6 +209,8 @@ namespace ES2Access.Screens
 
         public override void OnPop()
         {
+            _zoomWait = 0;
+            _zoomFrom = -1;
             _hud.Forget();
             _headers = null;
             _fidsi = null;
@@ -207,6 +222,7 @@ namespace ES2Access.Screens
         {
             _hud.Update();
             AnnounceLens();
+            WatchZoom();
         }
 
         /// <summary>The lens has changed under the player - they zoomed, or they walked into a system -
@@ -244,6 +260,7 @@ namespace ES2Access.Screens
         {
             builder.BeginStop(TitleStop);
             BuildTitle(builder);
+            BuildZoom(builder);
 
             builder.BeginStop(ContentStop);
             BuildDiplomacy(builder);
@@ -281,6 +298,90 @@ namespace ES2Access.Screens
             );
             AgeWidgets.Point(vtable, button, AgeWidgets.Raw(it.AgeTransform), it.AgeTransform);
             builder.AddItem(ControlId.Referenced(header, "scan:title/lens"), vtable);
+        }
+
+        // ---- the zoom ----
+
+        /// <summary>
+        /// How close the game is looking, as something the player can move.
+        ///
+        /// This lens is the one page where the zoom is not a matter of how much is drawn: the map's zoom
+        /// step picks the layer, the layer picks the lens, and so zooming changes the SUBJECT. The game's
+        /// own answer for a keyboard is two keys HELD down (PageUp and PageDown, polled while pressed -
+        /// a tap moves nothing) and nothing at all once the game is inside a system, which left the whole
+        /// zoom-dependent surface - every lens but the one the camera happened to be on, and the planets
+        /// of a system - out of reach. So the mode carries the zoom as an adjustable of its own, on the
+        /// arrows the mod already spends on a value, and the ladder runs all the way from the whole
+        /// galaxy to one planet (<see cref="GalaxyViewLevels.StepZoom"/>).
+        ///
+        /// The value is the rung and nothing else: what a rung MEANS is the lens's name, which the screen
+        /// announces whenever it changes, and repeating it here would say it twice. While the game is
+        /// flying between two view levels there is no rung to report - the answer is a step behind - so
+        /// the value says nothing and the lens announcement carries the news.
+        /// </summary>
+        private void BuildZoom(GraphBuilder builder)
+        {
+            if (GalaxyViewLevels.ZoomRung < 0)
+            {
+                return;
+            }
+
+            NodeVtable vtable = GraphNodes.Slider(
+                () => ModStrings.Get(ModStrings.ScanZoom),
+                ZoomText,
+                Zoom
+            );
+            builder.AddItem(ControlId.Structural("scan:zoom"), vtable);
+        }
+
+        /// <summary>One rung, and then the wait for a rung the game has not moved to yet. A press that
+        /// asks for a VIEW LEVEL is deferred - the game starts flying a frame or two later - so the rung
+        /// read straight afterwards is still the one the player has just left, and saying it answers
+        /// "nothing happened" to a press that did something.</summary>
+        private void Zoom(int sign, bool coarse)
+        {
+            int before = GalaxyViewLevels.ZoomRung;
+            if (!GalaxyViewLevels.StepZoom(sign, coarse) || GalaxyViewLevels.ZoomRung != before)
+            {
+                return;
+            }
+
+            _zoomFrom = before;
+            _zoomWait = ZoomSettleFrames;
+        }
+
+        private string ZoomText()
+        {
+            int rung = GalaxyViewLevels.ZoomRung;
+            int rungs = GalaxyViewLevels.ZoomRungs;
+            if (
+                rung < 0
+                || rungs <= 0
+                || GalaxyViewLevels.ChangingLevel
+                || (_zoomWait > 0 && rung == _zoomFrom)
+            )
+            {
+                return null;
+            }
+
+            return new MessageBuilder().PushFraction(rung + 1, rungs).Build();
+        }
+
+        /// <summary>Counts the wait above down, and ends it the moment the rung moves - so the value
+        /// speaks itself as soon as it is true, and a request the game refused goes quiet again instead of
+        /// staying silent for good.</summary>
+        private void WatchZoom()
+        {
+            if (_zoomWait <= 0)
+            {
+                return;
+            }
+
+            _zoomWait--;
+            if (GalaxyViewLevels.ZoomRung != _zoomFrom)
+            {
+                _zoomWait = 0;
+            }
         }
 
         // ---- the diplomacy lens ----
@@ -467,6 +568,17 @@ namespace ES2Access.Screens
         ///
         /// The figures need no help: the game writes each one as a number and the output's own icon, and
         /// the icon has a name.
+        ///
+        /// It is a lens about one system and NOT about its planets - those belong to the system
+        /// management lens a rung further in, which is why the zoom carries on past the closest step
+        /// (<see cref="BuildZoom"/>).
+        ///
+        /// What the tick reveals is read here as well, because the panel it shows is a SIBLING of the
+        /// name rather than a child of it: the system's name again, the remains standing on one of its
+        /// planets, and the line the game writes instead of all of it for somebody else's colony. The two
+        /// rank graphs it also holds are geometry with no words at all and are not modelled (roadmap);
+        /// in a save where neither they nor any remains are drawn, the tick changes nothing that can be
+        /// heard, which is the truth about that save rather than a gap in the reading.
         /// </summary>
         private void BuildSystemOverview(GraphBuilder builder)
         {
@@ -487,9 +599,7 @@ namespace ES2Access.Screens
                     {
                         GraphNodes.LabelPart(() => AgeText.Label(it.NodeNameLabel)),
                     },
-                    Sections = GraphNodes.Sections(
-                        NodeSection.Buffer(() => AgeWidgets.DrawnLines(it.NodeInfoGroup))
-                    ),
+                    Sections = GraphNodes.Sections(NodeSection.Buffer(() => SystemLines(it))),
                 };
                 AgeWidgets.PointAt(vtable, window.NodeInfoGroup);
 
@@ -518,9 +628,41 @@ namespace ES2Access.Screens
             }
         }
 
+        /// <summary>Everything the lens has to say about the system it is inspecting: the strip the name
+        /// and the tick sit in, the line of figures above it, and the panel the tick shows - each read
+        /// only while it is drawn, so what the buffer holds is what is on the screen.</summary>
+        private static IList<string> SystemLines(StarSystemOverviewScanViewWindow window)
+        {
+            List<string> lines = new List<string>();
+            AddDrawn(lines, window.NodeInfoGroup);
+            AddDrawn(lines, window.TopLineTable);
+            AddDrawn(lines, window.RemainsPanel.Shown ? window.RemainsPanel.AgeTransform : null);
+            AddDrawn(
+                lines,
+                window.InfoPanel.Shown ? window.InfoPanel.InformationInaccessibleLabel.AgeTransform : null
+            );
+            return lines;
+        }
+
+        /// <summary>A panel's drawn words appended to <paramref name="lines"/>, and nothing at all where
+        /// the panel is not on the screen.</summary>
+        private static void AddDrawn(List<string> lines, AgeTransform widget)
+        {
+            if (widget == null || !AgeWidgets.Visible(widget))
+            {
+                return;
+            }
+
+            IList<string> drawn = AgeWidgets.DrawnLines(widget);
+            for (int i = 0; drawn != null && i < drawn.Count; i++)
+            {
+                AddLine(lines, drawn[i]);
+            }
+        }
+
         /// <summary>The tick beside the system's name. The game draws it as a bare box, so it is named
-        /// here; what it reveals is a second panel off to one side, which the node's own buffer picks up
-        /// once it is showing.</summary>
+        /// here; what it reveals is a second panel off to one side, whose words the node's own buffer
+        /// reads once it is showing (<see cref="SystemLines"/>).</summary>
         private static void AddSystemInfoToggle(
             GraphBuilder builder,
             StarSystemOverviewScanViewWindow window
@@ -556,6 +698,12 @@ namespace ES2Access.Screens
         /// nothing, so the numbers are read from the planet with the output's own title in front of
         /// them - the five properties the label itself uses
         /// (<c>PlanetLabel_SystemManagementScanView.PlanetFidsiProperties</c>).
+        ///
+        /// A card SAYS all of itself. It is not a container the player opens - the game draws it as one
+        /// thing, four items on a card the size of a stamp - so its state and its synergies are parts of
+        /// its readout rather than something to go and find, and the buffer is the same content a line at
+        /// a time (<see cref="CardLines"/>). Nothing on the card is left to a tooltip, because it has
+        /// none: the status mark carries no <c>AgeTooltip</c> at all, on the prefab or on the data.
         /// </summary>
         private void BuildSystemManagement(GraphBuilder builder)
         {
@@ -603,15 +751,16 @@ namespace ES2Access.Screens
                         {
                             GraphNodes.LabelPart(() => AgeText.Label(it.PlanetTitle)),
                             GraphNodes.ValuePart(() => Outputs(planet)),
+                            GraphNodes.ValuePart(() => Status(planet), false),
+                            GraphNodes.ValuePart(() => SynergyText(it), false),
                         },
-                        // The strip under the ring - what the population is good at here, and its
-                        // caption - and the state the lens paints the planet in. Not the whole label:
-                        // the ring's own figures are bare numbers, and they are already said above with
-                        // the name of the output each one counts.
-                        Sections = GraphNodes.Sections(
-                            NodeSection.Buffer(() => AgeWidgets.DrawnLines(Synergies(it))),
-                            GraphNodes.TooltipSection(AgeWidgets.Raw(it.PlanetStatusGroup))
-                        ),
+                        // No sections: the card has no tooltip anywhere on it and nothing it holds is
+                        // hidden from the readout, so the buffer the readout itself makes - a line per
+                        // part - already is the card a line at a time.
+                        // The click a planet's own body takes from a system's page, which is the game's
+                        // only route from here to one planet: the lens follows the level, so this is
+                        // also the way from the system's planets to the planet's own data sheet.
+                        OnActivate = () => GalaxyViewLevels.OpenPlanet(planet),
                     };
                     AgeWidgets.PointAt(vtable, label.AgeTransform);
                     builder.AddItem(
@@ -628,13 +777,130 @@ namespace ES2Access.Screens
             }
         }
 
-        /// <summary>The strip along the bottom of a planet's label, which is the synergies table plus the
-        /// caption the game draws over it - a caption of its own group rather than of the table, so the
-        /// table alone would lose it.</summary>
-        private static AgeTransform Synergies(PlanetLabel_SystemManagementScanView label)
+        /// <summary>
+        /// The strip of icon pairs the lens lines up under a planet's ring: one per way a population of
+        /// the empire's suits that planet, drawn as the population's face beside the output it gains and
+        /// captioned once above them all.
+        ///
+        /// Both pictures are named from the icon table - the same reading the mod gives an icon anywhere
+        /// else - because the item carries no words and no tooltip of ANY kind (measured on the drawn
+        /// cards: no <c>AgeTooltip</c> on the item, on either image, or on the table), so there is nothing
+        /// else on the widget to read. The game's own caption ("Population synergies") heads the list.
+        ///
+        /// Null where the planet has none. The caption label stays drawn over an EMPTY table, so reading
+        /// the strip's words would announce a heading with nothing under it on every planet in the system.
+        /// </summary>
+        private static string SynergyText(PlanetLabel_SystemManagementScanView label)
+        {
+            try
+            {
+                AgeTransform table = label.SynergiesTable;
+                if (table == null || !AgeWidgets.Visible(table))
+                {
+                    return null;
+                }
+
+                MessageBuilder message = new MessageBuilder();
+                IList<AgeTransform> children = table.Children;
+                int said = 0;
+                for (int i = 0; children != null && i < children.Count; i++)
+                {
+                    StarSystemManagementScanViewPopulationSynergyItem item =
+                        children[i] == null
+                            ? null
+                            : children[i].GetComponent<
+                                StarSystemManagementScanViewPopulationSynergyItem
+                            >();
+                    if (item == null || !AgeWidgets.Visible(item.AgeTransform))
+                    {
+                        continue;
+                    }
+
+                    string pair = SynergyPair(item);
+                    if (string.IsNullOrEmpty(pair))
+                    {
+                        continue;
+                    }
+
+                    if (said == 0)
+                    {
+                        message.Fragment(Caption(label));
+                    }
+
+                    message.ListItemForcedComma(pair);
+                    said++;
+                }
+
+                return said == 0 ? null : message.Build();
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>One synergy: which population and what it gets, in the words the icon table gives the
+        /// two pictures. Null when neither picture has a name, which is the icon table saying this is
+        /// decoration.</summary>
+        private static string SynergyPair(StarSystemManagementScanViewPopulationSynergyItem item)
+        {
+            string population = Picture(item.AffinityIcon);
+            string output = Picture(item.FidsiIcon);
+            if (string.IsNullOrEmpty(population))
+            {
+                return output;
+            }
+
+            return string.IsNullOrEmpty(output)
+                ? population
+                : ModStrings.Format(ModStrings.ScanSynergy, population, output);
+        }
+
+        private static string Picture(AgePrimitiveImage image)
+        {
+            Texture texture = image == null ? null : image.Image;
+            return texture == null ? null : IconNames.NameForAsset(texture.name);
+        }
+
+        /// <summary>The caption the game writes over the synergies strip, read off the strip's own group -
+        /// the caption belongs to the group rather than to the table, so the table alone would lose it.
+        /// </summary>
+        private static string Caption(PlanetLabel_SystemManagementScanView label)
         {
             AgeTransform table = label.SynergiesTable;
-            return table == null || table.Parent == null ? table : table.Parent;
+            AgeTransform group = table == null ? null : table.Parent;
+            return group == null ? null : AgeWidgets.TextOf(group);
+        }
+
+        /// <summary>
+        /// What the lens is painting the planet as, in the game's own word for that state.
+        ///
+        /// The card draws it as one icon and nothing else - the legend's colonized or hospitable mark, or
+        /// the picture of whichever improvement stands on a colony - and the icon table names none of
+        /// them. So the state comes from the model through the wrapper the game asks the same question of
+        /// (<c>GuiPlanet.PlanetStatus</c>, the same expression the map's own planet circles are read by),
+        /// which answers with more than the three the icons distinguish: whose colony, whose outpost,
+        /// destroyed, hostile, or free to settle.
+        /// </summary>
+        private static string Status(Planet planet)
+        {
+            try
+            {
+                GuiPlanet.PlanetStatuses status = new GuiPlanet(planet).PlanetStatus;
+                return AgeText.Clean(Gui.Localize("%PlanetStatus" + status + "Title"));
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        private static void AddLine(List<string> lines, string line)
+        {
+            if (!string.IsNullOrEmpty(line))
+            {
+                lines.Add(line);
+            }
         }
 
         /// <summary>How many planet labels the lens is drawing.</summary>
