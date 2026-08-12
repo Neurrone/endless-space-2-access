@@ -249,7 +249,7 @@ namespace ES2Access.UI
             // and a name-only key throws Duplicate control id, which empties the WHOLE
             // page - the repeated-node rule, applied here because no screen author ever
             // sees the keys a scraper makes.
-            string key = prefix + "/" + widget.name + "/" + IndexInParent(widget);
+            string key = prefix + "/" + widget.name + "/" + AgeWidgets.IndexInParent(widget);
             if (toggle == null)
             {
                 cells.Add(Cells.Control(widget, button, tooltip, caption, key));
@@ -297,18 +297,5 @@ namespace ES2Access.UI
             }
         }
 
-        /// <summary>Where this widget sits among its siblings - the stable half of a pooled
-        /// prefab clone's identity, since every clone shares one name.</summary>
-        private static int IndexInParent(AgeTransform widget)
-        {
-            try
-            {
-                return widget.transform.GetSiblingIndex();
-            }
-            catch (Exception)
-            {
-                return 0;
-            }
-        }
     }
 }

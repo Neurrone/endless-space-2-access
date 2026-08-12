@@ -2560,6 +2560,20 @@ namespace ES2Access.Screens
                         ),
                 }
             );
+            // The pirates' blockade report (Vaulters): what they pillaged and what your cut of it was,
+            // each a container the popup refills by cloning a resource item. Both sit inside the details
+            // the report's own toggle unfolds.
+            variants.Add(
+                typeof(PirateMissionReportNotificationWindow),
+                new Variant
+                {
+                    Tables = w =>
+                        Some(
+                            ((PirateMissionReportNotificationWindow)w).RawLeechedResourcesTable,
+                            ((PirateMissionReportNotificationWindow)w).PlayerLeechedResourcesTable
+                        ),
+                }
+            );
             variants.Add(
                 typeof(ForceTruceProposedNotificationWindow),
                 new Variant
@@ -2751,6 +2765,13 @@ namespace ES2Access.Screens
                 }
             );
 
+            // The academy having granted a role: the same roles panel the exchange popup above draws,
+            // in a popup of its own, so the same cloned lines read the same way.
+            variants.Add(
+                typeof(AcademyRoleNotificationWindow),
+                new Variant { Tables = w => Roles((AcademyRoleNotificationWindow)w) }
+            );
+
             return variants;
         }
 
@@ -2777,6 +2798,15 @@ namespace ES2Access.Screens
             return Some(
                 panel == null || !Visible(window.RolesPanel) ? null : panel.RoleLineTable
             );
+        }
+
+        /// <summary>The same panel in the popup that exists only to report a role - it is the whole
+        /// content there, so its own visibility is the gate rather than a wrapper the popup shows and
+        /// hides.</summary>
+        private static IList<AgeTransform> Roles(AcademyRoleNotificationWindow window)
+        {
+            AcademyRolesReportPanel panel = window.RoleLineTable;
+            return Some(panel == null || !Visible(panel.AgeTransform) ? null : panel.RoleLineTable);
         }
 
         private static AgeTransform Transform(AgeControl control)

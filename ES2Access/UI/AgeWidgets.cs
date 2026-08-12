@@ -422,6 +422,22 @@ namespace ES2Access.UI
         /// windows name their heading groups in the prefab and bind neither the group nor the label
         /// inside it, so there is nothing to ask for them by except the name on screen.
         /// </summary>
+        /// <summary>Where this widget sits among its siblings - the stable half of a pooled prefab clone's
+        /// identity, since a set of clones can share one name and a position in a collected list moves the
+        /// moment a sibling appears or goes. The repeated-node key rule
+        /// (<c>docs/dev-loop.md</c>) is built out of this.</summary>
+        public static int IndexInParent(AgeTransform widget)
+        {
+            try
+            {
+                return widget == null ? 0 : widget.transform.GetSiblingIndex();
+            }
+            catch (Exception)
+            {
+                return 0;
+            }
+        }
+
         public static AgeTransform ChildNamed(AgeTransform widget, string name, int depth)
         {
             if (widget == null || depth < 0)

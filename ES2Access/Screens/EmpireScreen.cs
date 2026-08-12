@@ -244,14 +244,16 @@ namespace ES2Access.Screens
         }
 
         /// <summary>
-        /// The one readout in these panels the shape of the widget tree cannot name: how many systems
-        /// the empire holds against how many it can hold before the rest start to suffer.
+        /// The two things in these panels the shape of the widget tree cannot name.
         ///
-        /// The panel draws it as a bare "1/7" over a bar, and the sentence saying what the two numbers
-        /// ARE is on the group around them - which the walk would otherwise descend past, leaving a
-        /// fraction with nothing to say for itself. The game writes one of three sentences there
+        /// The first is how many systems the empire holds against how many it can hold before the rest
+        /// start to suffer. The panel draws it as a bare "1/7" over a bar, and the sentence saying what
+        /// the two numbers ARE is on the group around them - which the walk would otherwise descend past,
+        /// leaving a fraction with nothing to say for itself. The game writes one of three sentences there
         /// depending on the empire (<c>EmpireStatusSidePanel.Refresh</c> :87-98), so the words are
         /// whatever it wrote this frame.
+        ///
+        /// The second is an empire relic slot (<see cref="RelicSlot"/>).
         /// </summary>
         private static bool SpecialCell(
             List<Cell> cells,
@@ -260,6 +262,13 @@ namespace ES2Access.Screens
             SidePanel panel
         )
         {
+            // The type test first, so that every other panel's walk costs nothing: only the relic box
+            // holds slots, and it only exists for one faction.
+            if (panel is EmpireRelicsSidePanel && RelicSlot(cells, widget, keyPrefix))
+            {
+                return true;
+            }
+
             EmpireStatusSidePanel status = panel as EmpireStatusSidePanel;
             if (status == null || !ReferenceEquals(widget, status.OvercolonizationGroup))
             {
@@ -270,6 +279,153 @@ namespace ES2Access.Screens
                 Cells.Readout(widget, AgeWidgets.Raw(widget), keyPrefix + "overcolonization")
             );
             return true;
+        }
+
+        /// <summary>
+        /// One of the four empire relic slots the relic box draws (<c>RelicSlotItem</c>, Nakalim only -
+        /// <c>EmpireRelicsSidePanel.CanBeShown</c> requires the Templars affinity).
+        ///
+        /// It is here rather than left to the shape walk because pressing it does one of TWO OPPOSITE
+        /// things and the game says which only by swapping one picture for another. <c>Update</c> flips
+        /// the slot into remove mode the moment the slot holds a relic and back into assign mode when it
+        /// empties (<c>RelicSlotItem</c> :172-188), and the drawn sign is which of
+        /// <c>AssignRelicsImage</c>/<c>RemoveRelicsImage</c> is visible - so that is what is READ here,
+        /// rather than the private field behind it. A slot declared by shape alone would be a button whose
+        /// name never changes while its meaning does.
+        ///
+        /// The slot has no name of its own either: it titles itself with an icon token
+        /// (<c>FIDSIGroupTitle.Text = def.GuiSymbol</c>, "[explorer]" and friends), so the name is the
+        /// words the game opens the slot's own explanation with - "Exploration Relic" - and the icon's
+        /// name only where that sentence is missing.
+        ///
+        /// Everything the game refuses with is on the slot's OWN tooltip and is carried here in full,
+        /// which is what keeps the locked-slot sentence (<c>%EmpireRelicsSlotLocked</c>) and the
+        /// nothing-to-assign failure reachable: both are appended to that tooltip and to nothing else.
+        ///
+        /// Measured by binding the four slots to the game's own <c>EmpireRelicSlotDefinition</c> rows and
+        /// forcing the box visible, then restoring: "Exploration Relic:, button, Assign relics,
+        /// unavailable, Effects: ... This slot is locked. You must build a Cathedral to the Lost ...", and
+        /// with the remove picture drawn instead, "Exploration Relic:, button, Remove relics, 2, ...".
+        /// What is NOT measured is a real Nakalim empire: the definitions load for everyone (their datatable
+        /// carries no DLC prerequisite) but the box itself only shows for that affinity, so the assign and
+        /// remove PRESSES have never been made.
+        /// </summary>
+        private static bool RelicSlot(List<Cell> cells, AgeTransform widget, string keyPrefix)
+        {
+            RelicSlotItem slot = Slot(widget);
+            if (slot == null)
+            {
+                return false;
+            }
+
+            AgeTransform button = AgeWidgets.Transform(slot.button);
+            if (button == null || !AgeWidgets.Visible(button))
+            {
+                // Nothing to press and nothing to say: the walk is still stopped, because descending
+                // into the slot would scatter it into an icon, a picture and a number.
+                return true;
+            }
+
+            RelicSlotItem it = slot;
+            AgeTransform at = button;
+            AgeTooltip tooltip = slot.assignRelicsTooltip ?? AgeWidgets.Raw(button);
+            Func<bool> offered = () => AgeWidgets.Offered(at);
+            NodeVtable vtable = GraphNodes.Button(
+                () => RelicSlotName(it),
+                () => AgeWidgets.Press(at),
+                offered,
+                tooltip
+            );
+            vtable.Announcements.Add(GraphNodes.ValuePart(() => RelicSlotAction(it)));
+            vtable.Announcements.Add(GraphNodes.ValuePart(() => RelicsAssigned(it)));
+            GraphNodes.AddRefusal(vtable, tooltip, offered);
+            AgeWidgets.Point(vtable, slot.button, tooltip, button);
+            // The name and the position, because there are FOUR of these in one box and a key that named
+            // only the panel is the same for all four - which throws Duplicate control id and empties the
+            // WHOLE page. (Measured: that is how this was found. The clones happen to carry per-slot names
+            // in this prefab, and the index is what makes the key safe if a later one does not.)
+            Cells.Add(
+                cells,
+                widget,
+                ControlId.Referenced(
+                    slot,
+                    keyPrefix
+                        + "relic-slot/"
+                        + widget.name
+                        + "/"
+                        + AgeWidgets.IndexInParent(widget)
+                ),
+                vtable
+            );
+            return true;
+        }
+
+        /// <summary>Which relic slot this is, in the game's own words: the sentence it explains itself
+        /// with opens with the slot's name ("Exploration Relic:"), and the drawn title is an icon.
+        /// </summary>
+        private static string RelicSlotName(RelicSlotItem slot)
+        {
+            try
+            {
+                string described = CardActions.FirstLine(slot.FIDSIGroupTooltip);
+                if (!string.IsNullOrEmpty(described))
+                {
+                    return described;
+                }
+
+                AgePrimitiveLabel title = slot.FIDSIGroupTitle;
+                return title == null ? null : AgeWidgets.TextOf(title.AgeTransform);
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>What pressing this slot would do, read off the picture the game is drawing on it.
+        /// </summary>
+        private static string RelicSlotAction(RelicSlotItem slot)
+        {
+            try
+            {
+                return ModStrings.Get(
+                    AgeWidgets.Visible(slot.RemoveRelicsImage)
+                        ? ModStrings.EmpireRelicSlotRemove
+                        : ModStrings.EmpireRelicSlotAssign
+                );
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>How many relics are in the slot, while the game is drawing that group at all - it
+        /// hides it for an empty slot rather than writing a zero.</summary>
+        private static string RelicsAssigned(RelicSlotItem slot)
+        {
+            try
+            {
+                return AgeWidgets.Visible(slot.AssignRelicsGroup)
+                    ? AgeText.Label(slot.AssignedRelicsLabel)
+                    : null;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        private static RelicSlotItem Slot(AgeTransform widget)
+        {
+            try
+            {
+                return widget == null ? null : widget.GetComponent<RelicSlotItem>();
+            }
+            catch (Exception)
+            {
+                return null;
+            }
         }
 
         /// <summary>

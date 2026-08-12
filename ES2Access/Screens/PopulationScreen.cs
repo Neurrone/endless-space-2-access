@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using ES2Access.Core.Speech;
 using ES2Access.Core.UI.Graph;
 using ES2Access.Core.Util;
 using ES2Access.UI;
@@ -150,10 +151,16 @@ namespace ES2Access.Screens
             Emit(builder, _cells, ListRowKey);
         }
 
-        /// <summary>One people: their name, how many of them there are, and whether they are the one
-        /// the right-hand side is describing. The boost button beside them is the game's own, with the
-        /// game's own sentence about what it costs or how long the boost already running has left.
-        /// </summary>
+        /// <summary>One people: their name, how many of them there are, whether they are the one the
+        /// right-hand side is describing, and - for a gene hunter - the two splicing markers. The boost
+        /// button beside them is the game's own, with the game's own sentence about what it costs or how
+        /// long the boost already running has left.
+        ///
+        /// The markers are the mod's own words because the game has none: it draws a picture for each and
+        /// hangs no tooltip on either, and only a gene-hunter empire sees them at all
+        /// (<c>PopulationAffinityFilter.BindGeneHunterSpecifics</c> :87-99 flips nothing but
+        /// <c>Visible</c>). They read off that visibility, so a row the game marked says so and a row it
+        /// did not is silent.</summary>
         private static void AddPeople(List<Cell> cells, AgeTransform widget, int index)
         {
             PopulationAffinityFilter row =
@@ -174,6 +181,7 @@ namespace ES2Access.Screens
                     () => AgeWidgets.Operable(toggle)
                 );
                 vtable.Announcements.Add(GraphNodes.ValuePart(() => Count(it)));
+                vtable.Announcements.Add(GraphNodes.ValuePart(() => Marker(it)));
                 AgeWidgets.Point(vtable, it.Toggle);
                 Cells.Add(
                     cells,
@@ -184,6 +192,29 @@ namespace ES2Access.Screens
             }
 
             Cells.AddControl(cells, row.PopulationBoostButton, "population:boost/" + index);
+        }
+
+        /// <summary>Whether this people has already been spliced into the empire's own, or whether there
+        /// are now enough of them to splice - the two pictures a gene hunter's rows carry and nobody
+        /// else's do. Never both: the game shows the "ready" marker only while the splice has not
+        /// happened.</summary>
+        private static string Marker(PopulationAffinityFilter row)
+        {
+            try
+            {
+                if (AgeWidgets.Visible(row.AssimilatedGroup))
+                {
+                    return ModStrings.Get(ModStrings.PopulationAssimilated);
+                }
+
+                return AgeWidgets.Visible(row.ReadyForAssimilationIcon)
+                    ? ModStrings.Get(ModStrings.PopulationReadyForAssimilation)
+                    : null;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
         }
 
         private static string Count(PopulationAffinityFilter row)

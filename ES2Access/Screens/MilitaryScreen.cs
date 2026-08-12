@@ -48,12 +48,13 @@ namespace ES2Access.Screens
     /// <c>IGuiGarrisonsHandler</c> hooks throw or do nothing, :168-200), and the panel's Create-fleet
     /// button is not declared at all, because the method it calls on this host is empty.
     ///
-    /// The two boxes down the left edge each hand the shared side-panel reader one correction of their
-    /// own. The battle-tactics box draws its six deck slots as wordless artwork with the title label
-    /// hidden, so the shape walk finds nothing to say in them and they are read off the wrapper the panel
-    /// binds (<see cref="DeckSlot"/>); the box's Open button raises the window where the set is actually
-    /// changed (<see cref="BattleTacticsScreen"/>), and its Manage sibling in the manpower box raises
-    /// <see cref="TroopManagementScreen"/>.
+    /// The boxes down the left edge each hand the shared side-panel reader one correction of their own -
+    /// two of them always, and a third (the Behemoth count, <see cref="JuggernautCount"/>) for a player who
+    /// owns Supremacy. The battle-tactics box draws its six deck slots as wordless artwork with the title
+    /// label hidden, so the shape walk finds nothing to say in them and they are read off the wrapper the
+    /// panel binds (<see cref="DeckSlot"/>); the box's Open button raises the window where the set is
+    /// actually changed (<see cref="BattleTacticsScreen"/>), and its Manage sibling in the manpower box
+    /// raises <see cref="TroopManagementScreen"/>.
     ///
     /// The manpower box down the left edge is read by the shared side-panel reader, with one correction:
     /// seven of its groups are wired to a click handler that only does anything in the developers' god
@@ -236,9 +237,11 @@ namespace ES2Access.Screens
             }
         }
 
-        /// <summary>What a box down the left edge is called. The battle-tactics deck writes a heading
-        /// across its own top but not in the field the shared reader looks in, so it is taken from where
-        /// it is drawn; the manpower box writes none at all and gets a word of the mod's.</summary>
+        /// <summary>What a box down the left edge is called. Two of them write a heading across their own
+        /// top but not in the field the shared reader looks in, so it is taken from where it is drawn (see
+        /// <see cref="HeadingLabel"/>); the manpower box writes none at all and gets a word of the mod's.
+        /// Without the drawn heading the shared reader falls through to <c>panel.GetType().Name</c> and a
+        /// stop announces itself as "MilitaryJuggernautStatusSidePanel".</summary>
         private static string PanelName(SidePanel panel)
         {
             if (panel is MilitaryManPowerSidePanel)
@@ -246,34 +249,48 @@ namespace ES2Access.Screens
                 return ModStrings.Get(ModStrings.MilitaryManpowerPanel);
             }
 
-            string drawn = DeckHeading(panel);
+            string drawn = Heading(panel);
             return string.IsNullOrEmpty(drawn) ? SidePanels.Name(panel) : drawn;
         }
 
-        /// <summary>The label the battle-tactics box writes its heading into, which the shared reader
-        /// cannot find: that reader looks up a public <c>PanelTitle</c> field and this panel declares
-        /// none, keeping its heading in an ordinary label inside its contents instead. Looked for in the
-        /// CONTENTS rather than on the panel, because the panel's own first child is the group holding
-        /// its explaining icon and wears the same name.</summary>
-        private static AgeTransform DeckHeadingLabel(SidePanel panel)
+        /// <summary>The label a box writes its heading into where the shared reader cannot find it: that
+        /// reader looks up a public <c>PanelTitle</c> field and neither of these panels declares one,
+        /// keeping its heading in an ordinary label inside its contents instead. Looked for in the CONTENTS
+        /// rather than on the panel, because the battle-tactics panel's own first child is the group
+        /// holding its explaining icon and wears the same name.
+        ///
+        /// The Behemoth box (Supremacy only) is the second: it draws "Behemoths" over a gauge and a bare
+        /// "0/1" (measured live by forcing the panel visible and binding it to the player's empire), so
+        /// without this the stop is named after the class.</summary>
+        private static AgeTransform HeadingLabel(SidePanel panel)
         {
-            if (!(panel is MilitaryPlayCardDeckSidePanel))
+            if (panel is MilitaryPlayCardDeckSidePanel)
             {
-                return null;
+                return AgeWidgets.ChildNamed(panel.ContentGroup, "Header", 0);
             }
 
-            return AgeWidgets.ChildNamed(panel.ContentGroup, "Header", 0);
+            if (panel is MilitaryJuggernautStatusSidePanel)
+            {
+                return AgeWidgets.ChildNamed(panel.ContentGroup, JuggernautTitleName, 0);
+            }
+
+            return null;
         }
 
-        private static string DeckHeading(SidePanel panel)
+        private static string Heading(SidePanel panel)
         {
-            AgeTransform label = DeckHeadingLabel(panel);
+            AgeTransform label = HeadingLabel(panel);
             return label == null ? null : AgeWidgets.TextOf(label);
         }
 
-        /// <summary>What the shape of these boxes cannot answer: the heading the battle-tactics box
-        /// draws, which is already the name of the stop the player just entered, and the six deck slots
-        /// it draws as wordless artwork.</summary>
+        /// <summary>The name the Behemoth box's prefab gives its heading label. The panel exposes the gauge
+        /// and the value in fields and its heading in neither.</summary>
+        private const string JuggernautTitleName = "JuggernautCountTitle";
+
+        /// <summary>What the shape of these boxes cannot answer: the heading a box draws, which is already
+        /// the name of the stop the player just entered; the six battle-tactics slots drawn as wordless
+        /// artwork; and the Behemoth count, whose explanation is on the box rather than on the number
+        /// (<see cref="JuggernautCount"/>).</summary>
         private static bool PanelCell(
             List<Cell> cells,
             AgeTransform widget,
@@ -281,7 +298,7 @@ namespace ES2Access.Screens
             SidePanel panel
         )
         {
-            AgeTransform heading = DeckHeadingLabel(panel);
+            AgeTransform heading = HeadingLabel(panel);
             if (
                 heading != null
                 && ReferenceEquals(heading, widget)
@@ -291,7 +308,47 @@ namespace ES2Access.Screens
                 return true;
             }
 
-            return DeckSlot(cells, widget, keyPrefix);
+            return JuggernautCount(cells, widget, keyPrefix, panel)
+                || DeckSlot(cells, widget, keyPrefix);
+        }
+
+        /// <summary>
+        /// How many Behemoths the empire has against how many it may have (Supremacy only).
+        ///
+        /// The box draws that as a bare "0/1" over a bar, and everything that says what the two numbers
+        /// ARE is on the box itself: the game writes the cap's progression - and a line per Obliterator,
+        /// Battleship and Citadel it has counted - into <c>ContentGroup.AgeTooltip</c>
+        /// (<c>MilitaryJuggernautStatusSidePanel.Refresh</c> :58-88). The shape walk descends past that
+        /// group, so the sentence would be lost and the stop would be a fraction with nothing to say for
+        /// itself - the same shape the empire summary's overcolonization figure has.
+        ///
+        /// So the whole box is answered here as one line: the number, explained by the box's own sentence.
+        /// Measured live by binding the panel to the player's empire and forcing it visible; the panel
+        /// draws nothing else with words in it.
+        /// </summary>
+        private static bool JuggernautCount(
+            List<Cell> cells,
+            AgeTransform widget,
+            string keyPrefix,
+            SidePanel panel
+        )
+        {
+            MilitaryJuggernautStatusSidePanel box = panel as MilitaryJuggernautStatusSidePanel;
+            if (box == null || !ReferenceEquals(widget, box.ContentGroup))
+            {
+                return false;
+            }
+
+            AgeTransform value =
+                box.JuggernautCountValue == null ? null : box.JuggernautCountValue.AgeTransform;
+            if (AgeWidgets.Visible(value))
+            {
+                cells.Add(
+                    Cells.Readout(value, AgeWidgets.Raw(widget), keyPrefix + "juggernaut-count")
+                );
+            }
+
+            return true;
         }
 
         /// <summary>

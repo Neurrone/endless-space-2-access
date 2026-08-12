@@ -410,6 +410,14 @@ namespace ES2Access.Core.Speech
         public const string EmpireDescriptionPanel = "empire.description-panel";
         public const string EmpireHeadingsBand = "empire.headings-band";
 
+        /// <summary>Which of the two opposite things pressing an empire relic slot will do (Nakalim only).
+        /// The slot flips between them on its own as the empire's relic stock changes
+        /// (<c>RelicSlotItem.Update</c>), and the ONLY sign on screen is which of two pictures is drawn -
+        /// so a blind player would otherwise press a button that silently means the opposite thing.
+        /// </summary>
+        public const string EmpireRelicSlotAssign = "empire.relic-slot-assign";
+        public const string EmpireRelicSlotRemove = "empire.relic-slot-remove";
+
         // The economy screen. The screen's own name is the game's; the name here is the fallback for
         // the frames before the window has written its heading. The rest are for boxes the game draws
         // with no heading at all - the marketplace's four panels and its two tickers - and for the one
@@ -529,6 +537,14 @@ namespace ES2Access.Core.Speech
         public const string ScreenGovernment = "screen.government";
         public const string ScreenLaws = "screen.laws";
         public const string ScreenPopulation = "screen.population";
+
+        /// <summary>The two markers the population screen draws on a people's row for a gene hunter
+        /// (Horatio) and nowhere else: one says this people has already been spliced into the empire's
+        /// own, the other that there are now enough of them to splice. The game draws both as bare
+        /// pictures with no text and no tooltip on them (<c>PopulationAffinityFilter</c>
+        /// :87-99 only flips <c>Visible</c>), so these are the only words there are for them.</summary>
+        public const string PopulationAssimilated = "population.assimilated";
+        public const string PopulationReadyForAssimilation = "population.ready-for-assimilation";
 
         // ---- the diplomacy family ----
         // Every window in this family writes its own heading, so each screen name here is only ever
@@ -828,6 +844,8 @@ namespace ES2Access.Core.Speech
             { ScreenEmpire, "Empire summary" },
             { EmpireDescriptionPanel, "Empire" },
             { EmpireHeadingsBand, "Column headings" },
+            { EmpireRelicSlotAssign, "Assign relics" },
+            { EmpireRelicSlotRemove, "Remove relics" },
             { ScreenSenate, "Senate" },
             { SenateGovernmentPanel, "Government" },
             { SenateElectionPanel, "Next election" },
@@ -912,6 +930,8 @@ namespace ES2Access.Core.Speech
             { ScreenGovernment, "Government selection" },
             { ScreenLaws, "Laws" },
             { ScreenPopulation, "Population overview" },
+            { PopulationAssimilated, "Assimilated" },
+            { PopulationReadyForAssimilation, "Ready for assimilation" },
             { ScreenDiplomacy, "Diplomatic status" },
             { DiplomacyEmpires, "Empires" },
             { DiplomacyControls, "Screen controls" },
