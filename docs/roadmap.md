@@ -19,6 +19,14 @@ files above.
   DiplomaticInteractionNotificationWindow (MoodMessageLabel, NegotiationContributionPanel).
 - Galaxy-label gaps: AcademyGroup bottom readout; KOTH score value; deposit
   exploited-state; constellation ownership bonus; pin-message editing.
+- Targeting-cursor remainder: `HonorActionCursor` fleet/docking targets need a `ConfirmAt`
+  overload for fleet cursor-targets; `HackingOperationCursor` route building rides the
+  Penumbra wait; `TakeSystemCursor` has no Escape route in the game (right-click only) —
+  decide whether the mod should offer one; the instruction banner can speak the previous
+  mode's caption for a frame (cheap fix: skip an instruction that is not the current
+  cursor's).
+- Chat: the alliance tab's SENDING is pointer-only (incoming lines narrate); MP-fixture
+  verification outstanding.
 - Assigned-governor side panel: `Special` case for its three bare readouts (needs a save
   with a governor).
 - Verify whether the population screen covers the planet page's population-entry click
@@ -84,11 +92,8 @@ files above.
 
 ## To decide (owner)
 
-- Click parity when the game's own click is a bug: stated exception path or strict parity
-  (enemy battle-play cards — explanation given, awaiting ruling).
-- Cursor target modes: Enter-as-click while a targeting mode is active is the likely
-  answer (measure whether the game's cursor intercepts the click; else a binding choice
-  returns to the owner).
+- `TakeSystemCursor` has no Escape route in the game (right-click is its only cancel;
+  every other targeting cursor cancels on Escape) — strict parity, or offer Escape?
 
 ## Shipped (pointers only)
 

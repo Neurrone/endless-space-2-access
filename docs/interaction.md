@@ -61,8 +61,11 @@ notifications (`TutorialPopupLayer`, per page — es2-facts), so any lower numbe
 them; what keeps 98 livable is that a collapsed popup stands down and that the mod follows the
 panel's own visibility, so a popup the game has hidden holds nothing. The error box (99) and
 the message box (100) go ABOVE it, because an error or a confirmation the tutorial buries is
-unanswerable. A collapsed popup's bar is declared on whatever page took the keyboard back —
-every page, not only the ones that read it in their own place (`Screen.BuildShared`).
+unanswerable. A collapsed popup's bar is declared only by the eleven
+pages that PLACE it — the galaxy HUD, the eight icon-strip screens, planet overview and system
+management (`GlobalHud.Tutorial`) — because it is a fixture of the HUD's own edge and not something
+that follows the keyboard onto a modal, a notification or an error box (owner decision 2026-08-12).
+A tutorial minimised over a modal waits for the modal to close before it can be expanded again.
 
 **The selected-fleet panel has NO layer** — it is a contributor to the galaxy page
 (`FleetPanel` — `docs/helpers.md`), not a screen, because selecting a fleet changes only the cursor and the
@@ -92,12 +95,20 @@ chords and which cargo kinds the drag carries (ships, population, both queues) i
 status — `docs/test-recipes.md`'s per-screen paragraphs own it; a drop always puts the carried
 item at the target's own position ("Moved ⟨name⟩ to position ⟨n⟩").
 
+**Ctrl+Tab is the GAME's chat key, not a mod binding**: at startup `GameChatKey` moves
+`StartChatting` off Enter/Tab to Ctrl+Tab through the game's own options (ONLY while it still has
+the shipped default; a customised binding is left alone), and whatever chord the binding sits on is
+handed back through the stand-down (`ModInput.LeaveToGame`) — so re-binding chat in the game's
+options keeps working.
+
 **Enter is click parity everywhere.** Every node's Enter is the click the game itself puts on that
 control, including the destructive ones — a research queue item dequeues, a construction queue line
 cancels (instantly while nothing is invested, behind the GAME's own confirmation box once something
 is). There are no mod-invented action menus left; a control's extra buttons are child nodes opened
 with right. The one thing that displaces a node's click is a live drag landing on a control that
-takes the cargo, which is what makes Enter the drop key.
+takes the cargo, which is what makes Enter the drop key — and the other is a targeting cursor: while
+the game is waiting for a target, Enter on a map node is that confirm and the node's own click waits,
+exactly as the mouse's does — and the fleet nodes select nothing, because a click cannot.
 
 **Tab and Shift+Tab wrap** (owner decision 2026-08-12): the last stop's Tab lands on the first,
 the first stop's Shift+Tab on the last. On a page with exactly ONE stop the key is consumed and

@@ -36,6 +36,7 @@ namespace ES2Access.UI.Input
 
         private readonly List<InputAction> _actions = new List<InputAction>();
         private readonly Queue<Injection> _injected = new Queue<Injection>();
+        private readonly List<KeyboardBinding> _leftToGame = new List<KeyboardBinding>();
         private HashSet<KeyCode> _claimedKeys;
 
         /// <summary>Offered every triggered action; returning true consumes it. Null means nothing is
@@ -105,8 +106,10 @@ namespace ES2Access.UI.Input
         /// screens tick in the same frame, the page stands down for the modal and the modal's own
         /// screen has not finished arriving, so by the time the game's scan runs there is no focused
         /// screen and the very key we just consumed reads as unclaimed. The game then does what it
-        /// has bound to it - Enter and Tab are both StartChatting - and the chat panel takes the
-        /// engine's keyboard, which silences the whole layer until the player presses Enter again.
+        /// has bound to it - Enter is the game's Validate, KeypadEnter ends the turn - and the modal
+        /// the mod has just opened is answered a second time by the press that opened it. (Tab used to
+        /// be the worst of these: it opened the chat box and took the engine's keyboard with it, until
+        /// <see cref="GameChatKey"/> moved that binding to a chord of the game's own.)
         ///
         /// So a key stops being the mod's when it comes UP, not when the layer next looks dead. A
         /// key that was never down - an injected action - is therefore let go on the next tick,
@@ -136,12 +139,121 @@ namespace ES2Access.UI.Input
             get { return _backClaimed; }
         }
 
+        /// <summary>
+        /// Whether one of the keys going down THIS frame is a key the mod has already acted on during
+        /// this press - the <see cref="_consumed"/> latch, asked by key rather than for the whole layer.
+        ///
+        /// It exists for the other consumer of the frame's keys: the game's GUI hands its focused
+        /// control every key that went down, and it does that after the mod's tick, so a control the
+        /// mod's Enter has just put on screen hears that same Enter and acts on it too. Answering "the
+        /// mod already spent this press" is what lets that delivery be skipped without touching a key
+        /// the player really typed (see <c>GameKeyboardHandover</c>).
+        ///
+        /// A key that was never physically down - an injected action - is latched too and released on
+        /// the next tick, and is never GetKeyDown, so an injection cannot suppress anything.
+        /// </summary>
+        public bool ActedOnAKeyGoingDown()
+        {
+            for (int i = 0; i < _consumed.Count; i++)
+            {
+                if (UnityEngine.Input.GetKeyDown(_consumed[i]))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         /// <summary>Whether a screen of ours is focused at all - the first half of
         /// <see cref="LayerIsLive"/>, split out so a probe can say WHICH half answered no.</summary>
         public bool ScreenIsFocused()
         {
             Func<bool> focused = HasFocusedScreen;
             return focused != null && focused();
+        }
+
+        /// <summary>
+        /// Declare a CHORD that stays the game's even though the mod claims its key on its own.
+        ///
+        /// <see cref="ClaimsKey"/> answers per <see cref="KeyCode"/> and cannot do this: it is what the
+        /// game's key scans ask, and they ask about a combination one key at a time, so a claim on Tab
+        /// hides Ctrl+Tab from the game as surely as it hides Tab. That is right for a game binding the
+        /// mod is deliberately suppressing and wrong for one the mod deliberately put out of its own
+        /// way - <see cref="GameChatKey"/> moves the game's chat key to Ctrl+Tab precisely so that it
+        /// can be pressed, and without this the move would leave it doing nothing at all.
+        ///
+        /// So the exception is stated as the chord it is, and only <see cref="GameKeyStandDown"/> can
+        /// apply it, because only the game's own scan says which modifiers its binding wants. The mod's
+        /// own bindings are unaffected: they match modifiers exactly (<see cref="KeyboardBinding"/>),
+        /// so a chord handed over here was never one of them.
+        /// </summary>
+        public void LeaveToGame(KeyCode key, bool ctrl = false, bool shift = false, bool alt = false)
+        {
+            _leftToGame.Add(new KeyboardBinding(key, ctrl, shift, alt));
+        }
+
+        /// <summary>Reclaim every chord handed over, so the set can be restated from scratch when the
+        /// binding it follows changes.</summary>
+        public void TakeBackEveryChord()
+        {
+            _leftToGame.Clear();
+        }
+
+        /// <summary>Whether one of the mod's OWN actions is bound to exactly this chord - asked before
+        /// handing a chord over, because a game binding the player has moved onto one of the mod's
+        /// chords cannot have it.</summary>
+        public bool BindsChord(KeyCode key, bool ctrl, bool shift, bool alt)
+        {
+            for (int i = 0; i < _actions.Count; i++)
+            {
+                IList<InputBinding> bindings = _actions[i].Bindings;
+                for (int j = 0; j < bindings.Count; j++)
+                {
+                    KeyboardBinding keyboard = bindings[j] as KeyboardBinding;
+                    if (
+                        keyboard != null
+                        && keyboard.Key == key
+                        && keyboard.Ctrl == ctrl
+                        && keyboard.Shift == shift
+                        && keyboard.Alt == alt
+                    )
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>Whether <paramref name="key"/> with exactly these modifiers is one of the chords
+        /// above. Called from the game's per-frame scans, so it stays a walk over a list of two.
+        /// </summary>
+        public bool LeavesToGame(KeyCode key, bool ctrl, bool shift, bool alt)
+        {
+            for (int i = 0; i < _leftToGame.Count; i++)
+            {
+                KeyboardBinding chord = _leftToGame[i];
+                if (
+                    chord.Key == key
+                    && chord.Ctrl == ctrl
+                    && chord.Shift == shift
+                    && chord.Alt == alt
+                )
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>The chords handed back to the game, as the dev probe reads them
+        /// (<c>DevProbe.Claims</c>).</summary>
+        public IList<KeyboardBinding> ChordsLeftToGame
+        {
+            get { return _leftToGame.AsReadOnly(); }
         }
 
         public InputAction Register(string key)
@@ -279,9 +391,12 @@ namespace ES2Access.UI.Input
         /// <summary>
         /// True while <paramref name="key"/> belongs to the mod and to nothing else. The game polls
         /// UnityEngine.Input in parallel with us, so without this a key we act on ALSO fires the
-        /// game's own binding on it - Tab opens the chat box and takes the keyboard with it, Enter
-        /// answers a message box a second time, an arrow pans the galaxy camera under the cursor.
-        /// The game's key scans ask this and stand down when it says yes.
+        /// game's own binding on it - Enter answers a message box a second time, KeypadEnter ends the
+        /// turn under a cursor that was only pressing a button, an arrow pans the galaxy camera. The
+        /// game's key scans ask this and stand down when it says yes.
+        ///
+        /// Asked per key, which is why a chord the game is meant to keep needs saying separately - see
+        /// <see cref="LeaveToGame"/>.
         ///
         /// Only while the layer is live: a screen of ours is focused and the game is not holding the
         /// keyboard for something the player is typing into. Otherwise the game's keys are the only

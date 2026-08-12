@@ -806,6 +806,17 @@ generic graduates to the generic docs.
   `SecurityGroup` — `SecurityValue`'s own transform tooltip is null. `ColonyHeroSidePanel` swaps
   variants by `Visible` flags only (:157-240), the unassigned prefab keeps STALE hero text, and
   the unassign button is spelled `UnssignButton`.
+- **While a TARGETING CURSOR is current, the left click means confirm and nothing else.** All ten
+  of them override `OnCursorClick` without calling base and return false from `ValidateSelection`,
+  so select and zoom never run under a targeting mode — which is what makes Enter-as-confirm the
+  parity answer rather than a competing binding. Two of the ten aim at the POINTER rather than at a
+  cursor target (`ProbeLaunchingCursor`, `CoordinationRequestCursor`), so a confirm for those goes
+  through the order they post, not through a target's handler. **Escape is not uniform**: six
+  cancel via `GuiManager.cs:2101-2120`, the hacking pair via `ScanOverlayWindow.HandleInput:145-181`,
+  and `TakeSystemCursor` has NO Escape route at all — right-click is its only cancel.
+  `HasUserInstructions == true` is exactly that ten-mode set, so it is the banner predicate. The
+  instruction window can briefly show the PREVIOUS mode's caption on entry (stale until the next
+  refresh).
 
 ## Endings, notifications and the journal
 
@@ -840,6 +851,17 @@ generic graduates to the generic docs.
   speaking.
 - `EnableFactionIntroductionVideos` is FALSE in this install, so the faction intro cutscenes
   cannot be sighted here at all.
+- **`StartChatting`'s default is `Return,Tab`** (`InputManager.cs:269`) — both of the mod's own
+  primary keys. Bindings persist to `Settings/Input/…` in the user `Registry.xml`, flushed only on
+  a clean quit and re-applied at boot AFTER the input service is published, so a write made during
+  start-up can be overwritten: wait for the binding table before writing one. `Option.GetValue` is
+  uncached for key mappings, so the options row follows a programmatic change with no refresh of
+  its own. The game has exactly **two `ChatPanel`s** — the in-game one over an
+  `AgeControlTextFieldChat` (`StandardCancel=false`) and the lobby's over a plain
+  `AgeControlTextField` (`StandardCancel=true`) — plus one other chat-TYPE field, the
+  coordination-request pin box, which is why a chat reader scopes on `ChatPanel` identity rather
+  than on the control's type. `InGameChatWindow` is shown and answers `StartChatting` in single
+  player too, so the key is live in every session.
 
 ## Card and tooltip drawing mechanisms
 

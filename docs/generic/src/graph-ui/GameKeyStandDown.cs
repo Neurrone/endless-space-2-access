@@ -10,11 +10,12 @@ namespace ES2Access.UI.Input
     ///
     /// The mod polls UnityEngine.Input itself (see <see cref="ModInput"/>), and so does the game -
     /// in parallel, from its own scans, with no notion of a key having been handled already. Every
-    /// key the mod acts on therefore also does whatever the game has bound to it: Tab and Enter
-    /// raise StartChatting and the chat panel takes the engine's keyboard focus, so the mod goes
-    /// deaf mid-sentence; KeypadEnter ends the turn under a cursor that was only trying to press a
-    /// button; Enter on a message box answers it twice, once through the game's Validate and once
-    /// through ours; an arrow moves the cursor and pans the galaxy camera with it.
+    /// key the mod acts on therefore also does whatever the game has bound to it: KeypadEnter ends the
+    /// turn under a cursor that was only trying to press a button; Enter on a message box answers it
+    /// twice, once through the game's Validate and once through ours; an arrow moves the cursor and
+    /// pans the galaxy camera with it. Tab was the worst of them - it raised StartChatting and the chat
+    /// panel took the engine's keyboard focus, leaving the mod deaf mid-sentence - until the chat key
+    /// was moved off it (<see cref="GameChatKey"/>).
     ///
     /// So while the mod's layer is live, the game's scans are told that a key the mod claims is not
     /// pressed - <see cref="ModInput.ClaimsKey"/> decides, Escape excepted, because screens delegate
@@ -45,6 +46,10 @@ namespace ES2Access.UI.Input
     /// The encounter cameras keep their own copies of the same helpers. They are left alone until
     /// the mod has a screen on those views - with no screen of ours focused the layer is not live
     /// there and nothing would be claimed anyway.
+    ///
+    /// Standing the game down from a key can take away the only route to one of its surfaces, which is
+    /// why the chat key is MOVED rather than only suppressed (<see cref="GameChatKey"/>) and why a
+    /// chord can be handed back while its bare key is kept (<see cref="ModInput.LeaveToGame"/>).
     /// </summary>
     internal static class GameKeyStandDown
     {
@@ -157,7 +162,17 @@ namespace ES2Access.UI.Input
             return false;
         }
 
-        private static bool Claimed(Amplitude.Unity.Input.KeyCombination keyCombination)
+        /// <summary>
+        /// Whether the game is to be told this combination is not pressed. Internal rather than private
+        /// so the dev server can ask it without a keyboard (<c>DevProbe.Chord</c>) - the alternative is
+        /// holding a chord down while an HTTP request arrives.
+        ///
+        /// The modifiers are read from the combination the game is asking about, which is the only
+        /// place they exist: <see cref="ModInput.ClaimsKey"/> is asked per key. That is what lets a
+        /// chord be handed back while its bare key stays the mod's - Ctrl+Tab reaches the game's chat
+        /// panel while Tab still moves the cursor (<see cref="ModInput.LeaveToGame"/>).
+        /// </summary>
+        internal static bool Claimed(Amplitude.Unity.Input.KeyCombination keyCombination)
         {
             try
             {
@@ -167,9 +182,26 @@ namespace ES2Access.UI.Input
                     return false;
                 }
 
+                Amplitude.Unity.Input.Input.KeyModifier modifiers = keyCombination.Modifiers;
+                bool ctrl =
+                    (modifiers & Amplitude.Unity.Input.Input.KeyModifier.Ctrl)
+                    != Amplitude.Unity.Input.Input.KeyModifier.None;
+                bool shift =
+                    (modifiers & Amplitude.Unity.Input.Input.KeyModifier.Shift)
+                    != Amplitude.Unity.Input.Input.KeyModifier.None;
+                bool alt =
+                    (modifiers & Amplitude.Unity.Input.Input.KeyModifier.Alt)
+                    != Amplitude.Unity.Input.Input.KeyModifier.None;
+
                 for (int i = 0; i < keyCombination.KeyCodes.Count; i++)
                 {
-                    if (input.ClaimsKey(keyCombination.KeyCodes[i]))
+                    UnityEngine.KeyCode key = keyCombination.KeyCodes[i];
+                    if (input.LeavesToGame(key, ctrl, shift, alt))
+                    {
+                        continue;
+                    }
+
+                    if (input.ClaimsKey(key))
                     {
                         return true;
                     }

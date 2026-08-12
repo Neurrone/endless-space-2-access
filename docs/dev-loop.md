@@ -44,7 +44,8 @@ mutes voicing but `/speech` still captures.
 - `POST /input` — body = one action key (`ui.down`, `buffer.lineDown`…); its key-claim counterpart is
   `/eval ES2Access.Dev.DevProbe.Claims("Escape")` — the latch only lives for the frame an injection
   is consumed (no key was held), so catch it with `POST /wait` on the probe's own text, never a
-  second request
+  second request. `DevProbe.Chord("<chord>")` is the question about a CHORD — `Claims` is asked per
+  `KeyCode` and so hides chords entirely; `Claims` also reports `leftToGame`
 - `POST /type` — body = characters to TYPE at the focused screen (the type-ahead search), through the
   same gates a keypress passes; answers `taken`/`searching`/`search`/`results`/`focus` plus the speech
   it caused. `/input` cannot carry it: that queue is actions, and typing is text. Neither reaches a
@@ -171,6 +172,10 @@ Bash tool mangles `python -c` here (it injects `|| goto :error`); keep the JSON 
 button's activation is also silent, so a transcript cannot distinguish "refused" from
 "acted" for buttons — prove a button refusal with a state probe (queue count, graph dump),
 never by absence of speech. Checkbox/slider/combo refusals are provable by silence.
+
+**Proving a two-step mode's confirm when the fixture cannot let the order land.** Watch the MODE
+end — the cursor swapped back, the banner gone — not the order's effect, and pair it with the same
+key on the same node with no mode up, which must still do the node's own thing.
 
 **Proving a refactor changed no spoken or buffer line.** Walk every reachable screen family
 with `POST /input` and save `GET /gui/graph?buffers=1` per family to a scratchpad `before/`,

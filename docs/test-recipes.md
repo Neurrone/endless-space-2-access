@@ -461,6 +461,14 @@ walking read-only and reverting is the sanctioned alternative to mutating a save
 the shared-`Link` teleport. In the unlocked save the map draws 1 perceived system, 0 hangars and a
 Signal curiosity that refuses, so nothing else on it can be sighted there.
 
+**Reaching a targeting mode without its prerequisites.** `ICursorService.ChangeCursor(typeof
+(TimeBubbleCursor), "TimeBubbleSlowingTime")`, or `(typeof(ProbeLaunchingCursor), fleet)` — the same
+call the game's own buttons make, so the mode comes up with the banner and the confirm live even
+where the empire could never open it. The "unlocked" fixture then lets NO order land (0 probes,
+`MaximumTimeBubblesCount == 0`), so what a confirm is verified by is the **mode ENDING** — cursor
+back to `GalaxyCursor`, banner gone — never the order's effect. `POST /loadsave "unlocked"`
+afterwards.
+
 **The system-label batch.** Most of it is fixture-blocked; the escape hatch is the force-content
 trick in two variants — write the game's own `%…Description` into a label's tooltip `Content`, or
 assign the WRAPPER the label reads its name off — then focus the node, read
@@ -551,6 +559,12 @@ that they have none at all. Switch the lobby's Session Mode to Protected, which 
 multiplayer session with one player. The safe start/stop is `LocalPlayerReady` true then false, never
 Start. Send a chat line with `ReplaceInputText` plus the reflected `OnTextFieldValidateCb`. Leave the
 lobby before any `POST /loadsave`: from a lobby that route answers not-ready forever.
+
+**The chat key and the chat box.** Neither half needs a keypress. The remap is proved with
+`DevProbe.Chord("Ctrl+Tab")` → `suppressed:false` while `Chord("Tab")` stays suppressed; the handler
+chain with `InputManager.HandleInput(InputAction.StartChatting)` to open the box and
+`HandleInput(InputAction.Exit)` to close it. The options row re-reads live, so the binding shown
+there follows the programmatic move with no reopen.
 
 **Notification regression capture.** Any change to the notification family is checked by walking a
 fixed browse route over all three research-family popups and diffing `/gui/graph?edges=1&buffers=1`
