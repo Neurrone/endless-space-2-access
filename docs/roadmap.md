@@ -58,6 +58,8 @@ files above.
   - Umbral Choir ghost-system page (Penumbra): the Ghost state is a THIRD mode of the
     star system page beside Outpost and Colony — two side panels of bare-icon controls +
     a growth gauge.
+- Riftborn time bubble on the galaxy map: a `GalaxyEntity` with a disk renderer — no
+  widget, no label window; making it discoverable is real map-tree modelling.
 - Faction sightings needing a non-UE base-game save (code landed drawn-gated, unsighted):
   Lumeris — tech buy-out on the HUD research line (+ scrap↔sell swap rows); Cravers —
   planet depletion status + hunting-grounds decay; Vodyani — ark-as-colony walk
