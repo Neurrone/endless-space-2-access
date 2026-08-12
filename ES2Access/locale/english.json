@@ -134,6 +134,8 @@
   "loadsave.edit-name": "Type the save name, then press Enter.",
   "loadsave.cloud": "Steam cloud saves",
   "nav.cell-empty": "empty",
+  "save.started": "Saving the game",
+  "save.finished": "Save finished",
   "carry.carrying": "Dragging {0}",
   "carry.dropped": "Dropped {0}",
   "carry.drop-refused": "{0} cannot go there",

@@ -81,6 +81,12 @@ namespace ES2Access
         /// screen because it has to be listening in the lobby and in the game alike.</summary>
         private static SessionChat _chat;
 
+        /// <summary>The wordless spinner the game shows while it writes a save, said out loud. Like the
+        /// chat, it lives here rather than on a screen: a save is started from the game menu, from the
+        /// save page, from a quick-save key and by the game itself at the turn's end, and the player has
+        /// to hear about it wherever they are standing.</summary>
+        private static SaveProgress _saving;
+
         private static bool _announcedStartup;
         private static float _startTime;
 
@@ -111,6 +117,7 @@ namespace ES2Access
             // Registered right after the UI buffer, so the chat log is the buffer Ctrl+Right reaches
             // from a control's description while a multiplayer session is up.
             _chat = new SessionChat(Buffers);
+            _saving = new SaveProgress();
             Navigator = new GraphNavigator(Buffers);
             InstallAnnouncerWording();
             // A tooltip the game has to draw before its words exist arrives after focus does, so the
@@ -417,6 +424,14 @@ namespace ES2Access
                 _chat = null;
             }
 
+            // And the same for the saving watcher: the window service outlives the mod, so the
+            // subscription goes back before this assembly does.
+            if (_saving != null)
+            {
+                _saving.Stop();
+                _saving = null;
+            }
+
             // Whatever the mod made the game look like, the game looks like itself again. The screens
             // shut down first, so a drop list left open has already been closed by its own OnPop and
             // this only drops the record of it. A key capture has no such hook - the game holds the
@@ -503,6 +518,10 @@ namespace ES2Access
             // After the screens: a screen's arrival announcement interrupts, and a chat line queued
             // before it would be thrown away. Chat lines queue behind whatever the player asked for.
             _chat.Tick();
+
+            // Alongside the chat, and for the same reason: a save being written is news the game gives
+            // no words to, and it queues behind whatever the player asked for.
+            _saving.Tick();
 
             // After the screens have settled: the game's own hover, flyout and tooltip follow the
             // focus they just decided on.

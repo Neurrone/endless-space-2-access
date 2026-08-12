@@ -270,6 +270,13 @@ namespace ES2Access.Core.Speech
         public const string LoadSaveCloud = "loadsave.cloud";
         public const string NavCellEmpty = "nav.cell-empty";
 
+        // The save the game is writing right now - a manual one, a quick save, or the autosave at the
+        // end of a turn. The game marks the whole of it with a spinning icon and no words at all, so
+        // both halves are the mod's own sentences, and whole sentences: the fact a player needs is that
+        // the game is busy writing and then that it is safe to leave.
+        public const string SaveStarted = "save.started";
+        public const string SaveFinished = "save.finished";
+
         // Picking something up and putting it down somewhere else (a ship into another fleet). The
         // words are the DRAG's, because that is the gesture these keys stand in for and the one the
         // game's own tooltips name. The carried thing is named in the mod's sentence but in the game's
@@ -852,6 +859,8 @@ namespace ES2Access.Core.Speech
             { LoadSaveEditName, "Type the save name, then press Enter." },
             { LoadSaveCloud, "Steam cloud saves" },
             { NavCellEmpty, "empty" },
+            { SaveStarted, "Saving the game" },
+            { SaveFinished, "Save finished" },
             { CarryCarrying, "Dragging {0}" },
             { CarryDropped, "Dropped {0}" },
             { CarryDropRefused, "{0} cannot go there" },
