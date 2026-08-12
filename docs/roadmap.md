@@ -11,11 +11,11 @@ files above.
 - Notification variants awaiting a live sighting (baseline ships; upgrade per popup on
   sighting): election survey; ground-battle outcome selection; SimpleDescription-family
   members with own fields (alliance update, diplomatic relation change, constellation
-  event, deed completed); the 8 header-less line-class tables (bailiff + its totals
+  event, deed completed); the 9 header-less line-class tables (bailiff + its totals
   footer, law cancelled, population change, trading blockade, treaty cancelled, relics ×2,
-  queue-empty); one-of-N semantics for hand-written choice popups (hero recruitment,
-  ground-battle/hacking outcome pickers) + the hacking parameters sub-choice and countdown
-  gauge; breakdown-toggle tables (damage/displacement/force-truce);
+  queue-empty, lost-roots connectivity); one-of-N semantics for hand-written choice popups
+  (hero recruitment, ground-battle/hacking outcome pickers) + the hacking parameters
+  sub-choice and countdown gauge; breakdown-toggle tables (damage/displacement/force-truce);
   DiplomaticInteractionNotificationWindow (MoodMessageLabel, NegotiationContributionPanel).
 - Galaxy-label gaps: AcademyGroup bottom readout; KOTH score value; deposit
   exploited-state; constellation ownership bonus; pin-message editing.
@@ -52,6 +52,17 @@ files above.
     pirate-lair and destroyed-planet orbital labels — small, shares the fixture wait.
   - Notification variants: pirate mission report, obliterator attacker report, academy
     role, defense-program-encountered — mechanical registry entries, safe to write now.
+  - Nakalim relic slots (Awakening): the slot flips invisibly between assign and remove
+    (icon swap only) and names itself with a symbol token — announce the mode and a real
+    name; verify the locked/empty refusal sentences survive the shape walk.
+  - Umbral Choir ghost-system page (Penumbra): the Ghost state is a THIRD mode of the
+    star system page beside Outpost and Colony — two side panels of bare-icon controls +
+    a growth gauge.
+- Faction sightings needing a non-UE base-game save (code landed drawn-gated, unsighted):
+  Lumeris — tech buy-out on the HUD research line (+ scrap↔sell swap rows); Cravers —
+  planet depletion status + hunting-grounds decay; Vodyani — ark-as-colony walk
+  (`ExploitedStarSystem`: does the model need to change at all?), ark docking slots as a
+  drag target, ark population (full list: `audit-factions.md` §4 stages C-D).
 
 ## To decide (owner)
 
