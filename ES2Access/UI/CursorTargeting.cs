@@ -12,7 +12,9 @@ namespace ES2Access.UI
     /// The orders the game gives in two steps: a button puts the MAP into a targeting mode and the next
     /// left click on the map is the order's target. Launch a probe, take a system, fire the obliterator,
     /// mark a system for the pirates, call an honour action, place a time bubble, ask an ally to
-    /// coordinate, start a hacking program - ten cursors, and until now the second step was a mouse
+    /// coordinate, start a hacking program, plot a hacking operation - nine cursor classes (counted:
+    /// eight declare <c>HasUserInstructions</c> and <c>EntityActionCursor</c>'s is shared by the pirate
+    /// mark and the honour action), and until now the second step was a mouse
     /// click with no keyboard equivalent at all.
     ///
     /// The keyboard's second step is ENTER on the map node the player wants, because that is what the
@@ -34,8 +36,13 @@ namespace ES2Access.UI
     ///   two cannot be driven through their own handler without moving the physical mouse, so the mod
     ///   posts the same order they post, aimed at the node the player is on.
     ///
-    /// Escape and the right click stay the game's own way out; nothing here touches them, and the mod
-    /// does not claim Escape on the galaxy.
+    /// The keyboard's way BACK out is backslash, because that is the map's own right click and the right
+    /// click is what these modes answer with (<see cref="Contextual"/>). It is not always a cancel - the
+    /// game gives each cursor its own meaning for it - so the key is handed to the cursor rather than
+    /// wired to a cancel of ours.
+    ///
+    /// Escape stays the game's own way out, with one exception the game left open
+    /// (<see cref="EscapeIsOurs"/>).
     /// </summary>
     public static class CursorTargeting
     {
@@ -43,7 +50,7 @@ namespace ES2Access.UI
         /// Whether the map is in one of those modes, waiting for a target.
         ///
         /// Asked of the cursor the way the game asks it: <c>HasUserInstructions</c> is true for exactly
-        /// the ten targeting cursors and false for the plain galaxy cursor and the fleet-selection one,
+        /// the nine targeting cursors and false for the plain galaxy cursor and the fleet-selection one,
         /// and it is the same test the game shows its own "click a target" banner by
         /// (<c>GuiManager</c>:1552) and the mod already announces the mode from
         /// (<c>GlobalHud.AnnounceCursorMode</c>). A cursor added by a later patch is covered by
@@ -118,10 +125,88 @@ namespace ES2Access.UI
             return true;
         }
 
+        /// <summary>
+        /// The map's own RIGHT click while a mode is waiting - the way back out of every one of them, and
+        /// the caller's signal that the key belonged to the mode rather than to whatever the map does with
+        /// it the rest of the time (send the selected fleets, undo a zoom).
+        ///
+        /// What it does is the cursor's own business and deliberately not decided here: seven of the nine
+        /// cancel the mode outright, a hacking operation being plotted gives back its last waypoint, and
+        /// the program picker closes its prompt. All nine answer it from inside their own
+        /// <c>OnCursorClick</c>, so handing the button to that one method is the whole implementation -
+        /// nothing has to be re-derived when a mode's meaning for it is not a cancel.
+        ///
+        /// No target is passed, because none of the nine right-click branches reads one (measured in all
+        /// nine): a right click on the map means the same thing wherever the pointer is standing.
+        /// </summary>
+        public static bool Contextual()
+        {
+            Cursor cursor;
+            try
+            {
+                cursor = Gui.GetCursor();
+                if (cursor == null || !cursor.HasUserInstructions)
+                {
+                    return false;
+                }
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+
+            try
+            {
+                Send(cursor, MouseButton.Right, Nothing);
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: the waiting cursor's right click threw: " + e);
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Whether the mod has to answer Escape for the mode that is up, which is true for exactly one
+        /// cursor of the nine.
+        ///
+        /// Escape belongs to the game everywhere else on this page, and for eight of these modes the game
+        /// really does answer it: six through <c>GuiManager.HandleInput</c>'s Exit branch (:2103-2120) and
+        /// the hacking pair through the scan overlay's own handler. <c>TakeSystemCursor</c> is in neither
+        /// list, so its Escape falls all the way through to the pause menu and the player is left in a
+        /// mode with the pause menu over it. The mod answers there and nowhere else, and what it does is
+        /// that cursor's own right click - the cancel the game did give it
+        /// (<c>TakeSystemCursor.cs</c>:95-97).
+        /// </summary>
+        public static bool EscapeIsOurs
+        {
+            get
+            {
+                try
+                {
+                    return Gui.GetCursor() is TakeSystemCursor;
+                }
+                catch (Exception)
+                {
+                    return false;
+                }
+            }
+        }
+
+        /// <summary>What the engine hands a click that is over nothing. Shared and never written to.
+        /// </summary>
+        private static readonly CursorTarget[] Nothing = new CursorTarget[0];
+
         /// <summary>The map's own object for aiming at a node - the collider a mouse would be over. Null
         /// while the map has not built one, which is the same answer as a click on empty sky.</summary>
         private static CursorTarget TargetOf(GameNode node)
         {
+            if (node == null)
+            {
+                return null;
+            }
+
             try
             {
                 IGalaxyEntityFactoryService entities =
@@ -152,15 +237,23 @@ namespace ES2Access.UI
         /// </summary>
         private static void Click(Cursor cursor, CursorTarget target)
         {
-            if (target == null || Clicked == null)
+            if (target == null)
             {
                 return;
             }
 
-            Clicked.Invoke(
-                cursor,
-                new object[] { MouseButton.Left, new CursorTarget[] { target } }
-            );
+            Send(cursor, MouseButton.Left, new CursorTarget[] { target });
+        }
+
+        /// <summary>One of the mouse's buttons, handed to the cursor's own handler.</summary>
+        private static void Send(Cursor cursor, MouseButton button, CursorTarget[] targets)
+        {
+            if (Clicked == null)
+            {
+                return;
+            }
+
+            Clicked.Invoke(cursor, new object[] { button, targets });
         }
 
         private static readonly MethodInfo Clicked = ClickMethod();

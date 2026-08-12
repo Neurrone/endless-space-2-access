@@ -220,18 +220,17 @@ namespace ES2Access.Screens
         ///
         /// Some orders are given in two steps: pressing "launch a probe", "take this system", "fire the
         /// obliterator", "start a hacking operation" does not act - it puts the CURSOR into a mode and
-        /// waits for the player to click a target. Eight cursors work this way, and the only thing on
+        /// waits for the player to click a target. Nine cursors work this way, and the only thing on
         /// screen saying so is a line of text the game writes across the top
         /// (<c>UserInstructionsWindow</c>, shown by <c>GuiManager</c>:1552 exactly while
         /// <c>CurrentCursor.HasUserInstructions</c>). Without this, pressing such a button reads as doing
-        /// nothing at all, and the player is left in a mode they cannot see, whose only escape is a key
-        /// they have not been told about.
+        /// nothing at all, and the player is left in a mode they cannot see.
         ///
         /// It is announced and nothing more: entering the mode says what the game says, and leaving it
-        /// says that it is over. Whether the galaxy tree grows a "confirm the target here" gesture for
-        /// these modes is an open design question and deliberately not answered here - the modes stay
-        /// operable exactly as the game made them (Escape or a right-click cancels, a click on the map
-        /// confirms).
+        /// says that it is over. What the mode is OPERATED with is the galaxy page's business - Enter
+        /// confirms at the focused node and backslash is the mode's own right click
+        /// (<see cref="ES2Access.UI.CursorTargeting"/>) - and this is the one place that says the mode
+        /// ended, however it ended.
         ///
         /// Watched through the WINDOW rather than through the cursor service: the window's caption is the
         /// finished, localized sentence the player would read, the game has already decided whether the

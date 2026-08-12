@@ -90,6 +90,21 @@ namespace ES2Access.Screens
         }
 
         /// <summary>
+        /// The contextual key - the game's own right click - offered to the SCREEN before the focused
+        /// control's own command. Return true when the screen took it.
+        ///
+        /// For a mode the GAME has put the page into, which has taken the right click for itself and
+        /// means it wherever the pointer is standing: the map waiting for an order's target answers here,
+        /// so the same key stops sending fleets for exactly as long as the game would have stopped
+        /// answering a right click with a move. A screen with no such mode never overrides this, and the
+        /// control's own right click is untouched.
+        /// </summary>
+        public virtual bool Contextual()
+        {
+            return false;
+        }
+
+        /// <summary>
         /// An action fired on a screen where every key means the SAME one thing - the game's own "press
         /// anything to skip", which a cutscene answers with. Offered before the review chords and before
         /// navigation, because the point is that nothing else gets the press; return true when the screen

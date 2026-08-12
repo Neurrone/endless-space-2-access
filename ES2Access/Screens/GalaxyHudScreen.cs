@@ -198,10 +198,31 @@ namespace ES2Access.Screens
         }
 
         /// <summary>Escape belongs to the game: from the galaxy it raises the pause menu, and that is
-        /// the route every other way out of a game goes through.</summary>
+        /// the route every other way out of a game goes through. The one exception is the mode the game
+        /// itself left without an Escape, where the key would raise the pause menu OVER a map still
+        /// waiting for a target (<see cref="CursorTargeting.EscapeIsOurs"/>).</summary>
         public override bool Back()
         {
-            return false;
+            return CursorTargeting.EscapeIsOurs && CursorTargeting.Contextual();
+        }
+
+        /// <summary>Asked before the key is pressed, and true only in that same one case - otherwise the
+        /// game must keep the Escape it answers itself, mode or no mode.</summary>
+        public override bool ConsumesBack
+        {
+            get { return CursorTargeting.EscapeIsOurs; }
+        }
+
+        /// <summary>
+        /// While the map is waiting for an order's target, backslash is the map's own right click and
+        /// nothing else - the cancel for most of these modes, one waypoint back while a hacking operation
+        /// is being plotted (<see cref="CursorTargeting.Contextual"/>). The same displacement Enter lives
+        /// with: for as long as the mode is up, sending the selected fleets and undoing a zoom
+        /// (<see cref="SystemCommand"/>) wait, exactly as they do for the mouse.
+        /// </summary>
+        public override bool Contextual()
+        {
+            return CursorTargeting.Contextual();
         }
 
         public override void OnPush()

@@ -818,6 +818,15 @@ namespace ES2Access.UI
         // noise rather than reassurance.
         private bool Contextual()
         {
+            // A mode the game has put the page into gets the key first, because it has taken the right
+            // click from every control underneath (<see cref="Screen.Contextual"/>). Nothing is re-read
+            // after it: the control did not change, and what the mode's end sounds like is the one place
+            // that watches it.
+            if (_screen.Contextual())
+            {
+                return true;
+            }
+
             if (_graph.Contextual())
             {
                 SpeakStateAfterChange();
