@@ -17,8 +17,13 @@ files above.
   (hero recruitment, ground-battle/hacking outcome pickers) + the hacking parameters
   sub-choice and countdown gauge; breakdown-toggle tables (damage/displacement/force-truce);
   DiplomaticInteractionNotificationWindow (MoodMessageLabel, NegotiationContributionPanel).
-- Galaxy-label gaps: AcademyGroup bottom readout; KOTH score value; deposit
-  exploited-state; constellation ownership bonus; pin-message editing.
+- Galaxy-label gaps: constellation ownership bonus; pin-message editing.
+- Scan management-lens remainder (unverifiable at turn 1): the trade-quality dial
+  (geometry-only rating, no tooltip), the empire-rank bar graph + global-rank histogram,
+  the ghost/traitor lines.
+- Navigation defect: `ui.end` from an EXPANDED GROUP node on the scan content stop landed
+  on another stop's last node (hud:turn's Game menu) — End crossed a stop boundary; from a
+  child node it behaves. Reproduce and fix in the shared navigation.
 - Targeting-cursor remainder: `TakeSystemCursor` gets Escape-to-cancel (owner-ruled
   2026-08-12, awaiting go-ahead to implement); Backslash while a mode is armed should be
   the mode's right-click (cancel / waypoint removal — follows from the owner's
@@ -93,7 +98,13 @@ files above.
 
 ## To decide (owner)
 
-(nothing pending)
+- Should collapsing a system un-zoom? (Shipped: no — Backslash is the way out and both
+  tiers stay reachable with the branch open; guarded alternative: un-zoom only if the
+  camera is still on that system.)
+- Should the GALAXY view also get the scan view's Zoom node? (There zoom only changes how
+  much is drawn, not the subject.)
+- Rename Confirm's caption: mod key vs the game's own `%MessageBoxValidateTitle` (Cancel
+  now uses the game's).
 
 ## Shipped (pointers only)
 

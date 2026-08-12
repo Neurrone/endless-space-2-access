@@ -61,11 +61,13 @@ notifications (`TutorialPopupLayer`, per page — es2-facts), so any lower numbe
 them; what keeps 98 livable is that a collapsed popup stands down and that the mod follows the
 panel's own visibility, so a popup the game has hidden holds nothing. The error box (99) and
 the message box (100) go ABOVE it, because an error or a confirmation the tutorial buries is
-unanswerable. A collapsed popup's bar is declared only by the eleven
-pages that PLACE it — the galaxy HUD, the eight icon-strip screens, planet overview and system
-management (`GlobalHud.Tutorial`) — because it is a fixture of the HUD's own edge and not something
-that follows the keyboard onto a modal, a notification or an error box (owner decision 2026-08-12).
-A tutorial minimised over a modal waits for the modal to close before it can be expanded again.
+unanswerable. A collapsed popup's bar is declared on the focused page EXACTLY while the game is
+drawing it (`TutorialPopupPanel` shown + minimized — the game itself hides the panel for
+UnderScreens pages under a cover, so "declared" and "drawn" are one condition), except on the
+answer-only surfaces (`Screen.AnswersOnly`: the error box, the message box, the non-blocking box,
+the drop list, the loading screen); the eleven HUD-edge pages keep their own placement
+(`GraphBuilder.DeclaredStop` suppresses the shared append). Owner's third and final ruling on
+this bar, 2026-08-12.
 
 **The selected-fleet panel has NO layer** — it is a contributor to the galaxy page
 (`FleetPanel` — `docs/helpers.md`), not a screen, because selecting a fleet changes only the cursor and the
@@ -118,6 +120,14 @@ for as long as the mode is up. Escape stays the game's except under `TakeSystemC
 the game left with no Escape route: there the mod claims Escape (`ConsumesBack` true only then) and
 runs that cursor's own right-click cancel, so Escape cannot raise the pause menu over a map still
 waiting for a target (owner-ruled deviation, 2026-08-12).
+
+**Expanding a galaxy system node (Right) also brings the camera in** through the game's own zoom
+(`GalaxyViewLevels.ZoomTo`); Enter is unchanged, collapse moves nothing, Backslash remains the way
+out. Lane-destination children stay LEAVES (Enter zooms): their planet children would share
+reference identity with the root system's nodes — the one-object-one-node rule. The scan view's
+**Zoom is an adjustable node** on the existing Left/Right + Shift chords (no new binding); its
+coarse step is a LAYER-BAND jump rather than ≈10 increments — an owner-approved deviation, since
+ten of the camera's thirteen steps would be the whole range.
 
 **Tab and Shift+Tab wrap** (owner decision 2026-08-12): the last stop's Tab lands on the first,
 the first stop's Shift+Tab on the last. On a page with exactly ONE stop the key is consumed and

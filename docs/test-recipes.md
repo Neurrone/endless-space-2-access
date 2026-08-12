@@ -415,9 +415,12 @@ code-verified only.
 the `ShipsSpawnPointSidePanel` validator delegate with `CreateDelegate` and show the window with it.
 Same warning, doubled — **never press Confirm** on that purpose either: it NPEs.
 
-**The rename box.** Its openers are the star-system name line, the planet card's rename button
+**The rename box.** It walks heading / field / Cancel / Confirm. Its openers are the star-system
+name line (the Colony panel's name node opens it directly), the planet card's rename button
 (unreachable on a unique home planet) and the fleet panel; close it with
-`window.HandleInput(InputAction.Exit)`, which is the route the key takes. The one-Escape contract —
+`window.HandleInput(InputAction.Exit)`, which is the route the key takes. A `ColonyInfoSidePanel`
+found via `GetComponentInChildren` on `StarSystemScreen` has a NULL `RenameButton` (wrong
+instance) — drive the opener through the mod's node. The one-Escape contract —
 the first Escape steps OUT of editing, the second closes the box — is proved in halves, because
 Escape itself cannot be injected: simulate the FIRST one with
 `AgeManager.Instance.FocusedControl = null` and prove the mod's consumption with
@@ -449,12 +452,16 @@ non-committing, and the outcomes are never drawn (es2-facts).
 `GovernmentAction_ForceElections` is the game's own way to raise a real one and is UNVERIFIED — do
 not spend a fixture on it without the owner's say-so.
 
-**The scan view.** Entry is Enter on the lens toggle. Drive the camera with
-`cam.ForceZoomingOnPosition(step, position)` — `SetZoomStep` alone leaves the labels culled — and
-read the zoom table 0-1 Diplomacy / 2-5 Trade / 6-9 Economy / 10-12 System, plus the system and
-planet layers. **All four lens windows report `Shown` at once**, so the drawn `ScanViewWindowHeader`
-is the only reliable lens signal and `CaptionsPanel.ScanViewGuiElement` goes stale. Restore
-`ShowScanViewCaptions` and `ShowScanViewSystemInfos` afterwards.
+**The scan view.** Entry is Enter on the lens toggle; the PLAYER route through the lenses is the
+`Zoom` node beside it — Left/Right steps the 15-rung ladder, Shift+Left/Right jumps a lens band,
+Right at rung 13 enters the system, Enter on a planet card reaches the planet lens, Left steps
+back out. Verify with those injected actions; `cam.ForceZoomingOnPosition(step, position)` is for
+RESTORE only (`SetZoomStep` alone leaves the labels culled). The zoom table: 0-1 Diplomacy /
+2-5 Trade / 6-9 Economy / 10-12 System, plus the system and planet layers. **All four lens windows
+report `Shown` at once**, so the drawn `ScanViewWindowHeader` is the only reliable lens signal and
+`CaptionsPanel.ScanViewGuiElement` goes stale. Restore `ShowScanViewCaptions` and
+`ShowScanViewSystemInfos` afterwards. Fixture notes: one perceived system; synergies on two of
+Xiu's four planets; the rank graphs and remains panel never draw at turn 1.
 
 **Galaxy: the fog-off smoke pattern.** Forcing a world-state predicate TRUE in code, rebuilding,
 walking read-only and reverting is the sanctioned alternative to mutating a save — it is what proved
@@ -480,6 +487,15 @@ trick in two variants — write the game's own `%…Description` into a label's 
 assign the WRAPPER the label reads its name off — then focus the node, read
 `/gui/graph?buffers=1`, and let the next refresh blank it. Every read must be gated on
 ancestor-walked visibility, because the hidden pooled widgets hold the previous system's values.
+The one-frame variant for whole readouts: force the widgets, call
+`SystemLabelReadout.Lines(label)`, restore — ALL inside one `/eval`, so the game's own refresh
+cannot intervene; the absence-diff must come back RESTORED == BASE. **Raising the bar over a modal
+on demand**: flip the bound tutorial's `TutorialDefinition.Layer` (via `TutorialPopupPanel`'s
+private `tutorial` field) to `AboveModalWindows`, then
+`TutorialWindow.UpdateVisibilityAccordingToOtherWindows(Gui.GuiGameWindowService, true)` — the
+game re-evaluates only on a change; restore the layer afterwards. Entering a system binds
+"A MATTER OF INFLUENCE", leaving unbinds it. The unlocked save's four Xiu lanes are all
+unexplored — no lane-destination child is testable there.
 
 **Probes and faction panels (the other galaxy labels).** The unlocked save draws NONE of this
 surface. A probe row is exercisable with `probeLabel.Show()` then `Hide(true)` — self-healing. The

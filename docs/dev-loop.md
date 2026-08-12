@@ -191,6 +191,8 @@ a process restart — the stash loop, never two launches. For a purely ADDITIVE 
 change there is a cheaper before: null the injected dependency that produces the new part
 (`GraphAnnouncer.Carry = null`) and dump, instead of stashing the source. The stash loop is
 UNSAFE while another stage edits the same trees — the push takes their in-flight files too.
+A camera-dependent focus visual must be re-committed when the camera moves (`OnFocusVisual`
+fires once per focus CHANGE); `Navigator.ClearVisual()` from OnUpdate re-commits same-frame.
 `GET /gui/graph?screen=KEY&buffers=1` reaches screens whose
 window exists without a game running — out of a session `screen.game-menu` and
 `screen.rename` both declare real content, `screen.galaxy` and friends answer "not active".

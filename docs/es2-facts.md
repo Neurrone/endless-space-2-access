@@ -806,6 +806,33 @@ generic graduates to the generic docs.
   `SecurityGroup` — `SecurityValue`'s own transform tooltip is null. `ColonyHeroSidePanel` swaps
   variants by `Visible` flags only (:157-240), the unassigned prefab keeps STALE hero text, and
   the unassign button is spelled `UnssignButton`.
+- **A system has TWO star tooltips** — the label's and `PlanetLabelsWindow_SystemOrbital.StarTooltip`
+  — swapped by the camera; both class-backed, so only the drawn one has words: resolve at READ
+  time, never remember one. At orbital zoom the label group's top edge leaves the screen (y=-1
+  measured), so a tooltip anchored to it draws clamped away from it — a camera-dependent pointer
+  must be re-committed on camera change (`GalaxyHudScreen.FollowCamera`).
+- **The remaining label readouts**: the KOTH score figure exists only in
+  `KingOfTheHillScoreLine`'s ROW tooltip content; deposit exploited-state =
+  `StarSystemLabelDepositItem.ResourceImage.AgeTransform.Enable`; `DualGarrisonsLabelButtons` ship
+  counts sit on each button's `ShipCountLabel`; `AcademyGroup`'s own tooltip is bound to the
+  SYSTEM dossier (`StarSystemLabel:1777`) — never read it as the group's own.
+- **The game's keyboard zoom is unusable as shipped**: `ZoomIn:PageUp`/`ZoomOut:PageDown`
+  defaults, but `KeyboardZoomStepByStep=False` so a TAP moves nothing (held ramp, one notch per
+  0.1 s); the galaxy camera answers by POLLING (its `HandleInput` is a stub); the
+  system-management and planet-overview controllers answer `InputAction.ZoomIn/Out` only while
+  `!AgeManager.IsMouseCovered`. Camera layers per step: 0 Painting, 1 GalaxyMap,
+  2-3 InformativeGalaxy, 4-5 Constellation, 6-9 Systems, 10-11 System, 12 SystemOverview
+  (13 steps, default 9).
+- **The scan system BAND never draws planets**: `StarSystemManagementScanViewWindow` binds only
+  while `FocusedStarSystemNode != null` — the planets belong to the management lens one rung in.
+  `StarSystemManagementScanViewPopulationSynergyItem` carries NO AgeTooltip anywhere (the icon
+  table names its textures); `PlanetStatusGroup` carries none either.
+  `%BonusPopulationDefenseTitle` is absent from localization (the ExtendedGuiElement's AltTitle
+  exists).
+- The rename box's Cancel/Confirm captions are `%MessageBoxCancelTitle`/`%MessageBoxValidateTitle`;
+  Cancel runs `GuiModalWindow.OnCancelCb` — the same hide Escape reaches. `PopulationCount.Tooltip`
+  (population rows) sits on the entry's SYMBOL child (class `PopulationStarSystem`); the row
+  transform carries none.
 - **While a TARGETING CURSOR is current, the left click means confirm and nothing else.** There
   are NINE such classes — eight declare `HasUserInstructions` (`ProbeLaunching`,
   `CoordinationRequest`, `TimeBubble`, `ObliteratorFire`, `TakeSystem`, `HackingProgram`,
