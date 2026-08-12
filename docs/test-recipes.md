@@ -462,12 +462,18 @@ the shared-`Link` teleport. In the unlocked save the map draws 1 perceived syste
 Signal curiosity that refuses, so nothing else on it can be sighted there.
 
 **Reaching a targeting mode without its prerequisites.** `ICursorService.ChangeCursor(typeof
-(TimeBubbleCursor), "TimeBubbleSlowingTime")`, or `(typeof(ProbeLaunchingCursor), fleet)` — the same
-call the game's own buttons make, so the mode comes up with the banner and the confirm live even
-where the empire could never open it. The "unlocked" fixture then lets NO order land (0 probes,
-`MaximumTimeBubblesCount == 0`), so what a confirm is verified by is the **mode ENDING** — cursor
-back to `GalaxyCursor`, banner gone — never the order's effect. `POST /loadsave "unlocked"`
-afterwards.
+(TimeBubbleCursor), "TimeBubbleSlowingTime")`, or `(typeof(ProbeLaunchingCursor), fleet)`, or
+`(typeof(TakeSystemCursor), new AcademyDiplomacyGiveSystemAction())` (public parameterless ctor;
+its `OnComplete` runs only on a successful left click) — the same call the game's own buttons
+make, so the mode comes up with the banner and the confirm live even where the empire could
+never open it. What a confirm is verified by is the **mode ENDING** — cursor back to
+`GalaxyCursor`, banner gone — never the order's effect. CAUTION: in the current "unlocked" save
+`CanPlaceTimeBubble(Xiu)` answers TRUE, so Enter on a system in TimeBubble mode WOULD post the
+order — the safe refused-target pair is `TakeSystemCursor` on one of your own colonies
+(`TakeSystemNotAcademyOwned`). The hacking pair is NOT enterable here (a real program name
+bounces the cursor back same-frame). Proving "the node's own command yielded" needs the camera
+parked one step past `DefaultZoomStep` first, or the ordinary Backslash is a silent no-op and
+absence proves nothing. `POST /loadsave "unlocked"` afterwards.
 
 **The system-label batch.** Most of it is fixture-blocked; the escape hatch is the force-content
 trick in two variants — write the game's own `%…Description` into a label's tooltip `Content`, or

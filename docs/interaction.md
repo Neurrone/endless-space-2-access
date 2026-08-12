@@ -108,7 +108,16 @@ is). There are no mod-invented action menus left; a control's extra buttons are 
 with right. The one thing that displaces a node's click is a live drag landing on a control that
 takes the cargo, which is what makes Enter the drop key — and the other is a targeting cursor: while
 the game is waiting for a target, Enter on a map node is that confirm and the node's own click waits,
-exactly as the mouse's does — and the fleet nodes select nothing, because a click cannot.
+exactly as the mouse's does — and the fleet nodes select nothing, because a click cannot. Backslash
+follows the same rule: while a mode is armed it is the map's own right click for that mode and
+nothing else (a cancel for seven of the nine cursors, one waypoint back while a hacking operation is
+plotted, the prompt closed for the program picker) — the SCREEN takes the key before the focused
+node (`Screen.Contextual`, a new hook: the screen is offered the contextual key first, for a mode
+the game imposed on the whole page), so it works anywhere and sending fleets / undoing a zoom wait
+for as long as the mode is up. Escape stays the game's except under `TakeSystemCursor`, the one mode
+the game left with no Escape route: there the mod claims Escape (`ConsumesBack` true only then) and
+runs that cursor's own right-click cancel, so Escape cannot raise the pause menu over a map still
+waiting for a target (owner-ruled deviation, 2026-08-12).
 
 **Tab and Shift+Tab wrap** (owner decision 2026-08-12): the last stop's Tab lands on the first,
 the first stop's Shift+Tab on the last. On a page with exactly ONE stop the key is consumed and

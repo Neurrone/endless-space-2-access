@@ -806,15 +806,23 @@ generic graduates to the generic docs.
   `SecurityGroup` — `SecurityValue`'s own transform tooltip is null. `ColonyHeroSidePanel` swaps
   variants by `Visible` flags only (:157-240), the unassigned prefab keeps STALE hero text, and
   the unassign button is spelled `UnssignButton`.
-- **While a TARGETING CURSOR is current, the left click means confirm and nothing else.** All ten
-  of them override `OnCursorClick` without calling base and return false from `ValidateSelection`,
-  so select and zoom never run under a targeting mode — which is what makes Enter-as-confirm the
-  parity answer rather than a competing binding. Two of the ten aim at the POINTER rather than at a
-  cursor target (`ProbeLaunchingCursor`, `CoordinationRequestCursor`), so a confirm for those goes
-  through the order they post, not through a target's handler. **Escape is not uniform**: six
-  cancel via `GuiManager.cs:2101-2120`, the hacking pair via `ScanOverlayWindow.HandleInput:145-181`,
-  and `TakeSystemCursor` has NO Escape route at all — right-click is its only cancel.
-  `HasUserInstructions == true` is exactly that ten-mode set, so it is the banner predicate. The
+- **While a TARGETING CURSOR is current, the left click means confirm and nothing else.** There
+  are NINE such classes — eight declare `HasUserInstructions` (`ProbeLaunching`,
+  `CoordinationRequest`, `TimeBubble`, `ObliteratorFire`, `TakeSystem`, `HackingProgram`,
+  `HackingOperation`, `EntityActionCursor`) and `EntityActionCursor`'s two subclasses
+  (`PirateMarkCursor`, `HonorActionCursor`) inherit it. All override `OnCursorClick` without
+  calling base and return false from `ValidateSelection`, so select and zoom never run under a
+  targeting mode — which is what makes Enter-as-confirm the parity answer rather than a
+  competing binding. Two aim at the POINTER rather than at a cursor target (`ProbeLaunchingCursor`,
+  `CoordinationRequestCursor`), so a confirm for those goes through the order they post. **The
+  right button is answered inside each cursor's own `OnCursorClick` and NONE of the nine right
+  branches reads a cursor target**: a cancel for seven, one waypoint back or the prompt closed for
+  the hacking pair — which is why the mod's Backslash-while-armed needs no node. **Escape is not
+  uniform**: six cancel via `GuiManager.cs:2101-2120`, the hacking pair via
+  `ScanOverlayWindow.HandleInput:145-181`, and `TakeSystemCursor` has NO Escape route at all —
+  its own banner says "Right Click to cancel" and with it up, Exit reaches `GameMenuModalWindow`
+  (the mod claims Escape only there and runs that cancel, owner-ruled).
+  `HasUserInstructions == true` is exactly that nine-mode set, so it is the banner predicate. The
   instruction window can briefly show the PREVIOUS mode's caption on entry (stale until the next
   refresh).
 
