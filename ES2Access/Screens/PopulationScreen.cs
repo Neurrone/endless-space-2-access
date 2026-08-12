@@ -58,8 +58,9 @@ namespace ES2Access.Screens
         /// It is opened from the senate, which shares 15 with the other pages the icon strip opens, AND
         /// from the star system page, which sits at 10 and can raise the planet-constructibles panel at
         /// 20 and the system-selection modal at 25. Rather than reason about which of those can be up
-        /// at the same time, it takes a number above the whole 25-35 band of modals and stays under the
-        /// notification screen at 40 and the message box its Assimilate button raises.
+        /// at the same time, it takes a number above the whole 25-35 band of modals and stays under
+        /// the message box its Assimilate button raises. (The notification screen sits below the
+        /// modal band now - the engine draws every modal over a popup.)
         /// </summary>
         public override int Layer
         {

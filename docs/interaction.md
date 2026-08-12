@@ -21,7 +21,8 @@ drop list its policy column opens) ·
 `15` research (the technology wheel — a GuiScreen overlay drawn over whichever view level is
 underneath, so above them and below the planet panel) · `16` quest journal (the other GuiScreen
 overlay; the same strip of screen icons opens both, so the two are never up together) ·
-`40` notification · `50` game-menu · `52` options (one number, above the pause menu that can
+`18` notification (the engine's own ladder: above the screens, below every modal) ·
+`50` game-menu · `52` options (one number, above the pause menu that can
 open it) · `55` load-save · `60` loading · `70` drop-list (above options, its owner) ·
 `80` rename box · `85` improvements modal (over the star-system page, under its own
 confirmation) · `90` tutorial-selection modal (over the new game screen) ·

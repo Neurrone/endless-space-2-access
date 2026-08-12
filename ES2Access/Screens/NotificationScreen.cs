@@ -137,13 +137,16 @@ namespace ES2Access.Screens
             get { return "screen.notification"; }
         }
 
-        /// <summary>Over the game's own view, under the confirmation box, and under the tutorial popup
-        /// at 99: a tutorial the game draws above notifications has to be readable, and one it hides
-        /// behind them stands down, so the higher number never buries a popup the player can see.
+        /// <summary>Where the engine itself puts notifications: above the screens, below every modal
+        /// (the game's own draw-order ladder is Screens &lt; Notifications &lt; ModalWindows — measured
+        /// via AgeScreen.SortingOrder and the tutorials' TutorialPopupLayer scale). The modals a
+        /// notification OPENS (negotiation, battle report) sit far above and are unaffected; what
+        /// this number fixes is a modal and a popup up together, where the game draws the modal on
+        /// top and the mod used to read the popup. Owner ruling: the draw order decides.
         /// </summary>
         public override int Layer
         {
-            get { return 40; }
+            get { return 18; }
         }
 
         /// <summary>What happened. Spoken on arrival, ahead of the text focus lands on, which says

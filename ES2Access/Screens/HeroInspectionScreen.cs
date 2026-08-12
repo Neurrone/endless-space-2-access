@@ -88,7 +88,7 @@ namespace ES2Access.Screens
         }
 
         /// <summary>Over everything that opens it - the Academy page and the hero picker at 15 and 28,
-        /// the level-up notification at 40 - and under the two things it can raise itself: the rename box
+        /// the level-up notification at 18 - and under the two things it can raise itself: the rename box
         /// at 80 and the lose-changes message box at 100.</summary>
         public override int Layer
         {
