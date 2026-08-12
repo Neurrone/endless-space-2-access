@@ -21,8 +21,9 @@ files above.
   exploited-state; constellation ownership bonus; pin-message editing.
 - Assigned-governor side panel: `Special` case for its three bare readouts (needs a save
   with a governor).
-- StarSystemPopulationModalWindow (tutorial-locked in the fixtures) — and verify whether
-  the stage-6 population screen already covers the planet page's population-entry click.
+- Verify whether the population screen covers the planet page's population-entry click
+  (the window itself, StarSystemPopulationModalWindow, is supported — SystemPoliticsScreen
+  binds it; 2026-08-12 census).
 - Skill-tree type-ahead: a TypeAheadScope so search reaches skills in collapsed branches.
 - Modal-return cursor: closing any modal over the star system page lands on the planets
   stop's start node, not the opening button (pre-existing; improvements/rename too).
@@ -43,6 +44,11 @@ files above.
 - Real models for the minimum-pass pages: Mods, Credits/DLC/disclaimer, export, multiplayer
   join (multiplayer deferred until single-player is solid).
 - Rebindable mod keys (long-standing, from input.md).
+- DisclaimerModalWindow has no floor (the census's one uncovered non-DLC window besides
+  the saving spinner): retail reachability is only the weak-GPU boot popup — decide
+  whether a boot-time floor is worth it.
+- ContextualPromptWindow: every show site is hacking — rides the Penumbra wait
+  (2026-08-12 census).
 - **Expansion surfaces — UNSIGHTABLE here until the DLCs are installed** (2026-08-12 audit,
   `audit-dlc-mechanics.md` at the repo root; none of the four expansions has a depot in
   this install, so every item below is code-verified at best):
