@@ -101,9 +101,9 @@ namespace ES2Access
                 }
             }
 
-            InstallAnnouncerWording();
             Buffers = new BufferController();
             Navigator = new GraphNavigator(Buffers);
+            InstallAnnouncerWording();
             // A tooltip the game has to draw before its words exist arrives after focus does, so the
             // focused control's description is read again when it lands.
             PointerFocus.DrawnTooltipChanged = Navigator.InvalidateBuffer;
@@ -357,14 +357,17 @@ namespace ES2Access
         }
 
         /// <summary>
-        /// Teach the announcer and the table emitter the mod's own wording. These are static because
-        /// every control's readout passes through them; Stop drops them again.
+        /// Teach the announcer and the table emitter the mod's own wording, and hand it the live drag so
+        /// that a control that can be picked up or dropped onto says so. These are static because every
+        /// control's readout passes through them; Stop drops them again. Called AFTER the navigator
+        /// exists, because the drag is the navigator's.
         ///
         /// PartFilter is deliberately left unset, which means every announcement part speaks. It is
         /// the hook for per-control-type announcement settings, and there is no settings UI yet.
         /// </summary>
         private static void InstallAnnouncerWording()
         {
+            GraphAnnouncer.Carry = Carry;
             GraphAnnouncer.PositionText = (index, count) =>
                 new MessageBuilder().PushFraction(index, count).Build();
             GraphAnnouncer.ExpandedStateText = expanded =>

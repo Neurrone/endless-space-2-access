@@ -260,6 +260,11 @@ namespace ES2Access.Core.Speech
         /// <summary>What a control says while it would take the thing the player is holding.</summary>
         public const string CarryDropTarget = "carry.drop-target";
 
+        /// <summary>What a control the player could pick something up from says while nothing is being
+        /// carried - the drag's half of "has tooltip". Not said while something IS held: the useful fact
+        /// about a control then is whether the thing can go there.</summary>
+        public const string CarryDraggable = "carry.draggable";
+
         // The scan view. The lens names itself in the game's own words, so the only strings here are
         // for the two boxes the game draws bare and the pairing of a number with the output it counts.
         public const string ScreenScanView = "screen.scan-view";
@@ -782,6 +787,7 @@ namespace ES2Access.Core.Speech
             { CarryCancelled, "Cancelled drag" },
             { CarryMovedToPosition, "Moved {0} to position {1}" },
             { CarryDropTarget, "drop target" },
+            { CarryDraggable, "draggable" },
             { ScreenScanView, "Scan view" },
             { ScanSystemInfo, "System information" },
             { ScanLegend, "Legend" },

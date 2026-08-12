@@ -321,11 +321,6 @@ namespace ES2Access.Screens
                 vtable.OnPickUp = () => Pick(technology);
             }
 
-            if (ModEntry.Carry != null)
-            {
-                vtable.Announcements.Add(ModEntry.Carry.DropTargetPart(QueueKind));
-            }
-
             AgeWidgets.Point(vtable, item.Button, item.Tooltip, item.AgeTransform);
             builder.AddItem(
                 ControlId.Referenced(technology, "research:queue/" + technology.Name),

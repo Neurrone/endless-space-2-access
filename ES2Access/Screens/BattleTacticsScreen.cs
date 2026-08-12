@@ -229,21 +229,11 @@ namespace ES2Access.Screens
                 },
                 DropKind = TacticKind,
                 OnDrop = held => RemoveHeld(deck, held),
-            };
-
-            CarryState carry = ModEntry.Carry;
-            if (carry != null)
-            {
                 // The same test the drop makes, so the word and the outcome cannot disagree: a tactic
                 // carried off the LIST above was never in the set, and the last one in the set cannot
                 // leave it.
-                vtable.Announcements.Add(
-                    carry.DropTargetPart(
-                        TacticKind,
-                        () => Removable(deck, carry.Held == null ? null : carry.Held.Cargo)
-                    )
-                );
-            }
+                DropAccepts = held => Removable(deck, held == null ? null : held.Cargo),
+            };
 
             builder.StartRow();
             builder.AddItem(ControlId.Structural("tactics:remove-target"), vtable);
@@ -340,17 +330,12 @@ namespace ES2Access.Screens
                 DropKind = TacticKind,
                 OnDrop = held => Drop(it, held),
                 OnPickUp = () => Pick(it),
-            };
-            GraphNodes.AddRefusal(vtable, tooltip, enabled);
-
-            CarryState carry = ModEntry.Carry;
-            if (carry != null)
-            {
                 // Guarded by the same test the drop makes: a LOCKED slot is not a place a tactic can go,
                 // and saying "drop target" on it and then refusing the Enter is the readout promising
                 // something the screen will not do.
-                vtable.Announcements.Add(carry.DropTargetPart(TacticKind, enabled));
-            }
+                DropAccepts = held => enabled(),
+            };
+            GraphNodes.AddRefusal(vtable, tooltip, enabled);
 
             AgeWidgets.PointAt(vtable, widget);
             Cells.Add(_cells, widget, Id(card, key), vtable);

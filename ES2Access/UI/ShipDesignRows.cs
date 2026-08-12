@@ -958,21 +958,10 @@ namespace ES2Access.UI
                     }
                 },
                 OnPickUp = () => PickSlot(it),
+                // The same test the drop makes, so the word and the outcome cannot disagree: a slot the
+                // carried module does not fit is not somewhere it can go.
+                DropAccepts = held => Takes(owner, it, held),
             };
-
-            CarryState carry = ModEntry.Carry;
-            if (carry != null)
-            {
-                vtable.Announcements.Add(
-                    new NodeAnnouncement(
-                        () =>
-                            carry.Accepts(ModuleKind) && Takes(owner, it, carry.Held)
-                                ? ModStrings.Get(ModStrings.CarryDropTarget)
-                                : null,
-                        live: true
-                    )
-                );
-            }
 
             AgeWidgets.PointAt(vtable, slot.AgeTransform);
             Cells.Add(

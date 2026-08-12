@@ -480,11 +480,6 @@ namespace ES2Access.UI
                 vtable.OnPickUp = () => Pick(it);
             }
 
-            if (ModEntry.Carry != null)
-            {
-                vtable.Announcements.Add(ModEntry.Carry.DropTargetPart(QueueKind));
-            }
-
             AgeWidgets.PointAt(vtable, line.AgeTransform);
             string key = keyPrefix + "queue/" + line.Construction.GUID;
             ControlId id = ControlId.Referenced(line.Construction, key);

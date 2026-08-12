@@ -177,7 +177,8 @@ namespace ES2Access.Core.UI.Graph
         /// <summary>Optional. What this control offers to PICK UP and carry (a ship out of a fleet,
         /// a population unit off a planet). Returning null means it has nothing to give right now.
         /// The carried thing's name is captured at that moment and never re-derived - see
-        /// <see cref="CarryItem"/>.</summary>
+        /// <see cref="CarryItem"/>. A PURE QUERY: the readout asks it speculatively to know whether to
+        /// say "draggable" (<c>CarryState.DraggablePart</c>), so it must decide, not act.</summary>
         public Func<CarryItem> OnPickUp;
 
         /// <summary>Optional. Which kind of cargo this control will TAKE (<see cref="CarryItem.Kind"/>).
@@ -189,6 +190,14 @@ namespace ES2Access.Core.UI.Graph
         /// rule the mod invented. A refusal carries the game's own words and leaves the player still
         /// holding it.</summary>
         public Func<CarryItem, DropResult> OnDrop;
+
+        /// <summary>Optional. Whether this control would take THIS cargo right now - the screen's own
+        /// test for the ones among a family of targets that will refuse (a locked deck slot beside three
+        /// live ones, a hull slot the module does not fit). Asked for the spoken drop-target INDICATION
+        /// only, so the word and the outcome cannot disagree; the drop itself still goes through
+        /// <see cref="OnDrop"/>, whose refusal carries the game's own reason for a player who presses
+        /// anyway. Null = <see cref="DropKind"/> alone answers.</summary>
+        public Func<CarryItem, bool> DropAccepts;
 
         /// <summary>Optional. Read / open the control's tooltip. The action owns the whole behavior
         /// (speak, or open the drill-in tooltip reader), so the core stays game-agnostic.</summary>

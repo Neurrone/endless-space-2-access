@@ -502,13 +502,6 @@ namespace ES2Access.Screens
                 );
                 vtable.DropKind = ShipRows.ShipKind;
                 vtable.OnDrop = item => Transfer(screen, held, LineName(it), item);
-                if (ModEntry.Carry != null)
-                {
-                    vtable.Announcements.Add(
-                        ModEntry.Carry.DropTargetPart(ShipRows.ShipKind)
-                    );
-                }
-
                 AgeWidgets.PointAt(vtable, it.AgeTransform);
                 Cells.Add(
                     cells,

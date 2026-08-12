@@ -356,10 +356,6 @@ namespace ES2Access.Screens
             {
                 vtable.DropKind = PopulationKind;
                 vtable.OnDrop = item => DropPopulation(it, item);
-                if (ModEntry.Carry != null)
-                {
-                    vtable.Announcements.Add(ModEntry.Carry.DropTargetPart(PopulationKind));
-                }
             }
 
             AgeWidgets.PointAt(vtable, status ?? label.AgeTransform);
