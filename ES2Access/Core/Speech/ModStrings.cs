@@ -79,6 +79,14 @@ namespace ES2Access.Core.Speech
         public const string BufferEmpty = "buffer.empty";
         public const string BufferLine = "buffer.line";
 
+        // The multiplayer session's own stream: everything said in the lobby and in the game, plus
+        // every session event the game posts as a system message - joins, kicks, the launch
+        // countdown, the network clock. Spoken as it arrives and kept here to be re-read.
+        public const string BufferChat = "buffer.chat";
+        public const string ChatSaid = "chat.said";
+        public const string ChatWhispered = "chat.whispered";
+        public const string ChatToAlliance = "chat.to-alliance";
+
         // Screen names, spoken on arrival.
         public const string ScreenMainMenu = "screen.main-menu";
         public const string ScreenMessageBox = "screen.message-box";
@@ -124,6 +132,28 @@ namespace ES2Access.Core.Speech
         /// The game draws it as a bare icon and its tooltip is a sentence about what a click would do,
         /// so there is no name of the game's to use.</summary>
         public const string GalaxyAllianceRequests = "galaxy.alliance-requests";
+
+        // The multiplayer half of the turn controls, none of which the game names in words: the sync
+        // mark is an icon whose whole meaning is on its tooltip, the desync button is an icon that
+        // sends everybody back to the lobby, the ready ring is eight pictures, and the timers are
+        // arcs drawn around the End Turn button with no caption anywhere. All of them are absent in
+        // single player, where the game does not draw them at all.
+        public const string GalaxySyncState = "galaxy.sync-state";
+        public const string GalaxyReturnToLobby = "galaxy.return-to-lobby";
+        public const string GalaxyPlayers = "galaxy.players";
+        public const string GalaxyPlayersAllReady = "galaxy.players-all-ready";
+        public const string GalaxyPlayerPlaying = "galaxy.player-playing";
+        public const string GalaxyPlayersPlaying = "galaxy.players-playing";
+        public const string GalaxyGlobalTimer = "galaxy.global-timer";
+        public const string GalaxyTurnTimer = "galaxy.turn-timer";
+        public const string GalaxyOvertimeTimer = "galaxy.overtime-timer";
+        public const string GalaxyLastPlayerTimer = "galaxy.last-player-timer";
+        public const string GalaxyTimerSeconds = "galaxy.timer-seconds";
+
+        /// <summary>The turn is over for the player and the game is waiting on everybody else - the
+        /// state the game itself shows by rewriting the End Turn caption to "Pending", which nothing
+        /// announces because the turn number does not change while it lasts.</summary>
+        public const string GalaxyTurnWaiting = "galaxy.turn-waiting";
 
         public const string GalaxyResearch = "galaxy.research";
         public const string GalaxyTurnsRemaining = "galaxy.turns-remaining";
@@ -545,6 +575,10 @@ namespace ES2Access.Core.Speech
         public const string NewGameLobbyLocked = "new-game.lobby-locked";
         public const string NewGameLobbyUnlocked = "new-game.lobby-unlocked";
 
+        /// <summary>The lobby's chat history, which the game draws as a scrolling list of lines with no
+        /// heading of its own.</summary>
+        public const string NewGameChatLog = "new-game.chat-log";
+
         public const string NotifyOpenNegotiation = "notify.open-negotiation";
         public const string NotifyOpenMinorFaction = "notify.open-minor-faction";
         public const string NotifyOpenScoreScreen = "notify.open-score-screen";
@@ -718,6 +752,10 @@ namespace ES2Access.Core.Speech
             { BufferUi, "UI" },
             { BufferEmpty, "Buffer empty" },
             { BufferLine, "{0}. {1}" },
+            { BufferChat, "Chat" },
+            { ChatSaid, "{0}: {1}" },
+            { ChatWhispered, "{0} whispers: {1}" },
+            { ChatToAlliance, "{0}, to the alliance: {1}" },
             { ScreenMainMenu, "Main menu" },
             { ScreenMessageBox, "Dialog" },
             { ScreenOptions, "Options" },
@@ -747,6 +785,18 @@ namespace ES2Access.Core.Speech
             { GalaxyIdleFleets, "{0} idle fleets" },
             { GalaxyGameMenu, "Game menu" },
             { GalaxyAllianceRequests, "Alliance requests" },
+            { GalaxySyncState, "Multiplayer synchronization" },
+            { GalaxyReturnToLobby, "Return all players to the lobby" },
+            { GalaxyPlayers, "Players" },
+            { GalaxyPlayersAllReady, "every player has ended their turn" },
+            { GalaxyPlayerPlaying, "{0} player is still playing" },
+            { GalaxyPlayersPlaying, "{0} players are still playing" },
+            { GalaxyGlobalTimer, "Game time remaining" },
+            { GalaxyTurnTimer, "Turn time remaining" },
+            { GalaxyOvertimeTimer, "Overtime remaining" },
+            { GalaxyLastPlayerTimer, "Last player time remaining" },
+            { GalaxyTimerSeconds, "{0} seconds" },
+            { GalaxyTurnWaiting, "Turn ended, waiting for the other players" },
             { GalaxyResearch, "Research" },
             { GalaxyTurnsRemaining, "{0} turns remaining" },
             { GalaxyStockAndNet, "{0}, {1} per turn" },
@@ -960,6 +1010,7 @@ namespace ES2Access.Core.Speech
             { NewGameLockEmpire, "Lock empire" },
             { NewGameLobbyLocked, "The lobby is locked while the game launches" },
             { NewGameLobbyUnlocked, "The lobby is unlocked" },
+            { NewGameChatLog, "Chat log" },
             { NotifyOpenNegotiation, "Open negotiation" },
             { NotifyOpenMinorFaction, "Open minor faction diplomacy" },
             { NotifyOpenScoreScreen, "Open score screen" },

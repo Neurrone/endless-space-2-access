@@ -75,6 +75,12 @@ namespace ES2Access
 
         private static ModHost _host;
         private static ModRoutes _routes;
+
+        /// <summary>The multiplayer session's narration and its log - every session event this game has
+        /// is a chat message, so one subscription covers all of them. It lives here rather than on a
+        /// screen because it has to be listening in the lobby and in the game alike.</summary>
+        private static SessionChat _chat;
+
         private static bool _announcedStartup;
         private static float _startTime;
 
@@ -102,6 +108,9 @@ namespace ES2Access
             }
 
             Buffers = new BufferController();
+            // Registered right after the UI buffer, so the chat log is the buffer Ctrl+Right reaches
+            // from a control's description while a multiplayer session is up.
+            _chat = new SessionChat(Buffers);
             Navigator = new GraphNavigator(Buffers);
             InstallAnnouncerWording();
             // A tooltip the game has to draw before its words exist arrives after focus does, so the
@@ -400,6 +409,14 @@ namespace ES2Access
                 Screens = null;
             }
 
+            // Before the buffers go: the log hands its subscription back to the game's chat service,
+            // which outlives the mod and would otherwise keep calling into this assembly.
+            if (_chat != null)
+            {
+                _chat.Stop();
+                _chat = null;
+            }
+
             // Whatever the mod made the game look like, the game looks like itself again. The screens
             // shut down first, so a drop list left open has already been closed by its own OnPop and
             // this only drops the record of it. A key capture has no such hook - the game holds the
@@ -482,6 +499,10 @@ namespace ES2Access
             Navigator.TypeAheadTick();
 
             Screens.Tick();
+
+            // After the screens: a screen's arrival announcement interrupts, and a chat line queued
+            // before it would be thrown away. Chat lines queue behind whatever the player asked for.
+            _chat.Tick();
 
             // After the screens have settled: the game's own hover, flyout and tooltip follow the
             // focus they just decided on.

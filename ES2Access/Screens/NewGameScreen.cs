@@ -366,11 +366,43 @@ namespace ES2Access.Screens
             NewGameChatPanel chat = Get<NewGameChatPanel>(widget);
             if (chat != null)
             {
+                AddChatHistory(builder, chat);
                 SettingRows.AddTextField(builder, chat.ChatTextField, "newgame:chat/field", _editor);
                 return;
             }
 
             BuildUnmodelled(builder, widget, key);
+        }
+
+        /// <summary>
+        /// What has been said in the lobby, as a row of its own above the field it is typed into - the
+        /// lines are the row's reviewable content, so the player walks the history at their own pace
+        /// instead of hearing fifty of them at once.
+        ///
+        /// Gated on the line list the game only shows in multiplayer: in single player the panel is
+        /// soft-hidden, with the lines invisible and the field disabled
+        /// (<c>NewGameChatPanel.SessionService_SessionChange</c> :43-65), so a single-player lobby grows
+        /// no row here at all. The lines themselves come from <see cref="SessionChat"/>, which is also
+        /// what speaks them as they arrive - one wording, two surfaces.
+        /// </summary>
+        private static void AddChatHistory(GraphBuilder builder, NewGameChatPanel chat)
+        {
+            AgeTransform lines = Transform(chat.ChatLinesScrollView);
+            if (lines == null || !SettingRows.Drawn(lines))
+            {
+                return;
+            }
+
+            NodeVtable vtable = GraphNodes.Readout(
+                () => ModStrings.Get(ModStrings.NewGameChatLog),
+                SessionChat.Latest,
+                SessionChat.History,
+                null,
+                // The log grows under the cursor and every arriving line is already spoken by the
+                // watcher; re-reading the newest one under focus as well would say it twice.
+                false
+            );
+            builder.AddItem(ControlId.Referenced(lines, "newgame:chat/lines"), vtable);
         }
 
         // ---- the player's own empire ----

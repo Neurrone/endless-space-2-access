@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Reflection;
 using Amplitude;
 using ES2Access.Core.Speech;
 using ES2Access.Core.UI.Graph;
@@ -57,6 +58,19 @@ namespace ES2Access.Screens
 
         private int _turn = -1;
 
+        /// <summary>The multiplayer wait: whether the player's turn is over and the game is still on the
+        /// others, and how many of them were still playing when that was last said. Instance state, like
+        /// the turn watch, so each page keeps its own and a reload starts the watch over.</summary>
+        private bool _waiting;
+
+        private int _playing = -1;
+
+        /// <summary>The two private fields of <c>EndTurnWindow</c> the turn timer is only readable from,
+        /// looked up once per load rather than per frame.</summary>
+        private static FieldInfo _timerEnd;
+
+        private static FieldInfo _timerKind;
+
         /// <summary>The journal this page is listening to, kept so that the subscription can be given
         /// back. Instance state, so a hot reload takes it with the page.</summary>
         private QuestJournal _journal;
@@ -82,6 +96,8 @@ namespace ES2Access.Screens
             _turn = Turn();
             _questChanged = false;
             _instruction = Instruction();
+            _waiting = WaitingForOthers();
+            _playing = PlayersPlaying(TurnWindow());
             WatchQuests();
         }
 
@@ -93,6 +109,8 @@ namespace ES2Access.Screens
             _turn = -1;
             _questChanged = false;
             _instruction = null;
+            _waiting = false;
+            _playing = -1;
             ForgetQuests();
         }
 
@@ -104,6 +122,7 @@ namespace ES2Access.Screens
         public void Update()
         {
             AnnounceTurn();
+            AnnounceTurnWait();
             AnnounceQuest();
             AnnounceCursorMode();
         }
@@ -128,6 +147,68 @@ namespace ES2Access.Screens
             catch (Exception e)
             {
                 Log.Warn("hud: watching the turn threw: " + e);
+            }
+        }
+
+        /// <summary>
+        /// The other half of a multiplayer turn: the player has ended theirs and the game is waiting on
+        /// everybody else.
+        ///
+        /// The game shows it by rewriting the End Turn caption to "Pending"
+        /// (<c>EndTurnWindow.RefreshEndTurnLabel</c> :1123-1160) and by unlit slots on the ready ring,
+        /// and nothing announces either: the turn NUMBER does not change while the wait lasts, so the
+        /// turn watch above sees nothing until it is over. So the wait says itself when it starts, and
+        /// each time one more player finishes - which is the only progress there is to report while the
+        /// player can do nothing but listen.
+        ///
+        /// Gated on the ready ring, which the game draws outside single player only (:735): in a solo
+        /// game the same client states are passed through on every turn and none of them is a wait.
+        /// </summary>
+        private void AnnounceTurnWait()
+        {
+            try
+            {
+                EndTurnWindow window = TurnWindow();
+                int playing = PlayersPlaying(window);
+                if (playing < 0)
+                {
+                    _waiting = false;
+                    _playing = -1;
+                    return;
+                }
+
+                bool waiting = WaitingForOthers();
+                if (waiting && !_waiting)
+                {
+                    Voice.Say(ModStrings.Get(ModStrings.GalaxyTurnWaiting), false);
+                }
+                else if (waiting && playing > 0 && _playing > playing)
+                {
+                    Voice.Say(PlayersText(window), false);
+                }
+
+                _waiting = waiting;
+                _playing = playing;
+            }
+            catch (Exception e)
+            {
+                Log.Warn("hud: watching the multiplayer wait threw: " + e);
+            }
+        }
+
+        /// <summary>Whether the player's own turn is over and the game has not started the next one -
+        /// the state the End Turn caption reads "Pending" in.</summary>
+        private static bool WaitingForOthers()
+        {
+            try
+            {
+                return Gui.GuiGameWindowService != null
+                    && Gui.GuiGameWindowService.CurrentGameClientStateType
+                        == typeof(GameClientState_Turn_Finished);
+            }
+            catch (Exception)
+            {
+                return false;
             }
         }
 
@@ -1691,6 +1772,9 @@ namespace ES2Access.Screens
             AddTurnButton(found, window.NextIdleFleetButton, "next-idle-fleet", ModStrings.GalaxyNextIdleFleet, IdleFleetsText);
             AddTurnButton(found, window.GameMenuButton, "game-menu", ModStrings.GalaxyGameMenu, null);
             AddRequestToggle(found, window.RequestToggle);
+            AddSync(found, window);
+            AddPlayers(found, window);
+            AddTimers(found, window);
 
             builder.BeginStop(TurnStop);
             builder.StartRow();
@@ -1789,6 +1873,351 @@ namespace ES2Access.Screens
                     Vtable = vtable,
                 }
             );
+        }
+
+        // ---- the multiplayer half of the turn cluster ----
+
+        /// <summary>
+        /// Whether the game is still in step with the other players, and the host's way out when it is
+        /// not.
+        ///
+        /// The game draws the state as a tinted icon and puts the whole of its meaning on a tooltip
+        /// (<c>EndTurnWindow.RefreshSyncState</c> :1254-1269 hangs the <c>SyncStatus&lt;state&gt;</c>
+        /// element's description there), so the sentence is what this row SAYS rather than something
+        /// hanging off it. The group is drawn only outside single player (:734), which is what keeps
+        /// every line here absent from a solo game.
+        ///
+        /// The button beside it returns everybody to the lobby to reload the last auto-save
+        /// (<c>OnDesyncStatusClickCb</c> :1318-1321) and is switched on only for the host, and only on a
+        /// checksum mismatch - so it is declared while refusing, like every other button the mod
+        /// declares: knowing the way out exists is the point.
+        /// </summary>
+        private void AddSync(List<Cell> found, EndTurnWindow window)
+        {
+            AgeTransform group = window.SyncGroup;
+            if (!AgeWidgets.Visible(group))
+            {
+                return;
+            }
+
+            EndTurnWindow it = window;
+            NodeVtable vtable = GraphNodes.Readout(
+                () => ModStrings.Get(ModStrings.GalaxySyncState),
+                () => SyncText(it),
+                null,
+                null
+            );
+            AgeWidgets.PointAt(vtable, group);
+            found.Add(
+                new Cell
+                {
+                    Widget = group,
+                    Id = ControlId.Referenced(group, "hud:sync"),
+                    Vtable = vtable,
+                }
+            );
+
+            AddTurnButton(found, window.DesyncButton, "desync", ModStrings.GalaxyReturnToLobby, null);
+        }
+
+        /// <summary>
+        /// Where the other players are in their turn: how many are still playing, and a line each for
+        /// what the game says about them.
+        ///
+        /// Read off the ring of slots the game draws around the End Turn button - which is drawn in
+        /// multiplayer only (:735) and, unlike the players list, is NOT gated on where the mouse is
+        /// (<c>EndTurnWindow.SpecificUpdate</c> :906-921 shows that list only while the physical cursor
+        /// is inside the button, and the mod moves no cursor). Each slot already carries the game's own
+        /// sentence about its player - leader and faction, then the state word
+        /// (<c>CompetitorOrbitalSlot.Refresh</c> :45-68) - so nothing here recomputes a player state.
+        ///
+        /// One row rather than one per player: the cluster is a handful of buttons in the corner of the
+        /// screen, and eight more stops in it would be walked past on every pass. The per-player lines
+        /// are the row's reviewable content.
+        /// </summary>
+        private void AddPlayers(List<Cell> found, EndTurnWindow window)
+        {
+            AgeTransform ring = window.CompetitorsCircularTable;
+            if (!AgeWidgets.Visible(ring))
+            {
+                return;
+            }
+
+            EndTurnWindow it = window;
+            NodeVtable vtable = GraphNodes.Readout(
+                () => ModStrings.Get(ModStrings.GalaxyPlayers),
+                () => PlayersText(it),
+                () => PlayerLines(it),
+                null,
+                // The count changes as players end their turn, and the watch below is what announces
+                // that wherever the player is standing; a watched value would say it twice here.
+                false
+            );
+            found.Add(
+                new Cell
+                {
+                    Widget = ring,
+                    Id = ControlId.Referenced(ring, "hud:players"),
+                    Vtable = vtable,
+                }
+            );
+        }
+
+        /// <summary>
+        /// The clocks a multiplayer game can be running: the whole game's, which the game writes as a
+        /// label, and the current turn's, which it draws as arcs around the End Turn button with no
+        /// number written anywhere.
+        ///
+        /// Neither value is watched. Both change every second, and a value that re-announces itself
+        /// under the cursor would talk over everything else the player is doing; asked for, they are
+        /// current.
+        /// </summary>
+        private void AddTimers(List<Cell> found, EndTurnWindow window)
+        {
+            EndTurnWindow it = window;
+            AgeTransform global = window.GlobalTimerLabel == null
+                ? null
+                : window.GlobalTimerLabel.AgeTransform;
+            if (AgeWidgets.Visible(global))
+            {
+                NodeVtable vtable = GraphNodes.Readout(
+                    () => ModStrings.Get(ModStrings.GalaxyGlobalTimer),
+                    () => OneLine(AgeText.Label(it.GlobalTimerLabel)),
+                    null,
+                    null,
+                    false
+                );
+                found.Add(
+                    new Cell
+                    {
+                        Widget = global,
+                        Id = ControlId.Referenced(global, "hud:global-timer"),
+                        Vtable = vtable,
+                    }
+                );
+            }
+
+            AgeTransform arc = window.CommonTimerArc == null
+                ? null
+                : window.CommonTimerArc.AgeTransform;
+            if (arc == null || TimerSeconds(window) < 0)
+            {
+                return;
+            }
+
+            NodeVtable turnTimer = GraphNodes.Readout(
+                () => ModStrings.Get(TimerNameKey(it)),
+                () => ModStrings.Format(ModStrings.GalaxyTimerSeconds, TimerSeconds(it)),
+                null,
+                null,
+                false
+            );
+            found.Add(
+                new Cell
+                {
+                    Widget = arc,
+                    Id = ControlId.Referenced(arc, "hud:turn-timer"),
+                    Vtable = turnTimer,
+                }
+            );
+        }
+
+        /// <summary>What the game says about the synchronization state - the tooltip's sentence, which
+        /// is the only words there are for it.</summary>
+        private static string SyncText(EndTurnWindow window)
+        {
+            try
+            {
+                return OneLine(AgeText.Tooltip(window.SyncTooltip));
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>How many players have not ended their turn, counted the way the game counts them:
+        /// the slots of the ready ring whose unready icon is showing (<c>EndTurnWindow.Refresh</c>
+        /// :857-880). -1 when there is no ring, which is every single-player game.</summary>
+        private static int PlayersPlaying(EndTurnWindow window)
+        {
+            try
+            {
+                AgeTransform ring = window == null ? null : window.CompetitorsCircularTable;
+                if (!AgeWidgets.Visible(ring))
+                {
+                    return -1;
+                }
+
+                IList<AgeTransform> slots = ring.Children;
+                int playing = 0;
+                for (int i = 0; slots != null && i < slots.Count; i++)
+                {
+                    CompetitorOrbitalSlot slot = Slot(slots[i]);
+                    if (slot != null && slot.UnreadyIcon != null && slot.UnreadyIcon.Visible)
+                    {
+                        playing++;
+                    }
+                }
+
+                return playing;
+            }
+            catch (Exception e)
+            {
+                Log.Warn("hud: counting the players still playing threw: " + e);
+                return -1;
+            }
+        }
+
+        private static string PlayersText(EndTurnWindow window)
+        {
+            int playing = PlayersPlaying(window);
+            if (playing < 0)
+            {
+                return null;
+            }
+
+            return playing == 0
+                ? ModStrings.Get(ModStrings.GalaxyPlayersAllReady)
+                : ModStrings.Plural(
+                    ModStrings.GalaxyPlayerPlaying,
+                    ModStrings.GalaxyPlayersPlaying,
+                    playing
+                );
+        }
+
+        /// <summary>A line per player, in the game's own words: leader and faction, then where they are
+        /// in their turn - and, for a human who is not the local player, the whisper instruction the
+        /// game appends to the same tooltip, which is reviewable rather than spoken.</summary>
+        private static IList<string> PlayerLines(EndTurnWindow window)
+        {
+            List<string> lines = new List<string>();
+            try
+            {
+                AgeTransform ring = window == null ? null : window.CompetitorsCircularTable;
+                if (!AgeWidgets.Visible(ring))
+                {
+                    return lines;
+                }
+
+                IList<AgeTransform> slots = ring.Children;
+                for (int i = 0; slots != null && i < slots.Count; i++)
+                {
+                    CompetitorOrbitalSlot slot = Slot(slots[i]);
+                    if (slot == null)
+                    {
+                        continue;
+                    }
+
+                    foreach (string line in AgeText.Lines(AgeText.Tooltip(slot.Tooltip)))
+                    {
+                        lines.Add(line);
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("hud: reading the player states threw: " + e);
+            }
+
+            return lines;
+        }
+
+        private static CompetitorOrbitalSlot Slot(AgeTransform widget)
+        {
+            try
+            {
+                return widget == null ? null : widget.GetComponent<CompetitorOrbitalSlot>();
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// How long the running turn timer has left, in whole seconds, or -1 while no timer is running.
+        ///
+        /// The window draws the three timers as ARCS with no number on them and keeps the end time and
+        /// the kind of timer in private fields (:157-163, written from the timer service's own event
+        /// :1520-1530), so there is nothing on screen to read and the fields are the only source. The
+        /// same expression the window uses: end time minus the game's clock (:1071).
+        /// </summary>
+        private static int TimerSeconds(EndTurnWindow window)
+        {
+            try
+            {
+                if (window == null || TimerKind(window) == GameTimerType.None)
+                {
+                    return -1;
+                }
+
+                FieldInfo field = TimerField("currentTimerEndTime", ref _timerEnd);
+                if (field == null)
+                {
+                    return -1;
+                }
+
+                double left = (double)field.GetValue(window) - global::Game.Time;
+                return left <= 0.0 ? -1 : (int)left;
+            }
+            catch (Exception)
+            {
+                return -1;
+            }
+        }
+
+        /// <summary>Which of the three clocks is running, so the row can name itself: the turn's own
+        /// timer, the overtime the previous turns banked, or the shortened one the last player left in
+        /// the turn is given.</summary>
+        private static GameTimerType TimerKind(EndTurnWindow window)
+        {
+            try
+            {
+                FieldInfo field = TimerField("currentTimerType", ref _timerKind);
+                return field == null
+                    ? GameTimerType.None
+                    : (GameTimerType)field.GetValue(window);
+            }
+            catch (Exception)
+            {
+                return GameTimerType.None;
+            }
+        }
+
+        private static string TimerNameKey(EndTurnWindow window)
+        {
+            switch (TimerKind(window))
+            {
+                case GameTimerType.Overtime:
+                    return ModStrings.GalaxyOvertimeTimer;
+                case GameTimerType.LastPlayer:
+                    return ModStrings.GalaxyLastPlayerTimer;
+                default:
+                    return ModStrings.GalaxyTurnTimer;
+            }
+        }
+
+        private static FieldInfo TimerField(string name, ref FieldInfo cache)
+        {
+            if (cache != null)
+            {
+                return cache;
+            }
+
+            try
+            {
+                cache = typeof(EndTurnWindow).GetField(
+                    name,
+                    BindingFlags.Instance | BindingFlags.NonPublic
+                );
+            }
+            catch (Exception)
+            {
+                cache = null;
+            }
+
+            return cache;
         }
 
         /// <summary>The button's own caption, which the game writes over two lines and rewrites while

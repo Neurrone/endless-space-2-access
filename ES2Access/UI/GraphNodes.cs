@@ -502,17 +502,28 @@ namespace ES2Access.UI
         /// these are in practice always the renderer-assembled kind, and saying so by rule means a
         /// readout whose tooltip the game ever authored as plain content would be read the way plain
         /// content should be.
+        ///
+        /// <paramref name="watchValue"/> is the one thing a caller sometimes has to switch off: a
+        /// watched value re-announces itself under the cursor whenever it changes, which is right for a
+        /// number the game revises and wrong for one that revises itself every second - a running
+        /// timer, a log's newest line - where the player would be talked over continuously. Such a
+        /// readout is still current when read; it just stops speaking on its own.
         /// </summary>
         public static NodeVtable Readout(
             Func<string> label,
             Func<string> value,
             Func<IList<string>> details,
-            AgeTooltip tooltip
+            AgeTooltip tooltip,
+            bool watchValue = true
         )
         {
             return new NodeVtable
             {
-                Announcements = new List<NodeAnnouncement> { LabelPart(label), ValuePart(value) },
+                Announcements = new List<NodeAnnouncement>
+                {
+                    LabelPart(label),
+                    ValuePart(value, watchValue),
+                },
                 Sections = Sections(details, tooltip),
             };
         }
