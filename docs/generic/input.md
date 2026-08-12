@@ -118,6 +118,18 @@ patch site per input path (`src/graph-ui/GameKeyStandDown.cs`, an exemplar to im
   claims is hidden from the game's matcher and the press does nothing at all. Such a screen
   needs one hook that routes every claimed action to the game's own handler, asked before the
   review-buffer keys, and should leave the typed-letter class to the game entirely.
+- **If you suppress a key, you owe a replacement route** — a suppressed key can be the only
+  door to one of the game's own surfaces (a chat bound to Enter/Tab). And the suppression
+  predicate must be able to answer about a CHORD, not just a key: a per-key claim on Tab
+  hides Ctrl+Tab from the game as surely as Tab itself, so "move the game's binding to a
+  free chord" does nothing until the chord is handed back explicitly.
+- **Remapping a game binding is a decision the mod's developer makes explicitly for their
+  game — never an automatic pattern.** When chosen, go through the game's own options API
+  rather than shadowing (so the options screen shows it and the player can re-bind), touch
+  it only while it still holds the shipped default, and follow the binding wherever the
+  player moves it afterwards. Two traps: the binding table may fill AFTER the input service
+  is published (an early write gets overwritten), and the write persists into unmodded
+  launches — a consequence to state to the player.
 
 ## Typed text is not a chord
 

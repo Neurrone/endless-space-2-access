@@ -271,7 +271,11 @@ which no dump reveals. Key such lines on the game's *data* object, never the wid
   targeting cursor) has nothing to bind: its predicate flips frames before anything draws, so
   arrive on the mode's first drawn-and-operable surface and gate one-way on the mode itself
   thereafter — and a mode the game can drop the player into needs at least a watcher
-  announcing entry and exit, or the player is in an unannounced world.
+  announcing entry and exit, or the player is in an unannounced world. While such a mode is
+  armed, EVERY pointer gesture takes the mode's meaning — the primary click is the confirm,
+  and if the game gives the mode a right-click (cancel, waypoint removal) that gesture's key
+  follows it too; the mod's ordinary node actions and selection gestures must yield, or the
+  keyboard does what the mouse could not.
 - **Tab wraps; initial focus still matters.** Tab cycles round both ways — a player who cannot
   see the panels reads a dead key as broken — and a page with one stop consumes the key
   silently. Wrapping does not excuse a bad landing: an ordering where the cursor starts
@@ -289,7 +293,10 @@ which no dump reveals. Key such lines on the game's *data* object, never the wid
   renderer bucket): where the engine already ranks its windows, the mod's numbers are copying
   a table that exists, and guessing contradicts it. And a screen placed above EVERYTHING is
   only safe where the player can dismiss or collapse it and the mod stands down on that —
-  otherwise it buries every popup the game draws over it.
+  otherwise it buries every popup the game draws over it. A shared overlay strip (a
+  collapsed-help bar, a persistent HUD fixture) is declared by the pages whose LAYOUT owns
+  it — measured by where the game places the control, not by where its pixels remain
+  visible: an overlay drawn over a modal is not thereby part of the modal's tab order.
 - **A roster grid linearises.** A grid of cards (factions, loadouts, portraits) reads as
   one row per card in drawn order — left-to-right, top-to-bottom — not as a 2D table: the
   cells are peers of one kind, so column-preserving vertical moves buy nothing and the
@@ -305,7 +312,10 @@ which no dump reveals. Key such lines on the game's *data* object, never the wid
   and entering the table announces its role once. A cell is role-less text: a control type is
   two things, a reading order and a role word, and a metadata cell wants only the order —
   except a cell the game draws a real CONTROL into: that cell keeps the control's role word
-  and click, and its availability is asked of the control, not of the row. No
+  and click, and its availability is asked of the control, not of the row — and a control
+  the screen reads itself must not ALSO be given the container's state part: a node's parts
+  are additive, so a shared tail that repeats "unavailable" says it twice; the container
+  adds only what the node did not answer. No
   position phrases inside a table — neither rows nor cells say "N of M"; the row identifies
   itself by name. Never drop an empty cell — the shared-column invariant dies — speak an
   "empty" word in it. A cell's review buffer holds that cell's own content (heading, value,
