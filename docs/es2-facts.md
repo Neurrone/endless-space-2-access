@@ -454,7 +454,7 @@ generic graduates to the generic docs.
   (a group, no button component) in the same column instead.
 - **The game's Space is `ToggleScanView`** (`InputManager.cs:233`, one binding shared with Mouse2) —
   the strategic lens mode that sets `IsInScanView`, drops `IsInNormalView` (hiding the pinned quest
-  and most HUD) and repaints the whole map, unmodelled by the mod (roadmap row). This is why the
+  and most HUD) and repaints the whole map, modelled by `ScanViewScreen`. This is why the
   mod's drag key over-claims Space on every mod screen (owner decision 2026-08-11) instead of the
   conditional claim it launched with: a screen-reader user reaching for a pickup must never flip the
   map into an unannounced mode. The lens keeps its Mouse2 route; `InputAction.ClaimedWhile` remains

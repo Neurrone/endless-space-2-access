@@ -58,8 +58,8 @@ click checks that the game's handler does not read the modifiers the player is s
 The Enter chords pass the PHYSICAL modifier through to the game's handler, which
 is how the game's own selection rules apply rather than a copy of them. Which screens have the
 chords and which cargo kinds the drag carries (ships, population, both queues) is coverage
-status — the roadmap's row notes own it; a drop always puts the carried item at the target's
-own position ("Moved ⟨name⟩ to position ⟨n⟩").
+status — `docs/test-recipes.md`'s per-screen paragraphs own it; a drop always puts the carried
+item at the target's own position ("Moved ⟨name⟩ to position ⟨n⟩").
 
 **Enter is click parity everywhere.** Every node's Enter is the click the game itself puts on that
 control, including the destructive ones — a research queue item dequeues, a construction queue line

@@ -4,7 +4,8 @@ How to work each screen family against the live game without damaging the owner'
 openers, safe round trips, reversibility probes, and what each fixture cannot show. Loaded
 per-need — grep for the screen you are touching; the screen-agnostic verification patterns
 (evidence crops, tooltip audits, silence rules, etiquette) stay in `docs/dev-loop.md` §2.
-A new per-screen recipe lands HERE; status summaries stay in `docs/roadmap.md`.
+A new per-screen recipe or fixture limit lands HERE; `docs/roadmap.md` holds only work remaining
+plus a pointer index of shipped screens.
 
 **Raising a notification on demand** (the fixture has none pending):
 `Amplitude.Unity.Framework.Services.GetService<Amplitude.Unity.Event.IEventService>().Notify(new EventEmpireIntroduction(Gui.PlayerEmpire))`
@@ -16,7 +17,8 @@ EventQuestBegun(Gui.PlayerEmpire, quest)); Gui.GuiNotificationService.ShowGuiNot
 then dismiss with the window's own binding
 (`Gui.GuiService.GetWindow<QuestBegunNotificationWindow>().GuiNotification`). `IsAnyNotificationVisible`
 is on `Gui.GuiGameWindowService`, not on the notification service. Raising the quest popup also pops
-the "Tracking Quests" tutorial page, so re-minimize afterwards.
+the "Tracking Quests" tutorial page, so re-minimize afterwards. **No save shows an UNLOCKED End
+Turn** either, so the turn cluster's operable state stays code-verified.
 
 **Working a popup that draws its own content** (the research family: "Research Complete",
 "Technology Stage unlocked", "Construction Complete" — reachable by pressing Next/Previous
@@ -79,6 +81,10 @@ arrive as body controls) are both drawn only when `DepartmentOfScience.ResearchQ
 (`TechnologyUnlockedNotificationWindow.Refresh` :131-159). Do not fake it by emptying the queue —
 that is a fixture change; reach it by playing a save whose queue has run dry.
 
+**No quest in either fixture is in CHOICE state**, so a popup's choice cards have never been drawn:
+the checkbox side of the radio/checkbox rule (the quest popup's own Pin toggle) is live-verified and
+the `GuiRadioGroup` side is code-verified only.
+
 **World position → screen pixel.**
 `((GalaxyViewCameraController)Amplitude.Unity.Framework.Services.GetService
 <Amplitude.Unity.View.ICameraService>().CameraController).Camera.WorldToScreenPoint((Vector3)node.GalaxyPosition)`
@@ -123,6 +129,15 @@ the same `OnCancelCb`); the lobby stands down while either is up. The advanced w
 table per CATEGORY once and shows only `CurrentCategory`'s — read whichever is drawn, never the
 container's first child.
 
+**What the outgame fixtures cannot show.** Lobby: the multiplayer-only states (chat, Join/Kick/Ready,
+the DLC strip) have no fixture at all, and renaming the player needs Steam. Advanced settings: no
+column overflows at 1280×800, so scroll-into-view is inherited but unexercised. Custom faction
+editor: nothing was ever persisted — SAVING a faction (`OnValidateCb` :686-700) and editing or
+deleting an existing one are code-verified only. Load/save: the window declares no content unless
+the dialog is up (`/gui/graph?screen=screen.load-save` answers "not active" from a running game),
+so the whole family — including the type-ahead that searches SAVES rather than cells — is live-checked
+only from the manual script.
+
 **Working the technology wheel.** Open/close it from `/eval` with
 `Gui.GuiService.GetWindow<GameOverlayWindow>().ControlBanner.ToggleScreen("TechnologyScreen")`
 (F4 does the same); the first open in a session raises the "Tech Savvy" tutorial popup. The
@@ -130,6 +145,11 @@ permitted round trip is queue-then-cancel — probe with
 `Gui.PlayerEmpire.GetAgency<DepartmentOfScience>().ResearchQueue.Length` and
 `.PendingConstructions[i].ConstructibleElement.Name` before and after — but queueing fires
 `EventTutorial_TechnologySelected`, so do it LAST and restore with `POST /loadsave`.
+**Blocked in the beginner fixture (last checked turn 2)**: dependency links (only the Juggernaut
+chain has them and the fixture draws none), Disabled technologies and their failure reasons,
+buyout, a queue long enough to scroll, and a deed that has been WON or LOST — all 12 drawn deeds
+are in progress, so "Locked" and "Available" read live (the latter with its whole `DeedDescription`
+in the buffer) while Completed, Failed and "won by ⟨empire⟩" are unit-tested offline only.
 
 **Round-tripping the pinned quest** (how both halves of the `hud:quest` passive announcement get
 proved in one run): stash the quest first — `Quest __pinned = Gui.PlayerEmpire.GetAgency
@@ -139,7 +159,9 @@ plus a `/gui/graph` with no `hud:quest` stop; put it back with `…QuestJournal.
 which is the same assignment the journal's own pin toggle makes (`NarrativeScreen.cs:443`) and
 answers with "Pinned quest: …". Opening the journal from the panel node is safe and reversible:
 `ControlBanner.ToggleScreen("NarrativeScreen")` closes it again, and the stop comes back with the
-cursor still on it.
+cursor still on it. **Unverified in either fixture**: "Show location" (the turn-3 quest has no
+marker, so the game hides the button), the numeric "(x/y)" progress branch, and a quest waiting on
+an objective choice (which draws no progress word at all).
 
 **Working the quest journal.** Open/close from `/eval` with
 `Gui.GuiService.GetWindow<GameOverlayWindow>().ControlBanner.ToggleScreen("NarrativeScreen")`
@@ -155,7 +177,10 @@ follow have no fixture at all. The Failed filter draws none, which IS the testab
 gesture on it: `ui.right` opens the card, `ui.down` lands on "Pin Quest", Enter toggles, and
 `QuestJournal.ActiveQuest` is the probe; unpinning speaks "not checked" from the toggle and "No quest
 is pinned" from the HUD's watcher, even with the journal covering the panel. Alt+Enter on a card is
-now silent by design (the game has no modified click there).
+now silent by design (the game has no modified click there). **Also unverified at turn 3**: the
+Show-location marker (the quest has none, so the game hides the button), the minor-faction button,
+the podium a cooperative quest gets instead of a reward table, and the "Pending objective choice…"
+placeholder.
 
 **Ordering a fleet around** (state-changing — only against a save you can reload, and only after
 every read-only check is done). It is two halves: **Enter** on the fleet's own node selects it, then
@@ -175,6 +200,13 @@ into the dark, so a fleet that leaves is instantly un-re-routable (`NextNodeUnkn
 `PathToLink` and `PathTo` answer null for every destination except the lane it is already on. Every
 lane also costs 8.3–13.3 against 5–6 movement points, so an ordered fleet always ends the turn
 stranded mid-lane rather than discovering anything.
+
+**What neither fixture can show on the galaxy map.** A send to a SYSTEM (turn 3 knows one, and its
+three lanes all run into the dark); minor factions and pirate lairs; a FOREIGN outpost — the only
+state that fills `%OutpostColonizationTooltipDescription` — and `OutpostCancelIcon` (an outpost
+being lost or decolonized); and every fleet-label variant beyond the plain one-ship own fleet:
+merged labels, guarding, multi-ship/automated/privateer fleets, and any fleet of another empire
+(only one empire is visible at turn 3).
 
 **Testing the selection chords and the drag.** `/input` cannot hold a modifier, so
 `ui.selectToggle`/`ui.selectRange` reach the row's own click with NO physical Ctrl or Shift and the
@@ -209,7 +241,11 @@ the management row swaps Merge for the hangar-only Create). Neither is reversibl
 `POST /loadsave`. **The hero band has no fixture** (no hero at turn 3) but can be MEASURED:
 `w.FleetHeroPanel.Show()` draws it against a null hero and `.Hide()` puts it back — that is how the
 assign/unassign button's naming was found to come from `AssignIcon.Visible` rather than from which of
-the two shared-tooltip transforms is up.
+the two shared-tooltip transforms is up. **Also unverified in the fixture**: 26 of the 31 fleet
+actions and every TOGGLE action, Retrofit/Repair/Scrap/Sell/Specialize enabled, the other-empire
+banners, a list long enough to scroll, the range-outcome sentence with two or more ships, and the
+DROP itself — the cursor draws exactly one fleet line and each fleet owns exactly one ship, so every
+reachable transfer would destroy a fleet.
 
 **Moving population between planets** (management page). The drag is offered only where the system
 has a SECOND colony of the player's (`ColonizedStarSystem.PlanetsColonized.Count > 1`) — with one, the
@@ -278,7 +314,13 @@ The repair window is short (~20 frames), so fire the hide and the `/gui/graph` d
 ONE bash command to catch the missing-stop state; then `POST /wait` on
 `…PlanetLabel.Shown` and dump again for the rejoined stop. `/log?grep=` on the repair's own log
 line is what proves it fired ONCE rather than every frame. Costs the owner one visible blink of the
-card.
+card. The racy entry ITSELF — walking galaxy → orbital → Enter until the race lands — stays on the
+manual script, because reproducing it costs the owner's camera.
+
+**What the beginner fixture cannot show on the planet overview** (last checked turn 1): curiosities,
+resource deposits and the depletion row (no planet in the fixture has any), and the population
+entries' click — the game opens `PopulationModalWindow` there, and the entries are declared
+read-only per the approved design.
 
 **Opening the star system page.** `GalaxyViewLevels.OpenSystem(Gui.PlayerEmpire.GetAgency
 <DepartmentOfTheInterior>().ColonizedStarSystems[0].Node)` from `/eval` (Dusay, GUID 535 in the
@@ -314,8 +356,8 @@ predicate reads false at the galaxy overview, at the orbital zoom step with the 
 on the management page. Opening it from `/eval` is not worth it: `ShowConstructiblePanel` is
 private and indexes `fleetByActionDefinitionDictionary`, which in the beginner save holds no fleet.
 
-**Per-screen blocked-in-fixture inventories live in `docs/roadmap.md`'s row notes** (planet
-overview, management page, improvements modal…) — one truth, updated with screen status.
+**Per-screen blocked-in-fixture inventories live here**, one paragraph per screen; the roadmap holds
+only work remaining.
 What a test SESSION needs here: **the one permitted state round-trip on the management page**
 is Enter on a cheap constructible to queue it and Enter on its queue line to cancel it — check `dust`
 and the queue's names/order before and after (`ConstructionQueue.PendingConstructions`, indexed
@@ -326,6 +368,16 @@ presses). Both were run against a LIVE owner session and restored exactly. The h
 `IsUnique` so planet rename is unreachable; `StarSystemPopulationModalWindow`'s opener is
 tutorial-locked; and at turn 3 no buy-out button is drawn at all
 (`BuyoutTechnologyNotUnlocked` — es2-facts), so the queue line's buy-out children have no fixture.
+**The rest of the management page's blocked list**: a FOREIGN empire's outpost card; an outpost
+action running PAST its start turn (the disabled cancel); the regress/stagnant/complete captions and
+the Hisshos wording; the `Discard`-hidden faction actions (Hisshos/TimeLords/Vodyani); buy-outpost;
+and, last checked turn 1, hangar ships, colonize, the ghost panels, and the rebellion and migration
+rows. `EmigrationGroup`/`ImmigrationGroup` — the growth line's two count-only siblings of the
+outposts readout — are drawn by neither save, so nothing has been invented for them.
+
+**The improvements modal has nothing destructible in the beginner fixture** (last checked turn 1):
+ticking a tile, the Scrap button's enabled label and its confirmation, multi-row wrapping,
+scroll-into-view, the assigned-hero readout and the empty-list state are all code-verified only.
 
 **The system-discovery cutscene has no fixture at all.** It only runs on a system's FIRST
 visit (`GalaxyViewLevel_SystemDiscovery.CanBeActivated`: explored, visible, planets-visible,
@@ -349,4 +401,8 @@ open it through the opener's own private handler by reflection:
 argument logs an arity error and does nothing (es2-facts). Escape/Cancel is safe (commits
 nothing); **never press Confirm or replay a line's double click** — for the outpost purpose
 that posts `OrderChangeOutpostGrowthProvider` and resets the ship timer. Selecting a row is
-harmless (enables Confirm, posts nothing).
+harmless (enables Confirm, posts nothing). **Fixture-blocked** (turn-4 `[Beginner] test` has exactly
+ONE colony, so the table draws one row): multi-row navigation, up/down between rows, a sort visibly
+reordering, a REFUSED row's sentence, the scroll view, and an operable policy drop list — the fixture
+draws it `interactable=false`, so the combo-box branch and the `DropListScreen` it opens are
+code-verified only.
