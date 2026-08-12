@@ -39,7 +39,6 @@ files above.
 
 - Space over-claim → conditional hand-back, now the scan lens is modelled and announces
   itself (`InputAction.ClaimedWhile` was kept for exactly this).
-- Election's layer number (38 proposed; the stage argued 36 over a provisional 12).
 - Tab-at-edge silence: edge cue or wrap.
 - Cutscene keys: the passive announcer claims keys the page's own press-anything
   affordance needs (Enter-to-skip lost).
