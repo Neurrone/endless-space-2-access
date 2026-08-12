@@ -275,7 +275,12 @@ which no dump reveals. Key such lines on the game's *data* object, never the wid
   armed, EVERY pointer gesture takes the mode's meaning — the primary click is the confirm,
   and if the game gives the mode a right-click (cancel, waypoint removal) that gesture's key
   follows it too; the mod's ordinary node actions and selection gestures must yield, or the
-  keyboard does what the mouse could not.
+  keyboard does what the mouse could not. Two mechanics follow: the intercept belongs on the
+  SCREEN, asked before the focused node's own handler — wiring it per node silently misses
+  every node that has no such handler — and the mode's gesture is DELEGATED to the game's own
+  per-mode handler rather than re-implemented, because the same button means cancel, undo one
+  waypoint, or close a prompt depending on the mode, and one call site covers modes no
+  fixture can even reach.
 - **Tab wraps; initial focus still matters.** Tab cycles round both ways — a player who cannot
   see the panels reads a dead key as broken — and a page with one stop consumes the key
   silently. Wrapping does not excuse a bad landing: an ordering where the cursor starts
