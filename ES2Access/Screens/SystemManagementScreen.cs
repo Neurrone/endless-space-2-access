@@ -1456,8 +1456,10 @@ namespace ES2Access.Screens
         }
 
         /// <summary>One kind of person living here. The entry draws their symbol and how many of them
-        /// there are and never writes what they are called; the game keeps that name on the wrapper
-        /// hung on the entry's own tooltip.</summary>
+        /// there are and never writes what they are called; the game keeps that name on the wrapper hung
+        /// on the tooltip - which is on the SYMBOL inside the entry and not on the entry, so the pointer
+        /// is aimed at the tooltip rather than at the row (measured: the row carries no tooltip of its
+        /// own, and pointing at it left this row saying "has tooltip" with the dossier nowhere).</summary>
         private static Cell PopulationCell(
             AgeTransform widget,
             PopulationCount unit,
@@ -1475,7 +1477,7 @@ namespace ES2Access.Screens
                 },
                 Sections = GraphNodes.Sections(null, tooltip),
             };
-            AgeWidgets.PointAt(vtable, widget);
+            AgeWidgets.PointAt(vtable, widget, tooltip);
             return new Cell
             {
                 Widget = widget,
@@ -1901,21 +1903,8 @@ namespace ES2Access.Screens
                 vtable.Announcements.Add(GraphNodes.ValuePart(value));
             }
 
-            AgeWidgets.PointAt(vtable, TooltipOwner(tip) ?? widget);
+            AgeWidgets.PointAt(vtable, widget, tip);
             Add(cells, widget, ControlId.Referenced(widget, key), vtable);
-        }
-
-        /// <summary>The widget a tooltip is hung on, which is the one the game draws it for.</summary>
-        private static AgeTransform TooltipOwner(AgeTooltip tooltip)
-        {
-            try
-            {
-                return tooltip == null ? null : tooltip.AgeTransform;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
         }
 
         private static void AddWidgetLines(

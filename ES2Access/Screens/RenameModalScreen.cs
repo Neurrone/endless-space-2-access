@@ -13,7 +13,8 @@ namespace ES2Access.Screens
     /// (<c>RenameModalWindow.OnBeginShow</c>), which drops the player into a caret with no chance to
     /// hear what the box is asking, what is already in the field or that there is a Confirm button at
     /// all. So the keyboard is taken back on the way in and the box is walked like any other page:
-    /// the heading, the field, Confirm. Entering the field is then the player's own decision - Enter
+    /// the heading, the field, then the two buttons along the bottom - Cancel and Confirm, in the order
+    /// they are drawn. Entering the field is then the player's own decision - Enter
     /// on it, the same activation every other edit field in the mod takes (<see cref="SettingRows"/>) -
     /// and Escape out of it is a step back onto the field rather than out of the box.
     ///
@@ -258,12 +259,12 @@ namespace ES2Access.Screens
 
         /// <summary>
         /// The field, and - only while the keys could actually reach them - the heading above it and the
-        /// button that accepts it.
+        /// two buttons below it, the one that accepts the name and the one that abandons it.
         ///
         /// While the field holds the engine's keyboard the arrows are the caret's and Tab is eaten by
-        /// the game, so nothing on this box is reachable but the field itself. Declaring three stops
-        /// there is a promise the keys cannot keep: the field announced itself as "2 of 3" and the
-        /// player pressed the arrows looking for the other two. So the box declares what it can be
+        /// the game, so nothing on this box is reachable but the field itself. Declaring the other stops
+        /// there is a promise the keys cannot keep: the field announced itself as "2 of 4" and the
+        /// player pressed the arrows looking for the other three. So the box declares what it can be
         /// walked over, which while the player is typing is one stop and no position at all.
         /// </summary>
         public override void Build(GraphBuilder builder)
@@ -310,20 +311,58 @@ namespace ES2Access.Screens
                 }
             }
 
-            AgeControlButton validate = window.ValidateButton;
-            if (walkable && validate != null && AgeWidgets.Visible(AgeWidgets.Transform(validate)))
+            if (!walkable)
             {
-                AgeControlButton press = validate;
-                AgeTooltip tooltip = AgeWidgets.Raw(AgeWidgets.Transform(validate));
-                NodeVtable vtable = GraphNodes.Button(
-                    () => ModStrings.Get(ModStrings.RenameConfirm),
-                    () => AgeWidgets.Press(press),
-                    () => press.Enable,
-                    tooltip
-                );
-                AgeWidgets.Point(vtable, press);
-                builder.AddItem(ControlId.Referenced(validate, "rename:confirm"), vtable);
+                return;
             }
+
+            // In the order the box draws them along its bottom edge, which is Cancel at the left and
+            // Confirm at the right (measured: x 340 and x 856 of a 600-wide box). Cancel is the button
+            // the window keeps no field for, so it is found by the name the prefab gives it.
+            AddButton(
+                builder,
+                AgeWidgets.Button(AgeWidgets.ChildNamed(window.AgeTransform, "CancelButton", 3)),
+                null,
+                "rename:cancel"
+            );
+            AddButton(builder, window.ValidateButton, ModStrings.RenameConfirm, "rename:confirm");
+        }
+
+        /// <summary>
+        /// One of the two buttons along the bottom of the box, pressed the way a click presses it - which
+        /// for Cancel is the window's own <c>OnCancelCb</c>, the same hide that Escape reaches
+        /// (<c>GuiModalWindow.OnCancelCb</c> :102-105), so leaving by it throws the typed name away
+        /// exactly as the game would.
+        ///
+        /// Named by the game's own caption unless <paramref name="nameKey"/> gives the mod's own word for
+        /// it: both captions are localization keys the game resolves (<c>%MessageBoxCancelTitle</c>,
+        /// <c>%MessageBoxValidateTitle</c>), so neither button is named in English by this mod.
+        /// </summary>
+        private static void AddButton(
+            GraphBuilder builder,
+            AgeControlButton button,
+            string nameKey,
+            string key
+        )
+        {
+            AgeTransform widget = AgeWidgets.Transform(button);
+            if (button == null || !AgeWidgets.Visible(widget))
+            {
+                return;
+            }
+
+            AgeControlButton press = button;
+            AgeTransform at = widget;
+            string named = nameKey;
+            NodeVtable vtable = GraphNodes.Button(
+                () =>
+                    string.IsNullOrEmpty(named) ? AgeWidgets.TextOf(at) : ModStrings.Get(named),
+                () => AgeWidgets.Press(press),
+                () => press.Enable,
+                AgeWidgets.Raw(widget)
+            );
+            AgeWidgets.Point(vtable, press);
+            builder.AddItem(ControlId.Referenced(button, key), vtable);
         }
 
         private static RenameModalWindow Window()

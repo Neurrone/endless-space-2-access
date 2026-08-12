@@ -19,9 +19,11 @@ namespace ES2Access.Screens
     /// Minimising it is not this screen getting smaller, it is this screen ending. The box collapses
     /// to its title bar - the game crops the panel to the strip above its content, leaving the title,
     /// the close button and the arrow that collapsed it drawn at the top right of the screen - and
-    /// everything this screen is for is behind that crop. So a minimised tutorial is not ours: the
-    /// galaxy underneath takes the keyboard back, and the bar that is still on screen is declared
-    /// THERE, by <see cref="BuildCollapsedBar"/>, among the things drawn down the right-hand edge.
+    /// everything this screen is for is behind that crop. So a minimised tutorial is not ours: the page
+    /// underneath takes the keyboard back, and the bar that is still on screen is declared THERE, by
+    /// <see cref="BuildCollapsedBar"/> - on the eleven pages that share the HUD's right-hand edge among
+    /// the things drawn down it, and on every other page (<see cref="Screen.BuildShared"/>) wherever the
+    /// game is still drawing the bar, which over a modal it is.
     /// Nothing in the game's own notification strip stands for a minimised tutorial, so the bar is
     /// modelled as the bar: its title, its close button, and the arrow that brings it back.
     ///
@@ -126,7 +128,8 @@ namespace ES2Access.Screens
         /// cropped to its title bar, everything this screen declares is behind the crop, and a screen
         /// that held on would own the keyboard with nothing on it the player can see. That is what makes
         /// layer 98 livable - minimising hands everything underneath the keyboard back. The bar itself
-        /// stays reachable from the galaxy (<see cref="BuildCollapsedBar"/>), which is where it is drawn.
+        /// stays reachable on whatever page that is (<see cref="BuildCollapsedBar"/>), for as long as the
+        /// game keeps drawing it there.
         /// </summary>
         public override bool IsActive()
         {
@@ -336,9 +339,14 @@ namespace ES2Access.Screens
 
         /// <summary>
         /// The bar a collapsed tutorial leaves on screen, declared wherever the player is once this
-        /// screen has stood down - which is the galaxy underneath. It is modelled as it is drawn: the
-        /// close button, the title saying which tutorial is waiting, and the arrow that brings it back,
-        /// in the order the bar reads. Answers whether there was anything to declare.
+        /// screen has stood down - which is whatever page the game handed the keyboard back to. It is
+        /// modelled as it is drawn: the close button, the title saying which tutorial is waiting, and the
+        /// arrow that brings it back, in the order the bar reads.
+        ///
+        /// The gate is the game's own drawing, which is why callers need no rule of their own: the panel
+        /// is bound, shown and cropped to its title bar. A tutorial the game has HIDDEN for the window
+        /// that opened over it (an <c>UnderScreens</c> page) is not shown, and then this declares nothing
+        /// - which is what the answer is for.
         /// </summary>
         public static bool BuildCollapsedBar(GraphBuilder builder)
         {

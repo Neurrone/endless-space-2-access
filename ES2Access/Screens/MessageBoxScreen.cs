@@ -53,6 +53,13 @@ namespace ES2Access.Screens
             get { return 100; }
         }
 
+        /// <summary>A question the game is waiting on: the page it was raised over, and anything still
+        /// drawn beside it, are the player's again once they have answered and not before.</summary>
+        public override bool AnswersOnly
+        {
+            get { return true; }
+        }
+
         /// <summary>What the box is headed. Spoken on arrival, ahead of the question focus lands on,
         /// so the two together read as the box reads and neither says the other's half twice. A box
         /// the game gave no heading says only that something is standing between the player and the

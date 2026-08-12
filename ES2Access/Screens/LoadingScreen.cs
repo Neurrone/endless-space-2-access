@@ -48,6 +48,14 @@ namespace ES2Access.Screens
             get { return 60; }
         }
 
+        /// <summary>Nothing on screen is the player's while the game loads - there is only the progress
+        /// to hear and the wait, and whatever page the load is on its way to has not opened yet.
+        /// </summary>
+        public override bool AnswersOnly
+        {
+            get { return true; }
+        }
+
         /// <summary>What the game calls this load - the caption it writes from the faction and the
         /// session it is loading into. Falls back on saying that a load is happening, for the moment
         /// before the caption is written.</summary>

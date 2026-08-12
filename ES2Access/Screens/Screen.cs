@@ -61,6 +61,48 @@ namespace ES2Access.Screens
         /// <summary>Declare the screen's controls. Called on every navigation operation.</summary>
         public virtual void Build(GraphBuilder builder) { }
 
+        /// <summary>
+        /// A page that exists to be ANSWERED and holds nothing else: the error box, the two message
+        /// boxes, the drop list, the loading screen. Whatever the game may still be drawing around
+        /// them is not theirs - the player answers, and the page underneath comes back with everything
+        /// that belongs to it. Overridden by those pages so that <see cref="BuildShared"/> adds
+        /// nothing to them; every other page leaves it alone.
+        /// </summary>
+        public virtual bool AnswersOnly
+        {
+            get { return false; }
+        }
+
+        /// <summary>
+        /// What a page declares beyond its own content, added after <see cref="Build"/>.
+        ///
+        /// Just one thing: the bar a COLLAPSED tutorial leaves on screen. Collapsing the popup hands the
+        /// keyboard back to the page underneath, so the bar belongs to whatever page that is - and it is
+        /// declared exactly where the game is DRAWING it, which is the gate
+        /// <see cref="TutorialScreen.BuildCollapsedBar"/> asks: a tutorial page declares for itself what
+        /// it may be drawn above, so an <c>Above*</c> page keeps its bar over screens, modals and
+        /// notifications alike (and clickable there), while an <c>UnderScreens</c> page's panel is
+        /// HIDDEN by the game the moment anything opens - and then there is nothing to declare and
+        /// nothing is. Following the drawing is what stops a player who minimised a tutorial over a
+        /// modal from having no way back to it, without inventing a bar on a page where the game drew
+        /// none.
+        ///
+        /// A page that reads the bar among its OWN stops - the galaxy and the ten pages that share the
+        /// HUD's right-hand edge, where it is drawn above the notification icons - keeps the place it
+        /// chose; every other page gets it last. A page that only takes an ANSWER
+        /// (<see cref="AnswersOnly"/>) gets it not at all.
+        /// </summary>
+        public void BuildShared(GraphBuilder builder)
+        {
+            if (AnswersOnly || builder.DeclaredStop(GlobalHud.TutorialStop))
+            {
+                return;
+            }
+
+            builder.BeginStop(GlobalHud.TutorialStop);
+            TutorialScreen.BuildCollapsedBar(builder);
+        }
+
         /// <summary>Spoken when the player arrives on the screen, before the focused control reads.
         /// Null for a screen whose content already says where you are.</summary>
         public virtual string ScreenName

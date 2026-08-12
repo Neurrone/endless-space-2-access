@@ -50,6 +50,14 @@ namespace ES2Access.Screens
             get { return 97; }
         }
 
+        /// <summary>The box carries one message and the button that answers it, and nothing else: what
+        /// the game keeps drawing around it belongs to the page underneath, which is where it is
+        /// declared and where the player is again the moment this is answered.</summary>
+        public override bool AnswersOnly
+        {
+            get { return true; }
+        }
+
         /// <summary>What the box is headed, spoken ahead of the question focus lands on. A box the caller
         /// gave no heading says only that something is standing between the player and the screen they
         /// were on - the same phrase the blocking box falls back on, because it is the same sentence.

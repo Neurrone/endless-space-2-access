@@ -415,7 +415,7 @@ namespace ES2Access.Screens
                     Sections = GraphNodes.Sections(null, tooltip),
                 };
 
-                PointAtTooltip(vtable, tooltip, item);
+                AgeWidgets.PointAt(vtable, item, tooltip);
                 Add(cells, item, ControlId.Referenced(item, "planet:fidsi/" + name), vtable);
             }
         }
@@ -476,7 +476,7 @@ namespace ES2Access.Screens
                 Sections = GraphNodes.Sections(null, tooltip),
             };
 
-            PointAtTooltip(vtable, tooltip, widget);
+            AgeWidgets.PointAt(vtable, widget, tooltip);
             Add(
                 cells,
                 widget,
@@ -588,7 +588,7 @@ namespace ES2Access.Screens
                 Sections = RowSections(it, tooltip),
             };
 
-                        PointAtTooltip(vtable, tooltip, row);
+            AgeWidgets.PointAt(vtable, row, tooltip);
             Add(cells, row, ControlId.Referenced(row, "planet:row/" + key), vtable);
         }
 
@@ -741,7 +741,7 @@ namespace ES2Access.Screens
                 Sections = RowSections(it, tooltip),
             };
 
-                        PointAtTooltip(vtable, tooltip, widget);
+            AgeWidgets.PointAt(vtable, widget, tooltip);
             Add(cells, widget, ControlId.Referenced(widget, key), vtable);
         }
 
@@ -782,33 +782,6 @@ namespace ES2Access.Screens
                 : ModStrings.Get(nameKey);
         }
 
-        /// <summary>
-        /// Make the game draw the tooltip this control was declared with, which means pointing at the
-        /// widget the tooltip is actually ON.
-        ///
-        /// The card's rows do not carry their own: an anomaly's dossier hangs off the title inside the
-        /// row, not off the row, and pointing at the row showed nothing at all while the readout went
-        /// on saying the control had a tooltip. A control with no tooltip anywhere still gets pointed
-        /// at, so that anything hoverable under it lights up.
-        /// </summary>
-        private static void PointAtTooltip(
-            NodeVtable vtable,
-            AgeTooltip tooltip,
-            AgeTransform fallback
-        )
-        {
-            AgeTransform at = fallback;
-            try
-            {
-                if (tooltip != null && tooltip.AgeTransform != null)
-                {
-                    at = tooltip.AgeTransform;
-                }
-            }
-            catch (Exception) { }
-
-            AgeWidgets.PointAt(vtable, at);
-        }
         /// <summary>A tooltip only when there is something behind it. AGE hangs a tooltip component on
         /// widgets that never get one filled in, and an empty one would be picked as a row's
         /// explanation and then say nothing.</summary>

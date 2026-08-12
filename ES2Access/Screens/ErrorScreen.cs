@@ -61,6 +61,14 @@ namespace ES2Access.Screens
             get { return 99; }
         }
 
+        /// <summary>The box is the only way out of itself, and the game behind it has already stopped
+        /// answering: nothing the game is still drawing around it is the player's until this is
+        /// answered.</summary>
+        public override bool AnswersOnly
+        {
+            get { return true; }
+        }
+
         public override string ScreenName
         {
             get { return OptionalText.Phrase(ScreenNameKey); }

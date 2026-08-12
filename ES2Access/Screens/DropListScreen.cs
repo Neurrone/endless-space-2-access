@@ -107,6 +107,13 @@ namespace ES2Access.Screens
             get { return 70; }
         }
 
+        /// <summary>An open list is a choice being made: the only things it offers are the entries and
+        /// leaving it, and the setting it belongs to is waiting for one of them.</summary>
+        public override bool AnswersOnly
+        {
+            get { return true; }
+        }
+
         /// <summary>The setting being chosen, in the game's own words - so opening the list reads
         /// "Resolution" and then the resolution currently set.</summary>
         public override string ScreenName

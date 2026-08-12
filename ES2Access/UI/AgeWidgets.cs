@@ -794,6 +794,35 @@ namespace ES2Access.UI
             vtable.OnBlurVisual = ReleasePointer;
         }
 
+        /// <summary>
+        /// The same for a control whose tooltip the game hung somewhere OTHER than on the widget the node
+        /// is read off - a population entry whose dossier is on the symbol inside it, a card row whose
+        /// anomaly dossier is on the title inside it. Pass the tooltip the node was DECLARED with:
+        /// pointing at the widget aims at the widget's own tooltip, so where that is null the game draws
+        /// nothing at all while the readout goes on saying "has tooltip" and the review buffer stays
+        /// empty - the tooltip's words only exist once it is drawn.
+        ///
+        /// The widget is the fallback, so a control with no tooltip anywhere is still pointed at and
+        /// anything hoverable under it still lights up.
+        /// </summary>
+        public static void PointAt(NodeVtable vtable, AgeTransform widget, AgeTooltip tooltip)
+        {
+            PointAt(vtable, TooltipOwner(tooltip) ?? widget);
+        }
+
+        /// <summary>The widget a tooltip is hung on, which is the one the game draws it for.</summary>
+        public static AgeTransform TooltipOwner(AgeTooltip tooltip)
+        {
+            try
+            {
+                return tooltip == null ? null : tooltip.AgeTransform;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
         public static readonly Action ReleasePointer = PointerFocus.Release;
 
         /// <summary>

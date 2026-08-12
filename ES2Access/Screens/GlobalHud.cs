@@ -1602,11 +1602,13 @@ namespace ES2Access.Screens
 
         /// <summary>The bar a collapsed tutorial leaves at the top of the right-hand edge - its title,
         /// its close button, the arrow that brings it back. The tutorial screen knows how to read it;
-        /// what this decides is that it is declared by the pages that PLACE it - the galaxy and the
-        /// screens the HUD's own edge belongs to - because it is one of the fixtures of that edge and
-        /// not a thing that follows the keyboard onto a modal, a notification or an error box (owner
-        /// decision 2026-08-12). The accepted consequence is that a tutorial minimised over a modal
-        /// waits for the modal to close before it can be brought back.</summary>
+        /// what this decides is WHERE it sits on the eleven pages that share the HUD's right-hand edge:
+        /// among that edge's own fixtures, above the notification icons, which is where it is drawn.
+        ///
+        /// Every other page gets it appended instead, by <see cref="Screen.BuildShared"/>, and on the
+        /// same condition: exactly while the game is drawing the bar. This stop is what
+        /// <c>GraphBuilder.DeclaredStop</c> answers for, so a page that placed the bar itself is never
+        /// given a second one.</summary>
         public void Tutorial(GraphBuilder builder)
         {
             builder.BeginStop(TutorialStop);
