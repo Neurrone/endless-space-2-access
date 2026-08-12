@@ -42,6 +42,7 @@ namespace ES2Access.Screens
     /// </summary>
     public sealed class SystemManagementScreen : Screen
     {
+        private static readonly object PageStop = "system:page";
         private static readonly object PlanetStop = "system:planets";
         private static readonly object ConstructiblesStop = "system:constructibles";
         private static readonly object QueueStop = "system:queue";
@@ -173,6 +174,8 @@ namespace ES2Access.Screens
             // because the game draws them in the same places whichever one is up.
             _hud.Top(builder);
 
+            BuildPage(builder, window);
+
             builder.BeginStop(PlanetStop);
             builder.PushContext(ModStrings.Get(ModStrings.SystemPlanetsPanel));
             BuildPlanets(builder, window);
@@ -221,6 +224,34 @@ namespace ES2Access.Screens
             _hud.Tutorial(builder);
             _hud.Notifications(builder);
             _hud.Turn(builder);
+        }
+
+        /// <summary>
+        /// What the game hangs on the page's own WINDOW rather than on any of its panels, drawn above
+        /// the cards: the toggle between the view the player's sleepers have of a foreign colony and the
+        /// view its owner has (<c>StarSystemScreen.SwitchTraitorsModeButton</c> :629, drawn only while
+        /// the player has traitors in this system and there is a second colony to look at). Being drawn
+        /// is what declares it - no empire without sleepers here ever meets it - and the game names it
+        /// nowhere but in the sentence its own tooltip explains it with.
+        ///
+        /// It is a stop of its own before the planets rather than a card's child, because pressing it
+        /// re-binds the WHOLE page: what every panel below is about changes.
+        /// </summary>
+        private void BuildPage(GraphBuilder builder, StarSystemScreen window)
+        {
+            _cells.Clear();
+            Cells.AddControl(
+                _cells,
+                AgeWidgets.Transform(window.SwitchTraitorsModeButton),
+                "system:traitors-mode"
+            );
+            if (_cells.Count == 0)
+            {
+                return;
+            }
+
+            builder.BeginStop(PageStop);
+            Cells.Emit(builder, _cells);
         }
 
         private static void BuildBottomPanel(
@@ -518,6 +549,7 @@ namespace ES2Access.Screens
                 // buttons and are child nodes of their own, so only the rest of the table is read here.
                 AddWidgetLines(lines, label.PlanetCuriositiesTable, SkipCuriosities);
                 AddWidgetLines(lines, label.ResourceDepositsGroup);
+                AddDepletion(lines, label);
                 AddWidgetLines(lines, label.ImprovementStatus);
                 AddFidsi(lines, label);
                 AddOutpost(lines, label);
@@ -528,6 +560,29 @@ namespace ES2Access.Screens
             }
 
             return lines;
+        }
+
+        /// <summary>
+        /// How worn out the world is - a mining probe's damage, or a Craver colony eating the planet it
+        /// lives on. The game draws this only while the planet is being depleted or already is
+        /// (<c>PlanetLabel_SystemManagement.RefreshPlanetDepletion</c> :1321-1332), so being drawn is
+        /// the gate, and it writes the state and how many turns are left on the item itself with the
+        /// sentence behind them in its own tooltip.
+        ///
+        /// A FULLY depleted planet swaps that tooltip for an assembled dossier, whose words do not
+        /// exist until the tooltip is drawn - so the state line still reads and the paragraph arrives
+        /// when the player looks at it, rather than being invented here.
+        /// </summary>
+        private static void AddDepletion(List<string> lines, PlanetLabel_SystemManagement label)
+        {
+            PlanetDepletionStatusItem item = label.PlanetDepletionStatusItem;
+            if (item == null || !AgeWidgets.Visible(item.AgeTransform))
+            {
+                return;
+            }
+
+            AddLine(lines, Drawn(item.Title));
+            Add(lines, AgeWidgets.TooltipLines(item.Tooltip));
         }
 
         /// <summary>

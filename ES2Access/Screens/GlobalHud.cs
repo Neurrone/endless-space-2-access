@@ -561,6 +561,69 @@ namespace ES2Access.Screens
                     Vtable = vtable,
                 }
             );
+            AddResearchBuyout(cells, banner);
+        }
+
+        /// <summary>
+        /// Buying the technology being researched outright, from the button the banner draws at the end
+        /// of the research line.
+        ///
+        /// Same rule the construction queue's buy-outs follow (es2-facts): the game HIDES this button
+        /// for an empire that cannot buy technology at all and otherwise leaves it drawn and switched
+        /// off with the reason written into its own tooltip (<c>EmpireBanner.RefreshBuyout</c>
+        /// :470-515), so DRAWN is what declares it and <c>Enable</c> is what offers it. Which currency
+        /// this could be bought with, and why the answer is no today, is exactly what the player asks
+        /// the banner.
+        /// </summary>
+        private static void AddResearchBuyout(List<Cell> cells, EmpireBanner banner)
+        {
+            BuyoutButton buyout = banner.BuyoutButton;
+            if (buyout == null || !AgeWidgets.Visible(buyout.AgeTransform))
+            {
+                return;
+            }
+
+            BuyoutButton it = buyout;
+            AgeTransform at = buyout.AgeTransform;
+            AgeTooltip tooltip = AgeWidgets.Raw(at);
+            NodeVtable vtable = GraphNodes.Button(
+                () =>
+                    ModStrings.Format(
+                        ModStrings.SystemBuyOut,
+                        AgeText.Clean(Gui.GetLocalizedTitle("Empire" + it.Resource))
+                    ),
+                () => AgeWidgets.Press(at),
+                () => AgeWidgets.Offered(at),
+                tooltip
+            );
+            // The price the button writes on itself, and only while the button is on offer: a refused
+            // one carries a marker there rather than a number ("x", "-") and its tooltip already names
+            // the amount that cannot be afforded.
+            vtable.Announcements.Add(GraphNodes.ValuePart(() => BuyoutCost(it, at)));
+            GraphNodes.AddRefusal(vtable, tooltip, () => AgeWidgets.Offered(at));
+            AgeWidgets.PointAt(vtable, at);
+            cells.Add(
+                new Cell
+                {
+                    Widget = at,
+                    Id = ControlId.Referenced(buyout, "hud:empire/research-buyout"),
+                    Vtable = vtable,
+                }
+            );
+        }
+
+        private static string BuyoutCost(BuyoutButton buyout, AgeTransform widget)
+        {
+            try
+            {
+                return AgeWidgets.Offered(widget) && buyout.CostLabel != null
+                    ? AgeText.Label(buyout.CostLabel)
+                    : null;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
         }
 
         private static string ResearchText(Empire empire)

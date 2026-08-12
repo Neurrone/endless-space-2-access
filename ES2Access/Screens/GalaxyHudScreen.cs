@@ -1263,6 +1263,7 @@ namespace ES2Access.Screens
             List<string> lines = new List<string>();
             try
             {
+                AddDecay(lines, card);
                 AddFidsi(lines, card);
                 AddAnomalies(lines, card);
                 // The curiosities are NOT read here: each one is a button of the card's and is a child
@@ -1279,6 +1280,40 @@ namespace ES2Access.Screens
             }
 
             return lines;
+        }
+
+        /// <summary>
+        /// That the planet is decaying - a world that was colonized and lost, which colonizing the
+        /// system again would restore. The card says it with one wordless icon and keeps the sentence in
+        /// that icon's own tooltip, with a different one per cause (a Vodyani leech, a pirate invasion,
+        /// Unfallen tendrils pulled out) - and the game hides the icon outright for the Vodyani player
+        /// whose own ark is the cause (<c>PlanetLabel_SystemOrbital</c> :353-381).
+        ///
+        /// Drawn is the gate, and it has to be: the icon's tooltip carries the general sentence from the
+        /// prefab whether or not the card is showing it, so anything reading the tooltip alone would
+        /// tell every player that every healthy planet had been lost.
+        /// </summary>
+        private static void AddDecay(List<string> lines, PlanetLabel_SystemOrbital card)
+        {
+            try
+            {
+                AgeTransform icon = card.HuntingGroundsIcon;
+                if (icon == null || !Visible(icon))
+                {
+                    return;
+                }
+
+                Func<IList<string>> decay = AgeWidgets.TooltipLines(AgeWidgets.Raw(icon));
+                IList<string> said = decay == null ? null : decay();
+                for (int i = 0; said != null && i < said.Count; i++)
+                {
+                    AddLine(lines, said[i]);
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: reading an orbital card's decay marker threw: " + e);
+            }
         }
 
         /// <summary>What has been found on the planet. The card draws each anomaly as a coloured icon

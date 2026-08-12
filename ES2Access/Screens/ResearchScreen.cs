@@ -946,6 +946,7 @@ namespace ES2Access.Screens
                     Value(() => TechnologyState(technology)),
                 },
                 Sections = GraphNodes.Sections(
+                    AffinitySection(item),
                     GraphNodes.TooltipSection(item.Tooltip),
                     new NodeSection(() => Links(technology), TooltipMode.None)
                 ),
@@ -958,6 +959,33 @@ namespace ES2Access.Screens
             };
             ShowDot(vtable, item);
             return vtable;
+        }
+
+        /// <summary>
+        /// The marker the wheel draws on a technology that unlocks something only ONE affinity gets -
+        /// the player's own where this technology has one for it (<c>TechnologyItem2.CommonBind</c>
+        /// :290-316 prefers it). The dot draws it as an icon and names the affinity only in the
+        /// icon's own tooltip, which is the one place those words exist, so that tooltip joins the
+        /// dot's own; the group is hidden on every technology with no such unlock, which is the gate.
+        ///
+        /// It is a BADGE on the dot, not the dot's own description, so it is reviewable rather than
+        /// spoken (tooltips: where a row carries the card's tooltip and a badge's, the card's is the one
+        /// that speaks and the screen says so). Two thirds of the wheel's 385 technologies carry one -
+        /// measured, 254 - so announcing it would put the same ten words in front of nearly every dot.
+        /// Declared before the dot's own tooltip, which is the order the two are drawn in.
+        /// </summary>
+        private static NodeSection AffinitySection(TechnologyItem2 item)
+        {
+            try
+            {
+                return item.AffinityGroup != null && AgeWidgets.Visible(item.AffinityGroup)
+                    ? GraphNodes.TooltipSection(item.AffinityTooltip, TooltipMode.None)
+                    : null;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
         }
 
         /// <summary>
