@@ -61,7 +61,8 @@ notifications (`TutorialPopupLayer`, per page — es2-facts), so any lower numbe
 them; what keeps 98 livable is that a collapsed popup stands down and that the mod follows the
 panel's own visibility, so a popup the game has hidden holds nothing. The error box (99) and
 the message box (100) go ABOVE it, because an error or a confirmation the tutorial buries is
-unanswerable.
+unanswerable. A collapsed popup's bar is declared on whatever page took the keyboard back —
+every page, not only the ones that read it in their own place (`Screen.BuildShared`).
 
 **The selected-fleet panel has NO layer** — it is a contributor to the galaxy page
 (`FleetPanel` — `docs/helpers.md`), not a screen, because selecting a fleet changes only the cursor and the

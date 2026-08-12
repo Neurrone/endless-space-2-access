@@ -116,7 +116,8 @@ cold launch to in-game in one command; `.\wait-game.ps1 <menu|ingame|loading|dia
 on a state. Boot ≤ 1 min.
 
 **Reload loop.** `dotnet build ES2Access/ES2Access.csproj` → `POST /reload` →
-`GET /loader/status` (`staleBuild:false`, `modAssemblyName` incremented).
+`GET /loader/status` (`staleBuild:false`, `modAssemblyName` incremented). It can answer
+BEFORE a queued reload has run (`staleBuild:true`, old name) — poll again, don't rebuild.
 
 **Evidence crop.** A Class-backed tooltip's review buffer reads EMPTY in `/gui/graph?buffers=1`
 unless the node is focused first (its words only exist once the tooltip window draws them — see

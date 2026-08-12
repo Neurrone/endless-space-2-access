@@ -532,6 +532,19 @@ installed, so notification variants are readable structurally even when they are
 which is what makes the journal's ending entries readable; delete the entry afterwards through the
 journal's own cell rather than by editing the summary. The popup's groups hold no text and it hides
 Dismiss and Minimize (es2-facts), so its sentence rides the screen name.
+**A journal row without ending a game**: `new EndGameSummary(Gui.Game)` self-saves the FIRST time
+only (it sets `Game.EndGameSummaryAlreadySaved`); after that, construct one and call
+`SaveEndGameSummary(it)` — exactly one wrapper, never both for one instance (two rows, one object
+→ `Duplicate control id`). Open the journal in-game with
+`Gui.GuiService.ShowWindow<JournalModalWindow>()`, close with `HideWindow` — **never Escape**,
+which hides the journal and shows the MAIN MENU. Enter on the score-screen cell opens
+`VictoryScreen` (`fromJournal:true`); come back with `HideWindow<VictoryScreen>()` +
+`ShowWindow<JournalModalWindow>()`. Delete through the cell, answer Confirm, then `POST /loadsave`.
+**Raising a tutorial popup or an error on demand**: opening the technology screen or the politics
+modal binds a tutorial ("A MATTER OF INFLUENCE" / "BREAD AND CIRCUSES") and closing that window
+unbinds it; `((GuiManager)Gui.GuiService).ShowError(flags, message, stack,
+UnityEngine.LogType.Error)` raises the error box — dismiss with its Continue button, never Exit
+Game.
 
 **A solo multiplayer session** — the only fixture for the MP-only states, correcting the older claim
 that they have none at all. Switch the lobby's Session Mode to Protected, which makes it a

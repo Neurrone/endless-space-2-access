@@ -27,6 +27,13 @@ files above.
 - Skill-tree type-ahead: a TypeAheadScope so search reaches skills in collapsed branches.
 - Modal-return cursor: closing any modal over the star system page lands on the planets
   stop's start node, not the opening button (pre-existing; improvements/rename too).
+- ReadCell cells on EmpireScreen/MilitaryScreen/SystemSelectionScreen can say
+  "unavailable" twice (own part + the shared tail); the split-cell fix exists
+  (`Adorn(availability:false)`) but SystemSelectionScreen's combo needs care — a refused
+  row's word must survive.
+- `screen.victory` announces the raw key `%VictoryScreenPlayingPlayerTitle` — the mod's
+  lookup does not resolve it even though the drawn label localizes (the AGE
+  draw-time-localization trap, live-caught).
 - Notification arrival-focus race: a popup's first build can run before its description
   label is visible, landing arrival focus on the first control instead of the words (why
   the elimination sentence had to ride the screen name).
@@ -79,7 +86,6 @@ files above.
 
 - Click parity when the game's own click is a bug: stated exception path or strict parity
   (enemy battle-play cards — explanation given, awaiting ruling).
-- Backspace as a table cell's second button (journal Details cell) — awaiting ruling.
 - Cursor target modes: Enter-as-click while a targeting mode is active is the likely
   answer (measure whether the game's cursor intercepts the click; else a binding choice
   returns to the owner).

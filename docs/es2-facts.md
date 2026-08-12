@@ -812,7 +812,20 @@ generic graduates to the generic docs.
 - **The elimination popup's groups hold no text**, and it hides Dismiss and Minimize — so its
   sentence has to ride something else (the mod puts it on the screen name).
 - **`EndGameSummary` is written at popup-SHOW time**, which is what makes the journal's ending
-  entries readable at all.
+  entries readable at all. **Its CONSTRUCTOR saves itself**: `new EndGameSummary(game)` writes
+  the `.bin` and adds the journal row unless `Game.EndGameSummaryAlreadySaved` or
+  `EnableModdingTools` (`EndGameSummary.cs:145-151`). Constructing one and then calling
+  `SaveEndGameSummary` registers the SAME instance twice — two rows sharing one row object
+  throw `Duplicate control id` and empty the journal.
+- **The journal's Details column has no text of its own**: its two buttons carry their only
+  words on their own tooltips (`%VictoryScreenScoreScreenButtonDescription`,
+  `%JournalModalWindowDeleteEntryDescription`), one line each.
+- **A tutorial page's popup layer decides whether a MINIMIZED popup's bar survives a covering
+  window**: `UnderScreens`/`FleetsScreen` hide the whole panel; `AboveScreens`/
+  `AboveNotifications`/`AboveModalWindows` keep it drawn and clickable (minimizing only crops
+  the panel). Counted in `Public\Tutorials\*.xml`: 117/10 vs 41/16/49. Closing a modal a
+  tutorial was drawn over makes the popup re-announce its page — the panel is briefly
+  un-minimized during the hide.
 - `AgeModifierTypewriter`'s labels are complete from frame one (see the typewriter fact above);
   AGE also localizes label text itself, so assigning a raw `%key` still DRAWS localized
   (`AgePrimitiveLabel.cs:702-717`) — which means a drawn label is no evidence that the mod's own
