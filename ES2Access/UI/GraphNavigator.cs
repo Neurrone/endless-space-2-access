@@ -152,7 +152,6 @@ namespace ES2Access.UI
 
             GraphBuilder builder = new GraphBuilder(state.Expanded);
             screen.Build(builder);
-            screen.BuildShared(builder);
             return builder.Build();
         }
 
@@ -587,7 +586,6 @@ namespace ES2Access.UI
             {
                 GraphBuilder builder = new GraphBuilder(state.Expanded);
                 screen.Build(builder);
-                screen.BuildShared(builder);
                 return builder.Build();
             }
             catch (Exception e)

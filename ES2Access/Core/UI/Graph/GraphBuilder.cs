@@ -73,9 +73,6 @@ namespace ES2Access.Core.UI.Graph
         private int _stopAuto = 1;
         private object _regionKey;
 
-        // The keys a screen named its stops with (auto keys are not recorded) — see DeclaredStop.
-        private readonly HashSet<object> _stopKeys = new HashSet<object>();
-
         // The parent stack: structural levels (PushContext) and group headers (BeginGroup). A frame whose
         // group is collapsed suppresses every declaration beneath it (the stack stays balanced regardless).
         private sealed class ParentFrame
@@ -111,17 +108,8 @@ namespace ES2Access.Core.UI.Graph
             if (_currentRow != null) throw new InvalidOperationException("Cannot begin a stop inside an open row");
             _stopKey = key ?? AutoStopKey(_stopAuto);
             _stopAuto++;
-            if (key != null) _stopKeys.Add(key);
             _regionKey = null; // regions are per-stop
             return this;
-        }
-
-        /// <summary>Whether this build has already begun a stop under that key — asked by a contribution
-        /// SHARED by every screen (the collapsed-tutorial bar), so that a screen which reads it among its
-        /// own stops keeps the place it put it and only the screens that did not get it appended.</summary>
-        public bool DeclaredStop(object key)
-        {
-            return key != null && _stopKeys.Contains(key);
         }
 
         /// <summary>Tag nodes added from here with a region (Ctrl+arrow jump target) within the current

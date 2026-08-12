@@ -758,9 +758,19 @@ namespace ES2Access.Screens
         ///
         /// Takes any node on the map rather than a system, because the far end of a starlane is offered
         /// as a node of its own (<see cref="AddDestination"/>) and its Enter has to be this exact click
-        /// rather than a second copy of it.</summary>
+        /// rather than a second copy of it.
+        ///
+        /// While the game has the map in one of its TARGETING modes - launch a probe, take this system,
+        /// fire the obliterator - the same left click means "confirm the target here" instead of the
+        /// zoom, for the mouse as much as for us (<see cref="CursorTargeting"/>), so the mode is asked
+        /// first and the camera is left alone when it answers.</summary>
         private static void ZoomIn(GameNode node)
         {
+            if (CursorTargeting.ConfirmAt(node))
+            {
+                return;
+            }
+
             GalaxyViewLevels.ZoomTo(node);
             Voice.Say(ModStrings.Get(ModStrings.GalaxyZoomedIn), true);
         }
@@ -2329,6 +2339,13 @@ namespace ES2Access.Screens
         {
             try
             {
+                // Nothing is selected while a targeting mode is waiting - the same rule the fleet nodes
+                // follow (<see cref="Select"/>).
+                if (CursorTargeting.Aiming)
+                {
+                    return;
+                }
+
                 Amplitude.Unity.View.ICursorService cursors =
                     Amplitude.Unity.Framework.Services.GetService<Amplitude.Unity.View.ICursorService>();
                 if (cursors == null || hangar == null || hangar.CursorTarget == null)
@@ -2666,6 +2683,16 @@ namespace ES2Access.Screens
         {
             try
             {
+                // While the map is waiting for a target, a click selects NOTHING - every targeting
+                // cursor turns selection off (<c>ValidateSelection</c> false) and keeps the click for
+                // its own confirm. So this key is consumed and silent here rather than swapping in the
+                // garrison cursor, which would cancel the mode the player is in the middle of
+                // (<see cref="CursorTargeting"/>).
+                if (CursorTargeting.Aiming)
+                {
+                    return;
+                }
+
                 if (FleetOrders.Orbit(fleet) != null)
                 {
                     EndTurnWindow window = TurnWindow();

@@ -1603,8 +1603,11 @@ namespace ES2Access.Screens
 
         /// <summary>The bar a collapsed tutorial leaves at the top of the right-hand edge - its title,
         /// its close button, the arrow that brings it back. The tutorial screen knows how to read it;
-        /// what this decides is that it is declared HERE, on whatever page is underneath, because
-        /// collapsing the popup hands the keyboard back to that page.</summary>
+        /// what this decides is that it is declared by the pages that PLACE it - the galaxy and the
+        /// screens the HUD's own edge belongs to - because it is one of the fixtures of that edge and
+        /// not a thing that follows the keyboard onto a modal, a notification or an error box (owner
+        /// decision 2026-08-12). The accepted consequence is that a tutorial minimised over a modal
+        /// waits for the modal to close before it can be brought back.</summary>
         public void Tutorial(GraphBuilder builder)
         {
             builder.BeginStop(TutorialStop);
