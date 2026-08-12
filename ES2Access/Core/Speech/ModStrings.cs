@@ -353,11 +353,6 @@ namespace ES2Access.Core.Speech
         public const string RenameTypePrompt = "rename.type-prompt";
         public const string RenameConfirm = "rename.confirm";
 
-        /// <summary>What the box says when the field lets go of the keyboard without the box closing -
-        /// the first of the two Escapes it takes to get out of here. Nothing on screen changes, so
-        /// without this the player is left pressing keys at a box that has gone quiet.</summary>
-        public const string RenameKeyboardReturned = "rename.keyboard-returned";
-
         // The research screen - the wheel of technologies the game draws over the galaxy. The three
         // panel names are the mod's, because the game labels none of them; the quadrants, the stages
         // and every technology on them are named by the game.
@@ -810,12 +805,8 @@ namespace ES2Access.Core.Speech
             { ScreenSystemDiscovery, "System discovery" },
             { DiscoverySystem, "Discovering {0}" },
             { ScreenRename, "Rename" },
-            { RenameTypePrompt, "Type the new name, then press Enter." },
+            { RenameTypePrompt, "Type the new name, then press Enter to confirm or Escape to cancel." },
             { RenameConfirm, "Confirm" },
-            {
-                RenameKeyboardReturned,
-                "The name box has let go of the keyboard; press Escape again to close it."
-            },
             { ScreenResearch, "Research" },
             { ResearchStatusPanel, "Research status" },
             { ResearchKeyPanel, "Research key" },
