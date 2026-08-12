@@ -113,6 +113,11 @@ patch site per input path (`src/graph-ui/GameKeyStandDown.cs`, an exemplar to im
   the grabbing key is pressed again). The fix is a consumed-keys latch checked *before*
   the liveness gate, self-clearing on key release; the release-latched Escape flag above
   is the special case of this rule.
+- **A screen with nothing to navigate is the suppression's blind spot.** Where the game's
+  only interaction is a press-anything handler (a cutscene, a splash), every key the mod
+  claims is hidden from the game's matcher and the press does nothing at all. Such a screen
+  needs one hook that routes every claimed action to the game's own handler, asked before the
+  review-buffer keys, and should leave the typed-letter class to the game entirely.
 
 ## Typed text is not a chord
 
