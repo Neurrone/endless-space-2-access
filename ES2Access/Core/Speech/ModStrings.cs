@@ -805,7 +805,10 @@ namespace ES2Access.Core.Speech
             { ScreenSystemDiscovery, "System discovery" },
             { DiscoverySystem, "Discovering {0}" },
             { ScreenRename, "Rename" },
-            { RenameTypePrompt, "Type the new name, then press Enter to confirm or Escape to cancel." },
+            {
+                RenameTypePrompt,
+                "Type the new name, then press Enter to confirm or Escape to stop editing."
+            },
             { RenameConfirm, "Confirm" },
             { ScreenResearch, "Research" },
             { ResearchStatusPanel, "Research status" },

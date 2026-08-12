@@ -278,6 +278,12 @@ namespace ES2Access.UI
             Voice.Say(GraphAnnouncer.ComposeFull(node), true);
             _lastSpokenKey = node.Id;
             _lastSpokenNode = node;
+
+            // Everything live has just been read out; re-baseline so the live watch does not say any
+            // of it a second time. A caller asks for this while the control is CHANGING under it -
+            // the rename box's field, whose value is withheld while the game holds the keyboard and
+            // reappears the moment it lets go - which is exactly when the watch would.
+            _liveKey = null;
         }
 
         /// <summary>Run an action by name. The input layer calls this; so can the dev server, which is

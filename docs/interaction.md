@@ -88,9 +88,11 @@ one; Up/Down step the matches, Home/End their ends, Escape clears it and goes no
 action ends it and then does its own job). So **A–Z are claimed from the game on every mod screen**
 (`GraphNavigator.TakesTypedKey` via `ModInput.ClaimsTypedKey`, asked before the press), and a
 space typed into a LIVE search is text — the carry key stands aside for it (Space's claim
-itself is unconditional, above). Screens opt out with `AllowsTypeahead` (the rename box) or
-`CapturesRawInput` (the frames between asking for a key capture / text editor and the game taking
-the keyboard).
+itself is unconditional, above). Screens opt out with `AllowsTypeahead` (the key-rebind capture
+rows) or `CapturesRawInput` (the frames between asking for a key capture / text editor and the
+game taking the keyboard). Edit fields are entered explicitly: Enter on the field hands the
+keyboard over, and Escape steps back OUT of editing before a second Escape closes the surface —
+both halves the engine's own gestures (the rename box is the worked example).
 
 **Escape is the game's, except over a surface the mod invented.** A screen answers
 `ConsumesBack` (asked BEFORE the press), and `ModInput` latches EVERY consumed key until the

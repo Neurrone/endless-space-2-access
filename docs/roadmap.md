@@ -29,6 +29,9 @@ files above.
 - Departing-fade stand-down: the spurious "unavailable" frame when a game confirmation
   opens over a mod screen (general fix).
 - SidePanels drops the panel title's own explanatory tooltip (generic fix, three screens).
+- SettingRows editors end in silence: no watcher notices the game's field letting go, so a
+  committed or cancelled settings edit re-reads nothing (the rename box now does this
+  right; hoist its field-released re-read into the shared editor).
 - Empire page as a second drop client for population moves (if wanted).
 - Event narration (turn events) via `IEventService.EventRaised`.
 - Real models for the minimum-pass pages: Mods, Credits/DLC/disclaimer, export, multiplayer

@@ -167,7 +167,7 @@
   "screen.system-discovery": "System discovery",
   "discovery.system": "Discovering {0}",
   "screen.rename": "Rename",
-  "rename.type-prompt": "Type the new name, then press Enter to confirm or Escape to cancel.",
+  "rename.type-prompt": "Type the new name, then press Enter to confirm or Escape to stop editing.",
   "rename.confirm": "Confirm",
   "screen.research": "Research",
   "research.status-panel": "Research status",
