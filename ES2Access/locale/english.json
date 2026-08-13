@@ -41,6 +41,8 @@
   "chat.typing": "Chat. Type a message, Enter sends it, Escape leaves.",
   "chat.panel": "Chat",
   "chat.unread": "unread messages",
+  "chat.messages": "Messages",
+  "chat.message-box": "Message",
   "screen.main-menu": "Main menu",
   "screen.message-box": "Dialog",
   "screen.options": "Options",

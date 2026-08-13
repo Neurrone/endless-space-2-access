@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using ES2Access.Core.Speech;
 using ES2Access.Core.UI.Graph;
 using ES2Access.Core.Util;
@@ -8,11 +9,12 @@ using ES2Access.UI;
 namespace ES2Access.Screens
 {
     /// <summary>
-    /// The chat panel the game draws in the corner of every in-game page (<c>InGameChatPanel</c>) - not the
-    /// typing, which is the game's own field and already announced (<see cref="ES2Access.UI.ChatField"/>),
-    /// and not the messages, which are narrated and kept in a review buffer
-    /// (<see cref="ES2Access.UI.SessionChat"/>), but the one part of it a keyboard could not reach at all:
-    /// WHO THE NEXT MESSAGE GOES TO.
+    /// The whole chat panel the game draws in the corner of every in-game page
+    /// (<c>InGameChatPanel</c>) as something a keyboard can work: who the next message goes to, what
+    /// has been said, and the box it is typed into. The typing itself stays the game's - the field is
+    /// key-exclusive, the mod stands down for it, and the hand-over is announced by
+    /// <see cref="ES2Access.UI.ChatField"/>; the arriving lines stay
+    /// <see cref="ES2Access.UI.SessionChat"/>'s to narrate.
     ///
     /// The panel has two tabs, Global and Alliance, and they are not a filter - the tab that is showing
     /// decides the RECIPIENT of what is typed next (<c>ChatPanel.SetMessageOptionFromTab</c> stamps the
@@ -21,18 +23,21 @@ namespace ES2Access.Screens
     /// blind player could type to the room and never to their alliance.
     ///
     /// THE DRAWING CANNOT BE THE GATE HERE, which is the one exception in the mod's own rule. The panel
-    /// hides both tabs whenever it is discreet (<c>SetDiscreet</c>), and it is discreet exactly when the
-    /// player is NOT typing - so the tabs are drawn only in the state where the keyboard belongs to the game
-    /// and the mod cannot navigate. Following the drawing would mean the tabs stay unreachable forever. So a
-    /// tab is declared on the game's OWN answer to whether it exists at all (<c>ChatTab.CanShowTab</c>: the
-    /// alliance tab exists while the empire is in an alliance), and switching it does what a click does -
-    /// the panel's <c>currentTab</c> survives the box closing and reopening, so choosing the recipient
-    /// BEFORE pressing Ctrl+Tab is the whole gesture.
+    /// hides its tabs, its lines and its field whenever it is discreet (<c>SetDiscreet</c> :127-180
+    /// clears the field's <c>Enable</c> and its label's visibility along with them), and it is discreet
+    /// exactly when the player is NOT typing - so all of it is drawn only in the state where the
+    /// keyboard belongs to the game and the mod cannot navigate. Following the drawing would mean the
+    /// panel stays unreachable forever. So each part is declared on the game's OWN answer to whether it
+    /// exists: a tab on <c>ChatTab.CanShowTab</c> (the alliance tab exists while the empire is in an
+    /// alliance), a message on the service's history, the box on the panel being there at all.
+    /// Switching a tab does what a click does - the panel's <c>currentTab</c> survives the box closing
+    /// and reopening, so choosing the recipient BEFORE opening it is the whole gesture.
     ///
-    /// Declared only in a multiplayer session, which is the same question the chat review buffer asks and
-    /// for the same reason: in single player the game gives chat nothing to do, the alliance tab can never
-    /// exist, and one remaining tab is not a choice. A stop that offered it anyway would be a stop the
-    /// player walks past on every page to learn what a glance would have told them.
+    /// Declared wherever the GAME opens chat, single player included: the panel answers the chat key
+    /// and posts messages in one (<see cref="ES2Access.UI.SessionChat.HasChat"/> records what was
+    /// measured), so a solo player has a chat log to read whether or not anyone else can hear it. The
+    /// alliance tab simply reports itself absent there, which is the game's own answer and not a rule
+    /// of the mod's.
     ///
     /// Shared by every page rather than owned by one (<see cref="Screen.BuildShared"/>), for the reason the
     /// collapsed tutorial bar is: the game draws it over whatever the player is looking at, so it belongs to
@@ -42,10 +47,15 @@ namespace ES2Access.Screens
     {
         public static readonly object Stop = "chat:panel";
 
-        /// <summary>The tabs and the new-message button, where the game is offering chat at all.</summary>
+        /// <summary>How many of the newest messages are walkable - the panel's own limit
+        /// (<c>ChatPanel.MaxHistory</c>, enforced in <c>AddLine</c>).</summary>
+        private const int MaxLines = 50;
+
+        /// <summary>The panel's controls, in the order it draws them down the corner: the tab bar, the
+        /// lines that have been said, the box they are typed into.</summary>
         public static void Build(GraphBuilder builder)
         {
-            InGameChatPanel panel = Panel();
+            InGameChatPanel panel = SessionChat.Panel();
             if (panel == null)
             {
                 return;
@@ -57,7 +67,127 @@ namespace ES2Access.Screens
             Tabs(builder, panel);
             Notification(builder, panel);
             builder.EndRow();
+            Messages(builder);
+            Field(builder, panel);
             builder.PopContext();
+        }
+
+        /// <summary>
+        /// What has been said, one node per message, oldest first - the log the panel draws and a
+        /// keyboard could not read. The lines fade off the screen and the box scrolls, and neither
+        /// gesture is a key, so before this the only way back to a message was to have heard it go by.
+        ///
+        /// Read from the service's own history rather than off the drawn lines, for the reason
+        /// <see cref="SessionChat.History"/> gives: the panel pools and rebinds fifty widgets
+        /// (<c>InGameChatPanel.AddLine</c> :231-282), so a widget walk reads recycled blanks.
+        ///
+        /// Bounded to the last fifty, which is not a number of the mod's: it is exactly what the panel
+        /// itself keeps (<c>AddLine</c> drops the oldest past fifty), so the walk offers what the game
+        /// would still be showing and nothing it has already thrown away. Everything older stays in the
+        /// chat review buffer, which holds the session entire.
+        ///
+        /// A GROUP rather than fifty rows in the open, because this stop is now on every page of the
+        /// game and every page rebuilds it every frame: collapsed, the log costs one node, and it costs
+        /// fifty only while somebody is reading it (the cost gate in the graph engine's own rules).
+        /// </summary>
+        private static void Messages(GraphBuilder builder)
+        {
+            ReadOnlyCollection<ChatMessage> messages = SessionChat.Messages();
+            int count = messages == null ? 0 : messages.Count;
+            if (count == 0)
+            {
+                // Nothing said yet: the panel draws no lines either, and an expandable group with
+                // nothing under it is a dead end rather than a heading.
+                return;
+            }
+
+            ControlId id = ControlId.Structural("chat:messages");
+            builder.BeginGroup(id, GraphNodes.Group(() => ModStrings.Get(ModStrings.ChatMessages)));
+            try
+            {
+                if (!builder.IsExpanded(id))
+                {
+                    return;
+                }
+
+                for (int i = count > MaxLines ? count - MaxLines : 0; i < count; i++)
+                {
+                    ChatMessage message = messages[i];
+                    if (message == null)
+                    {
+                        continue;
+                    }
+
+                    ChatMessage it = message;
+                    NodeVtable vtable = new NodeVtable
+                    {
+                        ControlType = ControlTypes.Text,
+                        Announcements = new List<NodeAnnouncement>
+                        {
+                            GraphNodes.LabelPart(() => SessionChat.Line(it)),
+                        },
+                        // Nothing on screen to point at: the lines are hidden in every frame the mod
+                        // can navigate in, and a stale hover elsewhere would be a lie.
+                        OnFocusVisual = AgeWidgets.ReleasePointer,
+                    };
+                    // Keyed on its place in the history, which never changes, with the message riding
+                    // along so the cursor keeps the line it is on even if the collection is rebuilt.
+                    builder.AddItem(ControlId.Referenced(message, "chat:message/" + i), vtable);
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("chat: reading the messages threw: " + e);
+            }
+            finally
+            {
+                // Whatever happened above, the group has to be closed or the page declares nothing.
+                builder.EndGroup();
+            }
+        }
+
+        /// <summary>
+        /// The box the next message is typed in. Enter on it is the game's own <c>SetFocus</c> - what a
+        /// click on the panel, on a tab, or on the new-message button all reach
+        /// (<c>InGameChatPanel.OnNotificationCb</c>, <c>ChatTab.OnTabCb</c>) - and it is the same thing
+        /// the chat key does, so the keyboard has a way into chat that does not depend on a chord the
+        /// player may have rebound.
+        ///
+        /// Nothing is deferred and nothing is announced here, unlike every other of the mod's text
+        /// boxes. The game hands the field the keyboard inside that one call with no gap state to sit
+        /// in, the Enter that asked for it is not delivered to the field (the mod's own consumed-key
+        /// latch, <see cref="ES2Access.UI.Input.GameKeyboardHandover"/>, suppresses exactly the
+        /// transition frame), and what has just happened is announced by
+        /// <see cref="ES2Access.UI.ChatField"/> in the words the chat key already uses - so arriving by
+        /// key and arriving by node sound the same.
+        ///
+        /// It is never refusing, though the widget is disabled whenever the player is not typing: that
+        /// flag says which state the panel is in, not whether chat can be opened.
+        /// </summary>
+        private static void Field(GraphBuilder builder, InGameChatPanel panel)
+        {
+            try
+            {
+                AgeControlTextField field = panel.ChatTextField;
+                if (field == null)
+                {
+                    return;
+                }
+
+                AgeControlTextField box = field;
+                InGameChatPanel it = panel;
+                NodeVtable vtable = GraphNodes.EditField(
+                    () => ModStrings.Get(ModStrings.ChatMessageBox),
+                    () => TextFieldEditor.Typing(box) ? null : SettingRows.FieldText(box),
+                    () => it.SetFocus()
+                );
+                vtable.OnFocusVisual = AgeWidgets.ReleasePointer;
+                builder.AddItem(ControlId.Referenced(field, "chat:message-box"), vtable);
+            }
+            catch (Exception e)
+            {
+                Log.Warn("chat: reading the chat box threw: " + e);
+            }
         }
 
         /// <summary>One node per tab the game would show, in the order the bar draws them.</summary>
@@ -135,33 +265,6 @@ namespace ES2Access.Screens
                 return tab.NotificationImage != null && tab.NotificationImage.Visible
                     ? ModStrings.Get(ModStrings.ChatUnread)
                     : null;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        /// <summary>The panel while the game is really drawing it, in a session that has chat.</summary>
-        private static InGameChatPanel Panel()
-        {
-            try
-            {
-                if (!SessionChat.InMultiplayer())
-                {
-                    return null;
-                }
-
-                InGameChatWindow window = Gui.GuiServiceAvailable
-                    ? Gui.GuiService.GetWindow<InGameChatWindow>(false)
-                    : null;
-                if (window == null || !window.Shown)
-                {
-                    return null;
-                }
-
-                InGameChatPanel panel = window.InGameChatPanel;
-                return panel != null && AgeWidgets.Visible(panel.AgeTransform) ? panel : null;
             }
             catch (Exception)
             {

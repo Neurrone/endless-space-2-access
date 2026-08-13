@@ -1064,6 +1064,27 @@ generic graduates to the generic docs.
   coordination-request pin box, which is why a chat reader scopes on `ChatPanel` identity rather
   than on the control's type. `InGameChatWindow` is shown and answers `StartChatting` in single
   player too, so the key is live in every session.
+- **A single-player chat line goes out and comes back**: a message sent from the in-game panel is
+  stamped `ChatMessageOption.Default` (= `RecipientGlobal|TypeUser|ScopeNetwork`, by
+  `ChatDefaultOptionHook`), leaves through `Session.SendLobbyChatMessage` and returns through
+  `Session_LobbyChatMessage` → `ReceiveMessage`, arriving on `OnChatMessageReceived` with the
+  player's own name filled in from the lobby slot (measured in a Single session: "Neurrone: probe
+  alpha"). So single-player chat is a real, readable log rather than a dead box — which is what the
+  mod's chat surfaces are gated on (`SessionChat.HasChat`), MP-only having been the earlier policy.
+  `ChatManager` keeps the messages until the session is released or `RemoveMessages` is called;
+  the PANEL keeps only fifty (`ChatPanel.MaxHistory`, enforced in `AddLine`) and pools those
+  widgets, which is the bound the walkable log copies.
+- **`InGameChatWindow`'s visibility is `GameReady` and nothing else**:
+  `GuiManager.UpdateGameWindowsVisibility` passes a bare `true` for it (:1579-1580) and
+  `SetGameWindowVisibility` ANDs in `GameReady`, so "the window is shown" already means "a game is
+  running" — no session-mode test needed to keep chat off the menu.
+- **The in-game panel is discreet exactly when the player is not typing**, and `SetDiscreet`
+  (:127-180) takes the field with it: `ChatTextField.AgeTransform.Enable` and `Label.Visible` both
+  go false. So the field's own enabled flag reports which state the panel is in, never whether chat
+  can be opened. `SetFocus` (:116-125) is the single way in — the chat key, a tab click
+  (`ChatTab.OnTabCb`) and the new-message button (`OnNotificationCb`) all call it, and it focuses
+  the field and un-discreets in one call, with `OnValidateObject` nulled for a frame so the keypress
+  that opened the box cannot also validate it.
 
 ## Card and tooltip drawing mechanisms
 

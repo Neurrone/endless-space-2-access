@@ -755,6 +755,24 @@ chain with `InputManager.HandleInput(InputAction.StartChatting)` to open the box
 `HandleInput(InputAction.Exit)` to close it. The options row re-reads live, so the binding shown
 there follows the programmatic move with no reopen.
 
+**The whole chat cluster, in an ORDINARY single-player fixture** — no solo-MP lobby needed, because
+the in-game panel is live in single player (es2-facts). Seed the log through the game's own send:
+`p.ChatTextField.ReplaceInputText("…")` plus the reflected
+`InGameChatPanel.OnTextFieldValidateCb` (a `null` argument), where `p` is
+`Gui.GuiService.GetWindow<InGameChatWindow>(false).InGameChatPanel`; each call posts, echoes back
+through `OnChatMessageReceived`, and speaks. A loop of 55 in one `/eval` proves the fifty-row bound.
+The cluster is the LAST tab stop of every page, so `POST /input ui.prev` lands on it from anywhere.
+The box's Enter is verifiable end to end without a keystroke: `ui.activate` on the box node, then
+`AgeManager.Instance.FocusedControl == p.ChatTextField` for the hand-over,
+`DevProbe.Claims("Escape")` → `layerLive:false, claims:false` for the stand-down, the seeding call
+above for typing, and `p.HandleInput(InputAction.Exit)` for the way out (which must be followed by
+the mod re-reading the cursor). Restore the fixture with
+`Services.GetService<IChatControllerService>().RemoveMessages()` plus the reflected protected
+`ChatPanel.ClearLines`, then one `/reload` so the chat review buffer reseeds from the now-empty
+history. The alliance tab and the new-message button stay unreachable in single player by the game's
+own hand (no alliance; a Global line on the Global tab never raises the button) — the solo-MP lobby
+above is still the only fixture for those.
+
 **Notification regression capture.** Any change to the notification family is checked by walking a
 fixed browse route over all three research-family popups and diffing `/gui/graph?edges=1&buffers=1`
 per popup, per the exact-non-regression pattern above.

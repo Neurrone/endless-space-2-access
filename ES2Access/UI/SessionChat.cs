@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using Amplitude.Unity.Framework;
 using ES2Access.Core.Speech;
 using ES2Access.Core.UI.Buffers;
@@ -8,8 +9,8 @@ using ES2Access.Core.Util;
 namespace ES2Access.UI
 {
     /// <summary>
-    /// The whole of a multiplayer session's life, spoken - because the game posts every one of those
-    /// events as a chat message.
+    /// Everything said in a session, spoken - and in a multiplayer one that is the whole of the
+    /// session's life, because the game posts every one of those events as a chat message.
     ///
     /// Somebody joining, leaving, being disconnected or kicked (<c>Session.OnLobbyChatUpdate</c>
     /// :591-649), the host changing (<c>OnLobbyOwnerChange</c> :651-666), a player renaming themselves
@@ -26,11 +27,15 @@ namespace ES2Access.UI
     /// message arriving is never more urgent than what the player just asked for.
     ///
     /// The same lines go into a review buffer of their own, which is the second sink review buffers
-    /// are for - the announcement passes once, the log stays readable. The buffer is reachable only
-    /// while a multiplayer session exists (Ctrl+Left/Right cycles visible buffers), because in single
-    /// player the game disables chat outright (<c>NewGameChatPanel</c> :43-65) and there is nothing to
-    /// read. A hot reload loses the buffer's contents, so attaching seeds it from the service's own
-    /// <c>ReadOnlyMessages</c> history rather than starting the player's log at the reload.
+    /// are for - the announcement passes once, the log stays readable. The buffer is reachable
+    /// wherever the GAME offers chat (Ctrl+Left/Right cycles visible buffers), which is
+    /// <see cref="HasChat"/>: every multiplayer session, lobby included, and every running game
+    /// whatever its session mode - the in-game panel answers the chat key and posts messages in single
+    /// player too, and a message the player can send is one they must be able to re-read. Only the
+    /// single-player LOBBY is left out, and by the game's own hand: it disables its chat box outright
+    /// (<c>NewGameChatPanel.SessionService_SessionChange</c> :43-65). A hot reload loses the buffer's
+    /// contents, so attaching seeds it from the service's own <c>ReadOnlyMessages</c> history rather
+    /// than starting the player's log at the reload.
     ///
     /// Instance state throughout, and the subscription is given back in <see cref="Stop"/>, so a
     /// reload leaves nothing of this behind.
@@ -52,7 +57,7 @@ namespace ES2Access.UI
         /// not assumed.</summary>
         private IChatClientService _service;
 
-        private bool _multiplayer;
+        private bool _live;
 
         public SessionChat(BufferController buffers)
         {
@@ -75,13 +80,13 @@ namespace ES2Access.UI
                 Attach(service);
             }
 
-            bool multiplayer = InMultiplayer();
-            if (multiplayer != _multiplayer)
+            bool live = HasChat();
+            if (live != _live)
             {
-                _multiplayer = multiplayer;
+                _live = live;
                 if (_buffer != null)
                 {
-                    _buffer.Visible = multiplayer;
+                    _buffer.Visible = live;
                     // A lobby OPENS in single player and is switched to multiplayer from inside it
                     // (measured: the switch renames the player, which is itself a system message), so
                     // by the time the log becomes reachable the session may already have said things.
@@ -90,10 +95,10 @@ namespace ES2Access.UI
                 }
             }
 
-            if (!multiplayer)
+            if (!live)
             {
-                // A single-player session posts nothing here, and the game hides chat wholesale in one:
-                // anything that did arrive is not something the player can see or answer.
+                // Nowhere for the player to see or answer this: the menu, or the single-player lobby
+                // whose chat box the game has switched off.
                 _pending.Clear();
                 return;
             }
@@ -122,7 +127,7 @@ namespace ES2Access.UI
         public void Stop()
         {
             Attach(null);
-            _multiplayer = false;
+            _live = false;
             if (_buffer != null)
             {
                 _buffer.Visible = false;
@@ -140,15 +145,15 @@ namespace ES2Access.UI
             List<string> lines = new List<string>();
             try
             {
-                IChatClientService service = Service();
-                if (service == null || service.ReadOnlyMessages == null)
+                ReadOnlyCollection<ChatMessage> messages = Messages();
+                if (messages == null)
                 {
                     return lines;
                 }
 
-                for (int i = 0; i < service.ReadOnlyMessages.Count; i++)
+                for (int i = 0; i < messages.Count; i++)
                 {
-                    string line = Line(service.ReadOnlyMessages[i]);
+                    string line = Line(messages[i]);
                     if (!string.IsNullOrEmpty(line))
                     {
                         lines.Add(line);
@@ -161,6 +166,24 @@ namespace ES2Access.UI
             }
 
             return lines;
+        }
+
+        /// <summary>The session's messages themselves, oldest first, or null where there is no chat
+        /// service - the game's own collection, which is what both the drawn panel and this narration
+        /// read. For a surface that needs the messages rather than the sentences
+        /// (<see cref="Screens.ChatCluster"/> walks them one node each); the words a message is said in
+        /// are <see cref="Line"/>'s, so every surface says the same thing.</summary>
+        internal static ReadOnlyCollection<ChatMessage> Messages()
+        {
+            try
+            {
+                IChatClientService service = Service();
+                return service == null ? null : service.ReadOnlyMessages;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
         }
 
         /// <summary>The line said last, which is what a chat row reads out before its history is
@@ -222,7 +245,7 @@ namespace ES2Access.UI
             }
 
             _buffer.Clear();
-            if (!_multiplayer)
+            if (!_live)
             {
                 return;
             }
@@ -261,7 +284,7 @@ namespace ES2Access.UI
         /// to one's alliance are not the same thing as talking to the room, and a screen-reader user
         /// has no colour to tell them apart.
         /// </summary>
-        private static string Line(ChatMessage message)
+        internal static string Line(ChatMessage message)
         {
             try
             {
@@ -319,12 +342,51 @@ namespace ES2Access.UI
             }
         }
 
-        /// <summary>Whether there is a session other players can be in. The chat panel asks the same
-        /// question the same way (<c>ChatPanel.SessionService_SessionChange</c> :248-262).
+        /// <summary>
+        /// Whether the game is offering chat at all - the one question the review buffer and the chat
+        /// panel's own controls (<see cref="Screens.ChatCluster"/>) both ask, so the two can never
+        /// disagree about whether this session has chat.
         ///
-        /// Shared with <see cref="Screens.ChatCluster"/>, which gates the panel's own controls on it: one
-        /// answer, so the review buffer and the recipient tabs can never disagree about whether this
-        /// session has chat at all.</summary>
+        /// Two surfaces, so two answers ORed: any multiplayer session has the lobby's chat row, and any
+        /// running game has the in-game panel - which the game shows whenever a game is ready, single
+        /// player included (<c>GuiManager.UpdateGameWindowsVisibility</c> :1579-1580 passes a bare true
+        /// into <c>SetGameWindowVisibility</c>, whose only condition is <c>GameReady</c>), answers the
+        /// chat key in, and posts messages from (measured: a line sent in a single-player game comes
+        /// back through <c>OnChatMessageReceived</c> with the player's own name on it).
+        ///
+        /// So the drawn panel is the gate rather than the session mode. What is left out is the single
+        /// player LOBBY, where the game itself switches the box off.
+        /// </summary>
+        internal static bool HasChat()
+        {
+            return InMultiplayer() || Panel() != null;
+        }
+
+        /// <summary>The in-game chat panel while the game is really drawing it, or null. Asked by the
+        /// gate above and by the cluster that declares the panel's controls.</summary>
+        internal static InGameChatPanel Panel()
+        {
+            try
+            {
+                InGameChatWindow window = Gui.GuiServiceAvailable
+                    ? Gui.GuiService.GetWindow<InGameChatWindow>(false)
+                    : null;
+                if (window == null || !window.Shown)
+                {
+                    return null;
+                }
+
+                InGameChatPanel panel = window.InGameChatPanel;
+                return panel != null && AgeWidgets.Visible(panel.AgeTransform) ? panel : null;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>Whether there is a session other players can be in. The chat panel asks the same
+        /// question the same way (<c>ChatPanel.SessionService_SessionChange</c> :248-262).</summary>
         internal static bool InMultiplayer()
         {
             try

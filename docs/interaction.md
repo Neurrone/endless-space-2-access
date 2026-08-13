@@ -118,7 +118,9 @@ item at the target's own position ("Moved ⟨name⟩ to position ⟨n⟩").
 `StartChatting` off Enter/Tab to Ctrl+Tab through the game's own options (ONLY while it still has
 the shipped default; a customised binding is left alone), and whatever chord the binding sits on is
 handed back through the stand-down (`ModInput.LeaveToGame`) — so re-binding chat in the game's
-options keeps working.
+options keeps working. It is not the only way in: the chat stop every page carries (`ChatCluster`,
+in every session including single player) ends with the message box itself, and Enter on it is the
+same `SetFocus` the key raises, announced by the same words.
 
 **Enter is click parity everywhere.** Every node's Enter is the click the game itself puts on that
 control, including the destructive ones — a research queue item dequeues, a construction queue line
