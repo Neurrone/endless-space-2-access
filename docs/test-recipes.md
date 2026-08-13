@@ -346,6 +346,11 @@ tightened rule (making-screens-accessible.md §3), the gate protects the cursor'
 the page: a page whose early half is usable declares it, and the planet page's lost-card
 repair (`Nudge`) is the other half of that story.
 
+**The constructible filters are a safe round trip.** They are one select-one group the panel
+re-derives from `SelectedConstructibleFilterName` on every refresh, so Enter on another filter and
+Enter back on "All" leaves the fixture as found — nothing about the system or its queue moves. The
+grid under them changes with the pick, which is the cheap proof the pick landed.
+
 **What the beginner fixture cannot show on the orbital cards**: neither uncolonized planet's
 Colonize button is offered — both are tech-blocked, and the game leaves a blocked button
 `Visible` AND `Enable` while turning its click into "jump to the missing technology", so

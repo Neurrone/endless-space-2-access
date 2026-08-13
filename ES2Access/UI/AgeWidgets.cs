@@ -655,6 +655,36 @@ namespace ES2Access.UI
             }
         }
 
+        /// <summary>
+        /// Put a toggle ON and tell its handler, for a toggle the game is using as a RADIO - one of a
+        /// set it settles by writing every member's state back from the one name it keeps.
+        ///
+        /// The engine's own click flips (<c>AgeControlToggle.HandleMouseUpOrDown</c> :211-215), so
+        /// clicking the member that is already on unticks it for the frames until the panel's refresh
+        /// writes it back. A mouse sees that as a blink; a live-watched Selected part reads it out. So a
+        /// pick is a pick: the handler these groups are wired to only ever SETS which member is in
+        /// force and never reads the state it was called with, which is what makes setting it faithful
+        /// rather than a guess.
+        /// </summary>
+        public static void Select(AgeControlToggle toggle)
+        {
+            if (toggle == null)
+            {
+                return;
+            }
+
+            try
+            {
+                Click(Transform(toggle));
+                toggle.State = true;
+                Send(toggle.OnSwitchObject, toggle.OnSwitchMethod, toggle.gameObject);
+            }
+            catch (Exception e)
+            {
+                Log.Warn("widgets: picking a toggle threw: " + e);
+            }
+        }
+
         /// <summary>Take an entry of a drop list the way clicking it does: the list's own selection
         /// first - it is what rewrites the closed control's label - then the handler the list itself is
         /// wired to, which is what stores the answer. Every drop list in the game carries that wiring,

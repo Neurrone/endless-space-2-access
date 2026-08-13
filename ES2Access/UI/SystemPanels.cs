@@ -88,6 +88,17 @@ namespace ES2Access.UI
             }
         }
 
+        /// <summary>
+        /// One of the four things the grid can be narrowed to - everything, improvements, the ones that
+        /// can be built over and over, ships.
+        ///
+        /// They are RADIO buttons and not tick boxes, because that is what the game made them: its own
+        /// handler only ever SETS which filter is in force
+        /// (<c>StarSystemConstructiblePanel.OnToggleConstructibleFilter</c> :491-495) and its next
+        /// refresh writes every toggle's state back from that one name (<c>BindConstructibleFilter</c>
+        /// :417-425). Declared as tick boxes, unticking one flipped it locally and the refresh snapped it
+        /// straight back, which the live value watch then read out as a burst of checked/unchecked.
+        /// </summary>
         private static void AddFilter(List<Cell> cells, ConstructibleFilter filter, string keyPrefix)
         {
             if (filter == null || !AgeWidgets.Visible(filter.AgeTransform))
@@ -103,11 +114,12 @@ namespace ES2Access.UI
 
             ConstructibleFilter it = filter;
             AgeTooltip tooltip = filter.Tooltip;
-            NodeVtable vtable = GraphNodes.Checkbox(
+            NodeVtable vtable = GraphNodes.Radio(
                 () => CardActions.FirstLine(tooltip),
                 () => it.Toggle.State,
-                () => AgeWidgets.Toggle(it.Toggle),
+                () => AgeWidgets.Select(it.Toggle),
                 () => AgeWidgets.Operable(it.AgeTransform),
+                null,
                 tooltip,
                 TooltipMode.None
             );
