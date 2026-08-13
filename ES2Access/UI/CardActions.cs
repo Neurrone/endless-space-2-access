@@ -178,7 +178,12 @@ namespace ES2Access.UI
         /// A blocked button is NOT dropped: this game leaves one clickable and turns its click into
         /// "here is the technology you are missing", so a hinted button is declared and REFUSING - the
         /// player hears "unavailable" and the game's own sentence about why - rather than quietly not
-        /// being there.
+        /// being there. And because that click is the one thing such a button still does, the gesture
+        /// that runs it is wired here, exactly as <see cref="Cells.Add"/> wires it for every control
+        /// declared through a cell: these nodes are built and emitted in one call and never pass through
+        /// that one, so a card's blocked Colonize answered the gesture with nothing at all. The two
+        /// wirings are the same three lines on purpose - a card button and a cell are the mod's only two
+        /// ways of declaring a widget, and a hint can land on either.
         /// </summary>
         public static void Emit(GraphBuilder builder, string keyPrefix, List<CardAction> actions)
         {
@@ -220,6 +225,12 @@ namespace ES2Access.UI
                 else
                 {
                     AgeWidgets.PointAt(vtable, at);
+                }
+
+                if (vtable.OnSelectToggle == null && AgeWidgets.Hinted(at))
+                {
+                    AgeTransform hint = at;
+                    vtable.OnSelectToggle = () => AgeWidgets.Locate(hint);
                 }
 
                 builder.AddItem(ControlId.Structural(keyPrefix + "/action/" + i), vtable);

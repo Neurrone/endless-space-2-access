@@ -33,8 +33,11 @@ namespace ES2Access.UI
         /// Sixteen prefabs use that trick, and on every one of them the screen's own click is gated away
         /// (<see cref="AgeWidgets.Offered"/> answers false for exactly it), so the shared Ctrl+Enter fall
         /// back to the plain click would replay a control that does nothing. The gesture therefore has to
-        /// be WIRED - and this is the one call every widget-backed control in the mod passes through, so
-        /// it is wired here once instead of on every screen that draws a hintable control. A screen that
+        /// be WIRED - and this is the one call every CELL in the mod passes through, so it is wired here
+        /// once instead of on every screen that draws a hintable control. The other way a widget becomes
+        /// a node is a card's own button (<see cref="CardActions.Emit"/>), which wires the same three
+        /// lines for the same reason: keep the two in step, or the family that skips them answers the
+        /// gesture with silence. A screen that
         /// wired a Ctrl gesture of its own keeps it: this only fills an empty slot, and it fills it only
         /// where the hint is actually on the declared widget (a row whose hint hangs off a CHILD names
         /// the child itself, the way the troop list's locked type does).

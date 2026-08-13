@@ -351,6 +351,16 @@ re-derives from `SelectedConstructibleFilterName` on every refresh, so Enter on 
 Enter back on "All" leaves the fixture as found — nothing about the system or its queue moves. The
 grid under them changes with the pick, which is the cheap proof the pick landed.
 
+**A tech-blocked Colonize, for testing the missing-technology jump**: `unlocked` has three on the
+star system page (`PlanetLabel_SystemManagement.ColonizeButton` on Xiu I, Xiu II and Xiu IV all
+answer `Gui.IsHintActive` true; the hint's technology is the wheel's own `GuiTechnology`, e.g.
+"Maximized Exploitation" on Xiu I). Expand the planet card and the node is the card's own
+`.../action/0`. **The jump cannot be proved by injection**: `GuiButtonHint.ActivateHint` (:18-34)
+tests `Input.GetKey(LeftControl)` and no injected action holds a key, so `Gui.ActivateHint(t)`
+answers `False` from `/eval` too. What IS provable headlessly is the WIRING — reach the focused
+node through the loaded-from-bytes assembly (`ModEntry.Navigator.CurrentNode.Vtable.OnSelectToggle`)
+and check it is non-null; the keystroke half belongs on the manual script.
+
 **What the beginner fixture cannot show on the orbital cards**: neither uncolonized planet's
 Colonize button is offered — both are tech-blocked, and the game leaves a blocked button
 `Visible` AND `Enable` while turning its click into "jump to the missing technology", so
