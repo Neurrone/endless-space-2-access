@@ -599,8 +599,7 @@ namespace ES2Access.Screens
 
         /// <summary>
         /// One recommendation, which is the technology's own dot read from somewhere else on the
-        /// page: the same name, state, cost and turns, the same tooltip, and the same arcs in the
-        /// review buffer.
+        /// page: the same name, state, cost and turns, the same arcs, and the same tooltip.
         ///
         /// Focusing the row moves the view onto the dot and puts the pointer there, exactly as
         /// focusing the dot does - not for the look of it, but because the wheel does not DRAW a
@@ -629,13 +628,11 @@ namespace ES2Access.Screens
                     GraphNodes.LabelPart(() => AgeText.Clean(it.Title)),
                     GraphNodes.ValuePart(() => StateWord(it)),
                     Value(() => TechnologyState(it)),
+                    Value(() => Relationships(it)),
                 },
                 Sections = dot == null
                     ? null
-                    : GraphNodes.Sections(
-                        GraphNodes.TooltipSection(dot.Tooltip),
-                        new NodeSection(() => Links(it), TooltipMode.None)
-                    ),
+                    : GraphNodes.Sections(GraphNodes.TooltipSection(dot.Tooltip)),
                 OnActivate = () => Jump(it),
             };
             if (dot != null)
@@ -915,8 +912,16 @@ namespace ES2Access.Screens
         ///
         /// Enter is the dot's own click - queue it, or take it out of the queue when it is already in
         /// one - and Alt and Enter is the game's own Alt-click, which puts it at the FRONT of the
-        /// queue. The arcs the wheel draws from this dot to others are in the review buffer rather
-        /// than in the readout: a dot with five of them would otherwise take a paragraph to walk past.
+        /// queue.
+        ///
+        /// The arcs the wheel draws from this dot to others are part of what the dot is called: which
+        /// technologies it unlocks and is unlocked by, which it makes cheaper and is made cheaper by,
+        /// and which it rules out. A line between two dots is a fact only to somebody who can see which
+        /// two dots it joins, and it is the fact that decides what to research next - so it is said on
+        /// landing rather than left to a review key (owner ruling, all five kinds). It is one
+        /// announcement part rather than a section of its own so that the buffer carries it once: the
+        /// buffer's head is read off the parts, and a section saying the same thing would be the same
+        /// arcs twice.
         /// </summary>
         private NodeVtable TechnologyVtable(TechnologyItem2 item)
         {
@@ -939,11 +944,11 @@ namespace ES2Access.Screens
                         () => Suggested(technology) ? SuggestedWord() : null
                     ),
                     Value(() => TechnologyState(technology)),
+                    Value(() => Relationships(technology)),
                 },
                 Sections = GraphNodes.Sections(
                     AffinitySection(item),
-                    GraphNodes.TooltipSection(item.Tooltip),
-                    new NodeSection(() => Links(technology), TooltipMode.None)
+                    GraphNodes.TooltipSection(item.Tooltip)
                 ),
                 OnActivate = () => Queue(it, false),
                 OnAlternate = () => Queue(it, true),
@@ -1322,6 +1327,15 @@ namespace ES2Access.Screens
                 Log.Warn("research: looking up " + type.Name + "." + name + " threw: " + e);
                 return null;
             }
+        }
+
+        /// <summary>What a technology says about the ones it is joined to, in one part of its readout.
+        /// Worked out when the dot is read rather than watched: the wheel's arcs only change when a
+        /// technology is researched, and walking a ring is no reason to re-read 162 of them a frame.
+        /// </summary>
+        private static string Relationships(GuiTechnology2 technology)
+        {
+            return ResearchText.Relationships(Links(technology));
         }
 
         /// <summary>

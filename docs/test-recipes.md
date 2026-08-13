@@ -150,6 +150,12 @@ permitted round trip is queue-then-cancel — probe with
 `Gui.PlayerEmpire.GetAgency<DepartmentOfScience>().ResearchQueue.Length` and
 `.PendingConstructions[i].ConstructibleElement.Name` before and after — but queueing fires
 `EventTutorial_TechnologySelected`, so do it LAST and restore with `POST /loadsave`.
+**Link arcs in `unlocked` (turn ~15)**: 22 of 162 drawn — cost-reduction pairs (Xenobiology →
+Machine Bacteria / Eukaryotic Sap, and Eukaryotic Sap on to Wave Function Control / Graviton
+Research, which is the one dot that reads an arc from BOTH ends) and four exclusions (Tensor
+Algorithms ↔ Advanced Game Theory, Mineral Manipulation ↔ Optimized Logistics, Advanced Fusion Power
+↔ Hyperium Magnetics, Orichalcix Alignment ↔ Programmable Quadrinix). **Dependency arcs
+("Unlocks"/"Unlocked by") are drawn in neither fixture** — offline-tested only.
 **Blocked in the beginner fixture (last checked turn 2)**: dependency links (only the Juggernaut
 chain has them and the fixture draws none), Disabled technologies and their failure reasons,
 buyout, a queue long enough to scroll, and a deed that has been WON or LOST — all 12 drawn deeds

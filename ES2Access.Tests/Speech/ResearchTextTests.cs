@@ -67,6 +67,48 @@ namespace ES2Access.Tests.Speech
             Assert.Null(ResearchText.Link(ResearchText.LinkKind.Exclusion, false, string.Empty));
         }
 
+        /// <summary>Every arc a dot has, read one after another when the cursor lands on it - the
+        /// owner's ruling that a line between two dots is worth hearing, not only worth reviewing.
+        /// </summary>
+        [Fact]
+        public void EveryArcOfADotReadsAsOneList()
+        {
+            Assert.Equal(
+                "Cost reduced by Xenobiology, Reduces the cost of Graviton Research, "
+                    + "Mutually exclusive with Nanorobotics",
+                ResearchText.Relationships(
+                    new[]
+                    {
+                        ResearchText.Link(ResearchText.LinkKind.CostReduction, false, "Xenobiology"),
+                        ResearchText.Link(
+                            ResearchText.LinkKind.CostReduction,
+                            true,
+                            "Graviton Research"
+                        ),
+                        ResearchText.Link(ResearchText.LinkKind.Exclusion, true, "Nanorobotics"),
+                    }
+                )
+            );
+        }
+
+        /// <summary>A dot with no arcs says nothing rather than a stray separator - most of the wheel
+        /// is joined to nothing at all.</summary>
+        [Fact]
+        public void ADotJoinedToNothingSaysNothing()
+        {
+            Assert.Null(ResearchText.Relationships(null));
+            Assert.Null(ResearchText.Relationships(new string[0]));
+            Assert.Equal(
+                "Unlocks Juggernaut Frames",
+                ResearchText.Relationships(
+                    new[]
+                    {
+                        ResearchText.Link(ResearchText.LinkKind.Dependency, true, "Juggernaut Frames"),
+                    }
+                )
+            );
+        }
+
         [Fact]
         public void CountsAreOverWhatTheWheelDraws()
         {

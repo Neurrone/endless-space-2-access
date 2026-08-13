@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace ES2Access.Core.Speech
 {
     /// <summary>
@@ -52,6 +54,26 @@ namespace ES2Access.Core.Speech
                 fromHere ? ModStrings.ResearchLinkReduces : ModStrings.ResearchLinkReducedBy,
                 partner
             );
+        }
+
+        /// <summary>
+        /// Every arc drawn from one technology, as the one thing a dot says about the company it
+        /// keeps: each already a whole sentence from <see cref="Link"/>, read one after another in the
+        /// order the wheel drew them.
+        ///
+        /// A list rather than a paragraph, because that is what it is - the separator is the corpus's
+        /// own, so a language that lists things differently lists these differently too. Nothing to say
+        /// answers nothing at all, which is how a dot with no arcs stays as short as it looks.
+        /// </summary>
+        public static string Relationships(IList<string> links)
+        {
+            MessageBuilder message = new MessageBuilder();
+            for (int i = 0; links != null && i < links.Count; i++)
+            {
+                message.ListItem(links[i]);
+            }
+
+            return message.Build();
         }
 
         /// <summary>How much of a quadrant or one of its stages is done - counted over the
