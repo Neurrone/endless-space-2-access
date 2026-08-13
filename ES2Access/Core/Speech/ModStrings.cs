@@ -181,13 +181,6 @@ namespace ES2Access.Core.Speech
         public const string GalaxySystemOutpost = "galaxy.system-outpost";
         public const string GalaxyOpenSystem = "galaxy.open-system";
 
-        // What the camera just did, said back because the player cannot see it move. The game has no
-        // words of its own for the pair: what it does write about zooming is the titles of its two
-        // camera KEY BINDINGS ("Zoom in (Galaxy)", "Zoom out (Galaxy)"), which name a key rather than
-        // report a change, so these are the mod's.
-        public const string GalaxyZoomedIn = "galaxy.zoomed-in";
-        public const string GalaxyZoomedOut = "galaxy.zoomed-out";
-
         // The lanes out of a system. The game draws these as lines and writes nothing on them, and
         // where a line runs off into space it has no destination to name either. The number is the
         // lane's place going clockwise from north, which is also the order they are walked in; the
@@ -348,6 +341,13 @@ namespace ES2Access.Core.Speech
         /// view and the map. The game draws no such control - its zoom is a wheel gesture and two keys
         /// held down - so the name is the mod's.</summary>
         public const string Zoom = "zoom";
+
+        /// <summary>How close the game is looking, said whenever it changes wherever the player is
+        /// standing - the wheel, the game's own held zoom keys, a click that flies into a system, the
+        /// page a system or a planet opens onto. The rung and how many there are, because the numbers
+        /// are all there is: the game gives its zoom steps no names, and the two view levels above them
+        /// are pages rather than distances. The game writes nothing comparable of its own.</summary>
+        public const string ZoomLevel = "zoom.level";
 
         /// <summary>One of the icon pairs a planet's card lines up under its ring: which of the empire's
         /// populations does well on that planet, and what they get out of it. The game draws two pictures
@@ -902,8 +902,6 @@ namespace ES2Access.Core.Speech
             { GalaxySystemColonized, "colonized" },
             { GalaxySystemOutpost, "outpost" },
             { GalaxyOpenSystem, "Open system" },
-            { GalaxyZoomedIn, "Zoomed in" },
-            { GalaxyZoomedOut, "Zoomed out" },
             { GalaxyStarlane, "Starlane {0} to {1}, {2}" },
             { GalaxyStarlaneUnexplored, "Starlane {0} to an unexplored system, {1}" },
             { GalaxyWormhole, "Wormhole {0} to {1}, {2}" },
@@ -972,6 +970,7 @@ namespace ES2Access.Core.Speech
             { ScanLegend, "Legend" },
             { ScanOutput, "{0} {1}" },
             { Zoom, "Zoom" },
+            { ZoomLevel, "Zoom level {0} of {1}" },
             { ScanSynergy, "{0} for {1}" },
             { ScanBattle, "Battle between {0}" },
             { ScanBattleHere, "Battle" },

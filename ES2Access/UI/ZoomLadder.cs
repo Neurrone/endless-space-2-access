@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using ES2Access.Core.Speech;
 using ES2Access.Core.UI.Graph;
 
@@ -34,6 +35,29 @@ namespace ES2Access.UI
 
         private int _wait;
 
+        private bool _known;
+
+        /// <summary>Every id a ladder has been declared under. The rung is also announced from
+        /// wherever the player is standing (<see cref="ZoomWatch"/>), and the one place that must not
+        /// happen is on the ladder itself, whose own value has just read the new rung out - so the
+        /// watcher asks whether the control under the cursor is one of these.</summary>
+        private static readonly List<ControlId> Ladders = new List<ControlId>();
+
+        /// <summary>Whether a control is a zoom ladder - i.e. whether the player standing on it is
+        /// already being told the rung.</summary>
+        public static bool IsLadder(ControlId id)
+        {
+            for (int i = 0; id != null && i < Ladders.Count; i++)
+            {
+                if (Ladders[i].Equals(id))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         /// <summary>Declared only where the question applies at all - a battle or the system-discovery
         /// view has no rung.</summary>
         public void Build(GraphBuilder builder, object key)
@@ -43,8 +67,18 @@ namespace ES2Access.UI
                 return;
             }
 
+            ControlId id = ControlId.Structural(key);
+            if (!_known)
+            {
+                _known = true;
+                if (!IsLadder(id))
+                {
+                    Ladders.Add(id);
+                }
+            }
+
             builder.AddItem(
-                ControlId.Structural(key),
+                id,
                 GraphNodes.Slider(() => ModStrings.Get(ModStrings.Zoom), Text, Step)
             );
         }

@@ -92,6 +92,12 @@ namespace ES2Access
         /// to hear about it wherever they are standing.</summary>
         private static SaveProgress _saving;
 
+        /// <summary>How close the game is looking, said whenever it changes. Like the chat and the save
+        /// spinner it belongs to no screen: the zoom crosses pages - the galaxy, the scan overlay, a
+        /// system's page, a planet's - and a watcher owned by one of them would fall silent on the very
+        /// step that changed the page.</summary>
+        private static ZoomWatch _zoom;
+
         private static bool _announcedStartup;
         private static float _startTime;
 
@@ -124,6 +130,7 @@ namespace ES2Access
             _chat = new SessionChat(Buffers);
             _chatField = new ChatField();
             _saving = new SaveProgress();
+            _zoom = new ZoomWatch();
             Navigator = new GraphNavigator(Buffers);
             InstallAnnouncerWording();
             // A tooltip the game has to draw before its words exist arrives after focus does, so the
@@ -463,6 +470,10 @@ namespace ES2Access
                 _saving = null;
             }
 
+            // Nothing subscribed and nothing held: the rung watcher only reads, so letting go of it is
+            // the whole of its teardown.
+            _zoom = null;
+
             // Whatever the mod made the game look like, the game looks like itself again. The screens
             // shut down first, so a drop list left open has already been closed by its own OnPop and
             // this only drops the record of it. A key capture has no such hook - the game holds the
@@ -562,6 +573,10 @@ namespace ES2Access
             // Alongside the chat, and for the same reason: a save being written is news the game gives
             // no words to, and it queues behind whatever the player asked for.
             _saving.Tick();
+
+            // After the screens, so that a zoom step which also changes the page reads as the page and
+            // then the distance rather than the other way round.
+            _zoom.Tick();
 
             // After the screens have settled: the game's own hover, flyout and tooltip follow the
             // focus they just decided on.

@@ -385,7 +385,7 @@ generic graduates to the generic docs.
   can disappear under the player without the view changing, and a screen that reports it has to ask
   the flag every time rather than remember having zoomed. **And the converse traps too**: a force
   initiated while ALREADY at step 12 saves step 12 as the parameters to restore, so `RestoreZoom`
-  with the flag TRUE can be a talking no-op (measured: "Zoomed out" spoken, `zoomStep` unmoved,
+  with the flag TRUE can be a talking no-op (measured: the mod spoke, `zoomStep` unmoved,
   flag still set — the engine's restore does not clear it). The mod's backslash therefore never
   calls `RestoreZoom`: `ZoomToStep(node, DefaultZoomStep)` at the focused system whenever
   `ZoomStep > DefaultZoomStep`, which is deterministic in every state the camera can be in.

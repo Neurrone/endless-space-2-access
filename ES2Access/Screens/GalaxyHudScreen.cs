@@ -1023,11 +1023,10 @@ namespace ES2Access.Screens
         }
 
         /// <summary>The game's own left click on a system: the camera comes all the way in, which is
-        /// also what swaps the system's planets from circles to cards. Said as well as done - the key
-        /// changes the whole screen and what the tree underneath reads, and a player who cannot see the
-        /// camera move has nothing else to go on. What it says is what the CAMERA did, not what a menu
-        /// used to be called: "Open system" is the system's own page, a different place entirely, and
-        /// the two must not sound alike.
+        /// also what swaps the system's planets from circles to cards. Silent here - what the camera
+        /// did is reported as the rung it landed on, from the one watcher that reports every zoom
+        /// change however it was made (<see cref="ZoomWatch"/>), rather than by each key that causes
+        /// one saying so in words of its own.
         ///
         /// Takes any node on the map rather than a system, because the far end of a starlane is offered
         /// as a node of its own (<see cref="AddDestination"/>) and its Enter has to be this exact click
@@ -1045,7 +1044,6 @@ namespace ES2Access.Screens
             }
 
             GalaxyViewLevels.ZoomTo(node);
-            Voice.Say(ModStrings.Get(ModStrings.GalaxyZoomedIn), true);
         }
 
         /// <summary>
@@ -1065,22 +1063,19 @@ namespace ES2Access.Screens
                 return;
             }
 
-            // Nothing selected, nothing to unzoom: silent, like every other gesture key with
-            // nothing to do here.
-            if (ZoomOut(node))
-            {
-                Voice.Say(ModStrings.Get(ModStrings.GalaxyZoomedOut), true);
-            }
+            // Nothing selected, nothing to unzoom: silent, like every other gesture key with nothing
+            // to do here - and silent when it DOES move the camera too, because the rung it lands on
+            // is announced by the watcher that reports every zoom change (<see cref="ZoomWatch"/>).
+            ZoomOut(node);
         }
 
         /// <summary>
-        /// Put the camera back out at the default view, still looking at this system. Answers whether it
-        /// moved anything - a camera already out has no zoom to undo.
+        /// Put the camera back out at the default view, still looking at this system. Nothing at all
+        /// where the camera is already out - there is no zoom to undo.
         ///
-        /// Says nothing itself: the same move is a keypress of its own on a system (<see
-        /// cref="SystemCommand"/>, which reports it) and the far side of closing a branch (<see
-        /// cref="Collapse"/>, where the branch closing is the news and a second sentence about the camera
-        /// would be one too many).
+        /// Says nothing itself, wherever it is reached from - the key on a system
+        /// (<see cref="SystemCommand"/>) or closing a branch (<see cref="Collapse"/>). What the camera
+        /// did is the rung it landed on, announced once by <see cref="ZoomWatch"/> however it moved.
         ///
         /// NOT the game's RestoreZoom, for the reason ZoomToStep's own doc comment records: the game
         /// restores the camera to wherever it stood BEFORE the click-zoom, which for a keyboard player is
@@ -1088,15 +1083,14 @@ namespace ES2Access.Screens
         /// talking no-op for a camera that reached orbital zoom any other way (the mouse wheel, a restore
         /// by step number). The keyboard's way out is the default view at the system in question, always.
         /// </summary>
-        private static bool ZoomOut(StarSystemNode node)
+        private static void ZoomOut(StarSystemNode node)
         {
             if (GalaxyViewLevels.ZoomStep <= GalaxyViewLevels.DefaultZoomStep)
             {
-                return false;
+                return;
             }
 
             GalaxyViewLevels.ZoomToStep(node, GalaxyViewLevels.DefaultZoomStep);
-            return true;
         }
 
         /// <summary>The button the map draws on a colony's own label, beside its name - the one route
