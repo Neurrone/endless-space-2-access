@@ -793,22 +793,23 @@ namespace ES2Access.UI
             return true;
         }
 
+        // The game's own Alt+click: the control's OTHER activation where it wires one, and otherwise its
+        // plain click replayed while the player is still holding Alt, which is what lets the GAME's
+        // handler decide whether the modifier means anything here (<see cref="KeyGraph.Alternate"/>).
         private bool Alternate()
         {
-            GraphNode node = _graph.CurrentNode;
-            if (node == null)
+            if (_graph.CurrentNode == null)
             {
                 return false;
             }
 
-            if (node.Vtable.OnAlternate != null)
+            if (_graph.Alternate())
             {
-                _graph.Alternate();
                 SpeakStateAfterChange();
             }
 
-            // Claimed either way: a control that has no other activation must not let the chord
-            // through to the game, where the same keys mean something else entirely.
+            // Claimed either way: a control that has neither must not let the chord through to the
+            // game, where the same keys mean something else entirely.
             return true;
         }
 
@@ -841,10 +842,11 @@ namespace ES2Access.UI
             return true;
         }
 
-        // The two selection chords, which are the game's own modified clicks: one item in or out of
-        // the selection, and everything from the last one to this one. A control that is not part of
-        // a selection answers with silence rather than falling back to plain activation, which would
-        // do something the player did not ask for.
+        // The two selection chords, which are the game's own modified clicks: one item in or out of the
+        // selection, and everything from the last one to this one. A control that is not part of a
+        // selection gets its plain click replayed with the modifier still held, so the modified clicks
+        // the GAME understands and the mod never wired work anyway (KeyGraph.SelectToggle); a control
+        // with no click either answers with silence rather than borrowing another control's command.
         private bool SelectChord(bool range)
         {
             if (range ? _graph.SelectRange() : _graph.SelectToggle())

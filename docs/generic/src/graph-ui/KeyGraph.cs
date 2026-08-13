@@ -516,7 +516,10 @@ namespace ES2Access.Core.UI.Graph
         }
 
         /// <summary>Home/End inside a tree: the first/last node sharing the focused node's parent (its
-        /// siblings at the current depth).</summary>
+        /// siblings at the current depth) — and its STOP, always. A root-level node has no parent to
+        /// compare, so parent alone made every root-level node on the page a sibling and End on a
+        /// top-level group walked out of the panel onto another stop's last control. Home and End never
+        /// leave the stop they were pressed in, in a tree exactly as anywhere else.</summary>
         public MoveResult MoveToSiblingEdge(bool first)
         {
             MoveResult result = default(MoveResult);
@@ -530,6 +533,7 @@ namespace ES2Access.Core.UI.Graph
             foreach (GraphNode n in _current.Order)
             {
                 if (!ReferenceEquals(n.Parent, node.Parent)) continue;
+                if (!Equals(n.StopKey, node.StopKey)) continue;
                 if (first) { target = n; break; }
                 target = n; // last match wins
             }
@@ -579,14 +583,15 @@ namespace ES2Access.Core.UI.Graph
             return true;
         }
 
-        /// <summary>Run the focused control's other activation. False = it has none.</summary>
+        /// <summary>Run the focused control's other activation - the game's own Alt+click - or, where
+        /// the control wires no handler of its own for it, replay its plain click
+        /// (<see cref="ModifiedClick"/>). False = it has neither.</summary>
         public bool Alternate()
         {
             if (!Rerender()) return false;
             GraphNode node = CurrentNode;
-            if (node == null || node.Vtable.OnAlternate == null) return false;
-            node.Vtable.OnAlternate();
-            return true;
+            if (node == null) return false;
+            return ModifiedClick(node.Vtable.OnAlternate, node.Vtable.OnActivate);
         }
 
         /// <summary>Run the focused control's contextual command - the game's right click. False =
@@ -600,25 +605,54 @@ namespace ES2Access.Core.UI.Graph
             return true;
         }
 
-        /// <summary>Add the focused control's item to the game's selection, or take it out. False =
-        /// the control is not part of a selection.</summary>
+        /// <summary>Run the focused control's double-click command - the game's own second click.
+        /// False = it has none, and the caller says nothing rather than falling back to the single
+        /// click.</summary>
+        public bool DoubleClick()
+        {
+            if (!Rerender()) return false;
+            GraphNode node = CurrentNode;
+            if (node == null || node.Vtable.OnDoubleClick == null) return false;
+            node.Vtable.OnDoubleClick();
+            return true;
+        }
+
+        /// <summary>Add the focused control's item to the game's selection, or take it out - and where
+        /// the control is not part of a selection, replay its plain click instead
+        /// (<see cref="ModifiedClick"/>). False = it has neither.</summary>
         public bool SelectToggle()
         {
             if (!Rerender()) return false;
             GraphNode node = CurrentNode;
-            if (node == null || node.Vtable.OnSelectToggle == null) return false;
-            node.Vtable.OnSelectToggle();
-            return true;
+            if (node == null) return false;
+            return ModifiedClick(node.Vtable.OnSelectToggle, node.Vtable.OnActivate);
         }
 
-        /// <summary>Extend the game's selection to the focused control's item. False = the control
-        /// is not part of a selection.</summary>
+        /// <summary>Extend the game's selection to the focused control's item - and where the control
+        /// is not part of a selection, replay its plain click instead (<see cref="ModifiedClick"/>).
+        /// False = it has neither.</summary>
         public bool SelectRange()
         {
             if (!Rerender()) return false;
             GraphNode node = CurrentNode;
-            if (node == null || node.Vtable.OnSelectRange == null) return false;
-            node.Vtable.OnSelectRange();
+            if (node == null) return false;
+            return ModifiedClick(node.Vtable.OnSelectRange, node.Vtable.OnActivate);
+        }
+
+        // A modified click a control does not wire a handler for is still a CLICK, and the player is
+        // physically holding the modifier while it runs (the chord keys pass it straight through). So
+        // replaying the control's own click is the whole implementation of every modified click the GAME
+        // understands and the mod has never heard of - Ctrl+click to locate a technology in the tree,
+        // Alt+click to queue at the head - with no per-screen wiring, because the game's handler is what
+        // reads the modifier and branches. A handler that ignores modifiers just does its ordinary thing,
+        // exactly as a modified mouse click would. A wired slot stays an OVERRIDE, for the controls where
+        // the game runs a genuinely different handler. With neither, nothing runs and the caller stays
+        // silent: the chord is never lent to some other control's command.
+        private static bool ModifiedClick(Action slot, Action click)
+        {
+            Action run = slot ?? click;
+            if (run == null) return false;
+            run();
             return true;
         }
 

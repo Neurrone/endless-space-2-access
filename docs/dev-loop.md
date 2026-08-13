@@ -57,7 +57,9 @@ mutes voicing but `/speech` still captures.
   and `depth=`/`visibleOnly=`/`fields=` apply from there; an empty answer always carries an
   `error`/`note` line, and a node cut off by `depth=` is kept (`more:true`), never pruned
 - `GET /gui/age?...&fields=name,kind,text,tooltip,rect,interactable,enabled` — flat text, one
-  indented line per widget, only those fields, empties omitted
+  indented line per widget, only those fields, empties omitted. It PRUNES subtrees with no text and
+  no readable tooltip, so when the widgets themselves matter (geometry, pooled circles) enumerate
+  them with an `/eval` walk instead
 - `POST /eval?settle=MS&speech=0` — C# REPL (gotchas below); response carries caused speech
 - `POST /wait?timeout=MS` — body = bool expression, evaluated every frame; the wait is capped at
   ~60 s whatever is asked for, so a longer silence is proved by repeating the poll

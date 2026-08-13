@@ -50,7 +50,8 @@ setup · `49` victory-achieved ·
 can open it) · `55` load-save · `60` loading · `70` drop-list (above options, its owner) ·
 `80` rename box · `85` improvements modal (over the star-system page, under its own
 confirmation) · `86` system-politics modal · `90` tutorial-selection modal (over the new game
-screen) · `96` free · `97` non-blocking box · `98` tutorial popup · `99` error box ·
+screen) · `96` contextual prompt (over the scan view that raises it and the modal stack it draws last
+on; under the non-blocking box) · `97` non-blocking box · `98` tutorial popup · `99` error box ·
 `100` message-box.
 Mod-owned CHILD screens (`Screen.PushChild`) have no layer: the manager focuses the deepest
 child of the top screen.
@@ -86,11 +87,22 @@ activation (queue at the head), **Backslash** the control's right-click command
 of the game's own selection (`OnSelectToggle`), **Shift+Enter** extend that selection to here
 (`OnSelectRange`). There is NO reorder chord: moving an item within its list is a drag like any other.
 **Each of those keys means the game's own gesture and nothing else** — Backslash is the right click,
-Alt+Enter the Alt-click, Ctrl+Enter the Ctrl-click, Ctrl+Alt+Enter the second click — and a screen
-whose control lacks that gesture leaves the key silent rather than lending it to another one. The
-double-click chord is free because no handler in the game combines Ctrl and Alt with a click and its
-own binding matcher is exact-modifier (`InputManager.InputsMatch`); a mod screen replaying a double
-click checks that the game's handler does not read the modifiers the player is still holding.
+Alt+Enter the Alt-click, Ctrl+Enter the Ctrl-click, Ctrl+Alt+Enter the second click. The three
+modified LEFT clicks (Alt+Enter, Ctrl+Enter, Shift+Enter) **fall back to the control's plain click**
+where the screen wires no handler of their own (`KeyGraph.ModifiedClick`): the player is physically
+holding the modifier, so replaying the click is what lets the GAME's handler branch on it —
+Ctrl+click to locate a technology, Alt+click to queue at the head — with no per-screen wiring, and a
+handler that ignores modifiers just does its ordinary thing, exactly as a modified mouse click would.
+A wired slot stays an OVERRIDE, for the controls where the game runs a genuinely different handler.
+Backslash and Ctrl+Alt+Enter keep absent-means-silent: a right click or a second click that does not
+exist has nothing to replay. Where the game has left a control switched on only so a click can
+explain itself, Ctrl+Enter is that explanation: the jump to the missing technology (`Cells.Add` →
+`AgeWidgets.Locate`), wired once for every such control; those controls still announce themselves
+unavailable, and Enter on them does nothing, as the mouse's plain click does. (Owner rulings
+2026-08-13.) The double-click chord is free because no handler in the game combines Ctrl and Alt with
+a click and its own binding matcher is exact-modifier (`InputManager.InputsMatch`); a mod screen
+replaying a double click checks that the game's handler does not read the modifiers the player is
+still holding.
 The Enter chords pass the PHYSICAL modifier through to the game's handler, which
 is how the game's own selection rules apply rather than a copy of them. Which screens have the
 chords and which cargo kinds the drag carries (ships, population, both queues) is coverage
@@ -122,10 +134,14 @@ runs that cursor's own right-click cancel, so Escape cannot raise the pause menu
 waiting for a target (owner-ruled deviation, 2026-08-12).
 
 **Expanding a galaxy system node (Right) also brings the camera in** through the game's own zoom
-(`GalaxyViewLevels.ZoomTo`); Enter is unchanged, collapse moves nothing, Backslash remains the way
-out. Lane-destination children stay LEAVES (Enter zooms): their planet children would share
-reference identity with the root system's nodes — the one-object-one-node rule. The scan view's
-**Zoom is an adjustable node** on the existing Left/Right + Shift chords (no new binding); its
+(`GalaxyViewLevels.ZoomTo`); Enter is unchanged, Backslash remains the way out, and **collapse
+un-zooms** while `GalaxyViewLevels.FocusedSystem` is still that system — a camera the player has
+since moved elsewhere is left alone, so collapsing moves nothing there. A **lane destination OPENS
+like the system it names**, minus its own lanes: its children are keyed STRUCTURALLY under the lane
+(the reference tier dropped, not the level refused), which is how the one-object-one-node rule is
+kept while the tier below stays reachable. **Zoom is an adjustable node** on the existing
+Left/Right + Shift chords (no new binding), and it lives on BOTH the scan view and the galaxy's
+`hud:view-title` stop, in a row of its own beside the name of what the player is looking at; its
 coarse step is a LAYER-BAND jump rather than ≈10 increments — an owner-approved deviation, since
 ten of the camera's thirteen steps would be the whole range.
 
@@ -137,11 +153,12 @@ navigation: the cutscene's arrows, Tab, Enter and review chords all become the g
 press-anything skip, because a claimed key is invisible to the game's binding matcher and would
 otherwise do nothing at all. Escape is never offered to it and stays the game's.
 
-Backslash and every Enter chord are claimed on every mod screen and are **SILENT where
-the control has no such command** — they are pressed speculatively all over a page, and a cue on
-every one of them is noise. Silent but still consumed, and never a fall back to plain activation.
-Space while something is carried is the same: consumed on a control that will not take it, silent,
-carry kept.
+Backslash and every Enter chord are claimed on every mod screen. **Backslash and Ctrl+Alt+Enter are
+SILENT where the control has no such command** — pressed speculatively all over a page, a cue on
+each is noise; silent but consumed, never a fall back. Alt+Enter, Ctrl+Enter and Shift+Enter DO fall
+back to the control's plain click (above), and are silent-and-consumed only where the control has no
+click either. Space while something is carried is the same: consumed on a control that will not take
+it, silent, carry kept.
 **Space is claimed only where it can act** — the focused control has something to pick up,
 something is already being carried, or a live type-ahead search is taking the space as text
 (`ModEntry.CarryKeyClaimed` → `GraphNavigator.TakesCarryKey`, through `InputAction.ClaimedWhile`;

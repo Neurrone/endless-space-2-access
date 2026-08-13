@@ -654,6 +654,14 @@ generic graduates to the generic docs.
 - **`AgeScreen.SortingOrder` is the engine's own draw ladder** (Label 0 … ModalRenderer 5 …
   OverlayRenderer 6). It puts a NOTIFICATION under a modal, which is why the mod's notification
   layer sits below every modal rather than above them.
+- **Every rename in the game is ONE box.** Whatever the opener — a system, a fleet, a ship design, a
+  hero — it funnels through `IGuiService.RequestNewName` (`GuiManager.cs:2364`), which shows the one
+  `RenameModalWindow` with the caller's callback. So a rename screen is written once and every opener
+  inherits it.
+- **`ContextualPromptWindow` has NO keyboard dismissal of its own**: it declares no `HandleInput`, and
+  `ScanOverlayWindow` — which is up whenever the prompt is — swallows Exit, so the game's only ways
+  out are the cross, a right click and a click away. A mod screen over it has to supply the close
+  itself.
 - **Tutorial pages declare their own draw layer**: `TutorialPopupLayer` is per-page, and 49 of
   233 pages declare one ABOVE modals — so the tutorial screen has to sit near the top of the
   mod's ladder, with only the error and message boxes above it.
@@ -677,6 +685,10 @@ generic graduates to the generic docs.
   not the toggle it holds.
 - `SystemSelectionModalWindow` binds `interactiveCells: false`, so its shipped table has no
   interactive cell at all.
+- **`StarSystemPlanetCardsPanel` is its own drop client** — the panel, not the page around it, takes
+  both population moves: planet→planet, and the spaceport shipment, which the game routes through
+  `GuiTableCellSystemPopulation`. So a second host wanting the same drag wires the panel, not the
+  screen.
 
 ## The icon-strip screens (senate, empire, economy, research)
 
@@ -699,6 +711,13 @@ generic graduates to the generic docs.
   `EconomyScreen.ToggleSystems` is null live, so the tab strip is read off the drawn table;
   `%TargetEffectIndustryTitle` contains the game's own icon typo (spoken faithfully); and
   `ResourceItem.OnClickCb` is god-mode-only.
+- Economy, luxuries: **the luxury grid is a GRID** — the items cycle through 8 target effects with a
+  period of 8, so the columns are the FIDSI families and a row read as a flat strip loses which
+  family each figure belongs to.
+- Empire, the side panels: `EmpireDescriptionSidePanel` hangs its tooltips on the LABELS inside each
+  group and on each icon — never on the group itself, so a group-level read finds nothing.
+  `EmpireStatusSidePanel.PanelTitle` is the ONLY side-panel heading in the family that carries a
+  tooltip of its own.
 - Research: **254 of 385 technologies carry an affinity badge** — a majority, so the badge is
   ordinary content rather than an exception.
 - Politics: `PoliticalEventsPopulationPanel`'s table binds `canSelect:false`, has per-system
@@ -724,6 +743,10 @@ generic graduates to the generic docs.
   panel's property instead); costs, stats and the module list are hidden while a design is
   invalid (the fresh-Create state); and the designer's resource items are god-mode readouts
   named through `TooltipTitle`.
+- **`RepartitionHorizontalGauge.Refresh` HIDES a half whose value is zero**, so a reading of the
+  hidden half is unfalsifiable until a fixture gives that half a value — which is how a right-hand
+  share measured against the bar's far end instead of its middle (163% with energy at 37%) survived a
+  whole audit unseen.
 - **"Behemoth" in the game's fiction is `Juggernaut` in the code** — grep both spellings or half
   the family is invisible.
 - Fleet actions and columns are named twice over in the game's data: the action buttons resolve
@@ -746,6 +769,9 @@ generic graduates to the generic docs.
   `%AssignmentCooldownBaseDurationTitle` and `%HeroRelicTitle`.
 - `HeroSelectionModalWindow.Refresh` (:74-77) wipes `SelectedHero` through an inverted
   `Contains` — never cache it.
+- **`%SkillTreeStageLevelTitle` + `RequiredLevel` is a per-RING unlock threshold**, drawn as a
+  leader-line legend beside the ring — not a skill's name and not a per-branch total. Read as either
+  it says the wrong thing about every skill on the ring.
 
 ## Battles
 
@@ -829,6 +855,19 @@ generic graduates to the generic docs.
   table names its textures); `PlanetStatusGroup` carries none either.
   `%BonusPopulationDefenseTitle` is absent from localization (the ExtendedGuiElement's AltTitle
   exists).
+- **A scan BAND writes no words of its own.** `ScanNodeLabel` has no text: the planet dots and the
+  trade dial carry everything, and all of it on CLASS-backed tooltips, so an `AgeWidgets.DrawnLines`
+  reading of a band returns the system's name and nothing else — the content has to be read control by
+  control. `PlanetCircleItem.Content` is the RAW internal name (the spoken name comes from the
+  `GuiWrapper`), and `TradeCompanyGroup` is a SIBLING of `ContentTable`, not a child, so a walk of the
+  table misses it.
+- **The scan band's gate is painted-ness, and only painted-ness.** `MainMetaModifier.TargetAlphas`
+  fades a whole band per camera layer, and the `metaModifiers` a label collects in `Awake` never
+  animate the POOLED circles (which are created later), so neither the modifier list nor `Visible`
+  answers what is drawn — `AgeWidgets.Painted(ContentTable)` is the band gate and the circles' own
+  drawn alpha is the per-dot one.
+- `ScanViewDiplomacyLabel` draws exactly ONE line: on your own home system `SwapToggle.Enable` is
+  false, so the second variant never appears.
 - The rename box's Cancel/Confirm captions are `%MessageBoxCancelTitle`/`%MessageBoxValidateTitle`;
   Cancel runs `GuiModalWindow.OnCancelCb` — the same hide Escape reaches. `PopulationCount.Tooltip`
   (population rows) sits on the entry's SYMBOL child (class `PopulationStarSystem`); the row
@@ -872,6 +911,14 @@ generic graduates to the generic docs.
   the panel). Counted in `Public\Tutorials\*.xml`: 117/10 vs 41/16/49. Closing a modal a
   tutorial was drawn over makes the popup re-announce its page — the panel is briefly
   un-minimized during the hide.
+- **The report family's breakdown toggle is VESTIGIAL**: `ReportPanel` carries no `AgeModifier` at
+  all (verified on four report windows), so the toggle animates nothing and the tables it claims to
+  collapse stay drawn either way — the caption-less icon the shared caption rule drops costs the
+  player nothing.
+- **A hacking outcome's countdown is REAL-TIME seconds** — 10/20/30/45 by outcome, not turns — and it
+  auto-picks a default when it runs out, so the choice popup is one of the few surfaces where reading
+  slowly changes the result. `PickHackingOperation` only raises its prompt where the node offers MORE
+  than one operation (data-gated), so a single-operation node never shows the picker at all.
 - `AgeModifierTypewriter`'s labels are complete from frame one (see the typewriter fact above);
   AGE also localizes label text itself, so assigning a raw `%key` still DRAWS localized
   (`AgePrimitiveLabel.cs:702-717`) — which means a drawn label is no evidence that the mod's own
@@ -890,8 +937,28 @@ generic graduates to the generic docs.
   ship with the base install; only flags gate them. To unhide at runtime, add
   `Subscribed|Installed|Activated` via `AddAccessibility` — NOT `Shared`, which
   `RuntimeState_Lobby:400-430` wipes and re-derives at session creation.
+- **What the gates actually read is `IsShared`, and only a NEW game derives it.** The re-derive
+  branch runs for a freshly CREATED session (`RuntimeState_Lobby.cs:440-450`); a LOADED game takes
+  the save's own `sbs` bitfield instead, and `rdcol` — the flag that would send a load down the
+  derive branch — is never written anywhere in the game. So a `Shared` flag set by hand in a loaded
+  session STAYS set, which is what makes an unowned expansion's UI sightable at all. Two consumers
+  cache the answer at load time (`HackingManager`, `ScanOverlayWindow`), so their branches stay dark
+  until the save is loaded again.
+- **The `*_DLC*` datatables load whether or not the expansion is owned** — measured: the Juggernaut
+  specialization modal reports `GuiSpecializations.Count == 3` on an install owning no expansion. So
+  a DLC screen's DATA is measurable here even when its entry point is not.
 - **"Steam cloud" saves are not a Steam API**: the toggle writes a registry key that
   redirects the save directory to `<saves>\Cloud` — identical on any store.
+
+- **The out-game pages, measured** (DLC browser, mod manager, disclaimer, credits):
+  `DownloadableContentType` 1 is `Personal`, which the game words as "Add-on" — the browser's own
+  type column, not an ownership state. `AvailableModItem` leaves a DOWNLOADING row's toggles
+  enabled and its handler only logs (a game bug: the click does nothing), so the mod speaks that as
+  the refusal it meant. `ModdingSelectedModPanel` swaps its two branches by ALPHA alone — both stay
+  `Visible`, so a reader gates on `SelectedGuiMod` instead. `DisclaimerModalWindow.HandleInput`
+  returns true for EVERY action and acts on none, so Escape cannot dismiss it and only its own two
+  buttons can (Decline quits the game). The credit roll is 598 items and exits itself after
+  ≈8.5 minutes.
 
 - **A lobby has chat history the moment it becomes multiplayer**: switching Session Mode posts
   `%LobbyChatRenamed` through the chat service, so the log is never empty in a session that was
@@ -926,6 +993,10 @@ a colony gets `FidsiEnumerator` with numbers, an unsettled world gets `FidsiScor
 `FidsiProperties` holds SIX entries and `DisplayedProperties` is 5 — the sixth is `Happiness`, not
 an output. Read the numbers only where the enumerator is visible, or the buffer describes a card
 nobody can see.
+- **A panel feature can be a whole SECTION rather than a row.** `PanelFeatureModuleEffects` and
+  `PanelFeatureHullInfo` build N instances of ONE prefab, and each instance is a complete section —
+  heading and all — not a line of a list. A reader that treats the instances as repeated rows
+  flattens several sections into one.
 - **The galaxy camera's 13 zoom steps, and only the LAST reaches orbital.**
   `CanFocusGalaxyEntity()` is `zoomStep == ZoomStepsCount - 1`; until then
   `FocusedStarSystemNode` stays null and `PlanetLabelsWindow_SystemOrbital` never shows, and
@@ -944,3 +1015,15 @@ nobody can see.
   `Gui.FormatButtonHint` FORCES `Enable = true` as it writes the hint, and only 6 of the 16
   prefabs using the mechanism happen to be honest about their own flag — so the question is
   asked per site, never inherited from a prefab that looked right.
+- **The hint exists so a CLICK can explain itself, and that click is the only thing such a control
+  does.** `Gui.FormatButtonHint` switches the control on; the click then asks `Gui.IsHintActive` and
+  runs `Gui.ActivateHint`, which reads the Ctrl the player is PHYSICALLY holding and jumps the
+  technology screen to the missing technology. `AgeWidgets.Offered` answers false for exactly that
+  trick, so the mod's own Ctrl-chord fall back to the plain click would replay a no-op — the jump is
+  therefore WIRED, once, in `Cells.Add` (helpers.md). A hint hanging off a CHILD widget rather than
+  the declared one (the troop rows' locked type) is named by its own screen. The count on this
+  install: **101 `GuiButtonHint` instances, 8 of them hint-active** (2026-08-13). One of the eight is
+  the marketplace tab, which is hint-active while its own `Enable` is false — reachable from the
+  keyboard through the hint even though the mouse cannot click it.
+- **A refusal's own wording is keyed by its flag**: `%Failure<flag>Description` — so the sentence a
+  blocked control shows can be looked up from the flag alone, with no tooltip drawn.

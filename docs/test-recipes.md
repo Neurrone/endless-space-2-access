@@ -216,7 +216,7 @@ merged labels, guarding, multi-ship/automated/privateer fleets, and any fleet of
 **Testing the selection chords and the drag.** `/input` cannot hold a modifier, so
 `ui.selectToggle`/`ui.selectRange` reach the row's own click with NO physical Ctrl or Shift and the
 game runs its plain (radio) branch: the injection proves the wiring, the announcement and the
-fall-backs, never the modified semantics — those are code-trace plus the manual script. What IS
+fall-backs, never the modified semantics — for those, hold the key for real (next paragraph). What IS
 provable live: flip the panel's model from `/eval` and watch the row's live membership part
 (`ShipsManagementPanel.DeselectShips()` plus `Dirty = true` makes a tile read "not selected" under a
 standing cursor), then press the chord and read the state the row speaks back. The drag needs no
@@ -231,6 +231,15 @@ answer "Cancelled drag" (`claimsBack` reads true only until it does), and **`ui.
 drop**: on a control that takes the cargo it announces the drop and the control's own click does NOT
 run, on any other control the click runs and the drag survives it (inject Enter on a harmless toggle
 to prove that half). Silence is proved with a `/speech?since=N` window, not with the `/input` reply.
+
+**Holding a PHYSICAL modifier while a key is pressed** (the only way to test a modified click's game
+branch — Ctrl+click to locate, Alt+click to queue at the head). From a PowerShell script: bring the
+game up with `SwitchToThisWindow` plus `AttachThreadInput` + `SetFocus`, then drive the keys with
+`keybd_event`. `SetForegroundWindow` ALONE fails silently — the window comes up but Unity still reads
+the key as released, so the chord runs unmodified and looks like a wiring bug. Re-focus before every
+run, not once per session. And when the surface under test is a game screen shown UNDER a modal, it
+never reaches the mod's own stack: probe `Gui.GuiService.GetWindow<T>().Shown`, not
+`DevProbe.Stack()`, or a screen that is working reads as absent.
 
 **Working the selected-fleet panel.** It is a contributor, so there is no `screen=` key for it and
 no screen change to wait for: its three stops simply join the galaxy page's, between the systems
@@ -529,7 +538,13 @@ afterwards. Restore the camera when done.
 `GetComponentInChildren` on the WINDOW — the hero window hosts a second one, and grabbing the wrong
 instance reads a page nobody is on. **Never press Create or Apply.** Only civilian hulls exist in
 this save. Restore `SelectedGuiShipDesign` and the toggles: `ShowDetailedStatsToggle` persists
-across opens, the category filter does not.
+across opens, the category filter does not — and the two hosts hold INDEPENDENT toggles, so the
+designer's state says nothing about the hero window's. The detailed toggle gates exactly the three
+`Detailed*` panels and nothing else; `Accuracy`/`Evasion` are hidden in the PREFAB (no fixture can
+show them) and `SpecialStatsTable` only fills for a mining probe. Reopening from `/eval` needs a
+`GuiShipDesign`: take one off the `ShipDesignItem` children rather than constructing it. **Edit
+raises the Architects tutorial**, whose page node swallows navigation — minimize it before walking
+anything.
 
 **Hero inspection.** Bind, open, switch pages and close from `/eval`. An unrecruited `GuiHero` is
 the read-only fixture. For a skill point, set `Level = 2` and `Refresh`, then restore by reloading
@@ -557,6 +572,26 @@ its data.
 set `Visible=true`, read the graph, then `Unbind` + hide and re-diff. The same holds for every
 `NotificationWindow` instance — all of them exist whether or not the DLC that raises them is
 installed, so notification variants are readable structurally even when they are unsightable.
+
+**The three bind-and-show openers the DLC stage used** (the datatables load whether or not the
+expansion is owned — es2-facts, so these give real CONTENT, not just structure):
+the Juggernaut specialization modal binds off a fleet ship reached through
+`DepartmentOfDefense`; `ContextualPromptWindow` binds with a `ContextualPromptGuiElement` —
+**never press its "Yes"**, which commits the hacking operation behind it; and
+`StarSystemPopulationModalWindow` binds `...ColonizedStarSystems[0]`, which raises the BREAD AND
+CIRCUSES tutorial — minimize it afterwards.
+**Correction to `audit-dlc-mechanics.md` §5**: it calls
+`DefenseHackingProgramEncounteredNotificationWindow` a partial gap needing a `Variant`. It is not —
+its `CancelHackButton` carries the words "Cancel Hacking Op", so the shared caption rule finds it and
+no per-window wiring is needed.
+
+**Walking the out-game family from inside a session.** Leave the session first: show
+`BlackCurtainWindow`, then `GameClient.Disconnect(ClientLeft)` — the menu comes up with the pages
+reachable. Per page, `Gui.GuiService.ShowWindow<T>()` and `HandleInput(InputAction.Exit)` to close,
+EXCEPT the disclaimer, which swallows every action (es2-facts) — close it through its own Accept
+node. **Never press**: Decline on the disclaimer (quits the game), Confirm on the mod manager
+(reloads the runtime), or any store/web button (leaves the game). The DLC browser REMEMBERS its
+selected tab across opens — put the tab back when done.
 
 **The elimination popup and the journal.** `OrderEliminateEmpire` writes a REAL `EndGameSummary`,
 which is what makes the journal's ending entries readable; delete the entry afterwards through the

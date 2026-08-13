@@ -15,29 +15,25 @@ files above.
   footer, law cancelled, population change, trading blockade, treaty cancelled, relics ×2,
   queue-empty, lost-roots connectivity); one-of-N semantics for hand-written choice popups
   (hero recruitment, ground-battle/hacking outcome pickers) + the hacking parameters
-  sub-choice and countdown gauge; breakdown-toggle tables (damage/displacement/force-truce);
+  sub-choice and the outcome COUNTDOWN gauge (real-time seconds, auto-picking a default when it
+  runs out — es2-facts; needs a `Variant` hook plus a live sighting); the breakdown-toggle
+  popups' tables (damage/displacement/force-truce — the toggle itself is vestigial, below);
   DiplomaticInteractionNotificationWindow (MoodMessageLabel, NegotiationContributionPanel).
 - Galaxy-label gaps: constellation ownership bonus; pin-message editing.
 - Scan management-lens remainder (unverifiable at turn 1): the trade-quality dial
   (geometry-only rating, no tooltip), the empire-rank bar graph + global-rank histogram,
   the ghost/traitor lines.
-- Navigation defect: `ui.end` from an EXPANDED GROUP node on the scan content stop landed
-  on another stop's last node (hud:turn's Game menu) — End crossed a stop boundary; from a
-  child node it behaves. Reproduce and fix in the shared navigation.
-- Targeting-cursor remainder: `TakeSystemCursor` gets Escape-to-cancel (owner-ruled
-  2026-08-12, awaiting go-ahead to implement); Backslash while a mode is armed should be
-  the mode's right-click (cancel / waypoint removal — follows from the owner's
-  any-click-parity correction); `HonorActionCursor` fleet/docking targets need a
-  `ConfirmAt` overload for fleet cursor-targets; `HackingOperationCursor` route building
-  rides the Penumbra wait; the instruction banner can speak the previous mode's caption
-  for a frame (cheap fix: skip an instruction that is not the current cursor's).
-- Chat: the alliance tab's SENDING is pointer-only (incoming lines narrate); MP-fixture
-  verification outstanding.
+- Targeting-cursor remainder (Escape-on-TakeSystem and armed-Backslash SHIPPED, 30d23f9):
+  `HonorActionCursor` fleet/docking targets need a `ConfirmAt` overload for fleet
+  cursor-targets; `HackingOperationCursor` route building rides the Penumbra wait; the
+  instruction banner can speak the previous mode's caption for a frame (cheap fix: skip
+  an instruction that is not the current cursor's).
+- Chat: the recipient tabs ship (`ChatCluster`), but MP-fixture verification of the whole
+  cluster — tabs, new-message button, alliance sending — is outstanding.
 - Assigned-governor side panel: `Special` case for its three bare readouts (needs a save
   with a governor).
-- Verify whether the population screen covers the planet page's population-entry click
-  (the window itself, StarSystemPopulationModalWindow, is supported — SystemPoliticsScreen
-  binds it; 2026-08-12 census).
+- The planet page's population-entry click has no opener node yet (the window itself,
+  StarSystemPopulationModalWindow, is covered — SystemPoliticsScreen binds it).
 - Skill-tree type-ahead: a TypeAheadScope so search reaches skills in collapsed branches.
 - Modal-return cursor: closing any modal over the star system page lands on the planets
   stop's start node, not the opening button (pre-existing; improvements/rename too).
@@ -62,29 +58,26 @@ files above.
   right; hoist its field-released re-read into the shared editor).
 - Empire page as a second drop client for population moves (if wanted).
 - Event narration (turn events) via `IEventService.EventRaised`.
-- Real models for the minimum-pass pages: Mods, Credits/DLC/disclaimer, export, multiplayer
-  join (multiplayer deferred until single-player is solid).
+- A real model for the resource exporter, the one out-game page still on the shape floor: the
+  resource list and the export itself.
 - Rebindable mod keys (long-standing, from input.md).
-- DisclaimerModalWindow has no floor (the census's one uncovered non-DLC window besides
-  the saving spinner): retail reachability is only the weak-GPU boot popup — decide
-  whether a boot-time floor is worth it.
-- ContextualPromptWindow: every show site is hacking — rides the Penumbra wait
-  (2026-08-12 census).
+- The contextual prompt's component tables: modelled from the four data-defined shapes, but no
+  fixture draws a table with ROWS — re-measure when one can be sighted.
+- `StockAndNet` now exists in three copies (GlobalHud, EconomyScreen, JuggernautSpecializationScreen)
+  — hoist the visibility-correct one and drop the others.
 - **Expansion surfaces — UNSIGHTABLE here until the DLCs are installed** (2026-08-12 audit,
   `audit-dlc-mechanics.md` at the repo root; none of the four expansions has a depot in
-  this install, so every item below is code-verified at best):
-  - Behemoth family (Supremacy): the specialization modal's REAL model when sightable
-    (floor shipped at layer 29 — cards as radios, resources as readouts; deferred there:
-    cards-as-one-row vs several, strategic-resource naming, the GuiButtonHint on a
-    blocked card); the rest of the family when sightable.
+  this install, so every item below is code-verified at best — except where the `*_DLC*`
+  datatables alone are enough to bind a window, which is how the Behemoth modal got measured):
+  - Behemoth family (Supremacy): the specialization modal is a MODEL now, not a floor (layer 29 —
+    the datatables load unowned, so the three specializations and the six named resources were
+    measurable here). What still waits for the DLC is only what needs a real Behemoth: a TAKEABLE
+    card, Confirm, and the toolbar route into the modal; then the rest of the family.
   - Hacking subsystem (Penumbra): dashboard, processing-power/operations banner, traitors
     banner, program panel, operation route-building — one large stage, NOT to be written
     blind; wait for the DLC.
   - Traitor victim-side actions (Reveal/Kill/Remove in the population side panel) +
     pirate-lair and destroyed-planet orbital labels — small, shares the fixture wait.
-  - The report-family breakdown toggle (Damage/Displacement/IonWave/ObliteratorVictim/
-    PirateMission reports): a caption-less icon the shared caption rule drops — harmless
-    only if the collapsed panel keeps its tables Visible, UNVERIFIED with a real report.
   - Umbral Choir ghost-system page (Penumbra): the Ghost state is a THIRD mode of the
     star system page beside Outpost and Colony — two side panels of bare-icon controls +
     a growth gauge.
@@ -98,13 +91,13 @@ files above.
 
 ## To decide (owner)
 
-- Should collapsing a system un-zoom? (Shipped: no — Backslash is the way out and both
-  tiers stay reachable with the branch open; guarded alternative: un-zoom only if the
-  camera is still on that system.)
-- Should the GALAXY view also get the scan view's Zoom node? (There zoom only changes how
-  much is drawn, not the subject.)
 - Rename Confirm's caption: mod key vs the game's own `%MessageBoxValidateTitle` (Cancel
   now uses the game's).
+- The report family's breakdown toggle (IonWave and friends) is DECLARED NOWHERE: it is
+  vestigial — `ReportPanel` carries no `AgeModifier`, so it animates nothing (es2-facts).
+  Shipped that way; overrule if it should be offered anyway.
+- The drawn-heading lookup renames two out-game pages: "Multiplayer room" and "Asset export".
+  Keep the game's drawn headings or the mod's older names?
 
 ## Shipped (pointers only)
 
@@ -126,4 +119,5 @@ files above.
 | Diplomacy / negotiation / minor / pirate | DiplomacyScreen, NegotiationScreen, MinorFactionDiplomacyScreen, PirateDiplomacyScreen |
 | Target pickers / cutscenes / victory trio / journal | TargetSelectionScreen, CutsceneScreen, VictoryScreen, VictoryAchievedScreen, JournalScreen |
 | Dialogs: message box / error / non-blocking / game menu / drop list | MessageBoxScreen, ErrorScreen, NonBlockingMessageScreen, GameMenuScreen, DropListScreen |
-| Menu floors (minimum pass) | MenuDestinationScreens |
+| Contextual prompt / Behemoth specialization | ContextualPromptScreen, JuggernautSpecializationScreen |
+| Out-game pages: disclaimer / credits / DLC browser / mod manager / join game (export still a floor) | DisclaimerScreen, CreditsScreen, DLCScreen, ModdingConfigScreen, MenuDestinationScreens |
