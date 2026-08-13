@@ -619,7 +619,17 @@ which hides the journal and shows the MAIN MENU. Enter on the score-screen cell 
 modal binds a tutorial ("A MATTER OF INFLUENCE" / "BREAD AND CIRCUSES") and closing that window
 unbinds it; `((GuiManager)Gui.GuiService).ShowError(flags, message, stack,
 UnityEngine.LogType.Error)` raises the error box — dismiss with its Continue button, never Exit
-Game.
+Game. In `unlocked` the star system page itself binds one
+(`Gui.GuiGameWindowService.RequestStarSystemManagementViewLevel(...Node.GUID)`), which arrives
+EXPANDED and takes the keyboard; collapse and expand it without walking to it by replaying its own
+arrow — `MinimizeToggle.State = true/false` then `SendMessage(OnSwitchMethod)`.
+
+**The collapsed-tutorial-under-a-modal window** (the one state where a minimised popup can speak
+over the page underneath): expand the popup, open a modal over it — an `AboveModalWindows` tutorial
+stays `Shown`, and the mod's tutorial screen stands down for the modal while its linger stays armed —
+then minimise it while the modal is up, then close the modal. Watch `/speech` across the close: the
+tutorial's title and page must not be in it. Every step is an `/eval` (the improvements modal's
+opener is in `dev-loop.md` §2), so the whole repro is four requests.
 
 **A solo multiplayer session** — the only fixture for the MP-only states, correcting the older claim
 that they have none at all. Switch the lobby's Session Mode to Protected, which makes it a

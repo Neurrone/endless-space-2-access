@@ -122,7 +122,11 @@ namespace ES2Access.Screens
         /// The linger only bridges the frames between a covering window closing and the game putting the
         /// panel back, so it is kept - not spent - while something is covering it, and it bridges only
         /// while the popup is still bound to a tutorial: once the game has unbound it there is nothing
-        /// coming back.
+        /// coming back. It asks the collapsed question again as well, because the box can be COLLAPSED
+        /// while a window is covering it - minimising a popup a modal is drawn over is the ordinary way
+        /// to get at the modal - and a bridge that only asked whether a tutorial was still bound would
+        /// hand the closing modal's frames to a box the player has already put away, which announces its
+        /// title and its page over the page they went back to.
         ///
         /// Collapsing it IS the tutorial being over, for as long as it stays collapsed: the box is
         /// cropped to its title bar, everything this screen declares is behind the crop, and a screen
@@ -150,7 +154,7 @@ namespace ES2Access.Screens
                 {
                     _linger--;
                     TutorialPopupPanel panel = Panel();
-                    return panel != null && panel.IsBound;
+                    return panel != null && panel.IsBound && !Minimized(panel);
                 }
 
                 return false;
@@ -702,28 +706,24 @@ namespace ES2Access.Screens
             return message.Build();
         }
 
-        /// <summary>The page as the review buffer holds it: its title, then its text a line at a
-        /// time - an objective and the way to meet it are written as exactly those lines.</summary>
+        /// <summary>
+        /// What the review buffer holds BEYOND the page itself: the title of the box.
+        ///
+        /// The page's words are already the buffer's first line - the engine opens every buffer with the
+        /// control's own readout, and this control's readout is the page - so declaring them here as
+        /// well is the same paragraph twice, which is what it was. The title is not said by anything the
+        /// player can come back to: it is the screen's name, spoken once on arrival, so the buffer is
+        /// the only place it can be re-read from.
+        /// </summary>
         private static IList<string> Content()
         {
             List<string> lines = new List<string>();
-            TutorialPopupPanel panel = Panel();
-            if (panel == null)
-            {
-                return lines;
-            }
-
             try
             {
-                string title = Title(panel);
+                string title = Title(Panel());
                 if (!string.IsNullOrEmpty(title))
                 {
                     lines.Add(title);
-                }
-
-                foreach (string line in AgeText.Lines(Description(panel)))
-                {
-                    lines.Add(line);
                 }
             }
             catch (Exception e)
