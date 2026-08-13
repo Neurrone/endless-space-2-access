@@ -773,6 +773,10 @@ generic graduates to the generic docs.
   in it (`GuiButtonHint.IsActive()` is exactly `GuiTechnology != null`). Under a hint the game's
   `OnValidateCb` :379-395 does hint-jump AND close, both gated on the physically held Control —
   which no injected key can reproduce, so that pair is manual-script only.
+- Senate: **hovering a senator card and hovering a party row are the SAME highlight**
+  (`SenatorsPanel.OnMouseEnter` → `SenateScreen.HighlightPolitics` :157-161, which lights both the
+  assembly's score/pie slice and the party's senators). The association is the party NAME, and both
+  surfaces are named by it, so nothing is lost when the highlight is not drawn.
 - Senate: **`GuiPolitics.Title` contains the party SYMBOL** — `GetLocalizedTitle(Name)` is the
   bare word. An emptied `SenatorCard` keeps its old words, so a card is gated on the model, not
   on its labels. And costs and totals live INSIDE the control they belong to: `LawsWindow`'s
@@ -874,6 +878,14 @@ generic graduates to the generic docs.
   Plus/Minus/Asterisk/Pause, none of which the mod claims.
 - `ShowOtherCards` does not clamp; clicking an already-selected card IS the validation; and the
   ENEMY play cards set YOUR plan.
+- **A ground-battle outcome's second click is on the item's own transform.** Measured off the
+  unbound prefab (`GroundBattleOutcomeSelectionNotificationWindow.OutcomeItemPrefab`, readable with no
+  battle running): `GroundBattleOutcomeItem.Toggle` sits on the item's own `AgeTransform`, carries
+  `UseDoubleClick` with `OnDoubleClickMethod = OnDoubleClickCb` (select AND validate, :74-79) and
+  `OnSwitchMethod = OnToggleCb` (select only). That is exactly the shape the notification screen's
+  choice reader already declares and already gives the double-click chord to, so the gesture is
+  covered without a battle to run it on. A prefab's `AgeTransform` is null until it is instantiated —
+  probe the fields, not the transform.
 
 ## Diplomacy and the sweep
 

@@ -100,7 +100,12 @@ table and every cell of a row (its `DoubleClickButton`, the row selected first b
 handlers all read `GuiTable.SelectedLine`), so the empire page's systems table opens that system's
 management page, the military page shows the fleet on the map, and the two selection modals pick and
 close — no screen declares any of it. The tables whose client does nothing with the gesture stay
-silent, as the mouse does there. Where the game has left a control switched on only so a click can
+silent, as the mouse does there. Every table the mod reads THROUGH `TableSheet`, that is: the
+load-save dialog builds its rows by hand and so answers the chord with nothing (measured 2026-08-13),
+which costs the player no command — the game's own `LoadSaveModalWindow.OnLineDoubleClick` :401 loads
+the row (behind the same confirmation the Load button raises in game) or saves over it (behind
+`%LoadSaveConfirmOverwriteDescription`), and both are what the dialog's own buttons do to the picked
+row. Where the game has left a control switched on only so a click can
 explain itself, Ctrl+Enter is that explanation: the jump to the missing technology (`Cells.Add` →
 `AgeWidgets.Locate`), wired once for every such control; those controls still announce themselves
 unavailable, and Enter on them does nothing, as the mouse's plain click does. (Owner rulings

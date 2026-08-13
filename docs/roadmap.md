@@ -57,6 +57,12 @@ files above.
   empire page when it fires. Reproduce and fix.
 - Departing-fade stand-down: the spurious "unavailable" frame when a game confirmation
   opens over a mod screen (general fix).
+- `system: reading the side panels threw: Duplicate control id: system:side/2/Key/2` — seen ONCE
+  in batch G's ring while the star system page was up, never reproduced; it empties that panel's
+  walk for the frame it fires. Two children named "Key" at the same depth under the
+  representatives panel is the shape (its sensitivity legend), so the likely cause is a frame
+  where `PoliticalSensitivityBreakdown` had not yet resolved and the `Special` branch that claims
+  the legend did not fire. Reproduce and key it by index-in-parent.
 - SettingRows editors end in silence: no watcher notices the game's field letting go, so a
   committed or cancelled settings edit re-reads nothing (the rename box now does this
   right; hoist its field-released re-read into the shared editor).
@@ -90,6 +96,10 @@ files above.
   direction is not built: the game also drops a PLANET's population INTO the panel
   (`PlanetLabelsWindow_SystemManagement.StartDrag` :144-148 adds the panel as a target), which needs
   the same fixture and an owner ruling on which node in the panel takes the drop.
+- The load-save dialog answers Ctrl+Alt+Enter with nothing: it is the one table with a game
+  double click that the mod builds by hand rather than through `TableSheet` (measured, batch G).
+  Both effects are reachable from its other controls, so this is parity polish, not a hole —
+  and wiring it means testing a load and an overwrite, which needs an owner call.
 - Riftborn time bubble on the galaxy map: a `GalaxyEntity` with a disk renderer — no
   widget, no label window; making it discoverable is real map-tree modelling.
 - Faction sightings needing a non-UE base-game save (code landed drawn-gated, unsighted):

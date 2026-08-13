@@ -141,7 +141,13 @@ editor: nothing was ever persisted — SAVING a faction (`OnValidateCb` :686-700
 deleting an existing one are code-verified only. Load/save: the window declares no content unless
 the dialog is up (`/gui/graph?screen=screen.load-save` answers "not active" from a running game),
 so the whole family — including the type-ahead that searches SAVES rather than cells — is live-checked
-only from the manual script.
+only from the manual script. It CAN be raised in-game from `/eval` the way the pause menu does
+(`var w = Gui.GuiService.GetWindow("LoadSaveModalWindow") as LoadSaveModalWindow; w.LoadSaveMode =
+LoadSaveModalWindow.LoadSaveType.Save;` — or `LoadFromGame` — `Gui.GuiService.ShowWindow(w);`), and it
+closes with `Gui.GuiService.HideWindow(w)`: it is a `GuiWindow`, so `HandleInput` does not exist on it.
+The type-ahead lands on a save by name (`POST /type "fleet rework"`). **Never Enter on a row, and never
+press Load, Save or Delete** — the double-click chord is safe only because this screen's rows are
+hand-built and answer it with nothing (interaction.md).
 
 **Working the technology wheel.** Open/close it from `/eval` with
 `Gui.GuiService.GetWindow<GameOverlayWindow>().ControlBanner.ToggleScreen("TechnologyScreen")`
