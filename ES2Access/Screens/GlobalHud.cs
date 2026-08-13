@@ -1625,7 +1625,9 @@ namespace ES2Access.Screens
         /// <summary>
         /// Everything the game is waiting to tell the player, as a list they can walk instead of a
         /// column of icons they would have to click. Enter opens one - the popup that appears is a
-        /// screen of ours and takes over from here - and Backspace throws it away. With nothing
+        /// screen of ours and takes over from here - and Backslash throws it away, because throwing
+        /// one away is the game's OWN right click on the icon
+        /// (<c>NotificationItemsWindow.HandleInput</c> :90-101). With nothing
         /// waiting the game shows an empty corner, so this stop is not there at all.
         ///
         /// What a stop here holds is what the strip holds: an icon and, on hovering it, its title.
@@ -1656,7 +1658,7 @@ namespace ES2Access.Screens
                         null,
                         null
                     );
-                    vtable.OnSecondary = () => Dismiss(it);
+                    vtable.OnContextual = () => Dismiss(it);
                     vtable.Sections = GraphNodes.Sections(GraphNodes.TooltipDetails(IconTooltip(it, items)), null);
                     builder.AddItem(ControlId.Referenced(it, "hud:notification/" + count), vtable);
                     count++;

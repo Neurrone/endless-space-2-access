@@ -108,6 +108,12 @@ unavailable, and Enter on them does nothing, as the mouse's plain click does. (O
 a click and its own binding matcher is exact-modifier (`InputManager.InputsMatch`); a mod screen
 replaying a double click checks that the game's handler does not read the modifiers the player is
 still holding.
+**Backspace (`NodeVtable.OnSecondary`) is NOT a right click** — it is the second command on a node
+that folded two of the GAME's controls into one, and the only one left is the options screen's
+key-rebind row, where Enter captures the binding's first key and Backspace its second. Anything the
+game itself puts on a right click goes on Backslash, never here: the HUD's notification dismiss was
+on Backspace until 2026-08-13 and moved, because the game dismisses on right click
+(`NotificationItemsWindow.HandleInput` :90-101).
 The Enter chords pass the PHYSICAL modifier through to the game's handler, which
 is how the game's own selection rules apply rather than a copy of them. Which screens have the
 chords and which cargo kinds the drag carries (ships, population, both queues) is coverage
