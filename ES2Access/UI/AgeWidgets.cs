@@ -507,6 +507,15 @@ namespace ES2Access.UI
             }
         }
 
+        /// <summary>The heading the game wrote across the top of a <c>GuiPanel</c>, which is what a
+        /// sighted player reads above its content. Found where it is drawn: these are plain panels and
+        /// none of them binds the label, but every one of them names it "PanelTitle" in the prefab.
+        /// </summary>
+        public static string PanelTitle(AgeTransform panel)
+        {
+            return TextOf(ChildNamed(panel, "PanelTitle", 1));
+        }
+
         /// <summary>
         /// A widget the game is drawing, by the name its prefab gave it - breadth first, so the
         /// outermost of two things wearing the same name wins.

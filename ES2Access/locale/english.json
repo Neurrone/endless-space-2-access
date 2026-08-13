@@ -304,6 +304,8 @@
   "join-game.no-games": "No multiplayer games found",
   "join-game.game-found": "{0} multiplayer game found",
   "join-game.games-found": "{0} multiplayer games found",
+  "resources-export.asset-listed": "{0} asset listed",
+  "resources-export.assets-listed": "{0} assets listed",
   "new-game.host": "Host",
   "new-game.kick": "Kick",
   "new-game.lock-empire": "Lock empire",

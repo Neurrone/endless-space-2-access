@@ -28,9 +28,10 @@ namespace ES2Access.Screens
     /// nothing at all.
     ///
     /// <see cref="Build"/> defaults to the shape floor (<see cref="WindowShape"/>): the heading, plus every
-    /// control the page drew words on. That is what a page with no model of its own gets, and it is
-    /// deliberately not enough to call such a page finished - only the resource exporter is still on it.
-    /// Every other page overrides <see cref="Build"/> with a model of its own content.
+    /// control the page drew words on. That is what a page with no model of its own would get, and it is
+    /// deliberately not enough to call such a page finished - every one of these pages now overrides
+    /// <see cref="Build"/> with a model of its own content, so the floor is only what a page ADDED here
+    /// starts from.
     /// </summary>
     public abstract class MenuDestinationScreen : Screen
     {
@@ -112,38 +113,6 @@ namespace ES2Access.Screens
             {
                 return null;
             }
-        }
-    }
-
-    /// <summary>
-    /// The resource exporter - a modding tool that writes the game's own data out to files
-    /// (<c>ResourcesExportScreen</c>).
-    ///
-    /// DEFERRED: the resource list and the export itself.
-    ///
-    /// Escape: <c>HandleInput</c> shows the main menu again - except while an export is running, when the
-    /// window swallows every action until it finishes. That is the game's decision and is left alone.
-    /// </summary>
-    public sealed class ResourcesExportModScreen : MenuDestinationScreen
-    {
-        public override string Key
-        {
-            get { return "screen.resources-export"; }
-        }
-
-        protected override string Prefix
-        {
-            get { return "resources-export"; }
-        }
-
-        protected override string ScreenNameKey
-        {
-            get { return "screen.resources-export"; }
-        }
-
-        protected override GuiWindow Window()
-        {
-            return Get<ResourcesExportScreen>();
         }
     }
 

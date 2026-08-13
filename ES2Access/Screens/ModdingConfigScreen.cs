@@ -409,11 +409,9 @@ namespace ES2Access.Screens
             }
         }
 
-        /// <summary>The heading the game wrote on a panel, which is what the player reads above it. Found
-        /// where it is drawn: these are plain <c>GuiPanel</c>s and none of them exposes it.</summary>
         private static string PanelName(AgeTransform panel)
         {
-            return AgeWidgets.TextOf(AgeWidgets.ChildNamed(panel, "PanelTitle", 1));
+            return AgeWidgets.PanelTitle(panel);
         }
 
         /// <summary>What keys a row: the mod's own name, which survives the table pooling its rows and

@@ -643,6 +643,13 @@ namespace ES2Access.Core.Speech
         public const string JoinGameGameFound = "join-game.game-found";
         public const string JoinGameGamesFound = "join-game.games-found";
 
+        /// <summary>How much the asset exporter's list is showing. The page opens on a loading curtain
+        /// and fills a moment later, and each of its three filter ticks then adds or removes hundreds
+        /// of rows at once, so the size of the list is the one thing about it nothing on screen says.
+        /// </summary>
+        public const string ResourcesExportAssetListed = "resources-export.asset-listed";
+        public const string ResourcesExportAssetsListed = "resources-export.assets-listed";
+
         // The lobby's multiplayer marks. The game draws the crown, the kick button and the lock as
         // pictures with no words: the crown carries no tooltip at all, and the other two explain what
         // clicking them DOES ("Click to kick this player") without naming the thing being clicked. The
@@ -1122,6 +1129,8 @@ namespace ES2Access.Core.Speech
             { JoinGameNoGames, "No multiplayer games found" },
             { JoinGameGameFound, "{0} multiplayer game found" },
             { JoinGameGamesFound, "{0} multiplayer games found" },
+            { ResourcesExportAssetListed, "{0} asset listed" },
+            { ResourcesExportAssetsListed, "{0} assets listed" },
             { NewGameHost, "Host" },
             { NewGameKick, "Kick" },
             { NewGameLockEmpire, "Lock empire" },
