@@ -618,37 +618,80 @@ namespace ES2Access.Tests.UI
         }
 
         /// <summary>
-        /// The three keys that are not activation: the right-click command and the two selection
-        /// chords. Each runs its own slot and nothing else - a chord must never fall back to plain
-        /// activation on a control that does not have it, which would do something the player never
-        /// asked for. False is how the caller knows to say "nothing to do here" instead.
+        /// The right click is a slot of its own and nothing else: a control without one answers false
+        /// so the caller stays silent, and never borrows the plain click. A right click that does not
+        /// exist has nothing to replay - unlike the modified LEFT clicks below.
         /// </summary>
         [Fact]
-        public void TheContextualCommandAndTheSelectionChordsEachRunTheirOwnSlot()
+        public void TheContextualCommandRunsItsOwnSlotAndNothingWhereThereIsNone()
         {
             GraphState state = new GraphState();
-            int activated = 0, contextual = 0, toggled = 0, ranged = 0;
+            int activated = 0, contextual = 0;
             NodeVtable row = Vt("Ship");
             row.OnActivate = () => activated++;
             row.OnContextual = () => contextual++;
-            row.OnSelectToggle = () => toggled++;
-            row.OnSelectRange = () => ranged++;
+            NodeVtable plain = Vt("Plain");
+            plain.OnActivate = () => activated++;
 
             KeyGraph g = new KeyGraph(Renderer(b =>
-                b.AddItem(Id("a"), row).AddItem(Id("b"), Vt("Plain"))), state);
+                b.AddItem(Id("a"), row).AddItem(Id("b"), plain)), state);
             g.Rerender();
             Assert.True(g.Contextual());
-            Assert.True(g.SelectToggle());
-            Assert.True(g.SelectRange());
             Assert.Equal(0, activated);
             Assert.Equal(1, contextual);
-            Assert.Equal(1, toggled);
-            Assert.Equal(1, ranged);
 
             g.Move(GraphDir.Down);
             Assert.False(g.Contextual());
+            Assert.Equal(0, activated);
+        }
+
+        /// <summary>
+        /// The three modified LEFT clicks - Alt+click and the two selection chords. Where the control
+        /// wires the slot, the slot runs and the plain click does not. Where it does not, the plain
+        /// click is replayed instead: the player is physically holding the modifier, so the game's own
+        /// handler is what branches on it (Ctrl+click to locate a technology), and that must work
+        /// without every screen wiring a slot for behavior that is entirely the game's.
+        /// </summary>
+        [Fact]
+        public void TheModifiedClicksRunTheirOwnSlotAndOtherwiseReplayThePlainClick()
+        {
+            GraphState state = new GraphState();
+            int activated = 0, alternate = 0, toggled = 0, ranged = 0;
+            NodeVtable row = Vt("Ship");
+            row.OnActivate = () => activated++;
+            row.OnAlternate = () => alternate++;
+            row.OnSelectToggle = () => toggled++;
+            row.OnSelectRange = () => ranged++;
+            NodeVtable button = Vt("Behemoth");
+            button.OnActivate = () => activated++;
+
+            KeyGraph g = new KeyGraph(Renderer(b =>
+                b.AddItem(Id("a"), row).AddItem(Id("b"), button).AddItem(Id("c"), Vt("Label"))), state);
+            g.Rerender();
+            Assert.True(g.Alternate());
+            Assert.True(g.SelectToggle());
+            Assert.True(g.SelectRange());
+            Assert.Equal(0, activated);
+            Assert.Equal(1, alternate);
+            Assert.Equal(1, toggled);
+            Assert.Equal(1, ranged);
+
+            // No slot, but a click: each chord replays the click, once.
+            g.Move(GraphDir.Down);
+            Assert.True(g.Alternate());
+            Assert.True(g.SelectToggle());
+            Assert.True(g.SelectRange());
+            Assert.Equal(3, activated);
+            Assert.Equal(1, alternate);
+            Assert.Equal(1, toggled);
+            Assert.Equal(1, ranged);
+
+            // Neither: nothing ran, and false is how the caller knows to stay silent.
+            g.Move(GraphDir.Down);
+            Assert.False(g.Alternate());
             Assert.False(g.SelectToggle());
             Assert.False(g.SelectRange());
+            Assert.Equal(3, activated);
         }
 
         /// <summary>
