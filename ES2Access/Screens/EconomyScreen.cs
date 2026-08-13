@@ -829,16 +829,38 @@ namespace ES2Access.Screens
             return names;
         }
 
-        /// <summary>What the effect a resource family improves is called, off the game's own registry.
-        /// A name the corpus never wrote comes back as its own key - parked text, which is not a name to
-        /// speak.</summary>
+        /// <summary>
+        /// What a resource family's column is called - the resource it improves, in the game's own words
+        /// for it.
+        ///
+        /// The heading is drawn as an ICON and nothing else (<c>EconomyPanel.RefreshResourceHeader</c>
+        /// :177-185 sets an image, a tint and a tooltip - no label), so what it says is the name of the
+        /// thing pictured: "Industry". The family's own title is a sentence about what the family does
+        /// ("Improves Industry", and one of them carries an icon typo that reads a second resource's
+        /// name), which is a description - it stays where the game puts it, on the heading's tooltip.
+        ///
+        /// A family with no short name of its own - the compound strategic ones - keeps that title, which
+        /// is the only thing the game says about them. A name the corpus never wrote comes back as its
+        /// own key - parked text, which is not a name to speak.
+        /// </summary>
         private static string FamilyName(ResourceDefinition.Type type, int families, int index)
         {
             try
             {
                 GuiResource resource = NthResource(type, families, index);
+                if (resource == null)
+                {
+                    return null;
+                }
+
+                string improved = ImprovedResource(resource.TargetEffect.ToString());
+                if (improved != null)
+                {
+                    return improved;
+                }
+
                 Amplitude.Unity.Gui.ExtendedGuiElement element =
-                    resource == null ? null : Gui.GetExtendedGuiElement(resource.TargetEffect);
+                    Gui.GetExtendedGuiElement(resource.TargetEffect);
                 string title = element == null ? null : AgeText.Clean(Gui.Localize(element.Title));
                 return string.IsNullOrEmpty(title) || title[0] == '%' ? null : title;
             }
@@ -846,6 +868,72 @@ namespace ES2Access.Screens
             {
                 return null;
             }
+        }
+
+        /// <summary>What each resource family improves, as the game's own short titles for those
+        /// resources - the words the rest of the game calls Food and Manpower by. Keyed by the family's
+        /// target effect, which is the only thing that says which resource a family is for; a family the
+        /// game has no single word for (two resources at once, or an effect that is not a resource at
+        /// all) is absent and reads its sentence instead.</summary>
+        private static readonly Dictionary<string, string[]> ImprovedResources =
+            new Dictionary<string, string[]>
+            {
+                { "TargetEffectFood", new[] { "%SubCategoryFoodTitle" } },
+                { "TargetEffectIndustry", new[] { "%SubCategoryIndustryTitle" } },
+                { "TargetEffectDust", new[] { "%SubCategoryDustTitle" } },
+                { "TargetEffectScience", new[] { "%SubCategoryScienceTitle" } },
+                { "TargetEffectEmpirePoint", new[] { "%SubCategoryInfluenceTitle" } },
+                { "TargetEffectHappiness", new[] { "%SubCategoryApprovalTitle" } },
+                { "TargetEffectMilitary", new[] { "%CategoryManpowerTitle" } },
+                { "TargetEffectTrade", new[] { "%SubCategoryTradeTitle" } },
+                { "TargetEffectHonor", new[] { "%HonorTitle" } },
+                {
+                    "TargetEffectFoodIndustry",
+                    new[] { "%SubCategoryFoodTitle", "%SubCategoryIndustryTitle" }
+                },
+                {
+                    "TargetEffectDustScience",
+                    new[] { "%SubCategoryDustTitle", "%SubCategoryScienceTitle" }
+                },
+                {
+                    "TargetEffectFoodIndustryDustScience",
+                    new[]
+                    {
+                        "%SubCategoryFoodTitle",
+                        "%SubCategoryIndustryTitle",
+                        "%SubCategoryDustTitle",
+                        "%SubCategoryScienceTitle",
+                    }
+                },
+            };
+
+        /// <summary>See <see cref="ImprovedResources"/>. Null for a family that is not in it, and for one
+        /// whose names the corpus never wrote.</summary>
+        private static string ImprovedResource(string targetEffect)
+        {
+            string[] keys;
+            if (
+                string.IsNullOrEmpty(targetEffect)
+                || !ImprovedResources.TryGetValue(targetEffect, out keys)
+            )
+            {
+                return null;
+            }
+
+            MessageBuilder names = new MessageBuilder();
+            for (int i = 0; i < keys.Length; i++)
+            {
+                string name = AgeText.Clean(Gui.Localize(keys[i]));
+                if (string.IsNullOrEmpty(name) || name[0] == '%')
+                {
+                    return null;
+                }
+
+                names.ListItem(name);
+            }
+
+            string said = names.Build();
+            return string.IsNullOrEmpty(said) ? null : said;
         }
 
         private static GuiResource NthResource(

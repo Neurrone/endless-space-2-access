@@ -709,7 +709,13 @@ generic graduates to the generic docs.
   salables) — take a name from the target only when the class says the rich variant is bound.
   `AdCreationModalWindow` is a dead stub (unregistered, its opener never shown);
   `EconomyScreen.ToggleSystems` is null live, so the tab strip is read off the drawn table;
-  `%TargetEffectIndustryTitle` contains the game's own icon typo (spoken faithfully); and
+  `%TargetEffectIndustryTitle` contains the game's own icon typo ("Improves Industry [foodColored]"),
+  which is why a resource family's column is NOT named from its `TargetEffect` title: the heading is
+  drawn as an icon alone (`EconomyPanel.RefreshResourceHeader` :177-185), so it speaks the resource
+  the family improves, off the game's own short titles (`%SubCategoryFoodTitle` … ,
+  `%CategoryManpowerTitle`, `%HonorTitle`) keyed by target effect, and the sentence stays on the
+  heading's tooltip; a compound strategic family (`TargetEffectFoodIndustry`,
+  `TargetEffectSystemDevelopmentEffects`) has no short word and keeps the title. And
   `ResourceItem.OnClickCb` is god-mode-only.
 - Economy, luxuries: **the luxury grid is a GRID** — the items cycle through 8 target effects with a
   period of 8, so the columns are the FIDSI families and a row read as a flat strip loses which
