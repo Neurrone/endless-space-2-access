@@ -86,6 +86,12 @@ interval with the gap scaled to crowd size (total sweep time roughly constant); 
 node counts; event narration condenses before speaking rather than queueing one line per raw
 engine event. When a cap drops content, say so — silent truncation reads as completeness.
 
+**Pick a wait's unit by who is waiting.** A gap the player HEARS — a repeat interval, a
+re-announce throttle, a debounce before speaking — is wall-clock seconds; a settle that waits
+for the game's own next refresh or layout pass is frames. The two are interchangeable only at
+60 Hz, which is exactly where testing happens: a frame-counted speech throttle turned into
+seven silent seconds on a 13 fps page.
+
 ## Measuring
 
 Cheap signals, no profiler attached: the dev server's `/wait` returns frames-vs-elapsed (a

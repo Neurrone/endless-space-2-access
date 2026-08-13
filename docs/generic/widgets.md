@@ -41,9 +41,25 @@ parts, all text `Func<string>` resolved at speak time:
   marks, not text: declare each mark as a read-only page indicator carrying the Selected
   part (never invent a spoken "N of M" the game doesn't show), and if the game's marks are
   clickable, activating one jumps to that page.
+- **A camera whose zoom changes the SUBJECT is a widget.** Where the zoom steps swap which
+  data layer or which tier of entity the view draws (a strategic lens, an overlay mode), the
+  camera holds a value and belongs in the graph as an adjustable — `OnAdjust` stepping the
+  tiers, the landed tier spoken — because the wheel can be the only gesture the game bound
+  to it, and then every tier but the current one is unreachable by keyboard. A camera that
+  only changes how close the same subject is drawn stays a viewport (the camera-follows-focus
+  and expansion-zoom rules in [ui-navigation.md](ui-navigation.md)).
 - **Always-drawn text is always spoken** — a permanently drawn paragraph is part of the
   control's readout, never tooltip-ruled; the full rule and its discriminator live in
-  [making-screens-accessible.md](making-screens-accessible.md) §0.
+  [making-screens-accessible.md](making-screens-accessible.md) §0. The converse gate is
+  drawn-ness, never emptiness: **a hidden label keeps whatever was last written into it**
+  (and a never-shown one keeps the prefab's words), so a readout gated on "its text is
+  non-empty" happily speaks the previous prompt's title or a net figure from before the
+  panel closed — gate on the game's own drawn flag and let the words be whatever they are.
+- **A leader-line callout names a relationship, not the widget it points at.** A caption the
+  game draws with a line or arrow into a cluster ("Used Skill Points 4") is a statement about
+  the cluster, so adopting it as the pointed-at widget's name gives every node in that
+  cluster the same meaningless phrase; name those nodes from what they each are, and let the
+  callout read as its own line where it is drawn.
 
 Two announcement parts do the heavy lifting:
 
@@ -128,6 +144,10 @@ A drawn graph — bars as clipped rectangles, gauges as fill ratios — often ca
 at all. Read the encoded values off the drawn geometry (fill percentages, clip heights),
 announce the non-trivial series in one line, put every series in the review buffer, and
 take the series names from the model's own ordered list: the bars themselves name nothing.
+**Verify every encoded series in a state where it is non-zero.** A series drawn at zero
+reads as zero whatever the arithmetic behind it is, so a fixture that only ever shows zeroes
+cannot falsify a scale, origin or clip-height error — the gauge that read 163% in play had
+passed exactly that check.
 
 ## Adjust granularity
 

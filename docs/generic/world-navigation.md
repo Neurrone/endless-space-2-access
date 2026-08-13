@@ -41,13 +41,16 @@ often prefab-authored and invisible to code:
 
 Two rules keep every tier reachable:
 
-- **Expansion never moves the camera.** "Go in" (tree) and "get closer" (camera) are
-  different verbs — ui-navigation.md's expansion rule. Bind a camera move to the expand key
-  and whichever information tier the other distance shows becomes unreachable.
-- **The camera gets an explicit control**, placed wherever fits the screen's design (ES2:
-  entries in the node's action menu — "show system view" / "return to galaxy view", the
-  latter restoring the previous zoom step *at the focused node*, not at the camera's old
-  position). Node children then read **whatever the current distance draws**, switching
+- **Expansion moves the camera only while both tiers stay reachable.** "Go in" (tree) and
+  "get closer" (camera) are different verbs — ui-navigation.md's expansion rule — so binding
+  a camera move to the expand key is allowed exactly while an explicit zoom-out key still
+  reaches the other tier with the branch open; otherwise whichever information tier the other
+  distance shows becomes unreachable.
+- **The camera gets an explicit control**, placed wherever fits the screen's design (ES2: an
+  explicit zoom-out key, restoring the previous zoom step *at the focused node*, not at the
+  camera's old position); and where a zoom step swaps the SUBJECT rather than the distance,
+  that control is an adjustable widget ([widgets.md](widgets.md)).
+  Node children then read **whatever the current distance draws**, switching
   content source when the close-up surface exists and falling back to the far readout when
   it does not — never a dead node.
 

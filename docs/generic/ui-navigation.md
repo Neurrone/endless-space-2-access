@@ -66,7 +66,11 @@ which no dump reveals. Key such lines on the game's *data* object, never the wid
   - **`PushContext`** adds non-focusable labeled levels (spoken once on entry via the path
     diff). Its id derives from its label, so sibling contexts sharing a drawn caption
     (ES2's lobby: seven competitor slots all captioned "AI") silently collapse in the path
-    diff — disambiguate the label or key when the game repeats captions.
+    diff — disambiguate the label or key when the game repeats captions. A context is
+    announced and never focused, so it is also nowhere to PUT words: a drawn heading the game
+    attached an explanation or a tooltip to must land on a node — its own, or the single
+    control it captions ([making-screens-accessible.md](making-screens-accessible.md) §0) —
+    or that text has no surface it can ever be reviewed from.
   - **Stops and regions — two tiers, one division of labor.** `BeginStop` partitions a
     screen into Tab-cyclable stops with remembered positions; regions subdivide a stop.
     Tab moves between panels (stops); the region jump (WotR: Ctrl+arrows; ES2 Access:
@@ -203,7 +207,13 @@ which no dump reveals. Key such lines on the game's *data* object, never the wid
   renderer-composed tooltip cannot exist until the camera has brought its widget on screen,
   so reading one is a camera move plus a hover, in that order. Declare what is actually drawn — walk
   ancestors for visibility, test drawn-ness, filter decorative click-shields (no activation
-  wiring), order by measured position so speech order matches the screen.
+  wiring), order by measured position so speech order matches the screen. And drawn words are
+  never dropped from speech, even where they read as vacuous: a heading over an empty table is
+  what the sighted player sees too, and deleting it is a different screen, not a tidier one.
+  The one exception is a control whose drawing the mod's own presence excludes: where the game
+  draws something only while the KEYBOARD is the game's (chat tabs drawn while its field owns
+  input, and the mod stands down exactly then), no frame the mod builds on ever shows it drawn
+  — gate such a control on the game's own can-exist predicate instead.
 
 ## Patterns proven since the port
 
@@ -312,7 +322,10 @@ which no dump reveals. Key such lines on the game's *data* object, never the wid
   §0); the card's substance lives in its buffer ([buffers.md](buffers.md)'s card example).
   A **sparse grid** is not a table either: when the game keeps the full lattice and hides most
   cells, column-preserving moves pair wrong across the holes — linearise the drawn cells and
-  let the drawn headers become a walkable legend.
+  let the drawn headers become a walkable legend. Sparseness argues against position-keyed
+  ROWS, though, not against the columns: ask whether the column is a fact in the game's own
+  data (the luxury grid's columns were its FIDSI families) and, where it is, each linearised
+  cell still says which column it sits in.
 - **Tables read as tables**: one graph row per data row with a shared row key (Up/Down keeps
   the column), one node per cell announcing the drawn value alone — the column heading is
   spoken as the EDGE the player crosses to reach the cell, never repeated by the cell itself —
@@ -402,10 +415,17 @@ already has an answer for each case.)
 - **A control's several actions are its DRAWN buttons, modeled as child nodes** — declared
   while visible, refusing (reason in the tooltip part) while disabled, absent while the
   game hides them. Two rules follow: a container with no drawn actions is a LEAF, never an
-  expandable dead end; and a refused action is a declared-refusing node, not a missing one.
+  expandable dead end — and so is one whose only child repeats the parent's own words or is
+  switched off in the game's own settings, since an expansion that tells the player nothing
+  new is the empty group wearing a child; and a refused action is a declared-refusing node,
+  not a missing one.
 - **The alternate-activation chord is the game's modifier-click variant** where one exists
   — replay the click and let the game's handler read the physically held modifier — and
-  nothing where the game has none.
+  nothing where the game has none. Wire it ONCE, at the single call every node's activation
+  passes through: a per-node chord is defeated wherever the mod gates that node's click on
+  its own availability test, and a control the game leaves enabled precisely so a modified
+  click can explain itself then reads "unavailable" and swallows the very click the chord
+  was meant to deliver.
 - **A right-click command key** mirrors the game's right-click at the focused thing, given
   the current selection (move orders, zoom restore); its availability is computed on the
   press, not per frame.

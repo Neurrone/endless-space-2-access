@@ -78,8 +78,11 @@ Rules that came out of shipping this, all hit in practice:
   values from their captions and fuses adjacent blocks into nonsense lines. Read within
   each unit, and give typed readers to the few structures geometry gets wrong — a
   repeated-item grid pairs the Nth title with the Nth value by sibling index (its drawn
-  layout puts all titles above all values, so no row-banding can pair them); a textless
-  gauge reads as its drawn proportion. Two safety nets make a hundred-class surface
+  layout puts all titles above all values, so no row-banding can pair them), and collapsing
+  one of its items into a single spoken line is gated on that item being DRAWN as one line —
+  a repeated-prefab signal means "same shape, N times", never "small", so an item the prefab
+  draws over several rows reads as those rows; a textless gauge reads as its drawn
+  proportion. Two safety nets make a hundred-class surface
   tractable: unknown unit types read through the generic scoped reader, and a dev probe
   names which reader answered each unit — coverage gaps surface in tooling, not in speech.
   Remaining traps, all hit in practice: check *which* tooltip the window is currently bound
@@ -90,10 +93,19 @@ Rules that came out of shipping this, all hit in practice:
   caption and value occupy the same rect; and refill the review buffer when the drawn
   tooltip lands (an invalidation hook), guarded by a lines-equality check so a refill with
   identical content never resets the player's reading position.
+- **A cheap lines-reading of an unmodelled panel is complete only where its tooltips are
+  content-backed.** The descend-into-containers reading
+  ([making-screens-accessible.md](making-screens-accessible.md) §3) can only report words
+  that already exist, so count the class-backed tooltips on a surface BEFORE promising it
+  reads: a panel whose whole substance is renderer-assembled reads as its own name and
+  nothing else, and silently, because the reading itself succeeds.
 - **Point at the widget that owns the tooltip, not its row.** A row's tooltip often hangs
   off a child (the title label), and pointing at the container draws nothing — while the
   tree dump still looks plausible and the readout still says "has tooltip". Verify tooltip
-  rendering with the drawn-tooltip probe, never with the tree dump.
+  rendering with the drawn-tooltip probe, never with the tree dump: an INDICATED tooltip is
+  accepted only once the review buffer, with the node focused, actually holds its words —
+  indication itself stays unconditional (above), which is exactly why a mis-aimed pointer
+  advertises content the player can never reach and nothing in the speech says so.
 - **A row can carry more than one tooltip** (the heading's explanation and the value's
   description): announce the value's — the last-drawn — by the short/long rule, **and
   indicate whenever any tooltip in the row is long**; put every tooltip in the row into
@@ -109,6 +121,13 @@ Rules that came out of shipping this, all hit in practice:
   class-composed dossier once its stage is researched), so one control's short/long mode
   flips over its lifetime. Asking the marker at every declaration is what makes the shared
   helper correct; a cached `TooltipMode` ships a bug that only appears after a state change.
+- **One thing, two tooltip objects, swapped by view state.** Where the game draws the same
+  thing through different widgets per view (a zoom tier, a list-versus-detail switch), each
+  widget carries its own tooltip: resolve which one to read at READ time from whichever is
+  drawn now, or the remembered one reads empty the frame the view changes. Its mirror in a
+  camera-driven view is that the anchor can leave the screen while focus stays on the node,
+  so a camera-dependent focus pointer must re-commit on every camera change, not once when
+  focus arrives.
 - **One implementation of the short/long test, shared with the lines reader.** Two copies
   of "are this tooltip's words on the widget" that disagree produce a tooltip announced
   from one source and reviewed from another — and nothing in the spoken output reveals

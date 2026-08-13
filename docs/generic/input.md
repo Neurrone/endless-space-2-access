@@ -67,6 +67,11 @@ time, not at manual test:
 - The collision runs the other way too: before binding a chord that REPLAYS a game handler,
   grep that handler's reachable code for physical-modifier reads (`IsControlKeyDown` and
   kin) — the player is still holding the chord when the handler runs.
+- **Never route a keyboard gesture through a handler that gates on POINTER state.** A game
+  input handler asking whether the cursor is over the widget, whether a drag is live, or
+  which widget is under the mouse refuses every keyboard replay — and lies about it, since
+  such handlers return the same value for "refused at the gate" as for "done". Read past the
+  gate and call what the handler calls there.
 - Find every default binding sharing the mod's keys. The recurring offenders: Enter/Tab bound
   to chat or console (ES2 binds StartChatting to both, live even in single-player),
   KeypadEnter to end-turn, bare Up/Down piggybacked by popups for next/previous.

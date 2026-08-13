@@ -159,7 +159,8 @@ reload-safe ([hot-reload.md](hot-reload.md)) and per-frame cheap — `Build` run
 - **Reading a panel you haven't modelled in detail** (read-only side panels,
   out-of-fixture state variants): descend only into children that are themselves
   containers; a group whose children are all primitives is ONE line. This models whole
-  panels cheaply without per-widget work.
+  panels cheaply without per-widget work — and completely only where the panel's tooltips
+  are content-backed ([tooltips.md](tooltips.md)).
 
 ## 4. Verify with evidence, not claims
 
@@ -173,6 +174,12 @@ reload-safe ([hot-reload.md](hot-reload.md)) and per-frame cheap — `Build` run
   check even though it matches the pixels perfectly — "1500/1500" beside an unnamed icon
   satisfies spoken-equals-drawn and tells the player nothing. Matching is necessary;
   comprehensible is the bar.
+- **Verify with player-available gestures only.** Reaching the state under test by an engine
+  call — opening the window from the REPL, arming a mode by setting its flag — proves the
+  READING and never the reachability, and a screen whose only route in is a method no key
+  reaches passes every evidence pair while being unusable (it shipped that way twice). The
+  route in belongs in the evidence too: injected actions that correspond to real keys,
+  pressed from where the player actually stands.
 - **Exercise a gesture from states the test did not create.** A verification that always
   arrives through its own setup path only proves that path's precondition — a zoom-restore
   verified by zoom-in-then-restore never met a camera that was already zoomed by other
