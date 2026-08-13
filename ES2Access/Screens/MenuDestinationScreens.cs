@@ -150,7 +150,6 @@ namespace ES2Access.Screens
     /// </summary>
     public sealed class JoinGameListScreen : MenuDestinationScreen
     {
-        private static readonly object HeadersStop = "join-game:headers";
         private static readonly object LinesStop = "join-game:lines";
         private static readonly object ActionsStop = "join-game:actions";
 
@@ -254,10 +253,8 @@ namespace ES2Access.Screens
                 return;
             }
 
-            builder.BeginStop(HeadersStop);
-            _table.Headers(builder, table);
-
             builder.BeginStop(LinesStop);
+            _table.Headers(builder, table);
             if (_table.Lines(table).Count == 0)
             {
                 // A page whose whole content is a list the search came back empty for. Declared as a

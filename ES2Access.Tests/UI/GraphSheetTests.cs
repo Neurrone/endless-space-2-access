@@ -270,6 +270,107 @@ namespace ES2Access.Tests.UI
             Assert.Equal(s.FirstRow.StructuralKey, b.Build().StartKey.StructuralKey);
         }
 
+        private static string Say(MoveResult move)
+        {
+            return GraphAnnouncer.Compose(move.From, move.To, move.TransitionLabel);
+        }
+
+        [Fact]
+        public void TheRowPositionIsSaidOnArrivalAndOnRowChangesOnly()
+        {
+            GraphAnnouncer.PositionText = (index, count) => index + " of " + count;
+            GraphState state = new GraphState();
+            KeyGraph g = Table(state);
+            g.Rerender();
+            Assert.Equal("Fleets, table, Alpha, 1 of 2", GraphAnnouncer.ComposeFull(g.CurrentNode));
+
+            // Along the row: the row has not changed, so its position is not said again.
+            Assert.Equal("Ships, 3", Say(g.Move(GraphDir.Right)));
+
+            // A different row, reached off-primary: said.
+            Assert.Equal("Beta, 2, 2 of 2", Say(g.Move(GraphDir.Down)));
+
+            // Back onto column 0 of the row we are already in: still not said.
+            Assert.Equal("Beta", Say(g.Move(GraphDir.Left)));
+
+            Assert.Equal("Alpha, 1 of 2", Say(g.Move(GraphDir.Up)));
+        }
+
+        [Fact]
+        public void ACellSaysNoPositionOfItsOwn()
+        {
+            GraphBuilder b = new GraphBuilder();
+            GraphSheet s = new GraphSheet(b, "t:");
+            s.Region("Fleets", new[] { "Ships", "Move" });
+            s.Row(Vt("Alpha"), _rowA, () => "3", () => "5");
+            s.Row(Vt("Beta"), _rowB, () => "2", () => "4");
+            s.Finish();
+            GraphRender render = b.Build();
+            foreach (GraphNode node in render.Order)
+            {
+                Assert.Equal(0, node.PositionCount);
+            }
+        }
+
+        [Fact]
+        public void EachRegionCountsItsOwnRows()
+        {
+            GraphAnnouncer.PositionText = (index, count) => index + " of " + count;
+            object rowC = new object();
+            GraphBuilder b = new GraphBuilder();
+            GraphSheet s = new GraphSheet(b, "t:");
+            s.Region("Fleets");
+            s.Row(Vt("Alpha"), _rowA);
+            s.Row(Vt("Beta"), _rowB);
+            s.Region("Ships");
+            s.Row(Vt("Gamma"), rowC);
+            s.Finish();
+            GraphRender render = b.Build();
+
+            Assert.Equal(
+                "Fleets, Alpha, 1 of 2",
+                GraphAnnouncer.ComposeFull(Node(render, "t:row" + _rowA.GetHashCode() + "c0"))
+            );
+            Assert.Equal(
+                "Ships, Gamma, 1 of 1",
+                GraphAnnouncer.ComposeFull(Node(render, "t:row" + rowC.GetHashCode() + "c0"))
+            );
+        }
+
+        [Fact]
+        public void ARowThatHasMovedStillReadsAsTheSameRow()
+        {
+            GraphAnnouncer.PositionText = (index, count) => index + " of " + count;
+            GraphState state = new GraphState();
+            bool swapped = false;
+            KeyGraph g = new KeyGraph(() =>
+            {
+                GraphBuilder b = new GraphBuilder();
+                GraphSheet s = new GraphSheet(b, "t:");
+                s.Region("Fleets", new[] { "Ships" });
+                if (swapped)
+                {
+                    s.Row(Vt("Beta"), _rowB, () => "2");
+                    s.Row(Vt("Alpha"), _rowA, () => "3");
+                }
+                else
+                {
+                    s.Row(Vt("Alpha"), _rowA, () => "3");
+                    s.Row(Vt("Beta"), _rowB, () => "2");
+                }
+
+                s.Finish();
+                return b.Build();
+            }, state);
+            g.Rerender();
+
+            // A re-sort while the cursor stands still: stepping across the row afterwards is still a
+            // step within ONE row, because the row is identified by what it stands for.
+            swapped = true;
+            g.Rerender();
+            Assert.Equal("Ships, 3", Say(g.Move(GraphDir.Right)));
+        }
+
         [Fact]
         public void ThePrimaryCellCarriesTheRowObjectSoFocusFollowsAReorder()
         {

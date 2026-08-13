@@ -374,9 +374,21 @@ namespace ES2Access.Core.UI.Graph
             }
             GraphNode selected = SelectedNodeInStop(render, stopKey);
             if (selected != null) return selected;
+            GraphNode declared = DeclaredLanding(render, stopKey);
+            if (declared != null) return declared;
             foreach (GraphNode n in render.Order)
                 if (Equals(n.StopKey, stopKey)) return n;
             return null;
+        }
+
+        /// <summary>Where the stop said Tab should land (<see cref="GraphBuilder.LandStopOn"/>), or null.
+        /// </summary>
+        private static GraphNode DeclaredLanding(GraphRender render, object stopKey)
+        {
+            ControlId id;
+            if (stopKey == null || !render.StopLandings.TryGetValue(stopKey, out id)) return null;
+            GraphNode node = render.NodeAt(id);
+            return node != null && Equals(node.StopKey, stopKey) ? node : null;
         }
 
         /// <summary>Whether a node is one of a set of alternatives - it declares a selected-kind part,
@@ -391,12 +403,21 @@ namespace ES2Access.Core.UI.Graph
         }
 
         /// <summary>The first node in a stop that reads as SELECTED — carries a non-empty selected-kind
-        /// announcement part (list selection / choice option / tab / radio all declare one), or null.</summary>
+        /// announcement part (list selection / choice option / tab / radio all declare one), or null.
+        /// The search starts at the stop's declared landing where it has one, so a table's sort headings
+        /// — where the SORTED column reads "selected" — are not mistaken for the chosen row.</summary>
         public static GraphNode SelectedNodeInStop(GraphRender render, object stopKey)
         {
+            GraphNode from = DeclaredLanding(render, stopKey);
+            bool reached = from == null;
             foreach (GraphNode n in render.Order)
             {
                 if (!Equals(n.StopKey, stopKey)) continue;
+                if (!reached)
+                {
+                    if (!ReferenceEquals(n, from)) continue;
+                    reached = true;
+                }
                 IList<NodeAnnouncement> anns = n.Vtable != null ? n.Vtable.Announcements : null;
                 if (anns == null) continue;
                 foreach (NodeAnnouncement a in anns)

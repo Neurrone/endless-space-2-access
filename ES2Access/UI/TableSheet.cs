@@ -23,7 +23,8 @@ namespace ES2Access.UI
     ///
     /// What a table reads as (all of it inherited, none of it per screen):
     ///
-    /// - <b>The headers band</b> is a row of buttons; Enter is the header's own sort click, and the
+    /// - <b>The headers band</b> is a row of buttons sitting in the table's own Tab stop, one row above
+    ///   the first line - reached with Up from row 1, the way it is reached with the eye; Enter is the header's own sort click, and the
     ///   column the table is currently sorted by reads "selected", watched live - which is also the only
     ///   feedback a sort press has, since the game answers it by reordering rows and nothing else. A
     ///   column the table forbids sorting on is drawn disabled (<c>DisableSorting</c>) and reads so.
@@ -221,8 +222,14 @@ namespace ES2Access.UI
 
         // ---- the sort headers ----
 
-        /// <summary>One node per column heading, in the row the game drew them in. Either half of the
-        /// sheet may be declared without the other, and in either order: both read the headings first.
+        /// <summary>One node per column heading, in the row the game drew them in - declared in the
+        /// table's OWN stop, immediately above its rows, so the band is where it is drawn rather than a
+        /// Tab stop of its own: Up from the first row reaches the headings and Down comes back. Either
+        /// half of the sheet may be declared without the other, and in either order: both read the
+        /// headings first.
+        ///
+        /// The band carries no position: "1 of 8" there counts the table's COLUMNS, which is not a place
+        /// in a list. Where the player is in the table is said by the rows (<see cref="TableRow"/>).
         /// </summary>
         public void Headers(GraphBuilder builder, GuiTable table)
         {
@@ -233,7 +240,7 @@ namespace ES2Access.UI
             }
 
             GuiTable owner = table;
-            builder.StartRow();
+            builder.StartRow(positions: false);
             for (int i = 0; i < _headers.Count; i++)
             {
                 GuiTableHeader header = _headers[i];
@@ -359,6 +366,10 @@ namespace ES2Access.UI
             }
 
             sheet.Finish();
+
+            // Tab into the table lands on a ROW - the selected one where there is one - and not on the
+            // heading band declared above it, whose sorted column reads "selected" too.
+            builder.LandStopOn(sheet.FirstRow);
             return sheet;
         }
 

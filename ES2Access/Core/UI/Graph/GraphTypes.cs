@@ -237,6 +237,11 @@ namespace ES2Access.Core.UI.Graph
         /// primary, because every cell of it searches as the row's name.</summary>
         public int Column;
 
+        /// <summary>Which ROW of a table this control sits in - the same <see cref="TableRow"/> object
+        /// on every cell of the row, null outside a table. See <see cref="TableRow"/> for what the
+        /// announcer does with it.</summary>
+        public TableRow Row;
+
         /// <summary>Optional (Expandable groups): override HOW expansion state changes. When null the
         /// engine mutates the persistent expansion set (<see cref="GraphState.Expanded"/>); an adapter
         /// wires these to a retained game-side container's Expand/Collapse instead.</summary>
@@ -269,6 +274,31 @@ namespace ES2Access.Core.UI.Graph
         /// Called before the new control's OnFocusVisual, and also when the screen closes or the mod
         /// stops, so nothing is left looking hovered.</summary>
         public Action OnBlurVisual;
+    }
+
+    /// <summary>
+    /// Where a row sits in its table, shared by every cell of that row.
+    ///
+    /// A table's position phrase is about the ROW, not the cell: it is spoken when the player lands on
+    /// a row and when they move to a DIFFERENT one, and stays quiet while they walk that row's columns
+    /// - including the step back onto column 0, which no per-node position part could tell from an
+    /// arrival. That is why this is one shared object with a <see cref="Key"/> rather than an index on
+    /// each cell: the announcer compares the row the player came FROM with the row they landed in
+    /// (<see cref="GraphAnnouncer.Compose"/>), and the key is what survives the rebuild between the two.
+    ///
+    /// <see cref="Count"/> is filled in once the table knows how many rows it has, so a sheet may stamp
+    /// the object on a cell before the last row is emitted.
+    /// </summary>
+    public sealed class TableRow
+    {
+        /// <summary>Identifies the row across rebuilds - the sheet's own structural key for it.</summary>
+        public string Key;
+
+        /// <summary>1-based position of the row within its table.</summary>
+        public int Index;
+
+        /// <summary>How many rows the table has; 0 until the table is finished (nothing is spoken).</summary>
+        public int Count;
     }
 
     /// <summary>A directed edge to another node, with an optional spoken transition line (a "lane
@@ -346,6 +376,11 @@ namespace ES2Access.Core.UI.Graph
 
         /// <summary>Declaration order — drives stop/region cycling and type-ahead scan order.</summary>
         public readonly List<GraphNode> Order = new List<GraphNode>();
+
+        /// <summary>Where Tab lands in a stop that does not want its FIRST node - see
+        /// <see cref="GraphBuilder.LandStopOn"/>. Keyed by stop key; a stop with no entry lands on its
+        /// first node as before.</summary>
+        public readonly Dictionary<object, ControlId> StopLandings = new Dictionary<object, ControlId>();
 
         public GraphNode NodeAt(ControlId key)
         {

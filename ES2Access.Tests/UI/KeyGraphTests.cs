@@ -192,6 +192,46 @@ namespace ES2Access.Tests.UI
             Assert.Equal("text", Focused(g));
         }
 
+        /// <summary>A stop whose first nodes are not what the player came for - a table's sort headings,
+        /// where the SORTED column reads "selected" - says where Tab lands, and the
+        /// land-on-the-selected-one rule runs from there rather than over the headings.</summary>
+        private static KeyGraph TableUnderHeadings(GraphState state, bool rowSelected)
+        {
+            return new KeyGraph(Renderer(b =>
+            {
+                b.BeginStop("elsewhere").AddItem(Id("away"), Vt("Away"));
+                b.BeginStop("table");
+                b.AddItem(Id("head1"), Vt("Name", Part("selected", AnnouncementKinds.Selected)));
+                b.AddItem(Id("head2"), Vt("Ships", Part(null, AnnouncementKinds.Selected)));
+                b.AddItem(Id("row1"), Vt("Alpha", Part(null, AnnouncementKinds.Selected)));
+                b.AddItem(
+                    Id("row2"),
+                    Vt("Beta", Part(rowSelected ? "selected" : null, AnnouncementKinds.Selected))
+                );
+                b.LandStopOn(Id("row1"));
+            }), state);
+        }
+
+        [Fact]
+        public void ATabStopLandsWhereItSaidRatherThanOnItsFirstNode()
+        {
+            GraphState state = new GraphState();
+            KeyGraph g = TableUnderHeadings(state, false);
+            g.Rerender();
+            Assert.True(g.MoveStop(1, true).Moved);
+            Assert.Equal("row1", Focused(g));
+        }
+
+        [Fact]
+        public void ATabStopWithADeclaredLandingStillPrefersASelectedNodeBelowIt()
+        {
+            GraphState state = new GraphState();
+            KeyGraph g = TableUnderHeadings(state, true);
+            g.Rerender();
+            Assert.True(g.MoveStop(1, true).Moved);
+            Assert.Equal("row2", Focused(g));
+        }
+
         // ---- regions ----
 
         [Fact]

@@ -525,7 +525,9 @@ except leaving the page. The tab switch and the panel instances are both probeab
 `SidePanels`' `PanelTitle` branch first got exercised here.
 
 **The economy page and the recipe modal.** Which rows draw at all is the stage-8 gate table (this
-save is screen-unlocked, not tech-unlocked). The recipe modal is reachable with zero slots via
+save is screen-unlocked, not tech-unlocked) — which also means the **Marketplace tab is refused**
+(missing Galactic Commodities Exchange), so the buy table has NO fixture in `unlocked` and the
+resources grids are the only economy tables that can be walked. The recipe modal is reachable with zero slots via
 `new GuiRecipeSlot(0,false)` + `ShowWindow`. **NEVER press Confirm** — it is enabled even with an
 empty recipe and posts `OrderCreateRecipe` — and note Reset does NOT clear `RecipeModified`.
 

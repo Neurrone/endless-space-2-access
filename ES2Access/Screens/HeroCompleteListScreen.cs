@@ -26,7 +26,6 @@ namespace ES2Access.Screens
     /// </summary>
     public sealed class HeroCompleteListScreen : Screen
     {
-        private static readonly object HeadersStop = "hero-list:headers";
         private static readonly object LinesStop = "hero-list:lines";
         private static readonly object ActionsStop = "hero-list:actions";
 
@@ -65,10 +64,11 @@ namespace ES2Access.Screens
             }
         }
 
-        /// <summary>The headers, because they are drawn first and Tab does not wrap.</summary>
+        /// <summary>The table, because it is drawn first and Tab does not wrap - its headings are the
+        /// row above its first line, not a stop of their own.</summary>
         public override object InitialFocusStop
         {
-            get { return HeadersStop; }
+            get { return LinesStop; }
         }
 
         public override bool IsActive()
@@ -99,10 +99,8 @@ namespace ES2Access.Screens
                 return;
             }
 
-            builder.BeginStop(HeadersStop);
-            _table.Headers(builder, table);
-
             builder.BeginStop(LinesStop);
+            _table.Headers(builder, table);
             _table.Rows(builder, table, Title(window));
 
             _cells.Clear();

@@ -68,7 +68,6 @@ namespace ES2Access.Screens
         private static readonly object StrategicsStop = "economy:strategics";
         private static readonly object RecipesStop = "economy:recipes";
         private static readonly object BuyTabsStop = "economy:market/buy-tabs";
-        private static readonly object BuyHeadersStop = "economy:market/buy-headers";
         private static readonly object BuyRowsStop = "economy:market/buy";
         private static readonly object BuyBandStop = "economy:market/buy-band";
         private static readonly object SellTabsStop = "economy:market/sell-tabs";
@@ -568,7 +567,7 @@ namespace ES2Access.Screens
                 Log.Warn("economy: reading a resource grid threw: " + e);
             }
 
-            EmitGrid(builder, _gridHeaders, _grid, columns);
+            EmitGrid(builder, _gridHeaders, _grid, columns, stop);
             Unname(builder, named);
         }
 
@@ -685,26 +684,42 @@ namespace ES2Access.Screens
         /// Left and Right speak the family being entered, which is the table convention - a cell says
         /// its own value and the sheet says which column it is in as the player crosses into it - and it
         /// is not said on the heading row, where each node's own name is already the family.
+        ///
+        /// The positions are the table's, not a menu bar's: a drawn line says which LINE of the grid it
+        /// is ("2 of 4") when the player arrives in it or moves to another, and no node counts the
+        /// columns, which is what a row of family icons would otherwise be heard as.
         /// </summary>
         private static void EmitGrid(
             GraphBuilder builder,
             List<GridCell> headers,
             List<GridCell> items,
-            string[] columns
+            string[] columns,
+            object stop
         )
         {
             List<List<GridCell>> rows = AgeLayout.Rows(items, GridWidget);
-            if (headers.Count > 0)
+            bool headed = headers.Count > 0;
+            if (headed)
             {
                 rows.Insert(0, headers);
             }
 
+            int lines = headed ? rows.Count - 1 : rows.Count;
             for (int r = 0; r < rows.Count; r++)
             {
                 List<GridCell> row = rows[r];
-                builder.StartRow();
+                TableRow at = headed && r == 0
+                    ? null
+                    : new TableRow
+                    {
+                        Key = stop + "/line/" + r,
+                        Index = headed ? r : r + 1,
+                        Count = lines,
+                    };
+                builder.StartRow(positions: false);
                 for (int i = 0; i < row.Count; i++)
                 {
+                    row[i].Cell.Vtable.Row = at;
                     builder.AddItem(row[i].Cell.Id, row[i].Cell.Vtable);
                 }
 
@@ -1136,12 +1151,8 @@ namespace ES2Access.Screens
             GuiTable table = panel.BuyableItemsGuiTable;
             if (table != null && AgeWidgets.Visible(table.AgeTransform))
             {
-                builder.BeginStop(BuyHeadersStop);
-                builder.PushContext(ModStrings.Get(ModStrings.EmpireHeadingsBand));
-                _buyTable.Headers(builder, table);
-                builder.PopContext();
-
                 builder.BeginStop(BuyRowsStop);
+                _buyTable.Headers(builder, table);
                 _buyTable.Rows(builder, table, PanelName(panel, ModStrings.EconomyBuyPanel));
             }
 

@@ -67,7 +67,6 @@ namespace ES2Access.Screens
     /// </summary>
     public sealed class MilitaryScreen : Screen
     {
-        private static readonly object HeadersStop = "military:headers";
         private static readonly object FleetsStop = "military:fleets";
         private static readonly object FleetActionsStop = "military:fleet-actions";
         private static readonly object ShipsStop = "military:ships";
@@ -453,10 +452,8 @@ namespace ES2Access.Screens
                 return;
             }
 
-            builder.BeginStop(HeadersStop);
-            _table.Headers(builder, table);
-
             builder.BeginStop(FleetsStop);
+            _table.Headers(builder, table);
             _table.Rows(builder, table, GroupTitle(table));
         }
 

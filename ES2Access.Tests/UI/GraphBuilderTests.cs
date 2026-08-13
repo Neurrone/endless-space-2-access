@@ -193,6 +193,23 @@ namespace ES2Access.Tests.UI
             Assert.Equal(0, Node(r, "c").PositionCount);
         }
 
+        /// <summary>A row of COLUMNS - a table's heading band, a grid line - is not a bar of choices, and
+        /// "1 of 8" there would count the table's columns.</summary>
+        [Fact]
+        public void ARowDeclaredWithoutPositionsStampsNone()
+        {
+            GraphBuilder b = new GraphBuilder();
+            b.StartRow(positions: false)
+                .AddItem(Id("a"), Vt("A"))
+                .AddItem(Id("b"), Vt("B"))
+                .EndRow();
+            b.StartRow().AddItem(Id("c"), Vt("C")).AddItem(Id("d"), Vt("D")).EndRow();
+            GraphRender r = b.Build();
+            Assert.Equal(0, Node(r, "a").PositionCount);
+            Assert.Equal(0, Node(r, "b").PositionCount);
+            Assert.Equal(2, Node(r, "c").PositionCount);
+        }
+
         [Fact]
         public void RawNodesGetNoAutomaticWiringAndNoPositions()
         {

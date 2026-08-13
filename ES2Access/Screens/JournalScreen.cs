@@ -32,7 +32,6 @@ namespace ES2Access.Screens
     /// </summary>
     public sealed class JournalScreen : Screen
     {
-        private static readonly object HeadersStop = "journal:headers";
         private static readonly object LinesStop = "journal:lines";
         private static readonly object ActionsStop = "journal:actions";
 
@@ -74,10 +73,11 @@ namespace ES2Access.Screens
             }
         }
 
-        /// <summary>The headers, because they are drawn first and Tab does not wrap.</summary>
+        /// <summary>The table, because it is drawn first and Tab does not wrap - its headings are the
+        /// row above its first line, not a stop of their own.</summary>
         public override object InitialFocusStop
         {
-            get { return HeadersStop; }
+            get { return LinesStop; }
         }
 
         public override bool IsActive()
@@ -110,10 +110,8 @@ namespace ES2Access.Screens
             GuiTable table = Table(window);
             if (table != null && AgeWidgets.Visible(Lines(table)))
             {
-                builder.BeginStop(HeadersStop);
-                _table.Headers(builder, table);
-
                 builder.BeginStop(LinesStop);
+                _table.Headers(builder, table);
                 _table.Rows(builder, table, WindowShape.Title(window));
             }
             else

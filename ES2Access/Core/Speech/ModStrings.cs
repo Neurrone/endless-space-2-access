@@ -495,12 +495,11 @@ namespace ES2Access.Core.Speech
         public const string SenateEmptySenatorSlot = "senate.empty-senator-slot";
         public const string SenateLockedSenatorSlot = "senate.locked-senator-slot";
         // The empire summary. The screen's own name is the game's and is what is normally spoken; the
-        // name here is the fallback for the frames before the window has written its heading. The two
-        // mod words are for boxes the game draws with no heading at all: the panel holding the empire's
-        // portrait and description, and the band of column headings over the systems table.
+        // name here is the fallback for the frames before the window has written its heading. The mod
+        // word is for a box the game draws with no heading at all: the panel holding the empire's
+        // portrait and description.
         public const string ScreenEmpire = "screen.empire";
         public const string EmpireDescriptionPanel = "empire.description-panel";
-        public const string EmpireHeadingsBand = "empire.headings-band";
 
         /// <summary>Which of the two opposite things pressing an empire relic slot will do (Nakalim only).
         /// The slot flips between them on its own as the empire's relic stock changes
@@ -1037,7 +1036,6 @@ namespace ES2Access.Core.Speech
             { QuestsPinned, "pinned" },
             { ScreenEmpire, "Empire summary" },
             { EmpireDescriptionPanel, "Empire" },
-            { EmpireHeadingsBand, "Column headings" },
             { EmpireRelicSlotAssign, "Assign relics" },
             { EmpireRelicSlotRemove, "Remove relics" },
             { EmpirePopulationSent, "Sent {0} to {1} by spaceport" },

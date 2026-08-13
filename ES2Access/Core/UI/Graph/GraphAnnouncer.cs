@@ -66,7 +66,33 @@ namespace ES2Access.Core.UI.Graph
                 }
             }
 
+            string row = RowPosition(from, to);
+            if (!string.IsNullOrEmpty(row)) parts.Add(row);
+
             return Join(parts);
+        }
+
+        /// <summary>
+        /// Where the landing row sits in its table ("3 of 12"), or null.
+        ///
+        /// A table's position is a fact about the ROW, so it is said on arriving in a row and on moving
+        /// to a different one, and NOT while the player walks that row's columns - including the step
+        /// back onto column 0, which arrives at the same node an arrival would and is the case no
+        /// per-node part could tell apart. That is what makes it live here rather than in
+        /// <see cref="LeafText"/>: it is the one part of a readout that depends on where focus came FROM.
+        /// Rows are compared by <see cref="TableRow.Key"/>, not by object, because the two nodes come
+        /// from different renders.
+        /// </summary>
+        private static string RowPosition(GraphNode from, GraphNode to)
+        {
+            NodeVtable vt = to != null ? to.Vtable : null;
+            TableRow row = vt != null ? vt.Row : null;
+            if (row == null || row.Count <= 0 || row.Index <= 0 || PositionText == null) return null;
+            if (vt.SpeaksOwnPosition || HasKind(vt.Announcements, AnnouncementKinds.Position)) return null;
+            TableRow was = from != null && from.Vtable != null ? from.Vtable.Row : null;
+            if (was != null && was.Key != null && was.Key == row.Key) return null;
+            if (PartFilter != null && !PartFilter(vt.ControlType, AutoPositionProbe)) return null;
+            return PositionText(row.Index, row.Count);
         }
 
         /// <summary>The full readout for a landing with no prior focus (screen entry, focus restore).</summary>

@@ -63,7 +63,6 @@ namespace ES2Access.Screens
     public sealed class EmpireScreen : Screen
     {
         private static readonly object TabsStop = "empire:tabs";
-        private static readonly object HeadersStop = "empire:headers";
         private static readonly object SystemsStop = "empire:systems";
         private static readonly object PlanetsStop = "empire:detail/planets";
         private static readonly object ConstructiblesStop = "empire:detail/constructibles";
@@ -497,12 +496,8 @@ namespace ES2Access.Screens
                 return;
             }
 
-            builder.BeginStop(HeadersStop);
-            builder.PushContext(ModStrings.Get(ModStrings.EmpireHeadingsBand));
-            _table.Headers(builder, table);
-            builder.PopContext();
-
             builder.BeginStop(SystemsStop);
+            _table.Headers(builder, table);
             _table.Rows(builder, table, PanelTitle(panel));
 
             BuildDetails(builder, panel);
