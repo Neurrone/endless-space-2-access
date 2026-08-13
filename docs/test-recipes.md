@@ -541,6 +541,13 @@ colonized-system skills, so the dial comes out at angle 0 — set `EfficiencySec
 hand (216f reads back as 60%) to see a real proportion. Restore with `MaxAngle = 0`,
 `Hide(instant: true)`, `Unbind()`, and re-dump: the `scan:hero` node must be gone.
 
+**The planet lens's remains table** (rung 15 + scan) is empty on every planet of Xiu. Sight it
+with `PlanetRemainsItemsTable.ReserveChildren(1, w.PlanetRemainsItemPrefab, "PlanetRemainsItem")`,
+write `Title.Text`/`Description.Text` on the child's `PlanetRemainsItem` and set the child
+`Visible = true` + `ArrangeChildren()`. Restore by blanking both labels and hiding the child; the
+pooled child stays in the pool and the window's next `OnBeginShow` re-reserves the table from
+`Planet.Remains`, so nothing survives a planet change.
+
 **Galaxy: the fog-off smoke pattern.** Forcing a world-state predicate TRUE in code, rebuilding,
 walking read-only and reverting is the sanctioned alternative to mutating a save — it is what proved
 the shared-`Link` teleport. In the unlocked save the map draws 1 perceived system, 0 hangars and a

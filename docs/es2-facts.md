@@ -900,6 +900,12 @@ generic graduates to the generic docs.
   hides `OutputContentGroup` and shows a `%None` label when the governor adds nothing, and the
   hidden group keeps the prefab's placeholder "999 [prestige]" text, so the reading must be
   `PaintedLines`.
+- **The planet lens draws a THIRD table nothing else mentions.** `PlanetScanViewWindow` has
+  `PlanetRemainsItemsTable` under the right-hand column (rect 1050,260,220,480), filled from
+  `Planet.Remains` and drawn per item only where `!remains.Definition.VisibleInSystemOverview`
+  (`PlanetRemainsItem.Refresh`) — each a title plus a paragraph. `unlocked` has no remains on any
+  planet of Xiu, so the table is drawn EMPTY there and a stats-only reading of the lens looks
+  complete.
 - `ScanViewDiplomacyLabel` draws exactly ONE line: on your own home system `SwapToggle.Enable` is
   false, so the second variant never appears.
 - The rename box's Cancel/Confirm captions are `%MessageBoxCancelTitle`/`%MessageBoxValidateTitle`;

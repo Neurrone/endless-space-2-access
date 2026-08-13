@@ -60,6 +60,7 @@ namespace ES2Access.Screens
         private static readonly object TradeRegion = "scan:content/trade";
         private static readonly object PlanetsRegion = "scan:content/planets";
         private static readonly object HeroRegion = "scan:content/hero";
+        private static readonly object RemainsRegion = "scan:content/remains";
 
         /// <summary>The clusters the game keeps drawing over the lens - which is only the turn controls;
         /// it hides the banners, the pinned quest and the notification strip.</summary>
@@ -1286,6 +1287,10 @@ namespace ES2Access.Screens
         ///
         /// A line whose value is a list - what an atmosphere is made of - draws the parts in one label
         /// and the percentages in another, side by side, so the two are read together part by part.
+        ///
+        /// The third table is not statistics at all: what is LEFT on the planet - a wreck, a ruin, the
+        /// remnants of somebody else's war - each drawn as a title and a paragraph under the right-hand
+        /// column, and each one a thing the scan is there to find.
         /// </summary>
         private void BuildPlanet(GraphBuilder builder)
         {
@@ -1299,9 +1304,12 @@ namespace ES2Access.Screens
             {
                 AgeTransform left = window.PlanetStatsCategoryItemsTableLeft;
                 AgeTransform right = window.PlanetStatsCategoryItemsTableRight;
-                bool regions = Categories(left) + Categories(right) > 1;
+                AgeTransform remains = window.PlanetRemainsItemsTable;
+                bool regions =
+                    Categories(left) + Categories(right) + (Remains(remains) > 0 ? 1 : 0) > 1;
                 AddCategories(builder, left, "left", regions);
                 AddCategories(builder, right, "right", regions);
+                AddRemains(builder, remains, regions);
                 builder.SetRegion(null);
             }
             catch (Exception e)
@@ -1328,6 +1336,60 @@ namespace ES2Access.Screens
             }
 
             return count;
+        }
+
+        /// <summary>How many of the things left on the planet the lens is drawing. The table is pooled
+        /// and the game hides the entries belonging to the system's own overview rather than removing
+        /// them (<c>PlanetRemainsItem.Refresh</c>), so this is a count of what is PAINTED and never of
+        /// what the table holds.</summary>
+        private static int Remains(AgeTransform table)
+        {
+            IList<AgeTransform> children = table == null ? null : table.Children;
+            int count = 0;
+            for (int i = 0; children != null && i < children.Count; i++)
+            {
+                if (Remain(children[i]) != null)
+                {
+                    count++;
+                }
+            }
+
+            return count;
+        }
+
+        private static PlanetRemainsItem Remain(AgeTransform widget)
+        {
+            PlanetRemainsItem item =
+                widget == null ? null : widget.GetComponent<PlanetRemainsItem>();
+            return item != null && AgeWidgets.Painted(item.AgeTransform) ? item : null;
+        }
+
+        /// <summary>One node per thing left on the planet - its name and the paragraph the lens writes
+        /// under it, which is the whole of what the game says about it.</summary>
+        private static void AddRemains(GraphBuilder builder, AgeTransform table, bool regions)
+        {
+            IList<AgeTransform> children = table == null ? null : table.Children;
+            for (int i = 0; children != null && i < children.Count; i++)
+            {
+                PlanetRemainsItem item = Remain(children[i]);
+                if (item == null)
+                {
+                    continue;
+                }
+
+                builder.SetRegion(regions ? RemainsRegion : null);
+                PlanetRemainsItem it = item;
+                NodeVtable vtable = new NodeVtable
+                {
+                    Announcements = new List<NodeAnnouncement>
+                    {
+                        GraphNodes.LabelPart(() => AgeText.Label(it.Title)),
+                        GraphNodes.ValuePart(() => AgeText.Label(it.Description), false),
+                    },
+                };
+                AgeWidgets.PointAt(vtable, item.AgeTransform);
+                builder.AddItem(ControlId.Structural("scan:remains/" + i), vtable);
+            }
         }
 
         private static void AddCategories(

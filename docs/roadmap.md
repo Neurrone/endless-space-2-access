@@ -25,6 +25,8 @@ files above.
   the ghost/traitor lines. The governor panel is MODELLED (batch D) but has only ever been
   sighted against a hand-bound hero — a save with a real assigned governor would confirm the
   FIDSI half, which reads "None" for every hero that adds nothing.
+- Planet lens: the remains table is modelled (batch D) and no fixture has a planet with
+  `Remains` — its lines have only been read against a hand-written item.
 - Targeting-cursor remainder (Escape-on-TakeSystem and armed-Backslash SHIPPED, 30d23f9):
   `HonorActionCursor` fleet/docking targets need a `ConfirmAt` overload for fleet
   cursor-targets; `HackingOperationCursor` route building rides the Penumbra wait; the
