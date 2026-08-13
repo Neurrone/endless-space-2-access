@@ -22,7 +22,9 @@ files above.
 - Galaxy-label gaps: constellation ownership bonus; pin-message editing.
 - Scan management-lens remainder (unverifiable at turn 1): the trade-quality dial
   (geometry-only rating, no tooltip), the empire-rank bar graph + global-rank histogram,
-  the ghost/traitor lines.
+  the ghost/traitor lines. The governor panel is MODELLED (batch D) but has only ever been
+  sighted against a hand-bound hero — a save with a real assigned governor would confirm the
+  FIDSI half, which reads "None" for every hero that adds nothing.
 - Targeting-cursor remainder (Escape-on-TakeSystem and armed-Backslash SHIPPED, 30d23f9):
   `HonorActionCursor` fleet/docking targets need a `ConfirmAt` overload for fleet
   cursor-targets; `HackingOperationCursor` route building rides the Penumbra wait; the

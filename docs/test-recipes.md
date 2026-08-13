@@ -531,6 +531,16 @@ report `Shown` at once**, so the drawn `ScanViewWindowHeader` is the only reliab
 `ShowScanViewSystemInfos` afterwards. Fixture notes: one perceived system; synergies on two of
 Xiu's four planets; the rank graphs and remains panel never draw at turn 1.
 
+**The governor panel on the system-management lens** (rung 14 + scan) needs no save with a
+governor and no simulation change. Its `Bind` refuses without an `AssignedHero`, so bind it by
+hand: copy the window's private `guiInspectedSystem` into the panel's `guiColonizedStarSystem`,
+put `new GuiHero(((MajorEmpire)Gui.PlayerEmpire).GetAgency<DepartmentOfEducation>()
+.ActiveHeroes[0])` into its `guiHero`, invoke its private `RefreshEfficiency` and
+`RefreshFidsiBonus`, then `ArrangeChildren()` + `Show()`. The unassigned academy hero has NO
+colonized-system skills, so the dial comes out at angle 0 — set `EfficiencySector.MaxAngle` by
+hand (216f reads back as 60%) to see a real proportion. Restore with `MaxAngle = 0`,
+`Hide(instant: true)`, `Unbind()`, and re-dump: the `scan:hero` node must be gone.
+
 **Galaxy: the fog-off smoke pattern.** Forcing a world-state predicate TRUE in code, rebuilding,
 walking read-only and reverting is the sanctioned alternative to mutating a save — it is what proved
 the shared-`Link` teleport. In the unlocked save the map draws 1 perceived system, 0 hangars and a

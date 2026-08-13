@@ -337,6 +337,11 @@ namespace ES2Access.Core.Speech
         public const string ScanLegend = "scan.legend";
         public const string ScanOutput = "scan.output";
 
+        /// <summary>How much of a governor's dial the system management lens has filled in. The game
+        /// draws the value as a pie and writes no number anywhere, and its own caption over the dial
+        /// already says what is being measured, so this is the bare proportion.</summary>
+        public const string ScanHeroEfficiency = "scan.hero-efficiency";
+
         /// <summary>How close the game is looking, wherever the mod offers it as a control - the scan
         /// view and the map. The game draws no such control - its zoom is a wheel gesture and two keys
         /// held down - so the name is the mod's.</summary>
@@ -969,6 +974,7 @@ namespace ES2Access.Core.Speech
             { ScanSystemInfo, "System information" },
             { ScanLegend, "Legend" },
             { ScanOutput, "{0} {1}" },
+            { ScanHeroEfficiency, "{0}%" },
             { Zoom, "Zoom" },
             { ZoomLevel, "Zoom level {0} of {1}" },
             { ScanSynergy, "{0} for {1}" },

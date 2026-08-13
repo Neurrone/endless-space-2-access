@@ -59,6 +59,7 @@ namespace ES2Access.Screens
 
         private static readonly object TradeRegion = "scan:content/trade";
         private static readonly object PlanetsRegion = "scan:content/planets";
+        private static readonly object HeroRegion = "scan:content/hero";
 
         /// <summary>The clusters the game keeps drawing over the lens - which is only the turn controls;
         /// it hides the banners, the pinned quest and the notification strip.</summary>
@@ -910,12 +911,18 @@ namespace ES2Access.Screens
                     : null;
                 IList<AgeTransform> children =
                     window.PlanetLabelsGroup == null ? null : window.PlanetLabelsGroup.Children;
-                // Two halves means two regions; only one of them showing means none, or the jump key
-                // would swallow the press and move nothing.
-                bool regions = trade != null && trade.Count > 0 && Planets(children) > 0;
+                // Regions only where there is more than one place to jump between; a lone region makes
+                // the jump key swallow the press and move nothing, which sounds like a broken key.
+                int groups =
+                    (trade != null && trade.Count > 0 ? 1 : 0)
+                    + (Planets(children) > 0 ? 1 : 0)
+                    + (HeroPanelDrawn(window) ? 1 : 0);
+                bool regions = groups > 1;
 
                 builder.SetRegion(regions ? TradeRegion : null);
                 AddDrawnLines(builder, trade, "scan:trade");
+
+                AddHeroPanel(builder, window, regions);
 
                 builder.SetRegion(regions ? PlanetsRegion : null);
                 for (int i = 0; children != null && i < children.Count; i++)
@@ -965,6 +972,125 @@ namespace ES2Access.Screens
             {
                 Log.Warn("scan: reading the system management lens threw: " + e);
             }
+        }
+
+        // ---- the governor's panel ----
+
+        /// <summary>The panel the lens draws along the bottom for a system that has a governor - drawn
+        /// only where one is assigned (<c>StarSystemManagementScanViewWindow.Bind</c>), so its absence
+        /// is the answer "nobody governs this system" and there is nothing to declare.</summary>
+        private static bool HeroPanelDrawn(StarSystemManagementScanViewWindow window)
+        {
+            StarSystemManagementScanViewHeroPanel panel =
+                window == null ? null : window.HeroPanel;
+            return panel != null && AgeWidgets.Painted(panel.AgeTransform);
+        }
+
+        /// <summary>
+        /// The governor of the system, as the lens draws them: a heading, a portrait, a dial, and the
+        /// outputs they are adding to the system.
+        ///
+        /// One node, like the planet cards beside it: the game draws it as one small card and there is
+        /// nothing on it to work, so its parts ARE its readout and the buffer they make is the card a
+        /// line at a time.
+        ///
+        /// Two of the three things on it have no words at all, and both are named here rather than
+        /// left out. The PORTRAIT is who the governor is - the one thing a sighted player reads the
+        /// panel for - and the hero's name is written nowhere on the panel, so it is taken from the
+        /// panel's own bound hero. The DIAL is a pie: the game fills it with the share of this
+        /// governor's system skills whose effects actually apply here
+        /// (<c>StarSystemManagementScanViewHeroPanel.RefreshEfficiency</c> counts them and turns the
+        /// ratio into an angle), and the angle it drew is read back as the percentage it is, rather
+        /// than the skill count being re-derived - the drawn angle IS the value, and re-deriving it
+        /// would be a second implementation of the game's own counting rules to keep in step.
+        ///
+        /// Everything else is words the panel draws: the two captions and the FIDSI bonus (or the
+        /// "None" the game writes where the governor adds nothing), read in drawn order.
+        /// </summary>
+        private static void AddHeroPanel(
+            GraphBuilder builder,
+            StarSystemManagementScanViewWindow window,
+            bool regions
+        )
+        {
+            if (!HeroPanelDrawn(window))
+            {
+                return;
+            }
+
+            builder.SetRegion(regions ? HeroRegion : null);
+            StarSystemManagementScanViewHeroPanel it = window.HeroPanel;
+            NodeVtable vtable = new NodeVtable
+            {
+                Announcements = new List<NodeAnnouncement>
+                {
+                    GraphNodes.LabelPart(() => HeroHeading(it)),
+                    GraphNodes.ValuePart(() => HeroReadout(it), false),
+                },
+            };
+            AgeWidgets.PointAt(vtable, it.AgeTransform);
+            builder.AddItem(ControlId.Structural("scan:hero"), vtable);
+        }
+
+        /// <summary>The panel's own caption, which is the first thing it draws.</summary>
+        private static string HeroHeading(StarSystemManagementScanViewHeroPanel panel)
+        {
+            IList<string> lines = AgeWidgets.PaintedLines(panel.AgeTransform);
+            return lines.Count == 0 ? null : lines[0];
+        }
+
+        /// <summary>Who governs here and how well, then the rest of what the panel draws - the output
+        /// half's caption and its figures - in the order they are on the screen.</summary>
+        private static string HeroReadout(StarSystemManagementScanViewHeroPanel panel)
+        {
+            MessageBuilder message = new MessageBuilder();
+            message.ListItem(HeroName(panel));
+            message.ListItem(HeroEfficiency(panel));
+            IList<string> lines = AgeWidgets.PaintedLines(panel.AgeTransform);
+            for (int i = 1; i < lines.Count; i++)
+            {
+                message.ListItem(lines[i]);
+            }
+
+            return message.Build();
+        }
+
+        /// <summary>The hero the panel is bound to. Held privately - the panel draws a face and never a
+        /// name - so it is read through the field itself, looked up once.</summary>
+        private static readonly System.Reflection.FieldInfo HeroField =
+            typeof(StarSystemManagementScanViewHeroPanel).GetField(
+                "guiHero",
+                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic
+            );
+
+        private static string HeroName(StarSystemManagementScanViewHeroPanel panel)
+        {
+            try
+            {
+                GuiHero hero = HeroField == null ? null : HeroField.GetValue(panel) as GuiHero;
+                return hero == null ? null : AgeText.Clean(hero.Title);
+            }
+            catch (Exception e)
+            {
+                Log.Warn("scan: reading the governor's name threw: " + e);
+                return null;
+            }
+        }
+
+        /// <summary>How much of the dial the game filled in, as the percentage it draws. A full circle
+        /// is everything this governor knows applying here.</summary>
+        private static string HeroEfficiency(StarSystemManagementScanViewHeroPanel panel)
+        {
+            AgePrimitiveSector sector = panel.EfficiencySector;
+            if (sector == null)
+            {
+                return null;
+            }
+
+            return ModStrings.Format(
+                ModStrings.ScanHeroEfficiency,
+                Mathf.RoundToInt(sector.MaxAngle / 3.6f)
+            );
         }
 
         /// <summary>

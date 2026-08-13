@@ -157,6 +157,7 @@
   "scan.system-info": "System information",
   "scan.legend": "Legend",
   "scan.output": "{0} {1}",
+  "scan.hero-efficiency": "{0}%",
   "zoom": "Zoom",
   "zoom.level": "Zoom level {0} of {1}",
   "scan.synergy": "{0} for {1}",

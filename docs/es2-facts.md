@@ -886,6 +886,20 @@ generic graduates to the generic docs.
   animate the POOLED circles (which are created later), so neither the modifier list nor `Visible`
   answers what is drawn — `AgeWidgets.Painted(ContentTable)` is the band gate and the circles' own
   drawn alpha is the per-dot one.
+- **The governor's panel on the system-management lens has no words for the two things it is
+  ABOUT.** `StarSystemManagementScanViewHeroPanel` is shown only where the system has an
+  `AssignedHero` (`StarSystemManagementScanViewWindow.Bind`), and measured on the drawn panel it
+  carries NO `AgeTooltip` anywhere — not on `EfficiencyGroup`, `HeroEfficiencyIcon`, the portrait or
+  the root. The hero's NAME is drawn nowhere on it (the portrait is the identity) and lives in the
+  panel's private `guiHero`; the dial is geometry alone — `RefreshEfficiency` counts the governor's
+  colonized-system skills whose modifier paths are currently valid, divides, and writes the ratio to
+  `EfficiencySector.MaxAngle` as an angle, so `MaxAngle / 3.6` IS the percentage and re-deriving the
+  skill math would be a second copy of the game's counting rules. The two captions it does draw
+  (`%SystemManagementScanViewHeroEffectivenessTitle`, `…HeroOutputTitle`) are plain prefab labels,
+  not fields of the class, so they are read as drawn lines rather than by name; the output half
+  hides `OutputContentGroup` and shows a `%None` label when the governor adds nothing, and the
+  hidden group keeps the prefab's placeholder "999 [prestige]" text, so the reading must be
+  `PaintedLines`.
 - `ScanViewDiplomacyLabel` draws exactly ONE line: on your own home system `SwapToggle.Enable` is
   false, so the second variant never appears.
 - The rename box's Cancel/Confirm captions are `%MessageBoxCancelTitle`/`%MessageBoxValidateTitle`;
