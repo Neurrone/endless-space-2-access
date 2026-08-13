@@ -52,11 +52,9 @@ files above.
   empire page when it fires. Reproduce and fix.
 - Departing-fade stand-down: the spurious "unavailable" frame when a game confirmation
   opens over a mod screen (general fix).
-- SidePanels drops the panel title's own explanatory tooltip (generic fix, three screens).
 - SettingRows editors end in silence: no watcher notices the game's field letting go, so a
   committed or cancelled settings edit re-reads nothing (the rename box now does this
   right; hoist its field-released re-read into the shared editor).
-- Empire page as a second drop client for population moves (if wanted).
 - Event narration (turn events) via `IEventService.EventRaised`.
 - A real model for the resource exporter, the one out-game page still on the shape floor: the
   resource list and the export itself.
@@ -91,8 +89,6 @@ files above.
 
 ## To decide (owner)
 
-- Rename Confirm's caption: mod key vs the game's own `%MessageBoxValidateTitle` (Cancel
-  now uses the game's).
 - The report family's breakdown toggle (IonWave and friends) is DECLARED NOWHERE: it is
   vestigial — `ReportPanel` carries no `AgeModifier`, so it animates nothing (es2-facts).
   Shipped that way; overrule if it should be offered anyway.
