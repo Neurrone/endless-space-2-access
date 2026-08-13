@@ -455,10 +455,20 @@ loaded-from-bytes assembly by name — scan `AppDomain.CurrentDomain.GetAssembli
 `modAssemblyName` that `/status` reports, then `GetType` off it; the plain type name does not
 resolve.
 
-**The assigned-governor side panel** is measurable without a save that has a governor: flip the
-`Visible` flags `ColonyHeroSidePanel.Refresh` (:157-240) writes, read, and put them back. The
-unassigned prefab holds STALE hero text, so what the flip proves is the variant's SHAPE, never its
-words.
+**The assigned-governor side panel** is measurable without a save that has a governor, and the
+CHEAPER of the two routes is the one that gives real words. No fixture has a governor — in
+`unlocked` the empire holds one system (Xiu) with `AssignedHero` null and one unassigned hero in the
+academy (`DepartmentOfEducation.ActiveHeroes[0]`, Dmitri Lenko). Write that hero into the panel's
+private `privateAssignedHero` by reflection and set `Dirty = true`: `Refresh` (:157-240) then binds
+the whole assigned variant — portrait dossier, affinity and class dossiers, experience gauge — from
+a real `GuiHero`, and nothing in the simulation is touched (the system's own `AssignedHero` stays
+null). Put it back with the same field plus `Dirty`, or `POST /loadsave`. The older route — flipping
+the `Visible` flags `Refresh` writes — proves the variant's SHAPE only: the unassigned prefab holds
+STALE hero text and every class-backed tooltip has a null target, so nothing draws.
+`HeroInformationGroup` holds four children (name, affinity icon, gauge, class icon) and the two
+ICONS never appear in a `/gui/age` dump — that route prunes a subtree with no text and no *readable*
+tooltip, and theirs are class-backed with empty content, so their existence is an `/eval` walk of
+`.Children` or nothing.
 
 **The system-politics modal.** Open it from the star-system page's own node. "Show all events" is
 persistent WINDOW state — restore it — while the party pick is not. The table binds

@@ -1281,6 +1281,11 @@ namespace ES2Access.Screens
             SidePanel panel
         )
         {
+            if (GovernorInformation(cells, widget, keyPrefix, panel as ColonyHeroSidePanel))
+            {
+                return true;
+            }
+
             Cell special = Special(widget, keyPrefix, panel);
             if (special == null)
             {
@@ -1361,23 +1366,91 @@ namespace ES2Access.Screens
             }
 
             ColonyHeroSidePanel governor = panel as ColonyHeroSidePanel;
-            if (governor != null)
+            if (governor != null && ReferenceEquals(widget, governor.HeroPortraitGroup))
             {
-                if (ReferenceEquals(widget, governor.HeroPortraitGroup))
-                {
-                    return GovernorPortraitCell(widget, governor, keyPrefix);
-                }
-
-                if (
-                    governor.ExperienceGauge != null
-                    && ReferenceEquals(widget, governor.ExperienceGauge.AgeTransform)
-                )
-                {
-                    return GovernorLevelCell(widget, governor, keyPrefix);
-                }
+                return GovernorPortraitCell(widget, governor, keyPrefix);
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// The band the governor panel draws beside the portrait: the hero's name, the symbol for their
+        /// affinity, the gauge their experience is drawn in, the symbol for their class.
+        ///
+        /// Declared here rather than walked, because the shape of the band answers wrongly twice. The
+        /// NAME is the portrait's own words - the panel writes the hero's title on both, and the portrait
+        /// is where the dossier hangs (<see cref="GovernorPortraitCell"/>) - and the label carries a
+        /// tooltip the panel never gives a hero to (measured: class <c>Hero</c>, target null), so the
+        /// walk's line for it announced a dossier that can never draw and repeated the name under it. The
+        /// two SYMBOLS are the opposite case: the game hangs a whole dossier on each and writes no word
+        /// beside them, so a walk that keeps a line for having text dropped the only two things in the
+        /// band the portrait does not already say. Each is named the way every wordless icon in this mod
+        /// is named, by the wrapper on its own tooltip - "Imperials", "Counselor".
+        ///
+        /// Claiming the band means the gauge inside it is this method's to declare as well, which is why
+        /// it is the one place the level line is built.
+        /// </summary>
+        private static bool GovernorInformation(
+            List<Cell> cells,
+            AgeTransform widget,
+            string keyPrefix,
+            ColonyHeroSidePanel panel
+        )
+        {
+            if (panel == null || !ReferenceEquals(widget, panel.HeroInformationGroup))
+            {
+                return false;
+            }
+
+            GovernorSymbolCell(cells, panel.AffinityIcon, panel.AffinityTooltip, keyPrefix);
+            if (
+                panel.ExperienceGauge != null
+                && AgeWidgets.Visible(panel.ExperienceGauge.AgeTransform)
+            )
+            {
+                cells.Add(
+                    GovernorLevelCell(panel.ExperienceGauge.AgeTransform, panel, keyPrefix)
+                );
+            }
+
+            GovernorSymbolCell(cells, panel.ClassIcon, panel.ClassTooltip, keyPrefix);
+            return true;
+        }
+
+        /// <summary>One of the two symbols in that band: what the wrapper on its tooltip calls it, and
+        /// that tooltip's own dossier, pointed at the symbol so the game draws it.</summary>
+        private static void GovernorSymbolCell(
+            List<Cell> cells,
+            AgePrimitiveImage icon,
+            AgeTooltip tooltip,
+            string keyPrefix
+        )
+        {
+            AgeTransform widget = icon == null ? null : icon.AgeTransform;
+            if (widget == null || tooltip == null || !AgeWidgets.Visible(widget))
+            {
+                return;
+            }
+
+            AgeTooltip tip = tooltip;
+            NodeVtable vtable = new NodeVtable
+            {
+                Announcements = new List<NodeAnnouncement>
+                {
+                    GraphNodes.LabelPart(() => AgeWidgets.TooltipTitle(tip)),
+                },
+                Sections = GraphNodes.Sections(null, tooltip),
+            };
+            AgeWidgets.PointAt(vtable, widget, tooltip);
+            cells.Add(
+                new Cell
+                {
+                    Widget = widget,
+                    Id = ControlId.Referenced(widget, keyPrefix + widget.name),
+                    Vtable = vtable,
+                }
+            );
         }
 
         /// <summary>
