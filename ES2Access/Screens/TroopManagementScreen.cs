@@ -39,10 +39,13 @@ namespace ES2Access.Screens
     ///   the same sentence on both, forced to <c>Enable = true</c> so that a Ctrl+click can jump to the
     ///   missing technology (<c>GroundTroopManagementLine.Reset</c> :53-63, <c>Gui.FormatButtonHint</c>).
     ///   <see cref="AgeWidgets.Offered"/> answers false for exactly that trick, so neither is a control
-    ///   the mod can offer: a plain click on one only closes the window
-    ///   (<c>GroundTroopRepartiter.OnHintCb</c>), and the Ctrl+click the hint really wants is a
-    ///   mouse-only affordance the mod does not model anywhere yet. So the sentence is declared where
-    ///   the type is NAMED, once per locked row, rather than as two identical dead ends.
+    ///   the mod can offer as a click: a plain click on one only closes the window
+    ///   (<c>GroundTroopRepartiter.OnHintCb</c>). So the sentence is declared where the type is NAMED,
+    ///   once per locked row, rather than as two identical dead ends - and that node carries the row's
+    ///   Ctrl+Enter, which is the hint's own jump to the missing technology
+    ///   (<see cref="AgeWidgets.Locate"/>). It is named here rather than left to the shared wiring in
+    ///   <see cref="Cells.Add"/> because the hint hangs off a button drawn OVER the row instead of on
+    ///   the label the node was declared from.
     /// - **A locked upgrade's reason is written by the mod.** <c>GroundTroopUpgrade.RefreshTooltip</c>
     ///   asks whether the ITEM's transform is enabled, while <c>RefreshState</c> only ever disables the
     ///   item's HEADER group - so the game composes the right sentence and then never stores it, and a
@@ -332,6 +335,14 @@ namespace ES2Access.Screens
                 Sections = GraphNodes.Sections(null, tooltip),
             };
             GraphNodes.AddRefusal(vtable, tooltip, unlocked);
+            if (hint != null)
+            {
+                // The row's own Ctrl+click, named here rather than left to the shared wiring in
+                // <see cref="Cells.Add"/>: the hint hangs off a button of its own drawn OVER the row, so
+                // the declared widget is not the one carrying it.
+                AgeTransform locate = hint;
+                vtable.OnSelectToggle = () => AgeWidgets.Locate(locate);
+            }
 
             AgeWidgets.PointAt(vtable, hint ?? widget);
             Cells.Add(

@@ -26,6 +26,22 @@ namespace ES2Access.UI
     {
         private static readonly Func<Cell, AgeTransform> CellWidget = cell => cell.Widget;
 
+        /// <summary>
+        /// Declare one control - and give it the gesture this game hangs on the controls it has switched
+        /// OFF: the Ctrl+click that locates the technology the control is missing.
+        ///
+        /// Sixteen prefabs use that trick, and on every one of them the screen's own click is gated away
+        /// (<see cref="AgeWidgets.Offered"/> answers false for exactly it), so the shared Ctrl+Enter fall
+        /// back to the plain click would replay a control that does nothing. The gesture therefore has to
+        /// be WIRED - and this is the one call every widget-backed control in the mod passes through, so
+        /// it is wired here once instead of on every screen that draws a hintable control. A screen that
+        /// wired a Ctrl gesture of its own keeps it: this only fills an empty slot, and it fills it only
+        /// where the hint is actually on the declared widget (a row whose hint hangs off a CHILD names
+        /// the child itself, the way the troop list's locked type does).
+        ///
+        /// Asked per cell per rebuild because a hint comes and goes with the player's research: it is one
+        /// <c>GetComponent</c> on a widget the screen has already read several times over.
+        /// </summary>
         public static void Add(
             List<Cell> cells,
             AgeTransform widget,
@@ -33,6 +49,12 @@ namespace ES2Access.UI
             NodeVtable vtable
         )
         {
+            if (vtable != null && vtable.OnSelectToggle == null && AgeWidgets.Hinted(widget))
+            {
+                AgeTransform hint = widget;
+                vtable.OnSelectToggle = () => AgeWidgets.Locate(hint);
+            }
+
             cells.Add(new Cell { Widget = widget, Id = id, Vtable = vtable });
         }
 

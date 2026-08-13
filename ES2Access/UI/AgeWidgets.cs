@@ -172,6 +172,42 @@ namespace ES2Access.UI
             }
         }
 
+        /// <summary>Whether this control is carrying the missing-technology hint described on
+        /// <see cref="Offered"/> - the trick that makes a control read as unavailable, and the one thing
+        /// such a control still DOES.</summary>
+        public static bool Hinted(AgeTransform widget)
+        {
+            try
+            {
+                return Gui.IsHintActive(widget);
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Run the hint's own jump: the technology screen opens focused on the technology this control
+        /// is missing.
+        ///
+        /// The game gates it on the modifier the player is PHYSICALLY holding
+        /// (<c>GuiButtonHint.ActivateHint</c> :18-34 reads <c>Input.GetKey(LeftControl)</c>), so with the
+        /// modifier unheld this refuses and nothing happens - the same answer the mouse gets for a plain
+        /// click, and the reason the mod replays the gesture instead of reimplementing the jump.
+        /// </summary>
+        public static void Locate(AgeTransform widget)
+        {
+            try
+            {
+                Gui.ActivateHint(widget);
+            }
+            catch (Exception e)
+            {
+                Log.Warn("widgets: locating a hinted technology threw: " + e);
+            }
+        }
+
         /// <summary>A widget's tooltip whatever kind it is - what a caller needs to SHOW one rather
         /// than to read it.</summary>
         public static AgeTooltip Raw(AgeTransform transform)
