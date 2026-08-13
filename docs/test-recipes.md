@@ -150,6 +150,16 @@ permitted round trip is queue-then-cancel — probe with
 `Gui.PlayerEmpire.GetAgency<DepartmentOfScience>().ResearchQueue.Length` and
 `.PendingConstructions[i].ConstructibleElement.Name` before and after — but queueing fires
 `EventTutorial_TechnologySelected`, so do it LAST and restore with `POST /loadsave`.
+**Driving the game's own "go and look at this technology"** (the Ctrl+click hint jump, which no
+injection can reproduce because the game reads the physically held Control): call what the game
+calls — `var w = Gui.GuiService.GetWindow<TechnologyScreen>(); w.FocusTechnology(
+Gui.GuiWrapperProviderService.GetGuiTechnology2("TechnologyDefinition<Quadrant><n>"));
+Gui.GuiService.ShowWindow(w);` — from the galaxy AND with the wheel already open on some other dot.
+The mod's cursor must land on that technology (`ResearchLocate`); a plain reopen afterwards must
+still restore the remembered position. In **`unlocked`** the tech screen binds "A MATTER OF
+INFLUENCE" on EVERY open (not just the first) and the popup arrives expanded and takes the keyboard,
+so each of these steps ends with the minimize replay before the landing can be read — the locate is
+HELD, not lost, while the popup is up. Closing the window unbinds the tutorial again.
 **Link arcs in `unlocked` (turn ~15)**: 22 of 162 drawn — cost-reduction pairs (Xenobiology →
 Machine Bacteria / Eukaryotic Sap, and Eukaryotic Sap on to Wave Function Control / Graviton
 Research, which is the one dot that reads an arc from BOTH ends) and four exclusions (Tensor

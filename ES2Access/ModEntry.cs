@@ -222,6 +222,9 @@ namespace ES2Access
             // And the same for the control the game has focused, which is handed the frame's keys after
             // the mod has already acted on them.
             GameKeyboardHandover.Install();
+            // The game's own "the thing you are missing is over here", which moves the view and would
+            // otherwise leave the cursor behind.
+            ResearchLocate.Install();
 
             _routes = new ModRoutes(host);
             _routes.Register();
@@ -469,6 +472,7 @@ namespace ES2Access
             PointerFocus.Shutdown();
             GameKeyStandDown.Remove();
             GameKeyboardHandover.Remove();
+            ResearchLocate.Remove();
 
             if (Input != null)
             {

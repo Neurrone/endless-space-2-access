@@ -152,12 +152,35 @@ namespace ES2Access.Screens
             _hud.Forget();
             Look(ResearchCamera.Aim.None, null, null, null);
             _pendingExpand.Clear();
+            // A locate the page never got to answer goes with the page: the player closed it, and a
+            // technology remembered from that visit has no business moving the cursor on the next one.
+            ResearchLocate.Forget();
         }
 
         public override void OnUpdate()
         {
             _hud.Update();
+            FollowTheGame();
             MoveCamera();
+        }
+
+        /// <summary>
+        /// Land on the technology the GAME has just gone and looked at
+        /// (<see cref="ResearchLocate"/>): the same landing a search makes, so the branch it is buried
+        /// in is opened and the cursor is left on the dot.
+        ///
+        /// Here rather than on arrival because the two ways in are the same thing: the page opens at
+        /// the technology, or it was already open and the view moved to it. Both leave the request
+        /// waiting, and the first frame this page has the keyboard is when it can be answered - which
+        /// is also why a locate made under a tutorial popup is not lost, only held.
+        /// </summary>
+        private void FollowTheGame()
+        {
+            GuiTechnology2 wanted = ResearchLocate.Take();
+            if (wanted != null)
+            {
+                Jump(wanted);
+            }
         }
 
         public override void Build(GraphBuilder builder)

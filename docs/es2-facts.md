@@ -128,6 +128,16 @@ generic graduates to the generic docs.
   stages, and Empire Development II's stage is already `Researched`, so that deed is *available* and
   carries its full `DeedDescription` tooltip — the cheapest cross-check that a deed's state word is
   right is that the game switches the tooltip's CLASS on the same predicate.
+- **"Go and look at THIS technology" leaves no state behind.** Every way the game takes the player
+  to a dot — Ctrl+click on a hint button (`GuiButtonHint.ActivateHint`, the colonize and buy-out
+  buttons), a technology-unlocked notification — calls `TechnologyScreen.FocusTechnology(GuiTechnology2)`
+  (:154-167) and then `ShowWindow`. With the page already up it acts at once (`ForceZoomIn` +
+  `TechnologyItem2.FocusTechnology`'s pulse) and stores nothing; with the page closed it stashes the
+  technology in the private `FocusedTechnology`, which the show coroutine `DefferedDoZoomIn` (:776-790)
+  consumes and nulls the moment the window appears. So nothing readable survives the open, and a mod
+  that wants to put its cursor where the VIEW was sent has to hear the call itself (a Harmony patch on
+  that one overload) rather than poll for a result — `ES2Access.Screens.ResearchLocate`, consumed by
+  `ResearchScreen.OnUpdate` and dropped again when the page closes.
 - **What the game recommends researching is a list, not just a badge.**
   `TechnologyScreen.SuggestedGuiTechnologies` (refilled in `Refresh` :393-398 from
   `DepartmentOfScience.SuggestedTechnologies`) is what `UpdateSuggestionTop` badges the dots from
