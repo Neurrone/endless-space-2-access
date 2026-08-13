@@ -88,6 +88,8 @@
   "galaxy.system-colonized": "colonized",
   "galaxy.system-outpost": "outpost",
   "galaxy.open-system": "Open system",
+  "galaxy.shown-on-map": "Shown on the map",
+  "galaxy.quest-shown-on-map": "{0}, objective shown on the map",
   "galaxy.starlane": "Starlane {0} to {1}, {2}",
   "galaxy.starlane-unexplored": "Starlane {0} to an unexplored system, {1}",
   "galaxy.wormhole": "Wormhole {0} to {1}, {2}",

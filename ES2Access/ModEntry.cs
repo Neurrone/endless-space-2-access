@@ -230,8 +230,10 @@ namespace ES2Access
             // the mod has already acted on them.
             GameKeyboardHandover.Install();
             // The game's own "the thing you are missing is over here", which moves the view and would
-            // otherwise leave the cursor behind.
+            // otherwise leave the cursor behind - once for the technology wheel, once for the map,
+            // which between them are where every one of those buttons lands.
             ResearchLocate.Install();
+            GalaxyLocate.Install();
 
             _routes = new ModRoutes(host);
             _routes.Register();
@@ -484,6 +486,7 @@ namespace ES2Access
             GameKeyStandDown.Remove();
             GameKeyboardHandover.Remove();
             ResearchLocate.Remove();
+            GalaxyLocate.Remove();
 
             if (Input != null)
             {

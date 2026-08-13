@@ -138,6 +138,48 @@ generic graduates to the generic docs.
   that wants to put its cursor where the VIEW was sent has to hear the call itself (a Harmony patch on
   that one overload) rather than poll for a result — `ES2Access.Screens.ResearchLocate`, consumed by
   `ResearchScreen.OnUpdate` and dropped again when the page closes.
+- **"Go and look at THIS place on the map" is three calls, and they nest.** `IGuiGameWindowService`
+  is where every reveal in the game ends up, and only three of its members move the galaxy view:
+  `RequestGalaxyOverviewViewLevel(IGameEntityWithGalaxyPosition)` (`GuiManager.cs` :1170) forwards
+  straight to `RequestGalaxyOverviewViewLevel(Vector3)` (:1175) and DROPS the entity, and
+  `ShowQuestLocation(Quest, QuestStep)` (:1264-1286) picks a marker and then calls the same `Vector3`
+  overload. So a patch on "the call site" gets the poorest signature — hook all three, and note that
+  postfixes fire inner-first, so the richer outer capture naturally overwrites the poorer one it
+  caused. Measured: 51 player-facing flows (notifications, panel locate buttons, table double clicks,
+  the traitor banner, the next-idle-fleet button) reach the map through them.
+  `ES2Access.Screens.GalaxyLocate` is that capture; `GalaxyHudScreen.OnUpdate` consumes it.
+- **`ShowQuestLocation` CYCLES markers** through a private `lastShownMarkerIndexByQuest`, keyed on
+  quest name + step name — press the pin twice and the camera goes to the next marker. Nothing needs
+  to read that dictionary, though: the method resolves its marker and then makes the ordinary
+  position request with it, so a hook on the position call already has the chosen marker's own
+  position. A quest with NO markers makes no request at all and moves nothing.
+- **`RequestStarSystemManagementViewLevel` silently degrades to a galaxy centre.** For a system that
+  is blacked out (:1224-1228) or that the player neither owns nor has a traitor in (:1244-1247) it
+  calls `RequestGalaxyOverviewViewLevel(component.Position)` instead — no page opens, and the only
+  feedback a mouse user gets is the camera sliding. Measured from `unlocked` on a non-owned system:
+  the reveal capture fires and the mod says "Shown on the map" rather than announcing a page.
+- **A docked fleet's position IS its star's.** `FleetPosition`'s node-position setter takes
+  `service.Get3DPosition(nodePosition)`, so `Fleet.GalaxyPosition` for anything in orbit equals the
+  `StarSystemNode`'s exactly (measured: `GalaxyFleet.transform.position` equals
+  `Fleet.GalaxyPosition` for a fleet under way too). Turning a reveal POINT back into a thing must
+  therefore prefer the containing place on a tie, and find a parked fleet by its BERTH — the
+  `DockingSlotCursorTarget`'s own transform, which is what `EndTurnWindow.SelectIdleFleet` aims the
+  camera at. Galaxy scale for the radius: nearest-neighbour system spacing measured at 6.69 minimum,
+  10.61 mean over 136 systems.
+- **Which fleet of a shared berth the next-idle-fleet button meant is only knowable a few frames
+  later.** `EndTurnWindow.SelectIdleFleet` (:1387-1409) asks for the camera FIRST and selects the
+  fleet from `SelectFleetWhenViewReady`, a coroutine that waits out the 0.3 s slide. So the selection
+  standing when the reveal arrives is the PREVIOUS answer; a landing that reads it immediately picks
+  the wrong fleet whenever two fleets are parked at the same system (measured).
+- **Every `GuiTableLine` in the game carries a `DoubleClickButton`** (`GuiTableLine.Bind` :96-99
+  wires it to `OnLineDoubleClickCb` → the table client's `OnLineDoubleClick`) — measured: 14 lines
+  live in `unlocked`, none without one. Only eight classes implement the handler
+  (`StarSystemsManagementPanel` :434-441 opens that system's management page, `MilitaryScreen` :511
+  shows the fleet on the map, `FleetSelectionModalWindow` :181 and `SystemSelectionModalWindow` :184
+  pick and close, `LoadSaveModalWindow` :401 loads or overwrites, `JoinGameScreen` :435, and
+  `MarketplaceBuyableItemsPanel` :354 and `HeroCompleteListModalWindow` :83 are EMPTY), and
+  `FleetsScreen` is not among them. All eight read `GuiTable.SelectedLine`, never the line they were
+  handed, so replaying the gesture means selecting the row first.
 - **What the game recommends researching is a list, not just a badge.**
   `TechnologyScreen.SuggestedGuiTechnologies` (refilled in `Refresh` :393-398 from
   `DepartmentOfScience.SuggestedTechnologies`) is what `UpdateSuggestionTop` badges the dots from

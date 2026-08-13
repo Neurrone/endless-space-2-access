@@ -469,16 +469,24 @@ namespace ES2Access.UI
 
         /// <summary>Take the camera to something on the map, the way every "show me where this
         /// happened" button in the game does. Already on the galaxy, this only slides the camera
-        /// across and leaves the zoom where the player had it.</summary>
+        /// across and leaves the zoom where the player had it.
+        ///
+        /// Marked as the mod's own (<see cref="Screens.GalaxyLocate.Suppressed"/>): this is the camera
+        /// FOLLOWING the cursor, and the very call the mod watches for the game LEADING it.</summary>
         public static void PanTo(IGameEntityWithGalaxyPosition entity)
         {
             try
             {
+                Screens.GalaxyLocate.Suppressed = true;
                 Gui.GuiGameWindowService.RequestGalaxyOverviewViewLevel(entity);
             }
             catch (Exception e)
             {
                 Log.Warn("galaxy: panning to an entity threw: " + e);
+            }
+            finally
+            {
+                Screens.GalaxyLocate.Suppressed = false;
             }
         }
 
@@ -619,16 +627,24 @@ namespace ES2Access.UI
         }
 
         /// <summary>Open a system's management page - the game's own route into it, the one its label's
-        /// button takes.</summary>
+        /// button takes. Where the game will not open one - a system blacked out or nobody's - the call
+        /// silently degrades to centring the map on it (es2-facts), which is why this too is marked as
+        /// the mod's own: the cursor is already on the system, and being sent to it again would say
+        /// nothing about the page that did not open.</summary>
         public static void OpenSystem(StarSystemNode node)
         {
             try
             {
+                Screens.GalaxyLocate.Suppressed = true;
                 Gui.GuiGameWindowService.RequestStarSystemManagementViewLevel(node.GUID);
             }
             catch (Exception e)
             {
                 Log.Warn("galaxy: opening a system's management view threw: " + e);
+            }
+            finally
+            {
+                Screens.GalaxyLocate.Suppressed = false;
             }
         }
 

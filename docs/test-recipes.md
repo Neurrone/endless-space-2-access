@@ -294,7 +294,33 @@ snap-back shows as the system's own position returning), and `DevProbe.Screen()`
 fleet's node — in `unlocked` both visible fleets are mid-lane, so the landing proves the lane
 branch was opened too. The false-positive half of the same test: select a fleet with the galaxy up,
 move the cursor elsewhere (`hud:end-turn`), then show and hide `MilitaryScreen` — the cursor must
-stay where the player left it, because the selection did not change while the page was away.
+stay where the player left it, because the game made no reveal request (the landing is driven by
+`GalaxyLocate`'s capture now, not by diffing the selection across the page's absence).
+
+**Every other "go and look at this" the galaxy answers** (`GalaxyLocate`, all from `/eval`, all with
+the galaxy already up unless said otherwise, each read as `speech` on the reply):
+a NAMED thing — `Gui.GuiGameWindowService.RequestGalaxyOverviewViewLevel(colonizedStarSystem.Node)`
+→ the cursor lands on that system's node, one announcement, nothing of the mod's own added;
+a POINT at a declared place — the same call with `(Vector3)node.GalaxyPosition` → the same landing;
+a POINT out in the open — `new UnityEngine.Vector3(60f, 0f, 60f)` → "Shown on the map" then the
+view-title node; the F2 DOWNGRADE — `RequestStarSystemManagementViewLevel(nonOwnedNode.GUID)` → the
+same pair, and no claim that a page opened; the NEXT IDLE FLEET, which needs `[Midgame] quests
+fleets` (two idle fleets parked in one berth) — invoke the private `EndTurnWindow.OnNextIdleFleetCb`
+by reflection and the cursor must land on the fleet the game selects, ALTERNATING between the two on
+repeated presses (landing on the same one twice is the berth tie-break reading the previous
+selection — es2-facts). A QUEST PIN needs a quest with markers, which neither fixture has: compose
+the game's own nesting in one `/eval` statement instead — `RequestGalaxyOverviewViewLevel(pos)` then
+`ShowQuestLocation(quest, quest.GetCurrentStep())` on the marker-less pinned quest — which leaves
+exactly the state `ShowQuestLocation` leaves when it does have one, and must say
+"⟨quest title⟩, objective shown on the map" before the landing. The same call ALONE on a marker-less
+quest must be silent.
+
+**A table's double click** (`TableSheet.ShowOnMap`, every table): from `unlocked`,
+`Gui.GuiService.ShowWindow<EmpireScreen>()` lands the cursor on the Systems Management table's row;
+`POST /input ui.doubleClick` must open that system's management page (heard as the tutorial popup
+plus "Zoom level 14 of 15", confirmed by `/gui/graph` reading `Star system`). Note every
+`GuiTableLine` in the game carries a `DoubleClickButton`, so the absent-means-silent guard is not
+reachable from a fixture — the silent tables are the ones whose client handler is empty (es2-facts).
 
 **Moving population between planets** (management page). The drag is offered only where the system
 has a SECOND colony of the player's (`ColonizedStarSystem.PlanetsColonized.Count > 1`) — with one, the

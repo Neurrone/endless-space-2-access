@@ -89,6 +89,12 @@ files above.
   (`ExploitedStarSystem`: does the model need to change at all?), ark docking slots as a
   drag target, ark population (full list: `audit-factions.md` §4 stages C-D).
 
+- The go-and-look audit's remaining bucket, DECLINED in the batch-F stage because every one
+  of these effects already has a key: map labels' `OnRequestManagementView` (the label's own
+  management button is declared), the map's own double click on a system/fleet/lane (Enter
+  and Backslash carry it), and the two banner cyclers. They are worth revisiting only if a
+  keyboard player reports reaching one of them by no other route.
+
 ## To decide (owner)
 
 - The report family's breakdown toggle (IonWave and friends) is DECLARED NOWHERE: it is

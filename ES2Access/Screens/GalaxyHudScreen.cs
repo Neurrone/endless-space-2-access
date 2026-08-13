@@ -242,13 +242,6 @@ namespace ES2Access.Screens
         {
             _hud.Baseline();
             _fleetPanel.Baseline();
-
-            // A fleet the game selected while this page was gone is where the game has taken the
-            // player, so it is where the cursor goes - and a selection the player made HERE before
-            // leaving is not: coming back from a dialog leaves them where they were.
-            Fleet holding = SelectedFleet();
-            _arriveOn = ReferenceEquals(holding, _leftHolding) ? null : holding;
-            _arriveFrames = _arriveOn == null ? 0 : ArriveFrames;
         }
 
         public override void OnPop()
@@ -256,8 +249,11 @@ namespace ES2Access.Screens
             _zoom.Forget();
             _hud.Forget();
             _fleetPanel.Forget();
-            _leftHolding = SelectedFleet();
-            _arriveOn = null;
+            // A place the game asked to be looked at goes with the page: whatever replaced this one is
+            // where the player now is, and a request answered on some later visit would move the cursor
+            // for a reason nobody could remember.
+            GalaxyLocate.Forget();
+            _locating = null;
         }
 
         public override void OnUpdate()
@@ -267,11 +263,7 @@ namespace ES2Access.Screens
             _zoom.Update();
             // Before the camera is followed and before the graph is next built, so that the landing
             // and the branch it opens both happen on the frame the page arrives on.
-            if (_arriveOn != null && (ArriveOnFleet(_arriveOn) || --_arriveFrames <= 0))
-            {
-                _arriveOn = null;
-            }
-
+            FollowTheGame();
             FollowCamera();
         }
 
@@ -326,29 +318,365 @@ namespace ES2Access.Screens
             return navigator != null && navigator.CursorMovedHere;
         }
 
+        // ---- where the game has just sent the player ----
+
+        /// <summary>The request being worked on, so that a page which needs several frames to find its
+        /// answer is spending ONE budget on ONE request rather than restarting the clock.</summary>
+        private GalaxyLocate.Request _locating;
+
+        private int _locateFrames;
+
+        /// <summary>About a second: long enough for the places to have been declared once on a page
+        /// arrived at cold AND for the camera slide the game starts with the request to finish, which is
+        /// when it says which of a berth's fleets it meant. Short enough that a request nothing ever
+        /// answers gives up rather than seizing a later frame's cursor. It is only ever spent on an
+        /// answer that can still improve - a settled one lands the frame it is found.</summary>
+        private const int LocateFrames = 60;
+
+        /// <summary>How near a point has to be to something the tree declares before it IS that thing,
+        /// in the galaxy's own units. Well under the closest two systems in a galaxy ever stand (6.7
+        /// measured on the fixture, 10.6 on average), so nothing is ever mistaken for its neighbour,
+        /// and wide enough for the small offsets the map draws a fleet's berth at.</summary>
+        private const float LocateRadius = 3f;
+
         /// <summary>
-        /// The fleet the game handed the cursor while this page was away, and how many frames are left
-        /// to find it in the tree.
+        /// Put the cursor where the GAME has just sent the player (<see cref="GalaxyLocate"/>) - the
+        /// same landing a search makes, so the place it is buried in is opened and the cursor is left on
+        /// the thing itself.
         ///
-        /// The game centres the map on things by itself - the military screen's "show me this fleet",
-        /// a notification's link - and the page it hands back to is this one. Re-seating the cursor on
-        /// whatever the game selected is what makes the tree agree with the picture: without it the
-        /// player is told about the system they were reading before they left, which is no longer what
-        /// the game is looking at.
+        /// Here rather than on arrival because the two ways in are the same thing: the page opens
+        /// showing the place, or it was already open and the camera moved. The next idle fleet is the
+        /// second kind and the military screen's locate is the first, and neither is special.
+        ///
+        /// A request the tree has no node for is still answered - the camera HAS moved, and a player
+        /// told nothing would be left reading a place the map is no longer showing.
         /// </summary>
-        private Fleet _arriveOn;
+        private void FollowTheGame()
+        {
+            GalaxyLocate.Request wanted = GalaxyLocate.Peek();
+            if (wanted == null)
+            {
+                _locating = null;
+                return;
+            }
 
-        private int _arriveFrames;
+            if (!ReferenceEquals(wanted, _locating))
+            {
+                _locating = wanted;
+                _locateFrames = LocateFrames;
+                _holdingAtRequest = SelectedFleet();
+            }
 
-        /// <summary>What the game had selected when this page last went away, so that a selection made
-        /// WHILE it was away can be told from the one the player made here before leaving - only the
-        /// first is the game putting the player somewhere new.</summary>
-        private Fleet _leftHolding;
+            try
+            {
+                bool settled;
+                ControlId id = Locate(wanted, out settled);
+                // The budget is for an answer that can still get better - a page that has not declared
+                // anything yet, a berth the game has not yet said which of its fleets it meant. A
+                // settled answer is given now, including the settled answer that nothing on the map is
+                // there.
+                if (!settled && --_locateFrames > 0)
+                {
+                    return;
+                }
 
-        /// <summary>About a third of a second: long enough for the systems to have been declared once
-        /// on a page arrived at from a save being loaded, short enough that a fleet the map is not
-        /// drawing gives up rather than seizing a later frame's cursor.</summary>
-        private const int ArriveFrames = 20;
+                GalaxyLocate.Take();
+                _locating = null;
+                Land(id, wanted);
+            }
+            catch (Exception e)
+            {
+                GalaxyLocate.Take();
+                _locating = null;
+                Log.Warn("galaxy: landing on what the game located threw: " + e);
+            }
+        }
+
+        /// <summary>Whether the map has declared anything to land on yet. A page arrived at from a save
+        /// being loaded has not run <see cref="BuildSystems"/> even once.</summary>
+        private bool Declaring()
+        {
+            return _owned.Count > 0 || _other.Count > 0;
+        }
+
+        /// <summary>Speak what the landing needs saying beyond the node itself, then send the cursor.
+        /// The node's own announcement is the whole of an ordinary landing - it names the place the game
+        /// went to, which is the answer to the question that was asked.</summary>
+        private void Land(ControlId id, GalaxyLocate.Request wanted)
+        {
+            if (wanted.Quest != null)
+            {
+                Voice.Say(QuestLocated(wanted.Quest), false);
+            }
+            else if (id == null)
+            {
+                Voice.Say(ModStrings.Get(ModStrings.GalaxyShownOnMap), false);
+            }
+
+            GraphNavigator navigator = ModEntry.Navigator;
+            if (navigator != null)
+            {
+                // Nothing on the map answers for the point, so the cursor goes to the name of the view -
+                // where the player is told what they are looking at - rather than staying on a place the
+                // camera has left.
+                navigator.FocusNode(id ?? ControlId.Structural("hud:view-title/name"));
+            }
+        }
+
+        /// <summary>The quest a pin belongs to, in the game's own title for it.</summary>
+        private static string QuestLocated(Quest quest)
+        {
+            try
+            {
+                return ModStrings.Format(
+                    ModStrings.GalaxyQuestShownOnMap,
+                    AgeText.Clean(new GuiQuest(quest).Title)
+                );
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: naming the quest the game located threw: " + e);
+                return null;
+            }
+        }
+
+        /// <summary>The node for what the game asked to be looked at, or null where the map draws
+        /// nothing there. The thing itself first, since a request that named one is exact; the point
+        /// only where it did not, or where the thing it named is not something this tree declares.
+        ///
+        /// <paramref name="settled"/> is false while a later frame could answer better - the whole of
+        /// what the frame budget is for.</summary>
+        private ControlId Locate(GalaxyLocate.Request wanted, out bool settled)
+        {
+            ControlId named = FromEntity(wanted.Entity);
+            if (named != null)
+            {
+                settled = true;
+                return named;
+            }
+
+            return Nearest(wanted.Position, out settled);
+        }
+
+        /// <summary>The node for a thing the game named. A fleet is where the map draws it; everything
+        /// that stands at a system - the system, a colony of it, a planet in it - is that system.
+        /// </summary>
+        private ControlId FromEntity(IGameEntityWithGalaxyPosition entity)
+        {
+            if (entity == null)
+            {
+                return null;
+            }
+
+            Fleet fleet = entity as Fleet;
+            if (fleet != null)
+            {
+                List<FleetSite> sites = FleetIndex(new HashSet<ControlId>());
+                for (int i = 0; i < sites.Count; i++)
+                {
+                    if (ReferenceEquals(sites[i].Fleet, fleet))
+                    {
+                        return Reveal(sites[i]);
+                    }
+                }
+
+                return null;
+            }
+
+            ColonizedStarSystem colony = entity as ColonizedStarSystem;
+            Planet planet = entity as Planet;
+            GameNode node = colony != null
+                ? colony.Node
+                : planet != null
+                    ? planet.StarSystemNode
+                    : entity as GameNode;
+            return SystemId(node as StarSystemNode);
+        }
+
+        /// <summary>A system's node id, but only while this page is declaring that system: the map
+        /// draws the names of the systems the player has seen, and the tree says the same
+        /// (<see cref="Perceived"/>).</summary>
+        private ControlId SystemId(StarSystemNode node)
+        {
+            return node != null && (_owned.Contains(node) || _other.Contains(node))
+                ? ControlId.Structural("galaxy:system/" + node.GUID)
+                : null;
+        }
+
+        /// <summary>One thing the map is drawing, and where it is drawn.</summary>
+        private struct Spot
+        {
+            public Vector3 At;
+
+            /// <summary>The node, for everything but a fleet.</summary>
+            public ControlId Id;
+
+            /// <summary>Which fleet site this is, or -1. A fleet's node id is not made until it wins,
+            /// because making one records a branch to open.</summary>
+            public int Site;
+        }
+
+        /// <summary>
+        /// The nearest thing the map draws to a point, or null when the point is out in the open.
+        ///
+        /// The order candidates are offered in is the tie-break (<see cref="NearestPick"/>), and one tie
+        /// is exact rather than coincidental: a fleet parked at a system says its position IS that
+        /// system's (<c>FleetPosition</c> sets it from the node), so a request aimed at a star would
+        /// otherwise be answered by whichever fleet happens to be sitting there. Places first, then.
+        /// A fleet is offered at its BERTH - the slot the map draws it in, which is beside the star
+        /// rather than on it - so the one call that aims at a berth (the next-idle-fleet button) still
+        /// picks the fleet out.
+        /// </summary>
+        private ControlId Nearest(Vector3 position, out bool settled)
+        {
+            // A page arrived at cold has declared nothing, and "nothing is there" would be a wrong
+            // answer rather than a late one.
+            settled = Declaring();
+            List<FleetSite> sites = FleetIndex(new HashSet<ControlId>());
+            List<Spot> spots = new List<Spot>(_owned.Count + _other.Count + sites.Count);
+            for (int i = 0; i < _owned.Count; i++)
+            {
+                Add(spots, _owned[i].GalaxyPosition, SystemId(_owned[i]), -1);
+            }
+
+            for (int i = 0; i < _other.Count; i++)
+            {
+                Add(spots, _other[i].GalaxyPosition, SystemId(_other[i]), -1);
+            }
+
+            for (int i = 0; i < _probes.Count; i++)
+            {
+                Probe probe = _probes[i].Entity as Probe;
+                if (probe != null)
+                {
+                    Add(
+                        spots,
+                        probe.GalaxyPosition,
+                        ControlId.Structural("galaxy:probe/" + probe.GUID),
+                        -1
+                    );
+                }
+            }
+
+            for (int i = 0; i < _projectiles.Count; i++)
+            {
+                ObliteratorProjectile shot = _projectiles[i].Entity as ObliteratorProjectile;
+                if (shot != null)
+                {
+                    Add(
+                        spots,
+                        shot.GalaxyPosition,
+                        ControlId.Structural("galaxy:projectile/" + shot.GUID),
+                        -1
+                    );
+                }
+            }
+
+            for (int i = 0; i < _pins.Count; i++)
+            {
+                CoordinationRequest pin = _pins[i].CoordinationRequest;
+                if (pin != null)
+                {
+                    Add(spots, pin.GalaxyPosition, ControlId.Structural("galaxy:pin/" + pin.GUID), -1);
+                }
+            }
+
+            for (int i = 0; i < sites.Count; i++)
+            {
+                Add(spots, Berth(sites[i].Fleet), null, i);
+            }
+
+            NearestPick pick = new NearestPick(LocateRadius);
+            for (int i = 0; i < spots.Count; i++)
+            {
+                pick.Offer(i, (spots[i].At - position).sqrMagnitude);
+            }
+
+            if (!pick.Found)
+            {
+                return null;
+            }
+
+            Spot won = spots[pick.Index];
+            if (won.Site < 0)
+            {
+                return won.Id;
+            }
+
+            bool holding;
+            ControlId fleet = Reveal(sites[Holding(sites, won, out holding)]);
+            settled &= holding;
+            return fleet;
+        }
+
+        private static void Add(List<Spot> spots, Vector3 at, ControlId id, int site)
+        {
+            if (id != null || site >= 0)
+            {
+                spots.Add(new Spot { At = at, Id = id, Site = site });
+            }
+        }
+
+        /// <summary>Where the map draws a fleet: its berth in the system's docking slot while it is
+        /// parked there, and its own position while it is out on a lane. The two are different questions
+        /// because a parked fleet's position is the STAR's, and a request aimed at the berth is a
+        /// request for the fleet.</summary>
+        private static Vector3 Berth(Fleet fleet)
+        {
+            try
+            {
+                IVisibleDockingSlotRepositoryService slots =
+                    Amplitude.Unity.Framework.Services.GetService<IVisibleDockingSlotRepositoryService>();
+                DockingSlotCursorTarget slot = slots == null
+                    ? null
+                    : slots.GetDockingSlotWithFleet(fleet);
+                return slot == null ? (Vector3)fleet.GalaxyPosition : slot.transform.position;
+            }
+            catch (Exception)
+            {
+                return fleet.GalaxyPosition;
+            }
+        }
+
+        /// <summary>
+        /// Which of the fleets sharing one berth was meant.
+        ///
+        /// A point cannot say: every fleet parked at a system is drawn in the same slot. The game says
+        /// it by SELECTING the fleet - which it does a few frames later, once the camera it started
+        /// moving has arrived (<c>EndTurnWindow.SelectFleetWhenViewReady</c>), so the selection standing
+        /// at the moment of the request is the previous answer and not this one. Hence
+        /// <paramref name="settled"/>: while the berth holds several fleets and the game has not yet
+        /// changed its mind, the first of them is a provisional answer and the budget is spent waiting
+        /// for a better one. A berth with one fleet in it has nothing to wait for.
+        /// </summary>
+        private int Holding(List<FleetSite> sites, Spot won, out bool settled)
+        {
+            Fleet selected = SelectedFleet();
+            int sharing = 0;
+            int chosen = -1;
+            for (int i = 0; i < sites.Count; i++)
+            {
+                if ((Berth(sites[i].Fleet) - won.At).sqrMagnitude >= 0.0001f)
+                {
+                    continue;
+                }
+
+                sharing++;
+                if (ReferenceEquals(sites[i].Fleet, selected))
+                {
+                    chosen = i;
+                }
+            }
+
+            settled = sharing <= 1 || (chosen >= 0 && !ReferenceEquals(selected, _holdingAtRequest));
+            // The fleet the game is holding is the better guess even unsettled, which is what the
+            // budget running out falls back to.
+            return chosen >= 0 ? chosen : won.Site;
+        }
+
+        /// <summary>What the game's cursor was holding when the request arrived, so that a selection
+        /// made in ANSWER to it can be told from the one that was already standing.</summary>
+        private Fleet _holdingAtRequest;
 
         /// <summary>The fleet the map's own cursor is holding, or null while it is holding nothing. The
         /// cursor is half the answer: the garrison cursor is what "a fleet is selected" means to this
@@ -370,33 +698,6 @@ namespace ES2Access.Screens
                 Log.Warn("galaxy: asking what the cursor is holding threw: " + e);
                 return null;
             }
-        }
-
-        /// <summary>Put the cursor on the fleet the game selected while this page was away - opening
-        /// the place it is standing, exactly as a search landing does. Answers whether it is done with;
-        /// a fleet the tree cannot offer yet is left for the next frame, because the places are declared
-        /// by <see cref="BuildSystems"/> and a page arrived at cold has not run one yet.</summary>
-        private bool ArriveOnFleet(Fleet fleet)
-        {
-            List<FleetSite> sites = FleetIndex(new HashSet<ControlId>());
-            for (int i = 0; i < sites.Count; i++)
-            {
-                if (!ReferenceEquals(sites[i].Fleet, fleet))
-                {
-                    continue;
-                }
-
-                ControlId id = Reveal(sites[i]);
-                GraphNavigator navigator = ModEntry.Navigator;
-                if (navigator != null)
-                {
-                    navigator.FocusNode(id);
-                }
-
-                return true;
-            }
-
-            return false;
         }
 
         /// <summary>Down the screen, which is also the order the galaxy screen has always read in:
@@ -3079,6 +3380,10 @@ namespace ES2Access.Screens
                     return;
                 }
 
+                // Both routes below ask the camera for the fleet through the very call the mod watches
+                // for the GAME sending the player somewhere (<see cref="GalaxyLocate"/>) - but the
+                // cursor is already on this fleet, because this is the player's own key on its node.
+                GalaxyLocate.Suppressed = true;
                 if (FleetOrders.Orbit(fleet) != null)
                 {
                     EndTurnWindow window = TurnWindow();
@@ -3094,6 +3399,10 @@ namespace ES2Access.Screens
             catch (Exception e)
             {
                 Log.Warn("galaxy: selecting a fleet threw: " + e);
+            }
+            finally
+            {
+                GalaxyLocate.Suppressed = false;
             }
         }
 

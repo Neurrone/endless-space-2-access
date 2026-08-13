@@ -181,6 +181,15 @@ namespace ES2Access.Core.Speech
         public const string GalaxySystemOutpost = "galaxy.system-outpost";
         public const string GalaxyOpenSystem = "galaxy.open-system";
 
+        // The game has taken the camera to a point the map draws nothing at - a quest marker out
+        // between the stars, a battle at a place the player cannot see. The camera HAS moved, so
+        // silence would leave the player reading somewhere the game is no longer showing.
+        public const string GalaxyShownOnMap = "galaxy.shown-on-map";
+
+        // The same reveal, made by the quest banner's pin, which knows which quest it is about. Said
+        // whether or not the marker turned out to be somewhere the tree can name.
+        public const string GalaxyQuestShownOnMap = "galaxy.quest-shown-on-map";
+
         // The lanes out of a system. The game draws these as lines and writes nothing on them, and
         // where a line runs off into space it has no destination to name either. The number is the
         // lane's place going clockwise from north, which is also the order they are walked in; the
@@ -907,6 +916,8 @@ namespace ES2Access.Core.Speech
             { GalaxySystemColonized, "colonized" },
             { GalaxySystemOutpost, "outpost" },
             { GalaxyOpenSystem, "Open system" },
+            { GalaxyShownOnMap, "Shown on the map" },
+            { GalaxyQuestShownOnMap, "{0}, objective shown on the map" },
             { GalaxyStarlane, "Starlane {0} to {1}, {2}" },
             { GalaxyStarlaneUnexplored, "Starlane {0} to an unexplored system, {1}" },
             { GalaxyWormhole, "Wormhole {0} to {1}, {2}" },
