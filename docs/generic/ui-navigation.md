@@ -84,12 +84,14 @@ which no dump reveals. Key such lines on the game's *data* object, never the wid
     retained game-side container that owns its expand state); a hook that only wants a
     side effect must flip the builder's expansion set itself, or the tree refuses to stay
     open.
-- **Expansion changes no world state.** In a game whose view distance decides what is
-  drawn, "go in" (tree) and "get closer" (camera) are different verbs, and binding a
-  camera move to the expand key makes whichever information tier the other zoom level
-  shows unreachable — when different zoom levels show different information, both sets
-  must stay accessible, with the camera on its own explicit control (wherever fits the
-  screen's design).
+- **Expansion may move the camera only while both tiers stay reachable.** In a game whose
+  view distance decides what is drawn, "go in" (tree) and "get closer" (camera) are
+  different verbs — the risk of binding them together is that whichever information tier
+  the other zoom level shows becomes unreachable. Binding a camera move to expand is
+  therefore fine exactly when the other tier remains reachable through an explicit
+  zoom-out key with the branch still open (ES2: expanding a system zooms in, Backslash
+  zooms back out, and collapse un-zooms only while the camera is still on that system —
+  owner-ruled); where no such key exists, keep the camera on its own explicit control.
 - **`GraphAnnouncer`** — composes speech by **diffing the old and new focus paths**: the
   common ancestor prefix stays silent, newly entered levels read outermost-first, duplicate
   labels dedupe. Injected delegates (`PartFilter`, `PositionText`, `ExpandedStateText`) keep
