@@ -977,17 +977,21 @@ namespace ES2Access.Screens
         /// cards: no <c>AgeTooltip</c> on the item, on either image, or on the table), so there is nothing
         /// else on the widget to read. The game's own caption ("Population synergies") heads the list.
         ///
-        /// Null where the planet has none. The caption label stays drawn over an EMPTY table, so reading
-        /// the strip's words would announce a heading with nothing under it on every planet in the system.
+        /// The caption label stays drawn over an EMPTY table, and the sighted player sees exactly that -
+        /// a heading with nothing under it on every planet - so the reading says the same (OWNER-RATIFIED
+        /// 2026-08-13: parity with the sighted experience; drawn words are never deleted). The pairs
+        /// follow only where the table has them.
         /// </summary>
         private static string SynergyText(PlanetLabel_SystemManagementScanView label)
         {
             try
             {
+                MessageBuilder heading = new MessageBuilder();
+                heading.Fragment(Caption(label));
                 AgeTransform table = label.SynergiesTable;
                 if (table == null || !AgeWidgets.Visible(table))
                 {
-                    return null;
+                    return heading.Build();
                 }
 
                 MessageBuilder message = new MessageBuilder();
@@ -1021,7 +1025,7 @@ namespace ES2Access.Screens
                     said++;
                 }
 
-                return said == 0 ? null : message.Build();
+                return said == 0 ? heading.Build() : message.Build();
             }
             catch (Exception)
             {
