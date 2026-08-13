@@ -282,6 +282,20 @@ banners, a list long enough to scroll, the range-outcome sentence with two or mo
 DROP itself — the cursor draws exactly one fleet line and each fleet owns exactly one ship, so every
 reachable transfer would destroy a fleet.
 
+**The game's own "show me this fleet", and what the galaxy page does when it lands.** The repro for
+"the map snapped back to where I was" needs the locate to happen while the galaxy page is DOWN:
+focus a system node (`Navigator.FocusNode(ControlId.Structural("galaxy:system/<GUID>"))`, which
+pans the camera there), `Gui.GuiService.ShowWindow<MilitaryScreen>()`, then run the locate from
+es2-facts (`ICursorService.Select(galaxyFleet.CursorTarget)` → `ChangeCursor(typeof
+(GalaxyGarrisonCursor), galaxyFleet)` → `RequestGalaxyOverviewViewLevel(fleet)`). That last call
+closes the screen by itself, so the galaxy page comes back in the same `/eval` and its speech is in
+that response. Two things to read: `DevProbe.Camera()` must still be on the FLEET's position (a
+snap-back shows as the system's own position returning), and `DevProbe.Screen()` must report the
+fleet's node — in `unlocked` both visible fleets are mid-lane, so the landing proves the lane
+branch was opened too. The false-positive half of the same test: select a fleet with the galaxy up,
+move the cursor elsewhere (`hud:end-turn`), then show and hide `MilitaryScreen` — the cursor must
+stay where the player left it, because the selection did not change while the page was away.
+
 **Moving population between planets** (management page). The drag is offered only where the system
 has a SECOND colony of the player's (`ColonizedStarSystem.PlanetsColonized.Count > 1`) — with one, the
 population rows are declared read-only and there is no pick-up (measured live: with one colony

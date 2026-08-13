@@ -344,7 +344,11 @@ generic graduates to the generic docs.
   `Gui.GuiGameWindowService.RequestGalaxyOverviewViewLevel(fleet)` — in that order, because the
   panel's own visibility is gated on the cursor. Measured: cursor `GalaxyCursor` →
   `GalaxyGarrisonCursor`, the panel's stops appear, and the camera focus moves from
-  `[66.741, 0, -21.212]` to the fleet's own `[59.684, 0, -25.12]`.
+  `[66.741, 0, -21.212]` to the fleet's own `[59.684, 0, -25.12]`. **The last call also CLOSES
+  whatever full screen the player is on** — measured from `unlocked` with `MilitaryScreen` shown:
+  the request alone put the galaxy page back and no window had to be hidden by hand. So a locate is
+  a screen change the mod hears as an ordinary re-entry of the galaxy, and the cursor it re-seats on
+  arrival is the only thing that tells the player where the game has taken them.
 - **A STARLANE is a move target in its own right, not just a road to one.**
   `GalaxyGarrisonCursor.GetGalaxyPathToTargets` (:329-342) resolves the hovered galaxy node OR a
   `GalaxyLinkCursorTarget`'s `Link`, and `GetGalaxyPathToLink` builds the route in two halves: the

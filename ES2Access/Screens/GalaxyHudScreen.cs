@@ -242,6 +242,13 @@ namespace ES2Access.Screens
         {
             _hud.Baseline();
             _fleetPanel.Baseline();
+
+            // A fleet the game selected while this page was gone is where the game has taken the
+            // player, so it is where the cursor goes - and a selection the player made HERE before
+            // leaving is not: coming back from a dialog leaves them where they were.
+            Fleet holding = SelectedFleet();
+            _arriveOn = ReferenceEquals(holding, _leftHolding) ? null : holding;
+            _arriveFrames = _arriveOn == null ? 0 : ArriveFrames;
         }
 
         public override void OnPop()
@@ -249,6 +256,8 @@ namespace ES2Access.Screens
             _zoom.Forget();
             _hud.Forget();
             _fleetPanel.Forget();
+            _leftHolding = SelectedFleet();
+            _arriveOn = null;
         }
 
         public override void OnUpdate()
@@ -256,6 +265,13 @@ namespace ES2Access.Screens
             _hud.Update();
             _fleetPanel.Update();
             _zoom.Update();
+            // Before the camera is followed and before the graph is next built, so that the landing
+            // and the branch it opens both happen on the frame the page arrives on.
+            if (_arriveOn != null && (ArriveOnFleet(_arriveOn) || --_arriveFrames <= 0))
+            {
+                _arriveOn = null;
+            }
+
             FollowCamera();
         }
 
@@ -299,6 +315,89 @@ namespace ES2Access.Screens
         private StarSystemNode _cameraSystem;
 
         private bool _cameraOrbital;
+
+        /// <summary>Whether the focus visual being committed right now is the cursor having MOVED, as
+        /// opposed to this page being re-entered or the visual being re-taken where it already was.
+        /// Everything on this page that moves the CAMERA asks it first
+        /// (<see cref="GraphNavigator.CursorMovedHere"/>).</summary>
+        private static bool CursorMoved()
+        {
+            GraphNavigator navigator = ModEntry.Navigator;
+            return navigator != null && navigator.CursorMovedHere;
+        }
+
+        /// <summary>
+        /// The fleet the game handed the cursor while this page was away, and how many frames are left
+        /// to find it in the tree.
+        ///
+        /// The game centres the map on things by itself - the military screen's "show me this fleet",
+        /// a notification's link - and the page it hands back to is this one. Re-seating the cursor on
+        /// whatever the game selected is what makes the tree agree with the picture: without it the
+        /// player is told about the system they were reading before they left, which is no longer what
+        /// the game is looking at.
+        /// </summary>
+        private Fleet _arriveOn;
+
+        private int _arriveFrames;
+
+        /// <summary>What the game had selected when this page last went away, so that a selection made
+        /// WHILE it was away can be told from the one the player made here before leaving - only the
+        /// first is the game putting the player somewhere new.</summary>
+        private Fleet _leftHolding;
+
+        /// <summary>About a third of a second: long enough for the systems to have been declared once
+        /// on a page arrived at from a save being loaded, short enough that a fleet the map is not
+        /// drawing gives up rather than seizing a later frame's cursor.</summary>
+        private const int ArriveFrames = 20;
+
+        /// <summary>The fleet the map's own cursor is holding, or null while it is holding nothing. The
+        /// cursor is half the answer: the garrison cursor is what "a fleet is selected" means to this
+        /// game, and the panel's own visibility is gated on the same thing (es2-facts).</summary>
+        private static Fleet SelectedFleet()
+        {
+            try
+            {
+                if (!(Gui.GetCursor() is GalaxyGarrisonCursor))
+                {
+                    return null;
+                }
+
+                List<Fleet> selected = FleetOrders.Selected();
+                return selected.Count == 0 ? null : selected[0];
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: asking what the cursor is holding threw: " + e);
+                return null;
+            }
+        }
+
+        /// <summary>Put the cursor on the fleet the game selected while this page was away - opening
+        /// the place it is standing, exactly as a search landing does. Answers whether it is done with;
+        /// a fleet the tree cannot offer yet is left for the next frame, because the places are declared
+        /// by <see cref="BuildSystems"/> and a page arrived at cold has not run one yet.</summary>
+        private bool ArriveOnFleet(Fleet fleet)
+        {
+            List<FleetSite> sites = FleetIndex(new HashSet<ControlId>());
+            for (int i = 0; i < sites.Count; i++)
+            {
+                if (!ReferenceEquals(sites[i].Fleet, fleet))
+                {
+                    continue;
+                }
+
+                ControlId id = Reveal(sites[i]);
+                GraphNavigator navigator = ModEntry.Navigator;
+                if (navigator != null)
+                {
+                    navigator.FocusNode(id);
+                }
+
+                return true;
+            }
+
+            return false;
+        }
 
         /// <summary>Down the screen, which is also the order the galaxy screen has always read in:
         /// the empire's banners across the top and the name of the view beside them, then what the map
@@ -714,9 +813,15 @@ namespace ES2Access.Screens
             vtable.OnActivate = () => ZoomIn(it);
             vtable.OnContextual = () => SystemCommand(it);
 
-            // The camera goes where the cursor goes, so that whoever is watching the screen is looking
+            // The camera goes where the cursor MOVES, so that whoever is watching the screen is looking
             // at the system being read out. On the galaxy this only slides the camera across; it does
             // not undo the zoom a system that has been opened up asked for.
+            //
+            // Only where the cursor moved (<see cref="GraphNavigator.CursorMovedHere"/>): coming back
+            // to this page seats the cursor on the system it was left on, and panning for that would
+            // fly the camera off whatever the GAME has since centred it on - a fleet the military
+            // screen located, a notification's "show me this". Focus reflects where the game is
+            // looking on the way in; it only moves the camera once the player moves it.
             //
             // Once the camera is all the way in, the map pushes the system's own label off the top of
             // the screen and draws a tooltip anchor on the star instead - so that is what the pointer
@@ -725,7 +830,11 @@ namespace ES2Access.Screens
             AgeTooltip tip = tooltip;
             vtable.OnFocusVisual = () =>
             {
-                GalaxyViewLevels.PanTo(it);
+                if (CursorMoved())
+                {
+                    GalaxyViewLevels.PanTo(it);
+                }
+
                 AgeTooltip star = OrbitalStarTooltip(it);
                 if (star != null)
                 {
@@ -2917,7 +3026,9 @@ namespace ES2Access.Screens
         /// <summary>Focus follows the thing across the map, exactly as it follows a system: the camera is
         /// asked for it - the game's own "show me this" route, which takes a thing with a position rather
         /// than a place - and the pointer is put on its label so the game draws its dossier where it can
-        /// be read.</summary>
+        /// be read. The camera only where the cursor MOVED, for the reason <see cref="AddSystem"/>
+        /// records: a page being re-entered re-seats its cursor, and that is not a player going
+        /// anywhere.</summary>
         private static void Follow(
             NodeVtable vtable,
             IGameEntityWithGalaxyPosition entity,
@@ -2930,7 +3041,11 @@ namespace ES2Access.Screens
             AgeTooltip tip = tooltip;
             vtable.OnFocusVisual = () =>
             {
-                GalaxyViewLevels.PanTo(it);
+                if (CursorMoved())
+                {
+                    GalaxyViewLevels.PanTo(it);
+                }
+
                 if (anchor != null)
                 {
                     PointerFocus.MoveTo(null, tip, anchor);
