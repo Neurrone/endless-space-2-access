@@ -95,7 +95,12 @@ Ctrl+click to locate a technology, Alt+click to queue at the head — with no pe
 handler that ignores modifiers just does its ordinary thing, exactly as a modified mouse click would.
 A wired slot stays an OVERRIDE, for the controls where the game runs a genuinely different handler.
 Backslash and Ctrl+Alt+Enter keep absent-means-silent: a right click or a second click that does not
-exist has nothing to replay. Where the game has left a control switched on only so a click can
+exist has nothing to replay. On a `GuiTable` row, the second click is wired by `TableSheet` for EVERY
+table and every cell of a row (its `DoubleClickButton`, the row selected first because the game's
+handlers all read `GuiTable.SelectedLine`), so the empire page's systems table opens that system's
+management page, the military page shows the fleet on the map, and the two selection modals pick and
+close — no screen declares any of it. The tables whose client does nothing with the gesture stay
+silent, as the mouse does there. Where the game has left a control switched on only so a click can
 explain itself, Ctrl+Enter is that explanation: the jump to the missing technology (`Cells.Add` →
 `AgeWidgets.Locate`), wired once for every such control; those controls still announce themselves
 unavailable, and Enter on them does nothing, as the mouse's plain click does. (Owner rulings

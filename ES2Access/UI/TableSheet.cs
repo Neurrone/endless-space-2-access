@@ -64,8 +64,10 @@ namespace ES2Access.UI
     /// just what Enter does on a cell, which is how an interactive-cells table
     /// (<c>GuiTable.Bind(interactiveCells: true)</c>) offers the cell's own button - and note that such a
     /// button is the FIRST half of a two-step gesture, so what a screen hands back is
-    /// <see cref="AgeWidgets.PressPropagating"/>, never a bare press; <see cref="Decorate"/> adds the
-    /// gestures the game gives a row beyond its click; <see cref="NameColumn"/> names a column whose
+    /// <see cref="AgeWidgets.PressPropagating"/>, never a bare press; <see cref="Decorate"/> adds a
+    /// gesture the game gives a row on some OTHER control than the table's own (the marketplace's
+    /// quantity steppers) - the table's double click is not one of those, it belongs to every table and
+    /// is wired here (<see cref="ShowOnMap"/>); <see cref="NameColumn"/> names a column whose
     /// heading draws no caption; and <see cref="RowDetails"/> adds what a row draws inside its name cell
     /// beyond the name. Six, then - all six OPTIONAL, and nothing here presses anything on a screen's
     /// behalf.
@@ -170,9 +172,9 @@ namespace ES2Access.UI
         /// <summary>See <see cref="CellActivation"/>.</summary>
         public CellActivation ActivateCell;
 
-        /// <summary>The gestures the game gives a row beyond its click - the Military screen's fleet row
-        /// answers the table's own double click on a separate key. Handed the row's finished vtable.
-        /// </summary>
+        /// <summary>A gesture the game gives a row on some control of its own beyond the table's - the
+        /// marketplace's quantity steppers. Handed the row's finished vtable. The table's own double
+        /// click is NOT this: it is every table's, and <see cref="ShowOnMap"/> wires it.</summary>
         public Action<GuiTableLine, NodeVtable> Decorate;
 
         /// <summary>
@@ -488,6 +490,7 @@ namespace ES2Access.UI
             }
 
             GraphNodes.AddRefusal(vtable, line.Tooltip, enabled);
+            ShowOnMap(row, vtable);
 
             if (Decorate != null)
             {
@@ -495,6 +498,56 @@ namespace ES2Access.UI
             }
 
             return vtable;
+        }
+
+        /// <summary>
+        /// The table's own DOUBLE click, which every table in this game wires the same way and only some
+        /// of them answer.
+        ///
+        /// A line carries the button the second click lands on (<c>GuiTableLine.DoubleClickButton</c>,
+        /// bound to <c>OnLineDoubleClickCb</c> at <c>GuiTableLine.cs</c> :96-99), and the game forwards
+        /// it to whatever the table's client does with it: the empire's systems table opens that
+        /// system's management page, the military screen shows that fleet on the map, the two selection
+        /// modals pick the row and close. So the alternate-activation chord belongs to every table at
+        /// once rather than to whichever screen happened to notice - a per-screen wiring is how six of
+        /// the eight lost the gesture.
+        ///
+        /// Every one of those handlers reads the table's SELECTED line rather than the line it was
+        /// handed, so the row is picked first - which is exactly what the mouse's first click did before
+        /// its second one arrived. A row already picked is not picked again: the game's own selection
+        /// handler slides panels about and plays a sound, and neither belongs to a request to be shown
+        /// something. A table whose client does nothing with the gesture stays silent, as the mouse's
+        /// double click does there.
+        /// </summary>
+        private static void ShowOnMap(GuiTableLine line, NodeVtable vtable)
+        {
+            GuiTableLine row = line;
+            if (row.DoubleClickButton == null || vtable.OnDoubleClick != null)
+            {
+                return;
+            }
+
+            vtable.OnDoubleClick = () =>
+            {
+                try
+                {
+                    if (!AgeWidgets.Enabled(row.AgeTransform))
+                    {
+                        return;
+                    }
+
+                    if (row.SelectionToggle != null && !row.SelectionToggle.State)
+                    {
+                        AgeWidgets.Toggle(row.SelectionToggle);
+                    }
+
+                    AgeWidgets.DoubleClick(row.DoubleClickButton);
+                }
+                catch (Exception e)
+                {
+                    Log.Warn("table: replaying a row's double click threw: " + e);
+                }
+            };
         }
 
         /// <summary>One column of a row: what it is showing, with the game's own tooltip for the column
@@ -595,6 +648,10 @@ namespace ES2Access.UI
                 vtable.Announcements.Add(GraphNodes.DisabledPart(Operable(table, line)));
             }
 
+            // The row's second click, from any of its columns - for the same reason Enter here is the
+            // row's click: a player who arrowed across to compare a figure should not have to arrow
+            // back to act on the row they just compared.
+            ShowOnMap(row, vtable);
             vtable.SearchText = () => RowText(row, null);
         }
 

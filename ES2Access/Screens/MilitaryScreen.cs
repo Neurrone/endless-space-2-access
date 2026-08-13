@@ -24,14 +24,14 @@ namespace ES2Access.Screens
     /// - The table is SINGLE-select (<c>GuiTable.EnforceRadio</c> :309-316), so there are no selection
     ///   chords on a row: Enter is the row's own click, which picks the fleet, enables the three fleet
     ///   buttons and slides the ship list out underneath.
-    /// - Ctrl+Alt+Enter on a row is the table's own DOUBLE click, which is how the mouse gets from a
-    ///   fleet in this list to that fleet on the galaxy map (<c>OnLineDoubleClick</c> :511-560: it
-    ///   selects the fleet's cursor target, swaps in the garrison cursor and asks for the galaxy view).
-    ///   It reads the SELECTED fleet rather than the line it was handed, so the row is picked first -
-    ///   which is what the mouse's own first click did. Neither that handler nor the game's own
-    ///   selection handler (<c>MilitaryScreen.OnLineSelection</c> :475-509, <c>GuiTable</c>) reads the
-    ///   modifiers the player is holding while the chord replays them. Backslash on a row is silent:
-    ///   the table has no right click.
+    /// - Ctrl+Alt+Enter on a row is the table's own DOUBLE click - inherited too now
+    ///   (<see cref="TableSheet"/>), rather than wired here - and on this table it is how the mouse
+    ///   gets from a fleet in this list to that fleet on the galaxy map (<c>OnLineDoubleClick</c>
+    ///   :511-560: it selects the fleet's cursor target, swaps in the garrison cursor and asks for the
+    ///   galaxy view). Neither that handler nor the game's own selection handler
+    ///   (<c>MilitaryScreen.OnLineSelection</c> :475-509, <c>GuiTable</c>) reads the modifiers the
+    ///   player is holding while the chord replays them. Backslash on a row is silent: the table has no
+    ///   right click.
     ///
     /// The Hero column is a control rather than a figure (<c>interactiveCells: true</c>, :252, which is
     /// what draws <c>GuiTableCellAssignedHero.SelectionButton</c>): pressing it opens the hero picker for
@@ -93,7 +93,6 @@ namespace ES2Access.Screens
             _table = new TableSheet(Keys, FleetOf);
             _table.RowName = FleetName;
             _table.ReadCell = HeroCell;
-            _table.Decorate = FocusOnMap;
         }
 
         public override string Key
@@ -534,47 +533,6 @@ namespace ES2Access.Screens
             {
                 return null;
             }
-        }
-
-        /// <summary>
-        /// The gesture a fleet row has beyond its click: the table's own double click, which takes the
-        /// player to that fleet on the galaxy map.
-        ///
-        /// The game's handler acts on the SELECTED fleet and returns at once when there is none
-        /// (:513-516), so the row is picked first - which is exactly what the mouse's first click did
-        /// before its second one arrived. Picking a row that is already picked is not repeated: the
-        /// game's own selection handler slides the ship list out and plays a sound, and neither belongs
-        /// to a request to look at the map.
-        /// </summary>
-        private static void FocusOnMap(GuiTableLine line, NodeVtable vtable)
-        {
-            GuiTableLine row = line;
-            if (row.DoubleClickButton == null)
-            {
-                return;
-            }
-
-            vtable.OnDoubleClick = () =>
-            {
-                try
-                {
-                    if (!AgeWidgets.Enabled(row.AgeTransform))
-                    {
-                        return;
-                    }
-
-                    if (row.SelectionToggle != null && !row.SelectionToggle.State)
-                    {
-                        AgeWidgets.Toggle(row.SelectionToggle);
-                    }
-
-                    AgeWidgets.DoubleClick(row.DoubleClickButton);
-                }
-                catch (Exception e)
-                {
-                    Log.Warn("military: showing a fleet on the map threw: " + e);
-                }
-            };
         }
 
         // ---- what can be done to the picked fleet ----
