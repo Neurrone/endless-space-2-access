@@ -160,6 +160,10 @@ still restore the remembered position. In **`unlocked`** the tech screen binds "
 INFLUENCE" on EVERY open (not just the first) and the popup arrives expanded and takes the keyboard,
 so each of these steps ends with the minimize replay before the landing can be read — the locate is
 HELD, not lost, while the popup is up. Closing the window unbinds the tutorial again.
+**Where the wheel's first open lands** (re-check after any `IsActive` change): `POST /reload` for a
+fresh navigator state, then open — measured landing is `research:tree`, "Technology tree, Military,
+group, … 1 of 4". A 115-frame `POST /wait` across an open found NO frame where the window is
+`Shown && IsReady` while its transform is disabled, so this screen has no readiness race to gate on.
 **Link arcs in `unlocked` (turn ~15)**: 22 of 162 drawn — cost-reduction pairs (Xenobiology →
 Machine Bacteria / Eukaryotic Sap, and Eukaryotic Sap on to Wave Function Control / Graviton
 Research, which is the one dot that reads an arc from BOTH ends) and four exclusions (Tensor
