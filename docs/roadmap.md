@@ -56,8 +56,6 @@ files above.
   committed or cancelled settings edit re-reads nothing (the rename box now does this
   right; hoist its field-released re-read into the shared editor).
 - Event narration (turn events) via `IEventService.EventRaised`.
-- A real model for the resource exporter, the one out-game page still on the shape floor: the
-  resource list and the export itself.
 - Rebindable mod keys (long-standing, from input.md).
 - The contextual prompt's component tables: modelled from the four data-defined shapes, but no
   fixture draws a table with ROWS — re-measure when one can be sighted.
@@ -116,4 +114,4 @@ files above.
 | Target pickers / cutscenes / victory trio / journal | TargetSelectionScreen, CutsceneScreen, VictoryScreen, VictoryAchievedScreen, JournalScreen |
 | Dialogs: message box / error / non-blocking / game menu / drop list | MessageBoxScreen, ErrorScreen, NonBlockingMessageScreen, GameMenuScreen, DropListScreen |
 | Contextual prompt / Behemoth specialization | ContextualPromptScreen, JuggernautSpecializationScreen |
-| Out-game pages: disclaimer / credits / DLC browser / mod manager / join game (export still a floor) | DisclaimerScreen, CreditsScreen, DLCScreen, ModdingConfigScreen, MenuDestinationScreens |
+| Out-game pages: disclaimer / credits / DLC browser / mod manager / join game / asset exporter | DisclaimerScreen, CreditsScreen, DLCScreen, ModdingConfigScreen, MenuDestinationScreens, ResourcesExportModScreen |

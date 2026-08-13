@@ -592,6 +592,14 @@ EXCEPT the disclaimer, which swallows every action (es2-facts) — close it thro
 node. **Never press**: Decline on the disclaimer (quits the game), Confirm on the mod manager
 (reloads the runtime), or any store/web button (leaves the game). The DLC browser REMEMBERS its
 selected tab across opens — put the tab back when done.
+**The asset exporter** (`ShowWindow<ResourcesExportScreen>()`): never press either export button
+(they write files) or Open folder; progress is drivable by setting the panel's private
+`lastMessage` + the private `ExportInProgress` setter, restoring both; a row's click goes through
+reflection on `OnResourceExportPropertyItemClick(int)` — `SendMessage` from `/eval` drops the
+argument; the page reloads its manifests every visit, so wait for them. Known game bugs:
+`ResourceExportPropertyItem.Refresh` NREs on some assets (page stays "No asset selected"), and
+re-entering resets the filter TICKS without firing their callbacks, so the ticks can contradict
+the drawn list until one is toggled.
 
 **The elimination popup and the journal.** `OrderEliminateEmpire` writes a REAL `EndGameSummary`,
 which is what makes the journal's ending entries readable; delete the entry afterwards through the
