@@ -644,6 +644,13 @@ resources grids are the only economy tables that can be walked. The recipe modal
 empty recipe and posts `OrderCreateRecipe` — and note Reset does NOT clear `RecipeModified`.
 
 **Military and fleet-selection.** **Never press Retrofit**: it is immediate, with no confirmation.
+A ship tile's SECOND click (Ctrl+Alt+Enter) opens that ship's design read-only and is a safe round
+trip: `Gui.GuiService.ShowWindow<MilitaryScreen>()`, pick a fleet row (Enter) to draw the ship list,
+Tab twice, `ui.doubleClick` → "Ship Design: Settler", close with
+`Gui.GuiService.GetWindow<ShipDesignModalWindow>().HandleInput(InputAction.Exit)`. The first open
+raises the Architects tutorial — minimize it. The star-system HANGAR is empty in `unlocked` ("No ships
+in the hangar"), so the second host for that gesture is the selected-fleet panel, reached with the
+`GalaxyFleet` select route in es2-facts.
 A force-shown fleet-selection window must never have a row SELECTED — `ProcessSelection` NREs on a
 null `CheckValidity`. Create raises the Architects tutorial page in this save, so minimize it
 afterwards. Restore the camera when done.

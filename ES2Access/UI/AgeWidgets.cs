@@ -478,6 +478,36 @@ namespace ES2Access.UI
             }
         }
 
+        /// <summary>
+        /// The same for a control the game drew as a TOGGLE, which carries its own copy of the three
+        /// double-click fields (<c>firstpass/AgeControlToggle.cs:19-23,207-209</c>) rather than
+        /// inheriting the button's. Every list this game draws out of tiles rather than table lines
+        /// picks one up this way - a ship tile's tick, an event popup's choice - so the gesture is
+        /// replayed off the tick, and the handler behind it does its own selecting
+        /// (<c>ShipItem.OnDoubleClickCb</c> :190-192 sets the tick itself).
+        /// </summary>
+        public static void DoubleClick(AgeControlToggle toggle)
+        {
+            if (toggle == null)
+            {
+                return;
+            }
+
+            try
+            {
+                if (!toggle.UseDoubleClick)
+                {
+                    return;
+                }
+
+                Send(toggle.OnDoubleClickObject, toggle.OnDoubleClickMethod, toggle.gameObject);
+            }
+            catch (Exception e)
+            {
+                Log.Warn("widgets: replaying a toggle's double click threw: " + e);
+            }
+        }
+
         /// <summary>The control sitting on a transform, whatever kind it is.</summary>
         public static AgeControl Control(AgeTransform widget)
         {

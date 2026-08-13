@@ -28,7 +28,9 @@ namespace ES2Access.UI
     /// click and the game reads the modifier off the player's own fingers. Nothing here copies the
     /// game's selection rules: plain is <c>SelectShipRadioMode</c>, Control is <c>SelectShip</c> on this
     /// one tile, and Shift is the run from the panel's private <c>lastClickedShipGUID</c> anchor to
-    /// here, an anchor a reimplementation would have to keep in step for ever.
+    /// here, an anchor a reimplementation would have to keep in step for ever. The tile's own SECOND
+    /// click is a fourth gesture and not a selection at all - it opens the ship's design - and it is
+    /// wired here once for every panel that draws a tile.
     ///
     /// A tile's drawn tick is a frame BEHIND the model: <c>SelectShip</c> and <c>SelectShipRadioMode</c>
     /// write only <c>selectedShipsPerGarrison</c> and mark the panel dirty, and
@@ -150,6 +152,13 @@ namespace ES2Access.UI
                 ranged = true;
                 AgeWidgets.Toggle(it.SelectionToggle);
             };
+
+            // The game's own second click on a ship tile opens that ship's DESIGN
+            // (<c>ShipItem.OnDoubleClickCb</c> :190-218 - read-only for a design the player may not
+            // edit, and refused outright for one the game marks hidden or an inspection bypass, all of
+            // which is the handler's own decision). It hangs off the tick rather than off a button,
+            // and it picks the tile out itself, so there is nothing to select first.
+            vtable.OnDoubleClick = () => AgeWidgets.DoubleClick(it.SelectionToggle);
 
             // A range changed every row between the anchor and this one, so this row's new state is not
             // the answer - what the selection now IS, is.
