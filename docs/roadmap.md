@@ -92,6 +92,10 @@ files above.
   Shipped that way; overrule if it should be offered anyway.
 - The drawn-heading lookup renames two out-game pages: "Multiplayer room" and "Asset export".
   Keep the game's drawn headings or the mod's older names?
+- Mod-authored wordings awaiting sign-off: "Ring {0} of {1}" for the skill wheel's rings
+  (the game names them nowhere); "Sent {0} to {1} by spaceport" (the empire page's
+  population shipment); and the scan labels' 2px RelationBar (own/allied/enemy/pirate/
+  minor) — currently unread, needs five words or a colour mapping.
 
 ## Shipped (pointers only)
 
