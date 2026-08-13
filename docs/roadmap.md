@@ -82,6 +82,14 @@ files above.
   - Umbral Choir ghost-system page (Penumbra): the Ghost state is a THIRD mode of the
     star system page beside Outpost and Colony — two side panels of bare-icon controls +
     a growth gauge.
+- Spaceport population (batch G): the panel's rows, the pick-up and the drop through
+  `SpaceportSidePanel.ApplyDrop` are MODELLED, and no save can draw the panel at all
+  (es2-facts: `IsAvailable()` wants a system improvement). The rows and the pick-up were proved
+  against a lent binding; the round trip — Space in the spaceport, Enter on a planet card, the
+  `OrderTransferSpaceportPopulation` it posts — waits for a save with a spaceport. The OTHER
+  direction is not built: the game also drops a PLANET's population INTO the panel
+  (`PlanetLabelsWindow_SystemManagement.StartDrag` :144-148 adds the panel as a target), which needs
+  the same fixture and an owner ruling on which node in the panel takes the drop.
 - Riftborn time bubble on the galaxy map: a `GalaxyEntity` with a disk renderer — no
   widget, no label window; making it discoverable is real map-tree modelling.
 - Faction sightings needing a non-UE base-game save (code landed drawn-gated, unsighted):

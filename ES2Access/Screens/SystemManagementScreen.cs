@@ -845,12 +845,164 @@ namespace ES2Access.Screens
         }
 
         /// <summary>
+        /// The population waiting in the spaceport, read the same way a planet card's ring is read: a
+        /// row per affinity, with the count said rather than counted, and a unit of it can be picked up.
+        ///
+        /// The spaceport is the OTHER place this system keeps population, and the game moves it the same
+        /// way - a drag out of the panel onto one of this page's planet cards, which posts
+        /// <c>OrderTransferSpaceportPopulation</c> (<c>SpaceportSidePanel.StartDrag</c> :201-209,
+        /// <c>IDragDropClient.ApplyDrop</c> :70-80). So it is the same carry, taken by the same planet
+        /// cards, and only where it lands differs.
+        ///
+        /// The panel's markers are its own children rather than a container's, so this claims the
+        /// enumerator itself and stops the walk descending into a row of wordless slots. An empty
+        /// spaceport - and a locked slot the system's level has not paid for yet - contributes nothing,
+        /// which is what the walk did before this and what a planet card with no ring does.
+        /// </summary>
+        private static bool SpaceportPopulations(
+            List<Cell> cells,
+            AgeTransform widget,
+            string keyPrefix,
+            SpaceportSidePanel panel
+        )
+        {
+            PopulationEnumerator markers = panel == null
+                ? null
+                : panel.SpaceportPopulationEnumerator;
+            if (markers == null || !ReferenceEquals(widget, markers.AgeTransform))
+            {
+                return false;
+            }
+
+            try
+            {
+                Spaceport port = panel.Spaceport;
+                IList<AgeTransform> slots = markers.AgeTransform.Children;
+                List<Population> found = new List<Population>(2);
+                for (int i = 0; slots != null && i < slots.Count; i++)
+                {
+                    AgeTransform slot = slots[i];
+                    if (slot == null || !slot.Visible)
+                    {
+                        continue;
+                    }
+
+                    PopulationMarker it = slot.GetComponent<PopulationMarker>();
+                    Population population =
+                        it == null || it.GuiPopulation == null ? null : it.GuiPopulation.Population;
+                    if (population == null || found.Contains(population))
+                    {
+                        continue;
+                    }
+
+                    found.Add(population);
+                    Population held = population;
+                    // No tooltip: the sentence the panel writes onto an occupied slot is the one its own
+                    // heading already carries, and a slot the panel has not refreshed yet still holds
+                    // the prefab's placeholder (measured: "This is changed by code").
+                    NodeVtable vtable = GraphNodes.Readout(
+                        () => PopulationName(held),
+                        () => new MessageBuilder().PushQuantity(held.Count).Build(),
+                        null,
+                        null
+                    );
+                    if (port != null)
+                    {
+                        Spaceport source = port;
+                        vtable.OnPickUp = () => PickFromSpaceport(source, held);
+                    }
+
+                    cells.Add(
+                        new Cell
+                        {
+                            Widget = slot,
+                            Id = ControlId.Referenced(
+                                population,
+                                keyPrefix + "spaceport/population/" + found.Count
+                            ),
+                            Vtable = vtable,
+                        }
+                    );
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("system: reading the spaceport's population threw: " + e);
+            }
+
+            return true;
+        }
+
+        /// <summary>One unit of the spaceport's population, picked up - the game's own two tests for
+        /// starting that drag (<c>PopulationEnumerator.OnPopulationMarkerDragStarted</c> :239-252), asked
+        /// of the spaceport instead of a planet.</summary>
+        private static CarryItem PickFromSpaceport(Spaceport port, Population population)
+        {
+            try
+            {
+                IPopulationsManagementService populations =
+                    Services.GetService<IPopulationsManagementService>();
+                if (
+                    population.Count <= 0
+                    || !port.CanMovePopulation
+                    || port.Empire != Gui.PlayerEmpire
+                    || populations == null
+                    || !populations.CanMovePopulation(population.Affinity)
+                )
+                {
+                    return null;
+                }
+
+                return new CarryItem(population, PopulationName(population), PopulationKind);
+            }
+            catch (Exception e)
+            {
+                Log.Warn("system: picking a unit out of the spaceport threw: " + e);
+                return null;
+            }
+        }
+
+        /// <summary>The drawn spaceport panel this carried unit came OUT of, or null - which is how a
+        /// drop tells the two sources apart, since what is carried is the game's own
+        /// <c>Population</c> and the owner holding it is the one whose own table it is in.</summary>
+        private static SpaceportSidePanel SpaceportSource(Population population)
+        {
+            try
+            {
+                StarSystemScreen screen = Gui.GuiServiceAvailable
+                    ? Gui.GuiService.GetWindow<StarSystemScreen>(false)
+                    : null;
+                SpaceportSidePanel panel =
+                    screen == null ? null : screen.GetSpaceportSidePanel();
+                Spaceport port = panel == null ? null : panel.Spaceport;
+                if (port == null || !panel.Shown || port.PopulationsByAffinity == null)
+                {
+                    return null;
+                }
+
+                Population held;
+                return port.PopulationsByAffinity.TryGetValue(population.Affinity, out held)
+                    && ReferenceEquals(held, population)
+                    ? panel
+                    : null;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
         /// Put a carried population unit on this planet, the way the drag does it: the game's own
         /// <c>PopulationEnumerator.DragInfo</c> is filled in exactly as
         /// <c>PopulationEnumerator.OnPopulationMarkerDragStarted</c> fills it, the target's own
-        /// <c>CanAcceptPopulationDrop</c> decides, and the labels window's own
+        /// <c>CanAcceptPopulationDrop</c> decides, and the SOURCE's own
         /// <c>IDragDropClient.ApplyDrop</c> posts the order - which is what keeps the sound the game
-        /// plays and the exact <c>OrderTransferPopulationFromPlanetToPlanet</c> it builds.
+        /// plays and the exact order it builds. Which source that is decides which order: a unit off
+        /// another planet's ring goes through the labels window
+        /// (<c>OrderTransferPopulationFromPlanetToPlanet</c>), and a unit out of the spaceport through
+        /// the spaceport panel (<c>OrderTransferSpaceportPopulation</c>) - the same two clients the
+        /// game's own two drags use, rather than one order written twice here.
         ///
         /// The drag info is cleared again whatever happens: it is a static the game's own refresh
         /// reads every frame to draw a unit as already gone, and a stale one would empty a marker the
@@ -860,31 +1012,44 @@ namespace ES2Access.Screens
         {
             Population population = item == null ? null : item.Cargo as Population;
             ColonizedPlanet destination = Settled(label);
-            ColonizedPlanet source = SourceOf(destination, population);
-            if (population == null || destination == null || source == null)
+            ColonizedPlanet source = population == null ? null : SourceOf(destination, population);
+            SpaceportSidePanel port =
+                population == null || source != null ? null : SpaceportSource(population);
+            if (destination == null || (source == null && port == null))
             {
                 return DropResult.Refused(null);
             }
 
             try
             {
-                PlanetLabelsWindow_SystemManagement window =
-                    Gui.GuiService.GetWindow<PlanetLabelsWindow_SystemManagement>(false);
+                IDragDropClient client = source != null
+                    ? (IDragDropClient)
+                        Gui.GuiService.GetWindow<PlanetLabelsWindow_SystemManagement>(false)
+                    : port;
                 PopulationEnumerator.PopulationDragInfo drag = PopulationEnumerator.DragInfo;
                 drag.DragInProgress = true;
-                drag.SourcePopulationOwner = source;
-                drag.GuiPopulation = Wrap(source, population);
+                if (source != null)
+                {
+                    drag.SourcePopulationOwner = source;
+                    drag.GuiPopulation = Wrap(source.Empire, population);
+                }
+                else
+                {
+                    drag.SourcePopulationOwner = port.Spaceport;
+                    drag.GuiPopulation = Wrap(port.Spaceport.Empire, population);
+                }
+
                 drag.Quantity = 1;
                 drag.TransitingPopulation = new TransitingPopulation(population.Affinity, 1);
                 drag.ReplacedPopulationAffinity = StaticString.Empty;
                 try
                 {
-                    if (window == null || !label.PlanetPopulationEnumeratorFocused.CanAcceptPopulationDrop())
+                    if (client == null || !label.PlanetPopulationEnumeratorFocused.CanAcceptPopulationDrop())
                     {
                         return DropResult.Refused(null);
                     }
 
-                    ((IDragDropClient)window).ApplyDrop(label);
+                    client.ApplyDrop(label);
                 }
                 finally
                 {
@@ -953,14 +1118,14 @@ namespace ES2Access.Screens
 
         /// <summary>The game's own wrapper for a population, built the way its own enumerator builds
         /// one - which is what <c>ApplyDrop</c> reads the affinity out of.</summary>
-        private static GuiPopulation Wrap(ColonizedPlanet source, Population population)
+        private static GuiPopulation Wrap(Empire owner, Population population)
         {
-            DepartmentOfTheInterior interior = source.Empire.GetAgency<DepartmentOfTheInterior>();
+            DepartmentOfTheInterior interior = owner.GetAgency<DepartmentOfTheInterior>();
             PopulationEmpire empire =
                 interior == null
                     ? null
                     : interior.GetPopulationByAffinity(population.Affinity) as PopulationEmpire;
-            return new GuiPopulation(population, empire, source.Empire);
+            return new GuiPopulation(population, empire, owner);
         }
 
         private static AgeTransform StatusWidget(PlanetLabel_SystemManagement label)
@@ -1282,6 +1447,11 @@ namespace ES2Access.Screens
         )
         {
             if (GovernorInformation(cells, widget, keyPrefix, panel as ColonyHeroSidePanel))
+            {
+                return true;
+            }
+
+            if (SpaceportPopulations(cells, widget, keyPrefix, panel as SpaceportSidePanel))
             {
                 return true;
             }

@@ -333,6 +333,16 @@ push a drag by hand — `ES2Access.ModEntry.Carry.PickUp(new ES2Access.Core.UI.C
 `/input ui.activate` on the card refuse in the mod's fallback words with the drag kept, `ui.carry`
 anywhere that is not a source answer silently with the drag kept, and `ui.back` answer
 "Cancelled drag".
+**Sighting the spaceport side panel**, which no save draws (es2-facts: `IsAvailable()` needs
+`MaxPopulation > 0`). Show it with `Gui.GuiService.GetWindow<SidePanelsWindow>(false).ShowSidePanel(p)`
+— `SidePanel.Show` itself throws with a message telling you so — and the side-panel sweep declares it
+at once ("Spaceport", the destination line and its button; the empty panel adds no rows, which is the
+empty-state proof). To make its population ROWS exist, lend it real data:
+`p.SpaceportPopulationEnumerator.Bind(colonizedPlanet, p.gameObject)` + `RefreshNow()` draws that
+planet's markers in the spaceport's slots, and `Bind(p.Spaceport, p.gameObject)` + `RefreshNow()` puts
+it back. That proves the rows, their words and the pick-up ("Dragging Imperials") — **never Enter on a
+planet card while the binding is lent**, because the drop would move real population. Do not press the
+destination button either: it opens `SystemSelectionModalWindow`.
 **`PlanetPopulationEnumerator.CanAcceptPopulationDrop()` THROWS when no drag is in progress**
 (`DragInfo.TransitingPopulation` is null), so it can only be called with `PopulationEnumerator.DragInfo`
 filled in — and it is a static, read every frame by the enumerator's own refresh, so clear it in a

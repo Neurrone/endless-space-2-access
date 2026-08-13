@@ -487,6 +487,19 @@ generic graduates to the generic docs.
   game's words. A marker's `Rank` is what the drag moves (markers of one affinity are ranked
   count…1 in draw order), and `GuiPopulation.Title` is the game's display name for the affinity
   (measured on Dusay: "Imperials", "Yuusho" for `AffinityTerrans`/`AffinityHisshos`).
+- **The spaceport side panel needs a system improvement before it exists at all.**
+  `SpaceportSidePanel.CanBeShown()` is `Spaceport.IsAvailable()`, and that is
+  `MaxPopulation > 0 && !(StarSystem is ExploitedStarSystem) && State == Colony && !IsHiddenSystem`
+  (`Spaceport.cs:179-182`) — `MaxPopulation` being the `SpaceportCapacity` simulation property, which
+  starts at 0. Measured in `unlocked`: one colonized system (Xiu), `IsAvailable()` false, spaceport
+  population 0, the panel bound but never shown. So the panel, its markers and both directions of its
+  drag are FIXTURE-BLOCKED in every save this repo has. Its markers are its enumerator's OWN children
+  (`SpaceportPopulationEnumerator.PopMarkersContainer` IS that enumerator's transform, unlike a planet
+  card's ring), so a walk that wants them intercepts the enumerator itself; and the panel is a child of
+  `SidePanelsWindow/Viewport/SidePanelsTable`, so the shared side-panel sweep picks it up the moment the
+  game draws it (proved by `SidePanelsWindow.ShowSidePanel` — `SidePanel.Show` itself throws).
+  An occupied slot's tooltip is written by `SpaceportSidePanel.Refresh` :169-186; a slot the panel has
+  not refreshed yet still carries the prefab's placeholder, the literal words "This is changed by code".
 - ES2's icon numbers, for re-verification: 382 registered tokens (single writer
   `AgeManager.CreateSpecialCharactersDictionary` → `AgePrimitiveLabel.SpecialCharacters`,
   keys `"[TOKEN]"` upper-cased), 371 named + 11 nameless colour directives; localization
