@@ -823,19 +823,23 @@ namespace ES2Access.UI
         /// :1146-1188, <c>RefreshRangeEfficiency</c> :1082-1087) and explains each with a
         /// <c>%…Description</c> SENTENCE, which is a gloss and not a name.
         ///
-        /// Four of the titles are not <c>%ShipStat…</c> keys because the game does not keep one under
+        /// Six of the titles are not <c>%ShipStat…</c> keys because the game does not keep one under
         /// that name: the four weapon powers are titled as module CATEGORIES
         /// (<c>%CategoryWeaponKineticTitle</c> = "Kinetic", the same registry entry the module strip's
-        /// toggles are named from), the two absorptions have a percentage-specific title
-        /// (<c>%…AbsorptionPercentTitle</c>, "Hull Plating absorption", rather than the sentence-length
-        /// <c>%…AbsorptionTitle</c>), and the shield capacity is titled after the property it reads
-        /// (<c>%ShieldTitle</c> = "Shield power", from <c>SimulationProperties.Ship.Shield</c>).
+        /// toggles are named from) and the two squadron counts as module SUB-categories
+        /// (<c>%SubCategoryModuleSquadronFighterTitle</c> = "Fighter", on the GuiElements that also
+        /// carry the <c>[fighter]</c>/<c>[bomber]</c> symbols -
+        /// <c>Public\Gui\GuiElements[SubCategories].xml:425-441</c>); the two absorptions have a
+        /// percentage-specific title (<c>%…AbsorptionPercentTitle</c>, "Hull Plating absorption",
+        /// rather than the sentence-length <c>%…AbsorptionTitle</c>), and the shield capacity is
+        /// titled after the property it reads (<c>%ShieldTitle</c> = "Shield power", from
+        /// <c>SimulationProperties.Ship.Shield</c>).
         ///
-        /// Three rows have NO title anywhere in the game's strings - the plating health bonus and the
-        /// two squadron counts - so those pass a null key and are named by the first line of their own
-        /// description, which is then not announced twice. A mod paraphrase is not an option, and
-        /// <c>%ShipHealthTitle</c> (the plating bonus's property title) is the word "Health", which is
-        /// already the caption of the ship's own health two rows up.
+        /// One row has NO title anywhere in the game's strings - the plating health bonus - so it
+        /// passes a null key and is named by the first line of its own description, which is then not
+        /// announced twice. A mod paraphrase is not an option, and the title of the property it
+        /// actually reads (<c>SimulationProperties.Ship.ShipHealth</c> -> <c>%ShipHealthTitle</c>) is
+        /// the word "Health", which is already the caption of the ship's own health two rows up.
         /// </summary>
         private static void AddEditionStats(
             List<Cell> cells,
@@ -872,8 +876,20 @@ namespace ES2Access.UI
                 keyPrefix + "beam",
                 declared
             );
-            AddStat(cells, panel.FighterCountLabel, null, keyPrefix + "fighters", declared);
-            AddStat(cells, panel.BomberCountLabel, null, keyPrefix + "bombers", declared);
+            AddStat(
+                cells,
+                panel.FighterCountLabel,
+                "%SubCategoryModuleSquadronFighterTitle",
+                keyPrefix + "fighters",
+                declared
+            );
+            AddStat(
+                cells,
+                panel.BomberCountLabel,
+                "%SubCategoryModuleSquadronBomberTitle",
+                keyPrefix + "bombers",
+                declared
+            );
             AddStat(
                 cells,
                 panel.AccuracyLevelLabel,
@@ -1002,6 +1018,13 @@ namespace ES2Access.UI
         /// a value into a percentage of the bar's half-width), and what the two halves ARE is the
         /// sentence on its own tooltip - "the balance between projectile and energy weapons". Read off
         /// the drawn geometry, which is the only place the game put it.
+        ///
+        /// Which half is which IS drawn, though, once: the caption row between the two gauges
+        /// (<c>ProjectileTitle</c> / <c>EnergyTitle</c>, measured as siblings of both gauges inside
+        /// <c>BalanceGauges</c>) heads the left and right columns of BOTH bars - the offensive bar's
+        /// halves are kinetic+missile against laser+beam, and the defensive bar's are the hull plating
+        /// and shield absorptions those two weapon families are stopped by, which is what those
+        /// captions' own tooltips say. Without them the bar read out a naked "100%".
         /// </summary>
         private static void AddGauge(
             List<Cell> cells,
@@ -1026,9 +1049,22 @@ namespace ES2Access.UI
         {
             try
             {
+                AgeTransform band = gauge.AgeTransform == null ? null : gauge.AgeTransform.Parent;
                 MessageBuilder message = new MessageBuilder();
-                Add(message, Share(gauge.LeftGauge, gauge.LeftGauge.PercentLeft));
-                Add(message, Share(gauge.RightGauge, gauge.RightGauge.PercentRight - 100f));
+                Half(
+                    message,
+                    band,
+                    "ProjectileTitle",
+                    gauge.LeftGauge,
+                    50f - gauge.LeftGauge.PercentLeft
+                );
+                Half(
+                    message,
+                    band,
+                    "EnergyTitle",
+                    gauge.RightGauge,
+                    gauge.RightGauge.PercentRight - 50f
+                );
                 return message.Build();
             }
             catch (Exception)
@@ -1037,17 +1073,43 @@ namespace ES2Access.UI
             }
         }
 
+        /// <summary>One half of a balance bar under the caption the game drew over its column, so the
+        /// share is not read out on its own. A half the game left at nothing is drawn at zero width and
+        /// hidden, and is skipped here for the same reason.</summary>
+        private static void Half(
+            MessageBuilder message,
+            AgeTransform band,
+            string captionName,
+            AgeTransform half,
+            float reach
+        )
+        {
+            string share = Share(half, reach);
+            if (share == null)
+            {
+                return;
+            }
+
+            message.ListItem(AgeWidgets.TextOf(AgeWidgets.ChildNamed(band, captionName, 0)));
+            message.Fragment(share);
+        }
+
         /// <summary>One half of a balance bar as the share it was drawn at. Each half is anchored at
-        /// the middle and stretched out to its own side by half of its share, so the distance from the
-        /// middle IS the proportion.</summary>
-        private static string Share(AgeTransform half, float edge)
+        /// the middle and stretched out to its own side by half of its share
+        /// (<c>RepartitionHorizontalGauge.Refresh</c>), so <paramref name="reach"/> - how far its outer
+        /// edge got from the middle - is half the proportion. The two halves reach in OPPOSITE
+        /// directions and each has to be measured from the middle its own way, which is what an earlier
+        /// reading of the right half against the bar's far END got wrong: with the right half at 37% it
+        /// said 163%, and the fixture hid it because a half the game gives nothing to is drawn at zero
+        /// width and hidden.</summary>
+        private static string Share(AgeTransform half, float reach)
         {
             if (half == null || !half.Visible)
             {
                 return null;
             }
 
-            int percent = (int)Math.Abs(Math.Round((edge - 50f) * 2f));
+            int percent = (int)Math.Abs(Math.Round(reach * 2f));
             return percent + "%";
         }
 
