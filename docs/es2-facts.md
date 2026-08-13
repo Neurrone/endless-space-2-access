@@ -765,6 +765,14 @@ generic graduates to the generic docs.
 
 ## The icon-strip screens (senate, empire, economy, research)
 
+- Government: **the Validate button's missing-technology hint is the LAST of three refusals**, so a
+  save can refuse the change without ever lighting the hint. `GovernmentModalWindow.Refresh`
+  :204-214 tries `GovernmentChangeLocked`, then `GovernmentChangeCooldown`, then
+  `MustHaveTechnology`, and only the third reaches `FormatButtonHint`. Measured in `unlocked`:
+  `Enable` false, `IsHintActive` false, the `GuiButtonHint` component present but with no technology
+  in it (`GuiButtonHint.IsActive()` is exactly `GuiTechnology != null`). Under a hint the game's
+  `OnValidateCb` :379-395 does hint-jump AND close, both gated on the physically held Control —
+  which no injected key can reproduce, so that pair is manual-script only.
 - Senate: **`GuiPolitics.Title` contains the party SYMBOL** — `GetLocalizedTitle(Name)` is the
   bare word. An emptied `SenatorCard` keeps its old words, so a card is gated on the model, not
   on its labels. And costs and totals live INSIDE the control they belong to: `LawsWindow`'s

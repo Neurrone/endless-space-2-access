@@ -635,7 +635,11 @@ through its private setter: `Unbind` leaves the game's own `Refreshed` handler l
 the next refresh otherwise.
 
 **The senate family** (senate, government, laws, population). Open it from `/eval` with
-`ControlBanner.OnControlBannerToggle`; reach the modals through the mod's own nodes. **NEVER press
+`ControlBanner.OnControlBannerToggle`; reach the modals through the mod's own nodes. The government
+modal also opens directly — `Gui.GuiService.ShowWindow<SenateScreen>()` then
+`Gui.GuiService.ShowWindow<GovernmentModalWindow>()`, closed with `HideWindow` — which is how its
+Validate button's hint state is probed (`Gui.IsHintActive(w.ValidateButton)`; es2-facts says why it
+reads false here). **NEVER press
 Validate, Pass, Abolish, a boost, or Assimilate.** The selection resets on every show, so nothing
 carries between visits. Expect a ~1 s `unavailable` on the page under a just-closed modal — that is
 the game's fade, not a defect; re-read. **Save-blocked**: the gene hunter, assimilation, relics, a

@@ -33,8 +33,15 @@ namespace ES2Access.UI
         /// Sixteen prefabs use that trick, and on every one of them the screen's own click is gated away
         /// (<see cref="AgeWidgets.Offered"/> answers false for exactly it), so the shared Ctrl+Enter fall
         /// back to the plain click would replay a control that does nothing. The gesture therefore has to
-        /// be WIRED - and this is the one call every CELL in the mod passes through, so it is wired here
-        /// once instead of on every screen that draws a hintable control. The other way a widget becomes
+        /// be WIRED - and this is the one call that takes a whole VTABLE, so it is wired here
+        /// once instead of on every screen that draws a hintable control. It is NOT every cell: the
+        /// factory methods below (<see cref="Control"/>, <see cref="Readout"/>, <see cref="AddControl"/>,
+        /// <see cref="AddReadout"/>, <see cref="AddStat"/>) hand the caller a finished <see cref="Cell"/>
+        /// and are appended to the list directly, so a control declared that way keeps the shared fall
+        /// back to its plain click - which is right where the game's own handler branches on the held
+        /// Control and does more than the jump (the government window's Validate is the worked case:
+        /// <c>GovernmentModalWindow.OnValidateCb</c> :379-395 activates the hint AND closes the window,
+        /// and only the replayed click gets both). The other way a widget becomes
         /// a node is a card's own button (<see cref="CardActions.Emit"/>), which wires the same three
         /// lines for the same reason: keep the two in step, or the family that skips them answers the
         /// gesture with silence. A screen that
