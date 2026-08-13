@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using ES2Access.Core.Speech;
 using ES2Access.Core.UI.Graph;
 using ES2Access.Core.Util;
 using ES2Access.UI;
@@ -15,24 +16,29 @@ namespace ES2Access.Screens
     /// for, on top of a page the engine has switched off underneath (<c>GuiModalWindow.OnBeginShow</c>
     /// disables every screen behind an exclusive modal).
     ///
-    /// This is a FLOOR, not a model. Supremacy (DLC16) is not installed in the test environment - the
-    /// window can be inspected but never bound, since it only shows for a selected Behemoth
-    /// (<c>ShipsManagementPanel</c> :506,797) - so everything here is measured off the PREFAB and the
-    /// window's own code, and nothing has been watched with a Behemoth in it. What the floor gives is the
-    /// heading, the three specialization cards as the one-of-three the window keeps them
-    /// (<c>OnToggleSpecialization</c> unticks the previous card by hand, so nothing on screen says the set
-    /// is exclusive), what the empire can pay with, and the two ways out. What waits for the DLC:
+    /// Supremacy (DLC16) is not installed here, but the window does NOT need it to be read: its three
+    /// cards come out of the entity-action database, which loads every <c>*_DLC*</c> datatable whatever
+    /// the empire owns (measured - <c>GuiSpecializations.Count == 3</c> with all four expansions
+    /// unowned), and <c>Bind</c> takes any <c>Ship</c>. So the window was bound to a real ship and walked
+    /// with real cards, real costs and the game's real failure sentences, which settled the three
+    /// questions the earlier floor left open:
     ///
-    /// - the cards' own composition - a title, a paragraph, a cost line and a failure line - is read as
-    ///   ONE row with the rest of the card in its buffer. Whether a sighted player reads those four as one
-    ///   thing or four cannot be settled from an unbound prefab, and the cards do not exist until the
-    ///   window is shown (<c>OnBeginShow</c> clones them from <c>SpecializationCardPrefab</c>).
-    /// - the strategic resources strip is read as the game drew it - a stock and a net per resource, each
-    ///   named only by the sentence on its icon. With the DLC the six items are bound to real resources and
-    ///   the naming should be re-measured against <see cref="TooltipFeatures"/>.
-    /// - the missing-technology hint on a blocked card (<c>GuiButtonHint</c>, whose click cancels the whole
-    ///   window) is not declared; it is the same hinted-button shape <see cref="CardActions"/> handles and
-    ///   needs a live blocked card to model.
+    /// - a card is ONE row. The four pieces the prefab draws - title, paragraph, cost line, failure line -
+    ///   are a single tall panel a sighted player reads top to bottom after the title tells them which
+    ///   card it is, so the title is the row and the rest is its buffer.
+    /// - the strategic resources strip writes NO name on any of its six rows, only an icon and two
+    ///   figures, so it is named from each item's own binding rather than from the drawn row
+    ///   (<see cref="AddResource"/>) - reading it as drawn gave six identical "0"s.
+    /// - the missing-technology hint on a blocked card (<c>GuiButtonHint</c>) stays UNDECLARED, which is
+    ///   the same ruling <see cref="DiplomacyActions"/> already made for the hint button the diplomacy
+    ///   rows draw: its whole job is <c>Gui.ActivateHint</c>, which closes the window and points a mouse
+    ///   at the technology tree. The card's own failure lines already end with the game's sentence about
+    ///   it ("Hold Control+Click to locate this technology in the technology tree"), so nothing is lost.
+    ///
+    /// What still waits for the DLC is only what a BEHEMOTH would change: a card the empire can actually
+    /// take (every card refuses for a missing technology here, so a selected card, an enabled Confirm and
+    /// the confirmation box behind it are code-verified only), and the specialize button's own route into
+    /// the window from the ship toolbar.
     ///
     /// The resource items are READOUTS rather than controls even though the prefab wires a click to each:
     /// <c>ResourceItem.OnClickCb</c> does nothing outside the developers' god mode, and a click the game
@@ -274,10 +280,75 @@ namespace ES2Access.Screens
             IList<AgeTransform> items = Children(ResourcesTable(window));
             for (int i = 0; items != null && i < items.Count; i++)
             {
-                Cells.AddReadout(_cells, items[i], "juggernaut:resource/" + i);
+                AddResource(_cells, items[i], i);
             }
 
             Cells.Emit(builder, _cells);
+        }
+
+        /// <summary>
+        /// One strategic resource the empire could pay a specialization with.
+        ///
+        /// The strip draws an icon, a holding and a per-turn figure and writes NO name anywhere on the
+        /// row - six of them side by side read as six zeroes - so the name comes off the item's own
+        /// binding (<c>ResourceItem.GuiLocatedResource</c>), which is where the strip got the icon from.
+        /// The two figures are joined by the same phrasing the empire banner reads its stocks with, so
+        /// the second is heard as a rate rather than as a second holding.
+        ///
+        /// A resource the empire holds none of is DIMMED rather than dropped (measured: alpha 0.3 on all
+        /// six at turn one), and it stays declared - "we have no Antimatter" is exactly what a player
+        /// weighing a cost line reading "50 Antimatter" needs to hear.
+        /// </summary>
+        private static void AddResource(List<Cell> cells, AgeTransform widget, int index)
+        {
+            ResourceItem item = widget == null ? null : widget.GetComponent<ResourceItem>();
+            if (item == null || !AgeWidgets.Visible(widget))
+            {
+                return;
+            }
+
+            GuiLocatedResource resource = item.GuiLocatedResource;
+            if (resource == null)
+            {
+                // Before the panel has bound, and for a resource the game left unbound: the drawn
+                // figure alone, rather than a node named after nothing.
+                Cells.AddReadout(cells, widget, "juggernaut:resource/" + index);
+                return;
+            }
+
+            ResourceItem it = item;
+            GuiLocatedResource located = resource;
+            NodeVtable vtable = GraphNodes.Readout(
+                () => AgeText.Clean(located.Title),
+                () => StockAndNet(it.StockLabel, it.NetLabel),
+                null,
+                item.Tooltip
+            );
+            AgeWidgets.Point(vtable, item.Button, item.Tooltip, widget);
+            Cells.Add(
+                cells,
+                widget,
+                ControlId.Referenced(item, "juggernaut:resource/" + located.Name),
+                vtable
+            );
+        }
+
+        /// <summary>A holding and what the next turn does to it, as the game drew the two numbers - or
+        /// just the holding, which is all this strip draws. The item keeps a per-turn label with a real
+        /// figure in it ("+0") and leaves it HIDDEN here (measured), so the figure has to be gated on
+        /// the label being drawn and not on it being non-empty, or the reading invents a rate that is
+        /// nowhere on screen.</summary>
+        private static string StockAndNet(AgePrimitiveLabel stock, AgePrimitiveLabel net)
+        {
+            string held = AgeText.Label(stock);
+            string rate =
+                net != null && AgeWidgets.Visible(net.AgeTransform) ? AgeText.Label(net) : null;
+            if (string.IsNullOrEmpty(rate))
+            {
+                return held;
+            }
+
+            return ModStrings.Format(ModStrings.GalaxyStockAndNet, held, rate);
         }
 
         /// <summary>The strip of strategic resources, off the panel the window binds rather than by

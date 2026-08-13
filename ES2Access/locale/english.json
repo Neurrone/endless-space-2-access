@@ -55,6 +55,8 @@
   "notify.next": "Next notification",
   "notify.previous": "Previous notification",
   "notify.auto-popup": "Pop up automatically",
+  "prompt.screen": "Prompt",
+  "prompt.close": "Close",
   "tutorial.previous-page": "Previous page",
   "tutorial.next-page": "Next page",
   "tutorial.minimize": "Minimize",

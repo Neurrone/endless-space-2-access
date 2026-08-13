@@ -121,6 +121,11 @@ namespace ES2Access.Core.Speech
         public const string NotifyPrevious = "notify.previous";
         public const string NotifyAutoPopup = "notify.auto-popup";
 
+        // The scan view's anchored prompt: what to call it where its data gave it no heading, and
+        // the cross it is closed with, which the game draws as a bare icon.
+        public const string PromptScreen = "prompt.screen";
+        public const string PromptClose = "prompt.close";
+
         // The tutorial popup's own controls, and the name of one of the dots it marks its pages
         // with - the game draws them as dots and writes nothing on them.
         public const string TutorialPreviousPage = "tutorial.previous-page";
@@ -858,6 +863,8 @@ namespace ES2Access.Core.Speech
             { NotifyNext, "Next notification" },
             { NotifyPrevious, "Previous notification" },
             { NotifyAutoPopup, "Pop up automatically" },
+            { PromptScreen, "Prompt" },
+            { PromptClose, "Close" },
             { TutorialPreviousPage, "Previous page" },
             { TutorialNextPage, "Next page" },
             { TutorialMinimize, "Minimize" },
