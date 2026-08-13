@@ -694,7 +694,11 @@ generic graduates to the generic docs.
 - **AGE `ReserveChildren` tables retire rows by FADING** (alpha 0, `Visible` still true) — the
   third retirement style, beside the surplus-child alpha 0 of "`Visible` is not 'drawn'" and the
   scan view's pool that parks stale children fully visible outside the table's extents. Every
-  per-row read gates on painted-ness.
+  per-row read gates on painted-ness. A retired row also keeps its old RECT, which is how the
+  planet card's climate table (`PlanetGameplayTypeTable` — the one table on that card whose `Load`
+  does NOT set `StrictVisibility`) put the previous planet's biodiversity line on top of the
+  curiosity line and banded the two into one drawn row: a faded row is a layout hazard as well as a
+  phantom line.
 - **`GuiRadioGroup` rewires its child toggles and ignores `State`** — the group is the authority,
   not the toggle it holds.
 - `SystemSelectionModalWindow` binds `interactiveCells: false`, so its shipped table has no

@@ -370,6 +370,16 @@ resource deposits and the depletion row (no planet in the fixture has any), and 
 entries' click — the game opens `PopulationModalWindow` there, and the entries are declared
 read-only per the approved design.
 
+**Auditing the planet card needs a planet with FEWER lines than the one before it.** In
+`unlocked`, Xiu's planets are the pair that catches the pooled-row trap: open Xiu I (two climate
+lines) and then Xiu II (ONE, plus a curiosity) with
+`GalaxyViewLevels.OpenPlanet(…StarSystemNode.Planets[i])`. The card's climate table then holds a
+faded leftover sitting on the curiosity's rect, so the audit is `/gui/graph` against a
+`crop-shot.ps1` of the card (rect ≈ `960,290,300,240`) rather than against a `/gui/age` dump —
+the dump prunes nothing here but shows no alpha, and only the crop says which lines are on the
+screen. Raia (planet 2) is the unique one, and the only planet that draws the lore paragraph and
+the "Unique Planet" subtitle. Deposits, anomalies and depletion have no planet anywhere in Xiu.
+
 **Opening the star system page.** `GalaxyViewLevels.OpenSystem(Gui.PlayerEmpire.GetAgency
 <DepartmentOfTheInterior>().ColonizedStarSystems[0].Node)` from `/eval` (Dusay, GUID 535 in the
 fixture; `GameEntityGUID` is NOT in `Amplitude.Unity.Game`, so go through the node). The page

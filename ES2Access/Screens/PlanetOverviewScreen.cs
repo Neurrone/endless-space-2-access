@@ -525,10 +525,17 @@ namespace ES2Access.Screens
         /// or on its children is a line, and one whose children are groups with the words inside THEM
         /// is a table of things. That is the difference between "Status Colonized" and a list of
         /// anomalies, and it holds for the tables this fixture cannot show.
+        ///
+        /// PAINTED rather than merely visible, at both levels. Every table on this card is pooled, and
+        /// the climate table is one the engine retires leftovers from by fading them to nothing rather
+        /// than hiding them: measured on a planet with one climate line and a curiosity, the previous
+        /// planet's second line was still Visible at alpha 0 - so the card read a biodiversity the game
+        /// was not drawing, and its stale rect sat on the curiosity's line and banded the two into one
+        /// row ("1 of 2", "2 of 2") that up and down could not walk.
         /// </summary>
         private static void AddCardRows(List<Cell> cells, AgeTransform row)
         {
-            if (row == null || !AgeWidgets.Visible(row))
+            if (row == null || !AgeWidgets.Painted(row))
             {
                 return;
             }
@@ -542,7 +549,7 @@ namespace ES2Access.Screens
             IList<AgeTransform> items = Children(row);
             for (int i = 0; items != null && i < items.Count; i++)
             {
-                if (items[i] != null && AgeWidgets.Visible(items[i]))
+                if (items[i] != null && AgeWidgets.Painted(items[i]))
                 {
                     // Named under the table they came out of: two tables pool their rows from
                     // different prefabs and nothing stops both calling them "Item000", and two nodes
@@ -568,7 +575,13 @@ namespace ES2Access.Screens
 
         /// <summary>A row of the card as one control: everything it draws in one phrase, the tooltip
         /// that explains its value announced or indicated by the usual rule, and every tooltip drawn
-        /// anywhere in the row in the review buffer - the Type row alone carries two.</summary>
+        /// anywhere in the row in the review buffer - the Type row alone carries two.
+        ///
+        /// A row with no words at all is nothing to read: measured across every row this card draws -
+        /// status, type, size, the climate lines, a curiosity, the four output ratings, the deposits
+        /// and anomalies prefabs - every one of them writes its own text (an anomaly and a curiosity
+        /// are icon AND title, a deposit's amount label carries the name), and the only wordless rows
+        /// are the separators between the card's blocks.</summary>
         private static void AddRow(List<Cell> cells, AgeTransform row, string key)
         {
             string text = AgeWidgets.TextOf(row);
