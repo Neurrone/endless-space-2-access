@@ -291,6 +291,40 @@ namespace ES2Access.Core.Speech
         public const string GalaxySendFleet = "galaxy.send-fleet";
         public const string GalaxySendFleets = "galaxy.send-fleets";
 
+        // How long a journey takes and where it stops on the way. The game says none of this in words
+        // at all - it draws a dotted line with a numbered marker wherever a turn runs out - so every
+        // phrase here is the mod's, and each is a whole sentence rather than a number glued to a noun.
+        // "Movement" without "points" is deliberate: the figure is said beside a turn count, where the
+        // longer word is the only thing that makes the pair hard to hear.
+        public const string FleetRoutePreviewThisTurn = "fleet.route-preview-this-turn";
+        public const string FleetRoutePreviewTurns = "fleet.route-preview-turns";
+        public const string FleetRouteUsesPortal = "fleet.route-uses-portal";
+        public const string FleetRouteUsesWormhole = "fleet.route-uses-wormhole";
+
+        // The itinerary, one line per turn that ends somewhere with a name. The turn numbers are the
+        // ones the map writes on its own markers, counting the turn in progress as the first.
+        public const string FleetItineraryTurn = "fleet.itinerary-turn";
+        public const string FleetItineraryTurnUnexplored = "fleet.itinerary-turn-unexplored";
+        public const string FleetItineraryArrival = "fleet.itinerary-arrival";
+        public const string FleetItineraryArrivalUnexplored = "fleet.itinerary-arrival-unexplored";
+
+        // What a fleet already under way says about where it is going. Two shapes, because some of the
+        // surfaces that say it have already named the destination and some have not.
+        public const string FleetRouteToThisTurn = "fleet.route-to-this-turn";
+        public const string FleetRouteToTurns = "fleet.route-to-turns";
+        public const string FleetRouteUnexploredThisTurn = "fleet.route-unexplored-this-turn";
+        public const string FleetRouteUnexploredTurns = "fleet.route-unexplored-turns";
+        public const string FleetRouteArrivesThisTurn = "fleet.route-arrives-this-turn";
+        public const string FleetRouteArrivesTurns = "fleet.route-arrives-turns";
+
+        // A journey the game called off without asking. Being intercepted zeroes a fleet's movement and
+        // terminates its move order, and a route whose next hop has become impossible is cancelled
+        // outright - both silently, and the only sign of either is a fleet that has stopped.
+        public const string FleetInterceptedAt = "fleet.intercepted-at";
+        public const string FleetIntercepted = "fleet.intercepted";
+        public const string FleetRouteCancelledTo = "fleet.route-cancelled-to";
+        public const string FleetRouteCancelled = "fleet.route-cancelled";
+
         // The pinned quest the game draws in the top right corner. Its title, its status and its
         // objective are the game's own words; what a player can DO with the panel is not written
         // anywhere on it - the game draws two of the three as bare icons and the third as a click on
@@ -971,6 +1005,30 @@ namespace ES2Access.Core.Speech
             { GalaxyFleetGuarding, "Guarding" },
             { GalaxySendFleet, "Send fleet {0} here" },
             { GalaxySendFleets, "Send the {0} selected fleets here" },
+            { FleetRoutePreviewThisTurn, "Arrives this turn, {0} movement" },
+            { FleetRoutePreviewTurns, "{0} turns, {1} movement" },
+            { FleetRouteUsesPortal, "Uses portal" },
+            { FleetRouteUsesWormhole, "Uses wormhole" },
+            { FleetItineraryTurn, "Turn {0}: {1}" },
+            { FleetItineraryTurnUnexplored, "Turn {0}: an unexplored system" },
+            { FleetItineraryArrival, "Turn {0}: {1} (destination)" },
+            { FleetItineraryArrivalUnexplored, "Turn {0}: an unexplored system (destination)" },
+            { FleetRouteToThisTurn, "En route to {0}, arrives this turn" },
+            { FleetRouteToTurns, "En route to {0}, arrives in {1} turns" },
+            {
+                FleetRouteUnexploredThisTurn,
+                "En route to an unexplored system, arrives this turn"
+            },
+            {
+                FleetRouteUnexploredTurns,
+                "En route to an unexplored system, arrives in {0} turns"
+            },
+            { FleetRouteArrivesThisTurn, "Arrives this turn" },
+            { FleetRouteArrivesTurns, "Arrives in {0} turns" },
+            { FleetInterceptedAt, "{0} was intercepted at {1}" },
+            { FleetIntercepted, "{0} was intercepted" },
+            { FleetRouteCancelledTo, "The route of {0} to {1} was cancelled" },
+            { FleetRouteCancelled, "The route of {0} was cancelled" },
             { HudQuestShowLocation, "Show location" },
             { HudQuestUnpin, "Unpin quest" },
             { HudQuestPinned, "Pinned quest: {0}" },

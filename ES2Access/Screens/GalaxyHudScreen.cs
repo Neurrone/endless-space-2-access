@@ -1031,31 +1031,11 @@ namespace ES2Access.Screens
 
         /// <summary>The map's own rule for whether a node's name is drawn: it has been explored, and
         /// it is either remembered or in sight now. Everything this screen ever says the name of is
-        /// asked this first.
-        ///
-        /// The exploration threshold is the CURSOR TARGET's, and the game sets it one step higher for a
-        /// special node - the Academy, a quest site - than for an ordinary star system: 3 against 2
-        /// (<c>GalaxySpecialNodeCursorTarget.VisibleByCurrentEmpire</c> :22-27 against
-        /// <c>GalaxyStarSystemCursorTarget</c>'s :89-94, which the special one overrides). A
-        /// <c>SpecialNode</c> IS a <c>StarSystemNode</c>, so one threshold for both would have named
-        /// these places a whole exploration step before the map draws anything a mouse can point at.
-        /// </summary>
+        /// asked this first - and so is everything a ROUTE across the map names, which is why the rule
+        /// itself lives in <see cref="MapVisibility"/> rather than here.</summary>
         private static bool Perceived(GameNode node, Empire empire)
         {
-            try
-            {
-                if ((int)node.Exploration[empire] < (node is SpecialNode ? 3 : 2))
-                {
-                    return false;
-                }
-
-                EntityVisibility.Layer layer = node.Visibility[empire];
-                return layer == EntityVisibility.Layer.Known || (int)layer >= 3;
-            }
-            catch (Exception)
-            {
-                return false;
-            }
+            return MapVisibility.Perceived(node, empire);
         }
 
         /// <summary>
