@@ -28,7 +28,16 @@ Reference identity is followed *before* the structural key, so two nodes sharing
 object are one control to the cursor, and focus teleports between the surfaces that share it
 (ES2: a research-queue row and its tech-wheel node shared the technology wrapper; queueing a
 technology threw focus into the queue panel). Where two surfaces show the same entity, at
-most one carries the object reference — the other keys structurally. The sharper case is not
+most one carries the object reference — the other keys structurally. But first ask whether
+the second surface is needed at all: where a node merely *names* a place the graph already
+declares (ES2: a starlane's far end), don't declare a copy — **follow the reference**. Make
+it a leaf whose follow handler (`NodeVtable.OnFollow`, run by the descend key; the engine
+consumes the move silently so the landing announces once, through the one path) moves focus
+to the one node. A copy costs a structural re-key of everything under it, a copy
+deliberately poorer than the original or a tree with no bottom, and a which-of-the-two flag
+threaded through every builder below — all deleted by following. A follow is not a click:
+the descend key is pressed speculatively all over a tree, so the handler must post no order
+and confirm no armed targeting mode. The sharper case is not
 "the row moved" but **the
 widget stayed and its meaning changed**: a table that pools and re-sorts its line widgets
 reassigns them on every re-sort, so a cursor keyed on the widget acts on a different item
@@ -48,6 +57,8 @@ which no dump reveals. Key such lines on the game's *data* object, never the wid
   expandability, auto position) and `NodeVtable`: **behaviors as data**. Announcement parts
   (`NodeAnnouncement`, each a `Func<string>` resolved at speak time — read live, never cache),
   `OnActivate`/`OnSecondary`/`OnAdjust` (adjust preempts Left/Right navigation),
+  `OnFollow` (a leaf naming a place declared elsewhere — the descend key follows the
+  reference instead of expanding; see the one-object-one-node paragraph above),
   `StateText` (spoken interrupting right after activate/adjust), `Sections` (ordered
   content blocks, each a live lines-func with a surfacing mode, from which the engine
   derives BOTH the tooltip announcement part and the review buffer — one declaration, two
