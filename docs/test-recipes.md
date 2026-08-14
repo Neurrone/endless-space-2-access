@@ -281,6 +281,18 @@ it, dump the graph or invoke the predicate, put the original back in the same `/
 (Proved the lane gate both directions: a PartiallyRevealed link dropped to Identified left
 the tree; restored, it returned with its original numbering.)
 
+**Trade routes without a trading company** (the fixture cannot make one — preprocessor needs
+the HQ tech and the built improvement): inject a fake company/routes into
+`DepartmentOfCommerce` reversibly, then oracle against the renderer — invoke the private
+`TradeRouteRenderer.UpdatePlayerEmpireDependantData` and diff `lineToRenders` (material +
+endpoint pairs) against the mod's rows. Empty-state check: baseline the scan content stop
+before injecting and after removing.
+
+**Forcing a special node perceived**: exploration byte via `GetCurrentStates()` +
+`SetLayer(…, Visible, silent)`; restore the LAYER by reflection on the private `layers`
+array. Its subtree is legitimately empty ("Nothing in here") while its links stay unrevealed
+— the same answer an ordinary star with unrevealed links gives.
+
 **Forcing the system node's map marks** (all `/eval`-reversible; pristine save is the restore):
 ground battle — add `StarSystemLabel.GroundBattleInProgressTag` to the colony's
 `SimulationObject.Tags` (the NAMED-attacker branch is unreachable: `GetGroundBattleOnNode`

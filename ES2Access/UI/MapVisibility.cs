@@ -51,10 +51,12 @@ namespace ES2Access.UI
         /// :1514-1522) and writes <c>GameNode.LocalizedName</c> into it at the same threshold, or the
         /// literal "???" below it (<c>RefreshEmpireNameLabel</c> :1894-1921).
         ///
-        /// One threshold, for a special node - the Academy, a quest site - as much as for an ordinary
-        /// star system, because NAMING and TARGETING are different questions and this is the naming one.
-        /// Neither of those two label methods has a special-node branch at all: the label draws the
-        /// Academy's name at exploration 2 like anything else's. The higher threshold that exists in the
+        /// One threshold, for a special node - a black hole, a solar nebula, an asteroid field - as
+        /// much as for an ordinary star system, because NAMING and TARGETING are different questions and
+        /// this is the naming one. (The Academy and quest sites are NOT special nodes: each is an
+        /// ordinary <c>StarSystemNode</c> carrying the <c>WorldAcademy</c> or <c>QuestNodeTag</c> tag.)
+        /// Neither of those two label methods has a special-node branch at all: the label draws a
+        /// special node's name at exploration 2 like anything else's. The higher threshold that exists in the
         /// game - 3 in <c>GalaxySpecialNodeCursorTarget.VisibleByCurrentEmpire</c> :22-27, overriding
         /// <c>GalaxyStarSystemCursorTarget</c>'s :89-94 - governs whether the MOUSE can target the node,
         /// which is a separate rule this one must not borrow: taking it made the cursor refuse a name the

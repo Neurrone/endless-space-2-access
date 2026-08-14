@@ -121,10 +121,10 @@ files above.
   from the REPL); the "Ground battle, attacker ⟨empire⟩" named form (a real battle cannot be
   forced — the bare "Ground battle" form is verified); a special node at exploration exactly
   2 named by the reverted gate (states only raise; needs a save that reaches it).
-- Trade-route geometry in the SCAN VIEW screen (owner-ruled 2026-08-14: match where the game
-  draws the lines — not the galaxy tree, not the economy screen); fixture-blocked until a
-  save with a trading company. Special-node identification (does the readout need a "what
-  this is" clause — Academy vs ordinary system) awaits its measurement stage.
+- Trade-route lanes awaiting a live sighting with a REAL trading company (shipped 2026-08-14
+  verified against the renderer with an injected one): an external-subsidiary route and a
+  simulation-set HQ/subsidiary blockade. Special-node "what this is" clause: measured,
+  proposal pending the owner's ruling.
 
 ## To decide (owner)
 

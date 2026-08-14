@@ -464,6 +464,22 @@ generic graduates to the generic docs.
 - **`EntityExploration.SetState` only ever RAISES a state** (:87-100), so a fog test that needs
   a lower state must write the byte in the by-reference `GetCurrentStates()` array and put it
   back (test-recipes).
+- **`TradeRouteRenderer` draws in scan view only, own routes only, per-LEG with an undirected
+  merge** (three materials: open/blockaded/mixed; the blockade flag ACCUMULATES down a route's
+  path, and a route blockaded at either end draws blockaded from its first leg — the picture,
+  so the mod copies it). It computes once on entering scan view and never refreshes mid-mode;
+  the Economy lens legend captions only two of the three colours. The fixture cannot create a
+  trading company (`CreateTradingCompanyPreprocessor` needs the HQ tech AND the improvement
+  built — `DepartmentOfCommerce.cs:816-855`).
+- **The Academy and quest sites are NOT `SpecialNode`s** — each is an ordinary
+  `StarSystemNode` carrying the `WorldAcademy` / `QuestNodeTag` tag (the label has its own
+  `AcademyIconGroup`). `SpecialNode` means the eight stellar-phenomenon kinds (Black Hole,
+  Asteroid Field ×2 definitions, Collapsing Star, Solar Nebula, Neutron Star, Nebular Clouds,
+  Rejuvenation Field): no planets, same zoom/click as a star, and the KIND is named only by
+  the dossier's category line (`GuiSpecialNode.TooltipClass = "SpecialNode"`,
+  `Gui.GetLocalizedTitle(SpecialNodeDefinition.Name)` — e.g. "Solar Nebula" where an ordinary
+  star reads "Star System (White Star)"); the label and `LocalizedName` ("B10 6805") never
+  say it.
 - **`ContextualIconInvasion.AgeTooltip.Content` is prefab-authored and never cleared.**
   `RefreshInvasionContextualIcon` (:748-749) clears only `Class` and `Target`, so the
   `%StarSystemLabelInvasionDescription` sentence sits in `Content` on every label forever —
