@@ -1071,6 +1071,9 @@ namespace ES2Access.Screens
             vtable.Sections = GraphNodes.Sections(
                 NodeSection.Buffer(() => ConstellationLines(it, empire)),
                 NodeSection.Buffer(() => FleetPresence.LinesAt(it)),
+                // What sending the selection here would mean, turn by turn - nothing at all while no
+                // fleet is selected, which is most of the time (<see cref="FleetRoute"/>).
+                NodeSection.Buffer(() => FleetRoute.PreviewLines(it)),
                 NodeSection.Buffer(() => SystemLabelReadout.Lines(drawn)),
                 StarDossier(it, tooltip)
             );
@@ -1097,6 +1100,11 @@ namespace ES2Access.Screens
             // costs a walk of the docking-slot repository, and a watched part walks it every frame the
             // system is focused.
             vtable.Announcements.Add(GraphNodes.ValuePart(() => FleetPresence.At(it), false));
+
+            // And what it would cost to send the selection here - the picture the map draws for a mouse
+            // hovering over this system, in words. Silent while nothing is selected. Emphatically not
+            // watched: the answer is a pathfinding search (<see cref="FleetRoute"/>).
+            vtable.Announcements.Add(GraphNodes.ValuePart(() => FleetRoute.Preview(it), false));
 
             // The two clicks the map itself puts on a system, and nothing invented on top of them.
             vtable.OnActivate = () => ZoomIn(it);
@@ -2426,8 +2434,13 @@ namespace ES2Access.Screens
                             // lozenge tooltip heads it. Read on focus rather than watched, for the same
                             // reason a system's is.
                             GraphNodes.ValuePart(() => FleetPresence.On(lane), false),
+                            // A lane is a destination in its own right, so it previews like one.
+                            GraphNodes.ValuePart(() => FleetRoute.Preview(lane), false),
                         },
-                        Sections = GraphNodes.Sections(() => FleetPresence.LinesOn(lane), null),
+                        Sections = GraphNodes.Sections(
+                            NodeSection.Buffer(() => FleetPresence.LinesOn(lane)),
+                            NodeSection.Buffer(() => FleetRoute.PreviewLines(lane))
+                        ),
                     };
                     // A lane is a destination in its own right, not just a road to one: the game
                     // accepts a link as a move target and flies the fleet out onto it
@@ -2546,8 +2559,12 @@ namespace ES2Access.Screens
                     // Read on focus rather than watched, for the reason a system's own count phrase is:
                     // the answer costs a walk of the docking-slot repository.
                     GraphNodes.ValuePart(() => FleetPresence.At(it), false),
+                    GraphNodes.ValuePart(() => FleetRoute.Preview(it), false),
                 },
-                Sections = GraphNodes.Sections(() => FleetPresence.LinesAt(it), null),
+                Sections = GraphNodes.Sections(
+                    NodeSection.Buffer(() => FleetPresence.LinesAt(it)),
+                    NodeSection.Buffer(() => FleetRoute.PreviewLines(it))
+                ),
                 OnActivate = () => ZoomIn(it),
                 OnContextual = () => SendTo(it),
             };
