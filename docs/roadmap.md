@@ -124,6 +124,28 @@ files above.
   (the game names them nowhere); "Sent {0} to {1} by spaceport" (the empire page's
   population shipment); and the scan labels' 2px RelationBar (own/allied/enemy/pirate/
   minor) — currently unread, needs five words or a colour mapping.
+- Marketplace SELL rows: the game's middle-click subtracts the click quantity from the
+  pending sell order (`SalableItem.OnMiddleClickCb` :71-77) and no convention chord exists
+  for a middle click. Options: check whether the panel's own minus button is already a
+  declared control (then this is covered and needs only a recipe line), or model the
+  quantity as a Left/Right adjustable node the way the zoom ladder is. (Gesture audit,
+  2026-08-14.)
+- Coordination-pin drag (ally pings on the map): the game's drag moves the pin to an
+  arbitrary world point; a keyboard drop can only land on a NAMED map object — a semantic
+  narrowing that needs a ruling before Space/Enter carry it, or the gesture stays declined
+  like the pin-message editing above it. (Gesture audit, 2026-08-14.)
+- One-row tables still say "1 of 1" (the empire page's single system): the count is the
+  answer to "how many rows", so it is spoken even for one. Say if it should be suppressed
+  at 1.
+- Document-shaped `GraphSheet` regions (battle report lines, negotiation terms,
+  notification tables) inherited the row positions the tables gained — rows of the same
+  sheet engine. Say if a document-shaped region should stay silent instead.
+- Scan-lens hero efficiency speaks the dial's drawn angle as "{0}%" (`scan.hero-efficiency`
+  — mod-authored, the game draws no number). Sign off or reword.
+- Chat polish trio: Escape-out-of-typing is silent when the cursor was already the box
+  node (add a confirmation phrase?); Escape closes the panel even under a resting mouse
+  (the key was pressed — overrule if the mouse should win); a game-driven page change
+  closes chat with the page. All shipped as described; overrule any.
 
 ## Shipped (pointers only)
 
