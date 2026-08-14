@@ -28,8 +28,9 @@ namespace ES2Access.Screens
     /// Delete and copies the name into the save-name field - and says so; the commands then do what
     /// they say. That split (Enter selects, the command acts) is the game's own double-click-versus-
     /// click distinction, kept because it means no save is ever loaded, overwritten or deleted by a
-    /// stray Enter. It is also why this is the one table whose second click the mod does not carry
-    /// (<see cref="TableSheet.RowsHaveNoDoubleClick"/>): here that gesture loads or overwrites outright.
+    /// stray Enter. The second click (Ctrl+Alt+Enter) is carried too - it loads the save, or in save
+    /// mode overwrites it, each behind the game's own confirmation box, exactly as the mouse's double
+    /// click does (owner ruling 2026-08-14: parity over caution; the confirmation is the game's guard).
     ///
     /// The save-name field is the game's own text editor, and handing it the keyboard has to WAIT A
     /// FRAME; see <see cref="RequestEdit"/>.
@@ -47,7 +48,6 @@ namespace ES2Access.Screens
         /// </summary>
         private readonly TableSheet _table = new TableSheet("loadsave:", SaveOf)
         {
-            RowsHaveNoDoubleClick = true,
             CellTooltipReading = ModsColumnIsReviewed,
         };
 

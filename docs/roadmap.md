@@ -99,12 +99,6 @@ files above.
   direction is not built: the game also drops a PLANET's population INTO the panel
   (`PlanetLabelsWindow_SystemManagement.StartDrag` :144-148 adds the panel as a target), which needs
   the same fixture and an owner ruling on which node in the panel takes the drop.
-- The load-save dialog answers Ctrl+Alt+Enter with nothing. The table itself is a `TableSheet`
-  now (2026-08-14), so the gesture is no longer missing by accident: the screen sets
-  `TableSheet.RowsHaveNoDoubleClick` and is the only table that does, because here the second
-  click LOADS the game or overwrites the save outright. Both effects are reachable from the
-  dialog's own Load and Save buttons, so this is parity polish, not a hole — and wiring it means
-  testing a real load and a real overwrite, which needs an owner call.
 - Riftborn time bubble on the galaxy map: a `GalaxyEntity` with a disk renderer — no
   widget, no label window; making it discoverable is real map-tree modelling.
 - Faction sightings needing a non-UE base-game save (code landed drawn-gated, unsighted):

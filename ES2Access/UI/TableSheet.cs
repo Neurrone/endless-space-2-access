@@ -168,19 +168,6 @@ namespace ES2Access.UI
         /// </summary>
         public bool RowsAreLines;
 
-        /// <summary>
-        /// This table's rows do NOT carry the game's second click.
-        ///
-        /// Unset - the ordinary case - wires it (<see cref="ShowOnMap"/>), because on every table but
-        /// one the second click SHOWS the player something: the system's page, the fleet on the map,
-        /// the row picked and the window closed. The save list is the exception: its second click
-        /// LOADS the game or overwrites the save then and there, with nothing in front of it, and
-        /// putting that on a chord means testing a real load and a real overwrite - an owner call the
-        /// roadmap is holding. Until then the row simply does not have the gesture, which is honest:
-        /// both effects are reachable from the dialog's own Load and Save buttons.
-        /// </summary>
-        public bool RowsHaveNoDoubleClick;
-
         /// <summary>See <see cref="CellReader"/>.</summary>
         public CellReader ReadCell;
 
@@ -570,6 +557,11 @@ namespace ES2Access.UI
                     null,
                     () => RowFacts(row)
                 );
+                // A table row is not read as a radio button, though its selection IS one: the row's
+                // name and its spoken "selected"/"not selected" carry the whole affordance, and a role
+                // word on every row of a table the player was just told is a table is noise (owner
+                // ruling 2026-08-14). Text is the role-less type with the table reading order.
+                vtable.ControlType = ControlTypes.Text;
                 AgeWidgets.Point(vtable, row.SelectionToggle, line.Tooltip, widget);
             }
             else
@@ -616,13 +608,15 @@ namespace ES2Access.UI
         /// its second one arrived. A row already picked is not picked again: the game's own selection
         /// handler slides panels about and plays a sound, and neither belongs to a request to be shown
         /// something. A table whose client does nothing with the gesture stays silent, as the mouse's
-        /// double click does there. A table that declines the gesture altogether says so
-        /// (<see cref="RowsHaveNoDoubleClick"/>).
+        /// double click does there. The save list's second click is the one that ACTS rather than
+        /// shows - it loads or overwrites, behind the game's own confirmation box - and it is carried
+        /// like the rest: the chord is the mouse's gesture, and the confirmation is the game's own
+        /// guard on both of them (owner ruling 2026-08-14, reversing the earlier opt-out).
         /// </summary>
         private void ShowOnMap(GuiTableLine line, NodeVtable vtable)
         {
             GuiTableLine row = line;
-            if (RowsHaveNoDoubleClick || row.DoubleClickButton == null || vtable.OnDoubleClick != null)
+            if (row.DoubleClickButton == null || vtable.OnDoubleClick != null)
             {
                 return;
             }

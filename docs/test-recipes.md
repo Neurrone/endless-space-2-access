@@ -149,9 +149,10 @@ exist and answers `true`) — but Exit takes the game's own route back and RAISE
 that variant is two closes: the modal, then `GetWindow<GameMenuModalWindow>().HandleInput(
 InputAction.Exit)`.
 The type-ahead lands on a save by name (`POST /type "fleet rework"`) and gives ONE result per save
-whichever column focus is in. **Never Enter on a row, and never press Load, Save or Delete** — the
-double-click chord is safe because this screen sets `TableSheet.RowsHaveNoDoubleClick`, the one table
-that declines the gesture (its second click loads or overwrites outright). The saves are a
+whichever column focus is in. **Never Enter on a row, never press Load, Save or Delete, and NEVER
+`ui.doubleClick` a row** — the second click is CARRIED here (owner ruling 2026-08-14): it selects the
+row and fires the load (or, in save mode, the overwrite), with only the game's own confirmation box
+between the chord and a loaded game. The saves are a
 `TableSheet` since 2026-08-14: the sort band is a row above the rows, Up/Down speak "x of ⟨saves⟩",
 and a column's caption is the crossed edge. The Mods column is the one column that overrides the
 shared `ModeFor` rule (`LoadSaveScreen.CellTooltipReading`, keyed on the header's `PropertyName`
