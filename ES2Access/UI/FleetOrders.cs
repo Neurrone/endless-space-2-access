@@ -23,6 +23,15 @@ namespace ES2Access.UI
     /// are answered here, because the route to a lane is not the route to either of its ends: it is the
     /// route to the near end plus one more step out onto the lane itself.
     ///
+    /// A route the game will not fly has a REASON, and the game keeps its reasons in the same currency
+    /// everywhere: a list of <c>FailureInfo</c> handed down through the search and the action check, to
+    /// be turned into a sentence by <c>Gui.FormatFailureInfo</c>. Every search and check here takes that
+    /// list, optionally - passing null asks the cheap question ("is there a route") and passing a list
+    /// asks the expensive one ("and if not, why not"), which is exactly the split the game's own cursor
+    /// makes between a click and a hover preview. The expensive question re-runs the pathfinder with
+    /// progressively relaxed rules to find out which rule was the one that bit; it belongs to the moment
+    /// a key is pressed and never to a frame.
+    ///
     /// Nothing is remembered between calls: the definitions come out of the game's own database and the
     /// routes are asked for fresh, so this is reload-safe by construction and stale by nothing. Every
     /// entry point here is a search or an order, so all of them belong to the moment a key is pressed
@@ -107,14 +116,19 @@ namespace ES2Access.UI
 
         /// <summary>The route this fleet would fly to a place on the map, or null where there is none.
         /// Asking is a pathfinding search, so it belongs to the moment a menu is opened and never to a
-        /// frame.</summary>
-        public static GalaxyPath PathTo(Fleet fleet, GameNode node)
+        /// frame. Hand it a list and the reasons a missing route is missing are written into it.
+        /// </summary>
+        public static GalaxyPath PathTo(
+            Fleet fleet,
+            GameNode node,
+            List<FailureInfo> failureInfos = null
+        )
         {
             try
             {
                 return fleet == null || node == null
                     ? null
-                    : PathToPosition(fleet, node.NodePosition);
+                    : PathToPosition(fleet, node.NodePosition, failureInfos);
             }
             catch (Exception e)
             {
@@ -136,7 +150,11 @@ namespace ES2Access.UI
         /// A fleet already flying along this very lane is answered with the route to where it is going
         /// next, which is the game's way of saying "you are already doing that".
         /// </summary>
-        public static GalaxyPath PathToLink(Fleet fleet, Link link)
+        public static GalaxyPath PathToLink(
+            Fleet fleet,
+            Link link,
+            List<FailureInfo> failureInfos = null
+        )
         {
             try
             {
@@ -161,7 +179,7 @@ namespace ES2Access.UI
                     )
                 )
                 {
-                    return PathToPosition(fleet, next);
+                    return PathToPosition(fleet, next, failureInfos);
                 }
 
                 NodePosition near = NodePosition.Invalid;
@@ -189,27 +207,63 @@ namespace ES2Access.UI
                     return null;
                 }
 
-                GalaxyPath path = PathToPosition(fleet, near);
+                GalaxyPath path = PathToPosition(fleet, near, failureInfos);
                 IPathfindingService pathfinding = Services.GetService<IPathfindingService>();
                 if (path == null || pathfinding == null)
                 {
                     return null;
                 }
 
+                PathfindingRequestSettings settings = new PathfindingRequestSettings(fleet);
                 float cost = pathfinding
-                    .GetTransitionCost(
-                        fleet.GeneratePathfindingData(),
-                        near,
-                        far,
-                        new PathfindingRequestSettings(fleet)
-                    )
+                    .GetTransitionCost(fleet.GeneratePathfindingData(), near, far, settings)
                     .Cost;
-                if (float.IsInfinity(cost) || !path.AddMovement(far, pathfinding))
+                if (!float.IsInfinity(cost) && path.AddMovement(far, pathfinding))
+                {
+                    return path;
+                }
+
+                // The step OUT onto the lane is priced on its own, so its refusal is diagnosed on its
+                // own too, exactly as the cursor does it (`GetGalaxyPathToLink` :413-433): a step that
+                // only costs anything once closed borders are ignored is diplomacy, and everything else
+                // left at infinity is a step no ordinary drive can make. Asked only when somebody wants
+                // the reasons - the relaxed re-runs are the price of the answer.
+                if (failureInfos == null)
                 {
                     return null;
                 }
 
-                return path;
+                if (
+                    (settings.Flags & PathfindingFlags.IgnoreCloseBorder)
+                    != PathfindingFlags.IgnoreCloseBorder
+                )
+                {
+                    cost = pathfinding
+                        .GetTransitionCost(
+                            fleet.GeneratePathfindingData(),
+                            near,
+                            far,
+                            new PathfindingRequestSettings(PathfindingFlags.IgnoreCloseBorder, 0L)
+                        )
+                        .Cost;
+                    if (!float.IsInfinity(cost))
+                    {
+                        FailureInfo.Add(
+                            fleet.IsInvisible
+                                ? FailureFlags.DiplomacyPreventsPassingBecauseRevealed
+                                : FailureFlags.DiplomacyPreventsPassing,
+                            failureInfos
+                        );
+                        return null;
+                    }
+                }
+
+                FailureInfo.Add(
+                    FailureFlags.NeedFreeMovement,
+                    Movement.FreeMovementDescriptorName,
+                    failureInfos
+                );
+                return null;
             }
             catch (Exception e)
             {
@@ -219,10 +273,15 @@ namespace ES2Access.UI
         }
 
         /// <summary>Whether the game would carry out this move if it were ordered - the move action's
-        /// own answer, which is what decides whether the destination is offered at all.</summary>
-        public static bool CanSend(Fleet fleet, GalaxyPath path)
+        /// own answer, which is what decides whether the destination is offered at all. Hand it a list
+        /// and a refusal writes down what refused it.</summary>
+        public static bool CanSend(
+            Fleet fleet,
+            GalaxyPath path,
+            List<FailureInfo> failureInfos = null
+        )
         {
-            return Context(fleet, path) != null;
+            return Context(fleet, path, failureInfos) != null;
         }
 
         /// <summary>Send the fleet along a route the pathfinder has already found. The order is posted
@@ -232,7 +291,7 @@ namespace ES2Access.UI
         {
             try
             {
-                EntityActionContext context = Context(fleet, path);
+                EntityActionContext context = Context(fleet, path, null);
                 if (context != null)
                 {
                     PostOrder(new OrderEntityAction(fleet.Empire.Index, GoTo(), fleet, context));
@@ -251,11 +310,22 @@ namespace ES2Access.UI
         // PathToLink). Cancelling through OrderCancelEntityAction is something else again: it strands
         // the fleet mid-lane with no path at all, which no click in this game produces.
 
-        /// <summary>The ordinary route from where the fleet will next be to a position on the map. A
-        /// system the game has frozen - one being fought over, one mid-cutscene - is no destination at
-        /// all, which is the cursor's own first question before it asks the pathfinder anything.
+        /// <summary>
+        /// The ordinary route from where the fleet will next be to a position on the map. A system the
+        /// game has frozen - one being fought over, one mid-cutscene - is no destination at all, which
+        /// is the cursor's own first question before it asks the pathfinder anything.
+        ///
+        /// With a list to write into, this is also the game's own DIAGNOSTIC LADDER
+        /// (<c>GalaxyGarrisonCursor.GetGalaxyPathToPosition</c> :456-506): a route that was not found is
+        /// searched for again with one rule relaxed at a time, and whichever relaxation finds it names
+        /// the rule that refused. A route that WAS found is still priced against a citadel-free galaxy,
+        /// because a detour is worth saying even though the fleet can go.
         /// </summary>
-        private static GalaxyPath PathToPosition(Fleet fleet, NodePosition goal)
+        private static GalaxyPath PathToPosition(
+            Fleet fleet,
+            NodePosition goal,
+            List<FailureInfo> failureInfos
+        )
         {
             IPathfindingService pathfinding = Services.GetService<IPathfindingService>();
             IPositioningService positioning = Services.GetService<IPositioningService>();
@@ -267,18 +337,129 @@ namespace ES2Access.UI
             NodePosition start = fleet.Position.NextValidNodePosition;
             GameNode from = positioning.GetGameNode(start);
             GameNode to = positioning.GetGameNode(goal);
-            if (from == null || to == null || from.IsLocked || to.IsLocked)
+            if (from == null || to == null)
             {
                 return null;
             }
 
-            return pathfinding.FindPath(fleet, start, goal, new PathfindingRequestSettings(fleet));
+            if (from.IsLocked || to.IsLocked)
+            {
+                FailureInfo.Add(FailureFlags.SystemIsBeingFrozen, failureInfos);
+                return null;
+            }
+
+            PathfindingRequestSettings settings = new PathfindingRequestSettings(fleet);
+            GalaxyPath path = pathfinding.FindPath(fleet, start, goal, settings);
+            if (failureInfos == null)
+            {
+                return path;
+            }
+
+            if (path != null)
+            {
+                float withoutCitadels = pathfinding.FindPathCost(
+                    fleet.GeneratePathfindingData(),
+                    start,
+                    goal,
+                    new PathfindingRequestSettings(
+                        settings.Flags | PathfindingFlags.IgnoreCitadels,
+                        0L
+                    )
+                );
+                if (withoutCitadels < path.PathCost)
+                {
+                    FailureInfo.Add(FailureFlags.AtLeastOneCitadelCausesOtherPath, failureInfos);
+                }
+
+                return path;
+            }
+
+            if (
+                goal != start
+                && fleet.Position.NodePosition == NodePosition.Invalid
+                && (int)from.Exploration[fleet.Empire] < 3
+            )
+            {
+                FailureInfo.Add(FailureFlags.NextNodeUnknown, failureInfos);
+                return null;
+            }
+
+            if (
+                pathfinding.FindPath(
+                    fleet,
+                    start,
+                    goal,
+                    new PathfindingRequestSettings(
+                        settings.Flags | PathfindingFlags.IgnoreCitadels,
+                        0L
+                    )
+                ) != null
+            )
+            {
+                FailureInfo.Add(FailureFlags.AtLeastOneCitadelPreventsFreeMove, failureInfos);
+                return null;
+            }
+
+            if (
+                (settings.Flags & PathfindingFlags.IgnoreCloseBorder)
+                    != PathfindingFlags.IgnoreCloseBorder
+                && pathfinding.FindPath(
+                    fleet,
+                    start,
+                    goal,
+                    new PathfindingRequestSettings(
+                        settings.Flags | PathfindingFlags.IgnoreCloseBorder,
+                        0L
+                    )
+                ) != null
+            )
+            {
+                FailureInfo.Add(
+                    fleet.IsInvisible
+                        ? FailureFlags.DiplomacyPreventsPassingBecauseRevealed
+                        : FailureFlags.DiplomacyPreventsPassing,
+                    failureInfos
+                );
+                return null;
+            }
+
+            if (
+                pathfinding.FindPath(
+                    fleet,
+                    start,
+                    goal,
+                    new PathfindingRequestSettings(settings.Flags | PathfindingFlags.IgnoreAll, 0L)
+                ) != null
+            )
+            {
+                FailureInfo.Add(
+                    FailureFlags.CannotSeeValidPath,
+                    Movement.FreeMovementDescriptorName,
+                    failureInfos
+                );
+                return null;
+            }
+
+            FailureInfo.Add(
+                FailureFlags.NeedFreeMovement,
+                Movement.FreeMovementDescriptorName,
+                failureInfos
+            );
+            return null;
         }
 
         /// <summary>The move action's context for a route, or null where the game would refuse it -
         /// which is the same question asked whether a destination is being offered or ordered, so it is
-        /// asked in one place.</summary>
-        private static EntityActionContext Context(Fleet fleet, GalaxyPath path)
+        /// asked in one place. The refusals the ACTION raises are the ones the pathfinder cannot know
+        /// about - a fleet out of movement points, a battle already being planned on its orbit, a route
+        /// the simulation has since invalidated - so the list is handed to the check the way the game's
+        /// own cursor hands it (<c>GalaxyGarrisonCursor.ChooseFleetAndPrevisualizePath</c> :245), and
+        /// dropping it here was dropping half the reasons.</summary>
+        private static EntityActionContext Context(
+            Fleet fleet,
+            GalaxyPath path,
+            List<FailureInfo> failureInfos
+        )
         {
             try
             {
@@ -289,7 +470,9 @@ namespace ES2Access.UI
                 }
 
                 EntityActionContext context = definition.BuildEntityActionContext(fleet, path);
-                return context != null && definition.CanBeExecuted(fleet, context) ? context : null;
+                return context != null && definition.CanBeExecuted(fleet, context, failureInfos)
+                    ? context
+                    : null;
             }
             catch (Exception e)
             {

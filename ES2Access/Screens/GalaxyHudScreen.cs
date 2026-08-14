@@ -1368,7 +1368,8 @@ namespace ES2Access.Screens
             List<Fleet> selected = FleetOrders.Selected();
             if (selected.Count > 0)
             {
-                SendAll(SendableTo(node, selected));
+                List<FailureInfo> refusals = new List<FailureInfo>();
+                SendAll(SendableTo(node, selected, refusals), refusals);
                 return;
             }
 
@@ -1518,7 +1519,11 @@ namespace ES2Access.Screens
         /// there is not one of them: the game accepts the order and then does nothing about it, so
         /// counting it would turn the key's answer into a report of something that did not happen.
         /// </summary>
-        private static List<Sendable> SendableTo(GameNode node, List<Fleet> fleets)
+        private static List<Sendable> SendableTo(
+            GameNode node,
+            List<Fleet> fleets,
+            List<FailureInfo> refusals
+        )
         {
             List<Sendable> found = new List<Sendable>();
             for (int i = 0; i < fleets.Count; i++)
@@ -1529,26 +1534,45 @@ namespace ES2Access.Screens
                     continue;
                 }
 
-                AddSendable(found, fleets[i], FleetOrders.PathTo(fleets[i], node));
+                AddSendable(
+                    found,
+                    fleets[i],
+                    FleetOrders.PathTo(fleets[i], node, refusals),
+                    refusals
+                );
             }
 
             return found;
         }
 
-        private static List<Sendable> SendableTo(Link link, List<Fleet> fleets)
+        private static List<Sendable> SendableTo(
+            Link link,
+            List<Fleet> fleets,
+            List<FailureInfo> refusals
+        )
         {
             List<Sendable> found = new List<Sendable>();
             for (int i = 0; i < fleets.Count; i++)
             {
-                AddSendable(found, fleets[i], FleetOrders.PathToLink(fleets[i], link));
+                AddSendable(
+                    found,
+                    fleets[i],
+                    FleetOrders.PathToLink(fleets[i], link, refusals),
+                    refusals
+                );
             }
 
             return found;
         }
 
-        private static void AddSendable(List<Sendable> found, Fleet fleet, GalaxyPath path)
+        private static void AddSendable(
+            List<Sendable> found,
+            Fleet fleet,
+            GalaxyPath path,
+            List<FailureInfo> refusals
+        )
         {
-            if (path != null && FleetOrders.CanSend(fleet, path))
+            if (path != null && FleetOrders.CanSend(fleet, path, refusals))
             {
                 found.Add(new Sendable(fleet, path));
             }
@@ -1560,15 +1584,23 @@ namespace ES2Access.Screens
         /// posted.
         ///
         /// What went is said back, named after what would actually go: the fleet by name while there is
-        /// one, and how many while there are several. Where nothing could get there the key is SILENT -
-        /// the same answer as a control with no such command at all, because a refused order and an
-        /// absent one are the same to the player, and this key is pressed speculatively all over the
-        /// map.
+        /// one, and how many while there are several.
+        ///
+        /// Where nothing could get there, the REASONS are said instead - the game's own sentences, in
+        /// the game's own words, gathered by the same searches and the same action check the mouse's
+        /// drag runs (<see cref="FleetOrders"/>). This key is pressed on a destination the tree has
+        /// named, with fleets already selected, so it is never a speculative press: silence there told
+        /// the player nothing at all, and "the star system is frozen in time" or "the fleet cannot move
+        /// right now" is the whole answer. (This reverses the silence this comment used to record -
+        /// owner decision 2026-08-14.) The one case still silent is the one with nothing to explain: no
+        /// route was refused because every selected fleet is already parked at the destination, which
+        /// <see cref="SendableTo"/> passes over without asking the pathfinder anything.
         /// </summary>
-        private static void SendAll(List<Sendable> sendable)
+        private static void SendAll(List<Sendable> sendable, List<FailureInfo> refusals)
         {
             if (sendable.Count == 0)
             {
+                SayRefusals(refusals);
                 return;
             }
 
@@ -1586,6 +1618,53 @@ namespace ES2Access.Screens
                     : ModStrings.Format(ModStrings.GalaxySendFleets, sendable.Count),
                 true
             );
+        }
+
+        /// <summary>
+        /// Why nothing could go, in the game's own words. Each reason is one of the game's failure
+        /// flags, turned into the same sentence the map's own failure panel shows a mouse player
+        /// (<c>Gui.FormatFailureInfo</c>, which is what carries the flag's parameter - the technology
+        /// a route needs - into the sentence). Several selected fleets can be refused for the same
+        /// reason, and the same fleet can be refused twice over on the way to a starlane, so identical
+        /// sentences are said once; the rest are read out as a list, oldest reason first, which is the
+        /// order the searches asked their questions in.
+        ///
+        /// An ignorable flag is skipped, exactly as the game's own formatter skips it: those are the
+        /// bookkeeping flags a panel uses to grey a button, not things to tell anybody.
+        /// </summary>
+        private static void SayRefusals(List<FailureInfo> refusals)
+        {
+            try
+            {
+                MessageBuilder message = new MessageBuilder();
+                List<string> said = new List<string>();
+                for (int i = 0; i < refusals.Count; i++)
+                {
+                    FailureInfo refusal = refusals[i];
+                    if (refusal == null || refusal.IsIgnorable)
+                    {
+                        continue;
+                    }
+
+                    string text = AgeText.Clean(Gui.FormatFailureInfo(string.Empty, refusal));
+                    if (string.IsNullOrEmpty(text) || said.Contains(text))
+                    {
+                        continue;
+                    }
+
+                    said.Add(text);
+                    message.ListItem(text);
+                }
+
+                if (said.Count > 0)
+                {
+                    Voice.Say(message.Build(), true);
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: reading why a fleet could not be sent threw: " + e);
+            }
         }
 
         /// <summary>
@@ -2541,7 +2620,8 @@ namespace ES2Access.Screens
         /// </summary>
         private static void SendTo(GameNode node)
         {
-            SendAll(SendableTo(node, FleetOrders.Selected()));
+            List<FailureInfo> refusals = new List<FailureInfo>();
+            SendAll(SendableTo(node, FleetOrders.Selected(), refusals), refusals);
         }
 
         /// <summary>
@@ -2561,7 +2641,8 @@ namespace ES2Access.Screens
                 return;
             }
 
-            SendAll(SendableTo(link, selected));
+            List<FailureInfo> refusals = new List<FailureInfo>();
+            SendAll(SendableTo(link, selected, refusals), refusals);
         }
 
         /// <summary>
