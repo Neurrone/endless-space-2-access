@@ -541,10 +541,22 @@ namespace ES2Access.UI
             }
         }
 
-        /// <summary>What one drawn picture on the label says, in the game's own words: the sentence in
-        /// its tooltip where the tooltip carries one, and the title of the wrapper behind it where the
-        /// tooltip is the assembled kind and carries none. A picture the game has not drawn says
-        /// nothing - its tooltip still holds whatever was written for the last system to need it.
+        /// <summary>
+        /// What one drawn picture on the label says, in the game's own words: the sentence in its
+        /// tooltip where the tooltip carries one, the title of the wrapper behind it where the tooltip
+        /// is the assembled kind, and - last - the assembled tooltip's OWN content where it carries
+        /// some and there is no wrapper to name it from. A picture the game has not drawn says nothing:
+        /// its tooltip still holds whatever was written for the last system to need it.
+        ///
+        /// The third case is not an exception to the rule that an assembled tooltip's content field
+        /// holds authoring leftovers (<see cref="AgeWidgets.Readable"/>) - it is the case where the
+        /// game filled that field itself and hung something on the tooltip that is NOT a
+        /// <c>GuiWrapper</c>, so neither of the first two answers exists. The invasion icon is the one
+        /// on this label: <c>StarSystemLabel.RefreshInvasionContextualIcon</c> :731-743 sets Class
+        /// "GroundBattle", a <c>GuiGroundBattle</c> target (which is an
+        /// <c>IGroundBattleInfoProvider</c>, not a wrapper) and a real sentence in Content, and the
+        /// icon read as silence until this last fallback existed. It is tried LAST precisely so that a
+        /// picture the wrapper already names keeps the name and never trades it for a leftover.
         /// </summary>
         private static void Say(List<string> lines, AgeTransform widget)
         {
@@ -556,16 +568,26 @@ namespace ES2Access.UI
             AgeTooltip tooltip = AgeWidgets.Raw(widget);
             if (AgeWidgets.Readable(tooltip) != null)
             {
-                IList<string> words = AgeText.Lines(AgeText.Tooltip(tooltip));
-                for (int i = 0; words != null && i < words.Count; i++)
-                {
-                    Add(lines, words[i]);
-                }
-
+                AddWords(lines, AgeText.Lines(AgeText.Tooltip(tooltip)));
                 return;
             }
 
-            Add(lines, AgeWidgets.ItemText(widget));
+            string named = AgeWidgets.ItemText(widget);
+            if (!string.IsNullOrEmpty(named))
+            {
+                Add(lines, named);
+                return;
+            }
+
+            AddWords(lines, AgeText.Lines(AgeText.Tooltip(tooltip)));
+        }
+
+        private static void AddWords(List<string> lines, IList<string> words)
+        {
+            for (int i = 0; words != null && i < words.Count; i++)
+            {
+                Add(lines, words[i]);
+            }
         }
 
         /// <summary>The first thing a picture's own tooltip says - the whole of it where the game wrote
