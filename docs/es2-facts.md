@@ -823,6 +823,25 @@ generic graduates to the generic docs.
   tooltip of its own.
 - Research: **254 of 385 technologies carry an affinity badge** — a majority, so the badge is
   ordinary content rather than an exception.
+- Research: **the wheel draws NO turn count on any technology.** `TechnologyItem2` declares
+  `TurnsGroup`/`TurnsLabel` and `RefreshTurns` fills them from
+  `DepartmentOfScience.GetTechnologyRemainingTurn`, but the prefab wires neither — measured null on
+  every one of the 385 items in `unlocked`, drawn and undrawn alike. The only surfaces that ever
+  show a technology's remaining turns are `ResearchQueueItem` in the research status side panel
+  (`TurnsGroup` visible, alpha 1, text `"6[turnColored]"` for the in-progress technology) and
+  `EmpireBanner`'s research line (:417). `GetTechnologyRemainingTurn` answers for ANY technology, so
+  a readout that simply asks it invents a number the screen never shows — the mod policy that
+  follows: turns are spoken on the queue item, nowhere on the wheel
+  (`ResearchText.Progress`). What the dot itself draws is the queue POSITION
+  (`PositionInQueueGroup`, visible only for `Queued`/`InProgress` — measured `True`/`"1"` on the
+  in-progress dot and `False` on every other) and, in its tooltip, the cost ("Cost: 131 Science").
+- Load/save: **the Mods column writes a multi-sentence dossier into `Content`.** The save table's
+  `RuntimeModules` column (`Public/Gui/GuiElements[Tables].xml`, `SaveGames`) hangs a
+  Content-backed tooltip carrying the verdict sentence, a "Configuration:" heading and a line per
+  module — so `GraphNodes.ModeFor`'s premise for announcing Content ("the single sentence the game
+  wrote") does not hold for it, and the column overrides the rule to INDICATE. `GuiTableHeader`'s
+  drawn caption is translated; `PropertyName` is the column's stable name for a screen that needs
+  to single one out.
 - Politics: `PoliticalEventsPopulationPanel`'s table binds `canSelect:false`, has per-system
   columns, keeps names only on the tooltip WRAPPERS and values only as cell tooltips, and its
   `%SystemPopulationPoliticsTable*Title` keys are parked.

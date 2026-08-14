@@ -116,22 +116,21 @@ namespace ES2Access.Tests.Speech
             Assert.Equal("0 available, 0 researched of 1", ResearchText.Counts(0, 0, 1));
         }
 
-        /// <summary>The same three facts wherever a technology is read - on its dot, and in the list
-        /// of the ones the game is recommending.</summary>
+        /// <summary>The same two facts wherever a technology is read - on its dot, and in the list
+        /// of the ones the game is recommending. A turn count is not one of them: the wheel draws
+        /// none anywhere, so one computed for an unqueued technology would be the mod's own
+        /// invention.</summary>
         [Fact]
         public void WhatATechnologyWillTakeSaysOnlyWhatThereIsToSay()
         {
-            Assert.Equal(
-                "112 Science, 5 turns remaining, position 2",
-                ResearchText.Progress("112 Science", 5, 1)
-            );
+            Assert.Equal("112 Science, position 2", ResearchText.Progress("112 Science", 1));
 
-            // Nothing queued, no estimate: just the price.
-            Assert.Equal("112 Science", ResearchText.Progress("112 Science", -1, -1));
+            // Nothing queued: just the price.
+            Assert.Equal("112 Science", ResearchText.Progress("112 Science", -1));
 
             // Already researched - the game shows no cost for it, so neither do we.
-            Assert.Equal("position 1", ResearchText.Progress(null, -1, 0));
-            Assert.Null(ResearchText.Progress(null, -1, -1));
+            Assert.Equal("position 1", ResearchText.Progress(null, 0));
+            Assert.Null(ResearchText.Progress(null, -1));
         }
 
         /// <summary>

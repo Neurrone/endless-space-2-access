@@ -84,23 +84,25 @@ namespace ES2Access.Core.Speech
             return ModStrings.Format(ModStrings.ResearchCounts, available, researched, total);
         }
 
-        /// <summary>What a technology is going to take: what the game says it costs, how many turns
-        /// are left of it, and where it sits in the queue - the same three things wherever a
-        /// technology is read, on the wheel or in the list of the ones the game is recommending.
+        /// <summary>
+        /// What a technology is going to take: what the game says it costs, and where it sits in the
+        /// queue - the two things wherever a technology is read, on the wheel or in the list of the
+        /// ones the game is recommending.
         ///
-        /// A negative <paramref name="turns"/> or <paramref name="queuePosition"/> is "the game does
-        /// not say", and an empty <paramref name="costs"/> is a technology already researched, so a
-        /// caller can hand over what it has and get back only what there is to say.
+        /// No turn count, because the wheel draws none. The dot has a turns label in its prefab and
+        /// the game never wires it up - measured null on all 385 items - so the only surfaces that
+        /// ever show a technology's remaining turns are the research queue in the side panel and the
+        /// empire banner's research line, each of which reads its own. A number computed for a
+        /// technology nobody is researching is the mod saying something the screen does not.
+        ///
+        /// A negative <paramref name="queuePosition"/> is "the game does not say", and an empty
+        /// <paramref name="costs"/> is a technology already researched, so a caller can hand over what
+        /// it has and get back only what there is to say.
         /// </summary>
-        public static string Progress(string costs, int turns, int queuePosition)
+        public static string Progress(string costs, int queuePosition)
         {
             MessageBuilder message = new MessageBuilder();
             message.ListItem(costs);
-            if (turns >= 0)
-            {
-                message.ListItem(ModStrings.Format(ModStrings.GalaxyTurnsRemaining, turns));
-            }
-
             if (queuePosition >= 0)
             {
                 message.ListItem(
