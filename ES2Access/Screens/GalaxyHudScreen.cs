@@ -2773,9 +2773,30 @@ namespace ES2Access.Screens
                         () => it.LocalizedName,
                         () => Select(it),
                         null,
-                        Raw(lozenge)
+                        Raw(lozenge),
+                        null,
+                        // The rest of the journey, turn by turn, for whoever wants to know where this
+                        // fleet will be sleeping tonight (<see cref="FleetRoute"/>).
+                        () => FleetRoute.CommittedLines(it)
                     );
                     vtable.Announcements.Add(GraphNodes.ValuePart(() => FleetText(it)));
+                    // How much of the journey is left. A part of its OWN and not part of the line
+                    // above, because that line is WATCHED - a movement figure the game changes under
+                    // the player is worth saying - and the answer here is a walk of the fleet's whole
+                    // route, which is a thing to do when focus lands and never on a frame.
+                    //
+                    // The destination is named only where the line above has not already named it: a
+                    // fleet under way says "Moving to Xiu" and then how long that will take, and a
+                    // fleet parked with an order standing says where it is and then where it is going.
+                    vtable.Announcements.Add(
+                        GraphNodes.ValuePart(
+                            () =>
+                                FleetOrders.Orbit(it) == null
+                                    ? FleetRoute.Arrival(it)
+                                    : FleetRoute.Committed(it),
+                            false
+                        )
+                    );
                     if (lozenge != null)
                     {
                         PointAt(vtable, lozenge);

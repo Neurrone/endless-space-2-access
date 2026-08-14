@@ -483,13 +483,17 @@ namespace ES2Access.Screens
                 Garrison held = garrison;
                 global::FleetsScreen screen = window;
                 AgeTooltip tooltip = line.FleetTooltip;
+                // A hangar is a line here too, and a hangar goes nowhere.
+                Fleet going = garrison as Fleet;
                 NodeVtable vtable = GraphNodes.SelectionItem(
                     () => LineName(it),
                     () => Selected(screen, held),
                     null,
                     () => AgeWidgets.Toggle(it.SelectionToggle),
                     () => AgeWidgets.Operable(it.AgeTransform),
-                    tooltip
+                    tooltip,
+                    null,
+                    () => FleetRoute.CommittedLines(going)
                 );
                 vtable.OnSelectToggle = () => AgeWidgets.Toggle(it.SelectionToggle);
                 vtable.OnSelectRange = vtable.OnSelectToggle;
@@ -499,6 +503,12 @@ namespace ES2Access.Screens
                         live: true,
                         kind: AnnouncementKinds.Value
                     )
+                );
+                // After the numbers the line draws, because that is where it would be written if the
+                // game wrote it anywhere: the line names no destination of its own. Not watched - the
+                // answer is a walk of the fleet's path, and this list is rebuilt every frame.
+                vtable.Announcements.Add(
+                    GraphNodes.ValuePart(() => FleetRoute.Committed(going), false)
                 );
                 vtable.DropKind = ShipRows.ShipKind;
                 vtable.OnDrop = item => Transfer(screen, held, LineName(it), item);
