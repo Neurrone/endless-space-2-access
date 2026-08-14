@@ -293,7 +293,7 @@ namespace ES2Access.UI
                 // Read with every tooltip the game hung on the PIECES of the line, not just the one on
                 // the group: these panels caption a line with an icon and put the description on the
                 // label, and the line is the only node either is reachable from.
-                string key = keyPrefix + widget.name + "/" + depth;
+                string key = PathKey(keyPrefix, widget, panel);
                 cells.Add(
                     activatable
                         ? Cells.Control(widget, button, text, key)
@@ -304,6 +304,30 @@ namespace ES2Access.UI
             {
                 Log.Warn("side panels: reading a panel threw: " + e);
             }
+        }
+
+        /// <summary>
+        /// A node key that cannot collide, by construction: the widget's index path from the panel's
+        /// own root down, with the widget's name kept as a readable suffix. Two distinct widgets never
+        /// share an index path, so two siblings the prefab gave the same name - the representatives
+        /// panel's sensitivity legend draws two children both called "Key" - get two ids where a
+        /// name-plus-depth key gave them one and the builder refused the second, taking the whole
+        /// panel's walk with it (the duplicate-id throw the roadmap carried). The path is as stable
+        /// across frames as the drawn layout it mirrors, which is what a key was ever stable as.
+        /// </summary>
+        private static string PathKey(string keyPrefix, AgeTransform widget, SidePanel panel)
+        {
+            string path = "";
+            AgeTransform root = panel == null ? null : panel.AgeTransform;
+            AgeTransform at = widget;
+            int guard = 0;
+            while (at != null && !ReferenceEquals(at, root) && guard++ < 16)
+            {
+                path = "/" + AgeWidgets.IndexInParent(at) + path;
+                at = at.Parent;
+            }
+
+            return keyPrefix + "p" + path + "/" + widget.name;
         }
 
         /// <summary>Whether anything inside this widget is itself a container - which is what makes the
@@ -358,7 +382,9 @@ namespace ES2Access.UI
                 effects.TitleLabel == null ? null : effects.TitleLabel.AgeTransform;
             if (caption != null && AgeWidgets.Visible(caption))
             {
-                cells.Add(Cells.Readout(caption, AgeWidgets.Raw(caption), keyPrefix + caption.name));
+                cells.Add(
+                    Cells.Readout(caption, AgeWidgets.Raw(caption), PathKey(keyPrefix, caption, panel))
+                );
             }
 
             IList<AgeTransform> children = widget.Children;
@@ -384,11 +410,7 @@ namespace ES2Access.UI
                     }
 
                     cells.Add(
-                        Cells.Readout(
-                            line,
-                            AgeWidgets.Raw(line),
-                            keyPrefix + table.name + "/" + line.name
-                        )
+                        Cells.Readout(line, AgeWidgets.Raw(line), PathKey(keyPrefix, line, panel))
                     );
                 }
             }
