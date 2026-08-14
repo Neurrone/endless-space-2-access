@@ -910,7 +910,10 @@ generic graduates to the generic docs.
   planet card's climate table (`PlanetGameplayTypeTable` — the one table on that card whose `Load`
   does NOT set `StrictVisibility`) put the previous planet's biodiversity line on top of the
   curiosity line and banded the two into one drawn row: a faded row is a layout hazard as well as a
-  phantom line.
+  phantom line. A parked item also keeps its old tooltip `Target` wrapper, so a name-by-wrapper
+  read resurrects the PREVIOUS binding's name (the galaxy planet card spoke another planet's
+  "Dustciduous Trees" deposit); `AgeWidgets.ItemText` now enforces the alpha gate centrally, so
+  every table read that names items through it is covered.
 - **`GuiRadioGroup` rewires its child toggles and ignores `State`** — the group is the authority,
   not the toggle it holds.
 - `SystemSelectionModalWindow` binds `interactiveCells: false`, so its shipped table has no

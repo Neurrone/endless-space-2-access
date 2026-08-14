@@ -1140,6 +1140,15 @@ namespace ES2Access.UI
         /// </summary>
         public static string ItemText(AgeTransform widget)
         {
+            // A pooled table with StrictVisibility off retires a surplus child by parking it at
+            // Alpha 0 with Visible still true (AgeTransform.RefreshChildrenIList), and the parked
+            // item keeps its old wrapper on its tooltip - so an item that draws nothing must say
+            // nothing, or it answers with the previous binding's name.
+            if (widget == null || widget.Alpha < 0.01f)
+            {
+                return null;
+            }
+
             string drawn = TextOf(widget);
             if (!string.IsNullOrEmpty(drawn))
             {
@@ -1158,7 +1167,7 @@ namespace ES2Access.UI
 
             try
             {
-                if (!widget.Visible)
+                if (!widget.Visible || widget.Alpha < 0.01f)
                 {
                     return null;
                 }
