@@ -145,9 +145,13 @@ only from the manual script. It CAN be raised in-game from `/eval` the way the p
 (`var w = Gui.GuiService.GetWindow("LoadSaveModalWindow") as LoadSaveModalWindow; w.LoadSaveMode =
 LoadSaveModalWindow.LoadSaveType.Save;` — or `LoadFromGame` — `Gui.GuiService.ShowWindow(w);`), and it
 closes with `Gui.GuiService.HideWindow(w)`: it is a `GuiWindow`, so `HandleInput` does not exist on it.
-The type-ahead lands on a save by name (`POST /type "fleet rework"`). **Never Enter on a row, and never
-press Load, Save or Delete** — the double-click chord is safe only because this screen's rows are
-hand-built and answer it with nothing (interaction.md).
+The type-ahead lands on a save by name (`POST /type "fleet rework"`) and gives ONE result per save
+whichever column focus is in. **Never Enter on a row, and never press Load, Save or Delete** — the
+double-click chord is safe because this screen sets `TableSheet.RowsHaveNoDoubleClick`, the one table
+that declines the gesture (its second click loads or overwrites outright). The saves are a
+`TableSheet` since 2026-08-14: the sort band is a row above the rows, Up/Down speak "x of ⟨saves⟩",
+a column's caption is the crossed edge, and the Mods column's tooltip is Content-backed so the shared
+`ModeFor` rule ANNOUNCES it rather than saying "has tooltip".
 
 **Working the technology wheel.** Open/close it from `/eval` with
 `Gui.GuiService.GetWindow<GameOverlayWindow>().ControlBanner.ToggleScreen("TechnologyScreen")`

@@ -19,18 +19,17 @@ namespace ES2Access.Screens
     /// row of commands along the bottom. Which side of the table a control sits on is measured rather
     /// than declared, so either skin reads in the order it is drawn.
     ///
-    /// The table is walked as a table. Left and right step across the columns the game is drawing and
-    /// each cell reads its own column's heading and what is written in it - the heading the game's
-    /// header row shows, the value the cell itself shows, so what is spoken is what is on screen
-    /// rather than a second opinion assembled from the save file. Up and down move between saves and
-    /// keep the column, and every cell's review buffer holds the whole row, so a player who wants the
-    /// save's facts in one go never has to walk sideways for them.
+    /// The table is the game's own <c>GuiTable</c> and is read by the shared <see cref="TableSheet"/>,
+    /// which is what gives it the sort headers as a row above the saves, "3 of 12" as the player moves
+    /// between saves, a column's heading spoken as the edge crossed into it, and one cell's own heading,
+    /// value and tooltip in its review buffer.
     ///
     /// Enter on any cell selects that save - the game's own selection, the one that enables Load and
     /// Delete and copies the name into the save-name field - and says so; the commands then do what
     /// they say. That split (Enter selects, the command acts) is the game's own double-click-versus-
     /// click distinction, kept because it means no save is ever loaded, overwritten or deleted by a
-    /// stray Enter.
+    /// stray Enter. It is also why this is the one table whose second click the mod does not carry
+    /// (<see cref="TableSheet.RowsHaveNoDoubleClick"/>): here that gesture loads or overwrites outright.
     ///
     /// The save-name field is the game's own text editor, and handing it the keyboard has to WAIT A
     /// FRAME; see <see cref="RequestEdit"/>.
@@ -44,12 +43,12 @@ namespace ES2Access.Screens
         private static readonly object ContentStop = "loadsave:content";
         private static readonly object CommandStop = "loadsave:commands";
 
-        /// <summary>Shared by every save's row, which is what makes up and down keep the column.
+        /// <summary>The saves, read as the game's table. Held across builds like every other table's.
         /// </summary>
-        private static readonly object SaveRowKey = "loadsave:save-row";
-
-        /// <summary>How deep inside a cell to look for the text it is drawing.</summary>
-        private const int MaxCellDepth = 6;
+        private readonly TableSheet _table = new TableSheet("loadsave:", SaveOf)
+        {
+            RowsHaveNoDoubleClick = true,
+        };
 
         public override string Key
         {
@@ -161,12 +160,7 @@ namespace ES2Access.Screens
                 field = AddNameField(builder, window);
             }
 
-            // Announced once on the way in - "Load Game, table" - the way wotr-access names a table,
-            // rather than on every cell: a role heard on every row would drown the row itself out, and
-            // what a table IS is a fact about entering it, not about any one thing in it.
-            builder.PushContext(WindowTitle(window), ModStrings.Get(ModStrings.NavTable), false);
-            ControlId firstCell = AddSaves(builder, window);
-            builder.PopContext();
+            ControlId firstRow = AddSaves(builder, window);
 
             if (!fieldAbove)
             {
@@ -186,9 +180,9 @@ namespace ES2Access.Screens
             {
                 builder.SetStart(start);
             }
-            else if (firstCell != null)
+            else if (firstRow != null)
             {
-                builder.SetStart(firstCell);
+                builder.SetStart(firstRow);
             }
             else if (start != null)
             {
@@ -196,185 +190,19 @@ namespace ES2Access.Screens
             }
         }
 
-        /// <summary>Every save the table is showing, a row each, a cell at a time.</summary>
-        private static ControlId AddSaves(GraphBuilder builder, LoadSaveModalWindow window)
+        /// <summary>The saves, as the shared table reading: the sort headers as a row above them, then
+        /// a row per save, under the window's own title ("Load Game, table", said once on the way in).
+        /// Answers with the first row, which is where a load opens.</summary>
+        private ControlId AddSaves(GraphBuilder builder, LoadSaveModalWindow window)
         {
-            List<GuiTableHeader> headers = Headers(window);
-            HashSet<string> taken = new HashSet<string>();
-            ControlId first = null;
-            foreach (GuiTableLine line in Lines(window))
-            {
-                GuiTableLine row = line;
-                List<AgeTransform> cells = Cells(row);
-                if (cells.Count == 0)
-                {
-                    continue;
-                }
-
-                LoadSaveModalWindow owner = window;
-                string save = Distinct(taken, SaveKey(Descriptor(row)));
-                // What the whole row is called, for the search: every cell of it is one save, so
-                // typing a save's title has to land on the row once rather than once per column.
-                AgeTransform title = cells[0];
-                Func<string> name = () => CellText(title);
-                builder.StartRow(SaveRowKey);
-                for (int i = 0; i < cells.Count; i++)
-                {
-                    AgeTransform cell = cells[i];
-                    GuiTableHeader header = HeaderFor(headers, cell, i);
-                    ControlId id = ControlId.Referenced(
-                        cell,
-                        "loadsave:cell/" + save + "/" + ColumnOf(cell, i)
-                    );
-                    first = first ?? id;
-                    NodeVtable vtable = CellVtable(owner, row, headers, cell, header);
-                    // Which column a cell is in, so the search keeps one result per SAVE
-                    // (SearchScope.OverStop takes column 0 only) rather than one per cell.
-                    vtable.Column = i;
-                    vtable.SearchText = name;
-                    builder.AddItem(id, vtable);
-                }
-
-                builder.EndRow();
-            }
-
-            return first;
-        }
-
-        /// <summary>
-        /// One cell: its column's heading and what the cell is showing, with the whole row behind it in
-        /// the review buffer and the game's own selection on Enter.
-        ///
-        /// An empty cell still reads. The table's columns are the same eight for every save, and a
-        /// cell that dropped out of the row when it had nothing to show would shift the columns under
-        /// the player - and take up-and-down's column with them.
-        /// </summary>
-        private static NodeVtable CellVtable(
-            LoadSaveModalWindow window,
-            GuiTableLine line,
-            List<GuiTableHeader> headers,
-            AgeTransform cell,
-            GuiTableHeader header
-        )
-        {
-            Func<bool> selected = () => Selected(window, line);
-            NodeVtable vtable = new NodeVtable
-            {
-                Announcements = new List<NodeAnnouncement>
-                {
-                    GraphNodes.LabelPart(() => HeaderText(header)),
-                    GraphNodes.ValuePart(() => CellText(cell)),
-                    GraphNodes.SelectedPart(selected),
-                    GraphNodes.DisabledPart(() => Enabled(line.AgeTransform)),
-                },
-                Sections = GraphNodes.Sections(() => CellFacts(header, cell), null),
-                StateText = () =>
-                    selected() ? ModStrings.Get(ModStrings.NavSelected) : null,
-                OnActivate = () => Select(window, line),
-            };
-            vtable.OnFocusVisual = () => PointerFocus.MoveTo(cell, TooltipOfCell(cell), cell);
-            vtable.OnBlurVisual = ReleasePointer;
-            return vtable;
-        }
-
-        /// <summary>This cell for the review buffer: its own heading and value, then whatever the
-        /// cell has to say for itself - for the mods column, the configuration the save wants. The
-        /// rest of the row is a walk away; the buffer holds the cell the player is on.</summary>
-        private static IList<string> CellFacts(GuiTableHeader header, AgeTransform cell)
-        {
-            List<string> lines = new List<string>();
-            try
-            {
-                string fact = new MessageBuilder()
-                    .ListItem(HeaderText(header))
-                    .ListItem(CellText(cell))
-                    .Build();
-                if (!string.IsNullOrEmpty(fact))
-                {
-                    lines.Add(fact);
-                }
-
-                foreach (string detail in AgeText.Lines(AgeText.Tooltip(TooltipOfCell(cell))))
-                {
-                    lines.Add(detail);
-                }
-            }
-            catch (Exception e)
-            {
-                Log.Warn("load save: reviewing a save threw: " + e);
-            }
-
-            return lines;
-        }
-
-        private static string HeaderText(GuiTableHeader header)
-        {
-            try
-            {
-                return header == null ? null : AgeText.Label(header.Label);
-            }
-            catch (Exception)
+            GuiTable table = window.GuiTable;
+            if (table == null)
             {
                 return null;
             }
-        }
 
-        /// <summary>What a cell is showing, and the word for showing nothing. The columns the game
-        /// draws as a picture - a cloud badge, the icons of the content a save needs - carry their
-        /// meaning in their tooltips instead, which is what those read.</summary>
-        private static string CellText(AgeTransform cell)
-        {
-            MessageBuilder labels = new MessageBuilder();
-            MessageBuilder tooltips = new MessageBuilder();
-            try
-            {
-                ReadCell(cell, labels, tooltips, 0);
-            }
-            catch (Exception e)
-            {
-                Log.Warn("load save: reading a cell threw: " + e);
-            }
-
-            string drawn = labels.Build() ?? tooltips.Build();
-            return drawn ?? ModStrings.Get(ModStrings.NavCellEmpty);
-        }
-
-        // Everything the player can see inside a cell, in the order it is laid out: its words, and
-        // separately the first line of every tooltip hanging off it. Hidden branches are skipped -
-        // the cloud column keeps its badge and hides it rather than removing it.
-        private static void ReadCell(
-            AgeTransform widget,
-            MessageBuilder labels,
-            MessageBuilder tooltips,
-            int depth
-        )
-        {
-            if (depth > MaxCellDepth)
-            {
-                return;
-            }
-
-            AgePrimitiveLabel label = widget.GetComponent<AgePrimitiveLabel>();
-            if (label != null)
-            {
-                labels.ListItem(AgeText.Label(label));
-            }
-
-            IList<string> lines = AgeText.Lines(AgeText.Tooltip(widget.AgeTooltip));
-            if (lines.Count > 0)
-            {
-                tooltips.ListItem(lines[0]);
-            }
-
-            List<AgeTransform> children = widget.Children;
-            for (int i = 0; i < children.Count; i++)
-            {
-                AgeTransform child = children[i];
-                if (child != null && child.Visible)
-                {
-                    ReadCell(child, labels, tooltips, depth + 1);
-                }
-            }
+            _table.Headers(builder, table);
+            return _table.Rows(builder, table, WindowTitle(window)).FirstRow;
         }
 
         // ---- the save-name field ----
@@ -528,36 +356,6 @@ namespace ES2Access.Screens
             catch (Exception)
             {
                 return null;
-            }
-        }
-
-        // ---- selecting a save ----
-
-        /// <summary>Select a save the way clicking its row does: the table's selection first, then
-        /// the window's own selection handler - the one that copies the name into the field and
-        /// re-weighs the buttons.</summary>
-        private static void Select(LoadSaveModalWindow window, GuiTableLine line)
-        {
-            try
-            {
-                window.GuiTable.SelectedLine = line;
-                OptionsScreen.Call(LineSelected, window, new object[] { line });
-            }
-            catch (Exception e)
-            {
-                Log.Warn("load save: selecting a save threw: " + e);
-            }
-        }
-
-        private static bool Selected(LoadSaveModalWindow window, GuiTableLine line)
-        {
-            try
-            {
-                return ReferenceEquals(window.GuiTable.SelectedLine, line);
-            }
-            catch (Exception)
-            {
-                return false;
             }
         }
 
@@ -818,172 +616,10 @@ namespace ES2Access.Screens
 
         // ---- reading the window ----
 
-        /// <summary>
-        /// The saves the table is showing, top to bottom.
-        ///
-        /// "Showing" needs both tests. The table POOLS its rows rather than destroying them, and hides
-        /// the surplus the way the engine hides anything that has not declared strict visibility: by
-        /// making it TRANSPARENT, which leaves it reporting itself perfectly visible. A row left over
-        /// from a longer list therefore has to be recognised by having no save bound to it - which is
-        /// also what a row that is between bindings looks like.
-        /// </summary>
-        private static List<GuiTableLine> Lines(LoadSaveModalWindow window)
-        {
-            List<GuiTableLine> lines = new List<GuiTableLine>();
-            try
-            {
-                AgeTransform table =
-                    window.GuiTable == null ? null : window.GuiTable.LinesTable;
-                if (table == null)
-                {
-                    return lines;
-                }
-
-                foreach (GuiTableLine line in table.GetChildren<GuiTableLine>(false))
-                {
-                    if (
-                        line != null
-                        && line.AgeTransform != null
-                        && line.AgeTransform.Visible
-                        && (table.StrictVisibility || line.AgeTransform.Alpha > 0f)
-                        && Descriptor(line) != null
-                    )
-                    {
-                        lines.Add(line);
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                Log.Warn("load save: reading the save list threw: " + e);
-            }
-
-            return lines;
-        }
-
-        private static List<AgeTransform> Cells(GuiTableLine line)
-        {
-            List<AgeTransform> cells = new List<AgeTransform>();
-            try
-            {
-                if (line.CellsTable == null)
-                {
-                    return cells;
-                }
-
-                List<AgeTransform> children = line.CellsTable.Children;
-                for (int i = 0; i < children.Count; i++)
-                {
-                    if (children[i] != null)
-                    {
-                        cells.Add(children[i]);
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                Log.Warn("load save: reading a save's columns threw: " + e);
-            }
-
-            return cells;
-        }
-
-        private static List<GuiTableHeader> Headers(LoadSaveModalWindow window)
-        {
-            List<GuiTableHeader> headers = new List<GuiTableHeader>();
-            try
-            {
-                if (window.GuiTable == null || window.GuiTable.HeadersTable == null)
-                {
-                    return headers;
-                }
-
-                foreach (
-                    GuiTableHeader header in
-                        window.GuiTable.HeadersTable.GetChildren<GuiTableHeader>(false)
-                )
-                {
-                    if (header != null)
-                    {
-                        headers.Add(header);
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                Log.Warn("load save: reading the column headings threw: " + e);
-            }
-
-            return headers;
-        }
-
-        /// <summary>The heading over a cell: the header the game bound to the same column, found by
-        /// the column's own name so the pairing survives a table that reorders its columns, and by
-        /// position when a cell does not say which column it is.</summary>
-        private static GuiTableHeader HeaderFor(
-            List<GuiTableHeader> headers,
-            AgeTransform cell,
-            int index
-        )
-        {
-            string column = ColumnName(cell);
-            if (column != null)
-            {
-                for (int i = 0; i < headers.Count; i++)
-                {
-                    try
-                    {
-                        if (headers[i].PropertyName == column)
-                        {
-                            return headers[i];
-                        }
-                    }
-                    catch (Exception) { }
-                }
-            }
-
-            return index < headers.Count ? headers[index] : null;
-        }
-
-        private static string ColumnName(AgeTransform cell)
-        {
-            try
-            {
-                GuiTableCell component = cell.GetComponent<GuiTableCell>();
-                return component != null && component.ColumnInfo != null
-                    ? component.ColumnInfo.Name
-                    : null;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        private static string ColumnOf(AgeTransform cell, int index)
-        {
-            return ColumnName(cell) ?? index.ToString();
-        }
-
-        private static AgeTooltip TooltipOfCell(AgeTransform cell)
-        {
-            try
-            {
-                GuiTableCell component = cell == null ? null : cell.GetComponent<GuiTableCell>();
-                if (component != null && component.Tooltip != null)
-                {
-                    return component.Tooltip;
-                }
-
-                return cell == null ? null : cell.AgeTooltip;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        private static GameSaveDescriptor Descriptor(GuiTableLine line)
+        /// <summary>What a row STANDS FOR - the save it is showing, which is what identifies it across
+        /// the every-frame rebuild and across a re-sort, and is also the test for whether a pooled line
+        /// is a real row at all.</summary>
+        private static object SaveOf(GuiTableLine line)
         {
             try
             {
@@ -993,39 +629,6 @@ namespace ES2Access.Screens
             {
                 return null;
             }
-        }
-
-        /// <summary>A stable identity for a save across the every-frame rebuild: the file it lives
-        /// in, which survives renames of everything else about the row.</summary>
-        private static string SaveKey(GameSaveDescriptor save)
-        {
-            try
-            {
-                if (save == null)
-                {
-                    return "?";
-                }
-
-                return string.IsNullOrEmpty(save.SourceFileName) ? save.Title : save.SourceFileName;
-            }
-            catch (Exception)
-            {
-                return "?";
-            }
-        }
-
-        // Two saves cannot share a file, so this is insurance rather than a case the game produces:
-        // should the table ever draw two rows the mod cannot tell apart, the second gets a suffix
-        // instead of colliding and taking the whole screen down with it.
-        private static string Distinct(HashSet<string> taken, string key)
-        {
-            string candidate = key;
-            for (int n = 2; !taken.Add(candidate); n++)
-            {
-                candidate = key + "#" + n;
-            }
-
-            return candidate;
         }
 
         private static bool Saving(LoadSaveModalWindow window)
@@ -1229,13 +832,8 @@ namespace ES2Access.Screens
             }
         }
 
-        // The window's own handlers, reached the way the drop list screen reaches the options
-        // window's: resolved once, replayed with the argument its click path passes.
-        private static readonly MethodInfo LineSelected = OptionsScreen.Handler(
-            typeof(LoadSaveModalWindow),
-            "OnLineSelection"
-        );
-
+        // The window's own handler, reached the way the drop list screen reaches the options window's:
+        // resolved once, replayed with the argument its click path passes.
         private static readonly MethodInfo NameFieldGainFocus = OptionsScreen.Handler(
             typeof(LoadSaveModalWindow),
             "OnSaveNameTextFieldGainFocusCb"

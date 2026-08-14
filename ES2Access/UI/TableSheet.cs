@@ -163,6 +163,19 @@ namespace ES2Access.UI
         /// </summary>
         public bool RowsAreLines;
 
+        /// <summary>
+        /// This table's rows do NOT carry the game's second click.
+        ///
+        /// Unset - the ordinary case - wires it (<see cref="ShowOnMap"/>), because on every table but
+        /// one the second click SHOWS the player something: the system's page, the fleet on the map,
+        /// the row picked and the window closed. The save list is the exception: its second click
+        /// LOADS the game or overwrites the save then and there, with nothing in front of it, and
+        /// putting that on a chord means testing a real load and a real overwrite - an owner call the
+        /// roadmap is holding. Until then the row simply does not have the gesture, which is honest:
+        /// both effects are reachable from the dialog's own Load and Save buttons.
+        /// </summary>
+        public bool RowsHaveNoDoubleClick;
+
         /// <summary>See <see cref="CellReader"/>.</summary>
         public CellReader ReadCell;
 
@@ -585,12 +598,13 @@ namespace ES2Access.UI
         /// its second one arrived. A row already picked is not picked again: the game's own selection
         /// handler slides panels about and plays a sound, and neither belongs to a request to be shown
         /// something. A table whose client does nothing with the gesture stays silent, as the mouse's
-        /// double click does there.
+        /// double click does there. A table that declines the gesture altogether says so
+        /// (<see cref="RowsHaveNoDoubleClick"/>).
         /// </summary>
-        private static void ShowOnMap(GuiTableLine line, NodeVtable vtable)
+        private void ShowOnMap(GuiTableLine line, NodeVtable vtable)
         {
             GuiTableLine row = line;
-            if (row.DoubleClickButton == null || vtable.OnDoubleClick != null)
+            if (RowsHaveNoDoubleClick || row.DoubleClickButton == null || vtable.OnDoubleClick != null)
             {
                 return;
             }
