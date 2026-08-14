@@ -76,7 +76,9 @@ Two announcement parts do the heavy lifting:
   rule below), and the enforcement is two-layered: the factory returns null while the
   control is disabled, **and** the navigator treats "spoke nothing" as no reason to
   re-baseline its live-value watch — an unconditional re-baseline there silently swallows
-  the next genuine change.
+  the next genuine change. A two-step order (arm a mode, then aim) confirms in words when it
+  ACTS — the game's answer is often only a sound and a drawn change — while a refused aim
+  may keep the game's own silence: success and refusal must never sound the same.
 - **`SelectedPart`** — a non-empty Selected part also marks the node as its stop's **landing
   node**: focus entering the stop lands there instead of on the first node. A tab bar lands
   on the active tab; a popup lands on the current value. Produce it on any "one of these is

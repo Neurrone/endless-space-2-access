@@ -454,7 +454,13 @@ already has an answer for each case.)
 - **The activation key is the game's left click** on the focused thing. Where the click is
   destructive, the guard is the game's OWN confirmation flow (funnelled through the
   message-box screen) — never a mod menu in front of the click. A click the game answers
-  with silence stays silent on the keyboard too.
+  with silence stays silent on the keyboard too — but find where the answer LANDS before
+  calling it silence: a refusal often surfaces away from the control, in a shared failure
+  banner, a toast or a status line, and that text is the click's answer.
+- **A two-step targeting mode has a HOVER half, and the keyboard has no hover**: the mouse
+  is shown the consequences of an irreversible order before committing. Replay the mode's
+  own enter handler at the focused target and read back what it wrote — driving only the
+  click is functionally complete and informationally blind.
 - **A control's several actions are its DRAWN buttons, modeled as child nodes** — declared
   while visible, refusing (reason in the tooltip part) while disabled, absent while the
   game hides them. Two rules follow: a container with no drawn actions is a LEAF, never an

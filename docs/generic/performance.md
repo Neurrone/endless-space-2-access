@@ -81,7 +81,9 @@ For code that runs every frame (pumps, watchers, claim checks):
   composes the node's WHOLE readout every frame to decide whether the review buffer still
   matches it, so an on-demand part on the focused control costs what a live one costs. Only
   SECTIONS are landing-only — they resolve when the buffer is actually refilled — which is
-  where a part that does real work belongs.
+  where a part that does real work belongs. Work the readout itself must SAY has nowhere to
+  hide: memoize it on the state it was computed from — declaring a part un-watched stops it
+  being ANNOUNCED, never being ASKED.
 
 ## Stagger and cap everything unbounded
 
