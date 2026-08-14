@@ -1,6 +1,6 @@
 # ES2 dev loop — build, reload, verify
 
-Fixtures: **`[Beginner] test`** (turn 4 — Dusay a colony, Rigel an outpost; `DevProbe.Saves()`
+Fixtures: **`[Beginner] test`** (turn 5, "Turn 6" displayed — Dusay a colony, Rigel an outpost; `DevProbe.Saves()`
 reports titles) and **`[Midgame] quests fleets`** (turn 3 — the one with a quest pinned).
 Screen-by-screen status: `docs/roadmap.md`; working a specific screen and its fixture
 limits: `docs/test-recipes.md`. This file is
@@ -138,6 +138,20 @@ screenshot into context. Invoke via the PowerShell tool or
 no text, so `/gui/age` prunes it and the dump agrees with whatever the mod declared — parity that
 is really a blind spot. Print `Alpha` beside `Visible` in an `/eval` walk and check it against a
 `crop-shot.ps1` of the same rect.
+
+**An un-watched announcement part is still ASKED every frame.** `GraphNavigator.FillBuffer`
+(:470 → :562-570) recomposes the focused node's whole `LeafText` each tick so the buffer can
+notice a control changing underneath the cursor — `watch: false` means "not compared", never "not
+asked". An expensive answer (a pathfinding search) needs a memo keyed on the state it was computed
+from; prove the fix with a call counter read across ~100 frames, because no transcript or dump
+shows the waste (`FleetRoute.Searches`: 121 focused frames → 0 searches).
+
+**The renderer-field oracle.** When the mod recomputes something the game only DRAWS, drive the
+game's own renderer from `/eval` and read its private display list by reflection
+(`IPathRendererService.ClearPathDataAndRenderPath` → `PathRenderer.pathDatasToDisplay`, then
+`ClearPathData()`), and compare classifications, not pixels. It proves parity with the DRAWING
+only — when the drawn thing is a prediction, the second oracle is letting the game run and
+watching what happens (the map's own turn markers were one low; end-turning caught it).
 
 **Auditing a tooltip.** `DevProbe.TooltipDelay(0)`, focus via `/input`, then all three:
 `/screenshot`, `DevProbe.Tooltip()` (a `features` array — class name, the reader that answered,

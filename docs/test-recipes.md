@@ -275,6 +275,14 @@ answers `EncounterInPreparation` (action-side — this one proves the three-argu
 `CanBeExecuted`). Invoke the node's real `OnContextual` delegate by reflection, read `/speech`,
 restore, and re-load the pristine save if a positive control posted a real order.
 
+**Reaching the route-loss watcher's endings.** No fixture produces a real interception or
+invalidation, and both are reversible only by `POST /loadsave`: order a fleet out, then from
+`/eval` either `fleet.SetPath(null)` (expect "The route of ⟨fleet⟩ to ⟨dest⟩ was cancelled") or
+`HasBeenIntercepted = true` first (expect "⟨fleet⟩ was intercepted at ⟨system⟩", and no
+cancellation line). The negative pairs matter as much: a normal arrival and a route REPLACEMENT
+(re-select the fleet — sending cleared the selection — and Backslash a new destination) must both
+stay silent, checked with a `/speech?since=N` window.
+
 **Testing the selection chords and the drag.** `/input` cannot hold a modifier, so
 `ui.selectToggle`/`ui.selectRange` reach the row's own click with NO physical Ctrl or Shift and the
 game runs its plain (radio) branch: the injection proves the wiring, the announcement and the

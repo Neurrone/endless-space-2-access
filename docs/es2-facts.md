@@ -428,6 +428,30 @@ generic graduates to the generic docs.
   Mod policy (2026-08-14): backslash keeps sending with the zoom forced — expanding a tree system
   forces it — deliberately more capable than the mouse, which has a conflict to resolve and the
   keyboard does not.
+- **The map's own turn markers read one LOW for a fleet stopped mid-lane with nothing left.**
+  `PathRenderer.DisplayMovement` (:765) marks a turn boundary only when the leg is not already
+  under way, so the turn a stranded fleet cannot move in gets no marker and the destination is
+  labelled a turn early — measured: the marker said 2, the fleet arrived after 3, and the end-turn
+  countdown `3 → 2 → 1` confirmed the corrected walk. `RouteTurns.Walk` emits that turn; the mod's
+  numbers deliberately diverge from the drawn labels because the drawn labels are wrong about the
+  world.
+- **A fleet flies THROUGH systems mid-turn and only ends a turn AT a node when the budget dies
+  exactly there.** Measured: a route to Rigel passes Dusay during turn 3 and ends that turn
+  mid-lane. "Where does each turn end" and "which nodes does the fleet reach" are different
+  questions with different answers.
+- **Neither interception nor route cancellation raises an event, and neither is worded anywhere.**
+  `EventFleetGotInterceptedByAnEnemy` is raised only by `GuardEmpireLocalAction` (:605); the common
+  citadel interception (`Citadel.cs` :195-222) raises nothing, and no cancelled-route event exists.
+  Both endings share `Fleet.OnGoToEnd` → `SetPath(null)`, and the game's only signal is a
+  `GuiFleetStatus` icon on the lozenge — so polling `Fleet.Path` is the faithful watch
+  (`FleetRouteWatch`), and arrival is told from loss by whether the fleet stands at the remembered
+  destination (the same test `GoToFleetAction` :307 makes).
+- **`Fleet.GeneratePathfindingData()` and `GalaxyPath.Data` hand back the fleet's own SHARED
+  `PathfindingData` instance.** Mutating it corrupts the fleet's real pathfinding — always copy
+  before simulating (`FleetRoute` does).
+- **Sending a fleet clears the map's selection**, so re-ordering a moving fleet means re-selecting
+  it first — and it is why a route REPLACEMENT never looks like a cancellation to a watcher that
+  checks the fleet still exists and where it stands.
 - **A screen whose own buttons rebuild its window must split arrival from departure.** Merging two
   fleets destroys both and builds a third; the window goes not-ready for a frame or two, and a plain
   `Shown && IsReady` gate stood the screen down mid-order — the transcript read "Galaxy" plus the

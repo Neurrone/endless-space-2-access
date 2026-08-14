@@ -113,7 +113,23 @@ files above.
   and Backslash carry it), and the two banner cyclers. They are worth revisiting only if a
   keyboard player reports reaching one of them by no other route.
 
+- Fleet-route surfaces awaiting a live sighting (unit-tested, fixture-blocked in
+  `[Beginner] test`): "Uses portal" / "Uses wormhole" on the preview and their itinerary
+  mentions (no portal, no wormhole tech); the time-bubble start refill; a real citadel
+  interception and a real mid-route invalidation for `FleetRouteWatch` (both driven only via
+  `/eval` so far); a positive free-movement route for Ctrl+Backslash (tech not researchable
+  from the REPL); a state-2 special node hidden by the raised `Perceived` gate.
+
 ## To decide (owner)
+
+- **Which turns make the itinerary.** Shipped rule (approved wording read strictly): a line
+  per turn that ENDS at a node — but a fleet usually stops mid-lane past a system, so the
+  measured 4-turn Rigel route yields exactly one line ("Turn 4: Rigel (destination)").
+  Alternative rule: a line per turn in which the fleet REACHES a node, which would have read
+  "Turn 3: Dusay / Turn 4: Rigel (destination)" for the same route; the walker already knows.
+- Whether the "Fleet panel open for ⟨names⟩" announcement should also carry the single
+  selected fleet's destination/arrival ("… en route to Rigel, arrives in 3 turns") — left
+  off because the line lists every selected fleet and five destinations would drown it.
 
 - The report family's breakdown toggle (IonWave and friends) is DECLARED NOWHERE: it is
   vestigial — `ReportPanel` carries no `AgeModifier`, so it animates nothing (es2-facts).
