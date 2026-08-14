@@ -1083,6 +1083,12 @@ namespace ES2Access.Screens
                 NodeSection.Buffer(() => QuestMarkerLines(it, empire)),
                 StarDossier(it, tooltip)
             );
+            // What the place IS, where it is not a star system at all. Said first, because it is the
+            // thing a sighted player takes in without asking: the map gives a special node a body of
+            // its own (<see cref="SpecialKind"/>) while its name is a bare catalogue number that
+            // gives nothing away. Not watched - a node cannot become a different phenomenon.
+            vtable.Announcements.Add(GraphNodes.ValuePart(() => SpecialKind(it), false));
+
             if (owned)
             {
                 // A system of yours is either a colony or still an OUTPOST, and the map draws the two
@@ -1256,6 +1262,36 @@ namespace ES2Access.Screens
 
             AddFleets(builder, key, FleetPresence.FleetsAt(node));
             AddHangars(builder, key, node);
+        }
+
+        /// <summary>
+        /// What a place on the map is, where it is one of the galaxy's phenomena rather than a star
+        /// system - a solar nebula, a collapsing star, an asteroid field. Nothing at all for an
+        /// ordinary system, which needs no telling: it is what the map is made of.
+        ///
+        /// A special node is a <c>StarSystemNode</c> with no planets and a body of its own drawn over
+        /// the star (<c>GalaxySpecialNode.UpdateVisualAccordingToExploration</c>), and its name is a
+        /// bare catalogue number - so a sighted player knows what they are looking at from the picture
+        /// and a keyboard player was told nothing. The kind is only ever written down in the dossier
+        /// behind the star, which is a tooltip the player has to go and read.
+        ///
+        /// The words are the game's own - the same expression the dossier's header draws
+        /// (<c>GuiSpecialNode.CategoryTitle</c>), so this cannot drift from the line the buffer
+        /// already carries, and there is nothing here to translate.
+        /// </summary>
+        private static string SpecialKind(StarSystemNode node)
+        {
+            try
+            {
+                SpecialNode special = node as SpecialNode;
+                SpecialNodeDefinition definition =
+                    special == null ? null : special.SpecialNodeDefinition;
+                return definition == null ? null : Gui.GetLocalizedTitle(definition.Name);
+            }
+            catch (Exception)
+            {
+                return null;
+            }
         }
 
         /// <summary>What a system of the player's IS - taken from the state the game paints its label
