@@ -580,14 +580,19 @@ namespace ES2Access.UI
         }
 
         /// <summary>
-        /// The journey as a line per turn.
+        /// The journey as a line per turn: the places the fleet REACHES on that turn, in the order it
+        /// reaches them.
         ///
-        /// Only the turns that END somewhere with a name. A turn that runs out of movement half way down
-        /// a lane leaves the fleet in empty space, which the map draws as a numbered dot and calls
-        /// nothing at all - so there is nothing to write on that line, and inventing "somewhere between
-        /// Hir and Xiu" would be the mod describing a picture rather than reading one. Whatever that turn
-        /// did do that is worth saying - a portal, a wormhole - is said on it anyway, because the fleet
-        /// really did go through one.
+        /// Reaching, not stopping. A fleet with movement to spare flies straight through a system and
+        /// spends the night past it, so a turn can pass three places and end at none of them - and the
+        /// question an itinerary answers is "when does my fleet get to Hir", which the night's resting
+        /// spot alone cannot say. Owner ruling; the earlier rule was where the turn ENDED, and on a
+        /// measured route that produced exactly one line, the arrival.
+        ///
+        /// A turn that reaches nowhere at all - one spent entirely between two systems - is no line,
+        /// because the map draws a numbered dot in empty space and calls it nothing, and inventing
+        /// "somewhere between Hir and Xiu" would be describing a picture rather than reading one. What
+        /// such a turn nonetheless DID - a portal, a wormhole - is still said, on a line of its own.
         /// </summary>
         private static IList<string> Lines(Route route)
         {
@@ -596,44 +601,42 @@ namespace ES2Access.UI
                 return null;
             }
 
+            int destination = route.Places.Length - 1;
             List<string> lines = new List<string>(route.Turns.Count);
             for (int i = 0; i < route.Turns.Count; i++)
             {
                 RouteTurn turn = route.Turns[i];
                 MessageBuilder message = new MessageBuilder();
-                if (turn.EndLeg >= 0 && turn.EndLeg < route.Places.Length)
+                MessageBuilder places = new MessageBuilder();
+                bool arrives = false;
+                int reached = 0;
+                for (int j = 0; turn.Reached != null && j < turn.Reached.Count; j++)
                 {
-                    string name = Named(route.Places[turn.EndLeg]);
-                    if (turn.IsArrival)
+                    int at = turn.Reached[j];
+                    if (at < 0 || at >= route.Places.Length)
                     {
-                        message.ListItem(
-                            name == null
-                                ? ModStrings.Format(
-                                    ModStrings.FleetItineraryArrivalUnexplored,
-                                    turn.Number
-                                )
-                                : ModStrings.Format(
-                                    ModStrings.FleetItineraryArrival,
-                                    turn.Number,
-                                    name
-                                )
-                        );
+                        continue;
                     }
-                    else
-                    {
-                        message.ListItem(
-                            name == null
-                                ? ModStrings.Format(
-                                    ModStrings.FleetItineraryTurnUnexplored,
-                                    turn.Number
-                                )
-                                : ModStrings.Format(
-                                    ModStrings.FleetItineraryTurn,
-                                    turn.Number,
-                                    name
-                                )
-                        );
-                    }
+
+                    reached++;
+                    arrives |= at == destination;
+                    string name = Named(route.Places[at]);
+                    places.ListItem(
+                        name ?? ModStrings.Get(ModStrings.FleetUnexploredSystem)
+                    );
+                }
+
+                if (reached > 0)
+                {
+                    message.ListItem(
+                        ModStrings.Format(
+                            arrives
+                                ? ModStrings.FleetItineraryArrival
+                                : ModStrings.FleetItineraryTurn,
+                            turn.Number,
+                            places.Build()
+                        )
+                    );
                 }
 
                 if (turn.UsesPortal)

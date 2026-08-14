@@ -122,14 +122,6 @@ files above.
 
 ## To decide (owner)
 
-- **Which turns make the itinerary.** Shipped rule (approved wording read strictly): a line
-  per turn that ENDS at a node — but a fleet usually stops mid-lane past a system, so the
-  measured 4-turn Rigel route yields exactly one line ("Turn 4: Rigel (destination)").
-  Alternative rule: a line per turn in which the fleet REACHES a node, which would have read
-  "Turn 3: Dusay / Turn 4: Rigel (destination)" for the same route; the walker already knows.
-- Whether the "Fleet panel open for ⟨names⟩" announcement should also carry the single
-  selected fleet's destination/arrival ("… en route to Rigel, arrives in 3 turns") — left
-  off because the line lists every selected fleet and five destinations would drown it.
 
 - The report family's breakdown toggle (IonWave and friends) is DECLARED NOWHERE: it is
   vestigial — `ReportPanel` carries no `AgeModifier`, so it animates nothing (es2-facts).

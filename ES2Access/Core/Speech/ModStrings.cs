@@ -301,12 +301,13 @@ namespace ES2Access.Core.Speech
         public const string FleetRouteUsesPortal = "fleet.route-uses-portal";
         public const string FleetRouteUsesWormhole = "fleet.route-uses-wormhole";
 
-        // The itinerary, one line per turn that ends somewhere with a name. The turn numbers are the
-        // ones the map writes on its own markers, counting the turn in progress as the first.
+        // The itinerary, one line per turn in which the fleet reaches somewhere, counting the turn in
+        // progress as the first. A turn can reach several places, and they share the line - so what
+        // fills the slot is a LIST of names, and a place the map has not named goes into that list
+        // under the noun phrase below rather than as a sentence of its own.
         public const string FleetItineraryTurn = "fleet.itinerary-turn";
-        public const string FleetItineraryTurnUnexplored = "fleet.itinerary-turn-unexplored";
         public const string FleetItineraryArrival = "fleet.itinerary-arrival";
-        public const string FleetItineraryArrivalUnexplored = "fleet.itinerary-arrival-unexplored";
+        public const string FleetUnexploredSystem = "fleet.unexplored-system";
 
         // What a fleet already under way says about where it is going. Two shapes, because some of the
         // surfaces that say it have already named the destination and some have not.
@@ -1010,9 +1011,8 @@ namespace ES2Access.Core.Speech
             { FleetRouteUsesPortal, "Uses portal" },
             { FleetRouteUsesWormhole, "Uses wormhole" },
             { FleetItineraryTurn, "Turn {0}: {1}" },
-            { FleetItineraryTurnUnexplored, "Turn {0}: an unexplored system" },
             { FleetItineraryArrival, "Turn {0}: {1} (destination)" },
-            { FleetItineraryArrivalUnexplored, "Turn {0}: an unexplored system (destination)" },
+            { FleetUnexploredSystem, "an unexplored system" },
             { FleetRouteToThisTurn, "En route to {0}, arrives this turn" },
             { FleetRouteToTurns, "En route to {0}, arrives in {1} turns" },
             {

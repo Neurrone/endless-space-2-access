@@ -56,6 +56,13 @@ namespace ES2Access.Core.UI
         /// the far end of the last leg - the destination.</summary>
         public bool IsArrival;
 
+        /// <summary>Every place REACHED during this turn, in the order they were reached, as leg far-end
+        /// indices (leg i's far end is index i+1). Not the same question as <see cref="EndLeg"/>: a
+        /// traveller with movement left flies straight through a place and spends the night past it, so
+        /// a turn can reach three places and end at none of them - which is what an itinerary is FOR,
+        /// and what the night's resting spot alone cannot say.</summary>
+        public List<int> Reached = new List<int>(1);
+
         public bool UsesPortal;
 
         public bool UsesWormhole;
@@ -197,6 +204,10 @@ namespace ES2Access.Core.UI
                     }
                 }
 
+                // The far end of the leg just flown, recorded against whichever turn the walk is in NOW -
+                // which is not always the turn the leg started in, because a turn can end part way along
+                // it.
+                turn.Reached.Add(i + 1);
                 if (leg.RefillOnArrival)
                 {
                     current = maximum;

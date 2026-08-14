@@ -240,6 +240,64 @@ namespace ES2Access.Tests.UI
         }
 
         [Fact]
+        public void APlaceFlownStraightThroughIsReachedOnTheTurnItIsPassed()
+        {
+            // The measured route (Primus -> Dusay -> Rigel, budget 6 of 6 with 4.67 left, legs 13.33 and
+            // 8.27). The fleet reaches Dusay part way through turn 3 and carries straight on, spending
+            // that night in empty space; the itinerary still has to say "turn 3: Dusay", because when
+            // the fleet GETS somewhere is the question, not where it sleeps.
+            List<RouteTurn> turns = RouteTurns.Walk(
+                new Legs(Ordinary(13.33f), Ordinary(8.27f)),
+                4.666434f,
+                6f,
+                0f,
+                -1f
+            );
+
+            Assert.Equal(4, turns.Count);
+            Assert.Empty(turns[0].Reached);
+            Assert.Empty(turns[1].Reached);
+            Assert.Equal(new[] { 1 }, turns[2].Reached);
+            Assert.Equal(-1, turns[2].EndLeg);
+            Assert.Equal(new[] { 2 }, turns[3].Reached);
+            Assert.True(turns[3].IsArrival);
+        }
+
+        [Fact]
+        public void SeveralPlacesReachedInOneTurnAreOneTurnsWorth()
+        {
+            // Four short hops on a budget that covers all of them: one turn, four places reached, which
+            // the caller renders as a single line.
+            List<RouteTurn> turns = RouteTurns.Walk(
+                new Legs(Ordinary(1f), Ordinary(1f), Ordinary(1f), Ordinary(1f)),
+                6f,
+                6f,
+                0f,
+                -1f
+            );
+
+            Assert.Single(turns);
+            Assert.Equal(new[] { 1, 2, 3, 4 }, turns[0].Reached);
+        }
+
+        [Fact]
+        public void APlaceReachedExactlyAsTheBudgetRunsOutBelongsToTheTurnThatGotThere()
+        {
+            List<RouteTurn> turns = RouteTurns.Walk(
+                new Legs(Ordinary(3f), Ordinary(3f)),
+                3f,
+                3f,
+                0f,
+                -1f
+            );
+
+            Assert.Equal(2, turns.Count);
+            Assert.Equal(new[] { 1 }, turns[0].Reached);
+            Assert.Equal(1, turns[0].EndLeg);
+            Assert.Equal(new[] { 2 }, turns[1].Reached);
+        }
+
+        [Fact]
         public void NoRouteIsNoTurns()
         {
             Assert.Empty(RouteTurns.Walk(new Legs(), 3f, 3f, 0f, -1f));
