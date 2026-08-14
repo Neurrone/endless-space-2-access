@@ -464,6 +464,19 @@ generic graduates to the generic docs.
 - **`EntityExploration.SetState` only ever RAISES a state** (:87-100), so a fog test that needs
   a lower state must write the byte in the by-reference `GetCurrentStates()` array and put it
   back (test-recipes).
+- **`ContextualIconInvasion.AgeTooltip.Content` is prefab-authored and never cleared.**
+  `RefreshInvasionContextualIcon` (:748-749) clears only `Class` and `Target`, so the
+  `%StarSystemLabelInvasionDescription` sentence sits in `Content` on every label forever —
+  harmless only because readers gate on the icon being drawn. A reader that skips the
+  visibility gate reads a phantom invasion.
+- **`Gui.GetTitle` has no GuiElement for `InvadedStarSystem`, `CitadelDefense` or
+  `GuardedColonizedStarSystem`** — the raw `%…Title` key (or a "(missing GuiElement)" marker)
+  comes back, so those states have NO game-authored noun; mod phrases required. And the
+  `StarSystem` tooltip class carries `PanelFeatureTimeBubblesContainer` but NO guard or
+  citadel feature (`GuiTooltipDescriptions.xml`) — the guard ring is the map's only telling.
+- **`OrderCreateTimeBubble` does not land from the REPL** (it needs `TimeBubblesStock`, and
+  `OrderAddTimeBubbleStock` does not land either); the public route is
+  `DepartmentOfTheInterior.CreateTimeBubble(guid, definitionName, node)`.
 - **`Fleet.GeneratePathfindingData()` and `GalaxyPath.Data` hand back the fleet's own SHARED
   `PathfindingData` instance.** Mutating it corrupts the fleet's real pathfinding — always copy
   before simulating (`FleetRoute` does).

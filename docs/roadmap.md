@@ -118,7 +118,13 @@ files above.
   mentions (no portal, no wormhole tech); the time-bubble start refill; a real citadel
   interception and a real mid-route invalidation for `FleetRouteWatch` (both driven only via
   `/eval` so far); a positive free-movement route for Ctrl+Backslash (tech not researchable
-  from the REPL); a state-2 special node hidden by the raised `Perceived` gate.
+  from the REPL); the "Ground battle, attacker ⟨empire⟩" named form (a real battle cannot be
+  forced — the bare "Ground battle" form is verified); a special node at exploration exactly
+  2 named by the reverted gate (states only raise; needs a save that reaches it).
+- Trade-route geometry in the SCAN VIEW screen (owner-ruled 2026-08-14: match where the game
+  draws the lines — not the galaxy tree, not the economy screen); fixture-blocked until a
+  save with a trading company. Special-node identification (does the readout need a "what
+  this is" clause — Academy vs ordinary system) awaits its measurement stage.
 
 ## To decide (owner)
 

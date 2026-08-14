@@ -281,6 +281,17 @@ it, dump the graph or invoke the predicate, put the original back in the same `/
 (Proved the lane gate both directions: a PartiallyRevealed link dropped to Identified left
 the tree; restored, it returned with its original numbering.)
 
+**Forcing the system node's map marks** (all `/eval`-reversible; pristine save is the restore):
+ground battle — add `StarSystemLabel.GroundBattleInProgressTag` to the colony's
+`SimulationObject.Tags` (the NAMED-attacker branch is unreachable: `GetGroundBattleOnNode`
+matches `DefenderNode`, which only resolves from a real serialized battle); time bubble —
+`DepartmentOfTheInterior.CreateTimeBubble(newGuid, <definition name from the
+TimeBubbleDefinition database>, node)`; quest markers — `IQuestManagementService.Register`
+/`Unregister` a `QuestMarker`; guard — the public `GuardingEmpireIndex`/
+`GuardingDisplayedEmpireIndex` setters; citadel — `colony.BindCitadel(new Citadel(guid,
+Citadel1))`, undone by `UnbindCitadel(true)`. Lowering an `EntityVisibility` LAYER (unlike
+exploration) needs reflection on the private `layers` array.
+
 **Reaching the route-loss watcher's endings.** No fixture produces a real interception or
 invalidation, and both are reversible only by `POST /loadsave`: order a fleet out, then from
 `/eval` either `fleet.SetPath(null)` (expect "The route of ⟨fleet⟩ to ⟨dest⟩ was cancelled") or
