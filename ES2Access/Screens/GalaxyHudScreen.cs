@@ -2860,8 +2860,14 @@ namespace ES2Access.Screens
                     // (`GalaxyGarrisonCursor.OnCursorClick` :88-95 changes back to the plain cursor for
                     // a click that landed on a link and nothing else). With nothing selected the click
                     // does nothing at all, and so does this - there is no action to invent.
+                    //
+                    // While a targeting mode is armed that same left click means "confirm here" instead,
+                    // for a line as much as for a system (<see cref="CursorTargeting"/>) - and a lane is
+                    // where the probe mode is aimed by rights, since a lane running into the dark is the
+                    // only way to name a direction with no system at the end of it.
                     Link target = link;
-                    vtable.OnActivate = Deselect;
+                    GameNode aim = destination;
+                    vtable.OnActivate = () => LaneClick(target, aim);
                     vtable.OnContextual = () => LaneCommand(target);
 
                     string key = place + "/lane/" + link.GUID;
@@ -3047,6 +3053,21 @@ namespace ES2Access.Screens
 
             List<FailureInfo> refusals = new List<FailureInfo>();
             SendAll(SendableTo(link, selected, refusals), refusals);
+        }
+
+        /// <summary>The map's own left click on a lane: while an order is waiting for a target it is
+        /// aimed down this line (<see cref="CursorTargeting"/>), and the rest of the time it is the
+        /// click that lets go of the selection (<see cref="Deselect"/>). The same first-refusal order
+        /// the click on a system is asked in (<see cref="ZoomIn"/>), so the two cannot drift apart.
+        /// </summary>
+        private static void LaneClick(Link lane, GameNode far)
+        {
+            if (CursorTargeting.ConfirmAt(lane, far))
+            {
+                return;
+            }
+
+            Deselect();
         }
 
         /// <summary>

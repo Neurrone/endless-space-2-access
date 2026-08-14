@@ -134,6 +134,155 @@ namespace ES2Access.UI
         }
 
         /// <summary>
+        /// The same confirm, at a STARLANE rather than at a place - the map's own left click on the line
+        /// itself, which is where the mode is aimed when what the player wants is a direction rather than
+        /// a system. Aiming a probe down an unexplored lane is the whole point of the probe mode: the far
+        /// end of that line has no node of its own on this screen (a lane into the dark offers no
+        /// destination child), so the lane IS the only way to name where the probe should go.
+        ///
+        /// <paramref name="far"/> is the end the lane's own node is pointing at - the one its label names
+        /// and its compass direction is measured to - and confirming here means confirming at that end,
+        /// per cursor kind:
+        ///
+        /// - The two pointer-aimed modes are launched at the far end's own position, because the mouse's
+        ///   click on a lane is a point somewhere along the line and the far end is the point that line is
+        ///   leading to. Which end is far is asked of the acting fleet first, the way the game asks it
+        ///   when a fleet is sent onto a lane (<see cref="Downlane"/>).
+        /// - Every other mode is handed the lane's own cursor target and left to judge it, exactly as a
+        ///   click on the line hands one over. None of the seven reads a link target
+        ///   (<c>GalaxyLinkCursorTarget</c> is consumed only by the garrison cursor and the scan overlay),
+        ///   so what the player gets is the game's own silent refusal with the mode still up - the same
+        ///   nothing the mouse gets clicking a lane while the obliterator is armed.
+        ///
+        /// Nothing is read out on the way in either, for the same reason: a mode's hover readout is written
+        /// from a target it recognises, and none of them recognises this one.
+        /// </summary>
+        public static bool ConfirmAt(Link lane, GameNode far)
+        {
+            Cursor cursor;
+            try
+            {
+                cursor = Gui.GetCursor();
+                if (cursor == null || !cursor.HasUserInstructions || lane == null || far == null)
+                {
+                    return false;
+                }
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+
+            try
+            {
+                ProbeLaunchingCursor probe = cursor as ProbeLaunchingCursor;
+                if (probe != null)
+                {
+                    LaunchProbe(probe, Downlane(lane, far, probe.ProbeOriginFleet));
+                    return true;
+                }
+
+                CoordinationRequestCursor request = cursor as CoordinationRequestCursor;
+                if (request != null)
+                {
+                    AskToCoordinate(request, Downlane(lane, far, null));
+                    return true;
+                }
+
+                Click(cursor, TargetAlong(lane, far));
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: confirming a cursor target on a lane threw: " + e);
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Which end of a lane an order aimed down it is aimed AT.
+        ///
+        /// The lane's own node already answers this: it hangs off one system and names the other, and its
+        /// label's compass direction is measured that way round. The acting fleet gets to overrule it,
+        /// because a fleet standing on the end the node happens to call "far" would be sent nowhere at all
+        /// - a probe's heading is the normalised vector from the fleet to the place named, and from a
+        /// fleet to its own position that vector is zero. Which end a fleet is standing on is asked the
+        /// way the game asks it when it sends one onto a lane (<see cref="FleetOrders.PathToLink"/>,
+        /// ported from <c>GetGalaxyPathToLink</c>): in orbit it is the node it orbits, in flight the node
+        /// it is next due at.
+        ///
+        /// A fleet touching neither end keeps the node's own answer, which for the lane the probe mode
+        /// exists for - one running off into the dark - is the same answer the game's own rule gives:
+        /// the node offering the lane is an explored one, so the end it names is the unexplored one.
+        /// </summary>
+        private static GameNode Downlane(Link lane, GameNode far, Fleet fleet)
+        {
+            try
+            {
+                if (fleet == null || fleet.IsDestroyed || !Touches(fleet, far))
+                {
+                    return far;
+                }
+
+                return ReferenceEquals(lane.ExtremityNode1, far)
+                    ? lane.ExtremityNode2
+                    : lane.ExtremityNode1;
+            }
+            catch (Exception)
+            {
+                return far;
+            }
+        }
+
+        /// <summary>Whether the fleet is standing on this end of a lane - orbiting it, or flying with it
+        /// as the next node it is due at.</summary>
+        private static bool Touches(Fleet fleet, GameNode node)
+        {
+            NodePosition at = fleet.Position.IsInOrbit
+                ? fleet.NodePosition
+                : fleet.Position.NextValidNodePosition;
+            return at == node.NodePosition;
+        }
+
+        /// <summary>
+        /// The map's own object for aiming at a LANE - and there are two of them per lane, one for each
+        /// half of the line, because which end a mouse is nearer is part of what it is pointing at
+        /// (<c>GalaxyLink.Ignite</c> builds both, each with its own start and destination, and
+        /// <c>GetCursorTarget</c> picks by where along the line the pointer is). The half handed over is
+        /// the one leading to the end the lane's node names, so a cursor that reads the target's
+        /// direction reads the direction the player was told about.
+        /// </summary>
+        private static CursorTarget TargetAlong(Link lane, GameNode far)
+        {
+            try
+            {
+                IGalaxyEntityFactoryService entities =
+                    Services.GetService<IGalaxyEntityFactoryService>();
+                GameObject entity = entities == null ? null : entities[lane.GUID];
+                GalaxyLinkCursorTarget[] halves =
+                    entity == null ? null : entity.GetComponents<GalaxyLinkCursorTarget>();
+                if (halves == null || halves.Length == 0)
+                {
+                    return null;
+                }
+
+                for (int i = 0; i < halves.Length; i++)
+                {
+                    if (halves[i].DestinationPosition == far.NodePosition)
+                    {
+                        return halves[i];
+                    }
+                }
+
+                return halves[0];
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
         /// The map's own RIGHT click while a mode is waiting - the way back out of every one of them, and
         /// the caller's signal that the key belonged to the mode rather than to whatever the map does with
         /// it the rest of the time (send the selected fleets, undo a zoom).
