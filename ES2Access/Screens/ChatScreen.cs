@@ -203,8 +203,11 @@ namespace ES2Access.Screens
         /// would still be showing and nothing it has already thrown away. Everything older stays in the
         /// chat review buffer, which holds the session entire.
         ///
-        /// A GROUP rather than fifty rows in the open: collapsed, the log costs one node, and it costs
-        /// fifty only while somebody is reading it (the cost gate in the graph engine's own rules).
+        /// FLAT rows, not an expandable group, and the newest sits directly above the box: Up from the
+        /// box reads the last thing said, Up again the one before it, exactly as the eye walks the
+        /// column bottom-up (owner ruling 2026-08-14, reversing the collapsed group - a fold between
+        /// the box and the last message was a step nobody asked for, and the rows only exist while the
+        /// chat page itself does, so their cost is bounded by the visit).
         /// </summary>
         private static void Messages(GraphBuilder builder)
         {
@@ -212,20 +215,12 @@ namespace ES2Access.Screens
             int count = messages == null ? 0 : messages.Count;
             if (count == 0)
             {
-                // Nothing said yet: the panel draws no lines either, and an expandable group with
-                // nothing under it is a dead end rather than a heading.
+                // Nothing said yet: the panel draws no lines either.
                 return;
             }
 
-            ControlId id = ControlId.Structural("chat:messages");
-            builder.BeginGroup(id, GraphNodes.Group(() => ModStrings.Get(ModStrings.ChatMessages)));
             try
             {
-                if (!builder.IsExpanded(id))
-                {
-                    return;
-                }
-
                 for (int i = count > MaxLines ? count - MaxLines : 0; i < count; i++)
                 {
                     ChatMessage message = messages[i];
@@ -254,11 +249,6 @@ namespace ES2Access.Screens
             catch (Exception e)
             {
                 Log.Warn("chat: reading the messages threw: " + e);
-            }
-            finally
-            {
-                // Whatever happened above, the group has to be closed or the page declares nothing.
-                builder.EndGroup();
             }
         }
 

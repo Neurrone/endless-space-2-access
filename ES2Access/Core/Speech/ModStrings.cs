@@ -102,7 +102,7 @@ namespace ES2Access.Core.Speech
         // words: the game draws the log as bare lines under no heading at all, and it never draws the
         // box's own prompt (the panel keeps "%PressEnterToStartChattingTitle" as a placeholder it
         // compares against and never shows).
-        public const string ChatMessages = "chat.messages";
+
         public const string ChatMessageBox = "chat.message-box";
 
         // Screen names, spoken on arrival.
@@ -874,7 +874,7 @@ namespace ES2Access.Core.Speech
             { ChatTyping, "Chat. Type a message, Enter sends it, Escape leaves." },
             { ChatPanel, "Chat" },
             { ChatUnread, "unread messages" },
-            { ChatMessages, "Messages" },
+
             { ChatMessageBox, "Message" },
             { ScreenMainMenu, "Main menu" },
             { ScreenMessageBox, "Dialog" },
