@@ -275,6 +275,12 @@ answers `EncounterInPreparation` (action-side — this one proves the three-argu
 `CanBeExecuted`). Invoke the node's real `OnContextual` delegate by reflection, read `/speech`,
 restore, and re-load the pristine save if a positive control posted a real order.
 
+**Lowering a fog state reversibly.** `EntityExploration.SetState` refuses to lower, so write
+the byte directly: `node.Exploration.GetCurrentStates()[empire.Index]` is by-reference — set
+it, dump the graph or invoke the predicate, put the original back in the same `/eval`.
+(Proved the lane gate both directions: a PartiallyRevealed link dropped to Identified left
+the tree; restored, it returned with its original numbering.)
+
 **Reaching the route-loss watcher's endings.** No fixture produces a real interception or
 invalidation, and both are reversible only by `POST /loadsave`: order a fleet out, then from
 `/eval` either `fleet.SetPath(null)` (expect "The route of ⟨fleet⟩ to ⟨dest⟩ was cancelled") or

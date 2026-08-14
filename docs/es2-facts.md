@@ -446,6 +446,24 @@ generic graduates to the generic docs.
   `GuiFleetStatus` icon on the lozenge — so polling `Fleet.Path` is the faithful watch
   (`FleetRouteWatch`), and arrival is told from loss by whether the fleet stands at the remembered
   destination (the same test `GoToFleetAction` :307 makes).
+- **The map's NAME gate is `StarSystemLabel`'s, and it is looser than the mouse's.** The label
+  shows at exploration ≥ 2 AND (visibility Known or ≥ 3) (`ShowOrHideIfVisibleByEmpire`
+  :1514-1522), draws `GameNode.LocalizedName` at ≥ 2 and the literal `"???"` below it
+  (`RefreshEmpireNameLabel` :1894-1921), and the window binds a label to EVERY `GameNode` —
+  special nodes included, with no special-node branch on the name. So
+  `GalaxySpecialNodeCursorTarget`'s stricter ≥ 3 governs TARGETING, not naming: between
+  exploration 2 and 3 the map names a special node the mouse cannot yet click. Measured live:
+  every Unrevealed node's label hidden, so a lane preview into the dark never shows the far
+  end's name anywhere — the mod's "an unexplored system" placeholder is exact parity.
+- **A link's drawn line is built full-length at ignition and only TINTED by exploration.**
+  `GalaxyWarplink.Ignite` uses both extremities' real positions unconditionally;
+  `GetIntensityFromState` (:362-372) paints Localized/Identified at intensity 0 — invisible —
+  and PartiallyRevealed+ at 1. Existence of the geometry was never the question; visibility is
+  the intensity. Mod policy: `MapVisibility.Drawn(link)` gates the tree's lanes at
+  ≥ PartiallyRevealed.
+- **`EntityExploration.SetState` only ever RAISES a state** (:87-100), so a fog test that needs
+  a lower state must write the byte in the by-reference `GetCurrentStates()` array and put it
+  back (test-recipes).
 - **`Fleet.GeneratePathfindingData()` and `GalaxyPath.Data` hand back the fleet's own SHARED
   `PathfindingData` instance.** Mutating it corrupts the fleet's real pathfinding — always copy
   before simulating (`FleetRoute` does).
