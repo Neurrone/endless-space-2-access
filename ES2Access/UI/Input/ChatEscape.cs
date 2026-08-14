@@ -6,8 +6,10 @@ using HarmonyLib;
 namespace ES2Access.UI.Input
 {
     /// <summary>
-    /// Turns the first Escape out of the game's chat box into a step OUT of the box instead of the
-    /// game's close-the-whole-panel.
+    /// The mod's two interceptions in the chat panel's own input dispatch: the CHAT KEY on a closed
+    /// panel opens the chat page with the cursor ON the box rather than handing the box the keyboard
+    /// in the same press (owner ruling 2026-08-14 - typing is Enter on the box's node), and the first
+    /// Escape out of the box becomes a step OUT instead of the game's close-the-whole-panel.
     ///
     /// The chat field is key-exclusive, so while the player is typing the mod's whole layer stands down
     /// and the only key that can act is one the GAME routes. Escape is one: the field declares
@@ -124,7 +126,34 @@ namespace ES2Access.UI.Input
         {
             try
             {
-                if (inputAction != global::InputAction.Exit || __instance == null)
+                if (__instance == null)
+                {
+                    return true;
+                }
+
+                if (inputAction == global::InputAction.StartChatting)
+                {
+                    // The chat key, on a closed panel: open the page with the cursor ON the box
+                    // rather than letting the game hand the box the keyboard in the same press
+                    // (owner ruling 2026-08-14 - typing is Enter on the box, like every other text
+                    // box here). An open panel's chat key stays the game's, as does the whole key
+                    // when the mod has no page to open over.
+                    if (ChatHold.IsOpen(__instance))
+                    {
+                        return true;
+                    }
+
+                    GraphNavigator nav = ModEntry.Navigator;
+                    if (nav == null || nav.Screen == null || !ChatHold.OpenOnTheBox(__instance))
+                    {
+                        return true;
+                    }
+
+                    __result = true;
+                    return false;
+                }
+
+                if (inputAction != global::InputAction.Exit)
                 {
                     return true;
                 }

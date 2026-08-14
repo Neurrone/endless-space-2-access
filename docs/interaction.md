@@ -130,13 +130,16 @@ item at the target's own position ("Moved ⟨name⟩ to position ⟨n⟩").
 `StartChatting` off Enter/Tab to Ctrl+Tab through the game's own options (ONLY while it still has
 the shipped default; a customised binding is left alone), and whatever chord the binding sits on is
 handed back through the stand-down (`ModInput.LeaveToGame`) — so re-binding chat in the game's
-options keeps working. **Open chat is a PLACE, not a stop**: the key hands the keyboard to the game's
-box, and the mod pushes a child screen over the page (`ChatScreen`, in every session including single
-player — `docs/helpers.md`), so while the panel is up Tab cycles inside chat and the page underneath
-is unreachable, exactly as the panel behaves for a mouse. **The first Escape steps OUT of the box**
-into that page — keyboard back, panel still drawn, cursor on the box's own node with the tabs and the
-log one arrow away — and **the second Escape closes**, handing the player back to the control they
-left (the covered page keeps its own cursor). Enter on the box node types again. The panel is drawn
+options keeps working. **Open chat is a PLACE, not a stop**: the key opens the mod's child screen
+over the page (`ChatScreen`, in every session including single player — `docs/helpers.md`) with the
+cursor ON the box's node, NOT typing in it — entering the box is Enter on that node, the edit-field
+idiom everywhere else (owner ruling 2026-08-14; the game's own answer to the key, keyboard straight
+into the box, is intercepted in the panel's input handler — a mouse click or the new-message button
+still types at once, since a pointer asked for the box itself). While the panel is up Tab cycles
+inside chat and the page underneath is unreachable, exactly as the panel behaves for a mouse; Up from
+the box walks the log newest-first. **While typing, the first Escape steps OUT of the box** into that
+page — keyboard back, panel still drawn, cursor on the box's own node — and **Escape from the page
+closes**, handing the player back to the control they left (the covered page keeps its own cursor). The panel is drawn
 only while somebody is typing in it or a pointer rests on it, so the mod holds it open for as long as
 its page is up (`ChatHold`) — which is the one thing that lets chat follow the drawing like every
 other surface; declared on the window's existence instead, its controls sat in every page's Tab ring

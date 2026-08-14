@@ -22,9 +22,12 @@ namespace ES2Access.UI
     /// controls sat in every page's Tab ring while the game drew nothing at all, and the first Escape
     /// out of the box shut the panel before any of them could be reached (owner-reported, 2026-08-14).
     ///
-    /// Three gestures, and the game owns the first. THE CHAT KEY opens the box and hands the keyboard
-    /// over (the game's <c>SetFocus</c>); <see cref="Tick"/> notices and pushes the chat page over
-    /// whatever the player was on, which is what contains them in chat for as long as it is open. The
+    /// Three gestures. THE CHAT KEY opens the chat page with the cursor ON the box's node - not
+    /// inside it; typing is Enter on the box, the edit-field idiom everywhere else in the mod
+    /// (<see cref="OpenOnTheBox"/>, reached from the panel's own input handler so the game's
+    /// hand-the-keyboard-over answer never runs for the key; a MOUSE opening the box - a click, the
+    /// new-message button - still types at once, and <see cref="Tick"/> notices that edge and pushes
+    /// the page under it, which is what contains them in chat for as long as it is open). The
     /// first ESCAPE while typing steps OUT rather than closing (<see cref="StepOutOfTyping"/>): the
     /// keyboard comes back, the panel is held open, and the cursor lands on the box's own node with the
     /// tabs and the log one arrow away. The second ESCAPE, from a node of that page, closes
@@ -147,6 +150,36 @@ namespace ES2Access.UI
             {
                 Warn("chat: minding the chat panel threw: " + e);
                 _held = null;
+            }
+        }
+
+        /// <summary>
+        /// The chat key: open the panel and its page with the cursor ON the box - not inside it.
+        ///
+        /// The game's own answer to the key is <c>SetFocus</c>, which hands the box the keyboard in
+        /// the same press - and the box is key-exclusive, so that one chord took every key away at
+        /// once. Typing is entered the way every other text box in the mod is entered: Enter on the
+        /// box's node (owner ruling 2026-08-14). False when there is no page to open over, which
+        /// tells the caller to let the game act instead.
+        /// </summary>
+        public static bool OpenOnTheBox(InGameChatPanel panel)
+        {
+            if (panel == null)
+            {
+                return false;
+            }
+
+            try
+            {
+                Open(panel);
+                // The landing on the box is the page's own start node (ChatScreen.Field declares
+                // it), so a fresh open needs no cursor move from here.
+                return _held != null;
+            }
+            catch (Exception e)
+            {
+                Warn("chat: opening on the box threw: " + e);
+                return false;
             }
         }
 

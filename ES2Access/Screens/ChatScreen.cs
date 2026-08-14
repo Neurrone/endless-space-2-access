@@ -288,7 +288,12 @@ namespace ES2Access.Screens
                     () => it.SetFocus()
                 );
                 vtable.OnFocusVisual = AgeWidgets.ReleasePointer;
-                builder.AddItem(ControlId.Referenced(field, FieldKey), vtable);
+                ControlId id = ControlId.Referenced(field, FieldKey);
+                builder.AddItem(id, vtable);
+                // The page opens ON the box - focus lands on it, not inside it (owner ruling
+                // 2026-08-14): the box is what the player came for, the newest message is one Up
+                // away, and typing is Enter.
+                builder.SetStart(id);
             }
             catch (Exception e)
             {
