@@ -123,8 +123,8 @@ files above.
   2 named by the reverted gate (states only raise; needs a save that reaches it).
 - Trade-route lanes awaiting a live sighting with a REAL trading company (shipped 2026-08-14
   verified against the renderer with an injected one): an external-subsidiary route and a
-  simulation-set HQ/subsidiary blockade. Special-node "what this is" clause: measured,
-  proposal pending the owner's ruling.
+  simulation-set HQ/subsidiary blockade; an explored special node speaking its kind ("Solar
+  Nebula" — shipped 2026-08-14, no fixture reveals one).
 
 ## To decide (owner)
 
