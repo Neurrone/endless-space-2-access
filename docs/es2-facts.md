@@ -262,7 +262,8 @@ generic graduates to the generic docs.
   `Path == null`.
 - **A data-driven button roster's closed set lives in `Public/Gui/**/GuiElements[*].xml`, not the
   assemblies.** When a `WindowGuiElement`-derived class holds `(Name, TypeName)` pairs
-  (`FleetsScreenGuiElement.FleetActionButtons` — all 30 fleet actions), the XML on disk is the
+  (`FleetsScreenGuiElement.FleetActionButtons` — all 32 rows, one of them a STAR-SYSTEM
+  action driven from the fleet panel: `GroundBattleStarSystemActionDefinition`), the XML on disk is the
   authoritative enumeration; a decompiled-file glob under-counts. Static game data, readable
   without the game running.
 - **Full deselect needs BOTH** `ChangeCursor(typeof(GalaxyCursor), cursor)` AND `Select(null)` on
