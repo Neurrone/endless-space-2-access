@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Amplitude;
 using ES2Access.Core.Speech;
+using ES2Access.Core.UI;
 using ES2Access.Core.UI.Graph;
 using ES2Access.Core.Util;
 using ES2Access.UI;
@@ -89,6 +90,11 @@ namespace ES2Access.Screens
         /// <summary>The six labels the system lens rings a star with. Same reasoning: the panel creates
         /// them once and reuses them for whichever system the camera is nearest.</summary>
         private ScanViewSystemOverviewFidsiLabel[] _fidsi;
+
+        /// <summary>The lines the game lays over the map for the empire's trade routes, merged the way
+        /// the renderer merges them (<see cref="BuildTradeRoutes"/>). Reused rather than allocated: the
+        /// whole walk is redone on every rebuild.</summary>
+        private readonly TradeLanes _lanes = new TradeLanes();
 
         /// <summary>Scratch for reading how many captions the live lens declares, and the context its
         /// prerequisites are asked in. Reused rather than allocated, because the legend is read on every
@@ -266,6 +272,10 @@ namespace ES2Access.Screens
             BuildSystemManagement(builder);
             BuildPlanet(builder);
             BuildUnmodelled(builder);
+            // Last of the map's content, because it is the one thing here that does not belong to the
+            // live lens: the trade lines are laid over the galaxy for the whole mode, so they follow
+            // whatever the lens itself is drawing rather than interrupting it.
+            BuildTradeRoutes(builder);
 
             builder.BeginStop(LegendStop);
             BuildLegend(builder);
@@ -743,6 +753,172 @@ namespace ES2Access.Screens
             {
                 string drawn = AgeText.Label(label.NameLabel);
                 return string.IsNullOrEmpty(drawn) ? label.GameNode.LocalizedName : drawn;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        // ---- the trade routes drawn over the map ----
+
+        /// <summary>
+        /// The empire's own trade routes, as the lines the scan view draws for them.
+        ///
+        /// The game draws these nowhere else: <c>TradeRouteRenderer</c> refreshes only when the view
+        /// switches INTO the scan view (:184-190), and it draws the player's own routes and nobody
+        /// else's (:213-223). So this belongs to the lens and not to the map, and it is offered under
+        /// every lens because the renderer makes no distinction between them - the lines are laid over
+        /// the galaxy once and stay there for as long as the mode is up.
+        ///
+        /// What it draws is not one line per route. Every route's path is walked pairwise and each leg
+        /// merged onto the LANE it runs over, so two routes sharing a hop are one line, coloured for
+        /// the traffic on it - open, blockaded, or a third colour where the lane carries both
+        /// (:229-283). A per-route listing would have been a different picture: it would say the same
+        /// hop three times and never say the thing the drawing is about, which is which stretch of
+        /// space the empire's trade is crossing and where it is being stopped. The merge itself, and
+        /// the renderer's accumulating blockade flag, are <see cref="TradeLanes"/>.
+        ///
+        /// One group rather than a flat run of rows: the lines have no container on screen, but an
+        /// empire with a few companies draws dozens of them, and they would otherwise sit in the middle
+        /// of whatever labels the live lens is drawing. An empire with no trading company at all
+        /// declares nothing, which is the fixture and most of the early game.
+        ///
+        /// The routes are read from the department rather than from the renderer: the renderer computes
+        /// its lines once on the way in and never again, so a blockade that lands while the lens is up
+        /// leaves the picture stale, and reading the model keeps the words current.
+        /// </summary>
+        private void BuildTradeRoutes(GraphBuilder builder)
+        {
+            try
+            {
+                Empire empire = Gui.PlayerEmpire;
+                DepartmentOfCommerce commerce =
+                    empire == null ? null : empire.GetAgency<DepartmentOfCommerce>();
+                if (commerce == null)
+                {
+                    return;
+                }
+
+                _lanes.Clear();
+                IList<TradingCompany> companies = commerce.TradingCompanies;
+                for (int i = 0; companies != null && i < companies.Count; i++)
+                {
+                    TradingCompany company = companies[i];
+                    if (company == null)
+                    {
+                        continue;
+                    }
+
+                    // The two lists the game's own EnumerableTradingRoutes yields in turn, walked by
+                    // index: the enumerable allocates an iterator, and this runs every frame the lens
+                    // is up.
+                    AddRouteLegs(company.TradingRoutes);
+                    AddRouteLegs(company.ExternalTradingRoutes);
+                }
+
+                if (_lanes.Count == 0)
+                {
+                    return;
+                }
+
+                builder.BeginGroup(
+                    ControlId.Structural("scan:routes"),
+                    GraphNodes.Group(() => ModStrings.Get(ModStrings.ScanTradeRoutesGroup))
+                );
+                for (int i = 0; i < _lanes.Count; i++)
+                {
+                    AddLane(builder, _lanes[i]);
+                }
+
+                builder.EndGroup();
+            }
+            catch (Exception e)
+            {
+                Log.Warn("scan: reading the trade routes threw: " + e);
+            }
+        }
+
+        /// <summary>Every leg of every route in one of a company's two lists, counted onto its lane the
+        /// way the renderer counts it (:225-247) - including the blockade flag accumulating along the
+        /// path, and the whole-route flag a blockade at either END sets before the first leg.</summary>
+        private void AddRouteLegs(IList<TradingRoute> routes)
+        {
+            for (int i = 0; routes != null && i < routes.Count; i++)
+            {
+                TradingRoute route = routes[i];
+                NodePosition[] path = route == null ? null : route.Path;
+                if (path == null || path.Length < 2)
+                {
+                    continue;
+                }
+
+                TradingRouteBlockade blockade = route.Blockade;
+                TradingRouteBlockadedNodeInfo[] nodes =
+                    blockade == null ? null : blockade.NodeInfo;
+                bool blockaded =
+                    blockade != null
+                    && (blockade.IsBeingSoftBlockadedOnHQ || blockade.IsBeingSoftBlockadedOnSubsidiary);
+                for (int j = 0; j < path.Length - 1; j++)
+                {
+                    blockaded =
+                        blockaded
+                        || (
+                            nodes != null
+                            && j < nodes.Length
+                            && nodes[j] != null
+                            && nodes[j].IsBeingSoftBlockaded
+                        );
+                    _lanes.Add(path[j].NodeIndex, path[j + 1].NodeIndex, blockaded);
+                }
+            }
+        }
+
+        /// <summary>One line on the screen: the two places it runs between, and the traffic the game
+        /// coloured it for. Both ends are named lazily - the walk above runs every frame, and nothing
+        /// but the focused row's own words is ever needed.</summary>
+        private static void AddLane(GraphBuilder builder, TradeLanes.Lane lane)
+        {
+            TradeLanes.Lane it = lane;
+            builder.AddItem(
+                ControlId.Structural("scan:routes/" + lane.Start + "-" + lane.End),
+                GraphNodes.Readout(
+                    () => LaneName(it),
+                    () => TradeLanes.Text(it.Open, it.Blockaded),
+                    null,
+                    null
+                )
+            );
+        }
+
+        /// <summary>What the lane runs between, in the game's own names for the two places. A node the
+        /// route crosses has been revealed to the empire by the route itself
+        /// (<c>DepartmentOfCommerce.RevealNodesOnTradingRoutePath</c>), so there is no unnamed end to
+        /// fall back for - but an index the positioning service cannot place is left out rather than
+        /// read as a number.</summary>
+        private static string LaneName(TradeLanes.Lane lane)
+        {
+            try
+            {
+                IPositioningService positioning =
+                    Amplitude.Unity.Framework.Services.GetService<IPositioningService>();
+                if (positioning == null)
+                {
+                    return null;
+                }
+
+                GameNode from = positioning.GetGameNode(new NodePosition(lane.Start));
+                GameNode to = positioning.GetGameNode(new NodePosition(lane.End));
+                if (from == null || to == null)
+                {
+                    return null;
+                }
+
+                return ModStrings.Format(
+                    ModStrings.ScanTradeLane,
+                    from.LocalizedName,
+                    to.LocalizedName
+                );
             }
             catch (Exception)
             {

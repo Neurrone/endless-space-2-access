@@ -442,6 +442,21 @@ namespace ES2Access.Core.Speech
         public const string ScanBattle = "scan.battle";
         public const string ScanBattleHere = "scan.battle-here";
 
+        /// <summary>The trade routes the scan view draws as lines across the map, said a LANE at a time
+        /// because that is what the game draws: one line per pair of neighbouring places, however many
+        /// of the empire's routes run over it, painted open, blockaded or mixed
+        /// (<see cref="ES2Access.Core.UI.TradeLanes"/>). The game writes no words on any of it - the
+        /// lines carry a colour and nothing else - so the heading, the lane's name and all four counted
+        /// phrases are the mod's. Mixed keeps its own sentence: the lane is a third colour on the
+        /// screen, and "blockaded" alone would hide the traffic still getting through.</summary>
+        public const string ScanTradeRoutesGroup = "scan.trade-routes-group";
+        public const string ScanTradeLane = "scan.trade-lane";
+        public const string ScanTradeRouteOne = "scan.trade-route-one";
+        public const string ScanTradeRoutes = "scan.trade-routes";
+        public const string ScanTradeRouteOneBlockaded = "scan.trade-route-one-blockaded";
+        public const string ScanTradeRoutesBlockaded = "scan.trade-routes-blockaded";
+        public const string ScanTradeRoutesMixed = "scan.trade-routes-mixed";
+
         // The star system management page. The panel names are the mod's, because the game draws the
         // panels as unlabelled boxes with an icon in the corner; everything a panel CONTAINS is read
         // in the game's own words.
@@ -1091,6 +1106,13 @@ namespace ES2Access.Core.Speech
             { ScanSynergy, "{0} for {1}" },
             { ScanBattle, "Battle between {0}" },
             { ScanBattleHere, "Battle" },
+            { ScanTradeRoutesGroup, "Trade routes" },
+            { ScanTradeLane, "{0} to {1}" },
+            { ScanTradeRouteOne, "One trade route" },
+            { ScanTradeRoutes, "{0} trade routes" },
+            { ScanTradeRouteOneBlockaded, "One trade route, blockaded" },
+            { ScanTradeRoutesBlockaded, "{0} trade routes, blockaded" },
+            { ScanTradeRoutesMixed, "{0} trade routes, {1} blockaded" },
             { ScreenStarSystem, "Star system" },
             { ScreenPlanet, "Planet" },
             { PlanetPrevious, "Previous planet" },
