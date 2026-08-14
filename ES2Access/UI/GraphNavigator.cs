@@ -121,6 +121,18 @@ namespace ES2Access.UI
             get { return _state == null ? null : _state.CurKey; }
         }
 
+        /// <summary>How many nodes the focused screen declared on the last rebuild, or -1 when there
+        /// is no render. For a trace of a transition: a page that has stopped declaring its own
+        /// content while something else still declares its shared strip is the whole of what a
+        /// cursor jump in the gap looks like.</summary>
+        public int RenderedNodeCount
+        {
+            get
+            {
+                return _graph == null || _graph.Current == null ? -1 : _graph.Current.Nodes.Count;
+            }
+        }
+
         /// <summary>
         /// A render of the focused screen built purely to be READ - the dev server's accessible-tree
         /// dump. Exactly the build path navigation uses, so what the dump shows is what navigation

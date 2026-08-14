@@ -175,6 +175,16 @@ FOCUSED stop, and `ui.activate` while a search is live ends the search and then 
 landing's ordinary action — on a sort header that is a stray sort. Never follow a 0-result
 `/type` with `ui.activate`; clear with `ui.back` first.
 
+**Tracing a transition frame by frame.** A screen change is frames long and polling from outside
+samples between them, so the frame that moved the cursor is invisible. `POST /wait` evaluates its
+predicate EVERY frame and does not block `/eval`, so a predicate that LOGS and returns false is a
+per-frame recorder: start `POST /wait?timeout=30000` with body
+`ES2Access.Dev.DevProbe.Trace("tag")` in the background, drive the transition with `/eval`, then read
+`GET /log?since=0&grep=trace` (collapse runs of identical lines — a 30 s trace is ~1800 of them).
+Each line is the stack, the focused screen, the cursor, the node count that screen declared, and the
+tutorial/window state. A single-digit node count on an active page is a page declaring somebody
+else's content.
+
 **Injecting a sequence of keys.** `POST /input` one action key per request, ~0.4 s apart, then
 read `/speech?since=N` — `next` from a `since=0` read before the sequence is the baseline. The
 Bash tool mangles `python -c` here (it injects `|| goto :error`); keep the JSON formatting in a

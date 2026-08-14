@@ -210,6 +210,16 @@ answers with "Pinned quest: …". Opening the journal from the panel node is saf
 cursor still on it. **Unverified in either fixture**: "Show location" (the turn-3 quest has no
 marker, so the game hides the button), the numeric "(x/y)" progress branch, and a quest waiting on
 an objective choice (which draws no progress word at all).
+**Proving the quest half of the galaxy locate without a marker.** `unlocked` has six current quests
+and all six report `GetMarkers(step).Count == 0`, and `GuiManager.ShowQuestLocation` makes NO
+position request when there are none — so nothing lands. Make the pair of calls the game would make,
+in ONE `/eval` statement so they share a frame: `RequestGalaxyOverviewViewLevel(<a system's
+position>)` then `ShowQuestLocation(quest, quest.GetCurrentStep())`. `GalaxyLocate.RememberQuest`
+attaches the quest to the still-fresh position request exactly as a real marker would, and the
+landing speaks *"⟨quest⟩, objective shown on the map"* before the place's own readout. Enumerate the
+quests with `Services.GetService<IQuestRepositoryService>().GetCurrentQuests(Gui.PlayerEmpire.Index)`
+(cast each item to `Quest`; `Quest` has `State` and `GetCurrentStep()`, not `QuestState`/
+`QuestStepInProgress`).
 
 **Working the quest journal.** Open/close from `/eval` with
 `Gui.GuiService.GetWindow<GameOverlayWindow>().ControlBanner.ToggleScreen("NarrativeScreen")`

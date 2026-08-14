@@ -88,6 +88,83 @@ namespace ES2Access.Dev
         }
 
         /// <summary>
+        /// One line in the log for every frame, naming the whole of what decides where the keyboard
+        /// is: the polled stack, the screen the keys are going to, the cursor, how many nodes that
+        /// screen declared this frame, and the state of the tutorial popup and the three window
+        /// classes the game weighs it against.
+        ///
+        /// Always false, so <c>POST /wait</c> on it never finishes early and records the whole
+        /// passage: a transition is frames long, and polling from outside samples between them and
+        /// misses exactly the frame that moved the cursor. Read the result with
+        /// <c>GET /log?grep=trace</c>.
+        /// </summary>
+        public static bool Trace(string tag)
+        {
+            try
+            {
+                System.Text.StringBuilder line = new System.Text.StringBuilder();
+                line.Append("trace ").Append(tag).Append(" f=").Append(Time.frameCount);
+
+                ScreenManager screens = ModEntry.Screens;
+                line.Append(" stack=");
+                if (screens == null)
+                {
+                    line.Append('?');
+                }
+                else
+                {
+                    foreach (Screens.Screen screen in screens.Stack)
+                    {
+                        line.Append(screen.Key).Append(':').Append(screen.Layer).Append(' ');
+                    }
+                }
+
+                GraphNavigator navigator = ModEntry.Navigator;
+                Screens.Screen current = navigator == null ? null : navigator.Screen;
+                ControlId focused = navigator == null ? null : navigator.FocusedKey;
+                line.Append(" cur=").Append(current == null ? "-" : current.Key);
+                line.Append(" node=")
+                    .Append(
+                        focused == null ? "-" : Convert.ToString(focused.StructuralKey)
+                    );
+                line.Append(" nodes=")
+                    .Append(navigator == null ? -1 : navigator.RenderedNodeCount);
+                line.Append(" ").Append(TutorialState());
+                Core.Util.Log.Info(line.ToString());
+            }
+            catch (Exception e)
+            {
+                Core.Util.Log.Warn("trace threw: " + e.Message);
+            }
+
+            return false;
+        }
+
+        /// <summary>The popup as the tutorial screen's own gates see it, plus the three window classes
+        /// the game hides it for.</summary>
+        private static string TutorialState()
+        {
+            TutorialWindow window = Gui.GuiServiceAvailable
+                ? Gui.GuiService.GetWindow<TutorialWindow>(false)
+                : null;
+            TutorialPopupPanel panel = window == null ? null : window.TutorialPopupPanel;
+            GuiManager gui = Gui.GuiServiceAvailable ? Gui.GuiService as GuiManager : null;
+            return "tut="
+                + (window != null && window.Shown ? "win " : "nowin ")
+                + (panel == null ? "nopanel" : (panel.IsBound ? "bound " : "unbound "))
+                + (panel != null && panel.Shown ? "shown " : "hidden ")
+                + (
+                    panel != null && panel.MinimizeToggle != null && panel.MinimizeToggle.State
+                        ? "min"
+                        : "open"
+                )
+                + (gui == null ? "" : " gui=")
+                + (gui == null ? "" : (gui.IsAnyScreenVisible ? "S" : "-"))
+                + (gui == null ? "" : (gui.IsAnyModalVisible ? "M" : "-"))
+                + (gui == null ? "" : (gui.IsAnyNotificationVisible ? "N" : "-"));
+        }
+
+        /// <summary>
         /// One word for what the game is doing, for a wait-script that needs to know when to start.
         /// Read off the same gates the screens themselves use, so it can never disagree with them:
         ///
