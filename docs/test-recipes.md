@@ -241,6 +241,33 @@ Show-location marker (the quest has none, so the game hides the button), the min
 the podium a cooperative quest gets instead of a reward table, and the "Pending objective choice…"
 placeholder.
 
+**Travelling the starlanes** (read-only; `[Beginner] test` perceives exactly three systems — Dusay
+`535`, Rigel `505`, Primus `543` — so a TWO-hop chain is all the fixture can show, and only Dusay↔
+Primus and Dusay↔Rigel are named lanes). A lane is a LEAF: no expansion word in `/gui/graph`, and
+`ui.right` on `galaxy:system/535/lane/658` (unexplored) is consumed and silent. On a named one
+(`galaxy:system/535/lane/661`) `ui.right` speaks the destination's ordinary landing
+("Primus, group, 1 Fleet, expanded, …") and `DevProbe.Camera()` moves focus `52.6,-27.5 step 9` →
+`85.1,-1.8 step 12`. `ui.secondary` pops: the exact lane node again, camera back at the origin, and a
+system opened BY travel reads `collapsed` afterwards while one the player opened stays `expanded`. A
+third pop on an emptied trail answers `consumed (navigator)` with an empty `speech` array — which is
+the whole assertion, since nothing else on this stop wires `OnSecondary`. The trail survives closing
+a screen over the page (`Gui.GuiService.GetWindow<TechnologyScreen>(false).HandleInput(InputAction
+.Exit)` is the cheap way back) and is gone after `POST /loadsave`.
+**Proving travel is not a click.** Arm a mode with no order behind it —
+`Services.GetService<Amplitude.Unity.View.ICursorService>().ChangeCursor(typeof(
+CoordinationRequestCursor), Gui.GetCursor())` — and read it back with an IIFE returning
+`Amplitude.Unity.View.Cursor c = Gui.GetCursor()`'s type name plus `HasUserInstructions` (bare
+`Cursor` binds to `UnityEngine.Cursor` in the REPL). `ui.right` on a named lane leaves it
+`CoordinationRequestCursor instructions=True`; `ui.activate` on the same lane ends it — "Target
+selection ended", `GalaxyCursor instructions=False` — which is the mode-ends evidence, no order
+posted either way. Note the tutorial arms a probe cursor of its own around turn 6, so read the
+cursor before assuming the mode you set is the one that is up.
+**En-route fleets and the count phrase.** A fleet mid-lane is declared under BOTH ends with distinct
+keys — `galaxy:system/535/fleet/1373` reads "on starlane 2, west" and `galaxy:system/505/fleet/1373`
+"on starlane 1, east", each matching its own host's lane numbering — and both end systems announce
+"1 fleet under way nearby" beside their parked count. `POST /type savi` with every system collapsed
+answers `results:2` and lands on the Dusay-hosted copy with only that system expanded.
+
 **Ordering a fleet around** (state-changing — only against a save you can reload, and only after
 every read-only check is done). It is two halves: **Enter** on the fleet's own node selects it, then
 **`/input ui.contextual`** (backslash) on the DESTINATION — a system node, or a starlane child of one
@@ -735,7 +762,7 @@ private `tutorial` field) to `AboveModalWindows`, then
 `TutorialWindow.UpdateVisibilityAccordingToOtherWindows(Gui.GuiGameWindowService, true)` — the
 game re-evaluates only on a change; restore the layer afterwards. Entering a system binds
 "A MATTER OF INFLUENCE", leaving unbinds it. The unlocked save's four Xiu lanes are all
-unexplored — no lane-destination child is testable there.
+unexplored — no lane TRAVEL is testable there; `[Beginner] test` is the fixture for that.
 
 **Probes and faction panels (the other galaxy labels).** The unlocked save draws NONE of this
 surface. A probe row is exercisable with `probeLabel.Show()` then `Hide(true)` — self-healing. The

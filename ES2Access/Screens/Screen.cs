@@ -172,6 +172,25 @@ namespace ES2Access.Screens
         }
 
         /// <summary>
+        /// The second-command key (Backspace) offered to the SCREEN before the focused control's own
+        /// <see cref="NodeVtable.OnSecondary"/>. Return true when the screen took it.
+        ///
+        /// For a command that belongs to a PANEL rather than to a control: the galaxy's way back down
+        /// the starlanes it has been travelled is about where the player has been, not about the lane or
+        /// the planet the cursor is standing on, and wiring it per node would mean wiring it onto every
+        /// node the panel will ever declare. The focused node is passed because such a command is
+        /// usually scoped to one stop - a screen answers only where it means something and leaves every
+        /// other panel's Backspace alone.
+        ///
+        /// A screen that never overrides this changes nothing: the control's own second command is
+        /// reached exactly as before.
+        /// </summary>
+        public virtual bool Secondary(GraphNode focused)
+        {
+            return false;
+        }
+
+        /// <summary>
         /// An action fired on a screen where every key means the SAME one thing - the game's own "press
         /// anything to skip", which a cutscene answers with. Offered before the review chords and before
         /// navigation, because the point is that nothing else gets the press; return true when the screen

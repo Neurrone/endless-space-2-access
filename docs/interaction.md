@@ -123,6 +123,12 @@ key-rebind row, where Enter captures the binding's first key and Backspace its s
 game itself puts on a right click goes on Backslash, never here: the HUD's notification dismiss was
 on Backspace until 2026-08-13 and moved, because the game dismisses on right click
 (`NotificationItemsWindow.HandleInput` :90-101).
+The key is offered to the SCREEN first (`Screen.Secondary`, taking the focused node — mirroring
+`Screen.Contextual`), for a second command that belongs to a PANEL rather than to a control: the
+galaxy's way back down the starlanes it has travelled is about where the player has BEEN, and wiring
+it per node would mean wiring it onto every node that panel will ever declare. A screen answers only
+inside the stop it means it in and leaves every other panel's Backspace exactly as it was. And a LIVE
+type-ahead search takes the key ahead of both (below).
 The Enter chords pass the PHYSICAL modifier through to the game's handler, which
 is how the game's own selection rules apply rather than a copy of them. Which screens have the
 chords and which cargo kinds the drag carries (ships, population, both queues) is coverage
@@ -174,10 +180,22 @@ waiting for a target (owner-ruled deviation, 2026-08-12).
 **Expanding a galaxy system node (Right) also brings the camera in** through the game's own zoom
 (`GalaxyViewLevels.ZoomTo`); Enter is unchanged, Backslash remains the way out, and **collapse
 un-zooms** while `GalaxyViewLevels.FocusedSystem` is still that system — a camera the player has
-since moved elsewhere is left alone, so collapsing moves nothing there. A **lane destination OPENS
-like the system it names**, minus its own lanes: its children are keyed STRUCTURALLY under the lane
-(the reference tier dropped, not the level refused), which is how the one-object-one-node rule is
-kept while the tier below stays reachable. **Zoom is an adjustable node** on the existing
+since moved elsewhere is left alone, so collapsing moves nothing there. **A starlane is a LEAF and
+Right on a named one TRAVELS** (`NodeVtable.OnFollow` → `KeyGraph.TreeMove.Followed`, consumed
+silently): the cursor lands on the destination system's ONE node at the root of the systems stop,
+that branch opens, and the camera goes there through `ZoomTo` — never `ZoomIn`, because travelling is
+not a click and must not confirm an armed targeting mode (measured: the mode survives Right and is
+still ended by Enter on the same lane). The landing's ordinary announcement is the whole
+announcement. **Backspace pops the trail** while focus is in `galaxy:systems`: back to the exact lane
+node under the origin (the origin re-expanded so that node exists), camera back to the origin, again
+no words; a hop whose origin or destination is no longer perceived is skipped, and an empty trail is
+consumed and silent. A system opened BY travel is **collapsed on the way out** (another hop or a pop)
+and one the player opened is left alone — and neither runs the collapse's own un-zoom, since travel
+scripts the camera itself. The trail survives an excursion to another screen (the page keeps its
+state on pop) and dies with the game instance. A lane into the dark is a silent leaf under Right.
+Fleets under way hang under BOTH end systems, after the parked ones, each saying which lane and which
+bearing off the same lane list the lane nodes number themselves from. **Zoom is an adjustable node**
+on the existing
 Left/Right + Shift chords (no new binding), and it lives on BOTH the scan view and the galaxy's
 `hud:view-title` stop, in a row of its own beside the name of what the player is looking at; its
 coarse step is a LAYER-BAND jump rather than ≈10 increments — an owner-approved deviation, since
@@ -209,8 +227,12 @@ down and goes no further** (`claimsBack` reads true only then), and the carry di
 player leaves the page it started on — a menu opened over that page is still that page.
 
 **Typing a letter searches the focused stop** (no search key: the first printable character starts
-one; Up/Down step the matches, Home/End their ends, Escape clears it and goes no further, any other
-action ends it and then does its own job). So **A–Z are claimed from the game on every mod screen**
+one; Up/Down step the matches, Home/End their ends, Escape clears it and goes no further, **Backspace
+does exactly what Escape does** — ends the search, "Search cleared", and goes no further, so it never
+also runs the page's own second command on the match it landed on; any other action ends it and then
+does its own job). Backspace is the way OUT of a search rather than an editor for it: a search is
+re-typed in a keystroke, and one gesture is worth more than character editing (owner decision
+2026-08-14). So **A–Z are claimed from the game on every mod screen**
 (`GraphNavigator.TakesTypedKey` via `ModInput.ClaimsTypedKey`, asked before the press), and a
 space typed into a LIVE search is text — the carry key takes it for the search (a live search
 is one of the three conditions of Space's claim, above). Screens opt out with `AllowsTypeahead`

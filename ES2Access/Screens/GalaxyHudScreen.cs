@@ -28,12 +28,15 @@ namespace ES2Access.Screens
     /// what the game is asking about, and what the turn itself offers.
     ///
     /// There is no separate stop for the fleets. A fleet is not somewhere else on the screen: it is
-    /// drawn AT a system or ON a lane, and that is where it is walked - as a child of the place it is
-    /// standing, after that place's planets and starlanes. A list of every fleet in the empire, in a
-    /// corner of its own, described a picture the map does not draw and made "where is it" a question
-    /// the player had to answer from a sentence rather than from the tree they were already in. This
-    /// is a DELIBERATE deviation from the game's own arrangement, approved as such: the map draws
-    /// fleets as lozenges anchored to places, and the tree now says the same thing.
+    /// drawn AT a system or ON a lane between two of them, and either way it is walked under a SYSTEM -
+    /// after that system's planets and starlanes. A fleet in orbit hangs under the system it is
+    /// orbiting; a fleet under way hangs under BOTH systems its lane runs between, saying which lane it
+    /// is on and which way that lane leaves, because either end is a true answer to "where is it" and
+    /// choosing one would make the answer depend on which system the player happened to open. A list of
+    /// every fleet in the empire, in a corner of its own, described a picture the map does not draw and
+    /// made "where is it" a question the player had to answer from a sentence rather than from the tree
+    /// they were already in. This is a DELIBERATE deviation from the game's own arrangement, approved as
+    /// such: the map draws fleets as lozenges anchored to places, and the tree now says the same thing.
     ///
     /// A tutorial the player has collapsed is one of those places. Collapsing it hands the keyboard
     /// back to this page, and the bar the game leaves at the top of the right-hand edge - its title,
@@ -76,10 +79,17 @@ namespace ES2Access.Screens
     /// the camera is still there to take out. ENTER still asks for the same distance on its own, because
     /// it is the game's own left click on a system, and BACKSLASH is still the map's own right click.
     ///
-    /// The far end of a starlane opens the same way. A lane that leads somewhere the map has drawn the
-    /// name of offers that system as a child, and opening it goes there and reads what is in it - so "what
-    /// is down this line" is answered where the player is standing rather than by walking back to a list of
-    /// a hundred systems.
+    /// A STARLANE IS A LEAF, and right on one TRAVELS. A lane whose far end the map has drawn the name of
+    /// answers the right arrow by putting the cursor on that system's own node at the root of the stop,
+    /// opening it, and taking the camera there - so "what is down this line" is answered by going, without
+    /// walking back to a list of a hundred systems. It is a rebase, not a descent: every system has exactly
+    /// ONE node wherever the player reached it from, so nothing is ever read twice under two names and the
+    /// tree has a bottom by construction rather than by refusing lanes a level down. Backspace is the way
+    /// back: each hop is remembered, and the key puts the cursor on the very lane it was pressed on, with
+    /// the camera back where it started. A system that was only opened because a lane was travelled is
+    /// closed again on the way out; one the player opened themselves is left exactly as they left it.
+    /// Travelling is NOT a click - it posts no order and confirms no target, for the same reason opening
+    /// a branch does not.
     ///
     /// Backslash is what the map puts on a right click. On a system with fleets selected it sends them
     /// there; with nothing selected it undoes a zoom the player asked for, exactly as right-clicking
@@ -266,6 +276,7 @@ namespace ES2Access.Screens
             _hud.Update();
             _fleetPanel.Update();
             _zoom.Update();
+            CheckTrailSession();
             // Before the camera is followed and before the graph is next built, so that the landing
             // and the branch it opens both happen on the frame the page arrives on.
             FollowTheGame();
@@ -774,13 +785,13 @@ namespace ES2Access.Screens
             );
         }
 
-        /// <summary>One fleet and the branches that have to be open before it is a node: the system it
-        /// is parked at or whose lane it is flying, and - for a lane - the lane itself.</summary>
+        /// <summary>One fleet and the branch that has to be open before it is a node: the system it is
+        /// parked at, or one of the two whose lane it is flying. One branch, because a fleet hangs under
+        /// a SYSTEM either way now.</summary>
         private struct FleetSite
         {
             public Fleet Fleet;
             public ControlId System;
-            public ControlId Lane;
             public string Key;
         }
 
@@ -792,14 +803,15 @@ namespace ES2Access.Screens
             List<FleetSite> sites = new List<FleetSite>();
             try
             {
+                Empire empire = PlayerEmpire();
                 for (int i = 0; i < _owned.Count; i++)
                 {
-                    IndexPlace(_owned[i], sites, declared);
+                    IndexPlace(_owned[i], empire, sites, declared);
                 }
 
                 for (int i = 0; i < _other.Count; i++)
                 {
-                    IndexPlace(_other[i], sites, declared);
+                    IndexPlace(_other[i], empire, sites, declared);
                 }
             }
             catch (Exception e)
@@ -826,45 +838,41 @@ namespace ES2Access.Screens
             return ids;
         }
 
-        /// <summary>The fleets one system holds, and the ones out on each of its lanes. A lane is
-        /// reached from both of its ends, so a fleet on one is indexed twice - which costs a duplicate
-        /// result and is the right way round: either end is a true answer to "where is it", and
-        /// dropping one would make the answer depend on which system the search happened to reach
-        /// first.</summary>
+        /// <summary>The fleets one system holds, parked and under way alike - both hang under the system
+        /// itself. A lane is reached from both of its ends, so a fleet flying one is indexed under each
+        /// end: two results with one name, which is the right way round, because either end is a true
+        /// answer to "where is it" and dropping one would make the answer depend on which system the
+        /// search happened to reach first. The lanes are the ones the map draws
+        /// (<see cref="LanesOf"/>) - the same list the branch hosts them from, so the index cannot
+        /// offer a fleet the branch will not hold.</summary>
         private static void IndexPlace(
             StarSystemNode node,
+            Empire empire,
             List<FleetSite> sites,
             HashSet<ControlId> declared
         )
         {
+            if (empire == null)
+            {
+                return;
+            }
+
             string systemKey = "galaxy:system/" + node.GUID;
             ControlId system = ControlId.Referenced(node, systemKey);
-            Index(FleetPresence.FleetsAt(node), system, null, systemKey, sites, declared);
-            for (int i = 0; i < node.Links.Count; i++)
+            Index(FleetPresence.FleetsAt(node), system, systemKey, sites, declared);
+            List<EnRoute> flying = EnRouteOn(LanesOf(node, empire));
+            List<Fleet> nearby = new List<Fleet>(flying.Count);
+            for (int i = 0; i < flying.Count; i++)
             {
-                Link link = node.Links[i];
-                IList<Fleet> flying = FleetPresence.FleetsOn(link);
-                if (flying.Count == 0)
-                {
-                    continue;
-                }
-
-                string laneKey = systemKey + "/lane/" + link.GUID;
-                Index(
-                    flying,
-                    system,
-                    ControlId.Referenced(link, laneKey),
-                    laneKey,
-                    sites,
-                    declared
-                );
+                nearby.Add(flying[i].Fleet);
             }
+
+            Index(nearby, system, systemKey, sites, declared);
         }
 
         private static void Index(
             IList<Fleet> fleets,
             ControlId system,
-            ControlId lane,
             string key,
             List<FleetSite> sites,
             HashSet<ControlId> declared
@@ -878,36 +886,25 @@ namespace ES2Access.Screens
                     continue;
                 }
 
-                sites.Add(
-                    new FleetSite
-                    {
-                        Fleet = fleets[i],
-                        System = system,
-                        Lane = lane,
-                        Key = key,
-                    }
-                );
+                sites.Add(new FleetSite { Fleet = fleets[i], System = system, Key = key });
             }
         }
 
-        /// <summary>Open the place a fleet is standing in and answer with the fleet itself. The opening
-        /// is recorded rather than done: the expansion set belongs to the next rebuild.</summary>
+        /// <summary>Open the system a fleet is drawn at or beside, and answer with the fleet itself. The
+        /// opening is recorded rather than done: the expansion set belongs to the next rebuild.</summary>
         private ControlId Reveal(FleetSite site)
         {
             _pendingExpand.Add(site.System);
-            if (site.Lane != null)
-            {
-                _pendingExpand.Add(site.Lane);
-            }
-
             return ControlId.Structural(site.Key + "/fleet/" + site.Fleet.GUID);
         }
 
-        /// <summary>Open the branches a search landed in. The expansion set is the engine's, and this is
-        /// the one moment a screen has anything to say about it.</summary>
+        /// <summary>Open the branches a search landed in, and close the ones travelling has left behind.
+        /// The expansion set is the engine's, and this is the one moment a screen has anything to say
+        /// about it - the branches are asked for while a keystroke is being answered and applied on the
+        /// build that follows, because the render they belong to is the next one.</summary>
         private void ApplyPendingExpansions(GraphBuilder builder)
         {
-            if (_pendingExpand.Count == 0)
+            if (_pendingExpand.Count == 0 && _pendingCollapse.Count == 0)
             {
                 return;
             }
@@ -915,6 +912,13 @@ namespace ES2Access.Screens
             HashSet<ControlId> expansion = builder.Expansion;
             if (expansion != null)
             {
+                // Closings first: nothing ever asks for the same branch both ways on one frame, and
+                // where something did, being asked to open it is the later word.
+                for (int i = 0; i < _pendingCollapse.Count; i++)
+                {
+                    expansion.Remove(_pendingCollapse[i]);
+                }
+
                 for (int i = 0; i < _pendingExpand.Count; i++)
                 {
                     expansion.Add(_pendingExpand[i]);
@@ -922,10 +926,226 @@ namespace ES2Access.Screens
             }
 
             _pendingExpand.Clear();
+            _pendingCollapse.Clear();
         }
 
-        /// <summary>The groups a search has asked to be opened, applied on the next build.</summary>
+        /// <summary>The groups a search or a travelled lane has asked to be opened, applied on the next
+        /// build.</summary>
         private readonly List<ControlId> _pendingExpand = new List<ControlId>();
+
+        /// <summary>The groups travelling has asked to be CLOSED - a system whose branch was opened only
+        /// because a lane was travelled into it, being left again.</summary>
+        private readonly List<ControlId> _pendingCollapse = new List<ControlId>();
+
+        // ---- travelling the lanes ----
+
+        /// <summary>
+        /// One hop down a starlane: where it started, the lane it was taken on, and where it arrived.
+        ///
+        /// <see cref="Return"/> is the LANE's own node rather than the origin system's, because that is
+        /// where the player was standing when they pressed the key - coming back to the system itself
+        /// would make the way back a different place from the way out, and a player retracing several
+        /// hops would have to find the lane again each time.
+        /// </summary>
+        private struct Journey
+        {
+            public StarSystemNode Origin;
+            public ControlId Return;
+            public StarSystemNode Destination;
+
+            /// <summary>Whether the destination's branch was opened BY this hop. A system the player had
+            /// already opened themselves is theirs, and is left open when they leave.</summary>
+            public bool Opened;
+        }
+
+        private readonly List<Journey> _trail = new List<Journey>();
+
+        /// <summary>The game the trail was travelled in. A trail is a list of places, and a save loaded
+        /// over this one has different places - so the whole of it dies with the session rather than
+        /// pointing the player at systems out of a galaxy that no longer exists. It deliberately survives
+        /// everything SHORTER than that: a trip to the research screen and back is the same map, and this
+        /// page keeps its cursor across one (<see cref="KeepStateOnPop"/>), so the way back should keep
+        /// too.</summary>
+        private object _trailGame;
+
+        /// <summary>Forget a trail belonging to a galaxy the player is no longer in. Cheap enough to ask
+        /// every frame - it is one reference comparison - and asking every frame is what stops a stale
+        /// trail ever being reachable, rather than being caught at the moment it would have been used.
+        /// </summary>
+        private void CheckTrailSession()
+        {
+            object game = Gui.Game;
+            if (ReferenceEquals(game, _trailGame))
+            {
+                return;
+            }
+
+            _trailGame = game;
+            _trail.Clear();
+        }
+
+        /// <summary>
+        /// Go where a lane leads: the cursor onto the destination system's own node at the root of the
+        /// stop, its branch opened, and the camera taken there.
+        ///
+        /// The one node is the whole point. The destination is already declared - every system the map
+        /// draws is - so this REBASES the cursor onto it rather than declaring a second copy under the
+        /// lane, which is what keeps one object to one node and gives the tree a bottom without having to
+        /// make the copy poorer than the original.
+        ///
+        /// Nothing is spoken. The landing announces itself, once, through the same path every focus
+        /// change goes through, and it names the system - which is the answer to the question the key
+        /// asked.
+        ///
+        /// NOT a click: <c>ZoomTo</c> rather than <see cref="ZoomIn"/>, so a targeting mode the game has
+        /// armed is neither confirmed nor cancelled, exactly as opening a branch leaves it alone. Right is
+        /// pressed speculatively all over a tree and must never post an order.
+        /// </summary>
+        private void Travel(
+            StarSystemNode origin,
+            ControlId lane,
+            StarSystemNode destination,
+            HashSet<ControlId> expansion
+        )
+        {
+            try
+            {
+                CheckTrailSession();
+                ControlId arriving = RootId(destination);
+                // Asked of the engine's own expansion set, which the builder handed out when this lane
+                // was declared: whether the place was ALREADY open is the whole of what decides who owns
+                // its state, and the screen keeps no expansion of its own to ask instead.
+                bool open = expansion != null && expansion.Contains(arriving);
+                // Leaving a system this trail opened closes it again, before the hop that leaves it is
+                // remembered - the trail's top is still the hop that opened the place being left.
+                LeaveTravelled(origin);
+                _trail.Add(
+                    new Journey
+                    {
+                        Origin = origin,
+                        Return = lane,
+                        Destination = destination,
+                        Opened = !open,
+                    }
+                );
+
+                Arrive(arriving, destination);
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: travelling a starlane threw: " + e);
+            }
+        }
+
+        /// <summary>
+        /// Backspace: back up the lane the player came down.
+        ///
+        /// The cursor goes to the LANE node it was on when the hop was taken, which means the origin has
+        /// to be open for that node to exist - so it is asked to open whether or not it was left open.
+        /// The camera goes back to the origin. Nothing is spoken here either: the lane announces itself
+        /// on arrival, and it is the same lane, said the same way, as the one the player left.
+        ///
+        /// A hop into or out of somewhere the player can no longer SEE is skipped rather than taken: the
+        /// fog moves, empires lose vision, and a lane node under a system the map has stopped drawing is
+        /// not there to be landed on. Popping continues to the next hop that is still true, and a trail
+        /// with none left is spent.
+        /// </summary>
+        private bool PopTrail()
+        {
+            CheckTrailSession();
+            Empire empire = PlayerEmpire();
+            while (_trail.Count > 0)
+            {
+                Journey hop = _trail[_trail.Count - 1];
+                _trail.RemoveAt(_trail.Count - 1);
+                if (
+                    empire == null
+                    || hop.Origin == null
+                    || hop.Destination == null
+                    || !Perceived(hop.Origin, empire)
+                    || !Perceived(hop.Destination, empire)
+                )
+                {
+                    continue;
+                }
+
+                if (hop.Opened)
+                {
+                    _pendingCollapse.Add(RootId(hop.Destination));
+                }
+
+                _pendingExpand.Add(RootId(hop.Origin));
+                Arrive(hop.Return, hop.Origin);
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>Ask for the branch, then the cursor, then the camera - the order the frame applies
+        /// them in. The expansion belongs to the next build (<see cref="ApplyPendingExpansions"/>) and the
+        /// cursor to the tick after that, so the node the player lands on exists by the time they land.
+        /// </summary>
+        private void Arrive(ControlId id, StarSystemNode where)
+        {
+            _pendingExpand.Add(RootId(where));
+            GraphNavigator navigator = ModEntry.Navigator;
+            if (navigator != null)
+            {
+                navigator.FocusNode(id);
+            }
+
+            GalaxyViewLevels.ZoomTo(where);
+        }
+
+        /// <summary>Close a system again where this trail is the only reason it is open. The trail's last
+        /// hop is the one that opened wherever the player is now, so that is the only entry worth asking
+        /// about.</summary>
+        private void LeaveTravelled(StarSystemNode leaving)
+        {
+            if (_trail.Count == 0 || leaving == null)
+            {
+                return;
+            }
+
+            Journey top = _trail[_trail.Count - 1];
+            if (top.Opened && ReferenceEquals(top.Destination, leaving))
+            {
+                _pendingCollapse.Add(RootId(leaving));
+            }
+        }
+
+        /// <summary>A system's own node at the root of the stop - the one node that stands for it, keyed
+        /// exactly as <see cref="AddSystem"/> keys it. Distinct from <see cref="SystemId"/>, which asks
+        /// the narrower question of whether the page is DECLARING that system at all: travelling and
+        /// backing out have already established that from the map's own perception rules.</summary>
+        private static ControlId RootId(StarSystemNode node)
+        {
+            return ControlId.Referenced(node, "galaxy:system/" + node.GUID);
+        }
+
+        /// <summary>
+        /// Backspace on the map is the way back down the lanes that have been travelled, and it belongs to
+        /// the MAP rather than to whatever node the cursor is on - the player is somewhere because of the
+        /// hops they took, not because of the planet they are standing on.
+        ///
+        /// Only in the systems stop. The clusters round the edges of the screen keep whatever the key
+        /// meant to them, because a trail of places has nothing to say about a notification icon.
+        ///
+        /// Consumed even with nothing to go back to, and silent then: pressing it at the start of a
+        /// journey is asking for something that is simply not there, and a cue for it on a key pressed
+        /// speculatively is noise - the same rule the other gesture keys keep.
+        /// </summary>
+        public override bool Secondary(GraphNode focused)
+        {
+            if (focused == null || !Equals(focused.StopKey, SystemStop))
+            {
+                return false;
+            }
+
+            PopTrail();
+            return true;
+        }
 
         // ---- systems ----
 
@@ -1125,6 +1345,15 @@ namespace ES2Access.Screens
             // system is focused.
             vtable.Announcements.Add(GraphNodes.ValuePart(() => FleetPresence.At(it), false));
 
+            // ...and how many are under way on the lanes leaving here, which is the second half of the
+            // same answer: the branch opens onto both sets of fleets, so the count has to name both or
+            // the number the player was told and the children they walk stop matching. Worked out from
+            // the same lane list the branch is built from (<see cref="LanesOf"/>), so "nearby" means
+            // exactly the lanes this system offers. Not watched, for the reason above and one more: it
+            // walks the visible-fleet repository once per lane.
+            Empire counting = empire;
+            vtable.Announcements.Add(GraphNodes.ValuePart(() => UnderWayNearby(it, counting), false));
+
             // And what it would cost to send the selection here - the picture the map draws for a mouse
             // hovering over this system, in words. Silent while nothing is selected. Emphatically not
             // watched: the answer is a pathfinding search (<see cref="FleetRoute"/>).
@@ -1195,16 +1424,7 @@ namespace ES2Access.Screens
             // Only what is open costs anything: a galaxy of closed systems declares one node each.
             if (builder.IsExpanded(id))
             {
-                AddInside(
-                    builder,
-                    "galaxy:system/" + node.GUID,
-                    node,
-                    empire,
-                    label,
-                    true,
-                    labels,
-                    _drifting
-                );
+                AddInside(builder, "galaxy:system/" + node.GUID, node, empire, label, _drifting);
             }
 
             builder.EndGroup();
@@ -1242,47 +1462,37 @@ namespace ES2Access.Screens
         }
 
         /// <summary>
-        /// What the map draws inside a system, as the children of whichever node is standing for that
-        /// system.
+        /// What the map draws inside a system, as the children of that system's ONE node.
         ///
-        /// TWO nodes stand for a system: its own, at the root of the stop, and the far end of a lane
-        /// leading to it (<see cref="AddDestination"/>). Both open onto the same things through these same
-        /// builders, so what a system holds cannot come to depend on which way the player reached it.
+        /// One node, because travelling a lane rebases the cursor onto the destination's own node rather
+        /// than declaring a copy of it (<see cref="AddStarlanes"/>). So there is no second way in whose
+        /// contents could come to differ, no structural re-keying of everything underneath, and nothing
+        /// here has to be made poorer than anything else.
         ///
-        /// Two things differ at a lane's end, and <paramref name="root"/> is which of the two nodes this
-        /// is. Its planets are keyed under the LANE rather than carrying the planet they were read from:
-        /// the root's planet nodes carry the planet itself, and a second node carrying the same object
-        /// would BE that node as far as the cursor is concerned - reference identity is followed before the
-        /// structural key - so the copies are keyed structurally instead. And a lane's end offers no lanes
-        /// of its own: one of them leads straight back here, and the tree would have no bottom.
+        /// The fleets are in TWO groups because the map draws them in two places: what is parked here,
+        /// then what is under way on the lanes leaving here - the latter under both ends of its lane, each
+        /// saying which lane it is on (<see cref="AddEnRoute"/>).
         /// </summary>
-        private static void AddInside(
+        private void AddInside(
             GraphBuilder builder,
             string key,
             StarSystemNode node,
             Empire empire,
             StarSystemLabel label,
-            bool root,
-            StarSystemLabel[] labels,
             IList<DriftingProbe> probes
         )
         {
+            List<Lane> lanes = LanesOf(node, empire);
             AddManagementView(builder, key, label);
             AddLabelButtons(builder, key, label);
-            AddPlanets(builder, key, node, empire, label, root);
+            AddPlanets(builder, key, node, empire, label);
             AddWrecks(builder, key, node);
-            if (root)
-            {
-                AddStarlanes(builder, key, node, empire, labels);
-                AddProbesNear(builder, key, probes, node);
-            }
-
+            AddStarlanes(builder, key, node, empire, lanes);
+            AddProbesNear(builder, key, probes, node);
             AddFleets(builder, key, FleetPresence.FleetsAt(node));
+            AddEnRoute(builder, key, EnRouteOn(lanes));
             AddHangars(builder, key, node);
-            if (root)
-            {
-                AddProbeDirections(builder, key, node);
-            }
+            AddProbeDirections(builder, key, node);
         }
 
         /// <summary>
@@ -1334,35 +1544,6 @@ namespace ES2Access.Screens
             }
         }
 
-        /// <summary>The word for what this empire holds at a place, or nothing at all where it holds
-        /// nothing - so that a system named anywhere in the tree reads the same way it reads at the root
-        /// of the systems stop, and the word cannot drift between the two places that say it.</summary>
-        private static string StateOf(GameNode node, Empire empire)
-        {
-            StarSystemNode system = node as StarSystemNode;
-            return system != null && Held(system, empire) ? OwnedState(system, empire) : null;
-        }
-
-        /// <summary>Whether this empire holds anything at all here - the same membership test the owned
-        /// half of the systems stop is built from (<see cref="BuildSystems"/>), a GHOST of a colony
-        /// included, because that is what the map's label is counting.</summary>
-        private static bool Held(GameNode node, Empire empire)
-        {
-            DepartmentOfTheInterior interior =
-                empire == null ? null : empire.GetAgency<DepartmentOfTheInterior>();
-            IList<ColonizedStarSystem> systems =
-                interior == null ? null : interior.ColonizedStarSystems;
-            for (int i = 0; systems != null && i < systems.Count; i++)
-            {
-                if (systems[i] != null && systems[i].Node == node)
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
         /// <summary>Whether what this empire holds here is still an outpost. Read off the same list the
         /// stop was built from - an empire can hold a colony and a GHOST of one in the same place, and
         /// the ghost is not what the map's label is showing.</summary>
@@ -1394,9 +1575,8 @@ namespace ES2Access.Screens
         /// change however it was made (<see cref="ZoomWatch"/>), rather than by each key that causes
         /// one saying so in words of its own.
         ///
-        /// Takes any node on the map rather than a system, because the far end of a starlane is offered
-        /// as a node of its own (<see cref="AddDestination"/>) and its Enter has to be this exact click
-        /// rather than a second copy of it.
+        /// Takes any node on the map rather than a system, because the map hangs lanes off things that
+        /// are not systems and every one of them answers the same click.
         ///
         /// While the game has the map in one of its TARGETING modes - launch a probe, take this system,
         /// fire the obliterator - the same left click means "confirm the target here" instead of the
@@ -2088,8 +2268,7 @@ namespace ES2Access.Screens
             string place,
             StarSystemNode node,
             Empire empire,
-            StarSystemLabel label,
-            bool referenced
+            StarSystemLabel label
         )
         {
             try
@@ -2108,11 +2287,10 @@ namespace ES2Access.Screens
                     Empire looking = empire;
                     PlanetLabel_SystemOrbital card = CardFor(planet, cards);
                     string key = place + "/planet/" + i;
-                    // Carrying the planet only where this is the planet's ONE node (AddInside): a second
-                    // node on the same object is the same control to the cursor.
-                    ControlId id = referenced
-                        ? ControlId.Referenced(planet, key)
-                        : ControlId.Structural(key);
+                    // The planet's ONE node, so it carries the planet itself and rides along with it
+                    // across a rebuild. There is no second copy to collide with any more: a lane leading
+                    // here rebases onto this system rather than re-declaring its insides.
+                    ControlId id = ControlId.Referenced(planet, key);
                     if (card != null)
                     {
                         // The card carries a row of buttons the game draws under it, so where the game
@@ -2755,15 +2933,16 @@ namespace ES2Access.Screens
         }
 
         /// <summary>
-        /// The lanes leaving a system, and where each one goes.
+        /// The lanes the map draws out of a system, in the order - and therefore with the NUMBERS -
+        /// that every part of this screen names them by.
         ///
-        /// A lane says the name of the system at its far end only when the map draws that name.
-        /// Everything else is a lane into the unexplored, which is what the map shows: a line running
-        /// off into the dark. The galaxy model would answer either way - it holds every system's name
-        /// from the first turn - so the check, not the model, is what keeps this honest.
+        /// ONE list, because three things have to agree about it: the lane nodes themselves, the fleets
+        /// under way that are hosted under this system and say which lane they are on, and the count
+        /// phrase the system announces for them. Working the list out three times is how "starlane 2"
+        /// comes to mean two different lines depending on which control said it.
         ///
-        /// A LANE ITSELF is offered exactly while the map draws the line. The map's rule is not "has it
-        /// been revealed" but an intensity taken from the link's own exploration state
+        /// A LANE IS OFFERED exactly while the map draws the line. The map's rule is not "has it been
+        /// revealed" but an intensity taken from the link's own exploration state
         /// (<c>GalaxyLink.Refresh</c> :247-252 feeds <c>GetIntensityFromState</c> :362-372), and that
         /// intensity is ZERO - an invisible line - for Localized and Identified as well as for
         /// Unrevealed. It only lights up at PartiallyRevealed. Offering a lane the map is drawing at
@@ -2782,17 +2961,11 @@ namespace ES2Access.Screens
         /// see the lines needs the same "which one is that" the picture gives everyone else, and a
         /// number that moves between sessions would be worse than none.
         /// </summary>
-        private static void AddStarlanes(
-            GraphBuilder builder,
-            string place,
-            StarSystemNode node,
-            Empire empire,
-            StarSystemLabel[] labels
-        )
+        private static List<Lane> LanesOf(StarSystemNode node, Empire empire)
         {
+            List<Lane> lanes = new List<Lane>();
             try
             {
-                List<Lane> lanes = new List<Lane>();
                 for (int i = 0; i < node.Links.Count; i++)
                 {
                     Link link = node.Links[i];
@@ -2810,21 +2983,60 @@ namespace ES2Access.Screens
                     GameNode far = ReferenceEquals(link.ExtremityNode1, node)
                         ? link.ExtremityNode2
                         : link.ExtremityNode1;
-                    Lane lane = new Lane
-                    {
-                        Link = link,
-                        Far = far,
-                        Wormhole = wormhole,
-                        Bearing = CompassDirections.Bearing(
-                            far.GalaxyPosition.X - node.GalaxyPosition.X,
-                            far.GalaxyPosition.Y - node.GalaxyPosition.Y
-                        ),
-                    };
-                    lanes.Add(lane);
+                    lanes.Add(
+                        new Lane
+                        {
+                            Link = link,
+                            Far = far,
+                            Wormhole = wormhole,
+                            Bearing = CompassDirections.Bearing(
+                                far.GalaxyPosition.X - node.GalaxyPosition.X,
+                                far.GalaxyPosition.Y - node.GalaxyPosition.Y
+                            ),
+                        }
+                    );
                 }
 
                 lanes.Sort(ClockwiseFromNorth);
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: working out a system's starlanes threw: " + e);
+            }
 
+            return lanes;
+        }
+
+        /// <summary>
+        /// The lanes leaving a system, as LEAVES - and right on one goes down it.
+        ///
+        /// A lane says the name of the system at its far end only when the map draws that name.
+        /// Everything else is a lane into the unexplored, which is what the map shows: a line running
+        /// off into the dark. The galaxy model would answer either way - it holds every system's name
+        /// from the first turn - so the check, not the model, is what keeps this honest. A lane into the
+        /// dark is a leaf with nowhere to go and answers right with nothing, silently.
+        ///
+        /// A NAMED lane TRAVELS (<see cref="Travel"/>): the cursor is rebased onto the destination
+        /// system's own node at the root of this stop. Not a child of its own naming that system, which
+        /// is what this used to be: a second node for a place that already has one breaks the
+        /// one-object-one-node rule, forced its whole contents to be re-keyed structurally, and had to be
+        /// made deliberately poorer than the original - no lanes of its own - or the tree would have had
+        /// no bottom. Rebasing keeps one node per place and puts no bottom on the tree at all.
+        ///
+        /// Everything else a lane does is unchanged: what is flying it, what sending the selection here
+        /// would cost, the map's own left click, and the map's own right click.
+        /// </summary>
+        private void AddStarlanes(
+            GraphBuilder builder,
+            string place,
+            StarSystemNode node,
+            Empire empire,
+            List<Lane> lanes
+        )
+        {
+            try
+            {
+                HashSet<ControlId> expansion = builder.Expansion;
                 for (int i = 0; i < lanes.Count; i++)
                 {
                     Link link = lanes[i].Link;
@@ -2893,27 +3105,23 @@ namespace ES2Access.Screens
                     // Hir end of the Xiu-Hir lane threw the cursor across to the Xiu end on the next
                     // rebuild. Two GUIDs are stable without a reference, so nothing is lost.
                     ControlId id = ControlId.Structural(key);
-                    IList<Fleet> flying = FleetPresence.FleetsOn(link);
-                    // A lane into the dark with nothing flying it is a leaf: there is neither a fleet
-                    // to walk nor a system to name at the far end.
-                    if (flying.Count == 0 && !named)
+                    // Right on a named lane goes THERE. Wired as a follow rather than as an expansion:
+                    // an empty group auto-recollapses and speaks "no details" over the very landing this
+                    // makes, and a group that really declared the far system would be that system's
+                    // second node (<see cref="NodeVtable.OnFollow"/>). A lane running into the dark
+                    // wires nothing and answers the key with silence, as a leaf does everywhere.
+                    StarSystemNode far = named ? destination as StarSystemNode : null;
+                    if (far != null)
                     {
-                        builder.AddItem(id, vtable);
-                        continue;
+                        StarSystemNode from = node;
+                        StarSystemNode to = far;
+                        ControlId here = id;
+                        GalaxyHudScreen screen = this;
+                        HashSet<ControlId> expanded = expansion;
+                        vtable.OnFollow = () => screen.Travel(from, here, to, expanded);
                     }
 
-                    vtable.ControlType = ControlTypes.Group;
-                    builder.BeginGroup(id, vtable);
-                    if (builder.IsExpanded(id))
-                    {
-                        AddFleets(builder, key, flying);
-                        if (named)
-                        {
-                            AddDestination(builder, key, destination, empire, labels);
-                        }
-                    }
-
-                    builder.EndGroup();
+                    builder.AddItem(id, vtable);
                 }
             }
             catch (Exception e)
@@ -3004,120 +3212,6 @@ namespace ES2Access.Screens
             {
                 Log.Warn("galaxy: offering the probe's launch directions threw: " + e);
             }
-        }
-
-        /// <summary>
-        /// Where a lane goes, as a child of the lane - the place at its far end, offered here because
-        /// that is where the player asking "what is down this line" is standing.
-        ///
-        /// Only where the map draws the far end's name, which is the same question the lane's own
-        /// label asked: a lane into the dark has no destination to offer and stays a leaf.
-        ///
-        /// It says and does what the system's own node at the root of the tree says and does - the same
-        /// state word, the same count phrase for what is parked there, the same two clicks: ENTER is the
-        /// map's left click on that system (the camera goes in on it, <see cref="ZoomIn"/> - the very
-        /// call the root node makes, so the two cannot drift apart) and BACKSLASH sends the selection
-        /// all the way there, which is the distinction the game itself draws between a move ordered on a
-        /// node and one ordered on a link: the lane means "fly out onto this line", the system at its end
-        /// means "go there".
-        ///
-        /// And it OPENS, on the same key and with the same meaning as the system's own node: right brings
-        /// the camera in on that system and walks what the map is drawing there - its planets, its label's
-        /// buttons, what is parked in it (<see cref="AddInside"/>) - and closing it takes the camera back
-        /// out again (<see cref="Collapse"/>). Which is the whole point of a lane leading somewhere
-        /// explored: "what is down this line" is answered where the player is standing, without walking
-        /// back to a list of a hundred systems to find the one they were just told the name of. Only the
-        /// LANES are left off, or one of them would lead back here and the tree would have no bottom.
-        ///
-        /// Keyed structurally and NEVER on the far node, and neither is anything under it: that node is
-        /// already a node of this screen at the root of the systems stop, and two nodes sharing a backing
-        /// object are one control to the cursor - reference identity is followed before the structural key -
-        /// so carrying the reference here would teleport the player out of the lane the moment anything
-        /// rebuilt (the same trap <see cref="AddFleets"/> records).
-        /// </summary>
-        private static void AddDestination(
-            GraphBuilder builder,
-            string laneKey,
-            GameNode destination,
-            Empire empire,
-            StarSystemLabel[] labels
-        )
-        {
-            GameNode it = destination;
-            Empire looking = empire;
-            NodeVtable vtable = new NodeVtable
-            {
-                ControlType = ControlTypes.Button,
-                Announcements = new List<NodeAnnouncement>
-                {
-                    GraphNodes.LabelPart(
-                        () => ModStrings.Format(ModStrings.GalaxyLaneDestination, it.LocalizedName)
-                    ),
-                    GraphNodes.ValuePart(() => StateOf(it, looking)),
-                    // Read on focus rather than watched, for the reason a system's own count phrase is:
-                    // the answer costs a walk of the docking-slot repository.
-                    GraphNodes.ValuePart(() => FleetPresence.At(it), false),
-                    GraphNodes.ValuePart(() => FleetRoute.Preview(it), false),
-                },
-                Sections = GraphNodes.Sections(
-                    NodeSection.Buffer(() => FleetPresence.LinesAt(it)),
-                    NodeSection.Buffer(() => FleetRoute.PreviewLines(it))
-                ),
-                OnActivate = () => ZoomIn(it),
-                OnContextual = () => SendTo(it),
-            };
-
-            string key = laneKey + "/destination";
-            ControlId id = ControlId.Structural(key);
-            StarSystemNode system = destination as StarSystemNode;
-            if (system == null)
-            {
-                // Whatever else the galaxy hangs a lane off is not a place with planets in it.
-                builder.AddItem(id, vtable);
-                return;
-            }
-
-            StarSystemNode inside = system;
-            HashSet<ControlId> expansion = builder.Expansion;
-            vtable.ControlType = ControlTypes.Group;
-            vtable.OnExpand = () =>
-            {
-                if (expansion != null)
-                {
-                    expansion.Add(id);
-                }
-
-                // The same silent zoom the system's own node opens with, and NOT ZoomIn: opening a branch
-                // is not a click and must never confirm a target.
-                GalaxyViewLevels.ZoomTo(inside);
-            };
-            vtable.OnCollapse = () => Collapse(expansion, id, inside);
-            builder.BeginGroup(id, vtable);
-            if (builder.IsExpanded(id))
-            {
-                AddInside(
-                    builder,
-                    key,
-                    inside,
-                    empire,
-                    LabelFor(inside, labels),
-                    false,
-                    labels,
-                    null
-                );
-            }
-
-            builder.EndGroup();
-        }
-
-        /// <summary>Send the selected fleets to a place on the map, and nothing else. The system's own
-        /// node does more than this on the same key (<see cref="SystemCommand"/>): with nothing selected
-        /// it undoes a zoom, which from inside a lane would move a camera the player never asked about.
-        /// </summary>
-        private static void SendTo(GameNode node)
-        {
-            List<FailureInfo> refusals = new List<FailureInfo>();
-            SendAll(SendableTo(node, FleetOrders.Selected(), refusals), refusals);
         }
 
         /// <summary>
@@ -3242,13 +3336,15 @@ namespace ES2Access.Screens
 
 
         /// <summary>
-        /// The fleets standing at one place on the map - what each is made of, where it is, and where
-        /// it is going - as children of that place.
+        /// The fleets PARKED at a system - what each is made of, where it is, and where it is going -
+        /// as children of that system.
         ///
         /// Which fleets those are is never worked out here: they are the ones the map's own lozenge at
-        /// this system or on this lane is holding (<see cref="FleetPresence"/>), so a fleet nobody can
-        /// see is absent for the same reason it is absent from the picture, and the count the place
-        /// announces and the children it opens onto are the same answer read two ways.
+        /// this system is holding (<see cref="FleetPresence"/>), so a fleet nobody can see is absent for
+        /// the same reason it is absent from the picture, and the count the place announces and the
+        /// children it opens onto are the same answer read two ways. The fleets under way on this
+        /// system's lanes are the other half of that count and hang here too, after these
+        /// (<see cref="AddEnRoute"/>).
         ///
         /// Focus points at whichever label the map is drawing the fleet with, so the game draws the
         /// fleet's own dossier for it exactly as it would for a mouse resting there. Which label that
@@ -3282,54 +3378,207 @@ namespace ES2Access.Screens
                 for (int i = 0; i < fleets.Count; i++)
                 {
                     Fleet it = fleets[i];
-                    AgeTransform lozenge = FleetLozenge(it, docks, flying);
-                    NodeVtable vtable = GraphNodes.Button(
-                        () => it.LocalizedName,
-                        () => Select(it),
-                        null,
-                        Raw(lozenge),
-                        null,
-                        // The rest of the journey, turn by turn, for whoever wants to know where this
-                        // fleet will be sleeping tonight (<see cref="FleetRoute"/>).
-                        () => FleetRoute.CommittedLines(it)
+                    builder.AddItem(
+                        ControlId.Structural(place + "/fleet/" + it.GUID),
+                        FleetNode(it, docks, flying)
                     );
-                    vtable.Announcements.Add(GraphNodes.ValuePart(() => FleetText(it)));
-                    // How much of the journey is left. A part of its OWN and not part of the line
-                    // above, because that line is WATCHED - a movement figure the game changes under
-                    // the player is worth saying - and the answer here is a walk of the fleet's whole
-                    // route, which is a thing to do when focus lands and never on a frame.
-                    //
-                    // The destination is named only where the line above has not already named it: a
-                    // fleet under way says "Moving to Xiu" and then how long that will take, and a
-                    // fleet parked with an order standing says where it is and then where it is going.
-                    vtable.Announcements.Add(
-                        GraphNodes.ValuePart(
-                            () =>
-                                FleetOrders.Orbit(it) == null
-                                    ? FleetRoute.Arrival(it)
-                                    : FleetRoute.Committed(it),
-                            false
-                        )
-                    );
-                    if (lozenge != null)
-                    {
-                        PointAt(vtable, lozenge);
-                    }
-
-                    // Keyed on the fleet's own identity but NOT carrying the fleet as a reference:
-                    // the selected-fleet panel is declared on this same screen, and its fleet line is
-                    // keyed on the garrison - which for a fleet is this very object. Two nodes sharing
-                    // a backing object are ONE control to the cursor (reference identity is followed
-                    // before the structural key), so the panel's line teleported the player straight
-                    // back out to the map on the next rebuild. The line is the one that needs the
-                    // reference - its widget is a pool slot the game rebinds - and this key is a GUID,
-                    // which is stable without one.
-                    builder.AddItem(ControlId.Structural(place + "/fleet/" + it.GUID), vtable);
                 }
             }
             catch (Exception e)
             {
                 Log.Warn("galaxy: reading the fleets at a place threw: " + e);
+            }
+        }
+
+        /// <summary>
+        /// The fleets UNDER WAY on the lanes leaving a system, as children of that system - each saying
+        /// which lane it is on and which way that lane leaves.
+        ///
+        /// A lane runs between two systems and the fleet flying it is at neither, so the map draws it
+        /// out in between and the tree hangs it under BOTH ends. Either end is a true answer to "where
+        /// is it", and hosting it under one alone would make the answer depend on which of the two the
+        /// player happened to open - the same reasoning the fleet search index has always been built on.
+        /// Under the lane node itself is what this used to be, and a lane is a leaf now: travelling one
+        /// is what right means there.
+        ///
+        /// Keyed under the SYSTEM, with no reference carried, exactly as a parked fleet is: the two
+        /// hosts' keys differ by the system in them, so the two nodes are distinct controls, and a fleet
+        /// is parked or under way and never both, so neither key can collide with the other set.
+        /// </summary>
+        private static void AddEnRoute(GraphBuilder builder, string place, List<EnRoute> flying)
+        {
+            if (flying.Count == 0)
+            {
+                return;
+            }
+
+            try
+            {
+                DockLabel[] docks = DockLabels();
+                FleetLabel[] labels = FleetLabels();
+
+                for (int i = 0; i < flying.Count; i++)
+                {
+                    EnRoute leg = flying[i];
+                    Fleet it = leg.Fleet;
+                    NodeVtable vtable = FleetNode(it, docks, labels);
+                    // Straight after the name, because it answers the question the player is holding
+                    // while they hear it: why is this fleet under THIS system? One whole phrase rather
+                    // than a lane number glued to a compass word, and the number is the one the lane
+                    // node itself announces - both come off the same list (<see cref="LanesOf"/>).
+                    string template = leg.Wormhole
+                        ? ModStrings.GalaxyFleetOnWormhole
+                        : ModStrings.GalaxyFleetOnStarlane;
+                    int number = leg.Number;
+                    string direction = leg.Direction;
+                    vtable.Announcements.Insert(
+                        1,
+                        GraphNodes.ValuePart(
+                            () =>
+                                ModStrings.Format(template, number, ModStrings.Get(direction)),
+                            false
+                        )
+                    );
+                    builder.AddItem(
+                        ControlId.Structural(place + "/fleet/" + it.GUID),
+                        vtable
+                    );
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: reading the fleets under way near a system threw: " + e);
+            }
+        }
+
+        /// <summary>One fleet as a control, wherever it is being hung. Shared so that a fleet reads the
+        /// same way parked and under way - everything but the lane it is on is the same fleet.</summary>
+        private static NodeVtable FleetNode(Fleet it, DockLabel[] docks, FleetLabel[] flying)
+        {
+            AgeTransform lozenge = FleetLozenge(it, docks, flying);
+            NodeVtable vtable = GraphNodes.Button(
+                () => it.LocalizedName,
+                () => Select(it),
+                null,
+                Raw(lozenge),
+                null,
+                // The rest of the journey, turn by turn, for whoever wants to know where this
+                // fleet will be sleeping tonight (<see cref="FleetRoute"/>).
+                () => FleetRoute.CommittedLines(it)
+            );
+            vtable.Announcements.Add(GraphNodes.ValuePart(() => FleetText(it)));
+            // How much of the journey is left. A part of its OWN and not part of the line
+            // above, because that line is WATCHED - a movement figure the game changes under
+            // the player is worth saying - and the answer here is a walk of the fleet's whole
+            // route, which is a thing to do when focus lands and never on a frame.
+            //
+            // The destination is named only where the line above has not already named it: a
+            // fleet under way says "Moving to Xiu" and then how long that will take, and a
+            // fleet parked with an order standing says where it is and then where it is going.
+            vtable.Announcements.Add(
+                GraphNodes.ValuePart(
+                    () =>
+                        FleetOrders.Orbit(it) == null
+                            ? FleetRoute.Arrival(it)
+                            : FleetRoute.Committed(it),
+                    false
+                )
+            );
+            if (lozenge != null)
+            {
+                PointAt(vtable, lozenge);
+            }
+
+            // Keyed by the caller on the fleet's own GUID but NOT carrying the fleet as a reference:
+            // the selected-fleet panel is declared on this same screen, and its fleet line is keyed on
+            // the garrison - which for a fleet is this very object. Two nodes sharing a backing object
+            // are ONE control to the cursor (reference identity is followed before the structural key),
+            // so the panel's line teleported the player straight back out to the map on the next
+            // rebuild. The line is the one that needs the reference - its widget is a pool slot the game
+            // rebinds - and a GUID key is stable without one. It is also what lets a fleet under way be
+            // hosted under both ends of its lane at once.
+            return vtable;
+        }
+
+        /// <summary>One fleet under way on one of a system's lanes, with the lane already named the way
+        /// the lane node names itself.</summary>
+        private struct EnRoute
+        {
+            public Fleet Fleet;
+            public int Number;
+            public string Direction;
+            public bool Wormhole;
+        }
+
+        /// <summary>
+        /// The fleets under way on a system's lanes, in lane order, each carrying its lane's number.
+        ///
+        /// A fleet is taken by the FIRST lane that claims it. Two links can run between the same pair of
+        /// systems - a wormhole beside a starlane - and a fleet's leg is a pair of positions rather than
+        /// a link (<see cref="FleetPresence"/>), so both would claim it; declaring it twice under one
+        /// system is a duplicate control id, which throws the whole screen out of Build.
+        /// </summary>
+        private static List<EnRoute> EnRouteOn(List<Lane> lanes)
+        {
+            List<EnRoute> flying = new List<EnRoute>();
+            for (int i = 0; i < lanes.Count; i++)
+            {
+                IList<Fleet> onLane = FleetPresence.FleetsOn(lanes[i].Link);
+                for (int j = 0; j < onLane.Count; j++)
+                {
+                    Fleet fleet = onLane[j];
+                    if (Holds(flying, fleet))
+                    {
+                        continue;
+                    }
+
+                    flying.Add(
+                        new EnRoute
+                        {
+                            Fleet = fleet,
+                            Number = i + 1,
+                            Direction = CompassDirections.KeyForBearing(lanes[i].Bearing),
+                            Wormhole = lanes[i].Wormhole,
+                        }
+                    );
+                }
+            }
+
+            return flying;
+        }
+
+        private static bool Holds(List<EnRoute> flying, Fleet fleet)
+        {
+            for (int i = 0; i < flying.Count; i++)
+            {
+                if (ReferenceEquals(flying[i].Fleet, fleet))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>How many fleets the map is drawing out on this system's lanes, as a whole phrase.
+        /// Nothing at all where there are none - a system with nothing moving near it says nothing about
+        /// it, exactly as one with nothing parked says nothing.</summary>
+        private static string UnderWayNearby(StarSystemNode node, Empire empire)
+        {
+            try
+            {
+                int count = EnRouteOn(LanesOf(node, empire)).Count;
+                return count == 0
+                    ? null
+                    : ModStrings.Plural(
+                        ModStrings.GalaxyFleetUnderWayNearbyOne,
+                        ModStrings.GalaxyFleetsUnderWayNearby,
+                        count
+                    );
+            }
+            catch (Exception)
+            {
+                return null;
             }
         }
 

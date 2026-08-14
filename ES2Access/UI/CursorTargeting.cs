@@ -211,8 +211,9 @@ namespace ES2Access.UI
         /// The same confirm, at a STARLANE rather than at a place - the map's own left click on the line
         /// itself, which is where the mode is aimed when what the player wants is a direction rather than
         /// a system. Aiming a probe down an unexplored lane is the whole point of the probe mode: the far
-        /// end of that line has no node of its own on this screen (a lane into the dark offers no
-        /// destination child), so the lane IS the only way to name where the probe should go.
+        /// end of that line has no node of its own on this screen (a lane into the dark leads nowhere the
+        /// map has named, so there is nothing to travel to), so the lane IS the only way to name where the
+        /// probe should go.
         ///
         /// <paramref name="far"/> is the end the lane's own node is pointing at - the one its label names
         /// and its compass direction is measured to - and confirming here means confirming at that end,

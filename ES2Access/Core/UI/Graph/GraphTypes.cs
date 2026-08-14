@@ -149,6 +149,32 @@ namespace ES2Access.Core.UI.Graph
         /// <summary>Optional. Secondary activation — the right-click equivalent.</summary>
         public Action OnSecondary;
 
+        /// <summary>
+        /// Optional. This control NAMES A PLACE that already exists elsewhere in the graph, and Right
+        /// goes there — a reference-shaped leaf: a lane naming the system at its far end, a link
+        /// naming the row it points at, a search result naming the thing it found.
+        ///
+        /// It exists because the alternative is worse. Such a node could be made a GROUP that
+        /// re-declares the named place underneath it, and then every object has two nodes - which
+        /// breaks the one-object-one-node rule (reference identity is followed before the structural
+        /// key, so the copy either teleports the cursor or has to be keyed structurally and lose its
+        /// identity), and the tree has no bottom unless the copy is deliberately made poorer than the
+        /// original. Following the reference instead keeps ONE node per place: Right REBASES the
+        /// cursor onto it.
+        ///
+        /// The contract, which the engine holds the caller to:
+        /// - Only asked where the node is NOT expandable. A group's own expansion wins - a control
+        ///   that has children of its own is not standing in for somewhere else.
+        /// - It is NOT a click. Right opens branches all over a tree and a player presses it
+        ///   speculatively; a handler that posts an order or confirms a mode the game has armed would
+        ///   fire on a keystroke nobody meant as a command.
+        /// - The handler MOVES FOCUS itself (through the host's own put-the-cursor-here route) and the
+        ///   engine says nothing: <see cref="KeyGraph.TreeMove.Followed"/> is consumed silently, and
+        ///   the landing announces itself exactly once, by the one code path every focus change goes
+        ///   through. A handler that speaks as well is that landing said twice.
+        /// </summary>
+        public Action OnFollow;
+
         /// <summary>Optional. The control's OTHER activation — what the game's own modified click does
         /// (queue this at the head of the queue rather than the end). Distinct from
         /// <see cref="OnSecondary"/>, which is the right-click.</summary>

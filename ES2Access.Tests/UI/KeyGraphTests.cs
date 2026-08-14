@@ -347,6 +347,89 @@ namespace ES2Access.Tests.UI
             Assert.False(g.Current.NodeAt(Id("g")).Expanded);
         }
 
+        // ---- following a reference (a leaf that names somewhere else) ----
+
+        /// <summary>A tree whose second child NAMES the top-level node rather than holding anything of
+        /// its own - the shape a starlane has, pointing at the system it runs to.</summary>
+        private static KeyGraph FollowTree(GraphState state, List<string> followed, bool expandable)
+        {
+            return new KeyGraph(Renderer(b =>
+            {
+                b.AddItem(Id("top"), Vt("Top"));
+                b.BeginGroup(Id("g"), Vt("Group"));
+                b.AddItem(Id("c1"), Vt("Child 1"));
+                NodeVtable lane = Vt("Lane");
+                lane.OnFollow = () => followed.Add("followed");
+                if (expandable)
+                {
+                    b.BeginGroup(Id("lane"), lane);
+                    b.AddItem(Id("far"), Vt("Far"));
+                    b.EndGroup();
+                }
+                else
+                {
+                    b.AddItem(Id("lane"), lane);
+                }
+                b.EndGroup();
+            }, state), state);
+        }
+
+        // Right on the leaf runs the handler and reports Followed - the handler moves focus itself, so
+        // the engine leaves the cursor exactly where it was and says nothing.
+        [Fact]
+        public void TreeRightFollowsALeafThatNamesSomewhereElse()
+        {
+            GraphState state = new GraphState();
+            List<string> followed = new List<string>();
+            KeyGraph g = FollowTree(state, followed, false);
+            g.Rerender();
+            g.Move(GraphDir.Down);
+            g.TreeRight();
+            g.TreeRight();
+            g.Move(GraphDir.Down);
+            Assert.Equal("lane", Focused(g));
+
+            Assert.Equal(KeyGraph.TreeMove.Followed, g.TreeRight().Kind);
+            Assert.Single(followed);
+            Assert.Equal("lane", Focused(g));
+        }
+
+        // The same leaf without a handler is an ordinary Leaf: consumed, nothing run.
+        [Fact]
+        public void TreeRightOnALeafWithoutOneStaysALeaf()
+        {
+            GraphState state = new GraphState();
+            KeyGraph g = Tree(state);
+            g.Rerender();
+            g.Move(GraphDir.Down);
+            g.TreeRight();
+            g.TreeRight();
+            Assert.Equal("c1", Focused(g));
+            Assert.Equal(KeyGraph.TreeMove.Leaf, g.TreeRight().Kind);
+        }
+
+        // A node that has children of its own is not standing in for somewhere else: its own expansion
+        // wins and the follow handler is never asked.
+        [Fact]
+        public void AnExpandableNodeIgnoresItsFollowHandler()
+        {
+            GraphState state = new GraphState();
+            List<string> followed = new List<string>();
+            KeyGraph g = FollowTree(state, followed, true);
+            g.Rerender();
+            g.Move(GraphDir.Down);
+            g.TreeRight();
+            g.TreeRight();
+            g.Move(GraphDir.Down);
+            Assert.Equal("lane", Focused(g));
+
+            Assert.Equal(KeyGraph.TreeMove.Expanded, g.TreeRight().Kind);
+            Assert.Empty(followed);
+            Assert.Equal(KeyGraph.TreeMove.Descended, g.TreeRight().Kind);
+            Assert.Equal("far", Focused(g));
+            Assert.Empty(followed);
+        }
+
         /// <summary>Two panels, each with a group at the top level: Home and End inside one of them are
         /// about that panel and never reach into the other. The trap is that a top-level node has no
         /// parent, so "same parent" alone made every root-level node on the page a sibling.</summary>

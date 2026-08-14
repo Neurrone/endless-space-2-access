@@ -681,6 +681,12 @@ namespace ES2Access.UI
                     case KeyGraph.TreeMove.Ascended:
                         AnnounceMove(tree.Move);
                         return true;
+                    case KeyGraph.TreeMove.Followed:
+                        // The leaf named somewhere else and sent the cursor there itself. Nothing is
+                        // said here: the landing is announced once, by the pending-focus path every
+                        // other jump goes through, and a word from the key as well would be that
+                        // landing described twice.
+                        return true;
                     case KeyGraph.TreeMove.Leaf:
                         return true;
                 }
@@ -827,6 +833,17 @@ namespace ES2Access.UI
             if (node == null)
             {
                 return false;
+            }
+
+            // The SCREEN is offered the key first, the same way the contextual key is offered
+            // (<see cref="Screen.Secondary"/>): where a page has folded a second command onto this key
+            // for a whole panel of its own - the galaxy's way back down the lanes it has been travelled -
+            // that command belongs to the panel rather than to whichever node the cursor happens to be
+            // on, most of which wire no OnSecondary at all. A screen that declines leaves the focused
+            // control's own second command exactly as it was.
+            if (_screen.Secondary(node))
+            {
+                return true;
             }
 
             if (node.Vtable.OnSecondary != null)
@@ -1374,8 +1391,13 @@ namespace ES2Access.UI
                     _typeAhead.Last();
                     return true;
                 case UiActions.Back:
-                    // The key that puts the keyboard back, and it goes no further: the game must
-                    // not also close the screen the player was searching.
+                case UiActions.Secondary:
+                    // The two keys that put the keyboard back, and they go no further: the game must
+                    // not also close the screen the player was searching, and Backspace must not also
+                    // do the page's own second command on whatever the last match landed on. Backspace
+                    // is here rather than editing the typed letters because a search is re-typed in a
+                    // keystroke and the key is worth more as the way OUT of one - one gesture, the
+                    // same as Escape's (owner decision 2026-08-14).
                     ClearSearch(true);
                     return true;
                 default:

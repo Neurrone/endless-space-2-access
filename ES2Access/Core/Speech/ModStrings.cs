@@ -206,10 +206,18 @@ namespace ES2Access.Core.Speech
         public const string GalaxyWormhole = "galaxy.wormhole";
         public const string GalaxyWormholeUnexplored = "galaxy.wormhole-unexplored";
 
-        // The place a lane leads to, offered inside the lane itself. The game draws no such control - a
-        // line on the map is the whole of what it draws - so the phrase is the mod's, and it is a whole
-        // phrase because the name of a system is all that goes in it.
-        public const string GalaxyLaneDestination = "galaxy.lane-destination";
+        // Which lane a fleet under way is flying, said where that fleet hangs under one of the systems
+        // the lane runs between. The number and the compass word are the ones the lane node itself
+        // announces, off the same list, so the two cannot name different lines. Whole phrases, and one
+        // per kind of line, because "starlane" and "wormhole" are different words in the sentence rather
+        // than a noun slotted into it.
+        public const string GalaxyFleetOnStarlane = "galaxy.fleet-on-starlane";
+        public const string GalaxyFleetOnWormhole = "galaxy.fleet-on-wormhole";
+
+        // How many fleets are under way on the lanes leaving a system, said by the system itself after
+        // the count of what is parked there - the two together are what its branch opens onto.
+        public const string GalaxyFleetUnderWayNearbyOne = "galaxy.fleet-under-way-nearby-one";
+        public const string GalaxyFleetsUnderWayNearby = "galaxy.fleets-under-way-nearby";
 
         // What the map writes on a system's own label. The numbers are the game's; the words around
         // them are the mod's, because the label draws every one of them as a bare figure beside a
@@ -1047,7 +1055,10 @@ namespace ES2Access.Core.Speech
             { GalaxyStarlaneUnexplored, "Starlane {0} to an unexplored system, {1}" },
             { GalaxyWormhole, "Wormhole {0} to {1}, {2}" },
             { GalaxyWormholeUnexplored, "Wormhole {0} to an unexplored system, {1}" },
-            { GalaxyLaneDestination, "Go to {0}" },
+            { GalaxyFleetOnStarlane, "on starlane {0}, {1}" },
+            { GalaxyFleetOnWormhole, "on wormhole {0}, {1}" },
+            { GalaxyFleetUnderWayNearbyOne, "{0} fleet under way nearby" },
+            { GalaxyFleetsUnderWayNearby, "{0} fleets under way nearby" },
             { GalaxySystemPopulation, "{0} population" },
             { GalaxySystemSleepers, "{0} sleepers" },
             { GalaxySystemBuilding, "Building {0}, {1} turns" },

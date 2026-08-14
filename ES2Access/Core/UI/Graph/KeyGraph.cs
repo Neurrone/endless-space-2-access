@@ -443,6 +443,8 @@ namespace ES2Access.Core.UI.Graph
             Descended,  // moved to the group's first child (announce as a move)
             Ascended,   // moved to the nearest focusable ancestor (announce as a move)
             Leaf,       // Right on a non-group inside a tree — consumed, nothing to descend into
+            Followed,   // the leaf named a place elsewhere in the graph and sent the cursor there
+                        // (NodeVtable.OnFollow) — consumed SILENTLY: the landing speaks for itself
         }
 
         public struct TreeResult
@@ -461,7 +463,13 @@ namespace ES2Access.Core.UI.Graph
         }
 
         /// <summary>Right on a group: expand (auto-recollapse when it turns out empty), or descend into an
-        /// expanded one. Right elsewhere in a tree: Leaf (consume).</summary>
+        /// expanded one. Right on a leaf that names a place elsewhere in the graph: follow the reference
+        /// (<see cref="NodeVtable.OnFollow"/>). Right elsewhere in a tree: Leaf (consume).
+        ///
+        /// The order is the contract: a group's own children win, so OnFollow is only ever reached on a
+        /// node that has nothing to descend into. Following is deliberately NOT modelled as an
+        /// OnExpand override - a group whose expansion declares no children auto-recollapses and reports
+        /// EmptyGroup, which speaks "no details" over the very move the handler just made.</summary>
         public TreeResult TreeRight()
         {
             TreeResult result = new TreeResult { Kind = TreeMove.None };
@@ -496,6 +504,13 @@ namespace ES2Access.Core.UI.Graph
                 result.Move.To = child;
                 result.Move.Moved = true;
                 result.Kind = TreeMove.Descended;
+                return result;
+            }
+
+            if (node.Vtable != null && node.Vtable.OnFollow != null)
+            {
+                node.Vtable.OnFollow();
+                result.Kind = TreeMove.Followed;
                 return result;
             }
 
