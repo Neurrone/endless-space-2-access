@@ -51,23 +51,20 @@ namespace ES2Access.UI
         /// :1514-1522) and writes <c>GameNode.LocalizedName</c> into it at the same threshold, or the
         /// literal "???" below it (<c>RefreshEmpireNameLabel</c> :1894-1921).
         ///
-        /// The threshold is HIGHER for a special node - the Academy, a quest site - than for an ordinary
-        /// star system: 3 against 2 (<c>GalaxySpecialNodeCursorTarget.VisibleByCurrentEmpire</c> :22-27
-        /// against <c>GalaxyStarSystemCursorTarget</c>'s :89-94, which the special one overrides). A
-        /// <c>SpecialNode</c> IS a <c>StarSystemNode</c>, so one threshold for both would have named
-        /// every special node one step of exploration too early for the MOUSE. Note that the label
-        /// window has no special-node branch of its own, so between exploration 2 and 3 the map draws a
-        /// special node's name while this refuses it - deliberately unresolved, owner's call pending.
+        /// One threshold, for a special node - the Academy, a quest site - as much as for an ordinary
+        /// star system, because NAMING and TARGETING are different questions and this is the naming one.
+        /// Neither of those two label methods has a special-node branch at all: the label draws the
+        /// Academy's name at exploration 2 like anything else's. The higher threshold that exists in the
+        /// game - 3 in <c>GalaxySpecialNodeCursorTarget.VisibleByCurrentEmpire</c> :22-27, overriding
+        /// <c>GalaxyStarSystemCursorTarget</c>'s :89-94 - governs whether the MOUSE can target the node,
+        /// which is a separate rule this one must not borrow: taking it made the cursor refuse a name the
+        /// map was drawing on screen.
         /// </summary>
         public static bool Perceived(GameNode node, Empire empire)
         {
             try
             {
-                if (
-                    node == null
-                    || empire == null
-                    || (int)node.Exploration[empire] < (node is SpecialNode ? 3 : 2)
-                )
+                if (node == null || empire == null || (int)node.Exploration[empire] < 2)
                 {
                     return false;
                 }
