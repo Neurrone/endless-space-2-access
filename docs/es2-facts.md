@@ -734,6 +734,18 @@ generic graduates to the generic docs.
 - **Tutorial pages declare their own draw layer**: `TutorialPopupLayer` is per-page, and 49 of
   233 pages declare one ABOVE modals — so the tutorial screen has to sit near the top of the
   mod's ladder, with only the error and message boxes above it.
+- **A page comes back ONE FRAME before its own content does**, and that frame is where a cursor
+  goes missing. Measured with a per-frame trace (`DevProbe.Trace`) across a technology-wheel round
+  trip from the star system page in `unlocked`: f+0 the wheel's window shows (`IsAnyScreenVisible`)
+  and the star system screen stops declaring; f+1..3 NO mod screen is active at all (the handover
+  gap, three frames); the wheel runs; on the way back three more empty frames, then **f=N
+  `screen.star-system` is active declaring 3 nodes, f=N+1 declaring 78**. The three are the shared
+  HUD strip (`Screen.BuildShared`'s collapsed-tutorial bar), because `SystemManagementScreen.Build`
+  returns early until its planet cards exist while `IsActive` (view level + no modal + window shown)
+  is already true. The tutorial SCREEN never enters the stack at any point in the trip — the
+  cursor's landing on "Close tutorial" was the shared strip being the whole render for one frame,
+  not layer 98 taking focus. The mod policy that follows: shared contributions are skipped when the
+  page declared nothing, so "nothing here yet" stays an empty render.
 
 ## Tables, pools and clicks
 

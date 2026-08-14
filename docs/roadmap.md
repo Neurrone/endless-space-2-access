@@ -42,8 +42,6 @@ files above.
 - The planet page's population-entry click has no opener node yet (the window itself,
   StarSystemPopulationModalWindow, is covered — SystemPoliticsScreen binds it).
 - Skill-tree type-ahead: a TypeAheadScope so search reaches skills in collapsed branches.
-- Modal-return cursor: closing any modal over the star system page lands on the planets
-  stop's start node, not the opening button (pre-existing; improvements/rename too).
 - ReadCell cells on EmpireScreen/MilitaryScreen/SystemSelectionScreen can say
   "unavailable" twice (own part + the shared tail); the split-cell fix exists
   (`Adorn(availability:false)`) but SystemSelectionScreen's combo needs care — a refused
@@ -59,12 +57,15 @@ files above.
   empire page when it fires. Reproduce and fix.
 - Departing-fade stand-down: the spurious "unavailable" frame when a game confirmation
   opens over a mod screen (general fix).
-- `system: reading the side panels threw: Duplicate control id: system:side/2/Key/2` — seen ONCE
-  in batch G's ring while the star system page was up, never reproduced; it empties that panel's
-  walk for the frame it fires. Two children named "Key" at the same depth under the
-  representatives panel is the shape (its sensitivity legend), so the likely cause is a frame
-  where `PoliticalSensitivityBreakdown` had not yet resolved and the `Special` branch that claims
-  the legend did not fire. Reproduce and key it by index-in-parent.
+- `system: reading the side panels threw: Duplicate control id: system:side/2/Key/2` —
+  **REPRODUCED** (2026-08-14, `unlocked`, Xiu): it fires on every visit to the star system page,
+  three for three. Two children named "Key" at the same depth under the representatives panel is
+  the shape (its sensitivity legend); key it by index-in-parent. And it is worse than recorded: the
+  throw is caught with the menu ROW still open, so the very next declaration —
+  `Screen.BuildShared`'s `BeginStop` — throws `Cannot begin a stop inside an open row` and the
+  navigator loses the WHOLE page's build for that frame, not just the panel's walk. The two
+  warnings always arrive as a consecutive pair. Two fixes, and the second is the general one: key
+  the legend, and make a screen's own catch close what it opened (or the builder tolerate it).
 - SettingRows editors end in silence: no watcher notices the game's field letting go, so a
   committed or cancelled settings edit re-reads nothing (the rename box now does this
   right; hoist its field-released re-read into the shared editor).

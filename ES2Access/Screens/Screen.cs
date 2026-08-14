@@ -99,10 +99,19 @@ namespace ES2Access.Screens
         /// HUD's right-hand edge, where it is drawn above the notification icons - keeps the place it
         /// chose; every other page gets it last. A page that only takes an ANSWER
         /// (<see cref="AnswersOnly"/>) gets it not at all.
+        ///
+        /// And a page that has declared NOTHING gets it not at all either, which is the whole of why
+        /// these are contributions rather than a screen. "Nothing here yet" is what a page arriving in
+        /// pieces says while it waits for the half the cursor must be seated on, and it works because
+        /// an empty render is skipped and the cursor is left alone. A strip added to that emptiness
+        /// makes the render non-empty and hands the seat to the strip - measured on the star system
+        /// page, which becomes active exactly one frame before its planet cards are drawn: on the way
+        /// back from the technology wheel the cursor landed on "Close tutorial" and stayed there, since
+        /// the bar is declared on every later frame too and reconciliation then has no reason to move.
         /// </summary>
         public void BuildShared(GraphBuilder builder)
         {
-            if (AnswersOnly)
+            if (AnswersOnly || !builder.DeclaredAnything)
             {
                 return;
             }

@@ -170,6 +170,12 @@ still restore the remembered position. In **`unlocked`** the tech screen binds "
 INFLUENCE" on EVERY open (not just the first) and the popup arrives expanded and takes the keyboard,
 so each of these steps ends with the minimize replay before the landing can be read — the locate is
 HELD, not lost, while the popup is up. Closing the window unbinds the tutorial again.
+**The transition round trip** (the route that lost the cursor to the tutorial bar): from the star
+system page, park the cursor on a real node, `w.FocusTechnology(…); Gui.GuiService.ShowWindow(w);`,
+then close with `ControlBanner.ToggleScreen("TechnologyScreen")`. It must come back on the node it
+left. Watch the frames with a `POST /wait` on `ES2Access.Dev.DevProbe.Trace("tag")` and
+`GET /log?since=0&grep=trace` — the frame to look at is the one where `screen.star-system` is active
+with a node count in single digits.
 **Where the wheel's first open lands** (re-check after any `IsActive` change): `POST /reload` for a
 fresh navigator state, then open — measured landing is `research:tree`, "Technology tree, Military,
 group, … 1 of 4". A 115-frame `POST /wait` across an open found NO frame where the window is

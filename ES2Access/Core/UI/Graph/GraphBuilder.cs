@@ -144,6 +144,18 @@ namespace ES2Access.Core.UI.Graph
             return key != null && _stopKeys.Contains(key);
         }
 
+        /// <summary>
+        /// Whether anything has been declared yet. Asked by the same SHARED contributions, which must
+        /// not be the only thing on a page: a screen that has declared nothing is saying "nothing here
+        /// yet" - the safety valve a page arriving in pieces relies on - and a render carrying an
+        /// overlay strip and nothing else is not empty, so the valve never opens and the cursor is
+        /// seated on the strip for good.
+        /// </summary>
+        public bool DeclaredAnything
+        {
+            get { return _declared.Count > 0; }
+        }
+
         /// <summary>Tag nodes added from here with a region (Ctrl+arrow jump target) within the current
         /// stop; null clears. Region keys must be stable across rebuilds.</summary>
         public GraphBuilder SetRegion(object key)
