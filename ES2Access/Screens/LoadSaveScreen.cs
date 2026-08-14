@@ -48,7 +48,33 @@ namespace ES2Access.Screens
         private readonly TableSheet _table = new TableSheet("loadsave:", SaveOf)
         {
             RowsHaveNoDoubleClick = true,
+            CellTooltipReading = ModsColumnIsReviewed,
         };
+
+        /// <summary>The name the game gives the column of mods a save wants
+        /// (<c>Public\Gui\GuiElements[Tables].xml</c>, the <c>SaveGames</c> table).</summary>
+        private static readonly string ModsColumn = "RuntimeModules";
+
+        /// <summary>
+        /// The mods column is INDICATED, not announced - the one column here that overrides the shared
+        /// rule.
+        ///
+        /// Its tooltip is Content-backed, which the rule reads as "the single sentence the game wrote"
+        /// and so announces; but what the game writes into it is the save's whole module dossier, a
+        /// line per module with its version and whether it is installed. That is a review read - the
+        /// player walks it when a save will not load - and having it spoken whole on every pass down
+        /// the list is what the short/long rule exists to prevent. The rule cannot see it, because the
+        /// dossier is composed when the row binds rather than declared on the widget, so the column
+        /// says so itself. The words are unchanged and still in the buffer; only the loudness moves.
+        /// </summary>
+        private static TooltipMode? ModsColumnIsReviewed(GuiTableHeader header, AgeTransform cell)
+        {
+            // The column's own name in the game's table definition, not its drawn caption, which is
+            // translated.
+            return TableSheet.PropertyOf(header) == ModsColumn
+                ? TooltipMode.Indicate
+                : (TooltipMode?)null;
+        }
 
         public override string Key
         {

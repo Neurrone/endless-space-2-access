@@ -132,6 +132,11 @@ namespace ES2Access.UI
         /// cell under the name. Null for a table whose rows are only their columns.</summary>
         public delegate IList<string> RowExtras(GuiTableLine line);
 
+        /// <summary>How a column's own tooltip should reach the player, where the shared rule reads it
+        /// wrong. Null - for the column or for the table - leaves <see cref="GraphNodes.ModeFor"/> to
+        /// answer.</summary>
+        public delegate TooltipMode? CellTooltip(GuiTableHeader header, AgeTransform cell);
+
         /// <summary>
         /// How deep inside a cell to look for what it is drawing.
         ///
@@ -220,6 +225,19 @@ namespace ES2Access.UI
         /// <summary>See <see cref="RowExtras"/>. Read BEFORE the column facts, which is the order they
         /// are drawn in - the extras sit inside the leftmost cell.</summary>
         public RowExtras RowDetails;
+
+        /// <summary>
+        /// See <see cref="CellTooltip"/>. Unset is the ordinary case.
+        ///
+        /// It exists because <see cref="GraphNodes.ModeFor"/>'s rule reads a tooltip's SHAPE, and its
+        /// premise for announcing a Content-backed one is that Content is "the single sentence the game
+        /// wrote to explain the control". A column can break that premise: the save list's Mods column
+        /// writes a whole multi-sentence dossier into Content - every module the save wants, with its
+        /// version and whether it is installed - which is a review read rather than something to have
+        /// spoken whole every time focus passes over the cell. The rule cannot see that, because the
+        /// dossier is only composed when the row binds, so the column says so here.
+        /// </summary>
+        public CellTooltip CellTooltipReading;
 
         private readonly string _key;
         private readonly RowObject _rowRef;
@@ -663,7 +681,8 @@ namespace ES2Access.UI
                     },
                     Sections = GraphNodes.Sections(
                         () => CellFacts(heading, it),
-                        Supplied(heading, it) ? null : TooltipOf(it)
+                        Supplied(heading, it) ? null : TooltipOf(it),
+                        Reading(heading, it)
                     ),
                 };
                 Action own = ActivateCell == null ? null : ActivateCell(row, it);
@@ -696,9 +715,32 @@ namespace ES2Access.UI
                 }
             }
 
+            // Declared for the screen's own cells too: a cell reads its caption from the edge the
+            // player crossed, so its buffer is the one surface that has to carry the pair itself.
+            vtable.BufferHead = () => CellHead(heading, it);
             Adorn(table, line, vtable, true);
             AgeWidgets.PointAt(vtable, it);
             return vtable;
+        }
+
+        /// <summary>What this column says about how loudly its tooltip should read - see
+        /// <see cref="CellTooltipReading"/>.</summary>
+        private TooltipMode? Reading(GuiTableHeader header, AgeTransform cell)
+        {
+            if (CellTooltipReading == null)
+            {
+                return null;
+            }
+
+            try
+            {
+                return CellTooltipReading(header, cell);
+            }
+            catch (Exception e)
+            {
+                Log.Warn("table: asking how a column's tooltip should read threw: " + e);
+                return null;
+            }
         }
 
         /// <summary>
@@ -785,6 +827,23 @@ namespace ES2Access.UI
             }
         }
 
+        /// <summary>
+        /// What a cell's buffer OPENS with: the column's caption and the cell's value, which is what
+        /// the player heard on arriving - the caption as the crossed edge, then the value.
+        ///
+        /// It is the buffer's declared head (<see cref="NodeVtable.BufferHead"/>) AND the first of the
+        /// cell's own facts, deliberately the same string from the same place: the head dedupe then
+        /// drops the second, so the pair is said once however the cell was read. Splitting the two
+        /// apart is what made a cell open "Valid" and then "Mods, Valid".
+        /// </summary>
+        private string CellHead(GuiTableHeader header, AgeTransform cell)
+        {
+            return new MessageBuilder()
+                .ListItem(Caption(header))
+                .ListItem(Value(header, cell) ?? ModStrings.Get(ModStrings.NavCellEmpty))
+                .Build();
+        }
+
         /// <summary>This cell for the review buffer: its own heading and value, then the words hanging
         /// off whatever it draws inside itself - which planets a status circle stands for, what the
         /// number beside a growth arrow counts. The cell's own tooltip is declared separately, so it is
@@ -796,10 +855,7 @@ namespace ES2Access.UI
             try
             {
                 string drawn = Value(header, cell);
-                string fact = new MessageBuilder()
-                    .ListItem(Caption(header))
-                    .ListItem(drawn ?? ModStrings.Get(ModStrings.NavCellEmpty))
-                    .Build();
+                string fact = CellHead(header, cell);
                 if (!string.IsNullOrEmpty(fact))
                 {
                     lines.Add(fact);
@@ -1209,7 +1265,10 @@ namespace ES2Access.UI
             }
         }
 
-        private static string PropertyOf(GuiTableHeader header)
+        /// <summary>The name the game gives the column in its own table definition
+        /// (<c>Public/Gui/GuiElements[Tables].xml</c>) - what the game sorts by, and the only stable
+        /// way for a screen to name one of its columns: the drawn caption is translated.</summary>
+        public static string PropertyOf(GuiTableHeader header)
         {
             try
             {

@@ -109,6 +109,35 @@ namespace ES2Access.Tests.UI
             );
         }
 
+        /// <summary>A control whose readout leaves out a word the buffer needs declares its own head -
+        /// a table cell, whose column caption is spoken as the crossed edge and so is not in the
+        /// readout. The declared head replaces the readout's, is what the first content line is tested
+        /// against, and does not make the readout's own first part read again.</summary>
+        [Fact]
+        public void ADeclaredHeadOpensTheBufferAndTheCellsOwnFirstLineIsThenTheSame()
+        {
+            Assert.Equal(
+                new[] { "Mods, Valid", "selected", "Requires: Vanilla 1.5" },
+                Buffer(
+                    new NodeVtable
+                    {
+                        ControlType = Type("text", null),
+                        Announcements = new List<NodeAnnouncement>
+                        {
+                            Part("Valid", AnnouncementKinds.Value),
+                            Part("selected", AnnouncementKinds.Selected),
+                        },
+                        BufferHead = () => "Mods, Valid",
+                        Sections = new List<NodeSection>
+                        {
+                            Section(TooltipMode.None, "Mods, Valid"),
+                            Section(TooltipMode.Indicate, "Requires: Vanilla 1.5"),
+                        },
+                    }
+                )
+            );
+        }
+
         /// <summary>Every section is reviewable whatever its mode: that is what makes "announce and
         /// review" and "indicate and review" the same promise.</summary>
         [Fact]

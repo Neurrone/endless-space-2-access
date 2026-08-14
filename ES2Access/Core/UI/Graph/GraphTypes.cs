@@ -215,6 +215,22 @@ namespace ES2Access.Core.UI.Graph
         /// has nothing beyond its readout, which is a complete buffer in itself.</summary>
         public IList<NodeSection> Sections;
 
+        /// <summary>
+        /// Optional. What the review buffer OPENS with, for a control whose readout deliberately
+        /// leaves out a word the buffer needs.
+        ///
+        /// The buffer's head is normally the readout itself (<see cref="NodeBuffer"/>), and that is
+        /// right wherever the readout is the whole of what the control says. A table CELL is the
+        /// exception the type exists for: its column's caption is spoken as the EDGE the player
+        /// crossed to reach it rather than by the cell, so the cell's readout is the bare value while
+        /// the buffer - which nobody arrives at across an edge - needs the caption with it. Declaring
+        /// the head is how the caption gets there once: the control's own first content line then
+        /// matches it and the head dedupe drops the copy.
+        ///
+        /// Null - the ordinary case - is the readout.
+        /// </summary>
+        public Func<string> BufferHead;
+
         /// <summary>Optional. Horizontal value adjust (a slider): sign is -1 (decrease) / +1 (increase),
         /// large requests a coarse step. When set, left/right do NOT navigate.</summary>
         public Action<int, bool> OnAdjust;
