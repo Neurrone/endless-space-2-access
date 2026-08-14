@@ -304,6 +304,13 @@ TimeBubbleDefinition database>, node)`; quest markers — `IQuestManagementServi
 Citadel1))`, undone by `UnbindCitadel(true)`. Lowering an `EntityVisibility` LAYER (unlike
 exploration) needs reflection on the private `layers` array.
 
+**Free-aiming a probe by compass** (arm through the fleet-actions stop — that list walks
+with Left/Right, not Up/Down; landing is the "Launch towards" group, last in the system
+branch): End/Right/Down to a bearing, `ui.activate`; oracle
+`DepartmentOfDefense.Probes[i].Direction` against the unit vector (X=east, world-z=north).
+Primus's lanes run NE/SW/NW, so N/E/SE/S/W are lane-free bearings. Anchor-migration and
+at-star cases: set `Probe.GalaxyPosition` from `/eval`, restore by `/loadsave`.
+
 **Confirming a targeting mode on a LANE** (the probe-down-the-dark-lane repro): arm the
 cursor from `/eval` with `Fleets[0]`, focus the lane node (`galaxy:system/543/lane/662` on
 Primus), `POST /input ui.activate`. The direction oracle is

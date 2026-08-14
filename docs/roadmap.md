@@ -128,6 +128,10 @@ files above.
   readout with a real Behemoth (mechanism shipped and verified via take-system; the message
   branch — ETA, star odds, protection warning — is unsighted, no Behemoth fixture).
 
+- Type-ahead does not index PROBES: a probe under a collapsed system's branch is not
+  findable by typing (fleets are — `TypeAheadScope` indexes fleets only). Surfaced when
+  probes moved from the top-level open-space region to their nearest star (2026-08-14).
+
 ## To decide (owner)
 
 

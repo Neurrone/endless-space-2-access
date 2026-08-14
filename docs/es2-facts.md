@@ -503,6 +503,18 @@ generic graduates to the generic docs.
   system's planets. It is probe-based (`GuiExpeditionFleetAction : GuiProbeBasedFleetAction`)
   and greys out at 0 probes. A first visit to an undiscovered system routes through the
   discovery cinematic, all of it already spoken.
+- **A probe launch accepts ANY non-zero direction** — `LaunchProbeFleetActionDefinition.
+  CheckContext` (:92-95) refuses only a zero vector (`DirectionIsInvalid`); initiator checks
+  are docked-in-orbit + movement cost. Galaxy axes, measured against the camera:
+  `GalaxyPosition.X` = east, `.Y` (world z) = north. A launched probe has already moved one
+  hop of its `Speed` (6 here) when created — it never sits on the launch star — and probe
+  speed vs lane length (16.5-26.6) means a nearest-star anchor MIGRATES mid-flight.
+  `VisibleEntityLabel` draws at `WorldToScreenPoint(Entity.GalaxyPosition)` gated on camera
+  culling + `Visibility >= 3`, so the drawn position licenses direction-and-distance words.
+- **Arming a targeting mode from the fleet-actions stop closes the fleet panel and seats the
+  cursor back in the acting fleet's system branch** — the last node if the branch is open,
+  the system node if closed (which is why the mod's "Launch towards" group sits last: arming
+  lands the player directly on it).
 - **A `GalaxyLink` game object carries TWO mirrored `GalaxyLinkCursorTarget` halves**
   (start/destination swapped; `GetCursorTarget` picks by where along the line the pointer
   is), and **no targeting cursor consumes a link target** — only the garrison cursor and
