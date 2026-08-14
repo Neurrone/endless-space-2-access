@@ -332,6 +332,96 @@ namespace ES2Access.Tests.UI
             Assert.Equal("prose", DestKey(Node(r, "no"), GraphDir.Up));
         }
 
+        private static NodeVtable Col(string label, int column)
+        {
+            NodeVtable vtable = Vt(label);
+            vtable.Column = column;
+            return vtable;
+        }
+
+        /// <summary>A table's heading band (a menu row of columns) over a raw row of the same columns —
+        /// the shape every <c>TableSheet</c> declares.</summary>
+        private static GraphRender BandOverRow()
+        {
+            GraphBuilder b = new GraphBuilder();
+            b.StartRow(positions: false)
+                .AddItem(Id("h0"), Col("Name", 0))
+                .AddItem(Id("h1"), Col("Status", 1))
+                .AddItem(Id("h2"), Col("Population", 2))
+                .EndRow();
+            b.AddNode(Id("c0"), Col("Xiu", 0))
+                .AddNode(Id("c1"), Col("Colony", 1))
+                .AddNode(Id("c2"), Col("3", 2));
+            return b.Build();
+        }
+
+        [Fact]
+        public void UpFromARowCellReachesItsOwnColumnsHeading()
+        {
+            GraphRender r = BandOverRow();
+            Assert.Equal("h0", DestKey(Node(r, "c0"), GraphDir.Up));
+            Assert.Equal("h1", DestKey(Node(r, "c1"), GraphDir.Up));
+            Assert.Equal("h2", DestKey(Node(r, "c2"), GraphDir.Up));
+        }
+
+        [Fact]
+        public void DownFromAHeadingReachesItsOwnColumnsCell()
+        {
+            GraphRender r = BandOverRow();
+            Assert.Equal("c0", DestKey(Node(r, "h0"), GraphDir.Down));
+            Assert.Equal("c1", DestKey(Node(r, "h1"), GraphDir.Down));
+            Assert.Equal("c2", DestKey(Node(r, "h2"), GraphDir.Down));
+        }
+
+        /// <summary>Sparse rows exist: a column the first row does not draw has no cell to land on, and
+        /// that heading falls back to the row's primary rather than dead-ending.</summary>
+        [Fact]
+        public void AColumnTheOtherSideLacksFallsBackToTheSingleTarget()
+        {
+            GraphBuilder b = new GraphBuilder();
+            b.StartRow(positions: false)
+                .AddItem(Id("h0"), Col("Name", 0))
+                .AddItem(Id("h1"), Col("Status", 1))
+                .AddItem(Id("h2"), Col("Hero", 2))
+                .EndRow();
+            b.AddNode(Id("c0"), Col("Xiu", 0)).AddNode(Id("c2"), Col("Dmitri", 2));
+            GraphRender r = b.Build();
+            Assert.Equal("c0", DestKey(Node(r, "h1"), GraphDir.Down));
+            Assert.Equal("c2", DestKey(Node(r, "h2"), GraphDir.Down));
+            Assert.Equal("h0", DestKey(Node(r, "c0"), GraphDir.Up));
+            Assert.Equal("h2", DestKey(Node(r, "c2"), GraphDir.Up));
+        }
+
+        /// <summary>A bar of ordinary controls is not a set of columns — every one of them is column 0 —
+        /// so the seam keeps its single target in both directions.</summary>
+        [Fact]
+        public void ABarOfControlsIsNotPairedByColumn()
+        {
+            GraphRender r = StripOverRawRow();
+            Assert.Equal("f1", DestKey(Node(r, "c0"), GraphDir.Up));
+            Assert.Equal("f1", DestKey(Node(r, "c1"), GraphDir.Up));
+            Assert.Equal("c0", DestKey(Node(r, "f2"), GraphDir.Down));
+        }
+
+        [Fact]
+        public void ARawBottomRowMeetsAMenuRowBelowColumnByColumn()
+        {
+            GraphBuilder b = new GraphBuilder();
+            b.AddNode(Id("c0"), Col("Xiu", 0))
+                .AddNode(Id("c1"), Col("Colony", 1))
+                .AddNode(Id("c2"), Col("3", 2));
+            b.StartRow(positions: false)
+                .AddItem(Id("t0"), Col("Total", 0))
+                .AddItem(Id("t1"), Col("-", 1))
+                .AddItem(Id("t2"), Col("9", 2))
+                .EndRow();
+            GraphRender r = b.Build();
+            Assert.Equal("t1", DestKey(Node(r, "c1"), GraphDir.Down));
+            Assert.Equal("t2", DestKey(Node(r, "c2"), GraphDir.Down));
+            Assert.Equal("c1", DestKey(Node(r, "t1"), GraphDir.Up));
+            Assert.Equal("c2", DestKey(Node(r, "t2"), GraphDir.Up));
+        }
+
         [Fact]
         public void AStopOfMenuRowsOnlyIsLeftToItsOwnWiring()
         {

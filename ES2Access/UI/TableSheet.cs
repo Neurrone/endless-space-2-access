@@ -24,7 +24,8 @@ namespace ES2Access.UI
     /// What a table reads as (all of it inherited, none of it per screen):
     ///
     /// - <b>The headers band</b> is a row of buttons sitting in the table's own Tab stop, one row above
-    ///   the first line - reached with Up from row 1, the way it is reached with the eye; Enter is the header's own sort click, and the
+    ///   the first line - reached with Up from row 1, the way it is reached with the eye, and reached in
+    ///   the COLUMN the player was standing in rather than at the first one; Enter is the header's own sort click, and the
     ///   column the table is currently sorted by reads "selected", watched live - which is also the only
     ///   feedback a sort press has, since the game answers it by reordering rows and nothing else. A
     ///   column the table forbids sorting on is drawn disabled (<c>DisableSorting</c>) and reads so.
@@ -242,6 +243,7 @@ namespace ES2Access.UI
             }
 
             GuiTable owner = table;
+            int[] columns = BandColumns(table);
             builder.StartRow(positions: false);
             for (int i = 0; i < _headers.Count; i++)
             {
@@ -258,6 +260,10 @@ namespace ES2Access.UI
                     1,
                     GraphNodes.SelectedPart(() => SortedBy(owner, property))
                 );
+                // Which column this heading stands over, so that Up out of a row lands on the heading
+                // of the column the player was in rather than on the first one
+                // (<c>GraphBuilder.StitchModeBoundaries</c> pairs the seam by this number).
+                vtable.Column = columns[i];
                 AgeWidgets.PointAt(vtable, widget);
                 builder.AddItem(
                     ControlId.Referenced(header, _key + "header/" + property + "/" + i),
@@ -266,6 +272,68 @@ namespace ES2Access.UI
             }
 
             builder.EndRow();
+        }
+
+        /// <summary>
+        /// The logical column each heading stands over, one per entry of <see cref="_headers"/>.
+        ///
+        /// Its own index, for every table but one: the game draws one heading per column, in the order
+        /// a row lays its cells out, and <see cref="Rows"/> numbers those cells 0..N in that same order.
+        /// A cell the screen reads as SEVERAL columns (<see cref="SplitCell"/>) is the exception - it
+        /// pushes every column after it along - so a table with such a cell is measured against a real
+        /// row instead of assumed. Only that table pays for the walk.
+        /// </summary>
+        private int[] BandColumns(GuiTable table)
+        {
+            int[] map = new int[_headers.Count];
+            for (int i = 0; i < map.Length; i++)
+            {
+                map[i] = i;
+            }
+
+            if (SplitCell == null)
+            {
+                return map;
+            }
+
+            List<GuiTableLine> lines = Lines(table);
+            for (int l = 0; l < lines.Count; l++)
+            {
+                List<AgeTransform> cells = CellsOf(lines[l]);
+                if (cells.Count < 2)
+                {
+                    continue;
+                }
+
+                Assign(map, HeaderFor(cells[0], 0), 0);
+                int column = 0;
+                for (int i = 1; i < cells.Count; i++)
+                {
+                    GuiTableHeader header = HeaderFor(cells[i], i);
+                    IList<NodeVtable> parts = Split(lines[l], cells[i], header, AlwaysOn);
+                    Assign(map, header, ++column);
+                    if (parts != null)
+                    {
+                        column += parts.Count - 1;
+                    }
+                }
+
+                return map;
+            }
+
+            return map;
+        }
+
+        private void Assign(int[] map, GuiTableHeader header, int column)
+        {
+            for (int i = 0; i < _headers.Count; i++)
+            {
+                if (ReferenceEquals(_headers[i], header))
+                {
+                    map[i] = column;
+                    return;
+                }
+            }
         }
 
         /// <summary>The headings the table is drawing, which is what pairs a caption to a column.

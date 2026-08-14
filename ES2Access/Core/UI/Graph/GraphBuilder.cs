@@ -392,6 +392,13 @@ namespace ES2Access.Core.UI.Graph
         // column happened to be declared last. Only MISSING edges are filled, so raw content that wires
         // its own seam — a paragraph a sheet was told to continue below — is never overridden, and the
         // run stops at it by construction.
+        //
+        // WITH ONE EXCEPTION, and it is the common one: where the menu row is the table's own heading
+        // BAND, the seam is between two sets of COLUMNS, and a player standing in the third column
+        // expects the third column's heading — not the first. So when both sides declare distinct
+        // columns (<see cref="NodeVtable.Column"/>, stamped by the sheet and by the band), the seam is
+        // paired column by column, and only a column the other side does not have falls back to the
+        // single target. A bar of ordinary controls stamps no columns and so keeps the old rule exactly.
         private void StitchModeBoundaries()
         {
             Dictionary<object, List<GraphNode>> byStop = new Dictionary<object, List<GraphNode>>();
@@ -423,15 +430,23 @@ namespace ES2Access.Core.UI.Graph
                     {
                         if (cur.Transitions.ContainsKey(GraphDir.Up)) continue;
                         Row row = _rowOf[prev];
+                        List<GraphNode> run = new List<GraphNode>();
                         for (int j = i; j < nodes.Count && !_rowOf.ContainsKey(nodes[j]); j++)
                         {
                             if (nodes[j].Transitions.ContainsKey(GraphDir.Up)) break;
-                            nodes[j].Transitions[GraphDir.Up] = new Transition(row.Items[0].Id);
+                            run.Add(nodes[j]);
                         }
+
+                        Dictionary<int, ControlId> band = ByColumn(row.Items);
+                        Dictionary<int, ControlId> cells = ByColumn(run);
+                        foreach (GraphNode node in run)
+                            node.Transitions[GraphDir.Up] =
+                                new Transition(Across(band, node, row.Items[0].Id));
 
                         foreach (GraphNode cell in row.Items)
                             if (!cell.Transitions.ContainsKey(GraphDir.Down))
-                                cell.Transitions[GraphDir.Down] = new Transition(cur.Id);
+                                cell.Transitions[GraphDir.Down] =
+                                    new Transition(Across(cells, cell, cur.Id));
                     }
                     else // raw content above a menu row: the trailing run of raw nodes with no Down
                     {
@@ -444,14 +459,48 @@ namespace ES2Access.Core.UI.Graph
                         }
 
                         if (start < 0) continue;
-                        for (int j = start; j < i; j++)
-                            nodes[j].Transitions[GraphDir.Down] = new Transition(row.Items[0].Id);
+                        List<GraphNode> run = nodes.GetRange(start, i - start);
+                        Dictionary<int, ControlId> band = ByColumn(row.Items);
+                        Dictionary<int, ControlId> cells = ByColumn(run);
+                        foreach (GraphNode node in run)
+                            node.Transitions[GraphDir.Down] =
+                                new Transition(Across(band, node, row.Items[0].Id));
                         foreach (GraphNode cell in row.Items)
                             if (!cell.Transitions.ContainsKey(GraphDir.Up))
-                                cell.Transitions[GraphDir.Up] = new Transition(nodes[start].Id);
+                                cell.Transitions[GraphDir.Up] =
+                                    new Transition(Across(cells, cell, nodes[start].Id));
                     }
                 }
             }
+        }
+
+        // One side of a seam indexed by the column each node sits in, or null when the nodes are not a
+        // set of columns at all — a bar of ordinary controls, every one of them column 0, where pairing
+        // by column would be pairing everything with the first thing. Both conditions are needed: the
+        // columns must be distinct (a duplicate means the stamp is not a column number here) and at
+        // least one must be non-zero (a lone control, or a run of plain nodes, is column 0 by default).
+        private static Dictionary<int, ControlId> ByColumn(List<GraphNode> nodes)
+        {
+            Dictionary<int, ControlId> map = new Dictionary<int, ControlId>(nodes.Count);
+            bool columned = false;
+            foreach (GraphNode node in nodes)
+            {
+                int column = node.Vtable != null ? node.Vtable.Column : 0;
+                if (map.ContainsKey(column)) return null;
+                if (column != 0) columned = true;
+                map.Add(column, node.Id);
+            }
+
+            return columned ? map : null;
+        }
+
+        // Where crossing the seam from this node lands: the same column on the other side where both
+        // sides have it, else the single target the seam falls back to.
+        private static ControlId Across(Dictionary<int, ControlId> other, GraphNode from, ControlId fallback)
+        {
+            ControlId landing;
+            int column = from.Vtable != null ? from.Vtable.Column : 0;
+            return other != null && other.TryGetValue(column, out landing) ? landing : fallback;
         }
 
         // The (parent, stop) pair a single-item row's node is positioned within. A dedicated struct
