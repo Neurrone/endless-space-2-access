@@ -261,6 +261,32 @@ namespace ES2Access.Core.Speech
         public const string GalaxySystemAcademyBuyout = "galaxy.system-academy-buyout";
         public const string GalaxySystemHackingBeacon = "galaxy.system-hacking-beacon";
 
+        // A ground battle at a system. The map says it with one small picture beside the name and
+        // explains it in a sentence that names nobody, so who is attacking is the mod's phrase - and it
+        // is the DISPLAYED attacker, because the game hides a privateer's real owner behind another
+        // empire's flag and reading past that would tell the player something the picture does not.
+        // The bare form is for the battle the map is drawing while the repository will not say whose.
+        public const string GalaxySystemInvadedBy = "galaxy.system-invaded-by";
+        public const string GalaxySystemInvaded = "galaxy.system-invaded";
+
+        // A time bubble parked on a system - the disk the map draws over it. The game names the bubble
+        // and says who made it, but writes the turns it has left nowhere on the map at all, so the
+        // sentence around all three is the mod's.
+        public const string GalaxySystemTimeBubble = "galaxy.system-time-bubble";
+
+        // A quest's marker standing at a system: the pin the map draws, and the brighter one it draws
+        // for the quest the player is tracking. The game writes no word for either - the pin IS the
+        // word - so the phrase around the quest's own title is the mod's, and the two forms are what
+        // the map's own brightening says.
+        public const string GalaxySystemQuestMarker = "galaxy.system-quest-marker";
+        public const string GalaxySystemQuestMarkerPinned = "galaxy.system-quest-marker-pinned";
+
+        // The ring the map draws round a node somebody is holding: a citadel's, or a fleet standing
+        // guard. The ring is a colour and nothing else, so both phrases are the mod's, and each names
+        // the empire the ring is PAINTED for - the displayed one, privateers included.
+        public const string GalaxySystemCitadel = "galaxy.system-citadel";
+        public const string GalaxySystemGuarded = "galaxy.system-guarded";
+
         // Which way something on the map lies from somewhere else. The game writes no compass word
         // anywhere - it draws the map and expects it to be looked at - so all eight are the mod's.
         public const string DirectionNorth = "direction.north";
@@ -988,6 +1014,13 @@ namespace ES2Access.Core.Speech
             { GalaxySystemConversionBuyout, "Buy out conversion" },
             { GalaxySystemAcademyBuyout, "Buy out academy conversion" },
             { GalaxySystemHackingBeacon, "Displace hacking beacon" },
+            { GalaxySystemInvadedBy, "Ground battle, attacker {0}" },
+            { GalaxySystemInvaded, "Ground battle" },
+            { GalaxySystemTimeBubble, "{0}, {1}, {2} turns left" },
+            { GalaxySystemQuestMarker, "Quest here: {0}" },
+            { GalaxySystemQuestMarkerPinned, "Tracked quest here: {0}" },
+            { GalaxySystemCitadel, "Citadel, {0}" },
+            { GalaxySystemGuarded, "Guarded by {0}" },
             { DirectionNorth, "north" },
             { DirectionNorthEast, "northeast" },
             { DirectionEast, "east" },

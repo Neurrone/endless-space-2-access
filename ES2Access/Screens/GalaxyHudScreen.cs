@@ -1075,6 +1075,12 @@ namespace ES2Access.Screens
                 // fleet is selected, which is most of the time (<see cref="FleetRoute"/>).
                 NodeSection.Buffer(() => FleetRoute.PreviewLines(it)),
                 NodeSection.Buffer(() => SystemLabelReadout.Lines(drawn)),
+                // What the map draws AT the place rather than on its label: the ring round a held node,
+                // the disk of a time bubble, the pins a quest has planted. All three are colour and
+                // shape with no words anywhere near them.
+                NodeSection.Buffer(() => GuardLines(it, empire)),
+                NodeSection.Buffer(() => TimeBubbleLines(it, empire)),
+                NodeSection.Buffer(() => QuestMarkerLines(it, empire)),
                 StarDossier(it, tooltip)
             );
             if (owned)
@@ -1095,6 +1101,12 @@ namespace ES2Access.Screens
             vtable.Announcements.Add(
                 GraphNodes.ValuePart(() => SystemLabelReadout.Sleepers(drawn), false)
             );
+
+            // Whether somebody is fighting for the ground here. Spoken rather than reviewed: it is the
+            // one thing on a system that changes who owns the place within a turn or two, and the map
+            // says it in front of the player with an icon beside the name. Not watched - the answer
+            // costs a repository lookup, and it cannot change under a standing cursor.
+            vtable.Announcements.Add(GraphNodes.ValuePart(() => GroundBattle(it, empire), false));
 
             // What the map draws parked here, in the game's own count phrase. Not watched: the answer
             // costs a walk of the docking-slot repository, and a watched part walks it every frame the
@@ -1473,6 +1485,348 @@ namespace ES2Access.Screens
                 Log.Warn("galaxy: reading a system's constellation threw: " + e);
                 return null;
             }
+        }
+
+        /// <summary>
+        /// Whether the ground of this system is being fought over, and by whom.
+        ///
+        /// The map says it with one small picture beside the name and no words at all, so the whole
+        /// phrase is the mod's. It is gated exactly the way that picture is
+        /// (<c>StarSystemLabel.RefreshInvasionContextualIcon</c> :704-751): the node has to be in sight,
+        /// its planets have to be visible to this empire, and some colony standing here has to be both
+        /// seen and carrying the game's own invasion tag. Anything less and the map is drawing nothing,
+        /// so neither is this.
+        ///
+        /// The attacker is the DISPLAYED one. A privateer fleet fights under somebody else's flag by
+        /// design, and the game keeps the two apart on the battle itself
+        /// (<c>GroundBattle.AttackerEmpire</c> against <c>DisplayedAttackerEmpire</c>): reading the real
+        /// one would tell the player something the game is deliberately hiding from them. Where the
+        /// repository has no battle to hand but the tag is set, the bare phrase says what the icon says
+        /// - that there is a battle - and names nobody.
+        /// </summary>
+        private static string GroundBattle(StarSystemNode node, Empire empire)
+        {
+            try
+            {
+                if (!Invaded(node, empire))
+                {
+                    return null;
+                }
+
+                IGroundBattleRepositoryService battles =
+                    Amplitude.Unity.Framework.Services.GetService<IGroundBattleRepositoryService>();
+                GroundBattle battle =
+                    battles == null ? null : battles.GetGroundBattleOnNode(node.NodePosition);
+                string attacker = battle == null ? null : Owner(battle.DisplayedAttackerEmpire);
+                return string.IsNullOrEmpty(attacker)
+                    ? ModStrings.Get(ModStrings.GalaxySystemInvaded)
+                    : ModStrings.Format(ModStrings.GalaxySystemInvadedBy, attacker);
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: reading a system's ground battle threw: " + e);
+                return null;
+            }
+        }
+
+        /// <summary>The invasion icon's own three conditions, asked of the model the icon asks
+        /// them of.</summary>
+        private static bool Invaded(StarSystemNode node, Empire empire)
+        {
+            if (
+                node == null
+                || empire == null
+                || (int)node.Visibility[empire] < (int)EntityVisibility.Layer.Visible
+                || node.PlanetsVisibility == null
+                || !node.PlanetsVisibility[empire.Index]
+            )
+            {
+                return false;
+            }
+
+            IColonizedStarSystemRepositoryService colonies =
+                Amplitude.Unity.Framework.Services.GetService<IColonizedStarSystemRepositoryService>();
+            if (colonies == null)
+            {
+                return false;
+            }
+
+            foreach (ColonizedStarSystem colony in colonies.GetValues(node.NodePosition))
+            {
+                if ((int)colony.Visibility[empire] > 1 && colony.IsBeingInvaded)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// The time bubbles sitting on this system: what each one is, who put it there, and how long it
+        /// has left.
+        ///
+        /// The map draws a bubble as a coloured disk over the node and writes nothing on it. The game
+        /// names the bubble and says who made it inside the system's own dossier, but the turns it has
+        /// left appear nowhere on the map at all, which is the one thing a player planning around it
+        /// needs. So the line carries all three and the dossier's own words follow it.
+        ///
+        /// Gated on the bubble's visibility to this empire, which is the disk's own gate
+        /// (<c>GalaxyTimeBubble.RefreshVisibility</c> :67-84 hides the object below Visible).
+        /// Emphatically NOT on the effects a bubble has on the node it sits on - <c>IsLocked</c> and the
+        /// movement refills are true for a bubble nobody can see, and reading them would announce a
+        /// bubble the picture is withholding.
+        /// </summary>
+        private static IList<string> TimeBubbleLines(StarSystemNode node, Empire empire)
+        {
+            try
+            {
+                ITimeBubbleRepositoryService bubbles =
+                    Amplitude.Unity.Framework.Services.GetService<ITimeBubbleRepositoryService>();
+                if (node == null || empire == null || bubbles == null)
+                {
+                    return null;
+                }
+
+                List<string> lines = new List<string>();
+                foreach (TimeBubble bubble in bubbles.GetTimeBubbles(node.NodePosition))
+                {
+                    if (
+                        (int)bubble.Visibility[empire] < (int)EntityVisibility.Layer.Visible
+                    )
+                    {
+                        continue;
+                    }
+
+                    lines.Add(
+                        ModStrings.Format(
+                            ModStrings.GalaxySystemTimeBubble,
+                            AgeText.Clean(new GuiTimeBubble(bubble).Title),
+                            Owner(bubble.Empire),
+                            bubble.TurnRemaining
+                        )
+                    );
+                }
+
+                return lines;
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: reading a system's time bubbles threw: " + e);
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// The quests whose markers stand at this system, and which of them the player is tracking.
+        ///
+        /// There is no all-markers service to ask, so the walk goes the way the player's own journal
+        /// goes: every quest in progress, then the markers of the step it is on
+        /// (<c>Quest.GetMarkers</c> :510-522, which is itself
+        /// <c>IQuestManagementService.GetMarkers(instance, empire)</c> filtered to that step). Walking
+        /// from the QUEST rather than from the map's pins is what makes the quest nameable at all: a pin
+        /// carries an instance id and nothing else.
+        ///
+        /// Gated on the marker listing this empire, which is the pin's own gate
+        /// (<c>GalaxyQuestMarker.UpdateVisibility</c> :157-165 deactivates the object otherwise) - the
+        /// journal is already this empire's, so this only refuses a marker planted for somebody else on
+        /// a quest they share. The tracked form is the map's own distinction: it brightens the pin of
+        /// the pinned quest, which is the journal's <c>ActiveQuest</c>
+        /// (<c>QuestMarker.IsMarkerOfPinnedQuestForEmpire</c> compares exactly that).
+        ///
+        /// A marker is placed on a THING, not on a place, so where it stands is the thing's own node: a
+        /// planet's system, a curiosity's system, the node a fleet is standing at. A marker on a fleet
+        /// in mid-lane belongs to no system and is not said on any - the map draws its pin out in the
+        /// lane, where this tree has no node to hang it on.
+        /// </summary>
+        private static IList<string> QuestMarkerLines(StarSystemNode node, Empire empire)
+        {
+            try
+            {
+                DepartmentOfInternalAffairs affairs =
+                    empire == null ? null : empire.GetAgency<DepartmentOfInternalAffairs>();
+                QuestJournal journal = affairs == null ? null : affairs.QuestJournal;
+                if (node == null || journal == null)
+                {
+                    return null;
+                }
+
+                Quest pinned = journal.ActiveQuest;
+                List<string> lines = new List<string>();
+                ReadOnlyCollection<Quest> quests = journal.Read(QuestState.InProgress);
+                for (int i = 0; quests != null && i < quests.Count; i++)
+                {
+                    Quest quest = quests[i];
+                    QuestStep step = quest == null ? null : quest.GetCurrentStep();
+                    if (step == null || !MarkedAt(quest, step, node, empire))
+                    {
+                        continue;
+                    }
+
+                    string title = AgeText.Clean(new GuiQuest(quest).Title);
+                    if (string.IsNullOrEmpty(title))
+                    {
+                        continue;
+                    }
+
+                    string line = ModStrings.Format(
+                        ReferenceEquals(quest, pinned)
+                            ? ModStrings.GalaxySystemQuestMarkerPinned
+                            : ModStrings.GalaxySystemQuestMarker,
+                        title
+                    );
+                    if (!lines.Contains(line))
+                    {
+                        lines.Add(line);
+                    }
+                }
+
+                return lines;
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: reading a system's quest markers threw: " + e);
+                return null;
+            }
+        }
+
+        /// <summary>Whether this quest's current step has a marker standing at this system that this
+        /// empire is shown.</summary>
+        private static bool MarkedAt(
+            Quest quest,
+            QuestStep step,
+            StarSystemNode node,
+            Empire empire
+        )
+        {
+            foreach (QuestMarker marker in quest.GetMarkers(step))
+            {
+                if (Shown(marker, empire) && MarkerNode(marker) == node.NodePosition)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool Shown(QuestMarker marker, Empire empire)
+        {
+            Empire[] shown = marker == null ? null : marker.Empires;
+            for (int i = 0; shown != null && i < shown.Length; i++)
+            {
+                if (ReferenceEquals(shown[i], empire))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>Where a marker stands, as the node it is at. The game resolves a marker's position
+        /// through the thing it is bound to (<c>QuestMarker.GalaxyPosition</c>), and the same four kinds
+        /// of thing answer here - a node, a planet's system, a curiosity's system, the node a fleet is
+        /// standing at - because a position on the map is not a place in this tree. Invalid for anything
+        /// else, which includes a fleet in mid-lane.</summary>
+        private static NodePosition MarkerNode(QuestMarker marker)
+        {
+            IGameEntity target = marker == null ? null : marker.Target;
+            GameNode node = target as GameNode;
+            if (node != null)
+            {
+                return node.NodePosition;
+            }
+
+            Planet planet = target as Planet;
+            if (planet != null && planet.StarSystemNode != null)
+            {
+                return planet.StarSystemNode.NodePosition;
+            }
+
+            Curiosity curiosity = target as Curiosity;
+            if (curiosity != null && curiosity.CuriosityController != null)
+            {
+                StarSystemNode at = curiosity.CuriosityController.GetNode();
+                return at == null ? NodePosition.Invalid : at.NodePosition;
+            }
+
+            ColonizedStarSystem colony = target as ColonizedStarSystem;
+            if (colony != null && colony.Node != null)
+            {
+                return colony.Node.NodePosition;
+            }
+
+            Fleet fleet = target as Fleet;
+            return fleet == null ? NodePosition.Invalid : fleet.NodePosition;
+        }
+
+        /// <summary>
+        /// Who is holding this node: a citadel, or a fleet standing guard over it.
+        ///
+        /// The map says both by painting a ring round the node in the holder's colour and nothing else,
+        /// so the phrases are the mod's - and the ring's own gate is this one
+        /// (<c>GalaxyNode.UpdateGuardFeedback</c> :163-197 draws it only for a node in sight). A citadel
+        /// is a guard too as far as the model is concerned, so the two are said as one thing or the
+        /// other, never both.
+        ///
+        /// The guarding empire is the DISPLAYED one, for the reason <see cref="GroundBattle"/> records:
+        /// a privateer's flag is the game's own concealment and the ring is painted in the flag's
+        /// colour. A citadel has no such split - it belongs to the system that built it.
+        ///
+        /// This is the one thing about a held node the game writes nowhere else: the system's own
+        /// dossier - the tooltip behind the star - has no guard or citadel line at all (its panel
+        /// features are header, description, FIDSI, population, growth, defense, time bubbles, rooting,
+        /// effects, failures, relics), and its defense figure quietly folds a citadel's stock into the
+        /// system's own without naming it.
+        /// </summary>
+        private static IList<string> GuardLines(StarSystemNode node, Empire empire)
+        {
+            try
+            {
+                if (
+                    node == null
+                    || empire == null
+                    || (int)node.Visibility[empire] < (int)EntityVisibility.Layer.Visible
+                    || !node.IsGuarded
+                )
+                {
+                    return null;
+                }
+
+                if (node.IsGuardedByCitadel)
+                {
+                    string held = Owner(node.CitadelEmpire);
+                    return string.IsNullOrEmpty(held)
+                        ? null
+                        : new string[]
+                        {
+                            ModStrings.Format(ModStrings.GalaxySystemCitadel, held),
+                        };
+                }
+
+                string guard = Owner(GuardingEmpire(node));
+                return string.IsNullOrEmpty(guard)
+                    ? null
+                    : new string[]
+                    {
+                        ModStrings.Format(ModStrings.GalaxySystemGuarded, guard),
+                    };
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: reading a system's guard threw: " + e);
+                return null;
+            }
+        }
+
+        private static Empire GuardingEmpire(GameNode node)
+        {
+            int index = node.GuardingDisplayedEmpireIndex;
+            Empire[] empires = Gui.Game == null ? null : Gui.Game.Empires;
+            return empires == null || index < 0 || index >= empires.Length
+                ? null
+                : empires[index];
         }
 
         // ---- sending the selected fleets somewhere ----
