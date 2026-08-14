@@ -2351,8 +2351,19 @@ namespace ES2Access.Screens
         /// off into the dark. The galaxy model would answer either way - it holds every system's name
         /// from the first turn - so the check, not the model, is what keeps this honest.
         ///
+        /// A LANE ITSELF is offered exactly while the map draws the line. The map's rule is not "has it
+        /// been revealed" but an intensity taken from the link's own exploration state
+        /// (<c>GalaxyLink.Refresh</c> :247-252 feeds <c>GetIntensityFromState</c> :362-372), and that
+        /// intensity is ZERO - an invisible line - for Localized and Identified as well as for
+        /// Unrevealed. It only lights up at PartiallyRevealed. Offering a lane the map is drawing at
+        /// intensity nought is offering a road that is not on the screen, which is why the threshold
+        /// here is that one and not the reveal flag it used to be (owner ruling, after the drawn-parity
+        /// measurement of the unexplored-lane preview).
+        ///
         /// A wormhole is a different thing from a starlane and is said to be one. An empire without the
-        /// technology to see them is shown none, exactly as the game's own neighbour search skips them.
+        /// technology to see them is shown none, exactly as the game's own neighbour search skips them;
+        /// beyond that a wormhole is a <c>Link</c> like any other and passes the same intensity test,
+        /// because <c>GalaxyWormhole</c> draws its line through the same <c>GalaxyLink.Refresh</c>.
         ///
         /// The game numbers no lane and the model's own order is whatever order the galaxy was
         /// generated in, so the lanes are walked - and numbered - going clockwise from north, and each
@@ -2380,7 +2391,7 @@ namespace ES2Access.Screens
                         continue;
                     }
 
-                    if (link.Exploration[empire] == EntityExploration.State.Unrevealed)
+                    if (!MapVisibility.Drawn(link, empire))
                     {
                         continue;
                     }
