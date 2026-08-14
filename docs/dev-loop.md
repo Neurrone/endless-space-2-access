@@ -100,6 +100,9 @@ During boot/loading, main-thread routes 503 — retry; `/speech` and `/log` keep
 - No captured delegates inside that lambda: assigning a captured `Action`/`Func` local (or
   passing one to a method) answers with an `InternalErrorException`. Keep eval bodies
   delegate-free — inline the code or call a static.
+- Descriptor-driven simulation properties shrug off `SetPropertyBaseValue` + `Refresh` — the
+  descriptor recomputes them (measured: `Fleet.FreeMovementSpeed` stayed 0). Grant the
+  DESCRIPTOR's source (tech, law) or accept the state as fixture-blocked.
 
 
 ## 2. Verification patterns (screen-agnostic)

@@ -400,6 +400,34 @@ generic graduates to the generic docs.
   into the dark, since that far node need not be explored. A fleet already flying that same lane is
   answered with the path to its own `NextValidNodePosition`, the game's way of saying "you are
   already doing that".
+- **The map names a special node one exploration step later than a star system.**
+  `GalaxySpecialNodeCursorTarget.VisibleByCurrentEmpire` (:22-27) needs exploration ≥ 3 where
+  `GalaxyStarSystemCursorTarget` (:89-94) takes ≥ 2 — and `SpecialNode : StarSystemNode`, so any
+  `is StarSystemNode` enumeration (including `Galaxy.StarSystemNodes`) already contains the Academy
+  and quest nodes; what needs doing is the threshold, not the enumeration. Mod policy:
+  `GalaxyHudScreen.Perceived` gates a `SpecialNode` at 3 (measured evidence pair: a special and an
+  ordinary node forced to the same exploration 2 answer False and True).
+- **Ctrl held during the move gesture asks for `PathfindingFlags.FreeMovementOnly` — and without
+  the technology that is the game's own no-op.** `GalaxyGarrisonCursor.GetGalaxyPathToPosition`
+  (:453) reads the physical modifier; but `PathfindingManager.GetTransitionCost` (:219) re-admits
+  warp/wormhole transitions while the fleet's `FreeMovementSpeed <= epsilon`, so the Ctrl route
+  equals the plain route until the tech exists (measured: Primus→Rigel, 3 steps either way).
+  The mod's Ctrl+Backslash reaches the same decision through `FleetOrders.RequestedFlags`.
+- **A refused move gesture is NOT silent in the game — the reasons go to the failure banner.**
+  The cursor collects `FailureInfo`s through the three-argument `CanBeExecuted` (:245) and a ladder
+  of relaxed `FindPath` re-runs (:456-506), shown via `IGuiService.SetFailureInfos`. Mod policy
+  (2026-08-14, reversing the earlier documented silence, which rested on the wrong premise that the
+  game answered with nothing): the send key pressed on a NAMED destination speaks each distinct
+  reason once (`GalaxyHudScreen.SayRefusals`); the fleet's own orbit stays silent, because nothing
+  was refused there.
+- **`GalaxyView.CanFleetMovementBeOrdered` is gesture disambiguation, not movement law.** It is
+  false exactly while the overview's zoom is forced, and its only readers in the whole game are
+  `GalaxyGarrisonCursor.OnCursorDown/OnCursorUp` — because a right click is then reassigned to
+  restore-zoom, so it cannot also mean "move". Every real legality rule (borders, citadels, vision,
+  points, frozen systems) lives in the pathfinder and `CanBeExecuted`, which the mod's orders run.
+  Mod policy (2026-08-14): backslash keeps sending with the zoom forced — expanding a tree system
+  forces it — deliberately more capable than the mouse, which has a conflict to resolve and the
+  keyboard does not.
 - **A screen whose own buttons rebuild its window must split arrival from departure.** Merging two
   fleets destroys both and builds a third; the window goes not-ready for a frame or two, and a plain
   `Shown && IsReady` gate stood the screen down mid-order — the transcript read "Galaxy" plus the

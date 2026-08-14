@@ -81,7 +81,10 @@ alone, which is complete rather than a gap: entering a system swaps the cursor t
 `docs/generic/input.md`). On top of arrows/Tab/Enter/Backspace/Escape/Home/End, Alt+arrows and
 the Ctrl review chords: **Shift+Left/Right** coarse slider step, **Alt+Enter** the control's other
 activation (queue at the head), **Backslash** the control's right-click command
-(`NodeVtable.OnContextual`), **Ctrl+Alt+Enter** the control's DOUBLE click (`OnDoubleClick`),
+(`NodeVtable.OnContextual`), **Ctrl+Backslash** the game's Ctrl+right-click — the SAME `Contextual`
+action bound as a second chord, never a wired variant, because the game runs one handler for both
+clicks and reads the physical modifier inside it (on the map: a free-movement-only route,
+`FleetOrders.RequestedFlags`), **Ctrl+Alt+Enter** the control's DOUBLE click (`OnDoubleClick`),
 **Space** pick up / swap / put back what is being dragged (`OnPickUp`),
 **Enter** drop it where it will be taken (`DropKind` + `OnDrop`), **Ctrl+Enter** one item into or out
 of the game's own selection (`OnSelectToggle`), **Shift+Enter** extend that selection to here

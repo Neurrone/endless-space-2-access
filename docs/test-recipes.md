@@ -267,6 +267,14 @@ being lost or decolonized); and every fleet-label variant beyond the plain one-s
 merged labels, guarding, multi-ship/automated/privateer fleets, and any fleet of another empire
 (only one empire is visible at turn 3).
 
+**Forcing a send REFUSAL to hear its reason.** No fixture state refuses a move, so flip the game's
+own cheapest gate for the duration of one handler call and restore it in the SAME `/eval`:
+`GameNode.IsLocked = true` on the destination answers `SystemIsBeingFrozen` (pathfinder-side), and
+the private `StarSystemNode.empirePlanningEncounterIndex = <empire index>` on the fleet's own orbit
+answers `EncounterInPreparation` (action-side — this one proves the three-argument
+`CanBeExecuted`). Invoke the node's real `OnContextual` delegate by reflection, read `/speech`,
+restore, and re-load the pristine save if a positive control posted a real order.
+
 **Testing the selection chords and the drag.** `/input` cannot hold a modifier, so
 `ui.selectToggle`/`ui.selectRange` reach the row's own click with NO physical Ctrl or Shift and the
 game runs its plain (radio) branch: the injection proves the wiring, the announcement and the
