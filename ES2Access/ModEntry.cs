@@ -358,7 +358,17 @@ namespace ES2Access
             // The right click, which in this game is a command in its own right rather than a menu.
             // Claimed on every screen of ours, because it always answers - with the control's command
             // where there is one, and with a cue where there is not.
-            input.Register(UiActions.Contextual).Bind(KeyCode.Backslash);
+            //
+            // Control and Backslash is the game's own CONTROL and right click, and it is the SAME
+            // action deliberately: the game runs one handler for both and reads the modifier inside it
+            // (`GalaxyGarrisonCursor.GetGalaxyPathToPosition` :453 asks `Input.IsControlKeyDown()` while
+            // plotting the move, and answers with a free-movement course). So the chord is bound rather
+            // than wired - the physical Control is still held when the handler runs, which is how the
+            // GAME's rule applies rather than a copy of it, exactly as the modified Enter chords do.
+            // Everywhere the modifier means nothing to the game, the chord is the plain right click.
+            input.Register(UiActions.Contextual)
+                .Bind(KeyCode.Backslash)
+                .Bind(KeyCode.Backslash, ctrl: true);
             // The game's own DOUBLE click, on the one Enter chord the game itself never uses: no
             // handler in the game combines Control and Alt with a click, and its own binding matcher
             // is exact-modifier (`InputManager.InputsMatch`), so Control+Alt+Enter cannot trip a

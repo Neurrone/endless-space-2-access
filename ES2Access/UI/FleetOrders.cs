@@ -348,7 +348,10 @@ namespace ES2Access.UI
                 return null;
             }
 
-            PathfindingRequestSettings settings = new PathfindingRequestSettings(fleet);
+            PathfindingRequestSettings settings = new PathfindingRequestSettings(
+                fleet,
+                RequestedFlags()
+            );
             GalaxyPath path = pathfinding.FindPath(fleet, start, goal, settings);
             if (failureInfos == null)
             {
@@ -446,6 +449,27 @@ namespace ES2Access.UI
                 failureInfos
             );
             return null;
+        }
+
+        /// <summary>
+        /// The extra pathfinding rule the player is asking for by holding a modifier, read the moment
+        /// the route is asked for and from the same place the game reads it
+        /// (<c>GalaxyGarrisonCursor.GetGalaxyPathToPosition</c> :453). Control held during the move
+        /// gesture means FREE MOVEMENT ONLY: plot a course that ignores starlanes, wormholes and
+        /// portals and flies straight there.
+        ///
+        /// Read here rather than passed down from the key, because the physical modifier IS the game's
+        /// own input to this decision: the mod binds Control and Backslash so that the map's right
+        /// click reaches this code with Control still held, and what the flag then means is entirely
+        /// the pathfinder's and the move action's - a free-move edge costs infinity until the empire
+        /// has the technology that pays for it (<c>PathfindingManager</c> :284-292), so holding Control
+        /// without it is a refusal with a reason rather than a different route.
+        /// </summary>
+        private static PathfindingFlags RequestedFlags()
+        {
+            return Amplitude.Unity.Input.Input.IsControlKeyDown()
+                ? PathfindingFlags.FreeMovementOnly
+                : PathfindingFlags.Default;
         }
 
         /// <summary>The move action's context for a route, or null where the game would refuse it -
