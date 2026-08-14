@@ -503,6 +503,20 @@ generic graduates to the generic docs.
   system's planets. It is probe-based (`GuiExpeditionFleetAction : GuiProbeBasedFleetAction`)
   and greys out at 0 probes. A first visit to an undiscovered system routes through the
   discovery cinematic, all of it already spoken.
+- **Seven of the nine targeting cursors write a hover readout from `OnCursorEnter`**
+  (obliterator: ETA + star-destruction odds + protection warning; take-system, time-bubble,
+  the `EntityActionCursor` pair, hacking-program: failure infos). `ProbeLaunching` and
+  `CoordinationRequest` declare no enter readout (pointer-aimed), and `HackingOperation`'s
+  enter also STORES `hoveredCursorTargets` for its own click, so replaying it would re-aim
+  the mouse's next click. `IGuiService.SetFailureInfos` is an EVENT — `GameOverlayTooltipPanel`
+  is only a subscriber and can hold stale text with `Visible=false`, so the event, not the
+  panel, is the oracle. A VALID target makes four of the modes write nothing at all, and the
+  obliterator refuses a non-Behemoth fleet with an EMPTY FailureInfo list.
+- **`PanelFeatureProbeFleetActionInfo`'s captions live in the PREFAB** (`%ProbeStockTitle`
+  sibling labels), so the "default" reader pairs "Exploration Probes 2/2" correctly — a
+  feature class on `default` is only a defect when the DRAWN feature divorces value from
+  caption. The game gives Launch Mining Probe the same prefab, so a mining stock is captioned
+  "Exploration Probes" — the game's own mislabel, mirrored not corrected.
 - **`OrderCreateTimeBubble` does not land from the REPL** (it needs `TimeBubblesStock`, and
   `OrderAddTimeBubbleStock` does not land either); the public route is
   `DepartmentOfTheInterior.CreateTimeBubble(guid, definitionName, node)`.

@@ -124,7 +124,9 @@ files above.
 - Trade-route lanes awaiting a live sighting with a REAL trading company (shipped 2026-08-14
   verified against the renderer with an injected one): an external-subsidiary route and a
   simulation-set HQ/subsidiary blockade; an explored special node speaking its kind ("Solar
-  Nebula" — shipped 2026-08-14, no fixture reveals one).
+  Nebula" — shipped 2026-08-14, no fixture reveals one); the obliterator's armed-mode buffer
+  readout with a real Behemoth (mechanism shipped and verified via take-system; the message
+  branch — ETA, star odds, protection warning — is unsighted, no Behemoth fixture).
 
 ## To decide (owner)
 

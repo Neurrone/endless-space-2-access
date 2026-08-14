@@ -304,6 +304,14 @@ TimeBubbleDefinition database>, node)`; quest markers — `IQuestManagementServi
 Citadel1))`, undone by `UnbindCitadel(true)`. Lowering an `EntityVisibility` LAYER (unlike
 exploration) needs reflection on the private `layers` array.
 
+**The fixture's one text-producing targeting mode** is
+`ChangeCursor(typeof(TakeSystemCursor), new AcademyDiplomacyGiveSystemAction())` (disarm:
+`ChangeCursor(typeof(GalaxyCursor))`) — aim at an owned colony and the armed-mode buffer
+line reads "Must be a Academy Owned System". `TimeBubbleCursor` arms with any string and
+the obliterator arms on any fleet, but both answer EMPTY on every fixture system (a valid
+time-bubble target draws no panel; the obliterator refuses a non-Behemoth with an empty
+info list).
+
 **Arming the two pointer-aimed targeting modes from the REPL** (both reversible; the pin
 posts a real order, so reload after): `ICursorService.ChangeCursor(typeof(
 ProbeLaunchingCursor), fleet)` and `ChangeCursor(typeof(CoordinationRequestCursor),

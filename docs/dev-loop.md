@@ -159,7 +159,8 @@ watching what happens (the map's own turn markers were one low; end-turning caug
 `/screenshot`, `DevProbe.Tooltip()` (a `features` array — class name, the reader that answered,
 the lines it produced — plus the measured rows/rects/assets), `/gui/graph?buffers=1`. A feature
 class sitting on `"default"` whose lines divorce a value from its caption is the defect to look
-for; nothing about it shows in the spoken lines alone. `shown:false` on a control whose readout
+for — but the prefab may already carry the caption as sibling labels, so read the DRAWN
+feature before believing the class; nothing about it shows in the spoken lines alone. `shown:false` on a control whose readout
 says "has tooltip" is the OTHER signature — the pointer was aimed with the 2-arg
 `AgeWidgets.Point`, which re-derives the tooltip from the control's own transform instead of using
 the one the screen resolved.
