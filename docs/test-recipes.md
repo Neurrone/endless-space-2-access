@@ -786,18 +786,24 @@ chain with `InputManager.HandleInput(InputAction.StartChatting)` to open the box
 `HandleInput(InputAction.Exit)` to close it. The options row re-reads live, so the binding shown
 there follows the programmatic move with no reopen.
 
-**The whole chat cluster, in an ORDINARY single-player fixture** — no solo-MP lobby needed, because
+**The whole chat page, in an ORDINARY single-player fixture** — no solo-MP lobby needed, because
 the in-game panel is live in single player (es2-facts). Seed the log through the game's own send:
 `p.ChatTextField.ReplaceInputText("…")` plus the reflected
 `InGameChatPanel.OnTextFieldValidateCb` (a `null` argument), where `p` is
 `Gui.GuiService.GetWindow<InGameChatWindow>(false).InGameChatPanel`; each call posts, echoes back
 through `OnChatMessageReceived`, and speaks. A loop of 55 in one `/eval` proves the fifty-row bound.
-The cluster is the LAST tab stop of every page, so `POST /input ui.prev` lands on it from anywhere.
-The box's Enter is verifiable end to end without a keystroke: `ui.activate` on the box node, then
-`AgeManager.Instance.FocusedControl == p.ChatTextField` for the hand-over,
-`DevProbe.Claims("Escape")` → `layerLive:false, claims:false` for the stand-down, the seeding call
-above for typing, and `p.HandleInput(InputAction.Exit)` for the way out (which must be followed by
-the mod re-reading the cursor). Restore the fixture with
+**Chat is a CHILD SCREEN now (2026-08-14), not a stop on the page** — no `ui.prev` reaches it, and
+the whole round trip is drivable without a keystroke: `p.SetFocus()` is Ctrl+Tab (expect
+`Screens.Current.Key == "screen.chat"`, `/gui/graph` declaring nothing while the box holds the
+keyboard, and one line of speech); `p.HandleInput(InputAction.Exit)` is the first Escape and must
+answer `true` with the cursor landing on `chat:message-box`, the panel still non-discreet (crop it —
+`p.AgeTransform.GetGlobalPosition()` gives the rect) and `DevProbe.Claims("Escape")` reading
+`claims:true`; `/input ui.back` is the second and must return the cursor to the exact pre-chat node.
+`/input ui.next` on the chat page is consumed and SILENT (one stop) — that is the containment check.
+Re-entry is `ui.activate` on the box node, then `AgeManager.Instance.FocusedControl ==
+p.ChatTextField` for the hand-over and `DevProbe.Claims("Escape")` → `layerLive:false, claims:false`
+for the stand-down; the reflected `OnTextFieldValidateCb` on an EMPTY box is the game closing chat
+underneath the page, which must pop it and land the cursor back. Restore the fixture with
 `Services.GetService<IChatControllerService>().RemoveMessages()` plus the reflected protected
 `ChatPanel.ClearLines`, then one `/reload` so the chat review buffer reseeds from the now-empty
 history. The alliance tab and the new-message button stay unreachable in single player by the game's

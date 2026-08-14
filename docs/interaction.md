@@ -129,9 +129,22 @@ item at the target's own position ("Moved ⟨name⟩ to position ⟨n⟩").
 `StartChatting` off Enter/Tab to Ctrl+Tab through the game's own options (ONLY while it still has
 the shipped default; a customised binding is left alone), and whatever chord the binding sits on is
 handed back through the stand-down (`ModInput.LeaveToGame`) — so re-binding chat in the game's
-options keeps working. It is not the only way in: the chat stop every page carries (`ChatCluster`,
-in every session including single player) ends with the message box itself, and Enter on it is the
-same `SetFocus` the key raises, announced by the same words.
+options keeps working. **Open chat is a PLACE, not a stop**: the key hands the keyboard to the game's
+box, and the mod pushes a child screen over the page (`ChatScreen`, in every session including single
+player — `docs/helpers.md`), so while the panel is up Tab cycles inside chat and the page underneath
+is unreachable, exactly as the panel behaves for a mouse. **The first Escape steps OUT of the box**
+into that page — keyboard back, panel still drawn, cursor on the box's own node with the tabs and the
+log one arrow away — and **the second Escape closes**, handing the player back to the control they
+left (the covered page keeps its own cursor). Enter on the box node types again. The panel is drawn
+only while somebody is typing in it or a pointer rests on it, so the mod holds it open for as long as
+its page is up (`ChatHold`) — which is the one thing that lets chat follow the drawing like every
+other surface; declared on the window's existence instead, its controls sat in every page's Tab ring
+with nothing on screen (owner-reported, 2026-08-14). The one part left on the pages is the
+new-message button, because that is the one part the game draws while chat is closed. Escape on the
+chat page is an ordinary `ConsumesBack` claim — a mod-owned child screen the game cannot close — but
+the first Escape, the step out, is taken from INSIDE the game's own dispatch (`ChatEscape` prefixes
+`InGameChatPanel.HandleInput`), because while the box holds the keyboard the whole mod layer is stood
+down and the key never reaches it.
 
 **Enter is click parity everywhere.** Every node's Enter is the click the game itself puts on that
 control, including the destructive ones — a research queue item dequeues, a construction queue line

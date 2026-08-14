@@ -171,7 +171,7 @@ namespace ES2Access.UI
         /// <summary>The session's messages themselves, oldest first, or null where there is no chat
         /// service - the game's own collection, which is what both the drawn panel and this narration
         /// read. For a surface that needs the messages rather than the sentences
-        /// (<see cref="Screens.ChatCluster"/> walks them one node each); the words a message is said in
+        /// (<see cref="Screens.ChatScreen"/> walks them one node each); the words a message is said in
         /// are <see cref="Line"/>'s, so every surface says the same thing.</summary>
         internal static ReadOnlyCollection<ChatMessage> Messages()
         {
@@ -344,7 +344,7 @@ namespace ES2Access.UI
 
         /// <summary>
         /// Whether the game is offering chat at all - the one question the review buffer and the chat
-        /// panel's own controls (<see cref="Screens.ChatCluster"/>) both ask, so the two can never
+        /// panel's own controls (<see cref="Screens.ChatScreen"/>) both ask, so the two can never
         /// disagree about whether this session has chat.
         ///
         /// Two surfaces, so two answers ORed: any multiplayer session has the lobby's chat row, and any

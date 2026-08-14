@@ -21,14 +21,14 @@ namespace ES2Access.UI
     /// back through the chat service, one's own included), and the whole log stays re-readable in the
     /// chat review buffer once the field lets go.
     ///
-    /// Leaving is announced by re-reading the control the cursor is on rather than with a line of its
-    /// own: the player pressed Escape to get back somewhere, and where they are is the useful answer.
-    /// Escape is the game's own gesture either way, and this only reports it - the in-game field
-    /// declares <c>StandardCancel = false</c> so the engine hands Exit down to the panel, which drops
-    /// the focus itself (`InGameChatPanel.HandleInput` :108-112, with
-    /// `ChatPanel.OnTextFieldKeyDownCb` :232-246 as the second route), while the lobby's field leaves
-    /// <c>StandardCancel</c> on and the engine clears the focus for it
-    /// (`InputManager.HandleInput` :1216-1227, measured).
+    /// Only the LOBBY's field is reported on the way OUT, and by re-reading the control the cursor is
+    /// on rather than with a line of its own: the player pressed Escape to get back somewhere, and where
+    /// they are is the useful answer. There Escape is the engine's own gesture and this only reports it
+    /// (the lobby's field leaves <c>StandardCancel</c> on, so `InputManager.HandleInput` :1216-1227
+    /// clears the focus for it - measured). The IN-GAME panel has a page of its own now
+    /// (<see cref="Screens.ChatScreen"/>): the keyboard coming back out of that box is a step onto that
+    /// page or the page closing, and either way the navigator announces where the player has landed -
+    /// so saying anything here would say it twice.
     ///
     /// A CHAT PANEL'S OWN FIELD, not any key-exclusive control: the game has exactly two chat panels
     /// and one other <c>AgeControlTextFieldChat</c> - the alliance coordination request's pin field
@@ -39,6 +39,11 @@ namespace ES2Access.UI
     {
         private AgeControl _decidedAbout;
         private bool _isChatField;
+
+        /// <summary>Whether the field being typed in is the in-game panel's, whose page announces its
+        /// own landings - so only the way IN is said for it.</summary>
+        private bool _hasItsOwnPage;
+
         private bool _typing;
 
         /// <summary>Called from the per-frame pump, after the screens have ticked so that re-reading the
@@ -57,6 +62,11 @@ namespace ES2Access.UI
                 if (typing)
                 {
                     Voice.Say(ModStrings.Get(ModStrings.ChatTyping), true);
+                    return;
+                }
+
+                if (_hasItsOwnPage)
+                {
                     return;
                 }
 
@@ -81,6 +91,7 @@ namespace ES2Access.UI
         {
             _decidedAbout = null;
             _isChatField = false;
+            _hasItsOwnPage = false;
             _typing = false;
         }
 
@@ -96,19 +107,28 @@ namespace ES2Access.UI
             }
 
             _decidedAbout = focused;
-            _isChatField = IsAChatPanelsField(focused);
+            ChatPanel panel = OwningChatPanel(focused);
+            _isChatField = panel != null;
+            if (panel != null)
+            {
+                // Only ever written for a chat field, because the question it answers is asked about
+                // the field the keyboard has just LEFT - by which time the focus is null and there is
+                // no panel left to ask.
+                _hasItsOwnPage = panel is InGameChatPanel;
+            }
+
             return _isChatField;
         }
 
-        private static bool IsAChatPanelsField(AgeControl focused)
+        private static ChatPanel OwningChatPanel(AgeControl focused)
         {
             if (focused == null || focused.transform.parent == null)
             {
-                return false;
+                return null;
             }
 
             ChatPanel panel = focused.transform.parent.GetComponent<ChatPanel>();
-            return panel != null && ReferenceEquals(panel.ChatTextField, focused);
+            return panel != null && ReferenceEquals(panel.ChatTextField, focused) ? panel : null;
         }
     }
 }

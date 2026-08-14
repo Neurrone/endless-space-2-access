@@ -32,9 +32,11 @@ files above.
   cursor-targets; `HackingOperationCursor` route building rides the Penumbra wait; the
   instruction banner can speak the previous mode's caption for a frame (cheap fix: skip
   an instruction that is not the current cursor's).
-- Chat: the cluster ships whole (tabs, message log, box) and is verified in a single-player
-  fixture; what no fixture here has shown is the MULTIPLAYER half — the alliance tab, the
-  new-message button, whispers and alliance sending.
+- Chat: the child screen ships whole (tabs, message log, box, the page-level new-message
+  button) and is verified in a single-player fixture; what no fixture here has shown is the
+  MULTIPLAYER half — the alliance tab, the new-message button actually being raised (in
+  single player a Global line on the Global tab never raises it, so its page-level stop is
+  unverified live), whispers and alliance sending.
 - Assigned-governor side panel: `Special` case for its three bare readouts (needs a save
   with a governor).
 - The planet page's population-entry click has no opener node yet (the window itself,

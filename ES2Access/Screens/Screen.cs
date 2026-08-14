@@ -63,10 +63,11 @@ namespace ES2Access.Screens
 
         /// <summary>
         /// A page that exists to be ANSWERED and holds nothing else: the error box, the two message
-        /// boxes, the drop list, the loading screen. Whatever the game may still be drawing around
-        /// them is not theirs - the player answers, and the page underneath comes back with everything
-        /// that belongs to it. Overridden by those pages so that <see cref="BuildShared"/> adds
-        /// nothing to them; every other page leaves it alone.
+        /// boxes, the drop list, the loading screen - and the chat page, which contains the player in
+        /// the panel on purpose. Whatever the game may still be drawing around them is not theirs - the
+        /// player answers, and the page underneath comes back with everything that belongs to it.
+        /// Overridden by those pages so that <see cref="BuildShared"/> adds nothing to them; every
+        /// other page leaves it alone.
         /// </summary>
         public virtual bool AnswersOnly
         {
@@ -78,8 +79,10 @@ namespace ES2Access.Screens
         ///
         /// Two things, and both for the same reason: the game draws them OVER whatever the player is
         /// looking at, so they belong to whatever page that is rather than to the page they were first met
-        /// on. The second is the chat panel's recipient tabs (<see cref="ChatCluster"/>), which exist only
-        /// in a multiplayer session.
+        /// on. The second is the chat panel's new-message button
+        /// (<see cref="ChatScreen.BuildNewMessages"/>) - the only part of the panel the game draws while
+        /// chat is closed, and the page-level way into a chat page that is otherwise entered with the
+        /// game's own chat key.
         ///
         /// The first is the bar a COLLAPSED tutorial leaves on screen. Collapsing the popup hands the
         /// keyboard back to the page underneath, so the bar belongs to whatever page that is - and it is
@@ -110,9 +113,9 @@ namespace ES2Access.Screens
                 TutorialScreen.BuildCollapsedBar(builder);
             }
 
-            if (!builder.DeclaredStop(ChatCluster.Stop))
+            if (!builder.DeclaredStop(ChatScreen.AlertStop))
             {
-                ChatCluster.Build(builder);
+                ChatScreen.BuildNewMessages(builder);
             }
         }
 

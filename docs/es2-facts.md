@@ -1111,13 +1111,33 @@ generic graduates to the generic docs.
   `GuiManager.UpdateGameWindowsVisibility` passes a bare `true` for it (:1579-1580) and
   `SetGameWindowVisibility` ANDs in `GameReady`, so "the window is shown" already means "a game is
   running" — no session-mode test needed to keep chat off the menu.
-- **The in-game panel is discreet exactly when the player is not typing**, and `SetDiscreet`
-  (:127-180) takes the field with it: `ChatTextField.AgeTransform.Enable` and `Label.Visible` both
-  go false. So the field's own enabled flag reports which state the panel is in, never whether chat
-  can be opened. `SetFocus` (:116-125) is the single way in — the chat key, a tab click
-  (`ChatTab.OnTabCb`) and the new-message button (`OnNotificationCb`) all call it, and it focuses
-  the field and un-discreets in one call, with `OnValidateObject` nulled for a frame so the keypress
-  that opened the box cannot also validate it.
+- **The in-game panel is discreet whenever nobody is typing in it and no pointer rests on it**, and
+  `SetDiscreet` (:127-180) takes the field with it: `ChatTextField.AgeTransform.Enable` and
+  `Label.Visible` both go false, `ChatTabs[i].ShowOrHide` hides the tab bar, and going discreet
+  clears the engine's focus if the box still had it. So the field's own enabled flag reports which
+  state the panel is in, never whether chat can be opened. `discreet` itself is a private bool on
+  `InGameChatPanel` and is the one thing every part of that visibility derives from. `SetFocus`
+  (:116-125) is the single way in — the chat key, a tab click (`ChatTab.OnTabCb`) and the
+  new-message button (`OnNotificationCb`) all call it, and it focuses the field and un-discreets in
+  one call, with `OnValidateObject` nulled for a frame so the keypress that opened the box cannot
+  also validate it.
+- **The POINTER is what keeps the panel open after the box lets go**: `OnTextFieldLoseFocusCb`
+  (:310-317) goes discreet and hides every line unless `IsHoveringThePanel` (private, :493-514 —
+  the panel's rect, its scrollbar, and the engine's `OverrolledTransform`) says the cursor is on it.
+  A keyboard has no equivalent, so a mod that wants the panel walkable has to BE that pointer
+  (`ChatHold`) — and dropping the engine's focus fires this handler first, so the hold is
+  re-asserted after, never before. **Mod policy 2026-08-14**: chat is a mod-owned child screen held
+  open exactly while it is up.
+- **Escape out of the chat box is an ACTION dispatch, not a key delivery.** The field is
+  `AgeControlTextFieldChat` with `StandardCancel=false`, so `InputManager.HandleInput` :1228-1239
+  hands `InputAction.Exit` down the handler chain, and `InGameChatPanel.HandleInput` :108-112
+  answers it with `SetDiscreet(true)`. `ChatPanel.OnTextFieldKeyDownCb` :232-246 has an Escape route
+  of its own, but the InputManager's `Update` beats `AgeManager`'s LateUpdate KeyDown by a frame and
+  has already dropped the focus that route needs — so the panel's own `HandleInput` is the only
+  place that press can be intercepted (measured 2026-08-14).
+- **A chat tab that answers `CanShowTab` false is never drawn** even while the panel is open:
+  `ChatTab.OnBeginShow` gates on the same predicate, so `CanShowTab` and drawn-ness agree for a
+  non-discreet panel and the mod needs only one of them.
 
 ## Card and tooltip drawing mechanisms
 

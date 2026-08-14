@@ -229,6 +229,9 @@ namespace ES2Access
             // And the same for the control the game has focused, which is handed the frame's keys after
             // the mod has already acted on them.
             GameKeyboardHandover.Install();
+            // The one key that still reaches the game while it holds the keyboard for the chat box:
+            // Escape, which the panel answers by shutting itself instead of letting go.
+            ChatEscape.Install();
             // The game's own "the thing you are missing is over here", which moves the view and would
             // otherwise leave the cursor behind - once for the technology wheel, once for the map,
             // which between them are where every one of those buttons lands.
@@ -485,6 +488,9 @@ namespace ES2Access
             PointerFocus.Shutdown();
             GameKeyStandDown.Remove();
             GameKeyboardHandover.Remove();
+            ChatEscape.Remove();
+            // And the chat panel is let go, or the game keeps drawing one nobody is reading.
+            ChatHold.Stop();
             ResearchLocate.Remove();
             GalaxyLocate.Remove();
 
@@ -558,6 +564,11 @@ namespace ES2Access
             // Keys first, screens second: a keypress and the announcement it causes then land in
             // the same frame, instead of the player hearing the result of the previous one.
             Input.Tick();
+
+            // Right after the keys and before the screens rebuild: the hold is decided on where the
+            // cursor now IS, and letting go has to reach the panel before the frame's Build asks it
+            // what it is drawing.
+            ChatHold.Tick();
 
             // Typed characters are not one of the mod's actions - they are text, and the focused
             // screen's type-ahead search decides for itself whether it is listening for them.

@@ -381,9 +381,13 @@ namespace ES2Access.Dev
                 {
                     MethodInfo[] scans = GameKeyStandDown.KeyScans();
                     MethodInfo[] dispatches = GameKeyboardHandover.KeyDispatches();
-                    MethodInfo[] all = new MethodInfo[scans.Length + dispatches.Length];
+                    MethodInfo[] chat = ChatEscape.Handlers();
+                    MethodInfo[] all = new MethodInfo[
+                        scans.Length + dispatches.Length + chat.Length
+                    ];
                     scans.CopyTo(all, 0);
                     dispatches.CopyTo(all, scans.Length);
+                    chat.CopyTo(all, scans.Length + dispatches.Length);
                     _targets = all;
                 }
                 catch (Exception e)
