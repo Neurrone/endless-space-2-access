@@ -98,6 +98,13 @@ namespace ES2Access
         /// step that changed the page.</summary>
         private static ZoomWatch _zoom;
 
+        /// <summary>A fleet's journey being called off - intercepted, or cancelled under it - said out
+        /// loud. Here rather than on the galaxy page because it happens to fleets wherever the player
+        /// is standing: a route dies while its owner is reading the research wheel just as readily as
+        /// while they are watching the map, and a watcher owned by the map would miss exactly that.
+        /// </summary>
+        private static FleetRouteWatch _fleetRoutes;
+
         private static bool _announcedStartup;
         private static float _startTime;
 
@@ -131,6 +138,10 @@ namespace ES2Access
             _chatField = new ChatField();
             _saving = new SaveProgress();
             _zoom = new ZoomWatch();
+            // Baselined off the live game, so a reload in the middle of a journey says nothing about a
+            // route it was not there to see given.
+            _fleetRoutes = new FleetRouteWatch();
+            _fleetRoutes.Baseline();
             Navigator = new GraphNavigator(Buffers);
             InstallAnnouncerWording();
             // A tooltip the game has to draw before its words exist arrives after focus does, so the
@@ -486,8 +497,16 @@ namespace ES2Access
             }
 
             // Nothing subscribed and nothing held: the rung watcher only reads, so letting go of it is
-            // the whole of its teardown.
+            // the whole of its teardown. The route watcher and the route memo are the same - both read
+            // the game and remember nothing the game owns.
             _zoom = null;
+            if (_fleetRoutes != null)
+            {
+                _fleetRoutes.Forget();
+                _fleetRoutes = null;
+            }
+
+            FleetRoute.Reset();
 
             // Whatever the mod made the game look like, the game looks like itself again. The screens
             // shut down first, so a drop list left open has already been closed by its own OnPop and
@@ -601,6 +620,10 @@ namespace ES2Access
             // After the screens, so that a zoom step which also changes the page reads as the page and
             // then the distance rather than the other way round.
             _zoom.Tick();
+
+            // Alongside the save spinner and for the same reason: a route dying is news the game gives
+            // no words to, and it queues behind whatever the player asked for.
+            _fleetRoutes.Tick();
 
             // After the screens have settled: the game's own hover, flyout and tooltip follow the
             // focus they just decided on.
