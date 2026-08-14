@@ -503,6 +503,13 @@ generic graduates to the generic docs.
   system's planets. It is probe-based (`GuiExpeditionFleetAction : GuiProbeBasedFleetAction`)
   and greys out at 0 probes. A first visit to an undiscovered system routes through the
   discovery cinematic, all of it already spoken.
+- **A `GalaxyLink` game object carries TWO mirrored `GalaxyLinkCursorTarget` halves**
+  (start/destination swapped; `GetCursorTarget` picks by where along the line the pointer
+  is), and **no targeting cursor consumes a link target** — only the garrison cursor and
+  the scan overlay do — so a mode confirmed on a lane refuses silently and writes no hover
+  readout. A lane confirm for the pointer-aimed modes therefore aims at the lane's far
+  extremity, flipped when the acting fleet stands on it (a zero-length probe heading is the
+  game's own refusal).
 - **Seven of the nine targeting cursors write a hover readout from `OnCursorEnter`**
   (obliterator: ETA + star-destruction odds + protection warning; take-system, time-bubble,
   the `EntityActionCursor` pair, hacking-program: failure infos). `ProbeLaunching` and

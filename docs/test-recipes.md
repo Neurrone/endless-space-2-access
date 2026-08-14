@@ -304,6 +304,14 @@ TimeBubbleDefinition database>, node)`; quest markers — `IQuestManagementServi
 Citadel1))`, undone by `UnbindCitadel(true)`. Lowering an `EntityVisibility` LAYER (unlike
 exploration) needs reflection on the private `layers` array.
 
+**Confirming a targeting mode on a LANE** (the probe-down-the-dark-lane repro): arm the
+cursor from `/eval` with `Fleets[0]`, focus the lane node (`galaxy:system/543/lane/662` on
+Primus), `POST /input ui.activate`. The direction oracle is
+`DepartmentOfDefense.Probes[i].Direction` against the far node's bearing from the fleet.
+Do NOT oracle `GameOverlayTooltipPanel.Label.Text` after a reflected `OnCursorEnter` — it
+keeps whatever an earlier cursor broadcast (the panel is a subscriber; es2-facts); the
+buffer dump is the oracle.
+
 **The fixture's one text-producing targeting mode** is
 `ChangeCursor(typeof(TakeSystemCursor), new AcademyDiplomacyGiveSystemAction())` (disarm:
 `ChangeCursor(typeof(GalaxyCursor))`) — aim at an owned colony and the armed-mode buffer
