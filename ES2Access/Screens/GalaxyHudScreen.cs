@@ -140,6 +140,11 @@ namespace ES2Access.Screens
         // The same, for the three things the map draws away from any star. Each holds the LABEL rather
         // than the entity, because the label is what answers "is the game drawing this".
         private readonly List<ProbeLabel> _probes = new List<ProbeLabel>();
+
+        /// <summary>The probes with the star each one is nearest to worked out, rebuilt with the rest
+        /// of the map (<see cref="Anchor"/>).</summary>
+        private readonly List<DriftingProbe> _drifting = new List<DriftingProbe>();
+
         private readonly List<ObliteratorProjectileLabel> _projectiles =
             new List<ObliteratorProjectileLabel>();
         private readonly List<CoordinationRequestLabel> _pins =
@@ -544,18 +549,9 @@ namespace ES2Access.Screens
                 Add(spots, _other[i].GalaxyPosition, SystemId(_other[i]), -1);
             }
 
-            for (int i = 0; i < _probes.Count; i++)
+            for (int i = 0; i < _drifting.Count; i++)
             {
-                Probe probe = _probes[i].Entity as Probe;
-                if (probe != null)
-                {
-                    Add(
-                        spots,
-                        probe.GalaxyPosition,
-                        ControlId.Structural("galaxy:probe/" + probe.GUID),
-                        -1
-                    );
-                }
+                Add(spots, _drifting[i].Probe.GalaxyPosition, ProbeId(_drifting[i]), -1);
             }
 
             for (int i = 0; i < _projectiles.Count; i++)
@@ -600,6 +596,7 @@ namespace ES2Access.Screens
             Spot won = spots[pick.Index];
             if (won.Site < 0)
             {
+                RevealProbe(won.Id);
                 return won.Id;
             }
 
@@ -980,7 +977,10 @@ namespace ES2Access.Screens
                 }
 
                 Drifting();
-                int drifting = _probes.Count + _projectiles.Count + _pins.Count;
+                // Only the probes with no star to hang under: the rest are children of one
+                // (<see cref="AddProbesNear"/>), and counting them here would declare a region with
+                // nothing in it.
+                int drifting = Adrift() + _projectiles.Count + _pins.Count;
                 // A region jump with one region to jump to swallows the key and moves nothing, which
                 // sounds like the key being broken - so the map declares its halves only while it
                 // really has more than one of them, whichever ones those are.
@@ -1195,7 +1195,16 @@ namespace ES2Access.Screens
             // Only what is open costs anything: a galaxy of closed systems declares one node each.
             if (builder.IsExpanded(id))
             {
-                AddInside(builder, "galaxy:system/" + node.GUID, node, empire, label, true, labels);
+                AddInside(
+                    builder,
+                    "galaxy:system/" + node.GUID,
+                    node,
+                    empire,
+                    label,
+                    true,
+                    labels,
+                    _drifting
+                );
             }
 
             builder.EndGroup();
@@ -1254,7 +1263,8 @@ namespace ES2Access.Screens
             Empire empire,
             StarSystemLabel label,
             bool root,
-            StarSystemLabel[] labels
+            StarSystemLabel[] labels,
+            IList<DriftingProbe> probes
         )
         {
             AddManagementView(builder, key, label);
@@ -1264,10 +1274,15 @@ namespace ES2Access.Screens
             if (root)
             {
                 AddStarlanes(builder, key, node, empire, labels);
+                AddProbesNear(builder, key, probes, node);
             }
 
             AddFleets(builder, key, FleetPresence.FleetsAt(node));
             AddHangars(builder, key, node);
+            if (root)
+            {
+                AddProbeDirections(builder, key, node);
+            }
         }
 
         /// <summary>
@@ -2922,6 +2937,76 @@ namespace ES2Access.Screens
         };
 
         /// <summary>
+        /// The eight bearings a probe can be launched on, offered at the system the fleet holding it is
+        /// standing at, and only while the map is waiting for that launch.
+        ///
+        /// The lanes above are where a probe is usually aimed, and they are not all of it: the order
+        /// takes ANY direction that is not zero (<c>LaunchProbeFleetActionDefinition.CheckContext</c>
+        /// :92-95 refuses the zero vector alone), and the game's own tutorial for this action tells the
+        /// player to send the probe away from the known lanes to find a new constellation. A mouse aims
+        /// at empty sky by clicking it; the keyboard had only the map's own nodes, so every direction
+        /// with nothing along it was unreachable. Eight of them is the compass this mod already
+        /// describes lanes with, so the north offered here and the lane called north above are the same
+        /// north - deliberately overlapping, because a lane running north does not stop north from being
+        /// a direction.
+        ///
+        /// They sit here, LAST in the system's branch, because that is where the mode leaves the
+        /// player: arming it hides the fleet panel (the game draws that panel for the garrison cursor
+        /// alone), and the cursor is put back into the acting fleet's own system - onto the last node
+        /// of the branch where it is open, which is this group, and onto the system itself where it is
+        /// closed. Measured both ways. They exist only while the mode does, which is the same rule the
+        /// map's own "click a target" banner is drawn by.
+        /// </summary>
+        private static void AddProbeDirections(
+            GraphBuilder builder,
+            string place,
+            StarSystemNode node
+        )
+        {
+            try
+            {
+                ProbeLaunchingCursor cursor = CursorTargeting.ArmedProbe;
+                Fleet fleet = cursor == null ? null : cursor.ProbeOriginFleet;
+                if (
+                    fleet == null
+                    || fleet.IsDestroyed
+                    || !fleet.Position.IsInOrbit
+                    || fleet.NodePosition != node.NodePosition
+                )
+                {
+                    return;
+                }
+
+                ControlId id = ControlId.Structural(place + "/launch");
+                builder.BeginGroup(
+                    id,
+                    GraphNodes.Group(() => ModStrings.Get(ModStrings.GalaxyProbeDirections))
+                );
+                if (builder.IsExpanded(id))
+                {
+                    for (int i = 0; i < 8; i++)
+                    {
+                        double bearing = i * 45.0;
+                        string word = CompassDirections.KeyForBearing(bearing);
+                        builder.AddItem(
+                            ControlId.Structural(place + "/launch/" + i),
+                            GraphNodes.Button(
+                                () => ModStrings.Get(word),
+                                () => CursorTargeting.ConfirmTowards(bearing)
+                            )
+                        );
+                    }
+                }
+
+                builder.EndGroup();
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: offering the probe's launch directions threw: " + e);
+            }
+        }
+
+        /// <summary>
         /// Where a lane goes, as a child of the lane - the place at its far end, offered here because
         /// that is where the player asking "what is down this line" is standing.
         ///
@@ -3017,7 +3102,8 @@ namespace ES2Access.Screens
                     empire,
                     LabelFor(inside, labels),
                     false,
-                    labels
+                    labels,
+                    null
                 );
             }
 
@@ -3614,6 +3700,123 @@ namespace ES2Access.Screens
             {
                 Log.Warn("galaxy: reading what the map draws in open space threw: " + e);
             }
+
+            Anchor();
+        }
+
+        /// <summary>One probe the map is drawing, and the star it is drawn nearest to.</summary>
+        private struct DriftingProbe
+        {
+            public ProbeLabel Label;
+            public Probe Probe;
+
+            /// <summary>The system it hangs under, or null while the map is showing no system at all
+            /// for it to hang under.</summary>
+            public StarSystemNode Near;
+        }
+
+        /// <summary>
+        /// Which star each probe belongs to, which is the question the PICTURE answers: the map draws
+        /// the mote at the probe's own position (<c>VisibleEntityLabel.RefreshPositionAndSize</c> puts
+        /// the label on <c>camera.WorldToScreenPoint</c> of it), and a sighted player reads where it is
+        /// by seeing which star it is out from and how far. So the nearest system the map is naming is
+        /// what this tree hangs it under.
+        ///
+        /// Nearest is asked afresh on every build rather than remembered from the launch, because the
+        /// answer MIGRATES: a probe crosses about six units of galaxy a turn and the fixture's
+        /// neighbouring stars are sixteen to twenty-seven apart, so one flying towards a neighbour
+        /// belongs to the star it launched from for two turns and to the neighbour after that -
+        /// which is exactly what the picture shows.
+        ///
+        /// The candidates are the systems this page is DECLARING, not every system in the galaxy: a
+        /// probe hung under a star the player cannot see would be a node with no parent to reach it by.
+        /// </summary>
+        private void Anchor()
+        {
+            _drifting.Clear();
+            try
+            {
+                for (int i = 0; i < _probes.Count; i++)
+                {
+                    Probe probe = _probes[i].Entity as Probe;
+                    if (probe != null)
+                    {
+                        _drifting.Add(
+                            new DriftingProbe
+                            {
+                                Label = _probes[i],
+                                Probe = probe,
+                                Near = NearestSystem(probe.GalaxyPosition),
+                            }
+                        );
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: placing the probes against the systems threw: " + e);
+            }
+        }
+
+        /// <summary>The declared system nearest a point on the map, with no radius: the point is one
+        /// the map is drawing something at, so leaving it unplaced would drop that thing out of the
+        /// tree rather than leave it in open space.</summary>
+        private StarSystemNode NearestSystem(GalaxyPosition position)
+        {
+            NearestPick pick = new NearestPick(double.PositiveInfinity);
+            for (int i = 0; i < _owned.Count; i++)
+            {
+                pick.Offer(i, GalaxyPosition.SqrDistance(_owned[i].GalaxyPosition, position));
+            }
+
+            for (int i = 0; i < _other.Count; i++)
+            {
+                pick.Offer(
+                    _owned.Count + i,
+                    GalaxyPosition.SqrDistance(_other[i].GalaxyPosition, position)
+                );
+            }
+
+            if (!pick.Found)
+            {
+                return null;
+            }
+
+            return pick.Index < _owned.Count
+                ? _owned[pick.Index]
+                : _other[pick.Index - _owned.Count];
+        }
+
+        /// <summary>Where a probe's node hangs: under the star it is nearest to, or out in open space
+        /// while there is no star on the map to hang it under.</summary>
+        private static string ProbeKey(DriftingProbe probe)
+        {
+            return probe.Near == null
+                ? "galaxy:probe/" + probe.Probe.GUID
+                : "galaxy:system/" + probe.Near.GUID + "/probe/" + probe.Probe.GUID;
+        }
+
+        private static ControlId ProbeId(DriftingProbe probe)
+        {
+            return ControlId.Structural(ProbeKey(probe));
+        }
+
+        /// <summary>Open the star a probe hangs under, so that a request to show that probe lands on a
+        /// node that is really there. Recorded rather than done, like a search's own reveal: the
+        /// expansion set belongs to the next build.</summary>
+        private void RevealProbe(ControlId id)
+        {
+            for (int i = 0; i < _drifting.Count; i++)
+            {
+                StarSystemNode near = _drifting[i].Near;
+                if (near != null && ProbeId(_drifting[i]).Equals(id))
+                {
+                    _pendingExpand.Add(
+                        ControlId.Referenced(near, "galaxy:system/" + near.GUID)
+                    );
+                    return;
+                }
+            }
         }
 
         private static void Collect<TLabel>(AgeTransform container, List<TLabel> found)
@@ -3664,33 +3867,147 @@ namespace ES2Access.Screens
         /// is the one thing a reader of this tree has no way to be told.
         ///
         /// There is nothing to activate. A probe is not a thing the game lets anyone click.
+        ///
+        /// Almost every probe hangs under a STAR instead (<see cref="AddProbesNear"/>), which is where
+        /// the picture puts it; this is what is left when the map is naming no system at all for one to
+        /// hang under, so that a probe is never dropped from the tree.
         /// </summary>
         private void AddProbes(GraphBuilder builder)
         {
-            for (int i = 0; i < _probes.Count; i++)
+            for (int i = 0; i < _drifting.Count; i++)
             {
-                ProbeLabel it = _probes[i];
-                Probe probe = it.Entity as Probe;
-                if (probe == null)
+                if (_drifting[i].Near == null)
                 {
-                    continue;
+                    builder.AddItem(ProbeId(_drifting[i]), ProbeNode(_drifting[i]));
+                }
+            }
+        }
+
+        /// <summary>How many probes the map is drawing with no star of their own to hang under - the
+        /// only ones the open-space region has to be declared for.</summary>
+        private int Adrift()
+        {
+            int adrift = 0;
+            for (int i = 0; i < _drifting.Count; i++)
+            {
+                if (_drifting[i].Near == null)
+                {
+                    adrift++;
+                }
+            }
+
+            return adrift;
+        }
+
+        /// <summary>
+        /// The probes the map is drawing out from THIS star, as children of it - siblings of its
+        /// starlanes, which is what they look like on the screen: motes standing off the star, some of
+        /// them along a line and some of them nowhere near one.
+        ///
+        /// A probe is not attached to a lane the way a fleet is. A fleet has a leg - the game stores the
+        /// two nodes it is flying between - and a probe has neither node nor link, only a position and a
+        /// heading, so hanging one on a lane would be the mod inventing a relation the game does not
+        /// have. What a sighted player really reads off the map is the mote's position against the
+        /// nearest star, and that is what this says: which way out it lies and how far.
+        /// </summary>
+        private static void AddProbesNear(
+            GraphBuilder builder,
+            string place,
+            IList<DriftingProbe> probes,
+            StarSystemNode node
+        )
+        {
+            for (int i = 0; probes != null && i < probes.Count; i++)
+            {
+                if (ReferenceEquals(probes[i].Near, node))
+                {
+                    builder.AddItem(
+                        ControlId.Structural(place + "/probe/" + probes[i].Probe.GUID),
+                        ProbeNode(probes[i])
+                    );
+                }
+            }
+        }
+
+        /// <summary>What one probe says, wherever it is hung: whose it is, where it is, and - for the
+        /// player's own - how many turns it has left before it burns out.</summary>
+        private static NodeVtable ProbeNode(DriftingProbe drifting)
+        {
+            ProbeLabel it = drifting.Label;
+            Probe probe = drifting.Probe;
+            StarSystemNode near = drifting.Near;
+            NodeVtable vtable = new NodeVtable
+            {
+                Announcements = new List<NodeAnnouncement>
+                {
+                    GraphNodes.LabelPart(() => AgeWidgets.TooltipTitle(it.Tooltip)),
+                    GraphNodes.ValuePart(() => Owner(probe.Empire), false),
+                    GraphNodes.ValuePart(() => ProbeBearing(probe, near), false),
+                    GraphNodes.ValuePart(
+                        () => Countdown(it.DurationBackground, it.DurationLabel),
+                        false
+                    ),
+                },
+                Sections = GraphNodes.Sections(null, it.Tooltip),
+            };
+            Follow(vtable, probe, it.AgeTransform, it.Tooltip);
+            return vtable;
+        }
+
+        /// <summary>
+        /// Where a probe is, said from the star it hangs under: which way out it lies, in the same eight
+        /// words a starlane's direction is said in, and how far out in turns of the probe's OWN flight.
+        ///
+        /// Turns rather than a bare length, because a length in galaxy units is a number nothing else in
+        /// this game is ever said in, while turns are what the map's own countdown beside the mote is
+        /// already counting and what every distance this mod says is already said in. The probe's speed
+        /// is its own (<c>SimulationProperties.Probe.Speed</c>, the game's number, not a derived one),
+        /// so "three turns out" and "four turns left" can be heard against each other: that probe will
+        /// burn out about seven turns from this star.
+        ///
+        /// Rounded to the turn, and a probe less than half a turn out says only which way it went - a
+        /// rounded zero would claim a precision the picture does not have. One that has not left at all
+        /// says so, because its direction is not a direction yet.
+        /// </summary>
+        private static string ProbeBearing(Probe probe, StarSystemNode near)
+        {
+            try
+            {
+                if (near == null)
+                {
+                    return null;
                 }
 
-                NodeVtable vtable = new NodeVtable
+                double east = probe.GalaxyPosition.X - near.GalaxyPosition.X;
+                double north = probe.GalaxyPosition.Y - near.GalaxyPosition.Y;
+                double distance = Math.Sqrt((east * east) + (north * north));
+                if (distance < 0.01)
                 {
-                    Announcements = new List<NodeAnnouncement>
-                    {
-                        GraphNodes.LabelPart(() => AgeWidgets.TooltipTitle(it.Tooltip)),
-                        GraphNodes.ValuePart(() => Owner(probe.Empire), false),
-                        GraphNodes.ValuePart(
-                            () => Countdown(it.DurationBackground, it.DurationLabel),
-                            false
-                        ),
-                    },
-                    Sections = GraphNodes.Sections(null, it.Tooltip),
-                };
-                Follow(vtable, probe, it.AgeTransform, it.Tooltip);
-                builder.AddItem(ControlId.Structural("galaxy:probe/" + probe.GUID), vtable);
+                    return ModStrings.Format(ModStrings.GalaxyProbeAt, near.LocalizedName);
+                }
+
+                string direction = ModStrings.Get(CompassDirections.DirectionKey(east, north));
+                float speed = probe.Speed;
+                int turns = speed > 0f ? (int)Math.Round(distance / speed) : 0;
+                if (turns <= 0)
+                {
+                    return ModStrings.Format(
+                        ModStrings.GalaxyProbeNear,
+                        direction,
+                        near.LocalizedName
+                    );
+                }
+
+                return ModStrings.Format(
+                    turns == 1 ? ModStrings.GalaxyProbeOutOne : ModStrings.GalaxyProbeOutMany,
+                    direction,
+                    near.LocalizedName,
+                    turns
+                );
+            }
+            catch (Exception)
+            {
+                return null;
             }
         }
 

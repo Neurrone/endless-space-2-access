@@ -327,6 +327,32 @@ namespace ES2Access.Core.Speech
         public const string GalaxyProbeLaunchedOne = "galaxy.probe-launched-one";
         public const string GalaxyProbeLaunchedMany = "galaxy.probe-launched-many";
 
+        /// <summary>The same answer for a probe aimed at a compass DIRECTION rather than at a place.
+        /// A parallel family rather than the place one with a direction word dropped into it: "towards
+        /// Primus" and "heading north" are the same sentence only in English, and a translator handed
+        /// one template for both would have to pick a preposition that fits a proper noun and a bearing
+        /// at once.</summary>
+        public const string GalaxyProbeHeading = "galaxy.probe-heading";
+        public const string GalaxyProbeHeadingOne = "galaxy.probe-heading-one";
+        public const string GalaxyProbeHeadingMany = "galaxy.probe-heading-many";
+
+        /// <summary>The group the probe mode adds to the system a probe is being launched from: the
+        /// eight compass bearings, offered beside that system's starlanes because the order takes any
+        /// direction at all and the lanes are only the ones that lead somewhere.</summary>
+        public const string GalaxyProbeDirections = "galaxy.probe-directions";
+
+        /// <summary>Where a probe drifting through the map is, said from the system it is nearest to -
+        /// which is how a sighted player reads the mote: against the nearest star. The distance is in
+        /// turns of the probe's OWN flight, the unit the map's own countdown beside it is already in;
+        /// "at" is for one that has not left yet, and the middle form for one less than a turn out,
+        /// where a rounded number would say nothing. The distance is a COUNTED phrase and so has a form
+        /// per number (see <see cref="Plural"/>), which this family spells out rather than calling
+        /// because the number is not the only thing in the sentence.</summary>
+        public const string GalaxyProbeAt = "galaxy.probe-at";
+        public const string GalaxyProbeNear = "galaxy.probe-near";
+        public const string GalaxyProbeOutOne = "galaxy.probe-out-one";
+        public const string GalaxyProbeOutMany = "galaxy.probe-out-many";
+
         /// <summary>What pinning an ally coordination request answers with. The pin is drawn on the map
         /// and named nowhere, so the sentence is the mod's and the place in it is the game's.</summary>
         public const string GalaxyCoordinationRequested = "galaxy.coordination-requested";
@@ -1071,6 +1097,14 @@ namespace ES2Access.Core.Speech
             { GalaxyProbeLaunched, "Probe launched towards {0}" },
             { GalaxyProbeLaunchedOne, "Probe launched towards {0}, {1} probe remaining" },
             { GalaxyProbeLaunchedMany, "Probe launched towards {0}, {1} probes remaining" },
+            { GalaxyProbeHeading, "Probe launched heading {0}" },
+            { GalaxyProbeHeadingOne, "Probe launched heading {0}, {1} probe remaining" },
+            { GalaxyProbeHeadingMany, "Probe launched heading {0}, {1} probes remaining" },
+            { GalaxyProbeDirections, "Launch towards" },
+            { GalaxyProbeAt, "at {0}" },
+            { GalaxyProbeNear, "{0} of {1}" },
+            { GalaxyProbeOutOne, "{0} of {1}, {2} turn out" },
+            { GalaxyProbeOutMany, "{0} of {1}, {2} turns out" },
             { GalaxyCoordinationRequested, "Coordination request placed at {0}" },
             { FleetRoutePreviewThisTurn, "Arrives this turn, {0} movement" },
             { FleetRoutePreviewTurns, "{0} turns, {1} movement" },

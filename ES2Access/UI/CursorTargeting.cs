@@ -134,6 +134,80 @@ namespace ES2Access.UI
         }
 
         /// <summary>
+        /// The probe mode itself while it is the one waiting, and null the rest of the time.
+        ///
+        /// Offered because this one mode can be aimed where nothing at all is drawn: the order carries a
+        /// DIRECTION and the game refuses exactly one of them - the zero vector
+        /// (<c>LaunchProbeFleetActionDefinition.CheckContext</c> :92-95, <c>DirectionIsInvalid</c>) - so
+        /// the map's own nodes are a subset of what the player may aim at, not the whole of it. The
+        /// galaxy page offers the missing bearings while this answers non-null
+        /// (<see cref="ConfirmTowards"/>).
+        /// </summary>
+        public static ProbeLaunchingCursor ArmedProbe
+        {
+            get
+            {
+                try
+                {
+                    return Gui.GetCursor() as ProbeLaunchingCursor;
+                }
+                catch (Exception)
+                {
+                    return null;
+                }
+            }
+        }
+
+        /// <summary>
+        /// The same confirm, at a compass BEARING rather than at a place or a line - a probe launched
+        /// into the empty sky, which is the thing the mouse can do that no node on this map stands for.
+        ///
+        /// Only the probe mode: it is the one order that carries a DIRECTION instead of a target (the
+        /// ally pin aims at a point, and a point in the middle of nowhere is not a thing anyone wants
+        /// to name), and the game takes any direction that is not zero, so eight of them lose nothing
+        /// the mouse had. The heading is the unit vector of the bearing on the galaxy's own plane -
+        /// east is +X and north is +Y, measured against the camera itself (a point ten units up the Y
+        /// axis draws higher on the screen), which is the plane and the sense the mod's starlane
+        /// bearings are already read in (<see cref="CompassDirections"/>). So a lane the player was
+        /// told runs north and the north offered here are the same north.
+        /// </summary>
+        public static bool ConfirmTowards(double bearing)
+        {
+            ProbeLaunchingCursor cursor = ArmedProbe;
+            if (cursor == null)
+            {
+                return false;
+            }
+
+            try
+            {
+                Fleet fleet = cursor.ProbeOriginFleet;
+                if (fleet == null || fleet.IsDestroyed)
+                {
+                    return false;
+                }
+
+                string direction = CompassDirections.KeyForBearing(bearing);
+                Launch(cursor, fleet, Heading(bearing), ModStrings.Get(direction), true);
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: launching a probe on a bearing threw: " + e);
+            }
+
+            return true;
+        }
+
+        /// <summary>The unit vector of a bearing on the galaxy's plane, which the engine writes as a
+        /// three-component vector with the height thrown away (<c>GalaxyPosition</c> converts to
+        /// <c>(X, 0, Y)</c>).</summary>
+        private static Vector3 Heading(double bearing)
+        {
+            double radians = bearing * Math.PI / 180.0;
+            return new Vector3((float)Math.Sin(radians), 0f, (float)Math.Cos(radians));
+        }
+
+        /// <summary>
         /// The same confirm, at a STARLANE rather than at a place - the map's own left click on the line
         /// itself, which is where the mode is aimed when what the player wants is a direction rather than
         /// a system. Aiming a probe down an unexplored lane is the whole point of the probe mode: the far
@@ -597,10 +671,8 @@ namespace ES2Access.UI
         /// A probe has no target: the order carries the DIRECTION it leaves in
         /// (<c>ProbeLaunchingCursor.OnCursorClick</c> :140-153 normalises the vector from the fleet to
         /// wherever the mouse is), so aiming it means naming a place to head for, and the places a
-        /// keyboard player can name are the map's own nodes. Everything else is the cursor's own
-        /// sequence in the same order: ask the action whether it can be executed at all, post it, and
-        /// leave the mode when the probe just spent was the last one the fleet had - which is the game's
-        /// rule, not ours (:165).
+        /// keyboard player can name are the map's own nodes - or, where the player wants a direction
+        /// with nothing at the end of it, a compass bearing (<see cref="ConfirmTowards"/>).
         /// </summary>
         private static void LaunchProbe(ProbeLaunchingCursor cursor, GameNode node)
         {
@@ -611,6 +683,27 @@ namespace ES2Access.UI
             }
 
             Vector3 heading = ((Vector3)node.GalaxyPosition - (Vector3)fleet.GalaxyPosition).normalized;
+            Launch(
+                cursor,
+                fleet,
+                heading,
+                FleetRoute.Named(node) ?? ModStrings.Get(ModStrings.FleetUnexploredSystem),
+                false
+            );
+        }
+
+        /// <summary>The launch itself, once something has said which way: the cursor's own sequence in
+        /// the same order - ask the action whether it can be executed at all, post it, and leave the
+        /// mode when the probe just spent was the last one the fleet had, which is the game's rule and
+        /// not ours (<c>ProbeLaunchingCursor.OnCursorClick</c> :165).</summary>
+        private static void Launch(
+            ProbeLaunchingCursor cursor,
+            Fleet fleet,
+            Vector3 heading,
+            string towards,
+            bool bearing
+        )
+        {
             EntityActionDefinition definition = EntityActionDefinition.GetEntityActionDefinition(
                 LaunchProbeFleetAction.ActionDefinitionReference
             );
@@ -628,7 +721,7 @@ namespace ES2Access.UI
             Gui.PlaySound(1988358484u);
             PostOrder(new OrderEntityAction(fleet.Empire.Index, definition, fleet, context));
             float carried = ProbesLeft(fleet);
-            Say(Launched(node, carried));
+            Say(Launched(towards, carried, bearing));
             if (carried <= 1f)
             {
                 cursor.SwitchToGalaxyCursor();
@@ -645,21 +738,30 @@ namespace ES2Access.UI
         /// before the launch (which is exactly why the game's own click tests it against 1 rather than
         /// 0 to decide the mode is over - <c>ProbeLaunchingCursor.OnCursorClick</c> :154-165). A stock
         /// that could not be read at all is said as nothing rather than as a number.
+        ///
+        /// A launch aimed at a BEARING says so in a sentence of its own rather than in the place one
+        /// with a compass word dropped into it: "towards Primus" and "heading north" are one template
+        /// only in English, and a translator given a single slot for both would have to find a wording
+        /// that fits a proper noun and a direction at once.
         /// </summary>
-        private static string Launched(GameNode node, float carried)
+        private static string Launched(string towards, float carried, bool bearing)
         {
-            string place = FleetRoute.Named(node) ?? ModStrings.Get(ModStrings.FleetUnexploredSystem);
             int left = (int)carried - 1;
             if (left < 0)
             {
-                return ModStrings.Format(ModStrings.GalaxyProbeLaunched, place);
+                return ModStrings.Format(
+                    bearing ? ModStrings.GalaxyProbeHeading : ModStrings.GalaxyProbeLaunched,
+                    towards
+                );
             }
 
-            return ModStrings.Format(
-                left == 1 ? ModStrings.GalaxyProbeLaunchedOne : ModStrings.GalaxyProbeLaunchedMany,
-                place,
-                left
-            );
+            string one = bearing
+                ? ModStrings.GalaxyProbeHeadingOne
+                : ModStrings.GalaxyProbeLaunchedOne;
+            string many = bearing
+                ? ModStrings.GalaxyProbeHeadingMany
+                : ModStrings.GalaxyProbeLaunchedMany;
+            return ModStrings.Format(left == 1 ? one : many, towards, left);
         }
 
         /// <summary>
