@@ -1,7 +1,9 @@
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 using Amplitude.Unity.Framework;
 using Amplitude.Unity.View;
+using ES2Access.Core.Speech;
 using ES2Access.Core.Util;
 using UnityEngine;
 using Cursor = Amplitude.Unity.View.Cursor;
@@ -82,6 +84,12 @@ namespace ES2Access.UI
         /// <c>CanBeExecuted</c> for itself) and is silent, exactly as the same refused mouse click is
         /// silent, and the mode stays up so the player can pick somewhere else. What the mode's end
         /// sounds like is the one place that watches it - the HUD's cursor-mode announcement.
+        ///
+        /// Something HAPPENING is not silent, though, and that is the asymmetry the two pointer-aimed
+        /// modes need: the game answers a launched probe and a placed pin with a sound and a mark drawn
+        /// on the map, and without a word for the thing that landed there is nothing to tell a spent
+        /// probe from a refused one. The seven cursors driven through their own handler need nothing
+        /// here - what a legal target does is the game's own click, sounds and all.
         /// </summary>
         public static bool ConfirmAt(GameNode node)
         {
@@ -313,27 +321,64 @@ namespace ES2Access.UI
 
             Gui.PlaySound(1988358484u);
             PostOrder(new OrderEntityAction(fleet.Empire.Index, definition, fleet, context));
-            if (ProbesLeft(fleet) <= 1f)
+            float carried = ProbesLeft(fleet);
+            Say(Launched(node, carried));
+            if (carried <= 1f)
             {
                 cursor.SwitchToGalaxyCursor();
             }
         }
 
-        /// <summary>How many probes the fleet is carrying, counted the way the cursor counts them: the
-        /// probe stock of every ship in it, the hero's included, floored per ship.</summary>
+        /// <summary>
+        /// What a launch just did, in the mod's own words: the game answers one with a sound and a
+        /// probe drawn leaving the fleet, and a player who cannot see the map has no way to tell that
+        /// from the silent refusal of a target the order would not accept.
+        ///
+        /// The count is the stock MINUS the one just spent, because the order has only been posted:
+        /// it is executed by the session, not by this call, so the stock read here is still the stock
+        /// before the launch (which is exactly why the game's own click tests it against 1 rather than
+        /// 0 to decide the mode is over - <c>ProbeLaunchingCursor.OnCursorClick</c> :154-165). A stock
+        /// that could not be read at all is said as nothing rather than as a number.
+        /// </summary>
+        private static string Launched(GameNode node, float carried)
+        {
+            string place = FleetRoute.Named(node) ?? ModStrings.Get(ModStrings.FleetUnexploredSystem);
+            int left = (int)carried - 1;
+            if (left < 0)
+            {
+                return ModStrings.Format(ModStrings.GalaxyProbeLaunched, place);
+            }
+
+            return ModStrings.Format(
+                left == 1 ? ModStrings.GalaxyProbeLaunchedOne : ModStrings.GalaxyProbeLaunchedMany,
+                place,
+                left
+            );
+        }
+
+        /// <summary>
+        /// How many probes the fleet is carrying, counted the way the cursor counts them: the probe
+        /// stock of every ship in it, the hero's included, floored per ship. Negative where the empire
+        /// has no treasury to ask or the fleet no ship list, which is not the same answer as none
+        /// carried - and is what keeps a launch from claiming a made-up number.
+        ///
+        /// Walked as the enumerable it is. <c>Garrison.ShipsIncludingHero</c> is an
+        /// <c>IEnumerable&lt;Ship&gt;</c> written as a yield iterator, so it is no kind of list at all:
+        /// casting it to one answered null, silently made every fleet carry zero probes, and ended the
+        /// mode after a single launch however many probes were left.
+        /// </summary>
         private static float ProbesLeft(Fleet fleet)
         {
             DepartmentOfTheTreasury treasury = fleet.Empire.GetAgency<DepartmentOfTheTreasury>();
-            if (treasury == null)
+            IEnumerable<Ship> ships = fleet.ShipsIncludingHero;
+            if (treasury == null || ships == null)
             {
-                return 0f;
+                return -1f;
             }
 
             float probes = 0f;
-            System.Collections.IList ships = fleet.ShipsIncludingHero as System.Collections.IList;
-            for (int i = 0; i < (ships == null ? 0 : ships.Count); i++)
+            foreach (Ship ship in ships)
             {
-                Ship ship = ships[i] as Ship;
                 float stock;
                 if (
                     ship != null
@@ -371,9 +416,24 @@ namespace ES2Access.UI
                         string.Empty
                     )
                 );
+                Say(
+                    ModStrings.Format(
+                        ModStrings.GalaxyCoordinationRequested,
+                        FleetRoute.Named(node) ?? ModStrings.Get(ModStrings.FleetUnexploredSystem)
+                    )
+                );
             }
 
             cursor.SwitchToGalaxyCursor();
+        }
+
+        /// <summary>What the confirm just did, said out loud - interrupting, because it is the answer to
+        /// a key the player has this instant pressed. The mode's own end is announced separately and
+        /// queued (<c>GlobalHud.AnnounceCursorMode</c>), so a launch that spends the last probe says
+        /// what it did first and that the mode is over after.</summary>
+        private static void Say(string line)
+        {
+            Voice.Say(line, true);
         }
 
         // Typed on the ENGINE's order rather than the game's own subclass: the coordination request

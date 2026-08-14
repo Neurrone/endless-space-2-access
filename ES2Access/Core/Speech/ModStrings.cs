@@ -317,6 +317,20 @@ namespace ES2Access.Core.Speech
         public const string GalaxySendFleet = "galaxy.send-fleet";
         public const string GalaxySendFleets = "galaxy.send-fleets";
 
+        /// <summary>What a probe launch answers with: where it was aimed and how many probes the fleet
+        /// has left. The game answers a launch with a sound and nothing in words, so both halves are the
+        /// mod's; the count is a COUNTED phrase and therefore a form per number (see
+        /// <see cref="Plural"/>) rather than a number glued to a noun. The bare form is for the fleet
+        /// whose probe stock could not be read at all, where a made-up number would be worse than
+        /// none.</summary>
+        public const string GalaxyProbeLaunched = "galaxy.probe-launched";
+        public const string GalaxyProbeLaunchedOne = "galaxy.probe-launched-one";
+        public const string GalaxyProbeLaunchedMany = "galaxy.probe-launched-many";
+
+        /// <summary>What pinning an ally coordination request answers with. The pin is drawn on the map
+        /// and named nowhere, so the sentence is the mod's and the place in it is the game's.</summary>
+        public const string GalaxyCoordinationRequested = "galaxy.coordination-requested";
+
         // How long a journey takes and where it stops on the way. The game says none of this in words
         // at all - it draws a dotted line with a numbered marker wherever a turn runs out - so every
         // phrase here is the mod's, and each is a whole sentence rather than a number glued to a noun.
@@ -1054,6 +1068,10 @@ namespace ES2Access.Core.Speech
             { GalaxyFleetGuarding, "Guarding" },
             { GalaxySendFleet, "Send fleet {0} here" },
             { GalaxySendFleets, "Send the {0} selected fleets here" },
+            { GalaxyProbeLaunched, "Probe launched towards {0}" },
+            { GalaxyProbeLaunchedOne, "Probe launched towards {0}, {1} probe remaining" },
+            { GalaxyProbeLaunchedMany, "Probe launched towards {0}, {1} probes remaining" },
+            { GalaxyCoordinationRequested, "Coordination request placed at {0}" },
             { FleetRoutePreviewThisTurn, "Arrives this turn, {0} movement" },
             { FleetRoutePreviewTurns, "{0} turns, {1} movement" },
             { FleetRouteUsesPortal, "Uses portal" },
