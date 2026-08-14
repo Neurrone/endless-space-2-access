@@ -304,6 +304,13 @@ TimeBubbleDefinition database>, node)`; quest markers — `IQuestManagementServi
 Citadel1))`, undone by `UnbindCitadel(true)`. Lowering an `EntityVisibility` LAYER (unlike
 exploration) needs reflection on the private `layers` array.
 
+**Arming the two pointer-aimed targeting modes from the REPL** (both reversible; the pin
+posts a real order, so reload after): `ICursorService.ChangeCursor(typeof(
+ProbeLaunchingCursor), fleet)` and `ChangeCursor(typeof(CoordinationRequestCursor),
+CoordinationRequest.CoordinationRequestType.Attack)` — the latter arms with NO ally, and
+`CursorTargeting.ConfirmAt(node)` drives both. Fixture notes: the Patriots fleet carries
+exactly 2 probes; the Expedition button greys out at 0 probes.
+
 **Reaching the route-loss watcher's endings.** No fixture produces a real interception or
 invalidation, and both are reversible only by `POST /loadsave`: order a fleet out, then from
 `/eval` either `fleet.SetPath(null)` (expect "The route of ⟨fleet⟩ to ⟨dest⟩ was cancelled") or

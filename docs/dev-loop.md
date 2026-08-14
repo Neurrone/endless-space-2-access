@@ -89,7 +89,9 @@ During boot/loading, main-thread routes 503 — retry; `/speech` and `/log` keep
   over `AgeTransform.Children`, `GetPlayerEmpireGuiNotifications()` or any `List<GameType>`
   declares one implicitly**, and it poisons the WHOLE session — every later request answers
   with a `MakeGenericType` InternalErrorException. Iterate by index or bind as
-  `System.Collections.IList`. Recover with `POST /reload`.
+  `System.Collections.IList`. Recover with `POST /reload`. (REPL-only crutch: in shipped
+  code, `as IList` over a yield iterator answers null silently — walk the declared
+  interface.)
 - Bare `Time` binds to `InteractiveBase.Time(Action)`; write `UnityEngine.Time`.
 - `/reload` wipes the REPL session (variables, usings) and the speech ring.
 - Quote-bearing bodies: a file plus `--data-binary "@file"`, or the Bash tool.

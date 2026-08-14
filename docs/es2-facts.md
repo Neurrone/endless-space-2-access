@@ -490,6 +490,18 @@ generic graduates to the generic docs.
   comes back, so those states have NO game-authored noun; mod phrases required. And the
   `StarSystem` tooltip class carries `PanelFeatureTimeBubblesContainer` but NO guard or
   citadel feature (`GuiTooltipDescriptions.xml`) — the guard ring is the map's only telling.
+- **`Garrison.ShipsIncludingHero` is an `IEnumerable<Ship>` yield iterator, never a list** — a
+  cast to `IList` answers null silently and turned every fleet's probe count into zero for two
+  releases. Walk game collections through the interface they declare.
+- **An order is only POSTED by `PostOrder`; the session executes it later** — a stock read in
+  the same call still sees the pre-order value, which is why the game's own probe click tests
+  `<= 1` rather than `== 0` to decide the mode is over.
+- **The Expedition fleet action arms no mode**: `FleetActionButtonExpedition.OnClick` plays a
+  sound and force-zooms via `galaxyView.SelectGameNode` so a mouse can reach the curiosity
+  items on the orbital cards; the accessible path is the curiosity button under the zoomed
+  system's planets. It is probe-based (`GuiExpeditionFleetAction : GuiProbeBasedFleetAction`)
+  and greys out at 0 probes. A first visit to an undiscovered system routes through the
+  discovery cinematic, all of it already spoken.
 - **`OrderCreateTimeBubble` does not land from the REPL** (it needs `TimeBubblesStock`, and
   `OrderAddTimeBubbleStock` does not land either); the public route is
   `DepartmentOfTheInterior.CreateTimeBubble(guid, definitionName, node)`.
