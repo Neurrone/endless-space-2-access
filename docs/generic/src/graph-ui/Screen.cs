@@ -36,8 +36,85 @@ namespace ES2Access.Screens
         /// be operated.</summary>
         public abstract bool IsActive();
 
+        /// <summary>
+        /// Whether the page can still be WORKED, as opposed to standing there while the engine switches
+        /// it off - fading out after its own Close, or greyed under a confirmation it raised itself.
+        ///
+        /// This is the announcement side of a gap <see cref="IsActive"/> deliberately spans. A screen
+        /// stays active across that gap on purpose (the improvements modal outlives its window so the page
+        /// behind it is not handed back mid-fade), and in those frames the engine disables the whole
+        /// renderer stack above the window, so every control on the page flips to unavailable at once. The
+        /// live watch would then make the control the player has just pressed say "unavailable" as its
+        /// last word - measured on the improvements window's Close and on the ship designer's Close, whose
+        /// lose-your-changes box greys the window a frame before the box itself is up.
+        ///
+        /// Nothing about that is a fact about the control, so while this is false the live watch stays
+        /// silent (it still re-baselines, so a change made across the gap is not announced late). Nothing
+        /// else changes: the readouts, the refusals and the buffers are untouched, and a screen with no
+        /// such gap never overrides this.
+        /// </summary>
+        public virtual bool IsWorkable
+        {
+            get { return true; }
+        }
+
         /// <summary>Declare the screen's controls. Called on every navigation operation.</summary>
         public virtual void Build(GraphBuilder builder) { }
+
+        /// <summary>
+        /// A page that exists to be ANSWERED and holds nothing else: the error box, the two message
+        /// boxes, the drop list, the loading screen. Whatever the game may still be drawing around
+        /// them is not theirs - the player answers, and the page underneath comes back with everything
+        /// that belongs to it. Overridden by those pages so that <see cref="BuildShared"/> adds
+        /// nothing to them; every other page leaves it alone.
+        /// </summary>
+        public virtual bool AnswersOnly
+        {
+            get { return false; }
+        }
+
+        /// <summary>
+        /// What a page declares beyond its own content, added after <see cref="Build"/>.
+        ///
+        /// Two things, and both for the same reason: the game draws them OVER whatever the player is
+        /// looking at, so they belong to whatever page that is rather than to the page they were first met
+        /// on. The second is the chat panel's recipient tabs (<see cref="ChatCluster"/>), which exist only
+        /// in a multiplayer session.
+        ///
+        /// The first is the bar a COLLAPSED tutorial leaves on screen. Collapsing the popup hands the
+        /// keyboard back to the page underneath, so the bar belongs to whatever page that is - and it is
+        /// declared exactly where the game is DRAWING it, which is the gate
+        /// <see cref="TutorialScreen.BuildCollapsedBar"/> asks: a tutorial page declares for itself what
+        /// it may be drawn above, so an <c>Above*</c> page keeps its bar over screens, modals and
+        /// notifications alike (and clickable there), while an <c>UnderScreens</c> page's panel is
+        /// HIDDEN by the game the moment anything opens - and then there is nothing to declare and
+        /// nothing is. Following the drawing is what stops a player who minimised a tutorial over a
+        /// modal from having no way back to it, without inventing a bar on a page where the game drew
+        /// none.
+        ///
+        /// A page that reads the bar among its OWN stops - the galaxy and the ten pages that share the
+        /// HUD's right-hand edge, where it is drawn above the notification icons - keeps the place it
+        /// chose; every other page gets it last. A page that only takes an ANSWER
+        /// (<see cref="AnswersOnly"/>) gets it not at all.
+        /// </summary>
+        public void BuildShared(GraphBuilder builder)
+        {
+            if (AnswersOnly)
+            {
+                return;
+            }
+
+            if (!builder.DeclaredStop(GlobalHud.TutorialStop))
+            {
+                builder.BeginStop(GlobalHud.TutorialStop);
+                TutorialScreen.BuildCollapsedBar(builder);
+            }
+
+            if (!builder.DeclaredStop(ChatCluster.Stop))
+            {
+                ChatCluster.Build(builder);
+            }
+        }
 
         /// <summary>Spoken when the player arrives on the screen, before the focused control reads.
         /// Null for a screen whose content already says where you are.</summary>
@@ -63,6 +140,40 @@ namespace ES2Access.Screens
         /// <summary>The back key was pressed. Return true when the screen handled it; false lets the
         /// game's own handling stand.</summary>
         public virtual bool Back()
+        {
+            return false;
+        }
+
+        /// <summary>
+        /// The contextual key - the game's own right click - offered to the SCREEN before the focused
+        /// control's own command. Return true when the screen took it.
+        ///
+        /// For a mode the GAME has put the page into, which has taken the right click for itself and
+        /// means it wherever the pointer is standing: the map waiting for an order's target answers here,
+        /// so the same key stops sending fleets for exactly as long as the game would have stopped
+        /// answering a right click with a move. A screen with no such mode never overrides this, and the
+        /// control's own right click is untouched.
+        /// </summary>
+        public virtual bool Contextual()
+        {
+            return false;
+        }
+
+        /// <summary>
+        /// An action fired on a screen where every key means the SAME one thing - the game's own "press
+        /// anything to skip", which a cutscene answers with. Offered before the review chords and before
+        /// navigation, because the point is that nothing else gets the press; return true when the screen
+        /// acted on it.
+        ///
+        /// It exists because the mod cannot decline a key after the fact: the keys it claims are hidden
+        /// from the game's binding matcher (`GameKeyStandDown`), so on a screen whose whole interaction is
+        /// the game's press-anything handler, every claimed key EATS the skip. A screen with something to
+        /// navigate never wants this, which is why it is opt-in per screen rather than a mode.
+        ///
+        /// Escape is not offered - it stays the game's like everywhere else (<see cref="ConsumesBack"/>),
+        /// so the screen underneath keeps whatever the engine's own cancel does.
+        /// </summary>
+        public virtual bool AnyKey(string actionKey)
         {
             return false;
         }

@@ -78,6 +78,12 @@ namespace ES2Access.UI
         private ControlId _visualKey;
         private GraphNode _visualNode;
 
+        // Where the cursor stood at the last visual commit, and whether the commit being made now is
+        // the cursor having MOVED. Unlike _visualKey this survives ClearVisual, which is a re-commit
+        // on the control the cursor is already on.
+        private ControlId _visualFrom;
+        private bool _cursorMovedHere;
+
         // What the player is holding, if anything. Owned here because the carry key is dispatched
         // here and because a carry is scoped to the screen it started on, which is what this class
         // already tracks; ModEntry.Carry is the same object, for the screens that declare what can be
@@ -152,6 +158,7 @@ namespace ES2Access.UI
 
             GraphBuilder builder = new GraphBuilder(state.Expanded);
             screen.Build(builder);
+            screen.BuildShared(builder);
             return builder.Build();
         }
 
@@ -180,6 +187,9 @@ namespace ES2Access.UI
             _bufferLines = null;
             _pendingFocus = null;
             _pendingStop = null;
+            // Nowhere to have moved FROM: the first commit on a page is a cursor being seated, not a
+            // player going somewhere (see CursorMovedHere).
+            _visualFrom = null;
             ClearVisual();
 
             if (screen == null)
@@ -250,6 +260,8 @@ namespace ES2Access.UI
             _bufferKey = null;
             _bufferReadout = null;
             _bufferLines = null;
+            // Giving up the cursor is not moving it: whatever it is seated on next is a landing.
+            _visualFrom = null;
             ClearVisual();
         }
 
@@ -471,8 +483,28 @@ namespace ES2Access.UI
             ClearVisual();
             _visualKey = node.Id;
             _visualNode = node;
+            _cursorMovedHere = _visualFrom != null && !_visualFrom.Equals(node.Id);
+            _visualFrom = node.Id;
             ScrollIntoView.Reveal(node.Id.Reference);
             Safe(node.Vtable.OnFocusVisual, "OnFocusVisual");
+            _cursorMovedHere = false;
+        }
+
+        /// <summary>
+        /// Whether the commit now running is the cursor having MOVED here - asked from inside an
+        /// <c>OnFocusVisual</c> hook, and false anywhere else.
+        ///
+        /// A focus visual is committed for three different reasons and only one of them is the player
+        /// going somewhere: the cursor moved, the screen was re-attached and the cursor it remembered
+        /// re-seated, or the visual was dropped and re-taken on the SAME control because what the game
+        /// draws for it changed (<c>GalaxyHudScreen.FollowCamera</c>). A hook that only points the
+        /// game's pointer wants all three. A hook that MOVES THE WORLD - a camera pan to whatever the
+        /// cursor is on - wants only the first, or re-entering a page flies the camera back to the
+        /// system the player was reading before, over wherever the game has since taken it.
+        /// </summary>
+        public bool CursorMovedHere
+        {
+            get { return _cursorMovedHere; }
         }
 
         /// <summary>Leave the game looking as though nothing were hovered - focus has gone somewhere
@@ -586,6 +618,7 @@ namespace ES2Access.UI
             {
                 GraphBuilder builder = new GraphBuilder(state.Expanded);
                 screen.Build(builder);
+                screen.BuildShared(builder);
                 return builder.Build();
             }
             catch (Exception e)
@@ -819,6 +852,15 @@ namespace ES2Access.UI
         // noise rather than reassurance.
         private bool Contextual()
         {
+            // A mode the game has put the page into gets the key first, because it has taken the right
+            // click from every control underneath (<see cref="Screen.Contextual"/>). Nothing is re-read
+            // after it: the control did not change, and what the mode's end sounds like is the one place
+            // that watches it.
+            if (_screen.Contextual())
+            {
+                return true;
+            }
+
             if (_graph.Contextual())
             {
                 SpeakStateAfterChange();

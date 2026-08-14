@@ -37,6 +37,7 @@ namespace ES2Access.Core.UI.Graph
             public readonly List<GraphNode> Items = new List<GraphNode>();
             public object Key;
             public object StopKey;
+            public bool Positions = true;
         }
 
         private sealed class RawEdge
@@ -73,6 +74,12 @@ namespace ES2Access.Core.UI.Graph
         private int _stopAuto = 1;
         private object _regionKey;
 
+        // The keys a screen named its stops with (auto keys are not recorded) — see DeclaredStop.
+        private readonly HashSet<object> _stopKeys = new HashSet<object>();
+
+        // Per-stop Tab landings — see LandStopOn.
+        private readonly Dictionary<object, ControlId> _stopLandings = new Dictionary<object, ControlId>();
+
         // The parent stack: structural levels (PushContext) and group headers (BeginGroup). A frame whose
         // group is collapsed suppresses every declaration beneath it (the stack stays balanced regardless).
         private sealed class ParentFrame
@@ -108,8 +115,33 @@ namespace ES2Access.Core.UI.Graph
             if (_currentRow != null) throw new InvalidOperationException("Cannot begin a stop inside an open row");
             _stopKey = key ?? AutoStopKey(_stopAuto);
             _stopAuto++;
+            if (key != null) _stopKeys.Add(key);
             _regionKey = null; // regions are per-stop
             return this;
+        }
+
+        /// <summary>
+        /// Where Tab lands in the CURRENT stop when it has no remembered position - for a stop whose
+        /// first declared node is not what the player came for: a table's rows sit under its sort-header
+        /// band, and landing on "Name, button, selected" reads like a row called Name.
+        ///
+        /// It moves the "land on whichever alternative is in force" rule as well as the fallback: the
+        /// selected node is looked for from here ONWARD, so the table still opens on the selected row
+        /// and never on the sorted column's heading. Everything declared above it stays reachable with
+        /// the arrow keys, which is how the player reaches a heading in the first place.
+        /// </summary>
+        public GraphBuilder LandStopOn(ControlId id)
+        {
+            if (id != null) _stopLandings[_stopKey] = id;
+            return this;
+        }
+
+        /// <summary>Whether this build has already begun a stop under that key — asked by a contribution
+        /// SHARED by every screen (the collapsed-tutorial bar), so that a screen which reads it among its
+        /// own stops keeps the place it put it and only the screens that did not get it appended.</summary>
+        public bool DeclaredStop(object key)
+        {
+            return key != null && _stopKeys.Contains(key);
         }
 
         /// <summary>Tag nodes added from here with a region (Ctrl+arrow jump target) within the current
@@ -225,11 +257,16 @@ namespace ES2Access.Core.UI.Graph
         // ---- menu mode ----
 
         /// <summary>Open a horizontal row. Rows sharing a non-null <paramref name="rowKey"/> with the row
-        /// above/below get column-preserving vertical navigation.</summary>
-        public GraphBuilder StartRow(object rowKey = null)
+        /// above/below get column-preserving vertical navigation.
+        ///
+        /// <paramref name="positions"/> false for a row whose members are COLUMNS rather than a bar of
+        /// choices - a table's sort-header band, a grid line: "1 of 8" there counts the table's columns,
+        /// which is not a place in a list and is not what the player is walking. Such a row says where it
+        /// sits as a ROW instead (<see cref="TableRow"/>).</summary>
+        public GraphBuilder StartRow(object rowKey = null, bool positions = true)
         {
             if (_currentRow != null) throw new InvalidOperationException("Cannot start a row while another is open");
-            _currentRow = new Row { Key = rowKey, StopKey = _stopKey };
+            _currentRow = new Row { Key = rowKey, StopKey = _stopKey, Positions = positions };
             return this;
         }
 
@@ -331,6 +368,8 @@ namespace ES2Access.Core.UI.Graph
             render.StartKey = _start != null && render.Nodes.ContainsKey(_start)
                 ? _start
                 : render.Order[0].Id;
+            foreach (KeyValuePair<object, ControlId> landing in _stopLandings)
+                if (render.Nodes.ContainsKey(landing.Value)) render.StopLandings[landing.Key] = landing.Value;
             StampPositions();
             return render;
         }
@@ -460,6 +499,7 @@ namespace ES2Access.Core.UI.Graph
             List<SiblingKey> keys = new List<SiblingKey>();
             foreach (Row row in _rows)
             {
+                if (!row.Positions) continue;
                 if (row.Items.Count > 1)
                 {
                     Stamp(row.Items);

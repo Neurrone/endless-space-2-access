@@ -90,7 +90,12 @@ live lines-func with a surfacing mode: a tooltip announced or indicated per the 
 or buffer-only for an aggregate face) — and the engine composes the buffer itself: an auto
 HEAD from the node's own readout (label + state words, so a node with **no** sections
 already buffers correctly — its label lines, for free), then the sections in declared
-order, with the first-line-duplicates-label dedup. The navigator's single focus-commit
+order, with the first-line-duplicates-label dedup. That dedup is exactly one comparison — the
+label against the first line of the first section, once — so it does not save a node whose
+head and section are the same content in different shapes: a readout that JOINS the lines its
+section then lists buffers the paragraph twice with the title wedged between. A section
+carries only what the readout leaves out, and content promoted from a section into the readout
+LEAVES the section. The navigator's single focus-commit
 site does the fill — one hook, no per-screen buffer code, and no screen or factory
 constructs buffer content by hand.
 Announcement parts of the tooltip kind are excluded from the auto head: the sections

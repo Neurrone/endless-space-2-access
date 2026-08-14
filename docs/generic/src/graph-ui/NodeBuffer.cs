@@ -9,13 +9,15 @@ namespace ES2Access.Core.UI.Graph
     ///
     /// Two parts, in this order:
     ///
-    /// - an automatic HEAD, read off the control's own readout: its name, then the state words the
-    ///   readout appends ("unavailable", "checked", "expanded"). The role word and the auto-stamped
-    ///   position are left out - they describe the control, and the buffer is for what the control has
-    ///   to say - and so is the tooltip part, whether it announces the text or only says there is one,
-    ///   because the tooltip's own lines follow below. The head is why a control that declares NO
-    ///   sections still reviews correctly: a lore paragraph declared as nothing but a label is
-    ///   reviewable as that paragraph, for free.
+    /// - an automatic HEAD, read off the control's own readout: its FIRST declared part, then the state
+    ///   words the readout appends ("unavailable", "checked", "expanded"). The role word and the
+    ///   auto-stamped position are left out - they describe the control, and the buffer is for what the
+    ///   control has to say - and so is the tooltip part, whether it announces the text or only says
+    ///   there is one, because the tooltip's own lines follow below. The head is why a control that
+    ///   declares NO sections still reviews correctly: a lore paragraph declared as nothing but a label
+    ///   is reviewable as that paragraph, for free. The part the head was read off is not read again,
+    ///   whatever KIND it is: a table cell leads with its value rather than with a label, and testing
+    ///   the kind alone had such a cell open its buffer with the same line twice.
     /// - the sections, in declared order, which is drawn order: a row's heading tooltip before its
     ///   value's dossier, a card's drawn output rows before the panel behind it.
     ///
@@ -36,12 +38,16 @@ namespace ES2Access.Core.UI.Graph
             string label = GraphAnnouncer.FirstPartText(node);
             Add(lines, label);
 
+            IList<NodeAnnouncement> declared = node.Vtable.Announcements;
+            NodeAnnouncement head =
+                declared != null && declared.Count > 0 ? declared[0] : null;
             List<NodeAnnouncement> parts = GraphAnnouncer.EffectiveAnnouncements(node);
             for (int i = 0; i < parts.Count; i++)
             {
                 NodeAnnouncement part = parts[i];
                 if (
                     part == null
+                    || ReferenceEquals(part, head)
                     || part.Kind == AnnouncementKinds.Label
                     || part.Kind == AnnouncementKinds.Role
                     || part.Kind == AnnouncementKinds.Tooltip

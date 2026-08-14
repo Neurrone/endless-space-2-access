@@ -17,7 +17,9 @@ namespace ES2Access.Core.UI
     ///    the whole row, per-part filterable like any control;
     ///  - empty cells read the localized "blank" (<see cref="BlankText"/>).
     /// Emit rows in one region, then start the next; <see cref="Finish"/> closes the last region. Raw mode
-    /// underneath (explicit edges), so no auto positions.
+    /// underneath (explicit edges), so no auto positions - the one position a table speaks is its ROW's
+    /// ("3 of 12", the region's row count), stamped here as a <see cref="TableRow"/> and spoken by the
+    /// announcer on row CHANGES only, never as the player walks a row's columns.
     ///
     /// The three text/type hooks are static injection points the host wires once at startup, the same
     /// shape <see cref="GraphAnnouncer"/> uses: a sheet is constructed per rebuild, so per-instance wiring
@@ -63,6 +65,12 @@ namespace ES2Access.Core.UI
         private Func<string> _prevRowName;
         private object _rowRef;        // the current row's domain object (identity keys), or null
         private ControlId _first;      // the first PRIMARY this sheet emitted
+
+        // Where each row of the CURRENT region sits in it. Stamped on every cell of the row as it is
+        // emitted and completed with the count when the region closes -- how many rows a table has is
+        // not known until its last one has been declared.
+        private readonly List<TableRow> _regionRows = new List<TableRow>();
+        private TableRow _rowPos;
 
         public GraphSheet(GraphBuilder b, string keyPrefix)
         {
@@ -171,6 +179,8 @@ namespace ES2Access.Core.UI
             _prevRowIds = _rowIds;
             _prevRowName = _rowName;
             _rowIds = new List<CellRef>();
+            _rowPos = new TableRow { Key = RowKey(), Index = _regionRows.Count + 1 };
+            _regionRows.Add(_rowPos);
 
             // The row's name for vertical edge labels = the primary's label (first announcement part).
             _rowName = primary.Announcements != null && primary.Announcements.Count > 0
@@ -203,6 +213,11 @@ namespace ES2Access.Core.UI
             // Rows DO chain across region boundaries: the last row of a region wires to the first of the
             // next as rows are emitted (prev-row linkage carries across Region()).
             _columns = null;
+
+            // "3 of 12" counts the rows of the TABLE the player is in, and a region is one table.
+            for (int i = 0; i < _regionRows.Count; i++) _regionRows[i].Count = _regionRows.Count;
+            _regionRows.Clear();
+            _rowPos = null;
         }
 
         private void EmitCell(NodeVtable vt, int col)
@@ -212,11 +227,12 @@ namespace ES2Access.Core.UI
             // per column. Stamped here so no caller can forget it.
             vt.Column = col;
 
+            // Which row it is in, for the position the announcer speaks on row CHANGES only.
+            vt.Row = _rowPos;
+
             // Identity keys when the row has a domain object: stable across reorders/removals (the
             // primary also carries the reference for tier-1 follow); positional only for static lines.
-            string skey = _rowRef != null
-                ? _key + "row" + _rowRef.GetHashCode() + "c" + col
-                : _key + "r" + _row + "c" + col;
+            string skey = RowKey() + "c" + col;
             ControlId id = _rowRef != null && col == 0
                 ? ControlId.Referenced(_rowRef, skey)
                 : ControlId.Structural(skey);
@@ -268,6 +284,13 @@ namespace ES2Access.Core.UI
             foreach (CellRef c in row)
                 if (c.Col == col) return true;
             return false;
+        }
+
+        // The prefix every cell of the current row keys itself with — and the row's own identity across
+        // rebuilds, which is what tells a step along the row from a move into a different one.
+        private string RowKey()
+        {
+            return _rowRef != null ? _key + "row" + _rowRef.GetHashCode() : _key + "r" + _row;
         }
 
         private string Header(int col)

@@ -100,6 +100,17 @@ namespace ES2Access.UI
             Common = () => RoleWord(ModStrings.ControlMenuItem),
         };
 
+        /// <summary>A cell of a table: something the player reads but cannot work, and the one type
+        /// with NO role word. A table is already announced as a table on the way in, and a row of
+        /// figures that said "text" fourteen times would say nothing else. What the type is for is the
+        /// reading ORDER - value, then the row's selection and refusal states, then what the column's
+        /// tooltip has to say.</summary>
+        public static readonly ControlType Text = new ControlType
+        {
+            Key = "text",
+            Order = StandardOrder,
+        };
+
         /// <summary>Free text the player types into, worked through the game's own editor rather than
         /// through this mod - activating it is what hands the game's keyboard focus to the field.
         /// </summary>

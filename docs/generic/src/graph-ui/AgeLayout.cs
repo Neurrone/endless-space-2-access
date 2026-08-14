@@ -192,10 +192,16 @@ namespace ES2Access.UI
             }
         }
 
-        // A total order over the whole cluster, so the sort is stable whatever the rows turn out to
-        // be: down the screen first, then across. Row grouping is a separate question, asked of
-        // neighbours once they are in order.
-        private static int TopThenLeft(AgeTransform first, AgeTransform second)
+        /// <summary>
+        /// A total order over a whole cluster, down the screen first and then across, so the sort is
+        /// stable whatever the rows turn out to be. Row grouping is a separate question, asked of
+        /// neighbours once they are in order.
+        ///
+        /// This is the order a VERTICAL list of things is read in - a popup's content area, where each
+        /// item is a line of its own - and the counterpart of <see cref="ReadingOrder"/>, which walks a
+        /// strip across before it goes down.
+        /// </summary>
+        public static int TopThenLeft(AgeTransform first, AgeTransform second)
         {
             try
             {

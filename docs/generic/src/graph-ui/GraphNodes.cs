@@ -50,7 +50,11 @@ namespace ES2Access.UI
         /// Additive, never a suppressor: the mode-derived part still contributes, and the section it
         /// comes from still fills the buffer.
         /// </summary>
-        public static NodeAnnouncement RefusalPart(AgeTooltip tooltip, Func<bool> enabled)
+        public static NodeAnnouncement RefusalPart(
+            AgeTooltip tooltip,
+            Func<bool> enabled,
+            Func<string> name = null
+        )
         {
             if (tooltip == null)
             {
@@ -58,6 +62,7 @@ namespace ES2Access.UI
             }
 
             AgeTooltip it = tooltip;
+            Func<string> label = name;
             return new NodeAnnouncement(
                 () =>
                 {
@@ -68,7 +73,13 @@ namespace ES2Access.UI
                             return null;
                         }
 
-                        return ModeFor(it) == TooltipMode.Announce ? null : Refusal(it);
+                        if (ModeFor(it) == TooltipMode.Announce)
+                        {
+                            return null;
+                        }
+
+                        string refusal = Refusal(it);
+                        return Repeats(refusal, label) ? null : refusal;
                     }
                     catch (Exception)
                     {
@@ -80,12 +91,145 @@ namespace ES2Access.UI
             );
         }
 
+        /// <summary>
+        /// Append the game's own refusal sentence to a control, where there is one to say.
+        ///
+        /// The node's own name is read back out of the parts already declared rather than passed in, so
+        /// that no screen can forget it - and it is needed, because a "reason" that only repeats the
+        /// control's name is not a reason. That happens whenever the game's tooltip for a disabled
+        /// control is a bare DESCRIPTION on one line: <see cref="RefusalText.Compose"/> reads a lone
+        /// line as the whole of what the game said (it has nothing to trim a description away from), and
+        /// a read-only ship-design module - whose tooltip content is just the module's name - then reads
+        /// "⟨name⟩, unavailable, ⟨name⟩".
+        ///
+        /// Call this instead of adding <see cref="RefusalPart"/> by hand.
+        /// </summary>
+        public static void AddRefusal(NodeVtable vtable, AgeTooltip tooltip, Func<bool> enabled)
+        {
+            if (vtable == null || vtable.Announcements == null)
+            {
+                return;
+            }
+
+            NodeAnnouncement refusal = RefusalPart(tooltip, enabled, NamePart(vtable));
+            if (refusal != null)
+            {
+                vtable.Announcements.Add(refusal);
+            }
+        }
+
+        /// <summary>
+        /// The same, for a control the game refuses WITHOUT writing the reason anywhere on it.
+        ///
+        /// A game usually explains a blocked control on the control's own tooltip, and
+        /// <see cref="AddRefusal(NodeVtable, AgeTooltip, Func{bool})"/> reads it from there. Some do not:
+        /// the diplomacy ring's empire sectors carry no tooltip at all (measured - zero
+        /// <c>AgeTooltip</c> components on the sector), and the sentence the game would say lives only in
+        /// its own localization file. So the caller supplies the sentence - the GAME's own string, resolved
+        /// through <c>Gui.Localize</c>, never a phrase this mod invented for it - and it is spoken under
+        /// exactly the same conditions: only while the control is refusing, and never when it only repeats
+        /// the control's name.
+        /// </summary>
+        public static void AddRefusal(
+            NodeVtable vtable,
+            Func<string> reason,
+            Func<bool> enabled
+        )
+        {
+            if (vtable == null || vtable.Announcements == null || reason == null)
+            {
+                return;
+            }
+
+            Func<string> name = NamePart(vtable);
+            vtable.Announcements.Add(
+                new NodeAnnouncement(
+                    () =>
+                    {
+                        try
+                        {
+                            if (enabled != null && enabled())
+                            {
+                                return null;
+                            }
+
+                            string said = reason();
+                            return Repeats(said, name) ? null : said;
+                        }
+                        catch (Exception)
+                        {
+                            return null;
+                        }
+                    },
+                    live: true,
+                    kind: AnnouncementKinds.Tooltip
+                )
+            );
+        }
+
+        /// <summary>The control's own name, out of the parts it has already declared.</summary>
+        private static Func<string> NamePart(NodeVtable vtable)
+        {
+            IList<NodeAnnouncement> parts = vtable.Announcements;
+            for (int i = 0; i < parts.Count; i++)
+            {
+                if (parts[i] != null && parts[i].Kind == AnnouncementKinds.Label)
+                {
+                    return parts[i].Text;
+                }
+            }
+
+            return null;
+        }
+
+        private static bool Repeats(string refusal, Func<string> name)
+        {
+            if (string.IsNullOrEmpty(refusal) || name == null)
+            {
+                return false;
+            }
+
+            string label = name();
+            return !string.IsNullOrEmpty(label)
+                && string.Equals(label.Trim(), refusal.Trim(), StringComparison.Ordinal);
+        }
+
         /// <summary>The refusal alone, out of the three parts the game assembles a blocked control's
         /// tooltip from: its own description, the failure, and - only ever for a missing technology -
         /// the sentence telling a mouse where to click.</summary>
         private static string Refusal(AgeTooltip tooltip)
         {
-            return RefusalText.Compose(AgeText.Lines(AgeText.Tooltip(tooltip)), MouseInstruction());
+            string written = RefusalText.Compose(
+                AgeText.Lines(AgeText.Tooltip(tooltip)),
+                MouseInstruction()
+            );
+            return written ?? TargetRefusal(tooltip);
+        }
+
+        /// <summary>
+        /// The refusal of a control whose tooltip the RENDERER assembles: there are no words in
+        /// <c>Content</c> to trim, and the sentence only exists once the tooltip window has drawn its
+        /// failure panel - which is a hover delay away, and gone the moment the pointer leaves.
+        ///
+        /// The panel reads it off the wrapper the game hangs on the tooltip
+        /// (<c>PanelFeatureFailureInfos.Bind</c> is exactly this expression), and that wrapper is
+        /// filled in at bind time, so asking it gives the same sentence the player would see, at once
+        /// and without the tooltip being drawn at all.
+        /// </summary>
+        private static string TargetRefusal(AgeTooltip tooltip)
+        {
+            try
+            {
+                IFailureInfosProvider failures =
+                    tooltip == null ? null : tooltip.Target as IFailureInfosProvider;
+                return failures == null
+                    ? null
+                    : AgeText.Clean(Gui.FormatFailureInfos(failures.FailureInfos));
+            }
+            catch (Exception)
+            {
+                return null;
+            }
         }
 
         /// <summary>
@@ -102,13 +246,23 @@ namespace ES2Access.UI
         ///
         /// A tooltip the renderer assembles has no such part and is left alone: it is only indicated,
         /// and <see cref="RefusalPart"/> is what carries its refusal into speech.
+        ///
+        /// Every control in the mod gets this, because <see cref="Sections"/> is what calls it: a screen
+        /// that builds its own vtable rather than going through the shared cell helpers used to keep the
+        /// instruction in its spoken refusal, and the Academy's blocked Sell button is how that was found.
         /// </summary>
-        public static IList<NodeSection> HintSections(AgeTooltip tooltip)
+        public static IList<NodeSection> HintSections(AgeTooltip tooltip, TooltipMode? mode = null)
         {
-            Func<IList<string>> full = TooltipDetails(tooltip);
-            if (full == null || ModeFor(tooltip) != TooltipMode.Announce)
+            NodeSection whole = TooltipSection(tooltip, mode);
+            if (whole == null || whole.Mode != TooltipMode.Announce)
             {
-                return Sections(null, tooltip);
+                return whole == null ? null : new List<NodeSection> { whole };
+            }
+
+            Func<IList<string>> full = TooltipDetails(tooltip);
+            if (full == null)
+            {
+                return new List<NodeSection> { whole };
             }
 
             return new List<NodeSection>
@@ -212,24 +366,62 @@ namespace ES2Access.UI
         )
         {
             NodeSection drawn = NodeSection.Buffer(details);
-            NodeSection tip = TooltipSection(tooltip, mode);
+            IList<NodeSection> tip = HintSections(tooltip, mode);
             if (drawn == null && tip == null)
             {
                 return null;
             }
 
-            List<NodeSection> list = new List<NodeSection>(2);
+            List<NodeSection> list = new List<NodeSection>(3);
             if (drawn != null)
             {
                 list.Add(drawn);
             }
 
-            if (tip != null)
+            for (int i = 0; tip != null && i < tip.Count; i++)
             {
-                list.Add(tip);
+                list.Add(tip[i]);
             }
 
             return list;
+        }
+
+        /// <summary>
+        /// The declared sections of a line the game built out of several pieces, each carrying its own
+        /// explanation - an icon that says what the row IS beside a label that says what its value
+        /// MEANS. Every tooltip in <paramref name="tooltips"/> reads, in the order they were drawn,
+        /// each by its own short/long mode: the line is the only place any of them is reachable from.
+        ///
+        /// <paramref name="details"/> is what the line draws beyond its readout, and reads first.
+        /// <paramref name="lastMode"/> overrides the mode of the LAST tooltip - the one the line is
+        /// named after where it has no drawn caption, which must then not be announced twice.
+        /// </summary>
+        public static IList<NodeSection> SectionsFor(
+            IList<AgeTooltip> tooltips,
+            Func<IList<string>> details = null,
+            TooltipMode? lastMode = null
+        )
+        {
+            List<NodeSection> list = new List<NodeSection>(2);
+            NodeSection drawn = NodeSection.Buffer(details);
+            if (drawn != null)
+            {
+                list.Add(drawn);
+            }
+
+            for (int i = 0; tooltips != null && i < tooltips.Count; i++)
+            {
+                IList<NodeSection> tip = HintSections(
+                    tooltips[i],
+                    i == tooltips.Count - 1 ? lastMode : null
+                );
+                for (int j = 0; tip != null && j < tip.Count; j++)
+                {
+                    list.Add(tip[j]);
+                }
+            }
+
+            return list.Count == 0 ? null : list;
         }
 
         /// <summary>The same, for a screen that has already built its sections (a row with a heading
@@ -348,17 +540,28 @@ namespace ES2Access.UI
         /// these are in practice always the renderer-assembled kind, and saying so by rule means a
         /// readout whose tooltip the game ever authored as plain content would be read the way plain
         /// content should be.
+        ///
+        /// <paramref name="watchValue"/> is the one thing a caller sometimes has to switch off: a
+        /// watched value re-announces itself under the cursor whenever it changes, which is right for a
+        /// number the game revises and wrong for one that revises itself every second - a running
+        /// timer, a log's newest line - where the player would be talked over continuously. Such a
+        /// readout is still current when read; it just stops speaking on its own.
         /// </summary>
         public static NodeVtable Readout(
             Func<string> label,
             Func<string> value,
             Func<IList<string>> details,
-            AgeTooltip tooltip
+            AgeTooltip tooltip,
+            bool watchValue = true
         )
         {
             return new NodeVtable
             {
-                Announcements = new List<NodeAnnouncement> { LabelPart(label), ValuePart(value) },
+                Announcements = new List<NodeAnnouncement>
+                {
+                    LabelPart(label),
+                    ValuePart(value, watchValue),
+                },
                 Sections = Sections(details, tooltip),
             };
         }
@@ -366,6 +569,10 @@ namespace ES2Access.UI
         /// <summary>A setting the player turns on and off. Its state is both announced live - so a
         /// box the game ticks on the player's behalf says so - and spoken immediately after a
         /// toggle, which is what makes holding the key down readable.
+        ///
+        /// <paramref name="value"/> is a number the box itself DRAWS beside its tick - what an outpost
+        /// action costs, or how many turns the running one has left - and reads before the state, in
+        /// the order the box is read on screen.
         ///
         /// A box that is REFUSING says nothing at all: see <see cref="ActedState"/>.</summary>
         public static NodeVtable Checkbox(
@@ -375,7 +582,8 @@ namespace ES2Access.UI
             Func<bool> enabled = null,
             AgeTooltip tooltip = null,
             TooltipMode? tooltipMode = null,
-            Func<IList<string>> details = null
+            Func<IList<string>> details = null,
+            Func<string> value = null
         )
         {
             Func<string> stateText = () =>
@@ -384,6 +592,11 @@ namespace ES2Access.UI
                 );
 
             List<NodeAnnouncement> parts = Parts(label, enabled);
+            if (value != null)
+            {
+                parts.Add(ValuePart(value));
+            }
+
             parts.Add(ValuePart(stateText));
             return new NodeVtable
             {

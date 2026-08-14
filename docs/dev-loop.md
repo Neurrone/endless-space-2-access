@@ -55,11 +55,14 @@ mutes voicing but `/speech` still captures.
   AGE widgets with rects (`window=` is the filter; `/gui/game` is the one taking `path=`)
 - `window=` matches a registered window, a shown panel, then any named AgeTransform under them,
   and `depth=`/`visibleOnly=`/`fields=` apply from there; an empty answer always carries an
-  `error`/`note` line, and a node cut off by `depth=` is kept (`more:true`), never pruned
+  `error`/`note` line, and a node cut off by `depth=` is kept (`more:true`), never pruned. The
+  dump PRUNES any node with no control, no text, no value and no readable tooltip
+  (`AgeDump.Node.Speaks`) — the JSON and the `fields=` forms alike — and "readable" means
+  content-backed: a CLASS-backed tooltip has no content string and so does not save a textless
+  icon from the prune. A panel's icon-only controls are found with an `/eval` walk of
+  `.Children`, never with a tree dump
 - `GET /gui/age?...&fields=name,kind,text,tooltip,rect,interactable,enabled` — flat text, one
-  indented line per widget, only those fields, empties omitted. It PRUNES subtrees with no text and
-  no readable tooltip, so when the widgets themselves matter (geometry, pooled circles) enumerate
-  them with an `/eval` walk instead
+  indented line per widget, only those fields, empties omitted
 - `POST /eval?settle=MS&speech=0` — C# REPL (gotchas below); response carries caused speech
 - `POST /wait?timeout=MS` — body = bool expression, evaluated every frame; the wait is capped at
   ~60 s whatever is asked for, so a longer silence is proved by repeating the poll
@@ -128,6 +131,10 @@ unless the node is focused first (its words only exist once the tooltip window d
 screenshot into context. Invoke via the PowerShell tool or
 `powershell -Command "& './crop-shot.ps1' -Rect x,y,w,h"`; `powershell -File` mangles the
 `-Rect` array argument, and the Bash tool's quoting breaks it too.
+**On a pooled table the crop is the oracle, not the dump.** A retired row parked at alpha 0 draws
+no text, so `/gui/age` prunes it and the dump agrees with whatever the mod declared — parity that
+is really a blind spot. Print `Alpha` beside `Visible` in an `/eval` walk and check it against a
+`crop-shot.ps1` of the same rect.
 
 **Auditing a tooltip.** `DevProbe.TooltipDelay(0)`, focus via `/input`, then all three:
 `/screenshot`, `DevProbe.Tooltip()` (a `features` array — class name, the reader that answered,
@@ -163,7 +170,10 @@ answers with, then drive the results through `/input ui.down|ui.up|ui.home|ui.en
 a search up, all three read `claims:true` and `claimsBack:true`; after Escape clears it, Escape goes
 back to the game (`claims:false`) while the letters stay claimed, because type-ahead is armed
 whenever a mod screen is focused. Each keystroke re-announces the landing, so `/type "res"` answers
-with three identical lines — that is the design, not a stutter.
+with three identical lines — that is the design, not a stutter. `POST /type` searches only the
+FOCUSED stop, and `ui.activate` while a search is live ends the search and then performs the
+landing's ordinary action — on a sort header that is a stray sort. Never follow a 0-result
+`/type` with `ui.activate`; clear with `ui.back` first.
 
 **Injecting a sequence of keys.** `POST /input` one action key per request, ~0.4 s apart, then
 read `/speech?since=N` — `next` from a `since=0` read before the sequence is the baseline. The
@@ -199,14 +209,19 @@ fires once per focus CHANGE); `Navigator.ClearVisual()` from OnUpdate re-commits
 window exists without a game running — out of a session `screen.game-menu` and
 `screen.rename` both declare real content, `screen.galaxy` and friends answer "not active".
 
-**Sighting a surface the fixture never draws.** Three tiers, cheapest first: `Show()` the
+**Sighting a surface the fixture never draws.** Four tiers, cheapest first: `Show()` the
 game's own pooled widget, read, `Hide()` — the game's next visibility pass restores truth by
 itself; or set the game's OWN `Visible` flags and private fields from `/eval`, dump, restore,
 and re-diff the dump against the untouched one to prove nothing was left behind (this is how a
 whole DLC feature branch gets sighted); or, for a window with data, `Bind` + `Show`, read, then
 `Unbind` + hide. A forced-show proves STRUCTURE, never content, and a half-bind can outlive the
 probe — restore a monotonic setter through its backing field or private setter, and re-issue
-`POST /loadsave` if a window wedges. Never force-show a DLC modal without its data.
+`POST /loadsave` if a window wedges. Never force-show a DLC modal without its data. The fourth
+beats all three where the empty widget is generic over an INTERFACE: lend it another
+implementor's data (`Bind(otherOwner, client)` + `RefreshNow()`) and the game itself draws real
+content into the unreachable panel — the mod's rows, their wording, their ordering and the
+pick-up all verified live, with one `Bind` back to restore. A force-show proves structure; only
+lent data proves content. Never commit an action while the binding is lent.
 
 **Proving a watcher stays silent** is a long poll on the watched flag, not a scan of `/speech`:
 `POST /wait` on the game's own condition, then read `/speech?since=N` for the window that

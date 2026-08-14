@@ -143,6 +143,13 @@ which no dump reveals. Key such lines on the game's *data* object, never the wid
   unrepresentable (what `Sections` did for tooltips); where a concern must stay a
   parameter, every factory takes it uniformly even when a control kind rarely uses it,
   and the review question is "which factories don't?", never "which screens forgot?".
+  Ask the same question of the GAME's own uniform wiring: where the engine hangs a gesture on
+  a control KIND — every table line carrying a double-click button — it belongs to the mod's
+  shared reader for that kind, never to whichever screen's handler somebody happened to read.
+  And coverage a shared helper provides is coverage of its ADOPTERS: a claim that one call
+  reaches everything names the mechanism that enforces it or lists the paths that bypass,
+  written where the claim is — an aging "every X goes through here" is read as fact by the
+  next audit.
 - **Focus visuals** (`PointerFocus`): make the game *look* pointed-at where focus is, so
   sighted bystanders can follow. Use the engine's own entry points, never OS cursor
   warping — and find the hover entry point **per control class**: one widget kind may
@@ -187,6 +194,26 @@ which no dump reveals. Key such lines on the game's *data* object, never the wid
   keystroke, never interrupting a running animation, and a request for something already in
   view is a no-op. Verify with viewport rect probes: walking within an in-view group must
   leave the view bit-identical.
+  **The same trip runs the other way, and that half is the one that breaks.** The game moves
+  its own view — a locate, a quest marker, a next-idle button — and the mod's cursor must
+  follow, or the player is left on a page describing somewhere the game is no longer looking;
+  no per-screen audit finds it, because the defect lives in the seam between two screens. Four
+  things it takes. The camera follows the cursor MOVING, not the focus visual being committed:
+  a re-attached screen and a deliberately re-taken visual both commit with no keystroke behind
+  them, and panning on those flies the player back to the node they left. The call the adapter
+  pans WITH is the call the game leads with, so a mod that both drives and watches it must mark
+  its own moves — a suppression flag — or every arrow key reads as a reveal. Consume a pending
+  reveal from the per-frame update, never from the arrival hook: half of them fire with the
+  page already focused. And where the reveal is a POINT rather than an object, resolve the
+  nearest thing within a radius, with a tie between a container and its contents going to the
+  container (a docked fleet sits at its star's exact position). What must NOT move the cursor
+  is a selection the player made before leaving the page — that is not the game going
+  somewhere, and following it yanks the cursor on every trip through a dialog. A retry budget
+  is spent on an answer that can still get BETTER, never on one that is already settled —
+  including the settled answer "nothing", which lands the frame it is found. Three states,
+  not two: nothing declared yet (wait), declared and nothing matches (answer now), answered
+  but the game has not yet said which of two identical candidates (wait, holding the
+  provisional answer).
 - **Discover controls, don't trust named references**: a reused window can carry duplicate
   per-skin control sets (ES2's options window has two complete button bars) with the API's
   named fields pointing at one skin — possibly the hidden one. And **no visibility flag can
@@ -236,6 +263,14 @@ which no dump reveals. Key such lines on the game's *data* object, never the wid
   and keep all of it instance state so it is reload-safe by construction. For a continuous 0..1 value, quantize into steps (quarters), announce upward
   crossings only, only the highest when one frame crosses several, and re-arm when the value
   drops so a restarted phase reports afresh. Worked sample: `src/graph-ui/LoadingScreen.cs`.
+  A value that HAS a control needs the same watcher as soon as the game moves it by other
+  routes — a wheel, a held key, a click, a page change: a control's live part only speaks while
+  the player is standing on it. One pump-scoped watcher on the VALUE, not one announcement per
+  gesture; silent while its own control is focused (that readout has already said the number,
+  and the watcher still absorbs the change so returning does not re-announce it); silent for
+  the first value it ever sees, because a value that outlives every screen has no arrival to
+  baseline against; and silent while the value is still settling, so a camera flying between
+  rungs does not read out the ones it passes through.
 - **Arriving and standing down are different questions.** Arrive only when the widget has
   finished animating in (its labels may still hold the previous item's words) — and
   arrival also gates on **enablement**, not just visibility: an engine that disables the
@@ -264,7 +299,9 @@ which no dump reveals. Key such lines on the game's *data* object, never the wid
   any timer: games often answer "which page is up" from more than one place, and one blips
   null on a same-page re-entry while another does not — picking the right source beats a
   bounded linger, and a linger can be actively wrong (it keeps a screen alive while a
-  same-layer sibling wakes). For **leaving**, gate on the game's *unbind* — the data the
+  same-layer sibling wakes) — and any bridge across a covering window re-checks every
+  INDEPENDENT reason the screen could be inactive, not only the one it bridges: a panel the
+  player had minimized comes back speaking when the modal over it closes. For **leaving**, gate on the game's *unbind* — the data the
   window was opened for going null — not on visibility: a window can stop reporting shown
   at *begin*-hide while the page beneath re-enables only at *end*-hide, and a visibility
   gate strands the player on a page that is not yet interactive. Where the game unbinds for
@@ -336,12 +373,18 @@ which no dump reveals. Key such lines on the game's *data* object, never the wid
   the screen reads itself must not ALSO be given the container's state part: a node's parts
   are additive, so a shared tail that repeats "unavailable" says it twice; the container
   adds only what the node did not answer. No
-  position phrases inside a table — neither rows nor cells say "N of M"; the row identifies
-  itself by name. Never drop an empty cell — the shared-column invariant dies — speak an
+  position phrase on a CELL. The ROW says where it sits — once per row, on arriving in one and
+  on moving to a different one, never while walking a row's columns and never on the step back
+  onto column 0; that last case is why it is the row's own announcement and not a per-node
+  position part, since expressing it needs the row the focus came FROM. The drawn heading band
+  is a ROW of the table's own stop, above the first data row (Up from row 1 reaches it), never
+  a stop of its own — and the stop's Tab landing is then set explicitly on the first data ROW,
+  because a sorted heading reads "selected" and would otherwise win the
+  land-on-the-selected-alternative rule. Never drop an empty cell — the shared-column invariant dies — speak an
   "empty" word in it. A cell's review buffer holds that cell's own content (heading, value,
   the cell's own tooltip), not the whole row: the row is a walk away. `GraphSheet` (above) is
-  the raw-mode engine for all of this — headings as edge labels, no auto positions, and the
-  column stamp that type-ahead's one-result-per-row filter reads; a table built OUTSIDE it
+  the raw-mode engine for all of this — headings as edge labels, one position per ROW and none
+  per cell, and the column stamp that type-ahead's one-result-per-row filter reads; a table built OUTSIDE it
   must stamp each cell's `Column` by hand, or searching matches every cell of every row. The
   drawn-header pairing is the adapter's job, by the game's own column names, never by index.
 - **Minimized is not gone**: when the game collapses a panel to a title bar rather than

@@ -53,7 +53,11 @@ may register asynchronously and tear down on returning to menu — re-acquire, n
 where per-frame work can safely live, and any **per-class XML/data config registry** the
 GUI resolves by name (ES2: `Gui.GetGuiElement(typeName)` — captions, legend text, icons
 live there, not in code); it is a chokepoint-adjacent closed set worth checking before
-concluding "the game never names this".
+concluding "the game never names this"; and, in any game with a world or a map, the service
+the game moves the player's ATTENTION with — locate, reveal, show-this-quest-step. It is
+neither an action the mod posts nor an event on the bus, so chokepoints 3 and 4 both miss it,
+and every flow where the game leads and the mod's cursor must follow hangs off it (the reveal
+trip in [ui-navigation.md](ui-navigation.md)).
 
 ## Workflow
 
@@ -77,7 +81,11 @@ concluding "the game never names this".
    has an immediate-mode debug family none of the window machinery knows about). For anything
    that ENDS a session (victory, defeat, disconnection), find the single server/client state
    that terminates it and enumerate its outcomes from there — the losing path is often a
-   different window class from the winning one.
+   different window class from the winning one. The same completeness question about a
+   BEHAVIOUR is answered by the service INTERFACE that owns it, never by the verb: a grep for
+   the words you would have used returns zero on a game that spells it otherwise, while
+   reading the one interface end to end hands over the whole family — including the members no
+   verb would find.
 3. **Corroborate live** with the dev server ([dev-server.md](dev-server.md)): the raw GUI
    dump confirms the scene structure the decompile implies; the REPL probes services and
    calls candidate APIs against the running game before you build on them. When raw dumps and the mod's interpreted view both exist,

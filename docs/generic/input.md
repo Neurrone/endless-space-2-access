@@ -169,7 +169,11 @@ caused a shipped bug on ES2 before the rule was recognized:
   Enter that activated "edit this field" reaches the field itself the same frame: the editor
   opens and instantly commits/closes (and a validate handler wired to the field can silently
   act on stale content). Record the request and perform the handoff on the first frame where
-  no key is down.
+  no key is down. Unless the mod suppresses that delivery globally: a prefix on the engine's
+  own key-to-focused-control path, gated on the same consumed-key latch the game's key scans
+  ask about, takes the transition frame out for EVERY focused control. Then the hand-over is
+  immediate, and the deferral is a cost rather than a safeguard — it carries its own spoken
+  prompt, which double-announces against whatever already watches that field.
 - A key-*up* consumer (a rebind capture that ends on release) has the mirror problem: the
   activating key's release lands in the capture. Wait out the release too.
 

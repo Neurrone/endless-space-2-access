@@ -24,7 +24,12 @@ parts, all text `Func<string>` resolved at speak time:
   not doing (select-then-confirm dialogs, mode pickers). Only the chosen one speaks
   "selected" — it inherits the tab's silence-when-unselected rule — and its Selected part
   makes focus entering the group land on the current choice. Never model these as
-  checkboxes: that promises an untick the game does not have.
+  checkboxes: that promises an untick the game does not have. The tell in code is a refresh
+  that re-derives EVERY sibling's state from one selected-name field: the widget's own
+  `.State` is not authoritative there, which is also what makes flip-then-notify wrong for it
+  — replaying the engine's click on the member already chosen unticks it until the panel's
+  next refresh writes it back, a blink to a mouse and a spoken state change to a live Selected
+  part. Picking SETS the game's selection; the flip is a transient.
 - **Choice** — a popup entry: label + selected + position, deliberately **no role word**, so
   a 20-entry list doesn't say "list item" 20 times.
 - **Edit field** — the game's own text editor, announced with an edit-field role word and its
@@ -84,7 +89,9 @@ than the handler, so replaying takes four rules, each shipped as a bug first:
 
 - **Toggles flip-then-notify**: replay a toggle the way its own click path runs — set the
   widget's state first, then invoke its wired switch handler, which reads the state it now
-  finds. Calling the handler alone acts on the stale state.
+  finds. Calling the handler alone acts on the stale state — except where the handler ignores
+  the state it is called with and a later refresh re-derives it (a radio group, above): there
+  the pick sets rather than flips.
 - **A handler the mod cannot replay**: when the game's own handler derives its value from
   the pointer (a slider whose click path reads the drag cursor), replay the handler's
   *tail* against an explicit index instead — and read the current index from the same

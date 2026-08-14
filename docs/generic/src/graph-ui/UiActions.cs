@@ -30,6 +30,10 @@ namespace ES2Access.UI.Input
         /// <summary>The command the game puts on a right click here.</summary>
         public const string Contextual = "ui.contextual";
 
+        /// <summary>The command the game puts on a DOUBLE click here - its own second click, which
+        /// on this game's tables and cards is a command in its own right.</summary>
+        public const string DoubleClick = "ui.doubleClick";
+
         /// <summary>Pick the focused thing up, swap it for another, or put it back where it came
         /// from. Where it is put DOWN is named with <see cref="Activate"/>.</summary>
         public const string Carry = "ui.carry";

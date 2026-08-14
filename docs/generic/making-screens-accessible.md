@@ -174,6 +174,10 @@ reload-safe ([hot-reload.md](hot-reload.md)) and per-frame cheap — `Build` run
   check even though it matches the pixels perfectly — "1500/1500" beside an unnamed icon
   satisfies spoken-equals-drawn and tells the player nothing. Matching is necessary;
   comprehensible is the bar.
+- **A fix whose whole effect is an ABSENCE has no pair until you build one.** Silence on a
+  clean run is not evidence, and these repro windows are narrow by nature. Revert the one
+  guard, rebuild, reload, re-run the same probes: the failing half costs a couple of minutes
+  and is the only thing that shows the fix does anything at all.
 - **Verify with player-available gestures only.** Reaching the state under test by an engine
   call — opening the window from the REPL, arming a mode by setting its flag — proves the
   READING and never the reachability, and a screen whose only route in is a method no key

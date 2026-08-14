@@ -77,7 +77,11 @@ For code that runs every frame (pumps, watchers, claim checks):
   part is re-evaluated and string-compared every frame to detect change, so a query, a scan,
   or an allocation behind one is a steady per-frame cost no profiler run will obviously
   attribute to the mod. Expensive lookups go behind on-demand parts (resolved on focus or on
-  request), never live ones.
+  request), never live ones. So does everything else the focused node says: the navigator
+  composes the node's WHOLE readout every frame to decide whether the review buffer still
+  matches it, so an on-demand part on the focused control costs what a live one costs. Only
+  SECTIONS are landing-only — they resolve when the buffer is actually refilled — which is
+  where a part that does real work belongs.
 
 ## Stagger and cap everything unbounded
 
