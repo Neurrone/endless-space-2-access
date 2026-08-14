@@ -1069,6 +1069,12 @@ namespace ES2Access.Screens
             // behind the star. The middle one is a page of detail drawn as pictures, so it is reviewed
             // rather than spoken (<see cref="SystemLabelReadout"/>).
             vtable.Sections = GraphNodes.Sections(
+                // First while an order is waiting for a target, because it is what the player is here
+                // to read: the game answers a mouse hovering a target with the shot's own consequences
+                // and its refusals, and Enter on this node is that click
+                // (<see cref="CursorTargeting.PreviewLines"/>). Silent the rest of the time, which is
+                // almost always.
+                NodeSection.Buffer(() => CursorTargeting.PreviewLines(it)),
                 NodeSection.Buffer(() => ConstellationLines(it, empire)),
                 NodeSection.Buffer(() => FleetPresence.LinesAt(it)),
                 // What sending the selection here would mean, turn by turn - nothing at all while no

@@ -202,6 +202,138 @@ namespace ES2Access.UI
             }
         }
 
+        /// <summary>
+        /// What the waiting order would say about this place - the answer the game writes for a mouse
+        /// HOVERING it, before anything is committed.
+        ///
+        /// The mouse gets a whole readout before it clicks and the keyboard was getting none of it: the
+        /// obliterator's own hover writes how many turns the shot takes to arrive, which star the system
+        /// would be left with and at what odds, and whether the colony is protected against obliteration
+        /// at all (<c>ObliteratorFireCursor.OnCursorEnter</c> :93-141) - all of it in front of a shot
+        /// that cannot be taken back. The other modes write their REFUSALS the same way ("you cannot
+        /// take a system you cannot see"), which is the same question asked of a target that is no good.
+        ///
+        /// So the mode's own hover is replayed at the node the cursor is on and what the game wrote is
+        /// read back. Not spoken: it is a page of detail about a place, and the mode's arrival is
+        /// already announced - this is what the player reviews before pressing Enter.
+        ///
+        /// Where it is read from is the game's own event rather than the panel it draws
+        /// (<c>GameOverlayTooltipPanel</c> is a subscriber like any other), so the words are had whether
+        /// or not that panel is up, and they are formatted by the very call the panel formats them with
+        /// (<c>Gui.FormatFailureInfos</c>) - message first, then the first reason that is not ignorable,
+        /// exactly as drawn.
+        ///
+        /// The hover is ended again straight away, because a hover the pointer is not making is a state
+        /// the game has no other way to leave: the exit puts the overlay back to empty and drops the
+        /// path preview, which is what the mouse leaving the node does.
+        /// </summary>
+        public static IList<string> PreviewLines(GameNode node)
+        {
+            Cursor cursor;
+            try
+            {
+                cursor = Gui.GetCursor();
+                if (cursor == null || !cursor.HasUserInstructions || !Reads(cursor))
+                {
+                    return null;
+                }
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+
+            CursorTarget target = TargetOf(node);
+            if (target == null || Entered == null || Exited == null)
+            {
+                return null;
+            }
+
+            IGuiService gui = Services.GetService<IGuiService>();
+            if (gui == null)
+            {
+                return null;
+            }
+
+            CursorTarget[] targets = new CursorTarget[] { target };
+            string written = null;
+            try
+            {
+                _written = null;
+                gui.OverlayFailureInfosChanged += Wrote;
+                try
+                {
+                    Entered.Invoke(cursor, new object[] { targets });
+                }
+                finally
+                {
+                    gui.OverlayFailureInfosChanged -= Wrote;
+                    written = _written;
+                    _written = null;
+                    Exited.Invoke(cursor, new object[] { targets });
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: reading the waiting cursor's target threw: " + e);
+                return null;
+            }
+
+            return AgeText.Lines(AgeText.Clean(written));
+        }
+
+        /// <summary>The last thing the mode wrote to the overlay while the hover was being replayed,
+        /// already in the words the panel draws.</summary>
+        private static string _written;
+
+        private static void Wrote(object sender, FailureInfosEventArgs args)
+        {
+            if (args != null)
+            {
+                _written = Gui.FormatFailureInfos(args.Message, args.FailureInfos);
+            }
+        }
+
+        /// <summary>
+        /// Whether this mode answers a hover at all, and answering it is all it does.
+        ///
+        /// Asked of the cursor by construction rather than off a list of names: a mode that reports what
+        /// a target would mean does it by overriding <c>OnCursorEnter</c>, so declaring one IS the
+        /// question - and the two modes that aim at the POINTER rather than at a target (the probe, the
+        /// ally pin) declare none, which is the same answer as "nothing to read". Measured over all
+        /// nine: seven declare it, and the two that do not are exactly those two.
+        ///
+        /// The one exception is the hacking OPERATION, whose hover is not only a reading - it remembers
+        /// the targets it was handed for its own click to use (<c>HackingOperationCursor</c> :428-436),
+        /// so replaying it under the player's cursor would leave the mouse's next click aimed at
+        /// somewhere the pointer is not.
+        /// </summary>
+        private static bool Reads(Cursor cursor)
+        {
+            if (cursor is HackingOperationCursor)
+            {
+                return false;
+            }
+
+            for (Type kind = cursor.GetType(); kind != null && kind != typeof(Cursor); kind = kind.BaseType)
+            {
+                if (
+                    kind.GetMethod(
+                        "OnCursorEnter",
+                        BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.DeclaredOnly,
+                        null,
+                        new Type[] { typeof(CursorTarget[]) },
+                        null
+                    ) != null
+                )
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         /// <summary>What the engine hands a click that is over nothing. Shared and never written to.
         /// </summary>
         private static readonly CursorTarget[] Nothing = new CursorTarget[0];
@@ -281,6 +413,31 @@ namespace ES2Access.UI
             catch (Exception e)
             {
                 Log.Warn("galaxy: the engine's cursor click handler was not found: " + e);
+                return null;
+            }
+        }
+
+        /// <summary>The engine's hover pair, reflected for the same reason its click is: protected on
+        /// the engine's cursor, and virtual, so the mode's own override is what runs.</summary>
+        private static readonly MethodInfo Entered = HoverMethod("OnCursorEnter");
+
+        private static readonly MethodInfo Exited = HoverMethod("OnCursorExit");
+
+        private static MethodInfo HoverMethod(string name)
+        {
+            try
+            {
+                return typeof(Cursor).GetMethod(
+                    name,
+                    BindingFlags.Instance | BindingFlags.NonPublic,
+                    null,
+                    new Type[] { typeof(CursorTarget[]) },
+                    null
+                );
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: the engine's cursor hover handler was not found: " + e);
                 return null;
             }
         }
