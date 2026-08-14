@@ -76,12 +76,12 @@ namespace ES2Access.Core.Speech
             return message.Build();
         }
 
-        /// <summary>How much of a quadrant or one of its stages is done - counted over the
-        /// technologies the game is willing to draw, which is the same set the player can walk.
-        /// </summary>
-        public static string Counts(int available, int researched, int total)
+        /// <summary>How much of a quadrant or one of its stages is done, folded into the group's
+        /// own name: researched over available, counted over the technologies the game is willing
+        /// to draw, which is the same set the player can walk.</summary>
+        public static string TitleWithCounts(string title, int researched, int available)
         {
-            return ModStrings.Format(ModStrings.ResearchCounts, available, researched, total);
+            return ModStrings.Format(ModStrings.ResearchCounts, title, researched, available);
         }
 
         /// <summary>

@@ -1224,7 +1224,7 @@ namespace ES2Access.Core.Speech
             { ResearchStatusPanel, "Research status" },
             { ResearchKeyPanel, "Research key" },
             { ResearchTreePanel, "Technology tree" },
-            { ResearchCounts, "{0} available, {1} researched of {2}" },
+            { ResearchCounts, "{0} ({1} / {2})" },
             { ResearchQueuePosition, "position {0}" },
 
             { ResearchLinkReduces, "Reduces the cost of {0}" },

@@ -834,12 +834,7 @@ namespace ES2Access.Screens
             TechnologyQuadrantItem it = quadrant;
             AgeTransform title = Widget(quadrant.QuadrantTitle);
             AgeTooltip tooltip = AgeWidgets.Raw(title);
-            NodeVtable vtable = GraphNodes.Group(
-                () => AgeText.Clean(Gui.Localize(it.QuadrantGuiElement.Title)),
-                null,
-                tooltip
-            );
-            vtable.Announcements.Add(Value(() => QuadrantCounts(it)));
+            NodeVtable vtable = GraphNodes.Group(() => QuadrantTitle(it), null, tooltip);
             Hover(vtable, title, tooltip);
             Branch(builder, vtable, id, ResearchCamera.Level.Quadrant, quadrant, null);
             return vtable;
@@ -857,12 +852,8 @@ namespace ES2Access.Screens
             BaseTechnologyStageItem it = stage;
             AgeTransform name = stage.StageNameGroup;
             AgeTooltip tooltip = stage.StageTooltip;
-            NodeVtable vtable = GraphNodes.Group(
-                () => AgeText.Clean(it.GuiTechnologyStage.GetFullTitle(null, true)),
-                null,
-                tooltip
-            );
-            vtable.Announcements.Add(Value(() => StageState(it)));
+            NodeVtable vtable = GraphNodes.Group(() => StageTitle(it), null, tooltip);
+            vtable.Announcements.Add(Value(() => StageLock(it)));
             Hover(vtable, name, tooltip);
             Branch(builder, vtable, id, ResearchCamera.Level.Stage, quadrant, stage);
             return vtable;
@@ -1855,8 +1846,9 @@ namespace ES2Access.Screens
                 : string.CompareOrdinal(left.GuiTechnology.Title, right.GuiTechnology.Title);
         };
 
-        /// <summary>How much of a quadrant is done, counted over every stage of it.</summary>
-        private static string QuadrantCounts(TechnologyQuadrantItem quadrant)
+        /// <summary>A quadrant's name with how much of it is done - researched over available,
+        /// counted over every stage of it.</summary>
+        private static string QuadrantTitle(TechnologyQuadrantItem quadrant)
         {
             int available = 0;
             int researched = 0;
@@ -1871,20 +1863,32 @@ namespace ES2Access.Screens
                 }
             }
 
-            return ResearchText.Counts(available, researched, total);
+            return ResearchText.TitleWithCounts(
+                AgeText.Clean(Gui.Localize(quadrant.QuadrantGuiElement.Title)),
+                researched,
+                available
+            );
         }
 
-        /// <summary>How much of a stage is done and, while it is locked, the game's own sentence
-        /// about what is holding it - which it writes on the markers it draws around the ring.
-        /// </summary>
-        private static string StageState(BaseTechnologyStageItem stage)
+        /// <summary>A stage's name with how much of it is done - researched over available.</summary>
+        private static string StageTitle(BaseTechnologyStageItem stage)
         {
-            MessageBuilder message = new MessageBuilder();
             int available = 0;
             int researched = 0;
             int total = 0;
             Count(stage, ref available, ref researched, ref total);
-            message.Fragment(ResearchText.Counts(available, researched, total));
+            return ResearchText.TitleWithCounts(
+                AgeText.Clean(stage.GuiTechnologyStage.GetFullTitle(null, true)),
+                researched,
+                available
+            );
+        }
+
+        /// <summary>While a stage is locked, the game's own sentence about what is holding it -
+        /// which it writes on the markers it draws around the ring.</summary>
+        private static string StageLock(BaseTechnologyStageItem stage)
+        {
+            MessageBuilder message = new MessageBuilder();
             if (stage.Locked)
             {
                 // One marker per group of technologies the stage wants researched, and a stage that
@@ -1904,7 +1908,7 @@ namespace ES2Access.Screens
                             : AgeText.Clean(marker.Tooltip.Content);
                     if (!string.IsNullOrEmpty(text) && text != last)
                     {
-                        message.ListItemForcedComma(text);
+                        message.ListItem(text);
                         last = text;
                     }
                 }

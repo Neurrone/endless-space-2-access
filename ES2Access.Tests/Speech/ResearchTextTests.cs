@@ -110,10 +110,13 @@ namespace ES2Access.Tests.Speech
         }
 
         [Fact]
-        public void CountsAreOverWhatTheWheelDraws()
+        public void CountsRideOnTheGroupsOwnName()
         {
-            Assert.Equal("3 available, 1 researched of 27", ResearchText.Counts(3, 1, 27));
-            Assert.Equal("0 available, 0 researched of 1", ResearchText.Counts(0, 0, 1));
+            Assert.Equal("Military I (1 / 3)", ResearchText.TitleWithCounts("Military I", 1, 3));
+            Assert.Equal(
+                "Science and Exploration IV (0 / 0)",
+                ResearchText.TitleWithCounts("Science and Exploration IV", 0, 0)
+            );
         }
 
         /// <summary>The same two facts wherever a technology is read - on its dot, and in the list
