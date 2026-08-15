@@ -155,7 +155,10 @@ game's own renderer from `/eval` and read its private display list by reflection
 only — when the drawn thing is a prediction, the second oracle is letting the game run and
 watching what happens (the map's own turn markers were one low; end-turning caught it).
 
-**Auditing a tooltip.** `DevProbe.TooltipDelay(0)`, focus via `/input`, then all three:
+**Auditing a tooltip.** `DevProbe.TooltipDelay(0)`, focus via `/input`, then all three
+(caveat: delay 0 changes WHICH frame the game resolves the request on — a tooltip that
+works at 0 is not proof it works at the player's 0.3 s, nor vice versa; a stalled request
+is `DevProbe.TooltipPipe()`'s `timer` near 999, invisible to every drawn-window probe):
 `/screenshot`, `DevProbe.Tooltip()` (a `features` array — class name, the reader that answered,
 the lines it produced — plus the measured rows/rects/assets), `/gui/graph?buffers=1`. A feature
 class sitting on `"default"` whose lines divorce a value from its caption is the defect to look
