@@ -68,9 +68,12 @@ bottom row reaches the strip below, and coming back lands on the row's primary �
 2026-08-11, all six crossings spoken. A `NotificationScreen` that grows hand-written `Connect` calls
 around its sheet again is a regression, not a fix; the engine rule is the place to change.
 **Multi-row is fixture-blocked**: the fixture finishes one construction on the turn it is saved
-at, so only one line is ever drawn, and the ragged path (a system with nothing queued draws
-`NoNextConstructionButton` in the third column instead) needs a save with several colonies
-finishing at once — no fixture in the repo has one. The remaining-turns label on this line is a
+at, so only one line is ever drawn, and a multi-row table needs a save with several colonies
+finishing at once — no fixture in the repo has one. The RAGGED path is no longer blocked: sighted
+2026-08-15 on the owner's live save (turn 18), the third column reads "Empty Construction queue"
+where the system has nothing queued, and the row is "Rigel, button, Drone Networks, Empty
+Construction queue" — the `NoNextConstructionButton` branch, walked as an ordinary cell. The
+remaining-turns label on this line is a
 bare integer or the `[infinite]` token ("Unlimited" once cleaned), never `-`
 (`ConstructionCompletedNotificationLine.RefreshNextConstruction` :140-148 is the writer, not its
 `FormatNumberOfTurns`).
@@ -998,6 +1001,35 @@ reflection** — es2-gui-framework: the runtime getter reads the cached field, s
 a "has tooltip" claim with nothing to draw: the claim and the check are the same `AgeWidgets.Draws`
 predicate, so game state cannot separate them.
 
+**Sweeping the whole family** (the apparatus lives in `%TEMP%\parity`: `tmpl.txt` + `run.sh` for
+bind-and-show, `tmplfs.txt` + `runfs.sh` for lent-data force-shows, `reduce.sh` to collapse the
+JSONs outside context; one `/eval` handle bank per session, re-issued after every `/reload`). Three
+traps, each measured 2026-08-15:
+- **The template probes the popup that is still up and shows the next**, so the LAST line of a run
+  is never probed — repeat a harmless window as the final row.
+- **A first show under-counts painted text.** `TechnologyUnlocked` read 15 painted strings 1.3 s
+  after its first show and 19 on a later one: its `AnimateOnEndShowTransforms` bring the unlock
+  cards in one at a time, and the probe flagged four honesty rows for captions that were simply not
+  drawn yet. Wait ~2.6 s, and re-probe any window that flags before believing it.
+- **"System" is a substring.** The completeness check accounts a painted string that appears
+  anywhere inside a spoken line, so a caption like "System" is accounted or not depending on
+  whether a Class-backed tooltip happened to be drawn into a buffer when the probe ran. A finding
+  that comes and goes between runs of the same popup is this, not flakiness in the reader.
+- `RelicsCollectionCanceled` cannot be raised with `ReasonOfCancelation.CanceledByPlayer` — its
+  `Bind` rejects exactly that reason (`NotificationRelicsCollectionCanceled.Bind`); use
+  `FleetDestroyed`.
+
+**Settled state, 2026-08-15** (two consecutive full sweeps, 63 window types, byte-identical
+reductions): every type reads `clean:true` except `ConstructionCompleted` and `PopulationChange`,
+which each report their sheet's FIRST-column caption ("System") as painted-but-unsaid. That is
+`GraphSheet`'s deliberate rule — a left/right step is labelled with the destination column's
+header, "none onto the primary, whose full readout identifies it" — and the drawn caption for
+column 0 is dropped by `NotificationScreen.BuildSheet` before the headers reach the sheet. Open
+design question, not a regression. Fixture-blocked and therefore never swept: `PirateMissionReport`
+(below) and the five battle-stack types (`BattleSetup`, `BattleReport`, `GroundBattleSetup`,
+`GroundBattleReport`, `HackingOperationOutcomeSelection`), whose `Bind` throws without a live
+encounter or hacking operation and which no force-show has yet been able to show.
+
 **Reading the description path without a popup up.** The three answers that decide a popup's words —
 `DescriptionLabel`, `Description`, `Words` — are private statics on `NotificationScreen` taking the
 window, so `/eval` reflection reads them for ANY notification window whether or not it is the one
@@ -1043,9 +1075,11 @@ grows `notification:body/2/Title` "Damage Report" and `notification:body/3/Title
 to your enemy's Ion Wave"; parity `clean:true` in BOTH states, and `crop-shot.ps1 -Rect
 704,216,442,200` shows empty sky collapsed and the drawn panel expanded. A build where the detail
 rows read while the "+" says "not checked" has lost the painted-ness gate; one where the expander
-node is missing has lost the variant entry. `ForceTruceProposed` keeps ONE pre-existing placement
-finding (`notification:body/0/Title` drawn above the words it is read after) in every state — that
-is the words-lead-the-body design, not a regression.
+node is missing has lost the variant entry. `ForceTruceProposed` used to keep ONE placement finding
+(`notification:body/0/Title` drawn above the words it is read after); the words-lead-the-body design
+is now encoded in the probe (`NotificationAudit.CheckPlacement` drops the words node from the
+down-the-page order), so all six read `clean:true` and any placement row on them is a real
+regression.
 
 **Fixtures for that family.** All six are raised by binding the notification by hand
 (`b5.tsv`/`b8.tsv` shapes; `EventIonWaveReport(PEMP, AIEMP, new IonWaveReport(SSN, PEMP.Index))` is

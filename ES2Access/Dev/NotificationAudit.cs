@@ -650,6 +650,16 @@ namespace ES2Access.Dev
                     continue;
                 }
 
+                // What the popup SAYS leads what it DRAWS (<c>NotificationScreen.Build</c>), so the
+                // words take no place in the down-the-page order: a popup that writes a sentence over
+                // its chart, or beneath it, reads the sentence first either way. Measured over the
+                // family, nine popups draw their first body item above the words and every one of them
+                // is that convention - the flag was the rule the design deliberately breaks.
+                if (node.Key == Words)
+                {
+                    continue;
+                }
+
                 if (
                     previous != null
                     && AgeLayout.TopThenLeft(
@@ -671,6 +681,9 @@ namespace ES2Access.Dev
                 previous = node;
             }
         }
+
+        /// <summary>The node the popup's own words are read as, which leads the body by design.</summary>
+        private const string Words = Prefix + "words";
 
         private static readonly string[] Rails =
         {
@@ -713,7 +726,9 @@ namespace ES2Access.Dev
         ///
         /// A tooltip with no words of its own is judged on coverage alone: the renderer assembles it
         /// from its target when it draws, so there is no content to look for in a buffer until the
-        /// player is on it (see the blind spots in the stage report).
+        /// player is on it (see the blind spots in the stage report). "No words of its own" is the
+        /// reader's own test, not an empty content field - a renderer-assembled tooltip's content field
+        /// holds the key its dossier is looked up by.
         /// </summary>
         private static void CheckTooltips(Painted painted, List<Declared> declared, Result result)
         {
@@ -761,7 +776,14 @@ namespace ES2Access.Dev
                     continue;
                 }
 
-                string content = AgeText.Tooltip(tip.Tooltip);
+                // Words to look for only where the words are ON the tooltip. A renderer-assembled one
+                // keeps a data key in the same field - the law card's "LawP01L00", the survey's
+                // "Politics01" - and that key is what the renderer looks its dossier UP by, never
+                // anything the game draws or the mod says (crop-verified: the drawn panels head
+                // "Dust Windfall" and "Industrialists"). Asked through the same helper the reader picks
+                // its mode with, so the check and the reading can never disagree about which tooltips
+                // carry their own words.
+                string content = AgeText.Tooltip(AgeWidgets.Readable(tip.Tooltip));
                 if (string.IsNullOrEmpty(content))
                 {
                     continue;

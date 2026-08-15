@@ -20,6 +20,15 @@ files above.
   PirateMissionReportNotificationWindow (fixture-blocked: its `Bind` needs a live
   `AttackSystemPirateDiplomaticAction` — the other five report popups are done);
   DiplomaticInteractionNotificationWindow (MoodMessageLabel, NegotiationContributionPanel).
+- A sheet's FIRST-column caption is never spoken (`GraphSheet.EmitCell`: "none onto the primary,
+  whose full readout identifies it", and `NotificationScreen.BuildSheet` drops `Headers[0]` before
+  the sheet ever sees it). Fine where the primary cell names itself — a system name, a fleet name —
+  and silent where a primary column is bare values. Owner's call between: label the leftward step
+  onto column 0 with that header like every other column (engine change, one word added to a very
+  common motion, every sheet adapter must start passing the primary caption), or keep the rule and
+  teach the parity probe that a sheet's primary caption is accounted by the rows' readouts.
+  Standing evidence: `ConstructionCompleted` and `PopulationChange` are the only two notification
+  popups that are not `clean:true`, each for exactly this.
 - Galaxy-label gaps: constellation ownership bonus; pin-message editing.
 - Scan management-lens remainder (unverifiable at turn 1): the trade-quality dial
   (geometry-only rating, no tooltip), the empire-rank bar graph + global-rank histogram,

@@ -288,6 +288,8 @@ namespace ES2Access.Core.UI
 
         // The prefix every cell of the current row keys itself with — and the row's own identity across
         // rebuilds, which is what tells a step along the row from a move into a different one.
+        // External tooling never parses this format: a cell is resolved to its row through the public
+        // NodeVtable.Row and Column stamps, which is how the parity probe finds a cell's widget.
         private string RowKey()
         {
             return _rowRef != null ? _key + "row" + _rowRef.GetHashCode() : _key + "r" + _row;
