@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Reflection;
+using ES2Access.Core.Speech;
 using ES2Access.Core.UI;
 using ES2Access.Core.UI.Graph;
 using ES2Access.Core.Util;
@@ -54,8 +56,10 @@ namespace ES2Access.Screens
     /// (<c>ElectionFinalPanel.cs:143-156</c>). Everything is declared from live visibility, so a group
     /// the fixture never draws simply never appears rather than reading as an empty dead end.
     ///
-    /// This screen ships CODE-VERIFIED ONLY: an election needs a real election turn, which no save in
-    /// the project's fixtures reaches. The open measurements are in the session's test report.
+    /// An election needs a real election turn, which no save in the project's fixtures reaches, so this
+    /// screen was written code-verified. Step 1, the vote breakdown, has since been measured live on a
+    /// player's own election (one-system empire); steps 0 and 2 are still code-verified only. What that
+    /// one system could not show is in <c>docs/test-recipes.md</c>.
     /// </summary>
     public sealed class ElectionScreen : Screen
     {
@@ -73,6 +77,11 @@ namespace ES2Access.Screens
         private static readonly object LocalSystemStop = "election:local/system";
 
         private static readonly object FinalWinnersStop = "election:final/winners";
+
+        /// <summary>Shared by every winner's row, so the step between two winners keeps the column the
+        /// player was in - card to card, badge to badge.</summary>
+        private static readonly object WinnersRowKey = "election:final/winner-row";
+
         private static readonly object FinalLawsStop = "election:final/laws";
         private static readonly object FinalOutcomesStop = "election:final/outcomes";
 
@@ -87,6 +96,11 @@ namespace ES2Access.Screens
         /// <summary>Set once a panel has finished arriving, and cleared when the game unbinds the
         /// window.</summary>
         private bool _arrived;
+
+        /// <summary>The vote-breakdown panel whose carousel has already been held still, so the flag is
+        /// written once per arrival rather than every frame. Instance state: a hot reload starts it over
+        /// and holds the carousel again, which is idempotent.</summary>
+        private ElectionLocalPanel _held;
 
         public override string Key
         {
@@ -175,6 +189,7 @@ namespace ES2Access.Screens
         public override void OnPop()
         {
             _steps.Forget();
+            _held = null;
         }
 
         /// <summary>
@@ -190,18 +205,34 @@ namespace ES2Access.Screens
         /// (<c>ElectionModalWindow.cs:71-77</c>): dropping the navigator's record of what is showing
         /// makes the next frame re-apply the hover and the tooltip for the control the cursor is
         /// already on.
+        ///
+        /// It is also where the vote breakdown's carousel is held still (<see cref="HoldCarousel"/>):
+        /// which panel is showing is asked here every frame anyway, and the flag is written once per
+        /// arrival on it.
         /// </summary>
         public override void OnUpdate()
         {
             try
             {
+                ElectionPanel showing = CurrentPanel();
+                ElectionLocalPanel local = showing as ElectionLocalPanel;
+                if (local == null)
+                {
+                    _held = null;
+                }
+                else if (!ReferenceEquals(_held, local))
+                {
+                    _held = local;
+                    HoldCarousel(local);
+                }
+
                 int step = Step();
                 if (!_steps.IsNew(step))
                 {
                     return;
                 }
 
-                string title = PanelTitle(CurrentPanel());
+                string title = PanelTitle(showing);
                 if (string.IsNullOrEmpty(title))
                 {
                     return;
@@ -532,11 +563,12 @@ namespace ES2Access.Screens
 
         private void BuildLocal(GraphBuilder builder, ElectionLocalPanel panel)
         {
+            LocalCounts counts = Counts(panel);
+
             builder.BeginStop(LocalSupportStop);
             _cells.Clear();
             AddPanelTitle(_cells, panel);
-            int firstBar = _cells.Count;
-            AddSupportGauges(_cells, panel);
+            AddSupportGauges(_cells, panel, counts);
             // The empire's running total is a bare "37" on its own label: the words for it are the two
             // captions the prefab draws BESIDE it in the same group - "Overall Empire" above and "Total
             // representatives" below (measured on the prefab; neither the label nor the group carries a
@@ -550,90 +582,67 @@ namespace ES2Access.Screens
                 "election:total-electors",
                 Raw(box) ?? Raw(panel.TotalElectorsValue)
             );
+            AddCountingProgress(_cells, panel, counts);
             Cells.Emit(builder, _cells);
-            bool started = _cells.Count > firstBar;
-            if (started)
-            {
-                builder.SetStart(_cells[firstBar].Id);
-            }
 
             builder.BeginStop(LocalSystemStop);
             _cells.Clear();
-
-            // The carousel's own caption: the system it is showing and where that is in the round.
-            // The drawn index is spoken because the game draws it and nothing else here says it - the
-            // systems are not graph siblings, so no position is stamped for them.
-            AgeTransform name = Widget(panel.StarSystemNameLabel);
-            if (name != null && AgeWidgets.Visible(name))
-            {
-                AgePrimitiveLabel which = panel.StarSystemNameLabel;
-                AgePrimitiveLabel index = panel.StarSystemIndexLabel;
-                ControlId id = ControlId.Structural("election:system");
-                NodeVtable vtable = GraphNodes.Readout(
-                    () => AgeText.Label(which),
-                    () => AgeText.Label(index),
-                    null,
-                    Raw(which)
-                );
-                AgeWidgets.PointAt(vtable, name);
-                Cells.Add(_cells, name, id, vtable);
-
-                // The bars above draw no words of their own, so on a build where none of them was
-                // declared the system line is the first thing here that is not the panel's question -
-                // and the question is what arriving already said.
-                if (!started)
-                {
-                    builder.SetStart(id);
-                }
-            }
-
             AddButton(_cells, panel.PreviousSystemButton, "previous-system");
             AddButton(_cells, panel.NextSystemButton, "next-system");
-            AddRepresentatives(_cells, panel);
             Cells.Emit(builder, _cells);
-        }
 
-        /// <summary>
-        /// The cumulative support bars.
-        ///
-        /// The panel binds these with a party icon and a fill ratio and no words at all
-        /// (<c>ElectionLocalPanel.cs:296-308</c>) - it never touches their tooltips, so whether one is
-        /// there is prefab data. Declared from what is actually on the widget: a bar the prefab named
-        /// or gave a tooltip becomes a readout, and one that is only a coloured bar is left out rather
-        /// than declared as a nameless number. Which party each bar is for cannot be recovered from the
-        /// game's source - the ordered list behind the table is private - so the same per-party counts
-        /// are reached through the representative rows below, which the game DOES name.
-        /// </summary>
-        private static void AddSupportGauges(List<Cell> cells, ElectionLocalPanel panel)
-        {
-            IList<AgeTransform> children = Children(panel.PoliticsCumulativeSupportGaugesTable);
-            for (int i = 0; children != null && i < children.Count; i++)
+            // The system and its representatives as ONE row, declared rather than derived: the game
+            // wraps the representative icons onto a second line as soon as there are three of them
+            // (measured - two at y=740, the third at y=760), and a row taken from those rectangles
+            // splits the parties of one system across two lines of navigation. Which line an icon
+            // happens to wrap onto is not a fact about the system.
+            _cells.Clear();
+            ControlId system = AddSystemName(_cells, panel);
+            AddRepresentatives(_cells, panel);
+            Cells.EmitRow(builder, _cells);
+
+            // The system being counted, not the panel's question above it: the question is what
+            // arriving announced, and this row is what the whole step is about.
+            if (system != null)
             {
-                AgeTransform child = children[i];
-                if (
-                    Component<PoliticsCumulativeSupportGauge>(child) == null
-                    || !AgeWidgets.Visible(child)
-                )
-                {
-                    continue;
-                }
-
-                AgeTooltip tooltip = AgeWidgets.Raw(child);
-                if (string.IsNullOrEmpty(AgeWidgets.TextOf(child)) && tooltip == null)
-                {
-                    continue;
-                }
-
-                AddReadout(cells, child, "election:support/" + i, tooltip);
+                builder.SetStart(system);
             }
         }
 
+        /// <summary>The system the carousel is showing and where that is in the round - the head of the
+        /// system's row. The drawn index is spoken because the game draws it and nothing else here says
+        /// it: the systems are not graph siblings, so no position is stamped for them.</summary>
+        private static ControlId AddSystemName(List<Cell> cells, ElectionLocalPanel panel)
+        {
+            AgeTransform name = Widget(panel.StarSystemNameLabel);
+            if (name == null || !AgeWidgets.Visible(name))
+            {
+                return null;
+            }
+
+            AgePrimitiveLabel which = panel.StarSystemNameLabel;
+            AgePrimitiveLabel index = panel.StarSystemIndexLabel;
+            ControlId id = ControlId.Structural("election:system");
+            NodeVtable vtable = GraphNodes.Readout(
+                () => AgeText.Label(which),
+                () => AgeText.Label(index),
+                null,
+                Raw(which)
+            );
+            AgeWidgets.PointAt(vtable, name);
+            Cells.Add(cells, name, id, vtable);
+            return id;
+        }
+
         /// <summary>
-        /// How the current system's votes are split - one row per party with any, the row being an
+        /// How the current system's votes are split - one node per party with any, the node being an
         /// icon and a count (<c>ElectionLocalPanel.cs:258-264</c>,
         /// <c>SystemRepresentativeItem.cs:9-20</c>). The party is named nowhere on the row, only on the
         /// wrapper the game hangs on its tooltip, which is the case
-        /// <see cref="AgeWidgets.TooltipTitle"/> exists for.
+        /// <see cref="AgeWidgets.TooltipTitle"/> exists for, and its dossier is that tooltip's.
+        ///
+        /// Declared in the table's own order - which is the order the game bound them in, not the order
+        /// it wrapped them onto lines.
         /// </summary>
         private static void AddRepresentatives(List<Cell> cells, ElectionLocalPanel panel)
         {
@@ -642,7 +651,9 @@ namespace ES2Access.Screens
             {
                 AgeTransform child = children[i];
                 SystemRepresentativeItem item = Component<SystemRepresentativeItem>(child);
-                if (item == null || !AgeWidgets.Visible(child))
+                // A pooled table retires a surplus item by parking it at alpha 0 with Visible still
+                // true, and the parked item keeps the previous binding's wrapper and count.
+                if (item == null || !AgeWidgets.Painted(child))
                 {
                     continue;
                 }
@@ -665,6 +676,213 @@ namespace ES2Access.Screens
             }
         }
 
+        /// <summary>
+        /// The cumulative support bars - the "Political Trends" column down the right of the step.
+        ///
+        /// The panel binds these with a party icon and a fill ratio and no words at all
+        /// (<c>ElectionLocalPanel.cs:296-308</c>) and never touches their tooltips, so the widget itself
+        /// says nothing whatever about which party a bar is for. It is recovered from the list the bars
+        /// were bound FROM: <c>ReserveChildren</c>/<c>RefreshChildrenIList</c> (:208-209) walk that list
+        /// in order, so bar <c>i</c> is entry <c>i</c> of the shown system's
+        /// <c>PoliticsWithLocalScoresAndCumulatedScores</c> - private, and read by reflection in
+        /// <see cref="Counts"/>.
+        ///
+        /// What the bar draws is the party's cumulated share of the empire's representatives, so that is
+        /// what it says: the count through the shown system, of the empire's total. Visibility is the
+        /// senate's own available-parties filter (:306), so a party the government does not offer never
+        /// appears rather than reading as a zero.
+        /// </summary>
+        private static void AddSupportGauges(
+            List<Cell> cells,
+            ElectionLocalPanel panel,
+            LocalCounts counts
+        )
+        {
+            IList<AgeTransform> children = Children(panel.PoliticsCumulativeSupportGaugesTable);
+            IList<KeyValuePair<PoliticsDefinition, int[]>> parties = counts.Parties;
+            for (int i = 0; children != null && i < children.Count; i++)
+            {
+                AgeTransform child = children[i];
+                if (
+                    Component<PoliticsCumulativeSupportGauge>(child) == null
+                    || !AgeWidgets.Painted(child)
+                    || parties == null
+                    || i >= parties.Count
+                )
+                {
+                    continue;
+                }
+
+                KeyValuePair<PoliticsDefinition, int[]> party = parties[i];
+                if (party.Key == null || party.Value == null || party.Value.Length < 2)
+                {
+                    continue;
+                }
+
+                string label = AgeText.Clean(Gui.GetLocalizedTitle(party.Key.Name));
+                string share = new MessageBuilder()
+                    .PushFraction(party.Value[1], counts.Total)
+                    .Build();
+                NodeVtable vtable = GraphNodes.Readout(
+                    () => label,
+                    () => share,
+                    null,
+                    AgeWidgets.Raw(child)
+                );
+                AgeWidgets.PointAt(vtable, child);
+                Cells.Add(cells, child, ControlId.Structural("election:support/" + i), vtable);
+            }
+        }
+
+        /// <summary>
+        /// How far the count has got, as a sentence.
+        ///
+        /// The game draws it as a bare three-segment bar - what was counted before this system, what
+        /// this system adds, what is left (<c>ElectionLocalPanel.cs:239-250</c>) - with no words on or
+        /// beside it, so the two numbers behind it are the mod's own phrasing over the game's figures.
+        /// It is declared where the game DRAWS it, inside the Overall Empire box in the trends column,
+        /// rather than beside the carousel it advances with.
+        /// </summary>
+        private static void AddCountingProgress(
+            List<Cell> cells,
+            ElectionLocalPanel panel,
+            LocalCounts counts
+        )
+        {
+            AgeTransform gauge = panel.SystemRepresentativesGauge;
+            AgeTransform bar = gauge == null ? null : gauge.Parent;
+            if (bar == null || !AgeWidgets.Visible(bar) || counts.Total <= 0)
+            {
+                return;
+            }
+
+            string said = ModStrings.Format(
+                ModStrings.ElectionRepresentativesCounted,
+                counts.Counted,
+                counts.Total
+            );
+            NodeVtable vtable = GraphNodes.Readout(() => said, () => null, null, Raw(bar));
+            AgeWidgets.PointAt(vtable, bar);
+            Cells.Add(cells, bar, ControlId.Structural("election:counted"), vtable);
+        }
+
+        // ---- what the vote breakdown only draws ----
+
+        /// <summary>The figures behind the step's wordless bars, read once per build rather than once
+        /// per bar.</summary>
+        private struct LocalCounts
+        {
+            /// <summary>The shown system's parties, in the order the trends bars were bound from them;
+            /// each value is [this system's count, the count through this system].</summary>
+            public IList<KeyValuePair<PoliticsDefinition, int[]>> Parties;
+
+            /// <summary>Representatives counted through the shown system.</summary>
+            public int Counted;
+
+            /// <summary>The empire's representatives.</summary>
+            public int Total;
+        }
+
+        // Looked up once: Build runs every tick, and a reflection lookup per bar per frame is a scan at
+        // 60 Hz for an answer that never changes shape.
+        private static readonly FieldInfo InfosField = Field("starSystemElectionInformations");
+        private static readonly FieldInfo IndexField = Field("currentStarSystemIndex");
+        private static readonly FieldInfo TotalField = Field("cumulatedRepresentativesCount");
+        private static readonly FieldInfo CarouselField = Field("moveCarouselAutomatically");
+        private static FieldInfo _countedField;
+        private static FieldInfo _partiesField;
+
+        private static FieldInfo Field(string name)
+        {
+            try
+            {
+                return typeof(ElectionLocalPanel).GetField(
+                    name,
+                    BindingFlags.Instance | BindingFlags.NonPublic
+                );
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// What the shown system's bars are drawn from.
+        ///
+        /// All of it is private on the panel and none of it reaches a label: the per-party counts, which
+        /// system the carousel is on, and the empire's total. The struct holding the counts is private
+        /// too, so its own fields are looked up off the boxed value the first time one is seen.
+        /// </summary>
+        private static LocalCounts Counts(ElectionLocalPanel panel)
+        {
+            LocalCounts counts = new LocalCounts();
+            try
+            {
+                if (InfosField == null || IndexField == null || TotalField == null)
+                {
+                    return counts;
+                }
+
+                counts.Total = (int)TotalField.GetValue(panel);
+                System.Collections.IList infos =
+                    InfosField.GetValue(panel) as System.Collections.IList;
+                int index = (int)IndexField.GetValue(panel);
+                if (infos == null || index < 0 || index >= infos.Count)
+                {
+                    return counts;
+                }
+
+                object info = infos[index];
+                if (_countedField == null || _partiesField == null)
+                {
+                    Type type = info.GetType();
+                    _countedField = type.GetField("CumulatedRepresentativesCount");
+                    _partiesField = type.GetField("PoliticsWithLocalScoresAndCumulatedScores");
+                }
+
+                if (_countedField == null || _partiesField == null)
+                {
+                    return counts;
+                }
+
+                counts.Counted = (int)_countedField.GetValue(info);
+                counts.Parties =
+                    _partiesField.GetValue(info)
+                    as IList<KeyValuePair<PoliticsDefinition, int[]>>;
+            }
+            catch (Exception e)
+            {
+                Log.Warn("election: reading the vote breakdown's counts threw: " + e);
+            }
+
+            return counts;
+        }
+
+        /// <summary>
+        /// Stop the carousel walking off on its own.
+        ///
+        /// <c>ElectionLocalPanel.Show</c> starts a coroutine that steps to the next system every 1.5
+        /// seconds until a Prev/Next click switches it off (:70,:350-366,:384-400) - so a player reading
+        /// the system line has it replaced under them twice a second. Switching the same flag off on
+        /// arrival puts the panel in exactly the state a mouse user reaches with one click of an arrow,
+        /// and nothing else about the panel changes.
+        /// </summary>
+        private static void HoldCarousel(ElectionLocalPanel panel)
+        {
+            try
+            {
+                if (CarouselField != null)
+                {
+                    CarouselField.SetValue(panel, false);
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("election: holding the system carousel threw: " + e);
+            }
+        }
+
         // ---- step 2: the result ----
 
         private void BuildFinal(GraphBuilder builder, ElectionFinalPanel panel)
@@ -672,12 +890,11 @@ namespace ES2Access.Screens
             builder.BeginStop(FinalWinnersStop);
             _cells.Clear();
             AddPanelTitle(_cells, panel);
-            int firstCard = _cells.Count;
-            AddWinners(_cells, panel);
             Cells.Emit(builder, _cells);
-            if (_cells.Count > firstCard)
+            ControlId firstWinner = AddWinners(builder, _cells, panel);
+            if (firstWinner != null)
             {
-                builder.SetStart(_cells[firstCard].Id);
+                builder.SetStart(firstWinner);
             }
 
             builder.BeginStop(FinalLawsStop);
@@ -727,33 +944,169 @@ namespace ES2Access.Screens
             Cells.Emit(builder, _cells);
         }
 
-        /// <summary>The senators the election returned. Read-only cards - the panel binds no client to
-        /// them and their toggles are never wired (<c>ElectionFinalPanel.cs:184-204</c>) - so what they
-        /// are is what they say: the party, its experience line, the senator's level, and the party's
-        /// dossier on the tooltip. The support they won is drawn as a circular gauge with no number on
-        /// it, and nothing here invents one.</summary>
-        private static void AddWinners(List<Cell> cells, ElectionFinalPanel panel)
+        /// <summary>
+        /// The senators the election returned - one ROW each: the winning party, then one node for
+        /// every bloc of votes that was redirected to it.
+        ///
+        /// The cards are read-only (the panel binds no client to them and their toggles are never
+        /// wired, <c>ElectionFinalPanel.cs:184-204</c>), but read-only is not the same as one line. A
+        /// card draws three independent things - which party won, how experienced it is, and a badge
+        /// per party whose votes came across - and reading the whole card with
+        /// <see cref="AgeWidgets.TextOf"/> glued them into one name ("Militarists Established
+        /// +Industrialists"): three facts said as if they were the card's title, none of them
+        /// explainable on its own. So the party names the card, its experience tier is the value beside
+        /// it, its dossier is the tooltip, and the game's own sentence about what experience MEANS
+        /// (<c>SenatorBaseCard.cs:116-119</c>) is reviewable under it - buffer-only, because the card's
+        /// own dossier is the tooltip worth hearing here and the experience sentence is a definition
+        /// the player asks for rather than one they need on every landing.
+        ///
+        /// Each badge is its own node saying which party's votes were redirected, with the game's
+        /// one-sentence explanation announced (<c>PoliticsMiniature.cs:14-21</c>). They are drawn
+        /// scattered around the support gauge at computed angles (<c>WinnerSenatorCard.cs:116-133</c>),
+        /// so their rectangles are no reading order at all - the row is DECLARED, in the order the game
+        /// bound the redirections in. They exist only where votes were redirected and the government
+        /// allows redirecting them (:85-92), which the card expresses as the group's own visibility;
+        /// the group fades in on a modifier, so it is asked whether it is PAINTED rather than merely
+        /// visible.
+        ///
+        /// Which winner of how many is a fact about the ROW, not a place in a bar of choices: it is
+        /// stamped as one, so it is said on arriving at a winner and not again while the player walks
+        /// out to that winner's badges.
+        ///
+        /// The support each won is drawn as a circular gauge with no number on it, and nothing here
+        /// invents one.
+        /// </summary>
+        /// <returns>The first winner's card, for the stop to open on.</returns>
+        private static ControlId AddWinners(
+            GraphBuilder builder,
+            List<Cell> cells,
+            ElectionFinalPanel panel
+        )
         {
             IList<AgeTransform> children = Children(panel.WinnerSenatorCardsTable);
+            int winners = 0;
+            for (int i = 0; children != null && i < children.Count; i++)
+            {
+                if (Winner(children[i]) != null)
+                {
+                    winners++;
+                }
+            }
+
+            ControlId first = null;
+            int index = 0;
             for (int i = 0; children != null && i < children.Count; i++)
             {
                 AgeTransform child = children[i];
-                WinnerSenatorCard card = Component<WinnerSenatorCard>(child);
-                if (card == null || !AgeWidgets.Visible(child) || card.Senator == null)
+                WinnerSenatorCard card = Winner(child);
+                if (card == null)
                 {
                     continue;
                 }
 
-                AgeTooltip tooltip = card.PoliticsTooltip ?? AgeWidgets.Raw(child);
-                AgeTransform widget = child;
+                TableRow row = new TableRow
+                {
+                    Key = "election:winner/" + i,
+                    Index = ++index,
+                    Count = winners,
+                };
+                cells.Clear();
+                ControlId id = AddWinnerCard(cells, card, child, i, row);
+                AddRedirections(cells, card, i, row);
+                Cells.EmitRow(builder, cells, WinnersRowKey, positions: false);
+                if (first == null)
+                {
+                    first = id;
+                }
+            }
+
+            return first;
+        }
+
+        /// <summary>A drawn card with a senator bound to it, or null.</summary>
+        private static WinnerSenatorCard Winner(AgeTransform child)
+        {
+            WinnerSenatorCard card = Component<WinnerSenatorCard>(child);
+            return card != null && AgeWidgets.Visible(child) && card.Senator != null ? card : null;
+        }
+
+        /// <summary>The winning party itself: its name, the experience tier drawn under it
+        /// (<c>SenatorBaseCard.cs:165-185</c>), and its dossier. The tier is asked of the drawn label
+        /// rather than of the model, and only while the card is painting it - the prefab carries the
+        /// last binding's word otherwise.</summary>
+        private static ControlId AddWinnerCard(
+            List<Cell> cells,
+            WinnerSenatorCard card,
+            AgeTransform widget,
+            int i,
+            TableRow row
+        )
+        {
+            AgeTooltip tooltip = card.PoliticsTooltip ?? AgeWidgets.Raw(widget);
+            AgePrimitiveLabel name = card.PoliticsNameLabel;
+            AgePrimitiveLabel tier = card.PoliticsExperienceLabel;
+            AgeTransform tierWidget = Widget(tier);
+            AgeTransform whole = widget;
+            NodeVtable vtable = GraphNodes.Readout(
+                () => name != null ? AgeText.Label(name) : AgeWidgets.TextOf(whole),
+                () => AgeWidgets.Painted(tierWidget) ? AgeText.Label(tier) : null,
+                null,
+                null
+            );
+            vtable.Sections = GraphNodes.Sections(
+                GraphNodes.TooltipSection(tooltip),
+                AgeWidgets.Painted(tierWidget)
+                    ? GraphNodes.TooltipSection(card.ExperienceTooltip, TooltipMode.None)
+                    : null
+            );
+            vtable.Row = row;
+            AgeWidgets.PointAt(vtable, Anchor(tooltip, widget));
+            ControlId id = ControlId.Structural("election:winner/" + i);
+            Cells.Add(cells, widget, id, vtable);
+            return id;
+        }
+
+        /// <summary>The parties whose votes were redirected to this winner - the badges the card draws
+        /// around its gauge, each naming its party and explaining itself in one sentence of the game's
+        /// own (<c>PoliticsMiniature.cs:14-21</c>).</summary>
+        private static void AddRedirections(
+            List<Cell> cells,
+            WinnerSenatorCard card,
+            int i,
+            TableRow row
+        )
+        {
+            if (!AgeWidgets.Painted(card.AdditionalPoliticsGroup))
+            {
+                return;
+            }
+
+            IList<AgeTransform> children = Children(card.AdditionalPoliticsContainer);
+            for (int j = 0; children != null && j < children.Count; j++)
+            {
+                AgeTransform child = children[j];
+                PoliticsMiniature badge = Component<PoliticsMiniature>(child);
+                if (badge == null || !AgeWidgets.Painted(child))
+                {
+                    continue;
+                }
+
+                AgeTooltip tooltip = badge.Tooltip ?? AgeWidgets.Raw(child);
+                AgePrimitiveLabel label = badge.Label;
                 NodeVtable vtable = GraphNodes.Readout(
-                    () => AgeWidgets.TextOf(widget),
+                    () => AgeText.Label(label),
                     () => null,
                     null,
                     tooltip
                 );
-                AgeWidgets.PointAt(vtable, Anchor(tooltip, widget));
-                Cells.Add(cells, widget, ControlId.Structural("election:winner/" + i), vtable);
+                vtable.Row = row;
+                AgeWidgets.PointAt(vtable, Anchor(tooltip, child));
+                Cells.Add(
+                    cells,
+                    child,
+                    ControlId.Structural("election:winner/" + i + "/redirect/" + j),
+                    vtable
+                );
             }
         }
 

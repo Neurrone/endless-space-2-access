@@ -767,6 +767,43 @@ non-committing, and the outcomes are never drawn (es2-facts).
 `GovernmentAction_ForceElections` is the game's own way to raise a real one and is UNVERIFIED — do
 not spend a fixture on it without the owner's say-so.
 
+**The vote breakdown (step 1) can only be tested on a real election turn**, i.e. on the owner's own
+save, and it is then the ONLY test surface — so treat it as live and non-disposable: **never press
+Next Step, Skip, or Escape** (Escape raises the skip confirmation), and never `POST /loadsave` or
+`/quit` out of it. Safe: `/reload`, arrow/Tab injection, `/gui/graph?buffers=1`, and the Prev/Next
+system buttons (which are switched off on a one-system empire). Sighted 2026-08-16 on a
+one-system empire (Dusay, 4 representatives). What the dump should show: one row reading
+`Dusay / Industrialists 1 / Scientists 2 / Militarists 1` (the parties keep their own nodes and
+their own class-backed dossiers — focus each and re-dump with `buffers=1`, since an unfocused
+class tooltip reads empty), a Political Trends row per available party as "party, N of total", the
+Overall Empire line, and "N of M representatives counted". Read the trends pairing back against
+`/eval` on the panel's private `starSystemElectionInformations` (es2-facts) — the bars themselves
+carry no text to check against.
+Fixture-blocked on a one-system empire, and only there: the carousel auto-advance and the mod's
+stop for it (the coroutine exits immediately when the index is already the last, so the flag write
+is provable by reflection but its effect is not), the row re-reading on Next System, the progress
+line moving off "M of M", and any Political Trends entry whose cumulated count differs from the
+first system's.
+
+**The result step (step 2)** has the same live-only constraint and the same never-press list, with
+one addition: on the LAST step Escape presses Finish, and the law cards' `DoubleClickButton` must
+not be activated either. Safe: `/reload`, arrow/Tab injection, `/gui/graph?buffers=1`,
+`DevProbe.Tooltip()` with a delay set (restore `TooltipDelay(-1)`). Measured 2026-08-16 on the
+owner's save (two winners, one redirection badge each). What the dump should show: one ROW per
+winner — `Militarists, Established, has tooltip` then `+Industrialists, The votes for the
+" Industrialists" political party have been redirected to the " Militarists" political party.` —
+never the glued `Militarists Established +Industrialists`. The winner's place is stamped as a ROW
+position, so "1 of 2" is heard arriving at a card and on stepping to the other winner, and NOT on
+walking out to that winner's badges; the winner rows share a row key, so Down from a badge lands on
+the next winner's badge. The card's focused buffer holds the party dossier AND the experience
+sentence ("Reflects the experience gained by this political party…"); the badge announces its own
+sentence and buffers it. Check the badge's tooltip really draws with `DevProbe.Tooltip()` while it
+is focused (`shown:true`, one `PanelFeatureSimple` feature) — the card's own tooltip hangs off a
+child, so a pointer aimed at the card draws nothing.
+Fixture-blocked on that save: a winner with several badges or with none beside one that has them,
+the senator-hero card variant (`HeroExperienceGroup`), the experience-GAIN gauge, an experience
+tier other than "Established", and the election-action outcomes (never drawn — es2-facts).
+
 **The scan view.** Entry is Enter on the lens toggle; the PLAYER route through the lenses is the
 `Zoom` node beside it — Left/Right steps the 15-rung ladder, Shift+Left/Right jumps a lens band,
 Right at rung 13 enters the system, Enter on a planet card reaches the planet lens, Left steps

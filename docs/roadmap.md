@@ -43,6 +43,12 @@ files above.
 - The planet page's population-entry click has no opener node yet (the window itself,
   StarSystemPopulationModalWindow, is covered — SystemPoliticsScreen binds it).
 - Skill-tree type-ahead: a TypeAheadScope so search reaches skills in collapsed branches.
+- Election, vote breakdown: the "Political Trends" caption the game draws over the party
+  bars is not declared, so the six bar rows arrive with no heading of their own (the group
+  caption convention this file's own step-0 code follows). Owner call — it is one node.
+  Step 0 of the wizard is still code-verified only (step 1 was sighted 2026-08-16, step 2
+  measured and reworked the same day — what its one live card could not show is in
+  `test-recipes.md`).
 - ReadCell cells on EmpireScreen/MilitaryScreen/SystemSelectionScreen can say
   "unavailable" twice (own part + the shared tail); the split-cell fix exists
   (`Adorn(availability:false)`) but SystemSelectionScreen's combo needs care — a refused

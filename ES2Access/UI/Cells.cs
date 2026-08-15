@@ -18,9 +18,13 @@ namespace ES2Access.UI
     /// Declaring a panel's controls in the rows the game draws them in.
     ///
     /// Collection order is whatever the reading code happened to walk; the player's order is the one on
-    /// screen. Gathering cells and emitting them through <see cref="AgeLayout.Rows"/> means a strip the
-    /// engine wrapped onto a second line is walked as two lines with nothing being told, and a screen
-    /// that lists its buttons in a different order from the prefab still reads left to right.
+    /// screen. Gathering cells and emitting them through <see cref="AgeLayout.Rows"/> means a bar the
+    /// engine laid out over two lines is walked as two lines with nothing being told, and a screen that
+    /// lists its buttons in a different order from the prefab still reads left to right.
+    ///
+    /// Geometry answers what ORDER, though, not what BELONGS TOGETHER. Where the second line is the
+    /// layout box running out of width rather than a new line of content, the screen knows the set is
+    /// one line and says so: <see cref="EmitRow"/>.
     /// </summary>
     public static class Cells
     {
@@ -80,6 +84,45 @@ namespace ES2Access.UI
 
                 builder.EndRow();
             }
+        }
+
+        /// <summary>
+        /// The same cells as ONE row, in the order they were declared, whatever their rectangles say.
+        ///
+        /// <see cref="Emit"/> reads the rows off the screen, which is right wherever the game's layout
+        /// IS the reading order. It is wrong where the game WRAPS one line of related controls onto
+        /// several - a strip of icons that goes to a second line as soon as there is a third of them
+        /// (the election's representative table) - because which line an icon landed on is a fact about
+        /// the box it was drawn in, not about the thing being read. A screen that knows the set is one
+        /// line says so here, and the declaration order is then the order across it.
+        ///
+        /// <paramref name="rowKey"/> and <paramref name="positions"/> are <see cref="GraphBuilder.StartRow"/>'s
+        /// own two arguments, passed through for the family of rows that repeats down a panel: a shared
+        /// key gives the column-preserving step between them, and <paramref name="positions"/> false is
+        /// for a row whose members are a THING and the things hanging off it rather than a bar of
+        /// choices - counting "1 of 3" across a winner and its two badges answers a question nobody
+        /// asked. Such a row says where it sits as a row instead
+        /// (<see cref="ES2Access.Core.UI.Graph.NodeVtable.Row"/>).
+        /// </summary>
+        public static void EmitRow(
+            GraphBuilder builder,
+            List<Cell> cells,
+            object rowKey = null,
+            bool positions = true
+        )
+        {
+            if (cells.Count == 0)
+            {
+                return;
+            }
+
+            builder.StartRow(rowKey, positions);
+            foreach (Cell cell in cells)
+            {
+                builder.AddItem(cell.Id, cell.Vtable);
+            }
+
+            builder.EndRow();
         }
 
         /// <summary>A control the game drew, activated the way a mouse activates it - the shape every

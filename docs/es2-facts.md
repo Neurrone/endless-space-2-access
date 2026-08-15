@@ -1089,6 +1089,72 @@ generic graduates to the generic docs.
   both branches unconditionally), the modal nulls `OverrolledTransform`/`FocusedControl` on every
   step change (:71-77) so a hover highlight must be re-armed, and `%ElectionScreenTitle` is a
   parked key.
+- Election, the vote breakdown (`ElectionLocalPanel`, step 1) — everything on it is drawn from
+  private state and most of it carries no words at all:
+  - **The Political Trends bars are positionally bound and so ARE attributable.**
+    `Refresh` :208-209 `ReserveChildren`/`RefreshChildrenIList` over
+    `starSystemElectionInformations[currentStarSystemIndex].PoliticsWithLocalScoresAndCumulatedScores`,
+    so bar `i` is entry `i` of that list; each entry is `KeyValuePair<PoliticsDefinition,int[]>` with
+    `Value[0]` = this system's count and `Value[1]` = the count through this system (the struct at
+    :13-34). The private fields are `starSystemElectionInformations` (:86),
+    `currentStarSystemIndex` (:74) and `cumulatedRepresentativesCount` (:88); the struct is private
+    too, so its fields are looked up off the boxed value. Measured on the user's save: 7 entries,
+    bar 6 (`Politics00`, Independent) invisible — `BindPoliticsCumulativeSupportGauge` :306 sets
+    `Visible` from `Senate.AvailablePolitics`, so visibility already IS the party filter.
+  - **The counting-progress bar has no words anywhere.** The three segments (:239-250) are
+    `PreviousRepresentativesGauge`/`SystemRepresentativesGauge`/`RemainingRepresentativesGauge`, and
+    all three are children of `CumulatedRepresentativesGauge`, which sits INSIDE the Overall Empire
+    box in the trends column (measured rect 996,348,168,4 inside 980,318,200,80) — not beside the
+    system carousel it advances with. The two numbers behind it are
+    `starSystemElectionInformations[current].CumulatedRepresentativesCount` and
+    `cumulatedRepresentativesCount`.
+  - **`Show` starts a 1.5 s auto-carousel** (:180, the `MoveCarousel` coroutine :384-400) that keeps
+    stepping to the next system until a Prev/Next click sets `moveCarouselAutomatically` false
+    (:70,:350-366) — so the panel rewrites itself under a reader. Setting that private flag false is
+    exactly the state one arrow click leaves, and the coroutine exits on its own when the index is
+    already the last (which is why a one-system save cannot demonstrate it).
+  - **The representative strip WRAPS at three items.** `SystemRepresentativeTable` is 72 px wide and
+    lays two 36 px items per line (measured: Item000/Item001 at y=740, Item002 at y=760), so a
+    geometry-derived row splits one system's parties across two lines of navigation. Row membership
+    there has to be declared, not read off the rects (`Cells.EmitRow`).
+  - **A representative item's tooltip is class-backed** (`Class` = "Politics", `Target` = a
+    `GuiPolitics`), and its `Content` holds the party's element NAME ("Politics01") — an authoring
+    leftover, never a caption. The party's clean word is `Gui.GetLocalizedTitle(definition.Name)` or
+    `AgeText.Clean(wrapper.Title)`; both answer "Industrialists" (the `GuiPolitics.Title` symbol
+    glyph cleans away).
+- Election, the result (`ElectionFinalPanel` + `WinnerSenatorCard`, step 2) — a winner card is
+  THREE independent things drawn in one box, and reading the box's labels as one phrase
+  ("Militarists Established +Industrialists") says three facts as if they were the card's title:
+  - **The party and its experience tier are separate labels of `SenatorBaseCard`** —
+    `PoliticsNameLabel` (`= GuiPolitics.Title`, :121-124) and `PoliticsExperienceLabel` (the
+    tier WORD out of `GuiPolitics.FindExperienceInformation`, :165-176). The card's dossier is
+    `PoliticsTooltip` (class-backed, `Target` = the `GuiPolitics`), and `NameTooltip` and
+    `PortraitTooltip` are `Copy`s of it (`WinnerSenatorCard.cs:42`, `SenatorBaseCard.cs:154`), so
+    a card has the SAME dossier hanging on three widgets — collecting a card's tooltips by
+    walking it (`SettingRows.RowSections`) buffers the dossier three times.
+  - **`ExperienceTooltip` is content-backed** (`%SenatePoliticsExperienceDescription`, :116-119),
+    so the shared short/long rule would ANNOUNCE that definition on every landing on a winner.
+    Mod policy: the card names which tooltip speaks — the party dossier is indicated, the
+    experience sentence is declared buffer-only (`TooltipMode.None`), because it explains a word
+    rather than the card.
+  - **The vote-redirection badges exist only where both halves hold**: `redirectedVotes.Count > 0`
+    AND `GuiGovernment.CanRedirectVotes(empire)` (`WinnerSenatorCard.cs:85-92`). They are pooled
+    children of `AdditionalPoliticsContainer` (`ReserveChildren`/`RefreshChildrenIList` :88-89),
+    each a `PoliticsMiniature` whose `Label.Text` is `"+" + GuiPolitics.SymbolString` — an ICON
+    token, which the mod's inline-icon naming renders "+Industrialists" — and whose `Tooltip`
+    is content-backed `%ElectionFinalVoteRedirectionDescription`, one sentence naming both
+    parties (`PoliticsMiniature.cs:14-21`).
+  - **The badges' rectangles are no reading order.** `RefreshPoliticsMiniature` (:116-133) places
+    each one at a computed ANGLE around the support gauge (measured: a card at [414,180,200,430]
+    with its badge at [613,466,24,24], i.e. outside the card's own column), so the row is
+    declared, not banded (`Cells.EmitRow`).
+  - **`AdditionalPoliticsGroup` fades in on a modifier** started by a delayed coroutine
+    (`PostponeSecondarySupportAnimation` :135-146 → `StartAllModifiers`), so `Visible` is true
+    while the group is still at alpha 0 — the badges are gated on `AgeWidgets.Painted`.
+  - Fixture-blocked on the owner's own election (two winners, one badge each, both
+    "Established", neither with a hero): a card with several badges or none, the senator-hero
+    variant (`HeroExperienceGroup`, `SenatorBaseCard.cs:131-150`) and the experience-GAIN gauge
+    (`PoliticsExperienceGaugeGain`, drawn only for `data.ExperienceGain > 0.1f`, :93-113).
 
 ## Military, ships and the designer
 

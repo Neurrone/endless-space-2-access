@@ -651,6 +651,11 @@ namespace ES2Access.Core.Speech
         public const string SenateLockedLawSlot = "senate.locked-law-slot";
         public const string SenateEmptySenatorSlot = "senate.empty-senator-slot";
         public const string SenateLockedSenatorSlot = "senate.locked-senator-slot";
+
+        // The election's vote breakdown draws how far the count has got as a bare horizontal bar -
+        // three coloured segments, no words anywhere on or around it. The mod's sentence is the only
+        // way the two numbers behind it are said.
+        public const string ElectionRepresentativesCounted = "election.representatives-counted";
         // The empire summary. The screen's own name is the game's and is what is normally spoken; the
         // name here is the fallback for the frames before the window has written its heading. The mod
         // word is for a box the game draws with no heading at all: the panel holding the empire's
@@ -1263,6 +1268,7 @@ namespace ES2Access.Core.Speech
             { SenateLockedLawSlot, "Locked law slot" },
             { SenateEmptySenatorSlot, "Empty senator slot" },
             { SenateLockedSenatorSlot, "Locked senator slot" },
+            { ElectionRepresentativesCounted, "{0} of {1} representatives counted" },
             { ScreenEconomy, "Economy" },
             { EconomyQuantity, "Quantity {0}" },
             { EconomyBuyPanel, "Buy" },
