@@ -167,7 +167,9 @@ reload-safe ([hot-reload.md](hot-reload.md)) and per-frame cheap — `Build` run
 ## 4. Verify with evidence, not claims
 
 - Walk the whole screen in one request (the accessible-tree dump,
-  [dev-server.md](dev-server.md)) and read it against the screenshot.
+  [dev-server.md](dev-server.md)) and read it against the screenshot — and grep the dump
+  for nodes whose line opens with a bare role: a control whose name resolved empty
+  announces itself role-first, and nothing else in the loop flags it.
 - Any claim that spoken output matches drawn output carries the **evidence pair**: a
   screenshot cropped to the claimed region (with its rect) beside the spoken/buffer lines.
   Cropping is also what keeps image costs sane — never read full frames. And the pair's
