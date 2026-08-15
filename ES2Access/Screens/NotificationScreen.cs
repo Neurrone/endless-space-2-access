@@ -587,7 +587,7 @@ namespace ES2Access.Screens
             items.Sort(DownThePage);
             List<AgeTransform> cards = Cards(items);
             object region = null;
-            for (int index = 0; index < items.Count; index++)
+            for (int index = 0; index < items.Count; )
             {
                 Item item = items[index];
                 object here = cards == null ? BodyRegion : RegionOf(cards, item.Widget);
@@ -597,22 +597,76 @@ namespace ES2Access.Screens
                     region = here;
                 }
 
-                ControlId id;
-                if (item.IsControl)
+                int end = Band(items, index);
+                bool band = end > index + 1;
+                if (band)
                 {
-                    id = IdOf(item.Control);
-                    Add(builder, item.Control);
-                }
-                else
-                {
-                    id = AddRow(builder, item.Lines, index, item.Group);
+                    builder.StartRow();
                 }
 
-                if (index == 0)
+                for (; index < end; index++)
                 {
-                    builder.SetStart(id);
+                    Item one = items[index];
+                    ControlId id = one.IsControl
+                        ? Declare(builder, one.Control)
+                        : AddRow(builder, one.Lines, index, one.Group);
+                    if (index == 0)
+                    {
+                        builder.SetStart(id);
+                    }
+                }
+
+                if (band)
+                {
+                    builder.EndRow();
                 }
             }
+        }
+
+        /// <summary>
+        /// How far the band starting at <paramref name="from"/> runs: the items after it that the popup
+        /// drew BESIDE it inside the same container.
+        ///
+        /// Things laid out side by side are one row and are walked with left and right - the two things
+        /// a technology unlocks, the four technologies a panel suggests - because that is how they are on
+        /// the screen, and reading them as a column tells the player about a stack that is not there.
+        /// Being level is the test (the rectangles, which is what the player sees); sharing a container
+        /// is what stops a row spanning the seam between two panels that merely happen to be drawn at
+        /// the same height.
+        /// </summary>
+        private static int Band(List<Item> items, int from)
+        {
+            int end = from + 1;
+            AgeTransform holder = Parent(items[from].Widget);
+            while (
+                holder != null
+                && end < items.Count
+                && ReferenceEquals(Parent(items[end].Widget), holder)
+                && AgeLayout.SameRow(items[from].Widget, items[end].Widget)
+            )
+            {
+                end++;
+            }
+
+            return end;
+        }
+
+        private static AgeTransform Parent(AgeTransform widget)
+        {
+            try
+            {
+                return widget == null ? null : widget.Parent;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        private static ControlId Declare(GraphBuilder builder, Control control)
+        {
+            Add(builder, control);
+            return IdOf(control);
         }
 
         /// <summary>
