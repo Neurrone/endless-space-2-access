@@ -295,6 +295,13 @@ namespace ES2Access.Core.Speech
         public const string GalaxySystemCitadel = "galaxy.system-citadel";
         public const string GalaxySystemGuarded = "galaxy.system-guarded";
 
+        /// <summary>How many curiosities a planet's orbital card is drawing in the ring around it. The
+        /// card says it with one wordless icon per curiosity and writes no number anywhere, so the
+        /// phrase is the mod's - and it is a COUNTED phrase, hence a form per number (see
+        /// <see cref="Plural"/>) rather than a number glued to a noun.</summary>
+        public const string GalaxyPlanetCuriosityOne = "galaxy.planet-curiosity-one";
+        public const string GalaxyPlanetCuriosities = "galaxy.planet-curiosities";
+
         // Which way something on the map lies from somewhere else. The game writes no compass word
         // anywhere - it draws the map and expects it to be looked at - so all eight are the mod's.
         public const string DirectionNorth = "direction.north";
@@ -1092,6 +1099,8 @@ namespace ES2Access.Core.Speech
             { GalaxySystemQuestMarkerPinned, "Tracked quest here: {0}" },
             { GalaxySystemCitadel, "Citadel, {0}" },
             { GalaxySystemGuarded, "Guarded by {0}" },
+            { GalaxyPlanetCuriosityOne, "{0} curiosity" },
+            { GalaxyPlanetCuriosities, "{0} curiosities" },
             { DirectionNorth, "north" },
             { DirectionNorthEast, "northeast" },
             { DirectionEast, "east" },

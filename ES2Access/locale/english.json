@@ -127,6 +127,8 @@
   "galaxy.system-quest-marker-pinned": "Tracked quest here: {0}",
   "galaxy.system-citadel": "Citadel, {0}",
   "galaxy.system-guarded": "Guarded by {0}",
+  "galaxy.planet-curiosity-one": "{0} curiosity",
+  "galaxy.planet-curiosities": "{0} curiosities",
   "direction.north": "north",
   "direction.northeast": "northeast",
   "direction.east": "east",

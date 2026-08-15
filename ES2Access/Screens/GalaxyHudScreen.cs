@@ -2479,6 +2479,11 @@ namespace ES2Access.Screens
         /// what kind of world it is, and what the game says about colonizing it - with everything the
         /// card draws as icons and gauges in the review buffer, and its buttons one step in.
         ///
+        /// And how many curiosities are waiting in orbit, which the card draws as a ring of icons
+        /// beside it: they are buttons and so live one step in with the rest, but a player walking the
+        /// map would have to open every planet to find out that any exist at all. The count is what a
+        /// sighted player takes off the card at a glance, so the card's own line carries it.
+        ///
         /// Enter is the card's own click: the planet's page. It is the only thing the card itself does.
         /// </summary>
         private static NodeVtable OrbitalReadout(PlanetLabel_SystemOrbital card)
@@ -2493,6 +2498,7 @@ namespace ES2Access.Screens
                     GraphNodes.ValuePart(() => AgeText.Label(it.PlanetSizeAndType)),
                     GraphNodes.ValuePart(() => AgeText.Label(it.ColonizeStatus)),
                     GraphNodes.ValuePart(() => OutpostTimer(it)),
+                    GraphNodes.ValuePart(() => CuriosityCount(it)),
                 },
                 OnActivate = () => GalaxyViewLevels.OpenPlanet(it.Planet),
             };
@@ -2781,6 +2787,50 @@ namespace ES2Access.Screens
                 {
                     CardActions.AddRefusable(found, item, CardActions.TitleOf(item));
                 }
+            }
+        }
+
+        /// <summary>
+        /// How many curiosities the card is drawing, said on the card's own line so that finding one
+        /// does not mean opening every planet on the map.
+        ///
+        /// PAINTED is the test, and it has to be: the table pools its items and retires a surplus one
+        /// by fading it to nothing rather than hiding it, so a card that had two curiosities and has
+        /// one left still holds two children the engine calls visible - the same test the game's own
+        /// <c>GetVisibleChildrenCount</c> applies, and the same one the buttons themselves are gated
+        /// on, so the count and the children can never disagree.
+        /// </summary>
+        private static string CuriosityCount(PlanetLabel_SystemOrbital card)
+        {
+            try
+            {
+                AgeTransform table = card.PlanetCuriositiesTable;
+                if (table == null || !Visible(table))
+                {
+                    return null;
+                }
+
+                IList<AgeTransform> items = table.Children;
+                int count = 0;
+                for (int i = 0; items != null && i < items.Count; i++)
+                {
+                    if (AgeWidgets.Painted(items[i]))
+                    {
+                        count++;
+                    }
+                }
+
+                return count == 0
+                    ? null
+                    : ModStrings.Plural(
+                        ModStrings.GalaxyPlanetCuriosityOne,
+                        ModStrings.GalaxyPlanetCuriosities,
+                        count
+                    );
+            }
+            catch (Exception)
+            {
+                return null;
             }
         }
 

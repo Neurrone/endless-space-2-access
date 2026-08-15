@@ -519,6 +519,18 @@ is unaffected — but at step 12 the focused system's own label is pushed off th
 drawn layer without moving the camera. `DevProbe.Camera()` before and after; the fixture's home is
 focus `[68.884, 0, -22.45]`, zoomStep 9.
 
+**Curiosities on the orbital cards are nearly fixture-blocked.** A card draws them only for a
+system the empire has SURVEYED, and the model scan (`new GuiPlanet(planet).GetRemainingCuriosities
+(Gui.PlayerEmpire).Count` over `Gui.Game.Galaxy.GameNodes`) finds exactly one reachable card in each
+save: the owner's `[User] bug session` (turn 10) has **Ita III** with one ("Ruins", item rect
+≈ `735,634,24,24` inside the card at `633,520,128,140`), and `[Beginner] test` has **Primus V** with
+one. No explored system in either save has a planet with TWO, so the plural line has no fixture -
+resolve it with `ModStrings.Plural(...GalaxyPlanetCuriosityOne, ...GalaxyPlanetCuriosities, 2)` and
+say so. Crop the card with the cursor on a DIFFERENT planet: focusing it points the pointer at the
+card and the dossier tooltip covers the ring. The painted gate is proved by parking the item the way
+the engine does - set the item's `Alpha = 0f` from `/eval` (it sticks; the card does not refresh
+every frame), re-crop, re-read, then set it back to `1f`.
+
 **Entering a system re-opens the tutorial.** The first time the camera reaches a view level,
 the game pops that level's tutorial page — so an Enter-on-a-colony test leaves the popup
 un-minimized. Put it back (`TutorialPopupPanel.MinimizeToggle`, then send its `OnSwitchMethod`)
