@@ -1328,6 +1328,24 @@ generic graduates to the generic docs.
 
 ## Card and tooltip drawing mechanisms
 
+**A failed tooltip request is PARKED for 999 seconds, and only a change of hovered transform
+lifts it.** `GuiTooltipController.Update` (Amplitude.Unity.Gui/GuiTooltipController.cs:214-224):
+when the hover delay elapses and `ReadTooltipInformation()` says no — which it does when the
+tooltip has neither `Content` nor `Target` (:235) — the controller writes
+`timeBeforeShowingTooltip = 999f` instead of retrying. Two things, and only these two, re-ask:
+`AgeManager.OverrolledTransform` becoming a DIFFERENT transform (:191), or the tooltip's
+`Target` being written again, which sets `AgeTooltip.DirtyTarget` and makes :186-190 drop the
+remembered transform. This is a mouse-shaped design — a hand moves, so the edge always comes.
+`PointerFocus.LateTick` re-asserts the SAME transform every frame, so a keyboard user sitting
+still gets neither edge and the tooltip is suppressed for the whole 999 s. Measured live: a
+turn-start notification popup put focus on `notification:CompletedTechnologyTitle`, whose
+`AgeTooltip` carries neither content nor target; the controller parked and was still counting
+down (989 → 975) fifteen seconds later. **Mod policy:** never aim the pointer at a tooltip that
+has neither content nor target, and where the mod holds a hover it must re-issue the request
+itself when the window has not drawn — `AgeTooltip.DirtyTarget = true` is the engine's own
+re-ask signal and needs no reflection, but it resets the countdown, so it must be issued once
+per stall and never per frame.
+
 **A hint button's tooltip has three parts, in a fixed order**: the button's own description, then
 `"\n\n"` and the failure (`Gui.FormatFailure`, Gui.cs:1072), then — only for a missing technology —
 `"\n" + %MissingTechnologyClickDescription`, appended by `Gui.FormatButtonHint` (Gui.cs:1207).

@@ -643,6 +643,169 @@ namespace ES2Access.Dev
         }
 
         /// <summary>
+        /// One log line per frame naming the whole of the engine's hover-to-tooltip pipeline: what the
+        /// mod is pointing the engine at, what the tooltip controller remembers pointing at, its
+        /// countdown to showing, the tooltip's own content/class/target, and whether the tooltip window
+        /// is up. Always false, so <c>POST /wait</c> on it records the whole passage.
+        ///
+        /// The countdown is the interesting number. <c>GuiTooltipController.Update</c> parks it at
+        /// <c>999</c> when the delay elapses over a tooltip with neither content nor target, and only a
+        /// CHANGE of hovered transform - or the tooltip's target being written again - ever resets it.
+        /// </summary>
+        public static bool TooltipTrace(string tag)
+        {
+            try
+            {
+                Core.Util.Log.Info("ttrace " + tag + " f=" + Time.frameCount + " " + TooltipPipeline());
+            }
+            catch (Exception e)
+            {
+                Core.Util.Log.Warn("ttrace threw: " + e.Message);
+            }
+
+            return false;
+        }
+
+        /// <summary>The same reading as <see cref="TooltipTrace"/>, answered once to a poll.</summary>
+        public static string TooltipPipe()
+        {
+            try
+            {
+                return TooltipPipeline();
+            }
+            catch (Exception e)
+            {
+                return Err(e.Message);
+            }
+        }
+
+        private static string TooltipPipeline()
+        {
+            System.Text.StringBuilder line = new System.Text.StringBuilder();
+            AgeManager age = AgeManager.Instance;
+            AgeTransform over = age == null ? null : age.OverrolledTransform;
+            line.Append("over=").Append(Named(over));
+
+            Amplitude.Unity.Gui.GuiTooltipController controller = TooltipController();
+            if (controller == null)
+            {
+                line.Append(" controller=none");
+            }
+            else
+            {
+                AgeTransform remembered = controller.OverrolledAgeTransform;
+                line.Append(" ctrl=").Append(Named(remembered));
+                FieldInfo timer = AccessTools.Field(
+                    typeof(Amplitude.Unity.Gui.GuiTooltipController),
+                    "timeBeforeShowingTooltip"
+                );
+                line.Append(" timer=")
+                    .Append(
+                        timer == null
+                            ? "?"
+                            : Round((float)timer.GetValue(controller)).ToString(
+                                CultureInfo.InvariantCulture
+                            )
+                    );
+                line.Append(" cur=")
+                    .Append(
+                        controller.CurrentTooltipWindow == null
+                            ? "-"
+                            : controller.CurrentTooltipWindow.name
+                    );
+                AgeTooltip tip = controller.OverrolledAgeTooltip;
+                line.Append(" tip=").Append(Tipped(tip));
+            }
+
+            AgeTooltip aimed = over == null ? null : over.AgeTooltip;
+            line.Append(" aimed=").Append(Tipped(aimed));
+
+            GuiTooltipWindow window = Gui.GuiServiceAvailable
+                ? Gui.GuiService.GetWindow<GuiTooltipWindow>(false)
+                : null;
+            line.Append(" win=")
+                .Append(window == null ? "none" : (window.Shown ? "shown" : "hidden"))
+                .Append(
+                    window == null || window.AgeTooltip == null
+                        ? ""
+                        : "/" + window.AgeTooltip.Class
+                );
+
+            GuiManager gui = Gui.GuiServiceAvailable ? Gui.GuiService as GuiManager : null;
+            line.Append(" delay=")
+                .Append(
+                    gui == null
+                        ? "?"
+                        : Round(gui.TooltipDisplayDelay).ToString(CultureInfo.InvariantCulture)
+                );
+            line.Append(" notif=")
+                .Append(
+                    Gui.GuiNotificationService == null
+                        ? "?"
+                        : (Gui.GuiNotificationService.CanShowNotifications ? "can" : "no")
+                );
+
+            GraphNavigator navigator = ModEntry.Navigator;
+            ControlId focused = navigator == null ? null : navigator.FocusedKey;
+            line.Append(" node=")
+                .Append(focused == null ? "-" : Convert.ToString(focused.StructuralKey));
+            return line.ToString();
+        }
+
+        private static string Named(AgeTransform widget)
+        {
+            if (ReferenceEquals(widget, null))
+            {
+                return "null";
+            }
+
+            if (widget == null)
+            {
+                return "destroyed";
+            }
+
+            return widget.name;
+        }
+
+        private static string Tipped(AgeTooltip tooltip)
+        {
+            if (ReferenceEquals(tooltip, null))
+            {
+                return "-";
+            }
+
+            if (tooltip == null)
+            {
+                return "destroyed";
+            }
+
+            return "["
+                + (string.IsNullOrEmpty(tooltip.Class) ? "noclass" : tooltip.Class)
+                + " content="
+                + (string.IsNullOrEmpty(tooltip.Content) ? "0" : tooltip.Content.Length.ToString())
+                + (tooltip.Target == null ? " notarget" : " target")
+                + (tooltip.DirtyTarget ? " dirty" : "")
+                + "]";
+        }
+
+        private static Amplitude.Unity.Gui.GuiTooltipController TooltipController()
+        {
+            GuiManager gui = Gui.GuiServiceAvailable ? Gui.GuiService as GuiManager : null;
+            if (gui == null)
+            {
+                return null;
+            }
+
+            PropertyInfo property = AccessTools.Property(
+                typeof(Amplitude.Unity.Gui.GuiManager),
+                "GuiTooltipController"
+            );
+            return property == null
+                ? null
+                : property.GetValue(gui, null) as Amplitude.Unity.Gui.GuiTooltipController;
+        }
+
+        /// <summary>
         /// Set the game's tooltip hover delay - normally 0.3 s - and return what it was.
         /// <see cref="RestoreTooltipDelay"/> (-1) puts the game's own value back.
         ///
