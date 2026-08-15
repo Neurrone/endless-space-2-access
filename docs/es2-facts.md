@@ -913,7 +913,15 @@ generic graduates to the generic docs.
   phantom line. A parked item also keeps its old tooltip `Target` wrapper, so a name-by-wrapper
   read resurrects the PREVIOUS binding's name (the galaxy planet card spoke another planet's
   "Dustciduous Trees" deposit); `AgeWidgets.ItemText` now enforces the alpha gate centrally, so
-  every table read that names items through it is covered.
+  every table read that names items through it is covered. A pooled table can also be retired
+  WHOLESALE with its rows left painted: `PlanetLabel_SystemOrbital.RefreshPlanetCuriosities`
+  (:1090-1103) sets `PlanetCuriositiesTable.Visible = remaining.Count > 0` and RETURNS before
+  refreshing the children, so a planet whose last curiosity was just expedited keeps a child at
+  `Visible true, Alpha 1` inside a hidden table (measured on Ita II the turn its expedition
+  landed). The table's own visibility is the first gate and painted-ness the second — together
+  they are exactly what the engine's own `AgeTransform.GetVisibleChildrenCount` counts
+  (`Visible && (StrictVisibility || Alpha > 0)`, :2549-2561), which is the free oracle for any
+  count the mod speaks off such a table.
 - **`GuiRadioGroup` rewires its child toggles and ignores `State`** — the group is the authority,
   not the toggle it holds.
 - `SystemSelectionModalWindow` binds `interactiveCells: false`, so its shipped table has no

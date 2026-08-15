@@ -2758,7 +2758,9 @@ namespace ES2Access.Screens
         /// its tooltip, which is where it keeps the words it would have written.
         ///
         /// The table pools its items - a card that has run out of curiosities keeps the widgets and
-        /// hides them - so what is DRAWN is the gate, exactly as it is for the card's other buttons.
+        /// FADES them, leaving them visible at alpha 0 - so what is PAINTED is the gate, which is the
+        /// same question the game's own <c>GetVisibleChildrenCount</c> asks of this very table when it
+        /// lays the ring out.
         /// </summary>
         private static void AddCuriosities(
             List<CardActions.CardAction> found,
@@ -2775,7 +2777,7 @@ namespace ES2Access.Screens
             for (int i = 0; items != null && i < items.Count; i++)
             {
                 AgeTransform item = items[i];
-                if (item != null && Visible(item))
+                if (AgeWidgets.Painted(item))
                 {
                     CardActions.AddRefusable(found, item, CardActions.TitleOf(item));
                 }
