@@ -20,7 +20,12 @@ gameplay listeners** (anything on a quest), do NOT go through the event bus: bui
 notification and show it directly — `var n = new NotificationQuestBegun(); n.Bind(new
 EventQuestBegun(Gui.PlayerEmpire, quest)); Gui.GuiNotificationService.ShowGuiNotification(n);` —
 then dismiss with the window's own binding
-(`Gui.GuiService.GetWindow<QuestBegunNotificationWindow>().GuiNotification`). `IsAnyNotificationVisible`
+(`Gui.GuiService.GetWindow<QuestBegunNotificationWindow>().GuiNotification`). A
+notification shown this way never joins the empire's list, so `POST /loadsave` clears it
+without trace — the cheapest restore. Luxury example: `new NotificationLuxuryDiscovered()`
+bound to `new EventLuxuryDiscovered(Gui.PlayerEmpire as Empire, new
+Amplitude.StaticString("Luxury4"))`; Luxury1–6 = RedSang, Jadonyx, Dustciduous Trees,
+Bluecap Mold, Eden Incense, Transvine. `IsAnyNotificationVisible`
 is on `Gui.GuiGameWindowService`, not on the notification service. Raising the quest popup also pops
 the "Tracking Quests" tutorial page, so re-minimize afterwards. **No save shows an UNLOCKED End
 Turn** either, so the turn cluster's operable state stays code-verified.
