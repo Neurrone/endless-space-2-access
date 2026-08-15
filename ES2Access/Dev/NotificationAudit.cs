@@ -183,6 +183,7 @@ namespace ES2Access.Dev
         public static void Arm()
         {
             _vocabulary = null;
+            _unpaintedWaits = 0;
             if (!DevServerUp())
             {
                 return;
@@ -197,14 +198,54 @@ namespace ES2Access.Dev
             _vocabulary = null;
         }
 
-        private static void OnShown(NotificationWindow window)
+        /// <summary>How many ready frames the check will wait for a popup to paint SOMETHING before
+        /// running anyway and saying so. Measured: the arrival animation of a forced popup runs about
+        /// forty frames, and no popup of the sixty-four in the family paints fewer than four strings
+        /// once it has settled (the smallest measured count), so a popup still drawing nothing after a
+        /// second of ready frames is a finding rather than an animation.</summary>
+        private const int MaxUnpaintedWaits = 60;
+
+        /// <summary>What every id the notification screen declares begins with, which is how a node it
+        /// declared is told from one another screen contributed to the same render.</summary>
+        private const string Prefix = "notification:";
+
+        private static int _unpaintedWaits;
+
+        /// <summary>
+        /// Check the popup, once it is actually drawing.
+        ///
+        /// Ready is not painted: the screen calls this two ready frames after a popup's words settle,
+        /// and on those frames the popup can still be fading its content up with not one string drawn.
+        /// Every line the mod spoke is then unaccounted for and the whole readout reads as "says what
+        /// nothing draws" - measured live on LuxuryDiscovered, TechnologyStageUnlocked and
+        /// PopulationChange, each of which checks clean a moment later. So a check that finds NOTHING
+        /// painted is not a finding, it is an early frame: answer false and be asked again.
+        /// </summary>
+        private static bool OnShown(NotificationWindow window)
         {
             try
             {
                 Result result = Check(window);
+                if (result.PaintedTexts == 0 && ++_unpaintedWaits <= MaxUnpaintedWaits)
+                {
+                    return false;
+                }
+
+                if (result.PaintedTexts == 0)
+                {
+                    Core.Util.Log.Warn(
+                        "notification parity: "
+                            + result.Window
+                            + " was still drawing no text at all after "
+                            + MaxUnpaintedWaits
+                            + " ready frames - checking it anyway"
+                    );
+                }
+
+                _unpaintedWaits = 0;
                 if (result.Breaches == 0)
                 {
-                    return;
+                    return true;
                 }
 
                 Report(result, "completeness", result.Completeness);
@@ -216,6 +257,8 @@ namespace ES2Access.Dev
             {
                 Core.Util.Log.Warn("notification parity: the check itself threw: " + e);
             }
+
+            return true;
         }
 
         /// <summary>One line per invariant broken, naming the popup and the first offender - enough
@@ -924,6 +967,16 @@ namespace ES2Access.Dev
                 it.Node = node;
                 it.Id = node.Id;
                 it.Key = Convert.ToString(node.Id.StructuralKey);
+
+                // The screen's render is not only the popup's: the heads-up display contributes stops
+                // of its own to whatever screen has focus, and a minimised tutorial bar sitting up
+                // there was reported as three things the popup says and nothing draws. Only what the
+                // popup declared is measured against what the popup paints.
+                if (it.Key == null || !it.Key.StartsWith(Prefix))
+                {
+                    continue;
+                }
+
                 it.Region = node.RegionKey == null ? null : node.RegionKey.ToString();
                 it.Widget = WidgetOf(node.Id.Reference);
 
