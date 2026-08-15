@@ -719,6 +719,7 @@ namespace ES2Access.Dev
 
             AgeTooltip aimed = over == null ? null : over.AgeTooltip;
             line.Append(" aimed=").Append(Tipped(aimed));
+            line.Append(" want=").Append(Tipped(ES2Access.UI.PointerFocus.Wanted));
 
             GuiTooltipWindow window = Gui.GuiServiceAvailable
                 ? Gui.GuiService.GetWindow<GuiTooltipWindow>(false)
