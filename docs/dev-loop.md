@@ -63,7 +63,9 @@ mutes voicing but `/speech` still captures.
   `.Children`, never with a tree dump
 - `GET /gui/age?...&fields=name,kind,text,tooltip,rect,interactable,enabled` — flat text, one
   indented line per widget, only those fields, empties omitted
-- `POST /eval?settle=MS&speech=0` — C# REPL (gotchas below); response carries caused speech
+- `POST /eval?settle=MS&speech=0` — C# REPL (gotchas below); response carries caused speech.
+  `settle` is honoured ONLY while speech capture is on — with `speech=0` there is no wait at
+  all; substitute `POST /wait` with body `false` and a timeout
 - `POST /wait?timeout=MS` — body = bool expression, evaluated every frame; the wait is capped at
   ~60 s whatever is asked for, so a longer silence is proved by repeating the poll
 - `POST /loadsave` — body = save title (empty = newest); retryable `[not ready]` until it acts —
@@ -84,7 +86,9 @@ During boot/loading, main-thread routes 503 — retry; `/speech` and `/log` keep
 
 ### REPL gotchas (`POST /eval`)
 
-- One statement per request. No `using` directives — fully qualify everything.
+- Multi-statement bodies ARE accepted, and top-level `var` declarations PERSIST across
+  requests (a handle bank set once serves a whole sweep) — the poisons below still apply
+  to every statement. No `using` directives — fully qualify everything.
 - Never declare a local whose type is a constructed generic over a game type; **a `foreach`
   over `AgeTransform.Children`, `GetPlayerEmpireGuiNotifications()` or any `List<GameType>`
   declares one implicitly**, and it poisons the WHOLE session — every later request answers
