@@ -41,6 +41,19 @@ generic graduates to the generic docs.
   own tree does not hold is no words label at all, and the question stops there — no fallback to
   `GetDescription()`, because a popup with nowhere to draw a description never showed that
   sentence under any circumstances.
+- **41 of the 69 notification prefabs bind a Show Location button their own layout never holds,
+  and the game marks it VISIBLE anyway.** `ShowLocationButton` is `[GuiBound]`, so every window
+  resolves one; `NotificationWindow.OnBeginShow` (:139-140) then sets its `Visible`/`Enable` from
+  `GuiNotification.HasLocation` without asking whether the prefab laid it out. Measured over all
+  69 instances: 28 hold it in their bottom button bar (rect ~`(643,575,120,44)`), the other 41
+  answer with an orphan — `AgeTransform.Parent == null`, `IsRootTransform` false, rect
+  `(0,0,50,50)` — which the engine never draws because rendering walks the tree. Same shape as the
+  detached description label above, on a CONTROL: visible, alpha 1, enabled, drawn nowhere.
+  **Mod policy** (`NotificationScreen.Painted`): a paint test that walks up the chain must end AT
+  the popup's root, not merely run out of parents — an orphan passes every step of the walk and
+  then has no root, and the reward for the lenient version was a "Show Location" stop on
+  Outpost→Colony and Planet Destroyed that did nothing. `Controls` filters the whole list,
+  rails included, through that test.
 - **Every notification popup declares its two strips as CONTAINERS, and the popup's own buttons
   join the bottom one.** Measured over all 69 `NotificationWindow` instances in the scene: the
   browsing arrows sit in a `NavigationGroup` and the pop-up-again box in an `AutoPopupGroup`, both

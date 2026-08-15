@@ -2710,6 +2710,19 @@ namespace ES2Access.Screens
                 Add(controls, "previous", previous, ModStrings.NotifyPrevious);
                 Add(controls, "next", next, ModStrings.NotifyNext);
                 Add(controls, "auto-popup", null, autoPopup, ModStrings.NotifyAutoPopup);
+
+                // Every control, rails included, has to be one the popup is DRAWING. The rails are
+                // bound by name from the base window and a prefab that lays none out still answers with
+                // one (<see cref="Painted"/>), so this is where a stop that leads nowhere is dropped -
+                // asked of the whole list rather than at each Add, because the answer is the same
+                // question for all of them.
+                for (int i = controls.Count - 1; i >= 0; i--)
+                {
+                    if (!Painted(controls[i].Widget, root))
+                    {
+                        controls.RemoveAt(i);
+                    }
+                }
             }
             catch (Exception e)
             {
@@ -4252,6 +4265,13 @@ namespace ES2Access.Screens
         /// The window's OWN alpha is never asked, which is what <paramref name="root"/> is for: a popup
         /// fades ITSELF in on arrival (measured: the window transform animates 0 to 1 while every child
         /// stays at alpha 1), and asking it would empty the body for the length of that animation.
+        ///
+        /// The walk must END at <paramref name="root"/>, not merely run out of parents. Every prefab
+        /// binds the base window's rails by NAME, and forty-one of the sixty-nine bind a Show Location
+        /// button their own layout never holds - an orphan with no parent at all, parked at the screen's
+        /// origin, which the game then marks visible because the notification does have a location
+        /// (es2-facts). Visible, alpha 1, drawn nowhere: a chain test that stops at the first null parent
+        /// calls that painted, and the player gets a stop that does nothing.
         /// </summary>
         private static bool Painted(AgeTransform widget, AgeTransform root)
         {
@@ -4278,7 +4298,7 @@ namespace ES2Access.Screens
                     at = parent;
                 }
 
-                return true;
+                return ReferenceEquals(at, root);
             }
             catch (Exception)
             {
