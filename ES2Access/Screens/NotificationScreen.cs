@@ -321,6 +321,16 @@ namespace ES2Access.Screens
                 // of a list, so it takes no place in a count. The builder wires whatever is drawn above
                 // and below it to it.
                 lead = WordsId(label);
+
+                // What the popup offers on hovering its words - the dossier of the resource an
+                // expedition turned up, which the game hangs on the block it drew the description in
+                // rather than on the label. Read the same way a drawn row's explanation is: carried in
+                // the buffer, indicated or spoken by its own kind, and pointed AT on focus so the game
+                // draws it at all.
+                List<AgeTooltip> explaining = WordsTooltips(label, Words(window));
+                AgeTooltip explains =
+                    explaining.Count == 0 ? null : explaining[explaining.Count - 1];
+                AgeTransform hover = explains == null ? null : Holder(explains);
                 builder.AddNode(
                     lead,
                     new NodeVtable
@@ -331,12 +341,16 @@ namespace ES2Access.Screens
                         {
                             GraphNodes.LabelPart(() => Words(Current())),
                         },
-                        Sections = GraphNodes.Sections(() => Content(Current()), null),
+                        Sections = GraphNodes.SectionsFor(explaining, () => Content(Current())),
 
-                        // Nothing is hovered while the player is on the words: there is no control
+                        // Where the words explain nothing, nothing is hovered: there is no control
                         // under the cursor to light up, and no tooltip of a neighbouring one to leave
                         // hanging over the popup.
-                        OnFocusVisual = ReleasePointer,
+                        OnFocusVisual =
+                            hover == null
+                                ? ReleasePointer
+                                : () => PointerFocus.MoveTo(hover, explains),
+                        OnBlurVisual = ReleasePointer,
                     }
                 );
             }
@@ -1994,6 +2008,74 @@ namespace ES2Access.Screens
         {
             return ControlId.Referenced(label, "notification:words");
         }
+
+        /// <summary>
+        /// What the popup offers on hovering its words.
+        ///
+        /// A notification whose sentence names a thing offers that thing's dossier on hover - "your
+        /// empire now has access to Bluecap Mold" comes with the resource's stat block - and the game
+        /// hangs it not on the label but on the BLOCK it drew the label in
+        /// (<c>LuxuryDiscoveredNotificationWindow.ResourceTooltip</c> sits on the description group).
+        /// So the walk starts at the words and goes up for as long as the container is nothing but the
+        /// words' own block (<see cref="Wraps"/>), which is what reaches that group and stops before
+        /// the one above it that also holds the picture beside the text.
+        ///
+        /// A tooltip that only repeats the words is not a second thing to say, the same as anywhere
+        /// else on this screen.
+        /// </summary>
+        private static List<AgeTooltip> WordsTooltips(AgePrimitiveLabel label, string text)
+        {
+            List<AgeTooltip> kept = new List<AgeTooltip>();
+            try
+            {
+                AgeTransform at = label == null ? null : label.AgeTransform;
+                for (int depth = 0; at != null && depth < MaxAncestors; depth++)
+                {
+                    AgeTooltip tooltip = at.AgeTooltip;
+                    if (
+                        tooltip != null
+                        && !kept.Contains(tooltip)
+                        && Explains(tooltip, text) != null
+                    )
+                    {
+                        kept.Add(tooltip);
+                    }
+
+                    AgeTransform parent = at.Parent;
+                    if (parent == null || !Wraps(parent, at))
+                    {
+                        break;
+                    }
+
+                    at = parent;
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("notification: looking for the words' explanation threw: " + e);
+            }
+
+            return kept;
+        }
+
+        /// <summary>Whether the container is drawn as nothing but this widget's own block - its
+        /// rectangle the widget's, grown by the margins the widget was laid out with. That is exactly
+        /// how the popup family sizes the group it draws its description in, and it is what tells that
+        /// group apart from the container above it, which is drawn around the picture as well.
+        /// </summary>
+        private static bool Wraps(AgeTransform container, AgeTransform widget)
+        {
+            Rect inner = widget.GetGlobalPosition();
+            Rect outer = container.GetGlobalPosition();
+            return outer.xMin >= inner.xMin - widget.PixelMarginLeft - Slack
+                && outer.yMin >= inner.yMin - widget.PixelMarginTop - Slack
+                && outer.xMax <= inner.xMax + widget.PixelMarginRight + Slack
+                && outer.yMax <= inner.yMax + widget.PixelMarginBottom + Slack;
+        }
+
+        /// <summary>How far a block may miss the widget it was sized to and still be that widget's
+        /// block: a pixel of rounding, not a row of anything.</summary>
+        private const float Slack = 2f;
 
         private static void Add(GraphBuilder builder, Control control)
         {
