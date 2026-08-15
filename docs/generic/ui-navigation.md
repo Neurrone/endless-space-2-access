@@ -245,7 +245,20 @@ which no dump reveals. Key such lines on the game's *data* object, never the wid
   renderer-composed tooltip cannot exist until the camera has brought its widget on screen,
   so reading one is a camera move plus a hover, in that order. Declare what is actually drawn — walk
   ancestors for visibility, test drawn-ness, filter decorative click-shields (no activation
-  wiring), order by measured position so speech order matches the screen. And drawn words are
+  wiring), order by measured position so speech order matches the screen — but group by the
+  game's own containers: a rectangle says where a control is, never which part of the window
+  it belongs to. A widget shown through a scrolling window is drawn where the window is, not
+  where its rectangle is — measure it there, and still read all of it. A widget read off a
+  window's own field must be proved to hang under that window's root before its text is
+  believed: a chain-walking visibility test passes a DETACHED widget vacuously, so the chain
+  test must END at a named ancestor — running out of parents is a failure, not a pass — and
+  engine prefabs routinely keep unused wiring. And when regions or strips are derived by
+  comparing rects against a reference widget, the reference is a premise — validate it
+  first; a bogus divider reads as a layout change, not as a bad divider. "Did the game
+  write a caption ON this control" and "what does this control say" are two questions — the
+  first is the discriminator against invisible click-catchers (one level), the second is
+  the name (whole subtree); merging them turns wrapper buttons into captioned controls.
+  And drawn words are
   never dropped from speech, even where they read as vacuous: a heading over an empty table is
   what the sighted player sees too, and deleting it is a different screen, not a tidier one.
   The one exception is a control whose drawing the mod's own presence excludes: where the game

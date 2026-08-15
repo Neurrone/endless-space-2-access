@@ -50,7 +50,9 @@ the game finished writing count: text still holding an unfilled template slot ("
 a key the localizer hands back unchanged ("%SomeKey") is parked, not shown — treat it as
 absent, never speak it. The same trap has a prefab form: a widget HIDDEN today may already
 carry its text from the prefab, so a tooltip-fed readout gated on anything but the game's own
-drawn flag ships a false statement about every healthy object. Preserve it
+drawn flag ships a false statement about every healthy object. Ask drawn-ness of the CHAIN
+with the engine's own child test — a container retires without touching what it holds — and
+start the walk below the screen's root, because the root itself may animate. Preserve it
 exactly: no mod separators or punctuation inserted (multi-line game text joins with a space,
 not a list comma — worked examples in [localization.md](localization.md)). Conversely, invent nothing the game does
 not show: no placeholder nodes for empty states, no spoken position text where the game shows
@@ -174,6 +176,10 @@ reload-safe ([hot-reload.md](hot-reload.md)) and per-frame cheap — `Build` run
   check even though it matches the pixels perfectly — "1500/1500" beside an unnamed icon
   satisfies spoken-equals-drawn and tells the player nothing. Matching is necessary;
   comprehensible is the bar.
+- **When N prefabs share one reader, per-screen evidence pairs do not scale** — ship a
+  mechanical parity check that re-derives both sides (the drawn tree, the declared graph)
+  and runs itself on whatever the player meets; a shared reader's premises are per-prefab
+  data and only measurement can validate them.
 - **A fix whose whole effect is an ABSENCE has no pair until you build one.** Silence on a
   clean run is not evidence, and these repro windows are narrow by nature. Revert the one
   guard, rebuild, reload, re-run the same probes: the failing half costs a couple of minutes
@@ -215,7 +221,8 @@ retires a feature from testing on a guess (measured instance: "no stage deeds at
 was derived from preconditions, every link plausible, and 12 of 20 stages had one). And
 when the game *changes a rendering decision* on the same predicate your speech depends on —
 swapping a tooltip's class, an icon, a color — that switch is a **free oracle**: it
-confirms your state mapping independently, with no second probe.
+confirms your state mapping independently, with no second probe — and the engine often
+already computes the number you are about to recompute; find its predicate and match it.
 
 ## 5. Hand over the manual test
 

@@ -67,7 +67,10 @@ screen. The face deliberately extends to the widget's own indicated tooltip: an 
 tooltip must be readable from the buffer. That invariant holds **by construction** — the
 indication and the buffer both derive from the same declared section
 (`NodeVtable.Sections`, [ui-navigation.md](ui-navigation.md)), never from two separately
-wired channels. Simulation state the widget doesn't draw stays out.
+wired channels — but not instantly or unconditionally: a render-composed tooltip's lines
+only exist once the game draws them, so the buffer advertises before it holds — and if
+the game's request fails, never holds at all unless the mod owns the retry. Simulation
+state the widget doesn't draw stays out.
 
 **The "card" worked example**: a control whose readout is just name + state and whose
 entire substance lives in the buffer — type, traits, anomalies, outputs, refusal reasons.

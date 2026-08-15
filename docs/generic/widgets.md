@@ -11,7 +11,10 @@ One node factory per widget kind (see `src/graph-ui/GraphNodes.cs`), all built f
 parts, all text `Func<string>` resolved at speak time:
 
 - **Checkbox** — activate toggles; a **live** Value part speaks checked/unchecked, so a
-  game-driven flip under the cursor announces itself.
+  game-driven flip under the cursor announces itself. A disclosure/expander — a tick whose
+  click reveals or hides a panel — is a real checkbox (its state is meaningful), and the
+  panel it hides must NOT be read while hidden; a collapsed container is exactly the "gate
+  on the game's own drawn flag" case.
 - **Slider** — `OnAdjust` wired; the caller supplies the value already formatted the way the
   game _displays_ it (replicate the game's own number formatting — percentages, decimals —
   rather than inventing one).

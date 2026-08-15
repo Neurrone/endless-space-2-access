@@ -67,6 +67,9 @@ infrastructure); starting with the seam costs nearly nothing.
   template (gender, case, classifiers). When a composition would require grammatical
   agreement, that composition becomes a single key, not a glue job. Accept that speech
   tolerates slightly telegraphic style; translators adapt within their template.
+- **Numbers speak the displayed counter.** A strategy game's internal turn counter is
+  usually one off from the displayed one; any mod-composed schedule ("turn N") must use
+  the displayed counter, while durations stay relative.
 
 ## The message builder
 

@@ -64,7 +64,10 @@ Rules that came out of shipping this, all hit in practice:
 - **Indication must never gate on rendered content existing.** A render-composed tooltip's
   words do not exist until the game draws them — a hover-delay *after* focus arrives — so
   "say 'has tooltip' only if the lines are non-empty" is silent every single time. For a
-  renderer-assembled tooltip, having content is definitional: indicate unconditionally.
+  renderer-assembled tooltip, having content is definitional: indicate unconditionally —
+  but indicate only a tooltip the engine's own can-draw test accepts (its two-field
+  content/target check); prefabs routinely hang class-backed tooltips with no target on
+  decoration, and indicating one promises a review buffer that is always empty.
 - **Reading a render-composed tooltip back**: where provider interfaces are readable
   headlessly, prefer them — and the REFUSAL is the part that nearly always is: the failure
   feature is typically one call over a provider on the tooltip's target, populated at bind
@@ -72,6 +75,14 @@ Rules that came out of shipping this, all hit in practice:
   failure panel is the free oracle proving your expression matches it. Where they are not, make focus trigger the game's own tooltip
   display (see focus visuals in [ui-navigation.md](ui-navigation.md)) and read the drawn
   window's labels — what is drawn is exactly what should be spoken.
+  A hover tooltip system is edge-triggered: it asks once per hover change and may park a
+  failed request forever. A mod that holds a hover steady for keyboard focus must own the
+  retry — re-issue the engine's own re-ask signal when nothing has drawn past the delay,
+  budgeted per stall with the budget re-arming only on a successful draw — and must never
+  aim at a tooltip the engine's own can-I-draw test would refuse, re-checked every frame
+  so a widget the game fills late starts drawing without a refocus. When verifying, probe
+  the REQUEST's state, not only the drawn window — "not drawn yet" and "never will be"
+  look identical in speech, dump, and buffer.
   **Find the assembly unit first and scope the reading to it.** A tooltip system that
   composes at render time composes from an ordered list of typed sub-panels (ES2: panel
   features under one table). Reading by geometry *across* those units is what divorces
