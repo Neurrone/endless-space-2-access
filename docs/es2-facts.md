@@ -210,6 +210,18 @@ generic graduates to the generic docs.
   calls `RequestGalaxyOverviewViewLevel(component.Position)` instead — no page opens, and the only
   feedback a mouse user gets is the camera sliding. Measured from `unlocked` on a non-owned system:
   the reveal capture fires and the mod says "Shown on the map" rather than announcing a page.
+- **The label's management button is stricter than the view level behind it.** `StarSystemLabel`
+  :1626-1648 assigns `MainColonizedStarSystem` only while the state is `Colony`, and :1750 enables
+  `RequestManagementViewButton` from it — so the button is drawn dead on an OUTPOST of ours, while
+  `RequestStarSystemManagementViewLevel` (:1224-1247) opens the page for any system of ours that is
+  not `Lost`. A mod reading "can the player do this" off the button's `Enable` under-offers by
+  exactly the outpost case. Measured turn 18: Heka `enable=False`, repository `State == Outpost`,
+  `IsBlackedOut == false`, and `GalaxyViewLevels.OpenSystem` opens the page — whose outpost half
+  (`OutpostInfoSidePanel`, the outpost-action checkboxes) the system screen already reads.
+- **An undiscovered system's label carries `Enable=True` from the prefab.** A sweep of all 87
+  `StarSystemLabel`s found ~80 with `RequestManagementViewButton.Enable == True` and the visibility
+  chain false. Any offer gated on `Enable` alone would exist for the whole galaxy; the drawn-chain
+  test has to come first.
 - **A docked fleet's position IS its star's.** `FleetPosition`'s node-position setter takes
   `service.Get3DPosition(nodePosition)`, so `Fleet.GalaxyPosition` for anything in orbit equals the
   `StarSystemNode`'s exactly (measured: `GalaxyFleet.transform.position` equals

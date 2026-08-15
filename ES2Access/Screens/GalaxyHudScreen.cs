@@ -1483,7 +1483,7 @@ namespace ES2Access.Screens
         )
         {
             List<Lane> lanes = LanesOf(node, empire);
-            AddManagementView(builder, key, label);
+            AddManagementView(builder, key, node, label);
             AddLabelButtons(builder, key, label);
             AddPlanets(builder, key, node, empire, label);
             AddWrecks(builder, key, node);
@@ -1640,30 +1640,95 @@ namespace ES2Access.Screens
             GalaxyViewLevels.ZoomToStep(node, GalaxyViewLevels.DefaultZoomStep);
         }
 
-        /// <summary>The button the map draws on a colony's own label, beside its name - the one route
-        /// into the system's page, and the one the mouse takes. Declared only while the game is drawing
-        /// it and willing to act on it, which is its own answer to "is this a colony of mine".</summary>
+        /// <summary>
+        /// The button the map draws on a system of ours, beside its name - the one route into that
+        /// system's page, and the one the mouse takes.
+        ///
+        /// Declared while the game is drawing the button, and pressed only while the game will act on a
+        /// press. Those are two different questions here: the label greys the button out on anything but
+        /// a COLONY of ours (<c>StarSystemLabel</c> :1626-1648 assigns the system it enables from at
+        /// :1750 only while the state is <c>Colony</c>), while the view level behind it opens for any
+        /// system of ours that is not lost (<c>GuiManager.RequestStarSystemManagementViewLevel</c>
+        /// :1224-1247). So an OUTPOST is drawn a dead button over a page that would open perfectly well,
+        /// and dropping the node left every colony a one-key route into its page while an outpost's had
+        /// to be flown to on the zoom ladder.
+        ///
+        /// The greyed-out button is therefore still declared wherever that route would really open a
+        /// page (<see cref="Manageable"/>), and takes the route itself rather than pressing a button
+        /// that would do nothing. Nowhere else: on somebody else's system or an empty one the same call
+        /// silently degrades to centring the map (<see cref="GalaxyViewLevels.OpenSystem"/>), which is
+        /// not a page and would be a node that says it opens something and does not.
+        /// </summary>
         private static void AddManagementView(
             GraphBuilder builder,
             string key,
+            StarSystemNode node,
             StarSystemLabel label
         )
         {
             AgeTransform button = label == null ? null : label.RequestManagementViewButton;
-            if (button == null || !Visible(button) || !AgeWidgets.Operable(button))
+            if (button == null || !Visible(button))
+            {
+                return;
+            }
+
+            if (!AgeWidgets.Operable(button) && !Manageable(node))
             {
                 return;
             }
 
             AgeTransform it = button;
+            StarSystemNode at = node;
             NodeVtable vtable = GraphNodes.Button(
                 () => ModStrings.Get(ModStrings.GalaxyOpenSystem),
-                () => AgeWidgets.Press(it),
+                () => OpenManagementView(it, at),
                 null,
                 Raw(it)
             );
             PointAt(vtable, it);
             builder.AddItem(ControlId.Structural(key + "/management"), vtable);
+        }
+
+        /// <summary>The map's own way into a system's page: the label's button while the game is willing
+        /// to be pressed, and the request the button would have made where it is only drawn greyed
+        /// out.</summary>
+        private static void OpenManagementView(AgeTransform button, StarSystemNode node)
+        {
+            if (AgeWidgets.Operable(button))
+            {
+                AgeWidgets.Press(button);
+                return;
+            }
+
+            GalaxyViewLevels.OpenSystem(node);
+        }
+
+        /// <summary>Whether asking for a system's management page would really open one - the game's own
+        /// three conditions for it, asked of the same repository it asks
+        /// (<c>GuiManager.RequestStarSystemManagementViewLevel</c> :1224-1247): the node is not blacked
+        /// out, we hold a system here, and what we hold is not lost. Everything else falls through to
+        /// centring the map on the node.</summary>
+        private static bool Manageable(StarSystemNode node)
+        {
+            try
+            {
+                Empire empire = PlayerEmpire();
+                IColonizedStarSystemRepositoryService colonies =
+                    Amplitude.Unity.Framework.Services.GetService<IColonizedStarSystemRepositoryService>();
+                if (node == null || empire == null || colonies == null || node.IsBlackedOut)
+                {
+                    return false;
+                }
+
+                ColonizedStarSystem mine;
+                return colonies.TryGetValue(empire, node.NodePosition, out mine)
+                    && mine.State != StarSystemState.Lost;
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: asking whether a system's page would open threw: " + e);
+                return false;
+            }
         }
 
         /// <summary>The other buttons the map draws on a system's label - the diplomacy button under the

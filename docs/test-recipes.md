@@ -618,6 +618,15 @@ tightened rule (making-screens-accessible.md §3), the gate protects the cursor'
 the page: a page whose early half is usable declares it, and the planet page's lost-card
 repair (`Nudge`) is the other half of that story.
 
+**The management-view node's negative control.** "Unowned systems gain nothing" is only proved by a
+system whose label button is VISIBLE and inoperable — an invisible button passes for the wrong
+reason. Sweep the labels with
+`GetWindow<StarSystemLabelsWindow>(false).GetComponentsInChildren<StarSystemLabel>(true)` and print
+`StarSystemNode.LocalizedName`, the `RequestManagementViewButton` visibility chain, `.Enable`, and
+the gate under test; only the camera's own system and its neighbours read `vis=True`. Expanding a
+system ZOOMS to it, so two systems expanded at once is not an A/B: the one the camera left stops
+drawing its label and loses its `Open system` child.
+
 **The constructible filters are a safe round trip.** They are one select-one group the panel
 re-derives from `SelectedConstructibleFilterName` on every refresh, so Enter on another filter and
 Enter back on "All" leaves the fixture as found — nothing about the system or its queue moves. The
