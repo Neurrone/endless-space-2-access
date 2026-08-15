@@ -222,8 +222,14 @@ namespace ES2Access.Screens
         /// The seam is here rather than in a patch on the game because the screen already knows the
         /// answer: it waits out the animation for its own announcement (<see cref="Ready"/>), and
         /// that is the same moment a check of what the popup draws becomes meaningful.
+        ///
+        /// The watcher answers whether it is FINISHED with this popup. Ready is not painted - the
+        /// game calls a popup ready while its content is still fading up, and a watcher that measures
+        /// what is drawn sees nothing there - so answering false asks to be shown the same popup again
+        /// on the next ready frame, up to <see cref="MaxSettleWaits"/> of them. The watcher's own
+        /// patience is what gives up in words; this cap only stops a broken one asking forever.
         /// </summary>
-        internal static Action<NotificationWindow> Shown;
+        internal static Func<NotificationWindow, bool> Shown;
 
         /// <summary>How many ready frames to let pass before the popup counts as settled. Measured:
         /// on the frame the game calls the popup ready its content is laid out but not FINISHED - the
@@ -232,8 +238,14 @@ namespace ES2Access.Screens
         /// never sees.</summary>
         private const int SettleFrames = 2;
 
+        /// <summary>How many ready frames the watcher may keep asking for before the screen stops
+        /// offering the popup: about two seconds of them, which is several times the longest arrival
+        /// animation measured.</summary>
+        private const int MaxSettleWaits = 120;
+
         private NotificationWindow _settling;
         private int _settleFrames;
+        private int _settleWaits;
 
         /// <summary>Arrival says the notification, so the watch starts from what was just said.
         /// </summary>
@@ -256,6 +268,7 @@ namespace ES2Access.Screens
 
             _settling = window;
             _settleFrames = SettleFrames;
+            _settleWaits = 0;
         }
 
         private void Settled()
@@ -266,21 +279,31 @@ namespace ES2Access.Screens
             }
 
             NotificationWindow window = _settling;
-            _settling = null;
-            Action<NotificationWindow> watching = Shown;
+            Func<NotificationWindow, bool> watching = Shown;
             if (watching == null)
             {
+                _settling = null;
                 return;
             }
 
+            bool done;
             try
             {
-                watching(window);
+                done = watching(window);
             }
             catch (Exception e)
             {
                 Log.Warn("notification: the settled-popup watcher threw: " + e);
+                done = true;
             }
+
+            if (!done && ++_settleWaits <= MaxSettleWaits)
+            {
+                _settleFrames = 1;
+                return;
+            }
+
+            _settling = null;
         }
 
         public override void OnPop()
@@ -289,6 +312,7 @@ namespace ES2Access.Screens
             _title = null;
             _description = null;
             _settling = null;
+            _settleWaits = 0;
         }
 
         /// <summary>Walking to the next notification swaps the words inside the same popup - or
@@ -355,7 +379,9 @@ namespace ES2Access.Screens
             string description = Description(window);
             AgePrimitiveLabel label = description == null ? null : DescriptionLabel(window);
             AgeTransform words =
-                label != null && Visible(label.AgeTransform) ? label.AgeTransform : null;
+                label != null && Painted(label.AgeTransform, Root(window))
+                    ? label.AgeTransform
+                    : null;
 
             // A popup whose content is a MODEL rather than text writes its own body, and then it owns
             // every control it added as well - so only the shared skeleton is collected here.
@@ -1055,6 +1081,11 @@ namespace ES2Access.Screens
             {
                 if (
                     !InBody(line.Widget, top, bottom)
+                    // A line inside a panel the popup has folded away is not a line: the detail of a
+                    // damage report sits behind a "+" at alpha 0 and keeps every word it last held.
+                    // Asked of the label itself rather than of where it is measured, since a clipped
+                    // line is measured at the scrolling window it shows through.
+                    || !Painted(line.Owner, root)
                     || PartOf(line.Widget, controls)
                     || IsWords(line, words)
                     || IsIn(line.Widget, dossier)
@@ -1495,7 +1526,10 @@ namespace ES2Access.Screens
             List<AgeTransform> children = widget.Children;
             for (int i = 0; children != null && i < children.Count; i++)
             {
-                Collect(children[i], lines, depth + 1);
+                if (AgeWidgets.Paints(widget, children[i]))
+                {
+                    Collect(children[i], lines, depth + 1);
+                }
             }
         }
 
@@ -1521,7 +1555,7 @@ namespace ES2Access.Screens
             List<AgeTransform> children = widget.Children;
             for (int i = 0; children != null && i < children.Count; i++)
             {
-                if (Draws(children[i], depth + 1))
+                if (AgeWidgets.Paints(widget, children[i]) && Draws(children[i], depth + 1))
                 {
                     return true;
                 }
@@ -2072,7 +2106,7 @@ namespace ES2Access.Screens
             for (int i = 0; children != null && i < children.Count; i++)
             {
                 AgeTransform child = children[i];
-                if (child != null && Visible(child) && Draws(child, 0))
+                if (AgeWidgets.Paints(table, child) && Visible(child) && Draws(child, 0))
                 {
                     rows.Add(child);
                 }
@@ -2119,9 +2153,10 @@ namespace ES2Access.Screens
             List<AgeTransform> tables = new List<AgeTransform>();
             List<AgeTransform> top = controls == null ? null : TopRails(window, controls);
             List<AgeTransform> bottom = controls == null ? null : BottomRails(controls);
+            AgeTransform root = Root(window);
             foreach (AgeTransform table in variant.Tables(window))
             {
-                if (table == null || !Visible(table))
+                if (table == null || !Painted(table, root))
                 {
                     continue;
                 }
@@ -2337,7 +2372,8 @@ namespace ES2Access.Screens
                     () => Caption(it),
                     () => Press(it),
                     () => Enabled(it.Widget),
-                    explains
+                    explains,
+                    it.TipMode
                 );
             }
             else if (it.Radio || InRadioGroup(it.Toggle))
@@ -2348,7 +2384,8 @@ namespace ES2Access.Screens
                     () => Press(it),
                     () => Enabled(it.Widget),
                     null,
-                    explains
+                    explains,
+                    it.TipMode
                 );
 
                 // Picking is not doing: the popup wants the choice CONFIRMED, and where it draws no
@@ -2376,7 +2413,8 @@ namespace ES2Access.Screens
                     () => State(it.Toggle),
                     () => Press(it),
                     () => Enabled(it.Widget),
-                    explains
+                    explains,
+                    it.TipMode
                 );
             }
 
@@ -2481,6 +2519,12 @@ namespace ES2Access.Screens
             /// exclusivity by hand instead of with a <c>GuiRadioGroup</c>.</summary>
             public bool Radio;
 
+            /// <summary>How this control's tooltip reads, where the shared rule would otherwise say it
+            /// twice: a control the popup wrote no words on is NAMED by its tooltip's opening sentence
+            /// (<see cref="WordlessName"/>), and a tooltip that then announces itself repeats the name
+            /// it just gave. Null leaves the shared rule alone.</summary>
+            public TooltipMode? TipMode;
+
             /// <summary>The tooltip that explains this control where the game hung it somewhere other
             /// than on the control - a choice card's reason for refusing sits on the CARD, and the switch
             /// that refuses is a piece inside it.</summary>
@@ -2524,6 +2568,7 @@ namespace ES2Access.Screens
             List<Control> controls = new List<Control>();
             try
             {
+                AgeTransform root = Root(window);
                 AgeControlButton dismiss = Button(window, DismissButton);
                 AgeControlButton showLocation = Button(window, ShowLocationButton);
                 AgeControlButton minimize = Button(window, MinimizeButton);
@@ -2601,13 +2646,47 @@ namespace ES2Access.Screens
                         continue;
                     }
 
+                    string leads = WordlessName(button.AgeTransform, gateway.NameKey);
                     Add(
                         controls,
                         "gateway/" + gateway.Widget.name,
                         button,
                         null,
                         null,
-                        GatewayName(button.AgeTransform, gateway.NameKey)
+                        leads,
+                        false,
+                        null,
+                        Repeats(button.AgeTransform, leads)
+                    );
+                }
+
+                // The tick that folds a detail panel out and away, for a popup that drew it as a bare
+                // "+". Named by what the popup wrote about it, which is only ever its tooltip.
+                // The "+" fades ITSELF in the first time a report is shown
+                // (<c>DamageReportNotificationWindow.OnEndShow</c> :30-34 makes it visible and starts
+                // its modifiers), so it is offered when it is drawn rather than when it is flagged
+                // visible - otherwise the popup announces a control the screen is not showing yet.
+                foreach (AgeControlToggle expander in own ? Expanders(window) : NoExpanders)
+                {
+                    if (
+                        !Painted(expander.AgeTransform, root)
+                        || Has(controls, expander.AgeTransform)
+                    )
+                    {
+                        continue;
+                    }
+
+                    string unfolds = WordlessName(expander.AgeTransform, null);
+                    Add(
+                        controls,
+                        "expander/" + expander.name,
+                        null,
+                        expander,
+                        null,
+                        unfolds,
+                        false,
+                        null,
+                        Repeats(expander.AgeTransform, unfolds)
                     );
                 }
 
@@ -2658,7 +2737,8 @@ namespace ES2Access.Screens
             string nameKey,
             string name = null,
             bool radio = false,
-            AgeTooltip tip = null
+            AgeTooltip tip = null,
+            TooltipMode? mode = null
         )
         {
             AgeControl control = toggle == null ? (AgeControl)button : toggle;
@@ -2678,6 +2758,7 @@ namespace ES2Access.Screens
                     Name = name,
                     Radio = radio,
                     Tip = tip,
+                    TipMode = mode,
                 }
             );
         }
@@ -2706,6 +2787,7 @@ namespace ES2Access.Screens
         {
             List<AgeControl> extras = new List<AgeControl>();
             AgeControl[] declared = Declared(window);
+            AgeTransform root = Root(window);
             foreach (AgeControl control in window.gameObject.GetComponentsInChildren<AgeControl>(true))
             {
                 AgeControlButton button = control as AgeControlButton;
@@ -2715,7 +2797,7 @@ namespace ES2Access.Screens
                     || (toggle != null && !string.IsNullOrEmpty(toggle.OnSwitchMethod));
                 if (
                     !wired
-                    || !Visible(control.AgeTransform)
+                    || !Painted(control.AgeTransform, root)
                     || string.IsNullOrEmpty(CaptionOf(control.AgeTransform))
                     || Array.IndexOf(declared, control) >= 0
                 )
@@ -2790,6 +2872,13 @@ namespace ES2Access.Screens
         /// sentence its tooltip opens with - and the mod's own phrase only where the popup wrote neither.
         /// A gateway the shared reading already found is not declared twice.
         ///
+        /// <see cref="Expanders"/>: the tick the popup drew as a bare "+" that folds its detail panel
+        /// out and away. It has no caption - what it is for is written in its tooltip - so the shared
+        /// rule drops it, and dropping it leaves the detail of a damage report, of an obliterator
+        /// strike, of a pirate mission and of both sides of a war breakdown unreachable by keyboard
+        /// while the popup happily keeps drawing the "+". A real toggle rather than a button: the panel
+        /// stays out until the player folds it back, so the state is worth announcing.
+        ///
         /// <see cref="Cards"/>: controls the popup drew as CARDS - a picture with the words scattered
         /// around it rather than written on it. The shared rule names a control from the labels it holds,
         /// and a card holds none: its title, its category and its cost are laid out beside the disk the
@@ -2807,6 +2896,7 @@ namespace ES2Access.Screens
             public Func<NotificationWindow, IList<AgeTransform>> Tables;
             public Func<NotificationWindow, IList<AgeTransform>> Choices;
             public Func<NotificationWindow, IList<Control>> Cards;
+            public Func<NotificationWindow, IList<AgeControlToggle>> Expanders;
             public Func<NotificationWindow, AgeControl> Confirm;
             public Func<NotificationWindow, IList<Gateway>> Gateways;
             public Action<NotificationBody> Body;
@@ -2907,7 +2997,10 @@ namespace ES2Access.Screens
             );
 
             // Reports whose tables sit behind a breakdown toggle: the toggle is the game's own box (it
-            // is in no radio group and turns one thing on and off), and what it unfolds is these.
+            // is in no radio group and turns one thing on and off), and what it unfolds is these. The
+            // toggle itself is declared as well - the popup draws it as a bare "+" with its purpose in
+            // its tooltip, so nothing else here would find it, and without it the whole panel is
+            // unreachable.
             variants.Add(
                 typeof(DisplacementReportNotificationWindow),
                 new Variant
@@ -2917,6 +3010,7 @@ namespace ES2Access.Screens
                             ((DisplacementReportNotificationWindow)w).ImprovementsTable,
                             ((DisplacementReportNotificationWindow)w).PopulationsTable
                         ),
+                    Expanders = w => Unfolds(((DisplacementReportNotificationWindow)w).ReportToggle),
                 }
             );
             variants.Add(
@@ -2924,6 +3018,15 @@ namespace ES2Access.Screens
                 new Variant
                 {
                     Tables = w => Some(((IonWaveReportNotificationWindow)w).ShipLinesTable),
+                    Expanders = w => Unfolds(((IonWaveReportNotificationWindow)w).ReportToggle),
+                }
+            );
+            variants.Add(
+                typeof(ObliteratorAttackReportNotificationWindow),
+                new Variant
+                {
+                    Expanders = w =>
+                        Unfolds(((ObliteratorAttackReportNotificationWindow)w).ReportToggle),
                 }
             );
             variants.Add(
@@ -2936,6 +3039,8 @@ namespace ES2Access.Screens
                             ((ObliteratorVictimReportNotificationWindow)w).ImprovementsTable,
                             ((ObliteratorVictimReportNotificationWindow)w).PopulationsTable
                         ),
+                    Expanders = w =>
+                        Unfolds(((ObliteratorVictimReportNotificationWindow)w).ReportToggle),
                 }
             );
             // The pirates' blockade report (Vaulters): what they pillaged and what your cut of it was,
@@ -2950,6 +3055,8 @@ namespace ES2Access.Screens
                             ((PirateMissionReportNotificationWindow)w).RawLeechedResourcesTable,
                             ((PirateMissionReportNotificationWindow)w).PlayerLeechedResourcesTable
                         ),
+                    Expanders = w =>
+                        Unfolds(((PirateMissionReportNotificationWindow)w).MissionReportToggle),
                 }
             );
             variants.Add(
@@ -2961,6 +3068,25 @@ namespace ES2Access.Screens
                             ((ForceTruceProposedNotificationWindow)w).WinnerBreakdownTable,
                             ((ForceTruceProposedNotificationWindow)w).LooserBreakdownTable
                         ),
+                    Expanders = w =>
+                        Unfolds(
+                            ((ForceTruceProposedNotificationWindow)w).WinnerBreakdownToggle,
+                            ((ForceTruceProposedNotificationWindow)w).LooserBreakdownToggle
+                        ),
+                }
+            );
+
+            // A narrative event asking the player which way to take it: a set of cards the popup keeps
+            // exclusive itself (<c>NarrativeEventBegunNotificationWindow.RefreshChoiceItem</c>
+            // :266-279 writes every sibling's state from the one chosen index), each card a picture
+            // with its title, its description and the dossier of what it is about hung on it as a
+            // tooltip. Without this the whole choice is unreachable, since a card carries no caption
+            // of its own.
+            variants.Add(
+                typeof(NarrativeEventBegunNotificationWindow),
+                new Variant
+                {
+                    Choices = w => Some(((NarrativeEventBegunNotificationWindow)w).ChoiceTable),
                 }
             );
 
@@ -3356,7 +3482,11 @@ namespace ES2Access.Screens
         /// <summary>What a gateway button is called: the caption where the popup wrote one, else the
         /// sentence its tooltip opens with, else the mod's own name for where it goes. Null is a complete
         /// answer for the first two - the shared naming falls through to whatever is left.</summary>
-        private static string GatewayName(AgeTransform widget, string nameKey)
+        /// <summary>What to call a control the popup drew with no words on it: whatever it DID write -
+        /// the caption, else the sentence its tooltip opens with - and the mod's own phrase only where
+        /// the popup wrote neither. Used for the buttons a popup draws as bare icons (a gateway, an
+        /// expander), none of which the shared caption rule can name.</summary>
+        private static string WordlessName(AgeTransform widget, string nameKey)
         {
             string caption = CaptionOf(widget);
             if (!string.IsNullOrEmpty(caption))
@@ -3366,6 +3496,18 @@ namespace ES2Access.Screens
 
             string hinted = CardActions.FirstLine(AgeWidgets.Raw(widget));
             return string.IsNullOrEmpty(hinted) ? OptionalText.Phrase(nameKey) : hinted;
+        }
+
+        /// <summary>How a control's tooltip should read once <see cref="WordlessName"/> has named the
+        /// control out of it: indicated rather than announced, because a tooltip whose opening sentence
+        /// IS the name says the name twice. Null - leave the shared rule alone - wherever the name came
+        /// from somewhere else.</summary>
+        private static TooltipMode? Repeats(AgeTransform widget, string name)
+        {
+            string opening = CardActions.FirstLine(AgeWidgets.Raw(widget));
+            return !string.IsNullOrEmpty(opening) && opening == name
+                ? (TooltipMode?)TooltipMode.Indicate
+                : null;
         }
 
         /// <summary>The clickable control a popup's gateway field stands on - its own, else the one inside
@@ -3436,6 +3578,33 @@ namespace ES2Access.Screens
         private static IList<Gateway> Out(params Gateway[] gateways)
         {
             return gateways;
+        }
+
+        /// <summary>The ticks this popup folds its detail panels out with, where it has any.</summary>
+        private static IList<AgeControlToggle> Expanders(NotificationWindow window)
+        {
+            Variant variant = VariantOf(window);
+            if (variant == null || variant.Expanders == null)
+            {
+                return NoExpanders;
+            }
+
+            try
+            {
+                return variant.Expanders(window) ?? NoExpanders;
+            }
+            catch (Exception e)
+            {
+                Log.Warn("notification: looking for a popup's expanders threw: " + e);
+                return NoExpanders;
+            }
+        }
+
+        private static readonly AgeControlToggle[] NoExpanders = new AgeControlToggle[0];
+
+        private static IList<AgeControlToggle> Unfolds(params AgeControlToggle[] toggles)
+        {
+            return toggles;
         }
 
         private static Gateway To(AgeTransform widget, string nameKey)
@@ -3604,7 +3773,10 @@ namespace ES2Access.Screens
             List<AgeTransform> children = widget.Children;
             for (int i = 0; children != null && i < children.Count; i++)
             {
-                Labels(children[i], into, depth + 1);
+                if (AgeWidgets.Paints(widget, children[i]))
+                {
+                    Labels(children[i], into, depth + 1);
+                }
             }
         }
 
@@ -4058,6 +4230,55 @@ namespace ES2Access.Screens
                 }
 
                 return widget != null;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Whether the popup is really drawing this, or has folded it away.
+        ///
+        /// A report popup collapses its detail panel by FADING it: the panel keeps <c>Visible</c> true,
+        /// keeps its rectangle and keeps every word inside it at alpha 1, so <see cref="Visible"/> says
+        /// yes to a whole "Damage Report" the screen shows nothing of. Measured on
+        /// <c>IonWaveReportNotificationWindow</c> with the report collapsed: <c>ReportPanel</c> visible,
+        /// alpha 0, all five of its children visible at alpha 1, every ancestor above it at alpha 1.
+        /// The step from a parent to a child is the engine's own drawn test
+        /// (<see cref="AgeWidgets.Paints"/>) - the same one the parity probe walks with, so what the
+        /// popup reads and what the probe measures agree by construction.
+        ///
+        /// The window's OWN alpha is never asked, which is what <paramref name="root"/> is for: a popup
+        /// fades ITSELF in on arrival (measured: the window transform animates 0 to 1 while every child
+        /// stays at alpha 1), and asking it would empty the body for the length of that animation.
+        /// </summary>
+        private static bool Painted(AgeTransform widget, AgeTransform root)
+        {
+            try
+            {
+                if (widget == null || !Visible(widget))
+                {
+                    return false;
+                }
+
+                AgeTransform at = widget;
+                for (
+                    int depth = 0;
+                    at != null && !ReferenceEquals(at, root) && depth < MaxAncestors;
+                    depth++
+                )
+                {
+                    AgeTransform parent = at.Parent;
+                    if (!AgeWidgets.Paints(parent, at))
+                    {
+                        return false;
+                    }
+
+                    at = parent;
+                }
+
+                return true;
             }
             catch (Exception)
             {

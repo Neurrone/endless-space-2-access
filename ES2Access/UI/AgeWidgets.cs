@@ -101,6 +101,32 @@ namespace ES2Access.UI
             }
         }
 
+        /// <summary>
+        /// Whether the parent is DRAWING this child - the engine's own answer, which is what
+        /// <c>AgeTransform.GetVisibleChildrenCount</c> counts with
+        /// (<c>firstpass/AgeTransform.cs:2549-2561</c>): visible, and not faded away unless the parent
+        /// forces its children visible.
+        ///
+        /// This is the ONE-STEP form of <see cref="Painted"/>, for a walk that descends from a root it
+        /// already trusts. It never asks the root's own alpha, which matters wherever the root is
+        /// itself animating - a popup fades ITSELF in on arrival while every child stays at alpha 1,
+        /// and a walk that asked the root would read the whole window as blank for the length of that
+        /// animation.
+        /// </summary>
+        public static bool Paints(AgeTransform parent, AgeTransform child)
+        {
+            try
+            {
+                return child != null
+                    && child.Visible
+                    && (parent == null || parent.StrictVisibility || child.Alpha > 0f);
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
         public static bool Enabled(AgeTransform widget)
         {
             try

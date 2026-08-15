@@ -133,6 +133,10 @@ generic graduates to the generic docs.
   `%ShipSize*Title`, `%FleetListTableCommandPointsTitle`. `DevProbe.UnknownIcons()` is silent
   about these by design; the symptom is a spoken line that is only figures, and the fix is a typed
   reader, never a new icon row.
+- **Icon-table coverage proof** (moved here from `dev-loop.md`, which is the loop only): run every
+  `<LocalizationPair>` value in `<game>\Public\Localization\english\*.xml` through
+  `ES2Access.UI.AgeText.Clean`, then `DevProbe.UnknownIcons()` — `tokens` must be empty, and the
+  expected token counts are this file's icon numbers.
 - **`Gui.GetTitle` can hand back a key that has no translation.** `ShipStatCommandPoints`
   declares `%ShipStatCommandsTitle`, which the corpus no longer has; the engine's own naming
   convention (`"%" + name + "Title"`) resolves it. Anything reading a title through the element
@@ -938,6 +942,26 @@ generic graduates to the generic docs.
   `MouseUp` re-delivers up the chain (:170-192); the engine reaches the hit target by
   `SendMessage` (`AgeManager.cs:890` — where the click audio comes from) and the ancestors by a
   plain C# call, with no audio.
+- **A notification popup folds a detail panel away by FADING it, and fades ITSELF in on arrival —
+  two alpha animations that a single painted-ness rule cannot both serve.** The six report popups
+  (`DamageReportNotificationWindow` and its three subclasses, `DisplacementReport`,
+  `PirateMissionReport`, plus `ForceTruceProposed`'s two breakdown groups) collapse their detail
+  panel with `ReportPanel.StartAllModifiers(forward: false)`: measured on
+  `IonWaveReportNotificationWindow`, `ReportPanel` sits at `Visible true, Alpha 0` with all five of
+  its children at alpha 1 and every ancestor at alpha 1, so a `Visible`-only read speaks a whole
+  "Damage Report" the screen draws nothing of. The popup's ARRIVAL animates the window's own
+  transform 0 → 1 while every child stays at alpha 1 (measured: a `POST /wait` on
+  `Shown && Alpha <= 0` fires, one on `Shown && IsReady && !Painted(root)` never does over 154
+  frames). So the gate is the ENGINE's own child test —
+  `child.Visible && (parent.StrictVisibility || child.Alpha > 0)`, `AgeWidgets.Paints` — applied
+  descending from the window root and never to the root itself. `NotificationWindow.IsReady` is
+  already past the fade, so the arrival announcement is not at risk either way.
+- **`GuiWindow.IsReady` is not "painted".** The screen's settled-popup seam fires two READY frames
+  after a popup's words settle, and on those frames a popup can still be drawing not one string:
+  a `POST /wait` on `DevProbe.NotificationParity().Contains("\"texts\":0")` fires on a live raise,
+  and the parity check a moment later is clean. No settled popup of the sixty-four paints fewer
+  than four strings, so "paints nothing" is an early frame rather than a finding, and the auto-check
+  defers on it (bounded, with a give-up line).
 - **AGE `ReserveChildren` tables retire rows by FADING** (alpha 0, `Visible` still true) — the
   third retirement style, beside the surplus-child alpha 0 of "`Visible` is not 'drawn'" and the
   scan view's pool that parks stale children fully visible outside the table's extents. Every
@@ -1252,10 +1276,14 @@ generic graduates to the generic docs.
   the panel). Counted in `Public\Tutorials\*.xml`: 117/10 vs 41/16/49. Closing a modal a
   tutorial was drawn over makes the popup re-announce its page — the panel is briefly
   un-minimized during the hide.
-- **The report family's breakdown toggle is VESTIGIAL**: `ReportPanel` carries no `AgeModifier` at
-  all (verified on four report windows), so the toggle animates nothing and the tables it claims to
-  collapse stay drawn either way — the caption-less icon the shared caption rule drops costs the
-  player nothing.
+- **The report family's breakdown toggle is REAL — the earlier "vestigial" reading was an
+  ask-the-wrong-component error.** `ReportPanel.GetComponents<AgeModifier>()` really does answer
+  zero, which is what the reversed claim rested on; the animation lives in the transform's modifier
+  SET (`AgeFirstModifierSet`), which is what `StartAllModifiers` drives. Measured live 2026-08-15:
+  collapsed, `ReportPanel` is `Alpha 0` and a crop of its rectangle is empty sky; activating the
+  toggle draws "DAMAGE REPORT" and the ships line in the same rectangle. Never conclude "animates
+  nothing" from an absent `AgeModifier` component — ask the panel's ALPHA in both states, and pair
+  it with a crop.
 - **A hacking outcome's countdown is REAL-TIME seconds** — 10/20/30/45 by outcome, not turns — and it
   auto-picks a default when it runs out, so the choice popup is one of the few surfaces where reading
   slowly changes the result. `PickHackingOperation` only raises its prompt where the node offers MORE

@@ -16,8 +16,9 @@ files above.
   queue-empty, lost-roots connectivity); one-of-N semantics for hand-written choice popups
   (hero recruitment, ground-battle/hacking outcome pickers) + the hacking parameters
   sub-choice and the outcome COUNTDOWN gauge (real-time seconds, auto-picking a default when it
-  runs out — es2-facts; needs a `Variant` hook plus a live sighting); the breakdown-toggle
-  popups' tables (damage/displacement/force-truce — the toggle itself is vestigial, below);
+  runs out — es2-facts; needs a `Variant` hook plus a live sighting);
+  PirateMissionReportNotificationWindow (fixture-blocked: its `Bind` needs a live
+  `AttackSystemPirateDiplomaticAction` — the other five report popups are done);
   DiplomaticInteractionNotificationWindow (MoodMessageLabel, NegotiationContributionPanel).
 - Galaxy-label gaps: constellation ownership bonus; pin-message editing.
 - Scan management-lens remainder (unverifiable at turn 1): the trade-quality dial
@@ -135,9 +136,6 @@ files above.
 ## To decide (owner)
 
 
-- The report family's breakdown toggle (IonWave and friends) is DECLARED NOWHERE: it is
-  vestigial — `ReportPanel` carries no `AgeModifier`, so it animates nothing (es2-facts).
-  Shipped that way; overrule if it should be offered anyway.
 - The drawn-heading lookup renames two out-game pages: "Multiplayer room" and "Asset export".
   Keep the game's drawn headings or the mod's older names?
 - Mod-authored wordings awaiting sign-off: "Ring {0} of {1}" for the skill wheel's rings

@@ -1030,3 +1030,32 @@ shape is four body rows (StatusTitle, ObjectiveTitle, "Outcome", ObjectiveLore) 
 node**, `notification:top` holding Next/Previous/Pop-up-automatically and `notification:bottom`
 holding Minimize/Done. A words node reappearing on one of them, or the whole strip collapsing into
 `notification:bottom`, is the detached-label regression.
+
+**The collapsed-report family** — `IonWaveReport`, `ObliteratorAttackReport`,
+`ObliteratorVictimReport`, `DisplacementReport`, `PirateMissionReport`, `ForceTruceProposed`. Each
+draws a "+" (`ReportToggle` / `MissionReportToggle` / `Winner`+`LooserBreakdownToggle`) over a
+detail panel it keeps FADED (es2-facts), and each toggle is declared through the `Expanders` variant
+field and named from its own tooltip's opening sentence. Live-verified 2026-08-15 on a forced
+IonWave: collapsed = `notification:words`, the icon label, then
+`notification:expander/ReportToggle` reading "Click to display the details of the report, checkbox,
+not checked, has tooltip, 2 of 2" and NO detail rows; `ui.activate` says "checked" and the body
+grows `notification:body/2/Title` "Damage Report" and `notification:body/3/Title` "You lost 0 Ships
+to your enemy's Ion Wave"; parity `clean:true` in BOTH states, and `crop-shot.ps1 -Rect
+704,216,442,200` shows empty sky collapsed and the drawn panel expanded. A build where the detail
+rows read while the "+" says "not checked" has lost the painted-ness gate; one where the expander
+node is missing has lost the variant entry. `ForceTruceProposed` keeps ONE pre-existing placement
+finding (`notification:body/0/Title` drawn above the words it is read after) in every state — that
+is the words-lead-the-body design, not a regression.
+
+**Fixtures for that family.** All six are raised by binding the notification by hand
+(`b5.tsv`/`b8.tsv` shapes; `EventIonWaveReport(PEMP, AIEMP, new IonWaveReport(SSN, PEMP.Index))` is
+the cheapest). `PirateMissionReport` is FIXTURE-BLOCKED: its `Bind` dereferences an
+`AttackSystemPirateDiplomaticAction` that only a live pirate mission produces, and force-SHOWING the
+window instead throws in `OnBeginShow` and leaves a half-shown popup drawing nothing — hide it at
+once. `NarrativeEventBegun` needs a narrative quest (`QuestJournal.Read(QuestState.InProgress)`
+index 26, `AcademyQuest01`, on the parity-audit save) and its choice cards come through the
+`Choices` variant field; the fixture's card draws NO words at all (crop-verified: an icon on an
+empty panel), so its node is legitimately nameless and carries only its dossier tooltip — and that
+tooltip is `SimpleDescription`, so the parity probe reports it unaccounted until the node is
+FOCUSED. Raising it also pops the "Unforgettable Events" tutorial, which retires itself when the
+popup hides.
