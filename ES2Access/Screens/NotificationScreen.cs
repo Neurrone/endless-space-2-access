@@ -24,11 +24,11 @@ namespace ES2Access.Screens
     /// for the controls it put a caption on, because a caption is the game saying "this is a thing
     /// the player chooses".
     ///
-    /// The popup is walked the way it is drawn: the strip of controls above the words, the words
-    /// themselves, and the strip below them. Which strip a control belongs to is read off the
-    /// rectangle the game drew it at rather than from a list of names, so a control a popup adds of
-    /// its own - Empire Information up beside the portrait, Accept and Refuse along the bottom - is
-    /// walked in the strip the player sees it in without anything here knowing it exists.
+    /// The popup is walked the way it is drawn: the strip of controls along the title bar, the
+    /// content, and the strip of buttons along the bottom. Which of the three a control belongs to is
+    /// read off the CONTAINER the game drew it in rather than from a list of names, so a control a
+    /// popup adds of its own - Accept and Refuse along the bottom bar, Empire Information out in the
+    /// content - is walked where the player sees it without anything here knowing it exists.
     ///
     /// Not every popup fills that description in. A window that draws its own content - the research
     /// report, with a card per technology and a line per thing it unlocked - leaves the shared
@@ -294,7 +294,7 @@ namespace ES2Access.Screens
             List<Control> above = new List<Control>();
             List<Control> inside = new List<Control>();
             List<Control> below = new List<Control>();
-            Sort(window, controls, words, above, inside, below);
+            Sort(window, controls, above, inside, below);
 
             above.Sort(ReadingOrder);
             below.Sort(ReadingOrder);
@@ -400,36 +400,44 @@ namespace ES2Access.Screens
         /// <summary>
         /// Which of the popup's three bands each control is drawn in.
         ///
-        /// With the words in front of it that is one question - above them or below them - and it is
-        /// the one asked as long as the popup has words the player can see. A popup that draws its own
-        /// content instead has no such divider, and the answer comes from the skeleton every one of
-        /// them is built out of: the arrows and the pop-up-again box sit beside the title along the
-        /// top, dismissing and putting aside sit along the bottom, and whatever the popup drew between
-        /// the two is its content - including the buttons it added there, which are walked among the
-        /// rows rather than swept into a strip they are not drawn in.
+        /// Every notification is built out of the same skeleton, and the skeleton is what answers:
+        /// the arrows and the pop-up-again box sit beside the title along the top, dismissing and
+        /// putting aside sit along the bottom, and whatever the popup added of its own is its
+        /// content - walked among the rows where the player sees it rather than swept into a strip.
+        ///
+        /// The popup answers back in the bottom bar, though, and often: accepting an offer, opening
+        /// the academy, replaying a battle are all drawn in the row Dismiss is in. So the question is
+        /// asked of the CONTAINER the game drew the control in rather than of its rectangle - a
+        /// control inside the title bar or inside the button bar belongs to that strip, everything
+        /// else to the body. Measured over all sixty-nine popup windows: fifty of their own buttons
+        /// sit inside the button bar, none anywhere inside the title bar, and the forty-eight other
+        /// controls they add all sit in content containers of their own.
+        ///
+        /// Rectangles cannot answer it, whether measured against the words the popup says or against
+        /// the rails themselves. A survey draws its party lines level with nothing in particular,
+        /// beside a pie chart, above a description the game puts at the BOTTOM of the content - and
+        /// measuring swept all four of them into the top strip, interleaved with the browsing arrows.
         /// </summary>
         private static void Sort(
             NotificationWindow window,
             List<Control> controls,
-            AgeTransform words,
             List<Control> above,
             List<Control> inside,
             List<Control> below
         )
         {
-            List<AgeTransform> top = words == null ? TopRails(window, controls) : null;
-            List<AgeTransform> bottom = words == null ? BottomRails(controls) : null;
+            List<AgeTransform> title = TitleBar(window, controls);
+            List<AgeTransform> buttons = ButtonBar(controls);
             foreach (Control control in controls)
             {
-                if (words != null)
-                {
-                    (AgeLayout.Band(control.Widget, words) > 0 ? below : above).Add(control);
-                }
-                else if (AtOrAbove(control.Widget, top))
+                if (Array.IndexOf(TopKeys, control.Key) >= 0 || Within(control.Widget, title))
                 {
                     above.Add(control);
                 }
-                else if (AtOrBelow(control.Widget, bottom))
+                else if (
+                    Array.IndexOf(BottomKeys, control.Key) >= 0
+                    || Within(control.Widget, buttons)
+                )
                 {
                     below.Add(control);
                 }
@@ -438,6 +446,76 @@ namespace ES2Access.Screens
                     inside.Add(control);
                 }
             }
+        }
+
+        /// <summary>The rails themselves, by name: a control the base window owns is its strip's
+        /// whatever the popup did with it - one that parks Dismiss in a box of its own still dismisses
+        /// from the bottom.</summary>
+        private static readonly string[] TopKeys = { "next", "previous", "auto-popup" };
+
+        private static readonly string[] BottomKeys = { "dismiss", MinimizeKey, "show-location" };
+
+        /// <summary>The bar the title is drawn across, which is the one the browsing arrows and the
+        /// pop-up-again box are drawn in: the game lays both of them out as groups inside it.</summary>
+        private static List<AgeTransform> TitleBar(
+            NotificationWindow window,
+            List<Control> controls
+        )
+        {
+            List<AgeTransform> bars = new List<AgeTransform>();
+            AgeTransform group = Value(window, TitleGroup) as AgeTransform;
+            if (group != null)
+            {
+                bars.Add(group);
+            }
+
+            Holders(bars, controls, TopKeys);
+            return bars;
+        }
+
+        /// <summary>The row of buttons along the bottom, as the container the game drew them in.
+        /// </summary>
+        private static List<AgeTransform> ButtonBar(List<Control> controls)
+        {
+            List<AgeTransform> bars = new List<AgeTransform>();
+            Holders(bars, controls, BottomKeys);
+            return bars;
+        }
+
+        /// <summary>What the game drew these rails inside - which is what marks the strip out on
+        /// screen for a control that is not one of them.</summary>
+        private static void Holders(
+            List<AgeTransform> bars,
+            List<Control> controls,
+            string[] keys
+        )
+        {
+            foreach (Control control in controls)
+            {
+                if (Array.IndexOf(keys, control.Key) < 0)
+                {
+                    continue;
+                }
+
+                AgeTransform holder = control.Widget.Parent;
+                if (holder != null && !bars.Contains(holder))
+                {
+                    bars.Add(holder);
+                }
+            }
+        }
+
+        private static bool Within(AgeTransform widget, List<AgeTransform> bars)
+        {
+            foreach (AgeTransform bar in bars)
+            {
+                if (IsUnder(widget, bar))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         /// <summary>
@@ -459,7 +537,7 @@ namespace ES2Access.Screens
                 rails.Add(title.AgeTransform);
             }
 
-            Rails(rails, controls, "next", "previous", "auto-popup");
+            Rails(rails, controls, TopKeys);
             return rails;
         }
 
@@ -468,7 +546,7 @@ namespace ES2Access.Screens
         private static List<AgeTransform> BottomRails(List<Control> controls)
         {
             List<AgeTransform> rails = new List<AgeTransform>();
-            Rails(rails, controls, "dismiss", "minimize", "show-location");
+            Rails(rails, controls, BottomKeys);
             return rails;
         }
 
@@ -688,6 +766,11 @@ namespace ES2Access.Screens
         /// what tells a card apart from the pieces any panel is assembled out of: the construction
         /// report's header row and its lines are two such pieces and one report, and splitting them
         /// would announce a boundary the player cannot see.
+        ///
+        /// A card HOLDS what it heads. Where what the container holds is the row ITSELF - a survey's
+        /// four party lines, each of them a button the game laid out inside the same table - the
+        /// container is the row rather than a card around it, and calling every row a region of its own
+        /// puts a jump boundary between lines the player reads as one list.
         /// </summary>
         private static List<AgeTransform> Cards(List<Item> items)
         {
@@ -708,7 +791,7 @@ namespace ES2Access.Screens
             foreach (Item item in items)
             {
                 AgeTransform card = Card(common, item.Widget);
-                if (card == null)
+                if (card == null || ReferenceEquals(card, item.Widget))
                 {
                     // A row drawn outside the cards - one of them containing all the others, say -
                     // means the popup is not laid out as cards at all, and the body is the one region
@@ -1791,9 +1874,9 @@ namespace ES2Access.Screens
                 }
 
                 // And a line the popup wired a click to is a control in its own right, walked in the band
-                // it was drawn in. Where the popup HAS words, that band is a strip rather than the content
-                // - the words are what divides the popup then - and the lines are already declared there:
-                // reading them as a table too would declare every line twice. The rows stay.
+                // it was drawn in. Where that band is a STRIP - a line the game drew inside the title or
+                // the button bar - the line is already declared there, and reading it as a table too
+                // would declare it twice. The rows stay.
                 foreach (Control control in controls)
                 {
                     if (IsUnder(control.Widget, table) && !Has(inside, control.Widget))
@@ -3795,6 +3878,7 @@ namespace ES2Access.Screens
             "PreviousNotificationButton"
         );
         private static readonly PropertyInfo AutoPopupToggle = Member("AutoPopupToggle");
+        private static readonly PropertyInfo TitleGroup = Member("TitleGroup");
         private static readonly PropertyInfo NotificationTitle = Member("NotificationTitle");
         private static readonly PropertyInfo NotificationDescription = Member(
             "NotificationDescription"

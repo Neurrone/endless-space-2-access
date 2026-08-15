@@ -970,6 +970,20 @@ readable by reflection but not by `/gui/graph`; dismiss it with
 `DismissGuiNotification(window.GuiNotification)` and the empire's own list is untouched (verified:
 count unchanged before and after).
 
+**The election survey is the only popup that both SAYS and DRAWS** (`ElectionSurveyNotificationWindow`,
+raised on the game's own election turns — no save in the repo has one pending, so it is a
+walk-past-it fixture). Its shape, live-verified 2026-08-15: `notification:top` = Next / Previous /
+Pop up automatically; `notification:body` = the words node first, then the four
+`PoliticalSupportLine00N` buttons in drawn order, three of them (Industrialists, Militarists,
+Ecologists) banded into ONE row walked with Left/Right and the fourth (Scientists) on the row below,
+each reading "N%, Party, button, has tooltip" with a Class-backed `Politics` dossier in its buffer
+once focused; `notification:bottom` = Minimize / Done. **One body region, not four** — the party
+lines are rows inside `PoliticalSupportLinesTable`, and a build that gives each of them a
+`notification:body/N/PoliticalSupportLine00N` region has re-broken the card rule
+(`NotificationScreen.Cards`: a card HOLDS what it heads). The game also declares this table in the
+`Tables` variant list, so a build where the body comes back as `notification:table:` rows has
+re-broken `ReadTableSheet`'s guard.
+
 **The deed and quest-completed popups are the detached-description family** (es2-facts): their
 shape is four body rows (StatusTitle, ObjectiveTitle, "Outcome", ObjectiveLore) with **no words
 node**, `notification:top` holding Next/Previous/Pop-up-automatically and `notification:bottom`

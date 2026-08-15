@@ -41,6 +41,22 @@ generic graduates to the generic docs.
   own tree does not hold is no words label at all, and the question stops there — no fallback to
   `GetDescription()`, because a popup with nowhere to draw a description never showed that
   sentence under any circumstances.
+- **Every notification popup declares its two strips as CONTAINERS, and the popup's own buttons
+  join the bottom one.** Measured over all 69 `NotificationWindow` instances in the scene: the
+  browsing arrows sit in a `NavigationGroup` and the pop-up-again box in an `AutoPopupGroup`, both
+  of them children of `TitleGroup`; `Dismiss`/`Minimize`/`ShowLocation` sit in a `ButtonsGroup`
+  (66 of 69 — the other three park a spare `DismissButton` in a `Dummy` beside the description, and
+  their `Minimize` is still in `ButtonsGroup`). Of the 98 wired controls the popups add on top of
+  that skeleton, **50 are inside `ButtonsGroup`** (`AcceptButton`, `ValidateButton`, `ReplayButton`,
+  `AcademyButton`, the quest popup's `PinToggle`, …) and **none is anywhere inside `TitleGroup`**;
+  the other 48 sit in content containers of their own (`PoliticalSupportLinesTable`,
+  `CompletedTechnologyGroup`, `ChoicesTable`, `ContentGroup`, …). **Mod policy**
+  (`NotificationScreen.Sort`): a control is classified by identity plus containment — a base-class
+  rail goes to its strip by name whatever the popup did with it, a control the game drew inside
+  `TitleGroup` or the button bar goes to that strip, and everything else is body content walked in
+  the row it is drawn in. Rectangles cannot answer it: banding against the description swept an
+  election survey's four party lines into the top strip (the description is drawn BELOW the chart
+  there), and banding against the rails themselves is the same guess with a different ruler.
 - **A collapsed tutorial is a HUD stop, not a tutorial screen.** The game crops the popup
   to its title bar and hides nothing, so `MinimizeToggle.State` is the only signal;
   `TutorialScreen` stands down while it is set and `BuildCollapsedBar` declares the leftover
