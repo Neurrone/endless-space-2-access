@@ -10,7 +10,12 @@ namespace ES2Access.Core.UI
     /// composer: one Tab-stop of vertically-stacked REGIONS (each a Ctrl+arrow jump target and a context
     /// level, so entering one announces its title once via the path diff), rows navigated Up/Down with the
     /// column preserved, cells Left/Right. The usual table framing rules ride the graph's own mechanisms:
-    ///  - column header on column change  = left/right EDGE LABELS (the destination column's header);
+    ///  - column header on column change  = left/right EDGE LABELS (the destination column's header),
+    ///    the PRIMARY column included: stepping back left onto a row's name says the caption that
+    ///    column is drawn under, the same as every other crossing. (It used to say nothing there, on
+    ///    the argument that the primary's full readout identifies it; the owner's ruling is that a
+    ///    table is easier to hold on to when every column announces itself the same way, and a caption
+    ///    the game DREW must be sayable — the audit counted the unsaid one as painted-but-unsaid.)
     ///  - row name when off in a metadata column = vertical edge labels into non-primary cells;
     ///  - the whole-row readout = the PRIMARY (column 0) cell's announcement list carrying the row's
     ///    metadata as extra parts — vertical navigation rides column 0, so moving down the table reads
@@ -57,7 +62,7 @@ namespace ES2Access.Core.UI
             public ControlId Id;
         }
 
-        private string[] _columns; // headers for cells 1..N (null = a plain list region)
+        private string[] _columns; // headers for cells 0..N, primary first (null = a plain list region)
         private int _row = -1;
         private List<CellRef> _prevRowIds;
         private List<CellRef> _rowIds;
@@ -112,8 +117,11 @@ namespace ES2Access.Core.UI
         }
 
         /// <summary>Start a region: a Ctrl+arrow jump target and a context level ("Fleets, table").
-        /// <paramref name="columns"/> are the headers for the metadata cells (column 0 — the primary —
-        /// has none); null/empty = a plain one-column list region.</summary>
+        /// <paramref name="columns"/> are the headers for EVERY column the rows will have, the primary's
+        /// first — hand over the game's own header list as it is drawn, with no entry dropped, because
+        /// reindexing at the call site is the mistake this shape exists to prevent. A column the game
+        /// draws no caption over is a null entry (the crossing into it stays label-free); null/empty for
+        /// the whole array = a plain list region, which labels nothing.</summary>
         public GraphSheet Region(string label, string[] columns = null, string role = null)
         {
             CloseRegion();
@@ -128,13 +136,16 @@ namespace ES2Access.Core.UI
             return this;
         }
 
+        // A region is a TABLE once it has a column beside the primary; one captioned column on its own
+        // is still the list it looks like (the array counts the primary, so the threshold is 1, not 0).
         private static string DefaultRole(string[] columns)
         {
-            return columns != null && columns.Length > 0 && TableRoleText != null ? TableRoleText() : null;
+            return columns != null && columns.Length > 1 && TableRoleText != null ? TableRoleText() : null;
         }
 
-        /// <summary>One row: the interactive/primary cell's vtable plus the metadata cell values (their
-        /// count should match the region's columns). Metadata cells are read-only text.
+        /// <summary>One row: the interactive/primary cell's vtable plus the metadata cell values (which
+        /// are the region's columns from the SECOND on, the primary's own caption being the first).
+        /// Metadata cells are read-only text.
         /// <paramref name="rowRef"/> is the row's DOMAIN OBJECT (the fleet, the system) and should be
         /// passed whenever rows can appear/vanish/reorder: keys derive from it, so a removed row's focus
         /// slides to a genuinely different identity and the differ announces the landing — index keys
@@ -240,11 +251,12 @@ namespace ES2Access.Core.UI
             if (col == 0 && _first == null) _first = id;
 
             // Left/right to the nearest EMITTED cell (sparse rows skip empty columns), labeled with the
-            // destination column's header (none onto the primary, whose full readout identifies it).
+            // destination column's header -- the primary's included, so every crossing in a table names
+            // where it landed and no drawn caption goes unsaid.
             if (_rowIds.Count > 0)
             {
                 CellRef left = _rowIds[_rowIds.Count - 1];
-                _b.Connect(id, GraphDir.Left, left.Id, left.Col == 0 ? null : Header(left.Col));
+                _b.Connect(id, GraphDir.Left, left.Id, Header(left.Col));
                 _b.Connect(left.Id, GraphDir.Right, id, Header(col));
             }
             _rowIds.Add(new CellRef { Col = col, Id = id });
@@ -297,7 +309,7 @@ namespace ES2Access.Core.UI
 
         private string Header(int col)
         {
-            return _columns != null && col - 1 >= 0 && col - 1 < _columns.Length ? _columns[col - 1] : null;
+            return _columns != null && col >= 0 && col < _columns.Length ? _columns[col] : null;
         }
 
         private static string Text(Func<string> f)

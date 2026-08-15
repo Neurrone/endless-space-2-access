@@ -595,8 +595,8 @@ namespace ES2Access.Screens
             NegotiationTerms.Basket(sheet, table, Keys + "contract/" + key, _editor);
         }
 
-        /// <summary>The basket's columns: the shelf's two, plus the stepper a resource term is haggled
-        /// with.</summary>
+        /// <summary>The basket's columns: the shelf's three - name, type, cost - plus the stepper a
+        /// resource term is haggled with.</summary>
         private static string[] Basket()
         {
             string[] shelf = NegotiationTerms.Columns();
@@ -604,6 +604,7 @@ namespace ES2Access.Screens
             {
                 shelf[0],
                 shelf[1],
+                shelf[2],
                 ModStrings.Get(ModStrings.NegotiationQuantity),
             };
         }

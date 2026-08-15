@@ -95,7 +95,7 @@ namespace ES2Access.Tests.UI
             GraphRender render = Renderer(b =>
             {
                 GraphSheet sheet = new GraphSheet(b, "t:");
-                sheet.Region("Fleets", new[] { "Ships", "Move" });
+                sheet.Region("Fleets", new[] { "Name", "Ships", "Move" });
                 sheet.Row(Vt("Alpha"), new object(), () => "3", () => "5");
                 sheet.Row(Vt("Beta"), new object(), () => "2", () => "4");
                 sheet.Finish();

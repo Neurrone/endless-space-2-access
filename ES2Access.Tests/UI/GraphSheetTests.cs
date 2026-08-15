@@ -39,7 +39,7 @@ namespace ES2Access.Tests.UI
             {
                 GraphBuilder b = new GraphBuilder();
                 GraphSheet s = new GraphSheet(b, "t:");
-                s.Region("Fleets", new[] { "Ships", "Move" });
+                s.Region("Fleets", new[] { "Name", "Ships", "Move" });
                 s.Row(Vt("Alpha"), _rowA, () => "3", () => "5");
                 if (raggedSecondRow) s.Row(Vt("Beta"), _rowB);
                 else s.Row(Vt("Beta"), _rowB, () => "2", () => "4");
@@ -77,8 +77,10 @@ namespace ES2Access.Tests.UI
             Assert.Equal("Ships", back.TransitionLabel);
         }
 
+        /// <summary>The primary is a column like any other: crossing back into it says its caption, so a
+        /// player walking a row hears the same shape of line in both directions.</summary>
         [Fact]
-        public void ReturningToThePrimaryCellCrossesAnUnlabeledEdge()
+        public void ReturningToThePrimaryCellSpeaksItsColumnCaption()
         {
             GraphState state = new GraphState();
             KeyGraph g = Table(state);
@@ -86,8 +88,73 @@ namespace ES2Access.Tests.UI
             g.Move(GraphDir.Right);
             MoveResult back = g.Move(GraphDir.Left);
             Assert.True(back.Moved);
+            Assert.Equal("Name", back.TransitionLabel);
+            Assert.Equal("Alpha", GraphAnnouncer.LeafText(back.To));
+        }
+
+        /// <summary>A table whose primary column the game drew no caption over: the entry is null and
+        /// the crossing stays label-free rather than inventing a word for it.</summary>
+        [Fact]
+        public void APrimaryWithNoCaptionCrossesUnlabeled()
+        {
+            GraphState state = new GraphState();
+            KeyGraph g = new KeyGraph(() =>
+            {
+                GraphBuilder b = new GraphBuilder();
+                GraphSheet s = new GraphSheet(b, "t:");
+                s.Region("Fleets", new[] { null, "Ships" });
+                s.Row(Vt("Alpha"), _rowA, () => "3");
+                s.Finish();
+                return b.Build();
+            }, state);
+            g.Rerender();
+
+            Assert.Equal("Ships", g.Move(GraphDir.Right).TransitionLabel);
+            MoveResult back = g.Move(GraphDir.Left);
+            Assert.True(back.Moved);
             Assert.Null(back.TransitionLabel);
             Assert.Equal("Alpha", GraphAnnouncer.LeafText(back.To));
+        }
+
+        /// <summary>A plain list region has no captions at all, and gains none: neither direction is
+        /// labeled and the region is not called a table.</summary>
+        [Fact]
+        public void APlainListRegionLabelsNothingAndIsNoTable()
+        {
+            GraphState state = new GraphState();
+            KeyGraph g = new KeyGraph(() =>
+            {
+                GraphBuilder b = new GraphBuilder();
+                GraphSheet s = new GraphSheet(b, "t:");
+                s.Region("Fleets");
+                s.Row(Vt("Alpha"), _rowA, () => "3");
+                s.Finish();
+                return b.Build();
+            }, state);
+            g.Rerender();
+            Assert.Equal("Fleets, Alpha", GraphAnnouncer.ComposeFull(g.CurrentNode));
+
+            Assert.Null(g.Move(GraphDir.Right).TransitionLabel);
+            Assert.Null(g.Move(GraphDir.Left).TransitionLabel);
+        }
+
+        /// <summary>One captioned column and nothing beside it is the list it looks like: the header
+        /// array counts the primary, so a lone entry does not make a region a table.</summary>
+        [Fact]
+        public void APrimaryCaptionAloneDoesNotMakeARegionATable()
+        {
+            GraphState state = new GraphState();
+            KeyGraph g = new KeyGraph(() =>
+            {
+                GraphBuilder b = new GraphBuilder();
+                GraphSheet s = new GraphSheet(b, "t:");
+                s.Region("Fleets", new[] { "Name" });
+                s.Row(Vt("Alpha"), _rowA);
+                s.Finish();
+                return b.Build();
+            }, state);
+            g.Rerender();
+            Assert.Equal("Fleets, Alpha", GraphAnnouncer.ComposeFull(g.CurrentNode));
         }
 
         [Fact]
@@ -142,7 +209,7 @@ namespace ES2Access.Tests.UI
             {
                 GraphBuilder b = new GraphBuilder();
                 GraphSheet s = new GraphSheet(b, "t:");
-                s.Region("Fleets", new[] { "Ships" });
+                s.Region("Fleets", new[] { "Name", "Ships" });
                 s.Row(Vt("Alpha"), _rowA, () => "   ");
                 s.Finish();
                 return b.Build();
@@ -193,7 +260,7 @@ namespace ES2Access.Tests.UI
             if (prose) b.AddNode(Id("words"), Vt("Something happened."));
 
             GraphSheet s = new GraphSheet(b, "t:");
-            s.Region("Report", new[] { "Ships", "Move" });
+            s.Region("Report", new[] { "Name", "Ships", "Move" });
             if (prose) s.Follows(Id("words"));
             s.Row(Vt("Alpha"), _rowA, () => "3", () => "5");
             s.Row(Vt("Beta"), _rowB, () => "2", () => "4");
@@ -290,8 +357,9 @@ namespace ES2Access.Tests.UI
             // A different row, reached off-primary: said.
             Assert.Equal("Beta, 2, 2 of 2", Say(g.Move(GraphDir.Down)));
 
-            // Back onto column 0 of the row we are already in: still not said.
-            Assert.Equal("Beta", Say(g.Move(GraphDir.Left)));
+            // Back onto column 0 of the row we are already in: the column is named, the position is
+            // not - the row has not changed.
+            Assert.Equal("Name, Beta", Say(g.Move(GraphDir.Left)));
 
             Assert.Equal("Alpha, 1 of 2", Say(g.Move(GraphDir.Up)));
         }
@@ -301,7 +369,7 @@ namespace ES2Access.Tests.UI
         {
             GraphBuilder b = new GraphBuilder();
             GraphSheet s = new GraphSheet(b, "t:");
-            s.Region("Fleets", new[] { "Ships", "Move" });
+            s.Region("Fleets", new[] { "Name", "Ships", "Move" });
             s.Row(Vt("Alpha"), _rowA, () => "3", () => "5");
             s.Row(Vt("Beta"), _rowB, () => "2", () => "4");
             s.Finish();
@@ -347,7 +415,7 @@ namespace ES2Access.Tests.UI
             {
                 GraphBuilder b = new GraphBuilder();
                 GraphSheet s = new GraphSheet(b, "t:");
-                s.Region("Fleets", new[] { "Ships" });
+                s.Region("Fleets", new[] { "Name", "Ships" });
                 if (swapped)
                 {
                     s.Row(Vt("Beta"), _rowB, () => "2");

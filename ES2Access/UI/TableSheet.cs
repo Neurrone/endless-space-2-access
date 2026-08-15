@@ -31,7 +31,8 @@ namespace ES2Access.UI
     ///   column the table forbids sorting on is drawn disabled (<c>DisableSorting</c>) and reads so.
     /// - <b>The rows</b> are a <see cref="GraphSheet"/>: up and down walk the rows down the NAME column,
     ///   left and right walk one row's figures, and a column's own caption is the spoken edge the player
-    ///   crosses to reach it rather than a word every cell repeats. The name cell says the name, whether
+    ///   crosses to reach it rather than a word every cell repeats - the NAME column's caption included,
+    ///   so the step back onto the row's name names that column too. The name cell says the name, whether
     ///   the row is the one selected, and carries the whole row in its review buffer - a row of thirteen
     ///   figures in front of "not selected" is thirteen figures the player sits through to hear the one
     ///   word they are stepping the list for.
@@ -466,7 +467,11 @@ namespace ES2Access.UI
         /// and it survives a re-sort. Every row of one table has the same columns, so the first one
         /// that has any answers for all of them. A cell read as several columns
         /// (<see cref="SplitCell"/>) gives each of them the heading it came out of - they ARE that one
-        /// column of the game's table, and there is no other caption for them to have.</summary>
+        /// column of the game's table, and there is no other caption for them to have.
+        ///
+        /// The NAME column leads the list, because the sheet labels the crossing back onto a row's name
+        /// with it exactly as it labels every other crossing; it is never split, being the cell the row
+        /// itself is made of.</summary>
         private string[] Columns(List<GuiTableLine> lines)
         {
             for (int l = 0; l < lines.Count; l++)
@@ -477,7 +482,8 @@ namespace ES2Access.UI
                     continue;
                 }
 
-                List<string> columns = new List<string>(cells.Count - 1);
+                List<string> columns = new List<string>(cells.Count);
+                columns.Add(Caption(HeaderFor(cells[0], 0)));
                 for (int i = 1; i < cells.Count; i++)
                 {
                     GuiTableHeader header = HeaderFor(cells[i], i);

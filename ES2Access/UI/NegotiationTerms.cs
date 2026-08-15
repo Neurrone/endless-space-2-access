@@ -36,10 +36,18 @@ namespace ES2Access.UI
     /// </summary>
     public static class NegotiationTerms
     {
-        /// <summary>The game's own headers over a shelf of terms.</summary>
+        /// <summary>The game's own headers over a shelf of terms, in the order the sheet's columns are:
+        /// the NAME first, because that is the column a row's own cell is, then type and cost. All three
+        /// are the game's, drawn over the shelf; the sheet says each as the edge crossed into its
+        /// column, the name's included.</summary>
         public static string[] Columns()
         {
-            return new string[] { Localized("%NegotiationModalWindowTermTypeHeaderTitle"), Localized("%NegotiationModalWindowTermCostHeaderTitle") };
+            return new string[]
+            {
+                Localized("%NegotiationModalWindowTermNameHeaderTitle"),
+                Localized("%NegotiationModalWindowTermTypeHeaderTitle"),
+                Localized("%NegotiationModalWindowTermCostHeaderTitle"),
+            };
         }
 
         /// <summary>

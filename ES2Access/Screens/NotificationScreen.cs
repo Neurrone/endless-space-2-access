@@ -1639,7 +1639,8 @@ namespace ES2Access.Screens
         /// whole line, so walking down the table hears each system with what it finished and what it
         /// starts next; the columns beside it are there to walk across when one of those is the thing
         /// being compared, and each says the caption it is under as the edge crossed to reach it
-        /// rather than repeating it in every row.
+        /// rather than repeating it in every row - the row column too, so coming back left says
+        /// "System, Dusay" the same way going right said "Completed, Drone Networks".
         ///
         /// The words the popup opened with, where it had any, are the row above the first one - the
         /// table continues below them - and the strips around the whole thing are joined to it by the
@@ -1652,10 +1653,13 @@ namespace ES2Access.Screens
             ControlId lead
         )
         {
-            string[] columns = new string[sheet.Headers.Count - 1];
-            for (int i = 1; i < sheet.Headers.Count; i++)
+            // Every caption the popup drew, the row column's included: the sheet says each of them as
+            // the edge that crosses into its column, so dropping one here would be a drawn word the
+            // player can never hear.
+            string[] columns = new string[sheet.Headers.Count];
+            for (int i = 0; i < sheet.Headers.Count; i++)
             {
-                columns[i - 1] = sheet.Headers[i].Text;
+                columns[i] = sheet.Headers[i].Text;
             }
 
             GraphSheet table = new GraphSheet(builder, SheetKey);

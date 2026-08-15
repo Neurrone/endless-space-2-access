@@ -56,8 +56,10 @@ looks identical either way.
 `notification:body` region / 5 rows — a change to the sheet detection that moves either of those
 has broken it (the research popup's lore scroll view is the near miss it must keep rejecting). The
 table's own shape on `[Beginner] test`: one row, "Dusay, button, Drone Networks, Cerebral Reality,
-3 turns remaining"; Right crosses "Completed" then "Next Construction" — the column names are
-spoken as the crossed edge and the drawn caption row is NOT a row of its own — and both figure
+3 turns remaining"; Right crosses "Completed" then "Next Construction" and Left back onto the row
+crosses "System" ("System, Dusay, button, …", 2026-08-15) — the column names are
+spoken as the crossed edge, EVERY column's including the first, and the drawn caption row is NOT a
+row of its own — and both figure
 cells indicate a Class-backed `Constructible` dossier and carry it in the buffer. **Never press
 Enter on a row while testing**: it is the game's own click (`OnSelectSystemCb`), which opens that
 system's management view and puts the notification away — two fixture changes at once. Prove it
@@ -67,9 +69,19 @@ in `GraphBuilderTests`): every cell of the table's top row reaches the strip abo
 bottom row reaches the strip below, and coming back lands on the row's primary — live-verified
 2026-08-11, all six crossings spoken. A `NotificationScreen` that grows hand-written `Connect` calls
 around its sheet again is a regression, not a fix; the engine rule is the place to change.
-**Multi-row is fixture-blocked**: the fixture finishes one construction on the turn it is saved
-at, so only one line is ever drawn, and a multi-row table needs a save with several colonies
-finishing at once — no fixture in the repo has one. The RAGGED path is no longer blocked: sighted
+**Multi-row is no longer fixture-blocked** — the popup is STACKABLE, so a two-row one is built by
+binding the same notification twice before showing it, and nothing joins the empire's list:
+`var n = new NotificationConstructionsCompleted(); n.Bind(new EventConstructionCompleted(PEMP,
+(ColonizedStarSystem)css[0], CONSTR)); n.Bind(new EventConstructionCompleted(PEMP,
+(ColonizedStarSystem)css[1], CONSTR)); Gui.GuiNotificationService.ShowGuiNotification(n);` — with
+`CONSTR` any `ConstructibleElement` without the `HideNotification` tag (`StarSystemImprovementColonyBase`
+is one that has a real title), and `ColonizedStarSystems` bound as `System.Collections.IList` because
+its `ReadOnlyCollection<ColonizedStarSystem>` is REPL poison. Sighted 2026-08-15 on the owner's live
+save: rows "Dusay, button, Colony Base, Xeno-Industrial Infras., 2 turns remaining" and "Rigel,
+button, Colony Base, Empty Construction queue", 1 of 2 / 2 of 2, `clean:true`. Dismiss with
+`Gui.GuiNotificationService.DismissGuiNotification(Gui.GuiService.GetWindow<ConstructionCompletedNotificationWindow>(false).GuiNotification)`;
+the empire's list reads 0 before and after. The old block stands only for a SAVE that draws several
+lines by itself — no fixture in the repo has one. The RAGGED path is no longer blocked: sighted
 2026-08-15 on the owner's live save (turn 18), the third column reads "Empty Construction queue"
 where the system has nothing queued, and the row is "Rigel, button, Drone Networks, Empty
 Construction queue" — the `NoNextConstructionButton` branch, walked as an ordinary cell. The
@@ -183,7 +195,10 @@ whichever column focus is in. **Never Enter on a row, never press Load, Save or 
 row and fires the load (or, in save mode, the overwrite), with only the game's own confirmation box
 between the chord and a loaded game. The saves are a
 `TableSheet` since 2026-08-14: the sort band is a row above the rows, Up/Down speak "x of ⟨saves⟩",
-and a column's caption is the crossed edge. The Mods column is the one column that overrides the
+and a column's caption is the crossed edge — the NAME column's too since 2026-08-15 (`TableSheet.Columns`
+now leads with `HeaderFor(cells[0], 0)`), so stepping Left back onto a save says that column's caption
+before the save's name, or stays silent if the game drew that heading as a bare icon. Which of the two
+this table does has not been sighted live; it is a manual-test step. The Mods column is the one column that overrides the
 shared `ModeFor` rule (`LoadSaveScreen.CellTooltipReading`, keyed on the header's `PropertyName`
 `RuntimeModules`, never on the translated caption): its Content is a whole module dossier, so it
 says "has tooltip" and the dossier is read from the buffer. Measured on the Autosave row:
@@ -1020,12 +1035,15 @@ traps, each measured 2026-08-15:
   `FleetDestroyed`.
 
 **Settled state, 2026-08-15** (two consecutive full sweeps, 63 window types, byte-identical
-reductions): every type reads `clean:true` except `ConstructionCompleted` and `PopulationChange`,
-which each report their sheet's FIRST-column caption ("System") as painted-but-unsaid. That is
-`GraphSheet`'s deliberate rule — a left/right step is labelled with the destination column's
-header, "none onto the primary, whose full readout identifies it" — and the drawn caption for
-column 0 is dropped by `NotificationScreen.BuildSheet` before the headers reach the sheet. Open
-design question, not a regression. Fixture-blocked and therefore never swept: `PirateMissionReport`
+reductions): every type reads `clean:true`. The last two that did not — `ConstructionCompleted` and
+`PopulationChange`, each reporting its sheet's FIRST-column caption ("System") as painted-but-unsaid
+— were closed the same day by the owner's consistency ruling: `GraphSheet` now labels the crossing
+into column 0 with that column's header like every other crossing, and every sheet adapter passes
+its primary caption (`NotificationScreen.BuildSheet` no longer drops `Headers[0]`). Re-verified live:
+both popups walk Right/Right/Left/Left as "Completed …" / "Next Construction …" / "Completed …" /
+"System, Dusay, …" (and "Population (Affinity) …" / "Population Change …" / … / "System, Dusay, …"),
+both `clean:true` with no completeness rows — the crossing is credited by the probe's own
+`AddCrossings`, so no exemption was ever needed. Fixture-blocked and therefore never swept: `PirateMissionReport`
 (below) and the five battle-stack types (`BattleSetup`, `BattleReport`, `GroundBattleSetup`,
 `GroundBattleReport`, `HackingOperationOutcomeSelection`), whose `Bind` throws without a live
 encounter or hacking operation and which no force-show has yet been able to show.

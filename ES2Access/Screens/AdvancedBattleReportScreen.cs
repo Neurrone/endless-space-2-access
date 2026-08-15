@@ -233,6 +233,11 @@ namespace ES2Access.Screens
                 return;
             }
 
+            // The flotilla column has no caption to speak: the game draws no heading over this grid at
+            // all - the phase names come off the phase panels themselves - so column 0 leads the header
+            // list as a null and its crossing stays label-free. Nothing is invented for it.
+            columns.Insert(0, null);
+
             GraphSheet sheet = new GraphSheet(builder, "battle-advanced:phases:");
             sheet.Region(null, columns.ToArray());
             for (int row = 0; row < rows; row++)
