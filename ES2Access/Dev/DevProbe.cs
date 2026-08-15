@@ -1010,6 +1010,23 @@ namespace ES2Access.Dev
             });
         }
 
+        /// <summary>
+        /// Whether the popup on screen READS the way it DRAWS - the notification family's own
+        /// self-check, run against whichever one is up (see <see cref="NotificationAudit"/>).
+        ///
+        /// Sixty-nine window types share one reader and no fixture reaches most of them, so the
+        /// question "does this prefab break a premise of the shared reading" has to be answerable
+        /// from the popup itself. Four arrays, each empty when the popup is clean: text that is
+        /// painted and unspoken, words spoken that nothing draws, nodes filed in the wrong band or
+        /// walked out of the drawn order, and tooltips promised or lost. The same check runs by
+        /// itself on every popup the player is shown while the dev server is up, and complains to
+        /// the log.
+        /// </summary>
+        public static string NotificationParity()
+        {
+            return NotificationAudit.Json();
+        }
+
         private static readonly Func<AgeTransform, AgeTransform> Itself = widget => widget;
 
         /// <summary>Every widget under the panel that draws something a reader would have to account

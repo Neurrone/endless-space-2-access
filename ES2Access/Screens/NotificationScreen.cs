@@ -213,11 +213,74 @@ namespace ES2Access.Screens
             return false;
         }
 
+        /// <summary>
+        /// Dev-only: a popup's words have SETTLED - it has arrived, or the player has browsed to
+        /// another one and the labels now hold its text. Null in a player's game and whenever the
+        /// dev server is off, which is what makes this cost a null check on an event that happens
+        /// once per popup rather than anything per frame.
+        ///
+        /// The seam is here rather than in a patch on the game because the screen already knows the
+        /// answer: it waits out the animation for its own announcement (<see cref="Ready"/>), and
+        /// that is the same moment a check of what the popup draws becomes meaningful.
+        /// </summary>
+        internal static Action<NotificationWindow> Shown;
+
+        /// <summary>How many ready frames to let pass before the popup counts as settled. Measured:
+        /// on the frame the game calls the popup ready its content is laid out but not FINISHED - the
+        /// quest popup's body counted one item more than it does a moment later, which moved every
+        /// row's position - so a watcher reading the first ready frame is reading a layout the player
+        /// never sees.</summary>
+        private const int SettleFrames = 2;
+
+        private NotificationWindow _settling;
+        private int _settleFrames;
+
         /// <summary>Arrival says the notification, so the watch starts from what was just said.
         /// </summary>
         public override void OnPush()
         {
-            Remember(Current());
+            NotificationWindow window = Current();
+            Remember(window);
+            Settling(window);
+        }
+
+        /// <summary>Start the countdown to telling <see cref="Shown"/> about this popup. Nothing
+        /// watching means no countdown, so an unwatched game does not so much as compare a
+        /// field.</summary>
+        private void Settling(NotificationWindow window)
+        {
+            if (Shown == null || window == null)
+            {
+                return;
+            }
+
+            _settling = window;
+            _settleFrames = SettleFrames;
+        }
+
+        private void Settled()
+        {
+            if (_settling == null || --_settleFrames > 0)
+            {
+                return;
+            }
+
+            NotificationWindow window = _settling;
+            _settling = null;
+            Action<NotificationWindow> watching = Shown;
+            if (watching == null)
+            {
+                return;
+            }
+
+            try
+            {
+                watching(window);
+            }
+            catch (Exception e)
+            {
+                Log.Warn("notification: the settled-popup watcher threw: " + e);
+            }
         }
 
         public override void OnPop()
@@ -225,6 +288,7 @@ namespace ES2Access.Screens
             _up = false;
             _title = null;
             _description = null;
+            _settling = null;
         }
 
         /// <summary>Walking to the next notification swaps the words inside the same popup - or
@@ -242,6 +306,8 @@ namespace ES2Access.Screens
                     // remembered either, so the change is announced when the words are the real ones.
                     return;
                 }
+
+                Settled();
 
                 string title = Title(window);
                 string description = Description(window);
@@ -263,6 +329,10 @@ namespace ES2Access.Screens
                         .Build(),
                     false
                 );
+
+                // Browsing to the next notification is a new popup as far as anything checking one
+                // is concerned, and this is the frame its words became real.
+                Settling(window);
             }
             catch (Exception e)
             {

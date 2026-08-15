@@ -251,6 +251,9 @@ namespace ES2Access
 
             _routes = new ModRoutes(host);
             _routes.Register();
+            // Every notification popup checks itself against what it draws while a developer is
+            // watching; off, and costing nothing, in a player's game.
+            NotificationAudit.Arm();
             host.SetUpdateHandler(Update);
             host.StartCoroutine(PointFrameEnd());
         }
@@ -467,6 +470,9 @@ namespace ES2Access
                 _routes.Unregister();
                 _routes = null;
             }
+
+            // The screen's own static, so it outlives this assembly unless it is handed back.
+            NotificationAudit.Disarm();
 
             if (Screens != null)
             {

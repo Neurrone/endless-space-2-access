@@ -16,7 +16,10 @@ concrete screens are thin subclasses in `decompiled/Assembly-CSharp/`.
 The AGE equivalent of RectTransform+GameObject. Every widget has one. Useful members:
 
 - `Visible`, `Enable` (bool properties; `Enable` = interactable), `Alpha`, `FadeOnDisable`
-- `AgeTooltip` — property returning the attached tooltip component (`GetComponent<AgeTooltip>()`)
+- `AgeTooltip` — the attached tooltip component. **In play mode it returns a field cached in
+  `Awake` (`privateTooltip`), not a live `GetComponent`** (:387-395, :3772) — so a tooltip added to a
+  widget at runtime is invisible to the engine and to every reader until that private field is set
+  by reflection. The same caching applies to `AgeControl` and `AgePrimitive`
 - `GetGlobalPosition()` → screen `Rect`; `Children`, `GetChildren<T>()`
 - `ModifiersRunning` — true while show/hide animations (AgeModifiers) are running
 - Table layout helpers: `ReserveChildren`, `RefreshChildrenArray`, `ArrangeChildren`

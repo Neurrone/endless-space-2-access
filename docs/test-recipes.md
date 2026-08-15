@@ -978,6 +978,26 @@ above is still the only fixture for those.
 fixed browse route over all three research-family popups and diffing `/gui/graph?edges=1&buffers=1`
 per popup, per the exact-non-regression pattern above.
 
+**The parity probe is the family's own check** — `DevProbe.NotificationParity()` on whatever popup
+is up: painted-but-unspoken text, spoken-but-undrawn words, misfiled or out-of-order nodes, tooltips
+promised or lost, each an array that is empty when the popup is clean (`clean:true`). It runs by
+ITSELF on every popup shown while the dev server is on (two ready frames after the popup settles)
+and `Log.Warn`s one line per invariant broken — `/log?grep=parity` is the whole readout. The
+settle delay is load-bearing: on the first ready frame the quest popup counted one body item more
+than it does two frames later, which moved every row's position ("3 of 5" for a row that settles at
+"2 of 5"). Seeds that prove it still bites, each restored by its inverse (verified 2026-08-15 on
+`QuestBegunNotificationWindow`): **honesty** — `Alpha = 0` on a painted label the mod reads
+(`StatusTitle`), since the screen's own `Collect`/`Draws` ask `Visible` and never alpha;
+**completeness** — `Visible = true` on `ObjectiveLoreLabel`, a second paragraph in the lore scroll
+view that the lore row does not read (a live gap: a quest that shows two lore labels loses one);
+**placement** — move `PinToggle` into `TitleGroup` (private `parent` field plus both `Children`
+lists, restored to index 3), which `Sort` sweeps into the top strip; **tooltip parity** — add an
+`AgeTooltip` with `Content` to a card's `DoubleClickControlButton` (**and set `privateTooltip` by
+reflection** — es2-gui-framework: the runtime getter reads the cached field, so a plain
+`AddComponent` is invisible to the engine as well as to the mod). The one direction NOT seedable is
+a "has tooltip" claim with nothing to draw: the claim and the check are the same `AgeWidgets.Draws`
+predicate, so game state cannot separate them.
+
 **Reading the description path without a popup up.** The three answers that decide a popup's words —
 `DescriptionLabel`, `Description`, `Words` — are private statics on `NotificationScreen` taking the
 window, so `/eval` reflection reads them for ANY notification window whether or not it is the one

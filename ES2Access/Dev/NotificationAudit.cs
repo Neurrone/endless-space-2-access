@@ -1,0 +1,1339 @@
+using System;
+using System.Collections.Generic;
+using System.Reflection;
+using ES2Access.Core.Speech;
+using ES2Access.Core.UI.Graph;
+using ES2Access.Loader.Dev;
+using ES2Access.Screens;
+using ES2Access.UI;
+using HarmonyLib;
+using Newtonsoft.Json;
+using UnityEngine;
+
+namespace ES2Access.Dev
+{
+    /// <summary>
+    /// The notification family's self-check: what the popup PAINTS against what the mod DECLARES,
+    /// for whichever popup is on screen right now.
+    ///
+    /// Sixty-nine window types share one reader, and every defect the family has produced was the
+    /// same shape - one prefab violating a premise the shared reading never checked. A label drawn
+    /// where nothing looked for it, a sentence spoken that no widget draws, a control swept into the
+    /// wrong band, a tooltip promised on a control that has none or hung on a piece nothing reads.
+    /// None of them is visible in a transcript, all of them are visible in a comparison, and the
+    /// comparison is mechanical - so it lives here rather than in a stage's notes, and a popup nobody
+    /// has ever sighted checks itself the moment it opens.
+    ///
+    /// Four invariants, each answering with the widgets and strings that broke it:
+    ///
+    /// <list type="number">
+    /// <item><b>Completeness</b> - every painted string is somewhere in what the popup says or
+    /// carries.</item>
+    /// <item><b>Honesty</b> - every spoken word traces back to painted text, to a tooltip the game
+    /// would draw, or to the mod's own vocabulary. A word from none of the three was invented.</item>
+    /// <item><b>Placement</b> - the strips hold the rails and what the game drew beside them and
+    /// nothing else, every declared node hangs under the popup, and the body reads down the page.
+    /// </item>
+    /// <item><b>Tooltip parity</b> - a "has tooltip" claim has a tooltip that would draw, and a
+    /// tooltip that would draw is reachable from the node that covers its widget.</item>
+    /// </list>
+    ///
+    /// The painted side is measured from the window's own tree and knows nothing of the screen's
+    /// code, which is what makes the comparison worth anything: both halves are re-derived, from
+    /// different evidence, and agreement is the claim being tested.
+    ///
+    /// Main-thread only, dev-only, and never on the player's path: nothing here speaks, focuses or
+    /// changes what the game is showing.
+    /// </summary>
+    internal static class NotificationAudit
+    {
+        /// <summary>How deep under the popup's root the painted walk looks. The deepest word in the
+        /// family is a reward label eight levels down inside two nested scroll views; twenty leaves
+        /// room for a prefab nobody has met yet without letting a wiring loop run away.</summary>
+        private const int MaxDepth = 20;
+
+        /// <summary>A ceiling on the painted walk, so a probe on a pathological tree answers rather
+        /// than hangs.</summary>
+        private const int MaxWidgets = 4000;
+
+        /// <summary>How far up and down from a node's own widget a tooltip still counts as that
+        /// node's: the game hangs an explanation on the block it drew a label in (up) and on the
+        /// picture inside a cell (down), and both are read by the node that covers them.</summary>
+        private const int MaxRelated = 8;
+
+        // ---- the answer ----
+
+        /// <summary>One thing that does not line up, in the terms a fix needs: which node or widget,
+        /// where it is drawn, and the string that broke the rule.</summary>
+        private sealed class Breach
+        {
+            public string Where;
+            public string What;
+            public string Detail;
+            public Rect Rect;
+            public bool HasRect;
+        }
+
+        private sealed class Result
+        {
+            public string Window;
+            public string Title;
+            public int PaintedTexts;
+            public int PaintedControls;
+            public int PaintedTooltips;
+            public int Nodes;
+            public readonly List<Breach> Completeness = new List<Breach>();
+            public readonly List<Breach> Honesty = new List<Breach>();
+            public readonly List<Breach> Placement = new List<Breach>();
+            public readonly List<Breach> Tooltips = new List<Breach>();
+
+            /// <summary>Nodes whose widget could not be found - not a breach, but the placement and
+            /// tooltip answers are blind to them, so they are reported rather than dropped.</summary>
+            public readonly List<Breach> Unlocatable = new List<Breach>();
+
+            public int Breaches
+            {
+                get
+                {
+                    return Completeness.Count + Honesty.Count + Placement.Count + Tooltips.Count;
+                }
+            }
+        }
+
+        // ---- the two sides ----
+
+        private sealed class Painted
+        {
+            public readonly List<PaintedText> Texts = new List<PaintedText>();
+            public readonly List<PaintedTip> Tips = new List<PaintedTip>();
+            public int Controls;
+
+            /// <summary>Every string the player can see and every string a tooltip on this popup
+            /// would draw, reduced (<see cref="Reduce"/>) and whole as well as line by line - the
+            /// accounts a spoken line is allowed to be assembled out of.</summary>
+            public readonly List<string> Phrases = new List<string>();
+        }
+
+        private sealed class PaintedText
+        {
+            public AgeTransform Widget;
+            public string Value;
+
+            /// <summary>What the label says when the box it is drawn in has ellipsized it - a spoken
+            /// line that says the whole thing is right, not a mismatch.</summary>
+            public string Full;
+        }
+
+        private sealed class PaintedTip
+        {
+            public AgeTooltip Tooltip;
+            public AgeTransform Owner;
+            public bool Interactive;
+        }
+
+        private sealed class Declared
+        {
+            public AgeTransform Widget;
+            public ControlId Id;
+            public string Key;
+            public string Region;
+            public string Announcement;
+            public List<string> Buffer = new List<string>();
+
+            /// <summary>Announcement and buffer together: everything arriving on this node, or
+            /// reading it, would say.</summary>
+            public List<string> Spoken = new List<string>();
+        }
+
+        // ---- entry points ----
+
+        /// <summary>The check, run against whichever popup is showing, as JSON.</summary>
+        public static string Json()
+        {
+            try
+            {
+                NotificationWindow window = Shown();
+                if (window == null)
+                {
+                    return DevJson.Error("no notification popup is showing");
+                }
+
+                Result result = Check(window);
+                return Write(result);
+            }
+            catch (Exception e)
+            {
+                return DevJson.Error(e.Message);
+            }
+        }
+
+        /// <summary>
+        /// Run the check on every popup the player is shown, and complain in the log when one does
+        /// not line up.
+        ///
+        /// This is the point of the whole file: a defect that only shows on the one prefab nobody
+        /// tested is caught while somebody is playing, without a stage having to think of that popup
+        /// first. It is armed only when the dev server is up, costs nothing per frame - the screen
+        /// calls it when a popup's words settle, which is once per popup - and is dropped on
+        /// teardown.
+        /// </summary>
+        public static void Arm()
+        {
+            _vocabulary = null;
+            if (!DevServerUp())
+            {
+                return;
+            }
+
+            NotificationScreen.Shown = OnShown;
+        }
+
+        public static void Disarm()
+        {
+            NotificationScreen.Shown = null;
+            _vocabulary = null;
+        }
+
+        private static void OnShown(NotificationWindow window)
+        {
+            try
+            {
+                Result result = Check(window);
+                if (result.Breaches == 0)
+                {
+                    return;
+                }
+
+                Report(result, "completeness", result.Completeness);
+                Report(result, "honesty", result.Honesty);
+                Report(result, "placement", result.Placement);
+                Report(result, "tooltip parity", result.Tooltips);
+            }
+            catch (Exception e)
+            {
+                Core.Util.Log.Warn("notification parity: the check itself threw: " + e);
+            }
+        }
+
+        /// <summary>One line per invariant broken, naming the popup and the first offender - enough
+        /// to know a defect is there and which probe to run, never the whole answer.</summary>
+        private static void Report(Result result, string invariant, List<Breach> breaches)
+        {
+            if (breaches.Count == 0)
+            {
+                return;
+            }
+
+            Breach first = breaches[0];
+            Core.Util.Log.Warn(
+                "notification parity: "
+                    + result.Window
+                    + " breaks "
+                    + invariant
+                    + " ("
+                    + breaches.Count
+                    + "): "
+                    + first.Where
+                    + " - "
+                    + first.What
+                    + (string.IsNullOrEmpty(first.Detail) ? "" : " [" + first.Detail + "]")
+                    + " (DevProbe.NotificationParity() for all of it)"
+            );
+        }
+
+        // ---- the check ----
+
+        private static Result Check(NotificationWindow window)
+        {
+            Result result = new Result();
+            result.Window = window.GetType().Name;
+
+            AgeTransform root = window.gameObject.GetComponent<AgeTransform>();
+            if (root == null)
+            {
+                throw new Exception("the popup has no AgeTransform to walk");
+            }
+
+            Painted painted = new Painted();
+            Walk(root, painted, 0, new int[1]);
+            AddDrawnTooltipWords(painted);
+            result.PaintedTexts = painted.Texts.Count;
+            result.PaintedControls = painted.Controls;
+            result.PaintedTooltips = painted.Tips.Count;
+
+            NotificationScreen screen = TheScreen();
+            List<Declared> declared = DeclaredNodes(screen, result);
+            result.Nodes = declared.Count;
+
+            // Arriving on the popup says its title before any node speaks, so the title is declared
+            // even though no node carries it.
+            List<string> spokenAnywhere = new List<string>();
+            string name = ScreenName(screen);
+            result.Title = name;
+            if (!string.IsNullOrEmpty(name))
+            {
+                spokenAnywhere.Add(name);
+            }
+
+            for (int i = 0; i < declared.Count; i++)
+            {
+                for (int j = 0; j < declared[i].Spoken.Count; j++)
+                {
+                    spokenAnywhere.Add(declared[i].Spoken[j]);
+                }
+            }
+
+            CheckCompleteness(painted, spokenAnywhere, result);
+            CheckHonesty(painted, declared, name, result);
+            CheckPlacement(root, declared, result);
+            CheckTooltips(painted, declared, result);
+            return result;
+        }
+
+        // ---- 1. completeness ----
+
+        /// <summary>
+        /// Every painted string is somewhere in what the popup says.
+        ///
+        /// Matched on letters and digits alone (see <see cref="Reduce"/>) and per painted PIECE: a
+        /// mod-composed line joins several of the game's strings with separators of its own - a
+        /// quadrant, a technology and a cost read as one sentence - and asking whether the sentence
+        /// equals any one piece would fail on all of them, while asking whether it CONTAINS each
+        /// piece is exactly the claim being made.
+        ///
+        /// Two exceptions, both the family's own rules rather than concessions. A label the game
+        /// ellipsized to fit its box is matched on the whole string as well, because speaking the
+        /// full words is right and the drawn "Colony Ba." is the artifact. And a string the popup
+        /// never filled in - a template with its hole still in it - is not the popup's words at all
+        /// (<c>NotificationScreen</c> drops those on purpose), so it is not owed a reading.
+        /// </summary>
+        private static void CheckCompleteness(
+            Painted painted,
+            List<string> spoken,
+            Result result
+        )
+        {
+            List<string> reduced = new List<string>();
+            for (int i = 0; i < spoken.Count; i++)
+            {
+                reduced.Add(Reduce(spoken[i]));
+            }
+
+            for (int i = 0; i < painted.Texts.Count; i++)
+            {
+                PaintedText text = painted.Texts[i];
+                IList<string> lines = AgeText.Lines(text.Value);
+                for (int line = 0; line < lines.Count; line++)
+                {
+                    string piece = lines[line];
+                    if (Hollow(piece))
+                    {
+                        continue;
+                    }
+
+                    if (Contains(reduced, piece) || Contains(reduced, Slice(text.Full, line)))
+                    {
+                        continue;
+                    }
+
+                    result.Completeness.Add(
+                        Made(
+                            text.Widget,
+                            Name(text.Widget),
+                            "painted but nothing says it",
+                            Excerpt(piece)
+                        )
+                    );
+                }
+            }
+        }
+
+        private static string Slice(string full, int line)
+        {
+            if (string.IsNullOrEmpty(full))
+            {
+                return null;
+            }
+
+            IList<string> lines = AgeText.Lines(full);
+            return line < lines.Count ? lines[line] : full;
+        }
+
+        private static bool Contains(List<string> reduced, string piece)
+        {
+            string want = Reduce(piece);
+            if (want.Length == 0)
+            {
+                return true;
+            }
+
+            for (int i = 0; i < reduced.Count; i++)
+            {
+                if (reduced[i].IndexOf(want, StringComparison.Ordinal) >= 0)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        // ---- 2. honesty ----
+
+        /// <summary>
+        /// Every spoken line is accounted for, piece by piece: painted text, a tooltip the game would
+        /// draw (or is drawing), or one of the mod's own phrases.
+        ///
+        /// PHRASES, not words. A spoken line is a composition - a caption, a role word, a state, a
+        /// position - so the question is whether any PART of it was invented, and word-by-word
+        /// accounting cannot answer it: the mod's own strings contain several hundred ordinary
+        /// English words between them, and "Choose an objective" is spelled entirely out of words
+        /// some ModStrings template happens to use. Measured, at word granularity, on a label faded
+        /// out from under a node that kept reading it: no complaint. So each account - painted string,
+        /// tooltip line, mod template with its holes taken out - is struck out of the line where it
+        /// appears, and what is left with letters still in it is what nothing can explain.
+        ///
+        /// Numbers are not phrases: a value comes from the game and the same one is drawn under a
+        /// dozen formats ("104", "104.0", "+104"), so leftover digits are not a complaint.
+        /// </summary>
+        private static void CheckHonesty(
+            Painted painted,
+            List<Declared> declared,
+            string title,
+            Result result
+        )
+        {
+            List<string> accounts = new List<string>(painted.Phrases);
+            accounts.AddRange(Vocabulary());
+            // Longest first: striking "has tooltip" out before "tooltip" leaves nothing behind that a
+            // shorter phrase could half-cover.
+            accounts.Sort(LongestFirst);
+
+            for (int i = 0; i < declared.Count; i++)
+            {
+                Declared node = declared[i];
+                for (int j = 0; j < node.Spoken.Count; j++)
+                {
+                    string line = node.Spoken[j];
+                    string left = Unaccounted(line, accounts);
+                    if (left == null)
+                    {
+                        continue;
+                    }
+
+                    result.Honesty.Add(
+                        Made(node.Widget, node.Key, "says what nothing draws: " + left, Excerpt(line))
+                    );
+                }
+            }
+
+            string strayTitle = Unaccounted(title, accounts);
+            if (strayTitle != null)
+            {
+                result.Honesty.Add(
+                    Made(
+                        null,
+                        "(the popup's name)",
+                        "says what nothing draws: " + strayTitle,
+                        Excerpt(title)
+                    )
+                );
+            }
+        }
+
+        private static readonly Comparison<string> LongestFirst = delegate(string a, string b)
+        {
+            return b.Length.CompareTo(a.Length);
+        };
+
+        /// <summary>What is left of a spoken line once everything that can account for it has been
+        /// struck out, or null when nothing with letters in it is left. Struck out with a marker
+        /// rather than deleted, so two unrelated halves cannot be pushed together into a third
+        /// account that was never there.</summary>
+        private static string Unaccounted(string line, List<string> accounts)
+        {
+            string reduced = Reduce(line);
+            if (reduced.Length == 0)
+            {
+                return null;
+            }
+
+            char[] left = reduced.ToCharArray();
+            for (int i = 0; i < accounts.Count; i++)
+            {
+                string account = accounts[i];
+                if (account.Length == 0)
+                {
+                    continue;
+                }
+
+                for (
+                    int at = IndexOf(left, account, 0);
+                    at >= 0;
+                    at = IndexOf(left, account, at + 1)
+                )
+                {
+                    for (int c = at; c < at + account.Length; c++)
+                    {
+                        left[c] = ' ';
+                    }
+                }
+            }
+
+            System.Text.StringBuilder rest = new System.Text.StringBuilder();
+            bool letters = false;
+            for (int i = 0; i < left.Length; i++)
+            {
+                if (left[i] == ' ')
+                {
+                    if (rest.Length > 0 && rest[rest.Length - 1] != ' ')
+                    {
+                        rest.Append(' ');
+                    }
+
+                    continue;
+                }
+
+                letters = letters || char.IsLetter(left[i]);
+                rest.Append(left[i]);
+            }
+
+            return letters ? rest.ToString().Trim() : null;
+        }
+
+        private static int IndexOf(char[] text, string want, int from)
+        {
+            for (int i = from; i + want.Length <= text.Length; i++)
+            {
+                int c = 0;
+                while (c < want.Length && text[i + c] == want[c])
+                {
+                    c++;
+                }
+
+                if (c == want.Length)
+                {
+                    return i;
+                }
+            }
+
+            return -1;
+        }
+
+        // ---- 3. placement ----
+
+        /// <summary>
+        /// Where the nodes were put, against where the game drew them.
+        ///
+        /// Three questions. Every declared node hangs under the popup - a node whose widget belongs
+        /// to something else is reading another window's content. The strips hold the rails and
+        /// whatever the game drew inside the same containers and nothing else, which is the rule the
+        /// screen sorts by (<c>NotificationScreen.Sort</c>): asked here of the CONTAINERS again, from
+        /// the declared nodes, so a sort that starts measuring rectangles instead is caught. And the
+        /// body reads down the page, so a body item drawn above the one before it is a walk that
+        /// jumps around the popup.
+        ///
+        /// A clipped widget is measured at the box it is shown in (<see cref="AgeWidgets.Clipped"/>):
+        /// a paragraph laid out taller than its viewport keeps a rectangle that runs off the popup
+        /// and would put every item after it out of order.
+        /// </summary>
+        private static void CheckPlacement(
+            AgeTransform root,
+            List<Declared> declared,
+            Result result
+        )
+        {
+            List<AgeTransform> bars = new List<AgeTransform>();
+            for (int i = 0; i < declared.Count; i++)
+            {
+                if (IsRail(declared[i].Key) && declared[i].Widget != null)
+                {
+                    AgeTransform holder = declared[i].Widget.Parent;
+                    if (holder != null && bars.IndexOf(holder) < 0)
+                    {
+                        bars.Add(holder);
+                    }
+                }
+            }
+
+            Declared previous = null;
+            for (int i = 0; i < declared.Count; i++)
+            {
+                Declared node = declared[i];
+                if (node.Widget == null)
+                {
+                    continue;
+                }
+
+                if (!Under(node.Widget, root))
+                {
+                    result.Placement.Add(
+                        Made(node.Widget, node.Key, "declared but drawn outside the popup", null)
+                    );
+                    continue;
+                }
+
+                bool strip = IsStrip(node.Region);
+                bool inBar = WithinAny(node.Widget, bars);
+                if (strip && !IsRail(node.Key) && !inBar)
+                {
+                    result.Placement.Add(
+                        Made(
+                            node.Widget,
+                            node.Key,
+                            "in the " + node.Region + " strip, but the game drew it outside the bar",
+                            null
+                        )
+                    );
+                }
+
+                if (!strip && IsBody(node.Region) && inBar)
+                {
+                    result.Placement.Add(
+                        Made(
+                            node.Widget,
+                            node.Key,
+                            "read as content, but the game drew it inside a strip's bar",
+                            null
+                        )
+                    );
+                }
+
+                if (!IsBody(node.Region))
+                {
+                    continue;
+                }
+
+                if (
+                    previous != null
+                    && AgeLayout.TopThenLeft(
+                        AgeWidgets.Clipped(previous.Widget),
+                        AgeWidgets.Clipped(node.Widget)
+                    ) > 0
+                )
+                {
+                    result.Placement.Add(
+                        Made(
+                            node.Widget,
+                            node.Key,
+                            "read after " + previous.Key + ", but drawn above or left of it",
+                            null
+                        )
+                    );
+                }
+
+                previous = node;
+            }
+        }
+
+        private static readonly string[] Rails =
+        {
+            "notification:next",
+            "notification:previous",
+            "notification:auto-popup",
+            "notification:dismiss",
+            "notification:minimize",
+            "notification:show-location",
+        };
+
+        private static bool IsRail(string key)
+        {
+            return Array.IndexOf(Rails, key) >= 0;
+        }
+
+        private static bool IsStrip(string region)
+        {
+            return region == "notification:top" || region == "notification:bottom";
+        }
+
+        private static bool IsBody(string region)
+        {
+            return region != null
+                && !IsStrip(region)
+                && region != "notification:empire-info";
+        }
+
+        // ---- 4. tooltip parity ----
+
+        /// <summary>
+        /// The two directions a tooltip claim can be wrong.
+        ///
+        /// A control that says "has tooltip" must have one the game would draw - the promise is that
+        /// there is something to read, and a tooltip with neither words nor a target draws nothing.
+        /// And a tooltip the game WOULD draw on a control the player can reach must be reachable
+        /// from the node that covers it: the luxury popup hung the resource's dossier on the block
+        /// around the words rather than on the words, and the reading that only ever asked the widget
+        /// itself lost it silently.
+        ///
+        /// A tooltip with no words of its own is judged on coverage alone: the renderer assembles it
+        /// from its target when it draws, so there is no content to look for in a buffer until the
+        /// player is on it (see the blind spots in the stage report).
+        /// </summary>
+        private static void CheckTooltips(Painted painted, List<Declared> declared, Result result)
+        {
+            string claim = ModStrings.Get(ModStrings.NavHasTooltip);
+            string claimed = Reduce(claim);
+            for (int i = 0; i < declared.Count; i++)
+            {
+                Declared node = declared[i];
+                if (
+                    string.IsNullOrEmpty(node.Announcement)
+                    || claimed.Length == 0
+                    || Reduce(node.Announcement).IndexOf(claimed, StringComparison.Ordinal) < 0
+                )
+                {
+                    continue;
+                }
+
+                if (node.Widget == null || !AnyDrawing(node.Widget))
+                {
+                    result.Tooltips.Add(
+                        Made(node.Widget, node.Key, "says \"" + claim + "\" with nothing that draws", null)
+                    );
+                }
+            }
+
+            for (int i = 0; i < painted.Tips.Count; i++)
+            {
+                PaintedTip tip = painted.Tips[i];
+                if (!tip.Interactive)
+                {
+                    continue;
+                }
+
+                List<Declared> covering = Covering(declared, tip.Owner);
+                if (covering.Count == 0)
+                {
+                    result.Tooltips.Add(
+                        Made(
+                            tip.Owner,
+                            Name(tip.Owner),
+                            "the game would draw a tooltip here and no node covers it",
+                            Excerpt(AgeText.Tooltip(tip.Tooltip))
+                        )
+                    );
+                    continue;
+                }
+
+                string content = AgeText.Tooltip(tip.Tooltip);
+                if (string.IsNullOrEmpty(content))
+                {
+                    continue;
+                }
+
+                if (!CarriedBy(covering, content))
+                {
+                    result.Tooltips.Add(
+                        Made(
+                            tip.Owner,
+                            Name(tip.Owner) + " (" + covering[0].Key + ")",
+                            "the tooltip's words are not in what that node carries",
+                            Excerpt(content)
+                        )
+                    );
+                }
+            }
+        }
+
+        /// <summary>Whether anything on this widget, inside it or around it would draw a tooltip -
+        /// the game hangs an explanation on the block it drew a label in as readily as on the label.
+        /// </summary>
+        private static bool AnyDrawing(AgeTransform widget)
+        {
+            List<AgeTooltip> found = new List<AgeTooltip>();
+            AgeWidgets.Tooltips(widget, found);
+            for (int i = 0; i < found.Count; i++)
+            {
+                if (AgeWidgets.Draws(found[i]))
+                {
+                    return true;
+                }
+            }
+
+            AgeTransform at = widget.Parent;
+            for (int depth = 0; at != null && depth < MaxRelated; depth++)
+            {
+                if (AgeWidgets.Draws(at.AgeTooltip))
+                {
+                    return true;
+                }
+
+                at = at.Parent;
+            }
+
+            return false;
+        }
+
+        /// <summary>The nodes whose own widget is this one, holds it, or hangs inside it - the ones
+        /// a player standing anywhere near this tooltip would be on.</summary>
+        private static List<Declared> Covering(List<Declared> declared, AgeTransform owner)
+        {
+            List<Declared> covering = new List<Declared>();
+            for (int i = 0; i < declared.Count; i++)
+            {
+                AgeTransform widget = declared[i].Widget;
+                if (widget != null && (Under(owner, widget) || Under(widget, owner)))
+                {
+                    covering.Add(declared[i]);
+                }
+            }
+
+            return covering;
+        }
+
+        private static bool CarriedBy(List<Declared> covering, string content)
+        {
+            IList<string> lines = AgeText.Lines(content);
+            if (lines.Count == 0)
+            {
+                return true;
+            }
+
+            List<string> reduced = new List<string>();
+            for (int i = 0; i < covering.Count; i++)
+            {
+                for (int j = 0; j < covering[i].Spoken.Count; j++)
+                {
+                    reduced.Add(Reduce(covering[i].Spoken[j]));
+                }
+            }
+
+            return Contains(reduced, lines[0]);
+        }
+
+        // ---- the painted side ----
+
+        /// <summary>
+        /// Everything the popup is drawing, from its own tree.
+        ///
+        /// The gate is the family's own painted-ness rule: a widget the player cannot see is one
+        /// whose chain is hidden OR whose chain has been faded to nothing, and a pooled row retired
+        /// by alpha keeps its old words, its old rectangle and its Visible flag. Alpha is only
+        /// inherited where the parent says so (<c>StrictVisibility</c>), which is the same test the
+        /// engine's own draw makes.
+        /// </summary>
+        private static void Walk(AgeTransform widget, Painted painted, int depth, int[] budget)
+        {
+            if (widget == null || depth > MaxDepth || budget[0]++ > MaxWidgets)
+            {
+                return;
+            }
+
+            AgePrimitiveLabel label = widget.GetComponent<AgePrimitiveLabel>();
+            if (label != null)
+            {
+                string text = AgeText.Label(label);
+                if (!string.IsNullOrEmpty(text))
+                {
+                    PaintedText painting = new PaintedText();
+                    painting.Widget = widget;
+                    painting.Value = text;
+                    painting.Full = AgeText.FullLabel(label);
+                    painted.Texts.Add(painting);
+                    AddPhrase(painted.Phrases, text);
+                    AddPhrase(painted.Phrases, painting.Full);
+                }
+            }
+
+            AgeControl control = AgeWidgets.Control(widget);
+            if (control != null)
+            {
+                painted.Controls++;
+            }
+
+            AgeTooltip tooltip = widget.AgeTooltip;
+            if (AgeWidgets.Draws(tooltip))
+            {
+                PaintedTip tip = new PaintedTip();
+                tip.Tooltip = tooltip;
+                tip.Owner = widget;
+                tip.Interactive = control != null;
+                painted.Tips.Add(tip);
+                AddPhrase(painted.Phrases, AgeText.Tooltip(tooltip));
+                AddPhrase(painted.Phrases, AgeWidgets.TooltipTitle(tooltip));
+            }
+
+            List<AgeTransform> children = widget.Children;
+            for (int i = 0; children != null && i < children.Count; i++)
+            {
+                AgeTransform child = children[i];
+                if (child != null && child.Visible && (widget.StrictVisibility || child.Alpha > 0f))
+                {
+                    Walk(child, painted, depth + 1, budget);
+                }
+            }
+        }
+
+        /// <summary>The tooltip the game is drawing right now, if it is drawing one: a tooltip built
+        /// by the renderer has no words on the widget at all, and its buffer line is honest text the
+        /// popup's own tree cannot account for.</summary>
+        private static void AddDrawnTooltipWords(Painted painted)
+        {
+            try
+            {
+                GuiTooltipWindow window = Gui.GuiServiceAvailable
+                    ? Gui.GuiService.GetWindow<GuiTooltipWindow>(false)
+                    : null;
+                if (window == null || !window.Shown || window.PanelFeaturesTable == null)
+                {
+                    return;
+                }
+
+                IList<string> lines = AgeWidgets.DrawnLines(window.PanelFeaturesTable);
+                for (int i = 0; i < lines.Count; i++)
+                {
+                    AddPhrase(painted.Phrases, lines[i]);
+                }
+            }
+            catch (Exception e)
+            {
+                Core.Util.Log.Warn("notification parity: reading the drawn tooltip threw: " + e);
+            }
+        }
+
+        // ---- the declared side ----
+
+        /// <summary>
+        /// What the mod would say, built exactly the way <c>/gui/graph</c> builds it: the screen's own
+        /// render, each node's full arrival line, each node's buffer. Nothing is composed here, so a
+        /// difference between this and what a player hears is a difference in the navigator rather
+        /// than in this file.
+        /// </summary>
+        private static List<Declared> DeclaredNodes(NotificationScreen screen, Result result)
+        {
+            List<Declared> declared = new List<Declared>();
+            GraphNavigator navigator = ModEntry.Navigator;
+            if (screen == null || navigator == null)
+            {
+                return declared;
+            }
+
+            GraphRender render = navigator.InspectRender(screen);
+            if (render == null)
+            {
+                return declared;
+            }
+
+            foreach (GraphNode node in render.Order)
+            {
+                Declared it = new Declared();
+                it.Id = node.Id;
+                it.Key = Convert.ToString(node.Id.StructuralKey);
+                it.Region = node.RegionKey == null ? null : node.RegionKey.ToString();
+                it.Widget = WidgetOf(node.Id.Reference);
+
+                try
+                {
+                    it.Announcement = GraphAnnouncer.ComposeFull(node);
+                }
+                catch (Exception e)
+                {
+                    it.Announcement = null;
+                    result.Unlocatable.Add(Made(it.Widget, it.Key, "reading it threw", e.Message));
+                }
+
+                try
+                {
+                    it.Buffer = GraphNavigator.BufferLines(node);
+                }
+                catch (Exception)
+                {
+                    it.Buffer = new List<string>();
+                }
+
+                if (!string.IsNullOrEmpty(it.Announcement))
+                {
+                    it.Spoken.Add(it.Announcement);
+                }
+
+                for (int i = 0; i < it.Buffer.Count; i++)
+                {
+                    if (!string.IsNullOrEmpty(it.Buffer[i]))
+                    {
+                        it.Spoken.Add(it.Buffer[i]);
+                    }
+                }
+
+                if (it.Widget == null)
+                {
+                    result.Unlocatable.Add(
+                        Made(null, it.Key, "no widget behind this node's id", null)
+                    );
+                }
+
+                declared.Add(it);
+            }
+
+            return declared;
+        }
+
+        /// <summary>The widget a node was derived from. Every node this screen declares carries one -
+        /// the control, the row's group, the label the words were read off - so this is a lookup
+        /// rather than a search.</summary>
+        private static AgeTransform WidgetOf(object reference)
+        {
+            AgeTransform widget = reference as AgeTransform;
+            if (widget != null)
+            {
+                return widget;
+            }
+
+            Component component = reference as Component;
+            return component == null ? null : component.GetComponent<AgeTransform>();
+        }
+
+        private static NotificationScreen TheScreen()
+        {
+            ScreenManager screens = ModEntry.Screens;
+            if (screens == null)
+            {
+                return null;
+            }
+
+            IList<Screens.Screen> registered = screens.Registered;
+            for (int i = 0; i < registered.Count; i++)
+            {
+                NotificationScreen screen = registered[i] as NotificationScreen;
+                if (screen != null)
+                {
+                    return screen;
+                }
+            }
+
+            return null;
+        }
+
+        private static string ScreenName(NotificationScreen screen)
+        {
+            try
+            {
+                return screen == null ? null : screen.ScreenName;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        private static NotificationWindow Shown()
+        {
+            GuiManager gui = Gui.GuiServiceAvailable ? Gui.GuiService as GuiManager : null;
+            if (gui == null || !gui.IsAnyNotificationVisible)
+            {
+                return null;
+            }
+
+            NotificationWindow[] windows = gui.gameObject.GetComponentsInChildren<NotificationWindow>(
+                true
+            );
+            for (int i = 0; i < windows.Length; i++)
+            {
+                if (windows[i] != null && windows[i].Shown)
+                {
+                    return windows[i];
+                }
+            }
+
+            return null;
+        }
+
+        // ---- phrases ----
+
+        /// <summary>
+        /// The mod's own phrases, read out of <see cref="ModStrings"/> rather than listed here: every
+        /// key it compiles in, resolved through the LIVE translation, cut at its holes into the
+        /// literal pieces a composed line would actually contain. So the role words, the states, the
+        /// position phrase, the separators and every screen name account for themselves in whatever
+        /// language the player is running, and a stage that adds a new spoken word to the mod does
+        /// not have to remember this file.
+        ///
+        /// The class holds a few PREFIX constants beside the keys ("color."), which are not keys and
+        /// would each cost a warning; they are told apart by shape, since a key always has a dotted
+        /// tail and a prefix always ends in the dot.
+        /// </summary>
+        private static List<string> Vocabulary()
+        {
+            if (_vocabulary != null)
+            {
+                return _vocabulary;
+            }
+
+            List<string> phrases = new List<string>();
+            FieldInfo[] fields = typeof(ModStrings).GetFields(
+                BindingFlags.Public | BindingFlags.Static
+            );
+            for (int i = 0; i < fields.Length; i++)
+            {
+                FieldInfo field = fields[i];
+                if (!field.IsLiteral || field.FieldType != typeof(string))
+                {
+                    continue;
+                }
+
+                string key = field.GetRawConstantValue() as string;
+                if (string.IsNullOrEmpty(key) || key.EndsWith(".") || key.IndexOf('.') < 0)
+                {
+                    continue;
+                }
+
+                string[] pieces = ModStrings.Get(key).Split('{', '}');
+                for (int piece = 0; piece < pieces.Length; piece++)
+                {
+                    AddPhrase(phrases, pieces[piece]);
+                }
+            }
+
+            _vocabulary = phrases;
+            return phrases;
+        }
+
+        private static List<string> _vocabulary;
+
+        /// <summary>Record a string as something a spoken line may be assembled out of - the whole of
+        /// it, and each of its lines, since a tooltip is carried into the buffer a line at a time. A
+        /// single reduced letter is not an account: it would strike a letter out of the middle of a
+        /// word nothing draws.</summary>
+        private static void AddPhrase(List<string> into, string text)
+        {
+            if (string.IsNullOrEmpty(text))
+            {
+                return;
+            }
+
+            string whole = Reduce(text);
+            if (whole.Length >= 2 && into.IndexOf(whole) < 0)
+            {
+                into.Add(whole);
+            }
+
+            IList<string> lines = AgeText.Lines(text);
+            if (lines.Count < 2)
+            {
+                return;
+            }
+
+            for (int i = 0; i < lines.Count; i++)
+            {
+                string line = Reduce(lines[i]);
+                if (line.Length >= 2 && into.IndexOf(line) < 0)
+                {
+                    into.Add(line);
+                }
+            }
+        }
+
+        /// <summary>A string reduced to the letters and digits in it, lowercased: what two readings of
+        /// the same text share when one of them has been through a separator, a colour tag or a line
+        /// break the other has not.</summary>
+        private static string Reduce(string text)
+        {
+            if (string.IsNullOrEmpty(text))
+            {
+                return "";
+            }
+
+            System.Text.StringBuilder reduced = new System.Text.StringBuilder(text.Length);
+            for (int i = 0; i < text.Length; i++)
+            {
+                char c = text[i];
+                if (char.IsLetterOrDigit(c))
+                {
+                    reduced.Append(char.ToLowerInvariant(c));
+                }
+            }
+
+            return reduced.ToString();
+        }
+
+        /// <summary>Whether a painted string says nothing a reader could owe: no letters and no
+        /// digits, or a template the popup never filled in - "Research has been completed: {0}" is
+        /// the skeleton showing through, and the family drops those on purpose.</summary>
+        private static bool Hollow(string text)
+        {
+            if (Reduce(text).Length == 0)
+            {
+                return true;
+            }
+
+            int open = text.IndexOf('{');
+            return open >= 0 && text.IndexOf('}', open) > open;
+        }
+
+        // ---- odds and ends ----
+
+        private static bool Under(AgeTransform widget, AgeTransform ancestor)
+        {
+            AgeTransform at = widget;
+            for (int depth = 0; at != null && depth < 64; depth++)
+            {
+                if (ReferenceEquals(at, ancestor))
+                {
+                    return true;
+                }
+
+                at = at.Parent;
+            }
+
+            return false;
+        }
+
+        private static bool WithinAny(AgeTransform widget, List<AgeTransform> ancestors)
+        {
+            for (int i = 0; i < ancestors.Count; i++)
+            {
+                if (Under(widget, ancestors[i]))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static Breach Made(
+            AgeTransform widget,
+            string where,
+            string what,
+            string detail
+        )
+        {
+            Breach breach = new Breach();
+            breach.Where = where;
+            breach.What = what;
+            breach.Detail = detail;
+            try
+            {
+                if (widget != null)
+                {
+                    breach.Rect = AgeWidgets.Clipped(widget).GetGlobalPosition();
+                    breach.HasRect = true;
+                }
+            }
+            catch (Exception) { }
+
+            return breach;
+        }
+
+        private static string Name(AgeTransform widget)
+        {
+            return widget == null ? "(no widget)" : widget.name;
+        }
+
+        private static string Excerpt(string text)
+        {
+            if (string.IsNullOrEmpty(text))
+            {
+                return null;
+            }
+
+            string one = text.Replace('\n', ' ');
+            return one.Length <= 120 ? one : one.Substring(0, 117) + "...";
+        }
+
+        // ---- the answer as JSON ----
+
+        private static string Write(Result result)
+        {
+            return DevJson.Write(json =>
+            {
+                json.WriteStartObject();
+                json.WritePropertyName("window");
+                json.WriteValue(result.Window);
+                json.WritePropertyName("title");
+                json.WriteValue(result.Title);
+                json.WritePropertyName("clean");
+                json.WriteValue(result.Breaches == 0);
+                json.WritePropertyName("painted");
+                json.WriteStartObject();
+                json.WritePropertyName("texts");
+                json.WriteValue(result.PaintedTexts);
+                json.WritePropertyName("controls");
+                json.WriteValue(result.PaintedControls);
+                json.WritePropertyName("tooltips");
+                json.WriteValue(result.PaintedTooltips);
+                json.WriteEndObject();
+                json.WritePropertyName("nodes");
+                json.WriteValue(result.Nodes);
+                WriteBreaches(json, "completeness", result.Completeness);
+                WriteBreaches(json, "honesty", result.Honesty);
+                WriteBreaches(json, "placement", result.Placement);
+                WriteBreaches(json, "tooltips", result.Tooltips);
+                WriteBreaches(json, "unlocatable", result.Unlocatable);
+                json.WriteEndObject();
+            });
+        }
+
+        private static void WriteBreaches(JsonTextWriter json, string name, List<Breach> breaches)
+        {
+            json.WritePropertyName(name);
+            json.WriteStartArray();
+            for (int i = 0; i < breaches.Count; i++)
+            {
+                Breach breach = breaches[i];
+                json.WriteStartObject();
+                json.WritePropertyName("where");
+                json.WriteValue(breach.Where);
+                json.WritePropertyName("what");
+                json.WriteValue(breach.What);
+                if (!string.IsNullOrEmpty(breach.Detail))
+                {
+                    json.WritePropertyName("text");
+                    json.WriteValue(breach.Detail);
+                }
+
+                if (breach.HasRect)
+                {
+                    json.WritePropertyName("rect");
+                    json.WriteStartArray();
+                    json.WriteValue(Math.Round(breach.Rect.xMin));
+                    json.WriteValue(Math.Round(breach.Rect.yMin));
+                    json.WriteValue(Math.Round(breach.Rect.width));
+                    json.WriteValue(Math.Round(breach.Rect.height));
+                    json.WriteEndArray();
+                }
+
+                json.WriteEndObject();
+            }
+
+            json.WriteEndArray();
+        }
+
+        // ---- the gate ----
+
+        /// <summary>
+        /// Whether the dev server is actually up, which is what the auto-check is for: a player has
+        /// no use for a log line about a prefab, and the check is not free.
+        ///
+        /// The loader owns that answer and does not publish it - the config setting and the
+        /// environment override both land inside <c>DevServer.Start</c> - so it is read where it
+        /// ends up, as the listener existing. Read once, on arming; a failure to find it reads as
+        /// OFF, because a dev feature that cannot prove it is wanted should not run.
+        /// </summary>
+        private static bool DevServerUp()
+        {
+            try
+            {
+                Type plugin = typeof(ES2Access.Loader.ModHost).Assembly.GetType(
+                    "ES2Access.Loader.LoaderPlugin"
+                );
+                if (plugin == null)
+                {
+                    return false;
+                }
+
+                UnityEngine.Object[] found = UnityEngine.Object.FindObjectsOfType(plugin);
+                if (found == null || found.Length == 0)
+                {
+                    return false;
+                }
+
+                object dev = AccessTools.Field(plugin, "_dev").GetValue(found[0]);
+                return dev != null && AccessTools.Field(dev.GetType(), "_http").GetValue(dev) != null;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+    }
+}
