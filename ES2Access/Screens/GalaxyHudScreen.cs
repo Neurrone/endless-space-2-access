@@ -2791,7 +2791,13 @@ namespace ES2Access.Screens
                 CardActions.AddNamedByTooltip(found, card.VodyaniHintButton);
                 CardActions.AddNamedByTooltip(found, card.UmbralChoirHintButton);
                 CardActions.AddNamedByTooltip(found, card.BuyOutpostButton);
-                CardActions.AddNamedByTooltip(found, card.MinorFactionButton);
+                // The way into a minor civilization's diplomacy, drawn on a world one of them holds.
+                // Its own tooltip cannot name it however real the sentence in it: the game gives that
+                // one a renderer CLASS (MinorFaction, drawing the faction's panel from the tooltip's
+                // Target), and a class-backed tooltip is not the readable kind, so the first line comes
+                // back null and the button spoke unnamed. It opens the same screen the system label's
+                // diplomacy button does, so it takes the same name.
+                CardActions.AddNamedByMod(found, card.MinorFactionButton, ModStrings.GalaxySystemDiplomacy);
 
                 // The row of small round buttons under the card. The game draws them as bare icons and
                 // hangs an assembled stat block on each, so there is no caption and no first line of

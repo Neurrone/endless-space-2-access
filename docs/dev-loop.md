@@ -58,8 +58,9 @@ mutes voicing but `/speech` still captures.
   `error`/`note` line, and a node cut off by `depth=` is kept (`more:true`), never pruned. The
   dump PRUNES any node with no control, no text, no value and no readable tooltip
   (`AgeDump.Node.Speaks`) — the JSON and the `fields=` forms alike — and "readable" means
-  content-backed: a CLASS-backed tooltip has no content string and so does not save a textless
-  icon from the prune. A panel's icon-only controls are found with an `/eval` walk of
+  class-free: a CLASS-backed tooltip does not save a textless icon from the prune even when it
+  DOES carry a content sentence (the minor-faction button's does — `AgeWidgets.Readable`
+  rejects by class, not by absence of content). A panel's icon-only controls are found with an `/eval` walk of
   `.Children`, never with a tree dump
 - `GET /gui/age?...&fields=name,kind,text,tooltip,rect,interactable,enabled` — flat text, one
   indented line per widget, only those fields, empties omitted
