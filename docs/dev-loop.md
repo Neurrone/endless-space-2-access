@@ -211,7 +211,9 @@ Each line is the stack, the focused screen, the cursor, the node count that scre
 tutorial/window state. A single-digit node count on an active page is a page declaring somebody
 else's content.
 
-**Injecting a sequence of keys.** `POST /input` one action key per request, ~0.4 s apart, then
+**Injecting a sequence of keys.** `POST /input` one action key per request, ~0.4 s apart —
+a no-delay loop does not fail loudly, it reports a plausible WRONG route (rows appearing
+unreachable by Down) — then
 read `/speech?since=N` — `next` from a `since=0` read before the sequence is the baseline. The
 Bash tool mangles `python -c` here (it injects `|| goto :error`); keep the JSON formatting in a
 `.py` file in the scratchpad.
