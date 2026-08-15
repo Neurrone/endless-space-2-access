@@ -79,9 +79,9 @@ namespace ES2Access.Screens
     /// several and keep that exclusive by hand - unticking the others in their own code - rather than with
     /// a <c>GuiRadioGroup</c>, and a hand-wired set is pixel-for-pixel a row of independent boxes. Those
     /// sets are named the same way, and they are declared because the popup SAYS they are a choice rather
-    /// than because it wrote a caption on them: a card whose words are all nested inside it has no caption
-    /// to the shared rule, and dropping it would leave a keyboard player unable to choose at all. What is
-    /// written on the card, all of it, is its name. Picking is not doing - the popup wants the choice
+    /// than because it wrote a caption on them: a card the popup draws as a picture with no words at all
+    /// still has to be choosable, and dropping it would leave a keyboard player unable to choose at all.
+    /// What is written on the card, all of it, is its name. Picking is not doing - the popup wants the choice
     /// confirmed - so the button that confirms is declared even where the game drew it as a bare tick
     /// (under the game's own word for it), and where a popup draws no such button the game's own second
     /// click on the choice is what confirms and takes the double-click chord (Ctrl+Alt+Enter).
@@ -2596,10 +2596,9 @@ namespace ES2Access.Screens
                 }
 
                 // A choice the popup keeps exclusive itself is declared because the popup SAYS it is one,
-                // not because it wrote a caption on it: a card whose words are all nested inside it -
-                // a hero's name, class and politics each in its own group - has no caption to the shared
-                // rule, and dropping it would leave the player unable to choose at all. What is written
-                // on the card, all of it, is its name.
+                // not because it wrote a caption on it: the narrative event's cards are pictures on empty
+                // panels with no words anywhere inside them, and dropping them would leave the player
+                // unable to choose at all. What is written on the card, all of it, is its name.
                 for (int i = 0; i < choices.Count; i++)
                 {
                     AgeTransform choice = choices[i];
@@ -2620,7 +2619,7 @@ namespace ES2Access.Screens
                         null,
                         switched,
                         null,
-                        CardCaption(choice),
+                        CaptionOf(choice),
                         true,
                         choice.AgeTooltip
                     );
@@ -2811,7 +2810,7 @@ namespace ES2Access.Screens
                 if (
                     !wired
                     || !Painted(control.AgeTransform, root)
-                    || string.IsNullOrEmpty(CaptionOf(control.AgeTransform))
+                    || string.IsNullOrEmpty(Captioned(control.AgeTransform))
                     || Array.IndexOf(declared, control) >= 0
                 )
                 {
@@ -3501,7 +3500,9 @@ namespace ES2Access.Screens
         /// expander), none of which the shared caption rule can name.</summary>
         private static string WordlessName(AgeTransform widget, string nameKey)
         {
-            string caption = CaptionOf(widget);
+            // The one-level question: "wordless" is about what the popup wrote ON the icon, and an
+            // expander drawn over a detail panel it wraps has plenty of words UNDER it.
+            string caption = Captioned(widget);
             if (!string.IsNullOrEmpty(caption))
             {
                 return caption;
@@ -3720,20 +3721,28 @@ namespace ES2Access.Screens
             return control.NameKey == null ? null : ModStrings.Get(control.NameKey);
         }
 
-        /// <summary>What the game wrote on a control, all of it: a card drawn as a heading and a name
-        /// beside it - "Just Completed", "Xenobiology" - is one button saying both, and reading only
-        /// the first of them names the shelf instead of the thing on it. Read across the way they are
-        /// drawn rather than in the order the widget tree happens to list them.</summary>
+        /// <summary>
+        /// What the game wrote on a control, all of it: a card drawn as a heading and a name beside it
+        /// - "Just Completed", "Xenobiology" - is one button saying both, and reading only the first of
+        /// them names the shelf instead of the thing on it. Read across the way they are drawn rather
+        /// than in the order the widget tree happens to list them.
+        ///
+        /// The whole subtree, not the control's direct children: a line the game builds as a block per
+        /// column - the cancelled-relics line draws the system's name inside a <c>StarSystemInfo</c>
+        /// group and the reason beside it - loses the whole of one column to a one-level reading, and
+        /// nothing in the spoken line says a word is missing. That is the same answer a choice card
+        /// needs, which is why there is one of these rather than two.
+        ///
+        /// This is NOT the question <see cref="Captioned"/> asks. "What does this control say" reads the
+        /// subtree; "did the popup write a caption ON this control" must not, or every wired container
+        /// holding text - the invisible sheet over a lore paragraph - becomes a control of its own.
+        /// </summary>
         private static string CaptionOf(AgeTransform widget)
         {
             try
             {
                 List<AgePrimitiveLabel> labels = new List<AgePrimitiveLabel>();
-                foreach (AgePrimitiveLabel label in widget.GetChildren<AgePrimitiveLabel>(false))
-                {
-                    labels.Add(label);
-                }
-
+                Labels(widget, labels, 0);
                 labels.Sort(AcrossTheControl);
 
                 MessageBuilder caption = new MessageBuilder();
@@ -3751,23 +3760,41 @@ namespace ES2Access.Screens
             }
         }
 
-        /// <summary>Everything written on a card, in the order it is laid out. The shared rule reads the
-        /// labels a control carries DIRECTLY, which is all of them for a control the game drew flat; a
-        /// card is built out of groups instead - a portrait block, a stats block - and the words are the
-        /// whole of what the player is choosing between.</summary>
-        private static string CardCaption(AgeTransform widget)
+        /// <summary>
+        /// Whether the popup wrote a caption ON this control - the labels it laid out directly inside
+        /// it, and no deeper.
+        ///
+        /// This is the test that tells a control the player works from the invisible click-catchers
+        /// every notification is built out of: the sheet behind it that minimises it, the bar it is
+        /// dragged by, the text area that finishes the typing animation. Every one of those WRAPS
+        /// content - the quest popup's lore group is a wired button around the scroll view the
+        /// paragraph is in - so a subtree reading answers "captioned" for all of them and the
+        /// paragraph stops being a row of the body and becomes a button saying it.
+        /// </summary>
+        private static string Captioned(AgeTransform widget)
         {
-            List<AgePrimitiveLabel> labels = new List<AgePrimitiveLabel>();
-            Labels(widget, labels, 0);
-            labels.Sort(AcrossTheControl);
-
-            MessageBuilder caption = new MessageBuilder();
-            foreach (AgePrimitiveLabel label in labels)
+            try
             {
-                caption.ListItem(AgeText.Label(label));
-            }
+                MessageBuilder caption = new MessageBuilder();
+                List<AgePrimitiveLabel> labels = new List<AgePrimitiveLabel>();
+                foreach (AgePrimitiveLabel label in widget.GetChildren<AgePrimitiveLabel>(false))
+                {
+                    labels.Add(label);
+                }
 
-            return caption.Build();
+                labels.Sort(AcrossTheControl);
+                foreach (AgePrimitiveLabel label in labels)
+                {
+                    caption.ListItem(AgeText.Label(label));
+                }
+
+                return caption.Build();
+            }
+            catch (Exception e)
+            {
+                Log.Warn("notification: reading a control's caption threw: " + e);
+                return null;
+            }
         }
 
         private static void Labels(AgeTransform widget, List<AgePrimitiveLabel> into, int depth)
