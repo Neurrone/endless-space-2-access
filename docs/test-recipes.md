@@ -956,3 +956,22 @@ above is still the only fixture for those.
 **Notification regression capture.** Any change to the notification family is checked by walking a
 fixed browse route over all three research-family popups and diffing `/gui/graph?edges=1&buffers=1`
 per popup, per the exact-non-regression pattern above.
+
+**Reading the description path without a popup up.** The three answers that decide a popup's words —
+`DescriptionLabel`, `Description`, `Words` — are private statics on `NotificationScreen` taking the
+window, so `/eval` reflection reads them for ANY notification window whether or not it is the one
+showing (`typeof(ES2Access.Screens.NotificationScreen).GetMethod(name, NonPublic|Static, null, new
+[]{typeof(NotificationWindow)}, null).Invoke(null, new object[]{window})`). That is how the
+real-words case is regression-tested when no live popup has real words: bind a
+`LuxuryDiscoveredNotificationWindow` and read it directly. Beware that
+`Gui.GuiNotificationService.ShowGuiNotification` on top of an already-open popup does NOT bring the
+new one to the front — the mod keeps reading the popup that was there — so a raised notification is
+readable by reflection but not by `/gui/graph`; dismiss it with
+`DismissGuiNotification(window.GuiNotification)` and the empire's own list is untouched (verified:
+count unchanged before and after).
+
+**The deed and quest-completed popups are the detached-description family** (es2-facts): their
+shape is four body rows (StatusTitle, ObjectiveTitle, "Outcome", ObjectiveLore) with **no words
+node**, `notification:top` holding Next/Previous/Pop-up-automatically and `notification:bottom`
+holding Minimize/Done. A words node reappearing on one of them, or the whole strip collapsing into
+`notification:bottom`, is the detached-label regression.

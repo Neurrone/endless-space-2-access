@@ -22,6 +22,25 @@ generic graduates to the generic docs.
   what it DRAWS instead. Titles are exempt: every measured popup formats its title properly, and the
   one unfilled title seen (`"Research Complete: {0}"`, mid-browse) was a stale frame, which is why
   the change watcher waits for `IsReady`.
+- **Four notification windows wire the shared description to a label they left OUT of their
+  layout, and two of those still carry the skeleton's key on it.** Measured over every
+  `NotificationWindow` instance in the scene (`Resources.FindObjectsOfTypeAll`): 65 of 69 hold
+  `NotificationDescription` somewhere under the window's own `AgeTransform`; `DeedCompleted`,
+  `QuestCompleted`, `MetaplotBegun` and `MetaplotFinished` do not — `AgeTransform.Parent == null`,
+  the GameObject parented to a `Dummy` outside the window, the rect a degenerate `(2,15,45,20)`
+  in the corner of the screen. `Refresh`'s visibility gate never fires on them, so
+  `DeedCompletedNotificationWindow`'s label still holds the prefab's
+  `%NotificationDeedCompletedDescription`, which localizes to **"You have achieved this legendary
+  Deed!"** — spoken by the mod on the popup announcing that another empire got there FIRST, because
+  the label passes every other test: marked visible, no hidden ancestor (it has no ancestor), and
+  a whole sentence rather than a template. `GetDescription()` answers the same key, so the
+  notification-side fallback repeats the lie. What the popup actually draws is its
+  `QuestDescriptionGroup` (StatusTitle / ObjectiveTitle / Outcome / ObjectiveLore) and nothing
+  else — measured against `/gui/age`, there is no success-or-failure sentence anywhere outside it.
+  **Mod policy** (`NotificationScreen.DescriptionLabel`/`Held`): a description label the window's
+  own tree does not hold is no words label at all, and the question stops there — no fallback to
+  `GetDescription()`, because a popup with nowhere to draw a description never showed that
+  sentence under any circumstances.
 - **A collapsed tutorial is a HUD stop, not a tutorial screen.** The game crops the popup
   to its title bar and hides nothing, so `MinimizeToggle.State` is the only signal;
   `TutorialScreen` stands down while it is set and `BuildCollapsedBar` declares the leftover

@@ -35,7 +35,10 @@ namespace ES2Access.Screens
     /// description label parked under a container it has hidden, still holding the raw template the
     /// game would have filled ("Research has been completed: {0}"). A sentence with a hole in it is
     /// not what the popup says, so a description whose label the player cannot see, or which still
-    /// carries an unfilled slot, is treated as absent: not spoken, not a control, not in a buffer.
+    /// carries an unfilled slot, is treated as absent: not spoken, not a control, not in a buffer. So
+    /// is one the window does not HOLD - a handful of popups wire the shared label to an object left
+    /// out of their layout altogether, with the skeleton's own key still written on it, and that key
+    /// localizes to a congratulation on the popup that announces a deed FAILED.
     /// What such a popup says is then read off what it DRAWS, one row per drawn thing - a card's
     /// title, a paragraph of lore, each unlocked item with its own explaining tooltip - in the order
     /// it is drawn in, with the controls it drew among them walked in their place.
@@ -1139,6 +1142,15 @@ namespace ES2Access.Screens
                 Log.Warn("notification: looking for the window's transform threw: " + e);
                 return null;
             }
+        }
+
+        /// <summary>Whether the window HOLDS this widget - whether its own tree is what the widget hangs
+        /// under, which is what makes the widget part of what this popup draws rather than something the
+        /// prefab wired up and left outside the layout.</summary>
+        private static bool Held(NotificationWindow window, AgeTransform widget)
+        {
+            AgeTransform root = Root(window);
+            return root != null && IsUnder(widget, root);
         }
 
         // ---- the table a popup drew its content as ----
@@ -3285,8 +3297,22 @@ namespace ES2Access.Screens
 
         private const string ConfirmTitleKey = "%NotificationValidateTitle";
 
-        /// <summary>The label the popup put its words in: its own where it named one, else the shared
-        /// description every notification has.</summary>
+        /// <summary>
+        /// The label the popup put its words in: its own where it named one, else the shared description
+        /// every notification has - and none at all where the window does not HOLD the label it was
+        /// wired to.
+        ///
+        /// That last case is a leftover in the prefab rather than a state the popup is in. Four of the
+        /// sixty-nine notification windows point the shared description at a label they left out of
+        /// their layout entirely - parented to nothing, parked at a 45x20 corner of the screen - and two
+        /// of those still carry the skeleton's own key on it: the deed report's says
+        /// <c>%NotificationDeedCompletedDescription</c>, which localizes to "You have achieved this
+        /// legendary Deed!" on the very popup announcing that somebody else got there first. Every other
+        /// test passes such a label. It is marked visible; the chain above it hides nothing because it
+        /// has no chain; its text resolves to a whole sentence rather than a template with a hole in it.
+        /// Asking whether the WINDOW holds it is the only question that catches it - and a label the
+        /// window does not hold is a label nobody ever saw.
+        /// </summary>
         private static AgePrimitiveLabel DescriptionLabel(NotificationWindow window)
         {
             Variant variant = VariantOf(window);
@@ -3303,9 +3329,11 @@ namespace ES2Access.Screens
                 }
             }
 
-            return own != null && Visible(own.AgeTransform) && !string.IsNullOrEmpty(AgeText.Label(own))
-                ? own
-                : Value(window, NotificationDescription) as AgePrimitiveLabel;
+            AgePrimitiveLabel wired =
+                own != null && Visible(own.AgeTransform) && !string.IsNullOrEmpty(AgeText.Label(own))
+                    ? own
+                    : Value(window, NotificationDescription) as AgePrimitiveLabel;
+            return wired != null && Held(window, wired.AgeTransform) ? wired : null;
         }
 
         /// <summary>The control's name: the caption the game wrote on it, else the name this mod has
@@ -3564,7 +3592,7 @@ namespace ES2Access.Screens
         /// <summary>
         /// The title or the description: what the popup drew, else what the notification itself says.
         ///
-        /// The description is held to two conditions the title is not. It has to be somewhere the
+        /// The description is held to conditions the title is not. It has to be somewhere the
         /// player can SEE - a window that draws its own content parks the shared label under a
         /// container it has hidden, and what is written on a hidden label is the leftovers of a
         /// skeleton, not the popup's words - and it has to be FILLED IN: a notification that never
@@ -3572,6 +3600,12 @@ namespace ES2Access.Screens
         /// and in what the notification answers, and either way "Research has been completed: {0}"
         /// tells the player nothing they were interrupted for. Titles are formatted properly by every
         /// popup there is, so neither condition is asked of them.
+        ///
+        /// A popup that holds no description label at all (<see cref="DescriptionLabel"/>) has no
+        /// description, and the question stops there - it does not fall through to what the
+        /// notification would have written on one. The fallback is for a label the popup DRAWS and has
+        /// not filled; a popup with nowhere to draw a description never showed the player that sentence
+        /// under any circumstances, and reading it out is inventing a line the game left out.
         /// </summary>
         private static string Text(NotificationWindow window, PropertyInfo label, bool title)
         {
@@ -3585,6 +3619,11 @@ namespace ES2Access.Screens
                 AgePrimitiveLabel drawn = title
                     ? Value(window, label) as AgePrimitiveLabel
                     : DescriptionLabel(window);
+                if (!title && drawn == null)
+                {
+                    return null;
+                }
+
                 string text =
                     title || (drawn != null && Visible(drawn.AgeTransform))
                         ? AgeText.Label(drawn)
