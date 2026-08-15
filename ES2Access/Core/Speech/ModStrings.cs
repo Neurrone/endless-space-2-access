@@ -379,6 +379,11 @@ namespace ES2Access.Core.Speech
         // the game itself is showing rather than a count from now. A turn can reach several places, and
         // they share the line - so what fills the slot is a LIST of names, and a place the map has not
         // named goes into that list under the noun phrase below rather than as a sentence of its own.
+        // The header says whose journey the turns belong to: under a DESTINATION the itinerary is a
+        // proposal about the selected fleets, and without a word saying so it reads as something the
+        // place itself is doing. A fleet's own itinerary needs no header - the fleet line above it has
+        // already said where it is going.
+        public const string FleetRoutePreviewHeader = "fleet.route-preview-header";
         public const string FleetItineraryTurn = "fleet.itinerary-turn";
         public const string FleetItineraryArrival = "fleet.itinerary-arrival";
         public const string FleetUnexploredSystem = "fleet.unexplored-system";
@@ -1121,6 +1126,7 @@ namespace ES2Access.Core.Speech
             { FleetRoutePreviewTurns, "{0} turns, {1} movement" },
             { FleetRouteUsesPortal, "Uses portal" },
             { FleetRouteUsesWormhole, "Uses wormhole" },
+            { FleetRoutePreviewHeader, "Route preview" },
             { FleetItineraryTurn, "Turn {0}: {1}" },
             { FleetItineraryArrival, "Turn {0}: {1} (destination)" },
             { FleetUnexploredSystem, "an unexplored system" },

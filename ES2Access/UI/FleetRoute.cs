@@ -234,11 +234,30 @@ namespace ES2Access.UI
 
         /// <summary>The journey turn by turn, for the review buffer under a destination. One line per
         /// turn that ends somewhere with a name; a turn that ends half way down a lane is a dot on the
-        /// map with nothing to call it, and is not a line.</summary>
+        /// map with nothing to call it, and is not a line.
+        ///
+        /// Headed, which the same lines under a FLEET are not: here the turns belong to a journey nobody
+        /// has ordered yet, sitting among lines about what the place IS, and without a word saying so
+        /// they read as something the place itself is doing. Under a fleet the line above has already
+        /// said where that fleet is going, so the header would only repeat it - which is why the header
+        /// is added here and not in <see cref="Lines"/>.</summary>
         public static IList<string> PreviewLines(object target)
         {
             Ask(target);
-            return Lines(_route);
+            IList<string> lines = Lines(_route);
+            if (lines == null)
+            {
+                return null;
+            }
+
+            List<string> headed = new List<string>(lines.Count + 1);
+            headed.Add(ModStrings.Get(ModStrings.FleetRoutePreviewHeader));
+            for (int i = 0; i < lines.Count; i++)
+            {
+                headed.Add(lines[i]);
+            }
+
+            return headed;
         }
 
         /// <summary>What a fleet already under way is doing, for a surface that does NOT name where it is

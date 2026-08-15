@@ -161,6 +161,7 @@
   "fleet.route-preview-turns": "{0} turns, {1} movement",
   "fleet.route-uses-portal": "Uses portal",
   "fleet.route-uses-wormhole": "Uses wormhole",
+  "fleet.route-preview-header": "Route preview",
   "fleet.itinerary-turn": "Turn {0}: {1}",
   "fleet.itinerary-arrival": "Turn {0}: {1} (destination)",
   "fleet.unexplored-system": "an unexplored system",
