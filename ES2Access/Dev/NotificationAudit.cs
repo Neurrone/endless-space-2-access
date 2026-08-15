@@ -133,6 +133,7 @@ namespace ES2Access.Dev
 
         private sealed class Declared
         {
+            public GraphNode Node;
             public AgeTransform Widget;
             public ControlId Id;
             public string Key;
@@ -140,8 +141,10 @@ namespace ES2Access.Dev
             public string Announcement;
             public List<string> Buffer = new List<string>();
 
-            /// <summary>Announcement and buffer together: everything arriving on this node, or
-            /// reading it, would say.</summary>
+            /// <summary>Arrival line, buffer and every CROSSING into this node together: everything
+            /// arriving on it, reaching it from a neighbour, or reading it, would say. The third is
+            /// not an extra - a table's column captions are spoken only as edges, so a spoken side
+            /// without them cannot account for a caption the popup draws.</summary>
             public List<string> Spoken = new List<string>();
         }
 
@@ -895,9 +898,9 @@ namespace ES2Access.Dev
 
         /// <summary>
         /// What the mod would say, built exactly the way <c>/gui/graph</c> builds it: the screen's own
-        /// render, each node's full arrival line, each node's buffer. Nothing is composed here, so a
-        /// difference between this and what a player hears is a difference in the navigator rather
-        /// than in this file.
+        /// render, each node's full arrival line, each node's buffer, and each edge the player can
+        /// cross INTO it. Nothing is composed here, so a difference between this and what a player
+        /// hears is a difference in the navigator rather than in this file.
         /// </summary>
         private static List<Declared> DeclaredNodes(NotificationScreen screen, Result result)
         {
@@ -914,9 +917,11 @@ namespace ES2Access.Dev
                 return declared;
             }
 
+            Dictionary<ControlId, Declared> byId = new Dictionary<ControlId, Declared>();
             foreach (GraphNode node in render.Order)
             {
                 Declared it = new Declared();
+                it.Node = node;
                 it.Id = node.Id;
                 it.Key = Convert.ToString(node.Id.StructuralKey);
                 it.Region = node.RegionKey == null ? null : node.RegionKey.ToString();
@@ -954,22 +959,142 @@ namespace ES2Access.Dev
                     }
                 }
 
-                if (it.Widget == null)
+                declared.Add(it);
+                byId[node.Id] = it;
+            }
+
+            AddCrossings(render, byId, result);
+            ResolveRowCells(declared);
+
+            for (int i = 0; i < declared.Count; i++)
+            {
+                if (declared[i].Widget == null)
                 {
                     result.Unlocatable.Add(
-                        Made(null, it.Key, "no widget behind this node's id", null)
+                        Made(null, declared[i].Key, "no widget behind this node's id", null)
                     );
                 }
-
-                declared.Add(it);
             }
 
             return declared;
         }
 
-        /// <summary>The widget a node was derived from. Every node this screen declares carries one -
+        /// <summary>
+        /// What the player hears while CROSSING into a node, added to what that node says.
+        ///
+        /// A table's column captions are drawn once, above the columns, and no node's readout repeats
+        /// them: the sheet hangs them on the EDGES instead (<see cref="Core.UI.GraphSheet"/> labels a
+        /// left/right step with the destination column's header and a vertical one with the
+        /// destination row's name), and the navigator speaks a label by handing it to
+        /// <see cref="GraphAnnouncer.Compose"/> as the crossed edge - the same call
+        /// <c>GraphNavigator</c> makes with <c>KeyGraph.Move</c>'s transition label. So the line is
+        /// composed here through that one path rather than re-derived: a caption the player hears is a
+        /// caption this file accounts for, and a caption it invents is still owed an explanation by
+        /// the honesty check.
+        /// </summary>
+        private static void AddCrossings(
+            GraphRender render,
+            Dictionary<ControlId, Declared> byId,
+            Result result
+        )
+        {
+            foreach (GraphNode from in render.Order)
+            {
+                foreach (KeyValuePair<GraphDir, Transition> edge in from.Transitions)
+                {
+                    Transition crossing = edge.Value;
+                    if (crossing == null || string.IsNullOrEmpty(crossing.Label))
+                    {
+                        continue;
+                    }
+
+                    GraphNode to = render.NodeAt(crossing.Destination);
+                    Declared landing;
+                    if (to == null || to == from || !byId.TryGetValue(to.Id, out landing))
+                    {
+                        continue;
+                    }
+
+                    string line;
+                    try
+                    {
+                        line = GraphAnnouncer.Compose(from, to, crossing.Label);
+                    }
+                    catch (Exception e)
+                    {
+                        result.Unlocatable.Add(
+                            Made(landing.Widget, landing.Key, "crossing into it threw", e.Message)
+                        );
+                        continue;
+                    }
+
+                    if (!string.IsNullOrEmpty(line) && !landing.Spoken.Contains(line))
+                    {
+                        landing.Spoken.Add(line);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// The widget behind a table cell, which its id does not carry.
+        ///
+        /// A sheet keys its cells structurally and gives the ROW's domain object to the primary cell
+        /// alone (<see cref="Core.UI.GraphSheet"/>), so a metadata cell's id resolves to nothing and the
+        /// placement and tooltip answers go blind on every column but the first - which on this family
+        /// meant a whole table reported unlocatable and its cells' dossiers reported as claims with
+        /// nothing behind them. The sheet's own public stamps are the way back: every cell of a row
+        /// carries the same <see cref="TableRow"/> object and its own
+        /// <see cref="NodeVtable.Column"/>, so the row's widget is whatever the column-0 cell of the
+        /// same row resolved to.
+        ///
+        /// It is the ROW's widget, not the cell's: a cell's own transform is closure state inside the
+        /// screen's vtable and nothing public names it. That is honest for both answers here - the
+        /// cell is drawn inside the row and its tooltip hangs under it - at the cost of precision in
+        /// one direction only: a cell claiming a tooltip is now satisfied by any tooltip anywhere in
+        /// its row.
+        /// </summary>
+        private static void ResolveRowCells(List<Declared> declared)
+        {
+            Dictionary<string, AgeTransform> rows = new Dictionary<string, AgeTransform>();
+            for (int i = 0; i < declared.Count; i++)
+            {
+                Declared it = declared[i];
+                TableRow row = RowOf(it);
+                if (row == null || row.Key == null || it.Widget == null || it.Node.Vtable.Column != 0)
+                {
+                    continue;
+                }
+
+                rows[row.Key] = it.Widget;
+            }
+
+            for (int i = 0; i < declared.Count; i++)
+            {
+                Declared it = declared[i];
+                TableRow row = RowOf(it);
+                AgeTransform widget;
+                if (
+                    it.Widget == null
+                    && row != null
+                    && row.Key != null
+                    && rows.TryGetValue(row.Key, out widget)
+                )
+                {
+                    it.Widget = widget;
+                }
+            }
+        }
+
+        private static TableRow RowOf(Declared it)
+        {
+            return it.Node == null || it.Node.Vtable == null ? null : it.Node.Vtable.Row;
+        }
+
+        /// <summary>The widget a node was derived from. Most nodes this screen declares carry one -
         /// the control, the row's group, the label the words were read off - so this is a lookup
-        /// rather than a search.</summary>
+        /// rather than a search; a table cell is the exception and is resolved by
+        /// <see cref="ResolveRowCells"/>.</summary>
         private static AgeTransform WidgetOf(object reference)
         {
             AgeTransform widget = reference as AgeTransform;
