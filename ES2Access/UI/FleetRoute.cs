@@ -593,6 +593,12 @@ namespace ES2Access.UI
         /// because the map draws a numbered dot in empty space and calls it nothing, and inventing
         /// "somewhere between Hir and Xiu" would be describing a picture rather than reading one. What
         /// such a turn nonetheless DID - a portal, a wormhole - is still said, on a line of its own.
+        ///
+        /// The turn a line is filed under is the number the GAME is showing for it, not a count from
+        /// now: an itinerary is read against the turn counter in the corner and against everything else
+        /// the player has planned for turn 12, and "turn 3" meaning "three turns from whenever you last
+        /// looked" is the one reading that cannot be checked against anything. Durations elsewhere in
+        /// this class stay relative - "arrives in 3 turns" is the answer to a different question.
         /// </summary>
         private static IList<string> Lines(Route route)
         {
@@ -601,6 +607,7 @@ namespace ES2Access.UI
                 return null;
             }
 
+            int today = Displayed();
             int destination = route.Places.Length - 1;
             List<string> lines = new List<string>(route.Turns.Count);
             for (int i = 0; i < route.Turns.Count; i++)
@@ -633,7 +640,7 @@ namespace ES2Access.UI
                             arrives
                                 ? ModStrings.FleetItineraryArrival
                                 : ModStrings.FleetItineraryTurn,
-                            turn.Number,
+                            today > 0 ? today + turn.Number - 1 : turn.Number,
                             places.Build()
                         )
                     );
@@ -657,6 +664,24 @@ namespace ES2Access.UI
             }
 
             return lines.Count == 0 ? null : lines;
+        }
+
+        /// <summary>The turn number the game is showing in the corner. The simulation counts the turn now
+        /// in progress as <c>Game.Turn</c> and the interface writes that plus one, which is the number
+        /// every other turn the player reads is expressed in (the End Turn window does the same sum:
+        /// <c>GlobalHud.Turn</c>). Zero where there is no game, which leaves the itinerary counting from
+        /// now rather than saying a wrong absolute turn.</summary>
+        private static int Displayed()
+        {
+            try
+            {
+                Game game = Gui.Game;
+                return game == null ? 0 : game.Turn + 1;
+            }
+            catch (Exception)
+            {
+                return 0;
+            }
         }
 
         /// <summary>What the map calls a place, or null where it calls it nothing: a route can run

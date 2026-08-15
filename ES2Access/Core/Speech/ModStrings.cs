@@ -375,10 +375,10 @@ namespace ES2Access.Core.Speech
         public const string FleetRouteUsesPortal = "fleet.route-uses-portal";
         public const string FleetRouteUsesWormhole = "fleet.route-uses-wormhole";
 
-        // The itinerary, one line per turn in which the fleet reaches somewhere, counting the turn in
-        // progress as the first. A turn can reach several places, and they share the line - so what
-        // fills the slot is a LIST of names, and a place the map has not named goes into that list
-        // under the noun phrase below rather than as a sentence of its own.
+        // The itinerary, one line per turn in which the fleet reaches somewhere, under the turn number
+        // the game itself is showing rather than a count from now. A turn can reach several places, and
+        // they share the line - so what fills the slot is a LIST of names, and a place the map has not
+        // named goes into that list under the noun phrase below rather than as a sentence of its own.
         public const string FleetItineraryTurn = "fleet.itinerary-turn";
         public const string FleetItineraryArrival = "fleet.itinerary-arrival";
         public const string FleetUnexploredSystem = "fleet.unexplored-system";
