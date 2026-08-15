@@ -213,7 +213,10 @@ per-frame recorder: start `POST /wait?timeout=30000` with body
 `GET /log?since=0&grep=trace` (collapse runs of identical lines — a 30 s trace is ~1800 of them).
 Each line is the stack, the focused screen, the cursor, the node count that screen declared, and the
 tutorial/window state. A single-digit node count on an active page is a page declaring somebody
-else's content.
+else's content. The same per-frame evaluation makes a PLAIN boolean predicate an existence test over
+a whole transition: `satisfied:false` after N frames proves no frame in that window had the property
+(154 frames of a popup's arrival, never ready-and-unpainted) — but only once a weaker predicate that
+DOES fire proves the window was really sampled.
 
 **Injecting a sequence of keys.** `POST /input` one action key per request, ~0.4 s apart —
 a no-delay loop does not fail loudly, it reports a plausible WRONG route (rows appearing
@@ -288,11 +291,6 @@ A modal whose opener installs DELEGATES has to be opened through the opener's ow
 reflection for a private `Cb(GameObject obj = null)`, since `SendMessage` with no argument
 logs an arity error and does nothing (es2-facts). The worked route for
 `SystemSelectionModalWindow`, with its never-press warnings, is in `docs/test-recipes.md`.
-
-**Icon-table coverage proof.** Run every `<LocalizationPair>` value in
-`<game>\Public\Localization\english\*.xml` through `ES2Access.UI.AgeText.Clean`, then
-`DevProbe.UnknownIcons()` — `tokens` must be empty; the expected token counts are es2-facts'
-icon numbers.
 
 **Launcher stuck in session 0.** A `launcher-x64` orphaned into the *Services* session
 never exits and cannot be killed; the launch guard skips other sessions, but if a launch
