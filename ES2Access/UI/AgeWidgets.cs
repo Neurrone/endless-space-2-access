@@ -564,6 +564,62 @@ namespace ES2Access.UI
             }
         }
 
+        /// <summary>
+        /// Where a widget is DRAWN, for a question about layout: itself, unless the game shows it
+        /// through a scrolling window too small for it, in which case the window is.
+        ///
+        /// A widget laid out bigger than the box it is shown in keeps its whole rectangle, and the part
+        /// that does not fit hangs invisibly across whatever is drawn below and beside it. The quest
+        /// popup writes its lore as one 429-pixel label inside a 182-pixel viewport, so its rectangle
+        /// runs off the bottom of the popup and every layout rule answers about a shape nobody can see:
+        /// the paragraph measures level with the heading underneath it and level with the buttons along
+        /// the bottom - which is how it went missing from a content area that is worked out from the
+        /// strips it lies between.
+        ///
+        /// The answer is the scrolling window rather than the viewport inside it: that is the box the
+        /// player sees the text in, and the one the game named. A widget merely SCROLLED out of sight is
+        /// not clipped in this sense and keeps its own rectangle - it is one row of a list the player
+        /// scrolls through, and putting every such row on the viewport's edge would stack a whole sheet
+        /// at one point.
+        /// </summary>
+        public static AgeTransform Clipped(AgeTransform widget)
+        {
+            try
+            {
+                if (widget == null)
+                {
+                    return null;
+                }
+
+                Rect it = widget.GetGlobalPosition();
+                AgeTransform at = widget.Parent;
+                for (int depth = 0; at != null && depth < MaxAncestors; depth++)
+                {
+                    AgeControlScrollView view = at.GetComponent<AgeControlScrollView>();
+                    if (view != null && view.Viewport != null)
+                    {
+                        Rect box = view.Viewport.GetGlobalPosition();
+                        return it.height > box.height + Rounding || it.width > box.width + Rounding
+                            ? at
+                            : widget;
+                    }
+
+                    at = at.Parent;
+                }
+
+                return widget;
+            }
+            catch (Exception e)
+            {
+                Log.Warn("widgets: measuring what shows a widget threw: " + e);
+                return widget;
+            }
+        }
+
+        /// <summary>How far a widget may overrun the box it is shown in and still fit it: a pixel of
+        /// rounding, not a line of anything.</summary>
+        private const float Rounding = 1f;
+
         /// <summary>The heading the game wrote across the top of a <c>GuiPanel</c>, which is what a
         /// sighted player reads above its content. Found where it is drawn: these are plain panels and
         /// none of them binds the label, but every one of them names it "PanelTitle" in the prefab.

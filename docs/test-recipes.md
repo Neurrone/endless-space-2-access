@@ -93,7 +93,28 @@ that is a fixture change; reach it by playing a save whose queue has run dry.
 
 **No quest in either fixture is in CHOICE state**, so a popup's choice cards have never been drawn:
 the checkbox side of the radio/checkbox rule (the quest popup's own Pin toggle) is live-verified and
-the `GuiRadioGroup` side is code-verified only.
+the `GuiRadioGroup` side is code-verified only. **Sighted once on a player's own save**
+(`QuestBegunNotificationWindow`, a three-way choice, 2026-08-15): `notification:body/0/LoreGroup` =
+the lore paragraph as ONE row (node `notification:body/0/QuestLoreSW`, and the start of the walk),
+`notification:body/1/StatusContentGroup` = "Choose an objective", the three
+`QuestChoiceItem00N` radios banded into one row, then the objective line, "Reward" and the reward
+label; `notification:bottom` = Minimize / Pin Quest / Confirm; `notification:top` the usual three.
+Two body regions, not three — a build that puts `StatusTitleGroup` and `QuestChoicePanel` back in
+regions of their own has lost the lore, because it is the lore that makes
+`QuestDescriptionContent` the cards' container.
+
+**A popup's lore is only readable while its label overflows nothing.** The game writes quest,
+deed, technology and metaplot lore as ONE label inside a scroll view, laid out at the text's full
+height inside a viewport a fraction of it — 429 px of paragraph inside 182 px of window on the
+quest popup. The label keeps its whole rectangle, which runs down across the bottom button strip,
+so the body reader's "between the strips" test dropped it (fixed by `AgeWidgets.Clipped`,
+2026-08-15). It is TEXT-LENGTH dependent and so invisible to a structural check: the same prefab
+reads correctly with short lore (the deed popup's `ObjectiveLore`, the research popup's
+`TechnologyLoreSW`) and silently loses it once the writer wrote a long one. 22 of the 69
+notification prefabs hold a scroll view with labels in it; the single-label "…Lore…" ones are
+`QuestBegun`, `QuestCompleted`, `NarrativeEventBegun`, `DeedCompleted` (`OutcomeLoreGroup`),
+`SpecialNodeEvent`, `TechnologyUnlocked`, `MetaplotBegun`/`Finished`, `NewUnlockedContent` and
+`NewDownloadableContent` — check the lore of any of them against a save whose text is long.
 
 **World position → screen pixel.**
 `((GalaxyViewCameraController)Amplitude.Unity.Framework.Services.GetService

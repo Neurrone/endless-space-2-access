@@ -986,7 +986,7 @@ namespace ES2Access.Screens
                 if (
                     !InBody(line.Widget, top, bottom)
                     || PartOf(line.Widget, controls)
-                    || ReferenceEquals(line.Widget, words)
+                    || IsWords(line, words)
                     || IsIn(line.Widget, dossier)
                 )
                 {
@@ -1302,7 +1302,7 @@ namespace ES2Access.Screens
                     if (
                         InBody(line.Widget, top, bottom)
                         && !PartOf(line.Widget, controls)
-                        && !ReferenceEquals(line.Widget, words)
+                        && !IsWords(line, words)
                     )
                     {
                         body.Add(line);
@@ -1980,7 +1980,7 @@ namespace ES2Access.Screens
                 if (
                     InBody(line.Widget, top, bottom)
                     && !PartOf(line.Widget, controls)
-                    && !ReferenceEquals(line.Widget, words)
+                    && !IsWords(line, words)
                     && !IsUnder(line.Widget, table)
                     && !IsIn(line.Widget, dossier)
                 )
@@ -2111,8 +2111,18 @@ namespace ES2Access.Screens
             return EmpireDossier.RowText(row);
         }
 
-        /// <summary>Everything a subtree is showing, in the order it is laid out - hoisted to
-        /// <see cref="EmpireDossier.Read"/>, which the popup body and the dossier both walk with.</summary>
+        /// <summary>
+        /// Everything a subtree is showing, in the order it is laid out - hoisted to
+        /// <see cref="EmpireDossier.Read"/>, which the popup body and the dossier both walk with.
+        ///
+        /// Each line is then measured where the popup DRAWS it (<see cref="AgeWidgets.Clipped"/>). A
+        /// paragraph the game laid out taller than the scrolling window it shows it through - the quest
+        /// popup's lore - keeps a rectangle that runs off the bottom of the popup, and this screen works
+        /// out its content area as what lies between the two strips: measured whole, such a paragraph is
+        /// level with the buttons along the bottom and is dropped from the body altogether. The line
+        /// still says all of it - the game holds the whole string whatever it shows - and it is still
+        /// the label's own line; only where it is measured changes.
+        /// </summary>
         private static void Read(
             AgeTransform widget,
             List<Line> lines,
@@ -2120,7 +2130,27 @@ namespace ES2Access.Screens
             int depth
         )
         {
+            int from = lines.Count;
             EmpireDossier.Read(widget, lines, inherited, depth);
+            for (int i = from; i < lines.Count; i++)
+            {
+                Line line = lines[i];
+                AgeTransform shown = AgeWidgets.Clipped(line.Widget);
+                if (!ReferenceEquals(shown, line.Widget))
+                {
+                    line.Widget = shown;
+                    lines[i] = line;
+                }
+            }
+        }
+
+        /// <summary>Whether a drawn line is the popup's own words, which lead the body as a row of their
+        /// own and are not among what it drew. Asked of the label itself (<c>Owner</c>) as well as of
+        /// where the line is measured, because a description shown through a scrolling window is
+        /// measured at the window.</summary>
+        private static bool IsWords(Line line, AgeTransform words)
+        {
+            return ReferenceEquals(line.Widget, words) || ReferenceEquals(line.Owner, words);
         }
 
         /// <summary>The dossier panel a popup carries, whichever popup it is - the same panel serves
