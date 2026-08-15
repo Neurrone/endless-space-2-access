@@ -108,10 +108,27 @@ namespace ES2Access.Core.UI.Graph
         /// and the substance is there to be walked.</summary>
         public TooltipMode Mode;
 
-        public NodeSection(Func<IList<string>> lines, TooltipMode mode)
+        /// <summary>Whether there is anything here to indicate, asked EVERY frame. Only consulted for
+        /// <see cref="TooltipMode.Indicate"/>, and null - the default - means "always", which is the
+        /// right answer for a section the mod itself invented and therefore knows is real.
+        ///
+        /// It exists for the sections read off a game widget, where "the control has a tooltip" and
+        /// "the game would draw one" are different questions: a prefab hangs an empty tooltip on a
+        /// widget it has nothing to say about, and announcing one on it sends the player to an empty
+        /// review buffer. The question is asked per frame rather than when the node is declared because
+        /// a tooltip the game fills in later has to start indicating the moment it becomes real.
+        ///
+        /// Note what this is NOT: a check that the section's LINES resolve to something. A tooltip the
+        /// renderer assembles has no words until it is drawn, which is well after the readout that
+        /// mentions it is composed, so asking for lines answers "empty" on exactly the controls that
+        /// most need indicating.</summary>
+        public Func<bool> Indicates;
+
+        public NodeSection(Func<IList<string>> lines, TooltipMode mode, Func<bool> indicates = null)
         {
             Lines = lines;
             Mode = mode;
+            Indicates = indicates;
         }
 
         /// <summary>Content the control draws: reviewable, never spoken on focus.</summary>

@@ -251,6 +251,33 @@ namespace ES2Access.UI
             }
         }
 
+        /// <summary>
+        /// Whether the game would draw anything at all for this tooltip: it has words of its own, or a
+        /// target the renderer can assemble words from.
+        ///
+        /// This is <c>GuiTooltipController.ReadTooltipInformation</c>'s own test, and it is the one
+        /// place it is asked, because the two things that ask it must never disagree: the pointer aims
+        /// at a tooltip only if it would draw (<see cref="PointerFocus"/>), and a control only says "has
+        /// tooltip" for one that would draw (<c>NodeSection.Indicates</c>). A prefab that hangs an empty
+        /// tooltip on decoration - a turn counter's, with no class content and no target - fails it, and
+        /// promising a review buffer that has nothing in it is what that used to sound like.
+        ///
+        /// Asked every frame rather than when a node is declared: a widget the game has not filled in
+        /// yet starts drawing the moment it is filled.
+        /// </summary>
+        public static bool Draws(AgeTooltip tooltip)
+        {
+            try
+            {
+                return tooltip != null
+                    && (!string.IsNullOrEmpty(tooltip.Content) || tooltip.Target != null);
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
         /// <summary>What the player would read on a tooltip, resolved when they ask to read it - off
         /// the widget when the words are there, off the drawn tooltip window when they are not.
         /// </summary>

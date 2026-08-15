@@ -143,6 +143,32 @@ namespace ES2Access.Tests.UI
         }
 
         /// <summary>
+        /// What the indication IS conditional on: whether the game would draw the tooltip at all, which
+        /// a section read off a game widget answers with the engine's own test. A prefab hangs tooltips
+        /// on decoration it has nothing to say about - the research banner's, while nothing is queued -
+        /// and promising one there sends the player to an empty review buffer.
+        /// </summary>
+        [Fact]
+        public void ATooltipTheGameWouldDrawNothingForIsNotIndicated()
+        {
+            NodeSection empty = new NodeSection(Tooltip(), TooltipMode.Indicate, () => false);
+            Assert.Equal("New Game, button, 2 of 3", Readout(empty));
+        }
+
+        /// <summary>The test is re-asked every readout, so a tooltip the game fills in later starts
+        /// indicating the moment it becomes real - no rebuild, no re-declaration.</summary>
+        [Fact]
+        public void ATooltipThatBecomesRealStartsBeingIndicated()
+        {
+            bool real = false;
+            NodeSection later = new NodeSection(Tooltip(), TooltipMode.Indicate, () => real);
+            NodeAnnouncement part = TooltipParts.Part(new[] { later });
+            Assert.True(string.IsNullOrEmpty(part.Text()));
+            real = true;
+            Assert.Equal("has tooltip", part.Text());
+        }
+
+        /// <summary>
         /// A row carries the heading's explanation of what the measure IS and the value's description
         /// of what it SAYS, in drawn order. The one the player asked for by landing there is the
         /// value's - the last one drawn - so that is the one spoken.

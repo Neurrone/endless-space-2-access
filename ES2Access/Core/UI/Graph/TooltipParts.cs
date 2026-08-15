@@ -28,8 +28,7 @@ namespace ES2Access.Core.UI.Graph
         Announce,
 
         /// <summary>
-        /// A short "has tooltip" is spoken in place of the text - unconditionally, because the
-        /// control HAVING one is what this mode means and is already known by the time it is chosen.
+        /// A short "has tooltip" is spoken in place of the text.
         ///
         /// Asking whether the lines resolve to anything first would be asking the wrong question at
         /// the wrong moment. The mode is only ever reached for a tooltip that names a CLASS, whose
@@ -37,6 +36,11 @@ namespace ES2Access.Core.UI.Graph
         /// arrives, which is well after the readout that would mention it has been composed. So the
         /// check answered "empty" every time and the indication was never spoken at all, on exactly
         /// the controls that most needed it.
+        ///
+        /// The right question is the ENGINE's own: would it draw anything for this tooltip at all?
+        /// That is answerable immediately, and a section read off a game widget carries it as
+        /// <see cref="NodeSection.Indicates"/> - which is how the empty tooltips a prefab hangs on
+        /// decoration stop promising a review buffer that has nothing in it.
         /// </summary>
         Indicate,
     }
@@ -50,8 +54,10 @@ namespace ES2Access.Core.UI.Graph
     /// - the LAST <see cref="TooltipMode.Announce"/> section is the one spoken outright. A row can carry
     ///   more than one tooltip (the heading explains the measure, the value describes itself) and it is
     ///   the value's - the last one drawn - that the player asked for by landing there.
-    /// - any <see cref="TooltipMode.Indicate"/> section adds "has tooltip", UNCONDITIONALLY. Its words do
-    ///   not exist until the game draws them, so a check for content would answer "empty" every time.
+    /// - any <see cref="TooltipMode.Indicate"/> section adds "has tooltip" while its
+    ///   <see cref="NodeSection.Indicates"/> says there is something there - re-asked every readout, and
+    ///   always true for a section that declared no test. Never a check for the section's LINES: its
+    ///   words do not exist until the game draws them, so that would answer "empty" every time.
     /// - <see cref="TooltipMode.None"/> sections say nothing here at all: they are the control's drawn
     ///   face, already reviewable, and reading them on every pass is what buffers exist to avoid.
     ///
@@ -72,8 +78,9 @@ namespace ES2Access.Core.UI.Graph
 
             // The modes are structural - they come from the tooltip's own class, decided when the node
             // was declared - so which section speaks is settled here, once, rather than per readout.
+            // WHETHER an indicated section has anything in it is not structural and is asked per readout.
             Func<IList<string>> spoken = null;
-            bool indicate = false;
+            List<Func<bool>> indicators = null;
             for (int i = 0; i < sections.Count; i++)
             {
                 NodeSection section = sections[i];
@@ -84,7 +91,12 @@ namespace ES2Access.Core.UI.Graph
 
                 if (section.Mode == TooltipMode.Indicate)
                 {
-                    indicate = true;
+                    if (indicators == null)
+                    {
+                        indicators = new List<Func<bool>>(2);
+                    }
+
+                    indicators.Add(section.Indicates);
                 }
                 else if (section.Mode == TooltipMode.Announce)
                 {
@@ -92,14 +104,32 @@ namespace ES2Access.Core.UI.Graph
                 }
             }
 
-            if (spoken == null && !indicate)
+            if (spoken == null && indicators == null)
             {
                 return null;
             }
 
             Func<IList<string>> lines = spoken;
-            bool hasLong = indicate;
-            return new NodeAnnouncement(() => Compose(lines, hasLong), kind: AnnouncementKinds.Tooltip);
+            List<Func<bool>> hasLong = indicators;
+            return new NodeAnnouncement(
+                () => Compose(lines, Indicated(hasLong)),
+                kind: AnnouncementKinds.Tooltip
+            );
+        }
+
+        /// <summary>Whether any of the indicated sections has something to indicate right now. A section
+        /// that declared no test always does - the mod invented it and knows it is real.</summary>
+        private static bool Indicated(List<Func<bool>> indicators)
+        {
+            for (int i = 0; indicators != null && i < indicators.Count; i++)
+            {
+                if (indicators[i] == null || indicators[i]())
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         /// <summary>The part a single tooltip projects to - for a control this mod invented, which has

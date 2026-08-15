@@ -271,7 +271,11 @@ namespace ES2Access.UI
         /// LateUpdate, so the tooltip controller sees it on the next Update.</summary>
         public static void LateTick()
         {
-            AgeTooltip tooltip = HasWords(_showing.Tooltip) ? _showing.Tooltip : null;
+            // A tooltip the engine would draw nothing for is never pointed at: failing that test is
+            // what makes the tooltip controller PARK its countdown (see AskAgainIfStalled). The test
+            // itself is AgeWidgets.Draws, shared with the "has tooltip" indication so that aiming and
+            // announcing can never disagree about which tooltips are real.
+            AgeTooltip tooltip = AgeWidgets.Draws(_showing.Tooltip) ? _showing.Tooltip : null;
             AgeTransform hover = tooltip == null ? null : HoverTarget(_showing);
             if (hover == null)
             {
@@ -293,25 +297,6 @@ namespace ES2Access.UI
             }
 
             AskAgainIfStalled(tooltip);
-        }
-
-        /// <summary>Whether the game would draw anything for this tooltip: it has words of its own, or
-        /// a target the renderer can assemble words from. The tooltip controller asks exactly this
-        /// question, and a tooltip that fails it is what makes the controller PARK - see
-        /// <see cref="AskAgainIfStalled"/> - so a wordless widget is never pointed at in the first
-        /// place. Asked every frame rather than when focus arrives, because a widget the game has not
-        /// filled in yet starts drawing the moment it is filled.</summary>
-        private static bool HasWords(AgeTooltip tooltip)
-        {
-            try
-            {
-                return tooltip != null
-                    && (!string.IsNullOrEmpty(tooltip.Content) || tooltip.Target != null);
-            }
-            catch (Exception)
-            {
-                return false;
-            }
         }
 
         /// <summary>
