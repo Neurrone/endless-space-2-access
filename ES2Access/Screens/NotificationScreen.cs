@@ -2136,7 +2136,7 @@ namespace ES2Access.Screens
             Control it = control;
             AgeTooltip explains = Tip(it);
             NodeVtable vtable;
-            if (it.Toggle == null)
+            if (it.Toggle == null || it.Acts)
             {
                 vtable = GraphNodes.Button(
                     () => Caption(it),
@@ -2185,9 +2185,15 @@ namespace ES2Access.Screens
                 );
             }
 
-            if (it.Radio && it.Toggle != null)
+            if (it.Details != null)
             {
-                // A card in a set has no button to light up: its own toggle carries the hover.
+                vtable.Sections = it.Details;
+            }
+
+            if ((it.Radio || it.Acts) && it.Toggle != null)
+            {
+                // A card has no button to light up: its own toggle carries the hover - and hovering it is
+                // also what makes the game show what the card unlocks, exactly as it does for a mouse.
                 AgeWidgets.Point(vtable, it.Toggle, explains, it.Widget);
             }
             else
@@ -2264,7 +2270,7 @@ namespace ES2Access.Screens
 
         /// <summary>One control of the popup: the widget, how to name it when the game did not, and
         /// - when it is a toggle - the state it carries.</summary>
-        private struct Control
+        internal struct Control
         {
             public string Key;
             public AgeTransform Widget;
@@ -2284,6 +2290,20 @@ namespace ES2Access.Screens
             /// than on the control - a choice card's reason for refusing sits on the CARD, and the switch
             /// that refuses is a piece inside it.</summary>
             public AgeTooltip Tip;
+
+            /// <summary>A toggle the game uses as a one-shot ACTION rather than as a setting: clicking a
+            /// suggested technology queues it there and then, and the tick it leaves behind is animation.
+            /// Announced and worked as a BUTTON, because a state the player is told about is a state they
+            /// can expect to change back.</summary>
+            public bool Acts;
+
+            /// <summary>What this control carries in the review buffer, where the popup's own code is
+            /// what knows. The shared reading takes a control's ONE tooltip; a card assembled out of
+            /// several - what branch this is, what the thing does, what it unlocks - is the only place
+            /// any of them is reachable from, and which of them is worth saying outright is a question
+            /// about the card rather than about any one tooltip. Null leaves the shared reading alone.
+            /// </summary>
+            public IList<NodeSection> Details;
         }
 
         /// <summary>The tooltip a control speaks and carries: its own where it has one, else the one the
@@ -2364,6 +2384,16 @@ namespace ES2Access.Screens
                         true,
                         choice.AgeTooltip
                     );
+                }
+
+                // The cards the popup drew as pictures with their words laid out around them, already
+                // named and explained by the code that knows which word is which.
+                foreach (Control card in own ? CardControls(window) : NoCards)
+                {
+                    if (!Has(controls, card.Widget))
+                    {
+                        controls.Add(card);
+                    }
                 }
 
                 // The buttons that leave the popup for a page of their own, for a popup that drew one with
@@ -2565,6 +2595,14 @@ namespace ES2Access.Screens
         /// sentence its tooltip opens with - and the mod's own phrase only where the popup wrote neither.
         /// A gateway the shared reading already found is not declared twice.
         ///
+        /// <see cref="Cards"/>: controls the popup drew as CARDS - a picture with the words scattered
+        /// around it rather than written on it. The shared rule names a control from the labels it holds,
+        /// and a card holds none: its title, its category and its cost are laid out beside the disk the
+        /// click target actually is, so the rule drops the control for having no words and reads the
+        /// words as loose text belonging to nobody. Only the popup's code knows which label is the name
+        /// of the thing, which is the branch it came from and which is the price - so it says so, and
+        /// hands back a finished control.
+        ///
         /// A popup with no entry here is read entirely by the shared rules, which is the case for most
         /// of them. A stage adding a popup adds one entry and touches nothing else.
         /// </summary>
@@ -2573,6 +2611,7 @@ namespace ES2Access.Screens
             public Func<NotificationWindow, AgePrimitiveLabel> Words;
             public Func<NotificationWindow, IList<AgeTransform>> Tables;
             public Func<NotificationWindow, IList<AgeTransform>> Choices;
+            public Func<NotificationWindow, IList<Control>> Cards;
             public Func<NotificationWindow, AgeControl> Confirm;
             public Func<NotificationWindow, IList<Gateway>> Gateways;
             public Action<NotificationBody> Body;
@@ -2914,6 +2953,14 @@ namespace ES2Access.Screens
                 }
             );
 
+            // Research finished, and with nothing left in the queue the popup offers what to research
+            // next: one card per branch of the technology tree, each a picture with its branch, its
+            // technology and its cost drawn AROUND it. Clicking one queues that research at once.
+            variants.Add(
+                typeof(TechnologyUnlockedNotificationWindow),
+                new Variant { Cards = ResearchSuggestions.Cards }
+            );
+
             // The academy having granted a role: the same roles panel the exchange popup above draws,
             // in a popup of its own, so the same cloned lines read the same way.
             variants.Add(
@@ -3148,6 +3195,29 @@ namespace ES2Access.Screens
         }
 
         private static readonly Gateway[] NoGateways = new Gateway[0];
+
+        private static readonly Control[] NoCards = new Control[0];
+
+        /// <summary>The cards this popup drew, finished by the code that knows what its words mean.
+        /// </summary>
+        private static IList<Control> CardControls(NotificationWindow window)
+        {
+            Variant variant = VariantOf(window);
+            if (variant == null || variant.Cards == null)
+            {
+                return NoCards;
+            }
+
+            try
+            {
+                return variant.Cards(window) ?? NoCards;
+            }
+            catch (Exception e)
+            {
+                Log.Warn("notification: reading a popup's cards threw: " + e);
+                return NoCards;
+            }
+        }
 
         private static IList<Gateway> Gateways(NotificationWindow window)
         {
