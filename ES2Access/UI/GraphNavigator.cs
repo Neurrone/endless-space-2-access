@@ -54,7 +54,6 @@ namespace ES2Access.UI
         private ControlId _pendingFocus;
         private bool _pendingAnnounce;
         private object _pendingStop;
-        private bool _pendingStopAnnounce = true;
 
         // A stop the NEXT screen attached should land on - see LandOnStopAfterClose.
         private object _landingStop;
@@ -286,18 +285,6 @@ namespace ES2Access.UI
             _pendingAnnounce = announce;
         }
 
-        /// <summary>Ask for focus to land on a STOP rather than on one control - the node that stop was
-        /// last left on, or its first. Applied on the next tick, like <see cref="FocusNode"/>.
-        /// <paramref name="announce"/> false lands SILENTLY, for a caller that is already saying what
-        /// happened: the map's inspect cursor is a mode of the map stop, so arming it from elsewhere on
-        /// the screen puts the cursor there first and then announces the mode, rather than announcing
-        /// both.</summary>
-        public void FocusStop(object stopKey, bool announce = true)
-        {
-            _pendingStop = stopKey;
-            _pendingStopAnnounce = announce;
-        }
-
         /// <summary>Re-read the focused control in full, ancestors included.</summary>
         public void AnnounceCurrent()
         {
@@ -459,15 +446,9 @@ namespace ES2Access.UI
                     if (landing != null)
                     {
                         _graph.Focus(landing.Id);
-                        if (!_pendingStopAnnounce)
-                        {
-                            _lastSpokenKey = landing.Id;
-                            _lastSpokenNode = _graph.CurrentNode;
-                        }
                     }
 
                     _pendingStop = null;
-                    _pendingStopAnnounce = true;
                 }
             }
 

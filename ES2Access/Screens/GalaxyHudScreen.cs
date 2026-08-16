@@ -320,13 +320,6 @@ namespace ES2Access.Screens
             return Equals(stopKey, SystemStop);
         }
 
-        /// <summary>The map widget's own stop key, for the mode that has to put the cursor there.
-        /// </summary>
-        internal static object MapStop
-        {
-            get { return SystemStop; }
-        }
-
         /// <summary>
         /// The inspect cursor takes the keys it means before anything else on the page sees them - the
         /// arrows, Enter, Escape and the two size keys - which is what makes it a MODE rather than a
@@ -2276,8 +2269,8 @@ namespace ES2Access.Screens
         }
 
         /// <summary>One quest marker as the SCANNER needs it: which quest it belongs to, where on the
-        /// map it stands, and - where it stands at a system this page is naming - that system, which
-        /// is the only node the tree has to send the cursor to.</summary>
+        /// map it stands, and the system it stands at - which is the node the go-to sends the cursor
+        /// to, and is never null here (see <see cref="ScannedMarkers"/>).</summary>
         internal struct ScannedMarker
         {
             public string Quest;
@@ -2286,7 +2279,7 @@ namespace ES2Access.Screens
         }
 
         /// <summary>
-        /// Every quest marker the game is showing this empire, free-floating ones included.
+        /// Every quest marker the game is showing this empire that stands AT A SYSTEM.
         ///
         /// Walked from the JOURNAL rather than from the pins the map draws, for the reason
         /// <see cref="QuestMarkerLines"/> records: a pin carries an instance id and nothing else, so
@@ -2297,8 +2290,11 @@ namespace ES2Access.Screens
         ///
         /// The system-anchored markers are the ones <see cref="QuestMarkerLines"/> already says on a
         /// system row; they are here too, because a player asking "where are my quests" is asking a
-        /// question about the whole map and should not have to walk it to find out. The
-        /// free-floating ones - a marker on a fleet in mid-lane - are here and nowhere else.
+        /// question about the whole map and should not have to walk it to find out.
+        ///
+        /// A FREE-FLOATING marker - one planted on a fleet in mid-lane - is dropped instead of
+        /// listed (owner's ruling): the scanner exists to be swept and then gone to, and the tree has
+        /// nowhere to put a marker that is not at a system, so the go-to would have nowhere to land.
         /// </summary>
         internal IList<ScannedMarker> ScannedMarkers()
         {
@@ -2333,12 +2329,18 @@ namespace ES2Access.Screens
                             continue;
                         }
 
+                        StarSystemNode node = MarkerSystem(marker);
+                        if (node == null)
+                        {
+                            continue;
+                        }
+
                         found.Add(
                             new ScannedMarker
                             {
                                 Quest = title,
                                 At = marker.GalaxyPosition,
-                                Node = MarkerSystem(marker),
+                                Node = node,
                             }
                         );
                     }

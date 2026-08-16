@@ -22,7 +22,9 @@ files above.
   DiplomaticInteractionNotificationWindow (MoodMessageLabel, NegotiationContributionPanel).
 - Galaxy-label gaps: constellation ownership bonus; pin-message editing.
 - Scanner (shipped, taxonomy v2 2026-08-16): six categories — systems, fleets, probes, quest
-  markers, ally pins, obliterator missiles — the last three with only "all" and skipped while
+  markers (system-anchored ones only, owner's ruling 2026-08-17: a marker with no system is not
+  listed, since the go-to would have nowhere to land), ally pins, obliterator missiles — the last
+  three with only "all" and skipped while
   empty. Systems now include SPECIAL nodes (the tree's 13 rows, not 12) and have six
   subcategories: all / friendly / neutral / enemy / homeworld / special, with many-to-many
   membership. Remaining: FOREIGN homeworlds have never been heard (no fixture where

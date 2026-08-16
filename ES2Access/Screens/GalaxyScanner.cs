@@ -562,10 +562,6 @@ namespace ES2Access.Screens
             // announce the arrival, and a jump that says nothing at all reads as a key that did
             // nothing - so the line the scanner found it with is said again, which is the whole of what
             // arriving there means.
-            // A quest marker out in a starlane is the other thing with no node: it is planted on a
-            // fleet in mid-crossing, and the tree has nowhere to put a marker at all. There is nothing
-            // to select and nothing to land on, so the answer is the line again, which at least says
-            // the key was heard and where the thing is.
             if (found.Fleet != null)
             {
                 GalaxyHudScreen.SelectFleet(found.Fleet);
@@ -626,9 +622,12 @@ namespace ES2Access.Screens
         }
 
         /// <summary>
-        /// Every quest marker the game is showing this empire - the ones planted at a system, which
-        /// the system's own row already mentions, and the ones planted on a fleet out in a starlane,
-        /// which nothing else in this mod can reach.
+        /// Every quest marker the game is showing this empire AT A SYSTEM - the ones the system's own
+        /// row already mentions, gathered here so that "where are my quests" is one sweep rather than
+        /// a walk of the map. A marker planted on a fleet out in a starlane is not listed at all: the
+        /// scanner is a list of places to GO to, and the tree has no row for a marker that is not at a
+        /// system, so that entry could only ever refuse (owner's ruling -
+        /// <see cref="GalaxyHudScreen.ScannedMarkers"/>).
         ///
         /// Named by the QUEST, which is the only name a marker has (<c>QuestMarker</c> carries an
         /// instance id and a target and no words of its own), and gated by the page's own walk of the

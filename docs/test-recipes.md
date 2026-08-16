@@ -444,7 +444,13 @@ Ctrl from probes lands back on `Systems`, and Ctrl backwards from systems lands 
 (measured). The oracles for "is it really empty":
 quest markers — walk `QuestJournal.Read(QuestState.InProgress)` (bind as `System.Collections.IList`)
 and `quest.GetMarkers(quest.GetCurrentStep())`; `[Beginner] test` turn 21 has **32** quests in
-progress and **zero** markers on any of them, so nothing is drawn. Pins and missiles —
+progress and **zero** markers on any of them, so nothing is drawn. **Only markers standing AT A
+SYSTEM are listed (2026-08-17, owner's ruling)**: a free-floating marker — one planted on a fleet in
+mid-lane — is dropped in `GalaxyHudScreen.ScannedMarkers` because the go-to would have nowhere to
+land, so the enumeration oracle above must be filtered by `MarkerSystem(marker) != null` before it is
+compared with the category's count, and the go-to on a listed marker lands on
+`galaxy:system/<guid>` (`NodeFor` → `SystemId`). Fixture-blocked live: the enumeration answers
+`markers=0` on this save either way. Pins and missiles —
 `DepartmentOfDefense.ObliteratorProjectiles` and the coordination-request repository are empty, and
 pins need a game with allies in it.
 **Pins and missiles are label-free too** (2026-08-16): both are enumerated from the simulation under
@@ -1097,15 +1103,14 @@ route to the zoom slider, not one Shift+Tab. With the mode armed and the slider 
 unchanged — that rect is the "the cell did not move" oracle, since a suspended cell says nothing.
 `ui.next` back to the map answers with the map node's own announcement and then, ~12 frames later,
 the retained cell (`Ita, 5, 34, group, collapsed, has tooltip, 1 of 13` then `3, 0`); the next
-`ui.right` reads `6, 0`. `galaxy.inspect` pressed from a stop that is NOT the map moves the cursor
-to the map stop silently and then announces the mode — so `DevProbe.Screen()` reads
-`galaxy:system/514` afterwards while `/speech` holds only the two mode lines. Its camera check is
-the cell, not that node: entry from `hud:empire/screen/EmpireScreen` must end at
-`(68.884, 0, -22.45)` (home), not at Ita's `(74.14, 0, 11.921)` — the silent stop landing commits
-the page's focus visual, which pans the camera, and the mode puts it back three frames later. The same probe is the ONLY way to check that `galaxy.inspect`
-re-injected while the mode is live does nothing — it is silent and changes no state, so `/speech`
-cannot tell it from a key that never arrived: claims still true plus an unchanged cell reading on the
-next `ui.*` is the evidence. `galaxy.inspect` does not toggle out; the exits are `ui.back`, a landing
+`ui.right` reads `6, 0`. **Arming is a key of the map too (2026-08-17, owner's veto of the jump):**
+`galaxy.inspect` pressed from a stop that is NOT the map is not claimed and does nothing — no focus
+move, no arming, no speech. Its evidence is a state probe, since a key that does nothing looks in
+`/speech` exactly like a key that never arrived: from `hud:view-title/zoom`, `DevProbe.Screen()`
+still reads `hud:view-title/zoom` afterwards, `DevProbe.Claims("Escape,Minus")` still reads
+`claims:false`/`claimsBack:false`, and `/speech` gains nothing. The same probe is the ONLY way to
+check that `galaxy.inspect` re-injected while the mode is live does nothing: claims still true plus
+an unchanged cell reading on the next `ui.*` is the evidence. `galaxy.inspect` does not toggle out; the exits are `ui.back`, a landing
 Enter made, and leaving the map. Enter on a one-place cell lands on `galaxy:system/<guid>`
 with the tree's own announcement; Enter on a fleet-only cell (shrink to 1x1 and walk to `-1, -6`,
 `1st Conquerors Navy`) answers `Fleet panel open for …` — but only from a CLEAN cursor: with a
@@ -1120,8 +1125,8 @@ cursor is re-seated in the same breath, so asking the navigator again would read
 landing that Enter made does NOT re-centre, or it would fly the camera off the thing just landed on.
 Measured: enter at the Patriots row (camera `(31.884, 0, -53.45)`), `ui.up` eight times to
 `(31.884, 0, -29.49)`, `ui.back` → camera back at `(31.6, 0, -53.3)` and focus back on
-`galaxy:system/491/fleet/1304`; and entering from the empire stop then walking to cell (22,75) and
-back returns the camera to home exactly.
+`galaxy:system/491/fleet/1304`. (The companion measurement — entering from the empire stop, walking
+to cell (22,75) and coming back to home — is retired with the off-map jump it depended on.)
 **THE DRAWN SQUARE IS A MOD OVERLAY, NOT A BORROWED RENDERER (2026-08-17)** — every `_outline`
 line-renderer probe in this recipe is retired with the mechanism. The mark is
 `ES2Access/UI/InspectMarker.cs`: a `GameObject` named `ES2Access inspect marker` whose `OnGUI`
@@ -1165,7 +1170,15 @@ first). Leaving is Enter on `scan:title/lens`. The PLAYER route through the lens
 `Zoom` node beside it — Left/Right steps the 15-rung ladder, Shift+Left/Right jumps a lens band,
 Right at rung 13 enters the system, Enter on a planet card reaches the planet lens, Left steps
 back out. Verify with those injected actions; `cam.ForceZoomingOnPosition(step, position)` is for
-RESTORE only (`SetZoomStep` alone leaves the labels culled). The zoom table: 0-1 Diplomacy /
+RESTORE only (`SetZoomStep` alone leaves the labels culled). **The zoom IS present in scan mode
+(re-measured 2026-08-17 against a "the slider is missing in scan mode" report, NOT reproduced):**
+`scan:zoom` is the second node of the title ROW, reached by `ui.down` OR `ui.right` from
+`scan:title/lens`, announcing `Zoom, slider, N of 15, 2 of 2`, and `ui.left`/`ui.right` step it
+(measured across rungs 1→13, with the lens name spoken on each band crossing). Two states DO leave
+it valueless or absent, both shared with the plain HUD and both by design: `ZoomLadder.Text` returns
+null while the ladder waits for a level the game has not moved to (the announcement keeps the name
+and loses `N of 15` — seen on the refused `ui.right` at rung 13), and `ZoomLadder.Build` declares
+nothing at all where `GalaxyViewLevels.ZoomRung < 0` (a battle lens or the system-discovery view). The zoom table: 0-1 Diplomacy /
 2-5 Trade / 6-9 Economy / 10-12 System, plus the system and planet layers. **All four lens windows
 report `Shown` at once**, so the drawn `ScanViewWindowHeader` is the only reliable lens signal and
 `CaptionsPanel.ScanViewGuiElement` goes stale. Restore `ShowScanViewCaptions` and

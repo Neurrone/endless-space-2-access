@@ -225,10 +225,9 @@ screen's other stops as usual and the stop landed on gets every key exactly as i
 armed. This is not a nicety: the mod's own zoom slider is two stops above the map and lives on the
 arrows, so a mode claiming arrows screen-wide made it unusable. The cell, its size and its drawn
 square are all kept while suspended, and coming back to the map reads the cell out again (after a
-short wait, so the arriving stop's own announcement is not cut off). Ctrl+I pressed from another stop
-therefore moves the cursor to the map stop first, silently
-(`GraphNavigator.FocusStop(key, announce: false)`) — the entry POSITION is still taken from the stop
-the key was pressed on, so from the HUD it is still home. Escape and the size
+short wait, so the arriving stop's own announcement is not cut off). ARMING obeys the same rule: Ctrl+I
+pressed from another stop is NOT claimed and does nothing at all — no focus move, no arming, no speech
+(a jump to the map stop was tried and vetoed, 2026-08-17). Escape and the size
 keys are claimed from the game ONLY while the mode is live AND on the map stop
 (`GalaxyInspect.KeysClaimed` → `Active` through
 `InputAction.ClaimedWhile`, the Space precedent), which is what leaves the game its own KeypadMinus
