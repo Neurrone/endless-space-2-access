@@ -46,11 +46,11 @@ per-frame cost invisible (no scene scans, snapshot+reconcile, allocation discipl
 World/map screens (a cursor over the game's own world graph, zoom tiers as information
 surfaces, fog discipline): [world-navigation.md](world-navigation.md).
 
-## Planned (written once ES2 proves them)
+## Planned (written once a game proves them)
 
-- `world-navigation.md`'s tile-world half — exploration cursor vs. categorized scanner,
-  tile-signature skip navigation, spatial audio cues (the graph-world half is written,
-  proven by ES2's galaxy map).
+- `world-navigation.md`'s remaining tile-world pieces — tile-signature skip navigation and
+  spatial audio cues (the graph-world half, the categorized scanner, and the free
+  inspection cursor are written, proven by ES2's galaxy map).
 - `event-narration.md` — turning engine event firehoses into coherent narration: condensation
   passes, buff-churn reconciliation, event-log review buffers (the second sink pattern in
   [buffers.md](buffers.md)).
