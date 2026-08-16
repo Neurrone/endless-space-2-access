@@ -74,7 +74,7 @@ mutes voicing but `/speech` still captures.
   except from a LOBBY, where not-ready is the answer until the lobby is left, never a retry
 - `GET /log?since=N&grep=TEXT` — no `since` answers only the last 100 entries (`capped:true`);
   `grep` still searches the whole ring; `GET /screenshot`; `POST /quit` — shutdown takes
-  20–60 s: poll the PROCESS (not the port) every 2 s and only conclude a hang past 60 s
+  20–100 s: poll the PROCESS (not the port) every 2 s and only conclude a hang past 120 s
 - **Every route rejects a query parameter it does not declare** — 400 naming it and listing the
   route's own; a typo can no longer look like a broken feature
 - `POST /reload` (needs `Content-Length`). Empty-body POSTs (`/reload`, `/quit`): under the
@@ -133,7 +133,9 @@ an image.
 
 **Session loop.** `.\run-game.ps1 -NoSpeech -NoWait -LoadSave "[Beginner] test"` —
 cold launch to in-game in one command; `.\wait-game.ps1 <menu|ingame|loading|dialog>` blocks
-on a state. Boot ≤ 1 min.
+on a state. Boot ≤ 1 min. Both scripts via the PowerShell tool (Bash-invoked PowerShell hits
+execution policy). First act in-game: minimize the tutorial popup (recipe in
+`test-recipes.md`) — expanded, it eats every injection as `unconsumed`.
 
 **Reload loop.** `dotnet build ES2Access/ES2Access.csproj` → `POST /reload` →
 `GET /loader/status` (`staleBuild:false`, `modAssemblyName` incremented). It can answer
