@@ -285,9 +285,12 @@ Show-location marker (the quest has none, so the game hides the button), the min
 the podium a cooperative quest gets instead of a reward table, and the "Pending objective choice…"
 placeholder.
 
-**Travelling the starlanes** (read-only; `[Beginner] test` perceives exactly three systems — Dusay
-`535`, Rigel `505`, Primus `543` — so a TWO-hop chain is all the fixture can show, and only Dusay↔
-Primus and Dusay↔Rigel are named lanes). A lane is a LEAF: no expansion word in `/gui/graph`, and
+**Travelling the starlanes** (read-only; the three systems this recipe was written against are Dusay
+`535`, Rigel `505` and Primus `543` — a TWO-hop chain, with only Dusay↔Primus and Dusay↔Rigel named
+lanes. **The fixture has since advanced**: it now perceives twelve systems plus one special node, so
+"exactly three" no longer holds and a longer chain may be available. The three system ids are still
+right — a 2026-08-16 `/gui/graph` shows all three — but the lane keys and camera figures below were
+not re-measured). A lane is a LEAF: no expansion word in `/gui/graph`, and
 `ui.right` on `galaxy:system/535/lane/658` (unexplored) is consumed and silent. On a named one
 (`galaxy:system/535/lane/661`) `ui.right` speaks the destination's ordinary landing
 ("Primus, group, 1 Fleet, expanded, …") and `DevProbe.Camera()` moves focus `52.6,-27.5 step 9` →
@@ -311,6 +314,49 @@ keys — `galaxy:system/535/fleet/1373` reads "on starlane 2, west" and `galaxy:
 "on starlane 1, east", each matching its own host's lane numbering — and both end systems announce
 "1 fleet under way nearby" beside their parked count. `POST /type savi` with every system collapsed
 answers `results:2` and lands on the Dusay-hosted copy with only that system expanded.
+
+**The galaxy SCANNER** (read-only; `GalaxyScanner`). Drive it by action key —
+`galaxy.scanCategoryNext|Prev`, `galaxy.scanSubcategoryNext|Prev`, `galaxy.scanNext|Prev`,
+`galaxy.scanGoTo` — and read `/speech`. The FIRST press after a `/reload` says where the cursor
+already is and moves nothing (the screen instance is new, so every reload re-arms it). The oracle
+for the whole reading is a table computed independently in `/eval`: walk `galaxy.GameNodes`, skip
+`SpecialNode` and anything `MapVisibility.Perceived` refuses, subtract
+`DepartmentOfTheInterior.HomeSystemNode.GalaxyPosition`, and print `Math.Sqrt(de*de+dn*dn)` with
+`Math.Atan2(de, dn)` in degrees — the spoken distance is that rounded (midpoints away from zero) and
+the compass word is the 45° arc CENTRED on each point. Measured on `[Beginner] test` from home:
+"All systems, 12 found, Dusay, 0, 0, here, 1 of 12" then Heka 9 south, Libra 16 northwest, Rigel 17
+west, Qarius 23 north, Primus 27 northeast, Electra 27 southwest, Ita 35 north, Leo 40 northeast,
+Osulo 44 southwest, Byrtus 48 southwest, Heracles 53 southwest; "All fleets, 6 found, 1st
+Vanquishers Navy, 0, -3, 3 units south, 1 of 6".
+**The fixture's own scanner shape** (turn 5): 12 perceived systems plus one `SpecialNode` (B10 6805,
+excluded), of which **Dusay is the colony and Heka the OUTPOST** — Rigel is neither, so friendly
+systems is `{Dusay, Heka}` and neutral is the other ten; enemy is EMPTY, which is what proves the
+Shift cycle skips (All → Friendly → Neutral → straight back to All). Fleets are six, all the
+player's, so neutral and enemy fleets are empty too. Nothing here can produce the "⟨scope⟩, none
+found" line: it needs a scope to empty UNDER a parked cursor, and cycling skips empties by design —
+fixture-blocked, covered by `ScannerCursorTests`.
+**Proving the reference point moves.** With the tree cursor on the HUD the scanner measures from
+home; focus a system (`galaxy:system/505`) and the same list re-sorts round it (from Rigel the
+nearest fleets read Protectors 5 east, Conquerors 15 east, Vanquishers 16 east). Arm inspect
+(`galaxy.inspect`), step it four cells right and four up to `12, 12`, and "All fleets" answers 1st
+Victors Navy 3 units north — a different nearest, off the same six fleets.
+**`galaxy.scanGoTo` has three landings.** In inspect mode the cell moves to the ROUNDED pair and
+reads out ("0, -3, 1st Vanquishers Navy") with `DevProbe.Camera()` focus at
+`origin + (x, y)` exactly. Outside it, a system lands the tree cursor on `galaxy:system/<guid>` with
+its ordinary announcement, and a lane fleet opens its host branch and lands on
+`galaxy:system/535/fleet/1622`. A FREE-MOVEMENT fleet has no tree node at all (es2-facts) and falls
+back to `SelectFleet`: the camera moves to the fleet, the fleet panel opens, and the scanner's own
+line is spoken again — note the panel announces itself only the first time, which is why the echo is
+the arrival announcement.
+**The claim, without pressing a key.** `DevProbe.Claims("PageUp,PageDown")` must read `claims:false`
+on `screen.galaxy` (no modifier is held during an HTTP request), which is the over-suppression
+check — the game's keyboard zoom is untouched. `DevProbe.Chord("Ctrl+PageUp")` reads
+`suppressed:false` for the same reason and proves nothing; isolate the conjuncts instead —
+`ModEntry.Navigator.Screen is ES2Access.Screens.GalaxyHudScreen` and
+`ES2Access.UI.Input.KeyboardBinding.AnyModifierHeld` — and walk `ModEntry.Input.Actions` (as
+`System.Collections.IList`) printing `BindingsDisplay`, `ClaimedWhen != null` and `ClaimedWhen()`.
+Off the galaxy every `galaxy.scan*` injection answers `unconsumed`. The one physical check left —
+bare PageUp/PageDown still zoom, the chords do not — goes on the manual script.
 
 **Ordering a fleet around** (state-changing — only against a save you can reload, and only after
 every read-only check is done). It is two halves: **Enter** on the fleet's own node selects it, then

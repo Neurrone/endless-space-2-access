@@ -130,9 +130,23 @@ namespace ES2Access.Screens
         /// (<see cref="GalaxyInspect"/>) - a mode of this page, so it lives and dies with it.</summary>
         private readonly GalaxyInspect _inspect;
 
+        /// <summary>"What is near me, of this kind" - a list of one kind of thing at a time, sorted by
+        /// distance from wherever the player is reading (<see cref="GalaxyScanner"/>). Not a mode: its
+        /// chords are live alongside the tree and alongside the inspect cursor, which is why it hangs
+        /// off the page rather than replacing anything.</summary>
+        private readonly GalaxyScanner _scanner;
+
         public GalaxyHudScreen()
         {
             _inspect = new GalaxyInspect(this);
+            _scanner = new GalaxyScanner(this);
+        }
+
+        /// <summary>The map's inspect cursor, for the scanner: it measures from the cursor while the
+        /// mode is up, and sends the cursor to what it found.</summary>
+        internal GalaxyInspect Inspect
+        {
+            get { return _inspect; }
         }
 
         /// <summary>The probe labels the map is drawing this build - what the inspect cursor asks for
@@ -283,7 +297,11 @@ namespace ES2Access.Screens
         /// </summary>
         public override bool AnyKey(string actionKey)
         {
-            return _inspect.HandleKey(actionKey);
+            // The inspect cursor first, because while it is up the keys it names mean the cell and
+            // nothing else. The scanner's chords are none of those, so it is offered every key the
+            // cursor passed on - and it answers whether or not the cursor is up, which is what makes
+            // the two work together rather than one displacing the other.
+            return _inspect.HandleKey(actionKey) || _scanner.HandleKey(actionKey);
         }
 
         /// <summary>
@@ -521,6 +539,15 @@ namespace ES2Access.Screens
             }
 
             return Nearest(wanted.Position, out settled);
+        }
+
+        /// <summary>The same question the GAME's locate asks, for a caller inside the mod: where on
+        /// this page does this thing live. Used by the scanner to send the cursor to what it found -
+        /// through the page's own landing, branch opening included, rather than a second route to the
+        /// same nodes.</summary>
+        internal ControlId NodeFor(IGameEntityWithGalaxyPosition entity)
+        {
+            return FromEntity(entity);
         }
 
         /// <summary>The node for a thing the game named. A fleet is where the map draws it; everything

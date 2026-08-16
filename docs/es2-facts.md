@@ -308,6 +308,18 @@ generic graduates to the generic docs.
   `NodePosition`s, either way round, is the whole "which fleets are on this lane" test. Measured after
   `OrderCancelEntityAction`: `Path == null` while `IsInMovement` stays true with start and goal
   intact - a cancel does not call `UnsetMovement` - so a stranded fleet goes on belonging to its lane.
+- **A leg is NOT always a lane, and a fleet on a leg that is not one hangs under NOTHING in the
+  tree.** Free movement (the Ctrl+right-click course, and whatever a scripted start hands out) sets
+  a start and a goal with **no `Link` between them** — `Galaxy.GetLink(start, goal)` answers null —
+  so the fleet is in neither `FleetPresence.FleetsAt` (it is not docked) nor `FleetsOn` (there is no
+  lane to be on), and `GalaxyHudScreen.FleetIndex` therefore has no site for it: the type-ahead
+  search cannot find it and `FromEntity` answers null for it. It IS drawn, so
+  `FleetPresence.Drawing()` (the inspect cursor's and the scanner's source) still has it. Measured
+  on `[Beginner] test`: two of its six fleets (`1st Conquerors Navy`, `1st Vanquishers Navy`) are on
+  legs between `NodeIndex:76` and `NodeIndex:75` with no link, and the tree declares only the other
+  four. Anything that must "go to" such a fleet falls back to the map's own selection
+  (`GalaxyHudScreen.SelectFleet`); giving these fleets a stop of their own is open work
+  (`docs/roadmap.md`).
 - **The position model has no planet-level fleet state.** Docking slots and hangars key on the
   system's `GameNode` (`DockingSlotCursorTarget.GameNode`), and `FleetPosition.GetOrbit()` returns a
   `GameNode`; nothing anywhere binds a fleet to a `Planet`. So "which fleets are at this planet" is
@@ -1242,6 +1254,31 @@ generic graduates to the generic docs.
 - `Gui.FormatFailureInfos` returns the BASE text when every failure is ignorable — an empty-looking
   refusal that is really "nothing to report".
 - The non-blocking box's countdown lives in the MESSAGE, not in a field of its own.
+- **Who the player stands with, in one call**: `empire.GetAgency<DepartmentOfForeignAffairs>()
+  .GetDiplomaticRelation(other)` → `.State.Name` (a `StaticString`) and `.State.IsWarState`, plus
+  `.HasAbility(DiplomaticAbilityDefinition.Names.Alliance)`. The state names are FOUR separate
+  ladders on `DiplomaticRelationState.Names` — `Major` (Unknown/War/HotWar/ColdWar/Truce/Peace/
+  Alliance/Team), `Minor` (Unknown…Cordial…Integrated, plus its own War), `Pirate`
+  (Aggressive/Neutral/Cordial/BestFriend/Peace) and `Academy`. `IsWarState` covers the Major, Minor
+  and Academy wars and **never a pirate state**: pirates are hostile by disposition, not by a war
+  state, so any "at war with" test that must include them needs the pirate branch written out (the
+  scanner treats a `PirateEmpire` as an enemy unless its state is `Pirate.Peace`). The player's
+  relation to their OWN empire has a null `State` — ask identity first. Measured on `[Beginner]
+  test`: three unmet majors (`Major.Unknown`), nine minors (`Minor.Unknown`/`Cordial`), one
+  `LesserEmpire` (`Lesser.Default`) and one `PirateEmpire` (`Pirate.Neutral`).
+- **The map's own friend/neutral/enemy split is NOT the diplomatic one.** `GuiFleetGroup.Title`
+  compares `DiplomaticRelationState.GetDiplomaticRelationStateValue(state)` against ColdWar and
+  Peace — and that function answers **-1 for every non-Major state name**, so a cold war, every
+  minor faction, every lesser empire and every pirate all read as ENEMY in the lozenge's count
+  phrase. Mod policy (owner's taxonomy, 2026-08-16): the scanner does not borrow it — enemy is at
+  war (pirates included), friendly is the player's own plus alliance/team, everything else is
+  neutral.
+- **Whose colour a system's label paints** (`StarSystemLabel.RebuildColonizedStarSystemsList`):
+  among the `IColonizedStarSystemRepositoryService.GetValues(node.NodePosition)` colonies, the ones
+  at `Visibility[player] >= 1`, preferring the player's own, and only those whose `State` is
+  `Colony`. So an OUTPOST has no owner by that rule — which is why "is this system mine" is asked of
+  `DepartmentOfTheInterior.ColonizedStarSystems` instead (the same list the tree's owned region is
+  built from), where an outpost counts.
 
 ## Galaxy labels, probes and the scan view
 

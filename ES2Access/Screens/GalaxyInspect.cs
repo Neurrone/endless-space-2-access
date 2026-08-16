@@ -67,6 +67,38 @@ namespace ES2Access.Screens
             return _live;
         }
 
+        /// <summary>Where the cell is, in the pair the map is spoken in - false while the mode is not
+        /// up. What the SCANNER measures from while this mode owns the map: the cursor is where the
+        /// player is standing, so "nearest" has to mean nearest to it.</summary>
+        public bool Centre(out int x, out int y)
+        {
+            x = _x;
+            y = _y;
+            return _live;
+        }
+
+        /// <summary>
+        /// Put the cell on a place named by something else - the scanner sending the cursor to what it
+        /// found.
+        ///
+        /// The pair handed in is the ROUNDED one, the pair the player was just told, which is what
+        /// makes the thing certain to be inside even the one-unit cursor. The landing is an arrow
+        /// key's: the camera slides, the square is redrawn, and the cell is read out, because a
+        /// cursor moved by another key is still the same cursor arriving somewhere.
+        /// </summary>
+        public bool JumpTo(int x, int y)
+        {
+            if (!_live)
+            {
+                return false;
+            }
+
+            _x = x;
+            _y = y;
+            Settle(true);
+            return true;
+        }
+
         /// <summary>
         /// Speak an ending that happened during a screen change, AFTER the page that took over has
         /// announced itself. Called from the pump right after the screens tick.
@@ -864,8 +896,9 @@ namespace ES2Access.Screens
         /// <summary>Where the cursor the player is standing on IS, if it stands anywhere on the map -
         /// the node itself, or the nearest ancestor that is a place (a planet or a starlane under an
         /// opened system answers with that system). False for the clusters round the edge of the
-        /// screen, which are not places at all.</summary>
-        private static bool FocusedPlace(GraphNavigator navigator, out GalaxyPosition position)
+        /// screen, which are not places at all. Shared with the scanner, which measures from the same
+        /// place for the same reason: it is where the player is reading.</summary>
+        internal static bool FocusedPlace(GraphNavigator navigator, out GalaxyPosition position)
         {
             position = default(GalaxyPosition);
             GraphNode node = navigator == null ? null : navigator.CurrentNode;

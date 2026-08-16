@@ -222,6 +222,27 @@ the matcher is exact-modifier and "+" is Shift and the equals key on most layout
 outlive the page: anything that takes the player off the map ends it, and the line saying so is
 spoken from the pump once the arriving page's announcement burst has gone quiet.
 
+**The galaxy's SCANNER is on the Page keys with a modifier, and it is NOT a mode** — no arm key,
+nothing to exit, Escape never touches it; the chords are live for as long as the map is the focused
+page, alongside tree navigation and alongside the inspect cursor (`GalaxyScanner` —
+`docs/helpers.md`). **Ctrl+PageUp/Down** cycles the category (systems ↔ fleets, skipping one with
+nothing in it), **Shift+PageUp/Down** the subcategory within it (all / friendly / neutral / enemy,
+skipping empties), **Alt+PageUp/Down** steps one thing at a time and wraps at both ends (the only
+repeating chord of the three), and **Alt+Home** goes to what it is pointing at — the inspect cell
+onto the thing's ROUNDED spoken pair while that mode is up, otherwise the tree cursor onto the
+thing's own node. The FIRST scanner press of a game says where the cursor already is instead of
+moving it. **Bare PageUp/PageDown remain the GAME's keyboard zoom**, Ctrl+Home stays the review
+buffer's first line and plain Home/End the stop's ends.
+The claim is what makes that work and it is a NEW SHAPE: the three chords are claimed only while the
+galaxy page is focused AND a modifier is PHYSICALLY held (`GalaxyScanner.KeysClaimed` through
+`InputAction.ClaimedWhile`). The camera's own matcher reads its binding's key codes and ignores its
+modifiers (`GalaxyViewCameraController.IsInputKeyCombinationPressed`), so a plain claim on PageUp
+would take the bare press too — and `ModInput.LeaveToGame` cannot help, because the modifiers the
+stand-down reads come off the combination the GAME is asking about, which declares none either way.
+The physical modifier is the only thing that separates the two presses. `DevProbe.Chord` cannot
+prove this half (it holds no key); what it proves is the important half — with no modifier held,
+`Claims("PageUp")` reads `claims:false` on the galaxy page.
+
 **Tab and Shift+Tab wrap** (owner decision 2026-08-12): the last stop's Tab lands on the first,
 the first stop's Shift+Tab on the last. On a page with exactly ONE stop the key is consumed and
 says nothing — coming round to the panel the player is already on is not a move. **A screen where

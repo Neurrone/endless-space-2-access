@@ -17,5 +17,21 @@ namespace ES2Access.UI.Input
         // game only while the cursor is up, so the game keeps its own minus key the rest of the time.
         public const string InspectGrow = "galaxy.inspectGrow";
         public const string InspectShrink = "galaxy.inspectShrink";
+
+        // The SCANNER - "what is near me, of this kind" (<see cref="ES2Access.Screens.GalaxyScanner"/>).
+        // Three tiers, each on the same pair of keys with a different modifier: the kind of thing, the
+        // way of looking at that kind, and one thing at a time. They are not a mode - nothing arms them
+        // and nothing exits them - so they are offered to the map through the same hook the inspect
+        // cursor uses and are simply inert on every other page.
+        public const string ScanCategoryNext = "galaxy.scanCategoryNext";
+        public const string ScanCategoryPrev = "galaxy.scanCategoryPrev";
+        public const string ScanSubcategoryNext = "galaxy.scanSubcategoryNext";
+        public const string ScanSubcategoryPrev = "galaxy.scanSubcategoryPrev";
+        public const string ScanNext = "galaxy.scanNext";
+        public const string ScanPrev = "galaxy.scanPrev";
+
+        /// <summary>Go to whatever the scanner is pointing at - the inspect cursor onto its square
+        /// while that mode is up, the tree cursor onto its node otherwise.</summary>
+        public const string ScanGoTo = "galaxy.scanGoTo";
     }
 }

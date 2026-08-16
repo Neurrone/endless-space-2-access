@@ -343,6 +343,39 @@ namespace ES2Access.Core.Speech
         public const string GalaxyInspectFog = "galaxy.inspect.fog";
         public const string GalaxyInspectFogOne = "galaxy.inspect.fog-one";
         public const string GalaxyInspectFogMany = "galaxy.inspect.fog-many";
+
+        // The map's SCANNER - "what is near me, of this kind". Every scope is one whole phrase rather
+        // than an adjective glued to a noun, because in most languages the adjective agrees with the
+        // noun and no code that pastes two fragments together can inflect either. The eight are the
+        // taxonomy in full: two categories, four ways of looking at each.
+        public const string GalaxyScannerSystemsAll = "galaxy.scanner.systems-all";
+        public const string GalaxyScannerSystemsFriendly = "galaxy.scanner.systems-friendly";
+        public const string GalaxyScannerSystemsNeutral = "galaxy.scanner.systems-neutral";
+        public const string GalaxyScannerSystemsEnemy = "galaxy.scanner.systems-enemy";
+        public const string GalaxyScannerFleetsAll = "galaxy.scanner.fleets-all";
+        public const string GalaxyScannerFleetsFriendly = "galaxy.scanner.fleets-friendly";
+        public const string GalaxyScannerFleetsNeutral = "galaxy.scanner.fleets-neutral";
+        public const string GalaxyScannerFleetsEnemy = "galaxy.scanner.fleets-enemy";
+
+        /// <summary>How many things a scope holds, said as the scanner lands in it - a counted phrase,
+        /// hence a form per number (see <see cref="Plural"/>).</summary>
+        public const string GalaxyScannerFoundOne = "galaxy.scanner.found-one";
+        public const string GalaxyScannerFoundMany = "galaxy.scanner.found-many";
+
+        /// <summary>A scope the player is parked in that has run out under them. The scope's own name
+        /// goes INSIDE the sentence rather than in front of it, so a language that says "there are no
+        /// friendly fleets" has somewhere to put the words.</summary>
+        public const string GalaxyScannerEmpty = "galaxy.scanner.empty";
+
+        /// <summary>How far away something the scanner found is and which way it lies, in the galaxy's
+        /// own units - the same unit the coordinate pair is in, so the two numbers can be held against
+        /// each other. Counted, because a distance of one is a unit and not units.</summary>
+        public const string GalaxyScannerDistanceOne = "galaxy.scanner.distance-one";
+        public const string GalaxyScannerDistanceMany = "galaxy.scanner.distance-many";
+
+        /// <summary>What is said instead of a distance and a direction when the thing the scanner
+        /// found is where the player is already reading from.</summary>
+        public const string GalaxyScannerHere = "galaxy.scanner.here";
         public const string GalaxyFleetShips = "galaxy.fleet-ships";
         public const string GalaxyFleetMoving = "galaxy.fleet-moving";
         public const string GalaxyFleetMovement = "galaxy.fleet-movement";
@@ -1157,6 +1190,20 @@ namespace ES2Access.Core.Speech
             { GalaxyInspectFog, "Fog of war" },
             { GalaxyInspectFogOne, "1 square in fog of war" },
             { GalaxyInspectFogMany, "{0} squares in fog of war" },
+            { GalaxyScannerSystemsAll, "All systems" },
+            { GalaxyScannerSystemsFriendly, "Friendly systems" },
+            { GalaxyScannerSystemsNeutral, "Neutral systems" },
+            { GalaxyScannerSystemsEnemy, "Enemy systems" },
+            { GalaxyScannerFleetsAll, "All fleets" },
+            { GalaxyScannerFleetsFriendly, "Friendly fleets" },
+            { GalaxyScannerFleetsNeutral, "Neutral fleets" },
+            { GalaxyScannerFleetsEnemy, "Enemy fleets" },
+            { GalaxyScannerFoundOne, "1 found" },
+            { GalaxyScannerFoundMany, "{0} found" },
+            { GalaxyScannerEmpty, "{0}, none found" },
+            { GalaxyScannerDistanceOne, "{0} unit {1}" },
+            { GalaxyScannerDistanceMany, "{0} units {1}" },
+            { GalaxyScannerHere, "here" },
             { GalaxyFleetShips, "{0} ships" },
             { GalaxyFleetMoving, "moving" },
             { GalaxyFleetMovement, "{0} movement points" },

@@ -63,6 +63,22 @@ namespace ES2Access.UI.Input
             return ModifiersMatch() && UnityEngine.Input.GetKey(Key);
         }
 
+        /// <summary>
+        /// Whether the player is physically holding any of the three modifiers.
+        ///
+        /// For a conditional claim on a key the GAME also polls WITHOUT looking at modifiers - the
+        /// galaxy camera's own zoom matcher reads its combination's key codes and ignores its
+        /// modifiers entirely (<c>GalaxyViewCameraController.IsInputKeyCombinationPressed</c>), so a
+        /// chord on that key hits it as squarely as the bare key does. A claim can only be told apart
+        /// from the bare press by the physical modifier, because the combination the game is asking
+        /// about carries the BINDING's modifiers and not the player's
+        /// (<see cref="GameKeyStandDown.Claimed"/>).
+        /// </summary>
+        public static bool AnyModifierHeld
+        {
+            get { return CtrlHeld || ShiftHeld || AltHeld; }
+        }
+
         private bool ModifiersMatch()
         {
             return Ctrl == CtrlHeld && Shift == ShiftHeld && Alt == AltHeld;

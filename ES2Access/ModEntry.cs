@@ -445,6 +445,50 @@ namespace ES2Access
                 .Bind(KeyCode.KeypadMinus)
                 .ClaimedWhile(ES2Access.Screens.GalaxyInspect.KeysClaimed);
 
+            // The map's SCANNER (<see cref="ES2Access.Screens.GalaxyScanner"/>): three tiers of "what
+            // is near me" on one pair of keys, each tier a different modifier - the kind of thing, the
+            // way of looking at that kind, and one thing at a time. Stepping repeats, because sweeping
+            // a list of forty systems is what the key is for; changing scope does not, because
+            // there are only ever a handful of scopes and leaning on the key would race past them.
+            //
+            // PageUp and PageDown are the GAME's keyboard zoom, and the game must keep them: the
+            // claim is conditional on a modifier being physically held, which is the only thing that
+            // tells the chord from the bare press for a camera that reads its binding's key codes and
+            // ignores its modifiers - see GalaxyScanner.KeysClaimed.
+            input
+                .Register(MapActions.ScanCategoryNext)
+                .Bind(KeyCode.PageDown, ctrl: true)
+                .ClaimedWhile(ES2Access.Screens.GalaxyScanner.KeysClaimed);
+            input
+                .Register(MapActions.ScanCategoryPrev)
+                .Bind(KeyCode.PageUp, ctrl: true)
+                .ClaimedWhile(ES2Access.Screens.GalaxyScanner.KeysClaimed);
+            input
+                .Register(MapActions.ScanSubcategoryNext)
+                .Bind(KeyCode.PageDown, shift: true)
+                .ClaimedWhile(ES2Access.Screens.GalaxyScanner.KeysClaimed);
+            input
+                .Register(MapActions.ScanSubcategoryPrev)
+                .Bind(KeyCode.PageUp, shift: true)
+                .ClaimedWhile(ES2Access.Screens.GalaxyScanner.KeysClaimed);
+            input
+                .Register(MapActions.ScanNext)
+                .Bind(KeyCode.PageDown, alt: true)
+                .ClaimedWhile(ES2Access.Screens.GalaxyScanner.KeysClaimed)
+                .Repeating();
+            input
+                .Register(MapActions.ScanPrev)
+                .Bind(KeyCode.PageUp, alt: true)
+                .ClaimedWhile(ES2Access.Screens.GalaxyScanner.KeysClaimed)
+                .Repeating();
+            // Go to what the scanner is pointing at. Alt and Home, beside the two Alt keys that
+            // stepped the list - and Control+Home stays the review buffer's first line, plain Home the
+            // first control of the stop.
+            input
+                .Register(MapActions.ScanGoTo)
+                .Bind(KeyCode.Home, alt: true)
+                .ClaimedWhile(ES2Access.Screens.GalaxyScanner.KeysClaimed);
+
             input.Register(BufferActions.LineUp).Bind(KeyCode.UpArrow, ctrl: true);
             input.Register(BufferActions.LineDown).Bind(KeyCode.DownArrow, ctrl: true);
             input.Register(BufferActions.Prev).Bind(KeyCode.LeftArrow, ctrl: true);
