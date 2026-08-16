@@ -157,15 +157,6 @@ files above.
 ## To decide (owner)
 
 
-- **Enter on an AUTOMATED fleet's row is offered but does nothing.** The mouse cannot select one
-  either (`GalaxyFleetCursorTarget.ValidateSelection` :17-24 and `ValidateHighlight` both refuse an
-  automated fleet, so it does not even highlight under the pointer), and `GalaxyHudScreen.Select`
-  goes through the same cursor target — measured: Enter on `1st Conquerors Navy` opens no fleet
-  panel and says nothing. So the behaviour matches the mouse, but the row still announces itself
-  "button". Options: leave it (a click that does nothing is what the mouse has), or drop the role
-  word and the action for an automated fleet so the row is a plain readout. Withdrawing an
-  affordance is the louder decision, so this waits. (Found 2026-08-16 while doing the free-mover
-  parity work; the fixture's two free movers are exactly these fleets.)
 - The drawn-heading lookup renames two out-game pages: "Multiplayer room" and "Asset export".
   Keep the game's drawn headings or the mod's older names?
 - Mod-authored wordings awaiting sign-off: "Ring {0} of {1}" for the skill wheel's rings

@@ -367,8 +367,9 @@ reads out ("0, -3, 1st Vanquishers Navy") with `DevProbe.Camera()` focus at
 its ordinary announcement, and a lane fleet opens its host branch and lands on
 `galaxy:system/535/fleet/1622`. A FREE-MOVEMENT fleet lands the same way, on its DESTINATION's row
 (2026-08-16): `galaxy.scanGoTo` on `1st Conquerors Navy` opens **Heka's** branch and lands on
-`galaxy:system/522/fleet/1570`, heard as "1st Conquerors Navy, -1, -6, button, free moving to Heka,
-1 ships, Moving to Heka, 0 movement points, Arrives in 2 turns, has tooltip, 8 of 9". There is only
+`galaxy:system/522/fleet/1570`, heard as "1st Conquerors Navy, -1, -6, free moving to Heka,
+1 ships, Moving to Heka, 0 movement points, Arrives in 2 turns, has tooltip, 8 of 9" (no role word —
+it is an automated fleet, below). There is only
 one row to pick now — the source branch no longer holds one. Move the tree cursor somewhere else
 before pressing it: landing on the node the cursor is already on is silent, and after a type-ahead
 for the same fleet that is exactly where it stands. **Fixture-blocked**: the `SelectFleet` fallback
@@ -378,9 +379,11 @@ row, top-level if its destination is unperceived (`AddAdrift`). No fixture produ
 
 **Free-moving fleets in the galaxy tree** (`[Beginner] test`, destination-only since 2026-08-16;
 the both-ends design shipped earlier that day was reversed — see es2-facts). The two free movers
-both fly Dusay → Heka, and each gets ONE row, under Heka: "1st Conquerors Navy, -1, -6, button,
+both fly Dusay → Heka, and each gets ONE row, under Heka: "1st Conquerors Navy, -1, -6,
 free moving to Heka, 1 ships, Moving to Heka, 0 movement points, Arrives in 2 turns, has tooltip,
-8 of 9" and the Vanquishers the same at `9 of 9`. Dusay's branch holds its three LANE fleets and
+8 of 9" and the Vanquishers the same at `9 of 9`. **No role word on those two** — they are automated
+fleets and the map refuses them to the mouse, so the mod declares them `ControlTypes.Text` (below).
+Dusay's branch holds its three LANE fleets and
 nothing else, and its count says "3 fleets under way nearby" (it said 5 while the source rows
 existed); Heka says "2 fleets under way nearby". Type-ahead answers `results:1` for `vanq`/`conq`
 now, landing on the Heka row (it was `results:2`).
@@ -391,9 +394,23 @@ row it belongs to have never been heard.
 **The fixture's two free movers are AUTOMATED delivery fleets** (`Fleet.IsAutomated` true — probed
 2026-08-16; the other four are false), which matters twice: the game counts an automated fleet's
 ships whatever the visibility (`GarrisonsLabelButton` :210), so they are the wrong fleets for
-testing the ship-count gate — use `1st Protectors Navy` — and `GalaxyFleetCursorTarget
-.ValidateSelection` :17-24 refuses to select an automated fleet, so Enter on either row is
-consumed and does nothing (measured: no fleet-panel stop appears).
+testing the ship-count gate — use `1st Protectors Navy` — and `GalaxyFleetCursorTarget`
+refuses both selection (:17-24) and highlight (:26-33) for one. **Since the owner ruling of
+2026-08-16 the mod says so**: `FleetNode` declares an unselectable fleet `ControlTypes.Text` with no
+`OnActivate`, so the row carries no role word and Enter is a no-op. The regression check is one line
+of a branch dump — the Heka rows must read "…, -1, -6, free moving to Heka, …" with no "button",
+while Dusay's three lane fleets (not automated) must still read "…, 12, 15, button, on starlane 1,
+northeast, …". A build where all five say "button" has lost `FleetPresence.Selectable`; one where
+all five drop it has the predicate inverted.
+**Minimizing the tutorial popup, the step every galaxy session starts with.** `POST /input` does not
+work on `screen.tutorial` — `ui.down`/`ui.right` answer `unconsumed` and `ui.end`/`ui.next` answer
+`consumed` while moving no cursor and speaking nothing (measured twice, 2026-08-16). Invoke the
+game's own handler instead: `TutorialPopupPanel.OnMinimizeCb`, private, no arguments, by reflection
+from `/eval`. Take the panel from `FindObjectsOfType<TutorialPopupPanel>()` and pick the one that is
+`IsBound && Shown` — `FindObjectOfType` (singular) handed back an unbound instance on one launch and
+`OnMinimizeCb` threw an NRE inside itself (its `tutorial` field is null there). Guard on
+`MinimizeToggle != null && !MinimizeToggle.State` so a re-run is idempotent.
+
 **`[Beginner] test` perceives NO foreign fleet at all.** Measured 2026-08-16 by walking
 `Gui.Game.Empires` and each empire's `DepartmentOfDefense.Fleets` (as `System.Collections.IList`),
 printing `(int)f.Visibility[me]`: Neurrone 6 fleets all at 3, and every one of the other 25 fleets

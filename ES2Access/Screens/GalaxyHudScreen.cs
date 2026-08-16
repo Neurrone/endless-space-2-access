@@ -3985,8 +3985,16 @@ namespace ES2Access.Screens
             return false;
         }
 
-        /// <summary>One fleet as a control, wherever it is being hung. Shared so that a fleet reads the
-        /// same way parked and under way - everything but the lane it is on is the same fleet.</summary>
+        /// <summary>One fleet as a control, wherever it is being hung - parked, on a lane, crossing open
+        /// space, or adrift at the top level. Shared so that a fleet reads the same way in all four
+        /// places: everything but the lane it is on is the same fleet, and that includes whether it is a
+        /// control at all.
+        ///
+        /// A fleet the map will not let the mouse SELECT (<see cref="FleetPresence.Selectable"/> - an
+        /// automated delivery fleet) is declared as TEXT rather than as a button: no role word, no
+        /// action. Not an unavailable button, which would be the mod saying the game has switched
+        /// something off; there is no control here at all, exactly as there is none under the pointer.
+        /// Owner ruling 2026-08-16.</summary>
         private static NodeVtable FleetNode(Fleet it, DockLabel[] docks, FleetLabel[] flying)
         {
             AgeTransform lozenge = FleetLozenge(it, docks, flying);
@@ -4000,6 +4008,12 @@ namespace ES2Access.Screens
                 // fleet will be sleeping tonight (<see cref="FleetRoute"/>).
                 () => FleetRoute.CommittedLines(it)
             );
+            if (!FleetPresence.Selectable(it))
+            {
+                vtable.ControlType = ControlTypes.Text;
+                vtable.OnActivate = null;
+            }
+
             // Where it is on the map. Asked live rather than captured, because a fleet moves - and a
             // fleet in orbit reads the exact pair its system reads, which is the map saying the same
             // thing twice on purpose (<see cref="GalaxyCoordinates"/>).
@@ -5027,6 +5041,15 @@ namespace ES2Access.Screens
                 // garrison cursor, which would cancel the mode the player is in the middle of
                 // (<see cref="CursorTargeting"/>).
                 if (CursorTargeting.Aiming)
+                {
+                    return;
+                }
+
+                // The map's own cursor target refuses an automated fleet outright
+                // (<see cref="FleetPresence.Selectable"/>), so there is nothing to hand the selection
+                // to. Said here as well as at the node, because the inspect cursor's Enter and the
+                // scanner's fallback both come in through this door with no node in between.
+                if (!FleetPresence.Selectable(fleet))
                 {
                     return;
                 }

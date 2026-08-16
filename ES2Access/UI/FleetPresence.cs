@@ -292,6 +292,30 @@ namespace ES2Access.UI
         }
 
         /// <summary>
+        /// Whether the map lets the player SELECT this fleet at all.
+        ///
+        /// One refusal and it is not about who owns the fleet: `GalaxyFleetCursorTarget` turns both
+        /// selection and highlight off for an AUTOMATED fleet (:17-24 and :26-33), so an automated
+        /// delivery fleet does not even light up under the pointer, let alone open the fleet panel.
+        /// Everything else the map draws a lozenge for is selectable whoever owns it - there is no
+        /// empire test anywhere in that target.
+        ///
+        /// What this is for is the ROLE WORD as much as the action: a row that announced itself a
+        /// button and then did nothing on Enter would be promising something the map never offered.
+        /// </summary>
+        public static bool Selectable(Fleet fleet)
+        {
+            try
+            {
+                return !fleet.IsAutomated;
+            }
+            catch (Exception)
+            {
+                return true;
+            }
+        }
+
+        /// <summary>
         /// Whether the map puts a SHIP COUNT on this fleet's lozenge.
         ///
         /// Seeing a fleet and seeing how big it is are two different permissions, and the map draws the
