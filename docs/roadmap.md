@@ -21,10 +21,23 @@ files above.
   `AttackSystemPirateDiplomaticAction` — the other five report popups are done);
   DiplomaticInteractionNotificationWindow (MoodMessageLabel, NegotiationContributionPanel).
 - Galaxy-label gaps: constellation ownership bonus; pin-message editing.
-- Scanner (shipped): systems, fleets and PROBES are categorized (2026-08-16). Special nodes,
-  obliterator projectiles and ally pins are still out (no allegiance to sort them by) — whether the
-  map's remaining "open space" things want a category is an open question, not a defect. Mining
-  probes belong to a queued planet-row change, not here.
+- Scanner (shipped, taxonomy v2 2026-08-16): six categories — systems, fleets, probes, quest
+  markers, ally pins, obliterator missiles — the last three with only "all" and skipped while
+  empty. Systems now include SPECIAL nodes (the tree's 13 rows, not 12) and have six
+  subcategories: all / friendly / neutral / enemy / homeworld / special, with many-to-many
+  membership. Remaining: FOREIGN homeworlds have never been heard (no fixture where
+  `EmpirePosition.Known` is true — es2-facts), and quest markers, pins and missiles have never
+  been heard at all (no fixture draws one). Open judgment call for the owner: MINOR-faction home
+  systems are deliberately NOT in "homeworld" (the diplomacy lens the gate came from iterates
+  major empires only) — including them would add ~9 fixture systems to that scope.
+- Ally pins and obliterator missiles are still enumerated from the DRAWN labels, which the
+  camera's culling group can empty (es2-facts, "camera culling is not an information gate"). The
+  probes were moved off that list; these two were not, because the pin's row is built out of the
+  label's own widgets (its text field, its dismiss button). Needs an owner ruling on trading the
+  dismiss action for a zoom-stable row.
+- Mining probes (shipped 2026-08-16): the planet rows on the galaxy map and the empire screen say
+  the sentence the game keeps in the planet dossier, with the game's own gates. Fixture-blocked
+  live: no save has a mining probe.
 - Inspect mode (shipped): the drawn cursor is a heavy cyan FRAME whose sides run out past the
   corners — the map's line material ignores `width` AND refuses short lines (es2-facts), and neither
   quads nor circles are available on this view, so thickness is stacked hairlines and reach is

@@ -52,13 +52,32 @@ namespace ES2Access.Screens
         private const int CategorySystems = 0;
         private const int CategoryFleets = 1;
         private const int CategoryProbes = 2;
-        private const int CategoryCount = 3;
 
-        private const int ScopeAll = 0;
-        private const int ScopeFriendly = 1;
-        private const int ScopeNeutral = 2;
-        private const int ScopeEnemy = 3;
-        private const int ScopeCount = 4;
+        // The three that are only ever asked "what is there", after the three that are asked "whose".
+        // Each has the single subcategory "all", so the subcategory key on one of them comes round to
+        // where it started and says so - which is the honest answer to "what else is there".
+        private const int CategoryMarkers = 3;
+        private const int CategoryPins = 4;
+        private const int CategoryProjectiles = 5;
+        private const int CategoryCount = 6;
+
+        private const int ScopeAll = ScannerScopes.All;
+        private const int ScopeFriendly = ScannerScopes.Friendly;
+        private const int ScopeNeutral = ScannerScopes.Neutral;
+        private const int ScopeEnemy = ScannerScopes.Enemy;
+
+        /// <summary>How wide each category's row of the counts table is
+        /// (<see cref="ScannerScopes"/>) - and so how many subcategories its key cycles through.
+        /// </summary>
+        private static readonly int[] Widths = new int[]
+        {
+            ScannerScopes.SystemWidth,
+            ScannerScopes.AffiliationWidth,
+            ScannerScopes.AffiliationWidth,
+            ScannerScopes.SingleWidth,
+            ScannerScopes.SingleWidth,
+            ScannerScopes.SingleWidth,
+        };
 
         public GalaxyScanner(GalaxyHudScreen screen)
         {
@@ -160,9 +179,10 @@ namespace ES2Access.Screens
             public double East;
             public double North;
 
-            /// <summary>Which way the player stands to it: one of the three scopes below "all".
-            /// </summary>
-            public int Scope;
+            /// <summary>Which subcategories of its category this belongs to, as a set: a system can
+            /// be the enemy's AND their capital, and both scopes have to find it
+            /// (<see cref="ScannerScopes"/>).</summary>
+            public int Scopes;
 
             /// <summary>How far from where the player is reading, filled in when the list is sorted.
             /// </summary>
@@ -191,13 +211,10 @@ namespace ES2Access.Screens
         /// </summary>
         private bool Scan(int delta, ScannerAnswer said, Tier tier)
         {
-            List<Found> systems;
-            List<Found> fleets;
-            List<Found> probes;
             double east;
             double north;
-            Snapshot(out systems, out fleets, out probes, out east, out north);
-            int[][] counts = Counts(systems, fleets, probes);
+            List<Found>[] world = Snapshot(out east, out north);
+            int[][] counts = Counts(world);
 
             ScannerAnswer answer;
             bool held = Rearmed() || _cursor.Arm();
@@ -221,7 +238,7 @@ namespace ES2Access.Screens
                 }
             }
 
-            Say(answer, tier, held, Scoped(systems, fleets, probes), east, north);
+            Say(answer, tier, held, Scoped(world), east, north);
             return true;
         }
 
@@ -242,13 +259,10 @@ namespace ES2Access.Screens
         }
 
         /// <summary>The list the cursor is currently pointing into.</summary>
-        private List<Found> Scoped(List<Found> systems, List<Found> fleets, List<Found> probes)
+        private List<Found> Scoped(List<Found>[] world)
         {
-            List<Found> all = _cursor.Category == CategoryFleets
-                ? fleets
-                : _cursor.Category == CategoryProbes
-                    ? probes
-                    : systems;
+            int at = _cursor.Category;
+            List<Found> all = at >= 0 && at < world.Length ? world[at] : world[CategorySystems];
             if (_cursor.Subcategory == ScopeAll)
             {
                 return all;
@@ -257,7 +271,7 @@ namespace ES2Access.Screens
             List<Found> some = new List<Found>(all.Count);
             for (int i = 0; i < all.Count; i++)
             {
-                if (all[i].Scope == _cursor.Subcategory)
+                if (ScannerScopes.Holds(all[i].Scopes, _cursor.Subcategory))
                 {
                     some.Add(all[i]);
                 }
@@ -266,25 +280,31 @@ namespace ES2Access.Screens
             return some;
         }
 
-        private int[][] Counts(List<Found> systems, List<Found> fleets, List<Found> probes)
+        /// <summary>The whole world as the cursor's rules ask about it: one row per category, one
+        /// column per subcategory, a thing counted once in every subcategory it belongs to. The rows
+        /// are of DIFFERENT widths on purpose - what a category can be asked about is a fact about
+        /// that category, and a uniform table would have to pad the three that are only ever asked
+        /// "what is there" with scopes that could never hold anything.</summary>
+        private static int[][] Counts(List<Found>[] world)
         {
             int[][] counts = new int[CategoryCount][];
-            counts[CategorySystems] = Row(systems);
-            counts[CategoryFleets] = Row(fleets);
-            counts[CategoryProbes] = Row(probes);
+            for (int at = 0; at < CategoryCount; at++)
+            {
+                counts[at] = Row(world[at], Widths[at]);
+            }
+
             return counts;
         }
 
-        private static int[] Row(List<Found> found)
+        private static int[] Row(List<Found> found, int width)
         {
-            int[] row = new int[ScopeCount];
-            row[ScopeAll] = found.Count;
+            int[] scopes = new int[found.Count];
             for (int i = 0; i < found.Count; i++)
             {
-                row[found[i].Scope]++;
+                scopes[i] = found[i].Scopes;
             }
 
-            return row;
+            return ScannerScopes.Tally(scopes, width);
         }
 
         // ---- what it says ----
@@ -424,6 +444,9 @@ namespace ES2Access.Screens
             ModStrings.GalaxyScannerSystems,
             ModStrings.GalaxyScannerFleets,
             ModStrings.GalaxyScannerProbes,
+            ModStrings.GalaxyScannerQuestMarkers,
+            ModStrings.GalaxyScannerPins,
+            ModStrings.GalaxyScannerProjectiles,
         };
 
         private static readonly string[][] ScopeKeys = new string[][]
@@ -434,6 +457,8 @@ namespace ES2Access.Screens
                 ModStrings.GalaxyScannerSystemsFriendly,
                 ModStrings.GalaxyScannerSystemsNeutral,
                 ModStrings.GalaxyScannerSystemsEnemy,
+                ModStrings.GalaxyScannerSystemsHomeworld,
+                ModStrings.GalaxyScannerSystemsSpecial,
             },
             new string[]
             {
@@ -449,6 +474,9 @@ namespace ES2Access.Screens
                 ModStrings.GalaxyScannerProbesNeutral,
                 ModStrings.GalaxyScannerProbesEnemy,
             },
+            new string[] { ModStrings.GalaxyScannerQuestMarkersAll },
+            new string[] { ModStrings.GalaxyScannerPinsAll },
+            new string[] { ModStrings.GalaxyScannerProjectilesAll },
         };
 
         // ---- going there ----
@@ -467,18 +495,15 @@ namespace ES2Access.Screens
         /// </summary>
         private bool GoTo()
         {
-            List<Found> systems;
-            List<Found> fleets;
-            List<Found> probes;
             double east;
             double north;
-            Snapshot(out systems, out fleets, out probes, out east, out north);
+            List<Found>[] world = Snapshot(out east, out north);
             if (!Rearmed())
             {
                 _cursor.Arm();
             }
 
-            List<Found> scope = Scoped(systems, fleets, probes);
+            List<Found> scope = Scoped(world);
             int at = _cursor.Index;
             if (at < 0 || at >= scope.Count)
             {
@@ -498,13 +523,14 @@ namespace ES2Access.Screens
 
             GraphNavigator navigator = ModEntry.Navigator;
 
-            // A probe's row is the one thing here whose key only the page knows - it hangs under the
-            // star the map draws it out from - so it was worked out with the list and is carried on the
-            // finding. Opening that star is the page's own reveal; there is no fallback below it,
-            // because a probe is not a thing the game lets anybody select (a fleet's is).
+            // The rows the tree keys STRUCTURALLY - a probe, an ally's pin, a missile in flight - carry
+            // their own node here, because those keys are the page's to build and a probe's hangs off
+            // whichever star the map draws it nearest to. Opening whatever the row hangs under is the
+            // page's own reveal; there is no fallback below it, because none of the three is a thing
+            // the game lets anybody select (a fleet is).
             if (found.Row != null)
             {
-                _screen.RevealProbe(found.Row);
+                _screen.RevealRow(found.Row);
                 if (navigator != null)
                 {
                     navigator.FocusNode(found.Row);
@@ -535,61 +561,137 @@ namespace ES2Access.Screens
             // announce the arrival, and a jump that says nothing at all reads as a key that did
             // nothing - so the line the scanner found it with is said again, which is the whole of what
             // arriving there means.
+            // A quest marker out in a starlane is the other thing with no node: it is planted on a
+            // fleet in mid-crossing, and the tree has nowhere to put a marker at all. There is nothing
+            // to select and nothing to land on, so the answer is the line again, which at least says
+            // the key was heard and where the thing is.
             if (found.Fleet != null)
             {
                 GalaxyHudScreen.SelectFleet(found.Fleet);
-                MessageBuilder arrival = new MessageBuilder();
-                Instance(arrival, found, at, scope.Count, east, north);
-                Voice.Say(arrival.Build(), true);
             }
 
+            MessageBuilder arrival = new MessageBuilder();
+            Instance(arrival, found, at, scope.Count, east, north);
+            Voice.Say(arrival.Build(), true);
             return true;
         }
 
         // ---- what is out there ----
 
         /// <summary>
-        /// Everything the map is drawing, in the two kinds the scanner knows, each already sorted
+        /// Everything the map is showing, in every kind the scanner knows, each list already sorted
         /// nearest-first from where the player is reading.
         ///
-        /// Both lists every time, not only the one being read: cycling categories has to know whether
+        /// Every list every time, not only the one being read: cycling categories has to know whether
         /// the category next door holds anything before it decides to skip it, and that answer only
-        /// exists once the other list has been built.
+        /// exists once the other lists have been built.
         /// </summary>
-        private void Snapshot(
-            out List<Found> systems,
-            out List<Found> fleets,
-            out List<Found> probes,
-            out double east,
-            out double north
-        )
+        private List<Found>[] Snapshot(out double east, out double north)
         {
-            systems = new List<Found>();
-            fleets = new List<Found>();
-            probes = new List<Found>();
+            List<Found>[] world = new List<Found>[CategoryCount];
+            for (int at = 0; at < CategoryCount; at++)
+            {
+                world[at] = new List<Found>();
+            }
+
             Reference(out east, out north);
             try
             {
                 Empire empire = Gui.PlayerEmpire;
                 Galaxy galaxy = Gui.Game == null ? null : Gui.Game.Galaxy;
-                if (empire == null || galaxy == null)
+                if (empire != null && galaxy != null)
                 {
-                    return;
+                    DepartmentOfForeignAffairs foreign =
+                        empire.GetAgency<DepartmentOfForeignAffairs>();
+                    Systems(world[CategorySystems], galaxy, empire, foreign);
+                    Fleets(world[CategoryFleets], empire, foreign);
+                    Probes(world[CategoryProbes], empire, foreign);
+                    Markers(world[CategoryMarkers]);
+                    Pins(world[CategoryPins]);
+                    Projectiles(world[CategoryProjectiles]);
                 }
-
-                DepartmentOfForeignAffairs foreign = empire.GetAgency<DepartmentOfForeignAffairs>();
-                Systems(systems, galaxy, empire, foreign);
-                Fleets(fleets, empire, foreign);
-                Probes(probes, empire, foreign);
             }
             catch (Exception e)
             {
                 Log.Warn("galaxy: the scanner reading the map threw: " + e);
             }
 
-            Sort(systems, east, north);
-            Sort(fleets, east, north);
-            Sort(probes, east, north);
+            for (int at = 0; at < CategoryCount; at++)
+            {
+                Sort(world[at], east, north);
+            }
+
+            return world;
+        }
+
+        /// <summary>
+        /// Every quest marker the game is showing this empire - the ones planted at a system, which
+        /// the system's own row already mentions, and the ones planted on a fleet out in a starlane,
+        /// which nothing else in this mod can reach.
+        ///
+        /// Named by the QUEST, which is the only name a marker has (<c>QuestMarker</c> carries an
+        /// instance id and a target and no words of its own), and gated by the page's own walk of the
+        /// journal (<see cref="GalaxyHudScreen.ScannedMarkers"/>) so the scanner and the system rows
+        /// cannot disagree about which quests are being pointed at.
+        /// </summary>
+        private void Markers(List<Found> found)
+        {
+            IList<GalaxyHudScreen.ScannedMarker> markers = _screen.ScannedMarkers();
+            for (int i = 0; i < markers.Count; i++)
+            {
+                GalaxyHudScreen.ScannedMarker it = markers[i];
+                found.Add(Make(it.Quest, it.At, ScannerScopes.Only(), it.Node, null));
+            }
+        }
+
+        /// <summary>The pins allies have dropped on the map, off the very labels the tree declares its
+        /// pin rows from, and named the way those rows name them - by the KIND of request, which is
+        /// the only name the game gives one.</summary>
+        private void Pins(List<Found> found)
+        {
+            IList<CoordinationRequestLabel> pins = _screen.DrawnPins;
+            for (int i = 0; i < pins.Count; i++)
+            {
+                CoordinationRequest pin = pins[i] == null ? null : pins[i].CoordinationRequest;
+                if (pin != null)
+                {
+                    Found made = Make(
+                        GalaxyHudScreen.PinKind(pin),
+                        pin.GalaxyPosition,
+                        ScannerScopes.Only(),
+                        null,
+                        null
+                    );
+                    made.Row = GalaxyHudScreen.PinId(pin);
+                    found.Add(made);
+                }
+            }
+        }
+
+        /// <summary>The obliterator missiles in flight, off the same labels the tree's own missile rows
+        /// are declared from. The mod's phrase for one, because the game has no name for it - and
+        /// nothing else: where it is AIMED is written into the label's tooltip for the player's own
+        /// missile alone, and that is the game's ruling about what an empire may know.</summary>
+        private void Projectiles(List<Found> found)
+        {
+            IList<ObliteratorProjectileLabel> shots = _screen.DrawnProjectiles;
+            for (int i = 0; i < shots.Count; i++)
+            {
+                ObliteratorProjectile shot =
+                    shots[i] == null ? null : shots[i].Entity as ObliteratorProjectile;
+                if (shot != null)
+                {
+                    Found made = Make(
+                        ModStrings.Get(ModStrings.GalaxyObliteratorProjectile),
+                        shot.GalaxyPosition,
+                        ScannerScopes.Only(),
+                        null,
+                        null
+                    );
+                    made.Row = GalaxyHudScreen.ProjectileId(shot);
+                    found.Add(made);
+                }
+            }
         }
 
         /// <summary>
@@ -614,7 +716,7 @@ namespace ES2Access.Screens
                 Found made = Make(
                     it.Name,
                     it.Probe.GalaxyPosition,
-                    Scope(it.Probe.Empire, empire, foreign),
+                    ScannerScopes.Owned(Scope(it.Probe.Empire, empire, foreign)),
                     null,
                     null
                 );
@@ -625,9 +727,14 @@ namespace ES2Access.Screens
         }
 
         /// <summary>
-        /// The star systems the map is naming. Special nodes are left out on purpose: a nebula or an
-        /// asteroid field is a phenomenon the map draws, not a place with an allegiance, and the three
-        /// scopes below "all" would have nothing to say about one.
+        /// Every place the map is naming - the star systems and the SPECIAL nodes together, which is
+        /// exactly the set the tree's own systems stop declares. The two were split before and the
+        /// split was wrong: a nebula is a place the player steers to and asks the distance of like any
+        /// other, and a scanner that could not find one made the tree and the scanner disagree about
+        /// what is on the map.
+        ///
+        /// What a special node is NOT is owned, so it takes no place in the affiliation trio and
+        /// belongs to "special" alone (<see cref="ScannerScopes.System"/>).
         /// </summary>
         private static void Systems(
             List<Found> found,
@@ -637,20 +744,104 @@ namespace ES2Access.Screens
         )
         {
             HashSet<GameEntityGUID> mine = Mine(empire);
+            HashSet<GameEntityGUID> homes = Homes(empire);
             IColonizedStarSystemRepositoryService colonies =
                 Services.GetService<IColonizedStarSystemRepositoryService>();
             foreach (StarSystemNode node in galaxy.StarSystemNodes)
             {
-                if (node is SpecialNode || !MapVisibility.Perceived(node, empire))
+                if (!MapVisibility.Perceived(node, empire))
                 {
                     continue;
                 }
 
-                int scope = mine.Contains(node.GUID)
+                int affiliation = mine.Contains(node.GUID)
                     ? ScopeFriendly
                     : Scope(Owner(colonies, node, empire), empire, foreign);
-                found.Add(Make(node.LocalizedName, node.GalaxyPosition, scope, node, null));
+                int scopes = ScannerScopes.System(
+                    affiliation,
+                    node is SpecialNode,
+                    homes.Contains(node.GUID)
+                );
+                found.Add(Make(node.LocalizedName, node.GalaxyPosition, scopes, node, null));
             }
+        }
+
+        /// <summary>
+        /// The home systems the player is allowed to know about.
+        ///
+        /// Their OWN, always: the empire knows where it started, and the game keeps the node on the
+        /// interior's own agency (<c>DepartmentOfTheInterior.HomeSystemNode</c>).
+        ///
+        /// A foreign empire's only where the GAME reveals it, which it does in exactly one place - the
+        /// diplomacy lens, which draws a circle round another major empire's home system and links to
+        /// it (<c>GalaxyStarSystem.ContentForDiplomaticScanViewForHomeSystem.Update</c>). Two things
+        /// have to be true for that circle to be drawn at the home system, and both are asked here.
+        /// First the player's intelligence must have marked that empire's position KNOWN, which it
+        /// does only once at least one of that empire's colonies is explored or in sight
+        /// (<c>DepartmentOfIntelligence.RefreshEmpirePosition</c>). Second the position it knows must
+        /// BE the home system's, because that same routine falls back to the empire's
+        /// highest-influence visible colony when the home system is not among the ones the player can
+        /// see - and in that case the lens draws its circle somewhere else, and the home system is
+        /// still a secret. Asking only the first would hand the player a capital they were shown a
+        /// border colony of.
+        ///
+        /// Minor factions are not asked at all, matching the lens, which iterates the MAJOR empires.
+        /// </summary>
+        private static HashSet<GameEntityGUID> Homes(Empire empire)
+        {
+            HashSet<GameEntityGUID> homes = new HashSet<GameEntityGUID>();
+            try
+            {
+                StarSystemNode own = HomeOf(empire);
+                if (own != null)
+                {
+                    homes.Add(own.GUID);
+                }
+
+                DepartmentOfIntelligence intelligence =
+                    empire.GetAgency<DepartmentOfIntelligence>();
+                Game game = Gui.Game;
+                Empire[] empires = game == null ? null : game.Empires;
+                for (int i = 0; intelligence != null && empires != null && i < empires.Length; i++)
+                {
+                    MajorEmpire other = empires[i] as MajorEmpire;
+                    if (other == null || ReferenceEquals(other, empire))
+                    {
+                        continue;
+                    }
+
+                    StarSystemNode home = HomeOf(other);
+                    EmpirePosition known = intelligence.GetEmpirePosition(other);
+                    if (
+                        home != null
+                        && known != null
+                        && known.Known
+                        && (known.GalaxyPosition - home.GalaxyPosition).SquareMagnitude
+                            <= PositionSlack
+                    )
+                    {
+                        homes.Add(home.GUID);
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: the scanner asking which systems are capitals threw: " + e);
+            }
+
+            return homes;
+        }
+
+        /// <summary>How close the position the game says it knows has to be to a home system before it
+        /// IS that home system - the same epsilon the game compares two of these positions with
+        /// (<c>DepartmentOfIntelligence.RefreshEmpirePosition</c>).</summary>
+        private const float PositionSlack = 1.401298E-45f;
+
+        private static StarSystemNode HomeOf(Empire empire)
+        {
+            DepartmentOfTheInterior interior =
+                empire == null ? null : empire.GetAgency<DepartmentOfTheInterior>();
+            return interior == null ? null : interior.HomeSystemNode;
         }
 
         /// <summary>The systems that are the player's OWN - the same list the map's tree puts in its
@@ -732,7 +923,7 @@ namespace ES2Access.Screens
                     Make(
                         fleet.LocalizedName,
                         fleet.GalaxyPosition,
-                        Scope(owner, empire, foreign),
+                        ScannerScopes.Owned(Scope(owner, empire, foreign)),
                         null,
                         fleet
                     )
@@ -743,7 +934,7 @@ namespace ES2Access.Screens
         private static Found Make(
             string name,
             GalaxyPosition at,
-            int scope,
+            int scopes,
             StarSystemNode node,
             Fleet fleet
         )
@@ -757,7 +948,7 @@ namespace ES2Access.Screens
                 At = at,
                 East = east,
                 North = north,
-                Scope = scope,
+                Scopes = scopes,
                 Node = node,
                 Fleet = fleet,
             };

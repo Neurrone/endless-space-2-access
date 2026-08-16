@@ -769,7 +769,7 @@ namespace ES2Access.Screens
             Spot won = spots[pick.Index];
             if (won.Site < 0)
             {
-                RevealProbe(won.Id);
+                RevealRow(won.Id);
                 return won.Id;
             }
 
@@ -2250,6 +2250,104 @@ namespace ES2Access.Screens
             }
         }
 
+        /// <summary>One quest marker as the SCANNER needs it: which quest it belongs to, where on the
+        /// map it stands, and - where it stands at a system this page is naming - that system, which
+        /// is the only node the tree has to send the cursor to.</summary>
+        internal struct ScannedMarker
+        {
+            public string Quest;
+            public GalaxyPosition At;
+            public StarSystemNode Node;
+        }
+
+        /// <summary>
+        /// Every quest marker the game is showing this empire, free-floating ones included.
+        ///
+        /// Walked from the JOURNAL rather than from the pins the map draws, for the reason
+        /// <see cref="QuestMarkerLines"/> records: a pin carries an instance id and nothing else, so
+        /// the quest is nameable only from the quest's own side. The gate is the pin's own -
+        /// <c>GalaxyQuestMarker.UpdateVisibility</c> deactivates a marker that does not list the
+        /// active player's empire - and it is the whole gate: a marker is a game object placed in the
+        /// world, not one of the culled label windows, so nothing here moves with the camera.
+        ///
+        /// The system-anchored markers are the ones <see cref="QuestMarkerLines"/> already says on a
+        /// system row; they are here too, because a player asking "where are my quests" is asking a
+        /// question about the whole map and should not have to walk it to find out. The
+        /// free-floating ones - a marker on a fleet in mid-lane - are here and nowhere else.
+        /// </summary>
+        internal IList<ScannedMarker> ScannedMarkers()
+        {
+            List<ScannedMarker> found = new List<ScannedMarker>();
+            try
+            {
+                Empire empire = Gui.PlayerEmpire;
+                DepartmentOfInternalAffairs affairs =
+                    empire == null ? null : empire.GetAgency<DepartmentOfInternalAffairs>();
+                QuestJournal journal = affairs == null ? null : affairs.QuestJournal;
+                ReadOnlyCollection<Quest> quests =
+                    journal == null ? null : journal.Read(QuestState.InProgress);
+                for (int i = 0; quests != null && i < quests.Count; i++)
+                {
+                    Quest quest = quests[i];
+                    QuestStep step = quest == null ? null : quest.GetCurrentStep();
+                    if (step == null)
+                    {
+                        continue;
+                    }
+
+                    string title = AgeText.Clean(new GuiQuest(quest).Title);
+                    if (string.IsNullOrEmpty(title))
+                    {
+                        continue;
+                    }
+
+                    foreach (QuestMarker marker in quest.GetMarkers(step))
+                    {
+                        if (!Shown(marker, empire))
+                        {
+                            continue;
+                        }
+
+                        found.Add(
+                            new ScannedMarker
+                            {
+                                Quest = title,
+                                At = marker.GalaxyPosition,
+                                Node = MarkerSystem(marker),
+                            }
+                        );
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: listing the quest markers for the scanner threw: " + e);
+            }
+
+            return found;
+        }
+
+        /// <summary>The system a marker stands at, where the map is naming one - which is what decides
+        /// whether the scanner has a node to send the cursor to or only a place on the map.</summary>
+        private StarSystemNode MarkerSystem(QuestMarker marker)
+        {
+            NodePosition at = MarkerNode(marker);
+            if (!at.IsValid)
+            {
+                return null;
+            }
+
+            for (int i = 0; i < _systems.Count; i++)
+            {
+                if (_systems[i].NodePosition == at)
+                {
+                    return _systems[i];
+                }
+            }
+
+            return null;
+        }
+
         /// <summary>Whether this quest's current step has a marker standing at this system that this
         /// empire is shown.</summary>
         private static bool MarkedAt(
@@ -2822,6 +2920,10 @@ namespace ES2Access.Screens
                     GraphNodes.ValuePart(() => AgeText.Label(it.ColonizeStatus)),
                     GraphNodes.ValuePart(() => OutpostTimer(it)),
                     GraphNodes.ValuePart(() => CuriosityCount(it)),
+                    // A mining probe is a thing somebody has DONE to this planet, and the game keeps
+                    // it in the dossier where only a hover finds it. Said on the row so that a rival
+                    // staking a world in your own system is heard while walking past it.
+                    GraphNodes.ValuePart(() => MiningProbes.Line(it.Planet), false),
                 },
                 OnActivate = () => GalaxyViewLevels.OpenPlanet(it.Planet),
             };
@@ -4679,9 +4781,13 @@ namespace ES2Access.Screens
             Anchor();
         }
 
-        /// <summary>One probe the map is drawing, and the star it is drawn nearest to.</summary>
+        /// <summary>One probe the player has been shown, and the star it is drawn nearest to.</summary>
         private struct DriftingProbe
         {
+            /// <summary>The mote the map is drawing for it, where the camera happens to be close
+            /// enough to be drawing one - null otherwise (<see cref="Anchor"/>). Everything the row
+            /// says has a source that does not need it; the label is only ever a shortcut to the
+            /// dossier the game assembles at draw time.</summary>
             public ProbeLabel Label;
             public Probe Probe;
 
@@ -4705,21 +4811,44 @@ namespace ES2Access.Screens
         ///
         /// The candidates are the systems this page is DECLARING, not every system in the galaxy: a
         /// probe hung under a star the player cannot see would be a node with no parent to reach it by.
+        ///
+        /// The probes themselves come from the SIMULATION rather than from the motes the map is
+        /// drawing, because the mote is subject to a camera cull that has nothing to do with what the
+        /// player is allowed to know: the label windows keep only the entities Unity's own
+        /// <c>CullingGroup</c> reports inside the world camera's frustum
+        /// (<c>GalaxyEntityCulling</c> → <c>VisibleEntityLabelsWindow.RefreshLabelsCulling</c>), and
+        /// zooming out took every probe row and the whole scanner category away with it. The
+        /// information gate is the OTHER test the same window makes -
+        /// <c>VisibleEntityLabel.ShowOrHideIfVisibleByEmpire</c>'s <c>Visibility[empire] >= 3</c> -
+        /// and that is asked here in full (<see cref="MapVisibility.Sighted"/>). So the tree says the
+        /// same thing at every zoom step, and says nothing the picture would not have said had the
+        /// camera been closer.
         /// </summary>
         private void Anchor()
         {
             _drifting.Clear();
             try
             {
-                for (int i = 0; i < _probes.Count; i++)
+                Empire empire = Gui.PlayerEmpire;
+                Game game = Gui.Game;
+                Empire[] empires = game == null ? null : game.Empires;
+                for (int e = 0; empires != null && e < empires.Length; e++)
                 {
-                    Probe probe = _probes[i].Entity as Probe;
-                    if (probe != null)
+                    DepartmentOfDefense defense =
+                        empires[e] == null ? null : empires[e].GetAgency<DepartmentOfDefense>();
+                    ReadOnlyCollection<Probe> probes = defense == null ? null : defense.Probes;
+                    for (int i = 0; probes != null && i < probes.Count; i++)
                     {
+                        Probe probe = probes[i];
+                        if (probe == null || !MapVisibility.Sighted(probe.Visibility, empire))
+                        {
+                            continue;
+                        }
+
                         _drifting.Add(
                             new DriftingProbe
                             {
-                                Label = _probes[i],
+                                Label = LabelFor(probe),
                                 Probe = probe,
                                 Near = NearestSystem(probe.GalaxyPosition),
                             }
@@ -4731,6 +4860,21 @@ namespace ES2Access.Screens
             {
                 Log.Warn("galaxy: placing the probes against the systems threw: " + e);
             }
+        }
+
+        /// <summary>The mote the map happens to be drawing for this probe, or null while the camera
+        /// has culled it out.</summary>
+        private ProbeLabel LabelFor(Probe probe)
+        {
+            for (int i = 0; i < _probes.Count; i++)
+            {
+                if (_probes[i] != null && ReferenceEquals(_probes[i].Entity, probe))
+                {
+                    return _probes[i];
+                }
+            }
+
+            return null;
         }
 
         /// <summary>The declared system nearest a point on the map, with no radius: the point is one
@@ -4793,10 +4937,7 @@ namespace ES2Access.Screens
                     DriftingProbe it = _drifting[i];
                     MessageBuilder extra = new MessageBuilder();
                     extra.Fragment(Owner(it.Probe.Empire));
-                    string left = Countdown(
-                        it.Label.DurationBackground,
-                        it.Label.DurationLabel
-                    );
+                    string left = ProbeCountdown(it);
                     if (!string.IsNullOrEmpty(left))
                     {
                         if (extra.IsEmpty)
@@ -4813,7 +4954,7 @@ namespace ES2Access.Screens
                         new ScannedProbe
                         {
                             Probe = it.Probe,
-                            Name = AgeWidgets.TooltipTitle(it.Label.Tooltip),
+                            Name = ProbeName(it.Probe),
                             Extra = extra.Build(),
                             Node = ProbeId(it),
                         }
@@ -4828,10 +4969,13 @@ namespace ES2Access.Screens
             return found;
         }
 
-        /// <summary>Open the star a probe hangs under, so that a request to show that probe lands on a
-        /// node that is really there. Recorded rather than done, like a search's own reveal: the
-        /// expansion set belongs to the next build.</summary>
-        internal void RevealProbe(ControlId id)
+        /// <summary>Open whatever branch a row hangs under, so that a request to show that row lands
+        /// on a node that is really there. Recorded rather than done, like a search's own reveal: the
+        /// expansion set belongs to the next build. A probe is the only row on this page that hangs
+        /// under something (the star its mote is nearest to); a missile, an ally pin and a probe with
+        /// no star to hang under are all declared at the top of the open-space region, so asking for
+        /// one of those is answered by finding nothing to open, which is the right answer.</summary>
+        internal void RevealRow(ControlId id)
         {
             for (int i = 0; i < _drifting.Count; i++)
             {
@@ -4960,26 +5104,87 @@ namespace ES2Access.Screens
         /// player's own - how many turns it has left before it burns out.</summary>
         private static NodeVtable ProbeNode(DriftingProbe drifting)
         {
+            DriftingProbe found = drifting;
             ProbeLabel it = drifting.Label;
             Probe probe = drifting.Probe;
             StarSystemNode near = drifting.Near;
+            AgeTooltip dossier = it == null ? null : it.Tooltip;
             NodeVtable vtable = new NodeVtable
             {
                 Announcements = new List<NodeAnnouncement>
                 {
-                    GraphNodes.LabelPart(() => AgeWidgets.TooltipTitle(it.Tooltip)),
+                    GraphNodes.LabelPart(() => ProbeName(probe)),
                     GalaxyCoordinates.Part(() => probe.GalaxyPosition),
                     GraphNodes.ValuePart(() => Owner(probe.Empire), false),
                     GraphNodes.ValuePart(() => ProbeBearing(probe, near), false),
-                    GraphNodes.ValuePart(
-                        () => Countdown(it.DurationBackground, it.DurationLabel),
-                        false
-                    ),
+                    GraphNodes.ValuePart(() => ProbeCountdown(found), false),
                 },
-                Sections = GraphNodes.Sections(null, it.Tooltip),
+                // The dossier only exists while the game is drawing the mote: it is assembled at
+                // draw time onto the label's own tooltip, so a probe the camera has culled has a row
+                // with no review section rather than no row.
+                Sections = GraphNodes.Sections(null, dossier),
             };
-            Follow(vtable, probe, it.AgeTransform, it.Tooltip);
+            Follow(vtable, probe, it == null ? null : it.AgeTransform, dossier);
             return vtable;
+        }
+
+        /// <summary>
+        /// What a probe is called. The game gives it no name of its own; the words are the title of
+        /// the wrapper it hangs the dossier on (<c>ProbeLabel.Bind</c> sets
+        /// <c>Tooltip.Target = new GuiProbe(probe)</c>), which is a class title and so is the same for
+        /// every probe in the game - read once and kept, since it is asked on every frame a probe row
+        /// is focused and is not a thing that changes.
+        /// </summary>
+        private static string ProbeName(Probe probe)
+        {
+            try
+            {
+                if (_probeName == null && probe != null)
+                {
+                    _probeName = AgeText.Clean(new GuiProbe(probe).Title) ?? string.Empty;
+                }
+
+                return string.IsNullOrEmpty(_probeName) ? null : _probeName;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        private static string _probeName;
+
+        /// <summary>
+        /// How many turns a probe has left before it burns out.
+        ///
+        /// The map writes this on the mote for the player's OWN probes and nobody else's
+        /// (<c>ProbeLabel.Refresh</c>: the background is shown only when the probe's empire is the
+        /// player's, and the text is <c>GuiProbe.RemainingLifetime</c> with the turn icon), and both
+        /// halves of that are said here - the label's own text where the map is drawing it, and the
+        /// same two things composed the same way where the camera has culled the mote away. The
+        /// gate is the game's, not this mod's: a foreign probe's countdown stays unsaid at every zoom.
+        /// </summary>
+        private static string ProbeCountdown(DriftingProbe drifting)
+        {
+            try
+            {
+                if (drifting.Label != null)
+                {
+                    return Countdown(
+                        drifting.Label.DurationBackground,
+                        drifting.Label.DurationLabel
+                    );
+                }
+
+                Probe probe = drifting.Probe;
+                return probe == null || !ReferenceEquals(probe.Empire, Gui.PlayerEmpire)
+                    ? null
+                    : AgeText.Clean(new GuiProbe(probe).RemainingLifetime + "[turn]");
+            }
+            catch (Exception)
+            {
+                return null;
+            }
         }
 
         /// <summary>
@@ -5081,8 +5286,27 @@ namespace ES2Access.Screens
                     Sections = GraphNodes.Sections(null, it.Tooltip),
                 };
                 Follow(vtable, shot, it.AgeTransform, it.Tooltip);
-                builder.AddItem(ControlId.Structural("galaxy:projectile/" + shot.GUID), vtable);
+                builder.AddItem(ProjectileId(shot), vtable);
             }
+        }
+
+        /// <summary>Where a missile's row stands in the tree - out in open space, where the map draws
+        /// it. Built here rather than spelled out at each caller so the scanner's jump and the tree's
+        /// declaration cannot drift apart.</summary>
+        internal static ControlId ProjectileId(ObliteratorProjectile shot)
+        {
+            return ControlId.Structural("galaxy:projectile/" + shot.GUID);
+        }
+
+        /// <summary>The same, for an ally's pin.</summary>
+        internal static ControlId PinId(CoordinationRequest request)
+        {
+            return ControlId.Structural(PinKey(request));
+        }
+
+        private static string PinKey(CoordinationRequest request)
+        {
+            return "galaxy:pin/" + request.GUID;
         }
 
         /// <summary>
@@ -5125,8 +5349,8 @@ namespace ES2Access.Screens
                 };
                 Follow(vtable, request, it.AgeTransform, it.RequestTooltip);
 
-                string key = "galaxy:pin/" + request.GUID;
-                ControlId id = ControlId.Structural(key);
+                string key = PinKey(request);
+                ControlId id = PinId(request);
                 AgeTransform dismiss = it.DismissButtonContainer;
                 if (!Visible(dismiss))
                 {

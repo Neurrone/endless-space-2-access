@@ -801,6 +801,9 @@ namespace ES2Access.Screens
                 {
                     GraphNodes.LabelPart(() => AgeText.Label(it.PlanetNameLabel)),
                     GraphNodes.ValuePart(() => AgeText.Label(it.PlanetTypeLabel)),
+                    // The same sentence the map's planet rows say, for the same reason: the game keeps
+                    // a mining probe in the planet's dossier, where only a hover finds it.
+                    GraphNodes.ValuePart(() => MiningProbes.Line(it.Planet), false),
                 },
                 Sections = GraphNodes.Sections(
                     () => CardDetails(it),

@@ -62,6 +62,28 @@ namespace ES2Access.UI
         /// which is a separate rule this one must not borrow: taking it made the cursor refuse a name the
         /// map was drawing on screen.
         /// </summary>
+        /// <summary>
+        /// Whether this empire is being SHOWN a moving thing out in space - a probe, a missile.
+        ///
+        /// The one gate the game itself puts between the model and the mote it draws for one of these
+        /// (<c>VisibleEntityLabel.ShowOrHideIfVisibleByEmpire</c>: <c>Visibility[empire] >= 3</c>,
+        /// which is Visible). Its neighbour in that same window - whether the label survived the
+        /// camera's culling group - is NOT part of this and must never be borrowed into it: culling
+        /// is about where the camera is pointing, and a fact the player has been granted does not
+        /// stop being granted because they zoomed out.
+        /// </summary>
+        public static bool Sighted(EntityVisibility visibility, Empire empire)
+        {
+            try
+            {
+                return visibility != null && empire != null && (int)visibility[empire] >= 3;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
         public static bool Perceived(GameNode node, Empire empire)
         {
             try

@@ -360,7 +360,8 @@ scope standing empty under a parked cursor keeps its own sentence, `⟨scope⟩,
 An instance line is `name[, extras], pair, offset components, N of M`.
 
 The oracle for the whole reading is a table computed independently in `/eval`: walk
-`galaxy.GameNodes`, skip `SpecialNode` and anything `MapVisibility.Perceived` refuses, subtract
+`galaxy.GameNodes`, skip anything `MapVisibility.Perceived` refuses (special nodes are IN since
+taxonomy v2, so they are no longer skipped), subtract
 `DepartmentOfTheInterior.HomeSystemNode.GalaxyPosition`, and print each axis rounded away from zero
 — the spoken pair IS those two numbers and the spoken direction is their DIFFERENCE from the
 reference point's own rounded pair, north/south component first, zero components dropped, both zero
@@ -370,26 +371,79 @@ Rigel `-16, -5`, Qarius `-5, 23`, Primus `17, 21`, Electra `-17, -21`, Ita `5, 3
 Osulo `-31, -32`, Byrtus `-25, -42`, Heracles `-43, -30`; `Fleets: all, 1st Vanquishers Navy, 0, -3,
 3 south, 1 of 6`. **The distance SORT is unchanged** — the order is still nearest-first by true
 distance; only the wording of the direction changed.
-**The fixture's own scanner shape** (turn 5): 12 perceived systems plus one `SpecialNode` (B10 6805,
-excluded), of which **Dusay is the colony and Heka the OUTPOST** — Rigel is neither, so friendly
-systems is `{Dusay, Heka}` and neutral is the other ten; enemy is EMPTY, which is what proves the
-Shift cycle skips (All → Friendly → Neutral → straight back to All). Fleets are six, all the
-player's, so neutral and enemy fleets are empty too. Nothing here can produce the "⟨scope⟩, none
-found" line: it needs a scope to empty UNDER a parked cursor, and cycling skips empties by design —
-fixture-blocked, covered by `ScannerCursorTests`.
+**The fixture's own scanner shape** (turn 21, taxonomy v2): **13** perceived places — 12 star
+systems plus the `SpecialNode` B10 6805, which is now IN the category — of which **Dusay is the
+colony and Heka the OUTPOST**; Rigel is neither, so friendly is `{Dusay, Heka}` (2) and neutral is
+the other ten. The special node is in "all" and "special" ONLY and is deliberately not counted as
+neutral, so neutral stayed at 10 while "all" went 12 → 13. Enemy is EMPTY, which is what proves the
+Shift cycle skips. Fleets are six, all the player's, so neutral and enemy fleets are empty too.
+Nothing here can produce the "⟨scope⟩, none found" line: it needs a scope to empty UNDER a parked
+cursor, and cycling skips empties by design — fixture-blocked, covered by `ScannerCursorTests`.
+
+**The six SUBCATEGORIES of systems** (2026-08-16) cycle all → friendly → neutral → enemy →
+homeworld → special, empties skipped. Measured transcript, one Shift press then one instance step
+each: `friendly` / `Heka, -1, -9, 9 south, 1 west, 2 of 2`; `neutral` /
+`Rigel, -16, -5, 5 south, 16 west, 2 of 10`; `homeworld` / `Dusay, 0, 0, here, 1 of 1`; `special` /
+`B10 6805, -5, -26, 26 south, 5 west, 1 of 1`; then `all` / `2 of 13`. Coming back to systems from
+fleets with the memory on special says the whole scope,
+`Systems: special, B10 6805, -5, -26, 26 south, 5 west, 1 of 1`, and `galaxy.scanGoTo` from there
+lands on the tree row `B10 6805, -5, -26, group, Solar Nebula, collapsed, has tooltip, 10 of 13` —
+which is the check that the scanner and the tree agree about what is on the map.
+**HOMEWORLD is fixture-blocked past the player's own.** The oracle is the `EmpirePosition` table:
+`me.GetAgency<DepartmentOfIntelligence>().GetEmpirePosition(other).Known` for each `MajorEmpire`.
+Measured here: Neurrone `Known=True` (own, Dusay), Leaper/Baten, St Chaoiver/Jundur and
+Doria/Lonica all `Known=False` — and each stored position IS that empire's unseen home, which is
+why the mod checks `Known` as well as the position (es2-facts). Minor factions have home systems
+too (Niris/Osulo, Amoeba/Sabel, Epistis/Dyl, Yuusho/Olvaldi… nine of them) and are deliberately
+NOT in this scope.
+
 **PROBES are the third category** (2026-08-16), cycled to by Ctrl after fleets. They are the
-TRAVELLING probes only — the same `DrawnProbes`/`_drifting` list the tree's `AddProbes` rows and the
-inspect cell read, so all three agree. Detection probes (no mote of their own; they surface on system
-labels) and mining probes (planet-anchored) are deliberately absent. The instance line reuses the
-tree row's words for what a probe is called and whose it is, plus the owner-gated countdown, and
-leaves the "N turns out from ⟨star⟩" bearing to the tree row: `Probes: all, Probe, Neurrone, 4 Turn,
+TRAVELLING probes only — the same `_drifting` list the tree's probe rows and the inspect cell read,
+so all three agree. Detection probes (no mote of their own; they surface on system labels) and
+mining probes (planet-anchored) are deliberately absent. The instance line reuses the tree row's
+words for what a probe is called and whose it is, plus the owner-gated countdown, and leaves the
+"N turns out from ⟨star⟩" bearing to the tree row: `Probes: all, Probe, Neurrone, 4 Turn,
 -55, -30, 30 south, 55 west, 1 of 1`. `galaxy.scanGoTo` opens the probe's star and lands on
 `galaxy:system/488/probe/1621`; there is no select-the-thing fallback, because the game lets nobody
-click a probe. **The probe list is CAMERA-DEPENDENT**: `_probes` is collected from the labels the map
-is drawing, and at a far zoom step the map culls them — measured, zoom step 5 gives `drawnProbes=0`
-and the whole category is skipped, zoom step 12 gives 1. Zoom in before testing probes.
-Foreign-probe subcategories are fixture-blocked (the one probe is the player's own); the affiliation
-test is the same `Scope(owner, empire, foreign)` the fleets use.
+click a probe.
+**The probe list is NO LONGER camera-dependent** (fixed 2026-08-16): `_drifting` is built from
+`DepartmentOfDefense.Probes` across every empire under `MapVisibility.Sighted` (the game's own
+`Visibility >= 3`), and the drawn label is attached only when there is one. The oracle for that is
+NOT the zoom step — the culling group is a frustum test and the fixture's one probe survived steps
+5, 12 and 14 — but hiding the motes by hand: `l.CulledIn = false; l.Hide()` over every `ProbeLabel`
+in `ProbeLabelsWindow.LabelsContainer` gives `visible=0`, and the scanner still answers
+`Probes: all, Probe, Neurrone, 4 Turn, -55, -30, …, 1 of 1`, identical to the drawn reading (which
+also proves the label-free name and countdown are word-for-word the label's). The TREE row under
+the same hand-cull reads `Probe, -55, -30, Neurrone, west of Heracles, 2 turns out, 4 Turn, 3 of 3`
+— identical to the drawn reading minus `has tooltip`, since the dossier is assembled onto the
+label and there is no label. Restore with
+`l.CulledIn = true; l.ShowOrHideIfVisibleByEmpire(Gui.PlayerEmpire)` — the window's own refresh only
+runs when the camera POSITION moves, so it does not put them back by itself.
+Foreign-probe subcategories are fixture-blocked (the sighted probe is the player's own; the save
+holds two probes, one of them not sighted); the affiliation test is the same
+`Scope(owner, empire, foreign)` the fleets use.
+
+**The three "what is there" categories** — quest markers, ally pins, obliterator missiles — sit
+after probes in the Ctrl ring, each with a single subcategory. A Shift press on one comes round to
+`all` and says it again. All three are EMPTY in every fixture, and the empty-skip proves itself:
+Ctrl from probes lands back on `Systems`, and Ctrl backwards from systems lands on `Probes`
+(measured). The oracles for "is it really empty":
+quest markers — walk `QuestJournal.Read(QuestState.InProgress)` (bind as `System.Collections.IList`)
+and `quest.GetMarkers(quest.GetCurrentStep())`; `[Beginner] test` turn 21 has **32** quests in
+progress and **zero** markers on any of them, so nothing is drawn. Pins and missiles —
+`DepartmentOfDefense.ObliteratorProjectiles` and the coordination-request repository are empty, and
+pins need a game with allies in it.
+
+**MINING PROBES on a planet row** (2026-08-16, not part of the scanner): the galaxy map's orbital
+cards and the empire screen's planet cards both say
+`ES2Access.UI.MiningProbes.Line(planet)`. Fixture-blocked — `DepartmentOfTheTreasury.miningProbes`
+is empty for every empire, and `Line` returns null for all three Dusay planets, which is the proof
+that nothing changed in the fixture's rows. The shared-path evidence for the positive branch is the
+game's own text, read from `/eval`: `Gui.Localize("%PanelFeatureMiningProbeDescription",
+GetLeaderName(...))` gives `#1E6EC8#[terrans] Neurrone#REVERT#'s Mining Probe is currently mining
+the Resource deposits of this planet`, which `AgeText.Clean` speaks as
+`Imperials Neurrone's Mining Probe is currently mining the Resource deposits of this planet`; the
+owner-gated half formats as `+3.7` per symbol and `12 Turn` for the countdown.
 **Proving the reference point moves.** With the tree cursor on the HUD the scanner measures from
 home; focus a system (`galaxy:system/505`) and the same list re-sorts round it. Since 2026-08-16 a
 row with a thing of its OWN measures from that thing rather than from its parent system: standing on

@@ -351,5 +351,124 @@ namespace ES2Access.Tests.UI
             Assert.Equal(0, cursor.Category);
             Assert.Equal(0, cursor.Subcategory);
         }
+
+        // ---- the taxonomy the galaxy grew into: rows of DIFFERENT widths ----
+        //
+        // Systems have six subcategories (the affiliation trio plus homeworld and special), fleets and
+        // probes four, and the three that are only ever asked "what is there" - quest markers, ally
+        // pins, obliterator missiles - have one apiece.
+
+        private static int[][] Galaxy(
+            int markers,
+            int pins,
+            int projectiles,
+            int homeworlds,
+            int specials
+        )
+        {
+            return new int[][]
+            {
+                new int[] { 13, 2, 10, 0, homeworlds, specials },
+                new int[] { 6, 6, 0, 0 },
+                new int[] { 1, 1, 0, 0 },
+                new int[] { markers },
+                new int[] { pins },
+                new int[] { projectiles },
+            };
+        }
+
+        [Fact]
+        public void TheSubcategoryKeyReachesTheTwoScopesBeyondTheAffiliationTrio()
+        {
+            ScannerCursor cursor = new ScannerCursor();
+            int[][] counts = Galaxy(0, 0, 0, 1, 1);
+            cursor.Arm();
+
+            // all -> friendly -> neutral -> (enemy is empty, skipped) -> homeworld -> special -> all
+            Assert.Equal(ScannerAnswer.Scope, cursor.CycleSubcategory(1, counts));
+            Assert.Equal(1, cursor.Subcategory);
+            cursor.CycleSubcategory(1, counts);
+            Assert.Equal(2, cursor.Subcategory);
+            cursor.CycleSubcategory(1, counts);
+            Assert.Equal(4, cursor.Subcategory);
+            cursor.CycleSubcategory(1, counts);
+            Assert.Equal(5, cursor.Subcategory);
+            cursor.CycleSubcategory(1, counts);
+            Assert.Equal(0, cursor.Subcategory);
+        }
+
+        [Fact]
+        public void ACategoryWithOneSubcategoryComesRoundToItAndSaysItAgain()
+        {
+            ScannerCursor cursor = new ScannerCursor();
+            int[][] counts = Galaxy(2, 0, 0, 1, 1);
+            cursor.Arm();
+
+            // Systems, fleets, probes, then the quest markers - the first of the three with only
+            // "all" to offer.
+            cursor.CycleCategory(1, counts);
+            cursor.CycleCategory(1, counts);
+            cursor.CycleCategory(1, counts);
+            Assert.Equal(3, cursor.Category);
+
+            Assert.Equal(ScannerAnswer.Scope, cursor.CycleSubcategory(1, counts));
+            Assert.Equal(0, cursor.Subcategory);
+            Assert.Equal(ScannerAnswer.Scope, cursor.CycleSubcategory(-1, counts));
+            Assert.Equal(0, cursor.Subcategory);
+        }
+
+        [Fact]
+        public void TheCategoryRingSkipsTheThreeNewCategoriesWhileTheyAreEmpty()
+        {
+            ScannerCursor cursor = new ScannerCursor();
+            // The ordinary fixture: no quests pinned on the map, no allies to drop a pin, nobody
+            // firing a planet-killer.
+            int[][] counts = Galaxy(0, 0, 0, 1, 1);
+            cursor.Arm();
+
+            cursor.CycleCategory(1, counts);
+            Assert.Equal(1, cursor.Category);
+            cursor.CycleCategory(1, counts);
+            Assert.Equal(2, cursor.Category);
+
+            // Past the three empty ones and straight back to the systems.
+            cursor.CycleCategory(1, counts);
+            Assert.Equal(0, cursor.Category);
+
+            // And backwards over them too.
+            cursor.CycleCategory(-1, counts);
+            Assert.Equal(2, cursor.Category);
+        }
+
+        [Fact]
+        public void ANewCategoryJoinsTheRingTheMomentSomethingIsInIt()
+        {
+            ScannerCursor cursor = new ScannerCursor();
+            int[][] counts = Galaxy(0, 0, 1, 1, 1);
+            cursor.Arm();
+
+            cursor.CycleCategory(-1, counts);
+            Assert.Equal(5, cursor.Category);
+            Assert.Equal(0, cursor.Subcategory);
+            Assert.Equal(1, cursor.Count(counts));
+        }
+
+        [Fact]
+        public void ASystemCountedInTwoSubcategoriesIsSteppedThroughInEachOfThem()
+        {
+            ScannerCursor cursor = new ScannerCursor();
+            // The one homeworld is also one of the two friendly systems: "all" is 13, not 15.
+            int[][] counts = Galaxy(0, 0, 0, 1, 1);
+            cursor.Arm();
+
+            cursor.CycleSubcategory(1, counts);
+            Assert.Equal(1, cursor.Subcategory);
+            Assert.Equal(2, cursor.Count(counts));
+
+            cursor.CycleSubcategory(1, counts);
+            cursor.CycleSubcategory(1, counts);
+            Assert.Equal(4, cursor.Subcategory);
+            Assert.Equal(1, cursor.Count(counts));
+        }
     }
 }

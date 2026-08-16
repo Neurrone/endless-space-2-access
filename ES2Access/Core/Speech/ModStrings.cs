@@ -396,6 +396,22 @@ namespace ES2Access.Core.Speech
         public const string GalaxyScannerProbesNeutral = "galaxy.scanner.probes-neutral";
         public const string GalaxyScannerProbesEnemy = "galaxy.scanner.probes-enemy";
 
+        /// <summary>The two subcategories the star systems have that the affiliation trio cannot
+        /// express: an empire's capital, which is a fact about a system as well as about who holds it,
+        /// and the phenomena the map draws among the stars, which nobody holds at all.</summary>
+        public const string GalaxyScannerSystemsHomeworld = "galaxy.scanner.systems-homeworld";
+        public const string GalaxyScannerSystemsSpecial = "galaxy.scanner.systems-special";
+
+        /// <summary>The three categories that are only ever asked "what is there": each has a single
+        /// subcategory, and it is still named rather than left blank, so a subcategory press answers
+        /// with the same kind of word there as everywhere else.</summary>
+        public const string GalaxyScannerQuestMarkers = "galaxy.scanner.quest-markers";
+        public const string GalaxyScannerQuestMarkersAll = "galaxy.scanner.quest-markers-all";
+        public const string GalaxyScannerPins = "galaxy.scanner.pins";
+        public const string GalaxyScannerPinsAll = "galaxy.scanner.pins-all";
+        public const string GalaxyScannerProjectiles = "galaxy.scanner.projectiles";
+        public const string GalaxyScannerProjectilesAll = "galaxy.scanner.projectiles-all";
+
         /// <summary>A scope the player is parked in that has run out under them. The scope's own name
         /// goes INSIDE the sentence rather than in front of it, so a language that says "there are no
         /// friendly fleets" has somewhere to put the words.</summary>
@@ -1241,6 +1257,14 @@ namespace ES2Access.Core.Speech
             { GalaxyScannerProbesFriendly, "friendly" },
             { GalaxyScannerProbesNeutral, "neutral" },
             { GalaxyScannerProbesEnemy, "enemy" },
+            { GalaxyScannerSystemsHomeworld, "homeworld" },
+            { GalaxyScannerSystemsSpecial, "special" },
+            { GalaxyScannerQuestMarkers, "Quest markers" },
+            { GalaxyScannerQuestMarkersAll, "all" },
+            { GalaxyScannerPins, "Ally pins" },
+            { GalaxyScannerPinsAll, "all" },
+            { GalaxyScannerProjectiles, "Obliterator missiles" },
+            { GalaxyScannerProjectilesAll, "all" },
             { GalaxyScannerEmpty, "{0}, none found" },
             { GalaxyScannerHere, "here" },
             { GalaxyFleetShips, "{0} ships" },

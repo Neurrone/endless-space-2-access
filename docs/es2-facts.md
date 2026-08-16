@@ -1323,6 +1323,43 @@ generic graduates to the generic docs.
 
 - **A starlane is ONE `Link` shared by both end systems**, so per-system nodes built from a link
   must key STRUCTURALLY (measured as a focus teleport on a fog-off build).
+- **Camera culling is not an information gate.** Every `VisibleEntityLabelsWindow` (probes,
+  obliterator projectiles) and the coordination-request window make TWO separate tests per label:
+  `RefreshLabelsCulling` keeps only the entities Unity's own `CullingGroup` reports inside the
+  world camera (`GalaxyEntityCulling`, registered against `CameraPreRenderHookHandler.WorldCamera`,
+  no distance bands set), and `ShowOrHideIfVisibleByEmpire` then applies the real knowledge gate,
+  `Visibility[lookingEmpire] >= 3` (Visible). Only the second is about what the player may know.
+  **Mod policy:** anything enumerating these things reads the SIMULATION
+  (`DepartmentOfDefense.Probes` / `.ObliteratorProjectiles`,
+  `ICoordinationRequestRepositoryService`) with the `>= 3` gate, never the drawn-label list — the
+  probes were on the drawn list and a whole scanner category disappeared when the camera moved
+  (`MapVisibility.Sighted` is that gate; `GalaxyHudScreen.Anchor` is the worked example). The
+  label is still attached when one is drawn, because the game assembles a probe's DOSSIER onto the
+  label's tooltip at draw time and there is no other source for it — everything else a row says
+  (`GuiProbe.Title`, `GuiProbe.RemainingLifetime` + `[turn]`, the owner) comes off the entity.
+- **`EmpirePosition.Known` is what reveals a foreign capital, and it is not enough on its own.**
+  `DepartmentOfIntelligence.RefreshEmpirePosition` (:479-535) sets `Known = true` for another
+  empire once ANY of that empire's colonies is explored (≥ 4) or in sight (≥ 3) with the colony
+  itself visible (≥ 1); the position it stores is the HOME system's when the home system is among
+  those, and otherwise the empire's highest-influence visible colony. When nothing is visible it
+  writes the home position anyway and sets `Known = false` — so the stored position equals the
+  home system's for an empire the player knows nothing about, and a gate on the position alone
+  would leak every capital in the galaxy. The diplomacy lens draws its home circle off `Known`
+  (`GalaxyStarSystem.ContentForDiplomaticScanViewForHomeSystem.Update`) and iterates MAJOR empires
+  only. **Mod policy:** a foreign home system is named only when `Known` is true AND the known
+  position is the home system's; minor factions are not asked, matching the lens. Measured in
+  `[Beginner] test` turn 21: all three AI majors read `Known=False` while their stored positions
+  are exactly their (unseen) home systems — Leaper/Baten, St Chaoiver/Jundur, Doria/Lonica.
+- **`GalaxyQuestMarker` is a world object, not a culled label**: `UpdateVisibility` (:157-165)
+  only asks whether `Marker.Empires` lists the active player's empire, so enumerating quest
+  markers from the journal with that one test matches the picture at every zoom. A marker's
+  position resolves through whatever it is bound to (`QuestMarker.GalaxyPosition`), which is
+  `GalaxyPosition.Zero` when the target has none.
+- **A mining probe is surfaced only in the planet's dossier** (`PanelFeatureMiningProbe.Bind`
+  :15-58), and its gates are split: the owner's leader name is written for ANY empire's probe
+  (`%PanelFeatureMiningProbeDescription` + `GuiEmpire.GetLeaderName`), while the yield and the
+  remaining turns are written for the player's OWN probe alone — and a player's own probe with no
+  yield hides the whole feature. `GuiPlanet` is the `IMiningProbeBonusProvider`.
 - `PlanetCuriosityItem` is Class-backed yet its `Content` holds real words (`FormatFailureInfos`,
   written in `Refresh`), so the refusal reads off `Content` while the name comes from the wrapper
   (there is no Title label).
