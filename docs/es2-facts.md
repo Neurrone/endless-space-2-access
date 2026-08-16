@@ -1358,6 +1358,23 @@ generic graduates to the generic docs.
   and the drawn hue came out a pale cyan whatever colour the slot was registered with, so a mod-drawn
   line is told apart from a starlane by being cyan, not by weight. `ReleaseLine` ×N and
   `FreeColorSlot` on teardown; the manager's own `lineToRenders` count is the check.
+- **A SHORT line draws nothing at all, whichever of the fourteen materials it is given.** Measured
+  2026-08-16 at zoom step 9: a 3-unit line is invisible under every `materialType` 0-13, a 16-unit
+  one draws a stub, a 33-unit one draws almost whole — the lane shaders eat several units off each
+  END (a lane is drawn short of the stars it joins). So a mod shape smaller than a few units cannot
+  be made of these lines as-is; run every side well PAST its corners and the eaten part falls outside
+  the shape. Thickness is spatial too: the width argument being dead, several parallel lines a
+  twentieth of a unit apart read as one solid band (the inspect cursor's frame is 8-16 per side).
+  Materials 0-13 are lane, wormhole, diplomacy, trade-route ×3 and hacking-route ×8.
+- **Filled quads and rings are not available on the galaxy view.** `QuadRendererManager` is loaded
+  with an EMPTY material list (measured `materials.Count == 0`), every `QuadRenderer` the build
+  defines is a distance-field NUMBER (`Amplitude/Galaxy/PathNumber`, the turn markers on a fleet's
+  path) and `QuadToRender` needs an `IAtlasElement`, so there is no solid-fill quad to draw with.
+  `CircleRendererManager` is live and `CreateCircle` succeeds, but nothing it makes is drawn while
+  the galaxy is the view: every circle the game itself has live sits on `PrimitiveLayer.PlanetOrbit`
+  or `CurvedLine`, and `IPrimitiveMaskFilterService.GetCurrentPrimitiveMask()` reads
+  `0xFFFFFFFFFFFFD7D3` there — bits 2, 3, 5, 11 and 13 cleared. `PrimitiveLayer.Line` is the layer
+  that is on, which is why the lanes and a mod's own lines are on the screen at all.
 - **`GalaxyViewCameraController.CenterOnPoint(point, damping)` takes a bare point** and SmoothDamps
   to it, auto-clamped to the galaxy (`ClampCameraPosition`) — the way to move the camera to empty
   space, where `GuiManager.RequestGalaxyOverviewViewLevel` needs an entity and trips the mod's own

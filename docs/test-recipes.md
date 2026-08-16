@@ -330,25 +330,46 @@ CoordinationRequestCursor), Gui.GetCursor())` — and read it back with an IIFE 
 selection ended", `GalaxyCursor instructions=False` — which is the mode-ends evidence, no order
 posted either way. Note the tutorial arms a probe cursor of its own around turn 6, so read the
 cursor before assuming the mode you set is the one that is up.
-**En-route fleets and the count phrase.** A fleet mid-lane is declared under BOTH ends with distinct
-keys — `galaxy:system/535/fleet/1373` reads "on starlane 2, west" and `galaxy:system/505/fleet/1373`
-"on starlane 1, east", each matching its own host's lane numbering — and both end systems announce
-"1 fleet under way nearby" beside their parked count. `POST /type savi` with every system collapsed
-answers `results:2` and lands on the Dusay-hosted copy with only that system expanded.
+**En-route fleets and the count phrase** (rewritten 2026-08-16: destination-only now covers LANE
+fleets too, not just free movers). A fleet in transit on a starlane is declared under the endpoint it
+is flying TO and nowhere else, saying which of THAT system's lanes it is on. The independent oracle
+is the leg itself: `IPositioningService.GetGameNode(fleet.Position.Movement.Goal)`. On
+`[Beginner] test` the four lane fleets read Patriots Heracles→Osulo, Defenders Primus→Dusay, Victors
+Dusay→Primus, Protectors Dusay→Rigel, and each has exactly ONE row —
+`galaxy:system/491/fleet/1304`, `.../535/fleet/1447`, `.../543/fleet/1593`, `.../505/fleet/1622` —
+so `POST /type defe|victo|protec|patrio` each answer `results:1` (they answered `results:2` while
+both ends hosted). The counts follow the rows: Dusay says "1 fleet under way nearby" (it said 3),
+Primus 1, Rigel 1, Osulo 1, Heracles none, Heka 2 (its two free movers). A fleet on a lane that is
+NOT under way keeps a row under each end, which is what it always had — the rule is about transit.
+The LANE node's own "what is flying this lane" phrase is unchanged and is not reconciled: a lane is
+a leaf, so its count is a statement about the lane rather than about children it does not have.
+Fixture-blocked: a lane fleet whose destination the map has not named, which takes the top-level
+adrift row and says `on a star lane to an unexplored system`.
 
 **The galaxy SCANNER** (read-only; `GalaxyScanner`). Drive it by action key —
 `galaxy.scanCategoryNext|Prev`, `galaxy.scanSubcategoryNext|Prev`, `galaxy.scanNext|Prev`,
 `galaxy.scanGoTo` — and read `/speech`. The FIRST press after a `/reload` says where the cursor
-already is and moves nothing (the screen instance is new, so every reload re-arms it). The oracle
-for the whole reading is a table computed independently in `/eval`: walk `galaxy.GameNodes`, skip
-`SpecialNode` and anything `MapVisibility.Perceived` refuses, subtract
-`DepartmentOfTheInterior.HomeSystemNode.GalaxyPosition`, and print `Math.Sqrt(de*de+dn*dn)` with
-`Math.Atan2(de, dn)` in degrees — the spoken distance is that rounded (midpoints away from zero) and
-the compass word is the 45° arc CENTRED on each point. Measured on `[Beginner] test` from home:
-"All systems, 12 found, Dusay, 0, 0, here, 1 of 12" then Heka 9 south, Libra 16 northwest, Rigel 17
-west, Qarius 23 north, Primus 27 northeast, Electra 27 southwest, Ita 35 north, Leo 40 northeast,
-Osulo 44 southwest, Byrtus 48 southwest, Heracles 53 southwest; "All fleets, 6 found, 1st
-Vanquishers Navy, 0, -3, 3 units south, 1 of 6".
+already is and moves nothing (the screen instance is new, so every reload re-arms it).
+
+**What each tier SAYS** (2026-08-16 wording; no count anywhere in a scope line — the instance line's
+"N of M" carries the size): the arming press says the scope alone in `Category: subcategory` form,
+e.g. `Systems: all`. A SUBCATEGORY step (Shift) says the subcategory alone — `friendly`. A CATEGORY
+step (Ctrl) says the whole scope and then the nearest instance —
+`Systems: friendly, Dusay, 0, 0, here, 1 of 2`. An instance step says the instance line alone. A
+scope standing empty under a parked cursor keeps its own sentence, `⟨scope⟩, none found`.
+An instance line is `name[, extras], pair, offset components, N of M`.
+
+The oracle for the whole reading is a table computed independently in `/eval`: walk
+`galaxy.GameNodes`, skip `SpecialNode` and anything `MapVisibility.Perceived` refuses, subtract
+`DepartmentOfTheInterior.HomeSystemNode.GalaxyPosition`, and print each axis rounded away from zero
+— the spoken pair IS those two numbers and the spoken direction is their DIFFERENCE from the
+reference point's own rounded pair, north/south component first, zero components dropped, both zero
+collapsing to `here`. Measured on `[Beginner] test` from home: `Systems: all` then Dusay
+`0, 0, here, 1 of 12`, Heka `-1, -9, 9 south, 1 west`, Libra `-11, 11, 11 north, 11 west`,
+Rigel `-16, -5`, Qarius `-5, 23`, Primus `17, 21`, Electra `-17, -21`, Ita `5, 34`, Leo `23, 33`,
+Osulo `-31, -32`, Byrtus `-25, -42`, Heracles `-43, -30`; `Fleets: all, 1st Vanquishers Navy, 0, -3,
+3 south, 1 of 6`. **The distance SORT is unchanged** — the order is still nearest-first by true
+distance; only the wording of the direction changed.
 **The fixture's own scanner shape** (turn 5): 12 perceived systems plus one `SpecialNode` (B10 6805,
 excluded), of which **Dusay is the colony and Heka the OUTPOST** — Rigel is neither, so friendly
 systems is `{Dusay, Heka}` and neutral is the other ten; enemy is EMPTY, which is what proves the
@@ -356,11 +377,25 @@ Shift cycle skips (All → Friendly → Neutral → straight back to All). Fleet
 player's, so neutral and enemy fleets are empty too. Nothing here can produce the "⟨scope⟩, none
 found" line: it needs a scope to empty UNDER a parked cursor, and cycling skips empties by design —
 fixture-blocked, covered by `ScannerCursorTests`.
+**PROBES are the third category** (2026-08-16), cycled to by Ctrl after fleets. They are the
+TRAVELLING probes only — the same `DrawnProbes`/`_drifting` list the tree's `AddProbes` rows and the
+inspect cell read, so all three agree. Detection probes (no mote of their own; they surface on system
+labels) and mining probes (planet-anchored) are deliberately absent. The instance line reuses the
+tree row's words for what a probe is called and whose it is, plus the owner-gated countdown, and
+leaves the "N turns out from ⟨star⟩" bearing to the tree row: `Probes: all, Probe, Neurrone, 4 Turn,
+-55, -30, 30 south, 55 west, 1 of 1`. `galaxy.scanGoTo` opens the probe's star and lands on
+`galaxy:system/488/probe/1621`; there is no select-the-thing fallback, because the game lets nobody
+click a probe. **The probe list is CAMERA-DEPENDENT**: `_probes` is collected from the labels the map
+is drawing, and at a far zoom step the map culls them — measured, zoom step 5 gives `drawnProbes=0`
+and the whole category is skipped, zoom step 12 gives 1. Zoom in before testing probes.
+Foreign-probe subcategories are fixture-blocked (the one probe is the player's own); the affiliation
+test is the same `Scope(owner, empire, foreign)` the fleets use.
 **Proving the reference point moves.** With the tree cursor on the HUD the scanner measures from
-home; focus a system (`galaxy:system/505`) and the same list re-sorts round it (from Rigel the
-nearest fleets read Protectors 5 east, Conquerors 15 east, Vanquishers 16 east). Arm inspect
-(`galaxy.inspect`), step it four cells right and four up to `12, 12`, and "All fleets" answers 1st
-Victors Navy 3 units north — a different nearest, off the same six fleets.
+home; focus a system (`galaxy:system/505`) and the same list re-sorts round it. Since 2026-08-16 a
+row with a thing of its OWN measures from that thing rather than from its parent system: standing on
+`galaxy:system/488/probe/1621` (the probe at `-55, -30`), `Systems: friendly` answers
+`Heka, -1, -9, 21 north, 54 east` and `Systems: all` then reads Osulo `2 south, 24 east`, Byrtus
+`12 south, 30 east`, Electra `9 north, 38 east` — each the difference of the two spoken pairs.
 **`galaxy.scanGoTo` has three landings.** In inspect mode the cell moves to the ROUNDED pair and
 reads out ("0, -3, 1st Vanquishers Navy") with `DevProbe.Camera()` focus at
 `origin + (x, y)` exactly. Outside it, a system lands the tree cursor on `galaxy:system/<guid>` with
@@ -949,8 +984,15 @@ and an ally coordination pin. The negative half is one dump of `screen.star-syst
 rename button reads `Dusay, button, …` with no pair.
 
 **Inspect mode** (`galaxy.inspect` / `galaxy.inspectGrow` / `galaxy.inspectShrink` + the ordinary
-`ui.*` actions, all through `POST /input`). Entry lands on the focused stop's pair, so entering from
-the empire stop (no place under the cursor) and from `galaxy:system/535` (Dusay) both give "0, 0" on
+`ui.*` actions, all through `POST /input`). Entry lands on the focused stop's OWN pair (2026-08-16:
+it used to land on the parent system's, because a fleet/probe/missile/pin row is keyed structurally
+and the walk only read `ControlId.Reference`, which only a system's node carries —
+`GalaxyHudScreen.cs:1657`). Measured: focus `galaxy:system/491/fleet/1304` (the Patriots, `-37, -31`,
+under Osulo at `-31, -32`) and `galaxy.inspect` answers `-37, -31, 1st Patriots Navy, Star lane from
+Heracles to Osulo` with `DevProbe.Camera().focus` at `(31.884, 0, -53.45)` = origin + (-37, -31). A
+row with no thing of its own (a planet, a lane) still answers with its system, and entering from
+the empire stop (no place under the cursor) gives home. So entering from the empire stop and from
+`galaxy:system/535` (Dusay) both give "0, 0" on
 `[Beginner] test` — pick a non-home system to tell the two apart. The measured expectations there:
 entry says `Inspect mode, Cursor 3 by 3` then `0, 0, Dusay, Star lane from Rigel to Dusay, Star lane
 from Qarius to Dusay, Star lane from Dusay to Primus`; the cell lists systems, special nodes,
@@ -964,7 +1006,9 @@ lane-crossing check against known geometry (Dusay 0,0 to Primus 16.5,20.9 enters
 oracle for the pan: `DevProbe.Camera().focus` must equal `GalaxyCoordinates.Origin() + (x, 0, y)` —
 `(74.884, 0, -16.45)` at cell (6,6) with home at `(68.884, -22.45)`. Edge refusal: the galaxy's node
 bounds are x `[-164.0, 22.8]`, y `[-41.5, 88.3]`, so at 11x11 from (6,50) one `ui.right` reaches
-(17,50) and the next answers `Edge of the galaxy`. Fog: (6,50) at 11x11 is `Unexplored` whole, (6,6)
+(17,50) and the next answers `Map edge` (it said `Edge of the galaxy` before 2026-08-16; measured
+again eastward from (0,9) at 11x11 — (11,9), (22,9), then `Map edge`).
+Fog: (6,50) at 11x11 is `Unexplored` whole, (6,6)
 is `34 squares unexplored` — grow/shrink and the count tracks. **The mode's state probe is
 `DevProbe.Claims("Escape,Minus")`**: both claim true only while it is live, which is how "Enter on an
 empty cell did nothing" is proved to be a refusal rather than an exit (focus unchanged in
@@ -980,15 +1024,28 @@ with the tree's own announcement; Enter on a fleet-only cell (shrink to 1x1 and 
 `Gui.GuiGameWindowService.RequestStarSystemManagementViewLevel(guid)` — every keyboard route out of
 the map is claimed by the mode itself, so an engine call is the only way to stage it — and the exit
 line must land AFTER the whole arrival burst (`Star system`, `Zoom level 14 of 15`, `Planets, Raia…`,
-then `Exited inspect mode`). Teardown is checked by reflecting `_outline._lines` (all four null),
-`_slot` (-1) and the renderer's own `lineToRenders` count (72 with the cursor up, 68 without).
+then `Exited inspect mode`). **Leaving takes the CAMERA back too** (2026-08-16): the exit that returns
+focus re-centres on the position the mode was ENTERED at (`_entryAt`, taken on the way in — the
+cursor is re-seated in the same breath, so asking the navigator again would read the old node). A
+landing that Enter made does NOT re-centre, or it would fly the camera off the thing just landed on.
+Measured: enter at the Patriots row (camera `(31.884, 0, -53.45)`), `ui.up` eight times to
+`(31.884, 0, -29.49)`, `ui.back` → camera back at `(31.6, 0, -53.3)` and focus back on
+`galaxy:system/491/fleet/1304`; and entering from the empire stop then walking to cell (22,75) and
+back returns the camera to home exactly.
+Teardown is checked by reflecting `_outline._lines` (every slot null),
+`_slot` (-1) and the renderer's own `lineToRenders` count — the outline is now 4 lines per nested
+ring rather than 4 in all (32 at cursor 3, 64 at cursor 11), so the count is `base + 4 × ringsPerSide`.
 Fixture-blocked in the cell reading, for the same reasons the tree's own nodes are: an obliterator
 missile (none drawn) and an ally coordination pin (no alliance) — both share the cell's enumeration,
 visibility and wording with the tree, so the tree's route is the only place either can be sighted.
-Visual evidence needs the camera pulled back — `ForceZoomingOnPosition(6, origin)` — and the crop
-aimed with `CameraController.Camera.WorldToScreenPoint` on the cell corners; note the focused
-system's own dossier tooltip is drawn over the middle of the map and hides the lower half of the
-square.
+Visual evidence needs the camera pulled back — `ForceZoomingOnPosition(9, origin)` — and the crop
+aimed with `CameraController.Camera.WorldToScreenPoint` on the cell corners; the map's camera is
+tilted, so a world square is a TRAPEZOID on the screen and a rect built from two corners is only
+approximate — leave a wide margin. The focused node's own tooltip is drawn over the middle of the map
+and hides the square: `/eval ES2Access.UI.PointerFocus.Release()` after the last `/input` clears it
+for the crop, and the next focus change puts it back. Measured pairs: cursor 3 and cursor 11 both
+draw a heavy cyan frame with the sides running out past the corners (see `InspectOutline`'s own
+notes for why they must).
 
 **The scan view.** Entry is Enter on the lens toggle — which sits in the view-title stop's ROW,
 so it is `ui.right` from the name node and Up/Down never reach it (Down goes name → Zoom), and

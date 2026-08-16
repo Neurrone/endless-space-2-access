@@ -85,7 +85,11 @@ world model answers questions the renderer refuses to — adjacency APIs return
 never-discovered entities' names, and name lookups resolve for anything. Find the
 renderer's own visibility predicate and route every name and fact through it; never read
 the model directly for anything the player could not see. The *filter* is what needs the
-test, not the model. And the filter governs names and facts, not OFFERS: a game can hide a
+test, not the model. And the predicate is per FACT, not per entity: partial-information
+games commonly gate facets of one thing separately (as one example, ES2 draws a fleet at
+one detection tier, its ship count a tier higher, and its path only on a diplomatic
+ability), so passing an entity's existence gate discharges nothing about its other facts —
+ask "who draws THIS number" once per fact you speak. And the filter governs names and facts, not OFFERS: a game can hide a
 thing's identity while still letting the mouse act on its position, and withdrawing an
 affordance the mouse has is a separate, louder decision than withholding a name.
 

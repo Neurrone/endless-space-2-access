@@ -51,7 +51,8 @@ namespace ES2Access.Screens
         // category always has somewhere to land.
         private const int CategorySystems = 0;
         private const int CategoryFleets = 1;
-        private const int CategoryCount = 2;
+        private const int CategoryProbes = 2;
+        private const int CategoryCount = 3;
 
         private const int ScopeAll = 0;
         private const int ScopeFriendly = 1;
@@ -146,6 +147,12 @@ namespace ES2Access.Screens
         private struct Found
         {
             public string Name;
+
+            /// <summary>What else is said about this one straight after its name, already composed -
+            /// a probe's owner and its burn-out countdown. Null for the kinds whose name is all the
+            /// scanner has to add to the pair.</summary>
+            public string Extra;
+
             public GalaxyPosition At;
 
             /// <summary>How far from home, along each axis - the pair the map is spoken in, kept
@@ -161,10 +168,15 @@ namespace ES2Access.Screens
             /// </summary>
             public double Away;
 
-            /// <summary>Whichever of the two this is. The jump needs the thing itself, not its name.
+            /// <summary>Whichever of the three this is. The jump needs the thing itself, not its name.
             /// </summary>
             public StarSystemNode Node;
             public Fleet Fleet;
+
+            /// <summary>A probe's own row in the tree, worked out when the list was built - the page
+            /// keys a probe's node on the star it is nearest to, which is a question only the page can
+            /// answer.</summary>
+            public ControlId Row;
         }
 
         // ---- one press ----
@@ -181,13 +193,15 @@ namespace ES2Access.Screens
         {
             List<Found> systems;
             List<Found> fleets;
+            List<Found> probes;
             double east;
             double north;
-            Snapshot(out systems, out fleets, out east, out north);
-            int[][] counts = Counts(systems, fleets);
+            Snapshot(out systems, out fleets, out probes, out east, out north);
+            int[][] counts = Counts(systems, fleets, probes);
 
             ScannerAnswer answer;
-            if (Rearmed() || _cursor.Arm())
+            bool held = Rearmed() || _cursor.Arm();
+            if (held)
             {
                 answer = _cursor.Hold(counts, said);
             }
@@ -207,7 +221,7 @@ namespace ES2Access.Screens
                 }
             }
 
-            Say(answer, Scoped(systems, fleets), east, north);
+            Say(answer, tier, held, Scoped(systems, fleets, probes), east, north);
             return true;
         }
 
@@ -228,9 +242,13 @@ namespace ES2Access.Screens
         }
 
         /// <summary>The list the cursor is currently pointing into.</summary>
-        private List<Found> Scoped(List<Found> systems, List<Found> fleets)
+        private List<Found> Scoped(List<Found> systems, List<Found> fleets, List<Found> probes)
         {
-            List<Found> all = _cursor.Category == CategoryFleets ? fleets : systems;
+            List<Found> all = _cursor.Category == CategoryFleets
+                ? fleets
+                : _cursor.Category == CategoryProbes
+                    ? probes
+                    : systems;
             if (_cursor.Subcategory == ScopeAll)
             {
                 return all;
@@ -248,11 +266,12 @@ namespace ES2Access.Screens
             return some;
         }
 
-        private int[][] Counts(List<Found> systems, List<Found> fleets)
+        private int[][] Counts(List<Found> systems, List<Found> fleets, List<Found> probes)
         {
             int[][] counts = new int[CategoryCount][];
             counts[CategorySystems] = Row(systems);
             counts[CategoryFleets] = Row(fleets);
+            counts[CategoryProbes] = Row(probes);
             return counts;
         }
 
@@ -270,7 +289,31 @@ namespace ES2Access.Screens
 
         // ---- what it says ----
 
-        private void Say(ScannerAnswer answer, List<Found> scope, double east, double north)
+        /// <summary>
+        /// What a press says, which depends on WHICH key was pressed and not only on where the cursor
+        /// ended up.
+        ///
+        /// The arming press says the scope and stops: it moved nothing, so there is nothing found to
+        /// report, and the player asked where they were rather than what is there. A SUBCATEGORY step
+        /// says the subcategory alone - the category has not changed, and the player pressing that key
+        /// is sweeping the four scopes of one category listening for the one they want, which a full
+        /// instance line each time buries. A CATEGORY step says the whole scope and its nearest thing,
+        /// because it has changed both halves of where the cursor is and the nearest thing is the
+        /// answer to "what is over there" that the change was made to ask.
+        ///
+        /// NO COUNT anywhere in the scope lines (owner ruling): the instance line already ends in "N of
+        /// M", so the size of the scope arrives with the first thing in it and saying it twice is words
+        /// in front of the answer. The one place a number would have been the whole answer - a scope
+        /// standing empty - has its own sentence instead.
+        /// </summary>
+        private void Say(
+            ScannerAnswer answer,
+            Tier tier,
+            bool held,
+            List<Found> scope,
+            double east,
+            double north
+        )
         {
             if (answer == ScannerAnswer.Empty)
             {
@@ -278,17 +321,22 @@ namespace ES2Access.Screens
                 return;
             }
 
+            if (answer == ScannerAnswer.Scope && held)
+            {
+                Voice.Say(ScopeName(), true);
+                return;
+            }
+
+            if (answer == ScannerAnswer.Scope && tier == Tier.Subcategory)
+            {
+                Voice.Say(SubcategoryName(), true);
+                return;
+            }
+
             MessageBuilder message = new MessageBuilder();
             if (answer == ScannerAnswer.Scope)
             {
                 message.Fragment(ScopeName());
-                message.ListItemForcedComma(
-                    ModStrings.Plural(
-                        ModStrings.GalaxyScannerFoundOne,
-                        ModStrings.GalaxyScannerFoundMany,
-                        scope.Count
-                    )
-                );
             }
 
             int at = _cursor.Index;
@@ -324,40 +372,59 @@ namespace ES2Access.Screens
                 message.ListItemForcedComma(found.Name);
             }
 
+            message.ListItemForcedComma(found.Extra);
             message.ListItemForcedComma(GalaxyCoordinates.Text(found.At));
             message.ListItemForcedComma(Away(found, east, north));
             message.ListItemForcedComma();
             message.PushFraction(index + 1, count);
         }
 
-        /// <summary>How far and which way, in the galaxy's own units - the same unit the coordinate
-        /// pair is in, so the two numbers are one map. A thing standing where the player is reading
-        /// from has no direction to give, and says so instead of saying "0 units north".</summary>
+        /// <summary>
+        /// Which way the thing lies from where the player is reading, as the two components of the
+        /// offset - "23 south", "23 south, 1 west" (<see cref="CompassDirections.Offsets"/>).
+        ///
+        /// The components are the difference of the two ROUNDED pairs rather than the rounded
+        /// difference, because the player hears both pairs: a thing at "0, -9" heard from a place at
+        /// "0, 0" has to be nine south, and a rounding taken before the subtraction could make it
+        /// eight. So the arithmetic the player can do in their head always comes out.
+        ///
+        /// A thing standing on the pair the player is reading from has no direction to give, and says
+        /// so instead of saying nothing.
+        /// </summary>
         private static string Away(Found found, double east, double north)
         {
-            double sideways = found.East - east;
-            double up = found.North - north;
-            int units = MapCoordinates.Round(Math.Sqrt(sideways * sideways + up * up));
-            if (units == 0)
-            {
-                return ModStrings.Get(ModStrings.GalaxyScannerHere);
-            }
+            int sideways = MapCoordinates.Round(found.East) - MapCoordinates.Round(east);
+            int up = MapCoordinates.Round(found.North) - MapCoordinates.Round(north);
+            return sideways == 0 && up == 0
+                ? ModStrings.Get(ModStrings.GalaxyScannerHere)
+                : CompassDirections.Offsets(sideways, up);
+        }
 
+        /// <summary>The scope the cursor is in, both halves: which category, then which of its
+        /// subcategories. Two whole localized labels put together by a template of the language's own,
+        /// never an adjective glued to a noun.</summary>
+        private string ScopeName()
+        {
             return ModStrings.Format(
-                units == 1
-                    ? ModStrings.GalaxyScannerDistanceOne
-                    : ModStrings.GalaxyScannerDistanceMany,
-                units,
-                CompassDirections.Direction(sideways, up)
+                ModStrings.GalaxyScannerScope,
+                ModStrings.Get(CategoryKeys[_cursor.Category]),
+                SubcategoryName()
             );
         }
 
-        /// <summary>The name of the scope the cursor is in - one whole phrase per scope, never an
-        /// adjective glued to a noun.</summary>
-        private string ScopeName()
+        /// <summary>The subcategory half alone - what a step of the subcategory key changed. Kept per
+        /// category rather than shared, so a language can inflect it for each.</summary>
+        private string SubcategoryName()
         {
             return ModStrings.Get(ScopeKeys[_cursor.Category][_cursor.Subcategory]);
         }
+
+        private static readonly string[] CategoryKeys = new string[]
+        {
+            ModStrings.GalaxyScannerSystems,
+            ModStrings.GalaxyScannerFleets,
+            ModStrings.GalaxyScannerProbes,
+        };
 
         private static readonly string[][] ScopeKeys = new string[][]
         {
@@ -374,6 +441,13 @@ namespace ES2Access.Screens
                 ModStrings.GalaxyScannerFleetsFriendly,
                 ModStrings.GalaxyScannerFleetsNeutral,
                 ModStrings.GalaxyScannerFleetsEnemy,
+            },
+            new string[]
+            {
+                ModStrings.GalaxyScannerProbesAll,
+                ModStrings.GalaxyScannerProbesFriendly,
+                ModStrings.GalaxyScannerProbesNeutral,
+                ModStrings.GalaxyScannerProbesEnemy,
             },
         };
 
@@ -395,15 +469,16 @@ namespace ES2Access.Screens
         {
             List<Found> systems;
             List<Found> fleets;
+            List<Found> probes;
             double east;
             double north;
-            Snapshot(out systems, out fleets, out east, out north);
+            Snapshot(out systems, out fleets, out probes, out east, out north);
             if (!Rearmed())
             {
                 _cursor.Arm();
             }
 
-            List<Found> scope = Scoped(systems, fleets);
+            List<Found> scope = Scoped(systems, fleets, probes);
             int at = _cursor.Index;
             if (at < 0 || at >= scope.Count)
             {
@@ -421,10 +496,26 @@ namespace ES2Access.Screens
                 return true;
             }
 
+            GraphNavigator navigator = ModEntry.Navigator;
+
+            // A probe's row is the one thing here whose key only the page knows - it hangs under the
+            // star the map draws it out from - so it was worked out with the list and is carried on the
+            // finding. Opening that star is the page's own reveal; there is no fallback below it,
+            // because a probe is not a thing the game lets anybody select (a fleet's is).
+            if (found.Row != null)
+            {
+                _screen.RevealProbe(found.Row);
+                if (navigator != null)
+                {
+                    navigator.FocusNode(found.Row);
+                }
+
+                return true;
+            }
+
             ControlId id = _screen.NodeFor(
                 found.Fleet != null ? (IGameEntityWithGalaxyPosition)found.Fleet : found.Node
             );
-            GraphNavigator navigator = ModEntry.Navigator;
             if (id != null && navigator != null)
             {
                 navigator.FocusNode(id);
@@ -468,12 +559,14 @@ namespace ES2Access.Screens
         private void Snapshot(
             out List<Found> systems,
             out List<Found> fleets,
+            out List<Found> probes,
             out double east,
             out double north
         )
         {
             systems = new List<Found>();
             fleets = new List<Found>();
+            probes = new List<Found>();
             Reference(out east, out north);
             try
             {
@@ -487,6 +580,7 @@ namespace ES2Access.Screens
                 DepartmentOfForeignAffairs foreign = empire.GetAgency<DepartmentOfForeignAffairs>();
                 Systems(systems, galaxy, empire, foreign);
                 Fleets(fleets, empire, foreign);
+                Probes(probes, empire, foreign);
             }
             catch (Exception e)
             {
@@ -495,6 +589,39 @@ namespace ES2Access.Screens
 
             Sort(systems, east, north);
             Sort(fleets, east, north);
+            Sort(probes, east, north);
+        }
+
+        /// <summary>
+        /// Every probe the map is drawing a mote for - the TRAVELLING probes, and only those.
+        ///
+        /// The list is the page's own (<see cref="GalaxyHudScreen.ScannedProbes"/>), which is the list
+        /// the tree's probe rows and the inspect cell are both built from, so the three cannot disagree
+        /// about what is out there. A detection probe has no mote of its own (it is drawn on the system
+        /// label it watches) and a mining probe is fixed to a planet, so neither is a thing on the map
+        /// to steer towards and neither is here.
+        /// </summary>
+        private void Probes(
+            List<Found> found,
+            Empire empire,
+            DepartmentOfForeignAffairs foreign
+        )
+        {
+            IList<GalaxyHudScreen.ScannedProbe> drifting = _screen.ScannedProbes();
+            for (int i = 0; i < drifting.Count; i++)
+            {
+                GalaxyHudScreen.ScannedProbe it = drifting[i];
+                Found made = Make(
+                    it.Name,
+                    it.Probe.GalaxyPosition,
+                    Scope(it.Probe.Empire, empire, foreign),
+                    null,
+                    null
+                );
+                made.Extra = it.Extra;
+                made.Row = it.Node;
+                found.Add(made);
+            }
         }
 
         /// <summary>

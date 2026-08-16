@@ -259,6 +259,10 @@ namespace ES2Access.Screens
         /// they were rather than wherever the tree happens to seat them.</summary>
         private ControlId _entry;
 
+        /// <summary>Where on the map that control stands, kept so that leaving takes the CAMERA back
+        /// to it as well as the cursor (<see cref="Recentre"/>).</summary>
+        private GalaxyPosition _entryAt;
+
         // The galaxy's own extent, in the same pair the cursor is held in - worked out once per entry.
         private double _lowX;
         private double _highX;
@@ -272,6 +276,7 @@ namespace ES2Access.Screens
             GalaxyPosition at;
             if (FocusedPlace(navigator, out at))
             {
+                _entryAt = at;
                 double east;
                 double north;
                 GalaxyCoordinates.Offsets(at, out east, out north);
@@ -282,6 +287,7 @@ namespace ES2Access.Screens
             {
                 // Home, which is where the pair "0, 0" is - the one place on this map every player
                 // already knows.
+                _entryAt = GalaxyCoordinates.Origin();
                 _x = 0;
                 _y = 0;
             }
@@ -322,10 +328,43 @@ namespace ES2Access.Screens
                 if (navigator != null && _entry != null)
                 {
                     navigator.FocusNode(_entry);
+                    // Only where leaving is all that happened. A landing that Enter made goes on to
+                    // put the cursor somewhere else entirely, and pulling the camera back to where the
+                    // mode was opened from would fly it off the very thing that was just landed on.
+                    if (announce)
+                    {
+                        Recentre();
+                    }
                 }
             }
 
             _entry = null;
+        }
+
+        /// <summary>
+        /// Bring the camera back to the stop the mode was entered from.
+        ///
+        /// Leaving puts the cursor back where it was, and without this the picture stayed wherever the
+        /// square had been swept to - so a player who walked the cursor sixty units out and pressed
+        /// Escape was left reading a control that is not on the screen, and whoever is watching the
+        /// screen beside them was looking at empty space. The tree's own focus visual would have moved
+        /// the camera, but only where the CURSOR moved (a page seats its cursor without flying the
+        /// camera off what the game has centred), and coming back from a mode is not a cursor move.
+        ///
+        /// The place is the one worked out on the way IN rather than asked of the cursor again: the
+        /// cursor is put back in the same breath, and a page seats a cursor over the next frame or two.
+        /// A stop that is no place at all - the HUD, the turn controls - opened the mode at home, so
+        /// home is where leaving it puts the camera back.
+        ///
+        /// The same centring the cursor itself used, so the camera arrives the way it has been moving
+        /// all along.
+        /// </summary>
+        private void Recentre()
+        {
+            GalaxyViewLevels.CenterOn(
+                new Vector3(_entryAt.X, 0f, _entryAt.Y),
+                CameraDamping
+            );
         }
 
         private bool Move(int east, int north)
@@ -364,7 +403,8 @@ namespace ES2Access.Screens
                 (float)(origin.X + InspectGrid.Low(_x, _size)),
                 (float)(origin.X + InspectGrid.High(_x, _size)),
                 (float)(origin.Y + InspectGrid.Low(_y, _size)),
-                (float)(origin.Y + InspectGrid.High(_y, _size))
+                (float)(origin.Y + InspectGrid.High(_y, _size)),
+                _size
             );
             Voice.Say(CellText(), interrupt);
         }
@@ -893,17 +933,34 @@ namespace ES2Access.Screens
             }
         }
 
-        /// <summary>Where the cursor the player is standing on IS, if it stands anywhere on the map -
-        /// the node itself, or the nearest ancestor that is a place (a planet or a starlane under an
-        /// opened system answers with that system). False for the clusters round the edge of the
-        /// screen, which are not places at all. Shared with the scanner, which measures from the same
-        /// place for the same reason: it is where the player is reading.</summary>
+        /// <summary>
+        /// Where the cursor the player is standing on IS, if it stands anywhere on the map.
+        ///
+        /// The node's OWN thing first, wherever it has one - a fleet, a probe, a missile, an ally's
+        /// pin. Those rows are keyed structurally (a fleet's key names the system the map draws it at),
+        /// so the id carries no backing object and the page is asked instead
+        /// (<see cref="GalaxyHudScreen.PositionOf"/>). Then the node itself, then the nearest ancestor
+        /// that is a place: a planet or a starlane under an opened system answers with that system,
+        /// which is where the map draws it. False for the clusters round the edge of the screen, which
+        /// are not places at all.
+        ///
+        /// Shared with the scanner, which measures from the same place for the same reason: it is where
+        /// the player is reading, and standing on a fleet's row means reading from that fleet rather
+        /// than from the star it is filed under.
+        /// </summary>
         internal static bool FocusedPlace(GraphNavigator navigator, out GalaxyPosition position)
         {
             position = default(GalaxyPosition);
             GraphNode node = navigator == null ? null : navigator.CurrentNode;
+            GalaxyHudScreen screen =
+                navigator == null ? null : navigator.Screen as GalaxyHudScreen;
             for (int depth = 0; node != null && depth < 16; depth++)
             {
+                if (screen != null && screen.PositionOf(node.Id, out position))
+                {
+                    return true;
+                }
+
                 IGameEntityWithGalaxyPosition placed =
                     node.Id == null ? null : node.Id.Reference as IGameEntityWithGalaxyPosition;
                 if (placed != null)

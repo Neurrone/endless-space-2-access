@@ -74,5 +74,38 @@ namespace ES2Access.Tests.Speech
             Assert.Equal("west", ModStrings.Get(CompassDirections.KeyForBearing(253.9)));
             Assert.Equal("north", ModStrings.Get(CompassDirections.KeyForBearing(347.8)));
         }
+
+        // The OTHER way of saying which way something lies: the two components, which is what the
+        // scanner says. The failure that matters here is silent - a component said in the wrong order,
+        // or a zero component said as "0 east", still sounds like an answer.
+
+        [Fact]
+        public void SomethingDueSouthSaysOneComponent()
+        {
+            Assert.Equal("23 south", CompassDirections.Offsets(0, -23));
+            Assert.Equal("9 north", CompassDirections.Offsets(0, 9));
+        }
+
+        [Fact]
+        public void SomethingDueEastOrWestSaysOneComponentWithNoLeadingComma()
+        {
+            Assert.Equal("4 east", CompassDirections.Offsets(4, 0));
+            Assert.Equal("17 west", CompassDirections.Offsets(-17, 0));
+        }
+
+        [Fact]
+        public void SomethingOffAxisSaysNorthSouthFirstThenEastWest()
+        {
+            Assert.Equal("23 south, 1 west", CompassDirections.Offsets(-1, -23));
+            Assert.Equal("16 north, 5 east", CompassDirections.Offsets(5, 16));
+        }
+
+        [Fact]
+        public void SomethingOnTheSamePairHasNoComponentsAtAll()
+        {
+            // The caller says whatever "here" means to it; this answers with nothing rather than with
+            // a pair of zeroes.
+            Assert.Null(CompassDirections.Offsets(0, 0));
+        }
     }
 }

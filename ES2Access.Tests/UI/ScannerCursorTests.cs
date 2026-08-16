@@ -245,5 +245,111 @@ namespace ES2Access.Tests.UI
             cursor.CycleCategory(1, counts);
             Assert.Equal(6, cursor.Count(counts));
         }
+
+        // Each category remembers its OWN subcategory. Inaudible when it is wrong in the worst way: a
+        // player who narrowed systems to their own, looked at the fleets and came back would hear a
+        // scope name that is right for the scope they are in and wrong for the one they asked for.
+
+        // The three-category taxonomy the scanner grew: systems, fleets, probes.
+        private static int[][] Three(
+            int systemsAll,
+            int systemsFriendly,
+            int fleetsAll,
+            int fleetsFriendly,
+            int probesAll,
+            int probesFriendly
+        )
+        {
+            return new int[][]
+            {
+                new int[] { systemsAll, systemsFriendly, systemsAll - systemsFriendly, 0 },
+                new int[] { fleetsAll, fleetsFriendly, fleetsAll - fleetsFriendly, 0 },
+                new int[] { probesAll, probesFriendly, probesAll - probesFriendly, 0 },
+            };
+        }
+
+        [Fact]
+        public void ACategoryComesBackToTheSubcategoryItWasLeftIn()
+        {
+            // The owner's worked example: systems at friendly, out to fleets, and back.
+            ScannerCursor cursor = new ScannerCursor();
+            int[][] counts = Fixture();
+            cursor.Arm();
+            cursor.CycleSubcategory(1, counts);
+            Assert.Equal(0, cursor.Category);
+            Assert.Equal(1, cursor.Subcategory);
+
+            // Fleets, never visited, opens at "all".
+            cursor.CycleCategory(1, counts);
+            Assert.Equal(1, cursor.Category);
+            Assert.Equal(0, cursor.Subcategory);
+
+            cursor.CycleCategory(-1, counts);
+            Assert.Equal(0, cursor.Category);
+            Assert.Equal(1, cursor.Subcategory);
+        }
+
+        [Fact]
+        public void EachOfThreeCategoriesKeepsItsOwnPlace()
+        {
+            ScannerCursor cursor = new ScannerCursor();
+            int[][] counts = Three(12, 2, 6, 6, 3, 3);
+            cursor.Arm();
+
+            // Systems to friendly, fleets left at all, probes to friendly.
+            cursor.CycleSubcategory(1, counts);
+            Assert.Equal(1, cursor.Subcategory);
+            cursor.CycleCategory(1, counts);
+            Assert.Equal(1, cursor.Category);
+            Assert.Equal(0, cursor.Subcategory);
+            cursor.CycleCategory(1, counts);
+            Assert.Equal(2, cursor.Category);
+            cursor.CycleSubcategory(1, counts);
+            Assert.Equal(1, cursor.Subcategory);
+
+            // Round the cycle again: each is where it was left.
+            cursor.CycleCategory(1, counts);
+            Assert.Equal(0, cursor.Category);
+            Assert.Equal(1, cursor.Subcategory);
+            cursor.CycleCategory(1, counts);
+            Assert.Equal(1, cursor.Category);
+            Assert.Equal(0, cursor.Subcategory);
+            cursor.CycleCategory(1, counts);
+            Assert.Equal(2, cursor.Category);
+            Assert.Equal(1, cursor.Subcategory);
+        }
+
+        [Fact]
+        public void ARememberedSubcategoryThatHasEmptiedFallsBackToTheFirstThatHolds()
+        {
+            ScannerCursor cursor = new ScannerCursor();
+            int[][] counts = Fixture();
+            cursor.Arm();
+            cursor.CycleSubcategory(1, counts);
+            Assert.Equal(1, cursor.Subcategory);
+            cursor.CycleCategory(1, counts);
+
+            // The player's own systems have gone; the memory must not park the cursor on nothing.
+            int[][] emptied = Counts(10, 0, 10, 0, 6, 6, 0, 0);
+            cursor.CycleCategory(-1, emptied);
+            Assert.Equal(0, cursor.Category);
+            Assert.Equal(0, cursor.Subcategory);
+        }
+
+        [Fact]
+        public void ForgettingForgetsTheMemoryToo()
+        {
+            ScannerCursor cursor = new ScannerCursor();
+            int[][] counts = Fixture();
+            cursor.Arm();
+            cursor.CycleSubcategory(1, counts);
+            cursor.Forget();
+
+            cursor.Arm();
+            cursor.CycleCategory(1, counts);
+            cursor.CycleCategory(-1, counts);
+            Assert.Equal(0, cursor.Category);
+            Assert.Equal(0, cursor.Subcategory);
+        }
     }
 }

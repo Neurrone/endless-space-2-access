@@ -225,6 +225,12 @@ namespace ES2Access.Core.Speech
         public const string GalaxyFleetFreeMovingToUnexplored =
             "galaxy.fleet-free-moving-to-unexplored";
 
+        /// <summary>The same for a fleet flying a STARLANE whose far end the map has not named - the
+        /// other way a fleet under way can have no system in this tree to hang under. A separate
+        /// phrase because the two are different pictures: one is a line on the map running into the
+        /// dark, the other is a fleet striking out where there is no line at all.</summary>
+        public const string GalaxyFleetOnLaneToUnexplored = "galaxy.fleet-on-lane-to-unexplored";
+
         // How many fleets are under way on the lanes leaving a system, said by the system itself after
         // the count of what is parked there - the two together are what its branch opens onto.
         public const string GalaxyFleetUnderWayNearbyOne = "galaxy.fleet-under-way-nearby-one";
@@ -324,6 +330,16 @@ namespace ES2Access.Core.Speech
         public const string DirectionWest = "direction.west";
         public const string DirectionNorthWest = "direction.northwest";
 
+        /// <summary>The same question answered as the two COMPONENTS of the offset instead of as one
+        /// compass word - "23 south", "23 south, 1 west" (<see cref="CompassDirections.Offsets"/>).
+        /// One whole phrase per axis rather than a number glued to a direction word, because the
+        /// number and the word agree in most languages; the value is always positive, the sign having
+        /// already chosen which of the four templates is used.</summary>
+        public const string OffsetNorth = "offset.north";
+        public const string OffsetSouth = "offset.south";
+        public const string OffsetEast = "offset.east";
+        public const string OffsetWest = "offset.west";
+
         /// <summary>Where a place on the map is, as a pair of whole numbers measured from the empire's
         /// home system (<see cref="MapCoordinates"/>). The game draws the galaxy and writes no
         /// coordinate anywhere, so the pair is the mod's - and it is ONE template rather than a number
@@ -356,10 +372,17 @@ namespace ES2Access.Core.Speech
         public const string GalaxyInspectFogOne = "galaxy.inspect.fog-one";
         public const string GalaxyInspectFogMany = "galaxy.inspect.fog-many";
 
-        // The map's SCANNER - "what is near me, of this kind". Every scope is one whole phrase rather
-        // than an adjective glued to a noun, because in most languages the adjective agrees with the
-        // noun and no code that pastes two fragments together can inflect either. The eight are the
-        // taxonomy in full: two categories, four ways of looking at each.
+        // The map's SCANNER - "what is near me, of this kind". The scope is said as a CATEGORY and a
+        // SUBCATEGORY, in that order, because that is the shape of the two keys that move it: one
+        // steps the category, the other the subcategory, and a player who hears the two halves named
+        // apart knows which key changed what. The composite is its own template so a language decides
+        // what stands between the halves; both halves are whole localized labels, never fragments,
+        // and the subcategory labels are kept PER CATEGORY so that a language whose adjectives agree
+        // with the noun can inflect "friendly" for systems, fleets and probes separately.
+        public const string GalaxyScannerScope = "galaxy.scanner.scope";
+        public const string GalaxyScannerSystems = "galaxy.scanner.systems";
+        public const string GalaxyScannerFleets = "galaxy.scanner.fleets";
+        public const string GalaxyScannerProbes = "galaxy.scanner.probes";
         public const string GalaxyScannerSystemsAll = "galaxy.scanner.systems-all";
         public const string GalaxyScannerSystemsFriendly = "galaxy.scanner.systems-friendly";
         public const string GalaxyScannerSystemsNeutral = "galaxy.scanner.systems-neutral";
@@ -368,25 +391,18 @@ namespace ES2Access.Core.Speech
         public const string GalaxyScannerFleetsFriendly = "galaxy.scanner.fleets-friendly";
         public const string GalaxyScannerFleetsNeutral = "galaxy.scanner.fleets-neutral";
         public const string GalaxyScannerFleetsEnemy = "galaxy.scanner.fleets-enemy";
-
-        /// <summary>How many things a scope holds, said as the scanner lands in it - a counted phrase,
-        /// hence a form per number (see <see cref="Plural"/>).</summary>
-        public const string GalaxyScannerFoundOne = "galaxy.scanner.found-one";
-        public const string GalaxyScannerFoundMany = "galaxy.scanner.found-many";
+        public const string GalaxyScannerProbesAll = "galaxy.scanner.probes-all";
+        public const string GalaxyScannerProbesFriendly = "galaxy.scanner.probes-friendly";
+        public const string GalaxyScannerProbesNeutral = "galaxy.scanner.probes-neutral";
+        public const string GalaxyScannerProbesEnemy = "galaxy.scanner.probes-enemy";
 
         /// <summary>A scope the player is parked in that has run out under them. The scope's own name
         /// goes INSIDE the sentence rather than in front of it, so a language that says "there are no
         /// friendly fleets" has somewhere to put the words.</summary>
         public const string GalaxyScannerEmpty = "galaxy.scanner.empty";
 
-        /// <summary>How far away something the scanner found is and which way it lies, in the galaxy's
-        /// own units - the same unit the coordinate pair is in, so the two numbers can be held against
-        /// each other. Counted, because a distance of one is a unit and not units.</summary>
-        public const string GalaxyScannerDistanceOne = "galaxy.scanner.distance-one";
-        public const string GalaxyScannerDistanceMany = "galaxy.scanner.distance-many";
-
-        /// <summary>What is said instead of a distance and a direction when the thing the scanner
-        /// found is where the player is already reading from.</summary>
+        /// <summary>What is said instead of the offset components when the thing the scanner found is
+        /// where the player is already reading from.</summary>
         public const string GalaxyScannerHere = "galaxy.scanner.here";
         public const string GalaxyFleetShips = "galaxy.fleet-ships";
         public const string GalaxyFleetMoving = "galaxy.fleet-moving";
@@ -1152,6 +1168,7 @@ namespace ES2Access.Core.Speech
             { GalaxyFleetOnWormhole, "on wormhole {0}, {1}" },
             { GalaxyFleetFreeMovingTo, "free moving to {0}" },
             { GalaxyFleetFreeMovingToUnexplored, "free moving to an unexplored system" },
+            { GalaxyFleetOnLaneToUnexplored, "on a star lane to an unexplored system" },
             { GalaxyFleetUnderWayNearbyOne, "{0} fleet under way nearby" },
             { GalaxyFleetsUnderWayNearby, "{0} fleets under way nearby" },
             { GalaxySystemPopulation, "{0} population" },
@@ -1192,11 +1209,15 @@ namespace ES2Access.Core.Speech
             { DirectionSouthWest, "southwest" },
             { DirectionWest, "west" },
             { DirectionNorthWest, "northwest" },
+            { OffsetNorth, "{0} north" },
+            { OffsetSouth, "{0} south" },
+            { OffsetEast, "{0} east" },
+            { OffsetWest, "{0} west" },
             { GalaxyCoordinatePair, "{0}, {1}" },
             { GalaxyInspectEntered, "Inspect mode" },
             { GalaxyInspectExited, "Exited inspect mode" },
             { GalaxyInspectCursorSize, "Cursor {0} by {1}" },
-            { GalaxyInspectEdge, "Edge of the galaxy" },
+            { GalaxyInspectEdge, "Map edge" },
             { GalaxyInspectStarlane, "Star lane from {0} to {1}" },
             { GalaxyInspectStarlaneUnexplored, "Star lane from {0} going {1}" },
             { GalaxyInspectWormhole, "Wormhole from {0} to {1}" },
@@ -1204,19 +1225,23 @@ namespace ES2Access.Core.Speech
             { GalaxyInspectFog, "Unexplored" },
             { GalaxyInspectFogOne, "1 square unexplored" },
             { GalaxyInspectFogMany, "{0} squares unexplored" },
-            { GalaxyScannerSystemsAll, "All systems" },
-            { GalaxyScannerSystemsFriendly, "Friendly systems" },
-            { GalaxyScannerSystemsNeutral, "Neutral systems" },
-            { GalaxyScannerSystemsEnemy, "Enemy systems" },
-            { GalaxyScannerFleetsAll, "All fleets" },
-            { GalaxyScannerFleetsFriendly, "Friendly fleets" },
-            { GalaxyScannerFleetsNeutral, "Neutral fleets" },
-            { GalaxyScannerFleetsEnemy, "Enemy fleets" },
-            { GalaxyScannerFoundOne, "1 found" },
-            { GalaxyScannerFoundMany, "{0} found" },
+            { GalaxyScannerScope, "{0}: {1}" },
+            { GalaxyScannerSystems, "Systems" },
+            { GalaxyScannerFleets, "Fleets" },
+            { GalaxyScannerProbes, "Probes" },
+            { GalaxyScannerSystemsAll, "all" },
+            { GalaxyScannerSystemsFriendly, "friendly" },
+            { GalaxyScannerSystemsNeutral, "neutral" },
+            { GalaxyScannerSystemsEnemy, "enemy" },
+            { GalaxyScannerFleetsAll, "all" },
+            { GalaxyScannerFleetsFriendly, "friendly" },
+            { GalaxyScannerFleetsNeutral, "neutral" },
+            { GalaxyScannerFleetsEnemy, "enemy" },
+            { GalaxyScannerProbesAll, "all" },
+            { GalaxyScannerProbesFriendly, "friendly" },
+            { GalaxyScannerProbesNeutral, "neutral" },
+            { GalaxyScannerProbesEnemy, "enemy" },
             { GalaxyScannerEmpty, "{0}, none found" },
-            { GalaxyScannerDistanceOne, "{0} unit {1}" },
-            { GalaxyScannerDistanceMany, "{0} units {1}" },
             { GalaxyScannerHere, "here" },
             { GalaxyFleetShips, "{0} ships" },
             { GalaxyFleetMoving, "moving" },

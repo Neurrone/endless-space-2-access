@@ -567,6 +567,80 @@ namespace ES2Access.Screens
             return FromEntity(entity);
         }
 
+        /// <summary>
+        /// The inverse: where on the MAP the thing behind a node stands.
+        ///
+        /// Only the rows whose thing has a position of its own answer - a fleet, a probe, a missile, an
+        /// ally's pin. A system's node carries the system as its reference and is answered by the walk
+        /// that calls this (<see cref="Screens.GalaxyInspect.FocusedPlace"/>); a planet's row and a
+        /// lane's have no position of their own and fall through to their system's, which is where the
+        /// map draws them.
+        ///
+        /// It exists because those four rows are keyed STRUCTURALLY - a fleet's key names the system it
+        /// is drawn at, which is what keeps two fleets of the same name apart - so there is no backing
+        /// object on the id to read a position off. The ids are rebuilt here by the same code that
+        /// declared them, never parsed back out of the key.
+        /// </summary>
+        internal bool PositionOf(ControlId id, out GalaxyPosition at)
+        {
+            at = default(GalaxyPosition);
+            if (id == null)
+            {
+                return false;
+            }
+
+            try
+            {
+                for (int i = 0; i < _drifting.Count; i++)
+                {
+                    if (id.Equals(ProbeId(_drifting[i])))
+                    {
+                        at = _drifting[i].Probe.GalaxyPosition;
+                        return true;
+                    }
+                }
+
+                for (int i = 0; i < _projectiles.Count; i++)
+                {
+                    ObliteratorProjectile shot = _projectiles[i].Entity as ObliteratorProjectile;
+                    if (
+                        shot != null
+                        && id.Equals(ControlId.Structural("galaxy:projectile/" + shot.GUID))
+                    )
+                    {
+                        at = shot.GalaxyPosition;
+                        return true;
+                    }
+                }
+
+                for (int i = 0; i < _pins.Count; i++)
+                {
+                    CoordinationRequest pin = _pins[i].CoordinationRequest;
+                    if (pin != null && id.Equals(ControlId.Structural("galaxy:pin/" + pin.GUID)))
+                    {
+                        at = pin.GalaxyPosition;
+                        return true;
+                    }
+                }
+
+                List<FleetSite> sites = FleetIndex(new HashSet<ControlId>());
+                for (int i = 0; i < sites.Count; i++)
+                {
+                    if (id.Equals(sites[i].Node))
+                    {
+                        at = sites[i].Fleet.GalaxyPosition;
+                        return true;
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: finding where a node's own thing stands threw: " + e);
+            }
+
+            return false;
+        }
+
         /// <summary>The node for a thing the game named. A fleet is where the map draws it; everything
         /// that stands at a system - the system, a colony of it, a planet in it - is that system.
         /// </summary>
@@ -956,7 +1030,7 @@ namespace ES2Access.Screens
             string systemKey = "galaxy:system/" + node.GUID;
             ControlId system = ControlId.Referenced(node, systemKey);
             Index(FleetPresence.FleetsAt(node), system, systemKey, sites, declared);
-            List<EnRoute> flying = EnRouteOn(LanesOf(node, empire));
+            List<EnRoute> flying = EnRouteOn(node, LanesOf(node, empire));
             List<Fleet> crossing = FreeMovingAt(node);
             List<Fleet> nearby = new List<Fleet>(flying.Count + crossing.Count);
             for (int i = 0; i < flying.Count; i++)
@@ -1673,7 +1747,7 @@ namespace ES2Access.Screens
             AddStarlanes(builder, key, node, empire, lanes);
             AddProbesNear(builder, key, probes, node);
             AddFleets(builder, key, FleetPresence.FleetsAt(node));
-            AddEnRoute(builder, key, EnRouteOn(lanes));
+            AddEnRoute(builder, key, EnRouteOn(node, lanes));
             AddFreeMoving(builder, key, node, FreeMovingAt(node));
             AddHangars(builder, key, node);
             AddProbeDirections(builder, key, node);
@@ -3839,12 +3913,15 @@ namespace ES2Access.Screens
             try
             {
                 NodeVtable vtable = FleetNode(it, DockLabels(), FleetLabels());
+                // Which kind of journey it is, since the unnamed destination is all either can say
+                // about where it is going: a lane running into the dark is not the same picture as a
+                // fleet striking out across open space, and the map draws the one and not the other.
+                string phrase = Crossing(it)
+                    ? ModStrings.GalaxyFleetFreeMovingToUnexplored
+                    : ModStrings.GalaxyFleetOnLaneToUnexplored;
                 vtable.Announcements.Insert(
                     1,
-                    GraphNodes.ValuePart(
-                        () => ModStrings.Get(ModStrings.GalaxyFleetFreeMovingToUnexplored),
-                        false
-                    )
+                    GraphNodes.ValuePart(() => ModStrings.Get(phrase), false)
                 );
                 builder.AddItem(AdriftId(it), vtable);
             }
@@ -3857,6 +3934,26 @@ namespace ES2Access.Screens
         private static ControlId AdriftId(Fleet fleet)
         {
             return ControlId.Structural("galaxy:fleet/" + fleet.GUID);
+        }
+
+        /// <summary>Whether this fleet's current leg is a crossing of OPEN SPACE rather than a flight
+        /// down a lane - the same question <see cref="FreeMovingAt"/> asks, asked again for the one row
+        /// that has no system to have asked it under.</summary>
+        private static bool Crossing(Fleet fleet)
+        {
+            try
+            {
+                GameNode goal;
+                return CrossingOpenSpace(
+                    Amplitude.Unity.Framework.Services.GetService<IPositioningService>(),
+                    fleet,
+                    out goal
+                );
+            }
+            catch (Exception)
+            {
+                return true;
+            }
         }
 
         /// <summary>
@@ -3900,12 +3997,14 @@ namespace ES2Access.Screens
         }
 
         /// <summary>
-        /// The free movers with no branch to hang under: the ones whose destination is not one of the
-        /// systems this stop is declaring, because the map has never named it.
+        /// The fleets UNDER WAY with no branch to hang under: the ones whose destination is not one of
+        /// the systems this stop is declaring, because the map has never named it.
         ///
-        /// Asked of the whole drawn fleet list once per build rather than per system, and answered
-        /// against the very list the rows are made from - so a free mover is either its destination's
-        /// child or it is here, never both and never neither.
+        /// Both kinds of journey, since both hang under their destination: a crossing of open space,
+        /// and - since the destination-only rule was extended to them - a fleet on a starlane running
+        /// into the dark. Asked of the whole drawn fleet list once per build rather than per system,
+        /// and answered against the very list the rows are made from, so a fleet under way is either
+        /// its destination's child or it is here, never both and never neither.
         /// </summary>
         private static void FreeMovingAdrift(List<StarSystemNode> declared, List<Fleet> adrift)
         {
@@ -3917,9 +4016,8 @@ namespace ES2Access.Screens
                 IList<Fleet> drawn = FleetPresence.Drawing();
                 for (int i = 0; i < drawn.Count; i++)
                 {
-                    GameNode goal;
-                    if (CrossingOpenSpace(positioning, drawn[i], out goal)
-                        && !Declares(declared, goal))
+                    GameNode goal = GoalOf(positioning, drawn[i]);
+                    if (goal != null && !Declares(declared, goal))
                     {
                         adrift.Add(drawn[i]);
                     }
@@ -4070,16 +4168,21 @@ namespace ES2Access.Screens
         /// a link (<see cref="FleetPresence"/>), so both would claim it; declaring it twice under one
         /// system is a duplicate control id, which throws the whole screen out of Build.
         /// </summary>
-        private static List<EnRoute> EnRouteOn(List<Lane> lanes)
+        private static List<EnRoute> EnRouteOn(StarSystemNode node, List<Lane> lanes)
         {
             List<EnRoute> flying = new List<EnRoute>();
+            IPositioningService positioning =
+                Amplitude.Unity.Framework.Services.GetService<IPositioningService>();
             for (int i = 0; i < lanes.Count; i++)
             {
                 IList<Fleet> onLane = FleetPresence.FleetsOn(lanes[i].Link);
                 for (int j = 0; j < onLane.Count; j++)
                 {
                     Fleet fleet = onLane[j];
-                    if (Holds(flying, fleet))
+                    if (
+                        Holds(flying, fleet)
+                        || !Bound(positioning, fleet, lanes[i].Link, node)
+                    )
                     {
                         continue;
                     }
@@ -4097,6 +4200,62 @@ namespace ES2Access.Screens
             }
 
             return flying;
+        }
+
+        /// <summary>
+        /// Whether a fleet flying <paramref name="link"/> belongs under <paramref name="node"/> - which
+        /// is to say whether that is the end it is heading FOR.
+        ///
+        /// A lane's two ends are both on the screen, and the tree used to hang a fleet under each, on
+        /// the reasoning that either is a true answer to "where is it". That reasoning was overturned
+        /// for a fleet crossing open space on 2026-08-16 - the picture never shows where anything set
+        /// out FROM - and it was only ever true of open space by accident: a lane fleet's source is not
+        /// drawn either. What the map shows of a fleet under way is where it is and, once it is
+        /// selected, the path AHEAD. So a fleet in transit hangs under the end it is arriving at, the
+        /// same end a free mover hangs under, and it appears once for everyone.
+        ///
+        /// A fleet on a lane that is not under way at all - stopped between two stars - is heading for
+        /// neither end, so there is no destination to prefer and it keeps the row under EACH end that
+        /// it has always had. The rule is about a fleet IN TRANSIT; a fleet that has stopped is as much
+        /// at one end's lane as at the other's.
+        /// </summary>
+        private static bool Bound(
+            IPositioningService positioning,
+            Fleet fleet,
+            Link link,
+            StarSystemNode node
+        )
+        {
+            try
+            {
+                GameNode goal = GoalOf(positioning, fleet);
+                if (
+                    goal != null
+                    && (
+                        ReferenceEquals(goal, link.ExtremityNode1)
+                        || ReferenceEquals(goal, link.ExtremityNode2)
+                    )
+                )
+                {
+                    return ReferenceEquals(goal, node);
+                }
+
+                return true;
+            }
+            catch (Exception)
+            {
+                return true;
+            }
+        }
+
+        /// <summary>The node a fleet's current leg is flying to, or null while it is not under way.
+        /// </summary>
+        private static GameNode GoalOf(IPositioningService positioning, Fleet fleet)
+        {
+            FleetPosition position = fleet.Position;
+            return positioning == null || position.IsInOrbit || !position.IsInMovement
+                ? null
+                : positioning.GetGameNode(position.Movement.Goal);
         }
 
         private static bool Holds(List<EnRoute> flying, Fleet fleet)
@@ -4123,7 +4282,7 @@ namespace ES2Access.Screens
             try
             {
                 int count =
-                    EnRouteOn(LanesOf(node, empire)).Count + FreeMovingAt(node).Count;
+                    EnRouteOn(node, LanesOf(node, empire)).Count + FreeMovingAt(node).Count;
                 return count == 0
                     ? null
                     : ModStrings.Plural(
@@ -4602,10 +4761,77 @@ namespace ES2Access.Screens
             return ControlId.Structural(ProbeKey(probe));
         }
 
+        /// <summary>One travelling probe as the SCANNER needs it: what it is called, what else its row
+        /// says about it, and the node that row is - the last of which only this page can work out,
+        /// since a probe's key hangs off the star the map draws it nearest to.</summary>
+        internal struct ScannedProbe
+        {
+            public Probe Probe;
+            public string Name;
+            public string Extra;
+            public ControlId Node;
+        }
+
+        /// <summary>
+        /// The probes the scanner offers, off the very list the tree's own probe rows are built from
+        /// (<see cref="Anchor"/>) - so a probe the scanner finds always has the row it sends the cursor
+        /// to, and neither can name a probe the other does not.
+        ///
+        /// The words are the row's own: the dossier's title, whose probe it is, and - for the player's
+        /// own alone, because that is the only one the map draws a countdown on - how many turns it has
+        /// left. Its bearing from the star it hangs under is NOT here: that is a sentence about a place
+        /// the scanner is not measuring from, and the scanner has already said where the probe is in
+        /// the pair and the offset the player is standing at.
+        /// </summary>
+        internal IList<ScannedProbe> ScannedProbes()
+        {
+            List<ScannedProbe> found = new List<ScannedProbe>(_drifting.Count);
+            try
+            {
+                for (int i = 0; i < _drifting.Count; i++)
+                {
+                    DriftingProbe it = _drifting[i];
+                    MessageBuilder extra = new MessageBuilder();
+                    extra.Fragment(Owner(it.Probe.Empire));
+                    string left = Countdown(
+                        it.Label.DurationBackground,
+                        it.Label.DurationLabel
+                    );
+                    if (!string.IsNullOrEmpty(left))
+                    {
+                        if (extra.IsEmpty)
+                        {
+                            extra.Fragment(left);
+                        }
+                        else
+                        {
+                            extra.ListItemForcedComma(left);
+                        }
+                    }
+
+                    found.Add(
+                        new ScannedProbe
+                        {
+                            Probe = it.Probe,
+                            Name = AgeWidgets.TooltipTitle(it.Label.Tooltip),
+                            Extra = extra.Build(),
+                            Node = ProbeId(it),
+                        }
+                    );
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: listing the probes for the scanner threw: " + e);
+            }
+
+            return found;
+        }
+
         /// <summary>Open the star a probe hangs under, so that a request to show that probe lands on a
         /// node that is really there. Recorded rather than done, like a search's own reveal: the
         /// expansion set belongs to the next build.</summary>
-        private void RevealProbe(ControlId id)
+        internal void RevealProbe(ControlId id)
         {
             for (int i = 0; i < _drifting.Count; i++)
             {

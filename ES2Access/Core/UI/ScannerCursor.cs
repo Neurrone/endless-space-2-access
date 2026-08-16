@@ -88,8 +88,15 @@ namespace ES2Access.Core.UI
         /// <summary>
         /// The next category with anything in it, in the direction asked for, wrapping at the ends.
         ///
-        /// Landing opens the category at its first subcategory that holds something - which is "all"
-        /// in every taxonomy that has one, and never a scope the player would have to press again to
+        /// Landing opens the category at the subcategory the player last left IT in - each category
+        /// remembers its own, and one never visited is at its first scope that holds something, which
+        /// is "all" in every taxonomy that has one. A player who narrows systems to their own and then
+        /// goes to look at fleets comes back to their own systems rather than to all of them: the
+        /// narrowing is a question about systems, not a mode the whole scanner is in, and having to
+        /// re-narrow after every look sideways is what made the reset wrong.
+        ///
+        /// A remembered scope that has since emptied falls back to the first that holds something -
+        /// the same rule a first visit gets, and never a scope the player would have to press again to
         /// escape from.
         /// </summary>
         public ScannerAnswer CycleCategory(int delta, int[][] counts)
@@ -102,7 +109,8 @@ namespace ES2Access.Core.UI
                 if (Holds(counts[at]))
                 {
                     _category = at;
-                    _subcategory = FirstHolding(counts[at]);
+                    _subcategory = Remembered(counts[at], _memory[at]);
+                    _memory[at] = _subcategory;
                     _index = 0;
                     return ScannerAnswer.Scope;
                 }
@@ -125,6 +133,7 @@ namespace ES2Access.Core.UI
                 if (row[at] > 0)
                 {
                     _subcategory = at;
+                    _memory[_category] = at;
                     _index = 0;
                     return ScannerAnswer.Scope;
                 }
@@ -163,12 +172,20 @@ namespace ES2Access.Core.UI
             _subcategory = 0;
             _index = 0;
             _armed = false;
+            _memory = Empty;
         }
 
         private int _category;
         private int _subcategory;
         private int _index;
         private bool _armed;
+
+        /// <summary>Which subcategory each category was last left in. Zero - "all" in every taxonomy
+        /// that has one - is what a category never visited remembers, so a first visit needs no flag of
+        /// its own: the memory and the fallback agree.</summary>
+        private int[] _memory = Empty;
+
+        private static readonly int[] Empty = new int[0];
 
         /// <summary>Bring the cursor back inside a world that has changed under it: a scope that has
         /// shrunk past the parked index leaves the cursor on the nearest thing rather than on nothing,
@@ -181,6 +198,17 @@ namespace ES2Access.Core.UI
                 _subcategory = 0;
                 _index = 0;
                 return;
+            }
+
+            if (_memory.Length != counts.Length)
+            {
+                int[] grown = new int[counts.Length];
+                for (int i = 0; i < _memory.Length && i < grown.Length; i++)
+                {
+                    grown[i] = _memory[i];
+                }
+
+                _memory = grown;
             }
 
             if (_category < 0 || _category >= counts.Length)
@@ -198,6 +226,15 @@ namespace ES2Access.Core.UI
             {
                 _index = 0;
             }
+
+            _memory[_category] = _subcategory;
+        }
+
+        /// <summary>The subcategory a category is opened at: the one it was last left in while that
+        /// still holds something, and otherwise its first that does.</summary>
+        private static int Remembered(int[] row, int last)
+        {
+            return last >= 0 && last < row.Length && row[last] > 0 ? last : FirstHolding(row);
         }
 
         /// <summary>The answer when a cycle found nowhere else to go: the cursor has not moved, and

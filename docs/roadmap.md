@@ -21,12 +21,14 @@ files above.
   `AttackSystemPirateDiplomaticAction` — the other five report popups are done);
   DiplomaticInteractionNotificationWindow (MoodMessageLabel, NegotiationContributionPanel).
 - Galaxy-label gaps: constellation ownership bonus; pin-message editing.
-- Scanner (shipped): only systems and fleets are categorized. Special nodes, probes, obliterator
-  projectiles and ally pins are deliberately out (no allegiance to sort them by) — whether the map's
-  "open space" things want a category of their own is an open question, not a defect.
-- Inspect mode (shipped): the drawn square comes out a pale cyan HAIRLINE — the map's line
-  material ignores `width` and the palette slot's colour does not reach the shader (es2-facts), so
-  a louder cursor means the circle renderer (`ICircleRendererService`) instead. Its cell reading
+- Scanner (shipped): systems, fleets and PROBES are categorized (2026-08-16). Special nodes,
+  obliterator projectiles and ally pins are still out (no allegiance to sort them by) — whether the
+  map's remaining "open space" things want a category is an open question, not a defect. Mining
+  probes belong to a queued planet-row change, not here.
+- Inspect mode (shipped): the drawn cursor is a heavy cyan FRAME whose sides run out past the
+  corners — the map's line material ignores `width` AND refuses short lines (es2-facts), and neither
+  quads nor circles are available on this view, so thickness is stacked hairlines and reach is
+  overshoot. Its cell reading
   now carries obliterator projectiles and ally coordination pins too, off the tree's own lists and
   wording — both remain fixture-unreachable, so neither has ever been heard.
 - Scan management-lens remainder (unverifiable at turn 1): the trade-quality dial
