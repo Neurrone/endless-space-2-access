@@ -422,6 +422,29 @@ namespace ES2Access
                 .Bind(KeyCode.LeftArrow, shift: true)
                 .Repeating();
 
+            // The galaxy map's own mode: a square of galaxy swept with the arrows instead of the tree
+            // (<see cref="ES2Access.Screens.GalaxyInspect"/>). Control and I is free in this game - the
+            // input manager binds nothing at all to I - so it is bound outright; the two size keys are
+            // taken from the game only while the cursor is actually up, which is what leaves the game
+            // its own keypad minus (Sleep for this turn) everywhere else.
+            input.Register(MapActions.Inspect).Bind(KeyCode.I, ctrl: true);
+            // The plus key is three chords, not one: on most layouts "+" is Shift and the equals key,
+            // and the mod's binding matcher is exact-modifier - so the bare key, the shifted one and
+            // the keypad's own plus all have to be declared or the player who really presses "+" gets
+            // nothing.
+            input
+                .Register(MapActions.InspectGrow)
+                .Bind(KeyCode.Equals)
+                .Bind(KeyCode.Equals, shift: true)
+                .Bind(KeyCode.Plus)
+                .Bind(KeyCode.KeypadPlus)
+                .ClaimedWhile(ES2Access.Screens.GalaxyInspect.KeysClaimed);
+            input
+                .Register(MapActions.InspectShrink)
+                .Bind(KeyCode.Minus)
+                .Bind(KeyCode.KeypadMinus)
+                .ClaimedWhile(ES2Access.Screens.GalaxyInspect.KeysClaimed);
+
             input.Register(BufferActions.LineUp).Bind(KeyCode.UpArrow, ctrl: true);
             input.Register(BufferActions.LineDown).Bind(KeyCode.DownArrow, ctrl: true);
             input.Register(BufferActions.Prev).Bind(KeyCode.LeftArrow, ctrl: true);
@@ -513,6 +536,12 @@ namespace ES2Access
             }
 
             FleetRoute.Reset();
+            // Same shape: the map's coordinate origin is a cached read, and letting go of it only
+            // drops the empire it was taken from.
+            GalaxyCoordinates.Forget();
+            // And the map's inspect cursor, whose lines the page gave back when it was popped just
+            // above: what is left is the flag the input layer's own claim reads.
+            GalaxyInspect.Reset();
 
             // Whatever the mod made the game look like, the game looks like itself again. The screens
             // shut down first, so a drop list left open has already been closed by its own OnPop and
@@ -610,6 +639,12 @@ namespace ES2Access
             Navigator.TypeAheadTick();
 
             Screens.Tick();
+
+            // Right after the screens, and only ever with something to say: the map's inspect cursor
+            // ends when the map stops being the page the player is on, and the line saying so has to
+            // land AFTER whatever took the page over has announced itself - a screen's arrival
+            // interrupts, and anything queued before it is thrown away.
+            GalaxyInspect.Tick();
 
             // After the screens, so that reading the cursor's control back on the way out of the chat
             // box reads the graph as the screens have just left it.

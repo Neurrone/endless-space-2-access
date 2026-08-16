@@ -804,7 +804,67 @@ Fixture-blocked on that save: a winner with several badges or with none beside o
 the senator-hero card variant (`HeroExperienceGroup`), the experience-GAIN gauge, an experience
 tier other than "Established", and the election-action outcomes (never drawn — es2-facts).
 
-**The scan view.** Entry is Enter on the lens toggle; the PLAYER route through the lenses is the
+**Map coordinates.** The route in is `ui.next` to `galaxy:systems` and reading the dump: home
+(Dusay) must read "0, 0" and every other pair must match
+`ES2Access.UI.GalaxyCoordinates.Text(n.GalaxyPosition)` computed over `Galaxy.GameNodes` from
+`/eval` (`StarSystemNodes` is a yield iterator — `as IList` on it answers null and the eval
+NREs; index `GameNodes` instead). The free oracle is the ORBIT invariant: walk every empire's
+`DepartmentOfDefense.Fleets`, and for each fleet with a `FleetOrders.Orbit` the fleet's pair
+must equal that node's — 8 orbiting fleets, 0 mismatches on `[Beginner] test`, and none of
+them the player's, so this is a model check rather than a spoken one. What the fixture DOES
+reach spoken: a special node (`B10 6805, -5, -26, Solar Nebula`), a drifting probe (expand
+Heracles — the probe hangs under the nearest DECLARED system, so it is invisible while that
+system is collapsed), and fleets under way (`1st Defenders Navy, 12, 15` on Dusay's lane to
+Primus). Fixture-blocked: an orbiting fleet of the player's own, an obliterator projectile,
+and an ally coordination pin. The negative half is one dump of `screen.star-system`: the
+rename button reads `Dusay, button, …` with no pair.
+
+**Inspect mode** (`galaxy.inspect` / `galaxy.inspectGrow` / `galaxy.inspectShrink` + the ordinary
+`ui.*` actions, all through `POST /input`). Entry lands on the focused stop's pair, so entering from
+the empire stop (no place under the cursor) and from `galaxy:system/535` (Dusay) both give "0, 0" on
+`[Beginner] test` — pick a non-home system to tell the two apart. The measured expectations there:
+entry says `Inspect mode, Cursor 3 by 3` then `0, 0, Dusay, Star lane from Rigel to Dusay, Star lane
+from Qarius to Dusay, Star lane from Dusay to Primus`; the cell lists systems, special nodes,
+fleets, probes, obliterator missiles, ally pins, then the lanes crossing it and the fog — the three
+open-space kinds in the tree's own declaration order (`AddProbes`/`AddProjectiles`/`AddPins`), off
+the page's own `DrawnProbes`/`DrawnProjectiles`/`DrawnPins` lists, so the cell and the tree cannot
+disagree about what the map is drawing. `ui.right` twice then `ui.up` twice reads
+`3, 0` / `6, 0` / `6, 3` / `6, 6 Star lane from Dusay to Primus` — that last cell is the
+lane-crossing check against known geometry (Dusay 0,0 to Primus 16.5,20.9 enters the cell centred
+6,6 and misses the one at 6,3). Empty cells say the pair and nothing else. The camera is the exact
+oracle for the pan: `DevProbe.Camera().focus` must equal `GalaxyCoordinates.Origin() + (x, 0, y)` —
+`(74.884, 0, -16.45)` at cell (6,6) with home at `(68.884, -22.45)`. Edge refusal: the galaxy's node
+bounds are x `[-164.0, 22.8]`, y `[-41.5, 88.3]`, so at 11x11 from (6,50) one `ui.right` reaches
+(17,50) and the next answers `Edge of the galaxy`. Fog: (6,50) at 11x11 is `Fog of war` whole, (6,6)
+is `34 squares in fog of war` — grow/shrink and the count tracks. **The mode's state probe is
+`DevProbe.Claims("Escape,Minus")`**: both claim true only while it is live, which is how "Enter on an
+empty cell did nothing" is proved to be a refusal rather than an exit (focus unchanged in
+`DevProbe.Screen()`, claims still true). The same probe is the ONLY way to check that `galaxy.inspect`
+re-injected while the mode is live does nothing — it is silent and changes no state, so `/speech`
+cannot tell it from a key that never arrived: claims still true plus an unchanged cell reading on the
+next `ui.*` is the evidence. `galaxy.inspect` does not toggle out; the exits are `ui.back`, a landing
+Enter made, and leaving the map. Enter on a one-place cell lands on `galaxy:system/<guid>`
+with the tree's own announcement; Enter on a fleet-only cell (shrink to 1x1 and walk to `-1, -6`,
+`1st Conquerors Navy`) answers `Fleet panel open for …` — but only from a CLEAN cursor: with a
+`GalaxyGarrisonCursor` already up holding nothing, the selection did not take (seen once, unexplained;
+`cursors.ChangeCursor(typeof(GalaxyCursor), Gui.GetCursor())` resets it). Auto-exit is driven with
+`Gui.GuiGameWindowService.RequestStarSystemManagementViewLevel(guid)` — every keyboard route out of
+the map is claimed by the mode itself, so an engine call is the only way to stage it — and the exit
+line must land AFTER the whole arrival burst (`Star system`, `Zoom level 14 of 15`, `Planets, Raia…`,
+then `Exited inspect mode`). Teardown is checked by reflecting `_outline._lines` (all four null),
+`_slot` (-1) and the renderer's own `lineToRenders` count (72 with the cursor up, 68 without).
+Fixture-blocked in the cell reading, for the same reasons the tree's own nodes are: an obliterator
+missile (none drawn) and an ally coordination pin (no alliance) — both share the cell's enumeration,
+visibility and wording with the tree, so the tree's route is the only place either can be sighted.
+Visual evidence needs the camera pulled back — `ForceZoomingOnPosition(6, origin)` — and the crop
+aimed with `CameraController.Camera.WorldToScreenPoint` on the cell corners; note the focused
+system's own dossier tooltip is drawn over the middle of the map and hides the lower half of the
+square.
+
+**The scan view.** Entry is Enter on the lens toggle — which sits in the view-title stop's ROW,
+so it is `ui.right` from the name node and Up/Down never reach it (Down goes name → Zoom), and
+it is not declared at all at a rung with no lens over it (rung 13 draws none; step out to ~7
+first). Leaving is Enter on `scan:title/lens`. The PLAYER route through the lenses is the
 `Zoom` node beside it — Left/Right steps the 15-rung ladder, Shift+Left/Right jumps a lens band,
 Right at rung 13 enters the system, Enter on a planet card reaches the planet lens, Left steps
 back out. Verify with those injected actions; `cam.ForceZoomingOnPosition(step, position)` is for

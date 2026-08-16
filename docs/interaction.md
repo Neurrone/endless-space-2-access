@@ -201,6 +201,27 @@ Left/Right + Shift chords (no new binding), and it lives on BOTH the scan view a
 coarse step is a LAYER-BAND jump rather than ≈10 increments — an owner-approved deviation, since
 ten of the camera's thirteen steps would be the whole range.
 
+**Ctrl+I is the galaxy's INSPECT MODE** — a square of galaxy the player moves about the map and hears
+the contents of, instead of walking the tree (`GalaxyInspect` — `docs/helpers.md`). Ctrl+I is free in
+this game (`InputManager` binds nothing at all to I) and is bound outright, so plain I is suppressed
+from the game wherever a mod screen is focused, which costs nothing. While the mode is LIVE it takes
+its keys at MODE level, ahead of the review chords and of navigation (`Screen.AnyKey` — the same hook
+the cutscene uses, and the same displacement the map already lives with under an armed targeting
+cursor): **arrows** move the cell by exactly its own size, **Enter** lands on the one thing in the
+cell (silent for none or several), **Escape** leaves ("Exited inspect mode"), **`+`/`-`** grow and
+shrink it through 1/3/5/7/9/11 units. Every other key falls through untouched. **Ctrl+I only ARMS
+the mode — it is not a toggle**: pressed again while the cursor is up it is taken and does nothing,
+silently, on the same ruling as Enter on an empty cell (the key is pressed speculatively mid-sweep,
+and dropping the cursor there would cost the player the cell they were standing on). The three ways
+out are Escape, a landing Enter made, and the map going away. Escape and the size
+keys are claimed from the game ONLY while the mode is live (`GalaxyInspect.KeysClaimed` through
+`InputAction.ClaimedWhile`, the Space precedent), which is what leaves the game its own KeypadMinus
+(`SleepForThisTurn`) and the battle screens their `EncounterSpeedUp`/`EncounterSlowDown` everywhere
+else. `+` is THREE chords — bare Equals, Shift+Equals and KeypadPlus (plus `KeyCode.Plus`) — because
+the matcher is exact-modifier and "+" is Shift and the equals key on most layouts. The mode cannot
+outlive the page: anything that takes the player off the map ends it, and the line saying so is
+spoken from the pump once the arriving page's announcement burst has gone quiet.
+
 **Tab and Shift+Tab wrap** (owner decision 2026-08-12): the last stop's Tab lands on the first,
 the first stop's Shift+Tab on the last. On a page with exactly ONE stop the key is consumed and
 says nothing — coming round to the panel the player is already on is not a move. **A screen where

@@ -387,6 +387,7 @@ namespace ES2Access.Screens
                     null,
                     () => DiplomacyLines(it)
                 );
+                vtable.Announcements.Add(GalaxyCoordinates.Part(node.GalaxyPosition));
                 AgeWidgets.Point(vtable, toggle);
             }
             else
@@ -396,6 +397,7 @@ namespace ES2Access.Screens
                     Announcements = new List<NodeAnnouncement>
                     {
                         GraphNodes.LabelPart(() => node.LocalizedName),
+                        GalaxyCoordinates.Part(node.GalaxyPosition),
                         GraphNodes.ValuePart(() => DiplomacyLines(it)),
                     },
                     // No section: the label draws ONE line of words and the readout is already all of
@@ -578,6 +580,9 @@ namespace ES2Access.Screens
                 Announcements = new List<NodeAnnouncement>
                 {
                     GraphNodes.LabelPart(() => NodeName(it)),
+                    // The same pair the galaxy view says after the same name: the lens recolours the
+                    // map, it does not move the stars (<see cref="GalaxyCoordinates"/>).
+                    GalaxyCoordinates.Part(node.GalaxyPosition),
                 },
                 Sections = GraphNodes.Sections(
                     NodeSection.Buffer(() => NodeLines(it)),

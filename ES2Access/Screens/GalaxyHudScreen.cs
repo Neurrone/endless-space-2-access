@@ -126,6 +126,38 @@ namespace ES2Access.Screens
         /// somewhere, and the somewhere is on this map.</summary>
         private readonly FleetPanel _fleetPanel = new FleetPanel();
 
+        /// <summary>The square of galaxy the player can sweep the map with instead of walking the tree
+        /// (<see cref="GalaxyInspect"/>) - a mode of this page, so it lives and dies with it.</summary>
+        private readonly GalaxyInspect _inspect;
+
+        public GalaxyHudScreen()
+        {
+            _inspect = new GalaxyInspect(this);
+        }
+
+        /// <summary>The probe labels the map is drawing this build - what the inspect cursor asks for
+        /// the probes inside its cell, so the two answers come off one walk of the label window.
+        /// </summary>
+        internal IList<ProbeLabel> DrawnProbes
+        {
+            get { return _probes; }
+        }
+
+        /// <summary>The obliterator missiles the map is drawing this build - the same list
+        /// <see cref="AddProjectiles"/> declares its nodes from, so the cell and the tree cannot
+        /// disagree about which shots are in flight.</summary>
+        internal IList<ObliteratorProjectileLabel> DrawnProjectiles
+        {
+            get { return _projectiles; }
+        }
+
+        /// <summary>The ally pins the map is drawing this build - the same list
+        /// <see cref="AddPins"/> declares its nodes from.</summary>
+        internal IList<CoordinationRequestLabel> DrawnPins
+        {
+            get { return _pins; }
+        }
+
         // Regions - what Alt and an arrow jump between - are declared only where a stop really has
         // two halves. A stop with one region swallows the key and moves nothing, which reads as the
         // key being broken rather than as there being nowhere else to go. The empire stop declares
@@ -235,10 +267,23 @@ namespace ES2Access.Screens
         }
 
         /// <summary>Asked before the key is pressed, and true only in that same one case - otherwise the
-        /// game must keep the Escape it answers itself, mode or no mode.</summary>
+        /// game must keep the Escape it answers itself, mode or no mode. The mod's OWN mode is the
+        /// second: the inspect cursor is a surface the game has never heard of, so leaving it must not
+        /// also raise the pause menu behind it (<see cref="GalaxyInspect"/>).</summary>
         public override bool ConsumesBack
         {
-            get { return CursorTargeting.EscapeIsOurs; }
+            get { return GalaxyInspect.Live || CursorTargeting.EscapeIsOurs; }
+        }
+
+        /// <summary>
+        /// The inspect cursor takes the keys it means before anything else on the page sees them - the
+        /// arrows, Enter, Escape and the two size keys - which is what makes it a MODE rather than a
+        /// set of extra commands on whatever control the tree cursor happens to be standing on. Every
+        /// other key falls through untouched (<see cref="GalaxyInspect"/>).
+        /// </summary>
+        public override bool AnyKey(string actionKey)
+        {
+            return _inspect.HandleKey(actionKey);
         }
 
         /// <summary>
@@ -269,6 +314,10 @@ namespace ES2Access.Screens
             // for a reason nobody could remember.
             GalaxyLocate.Forget();
             _locating = null;
+            // The inspect cursor is a mode of THIS page: whatever replaced the map is where the player
+            // now is, and a square still drawn on a map nobody is looking at would be a mode nothing
+            // could end.
+            _inspect.Forget();
         }
 
         public override void OnUpdate()
@@ -1284,6 +1333,11 @@ namespace ES2Access.Screens
             AgeTooltip tooltip = label == null ? null : label.StarTooltip;
             StarSystemLabel drawn = label;
             NodeVtable vtable = GraphNodes.Group(() => it.LocalizedName);
+            // Where on the map it is, straight after its name and before anything it happens to be
+            // today - the pair is part of what the place is CALLED for a player steering by it
+            // (<see cref="GalaxyCoordinates"/>). Taken once here rather than read per frame: a node's
+            // position is fixed at galaxy generation.
+            vtable.Announcements.Add(GalaxyCoordinates.Part(node.GalaxyPosition));
             // What is parked here, then everything the map writes on the label itself - the icons it
             // flanks the name with, what is being built, what is in the ground - and last the dossier
             // behind the star. The middle one is a page of detail drawn as pictures, so it is reviewed
@@ -1510,7 +1564,7 @@ namespace ES2Access.Screens
         /// (<c>GuiSpecialNode.CategoryTitle</c>), so this cannot drift from the line the buffer
         /// already carries, and there is nothing here to translate.
         /// </summary>
-        private static string SpecialKind(StarSystemNode node)
+        internal static string SpecialKind(StarSystemNode node)
         {
             try
             {
@@ -3589,6 +3643,10 @@ namespace ES2Access.Screens
                 // fleet will be sleeping tonight (<see cref="FleetRoute"/>).
                 () => FleetRoute.CommittedLines(it)
             );
+            // Where it is on the map. Asked live rather than captured, because a fleet moves - and a
+            // fleet in orbit reads the exact pair its system reads, which is the map saying the same
+            // thing twice on purpose (<see cref="GalaxyCoordinates"/>).
+            vtable.Announcements.Add(GalaxyCoordinates.Part(() => it.GalaxyPosition));
             vtable.Announcements.Add(GraphNodes.ValuePart(() => FleetText(it)));
             // How much of the journey is left. A part of its OWN and not part of the line
             // above, because that line is WATCHED - a movement figure the game changes under
@@ -4313,6 +4371,7 @@ namespace ES2Access.Screens
                 Announcements = new List<NodeAnnouncement>
                 {
                     GraphNodes.LabelPart(() => AgeWidgets.TooltipTitle(it.Tooltip)),
+                    GalaxyCoordinates.Part(() => probe.GalaxyPosition),
                     GraphNodes.ValuePart(() => Owner(probe.Empire), false),
                     GraphNodes.ValuePart(() => ProbeBearing(probe, near), false),
                     GraphNodes.ValuePart(
@@ -4415,6 +4474,7 @@ namespace ES2Access.Screens
                         GraphNodes.LabelPart(
                             () => ModStrings.Get(ModStrings.GalaxyObliteratorProjectile)
                         ),
+                        GalaxyCoordinates.Part(() => shot.GalaxyPosition),
                         GraphNodes.ValuePart(() => Owner(shot.Empire), false),
                         GraphNodes.ValuePart(
                             () => Countdown(it.DurationBackground, it.DurationLabel),
@@ -4456,6 +4516,9 @@ namespace ES2Access.Screens
                     Announcements = new List<NodeAnnouncement>
                     {
                         GraphNodes.LabelPart(() => PinKind(request)),
+                        // A pin is named by its KIND - "attack here" - so the pair is the only thing
+                        // that says WHERE here is.
+                        GalaxyCoordinates.Part(() => request.GalaxyPosition),
                         GraphNodes.ValuePart(() => PinMessage(it), false),
                     },
                     Sections = GraphNodes.Sections(
@@ -4488,7 +4551,7 @@ namespace ES2Access.Screens
         }
 
         /// <summary>What the game calls this kind of request, in its own words.</summary>
-        private static string PinKind(CoordinationRequest request)
+        internal static string PinKind(CoordinationRequest request)
         {
             try
             {
@@ -4590,6 +4653,13 @@ namespace ES2Access.Screens
         /// swap in the garrison cursor, and ask the camera for the fleet - in that order, because the
         /// panel's own visibility is gated on that cursor.
         /// </summary>
+        /// <summary>The same selection a fleet's own node makes, for the one other thing on this page
+        /// that names a fleet without walking to it (<see cref="GalaxyInspect"/>).</summary>
+        internal static void SelectFleet(Fleet fleet)
+        {
+            Select(fleet);
+        }
+
         private static void Select(Fleet fleet)
         {
             try

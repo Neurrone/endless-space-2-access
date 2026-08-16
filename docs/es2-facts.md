@@ -660,6 +660,13 @@ generic graduates to the generic docs.
   `WorldToScreenPoint` at the fixture's home view: from Dusay (screen centre, 640,400 of 1280x800)
   Primus is bearing 38.3° and lands at screen +451,+492 (up and right), Qarius 347.8° at -130,+519
   (up), Rigel 253.8° at -737,-184 (left and slightly down).
+- **The empire's own origin on that compass is `DepartmentOfTheInterior.HomeSystemNode`**
+  (`DepartmentOfTheInterior.cs:655`) — the one place a player already has in their head, which is
+  what makes a coordinate pair mean anything. It is a plain settable property with no event, null
+  until a home is chosen and replaced wholesale by a new game or a load, so anything caching it
+  re-derives on the player empire changing IDENTITY rather than subscribing. Fixture `[Beginner]
+  test`: Dusay at raw (68.884, -22.450), and the 13 systems the map names span -43..23 east and
+  -42..34 north of it against a whole-galaxy span of -95..92 by -64..66.
 - **The galaxy camera never rotates, so a compass word is world-fixed.**
   `GalaxyViewCameraController.StartRotating()` is private with zero call sites and the live camera
   reads `euler = (59.5, 0, 0)` — pitch only. Nothing spoken about direction has to track a yaw, and
@@ -1258,6 +1265,44 @@ generic graduates to the generic docs.
   probe, and `ObliteratorProjectileLabel` writes destination and ETA only for yours.
   `WreckedMothershipLabelWindow` binds `FocusedGameNode` and its items follow the curiosity
   pattern. Constellation exploration is an aggregate recomputed on node-exploration events.
+- **The map draws its own lines through `ILineRendererService`, and two of the six arguments are
+  not what they look like.** `CreateLine(pos0, pos1, width, color0, color1, materialType)` +
+  `ShowLine` puts a `LineToRender` — a plain record of public fields the manager reads live each
+  frame, so moving one is field mutation — into the SAME manager the starlanes use
+  (`Services.GetService<ILineRendererService>()` and the galaxy technique's own answer are one
+  object, measured). But: **`materialType` is an INDEX into a private `materials[]`** the manager was
+  loaded with (`GetMaterialIndex` answers -1 for a foreign material), so it is borrowed off a live
+  `GalaxyWarplink.Line` (0 on this build); and **a `Color32` is not a colour** — it is two packed
+  16-bit indices into the GPU colour palette (`GalaxyLink.Refresh` and `GalaxyStarSystem`'s
+  `defaultWhiteEncodedColor` both build one as `(slot & 0xFF, slot >> 8, slot2 & 0xFF, slot2 >> 8)`),
+  so slots come from `Amplitude.Unity.Graphics.Services.GetService<IGPUColorEvolutionService>(5)`
+  (`RegisterColorSlot`/`ChangeColorSlot`/`FreeColorSlot`; context 5 is the galaxy's). A line that
+  gets either wrong is accepted, reports itself `Visible`, and is simply not on the screen. **The
+  `width` argument is ignored by material 0** — 0.1, 2 and 20 all draw the same hairline (measured) —
+  and the drawn hue came out a pale cyan whatever colour the slot was registered with, so a mod-drawn
+  line is told apart from a starlane by being cyan, not by weight. `ReleaseLine` ×N and
+  `FreeColorSlot` on teardown; the manager's own `lineToRenders` count is the check.
+- **`GalaxyViewCameraController.CenterOnPoint(point, damping)` takes a bare point** and SmoothDamps
+  to it, auto-clamped to the galaxy (`ClampCameraPosition`) — the way to move the camera to empty
+  space, where `GuiManager.RequestGalaxyOverviewViewLevel` needs an entity and trips the mod's own
+  `GalaxyLocate` watch. Damping 0.3 (the game's own figure) reads as one smooth slide per keypress.
+  `ForceZoomingOnPosition(step, point)` is the same thing with a zoom step, and is how a camera
+  reading is restored exactly.
+- **Fog of war is a per-POINT question with a per-point answer**: `IVisibilityService.IsExplored
+  (empire, GalaxyPosition)` samples the empire's fog-of-war distance field — the very field the fog
+  is drawn from — so a region can be sampled square by square (121 lookups into a byte array cost
+  nothing). There is no second, "currently visible" field for arbitrary points: the map draws ONE
+  fog, so there is no unexplored/remembered distinction to resolve for a point. `GalaxyBounds` on the
+  same service is NOT the galaxy's extent — it is that field's rect, scaled 2.5× (`VisibilityController
+  .GalaxyBoundsScaleFactor`), so anything wanting "where does the galaxy stop" measures
+  `Galaxy.GameNodes` instead (`[Beginner] test`: x `[-164.0, 22.8]`, y `[-41.5, 88.3]` from home).
+  **The game has no UI word for the fog**: "the fog of war" occurs exactly once in the whole English
+  corpus, in one quest objective's tooltip, and "miasma" occurs nowhere at all — so a mod that says
+  it says it in its own words.
+- **`InputManager` binds no letter keys and no I at all.** The full default table is the F-keys
+  (F1-F8 screens), arrows, `KeypadEnter` end turn, `Space`/`Mouse2` scan view, `Return`/`Tab` chat,
+  `KeypadMinus` sleep-for-this-turn, `Ctrl+F` search, `PageUp`/`PageDown` zoom, the debug chords, and
+  the encounter camera's `Minus,KeypadMinus`/`Plus,KeypadPlus` speed keys — so `Ctrl+I` was free.
 - **The scan view is a MODE, not a view level**: `IsInNormalView` goes false and only
   `EndTurnWindow` survives, while `TopTitlePanel` keeps the lens-naming label even hidden.
   `ScanViewWindowCaptionsPanel` is a pool that does not clean up (surplus children stay fully

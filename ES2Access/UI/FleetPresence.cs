@@ -89,6 +89,47 @@ namespace ES2Access.UI
             return Fleets(GroupsOn(link));
         }
 
+        /// <summary>
+        /// Every fleet the map is drawing ANYWHERE, parked or under way - for a caller asking about a
+        /// REGION of the map rather than about a place in it (the inspect cursor's square of galaxy),
+        /// which has no node and no link to ask through.
+        ///
+        /// The fleet label window's own repository and its own gate, so the answer is the set of
+        /// lozenges on the screen and no vision rule is re-derived. A parked fleet's
+        /// <c>GalaxyPosition</c> is its star's, which is what puts it in the same square as the star -
+        /// the small offset the map draws its berth at is a picture detail, not a place.
+        /// </summary>
+        public static IList<Fleet> Drawing()
+        {
+            try
+            {
+                IVisibleGalaxyFleetRepositoryService repository =
+                    Services.GetService<IVisibleGalaxyFleetRepositoryService>();
+                if (repository == null)
+                {
+                    return None;
+                }
+
+                ReadOnlyCollection<GalaxyFleet> drawn = repository.GalaxyFleets;
+                List<Fleet> fleets = new List<Fleet>(drawn.Count);
+                for (int i = 0; i < drawn.Count; i++)
+                {
+                    Fleet fleet = drawn[i] == null ? null : drawn[i].Fleet;
+                    if (fleet != null && !fleet.IsDestroyed && Drawn(fleet))
+                    {
+                        fleets.Add(fleet);
+                    }
+                }
+
+                return fleets;
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: reading every fleet the map draws threw: " + e);
+                return None;
+            }
+        }
+
         private static readonly Fleet[] None = new Fleet[0];
 
         private static IList<Fleet> Fleets(List<List<Garrison>> groups)

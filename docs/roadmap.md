@@ -21,6 +21,11 @@ files above.
   `AttackSystemPirateDiplomaticAction` — the other five report popups are done);
   DiplomaticInteractionNotificationWindow (MoodMessageLabel, NegotiationContributionPanel).
 - Galaxy-label gaps: constellation ownership bonus; pin-message editing.
+- Inspect mode (shipped): the drawn square comes out a pale cyan HAIRLINE — the map's line
+  material ignores `width` and the palette slot's colour does not reach the shader (es2-facts), so
+  a louder cursor means the circle renderer (`ICircleRendererService`) instead. Its cell reading
+  now carries obliterator projectiles and ally coordination pins too, off the tree's own lists and
+  wording — both remain fixture-unreachable, so neither has ever been heard.
 - Scan management-lens remainder (unverifiable at turn 1): the trade-quality dial
   (geometry-only rating, no tooltip), the empire-rank bar graph + global-rank histogram,
   the ghost/traitor lines. The governor panel is MODELLED (batch D) but has only ever been

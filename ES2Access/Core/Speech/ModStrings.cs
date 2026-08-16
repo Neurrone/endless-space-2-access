@@ -312,6 +312,37 @@ namespace ES2Access.Core.Speech
         public const string DirectionSouthWest = "direction.southwest";
         public const string DirectionWest = "direction.west";
         public const string DirectionNorthWest = "direction.northwest";
+
+        /// <summary>Where a place on the map is, as a pair of whole numbers measured from the empire's
+        /// home system (<see cref="MapCoordinates"/>). The game draws the galaxy and writes no
+        /// coordinate anywhere, so the pair is the mod's - and it is ONE template rather than a number
+        /// said twice, because which axis comes first, and what separates them, is a language's
+        /// business.</summary>
+        public const string GalaxyCoordinatePair = "galaxy.coordinates";
+
+        // The map's inspect cursor - a mode of the mod's own, so every word in it is the mod's. The
+        // cursor's size is said as a whole phrase rather than a number glued to a symbol, because "3
+        // by 3" is a shape and "3x3" is a sum. The two starlane phrases name the lane's ends the same
+        // way round every time (westmost first), so one lane heard from two neighbouring cells is
+        // heard as one lane; a lane whose far end the map has not named says which way it runs
+        // instead, exactly as the lane's own node does.
+        public const string GalaxyInspectEntered = "galaxy.inspect.entered";
+        public const string GalaxyInspectExited = "galaxy.inspect.exited";
+        public const string GalaxyInspectCursorSize = "galaxy.inspect.cursor-size";
+        public const string GalaxyInspectEdge = "galaxy.inspect.edge";
+        public const string GalaxyInspectStarlane = "galaxy.inspect.starlane";
+        public const string GalaxyInspectStarlaneUnexplored = "galaxy.inspect.starlane-unexplored";
+        public const string GalaxyInspectWormhole = "galaxy.inspect.wormhole";
+        public const string GalaxyInspectWormholeUnexplored = "galaxy.inspect.wormhole-unexplored";
+
+        // What the map draws OVER a place nobody has been to yet. The game paints it and names it
+        // nowhere in its own interface - the only words it has for the thing are in one quest
+        // objective's tooltip, "the fog of war" - so the phrase is the mod's. A cell wholly under it
+        // says so; a cell partly under it says how many of its squares are, which is what tells the
+        // player to shrink the cursor and find the edge of what they can see.
+        public const string GalaxyInspectFog = "galaxy.inspect.fog";
+        public const string GalaxyInspectFogOne = "galaxy.inspect.fog-one";
+        public const string GalaxyInspectFogMany = "galaxy.inspect.fog-many";
         public const string GalaxyFleetShips = "galaxy.fleet-ships";
         public const string GalaxyFleetMoving = "galaxy.fleet-moving";
         public const string GalaxyFleetMovement = "galaxy.fleet-movement";
@@ -1114,6 +1145,18 @@ namespace ES2Access.Core.Speech
             { DirectionSouthWest, "southwest" },
             { DirectionWest, "west" },
             { DirectionNorthWest, "northwest" },
+            { GalaxyCoordinatePair, "{0}, {1}" },
+            { GalaxyInspectEntered, "Inspect mode" },
+            { GalaxyInspectExited, "Exited inspect mode" },
+            { GalaxyInspectCursorSize, "Cursor {0} by {1}" },
+            { GalaxyInspectEdge, "Edge of the galaxy" },
+            { GalaxyInspectStarlane, "Star lane from {0} to {1}" },
+            { GalaxyInspectStarlaneUnexplored, "Star lane from {0} going {1}" },
+            { GalaxyInspectWormhole, "Wormhole from {0} to {1}" },
+            { GalaxyInspectWormholeUnexplored, "Wormhole from {0} going {1}" },
+            { GalaxyInspectFog, "Fog of war" },
+            { GalaxyInspectFogOne, "1 square in fog of war" },
+            { GalaxyInspectFogMany, "{0} squares in fog of war" },
             { GalaxyFleetShips, "{0} ships" },
             { GalaxyFleetMoving, "moving" },
             { GalaxyFleetMovement, "{0} movement points" },

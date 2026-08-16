@@ -491,6 +491,39 @@ namespace ES2Access.UI
         }
 
         /// <summary>
+        /// Slide the camera onto a bare POINT of the map - somewhere with nothing at it.
+        ///
+        /// The camera controller's own recentring (<c>CenterOnPoint</c>: a SmoothDamp towards the
+        /// point, clamped to the galaxy by <c>ClampCameraPosition</c>), called directly rather than
+        /// through <see cref="PanTo"/>. PanTo goes through the GUI's "show the player this entity",
+        /// which is the very call <see cref="Screens.GalaxyLocate"/> watches for the game LEADING the
+        /// player somewhere, and it needs an entity - and the inspect cursor is aimed at empty space
+        /// as often as at a star.
+        ///
+        /// Answers whether the camera took it, which is false while the galaxy camera is not the live
+        /// one (inside a system, on a planet).
+        /// </summary>
+        public static bool CenterOn(Vector3 point, float damping)
+        {
+            try
+            {
+                GalaxyViewCameraController camera = Camera();
+                if (camera == null)
+                {
+                    return false;
+                }
+
+                camera.CenterOnPoint(point, damping);
+                return true;
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: centring the camera on a point threw: " + e);
+                return false;
+            }
+        }
+
+        /// <summary>
         /// Bring the camera all the way in on a node, to <see cref="OrbitalZoomStep"/> - the step at
         /// which the map draws the system's planets as cards in orbit around its star.
         ///
