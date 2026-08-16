@@ -632,23 +632,21 @@ namespace ES2Access.Screens
                     }
                 }
 
-                IList<ObliteratorProjectileLabel> shots = _screen.DrawnProjectiles;
+                IList<GalaxyHudScreen.SightedShot> shots = _screen.SightedProjectiles;
                 for (int i = 0; i < shots.Count; i++)
                 {
-                    ObliteratorProjectile shot =
-                        shots[i] == null ? null : shots[i].Entity as ObliteratorProjectile;
-                    if (shot != null && Holds(shot.GalaxyPosition))
+                    ObliteratorProjectile shot = shots[i].Shot;
+                    if (Holds(shot.GalaxyPosition))
                     {
                         contents.Projectiles.Add(shot);
                     }
                 }
 
-                IList<CoordinationRequestLabel> pins = _screen.DrawnPins;
+                IList<GalaxyHudScreen.SightedPin> pins = _screen.SightedPins;
                 for (int i = 0; i < pins.Count; i++)
                 {
-                    CoordinationRequest pin =
-                        pins[i] == null ? null : pins[i].CoordinationRequest;
-                    if (pin != null && Holds(pin.GalaxyPosition))
+                    CoordinationRequest pin = pins[i].Request;
+                    if (Holds(pin.GalaxyPosition))
                     {
                         contents.Pins.Add(pin);
                     }

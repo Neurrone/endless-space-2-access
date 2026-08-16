@@ -173,6 +173,7 @@
   "galaxy.scanner.probes-neutral": "neutral",
   "galaxy.scanner.probes-enemy": "enemy",
   "galaxy.scanner.systems-homeworld": "homeworld",
+  "galaxy.scanner.systems-minor-factions": "minor factions",
   "galaxy.scanner.systems-special": "special",
   "galaxy.scanner.quest-markers": "Quest markers",
   "galaxy.scanner.quest-markers-all": "all",

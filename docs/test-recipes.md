@@ -352,12 +352,18 @@ adrift row and says `on a star lane to an unexplored system`.
 already is and moves nothing (the screen instance is new, so every reload re-arms it).
 
 **What each tier SAYS** (2026-08-16 wording; no count anywhere in a scope line — the instance line's
-"N of M" carries the size): the arming press says the scope alone in `Category: subcategory` form,
-e.g. `Systems: all`. A SUBCATEGORY step (Shift) says the subcategory alone — `friendly`. A CATEGORY
-step (Ctrl) says the whole scope and then the nearest instance —
+"N of M" carries the size). **Every press that MOVES reads its landing**: the only difference between
+the two scope tiers is how much of the scope is named in front of the instance line. The arming press
+is the exception — it moved nothing, so it says the scope alone in `Category: subcategory` form, e.g.
+`Systems: all`. A SUBCATEGORY step (Shift) says the subcategory then the landing —
+`friendly, Dusay, 0, 0, here, 1 of 2`. A CATEGORY step (Ctrl) says the whole scope then the landing —
 `Systems: friendly, Dusay, 0, 0, here, 1 of 2`. An instance step says the instance line alone. A
 scope standing empty under a parked cursor keeps its own sentence, `⟨scope⟩, none found`.
 An instance line is `name[, extras], pair, offset components, N of M`.
+(Superseded: the subcategory tier said the bare label with no instance line until the owner ruled
+that against it — a bare label answered "you are in an empty place" and "there are things here" with
+the same sentence.) A single-subcategory category's Shift press comes round to `all` and reads its
+landing too, by the same code path; fixture-blocked, since all three such categories are empty.
 
 The oracle for the whole reading is a table computed independently in `/eval`: walk
 `galaxy.GameNodes`, skip anything `MapVisibility.Perceived` refuses (special nodes are IN since
@@ -380,11 +386,19 @@ Shift cycle skips. Fleets are six, all the player's, so neutral and enemy fleets
 Nothing here can produce the "⟨scope⟩, none found" line: it needs a scope to empty UNDER a parked
 cursor, and cycling skips empties by design — fixture-blocked, covered by `ScannerCursorTests`.
 
-**The six SUBCATEGORIES of systems** (2026-08-16) cycle all → friendly → neutral → enemy →
-homeworld → special, empties skipped. Measured transcript, one Shift press then one instance step
-each: `friendly` / `Heka, -1, -9, 9 south, 1 west, 2 of 2`; `neutral` /
-`Rigel, -16, -5, 5 south, 16 west, 2 of 10`; `homeworld` / `Dusay, 0, 0, here, 1 of 1`; `special` /
-`B10 6805, -5, -26, 26 south, 5 west, 1 of 1`; then `all` / `2 of 13`. Coming back to systems from
+**The seven SUBCATEGORIES of systems** (2026-08-16) cycle all → friendly → neutral → enemy →
+homeworld → **minor factions** → special, empties skipped. Measured transcript, one Shift press each
+(the press now reads its own landing): `friendly, Dusay, 0, 0, here, 1 of 2`;
+`neutral, Libra, -11, 11, 11 north, 11 west, 1 of 10`; `homeworld, Dusay, 0, 0, here, 1 of 1`;
+`minor factions, Osulo, -31, -32, 32 south, 31 west, 1 of 1`;
+`special, B10 6805, -5, -26, 26 south, 5 west, 1 of 1`; then `all, Dusay, 0, 0, here, 1 of 13`.
+**MINOR FACTIONS OVERLAPS NEUTRAL BY DESIGN** — it is an ownership filter laid over the affiliation
+trio, not a fourth member of it, so Osulo is found by both and `neutral` stays at 10. The oracle is
+an independent `/eval` walk: for every perceived node, any `ColonizedStarSystem` at its
+`NodePosition` with `Visibility[me] >= 1` whose `Empire is MinorEmpire`. Measured here:
+`perceived=13 specials=1 minorSystems=1` — **Osulo (Niris, Colony)** and nothing else. The galaxy
+holds nine minor-faction homes but only Osulo is perceived at turn 21; an earlier note in this repo
+claiming ~9 of them were visible was wrong. Coming back to systems from
 fleets with the memory on special says the whole scope,
 `Systems: special, B10 6805, -5, -26, 26 south, 5 west, 1 of 1`, and `galaxy.scanGoTo` from there
 lands on the tree row `B10 6805, -5, -26, group, Solar Nebula, collapsed, has tooltip, 10 of 13` —
@@ -433,6 +447,13 @@ and `quest.GetMarkers(quest.GetCurrentStep())`; `[Beginner] test` turn 21 has **
 progress and **zero** markers on any of them, so nothing is drawn. Pins and missiles —
 `DepartmentOfDefense.ObliteratorProjectiles` and the coordination-request repository are empty, and
 pins need a game with allies in it.
+**Pins and missiles are label-free too** (2026-08-16): both are enumerated from the simulation under
+the game's own knowledge gates and every word of their rows is recomposed from the entity, so
+neither moves with the camera (es2-facts). Nothing about them is read off a drawn widget any more —
+including the pin's DISMISS, which is now the game's own two orders rather than a button press. All
+fixture-blocked; the evidence is the recomposition checked line by line against
+`ObliteratorProjectileLabel.Refresh` and `CoordinationRequestLabel.SetTooltips`/`OnDismissCb`, plus
+the probes' own hand-cull proof that the pattern works.
 
 **MINING PROBES on a planet row** (2026-08-16, not part of the scanner): the galaxy map's orbital
 cards and the empire screen's planet cards both say
@@ -1087,19 +1108,25 @@ Measured: enter at the Patriots row (camera `(31.884, 0, -53.45)`), `ui.up` eigh
 `galaxy:system/491/fleet/1304`; and entering from the empire stop then walking to cell (22,75) and
 back returns the camera to home exactly.
 Teardown is checked by reflecting `_outline._lines` (every slot null),
-`_slot` (-1) and the renderer's own `lineToRenders` count — the outline is now 4 lines per nested
-ring rather than 4 in all (32 at cursor 3, 64 at cursor 11), so the count is `base + 4 × ringsPerSide`.
+`_slot` (-1) and the renderer's own `lineToRenders` count — since 2026-08-16 the outline is **4
+lines in all** again, one per cell edge, at every cursor size.
 Fixture-blocked in the cell reading, for the same reasons the tree's own nodes are: an obliterator
 missile (none drawn) and an ally coordination pin (no alliance) — both share the cell's enumeration,
 visibility and wording with the tree, so the tree's route is the only place either can be sighted.
-Visual evidence needs the camera pulled back — `ForceZoomingOnPosition(9, origin)` — and the crop
-aimed with `CameraController.Camera.WorldToScreenPoint` on the cell corners; the map's camera is
-tilted, so a world square is a TRAPEZOID on the screen and a rect built from two corners is only
-approximate — leave a wide margin. The focused node's own tooltip is drawn over the middle of the map
-and hides the square: `/eval ES2Access.UI.PointerFocus.Release()` after the last `/input` clears it
-for the crop, and the next focus change puts it back. Measured pairs: cursor 3 and cursor 11 both
-draw a heavy cyan frame with the sides running out past the corners (see `InspectOutline`'s own
-notes for why they must).
+**Visual evidence: do NOT pull the camera back.** The old advice here
+(`ForceZoomingOnPosition(9, origin)` before cropping) is exactly what produced the false "short lines
+never draw" rule — the eating is screen-space, so a pulled-back camera hides edges the player would
+see. Crop at the zoom the MODE puts the camera at. The cursor's own centre is
+`GalaxyViewCameraController.TargetPositionCurrent`, and that is the screen centre, so a crop is aimed
+by halving the window size rather than by projecting corners (this window is ~1306×820, centre
+~(653, 410); a 700×600 rect at (300, 120) frames a size-3 cursor whole). Measured 2026-08-16 with the
+NO-OVERSHOOT outline, crops saved beside this recipe's session files: **cursor 3** draws four bright
+cyan bars in a clean square round the star, each stopping a little short of the corners (the ends the
+shader eats) and NOTHING outside the cell; **cursor 11** draws the same four bars at cell scale, and
+because the mode's camera does not zoom out with the cursor the box is wider than the viewport, so
+only three edges are on screen. The focused node's own tooltip is drawn over the middle of the map
+and can hide the square: `/eval ES2Access.UI.PointerFocus.Release()` after the last `/input` clears
+it for the crop, and the next focus change puts it back.
 
 **The scan view.** Entry is Enter on the lens toggle — which sits in the view-title stop's ROW,
 so it is `ui.right` from the name node and Up/Down never reach it (Down goes name → Zoom), and

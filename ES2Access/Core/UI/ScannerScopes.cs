@@ -35,16 +35,22 @@ namespace ES2Access.Core.UI
         /// <summary>An empire's home system, the player's own included.</summary>
         public const int Homeworld = 4;
 
+        /// <summary>A system a minor faction lives on. An OWNERSHIP filter laid over the affiliation
+        /// trio rather than a fourth member of it: a minor faction's system is neutral - that is the
+        /// diplomatic answer and it stays true - and it is also findable as "one of theirs", which is
+        /// the question a player asks when they are looking for someone to assimilate.</summary>
+        public const int MinorFaction = 5;
+
         /// <summary>A special node - a nebula, a black hole, an asteroid field.</summary>
-        public const int Special = 5;
+        public const int Special = 6;
 
         /// <summary>How many subcategories a category has that splits by affiliation and nothing
         /// else (fleets, probes).</summary>
         public const int AffiliationWidth = 4;
 
-        /// <summary>How many the star systems have: the affiliation trio plus the two the map's own
-        /// picture adds.</summary>
-        public const int SystemWidth = 6;
+        /// <summary>How many the star systems have: the affiliation trio plus the three that ask a
+        /// different question about the same place.</summary>
+        public const int SystemWidth = 7;
 
         /// <summary>How many a category has that is only ever asked "what is there" (quest markers,
         /// ally pins, obliterator missiles): one, which is "all".</summary>
@@ -80,10 +86,13 @@ namespace ES2Access.Core.UI
         /// would make "neutral" mean "everything left over" and quietly pad the one scope a player
         /// sweeps to find somewhere to settle.
         ///
-        /// An ordinary system is in its affiliation, and additionally in "homeworld" when it is an
-        /// empire's capital - both at once, which is the case this whole set exists for.
+        /// An ordinary system is in its affiliation, and ALSO in "homeworld" when it is an empire's
+        /// capital and in "minor factions" when a minor faction lives on it - all at once, which is
+        /// the case this whole set exists for. Neither of those two takes a system out of its
+        /// affiliation: "neutral" answers how the player stands to whoever holds a place, and a minor
+        /// faction's system is neutral whether or not it is also findable as one of theirs.
         /// </summary>
-        public static int System(int affiliation, bool special, bool homeworld)
+        public static int System(int affiliation, bool special, bool homeworld, bool minor)
         {
             if (special)
             {
@@ -91,7 +100,12 @@ namespace ES2Access.Core.UI
             }
 
             int scopes = Bit(All) | Bit(affiliation);
-            return homeworld ? scopes | Bit(Homeworld) : scopes;
+            if (homeworld)
+            {
+                scopes |= Bit(Homeworld);
+            }
+
+            return minor ? scopes | Bit(MinorFaction) : scopes;
         }
 
         /// <summary>One row of the counts table: how many of these things each subcategory holds,

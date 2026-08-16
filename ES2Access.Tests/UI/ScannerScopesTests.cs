@@ -23,7 +23,7 @@ namespace ES2Access.Tests.UI
             );
             Assert.True(
                 ScannerScopes.Holds(
-                    ScannerScopes.System(ScannerScopes.Neutral, false, false),
+                    ScannerScopes.System(ScannerScopes.Neutral, false, false, false),
                     ScannerScopes.All
                 )
             );
@@ -32,19 +32,43 @@ namespace ES2Access.Tests.UI
         [Fact]
         public void ASpecialNodeIsSpecialAndNothingElse()
         {
-            int scopes = ScannerScopes.System(ScannerScopes.Neutral, true, false);
+            int scopes = ScannerScopes.System(ScannerScopes.Neutral, true, false, false);
             Assert.True(ScannerScopes.Holds(scopes, ScannerScopes.Special));
             // Not neutral: the affiliation trio is about who HOLDS a place, and nobody holds a nebula.
             Assert.False(ScannerScopes.Holds(scopes, ScannerScopes.Neutral));
             Assert.False(ScannerScopes.Holds(scopes, ScannerScopes.Friendly));
             Assert.False(ScannerScopes.Holds(scopes, ScannerScopes.Enemy));
             Assert.False(ScannerScopes.Holds(scopes, ScannerScopes.Homeworld));
+            Assert.False(ScannerScopes.Holds(scopes, ScannerScopes.MinorFaction));
+        }
+
+        [Fact]
+        public void AMinorFactionSystemStaysNeutralAsWell()
+        {
+            // The affiliation trio answers how the player STANDS to whoever holds a place, and that
+            // answer is still neutral. "Minor factions" is an ownership filter laid over it, not a
+            // fourth affiliation - so the two scopes overlap by design and the same system is found
+            // by either.
+            int scopes = ScannerScopes.System(ScannerScopes.Neutral, false, false, true);
+            Assert.True(ScannerScopes.Holds(scopes, ScannerScopes.Neutral));
+            Assert.True(ScannerScopes.Holds(scopes, ScannerScopes.MinorFaction));
+            Assert.False(ScannerScopes.Holds(scopes, ScannerScopes.Special));
+        }
+
+        [Fact]
+        public void AMinorFactionCapitalIsNeutralAndMinorAndHomeworldAtOnce()
+        {
+            int scopes = ScannerScopes.System(ScannerScopes.Neutral, false, true, true);
+            Assert.True(ScannerScopes.Holds(scopes, ScannerScopes.All));
+            Assert.True(ScannerScopes.Holds(scopes, ScannerScopes.Neutral));
+            Assert.True(ScannerScopes.Holds(scopes, ScannerScopes.Homeworld));
+            Assert.True(ScannerScopes.Holds(scopes, ScannerScopes.MinorFaction));
         }
 
         [Fact]
         public void AnEnemyCapitalIsBothEnemyAndHomeworld()
         {
-            int scopes = ScannerScopes.System(ScannerScopes.Enemy, false, true);
+            int scopes = ScannerScopes.System(ScannerScopes.Enemy, false, true, false);
             Assert.True(ScannerScopes.Holds(scopes, ScannerScopes.Enemy));
             Assert.True(ScannerScopes.Holds(scopes, ScannerScopes.Homeworld));
             Assert.False(ScannerScopes.Holds(scopes, ScannerScopes.Special));
@@ -63,27 +87,32 @@ namespace ES2Access.Tests.UI
         public void AThingIsCountedOnceInEverySubcategoryItIsIn()
         {
             // The fixture galaxy after the taxonomy grew: twelve star systems - the player's own two,
-            // one of which is their capital, and ten neutral - plus one special node.
+            // one of which is their capital, and ten neutral, one of those ten a minor faction's -
+            // plus one special node.
             int[] scopes = new int[13];
-            scopes[0] = ScannerScopes.System(ScannerScopes.Friendly, false, true);
-            scopes[1] = ScannerScopes.System(ScannerScopes.Friendly, false, false);
+            scopes[0] = ScannerScopes.System(ScannerScopes.Friendly, false, true, false);
+            scopes[1] = ScannerScopes.System(ScannerScopes.Friendly, false, false, false);
             for (int i = 2; i < 12; i++)
             {
-                scopes[i] = ScannerScopes.System(ScannerScopes.Neutral, false, false);
+                scopes[i] = ScannerScopes.System(ScannerScopes.Neutral, false, false, false);
             }
 
-            scopes[12] = ScannerScopes.System(ScannerScopes.Neutral, true, false);
+            scopes[11] = ScannerScopes.System(ScannerScopes.Neutral, false, true, true);
+            scopes[12] = ScannerScopes.System(ScannerScopes.Neutral, true, false, false);
 
             int[] row = ScannerScopes.Tally(scopes, ScannerScopes.SystemWidth);
             Assert.Equal(13, row[ScannerScopes.All]);
             Assert.Equal(2, row[ScannerScopes.Friendly]);
+            // The minor faction's system is STILL counted in neutral.
             Assert.Equal(10, row[ScannerScopes.Neutral]);
             Assert.Equal(0, row[ScannerScopes.Enemy]);
-            Assert.Equal(1, row[ScannerScopes.Homeworld]);
+            Assert.Equal(2, row[ScannerScopes.Homeworld]);
+            Assert.Equal(1, row[ScannerScopes.MinorFaction]);
             Assert.Equal(1, row[ScannerScopes.Special]);
 
-            // "All" is the size of the category, NOT the sum of the scopes below it - the capital is
-            // counted twice and the special node is counted in neither trio.
+            // "All" is the size of the category, NOT the sum of the scopes below it - the capitals
+            // and the minor faction are counted twice and the special node is counted in neither
+            // trio.
             Assert.NotEqual(
                 row[ScannerScopes.All],
                 row[ScannerScopes.Friendly]

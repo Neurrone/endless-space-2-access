@@ -1350,6 +1350,25 @@ generic graduates to the generic docs.
   position is the home system's; minor factions are not asked, matching the lens. Measured in
   `[Beginner] test` turn 21: all three AI majors read `Known=False` while their stored positions
   are exactly their (unseen) home systems — Leaper/Baten, St Chaoiver/Jundur, Doria/Lonica.
+- **An ally PIN and an obliterator MISSILE are recomposable in full, so neither needs its label.**
+  A missile's whole reading is arithmetic on the entity (`ObliteratorProjectileLabel.Refresh`):
+  turns = `Ceil(|position − Destination.GalaxyPosition| / Speed)`, or 99 at zero speed; the tooltip
+  is `%ObliteratorProjectileLabelDescription(turns, destination)` and the countdown `turns + "[turn]"`
+  — **both written for the player's OWN missile only**, which is the game's ruling on what an empire
+  may know, and its knowledge gate is the probes' (`Visibility[empire] >= 3`). A pin's message is
+  `CoordinationRequest.Message` (the label's field is assigned from it every refresh, so the entity
+  is the source and the field is only a possibly-truncated rendering of it); its two sentences are
+  `%CoordinationTools⟨RequestType⟩CoordinationRequestTooltip` plus a sender line that branches on
+  ownership (`…SenderCoordinationRequestTooltip`, or `…ReceiverCoordinationRequestTooltip` with the
+  owner's name + faction); and its DISMISS is two deterministic routes, not a widget click
+  (`CoordinationRequestLabel.OnDismissCb`): your own pin posts `OrderRemoveCoordinationRequest`,
+  anybody else's is `SetForceHidden(true)` + `UpdateVisiblity(playerEmpire)` — and the label's own
+  `Hide()` need not be replayed, because the request raises `VisibilityChanged` and any label hides
+  itself off that. A pin's knowledge gate is `CoordinationRequest.IsVisible(empire)` (not
+  force-hidden, and shared with the alliance). **Mod policy:** that gate and nothing else — the other
+  half of `CanShowRequestLabel`, `ICoordinationRequestRepositoryService.ShowRequestToggle`, is the
+  player's global "draw the pins" switch, and whether a reader obeys a display toggle is a design
+  question rather than a fact about knowledge (left unobeyed, flagged to the owner).
 - **`GalaxyQuestMarker` is a world object, not a culled label**: `UpdateVisibility` (:157-165)
   only asks whether `Marker.Empires` lists the active player's empire, so enumerating quest
   markers from the journal with that one test matches the picture at every zoom. A marker's
@@ -1395,23 +1414,36 @@ generic graduates to the generic docs.
   and the drawn hue came out a pale cyan whatever colour the slot was registered with, so a mod-drawn
   line is told apart from a starlane by being cyan, not by weight. `ReleaseLine` ×N and
   `FreeColorSlot` on teardown; the manager's own `lineToRenders` count is the check.
-- **A SHORT line draws nothing at all, whichever of the fourteen materials it is given.** Measured
-  2026-08-16 at zoom step 9: a 3-unit line is invisible under every `materialType` 0-13, a 16-unit
-  one draws a stub, a 33-unit one draws almost whole — the lane shaders eat several units off each
-  END (a lane is drawn short of the stars it joins). So a mod shape smaller than a few units cannot
-  be made of these lines as-is; run every side well PAST its corners and the eaten part falls outside
-  the shape. Thickness is spatial too: the width argument being dead, several parallel lines a
-  twentieth of a unit apart read as one solid band (the inspect cursor's frame is 8-16 per side).
+- **A short line's invisibility is about the CAMERA, not the line — corrected 2026-08-16.** The
+  earlier reading ("a 3-unit line is invisible under every `materialType` 0-13, a 16-unit one draws a
+  stub, a 33-unit one draws almost whole") was taken at zoom step 9 and generalised into a rule about
+  world length; it is not one. The lane shaders eat off each END in something closer to SCREEN space,
+  so the same 3-unit line is invisible far out and draws as a solid bar close in: crop evidence, the
+  inspect cursor's 3-unit cell edges drawing as four clean bars at the zoom the cursor's own camera
+  sits at. **What this cost:** the overshoot workaround — running every side ten units past its
+  corner — was built on the false rule and was never needed at the zoom the mode actually uses; it
+  was the sprawling crop-mark frame the owner then rejected. Before working round a length
+  threshold, re-measure it at the camera the feature will really be used at. Thickness IS still dead
+  (the width argument is ignored by material 0), so a heavier line has to be several parallel ones.
   Materials 0-13 are lane, wormhole, diplomacy, trade-route ×3 and hacking-route ×8.
 - **Filled quads and rings are not available on the galaxy view.** `QuadRendererManager` is loaded
   with an EMPTY material list (measured `materials.Count == 0`), every `QuadRenderer` the build
   defines is a distance-field NUMBER (`Amplitude/Galaxy/PathNumber`, the turn markers on a fleet's
   path) and `QuadToRender` needs an `IAtlasElement`, so there is no solid-fill quad to draw with.
-  `CircleRendererManager` is live and `CreateCircle` succeeds, but nothing it makes is drawn while
-  the galaxy is the view: every circle the game itself has live sits on `PrimitiveLayer.PlanetOrbit`
-  or `CurvedLine`, and `IPrimitiveMaskFilterService.GetCurrentPrimitiveMask()` reads
-  `0xFFFFFFFFFFFFD7D3` there — bits 2, 3, 5, 11 and 13 cleared. `PrimitiveLayer.Line` is the layer
-  that is on, which is why the lanes and a mod's own lines are on the screen at all.
+  **Rings: still unavailable, but every reason first given for it was wrong** (re-measured
+  2026-08-16, crops at each step). `ICircleRendererService` lives at renderer context **0**, read off
+  a live orbit ring's own `RendererContextIndex` — asking at 5, where the colour palette lives,
+  answers null, and a null service draws nothing and raises nothing, which is what the first
+  investigation actually hit. The mask is not the obstacle either: live it is
+  `0xFFFFFFFFFFFEDFFF` (only `CurvedLine` and `QuestMarker` cleared), so `PlanetOrbit` — where all
+  444 of the game's own live circles sit — and `Line` are both ON. And the manager's shown list IS
+  the render source: hiding every `materialType == 0` `CircleToRender` removed the solid planet-orbit
+  rings from the screen. Even so, a circle created through `CreateCircle` + `ShowCircle` never
+  appeared — not on `Line`, not on `PlanetOrbit`, and not when given a drawn orbit ring's exact
+  position, axes, width, material index and encoded colour, at radii from 1 to 9. Whatever the
+  remaining difference is, a mod cannot get a ring onto this view; **do not spend a stage on it
+  again without a new lead.** (A trap met on the way: writing a live circle's `Radius` proves
+  nothing — `CircleRenderer.Draw` re-`Init`s its record from the component every refresh.)
 - **`GalaxyViewCameraController.CenterOnPoint(point, damping)` takes a bare point** and SmoothDamps
   to it, auto-clamped to the galaxy (`ClampCameraPosition`) — the way to move the camera to empty
   space, where `GuiManager.RequestGalaxyOverviewViewLevel` needs an entity and trips the mod's own

@@ -30,20 +30,25 @@ files above.
   been heard at all (no fixture draws one). Open judgment call for the owner: MINOR-faction home
   systems are deliberately NOT in "homeworld" (the diplomacy lens the gate came from iterates
   major empires only) — including them would add ~9 fixture systems to that scope.
-- Ally pins and obliterator missiles are still enumerated from the DRAWN labels, which the
-  camera's culling group can empty (es2-facts, "camera culling is not an information gate"). The
-  probes were moved off that list; these two were not, because the pin's row is built out of the
-  label's own widgets (its text field, its dismiss button). Needs an owner ruling on trading the
-  dismiss action for a zoom-stable row.
+- Ally pins and obliterator missiles are label-free too (2026-08-16, owner-ruled): enumerated from
+  the simulation under the game's own knowledge gates, every word recomposed from the entity, and
+  the pin's dismiss routed through the game's own two orders instead of its button. Nothing about
+  the three open-space kinds moves with the camera any more. Still never heard — no fixture draws
+  a pin or a missile. Open: whether a reader should obey the player's global
+  `ShowRequestToggle` ("draw the pins") switch; it is currently not obeyed.
 - Mining probes (shipped 2026-08-16): the planet rows on the galaxy map and the empire screen say
   the sentence the game keeps in the planet dossier, with the game's own gates. Fixture-blocked
   live: no save has a mining probe.
-- Inspect mode (shipped): the drawn cursor is a heavy cyan FRAME whose sides run out past the
-  corners — the map's line material ignores `width` AND refuses short lines (es2-facts), and neither
-  quads nor circles are available on this view, so thickness is stacked hairlines and reach is
-  overshoot. Its cell reading
-  now carries obliterator projectiles and ally coordination pins too, off the tree's own lists and
-  wording — both remain fixture-unreachable, so neither has ever been heard.
+- Inspect mode (shipped): the drawn cursor is FOUR CYAN BARS on the cell's own edges and nothing
+  outside it (2026-08-16 — the overshooting crop-mark frame is gone; it rested on a "short lines
+  never draw" rule that turned out to be about the camera, not the line, and at the mode's own zoom
+  a 3-unit edge draws fine — es2-facts). Remaining: the bars are BRIGHT, not soft, and that is not
+  currently fixable — the line material ignores `width` and the drawn hue comes out cyan whatever
+  colour slot is asked for, and a soft ring is unavailable (circles cannot be got onto this view at
+  all; every earlier reason for that was wrong and the re-measurement is in es2-facts, with a
+  "do not spend another stage on it" note). Also: the mode's camera does not zoom out with the
+  cursor, so a size-11 cell is wider than the viewport. Its cell reading carries obliterator
+  missiles and ally pins, which remain fixture-unreachable and have never been heard.
 - Scan management-lens remainder (unverifiable at turn 1): the trade-quality dial
   (geometry-only rating, no tooltip), the empire-rank bar graph + global-rank histogram,
   the ghost/traitor lines. The governor panel is MODELLED (batch D) but has only ever been

@@ -159,19 +159,19 @@ namespace ES2Access.Screens
             get { return _probes; }
         }
 
-        /// <summary>The obliterator missiles the map is drawing this build - the same list
-        /// <see cref="AddProjectiles"/> declares its nodes from, so the cell and the tree cannot
-        /// disagree about which shots are in flight.</summary>
-        internal IList<ObliteratorProjectileLabel> DrawnProjectiles
+        /// <summary>The obliterator missiles this empire has been SHOWN - the same list
+        /// <see cref="AddProjectiles"/> declares its nodes from, so the cell, the tree and the
+        /// scanner cannot disagree about which shots are in flight.</summary>
+        internal IList<SightedShot> SightedProjectiles
         {
-            get { return _projectiles; }
+            get { return _shots; }
         }
 
-        /// <summary>The ally pins the map is drawing this build - the same list
+        /// <summary>The ally pins this empire has been shown - the same list
         /// <see cref="AddPins"/> declares its nodes from.</summary>
-        internal IList<CoordinationRequestLabel> DrawnPins
+        internal IList<SightedPin> SightedPins
         {
-            get { return _pins; }
+            get { return _sighted; }
         }
 
         // Regions - what Alt and an arrow jump between - are declared only where a stop really has
@@ -222,6 +222,12 @@ namespace ES2Access.Screens
             new List<ObliteratorProjectileLabel>();
         private readonly List<CoordinationRequestLabel> _pins =
             new List<CoordinationRequestLabel>();
+
+        /// <summary>The missiles and the pins the player has been shown, each with the label the map
+        /// happens to be drawing for it attached - or without one, which is the ordinary case at a
+        /// camera position that has culled it (<see cref="Sight"/>).</summary>
+        private readonly List<SightedShot> _shots = new List<SightedShot>();
+        private readonly List<SightedPin> _sighted = new List<SightedPin>();
 
         public override string Key
         {
@@ -4779,6 +4785,117 @@ namespace ES2Access.Screens
             }
 
             Anchor();
+            Sight();
+        }
+
+        /// <summary>One obliterator missile the player has been shown, and the mote the map is drawing
+        /// for it while the camera is on it.</summary>
+        internal struct SightedShot
+        {
+            public ObliteratorProjectile Shot;
+            public ObliteratorProjectileLabel Label;
+        }
+
+        /// <summary>One ally pin the player has been shown, and the label the map is drawing for it
+        /// while the camera is on it.</summary>
+        internal struct SightedPin
+        {
+            public CoordinationRequest Request;
+            public CoordinationRequestLabel Label;
+        }
+
+        /// <summary>
+        /// The missiles and the pins, from the SIMULATION under the game's own knowledge gates - the
+        /// same move the probes made (<see cref="Anchor"/>) and for the same reason: the label lists
+        /// are emptied by a camera cull that says nothing about what the player may know.
+        ///
+        /// The gates are not the same as each other and neither is invented here. A missile is a
+        /// moving entity like a probe, so it is <c>Visibility[empire] >= 3</c>
+        /// (<c>VisibleEntityLabel.ShowOrHideIfVisibleByEmpire</c>). A pin is not an entity anybody can
+        /// see - it is a message - so its gate is the request's own
+        /// <c>CoordinationRequest.IsVisible</c>, which is "not force-hidden and shared with my
+        /// alliance" (<c>CoordinationRequestLabel.CanShowRequestLabel</c> asks exactly that). What is
+        /// deliberately NOT asked is that method's other half, <c>ShowRequestToggle</c>: that is the
+        /// player's global "draw the pins" switch, and whether a reader should obey it is a question
+        /// for the owner rather than a fact about knowledge.
+        /// </summary>
+        private void Sight()
+        {
+            _shots.Clear();
+            _sighted.Clear();
+            try
+            {
+                Empire empire = Gui.PlayerEmpire;
+                Game game = Gui.Game;
+                Empire[] empires = game == null ? null : game.Empires;
+                for (int e = 0; empires != null && e < empires.Length; e++)
+                {
+                    DepartmentOfDefense defense =
+                        empires[e] == null ? null : empires[e].GetAgency<DepartmentOfDefense>();
+                    ReadOnlyCollection<ObliteratorProjectile> shots =
+                        defense == null ? null : defense.ObliteratorProjectiles;
+                    for (int i = 0; shots != null && i < shots.Count; i++)
+                    {
+                        ObliteratorProjectile shot = shots[i];
+                        if (shot != null && MapVisibility.Sighted(shot.Visibility, empire))
+                        {
+                            _shots.Add(
+                                new SightedShot { Shot = shot, Label = LabelFor(shot) }
+                            );
+                        }
+                    }
+                }
+
+                ICoordinationRequestRepositoryService requests =
+                    Amplitude.Unity.Framework.Services
+                        .GetService<ICoordinationRequestRepositoryService>();
+                IEnumerable<CoordinationRequest> all = requests;
+                if (all != null && empire != null)
+                {
+                    foreach (CoordinationRequest request in all)
+                    {
+                        if (request != null && request.IsVisible(empire))
+                        {
+                            _sighted.Add(
+                                new SightedPin { Request = request, Label = LabelFor(request) }
+                            );
+                        }
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: reading the missiles and pins threw: " + e);
+            }
+        }
+
+        private ObliteratorProjectileLabel LabelFor(ObliteratorProjectile shot)
+        {
+            for (int i = 0; i < _projectiles.Count; i++)
+            {
+                if (_projectiles[i] != null && ReferenceEquals(_projectiles[i].Entity, shot))
+                {
+                    return _projectiles[i];
+                }
+            }
+
+            return null;
+        }
+
+        private CoordinationRequestLabel LabelFor(CoordinationRequest request)
+        {
+            for (int i = 0; i < _pins.Count; i++)
+            {
+                if (
+                    _pins[i] != null
+                    && ReferenceEquals(_pins[i].CoordinationRequest, request)
+                )
+                {
+                    return _pins[i];
+                }
+            }
+
+            return null;
         }
 
         /// <summary>One probe the player has been shown, and the star it is drawn nearest to.</summary>
@@ -5260,15 +5377,10 @@ namespace ES2Access.Screens
         /// </summary>
         private void AddProjectiles(GraphBuilder builder)
         {
-            for (int i = 0; i < _projectiles.Count; i++)
+            for (int i = 0; i < _shots.Count; i++)
             {
-                ObliteratorProjectileLabel it = _projectiles[i];
-                ObliteratorProjectile shot = it.Entity as ObliteratorProjectile;
-                if (shot == null)
-                {
-                    continue;
-                }
-
+                ObliteratorProjectileLabel it = _shots[i].Label;
+                ObliteratorProjectile shot = _shots[i].Shot;
                 NodeVtable vtable = new NodeVtable
                 {
                     Announcements = new List<NodeAnnouncement>
@@ -5278,15 +5390,79 @@ namespace ES2Access.Screens
                         ),
                         GalaxyCoordinates.Part(() => shot.GalaxyPosition),
                         GraphNodes.ValuePart(() => Owner(shot.Empire), false),
-                        GraphNodes.ValuePart(
-                            () => Countdown(it.DurationBackground, it.DurationLabel),
-                            false
-                        ),
+                        GraphNodes.ValuePart(() => ShotCountdown(shot), false),
                     },
-                    Sections = GraphNodes.Sections(null, it.Tooltip),
+                    // The sentence the game writes into the mote's tooltip, composed from the missile
+                    // itself rather than read off the mote - so a shot the camera is not looking at
+                    // still says where it is aimed. Same gate, same words, same arithmetic.
+                    Sections = GraphNodes.Sections(() => ShotDetails(shot), null),
                 };
-                Follow(vtable, shot, it.AgeTransform, it.Tooltip);
+                Follow(
+                    vtable,
+                    shot,
+                    it == null ? null : it.AgeTransform,
+                    it == null ? null : it.Tooltip
+                );
                 builder.AddItem(ProjectileId(shot), vtable);
+            }
+        }
+
+        /// <summary>
+        /// How many turns a missile has left, by the game's own arithmetic
+        /// (<c>ObliteratorProjectileLabel.Refresh</c>): the distance still to fly over its speed,
+        /// rounded UP, and 99 for a missile that is somehow not moving.
+        /// </summary>
+        private static int ShotTurns(ObliteratorProjectile shot)
+        {
+            double east = shot.GalaxyPosition.X - shot.Destination.GalaxyPosition.X;
+            double north = shot.GalaxyPosition.Y - shot.Destination.GalaxyPosition.Y;
+            double away = Math.Sqrt((east * east) + (north * north));
+            float speed = shot.Speed;
+            return speed > 0f ? (int)Math.Ceiling(away / speed) : 99;
+        }
+
+        /// <summary>The countdown the map draws beside a missile - for the player's OWN missile alone,
+        /// which is the game's own choice about what an empire may know.</summary>
+        private static string ShotCountdown(ObliteratorProjectile shot)
+        {
+            try
+            {
+                return ReferenceEquals(shot.Empire, Gui.PlayerEmpire)
+                    ? AgeText.Clean(ShotTurns(shot) + "[turn]")
+                    : null;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>What the game says about a missile in its tooltip: which system it is aimed at and
+        /// how long it has. Written for the player's own missile only - somebody else's is a thing on
+        /// the map with no destination attached, and inventing one from the model would tell the
+        /// player something the game is deliberately not showing.</summary>
+        private static IList<string> ShotDetails(ObliteratorProjectile shot)
+        {
+            try
+            {
+                if (!ReferenceEquals(shot.Empire, Gui.PlayerEmpire))
+                {
+                    return null;
+                }
+
+                string said = AgeText.Clean(
+                    Gui.Localize(
+                        "%ObliteratorProjectileLabelDescription",
+                        ShotTurns(shot),
+                        shot.Destination.LocalizedName
+                    )
+                );
+                return string.IsNullOrEmpty(said) ? null : new List<string> { said };
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: reading a missile's destination threw: " + e);
+                return null;
             }
         }
 
@@ -5323,15 +5499,10 @@ namespace ES2Access.Screens
         /// </summary>
         private void AddPins(GraphBuilder builder)
         {
-            for (int i = 0; i < _pins.Count; i++)
+            for (int i = 0; i < _sighted.Count; i++)
             {
-                CoordinationRequestLabel it = _pins[i];
-                CoordinationRequest request = it.CoordinationRequest;
-                if (request == null)
-                {
-                    continue;
-                }
-
+                CoordinationRequestLabel it = _sighted[i].Label;
+                CoordinationRequest request = _sighted[i].Request;
                 NodeVtable vtable = new NodeVtable
                 {
                     Announcements = new List<NodeAnnouncement>
@@ -5340,34 +5511,156 @@ namespace ES2Access.Screens
                         // A pin is named by its KIND - "attack here" - so the pair is the only thing
                         // that says WHERE here is.
                         GalaxyCoordinates.Part(() => request.GalaxyPosition),
-                        GraphNodes.ValuePart(() => PinMessage(it), false),
+                        // The words on the pin come off the REQUEST, which is where the label reads
+                        // them from too (<c>CoordinationRequestLabel.Refresh</c> assigns
+                        // <c>CoordinationRequest.Message</c> into its field every refresh) - so the
+                        // message is said whether or not the camera is drawing the pin, and is never
+                        // the truncated form the field may have fitted to its box.
+                        GraphNodes.ValuePart(() => AgeText.Clean(request.Message), false),
                     },
-                    Sections = GraphNodes.Sections(
-                        NodeSection.Buffer(AgeWidgets.TooltipLines(it.SenderTooltip)),
-                        GraphNodes.TooltipSection(it.RequestTooltip)
-                    ),
+                    Sections = GraphNodes.Sections(() => PinDetails(request), null),
                 };
-                Follow(vtable, request, it.AgeTransform, it.RequestTooltip);
+                Follow(
+                    vtable,
+                    request,
+                    it == null ? null : it.AgeTransform,
+                    it == null ? null : it.RequestTooltip
+                );
 
                 string key = PinKey(request);
                 ControlId id = PinId(request);
-                AgeTransform dismiss = it.DismissButtonContainer;
-                if (!Visible(dismiss))
-                {
-                    builder.AddItem(id, vtable);
-                    continue;
-                }
-
                 vtable.ControlType = ControlTypes.Group;
                 builder.BeginGroup(id, vtable);
                 if (builder.IsExpanded(id))
                 {
-                    List<CardActions.CardAction> found = new List<CardActions.CardAction>(1);
-                    CardActions.AddRefusable(found, dismiss, CardActions.NameFromTooltip(dismiss));
-                    CardActions.Emit(builder, key, found);
+                    CoordinationRequest dismissed = request;
+                    builder.AddItem(
+                        ControlId.Structural(key + "/dismiss"),
+                        GraphNodes.Button(
+                            () => PinDismissName(dismissed),
+                            () => DismissPin(dismissed)
+                        )
+                    );
                 }
 
                 builder.EndGroup();
+            }
+        }
+
+        /// <summary>
+        /// What the game explains a pin with, in its own two sentences: what this KIND of request
+        /// means, and who sent it.
+        ///
+        /// Both are written into the label's tooltips as plain localized text
+        /// (<c>CoordinationRequestLabel.SetTooltips</c>) from nothing but the request and its owner,
+        /// so both are recomposed here rather than read off a tooltip that only exists while the map
+        /// is drawing the pin. The sender sentence has two forms and the game picks by ownership -
+        /// yours says what the pin is for, somebody else's names them and their faction.
+        /// </summary>
+        private static IList<string> PinDetails(CoordinationRequest request)
+        {
+            List<string> lines = new List<string>(2);
+            try
+            {
+                AddLine(
+                    lines,
+                    AgeText.Clean(
+                        Gui.Localize(
+                            "%CoordinationTools" + request.RequestType
+                                + "CoordinationRequestTooltip"
+                        )
+                    )
+                );
+
+                if (Mine(request))
+                {
+                    AddLine(
+                        lines,
+                        AgeText.Clean(
+                            Gui.Localize("%CoordinationToolsSenderCoordinationRequestTooltip")
+                        )
+                    );
+                    return lines;
+                }
+
+                GuiEmpire sender =
+                    Gui.GuiWrapperProviderService.GetGuiEmpire(request.OwnerEmpire);
+                string named = sender.LocalizedName
+                    + " ("
+                    + sender.GuiFaction.GetSymbolString(false)
+                    + sender.GuiFaction.LocalizedName
+                    + ")";
+                AddLine(
+                    lines,
+                    AgeText.Clean(
+                        Gui.Localize(
+                            "%CoordinationToolsReceiverCoordinationRequestTooltip",
+                            named
+                        )
+                    )
+                );
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: reading a pin's sentences threw: " + e);
+            }
+
+            return lines;
+        }
+
+        /// <summary>Whether this pin is the player's own, which is what decides both the words the
+        /// game explains it with and what letting go of it DOES.</summary>
+        private static bool Mine(CoordinationRequest request)
+        {
+            return ReferenceEquals(Gui.PlayerEmpire, request.OwnerEmpire);
+        }
+
+        /// <summary>What the game calls the button that lets go of a pin - a different sentence for
+        /// your own pin (which is deleted for everyone) and somebody else's (which is only hidden from
+        /// you), because they are different acts.</summary>
+        private static string PinDismissName(CoordinationRequest request)
+        {
+            try
+            {
+                return AgeText.Clean(
+                    Gui.Localize(
+                        Mine(request)
+                            ? "%CoordinationToolsSenderDismissCoordinationRequestTooltip"
+                            : "%CoordinationToolsReceiverDismissCoordinationRequestTooltip"
+                    )
+                );
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Let go of a pin, by the game's own two routes rather than by pressing its button
+        /// (<c>CoordinationRequestLabel.OnDismissCb</c>): your OWN pin is removed for everybody with
+        /// the order that does that, and somebody else's is force-hidden for you alone and its
+        /// visibility recomputed. The label's own <c>Hide()</c> is not replayed - the request raises
+        /// <c>VisibilityChanged</c> and any label that exists hides itself off that, which is also
+        /// what makes this work with no label at all.
+        /// </summary>
+        private static void DismissPin(CoordinationRequest request)
+        {
+            try
+            {
+                if (Mine(request))
+                {
+                    Gui.GetActivePlayerController()
+                        .PostOrder(new OrderRemoveCoordinationRequest(request));
+                    return;
+                }
+
+                request.SetForceHidden(true);
+                request.UpdateVisiblity(Gui.PlayerEmpire);
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: letting go of a pin threw: " + e);
             }
         }
 

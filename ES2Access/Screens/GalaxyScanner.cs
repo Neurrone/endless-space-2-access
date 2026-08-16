@@ -314,12 +314,16 @@ namespace ES2Access.Screens
         /// ended up.
         ///
         /// The arming press says the scope and stops: it moved nothing, so there is nothing found to
-        /// report, and the player asked where they were rather than what is there. A SUBCATEGORY step
-        /// says the subcategory alone - the category has not changed, and the player pressing that key
-        /// is sweeping the four scopes of one category listening for the one they want, which a full
-        /// instance line each time buries. A CATEGORY step says the whole scope and its nearest thing,
-        /// because it has changed both halves of where the cursor is and the nearest thing is the
-        /// answer to "what is over there" that the change was made to ask.
+        /// report, and the player asked where they were rather than what is there.
+        ///
+        /// EVERY press that MOVES reads its landing (owner ruling, 2026-08-16): moving between
+        /// categories or between subcategories is never silent while there is something there. What
+        /// differs between the two is only how much of the scope is named in front of it - a CATEGORY
+        /// step has changed both halves of where the cursor is and says the whole scope, a
+        /// SUBCATEGORY step has changed one and says that half alone - and then both say the nearest
+        /// thing. Saying the subcategory and stopping made the key answer "you are in an empty place"
+        /// and "you are somewhere with things in it" with the same sentence, which is the one thing a
+        /// scope line must never do.
         ///
         /// NO COUNT anywhere in the scope lines (owner ruling): the instance line already ends in "N of
         /// M", so the size of the scope arrives with the first thing in it and saying it twice is words
@@ -347,16 +351,12 @@ namespace ES2Access.Screens
                 return;
             }
 
-            if (answer == ScannerAnswer.Scope && tier == Tier.Subcategory)
-            {
-                Voice.Say(SubcategoryName(), true);
-                return;
-            }
-
             MessageBuilder message = new MessageBuilder();
             if (answer == ScannerAnswer.Scope)
             {
-                message.Fragment(ScopeName());
+                message.Fragment(
+                    tier == Tier.Subcategory ? SubcategoryName() : ScopeName()
+                );
             }
 
             int at = _cursor.Index;
@@ -458,6 +458,7 @@ namespace ES2Access.Screens
                 ModStrings.GalaxyScannerSystemsNeutral,
                 ModStrings.GalaxyScannerSystemsEnemy,
                 ModStrings.GalaxyScannerSystemsHomeworld,
+                ModStrings.GalaxyScannerSystemsMinorFactions,
                 ModStrings.GalaxyScannerSystemsSpecial,
             },
             new string[]
@@ -644,53 +645,47 @@ namespace ES2Access.Screens
             }
         }
 
-        /// <summary>The pins allies have dropped on the map, off the very labels the tree declares its
+        /// <summary>The pins allies have dropped on the map, off the very list the tree declares its
         /// pin rows from, and named the way those rows name them - by the KIND of request, which is
         /// the only name the game gives one.</summary>
         private void Pins(List<Found> found)
         {
-            IList<CoordinationRequestLabel> pins = _screen.DrawnPins;
+            IList<GalaxyHudScreen.SightedPin> pins = _screen.SightedPins;
             for (int i = 0; i < pins.Count; i++)
             {
-                CoordinationRequest pin = pins[i] == null ? null : pins[i].CoordinationRequest;
-                if (pin != null)
-                {
-                    Found made = Make(
-                        GalaxyHudScreen.PinKind(pin),
-                        pin.GalaxyPosition,
-                        ScannerScopes.Only(),
-                        null,
-                        null
-                    );
-                    made.Row = GalaxyHudScreen.PinId(pin);
-                    found.Add(made);
-                }
+                CoordinationRequest pin = pins[i].Request;
+                Found made = Make(
+                    GalaxyHudScreen.PinKind(pin),
+                    pin.GalaxyPosition,
+                    ScannerScopes.Only(),
+                    null,
+                    null
+                );
+                made.Row = GalaxyHudScreen.PinId(pin);
+                found.Add(made);
             }
         }
 
-        /// <summary>The obliterator missiles in flight, off the same labels the tree's own missile rows
+        /// <summary>The obliterator missiles in flight, off the same list the tree's own missile rows
         /// are declared from. The mod's phrase for one, because the game has no name for it - and
-        /// nothing else: where it is AIMED is written into the label's tooltip for the player's own
-        /// missile alone, and that is the game's ruling about what an empire may know.</summary>
+        /// nothing else: where it is AIMED is a sentence the game writes for the player's own missile
+        /// alone, so it stays on the row where it can be reviewed rather than being said to everyone
+        /// sweeping the category.</summary>
         private void Projectiles(List<Found> found)
         {
-            IList<ObliteratorProjectileLabel> shots = _screen.DrawnProjectiles;
+            IList<GalaxyHudScreen.SightedShot> shots = _screen.SightedProjectiles;
             for (int i = 0; i < shots.Count; i++)
             {
-                ObliteratorProjectile shot =
-                    shots[i] == null ? null : shots[i].Entity as ObliteratorProjectile;
-                if (shot != null)
-                {
-                    Found made = Make(
-                        ModStrings.Get(ModStrings.GalaxyObliteratorProjectile),
-                        shot.GalaxyPosition,
-                        ScannerScopes.Only(),
-                        null,
-                        null
-                    );
-                    made.Row = GalaxyHudScreen.ProjectileId(shot);
-                    found.Add(made);
-                }
+                ObliteratorProjectile shot = shots[i].Shot;
+                Found made = Make(
+                    ModStrings.Get(ModStrings.GalaxyObliteratorProjectile),
+                    shot.GalaxyPosition,
+                    ScannerScopes.Only(),
+                    null,
+                    null
+                );
+                made.Row = GalaxyHudScreen.ProjectileId(shot);
+                found.Add(made);
             }
         }
 
@@ -760,7 +755,8 @@ namespace ES2Access.Screens
                 int scopes = ScannerScopes.System(
                     affiliation,
                     node is SpecialNode,
-                    homes.Contains(node.GUID)
+                    homes.Contains(node.GUID),
+                    Minor(colonies, node, empire)
                 );
                 found.Add(Make(node.LocalizedName, node.GalaxyPosition, scopes, node, null));
             }
@@ -899,6 +895,40 @@ namespace ES2Access.Screens
             }
 
             return main == null ? null : main.Empire;
+        }
+
+        /// <summary>
+        /// Whether a minor faction lives on this system.
+        ///
+        /// Asked of ALL the colonies standing at the node, not of the one whose colour the label
+        /// paints (<see cref="Owner"/>): a minor faction shares its system with whoever settles a
+        /// planet there, and that owner rule prefers the player's own colony, so asking it would hide
+        /// exactly the faction sitting in the player's own back garden - which is the one a player
+        /// sweeping this scope most wants to find.
+        ///
+        /// The gate is the same one the ownership answer uses, <c>Visibility[empire] >= 1</c>, so
+        /// nothing here names a faction the map has not shown the player.
+        /// </summary>
+        private static bool Minor(
+            IColonizedStarSystemRepositoryService colonies,
+            StarSystemNode node,
+            Empire empire
+        )
+        {
+            if (colonies == null)
+            {
+                return false;
+            }
+
+            foreach (ColonizedStarSystem colony in colonies.GetValues(node.NodePosition))
+            {
+                if ((int)colony.Visibility[empire] >= 1 && colony.Empire is MinorEmpire)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         /// <summary>Every fleet the map draws a lozenge for, parked and under way alike - the same
