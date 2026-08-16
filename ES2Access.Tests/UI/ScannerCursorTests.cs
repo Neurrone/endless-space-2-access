@@ -44,7 +44,7 @@ namespace ES2Access.Tests.UI
             ScannerCursor cursor = new ScannerCursor();
             Assert.True(cursor.Arm());
 
-            Assert.Equal(ScannerAnswer.Scope, cursor.Hold(Fixture(), ScannerAnswer.Scope));
+            Assert.Equal(ScannerAnswer.Scope, cursor.Hold(Fixture()));
             Assert.Equal(0, cursor.Category);
             Assert.Equal(0, cursor.Subcategory);
             Assert.Equal(0, cursor.Index);
@@ -54,11 +54,14 @@ namespace ES2Access.Tests.UI
         }
 
         [Fact]
-        public void TheArmingPressSaysTheSentenceOfTheTierThatWasPressed()
+        public void TheArmingPressSaysTheScopeItIsParkedInWhicheverTierWasPressed()
         {
+            // The scope sentence carries the parked thing with it, so an arming press is never silent
+            // about what the scanner is standing on - the tier of the key that armed it changes
+            // nothing about where it was standing.
             ScannerCursor cursor = new ScannerCursor();
             cursor.Arm();
-            Assert.Equal(ScannerAnswer.Instance, cursor.Hold(Fixture(), ScannerAnswer.Instance));
+            Assert.Equal(ScannerAnswer.Scope, cursor.Hold(Fixture()));
         }
 
         [Fact]
@@ -66,10 +69,7 @@ namespace ES2Access.Tests.UI
         {
             ScannerCursor cursor = new ScannerCursor();
             cursor.Arm();
-            Assert.Equal(
-                ScannerAnswer.Empty,
-                cursor.Hold(Counts(0, 0, 0, 0, 0, 0, 0, 0), ScannerAnswer.Instance)
-            );
+            Assert.Equal(ScannerAnswer.Empty, cursor.Hold(Counts(0, 0, 0, 0, 0, 0, 0, 0)));
         }
 
         [Fact]

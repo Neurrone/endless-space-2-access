@@ -4,8 +4,8 @@ namespace ES2Access.Core.UI
     /// </summary>
     public enum ScannerAnswer
     {
-        /// <summary>A new scope was landed in: it is named, counted, and its nearest thing said.
-        /// </summary>
+        /// <summary>A scope was landed in or is being reported from a standstill: it is named, and
+        /// then the thing the cursor stands on in it is said.</summary>
         Scope,
 
         /// <summary>One thing in the scope the cursor is already in.</summary>
@@ -76,13 +76,14 @@ namespace ES2Access.Core.UI
             return true;
         }
 
-        /// <summary>Where the cursor already is, for the arming press: <paramref name="said"/> is the
-        /// sentence the tier that was pressed would have said, and the only thing that can displace it
-        /// is the scope having emptied.</summary>
-        public ScannerAnswer Hold(int[][] counts, ScannerAnswer said)
+        /// <summary>Where the cursor already is, for the arming press. It says the scope it is parked
+        /// in whichever tier's key armed it - the player is being told a PLACE, and the tier they
+        /// happened to press says nothing about where they were standing - and the only thing that can
+        /// displace that is the scope having emptied.</summary>
+        public ScannerAnswer Hold(int[][] counts)
         {
             Settle(counts);
-            return Count(counts) == 0 ? ScannerAnswer.Empty : said;
+            return Count(counts) == 0 ? ScannerAnswer.Empty : ScannerAnswer.Scope;
         }
 
         /// <summary>

@@ -121,17 +121,17 @@ namespace ES2Access.Screens
                 switch (actionKey)
                 {
                     case MapActions.ScanCategoryNext:
-                        return Scan(1, ScannerAnswer.Scope, Tier.Category);
+                        return Scan(1, Tier.Category);
                     case MapActions.ScanCategoryPrev:
-                        return Scan(-1, ScannerAnswer.Scope, Tier.Category);
+                        return Scan(-1, Tier.Category);
                     case MapActions.ScanSubcategoryNext:
-                        return Scan(1, ScannerAnswer.Scope, Tier.Subcategory);
+                        return Scan(1, Tier.Subcategory);
                     case MapActions.ScanSubcategoryPrev:
-                        return Scan(-1, ScannerAnswer.Scope, Tier.Subcategory);
+                        return Scan(-1, Tier.Subcategory);
                     case MapActions.ScanNext:
-                        return Scan(1, ScannerAnswer.Instance, Tier.Instance);
+                        return Scan(1, Tier.Instance);
                     case MapActions.ScanPrev:
-                        return Scan(-1, ScannerAnswer.Instance, Tier.Instance);
+                        return Scan(-1, Tier.Instance);
                     case MapActions.ScanGoTo:
                         return GoTo();
                 }
@@ -209,7 +209,7 @@ namespace ES2Access.Screens
         /// rules - skip a scope with nothing in it, come back to the nearest thing - are questions
         /// about the counts, and the counts are what the snapshot is.
         /// </summary>
-        private bool Scan(int delta, ScannerAnswer said, Tier tier)
+        private bool Scan(int delta, Tier tier)
         {
             double east;
             double north;
@@ -220,7 +220,7 @@ namespace ES2Access.Screens
             bool held = Rearmed() || _cursor.Arm();
             if (held)
             {
-                answer = _cursor.Hold(counts, said);
+                answer = _cursor.Hold(counts);
             }
             else
             {
@@ -313,8 +313,11 @@ namespace ES2Access.Screens
         /// What a press says, which depends on WHICH key was pressed and not only on where the cursor
         /// ended up.
         ///
-        /// The arming press says the scope and stops: it moved nothing, so there is nothing found to
-        /// report, and the player asked where they were rather than what is there.
+        /// NO PRESS THAT LANDS ON SOMETHING IS SILENT ABOUT WHAT IT LANDED ON (owner ruling,
+        /// 2026-08-17). The arming press moves nothing, but it is still standing on something, so it
+        /// says the whole scope AND the thing the cursor is parked on - whichever tier's key armed it.
+        /// Saying the scope alone told the player which list they were in and then left the list
+        /// unread, which is the same defect the subcategory tier had.
         ///
         /// EVERY press that MOVES reads its landing (owner ruling, 2026-08-16): moving between
         /// categories or between subcategories is never silent while there is something there. What
@@ -345,17 +348,14 @@ namespace ES2Access.Screens
                 return;
             }
 
-            if (answer == ScannerAnswer.Scope && held)
-            {
-                Voice.Say(ScopeName(), true);
-                return;
-            }
-
             MessageBuilder message = new MessageBuilder();
             if (answer == ScannerAnswer.Scope)
             {
+                // The subcategory tier names the half it changed - but only when it CHANGED one. An
+                // arming press changed neither half, so it names both: the player is being told where
+                // the scanner already stood, and half of that is not a place.
                 message.Fragment(
-                    tier == Tier.Subcategory ? SubcategoryName() : ScopeName()
+                    tier == Tier.Subcategory && !held ? SubcategoryName() : ScopeName()
                 );
             }
 

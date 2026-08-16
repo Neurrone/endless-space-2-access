@@ -352,10 +352,15 @@ adrift row and says `on a star lane to an unexplored system`.
 already is and moves nothing (the screen instance is new, so every reload re-arms it).
 
 **What each tier SAYS** (2026-08-16 wording; no count anywhere in a scope line — the instance line's
-"N of M" carries the size). **Every press that MOVES reads its landing**: the only difference between
-the two scope tiers is how much of the scope is named in front of the instance line. The arming press
-is the exception — it moved nothing, so it says the scope alone in `Category: subcategory` form, e.g.
-`Systems: all`. A SUBCATEGORY step (Shift) says the subcategory then the landing —
+"N of M" carries the size). **No press that lands on something is silent about the landing**: the
+only difference between the tiers is how much of the scope is named in front of the instance line.
+The ARMING press moved nothing but is still parked on something, so it says the whole scope AND that
+thing, whichever tier's key armed it — measured 2026-08-17 on `[Beginner] test` from home,
+`galaxy.scanNext` and `galaxy.scanCategoryNext` alike answer
+`Systems: all, Dusay, 0, 0, here, 1 of 13`, and the NEXT `galaxy.scanNext` answers
+`Heka, -1, -9, 9 south, 1 west, 2 of 13`, which is what proves the arming press held at index 1.
+(Superseded: it said `Systems: all` and stopped, which left the player told which list they were in
+and not what was in it.) A SUBCATEGORY step (Shift) says the subcategory then the landing —
 `friendly, Dusay, 0, 0, here, 1 of 2`. A CATEGORY step (Ctrl) says the whole scope then the landing —
 `Systems: friendly, Dusay, 0, 0, here, 1 of 2`. An instance step says the instance line alone. A
 scope standing empty under a parked cursor keeps its own sentence, `⟨scope⟩, none found`.
@@ -371,8 +376,8 @@ taxonomy v2, so they are no longer skipped), subtract
 `DepartmentOfTheInterior.HomeSystemNode.GalaxyPosition`, and print each axis rounded away from zero
 — the spoken pair IS those two numbers and the spoken direction is their DIFFERENCE from the
 reference point's own rounded pair, north/south component first, zero components dropped, both zero
-collapsing to `here`. Measured on `[Beginner] test` from home: `Systems: all` then Dusay
-`0, 0, here, 1 of 12`, Heka `-1, -9, 9 south, 1 west`, Libra `-11, 11, 11 north, 11 west`,
+collapsing to `here`. Measured on `[Beginner] test` from home: `Systems: all, Dusay,
+0, 0, here, 1 of 13`, then Heka `-1, -9, 9 south, 1 west`, Libra `-11, 11, 11 north, 11 west`,
 Rigel `-16, -5`, Qarius `-5, 23`, Primus `17, 21`, Electra `-17, -21`, Ita `5, 34`, Leo `23, 33`,
 Osulo `-31, -32`, Byrtus `-25, -42`, Heracles `-43, -30`; `Fleets: all, 1st Vanquishers Navy, 0, -3,
 3 south, 1 of 6`. **The distance SORT is unchanged** — the order is still nearest-first by true
