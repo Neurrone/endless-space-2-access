@@ -344,10 +344,25 @@ Victors Navy 3 units north — a different nearest, off the same six fleets.
 reads out ("0, -3, 1st Vanquishers Navy") with `DevProbe.Camera()` focus at
 `origin + (x, y)` exactly. Outside it, a system lands the tree cursor on `galaxy:system/<guid>` with
 its ordinary announcement, and a lane fleet opens its host branch and lands on
-`galaxy:system/535/fleet/1622`. A FREE-MOVEMENT fleet has no tree node at all (es2-facts) and falls
-back to `SelectFleet`: the camera moves to the fleet, the fleet panel opens, and the scanner's own
-line is spoken again — note the panel announces itself only the first time, which is why the echo is
-the arrival announcement.
+`galaxy:system/535/fleet/1622`. A FREE-MOVEMENT fleet now lands the same way (2026-08-16):
+`galaxy.scanGoTo` on `1st Conquerors Navy` opens Dusay's branch and lands on
+`galaxy:system/535/fleet/1570`, heard as "1st Conquerors Navy, -1, -6, button, free moving to Heka,
+…, 11 of 12". Which of the two endpoint rows it picks is the tree's own order — `FleetIndex` walks
+`_owned` then `_other` and `FromEntity` takes the first site — the same rule that already decided
+which end of a lane a lane fleet's Alt+Home lands at. **Fixture-blocked**: the `SelectFleet` fallback
+(camera + fleet panel + the scanner's line spoken again) now needs a free mover with NEITHER endpoint
+perceived, and every system in `[Beginner] test` is perceived.
+
+**Free-moving fleets in the galaxy tree** (`[Beginner] test`, shipped 2026-08-16). The two free
+movers both fly Dusay → Heka, so each gets a row under BOTH — "1st Conquerors Navy, -1, -6, button,
+free moving to Heka, 1 ships, Moving to Heka, 0 movement points, Arrives in 2 turns" under Dusay and
+"… free moving from Dusay, …" under Heka. Their systems count them: Dusay went from "3 fleets under
+way nearby" to 5 and Heka from silence to 2, because the count names everything the branch opens
+onto. Type-ahead answers `results:2` for `vanq`/`conq` — both endpoint rows, which is the design.
+No fixture here has a fleet IN ORBIT (all six read `Position.IsInOrbit == false`), so the parked-fleet
+rows (`AddFleets`) cannot be exercised live in this save; and no fixture produces a free mover with an
+unperceived far end, so `galaxy.fleet-free-moving-to-unexplored` / `-from-unexplored` have never been
+heard.
 **The claim, without pressing a key.** `DevProbe.Claims("PageUp,PageDown")` must read `claims:false`
 on `screen.galaxy` (no modifier is held during an HTTP request), which is the over-suppression
 check — the game's keyboard zoom is untouched. `DevProbe.Chord("Ctrl+PageUp")` reads

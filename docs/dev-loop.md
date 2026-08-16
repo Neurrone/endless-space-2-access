@@ -1,7 +1,8 @@
 # ES2 dev loop — build, reload, verify
 
-Fixtures: **`[Beginner] test`** (turn 5, "Turn 6" displayed — Dusay a colony, Rigel an outpost; `DevProbe.Saves()`
-reports titles) and **`[Midgame] quests fleets`** (turn 3 — the one with a quest pinned).
+Fixtures: **`[Beginner] test`** (turn 21 — Dusay a colony, Heka an outpost, two free-movement
+fleets on Dusay→Heka legs; `DevProbe.Saves()` reports titles) and **`[Midgame] quests fleets`**
+(turn 3 — the one with a quest pinned).
 Screen-by-screen status: `docs/roadmap.md`; working a specific screen and its fixture
 limits: `docs/test-recipes.md`. This file is
 ONLY the loop: the dev server, the REPL, and the screen-agnostic verification patterns.

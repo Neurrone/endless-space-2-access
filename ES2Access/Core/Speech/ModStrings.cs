@@ -214,6 +214,18 @@ namespace ES2Access.Core.Speech
         public const string GalaxyFleetOnStarlane = "galaxy.fleet-on-starlane";
         public const string GalaxyFleetOnWormhole = "galaxy.fleet-on-wormhole";
 
+        // The same answer for a fleet crossing OPEN SPACE between two systems with no lane between
+        // them: there is no line to number, so the leg is named by the system at its other end and by
+        // which end that is. Whole phrases, one per direction, because "to" and "from" are the sentence
+        // rather than a word slotted into it - and one more of each for a far end the map has not
+        // named, which is the same silence a lane running into the dark keeps.
+        public const string GalaxyFleetFreeMovingTo = "galaxy.fleet-free-moving-to";
+        public const string GalaxyFleetFreeMovingFrom = "galaxy.fleet-free-moving-from";
+        public const string GalaxyFleetFreeMovingToUnexplored =
+            "galaxy.fleet-free-moving-to-unexplored";
+        public const string GalaxyFleetFreeMovingFromUnexplored =
+            "galaxy.fleet-free-moving-from-unexplored";
+
         // How many fleets are under way on the lanes leaving a system, said by the system itself after
         // the count of what is parked there - the two together are what its branch opens onto.
         public const string GalaxyFleetUnderWayNearbyOne = "galaxy.fleet-under-way-nearby-one";
@@ -1138,6 +1150,10 @@ namespace ES2Access.Core.Speech
             { GalaxyWormholeUnexplored, "Wormhole {0} to an unexplored system, {1}" },
             { GalaxyFleetOnStarlane, "on starlane {0}, {1}" },
             { GalaxyFleetOnWormhole, "on wormhole {0}, {1}" },
+            { GalaxyFleetFreeMovingTo, "free moving to {0}" },
+            { GalaxyFleetFreeMovingFrom, "free moving from {0}" },
+            { GalaxyFleetFreeMovingToUnexplored, "free moving to an unexplored system" },
+            { GalaxyFleetFreeMovingFromUnexplored, "free moving from an unexplored system" },
             { GalaxyFleetUnderWayNearbyOne, "{0} fleet under way nearby" },
             { GalaxyFleetsUnderWayNearby, "{0} fleets under way nearby" },
             { GalaxySystemPopulation, "{0} population" },

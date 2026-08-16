@@ -914,13 +914,15 @@ namespace ES2Access.Screens
             return ids;
         }
 
-        /// <summary>The fleets one system holds, parked and under way alike - both hang under the system
-        /// itself. A lane is reached from both of its ends, so a fleet flying one is indexed under each
-        /// end: two results with one name, which is the right way round, because either end is a true
-        /// answer to "where is it" and dropping one would make the answer depend on which system the
-        /// search happened to reach first. The lanes are the ones the map draws
-        /// (<see cref="LanesOf"/>) - the same list the branch hosts them from, so the index cannot
-        /// offer a fleet the branch will not hold.</summary>
+        /// <summary>The fleets one system holds - parked, under way on its lanes, and crossing open
+        /// space to or from it alike, all three of which hang under the system itself. A lane is reached
+        /// from both of its ends, so a fleet flying one is indexed under each end: two results with one
+        /// name, which is the right way round, because either end is a true answer to "where is it" and
+        /// dropping one would make the answer depend on which system the search happened to reach first.
+        /// A crossing of open space is indexed under both of its ends for the same reason
+        /// (<see cref="FreeMovingAt"/>). Every list here is the one the BRANCH is built from - the lanes
+        /// the map draws (<see cref="LanesOf"/>) and the same crossings - so the index cannot offer a
+        /// fleet the branch will not hold.</summary>
         private static void IndexPlace(
             StarSystemNode node,
             Empire empire,
@@ -937,10 +939,16 @@ namespace ES2Access.Screens
             ControlId system = ControlId.Referenced(node, systemKey);
             Index(FleetPresence.FleetsAt(node), system, systemKey, sites, declared);
             List<EnRoute> flying = EnRouteOn(LanesOf(node, empire));
-            List<Fleet> nearby = new List<Fleet>(flying.Count);
+            List<FreeLeg> crossing = FreeMovingAt(node, empire);
+            List<Fleet> nearby = new List<Fleet>(flying.Count + crossing.Count);
             for (int i = 0; i < flying.Count; i++)
             {
                 nearby.Add(flying[i].Fleet);
+            }
+
+            for (int i = 0; i < crossing.Count; i++)
+            {
+                nearby.Add(crossing[i].Fleet);
             }
 
             Index(nearby, system, systemKey, sites, declared);
@@ -1550,9 +1558,12 @@ namespace ES2Access.Screens
         /// contents could come to differ, no structural re-keying of everything underneath, and nothing
         /// here has to be made poorer than anything else.
         ///
-        /// The fleets are in TWO groups because the map draws them in two places: what is parked here,
-        /// then what is under way on the lanes leaving here - the latter under both ends of its lane, each
-        /// saying which lane it is on (<see cref="AddEnRoute"/>).
+        /// The fleets are in THREE groups because the map draws them at three distances: what is parked
+        /// here, then what is under way on the lanes leaving here - the latter under both ends of its
+        /// lane, each saying which lane it is on (<see cref="AddEnRoute"/>) - and last what is crossing
+        /// the open space between here and somewhere with no lane to it at all
+        /// (<see cref="AddFreeMoving"/>), which hangs under both ends of that crossing for the same
+        /// reason.
         /// </summary>
         private void AddInside(
             GraphBuilder builder,
@@ -1572,6 +1583,7 @@ namespace ES2Access.Screens
             AddProbesNear(builder, key, probes, node);
             AddFleets(builder, key, FleetPresence.FleetsAt(node));
             AddEnRoute(builder, key, EnRouteOn(lanes));
+            AddFreeMoving(builder, key, FreeMovingAt(node, empire));
             AddHangars(builder, key, node);
             AddProbeDirections(builder, key, node);
         }
@@ -3655,6 +3667,178 @@ namespace ES2Access.Screens
             }
         }
 
+        /// <summary>
+        /// The fleets crossing the OPEN SPACE beside a system - the ones flying a leg between two nodes
+        /// with no lane between them - as children of the system at either end of that crossing.
+        ///
+        /// A free-moving fleet is the one thing the map draws that the rest of this tree had no place
+        /// for: it is in no docking slot and on no lane, so neither the parked list nor the lane list
+        /// holds it, and it used to be reachable only by the inspect cursor and the scanner - findable
+        /// by neither Tab nor the search. The rule for that is the same one every other homeless thing
+        /// on this map is given: where the model gives it no place, it gets a row of its own.
+        ///
+        /// Under BOTH ends, exactly as a fleet on a lane hangs under both of its (<see cref="AddEnRoute"/>):
+        /// either end is a true answer to "where is it", and hosting it under one alone would make the
+        /// answer depend on which of the two the player happened to open. Which end this row is decides
+        /// what it says - on its way OUT of here, or on its way IN - and the other end is named only
+        /// where the map names it, the same silence a lane running into the dark keeps.
+        /// </summary>
+        private static void AddFreeMoving(GraphBuilder builder, string place, List<FreeLeg> crossing)
+        {
+            if (crossing.Count == 0)
+            {
+                return;
+            }
+
+            try
+            {
+                DockLabel[] docks = DockLabels();
+                FleetLabel[] labels = FleetLabels();
+                for (int i = 0; i < crossing.Count; i++)
+                {
+                    FreeLeg leg = crossing[i];
+                    Fleet it = leg.Fleet;
+                    NodeVtable vtable = FleetNode(it, docks, labels);
+                    GameNode far = leg.Other;
+                    string template = far != null
+                        ? (
+                            leg.Outbound
+                                ? ModStrings.GalaxyFleetFreeMovingTo
+                                : ModStrings.GalaxyFleetFreeMovingFrom
+                        )
+                        : (
+                            leg.Outbound
+                                ? ModStrings.GalaxyFleetFreeMovingToUnexplored
+                                : ModStrings.GalaxyFleetFreeMovingFromUnexplored
+                        );
+                    // Straight after the name, in the slot the lane phrase takes on a fleet under way,
+                    // and for the same reason: it answers the question the player is holding while they
+                    // hear it - why is this fleet under THIS system?
+                    vtable.Announcements.Insert(
+                        1,
+                        GraphNodes.ValuePart(
+                            () =>
+                                far == null
+                                    ? ModStrings.Get(template)
+                                    : ModStrings.Format(template, far.LocalizedName),
+                            false
+                        )
+                    );
+                    builder.AddItem(
+                        ControlId.Structural(place + "/fleet/" + it.GUID),
+                        vtable
+                    );
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: reading the fleets crossing open space near a system threw: " + e);
+            }
+        }
+
+        /// <summary>One fleet crossing open space beside a system, from that system's end of the
+        /// crossing.</summary>
+        private struct FreeLeg
+        {
+            public Fleet Fleet;
+
+            /// <summary>The node at the OTHER end of the crossing, or null where the map has not named
+            /// it.</summary>
+            public GameNode Other;
+
+            /// <summary>Whether this end is where the crossing STARTED - the fleet is on its way out
+            /// rather than on its way in.</summary>
+            public bool Outbound;
+        }
+
+        /// <summary>
+        /// The fleets the map draws crossing open space with one end of the crossing at this system.
+        ///
+        /// The fleets are the ones the map is DRAWING (<see cref="FleetPresence.Drawing"/>) - the fleet
+        /// label window's own repository and its own vision gate - so a fleet nobody can see is absent
+        /// here for the same reason it is absent from the picture, and no vision rule is re-derived.
+        ///
+        /// What makes a leg free movement is that its two ends have no <c>Link</c> between them: the
+        /// game stores a leg as a pair of node positions rather than as a lane
+        /// (<c>FleetPosition.SetMovement</c>), and a fleet flying with starlanes ignored gets a pair
+        /// that no line joins. That test is also what keeps this list and <see cref="EnRouteOn"/> from
+        /// both claiming the same fleet, which under one system would be a duplicate control id and
+        /// would throw the whole page out of Build: a leg either has a lane or it does not.
+        /// </summary>
+        private static List<FreeLeg> FreeMovingAt(StarSystemNode node, Empire empire)
+        {
+            List<FreeLeg> crossing = new List<FreeLeg>();
+            try
+            {
+                IPositioningService positioning =
+                    Amplitude.Unity.Framework.Services.GetService<IPositioningService>();
+                if (positioning == null)
+                {
+                    return crossing;
+                }
+
+                IList<Fleet> drawn = FleetPresence.Drawing();
+                for (int i = 0; i < drawn.Count; i++)
+                {
+                    Fleet fleet = drawn[i];
+                    FleetPosition position = fleet.Position;
+                    if (position.IsInOrbit || !position.IsInMovement)
+                    {
+                        continue;
+                    }
+
+                    bool outbound = position.Movement.Start == node.NodePosition;
+                    if (!outbound && position.Movement.Goal != node.NodePosition)
+                    {
+                        continue;
+                    }
+
+                    GameNode far = positioning.GetGameNode(
+                        outbound ? position.Movement.Goal : position.Movement.Start
+                    );
+                    if (far == null || Linked(node, far))
+                    {
+                        continue;
+                    }
+
+                    crossing.Add(
+                        new FreeLeg
+                        {
+                            Fleet = fleet,
+                            Other = Perceived(far, empire) ? far : null,
+                            Outbound = outbound,
+                        }
+                    );
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: working out what is crossing open space near a system threw: " + e);
+            }
+
+            return crossing;
+        }
+
+        /// <summary>Whether a line of any kind joins these two nodes - the model's own question, asked of
+        /// every link the node holds rather than of the lanes the map draws, because a leg with an
+        /// undrawn lane under it is still not free movement.</summary>
+        private static bool Linked(GameNode node, GameNode far)
+        {
+            for (int i = 0; i < node.Links.Count; i++)
+            {
+                Link link = node.Links[i];
+                if (
+                    ReferenceEquals(link.ExtremityNode1, far)
+                    || ReferenceEquals(link.ExtremityNode2, far)
+                )
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         /// <summary>One fleet as a control, wherever it is being hung. Shared so that a fleet reads the
         /// same way parked and under way - everything but the lane it is on is the same fleet.</summary>
         private static NodeVtable FleetNode(Fleet it, DockLabel[] docks, FleetLabel[] flying)
@@ -3768,14 +3952,18 @@ namespace ES2Access.Screens
             return false;
         }
 
-        /// <summary>How many fleets the map is drawing out on this system's lanes, as a whole phrase.
-        /// Nothing at all where there are none - a system with nothing moving near it says nothing about
-        /// it, exactly as one with nothing parked says nothing.</summary>
+        /// <summary>How many fleets the map is drawing out in the space around this system, as a whole
+        /// phrase - what is on its lanes and what is crossing open space to or from it, which together
+        /// are exactly the fleets its branch opens onto. Both halves, because a count that named one of
+        /// them would stop matching the children the player walks. Nothing at all where there are none -
+        /// a system with nothing moving near it says nothing about it, exactly as one with nothing
+        /// parked says nothing.</summary>
         private static string UnderWayNearby(StarSystemNode node, Empire empire)
         {
             try
             {
-                int count = EnRouteOn(LanesOf(node, empire)).Count;
+                int count =
+                    EnRouteOn(LanesOf(node, empire)).Count + FreeMovingAt(node, empire).Count;
                 return count == 0
                     ? null
                     : ModStrings.Plural(

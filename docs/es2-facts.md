@@ -308,18 +308,25 @@ generic graduates to the generic docs.
   `NodePosition`s, either way round, is the whole "which fleets are on this lane" test. Measured after
   `OrderCancelEntityAction`: `Path == null` while `IsInMovement` stays true with start and goal
   intact - a cancel does not call `UnsetMovement` - so a stranded fleet goes on belonging to its lane.
-- **A leg is NOT always a lane, and a fleet on a leg that is not one hangs under NOTHING in the
-  tree.** Free movement (the Ctrl+right-click course, and whatever a scripted start hands out) sets
-  a start and a goal with **no `Link` between them** — `Galaxy.GetLink(start, goal)` answers null —
-  so the fleet is in neither `FleetPresence.FleetsAt` (it is not docked) nor `FleetsOn` (there is no
-  lane to be on), and `GalaxyHudScreen.FleetIndex` therefore has no site for it: the type-ahead
-  search cannot find it and `FromEntity` answers null for it. It IS drawn, so
+- **A leg is NOT always a lane.** Free movement (the Ctrl+right-click course, and whatever a scripted
+  start hands out) sets a start and a goal with **no `Link` between them** —
+  `Galaxy.GetLink(start, goal)` answers null — so the fleet is in neither `FleetPresence.FleetsAt`
+  (it is not docked) nor `FleetsOn` (there is no lane to be on). It IS drawn, so
   `FleetPresence.Drawing()` (the inspect cursor's and the scanner's source) still has it. Measured
   on `[Beginner] test`: two of its six fleets (`1st Conquerors Navy`, `1st Vanquishers Navy`) are on
-  legs between `NodeIndex:76` and `NodeIndex:75` with no link, and the tree declares only the other
-  four. Anything that must "go to" such a fleet falls back to the map's own selection
-  (`GalaxyHudScreen.SelectFleet`); giving these fleets a stop of their own is open work
-  (`docs/roadmap.md`).
+  legs between Dusay and Heka with no link. **Mod policy** (shipped): the tree hangs such a fleet
+  under EVERY endpoint system the player perceives — `GalaxyHudScreen.FreeMovingAt` tests the leg's
+  two ends against the node and `Linked` against the node's own `Links`, which is exactly the test
+  that keeps this list and `EnRouteOn` from both claiming one fleet (two claims under one system is a
+  duplicate control id and throws the page out of `Build`). Both ends, for the lane fleet's reason:
+  either end is a true answer to "where is it". A fleet whose leg has neither end perceived stays
+  tree-absent — no branch exists to hold it — and everything that must "go to" one still falls back
+  to the map's own selection (`GalaxyHudScreen.SelectFleet`).
+- **A leg WITH a link the map does not draw is still not a free mover, and is still tree-absent.**
+  `EnRouteOn` walks `LanesOf`, which drops a lane below the drawn intensity and a wormhole an empire
+  cannot see, while `FreeMovingAt` skips any leg its two ends have a `Link` for. So a fleet flying an
+  undrawn lane falls between them — deliberately: its road is not on the screen, and the scanner and
+  the inspect cursor still reach it. No fixture has produced one.
 - **The position model has no planet-level fleet state.** Docking slots and hangars key on the
   system's `GameNode` (`DockingSlotCursorTarget.GameNode`), and `FleetPosition.GetOrbit()` returns a
   `GameNode`; nothing anywhere binds a fleet to a `Planet`. So "which fleets are at this planet" is

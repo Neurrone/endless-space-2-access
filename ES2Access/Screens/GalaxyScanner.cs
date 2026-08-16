@@ -432,14 +432,15 @@ namespace ES2Access.Screens
             }
 
             // A fleet the tree has NO node for. The tree hangs a fleet under the system it is parked
-            // at or under both ends of the starlane it is flying, and a fleet under FREE MOVEMENT is
-            // on neither: its leg runs between two nodes with no starlane between them (measured on
-            // the fixture - es2-facts), so no system's branch holds it. The map still draws it and the
-            // scanner still finds it, so the key answers with the only "go to this fleet" this game
-            // has for one: the camera and the selection, the same landing the inspect cursor's Enter
-            // makes on a fleet in its cell. There is no node to announce the arrival, and a jump that
-            // says nothing at all reads as a key that did nothing - so the line the scanner found it
-            // with is said again, which is the whole of what arriving there means.
+            // at, under both ends of the starlane it is flying, or under both ends of the open-space
+            // crossing it is making - and a fleet whose crossing has NEITHER end on a system the player
+            // can see is under none of them, because a branch only exists for a system the map names.
+            // The map still draws such a fleet and the scanner still finds it, so the key answers with
+            // the only "go to this fleet" this game has for one: the camera and the selection, the same
+            // landing the inspect cursor's Enter makes on a fleet in its cell. There is no node to
+            // announce the arrival, and a jump that says nothing at all reads as a key that did
+            // nothing - so the line the scanner found it with is said again, which is the whole of what
+            // arriving there means.
             if (found.Fleet != null)
             {
                 GalaxyHudScreen.SelectFleet(found.Fleet);
