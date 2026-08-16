@@ -105,8 +105,10 @@ bare pair can stay with the game where the game uses it).
   instance** — a position in a rebuilt list is an index, not an identity. Each category
   remembers its own last subcategory; a first visit is "all". The "empty" line is then
   only reachable by standing still while the world empties the parked scope.
-- **The first press announces without stepping** — nothing else announces a facility that
-  has no entry. Scope lines stay terse ("Category: subcategory" — no counts); instance
+- **The first press announces without stepping — and still reads the instance it is parked
+  on**; only an empty scope replaces the landing with its own sentence. An announce-only
+  press that stops at the scope name reads as broken silence (this repo shipped that shape
+  twice). Scope lines stay terse ("Category: subcategory" — no counts); instance
   lines carry name, absolute position pair, the offset from the reference as **rounded
   components** ("9 south, 1 west" — the differences of the spoken pairs, so the numbers
   always reconcile with what the rows say), and "n of m"; a zero offset collapses to
