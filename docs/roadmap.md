@@ -39,16 +39,13 @@ files above.
 - Mining probes (shipped 2026-08-16): the planet rows on the galaxy map and the empire screen say
   the sentence the game keeps in the planet dossier, with the game's own gates. Fixture-blocked
   live: no save has a mining probe.
-- Inspect mode (shipped): the drawn cursor is FOUR CYAN BARS on the cell's own edges and nothing
-  outside it (2026-08-16 — the overshooting crop-mark frame is gone; it rested on a "short lines
-  never draw" rule that turned out to be about the camera, not the line, and at the mode's own zoom
-  a 3-unit edge draws fine — es2-facts). Remaining: the bars are BRIGHT, not soft, and that is not
-  currently fixable — the line material ignores `width` and the drawn hue comes out cyan whatever
-  colour slot is asked for, and a soft ring is unavailable (circles cannot be got onto this view at
-  all; every earlier reason for that was wrong and the re-measurement is in es2-facts, with a
-  "do not spend another stage on it" note). Also: the mode's camera does not zoom out with the
-  cursor, so a size-11 cell is wider than the viewport. Its cell reading carries obliterator
-  missiles and ally pins, which remain fixture-unreachable and have never been heard.
+- Inspect mode (shipped): the drawn cursor is a MOD-DRAWN screen-space square (2026-08-17,
+  `InspectMarker` — the borrowed line/circle/quad renderers are all retired and the saga is closed
+  in es2-facts). Colour, alpha and thickness are now the mod's to choose, and a ~26 px floor keeps a
+  1×1 cell visible at full overview. Remaining: the mode's camera does not zoom out with the cursor,
+  so a size-11 cell close in is still wider than the viewport (the square's off-screen edges simply
+  clip). Its cell reading carries obliterator missiles and ally pins, which remain
+  fixture-unreachable and have never been heard.
 - Scan management-lens remainder (unverifiable at turn 1): the trade-quality dial
   (geometry-only rating, no tooltip), the empire-rank bar graph + global-rank histogram,
   the ghost/traitor lines. The governor panel is MODELLED (batch D) but has only ever been

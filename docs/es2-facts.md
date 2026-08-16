@@ -1444,6 +1444,23 @@ generic graduates to the generic docs.
   remaining difference is, a mod cannot get a ring onto this view; **do not spend a stage on it
   again without a new lead.** (A trap met on the way: writing a live circle's `Radius` proves
   nothing — `CircleRenderer.Draw` re-`Init`s its record from the component every refresh.)
+- **THE BORROWED-RENDERER SAGA IS CLOSED: the mod draws its own overlay (2026-08-17).** The three
+  bullets above stay true about the game's renderers and stay worth reading before anyone asks one
+  of them for a mark — but the inspect cursor no longer uses any of them, and no future map mark
+  should start there either. Every borrowed answer failed the same way twice over: the mark is drawn
+  IN THE WORLD, so it shrinks with the camera (the case that has to work is a one-unit cell at full
+  overview zoom, about one pixel of world), and the mod controls neither thickness (width ignored)
+  nor hue (a palette index, not a colour). A `MonoBehaviour` of the mod's own with an `OnGUI` that
+  projects the cell's four world corners through `ICameraService.Camera` (`Default Camera`) and
+  strokes textured rects round the bounding box has none of those problems: IMGUI composites above
+  the whole scene AND above the game's own AGE windows at a low `GUI.depth` (measured — the square
+  drew over an open `GuiTooltipWindow`), thickness and a minimum on-screen size are in PIXELS so no
+  zoom can thin them away, and the colour asked for is the colour drawn. Cost is four
+  `WorldToScreenPoint` calls and eight rects a frame while armed and nothing at all otherwise.
+  `ES2Access/UI/InspectMarker.cs` is the worked example. Two engine notes it paid for:
+  `WorldToScreenPoint` measures y from the BOTTOM and IMGUI from the top, and the host object must be
+  DESTROYED (not disabled) on teardown, because a behaviour surviving a hot reload belongs to an
+  assembly the next load cannot reach.
 - **`GalaxyViewCameraController.CenterOnPoint(point, damping)` takes a bare point** and SmoothDamps
   to it, auto-clamped to the galaxy (`ClampCameraPosition`) — the way to move the camera to empty
   space, where `GuiManager.RequestGalaxyOverviewViewLevel` needs an entity and trips the mod's own

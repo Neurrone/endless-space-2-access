@@ -309,14 +309,32 @@ namespace ES2Access.Screens
         /// also raise the pause menu behind it (<see cref="GalaxyInspect"/>).</summary>
         public override bool ConsumesBack
         {
-            get { return GalaxyInspect.Live || CursorTargeting.EscapeIsOurs; }
+            get { return GalaxyInspect.Active || CursorTargeting.EscapeIsOurs; }
+        }
+
+        /// <summary>Whether a stop key is the map itself - the widget the inspect cursor is a mode OF.
+        /// Every other stop on this screen keeps its own keys while that mode is armed
+        /// (<see cref="GalaxyInspect"/>).</summary>
+        internal static bool IsMapStop(object stopKey)
+        {
+            return Equals(stopKey, SystemStop);
+        }
+
+        /// <summary>The map widget's own stop key, for the mode that has to put the cursor there.
+        /// </summary>
+        internal static object MapStop
+        {
+            get { return SystemStop; }
         }
 
         /// <summary>
         /// The inspect cursor takes the keys it means before anything else on the page sees them - the
         /// arrows, Enter, Escape and the two size keys - which is what makes it a MODE rather than a
         /// set of extra commands on whatever control the tree cursor happens to be standing on. Every
-        /// other key falls through untouched (<see cref="GalaxyInspect"/>).
+        /// other key falls through untouched, and so does every key at all while the cursor is standing
+        /// somewhere other than the map: the mode is a mode of the MAP widget, and the zoom slider two
+        /// stops above it keeps its own arrows whether or not a cell is armed
+        /// (<see cref="GalaxyInspect"/>).
         /// </summary>
         public override bool AnyKey(string actionKey)
         {
@@ -366,6 +384,7 @@ namespace ES2Access.Screens
             _hud.Update();
             _fleetPanel.Update();
             _zoom.Update();
+            _inspect.Update();
             CheckTrailSession();
             // Before the camera is followed and before the graph is next built, so that the landing
             // and the branch it opens both happen on the frame the page arrives on.

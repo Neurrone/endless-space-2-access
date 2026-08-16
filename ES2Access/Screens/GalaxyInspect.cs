@@ -27,13 +27,23 @@ namespace ES2Access.Screens
     /// tile). What lives here is the live half: which of the things the map is drawing fall inside the
     /// cell, where the camera goes, the square drawn on the screen, and the keys.
     ///
-    /// THE KEYS ARE TAKEN AT MODE LEVEL. The arrows, Enter and Escape mean the cell rather than the
-    /// cursor for exactly as long as the mode is up, and they are taken through <c>Screen.AnyKey</c> -
-    /// the hook that is asked before the review chords and before navigation - which is the same
-    /// displacement the map already lives with while the game has armed a targeting cursor. Escape is
-    /// claimed FROM the game only while the mode is live (<see cref="Live"/>), or leaving the mode
-    /// would also raise the pause menu; the two size keys are claimed the same way, so the game keeps
-    /// its own keypad minus (Sleep for this turn) the rest of the time.
+    /// THE KEYS ARE TAKEN AT MODE LEVEL, BUT ONLY ON THE MAP. The arrows, Enter and Escape mean the
+    /// cell rather than the cursor while the mode is up AND the tree cursor is standing on the map
+    /// widget (<see cref="Active"/>), and they are taken through <c>Screen.AnyKey</c> - the hook that
+    /// is asked before the review chords and before navigation - which is the same displacement the map
+    /// already lives with while the game has armed a targeting cursor. Escape is claimed FROM the game
+    /// under the same condition, or leaving the mode would also raise the pause menu; the two size keys
+    /// are claimed the same way, so the game keeps its own keypad minus (Sleep for this turn) the rest
+    /// of the time.
+    ///
+    /// OFF THE MAP THE MODE IS SUSPENDED, not ended. Tab and Shift+Tab still walk the galaxy screen's
+    /// other stops while the cursor is up, and a stop that is not the map - the zoom slider above all -
+    /// gets every key exactly as if this mode did not exist: its arrows adjust it, its Escape is the
+    /// game's, and nothing the player presses there moves the cell. A mode that claimed the arrows
+    /// screen-wide made the zoom slider unusable, which is the defect this rule exists for. The cell
+    /// keeps its place, its size and its square while suspended - the square is a mark on the MAP and
+    /// the map has not changed - and coming back to the map reads the cell out again
+    /// (<see cref="Update"/>), so the player knows the arrows mean the cell once more.
     ///
     /// THE MODE CANNOT OUTLIVE THE PAGE. Anything that takes the player off the map - a screen, a
     /// modal, a system opened - pops this page, and the mode ends there with its lines released and
@@ -53,18 +63,37 @@ namespace ES2Access.Screens
             _screen = screen;
         }
 
-        /// <summary>Whether the cursor is up. Static because the input layer asks it while deciding
-        /// what to claim from the game, and there is exactly one map.</summary>
+        /// <summary>Whether the cursor is up - armed, whether or not the player is standing on the map
+        /// at this moment. Static because the input layer asks it while deciding what to claim from the
+        /// game, and there is exactly one map.</summary>
         public static bool Live
         {
             get { return _live; }
         }
 
+        /// <summary>Whether the mode is DRIVING: up, and with the tree cursor on the map widget. This
+        /// is what every key question asks, because a mode that took keys from the screen's other stops
+        /// would leave them unusable while it was armed.</summary>
+        public static bool Active
+        {
+            get { return _live && OnMap(); }
+        }
+
         /// <summary>What <c>ModInput</c>'s conditional claim asks: the size keys and Escape belong to
-        /// the mod only while the cursor is up.</summary>
+        /// the mod only while the cursor is up and standing on the map.</summary>
         public static bool KeysClaimed()
         {
-            return _live;
+            return Active;
+        }
+
+        /// <summary>Whether the tree cursor is standing on the galaxy map widget - the stop the cell is
+        /// a mode OF. Everything else on this screen (the zoom slider, the turn controls, the
+        /// notifications) suspends the mode for as long as the player is standing there.</summary>
+        private static bool OnMap()
+        {
+            GraphNavigator navigator = ModEntry.Navigator;
+            GraphNode node = navigator == null ? null : navigator.CurrentNode;
+            return node != null && GalaxyHudScreen.IsMapStop(node.StopKey);
         }
 
         /// <summary>Where the cell is, in the pair the map is spoken in - false while the mode is not
@@ -151,10 +180,12 @@ namespace ES2Access.Screens
         /// one arrival.</summary>
         private const int QuietFrames = 15;
 
-        /// <summary>Drop the mode's process-wide state - mod teardown. The lines themselves go back
-        /// when the page is popped, which happens first.</summary>
+        /// <summary>Drop the mode's process-wide state - mod teardown. The square is taken off here as
+        /// well as when the page is popped: it is drawn by an object of this assembly's own, and one
+        /// left alive would be drawn by a behaviour whose type the next load cannot reach.</summary>
         public static void Reset()
         {
+            InspectMarker.Hide();
             _live = false;
             _pending = null;
             _spokenWhenLeft = null;
@@ -185,7 +216,9 @@ namespace ES2Access.Screens
                     return true;
                 }
 
-                if (!_live)
+                // Suspended is not up: off the map widget every key below belongs to whatever the
+                // player is standing on, and the mode hears none of them.
+                if (!Active)
                 {
                     return false;
                 }
@@ -230,9 +263,56 @@ namespace ES2Access.Screens
             }
             else
             {
-                _outline.Clear();
+                InspectMarker.Hide();
             }
         }
+
+        /// <summary>
+        /// Per frame, from the page.
+        ///
+        /// The one thing that has to be noticed between keypresses is the player coming BACK to the map
+        /// with the cursor still up: Tab took them to another stop, the mode went quiet there, and now
+        /// the arrows mean the cell again. So the cell is read out - the same sentence a move reads, and
+        /// no new words - which is how the player hears that the mode is driving again.
+        ///
+        /// It waits a few frames rather than speaking on the frame the focus changed: the stop being
+        /// arrived at announces itself in a burst that interrupts, and a line queued into the middle of
+        /// that burst is thrown away.
+        /// </summary>
+        public void Update()
+        {
+            bool onMap = Active;
+            if (_centre > 0 && onMap && --_centre == 0)
+            {
+                Frame();
+            }
+
+            if (onMap && !_wasOnMap)
+            {
+                _resume = ResumeFrames;
+            }
+
+            _wasOnMap = onMap;
+            if (_resume <= 0)
+            {
+                return;
+            }
+
+            if (--_resume == 0 && onMap)
+            {
+                Voice.Say(CellText(), false);
+            }
+        }
+
+        /// <summary>How long the resume line waits for the stop the player has just landed on to finish
+        /// announcing itself - a fifth of a second, several times the gap between the parts of one
+        /// arrival.</summary>
+        private const int ResumeFrames = 12;
+
+        /// <summary>How many frames after the cursor reaches the map the camera is put back on the cell
+        /// - long enough for the page's focus visual to have committed, which is what it is undoing.
+        /// </summary>
+        private const int CentreFrames = 3;
 
         // ---- the mode ----
 
@@ -244,7 +324,16 @@ namespace ES2Access.Screens
         private static int _quiet;
 
         private readonly GalaxyHudScreen _screen;
-        private readonly InspectOutline _outline = new InspectOutline();
+
+        /// <summary>Whether the player was standing on the map last frame, and what is left of the wait
+        /// before the cell is read out again (<see cref="Update"/>).</summary>
+        private bool _wasOnMap;
+
+        private int _resume;
+
+        /// <summary>What is left of the wait before the camera is put back on the cell after an entry
+        /// that had to move the cursor onto the map first.</summary>
+        private int _centre;
 
         /// <summary>Where the cursor is, in the pair the map is spoken in - whole units from home.
         /// </summary>
@@ -294,6 +383,24 @@ namespace ES2Access.Screens
 
             MeasureGalaxy();
             _live = true;
+            // A mode of the map is entered ON the map. Where the key was pressed from somewhere else on
+            // the screen - the turn controls, the zoom slider - the cursor is moved to the map stop, or
+            // the mode would arm and immediately suspend itself and the arrows would move nothing.
+            // Silently: the mode says what it is a line later, and the stop the player was standing on
+            // is still where Escape puts them back (_entry, taken above).
+            if (navigator != null && !OnMap())
+            {
+                navigator.FocusStop(GalaxyHudScreen.MapStop, false);
+                // That landing commits the page's own focus visual, which pans the camera to the
+                // control landed on - over the cell this entry is about to centre on (measured: the
+                // camera ended on the map stop's remembered star while the cell sat at home,
+                // off-screen). So the camera is put back on the cell once the landing has happened.
+                _centre = CentreFrames;
+            }
+
+            // Entry announces the mode and reads the cell itself; the resume line is for coming BACK.
+            _wasOnMap = true;
+            _resume = 0;
             Voice.Say(
                 new MessageBuilder()
                     .Fragment(ModStrings.Get(ModStrings.GalaxyInspectEntered))
@@ -310,7 +417,10 @@ namespace ES2Access.Screens
         private void Exit(bool announce, bool deferred)
         {
             _live = false;
-            _outline.Clear();
+            _wasOnMap = false;
+            _resume = 0;
+            _centre = 0;
+            InspectMarker.Hide();
             string line = announce ? ModStrings.Get(ModStrings.GalaxyInspectExited) : null;
             if (deferred)
             {
@@ -394,19 +504,25 @@ namespace ES2Access.Screens
         /// <summary>Put the camera and the drawn square on the cell, then say what is in it.</summary>
         private void Settle(bool interrupt)
         {
+            Frame();
+            Voice.Say(CellText(), interrupt);
+        }
+
+        /// <summary>The half of <see cref="Settle"/> that says nothing: the camera on the cell and the
+        /// square round it.</summary>
+        private void Frame()
+        {
             GalaxyPosition origin = GalaxyCoordinates.Origin();
             GalaxyViewLevels.CenterOn(
                 new Vector3(origin.X + _x, 0f, origin.Y + _y),
                 CameraDamping
             );
-            _outline.Draw(
+            InspectMarker.Show(
                 (float)(origin.X + InspectGrid.Low(_x, _size)),
                 (float)(origin.X + InspectGrid.High(_x, _size)),
                 (float)(origin.Y + InspectGrid.Low(_y, _size)),
-                (float)(origin.Y + InspectGrid.High(_y, _size)),
-                _size
+                (float)(origin.Y + InspectGrid.High(_y, _size))
             );
-            Voice.Say(CellText(), interrupt);
         }
 
         private string SizeText()

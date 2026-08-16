@@ -1085,9 +1085,24 @@ bounds are x `[-164.0, 22.8]`, y `[-41.5, 88.3]`, so at 11x11 from (6,50) one `u
 again eastward from (0,9) at 11x11 — (11,9), (22,9), then `Map edge`).
 Fog: (6,50) at 11x11 is `Unexplored` whole, (6,6)
 is `34 squares unexplored` — grow/shrink and the count tracks. **The mode's state probe is
-`DevProbe.Claims("Escape,Minus")`**: both claim true only while it is live, which is how "Enter on an
+`DevProbe.Claims("Escape,Minus")`**: both claim true only while it is live AND the tree cursor is on
+the map stop, which is how "Enter on an
 empty cell did nothing" is proved to be a refusal rather than an exit (focus unchanged in
-`DevProbe.Screen()`, claims still true). The same probe is the ONLY way to check that `galaxy.inspect`
+`DevProbe.Screen()`, claims still true).
+**Suspension off the map (2026-08-17).** `ui.prev` from the map lands on `hud:view-title/name`
+(`Galaxy View, 1 of 2`) and `ui.down` from there on `hud:view-title/zoom` — that pair IS the
+route to the zoom slider, not one Shift+Tab. With the mode armed and the slider focused,
+`DevProbe.Claims("Escape,Minus")` reads `claims:false` on both and `claimsBack:false`, `ui.left`
+/`ui.right` answer `5 of 15`/`4 of 15` like any slider, and the marker's reflected world rect is
+unchanged — that rect is the "the cell did not move" oracle, since a suspended cell says nothing.
+`ui.next` back to the map answers with the map node's own announcement and then, ~12 frames later,
+the retained cell (`Ita, 5, 34, group, collapsed, has tooltip, 1 of 13` then `3, 0`); the next
+`ui.right` reads `6, 0`. `galaxy.inspect` pressed from a stop that is NOT the map moves the cursor
+to the map stop silently and then announces the mode — so `DevProbe.Screen()` reads
+`galaxy:system/514` afterwards while `/speech` holds only the two mode lines. Its camera check is
+the cell, not that node: entry from `hud:empire/screen/EmpireScreen` must end at
+`(68.884, 0, -22.45)` (home), not at Ita's `(74.14, 0, 11.921)` — the silent stop landing commits
+the page's focus visual, which pans the camera, and the mode puts it back three frames later. The same probe is the ONLY way to check that `galaxy.inspect`
 re-injected while the mode is live does nothing — it is silent and changes no state, so `/speech`
 cannot tell it from a key that never arrived: claims still true plus an unchanged cell reading on the
 next `ui.*` is the evidence. `galaxy.inspect` does not toggle out; the exits are `ui.back`, a landing
@@ -1107,26 +1122,41 @@ Measured: enter at the Patriots row (camera `(31.884, 0, -53.45)`), `ui.up` eigh
 `(31.884, 0, -29.49)`, `ui.back` → camera back at `(31.6, 0, -53.3)` and focus back on
 `galaxy:system/491/fleet/1304`; and entering from the empire stop then walking to cell (22,75) and
 back returns the camera to home exactly.
-Teardown is checked by reflecting `_outline._lines` (every slot null),
-`_slot` (-1) and the renderer's own `lineToRenders` count — since 2026-08-16 the outline is **4
-lines in all** again, one per cell edge, at every cursor size.
+**THE DRAWN SQUARE IS A MOD OVERLAY, NOT A BORROWED RENDERER (2026-08-17)** — every `_outline`
+line-renderer probe in this recipe is retired with the mechanism. The mark is
+`ES2Access/UI/InspectMarker.cs`: a `GameObject` named `ES2Access inspect marker` whose `OnGUI`
+projects the cell each frame. **Its evidence is OPTICAL and nothing else** — `crop-shot.ps1` on the
+screen centre, because the mode's own camera centres each cell there (1280x800 → `-Rect
+500,280,280,240` frames it at any size). State probes only support a crop, never replace it: host
+count is
+`Resources.FindObjectsOfTypeAll(typeof(GameObject))` filtered by that name (1 while armed, **0**
+after `ui.back` and after a `/reload` taken with the mode armed — the leak test), and the world rect
+is reflection on the component's `_lowX`/`_highX`/`_lowY`/`_highY`, which is how "the cell did not
+move" is proved while the player is off the map. Two crop-hygiene notes: the focused system's
+`GuiTooltipWindow` sits over the screen centre for the whole mode (the mod points the game's pointer
+at the focused node), so a clean crop wants `PointerFocus.Release()` first — and the
+tooltip-covered crop is itself the non-occlusion evidence, the square drawing over the tooltip
+panel. Camera zoom for the size/zoom matrix is set directly:
+`cam.ForceZoomingOnPosition(step, cam.TargetPositionCurrent)`, step 0 = full overview, 12 = closest
+(`ZoomStepsCount` 13).
 Fixture-blocked in the cell reading, for the same reasons the tree's own nodes are: an obliterator
 missile (none drawn) and an ally coordination pin (no alliance) — both share the cell's enumeration,
 visibility and wording with the tree, so the tree's route is the only place either can be sighted.
-**Visual evidence: do NOT pull the camera back.** The old advice here
-(`ForceZoomingOnPosition(9, origin)` before cropping) is exactly what produced the false "short lines
-never draw" rule — the eating is screen-space, so a pulled-back camera hides edges the player would
-see. Crop at the zoom the MODE puts the camera at. The cursor's own centre is
-`GalaxyViewCameraController.TargetPositionCurrent`, and that is the screen centre, so a crop is aimed
-by halving the window size rather than by projecting corners (this window is ~1306×820, centre
-~(653, 410); a 700×600 rect at (300, 120) frames a size-3 cursor whole). Measured 2026-08-16 with the
-NO-OVERSHOOT outline, crops saved beside this recipe's session files: **cursor 3** draws four bright
-cyan bars in a clean square round the star, each stopping a little short of the corners (the ends the
-shader eats) and NOTHING outside the cell; **cursor 11** draws the same four bars at cell scale, and
-because the mode's camera does not zoom out with the cursor the box is wider than the viewport, so
-only three edges are on screen. The focused node's own tooltip is drawn over the middle of the map
-and can hide the square: `/eval ES2Access.UI.PointerFocus.Release()` after the last `/input` clears
-it for the crop, and the next focus change puts it back.
+**Visual evidence: crop the screen centre, at every zoom.** The cell's centre is
+`GalaxyViewCameraController.TargetPositionCurrent`, which the mode keeps at the screen centre, so a
+crop is aimed by halving the window rather than by projecting corners. The window is **1280×800**
+(`UnityEngine.Screen.width/height`, and the `/screenshot` frame agrees), centre **(640, 400)**; a
+`-Rect 500,280,280,240` frames any cursor size. Measured 2026-08-17 with the mod-drawn overlay: the
+square is pale cyan with a dark backing band and is unmistakable at **1×1 at zoom step 0** (the case
+every borrowed renderer failed — it draws at its ~26 px floor, centred on the cell), at **1×1 zoomed
+in**, at **11×11 at step 0** and at **3×3 at the default step 5**; at 11×11 CLOSE IN the box is still
+wider than the viewport, because the mode's camera does not zoom out with the cursor. The old advice
+in this paragraph — never pull the camera back, because short lines vanish — died with the line
+renderer: the overlay is screen-space and any zoom is now a fair test. The focused node's own tooltip
+is drawn over the middle of the map: it can no longer HIDE the square (IMGUI draws over it, which is
+the non-occlusion evidence) but it makes an ugly crop, and
+`/eval ES2Access.UI.PointerFocus.Release()` after the last `/input` clears it, the next focus change
+putting it back.
 
 **The scan view.** Entry is Enter on the lens toggle — which sits in the view-title stop's ROW,
 so it is `ui.right` from the name node and Up/Down never reach it (Down goes name → Zoom), and
