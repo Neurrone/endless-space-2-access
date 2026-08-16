@@ -454,7 +454,9 @@ namespace ES2Access
             // PageUp and PageDown are the GAME's keyboard zoom, and the game must keep them: the
             // claim is conditional on a modifier being physically held, which is the only thing that
             // tells the chord from the bare press for a camera that reads its binding's key codes and
-            // ignores its modifiers - see GalaxyScanner.KeysClaimed.
+            // ignores its modifiers - see GalaxyScanner.KeysClaimed. The claim is conditional on the
+            // tree cursor standing on the MAP WIDGET too: these are keys of that widget, exactly like
+            // the inspect cursor's, and on the zoom slider or the HUD buttons they are inert.
             input
                 .Register(MapActions.ScanCategoryNext)
                 .Bind(KeyCode.PageDown, ctrl: true)

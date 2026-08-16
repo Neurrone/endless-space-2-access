@@ -19,12 +19,20 @@ namespace ES2Access.Screens
     /// how many neutral systems are within reach, which of my own systems is furthest out. That
     /// question is a LIST, sorted by distance, of one kind of thing at a time, and this is it.
     ///
-    /// IT IS NOT A MODE. There is no key that turns it on and nothing to leave: the three chords are
-    /// live for exactly as long as the map is the focused page, alongside ordinary tree navigation and
-    /// alongside the inspect cursor. That is what makes it usable in the middle of doing something
+    /// IT IS NOT A MODE, BUT IT IS A MODE OF THE MAP WIDGET. There is no key that turns it on and
+    /// nothing to leave: the three chords are live for exactly as long as the tree cursor is standing
+    /// on the map stop (<see cref="GalaxyHudScreen.CursorOnMap"/>), alongside ordinary tree navigation
+    /// and alongside the inspect cursor. That is what makes it usable in the middle of doing something
     /// else - the player asks where the nearest enemy is without giving up the control they were
-    /// standing on. Escape means what it always meant here, and on every other page the chords are
-    /// simply not offered (<c>Screen.AnyKey</c> is only asked of the focused screen).
+    /// standing on. Escape means what it always meant here.
+    ///
+    /// On the screen's OTHER stops - the zoom slider, the HUD buttons, the view title - and on every
+    /// other page, the chords are unclaimed and inert: nothing is consumed, nothing is said, nothing
+    /// moves. The scoping is the inspect cursor's, for the same reason (<see cref="GalaxyInspect"/>):
+    /// a key set belonging to one widget must not be taken from the stops the player walks to next.
+    /// What leaving the map does NOT do is reset anything - the parked scope, the per-category memory
+    /// and the armed flag are all still there when the player tabs back, so the next press resumes the
+    /// sweep instead of re-announcing where it stood.
     ///
     /// THE LISTS ARE BUILT ON THE PRESS AND THROWN AWAY. Nothing is cached between presses and nothing
     /// runs per frame: the answer depends on where the player is reading FROM, which moves with every
@@ -84,9 +92,19 @@ namespace ES2Access.Screens
             _screen = screen;
         }
 
+        /// <summary>Whether the scanner's chords mean the scanner at this moment: the tree cursor is
+        /// standing on the map widget the scanner is a mode of. Everything else on this screen - the
+        /// zoom slider, the HUD buttons, the view title - is a place the chords do not reach, and the
+        /// state the cursor is holding survives the trip there untouched.</summary>
+        public static bool Active
+        {
+            get { return GalaxyHudScreen.CursorOnMap(); }
+        }
+
         /// <summary>
         /// What <c>ModInput</c>'s conditional claim asks: the scanner's keys are taken from the game
-        /// only while the map is the focused page AND the player is physically holding a modifier.
+        /// only while the tree cursor is standing on the MAP WIDGET of the galaxy page AND the player
+        /// is physically holding a modifier.
         ///
         /// The modifier half is what leaves the game its own keyboard zoom. The galaxy camera polls
         /// PageUp and PageDown through its own matcher, which reads the key codes of its binding and
@@ -99,10 +117,7 @@ namespace ES2Access.Screens
         /// </summary>
         public static bool KeysClaimed()
         {
-            GraphNavigator navigator = ModEntry.Navigator;
-            return navigator != null
-                && navigator.Screen is GalaxyHudScreen
-                && KeyboardBinding.AnyModifierHeld;
+            return Active && KeyboardBinding.AnyModifierHeld;
         }
 
         /// <summary>Drop the scanner's position - mod teardown. The lists were never held.</summary>
@@ -113,9 +128,17 @@ namespace ES2Access.Screens
         }
 
         /// <summary>One key, offered to the scanner after the inspect cursor has passed on it. True
-        /// when the scanner took it.</summary>
+        /// when the scanner took it - which it never is away from the map widget, because the same
+        /// question the claim asks has to be asked here too: an injected or unclaimed key still
+        /// arrives, and a chord that stepped the list from the HUD button strip is the defect the
+        /// scoping is for.</summary>
         public bool HandleKey(string actionKey)
         {
+            if (!Active)
+            {
+                return false;
+            }
+
             try
             {
                 switch (actionKey)

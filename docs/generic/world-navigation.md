@@ -89,10 +89,16 @@ captions and legend data can go stale while every lens's window reports itself s
 
 A scanner answers "what is near me, of kind X" without leaving the thing the player is
 standing on. It is a **question, not a mode**: no activation key, nothing to exit, Escape
-never involved — its chorded keys are simply live whenever the world view is focused and
-inert everywhere else. Three tiers share one key pair, separated by modifier — category,
-subcategory, instance — plus one "go to what it points at" key (wotr-access lineage; the
-bare pair can stay with the game where the game uses it).
+never involved — but its chorded keys belong to the **world-view widget**, not the screen:
+live while the focused stop IS that widget, inert on the screen's other stops (a zoom
+slider, a button strip) and on every other screen. Gate BOTH the claim and the handler on
+that stop — an unclaimed key still reaches a screen-level any-key hook. Leaving the widget
+**suspends** the keys and resets nothing: the parked scope, per-category memory and armed
+flag survive, so the next press resumes instead of re-announcing. (ES2 shipped the
+screen-level gate twice — scanner and inspection cursor alike — and the player reported
+both.) Three tiers share one key pair, separated by modifier — category, subcategory,
+instance — plus one "go to what it points at" key (wotr-access lineage; the bare pair can
+stay with the game where the game uses it).
 
 - **Rebuild and re-sort on every press; cache nothing.** The sort key is distance from
   where the player is reading, which moves with every arrow press. Snapshot everything the
@@ -127,7 +133,10 @@ bare pair can stay with the game where the game uses it).
   here is inaudible — an empty landing, a step that stops dead, an index past a shrunk
   list all sound like "found nothing".
 
-Its partner, the **free inspection cursor** (a togglable mode, unlike the scanner): a
+Its partner, the **free inspection cursor** (a togglable mode, unlike the scanner — but a
+mode of the same widget: its keys, arming key included, act only while the focused stop is
+the world-view widget; Tab still walks the screen's other stops with the mode merely
+suspended, cell and size retained): a
 square cell on the world plane in odd sizes, stepping by exactly its size so cells tile
 with half-open bounds; the center stays on the integer coordinates the mod speaks. Entry
 lands at the focused stop's *own* position; the camera follows every move and a drawn

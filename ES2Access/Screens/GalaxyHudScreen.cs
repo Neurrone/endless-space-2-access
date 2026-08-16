@@ -312,12 +312,22 @@ namespace ES2Access.Screens
             get { return GalaxyInspect.Active || CursorTargeting.EscapeIsOurs; }
         }
 
-        /// <summary>Whether a stop key is the map itself - the widget the inspect cursor is a mode OF.
-        /// Every other stop on this screen keeps its own keys while that mode is armed
-        /// (<see cref="GalaxyInspect"/>).</summary>
+        /// <summary>Whether a stop key is the map itself - the widget the inspect cursor and the
+        /// scanner are both modes OF. Every other stop on this screen keeps its own keys while either
+        /// is armed (<see cref="GalaxyInspect"/>, <see cref="GalaxyScanner"/>).</summary>
         internal static bool IsMapStop(object stopKey)
         {
             return Equals(stopKey, SystemStop);
+        }
+
+        /// <summary>Whether the tree cursor is standing on the map widget AT THIS MOMENT - the one
+        /// question both of the map's own key sets ask before taking anything, so that a player
+        /// standing on the zoom slider or the HUD buttons keeps every key those stops answer.</summary>
+        internal static bool CursorOnMap()
+        {
+            GraphNavigator navigator = ModEntry.Navigator;
+            GraphNode node = navigator == null ? null : navigator.CurrentNode;
+            return node != null && IsMapStop(node.StopKey);
         }
 
         /// <summary>

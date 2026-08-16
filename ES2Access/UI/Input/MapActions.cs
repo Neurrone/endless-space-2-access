@@ -21,8 +21,9 @@ namespace ES2Access.UI.Input
         // The SCANNER - "what is near me, of this kind" (<see cref="ES2Access.Screens.GalaxyScanner"/>).
         // Three tiers, each on the same pair of keys with a different modifier: the kind of thing, the
         // way of looking at that kind, and one thing at a time. They are not a mode - nothing arms them
-        // and nothing exits them - so they are offered to the map through the same hook the inspect
-        // cursor uses and are simply inert on every other page.
+        // and nothing exits them - but they ARE keys of the map widget, like the inspect cursor's: they
+        // go through the same hook and are inert on every other stop of the galaxy page and on every
+        // other page, while the position they were left in survives the trip away.
         public const string ScanCategoryNext = "galaxy.scanCategoryNext";
         public const string ScanCategoryPrev = "galaxy.scanCategoryPrev";
         public const string ScanSubcategoryNext = "galaxy.scanSubcategoryNext";

@@ -556,11 +556,22 @@ Two probes stand in for the missing fixture, and both are real evidence rather t
 on `screen.galaxy` (no modifier is held during an HTTP request), which is the over-suppression
 check — the game's keyboard zoom is untouched. `DevProbe.Chord("Ctrl+PageUp")` reads
 `suppressed:false` for the same reason and proves nothing; isolate the conjuncts instead —
-`ModEntry.Navigator.Screen is ES2Access.Screens.GalaxyHudScreen` and
+`ES2Access.Screens.GalaxyScanner.Active` (the map-stop half) and
 `ES2Access.UI.Input.KeyboardBinding.AnyModifierHeld` — and walk `ModEntry.Input.Actions` (as
 `System.Collections.IList`) printing `BindingsDisplay`, `ClaimedWhen != null` and `ClaimedWhen()`.
-Off the galaxy every `galaxy.scan*` injection answers `unconsumed`. The one physical check left —
-bare PageUp/PageDown still zoom, the chords do not — goes on the manual script.
+The one physical check left — bare PageUp/PageDown still zoom, the chords do not — goes on the
+manual script.
+
+**The chords are keys of the MAP WIDGET, not of the galaxy page** (fixed 2026-08-17; they used to
+fire from any stop of the page). Off the galaxy AND on the page's other stops — `hud:empire`,
+`hud:view-title` (which is where the **Zoom slider** lives, `ui.down` once from the stop's first
+control), `hud:quest`, `hud:tutorial`, `hud:notifications`, `hud:turn` — every `galaxy.scan*`
+injection answers `unconsumed` with an empty `speech`. Injection alone is not the oracle (an
+`unconsumed` key that had already stepped the cursor would look the same), so pair it with a state
+probe: reflect `GalaxyHudScreen._scanner` → `GalaxyScanner._cursor` and print
+`Category/Subcategory/Index` plus the private `_armed`. That probe is also the RETENTION oracle —
+park the cursor on the map (`Fleets: friendly`, index 2), Tab away, inject, Tab back, and the four
+numbers must be unchanged and the next `galaxy.scanNext` must step (`… 3 of 6`) rather than re-arm.
 
 **Ordering a fleet around** (state-changing — only against a save you can reload, and only after
 every read-only check is done). It is two halves: **Enter** on the fleet's own node selects it, then

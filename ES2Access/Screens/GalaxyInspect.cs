@@ -96,9 +96,7 @@ namespace ES2Access.Screens
         /// notifications) suspends the mode for as long as the player is standing there.</summary>
         private static bool OnMap()
         {
-            GraphNavigator navigator = ModEntry.Navigator;
-            GraphNode node = navigator == null ? null : navigator.CurrentNode;
-            return node != null && GalaxyHudScreen.IsMapStop(node.StopKey);
+            return GalaxyHudScreen.CursorOnMap();
         }
 
         /// <summary>Where the cell is, in the pair the map is spoken in - false while the mode is not

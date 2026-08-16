@@ -238,8 +238,8 @@ outlive the page: anything that takes the player off the map ends it, and the li
 spoken from the pump once the arriving page's announcement burst has gone quiet.
 
 **The galaxy's SCANNER is on the Page keys with a modifier, and it is NOT a mode** — no arm key,
-nothing to exit, Escape never touches it; the chords are live for as long as the map is the focused
-page, alongside tree navigation and alongside the inspect cursor (`GalaxyScanner` —
+nothing to exit, Escape never touches it; the chords are live for as long as the tree cursor stands
+on the MAP stop, alongside tree navigation and alongside the inspect cursor (`GalaxyScanner` —
 `docs/helpers.md`). **Ctrl+PageUp/Down** cycles the category (systems ↔ fleets, skipping one with
 nothing in it), **Shift+PageUp/Down** the subcategory within it (all / friendly / neutral / enemy,
 skipping empties), **Alt+PageUp/Down** steps one thing at a time and wraps at both ends (the only
@@ -248,9 +248,18 @@ onto the thing's ROUNDED spoken pair while that mode is up, otherwise the tree c
 thing's own node. The FIRST scanner press of a game says where the cursor already is instead of
 moving it. **Bare PageUp/PageDown remain the GAME's keyboard zoom**, Ctrl+Home stays the review
 buffer's first line and plain Home/End the stop's ends.
-The claim is what makes that work and it is a NEW SHAPE: the three chords are claimed only while the
-galaxy page is focused AND a modifier is PHYSICALLY held (`GalaxyScanner.KeysClaimed` through
-`InputAction.ClaimedWhile`). The camera's own matcher reads its binding's key codes and ignores its
+**KEYS OF THE MAP WIDGET, like the inspect cursor's (2026-08-17).** Every chord above acts only
+while the focused stop IS the map (`GalaxyHudScreen.CursorOnMap`, over `IsMapStop`); on the zoom
+slider, the HUD buttons, the view title and every other screen they are unclaimed AND unconsumed —
+no speech, no step, nothing. The gate is asked in `GalaxyScanner.HandleKey` as well as in the claim,
+because an unclaimed key still reaches `Screen.AnyKey`. Leaving the map SUSPENDS the keys and resets
+nothing: the parked scope, the per-category memory and the armed flag are all still there on the way
+back, so the next press resumes the sweep rather than re-announcing where it stood. (Corrected: the
+chords used to be live wherever the galaxy page was focused, which stepped the list from the HUD
+button strip.)
+The claim is what makes the bare press work and it is a NEW SHAPE: the three chords are claimed only
+while the map stop is focused AND a modifier is PHYSICALLY held (`GalaxyScanner.KeysClaimed` →
+`Active`, through `InputAction.ClaimedWhile`). The camera's own matcher reads its binding's key codes and ignores its
 modifiers (`GalaxyViewCameraController.IsInputKeyCombinationPressed`), so a plain claim on PageUp
 would take the bare press too — and `ModInput.LeaveToGame` cannot help, because the modifiers the
 stand-down reads come off the combination the GAME is asking about, which declares none either way.
