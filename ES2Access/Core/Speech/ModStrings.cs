@@ -349,9 +349,10 @@ namespace ES2Access.Core.Speech
 
         // What the map draws OVER a place nobody has been to yet. The game paints it and names it
         // nowhere in its own interface - the only words it has for the thing are in one quest
-        // objective's tooltip, "the fog of war" - so the phrase is the mod's. A cell wholly under it
-        // says so; a cell partly under it says how many of its squares are, which is what tells the
-        // player to shrink the cursor and find the edge of what they can see.
+        // objective's tooltip, "the fog of war" - so the phrase is the mod's, and it names what the
+        // sampling actually asks (IsExplored, per square) rather than the picture: "unexplored". A
+        // cell wholly under it says so; a cell partly under it says how many of its squares are,
+        // which is what tells the player to shrink the cursor and find the edge of what they can see.
         public const string GalaxyInspectFog = "galaxy.inspect.fog";
         public const string GalaxyInspectFogOne = "galaxy.inspect.fog-one";
         public const string GalaxyInspectFogMany = "galaxy.inspect.fog-many";
@@ -1203,9 +1204,9 @@ namespace ES2Access.Core.Speech
             { GalaxyInspectStarlaneUnexplored, "Star lane from {0} going {1}" },
             { GalaxyInspectWormhole, "Wormhole from {0} to {1}" },
             { GalaxyInspectWormholeUnexplored, "Wormhole from {0} going {1}" },
-            { GalaxyInspectFog, "Fog of war" },
-            { GalaxyInspectFogOne, "1 square in fog of war" },
-            { GalaxyInspectFogMany, "{0} squares in fog of war" },
+            { GalaxyInspectFog, "Unexplored" },
+            { GalaxyInspectFogOne, "1 square unexplored" },
+            { GalaxyInspectFogMany, "{0} squares unexplored" },
             { GalaxyScannerSystemsAll, "All systems" },
             { GalaxyScannerSystemsFriendly, "Friendly systems" },
             { GalaxyScannerSystemsNeutral, "Neutral systems" },

@@ -1244,6 +1244,10 @@ namespace ES2Access.Screens
         /// them. On turn one there is one colony and nothing else has been seen yet, and a lone region
         /// makes Alt and an arrow swallow the key and move nothing - which sounds like the key being
         /// broken rather than like there being nowhere else to go.
+        ///
+        /// Inside each half the systems are put in the order they would be READ off the map -
+        /// <see cref="ReadingOrder"/> - so that the list runs the same way twice and the same way the
+        /// pairs it speaks do. Home is not held at the front: it sits wherever its own pair puts it.
         /// </summary>
         private void BuildSystems(GraphBuilder builder)
         {
@@ -1279,6 +1283,9 @@ namespace ES2Access.Screens
                         _other.Add(node);
                     }
                 }
+
+                _owned.Sort(ReadingOrder);
+                _other.Sort(ReadingOrder);
 
                 Drifting();
                 // Only the probes with no star to hang under: the rest are children of one
@@ -1331,6 +1338,51 @@ namespace ES2Access.Screens
             {
                 Log.Warn("galaxy: reading the systems threw: " + e);
             }
+        }
+
+        /// <summary>
+        /// The order the systems are listed in, within each of the halves: north to south by rows a
+        /// unit high, and west to east along a row.
+        ///
+        /// Left alone the list arrives in the galaxy's own node array order, which is whatever order
+        /// generation built the nodes in - it means nothing to a player, and a list they count
+        /// positions along ("7 of 23") has to have a reason for the position.
+        ///
+        /// Sorted on the SPOKEN pair rather than on the raw position, because the pair is the only
+        /// thing the player can hear: a player holding two rows' numbers against each other must never
+        /// meet "3, 12" before "-4, 12". So the rounding here is <see cref="MapCoordinates.Round"/>'s,
+        /// the same rounding the row itself says, and two systems whose northing rounds the same are
+        /// one row however far apart their raw positions are. Identical rounded pairs are settled on
+        /// the raw values so that the order is at least fixed - the galaxy never places two systems
+        /// that close, so nothing is expected to reach it.
+        ///
+        /// Once per build of the stop rather than per frame, through a delegate held here rather than
+        /// a method group at the call site, which would allocate one per sort.
+        /// </summary>
+        private static readonly Comparison<StarSystemNode> ReadingOrder = CompareReadingOrder;
+
+        private static int CompareReadingOrder(StarSystemNode left, StarSystemNode right)
+        {
+            double leftEast,
+                leftNorth,
+                rightEast,
+                rightNorth;
+            GalaxyCoordinates.Offsets(left.GalaxyPosition, out leftEast, out leftNorth);
+            GalaxyCoordinates.Offsets(right.GalaxyPosition, out rightEast, out rightNorth);
+            int row = MapCoordinates.Round(rightNorth).CompareTo(MapCoordinates.Round(leftNorth));
+            if (row != 0)
+            {
+                return row;
+            }
+
+            int along = MapCoordinates.Round(leftEast).CompareTo(MapCoordinates.Round(rightEast));
+            if (along != 0)
+            {
+                return along;
+            }
+
+            int north = rightNorth.CompareTo(leftNorth);
+            return north != 0 ? north : leftEast.CompareTo(rightEast);
         }
 
         /// <summary>The map's own rule for whether a node's name is drawn: it has been explored, and

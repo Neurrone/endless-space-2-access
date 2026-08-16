@@ -1342,7 +1342,8 @@ generic graduates to the generic docs.
   `Galaxy.GameNodes` instead (`[Beginner] test`: x `[-164.0, 22.8]`, y `[-41.5, 88.3]` from home).
   **The game has no UI word for the fog**: "the fog of war" occurs exactly once in the whole English
   corpus, in one quest objective's tooltip, and "miasma" occurs nowhere at all — so a mod that says
-  it says it in its own words.
+  it says it in its own words. The mod's word is **"unexplored"** (`galaxy.inspect.fog*`), naming the
+  predicate it actually samples rather than the picture drawn over it.
 - **`InputManager` binds no letter keys and no I at all.** The full default table is the F-keys
   (F1-F8 screens), arrows, `KeypadEnter` end turn, `Space`/`Mouse2` scan view, `Return`/`Tab` chat,
   `KeypadMinus` sleep-for-this-turn, `Ctrl+F` search, `PageUp`/`PageDown` zoom, the debug chords, and

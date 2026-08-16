@@ -285,6 +285,18 @@ Show-location marker (the quest has none, so the game hides the button), the min
 the podium a cooperative quest gets instead of a reward table, and the "Pending objective choice…"
 placeholder.
 
+**The galaxy tree's system order** (shipped 2026-08-16). The top-level rows are sorted on the SPOKEN
+pair — rounded northing descending, rounded easting ascending inside a row a unit high — inside each
+of the two regions (colonies, then everything else); ties on the rounded pair fall back to the raw
+values, which no fixture reaches. `[Beginner] test` reads, ordinals included: Dusay `1 of 13`, Heka
+`2 of 13`, then Ita, Leo, Qarius, Primus, Libra, Rigel, Electra, B10 6805, Heracles, Osulo, Byrtus
+`13 of 13`. The independent oracle is an `/eval` walk of `Galaxy.StarSystemNodes` (as a non-generic
+`IEnumerator` — the property is a yield iterator) filtered by `MapVisibility.Perceived`, printing
+`MapCoordinates.Round(position − origin)`. Home is NOT pinned first: Dusay leads the colonies only
+because its northing 0 beats Heka's −9, and in a single merged list it would sit 6th. Nothing else
+re-orders: the scanner keeps its distance sort (baseline below unchanged) and a branch's children
+keep theirs (Dusay's twelve, Conquerors still `11 of 12`).
+
 **Travelling the starlanes** (read-only; the three systems this recipe was written against are Dusay
 `535`, Rigel `505` and Primus `543` — a TWO-hop chain, with only Dusay↔Primus and Dusay↔Rigel named
 lanes. **The fixture has since advanced**: it now perceives twelve systems plus one special node, so
@@ -896,8 +908,8 @@ lane-crossing check against known geometry (Dusay 0,0 to Primus 16.5,20.9 enters
 oracle for the pan: `DevProbe.Camera().focus` must equal `GalaxyCoordinates.Origin() + (x, 0, y)` —
 `(74.884, 0, -16.45)` at cell (6,6) with home at `(68.884, -22.45)`. Edge refusal: the galaxy's node
 bounds are x `[-164.0, 22.8]`, y `[-41.5, 88.3]`, so at 11x11 from (6,50) one `ui.right` reaches
-(17,50) and the next answers `Edge of the galaxy`. Fog: (6,50) at 11x11 is `Fog of war` whole, (6,6)
-is `34 squares in fog of war` — grow/shrink and the count tracks. **The mode's state probe is
+(17,50) and the next answers `Edge of the galaxy`. Fog: (6,50) at 11x11 is `Unexplored` whole, (6,6)
+is `34 squares unexplored` — grow/shrink and the count tracks. **The mode's state probe is
 `DevProbe.Claims("Escape,Minus")`**: both claim true only while it is live, which is how "Enter on an
 empty cell did nothing" is proved to be a refusal rather than an exit (focus unchanged in
 `DevProbe.Screen()`, claims still true). The same probe is the ONLY way to check that `galaxy.inspect`
