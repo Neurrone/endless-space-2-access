@@ -31,8 +31,10 @@ namespace ES2Access.Screens
     /// drawn AT a system or ON a lane between two of them, and either way it is walked under a SYSTEM -
     /// after that system's planets and starlanes. A fleet in orbit hangs under the system it is
     /// orbiting; a fleet under way hangs under BOTH systems its lane runs between, saying which lane it
-    /// is on and which way that lane leaves, because either end is a true answer to "where is it" and
-    /// choosing one would make the answer depend on which system the player happened to open. A list of
+    /// is on and which way that lane leaves, because a lane is drawn map geometry and either end is a
+    /// true answer to "where is it". A fleet crossing OPEN SPACE has no drawn road and hangs under its
+    /// DESTINATION alone (<see cref="AddFreeMoving"/>), or at the top of the systems list where the map
+    /// has not named that destination (<see cref="AddAdrift"/>). A list of
     /// every fleet in the empire, in a corner of its own, described a picture the map does not draw and
     /// made "where is it" a question the player had to answer from a sentence rather than from the tree
     /// they were already in. This is a DELIBERATE deviation from the game's own arrangement, approved as
@@ -176,10 +178,14 @@ namespace ES2Access.Screens
         // two halves. A stop with one region swallows the key and moves nothing, which reads as the
         // key being broken rather than as there being nowhere else to go. The empire stop declares
         // none: its parts are its rows, and up and down already walk them.
-        private static readonly object OwnedSystemsRegion = "galaxy:systems/owned";
-        private static readonly object OtherSystemsRegion = "galaxy:systems/other";
+        //
+        /// <summary>Everything the map draws AT a place - every star the player has seen, whoever owns
+        /// it, in the order the map reads. One region and not two: an empire's own colonies are not a
+        /// part of the picture drawn apart from the rest, they are stars in the same sky, and splitting
+        /// them off made the list run north to south twice (owner ruling 2026-08-16).</summary>
+        private static readonly object SystemsRegion = "galaxy:systems/stars";
 
-        /// <summary>The third of the map's halves: what the game draws OUT BETWEEN the stars - a probe
+        /// <summary>The map's other half: what the game draws OUT BETWEEN the stars - a probe
         /// drifting, a planet-killer crossing, a pin an ally has dropped. None of them stands at a place
         /// (<see cref="Drifting"/>), so none of them can hang under one, and they are jumped to as a
         /// region of their own rather than being left at the end of a list of a hundred systems.</summary>
@@ -190,8 +196,19 @@ namespace ES2Access.Screens
 
         // Reused across builds rather than allocated per frame: the galaxy is walked whole to work
         // out which systems the player can see, and Build runs every tick.
-        private readonly List<StarSystemNode> _owned = new List<StarSystemNode>();
-        private readonly List<StarSystemNode> _other = new List<StarSystemNode>();
+
+        /// <summary>Every star the map is naming, in the order it reads - one list, colonies and
+        /// everything else together (<see cref="SystemsRegion"/>).</summary>
+        private readonly List<StarSystemNode> _systems = new List<StarSystemNode>();
+
+        /// <summary>Which of them are the empire's own, for the one word the row says about it. Kept
+        /// apart from the order rather than sorted into it: whose a star is changes what its row says,
+        /// never where the row sits.</summary>
+        private readonly List<StarSystemNode> _colonies = new List<StarSystemNode>();
+
+        /// <summary>The fleets crossing open space towards somewhere the map has not named - the ones
+        /// with no system to hang under (<see cref="AddAdrift"/>).</summary>
+        private readonly List<Fleet> _adrift = new List<Fleet>();
 
         // The same, for the three things the map draws away from any star. Each holds the LABEL rather
         // than the entity, because the label is what answers "is the game drawing this".
@@ -479,7 +496,7 @@ namespace ES2Access.Screens
         /// being loaded has not run <see cref="BuildSystems"/> even once.</summary>
         private bool Declaring()
         {
-            return _owned.Count > 0 || _other.Count > 0;
+            return _systems.Count > 0;
         }
 
         /// <summary>Speak what the landing needs saying beyond the node itself, then send the cursor.
@@ -590,7 +607,7 @@ namespace ES2Access.Screens
         /// (<see cref="Perceived"/>).</summary>
         private ControlId SystemId(StarSystemNode node)
         {
-            return node != null && (_owned.Contains(node) || _other.Contains(node))
+            return node != null && _systems.Contains(node)
                 ? ControlId.Structural("galaxy:system/" + node.GUID)
                 : null;
         }
@@ -625,15 +642,10 @@ namespace ES2Access.Screens
             // answer rather than a late one.
             settled = Declaring();
             List<FleetSite> sites = FleetIndex(new HashSet<ControlId>());
-            List<Spot> spots = new List<Spot>(_owned.Count + _other.Count + sites.Count);
-            for (int i = 0; i < _owned.Count; i++)
+            List<Spot> spots = new List<Spot>(_systems.Count + sites.Count);
+            for (int i = 0; i < _systems.Count; i++)
             {
-                Add(spots, _owned[i].GalaxyPosition, SystemId(_owned[i]), -1);
-            }
-
-            for (int i = 0; i < _other.Count; i++)
-            {
-                Add(spots, _other[i].GalaxyPosition, SystemId(_other[i]), -1);
+                Add(spots, _systems[i].GalaxyPosition, SystemId(_systems[i]), -1);
             }
 
             for (int i = 0; i < _drifting.Count; i++)
@@ -861,14 +873,15 @@ namespace ES2Access.Screens
             );
         }
 
-        /// <summary>One fleet and the branch that has to be open before it is a node: the system it is
-        /// parked at, or one of the two whose lane it is flying. One branch, because a fleet hangs under
-        /// a SYSTEM either way now.</summary>
+        /// <summary>One fleet, the node it is declared as, and the branch that has to be open before
+        /// that node exists: the system it is parked at, or one of the two whose lane it is flying, or
+        /// nothing at all for one crossing open space towards somewhere the map has not named, whose
+        /// row is at the top level and needs no branch opened (<see cref="AddAdrift"/>).</summary>
         private struct FleetSite
         {
             public Fleet Fleet;
             public ControlId System;
-            public string Key;
+            public ControlId Node;
         }
 
         /// <summary>Every fleet the map is drawing and the place each is drawn at, minus the ones the
@@ -880,14 +893,19 @@ namespace ES2Access.Screens
             try
             {
                 Empire empire = PlayerEmpire();
-                for (int i = 0; i < _owned.Count; i++)
+                for (int i = 0; i < _systems.Count; i++)
                 {
-                    IndexPlace(_owned[i], empire, sites, declared);
+                    IndexPlace(_systems[i], empire, sites, declared);
                 }
 
-                for (int i = 0; i < _other.Count; i++)
+                for (int i = 0; i < _adrift.Count; i++)
                 {
-                    IndexPlace(_other[i], empire, sites, declared);
+                    Fleet fleet = _adrift[i];
+                    ControlId id = AdriftId(fleet);
+                    if (!declared.Contains(id))
+                    {
+                        sites.Add(new FleetSite { Fleet = fleet, System = null, Node = id });
+                    }
                 }
             }
             catch (Exception e)
@@ -915,14 +933,14 @@ namespace ES2Access.Screens
         }
 
         /// <summary>The fleets one system holds - parked, under way on its lanes, and crossing open
-        /// space to or from it alike, all three of which hang under the system itself. A lane is reached
-        /// from both of its ends, so a fleet flying one is indexed under each end: two results with one
-        /// name, which is the right way round, because either end is a true answer to "where is it" and
-        /// dropping one would make the answer depend on which system the search happened to reach first.
-        /// A crossing of open space is indexed under both of its ends for the same reason
-        /// (<see cref="FreeMovingAt"/>). Every list here is the one the BRANCH is built from - the lanes
-        /// the map draws (<see cref="LanesOf"/>) and the same crossings - so the index cannot offer a
-        /// fleet the branch will not hold.</summary>
+        /// space TO it, all three of which hang under the system itself. A lane is reached from both of
+        /// its ends, so a fleet flying one is indexed under each end: two results with one name, which
+        /// is the right way round, because either end is a true answer to "where is it" and dropping one
+        /// would make the answer depend on which system the search happened to reach first. A crossing
+        /// of open space is indexed under its DESTINATION alone (<see cref="FreeMovingAt"/>), because
+        /// that is the one end the map itself shows. Every list here is the one the BRANCH is built
+        /// from - the lanes the map draws (<see cref="LanesOf"/>) and the same crossings - so the index
+        /// cannot offer a fleet the branch will not hold.</summary>
         private static void IndexPlace(
             StarSystemNode node,
             Empire empire,
@@ -939,7 +957,7 @@ namespace ES2Access.Screens
             ControlId system = ControlId.Referenced(node, systemKey);
             Index(FleetPresence.FleetsAt(node), system, systemKey, sites, declared);
             List<EnRoute> flying = EnRouteOn(LanesOf(node, empire));
-            List<FreeLeg> crossing = FreeMovingAt(node, empire);
+            List<Fleet> crossing = FreeMovingAt(node);
             List<Fleet> nearby = new List<Fleet>(flying.Count + crossing.Count);
             for (int i = 0; i < flying.Count; i++)
             {
@@ -948,7 +966,7 @@ namespace ES2Access.Screens
 
             for (int i = 0; i < crossing.Count; i++)
             {
-                nearby.Add(crossing[i].Fleet);
+                nearby.Add(crossing[i]);
             }
 
             Index(nearby, system, systemKey, sites, declared);
@@ -970,16 +988,21 @@ namespace ES2Access.Screens
                     continue;
                 }
 
-                sites.Add(new FleetSite { Fleet = fleets[i], System = system, Key = key });
+                sites.Add(new FleetSite { Fleet = fleets[i], System = system, Node = id });
             }
         }
 
         /// <summary>Open the system a fleet is drawn at or beside, and answer with the fleet itself. The
-        /// opening is recorded rather than done: the expansion set belongs to the next rebuild.</summary>
+        /// opening is recorded rather than done: the expansion set belongs to the next rebuild. A fleet
+        /// whose row is at the top level has nothing to open.</summary>
         private ControlId Reveal(FleetSite site)
         {
-            _pendingExpand.Add(site.System);
-            return ControlId.Structural(site.Key + "/fleet/" + site.Fleet.GUID);
+            if (site.System != null)
+            {
+                _pendingExpand.Add(site.System);
+            }
+
+            return site.Node;
         }
 
         /// <summary>Open the branches a search landed in, and close the ones travelling has left behind.
@@ -1234,20 +1257,25 @@ namespace ES2Access.Screens
         // ---- systems ----
 
         /// <summary>
-        /// The star systems the player can see, their own colonies first.
+        /// The star systems the player can see, in ONE list.
         ///
         /// Which ones those are is the same question the map asks when it decides whether to draw a
         /// system's name: explored at least once, and either remembered or currently in sight. Asking
         /// it the same way is what keeps this list and the map showing the same galaxy.
         ///
-        /// The two halves are declared as regions to jump between only while there really are two of
-        /// them. On turn one there is one colony and nothing else has been seen yet, and a lone region
-        /// makes Alt and an arrow swallow the key and move nothing - which sounds like the key being
-        /// broken rather than like there being nowhere else to go.
+        /// One list and not two. An empire's own colonies used to be held at the front, which made the
+        /// list run north to south twice and put two systems that are neighbours on the map at opposite
+        /// ends of the walk; the map itself draws no such division, and whose a star is is already the
+        /// first thing its own row says (owner ruling 2026-08-16). So the only division left on this
+        /// stop is between what stands AT a place and what is drawn out between the stars, which is a
+        /// division the picture really has.
         ///
-        /// Inside each half the systems are put in the order they would be READ off the map -
+        /// The systems are put in the order they would be READ off the map -
         /// <see cref="ReadingOrder"/> - so that the list runs the same way twice and the same way the
-        /// pairs it speaks do. Home is not held at the front: it sits wherever its own pair puts it.
+        /// pairs it speaks do. Home is not held at the front either: it sits wherever its own pair puts
+        /// it. A fleet crossing open space towards somewhere the map has not named is walked into that
+        /// same order by its own position (<see cref="AddAdrift"/>), because it stands at no place and
+        /// there is nowhere else for it to be.
         /// </summary>
         private void BuildSystems(GraphBuilder builder)
         {
@@ -1260,8 +1288,8 @@ namespace ES2Access.Screens
                     return;
                 }
 
-                _owned.Clear();
-                _other.Clear();
+                _systems.Clear();
+                _colonies.Clear();
                 DepartmentOfTheInterior interior = empire.GetAgency<DepartmentOfTheInterior>();
                 if (interior != null)
                 {
@@ -1269,23 +1297,25 @@ namespace ES2Access.Screens
                     {
                         // An empire can hold more than one thing in the same system - a colony and a
                         // ghost of it - and the system is still one place on the map.
-                        if (colony.Node != null && !_owned.Contains(colony.Node))
+                        if (colony.Node != null && !_colonies.Contains(colony.Node))
                         {
-                            _owned.Add(colony.Node);
+                            _colonies.Add(colony.Node);
+                            _systems.Add(colony.Node);
                         }
                     }
                 }
 
                 foreach (StarSystemNode node in galaxy.StarSystemNodes)
                 {
-                    if (!_owned.Contains(node) && Perceived(node, empire))
+                    if (!_colonies.Contains(node) && Perceived(node, empire))
                     {
-                        _other.Add(node);
+                        _systems.Add(node);
                     }
                 }
 
-                _owned.Sort(ReadingOrder);
-                _other.Sort(ReadingOrder);
+                _systems.Sort(ReadingOrder);
+                FreeMovingAdrift(_systems, _adrift);
+                _adrift.Sort(FleetReadingOrder);
 
                 Drifting();
                 // Only the probes with no star to hang under: the rest are children of one
@@ -1296,13 +1326,10 @@ namespace ES2Access.Screens
                 // sounds like the key being broken - so the map declares its halves only while it
                 // really has more than one of them, whichever ones those are.
                 bool split =
-                    (_owned.Count > 0 ? 1 : 0)
-                        + (_other.Count > 0 ? 1 : 0)
-                        + (drifting > 0 ? 1 : 0)
-                    > 1;
-                if (split && _owned.Count > 0)
+                    (_systems.Count + _adrift.Count > 0 ? 1 : 0) + (drifting > 0 ? 1 : 0) > 1;
+                if (split)
                 {
-                    builder.SetRegion(OwnedSystemsRegion);
+                    builder.SetRegion(SystemsRegion);
                 }
 
                 // Fetched once for the whole stop rather than once per system: the labels the map
@@ -1310,19 +1337,37 @@ namespace ES2Access.Screens
                 // window serves every system this build declares.
                 StarSystemLabel[] labels = SystemLabels();
 
-                for (int i = 0; i < _owned.Count; i++)
+                // Two lists already in the same order, merged as they are declared: a homeless fleet
+                // takes its place among the stars rather than being parked at either end of them.
+                int star = 0;
+                int fleet = 0;
+                while (star < _systems.Count || fleet < _adrift.Count)
                 {
-                    AddSystem(builder, _owned[i], empire, true, labels);
-                }
-
-                if (split && _other.Count > 0)
-                {
-                    builder.SetRegion(OtherSystemsRegion);
-                }
-
-                for (int i = 0; i < _other.Count; i++)
-                {
-                    AddSystem(builder, _other[i], empire, false, labels);
+                    bool takeStar =
+                        fleet >= _adrift.Count
+                        || (
+                            star < _systems.Count
+                            && ComparePositions(
+                                _systems[star].GalaxyPosition,
+                                _adrift[fleet].GalaxyPosition
+                            ) <= 0
+                        );
+                    if (takeStar)
+                    {
+                        AddSystem(
+                            builder,
+                            _systems[star],
+                            empire,
+                            _colonies.Contains(_systems[star]),
+                            labels
+                        );
+                        star++;
+                    }
+                    else
+                    {
+                        AddAdrift(builder, _adrift[fleet]);
+                        fleet++;
+                    }
                 }
 
                 if (split && drifting > 0)
@@ -1341,48 +1386,43 @@ namespace ES2Access.Screens
         }
 
         /// <summary>
-        /// The order the systems are listed in, within each of the halves: north to south by rows a
-        /// unit high, and west to east along a row.
+        /// The order the things on this stop are listed in: north to south by rows a unit high, and
+        /// west to east along a row.
         ///
         /// Left alone the list arrives in the galaxy's own node array order, which is whatever order
         /// generation built the nodes in - it means nothing to a player, and a list they count
         /// positions along ("7 of 23") has to have a reason for the position.
         ///
-        /// Sorted on the SPOKEN pair rather than on the raw position, because the pair is the only
-        /// thing the player can hear: a player holding two rows' numbers against each other must never
-        /// meet "3, 12" before "-4, 12". So the rounding here is <see cref="MapCoordinates.Round"/>'s,
-        /// the same rounding the row itself says, and two systems whose northing rounds the same are
-        /// one row however far apart their raw positions are. Identical rounded pairs are settled on
-        /// the raw values so that the order is at least fixed - the galaxy never places two systems
-        /// that close, so nothing is expected to reach it.
+        /// The rule itself is <see cref="MapCoordinates.ReadingOrder"/>, which is engine-free and
+        /// unit-tested; everything here is the adapter that turns a thing on the map into the pair of
+        /// offsets it speaks.
         ///
-        /// Once per build of the stop rather than per frame, through a delegate held here rather than
-        /// a method group at the call site, which would allocate one per sort.
+        /// Once per build of the stop rather than per frame, through delegates held here rather than
+        /// method groups at the call sites, which would allocate one per sort.
         /// </summary>
         private static readonly Comparison<StarSystemNode> ReadingOrder = CompareReadingOrder;
 
+        private static readonly Comparison<Fleet> FleetReadingOrder = CompareFleetReadingOrder;
+
         private static int CompareReadingOrder(StarSystemNode left, StarSystemNode right)
+        {
+            return ComparePositions(left.GalaxyPosition, right.GalaxyPosition);
+        }
+
+        private static int CompareFleetReadingOrder(Fleet left, Fleet right)
+        {
+            return ComparePositions(left.GalaxyPosition, right.GalaxyPosition);
+        }
+
+        private static int ComparePositions(GalaxyPosition left, GalaxyPosition right)
         {
             double leftEast,
                 leftNorth,
                 rightEast,
                 rightNorth;
-            GalaxyCoordinates.Offsets(left.GalaxyPosition, out leftEast, out leftNorth);
-            GalaxyCoordinates.Offsets(right.GalaxyPosition, out rightEast, out rightNorth);
-            int row = MapCoordinates.Round(rightNorth).CompareTo(MapCoordinates.Round(leftNorth));
-            if (row != 0)
-            {
-                return row;
-            }
-
-            int along = MapCoordinates.Round(leftEast).CompareTo(MapCoordinates.Round(rightEast));
-            if (along != 0)
-            {
-                return along;
-            }
-
-            int north = rightNorth.CompareTo(leftNorth);
-            return north != 0 ? north : leftEast.CompareTo(rightEast);
+            GalaxyCoordinates.Offsets(left, out leftEast, out leftNorth);
+            GalaxyCoordinates.Offsets(right, out rightEast, out rightNorth);
+            return MapCoordinates.ReadingOrder(leftEast, leftNorth, rightEast, rightNorth);
         }
 
         /// <summary>The map's own rule for whether a node's name is drawn: it has been explored, and
@@ -1613,9 +1653,8 @@ namespace ES2Access.Screens
         /// The fleets are in THREE groups because the map draws them at three distances: what is parked
         /// here, then what is under way on the lanes leaving here - the latter under both ends of its
         /// lane, each saying which lane it is on (<see cref="AddEnRoute"/>) - and last what is crossing
-        /// the open space between here and somewhere with no lane to it at all
-        /// (<see cref="AddFreeMoving"/>), which hangs under both ends of that crossing for the same
-        /// reason.
+        /// the open space TOWARDS here with no lane to fly (<see cref="AddFreeMoving"/>), which hangs
+        /// under this end alone.
         /// </summary>
         private void AddInside(
             GraphBuilder builder,
@@ -1635,7 +1674,7 @@ namespace ES2Access.Screens
             AddProbesNear(builder, key, probes, node);
             AddFleets(builder, key, FleetPresence.FleetsAt(node));
             AddEnRoute(builder, key, EnRouteOn(lanes));
-            AddFreeMoving(builder, key, FreeMovingAt(node, empire));
+            AddFreeMoving(builder, key, node, FreeMovingAt(node));
             AddHangars(builder, key, node);
             AddProbeDirections(builder, key, node);
         }
@@ -3720,8 +3759,8 @@ namespace ES2Access.Screens
         }
 
         /// <summary>
-        /// The fleets crossing the OPEN SPACE beside a system - the ones flying a leg between two nodes
-        /// with no lane between them - as children of the system at either end of that crossing.
+        /// The fleets crossing the OPEN SPACE towards a system - the ones flying a leg between two
+        /// nodes with no lane between them - as children of the system they are flying TO.
         ///
         /// A free-moving fleet is the one thing the map draws that the rest of this tree had no place
         /// for: it is in no docking slot and on no lane, so neither the parked list nor the lane list
@@ -3729,15 +3768,24 @@ namespace ES2Access.Screens
         /// by neither Tab nor the search. The rule for that is the same one every other homeless thing
         /// on this map is given: where the model gives it no place, it gets a row of its own.
         ///
-        /// Under BOTH ends, exactly as a fleet on a lane hangs under both of its (<see cref="AddEnRoute"/>):
-        /// either end is a true answer to "where is it", and hosting it under one alone would make the
-        /// answer depend on which of the two the player happened to open. Which end this row is decides
-        /// what it says - on its way OUT of here, or on its way IN - and the other end is named only
-        /// where the map names it, the same silence a lane running into the dark keeps.
+        /// Under the DESTINATION only, and this is where a free mover parts company with a fleet on a
+        /// lane. A lane is drawn map geometry: both of its ends are on the screen, either one is a way
+        /// of finding a fleet flying it, and a sighted player reaches it from both. A crossing of open
+        /// space is not drawn at all. What the picture shows is a fleet standing between the stars and,
+        /// when it is selected, the path AHEAD of it - dots and numbered turn markers running to where
+        /// it is going. Nothing anywhere draws or writes where a fleet set out FROM, not even for the
+        /// player's own fleets (<see cref="UI.FleetRoute"/>; the game's own path starts at the node
+        /// being flown towards). So a row under the source system would be the mod telling the player
+        /// something the game does not tell anybody, and it was taken out on 2026-08-16.
         /// </summary>
-        private static void AddFreeMoving(GraphBuilder builder, string place, List<FreeLeg> crossing)
+        private static void AddFreeMoving(
+            GraphBuilder builder,
+            string place,
+            StarSystemNode node,
+            List<Fleet> arriving
+        )
         {
-            if (crossing.Count == 0)
+            if (arriving.Count == 0)
             {
                 return;
             }
@@ -3746,23 +3794,10 @@ namespace ES2Access.Screens
             {
                 DockLabel[] docks = DockLabels();
                 FleetLabel[] labels = FleetLabels();
-                for (int i = 0; i < crossing.Count; i++)
+                for (int i = 0; i < arriving.Count; i++)
                 {
-                    FreeLeg leg = crossing[i];
-                    Fleet it = leg.Fleet;
+                    Fleet it = arriving[i];
                     NodeVtable vtable = FleetNode(it, docks, labels);
-                    GameNode far = leg.Other;
-                    string template = far != null
-                        ? (
-                            leg.Outbound
-                                ? ModStrings.GalaxyFleetFreeMovingTo
-                                : ModStrings.GalaxyFleetFreeMovingFrom
-                        )
-                        : (
-                            leg.Outbound
-                                ? ModStrings.GalaxyFleetFreeMovingToUnexplored
-                                : ModStrings.GalaxyFleetFreeMovingFromUnexplored
-                        );
                     // Straight after the name, in the slot the lane phrase takes on a fleet under way,
                     // and for the same reason: it answers the question the player is holding while they
                     // hear it - why is this fleet under THIS system?
@@ -3770,9 +3805,10 @@ namespace ES2Access.Screens
                         1,
                         GraphNodes.ValuePart(
                             () =>
-                                far == null
-                                    ? ModStrings.Get(template)
-                                    : ModStrings.Format(template, far.LocalizedName),
+                                ModStrings.Format(
+                                    ModStrings.GalaxyFleetFreeMovingTo,
+                                    node.LocalizedName
+                                ),
                             false
                         )
                     );
@@ -3788,23 +3824,43 @@ namespace ES2Access.Screens
             }
         }
 
-        /// <summary>One fleet crossing open space beside a system, from that system's end of the
-        /// crossing.</summary>
-        private struct FreeLeg
+        /// <summary>
+        /// A fleet crossing open space towards somewhere the map has not named, as a row of its own at
+        /// the top of the tree.
+        ///
+        /// It has no system to hang under - its destination is not a place this tree declares - and the
+        /// rule for a homeless thing on this map is the one every other one is given: a row of its own,
+        /// walked into the list by its own position (<see cref="BuildSystems"/>). What it says about
+        /// where it is going is the one thing that can be said, which is that the player cannot see
+        /// where that is.
+        /// </summary>
+        private static void AddAdrift(GraphBuilder builder, Fleet it)
         {
-            public Fleet Fleet;
+            try
+            {
+                NodeVtable vtable = FleetNode(it, DockLabels(), FleetLabels());
+                vtable.Announcements.Insert(
+                    1,
+                    GraphNodes.ValuePart(
+                        () => ModStrings.Get(ModStrings.GalaxyFleetFreeMovingToUnexplored),
+                        false
+                    )
+                );
+                builder.AddItem(AdriftId(it), vtable);
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: reading a fleet crossing open space threw: " + e);
+            }
+        }
 
-            /// <summary>The node at the OTHER end of the crossing, or null where the map has not named
-            /// it.</summary>
-            public GameNode Other;
-
-            /// <summary>Whether this end is where the crossing STARTED - the fleet is on its way out
-            /// rather than on its way in.</summary>
-            public bool Outbound;
+        private static ControlId AdriftId(Fleet fleet)
+        {
+            return ControlId.Structural("galaxy:fleet/" + fleet.GUID);
         }
 
         /// <summary>
-        /// The fleets the map draws crossing open space with one end of the crossing at this system.
+        /// The fleets the map draws crossing open space towards this system.
         ///
         /// The fleets are the ones the map is DRAWING (<see cref="FleetPresence.Drawing"/>) - the fleet
         /// label window's own repository and its own vision gate - so a fleet nobody can see is absent
@@ -3817,50 +3873,22 @@ namespace ES2Access.Screens
         /// both claiming the same fleet, which under one system would be a duplicate control id and
         /// would throw the whole page out of Build: a leg either has a lane or it does not.
         /// </summary>
-        private static List<FreeLeg> FreeMovingAt(StarSystemNode node, Empire empire)
+        private static List<Fleet> FreeMovingAt(StarSystemNode node)
         {
-            List<FreeLeg> crossing = new List<FreeLeg>();
+            List<Fleet> arriving = new List<Fleet>();
             try
             {
                 IPositioningService positioning =
                     Amplitude.Unity.Framework.Services.GetService<IPositioningService>();
-                if (positioning == null)
-                {
-                    return crossing;
-                }
-
                 IList<Fleet> drawn = FleetPresence.Drawing();
                 for (int i = 0; i < drawn.Count; i++)
                 {
-                    Fleet fleet = drawn[i];
-                    FleetPosition position = fleet.Position;
-                    if (position.IsInOrbit || !position.IsInMovement)
+                    GameNode goal;
+                    if (CrossingOpenSpace(positioning, drawn[i], out goal)
+                        && ReferenceEquals(goal, node))
                     {
-                        continue;
+                        arriving.Add(drawn[i]);
                     }
-
-                    bool outbound = position.Movement.Start == node.NodePosition;
-                    if (!outbound && position.Movement.Goal != node.NodePosition)
-                    {
-                        continue;
-                    }
-
-                    GameNode far = positioning.GetGameNode(
-                        outbound ? position.Movement.Goal : position.Movement.Start
-                    );
-                    if (far == null || Linked(node, far))
-                    {
-                        continue;
-                    }
-
-                    crossing.Add(
-                        new FreeLeg
-                        {
-                            Fleet = fleet,
-                            Other = Perceived(far, empire) ? far : null,
-                            Outbound = outbound,
-                        }
-                    );
                 }
             }
             catch (Exception e)
@@ -3868,7 +3896,73 @@ namespace ES2Access.Screens
                 Log.Warn("galaxy: working out what is crossing open space near a system threw: " + e);
             }
 
-            return crossing;
+            return arriving;
+        }
+
+        /// <summary>
+        /// The free movers with no branch to hang under: the ones whose destination is not one of the
+        /// systems this stop is declaring, because the map has never named it.
+        ///
+        /// Asked of the whole drawn fleet list once per build rather than per system, and answered
+        /// against the very list the rows are made from - so a free mover is either its destination's
+        /// child or it is here, never both and never neither.
+        /// </summary>
+        private static void FreeMovingAdrift(List<StarSystemNode> declared, List<Fleet> adrift)
+        {
+            adrift.Clear();
+            try
+            {
+                IPositioningService positioning =
+                    Amplitude.Unity.Framework.Services.GetService<IPositioningService>();
+                IList<Fleet> drawn = FleetPresence.Drawing();
+                for (int i = 0; i < drawn.Count; i++)
+                {
+                    GameNode goal;
+                    if (CrossingOpenSpace(positioning, drawn[i], out goal)
+                        && !Declares(declared, goal))
+                    {
+                        adrift.Add(drawn[i]);
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: working out what is crossing open space threw: " + e);
+            }
+        }
+
+        private static bool Declares(List<StarSystemNode> declared, GameNode node)
+        {
+            for (int i = 0; i < declared.Count; i++)
+            {
+                if (ReferenceEquals(declared[i], node))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>Whether the leg a fleet is flying is a crossing of open space - it is under way and
+        /// the two ends of its leg have no line between them - and if so, where it is flying to.
+        /// </summary>
+        private static bool CrossingOpenSpace(
+            IPositioningService positioning,
+            Fleet fleet,
+            out GameNode goal
+        )
+        {
+            goal = null;
+            FleetPosition position = fleet.Position;
+            if (positioning == null || position.IsInOrbit || !position.IsInMovement)
+            {
+                return false;
+            }
+
+            GameNode start = positioning.GetGameNode(position.Movement.Start);
+            goal = positioning.GetGameNode(position.Movement.Goal);
+            return start != null && goal != null && !Linked(start, goal);
         }
 
         /// <summary>Whether a line of any kind joins these two nodes - the model's own question, asked of
@@ -4015,7 +4109,7 @@ namespace ES2Access.Screens
             try
             {
                 int count =
-                    EnRouteOn(LanesOf(node, empire)).Count + FreeMovingAt(node, empire).Count;
+                    EnRouteOn(LanesOf(node, empire)).Count + FreeMovingAt(node).Count;
                 return count == 0
                     ? null
                     : ModStrings.Plural(
@@ -4031,13 +4125,24 @@ namespace ES2Access.Screens
         }
 
         /// <summary>What a fleet is made of, what it is doing, and how far it can still go this turn.
+        ///
+        /// How big it is only where the map says so (<see cref="FleetPresence.ShowsShipCount"/>): a
+        /// fleet the player can see but has not got a proper look at is drawn with no number on it at
+        /// all, and the part is left out rather than filled with a word about not knowing, because
+        /// there is no such word on the picture either.
         /// </summary>
         private static string FleetText(Fleet fleet)
         {
             try
             {
                 MessageBuilder message = new MessageBuilder();
-                message.ListItem(ModStrings.Format(ModStrings.GalaxyFleetShips, fleet.ShipsCount));
+                if (FleetPresence.ShowsShipCount(fleet))
+                {
+                    message.ListItem(
+                        ModStrings.Format(ModStrings.GalaxyFleetShips, fleet.ShipsCount)
+                    );
+                }
+
                 message.ListItem(FleetState(fleet));
                 if (fleet.IsGuarding)
                 {
@@ -4461,27 +4566,12 @@ namespace ES2Access.Screens
         private StarSystemNode NearestSystem(GalaxyPosition position)
         {
             NearestPick pick = new NearestPick(double.PositiveInfinity);
-            for (int i = 0; i < _owned.Count; i++)
+            for (int i = 0; i < _systems.Count; i++)
             {
-                pick.Offer(i, GalaxyPosition.SqrDistance(_owned[i].GalaxyPosition, position));
+                pick.Offer(i, GalaxyPosition.SqrDistance(_systems[i].GalaxyPosition, position));
             }
 
-            for (int i = 0; i < _other.Count; i++)
-            {
-                pick.Offer(
-                    _owned.Count + i,
-                    GalaxyPosition.SqrDistance(_other[i].GalaxyPosition, position)
-                );
-            }
-
-            if (!pick.Found)
-            {
-                return null;
-            }
-
-            return pick.Index < _owned.Count
-                ? _owned[pick.Index]
-                : _other[pick.Index - _owned.Count];
+            return pick.Found ? _systems[pick.Index] : null;
         }
 
         /// <summary>Where a probe's node hangs: under the star it is nearest to, or out in open space

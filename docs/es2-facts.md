@@ -314,14 +314,46 @@ generic graduates to the generic docs.
   (it is not docked) nor `FleetsOn` (there is no lane to be on). It IS drawn, so
   `FleetPresence.Drawing()` (the inspect cursor's and the scanner's source) still has it. Measured
   on `[Beginner] test`: two of its six fleets (`1st Conquerors Navy`, `1st Vanquishers Navy`) are on
-  legs between Dusay and Heka with no link. **Mod policy** (shipped): the tree hangs such a fleet
-  under EVERY endpoint system the player perceives — `GalaxyHudScreen.FreeMovingAt` tests the leg's
-  two ends against the node and `Linked` against the node's own `Links`, which is exactly the test
-  that keeps this list and `EnRouteOn` from both claiming one fleet (two claims under one system is a
-  duplicate control id and throws the page out of `Build`). Both ends, for the lane fleet's reason:
-  either end is a true answer to "where is it". A fleet whose leg has neither end perceived stays
-  tree-absent — no branch exists to hold it — and everything that must "go to" one still falls back
-  to the map's own selection (`GalaxyHudScreen.SelectFleet`).
+  legs between Dusay and Heka with no link, and both are AUTOMATED delivery fleets
+  (`Fleet.IsAutomated`, the `AutomatedFleet` tag — measured 2026-08-16), which is why they fly with
+  starlanes ignored. **Mod policy** (2026-08-16, reversing the both-ends policy shipped earlier the
+  same day): the tree hangs such a fleet under its DESTINATION alone, and under no system at all
+  where the destination is unperceived — there it gets a top-level row walked into the system list by
+  its own rounded pair (`GalaxyHudScreen.AddAdrift`). The rationale is parity, not tidiness: **the
+  map draws where a fleet is GOING and never where it came from.** A selected fleet's committed path
+  is drawn ahead of it as dots and numbered turn markers; `Fleet.Path` starts at the node being flown
+  towards, so the source is not in it, and the only place the game writes a destination as text is
+  owner-gated (`PanelFeatureGarrisonInfoAutomatedFleet` :77-85). A lane fleet keeps its two rows,
+  because a lane is drawn geometry with both ends on the screen. `GalaxyHudScreen.CrossingOpenSpace`
+  is the one test (`Linked(start, goal)` over the start node's own `Links`), which is also what keeps
+  this list and `EnRouteOn` from both claiming one fleet — two claims under one system is a duplicate
+  control id and throws the page out of `Build`.
+- **Drawing a foreign fleet's PATH is a separate and much narrower permission than selecting it.**
+  `GalaxyFleetCursorTarget.ValidateSelection` :17-24 refuses only AUTOMATED fleets — there is no
+  owner test, so the mouse selects anybody's fleet — but `GalaxyGarrisonCursor.RenderPath` :525
+  returns before drawing anything for a fleet of another empire unless the player has
+  `Empire.SeesEnemyPathfinding` AND is at war with its owner (or the owner is a `PirateEmpire` the
+  player may attack). **Mod policy**: `FleetRoute.Current` asks the same question, so the
+  turn-by-turn itinerary, the "arrives in N turns" part and the route review buffer are all silent
+  for a foreign fleet whose path the game would not draw. Before the gate the mod read an AI's whole
+  plan out of the model, naming systems the player had never seen (measured: "arrivesIn=9 places=4
+  last=Fajis"). What is left for a foreign fleet is what a sighted player still has — the lozenge,
+  its position, and the leg it is flying now, which is geometry on the screen.
+- **`PathRenderer.RenderPath` :408-545 does NOT clip a path to what the player can see.** There is
+  no visibility, exploration or fog test anywhere in it: once the cursor decides to render, every leg
+  of `path.PathPositions` is turned into curve and marker data whatever lies under it, and
+  `hiddenColor` is the whole path's fade-out colour rather than a per-segment gate. So a route the
+  mod reads should be read to its end, with unperceived nodes left unnamed by the existing
+  `MapVisibility.Perceived` gate (`FleetRoute.Named`) — there is no "the route continues beyond
+  explored space" boundary to communicate, because the drawing has none.
+- **The map shows a fleet's SHIP COUNT only from the Visible tier up.**
+  `GarrisonsLabelButton.RefreshShipCount` :203-217 adds a fleet's ships into the lozenge number only
+  while `fleet.IsAutomated` — an automated delivery fleet's strength is public — or
+  `(int)fleet.Visibility[Gui.PlayerEmpire] >= 3`; below that the lozenge is drawn with the fleet
+  missing from its own total, and no placeholder is shown. Same test in
+  `RefreshMultiGarrisonsChevrons` :219-232. **Mod policy**: `FleetPresence.ShowsShipCount` is that
+  predicate verbatim and `GalaxyHudScreen.FleetText` omits the "N ships" part outright when it is
+  false. An empire's own fleets are always at full visibility, so nothing changes for them.
 - **A leg WITH a link the map does not draw is still not a free mover, and is still tree-absent.**
   `EnRouteOn` walks `LanesOf`, which drops a lane below the drawn intensity and a wormhole an empire
   cannot see, while `FreeMovingAt` skips any leg its two ends have a `Link` for. So a fleet flying an

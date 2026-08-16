@@ -84,6 +84,13 @@ files above.
 - SettingRows editors end in silence: no watcher notices the game's field letting go, so a
   committed or cancelled settings edit re-reads nothing (the rename box now does this
   right; hoist its field-released re-read into the shared editor).
+- **An "entered vision" watcher for the galaxy map** (owner-requested 2026-08-16): announce when a
+  foreign fleet newly becomes perceived — a sighted player sees a lozenge appear, and there is no
+  game notification to carry it (the ~162-entry mapping in `GuiNotificationManager` :576-740 has
+  none). The signal to watch is `EntityVisibility.OnLayerChanged` or a poll of
+  `FleetPresence.Drawing()` against the previous frame's set, on the pattern `FleetRouteWatch`
+  already uses. Blocked for live testing in `[Beginner] test`, which perceives no foreign fleet at
+  all (test-recipes) — a fixture where one crosses the border has to be made first.
 - Event narration (turn events) via `IEventService.EventRaised`.
 - Rebindable mod keys (long-standing, from input.md).
 - The contextual prompt's component tables: modelled from the four data-defined shapes, but no
@@ -150,6 +157,15 @@ files above.
 ## To decide (owner)
 
 
+- **Enter on an AUTOMATED fleet's row is offered but does nothing.** The mouse cannot select one
+  either (`GalaxyFleetCursorTarget.ValidateSelection` :17-24 and `ValidateHighlight` both refuse an
+  automated fleet, so it does not even highlight under the pointer), and `GalaxyHudScreen.Select`
+  goes through the same cursor target — measured: Enter on `1st Conquerors Navy` opens no fleet
+  panel and says nothing. So the behaviour matches the mouse, but the row still announces itself
+  "button". Options: leave it (a click that does nothing is what the mouse has), or drop the role
+  word and the action for an automated fleet so the row is a plain readout. Withdrawing an
+  affordance is the louder decision, so this waits. (Found 2026-08-16 while doing the free-mover
+  parity work; the fixture's two free movers are exactly these fleets.)
 - The drawn-heading lookup renames two out-game pages: "Multiplayer room" and "Asset export".
   Keep the game's drawn headings or the mod's older names?
 - Mod-authored wordings awaiting sign-off: "Ring {0} of {1}" for the skill wheel's rings

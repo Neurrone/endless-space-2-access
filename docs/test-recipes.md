@@ -285,17 +285,26 @@ Show-location marker (the quest has none, so the game hides the button), the min
 the podium a cooperative quest gets instead of a reward table, and the "Pending objective choice…"
 placeholder.
 
-**The galaxy tree's system order** (shipped 2026-08-16). The top-level rows are sorted on the SPOKEN
-pair — rounded northing descending, rounded easting ascending inside a row a unit high — inside each
-of the two regions (colonies, then everything else); ties on the rounded pair fall back to the raw
-values, which no fixture reaches. `[Beginner] test` reads, ordinals included: Dusay `1 of 13`, Heka
-`2 of 13`, then Ita, Leo, Qarius, Primus, Libra, Rigel, Electra, B10 6805, Heracles, Osulo, Byrtus
-`13 of 13`. The independent oracle is an `/eval` walk of `Galaxy.StarSystemNodes` (as a non-generic
-`IEnumerator` — the property is a yield iterator) filtered by `MapVisibility.Perceived`, printing
-`MapCoordinates.Round(position − origin)`. Home is NOT pinned first: Dusay leads the colonies only
-because its northing 0 beats Heka's −9, and in a single merged list it would sit 6th. Nothing else
-re-orders: the scanner keeps its distance sort (baseline below unchanged) and a branch's children
-keep theirs (Dusay's twelve, Conquerors still `11 of 12`).
+**The galaxy tree's system order** (merged into ONE list 2026-08-16, superseding the two-region
+order shipped the same day). Every perceived system is one list sorted on the SPOKEN pair — rounded
+northing descending, rounded easting ascending inside a row a unit high; ties on the rounded pair
+fall back to the raw values, which no fixture reaches. There is no colonies-first region any more,
+and with nothing drifting in open space the stop declares **no regions at all** (one region would
+swallow Alt+Up/Down). `[Beginner] test` reads, ordinals included: Ita `1 of 13`, Leo, Qarius,
+Primus, Libra, **Dusay `6 of 13`**, Rigel, Heka `8 of 13`, Electra, B10 6805, Heracles, Osulo,
+Byrtus `13 of 13`. The independent oracle is an `/eval` walk of `Galaxy.StarSystemNodes` (as a
+non-generic `IEnumerator` — the property is a yield iterator) filtered by `MapVisibility.Perceived`,
+sorted through `MapCoordinates.ReadingOrder` and printing `MapCoordinates.Round(position − origin)`;
+it agreed name for name and ordinal for ordinal. Home is not pinned first: Dusay sits 6th because
+its northing 0 falls between Libra's 11 and Rigel's −5. Nothing else re-orders: the scanner keeps
+its distance sort (baseline below unchanged) and a branch's children keep theirs.
+
+A system row's "N population" part comes off the map's own drawn LABEL and is absent while the
+camera is not drawing that label — so a system dumped right after a camera move can read
+"colonized, 3 fleets under way nearby" with no population, and the same row reads
+"colonized, 5 population, 3 fleets under way nearby" from the home camera. Not a regression;
+put the camera back (`DevProbe.Camera()` focus `[68.884, 0, -22.45]`, zoom slider `10 of 15`)
+before comparing a before/after dump.
 
 **Travelling the starlanes** (read-only; the three systems this recipe was written against are Dusay
 `535`, Rigel `505` and Primus `543` — a TWO-hop chain, with only Dusay↔Primus and Dusay↔Rigel named
@@ -356,25 +365,55 @@ Victors Navy 3 units north — a different nearest, off the same six fleets.
 reads out ("0, -3, 1st Vanquishers Navy") with `DevProbe.Camera()` focus at
 `origin + (x, y)` exactly. Outside it, a system lands the tree cursor on `galaxy:system/<guid>` with
 its ordinary announcement, and a lane fleet opens its host branch and lands on
-`galaxy:system/535/fleet/1622`. A FREE-MOVEMENT fleet now lands the same way (2026-08-16):
-`galaxy.scanGoTo` on `1st Conquerors Navy` opens Dusay's branch and lands on
-`galaxy:system/535/fleet/1570`, heard as "1st Conquerors Navy, -1, -6, button, free moving to Heka,
-…, 11 of 12". Which of the two endpoint rows it picks is the tree's own order — `FleetIndex` walks
-`_owned` then `_other` and `FromEntity` takes the first site — the same rule that already decided
-which end of a lane a lane fleet's Alt+Home lands at. **Fixture-blocked**: the `SelectFleet` fallback
-(camera + fleet panel + the scanner's line spoken again) now needs a free mover with NEITHER endpoint
-perceived, and every system in `[Beginner] test` is perceived.
+`galaxy:system/535/fleet/1622`. A FREE-MOVEMENT fleet lands the same way, on its DESTINATION's row
+(2026-08-16): `galaxy.scanGoTo` on `1st Conquerors Navy` opens **Heka's** branch and lands on
+`galaxy:system/522/fleet/1570`, heard as "1st Conquerors Navy, -1, -6, button, free moving to Heka,
+1 ships, Moving to Heka, 0 movement points, Arrives in 2 turns, has tooltip, 8 of 9". There is only
+one row to pick now — the source branch no longer holds one. Move the tree cursor somewhere else
+before pressing it: landing on the node the cursor is already on is silent, and after a type-ahead
+for the same fleet that is exactly where it stands. **Fixture-blocked**: the `SelectFleet` fallback
+(camera + fleet panel + the scanner's line spoken again) is now reachable only by a fleet PARKED at
+a system the map does not name or flying a lane the map does not draw — a free mover always has a
+row, top-level if its destination is unperceived (`AddAdrift`). No fixture produces either.
 
-**Free-moving fleets in the galaxy tree** (`[Beginner] test`, shipped 2026-08-16). The two free
-movers both fly Dusay → Heka, so each gets a row under BOTH — "1st Conquerors Navy, -1, -6, button,
-free moving to Heka, 1 ships, Moving to Heka, 0 movement points, Arrives in 2 turns" under Dusay and
-"… free moving from Dusay, …" under Heka. Their systems count them: Dusay went from "3 fleets under
-way nearby" to 5 and Heka from silence to 2, because the count names everything the branch opens
-onto. Type-ahead answers `results:2` for `vanq`/`conq` — both endpoint rows, which is the design.
+**Free-moving fleets in the galaxy tree** (`[Beginner] test`, destination-only since 2026-08-16;
+the both-ends design shipped earlier that day was reversed — see es2-facts). The two free movers
+both fly Dusay → Heka, and each gets ONE row, under Heka: "1st Conquerors Navy, -1, -6, button,
+free moving to Heka, 1 ships, Moving to Heka, 0 movement points, Arrives in 2 turns, has tooltip,
+8 of 9" and the Vanquishers the same at `9 of 9`. Dusay's branch holds its three LANE fleets and
+nothing else, and its count says "3 fleets under way nearby" (it said 5 while the source rows
+existed); Heka says "2 fleets under way nearby". Type-ahead answers `results:1` for `vanq`/`conq`
+now, landing on the Heka row (it was `results:2`).
 No fixture here has a fleet IN ORBIT (all six read `Position.IsInOrbit == false`), so the parked-fleet
 rows (`AddFleets`) cannot be exercised live in this save; and no fixture produces a free mover with an
-unperceived far end, so `galaxy.fleet-free-moving-to-unexplored` / `-from-unexplored` have never been
-heard.
+unperceived destination, so `galaxy.fleet-free-moving-to-unexplored` and the top-level `AddAdrift`
+row it belongs to have never been heard.
+**The fixture's two free movers are AUTOMATED delivery fleets** (`Fleet.IsAutomated` true — probed
+2026-08-16; the other four are false), which matters twice: the game counts an automated fleet's
+ships whatever the visibility (`GarrisonsLabelButton` :210), so they are the wrong fleets for
+testing the ship-count gate — use `1st Protectors Navy` — and `GalaxyFleetCursorTarget
+.ValidateSelection` :17-24 refuses to select an automated fleet, so Enter on either row is
+consumed and does nothing (measured: no fleet-panel stop appears).
+**`[Beginner] test` perceives NO foreign fleet at all.** Measured 2026-08-16 by walking
+`Gui.Game.Empires` and each empire's `DepartmentOfDefense.Fleets` (as `System.Collections.IList`),
+printing `(int)f.Visibility[me]`: Neurrone 6 fleets all at 3, and every one of the other 25 fleets
+(Leaper 8, St Chaoiver 2, Doria 4, nine minor empires 1 each, LesserEmpire 4, PirateEmpire 0) at 0.
+So **every foreign-fleet behaviour on the galaxy map is fixture-blocked here** — the ship-count
+gate, foreign selection, and the foreign-route gate alike. `me.SeesEnemyPathfinding` is also false.
+Two probes stand in for the missing fixture, and both are real evidence rather than reasoning:
+- **Ship count below Visible.** Write the private `EntityVisibility.layers` array by reflection
+  (`typeof(EntityVisibility).GetField("layers", Instance|NonPublic)`, index by `empire.Index`) to
+  drop a NON-automated fleet to `Layer.Marked`, dump, then write it back to `Visible`. Measured on
+  `1st Protectors Navy` under Dusay: "… on starlane 2, west, **1 ships**, Moving to an unexplored
+  system, 6 movement points, …" became "… on starlane 2, west, Moving to an unexplored system,
+  6 movement points, …" — the part omitted, no placeholder, its two Visible neighbours unchanged.
+  The write survives a graph rebuild; the game's own visibility pass puts it back at the next turn.
+- **A foreign fleet's route.** `FleetRoute.Committed(f)` and `.CommittedLines(f)` answer null for
+  any of Leaper's fleets (they need no visibility to be reachable from `/eval`), while
+  `FleetRoute.Of(f, f.Path)` — the same walk with the gate stepped around — still answers
+  "arrivesIn=9 places=4 last=Fajis". That pair is the failing half: without the gate the mod read
+  an AI's whole plan out of the model, through systems the player has never seen.
+
 **The claim, without pressing a key.** `DevProbe.Claims("PageUp,PageDown")` must read `claims:false`
 on `screen.galaxy` (no modifier is held during an HTTP request), which is the over-suppression
 check — the game's keyboard zoom is untouched. `DevProbe.Chord("Ctrl+PageUp")` reads

@@ -323,13 +323,65 @@ namespace ES2Access.UI
             return Lines(Current(fleet));
         }
 
+        /// <summary>
+        /// Whether the map would DRAW this fleet's committed route if the player selected it.
+        ///
+        /// Selecting a fleet is something the game lets the player do whoever owns it
+        /// (<c>GalaxyFleetCursorTarget.ValidateSelection</c> :17-24 makes no owner test), but drawing
+        /// the path that fleet is flying is a separate permission and a much narrower one: the cursor
+        /// asks for the path and the renderer refuses it outright for somebody else's fleet unless the
+        /// empire has the SeesEnemyPathfinding property AND is at war with its owner - or the owner is
+        /// the pirates and the empire may attack their fleets (<c>GalaxyGarrisonCursor.RenderPath</c>
+        /// :525). Nothing else in the game writes a fleet's destination down for a foreign fleet
+        /// either (<c>PanelFeatureGarrisonInfoAutomatedFleet</c> :77-85 is owner-gated).
+        ///
+        /// So the turn-by-turn itinerary this class produces is the words for a picture, and where the
+        /// picture is refused the words are too. What is left is what a sighted player still has: the
+        /// fleet drawn between two stars, and the leg it is flying now, which is geometry on the screen
+        /// rather than a route read out of the model.
+        /// </summary>
+        private static bool RouteShown(Fleet fleet)
+        {
+            try
+            {
+                Empire empire = Gui.PlayerEmpire as Empire;
+                if (empire == null || ReferenceEquals(fleet.Empire, empire))
+                {
+                    return true;
+                }
+
+                if (!empire.SeesEnemyPathfinding)
+                {
+                    return false;
+                }
+
+                return DepartmentOfForeignAffairs.HasDiplomaticAbility(
+                        fleet.Empire,
+                        empire,
+                        DiplomaticAbilityDefinition.Names.War
+                    )
+                    || (
+                        fleet.Empire is PirateEmpire
+                        && DepartmentOfForeignAffairs.HasDiplomaticAbility(
+                            fleet.Empire,
+                            empire,
+                            DiplomaticAbilityDefinition.Names.AttackOwnedFleets
+                        )
+                    );
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
         /// <summary>Where a fleet with a route already given is going, worked out from where it is NOW -
         /// so the answer shrinks as the journey is flown, which is what a player asking half way through
         /// wants to know. Not memoised: it is asked of one fleet at a time and costs no search, only a
         /// walk of a path the game is already holding.</summary>
         public static Route Current(Fleet fleet)
         {
-            if (fleet == null)
+            if (fleet == null || !RouteShown(fleet))
             {
                 return null;
             }

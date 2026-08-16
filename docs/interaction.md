@@ -193,8 +193,13 @@ consumed and silent. A system opened BY travel is **collapsed on the way out** (
 and one the player opened is left alone — and neither runs the collapse's own un-zoom, since travel
 scripts the camera itself. The trail survives an excursion to another screen (the page keeps its
 state on pop) and dies with the game instance. A lane into the dark is a silent leaf under Right.
-Fleets under way hang under BOTH end systems, after the parked ones, each saying which lane and which
-bearing off the same lane list the lane nodes number themselves from. **Zoom is an adjustable node**
+Fleets on a LANE hang under BOTH end systems, after the parked ones, each saying which lane and which
+bearing off the same lane list the lane nodes number themselves from; a fleet crossing OPEN SPACE
+hangs under its DESTINATION only — the map draws where a fleet is going and never where it came from
+(es2-facts) — and one whose destination is unperceived gets a top-level row instead, walked into the
+system list by its own pair. **The systems stop is ONE region, not two**: colonies are not split off
+from the rest (owner ruling 2026-08-16), so Alt+Up/Down on this stop jumps only between the stars and
+what is drifting out between them, and declares nothing at all while there is nothing drifting. **Zoom is an adjustable node**
 on the existing
 Left/Right + Shift chords (no new binding), and it lives on BOTH the scan view and the galaxy's
 `hud:view-title` stop, in a row of its own beside the name of what the player is looking at; its

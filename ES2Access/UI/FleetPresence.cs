@@ -291,6 +291,35 @@ namespace ES2Access.UI
             }
         }
 
+        /// <summary>
+        /// Whether the map puts a SHIP COUNT on this fleet's lozenge.
+        ///
+        /// Seeing a fleet and seeing how big it is are two different permissions, and the map draws the
+        /// second one strictly (<c>GarrisonsLabelButton.RefreshShipCount</c> :203-217): a fleet is
+        /// counted into the number on the lozenge only while it is AUTOMATED - a wandering monster,
+        /// whose strength the game tells everybody - or the empire's own visibility of it has reached
+        /// Visible. Below that the map shows the fleet and says nothing about its size, so neither does
+        /// this mod: an omitted part, not a placeholder, because the game draws no placeholder either.
+        ///
+        /// An empire's own fleets are always at full visibility, so this is only ever false for
+        /// somebody else's.
+        /// </summary>
+        public static bool ShowsShipCount(Fleet fleet)
+        {
+            try
+            {
+                MajorEmpire empire = Gui.PlayerEmpire as MajorEmpire;
+                return fleet.IsAutomated
+                    || fleet.Visibility == null
+                    || empire == null
+                    || (int)fleet.Visibility[empire] >= 3;
+            }
+            catch (Exception)
+            {
+                return true;
+            }
+        }
+
         /// <summary>The extra test the fleet label window makes before drawing a label at all
         /// (<c>FleetLabelsWindow.ShowAllLabels</c>): the repository holds the fleets that exist on the
         /// map, this is the one that says whether this empire may look at them.</summary>

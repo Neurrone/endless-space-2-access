@@ -432,9 +432,12 @@ namespace ES2Access.Screens
             }
 
             // A fleet the tree has NO node for. The tree hangs a fleet under the system it is parked
-            // at, under both ends of the starlane it is flying, or under both ends of the open-space
-            // crossing it is making - and a fleet whose crossing has NEITHER end on a system the player
-            // can see is under none of them, because a branch only exists for a system the map names.
+            // at, under both ends of the starlane it is flying, under the DESTINATION of the
+            // open-space crossing it is making, or - where that destination is a place the map has
+            // never named - at the top level of the systems stop. So a free mover always has a row
+            // now, and what is left here is a fleet parked at a system the map does not name and a
+            // fleet flying a lane the map does not draw (es2-facts): the branch that would hold it
+            // does not exist.
             // The map still draws such a fleet and the scanner still finds it, so the key answers with
             // the only "go to this fleet" this game has for one: the camera and the selection, the same
             // landing the inspect cursor's Enter makes on a fleet in its cell. There is no node to
