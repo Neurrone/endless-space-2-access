@@ -1661,7 +1661,8 @@ generic graduates to the generic docs.
   never exits and cannot be killed; the launch guard skips other sessions, but if a launch
   still fails, `tasklist /FI "PID eq <pid>"` tells you which session you are fighting.
 
-- **The game has NO store code besides Steam** — no GOG/Galaxy/Epic assemblies or branches
+- **The STEAM build has NO store code besides Steam** (measured on the Steam build; the GOG
+  build differs — see the GOG bullets below) — no GOG/Galaxy/Epic assemblies or branches
   anywhere; the single branch is "did `SteamAPI_Init()` succeed", and the failure path is
   hardcoded on (`enableOfflineModeWhenSteamClientIsDown = true`): services register with
   `IsSteamRunning == false`, all DLC unowned, language forced to English, Join Game refused
@@ -1684,6 +1685,27 @@ generic graduates to the generic docs.
   a DLC screen's DATA is measurable here even when its entry point is not.
 - **"Steam cloud" saves are not a Steam API**: the toggle writes a registry key that
   redirects the save directory to `<saves>\Cloud` — identical on any store.
+
+- **The GOG build renames the galaxy class**: top-level `Galaxy` (Steam) is `GalaxyIngame`
+  (GOG), because the GOG install ships `GalaxyCSharp.dll` — the GOG Galaxy SDK, whose
+  namespace is `Galaxy.Api` — and the class name would collide. The `Game.Galaxy` PROPERTY
+  keeps its name (`public GalaxyIngame Galaxy`), and `GameNodes`/`StarSystemNodes` are
+  member-identical on both. Policy this forces: the mod never names the type — a member ref
+  compiled against one store's assembly fails at RUNTIME on the other (the IL embeds the
+  type name), which no build or test on one machine catches. `UI/GameGalaxy.cs` is the
+  single reflected seam; any new galaxy-object access goes through it. The offline
+  `StoreDivergenceTests` fails the suite if any other file names a divergent member.
+- **The GOG build strips the Steam Workshop fields**: `ModdingScreen` has no
+  `SteamWorkshopButton` / `WorkshopLegalAgreementButton`(+`Label`), and
+  `ModdingAvailableModsPanel` has no `WorkshopFilterToggle`; every other field on both
+  classes is identical. `UI/SteamWorkshop.cs` reflects them (null on GOG), and the modding
+  page simply declares only the controls the running build draws.
+- **`decompiled/` is a Steam-era snapshot** (generated 29 Jul 2026, before this machine
+  switched to GOG) and disagrees with the live assemblies on at least the two points above.
+  Regenerating via `decompile.ps1` would replace it with the GOG view and the Steam DLLs
+  only exist on the other machine now — so when the snapshot and the live game disagree,
+  verify against the installed build with
+  `ilspycmd -t <Type> "<game>\EndlessSpace2_Data\Managed\Assembly-CSharp.dll"`.
 
 - **The out-game pages, measured** (DLC browser, mod manager, disclaimer, credits):
   `DownloadableContentType` 1 is `Personal`, which the game words as "Add-on" — the browser's own

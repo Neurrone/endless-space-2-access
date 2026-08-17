@@ -1099,14 +1099,13 @@ namespace ES2Access.Screens
             try
             {
                 Empire empire = Gui.PlayerEmpire;
-                Galaxy galaxy = Gui.Game == null ? null : Gui.Game.Galaxy;
-                if (empire == null || galaxy == null)
+                if (empire == null || !GameGalaxy.Present())
                 {
                     return contents;
                 }
 
                 List<StarSystemNode> perceived = new List<StarSystemNode>();
-                foreach (StarSystemNode node in galaxy.StarSystemNodes)
+                foreach (StarSystemNode node in GameGalaxy.StarSystemNodes())
                 {
                     if (!MapVisibility.Perceived(node, empire))
                     {
@@ -1396,8 +1395,7 @@ namespace ES2Access.Screens
             _highY = 0.0;
             try
             {
-                Galaxy galaxy = Gui.Game == null ? null : Gui.Game.Galaxy;
-                GameNode[] nodes = galaxy == null ? null : galaxy.GameNodes;
+                GameNode[] nodes = GameGalaxy.GameNodes();
                 if (nodes == null || nodes.Length == 0)
                 {
                     return;

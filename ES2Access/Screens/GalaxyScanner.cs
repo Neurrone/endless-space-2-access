@@ -618,12 +618,11 @@ namespace ES2Access.Screens
             try
             {
                 Empire empire = Gui.PlayerEmpire;
-                Galaxy galaxy = Gui.Game == null ? null : Gui.Game.Galaxy;
-                if (empire != null && galaxy != null)
+                if (empire != null && GameGalaxy.Present())
                 {
                     DepartmentOfForeignAffairs foreign =
                         empire.GetAgency<DepartmentOfForeignAffairs>();
-                    Systems(world[CategorySystems], galaxy, empire, foreign);
+                    Systems(world[CategorySystems], empire, foreign);
                     Fleets(world[CategoryFleets], empire, foreign);
                     Probes(world[CategoryProbes], empire, foreign);
                     Markers(world[CategoryMarkers]);
@@ -755,7 +754,6 @@ namespace ES2Access.Screens
         /// </summary>
         private static void Systems(
             List<Found> found,
-            Galaxy galaxy,
             Empire empire,
             DepartmentOfForeignAffairs foreign
         )
@@ -764,7 +762,7 @@ namespace ES2Access.Screens
             HashSet<GameEntityGUID> homes = Homes(empire);
             IColonizedStarSystemRepositoryService colonies =
                 Services.GetService<IColonizedStarSystemRepositoryService>();
-            foreach (StarSystemNode node in galaxy.StarSystemNodes)
+            foreach (StarSystemNode node in GameGalaxy.StarSystemNodes())
             {
                 if (!MapVisibility.Perceived(node, empire))
                 {

@@ -1384,8 +1384,7 @@ namespace ES2Access.Screens
             try
             {
                 Empire empire = PlayerEmpire();
-                Galaxy galaxy = Gui.Game == null ? null : Gui.Game.Galaxy;
-                if (empire == null || galaxy == null)
+                if (empire == null || !GameGalaxy.Present())
                 {
                     return;
                 }
@@ -1407,7 +1406,7 @@ namespace ES2Access.Screens
                     }
                 }
 
-                foreach (StarSystemNode node in galaxy.StarSystemNodes)
+                foreach (StarSystemNode node in GameGalaxy.StarSystemNodes())
                 {
                     if (!_colonies.Contains(node) && Perceived(node, empire))
                     {

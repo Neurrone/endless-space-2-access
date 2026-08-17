@@ -65,7 +65,15 @@ trip in [ui-navigation.md](ui-navigation.md)).
    including engine/firstpass assemblies. IL2CPP variant: interop proxy assemblies give
    structure; Cpp2IL dummies give signatures; a Ghidra pipeline gives real method bodies
    (DiscoAccess's approach — "ground truth in one shot" beats live-probing one hypothesis
-   at a time).
+   at a time). **A game sold on more than one store can differ in its OWN assemblies per
+   store** — not just in store SDK DLLs: a top-level type renamed to dodge a store SDK's
+   namespace, a store feature's fields stripped from a screen class (ES2's GOG build does
+   both). A mod DLL compiled against one store's assemblies fails at RUNTIME on the other
+   wherever a member ref names a divergent type — the IL embeds the type name, and no
+   build or test on your own machine catches it. Isolate each divergent member behind one
+   reflected seam keyed on the stable member NAME, and treat "compiles against each
+   store's assemblies" as the completeness check — one clean build proves nothing about
+   the store you don't have installed.
 2. **Grep for the dispatch idioms.** High-yield patterns: `SendMessage(` (handler-name
    dispatch), `GetService<`/`Instance.` (locators), `Notify(`/`EventRaised` (buses),
    `OnClick`/`Cb` naming, `IsReady`/`VisibilityChanged`/`OnEndShow` (readiness),

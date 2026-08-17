@@ -92,7 +92,11 @@ namespace ES2Access.Screens
             builder.BeginStop(TopStop);
             _cells.Clear();
             Cells.AddControl(_cells, window.ModdingManualButton, "modding:manual");
-            Cells.AddControl(_cells, window.WorkshopLegalAgreementButton, "modding:legal");
+            Cells.AddControl(
+                _cells,
+                SteamWorkshop.LegalAgreementButton(window),
+                "modding:legal"
+            );
             Cells.Emit(builder, _cells);
 
             builder.BeginStop(LibraryStop);
@@ -107,7 +111,7 @@ namespace ES2Access.Screens
             builder.BeginStop(ActionsStop);
             _cells.Clear();
             Cells.AddControl(_cells, window.ValidateButton, "modding:confirm");
-            Cells.AddControl(_cells, window.SteamWorkshopButton, "modding:workshop");
+            Cells.AddControl(_cells, SteamWorkshop.OpenButton(window), "modding:workshop");
             Cells.AddControl(_cells, Back(window), "modding:back");
             Cells.Emit(builder, _cells);
         }
@@ -127,7 +131,7 @@ namespace ES2Access.Screens
             try
             {
                 AddCheckbox(panel.LocalFilterToggle, "modding:filter/local");
-                AddCheckbox(panel.WorkshopFilterToggle, "modding:filter/workshop");
+                AddCheckbox(SteamWorkshop.FilterToggle(panel), "modding:filter/workshop");
                 Cells.AddControl(_cells, panel.DisableCustomConfigButton, "modding:custom-config");
                 if (AgeWidgets.Visible(panel.NoDataAvailableGroup))
                 {
@@ -446,6 +450,7 @@ namespace ES2Access.Screens
             try
             {
                 AgeTransform band = window.ButtonsGroup;
+                AgeTransform workshop = SteamWorkshop.OpenButton(window);
                 IList<AgeTransform> children = band == null ? null : band.Children;
                 for (int i = 0; children != null && i < children.Count; i++)
                 {
@@ -453,7 +458,7 @@ namespace ES2Access.Screens
                     if (
                         child != null
                         && !ReferenceEquals(child, window.ValidateButton)
-                        && !ReferenceEquals(child, window.SteamWorkshopButton)
+                        && !ReferenceEquals(child, workshop)
                         && AgeWidgets.Visible(child)
                         && AgeWidgets.Button(child) != null
                     )
