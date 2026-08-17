@@ -1091,7 +1091,7 @@ namespace ES2Access.Core.Speech
 
         private static readonly Dictionary<string, string> Defaults = new Dictionary<string, string>
         {
-            { StartupReady, "Endless Space 2 Access ready" },
+            { StartupReady, "Endless Space 2 Access {0} ready" },
             { FragmentSeparator, " " },
             { ListSeparator, ", " },
             { Fraction, "{0} of {1}" },

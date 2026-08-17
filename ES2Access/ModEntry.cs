@@ -28,7 +28,34 @@ namespace ES2Access
     /// </summary>
     public static class ModEntry
     {
-        public const string ModVersion = "0.1.0";
+        /// <summary>The mod's version, as the build stamped it into this assembly - the one source is
+        /// <c>&lt;Version&gt;</c> in ES2Access.csproj, so a release bump cannot leave the spoken startup
+        /// line, the dev server and the DLL disagreeing. Read from metadata rather than from a file, which
+        /// is what makes it work under the loader's load-from-bytes path (there is no path on disk to
+        /// ask). Falls back on the numeric assembly version, which the build always writes, rather than
+        /// on a word no translator was given.</summary>
+        public static readonly string ModVersion = ReadVersion();
+
+        private static string ReadVersion()
+        {
+            try
+            {
+                System.Reflection.Assembly assembly = typeof(ModEntry).Assembly;
+                System.Reflection.AssemblyInformationalVersionAttribute stamped =
+                    (System.Reflection.AssemblyInformationalVersionAttribute)
+                        Attribute.GetCustomAttribute(
+                            assembly,
+                            typeof(System.Reflection.AssemblyInformationalVersionAttribute)
+                        );
+                return stamped == null || string.IsNullOrEmpty(stamped.InformationalVersion)
+                    ? assembly.GetName().Version.ToString()
+                    : stamped.InformationalVersion;
+            }
+            catch (Exception)
+            {
+                return string.Empty;
+            }
+        }
 
         /// <summary>Set to 1 to run without a screen reader: nothing is voiced, but everything the
         /// mod would have said is still readable from the dev server.</summary>
@@ -741,7 +768,9 @@ namespace ES2Access
             {
                 _announcedStartup = true;
                 Speech.Speak(
-                    new MessageBuilder().Fragment(ModStrings.Get(ModStrings.StartupReady)),
+                    new MessageBuilder().Fragment(
+                        ModStrings.Format(ModStrings.StartupReady, ModVersion)
+                    ),
                     false
                 );
             }

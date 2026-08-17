@@ -15,16 +15,27 @@ namespace ES2Access.Screens
     ///
     /// It is a MODE rather than a place: the camera stays where it was and the game swaps every label
     /// on the map for a different set. Which set is not a choice the player makes. The map's zoom step
-    /// picks a layer descriptor, the descriptor picks the lens, and the lens decides what the labels
-    /// mean - so zooming, which everywhere else only changes how much is drawn, here changes the
-    /// SUBJECT. That is why the lens announces itself on arrival and again every time the descriptor
-    /// changes: a sighted player reads the lens's name across the top of the screen, and a player who
-    /// zoomed one step would otherwise be reading trade figures believing them to be diplomacy.
+    /// picks a layer descriptor (<c>GalaxyViewCameraController.LayerDescriptorNamesByZoomIndex</c>), the
+    /// descriptor picks the lens, and the lens decides what the labels mean - so zooming here does TWO
+    /// jobs: it still changes how much is drawn, as it does everywhere, and it also SELECTS the lens.
+    ///
+    /// Nine descriptors map onto six lens names (<c>TopTitlePanel.Load</c>), so three of the boundaries
+    /// fall inside a single name - and crossing one is not a quiet event: the game re-runs its per-layer
+    /// alpha and position tables over the lens window, its sections and every label
+    /// (<c>GuiLayeredScanViewWindow</c>, <c>LabelMetaModifier</c>), which makes whole sub-panels and
+    /// label lines appear and disappear. So the lens announces itself on arrival and again at every
+    /// DESCRIPTOR change, same-name band boundaries included: a sighted player reads the lens's name
+    /// across the top of the screen and watches the picture change under it, and a player who zoomed one
+    /// step would otherwise be reading trade figures believing them to be diplomacy - or reading a band
+    /// that has quietly dropped half of what it was drawing.
     ///
     /// Which is why the mode carries a zoom of its own (<see cref="ZoomLadder"/>) - the same control the
-    /// map offers, and needed harder here: on the map the zoom decides how much is drawn, here it decides
-    /// WHICH of the six lenses the player is reading, so a page with no zoom is a page with five lenses
-    /// and a system's planets missing.
+    /// map offers, and needed harder here: the galaxy's thirteen camera steps carry FOUR of the lenses
+    /// (diplomacy 0-1, trade 2-5, economy 6-9, the system overview 10-12), and the other two are not on
+    /// that ladder at all - the system-management and planet lenses come from ENTERING the system's and
+    /// the planet's own view levels (<c>GalaxyViewLevel.ApplyLayer</c>), which is what the ladder's last
+    /// two rungs do. A page with no zoom is a page with whichever single lens the camera happened to be
+    /// on, and a system's planets missing.
     ///
     /// Before this screen the mod was silent here. Every other page gates on the game's "normal view",
     /// which the scan view turns off, and the game hides the window each of those pages is built from -
@@ -67,11 +78,12 @@ namespace ES2Access.Screens
         /// it hides the banners, the pinned quest and the notification strip.</summary>
         private readonly GlobalHud _hud = new GlobalHud();
 
-        /// <summary>The lens the player has already been told about, and the layer descriptor it was
-        /// read from. The descriptor outlives the screen - the game keeps it up to date whether or not
-        /// the lens is up - so arriving baselines against what is showing rather than against nothing,
-        /// and the arrival announcement is not said twice.</summary>
-        private string _lens;
+        /// <summary>The layer descriptor the player has already been told about - the DESCRIPTOR and not
+        /// the lens's name, because three of the descriptor boundaries fall inside one name and the
+        /// drawing changes at every one of them, so a name is no baseline. The descriptor outlives the
+        /// screen - the game keeps it up to date whether or not the lens is up - so arriving baselines
+        /// against what is showing rather than against nothing, and the arrival announcement is not said
+        /// twice.</summary>
         private string _descriptor;
 
         /// <summary>Whether the lens has finished showing itself since the mode was entered - the
@@ -208,7 +220,6 @@ namespace ES2Access.Screens
             _headers = null;
             _fidsi = null;
             _descriptor = Descriptor();
-            _lens = LensName();
         }
 
         public override void OnPop()
@@ -218,7 +229,6 @@ namespace ES2Access.Screens
             _headers = null;
             _fidsi = null;
             _descriptor = null;
-            _lens = null;
         }
 
         public override void OnUpdate()
@@ -230,7 +240,13 @@ namespace ES2Access.Screens
 
         /// <summary>The lens has changed under the player - they zoomed, or they walked into a system -
         /// and everything on the screen now means something else. Queued, never interrupting: it is
-        /// something that happened rather than an answer to a key.</summary>
+        /// something that happened rather than an answer to a key.
+        ///
+        /// Said on every descriptor change, INCLUDING one whose lens name is the name just said. Three of
+        /// the nine descriptors' boundaries fall inside a single name, and the game redraws the band as
+        /// heavily there as anywhere else - so suppressing the repeat let the three loudest same-name
+        /// steps pass in silence, which is the one thing this watcher exists to prevent (owner ruling
+        /// 2026-08-17). Hearing "Trade" twice is the price of never crossing a band unannounced.</summary>
         private void AnnounceLens()
         {
             try
@@ -243,12 +259,11 @@ namespace ES2Access.Screens
 
                 _descriptor = descriptor;
                 string lens = LensName();
-                if (string.IsNullOrEmpty(lens) || lens == _lens)
+                if (string.IsNullOrEmpty(lens))
                 {
                     return;
                 }
 
-                _lens = lens;
                 Voice.Say(lens, false);
             }
             catch (Exception e)

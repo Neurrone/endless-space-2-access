@@ -23,7 +23,10 @@ namespace ES2Access.Tests.Speech
         [Fact]
         public void DefaultsAreEnglish()
         {
-            Assert.Equal("Endless Space 2 Access ready", ModStrings.Get(ModStrings.StartupReady));
+            Assert.Equal(
+                "Endless Space 2 Access 1.2.3 ready",
+                ModStrings.Format(ModStrings.StartupReady, "1.2.3")
+            );
             Assert.Equal("5 of 20", ModStrings.Format(ModStrings.Fraction, 5, 20));
         }
 
@@ -54,7 +57,10 @@ namespace ES2Access.Tests.Speech
             );
             ModStrings.Install(null);
 
-            Assert.Equal("Endless Space 2 Access ready", ModStrings.Get(ModStrings.StartupReady));
+            Assert.Equal(
+                "Endless Space 2 Access {0} ready",
+                ModStrings.Get(ModStrings.StartupReady)
+            );
         }
 
         [Fact]
@@ -65,7 +71,10 @@ namespace ES2Access.Tests.Speech
             );
             ModStrings.Install(new Dictionary<string, string>());
 
-            Assert.Equal("Endless Space 2 Access ready", ModStrings.Get(ModStrings.StartupReady));
+            Assert.Equal(
+                "Endless Space 2 Access {0} ready",
+                ModStrings.Get(ModStrings.StartupReady)
+            );
         }
 
         [Fact]

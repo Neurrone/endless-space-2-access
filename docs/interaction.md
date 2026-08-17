@@ -286,8 +286,9 @@ something is already being carried, or a live type-ahead search is taking the sp
 (`ModEntry.CarryKeyClaimed` → `GraphNavigator.TakesCarryKey`, through `InputAction.ClaimedWhile`;
 owner decision 2026-08-12, reversing the blanket claim of 2026-08-11). Everywhere else it falls
 through to the game, whose Space is the strategic lens (`ToggleScanView`) — modelled now by
-`ScanViewScreen`, which announces the lens on arrival and the view again on the way out, so
-handing the key back cannot drop the player into an unannounced mode. Every other binding is
+`ScanViewScreen`, which announces the lens on arrival, again at every layer-descriptor change while
+the mode is up (same-name band boundaries included — es2-facts), and the view again on the way out,
+so handing the key back cannot drop the player into an unannounced mode. Every other binding is
 claimed outright. While something is carried, **Escape puts it
 down and goes no further** (`claimsBack` reads true only then), and the carry dies silently when the
 player leaves the page it started on — a menu opened over that page is still that page.

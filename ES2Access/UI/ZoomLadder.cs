@@ -15,8 +15,8 @@ namespace ES2Access.UI
     /// the way from the whole galaxy to one planet (<see cref="GalaxyViewLevels.StepZoom"/>).
     ///
     /// The value is the rung and nothing else. What a rung MEANS is a matter for the page: on the scan
-    /// view it is the lens's name, which that screen announces whenever it changes, and repeating it here
-    /// would say it twice. While the game is flying between two view levels there is no rung to report -
+    /// view it is the lens's name, which that screen announces whenever the layer under it changes -
+    /// name repeated or not - and repeating it here would say it twice. While the game is flying between two view levels there is no rung to report -
     /// the answer is a step behind - so the value says nothing rather than answering "nothing happened" to
     /// a press that did something, and speaks itself as soon as it is true again.
     ///

@@ -1246,12 +1246,16 @@ RESTORE only (`SetZoomStep` alone leaves the labels culled). **The zoom IS prese
 (re-measured 2026-08-17 against a "the slider is missing in scan mode" report, NOT reproduced):**
 `scan:zoom` is the second node of the title ROW, reached by `ui.down` OR `ui.right` from
 `scan:title/lens`, announcing `Zoom, slider, N of 15, 2 of 2`, and `ui.left`/`ui.right` step it
-(measured across rungs 1→13, with the lens name spoken on each band crossing). Two states DO leave
+(measured across rungs 0→12 both ways 2026-08-17, with the lens name spoken on every DESCRIPTOR
+crossing — including the three where the name does not change, so a full sweep says "Diplomacy
+scan" at 0↔1, "Trade Scan" at 1↔2 and again at 3↔4, "Economy scan" at 5↔6, "System scan" at 9↔10
+and again at 11↔12, and nothing but the slider value inside a band). Two states DO leave
 it valueless or absent, both shared with the plain HUD and both by design: `ZoomLadder.Text` returns
 null while the ladder waits for a level the game has not moved to (the announcement keeps the name
 and loses `N of 15` — seen on the refused `ui.right` at rung 13), and `ZoomLadder.Build` declares
 nothing at all where `GalaxyViewLevels.ZoomRung < 0` (a battle lens or the system-discovery view). The zoom table: 0-1 Diplomacy /
-2-5 Trade / 6-9 Economy / 10-12 System, plus the system and planet layers. **All four lens windows
+2-5 Trade / 6-9 Economy / 10-12 System, plus the system and planet layers — six titles over nine
+descriptors, so the band boundaries are one rung finer than the titles (es2-facts). **All four lens windows
 report `Shown` at once**, so the drawn `ScanViewWindowHeader` is the only reliable lens signal and
 `CaptionsPanel.ScanViewGuiElement` goes stale. Restore `ShowScanViewCaptions` and
 `ShowScanViewSystemInfos` afterwards. Fixture notes: one perceived system; synergies on two of
