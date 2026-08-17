@@ -660,7 +660,7 @@ namespace ES2Access.Screens
         {
             int x = InspectGrid.Step(_x, _size, east);
             int y = InspectGrid.Step(_y, _size, north);
-            if (!InspectGrid.InBounds(x, y, _lowX, _highX, _lowY, _highY))
+            if (!InspectGrid.InBounds(x, y, _size, _lowX, _highX, _lowY, _highY))
             {
                 Voice.Say(ModStrings.Get(ModStrings.GalaxyInspectEdge), true);
                 return true;

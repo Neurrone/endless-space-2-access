@@ -111,11 +111,32 @@ namespace ES2Access.Tests.UI
         }
 
         [Fact]
-        public void TheEdgeOfTheGalaxyIsTheLastCentreInsideIt()
+        public void TheEdgeOfTheGalaxyIsTheLastCellThatTouchesIt()
         {
-            Assert.True(InspectGrid.InBounds(10, 10, -10, 10, -10, 10));
-            Assert.False(InspectGrid.InBounds(11, 0, -10, 10, -10, 10));
-            Assert.False(InspectGrid.InBounds(0, -11, -10, 10, -10, 10));
+            Assert.True(InspectGrid.InBounds(10, 10, 1, -10, 10, -10, 10));
+            Assert.False(InspectGrid.InBounds(12, 0, 1, -10, 10, -10, 10));
+            Assert.False(InspectGrid.InBounds(0, -12, 1, -10, 10, -10, 10));
+        }
+
+        /// <summary>The outermost system sits at a fractional position that ROUNDS into the boundary
+        /// cell (Byrtus, north -41.6, announced in cell -42): the cell that holds it must be
+        /// reachable, and the first cell wholly past the extent is the edge.</summary>
+        [Fact]
+        public void TheCellHoldingTheOutermostSystemIsReachable()
+        {
+            // South edge at -41.6: cell -42 (span -42.5..-41.5) touches it, cell -43 does not.
+            Assert.True(InspectGrid.InBounds(0, -42, 1, -50, 50, -41.6, 10));
+            Assert.False(InspectGrid.InBounds(0, -43, 1, -50, 50, -41.6, 10));
+
+            // The wider cursor reaches further by the same rule: a 3-wide cell centred at -43
+            // still touches -41.6 (span -44.5..-41.5).
+            Assert.True(InspectGrid.InBounds(0, -43, 3, -50, 50, -41.6, 10));
+            Assert.False(InspectGrid.InBounds(0, -46, 3, -50, 50, -41.6, 10));
+
+            // Half-open on the high edge, exactly as Holds: a system AT a cell's high edge belongs
+            // to the neighbour, so the neighbour is the last reachable cell, not this one plus one.
+            Assert.True(InspectGrid.InBounds(0, 10, 1, -50, 50, -50, 10.0));
+            Assert.False(InspectGrid.InBounds(0, 11, 1, -50, 50, -50, 10.0));
         }
 
         [Fact]

@@ -167,19 +167,30 @@ namespace ES2Access.Core.UI
             return ax != bx ? ax < bx : ay <= by;
         }
 
-        /// <summary>Whether a cell centre is still inside the galaxy - the test a move makes before it
+        /// <summary>Whether a cell still touches the galaxy - the test a move makes before it
         /// happens, so the player is told they are at the edge rather than being taken out into
-        /// nothing.</summary>
+        /// nothing.
+        ///
+        /// The CELL's span, never its centre: the outermost system sits at a fractional position
+        /// that rounds INTO the boundary cell, so a centre test refuses the very cell that holds it
+        /// - the scanner says a system is one south while the arrow says "Map edge" (owner-reported,
+        /// Byrtus). A cell is reachable exactly when its half-open span overlaps the extent box the
+        /// outermost systems measure out, which keeps the move test and <see cref="Holds"/> telling
+        /// the same story about who contains whom.</summary>
         public static bool InBounds(
             int x,
             int y,
+            int size,
             double lowX,
             double highX,
             double lowY,
             double highY
         )
         {
-            return x >= lowX && x <= highX && y >= lowY && y <= highY;
+            return High(x, size) > lowX
+                && Low(x, size) <= highX
+                && High(y, size) > lowY
+                && Low(y, size) <= highY;
         }
 
         /// <summary>The whole-unit squares a cell covers, as offsets from its centre: -n..n where the
