@@ -218,6 +218,11 @@ generic graduates to the generic docs.
   exactly the outpost case. Measured turn 18: Heka `enable=False`, repository `State == Outpost`,
   `IsBlackedOut == false`, and `GalaxyViewLevels.OpenSystem` opens the page — whose outpost half
   (`OutpostInfoSidePanel`, the outpost-action checkboxes) the system screen already reads.
+- **The map's star/fleet/mote labels are pooled and re-bound as the camera slides** (2026-08-17):
+  a tooltip widget captured for a place goes stale within the 0.3 s camera glide, so anything
+  aiming the pointer at a map thing must resolve the widget from the ENTITY per frame —
+  `GalaxyHudScreen.MapMark` is the one lookup, shared by the inspect cell's aim (see the code
+  comment at its `AddSystem` site for the mechanism).
 - **An undiscovered system's label carries `Enable=True` from the prefab.** A sweep of all 87
   `StarSystemLabel`s found ~80 with `RequestManagementViewButton.Enable == True` and the visibility
   chain false. Any offer gated on `Enable` alone would exist for the whole galaxy; the drawn-chain

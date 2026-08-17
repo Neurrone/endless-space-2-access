@@ -1161,11 +1161,19 @@ count is
 `Resources.FindObjectsOfTypeAll(typeof(GameObject))` filtered by that name (1 while armed, **0**
 after `ui.back` and after a `/reload` taken with the mode armed — the leak test), and the world rect
 is reflection on the component's `_lowX`/`_highX`/`_lowY`/`_highY`, which is how "the cell did not
-move" is proved while the player is off the map. Two crop-hygiene notes: the focused system's
-`GuiTooltipWindow` sits over the screen centre for the whole mode (the mod points the game's pointer
-at the focused node), so a clean crop wants `PointerFocus.Release()` first — and the
-tooltip-covered crop is itself the non-occlusion evidence, the square drawing over the tooltip
-panel. Camera zoom for the size/zoom matrix is set directly:
+move" is proved while the player is off the map. Crop hygiene since the cell-owned aim
+(2026-08-17): the drawn tooltip is the CELL's, not the focused node's, and an `/eval`
+`PointerFocus.Release()` lasts one frame because the pump re-aims — a clean marker crop is taken
+by stepping to an EMPTY cell instead.
+**The cell owns the game's drawn tooltip while the mode drives the map (2026-08-17)**: the aim rule
+is system > fleets > probes/missiles/pins, and NOTHING on an empty cell (`win=hidden`, bare-sky
+crop). Oracle pair: `DevProbe.TooltipPipe()` plus a `crop-shot.ps1` of `GuiTooltipWindow`'s rect.
+`ModEntry.Navigator.ClearVisual()` from `/eval` stages a camera-driven focus-visual re-commit
+without waiting for one — the cell's aim must survive it. Measured cells in `[Beginner] test`:
+(-1,-6) at 11×11 = Heka + 2 fleets (system wins), (-12,-6) at 11×11 = Rigel + 1st Protectors Navy,
+(-56,-28) at 11×11 = probe only, (0,22) = Qarius, (6,0)/(0,3)/(-56,-17) = empty. Leaving the mode
+releases the aim and re-commits the standing control's focus visual (focus never moved, so nothing
+else would ask). Camera zoom for the size/zoom matrix is set directly:
 `cam.ForceZoomingOnPosition(step, cam.TargetPositionCurrent)`, step 0 = full overview, 12 = closest
 (`ZoomStepsCount` 13).
 Fixture-blocked in the cell reading, for the same reasons the tree's own nodes are: an obliterator
