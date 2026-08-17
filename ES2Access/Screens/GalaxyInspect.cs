@@ -136,8 +136,96 @@ namespace ES2Access.Screens
         /// and an ending that is waiting to be spoken.</summary>
         public static void Tick()
         {
+            ObserveChordKey();
             Point();
             Ending();
+        }
+
+        /// <summary>
+        /// One log line for every PHYSICAL press of the inspect chord's letter, while the dev server
+        /// is up: the whole claim decision as it stood on that frame. The chord's refusals are silent
+        /// by design - off the map the key is not the mod's, another modifier spoils the
+        /// exact-modifier match, and the game answers Ctrl+I with nothing - so a press that is lost
+        /// (owner-reported: the first Ctrl+I after a Down sometimes arms nothing, and only a second
+        /// one enters) leaves no trace anywhere. This is that trace, written on the exact frame the
+        /// letter went down, so the next lost press names its own cause in the log.
+        /// </summary>
+        private static void ObserveChordKey()
+        {
+            try
+            {
+                if (!DevUp() || !UnityEngine.Input.GetKeyDown(UnityEngine.KeyCode.I))
+                {
+                    return;
+                }
+
+                GraphNavigator navigator = ModEntry.Navigator;
+                Core.UI.Graph.GraphNode node = navigator == null ? null : navigator.CurrentNode;
+                Log.Info(
+                    "inspect-chord: I down"
+                        + " ctrl="
+                        + (
+                            UnityEngine.Input.GetKey(UnityEngine.KeyCode.LeftControl)
+                            || UnityEngine.Input.GetKey(UnityEngine.KeyCode.RightControl)
+                        )
+                        + " shift="
+                        + (
+                            UnityEngine.Input.GetKey(UnityEngine.KeyCode.LeftShift)
+                            || UnityEngine.Input.GetKey(UnityEngine.KeyCode.RightShift)
+                        )
+                        + " alt="
+                        + (
+                            UnityEngine.Input.GetKey(UnityEngine.KeyCode.LeftAlt)
+                            || UnityEngine.Input.GetKey(UnityEngine.KeyCode.RightAlt)
+                        )
+                        + " onMap="
+                        + OnMap()
+                        + " node="
+                        + (node == null ? "null" : node.Id + " stop=" + node.StopKey)
+                        + " live="
+                        + _live
+                );
+            }
+            catch (Exception)
+            {
+                // A diagnostic must never cost the frame it is diagnosing.
+            }
+        }
+
+        // Whether the dev server is listening, read once per load the way NotificationAudit reads it
+        // (the loader owns the answer and does not publish it): a player has no use for a log line
+        // about a keypress, and a dev feature that cannot prove it is wanted should not run.
+        private static int _devUp = -1;
+
+        private static bool DevUp()
+        {
+            if (_devUp < 0)
+            {
+                bool up;
+                try
+                {
+                    Type plugin = typeof(ES2Access.Loader.ModHost).Assembly.GetType(
+                        "ES2Access.Loader.LoaderPlugin"
+                    );
+                    UnityEngine.Object[] found =
+                        plugin == null ? null : UnityEngine.Object.FindObjectsOfType(plugin);
+                    object dev =
+                        found == null || found.Length == 0
+                            ? null
+                            : HarmonyLib.AccessTools.Field(plugin, "_dev").GetValue(found[0]);
+                    up =
+                        dev != null
+                        && HarmonyLib.AccessTools.Field(dev.GetType(), "_http").GetValue(dev) != null;
+                }
+                catch (Exception)
+                {
+                    up = false;
+                }
+
+                _devUp = up ? 1 : 0;
+            }
+
+            return _devUp == 1;
         }
 
         /// <summary>
