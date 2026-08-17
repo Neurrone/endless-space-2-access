@@ -1702,7 +1702,7 @@ namespace ES2Access.Screens
         /// there are and never writes what they are called; the game keeps that name on the wrapper hung
         /// on the tooltip - which is on the SYMBOL inside the entry and not on the entry, so the pointer
         /// is aimed at the tooltip rather than at the row (measured: the row carries no tooltip of its
-        /// own, and pointing at it left this row saying "has tooltip" with the dossier nowhere).</summary>
+        /// own, and pointing at it left this row's review buffer with the dossier nowhere).</summary>
         private static Cell PopulationCell(
             AgeTransform widget,
             PopulationCount unit,
@@ -2119,7 +2119,7 @@ namespace ES2Access.Screens
         /// for the readouts whose tooltip the panel does NOT hang on the widget the number is drawn in -
         /// it keeps it in a field of its own and puts it on the group around the number - and it is the
         /// pointer's target too, because the game draws a tooltip for the widget that owns it and
-        /// pointing at the number would draw nothing while the readout still said "has tooltip".
+        /// pointing at the number would draw nothing and leave the review buffer empty.
         /// </summary>
         private static void AddReadout(
             List<Cell> cells,

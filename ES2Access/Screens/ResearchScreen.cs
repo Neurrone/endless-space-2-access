@@ -1047,7 +1047,7 @@ namespace ES2Access.Screens
         /// read off, because the engine re-derives the tooltip it draws from the transform it is told
         /// the mouse is over: a quadrant's title carries its own explanation and the two are the same
         /// transform, but a stage keeps its dossier on a transform of its own and aiming at the drawn
-        /// name then drew nothing at all while the readout went on saying "has tooltip"
+        /// name then drew nothing at all, leaving the stage's dossier out of its review buffer
         /// (<see cref="AgeWidgets.PointAt"/>).</summary>
         private static void Hover(NodeVtable vtable, AgeTransform widget, AgeTooltip tooltip)
         {

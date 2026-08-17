@@ -4516,7 +4516,7 @@ namespace ES2Access.Screens
         /// The lozenge rather than the label, because the tooltip that gets DRAWN is the one on
         /// whatever the pointer is over, and both labels carry two: a CenterTooltip of their own and
         /// the lozenge's, filled from the same fleet data. Declaring the label's while the engine draws
-        /// the lozenge's leaves the readout saying "has tooltip" over a review buffer that never fills,
+        /// the lozenge's leaves the node with a review buffer that never fills,
         /// because the buffer only reads a drawn tooltip it can recognise as the one it declared.
         /// </summary>
         private static AgeTransform FleetLozenge(

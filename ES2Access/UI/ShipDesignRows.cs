@@ -425,7 +425,7 @@ namespace ES2Access.UI
         /// <summary>
         /// A cost or a stock the game drew as a bare symbol and a number.
         ///
-        /// The shape walk would leave it saying "50" and "has tooltip": the resource's own name is on
+        /// The shape walk would leave it saying just "50": the resource's own name is on
         /// the tooltip's wrapper (<c>ShipDesignResourceItem.RefreshCost</c> sets Target and a CLASS, so
         /// the words are the renderer's) and the symbol beside the number is a picture. Same reading
         /// the economy screen's resource grid gets, for the same reason.

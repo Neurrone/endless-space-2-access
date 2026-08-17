@@ -179,8 +179,8 @@ namespace ES2Access.Core.UI.Graph
             // The drag indication ("draggable" / "drop target"), derived for the same reason and in the
             // same place: which controls can be picked up and which will take a drop is already written
             // down in the vtable, so no screen composes the word and every screen with a drag has it.
-            // Kindless, so it sits at the tail of the readout beside "has tooltip" - what a control has
-            // to SAY about itself, after everything it IS.
+            // Kindless, so it sits at the tail of the readout - what a control has to SAY about
+            // itself, after everything it IS.
             if (Carry != null)
             {
                 NodeAnnouncement source = Carry.DraggablePart(vt);

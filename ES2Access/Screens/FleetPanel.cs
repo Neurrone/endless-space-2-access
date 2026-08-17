@@ -270,7 +270,7 @@ namespace ES2Access.Screens
         /// The tooltip hangs on the ITEM, not on either control, so the pointer has to be told both
         /// which tooltip to show and what to draw it under. Pointing at the button alone re-derives the
         /// tooltip from the button's own transform, which every one of these leaves empty - and the
-        /// readout goes on saying "has tooltip" over a window that never draws.
+        /// row's review buffer then waits on a window that never draws.
         /// </summary>
         private static void AddAction(List<Cell> cells, FleetActionItem item)
         {

@@ -54,7 +54,6 @@ namespace ES2Access.Core.Speech
         public const string NavNotSelected = "nav.not-selected";
 
         public const string NavDisabled = "nav.disabled";
-        public const string NavHasTooltip = "nav.has-tooltip";
         public const string NavNoDetails = "nav.no-details";
         public const string NavTable = "nav.table";
 
@@ -574,8 +573,9 @@ namespace ES2Access.Core.Speech
         public const string CarryDropTarget = "carry.drop-target";
 
         /// <summary>What a control the player could pick something up from says while nothing is being
-        /// carried - the drag's half of "has tooltip". Not said while something IS held: the useful fact
-        /// about a control then is whether the thing can go there.</summary>
+        /// carried - one of the few things the readout says a control HAS rather than what it is. Not
+        /// said while something IS held: the useful fact about a control then is whether the thing can
+        /// go there.</summary>
         public const string CarryDraggable = "carry.draggable";
 
         // The scan view. The lens names itself in the game's own words, so the only strings here are
@@ -1106,7 +1106,6 @@ namespace ES2Access.Core.Speech
             { NavSelected, "selected" },
             { NavNotSelected, "not selected" },
             { NavDisabled, "unavailable" },
-            { NavHasTooltip, "has tooltip" },
             { NavNoDetails, "Nothing in here" },
             { NavTable, "table" },
             { SearchNoMatch, "No match for {0}" },

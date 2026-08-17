@@ -283,10 +283,11 @@ namespace ES2Access.UI
         ///
         /// This is <c>GuiTooltipController.ReadTooltipInformation</c>'s own test, and it is the one
         /// place it is asked, because the two things that ask it must never disagree: the pointer aims
-        /// at a tooltip only if it would draw (<see cref="PointerFocus"/>), and a control only says "has
-        /// tooltip" for one that would draw (<c>NodeSection.Indicates</c>). A prefab that hangs an empty
-        /// tooltip on decoration - a turn counter's, with no class content and no target - fails it, and
-        /// promising a review buffer that has nothing in it is what that used to sound like.
+        /// at a tooltip only if it would draw (<see cref="PointerFocus"/>), and a section only counts
+        /// as tooltip content to review for one that would draw (<c>NodeSection.Indicates</c>). A
+        /// prefab that hangs an empty tooltip on decoration - a turn counter's, with no class content
+        /// and no target - fails it, and sending the player to an empty review buffer is what taking
+        /// its word for it used to cost.
         ///
         /// Asked every frame rather than when a node is declared: a widget the game has not filled in
         /// yet starts drawing the moment it is filled.
@@ -372,8 +373,8 @@ namespace ES2Access.UI
         /// For a line the mod reads as ONE thing that the game built out of several pieces - an icon
         /// captioning a label, each with its own explanation - the line is the only place any of those
         /// explanations is reachable from, so it carries all of them. Asking the container alone finds
-        /// nothing when the words hang on the piece inside it, and the readout still says "has tooltip"
-        /// while the buffer stays empty (see <see cref="PointAt(NodeVtable, AgeTransform, AgeTooltip)"/>
+        /// nothing when the words hang on the piece inside it, and the row goes on offering a review
+        /// buffer that stays empty (see <see cref="PointAt(NodeVtable, AgeTransform, AgeTooltip)"/>
         /// for the other half of that failure).
         ///
         /// A tooltip the game could never draw anything for (<see cref="NeverDraws"/>) is not one of
@@ -1086,8 +1087,8 @@ namespace ES2Access.UI
         /// is read off - a population entry whose dossier is on the symbol inside it, a card row whose
         /// anomaly dossier is on the title inside it. Pass the tooltip the node was DECLARED with:
         /// pointing at the widget aims at the widget's own tooltip, so where that is null the game draws
-        /// nothing at all while the readout goes on saying "has tooltip" and the review buffer stays
-        /// empty - the tooltip's words only exist once it is drawn.
+        /// nothing at all and the review buffer stays empty - the tooltip's words only exist once it
+        /// is drawn.
         ///
         /// The widget is the fallback, so a control with no tooltip anywhere is still pointed at and
         /// anything hoverable under it still lights up.

@@ -102,21 +102,25 @@ namespace ES2Access.Core.UI.Graph
         /// the one it would give now. Null or an empty list = the section contributes nothing.</summary>
         public Func<IList<string>> Lines;
 
-        /// <summary>How the section reaches the focus readout. <see cref="TooltipMode.None"/> is a
-        /// buffer-only section: content the control DRAWS (a planet card's output rows, a chart's
-        /// series), never announced and never indicated, because the readout already named the control
-        /// and the substance is there to be walked.</summary>
+        /// <summary>How the section reaches the focus readout. Only
+        /// <see cref="TooltipMode.Announce"/> puts anything there; <see cref="TooltipMode.None"/>
+        /// (content the control DRAWS - a planet card's output rows, a chart's series) and
+        /// <see cref="TooltipMode.Indicate"/> (a dossier the game assembles on hover) are both
+        /// buffer-only, because the readout already named the control and the substance is there to
+        /// be walked.</summary>
         public TooltipMode Mode;
 
-        /// <summary>Whether there is anything here to indicate, asked EVERY frame. Only consulted for
+        /// <summary>Whether there is really a tooltip here, asked EVERY frame. Only consulted for
         /// <see cref="TooltipMode.Indicate"/>, and null - the default - means "always", which is the
         /// right answer for a section the mod itself invented and therefore knows is real.
         ///
         /// It exists for the sections read off a game widget, where "the control has a tooltip" and
         /// "the game would draw one" are different questions: a prefab hangs an empty tooltip on a
-        /// widget it has nothing to say about, and announcing one on it sends the player to an empty
-        /// review buffer. The question is asked per frame rather than when the node is declared because
-        /// a tooltip the game fills in later has to start indicating the moment it becomes real.
+        /// widget it has nothing to say about, and aiming the focus pointer at one parks the game's
+        /// own tooltip countdown for good. The question is asked per frame rather than when the node
+        /// is declared because a tooltip the game fills in later has to start counting the moment it
+        /// becomes real. Nothing SPEAKS off this any more - the pointer and the tooltip-parity audit
+        /// are its two readers.
         ///
         /// Note what this is NOT: a check that the section's LINES resolve to something. A tooltip the
         /// renderer assembles has no words until it is drawn, which is well after the readout that

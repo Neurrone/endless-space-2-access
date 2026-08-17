@@ -183,7 +183,7 @@ namespace ES2Access.Tests.UI
             {
                 ControlType = button,
                 Announcements = new[] { Part("Explorer", AnnouncementKinds.Label) },
-                Sections = new[] { new NodeSection(() => new[] { "A ship" }, TooltipMode.Indicate) },
+                Sections = new[] { new NodeSection(() => new[] { "A ship" }, TooltipMode.Announce) },
                 OnPickUp = () => new CarryItem(new object(), "Explorer", "ship"),
                 DropKind = "ship",
                 OnDrop = held => DropResult.Done(),
@@ -192,12 +192,12 @@ namespace ES2Access.Tests.UI
             b.AddItem(Id("a"), vt);
             GraphNode node = Node(b.Build(), "a");
 
-            Assert.Equal("Explorer, button, has tooltip, draggable", GraphAnnouncer.LeafText(node));
+            Assert.Equal("Explorer, button, A ship, draggable", GraphAnnouncer.LeafText(node));
 
             // Mid-drag the useful fact is where the thing can GO, so the same control swaps one word for
             // the other rather than saying both.
             carry.PickUp(new CarryItem(new object(), "Hunter", "ship"), "fleets");
-            Assert.Equal("Explorer, button, has tooltip, drop target", GraphAnnouncer.LeafText(node));
+            Assert.Equal("Explorer, button, A ship, drop target", GraphAnnouncer.LeafText(node));
         }
 
         [Fact]

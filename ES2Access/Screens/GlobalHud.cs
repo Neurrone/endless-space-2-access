@@ -1399,8 +1399,8 @@ namespace ES2Access.Screens
                 GraphNodes.ValuePart(() => AgeText.FullLabel(it.QuestObjectiveLabel))
             );
             // The panel is the thing that lights up, but the tooltip worth reading hangs off the
-            // objective's own label inside it - pointing at the panel would leave the readout saying
-            // "has tooltip" over a tooltip the game never drew.
+            // objective's own label inside it - pointing at the panel would leave the review buffer
+            // waiting on a tooltip the game never drew.
             AgeWidgets.Point(
                 vtable,
                 open,

@@ -145,7 +145,7 @@ namespace ES2Access.Core.UI
 
         /// <summary>
         /// What a control the player could pick something up from says while NOTHING is being carried -
-        /// the drag's half of "has tooltip", and the only announcement of the pick-up key there is.
+        /// the only announcement of the pick-up key there is.
         ///
         /// It goes quiet the moment something is held: the player is then hunting for somewhere to put
         /// that thing down, and being told the control under the cursor could also be picked up is noise.

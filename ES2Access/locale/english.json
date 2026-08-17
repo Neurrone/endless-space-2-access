@@ -21,7 +21,6 @@
   "nav.selected": "selected",
   "nav.not-selected": "not selected",
   "nav.disabled": "unavailable",
-  "nav.has-tooltip": "has tooltip",
   "nav.no-details": "Nothing in here",
   "nav.table": "table",
   "search.no-match": "No match for {0}",

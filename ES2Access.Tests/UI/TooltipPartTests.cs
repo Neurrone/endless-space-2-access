@@ -88,12 +88,40 @@ namespace ES2Access.Tests.UI
             );
         }
 
+        /// <summary>
+        /// A long tooltip is READ, never announced - not its words, and not the fact that it is there.
+        ///
+        /// The mod used to say "has tooltip" here. On a live screen almost every control carries one,
+        /// so the phrase arrived on nearly every readout and distinguished nothing; the convention that
+        /// replaced it is simply that the player checks the review buffer, on any control, whenever
+        /// they want more. Nothing was lost from the buffer - only from the announcement.
+        /// </summary>
         [Fact]
-        public void IndicateModeSpeaksThatThereIsATooltipInsteadOfItsText()
+        public void IndicateModeSaysNothingInTheReadout()
         {
             Assert.Equal(
-                "New Game, button, has tooltip, 2 of 3",
+                "New Game, button, 2 of 3",
                 Readout(Section(TooltipMode.Indicate, "A long stat block", "line two"))
+            );
+            Assert.Null(TooltipParts.Part(new[] { Section(TooltipMode.Indicate, "A long stat block") }));
+            Assert.Null(TooltipParts.Part(TooltipMode.Indicate, Tooltip("A long stat block")));
+        }
+
+        /// <summary>Whatever its state: with words, without them, and with the engine's own
+        /// would-it-draw test answering either way. The test is still declared - the tooltip-parity
+        /// audit and the focus pointer both ask it - it just no longer decides a spoken word.</summary>
+        [Fact]
+        public void AnIndicateSectionIsSilentWhateverItsStateIs()
+        {
+            Assert.Equal("New Game, button, 2 of 3", Readout(Section(TooltipMode.Indicate)));
+            Assert.Equal("New Game, button, 2 of 3", Readout(Section(TooltipMode.Indicate, "", "   ")));
+            Assert.Equal(
+                "New Game, button, 2 of 3",
+                Readout(new NodeSection(Tooltip(), TooltipMode.Indicate, () => false))
+            );
+            Assert.Equal(
+                "New Game, button, 2 of 3",
+                Readout(new NodeSection(Tooltip("A stat block"), TooltipMode.Indicate, () => true))
             );
         }
 
@@ -123,52 +151,6 @@ namespace ES2Access.Tests.UI
         }
 
         /// <summary>
-        /// The indication is about the tooltip EXISTING, and it exists whether or not it can be read
-        /// yet. Every control in this mode carries a tooltip whose words are assembled by the tooltip
-        /// window as it draws - a third of a second after focus arrives, and therefore never in time
-        /// for the readout that mentions it. Reading the lines first and staying quiet when they came
-        /// back empty silenced the indication on every one of them.
-        /// </summary>
-        [Fact]
-        public void IndicateModeSpeaksEvenBeforeTheTooltipHasAnyDrawnLinesToRead()
-        {
-            Assert.Equal(
-                "New Game, button, has tooltip, 2 of 3",
-                Readout(Section(TooltipMode.Indicate))
-            );
-            Assert.Equal(
-                "New Game, button, has tooltip, 2 of 3",
-                Readout(Section(TooltipMode.Indicate, "", "   "))
-            );
-        }
-
-        /// <summary>
-        /// What the indication IS conditional on: whether the game would draw the tooltip at all, which
-        /// a section read off a game widget answers with the engine's own test. A prefab hangs tooltips
-        /// on decoration it has nothing to say about - the research banner's, while nothing is queued -
-        /// and promising one there sends the player to an empty review buffer.
-        /// </summary>
-        [Fact]
-        public void ATooltipTheGameWouldDrawNothingForIsNotIndicated()
-        {
-            NodeSection empty = new NodeSection(Tooltip(), TooltipMode.Indicate, () => false);
-            Assert.Equal("New Game, button, 2 of 3", Readout(empty));
-        }
-
-        /// <summary>The test is re-asked every readout, so a tooltip the game fills in later starts
-        /// indicating the moment it becomes real - no rebuild, no re-declaration.</summary>
-        [Fact]
-        public void ATooltipThatBecomesRealStartsBeingIndicated()
-        {
-            bool real = false;
-            NodeSection later = new NodeSection(Tooltip(), TooltipMode.Indicate, () => real);
-            NodeAnnouncement part = TooltipParts.Part(new[] { later });
-            Assert.True(string.IsNullOrEmpty(part.Text()));
-            real = true;
-            Assert.Equal("has tooltip", part.Text());
-        }
-
-        /// <summary>
         /// A row carries the heading's explanation of what the measure IS and the value's description
         /// of what it SAYS, in drawn order. The one the player asked for by landing there is the
         /// value's - the last one drawn - so that is the one spoken.
@@ -186,24 +168,23 @@ namespace ES2Access.Tests.UI
         }
 
         /// <summary>
-        /// Whichever section is long, the player has to be told there is something to review - the
-        /// buffer holds it either way, and an unindicated buffer is a buffer nobody presses Ctrl+Down
-        /// on. The short one's words are still said: they are the sentence the game's author wrote for
-        /// exactly this moment, and dropping them because something ELSE on the row is reviewable
-        /// would be losing information to say less.
+        /// A long section beside a short one takes nothing away from it and adds nothing of its own.
+        /// The short one's words are the sentence the game's author wrote for exactly this moment, and
+        /// they are said wherever the long one sits in the row; the long one is in the buffer, which is
+        /// where the player looks for it whether or not anything said so.
         /// </summary>
         [Fact]
-        public void AnyLongTooltipIsIndicatedAlongsideTheShortOnesWords()
+        public void ALongTooltipLeavesTheShortOnesWordsAloneAndAddsNothing()
         {
             Assert.Equal(
-                "New Game, button, What this measures, has tooltip, 2 of 3",
+                "New Game, button, What this measures, 2 of 3",
                 Readout(
                     Section(TooltipMode.Announce, "What this measures"),
                     Section(TooltipMode.Indicate, "a stat block")
                 )
             );
             Assert.Equal(
-                "New Game, button, What it is set to, has tooltip, 2 of 3",
+                "New Game, button, What it is set to, 2 of 3",
                 Readout(
                     Section(TooltipMode.Indicate, "a stat block"),
                     Section(TooltipMode.Announce, "What it is set to")
@@ -249,10 +230,6 @@ namespace ES2Access.Tests.UI
                 AnnouncementKinds.Tooltip,
                 TooltipParts.Part(new[] { Section(TooltipMode.Announce, "Text") }).Kind
             );
-            Assert.Equal(
-                AnnouncementKinds.Tooltip,
-                TooltipParts.Part(new[] { Section(TooltipMode.Indicate, "Text") }).Kind
-            );
         }
 
         /// <summary>The lines are the game's prose - the translated LIST separator must never
@@ -270,22 +247,9 @@ namespace ES2Access.Tests.UI
             );
         }
 
-        [Fact]
-        public void IndicateModeSpeaksTheTranslatedWording()
-        {
-            ModStrings.Install(new Dictionary<string, string>
-            {
-                { ModStrings.NavHasTooltip, "info available" },
-            });
-            Assert.Equal(
-                "info available",
-                TooltipParts.Part(new[] { Section(TooltipMode.Indicate, "Text") }).Text()
-            );
-        }
-
         /// <summary>A screen may still declare a tooltip-kind part of its own for something no section
         /// can express - a drop-list entry's live refusal - and the derived part must survive beside
-        /// it, or the rows with the most to review are the ones that stop saying so.</summary>
+        /// it, or a row the screen has one extra word about loses the tooltip it was reading.</summary>
         [Fact]
         public void ASectionStillSpeaksBesideAPartTheScreenDeclaredItself()
         {
@@ -300,11 +264,11 @@ namespace ES2Access.Tests.UI
                         Part("Vaulters", AnnouncementKinds.Label),
                         Part("The content pack is not activated", AnnouncementKinds.Tooltip),
                     },
-                    Sections = new[] { Section(TooltipMode.Indicate, "lore") },
+                    Sections = new[] { Section(TooltipMode.Announce, "A faction of exiles") },
                 }
             );
             Assert.Equal(
-                "Vaulters, The content pack is not activated, has tooltip",
+                "Vaulters, The content pack is not activated, A faction of exiles",
                 GraphAnnouncer.LeafText(Node(b.Build(), "t"))
             );
         }

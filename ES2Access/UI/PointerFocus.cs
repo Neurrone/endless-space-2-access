@@ -273,8 +273,8 @@ namespace ES2Access.UI
         {
             // A tooltip the engine would draw nothing for is never pointed at: failing that test is
             // what makes the tooltip controller PARK its countdown (see AskAgainIfStalled). The test
-            // itself is AgeWidgets.Draws, shared with the "has tooltip" indication so that aiming and
-            // announcing can never disagree about which tooltips are real.
+            // itself is AgeWidgets.Draws, shared with NodeSection.Indicates so that aiming and
+            // declaring can never disagree about which tooltips are real.
             AgeTooltip tooltip = AgeWidgets.Draws(_showing.Tooltip) ? _showing.Tooltip : null;
             AgeTransform hover = tooltip == null ? null : HoverTarget(_showing);
             if (hover == null)

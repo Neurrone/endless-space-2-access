@@ -34,8 +34,8 @@ namespace ES2Access.Dev
     /// <item><b>Placement</b> - the strips hold the rails and what the game drew beside them and
     /// nothing else, every declared node hangs under the popup, and the body reads down the page.
     /// </item>
-    /// <item><b>Tooltip parity</b> - a "has tooltip" claim has a tooltip that would draw, and a
-    /// tooltip that would draw is reachable from the node that covers its widget.</item>
+    /// <item><b>Tooltip parity</b> - a node that declares tooltip content has a tooltip that would
+    /// draw, and a tooltip that would draw is reachable from the node that covers its widget.</item>
     /// </list>
     ///
     /// The painted side is measured from the window's own tree and knows nothing of the screen's
@@ -451,7 +451,7 @@ namespace ES2Access.Dev
         {
             List<string> accounts = new List<string>(painted.Phrases);
             accounts.AddRange(Vocabulary());
-            // Longest first: striking "has tooltip" out before "tooltip" leaves nothing behind that a
+            // Longest first: striking "not checked" out before "checked" leaves nothing behind that a
             // shorter phrase could half-cover.
             accounts.Sort(LongestFirst);
 
@@ -717,10 +717,16 @@ namespace ES2Access.Dev
         /// <summary>
         /// The three directions a tooltip claim can be wrong.
         ///
-        /// A control that says "has tooltip" must have one the game would draw - the promise is that
-        /// there is something to read, and a tooltip with neither words nor a target draws nothing -
-        /// and the tooltip it POINTS AT must be that one, since a control carrying two of them shows
-        /// only what the pointer is sent to.
+        /// A control that DECLARES a reviewable tooltip must have one the game would draw - the
+        /// promise is that there is something to read, and a tooltip with neither words nor a target
+        /// draws nothing - and the tooltip it POINTS AT must be that one, since a control carrying two
+        /// of them shows only what the pointer is sent to.
+        ///
+        /// Nothing in the readout says any of this any more (the "has tooltip" indication is gone: the
+        /// player checks the review buffer on every control, so a per-control claim about it said
+        /// nothing). The promise did not go with it - it became implicit, and a promise nobody hears is
+        /// a promise nobody can check by ear, so the check reads the DECLARATION instead of the spoken
+        /// line. Same nodes, same breaches, no wording in the middle.
         /// And a tooltip the game WOULD draw on a control the player can reach must be reachable
         /// from the node that covers it: the luxury popup hung the resource's dossier on the block
         /// around the words rather than on the words, and the reading that only ever asked the widget
@@ -734,16 +740,10 @@ namespace ES2Access.Dev
         /// </summary>
         private static void CheckTooltips(Painted painted, List<Declared> declared, Result result)
         {
-            string claim = ModStrings.Get(ModStrings.NavHasTooltip);
-            string claimed = Reduce(claim);
             for (int i = 0; i < declared.Count; i++)
             {
                 Declared node = declared[i];
-                if (
-                    string.IsNullOrEmpty(node.Announcement)
-                    || claimed.Length == 0
-                    || Reduce(node.Announcement).IndexOf(claimed, StringComparison.Ordinal) < 0
-                )
+                if (!Promises(node))
                 {
                     continue;
                 }
@@ -751,7 +751,12 @@ namespace ES2Access.Dev
                 if (node.Widget == null || !AnyDrawing(node.Widget))
                 {
                     result.Tooltips.Add(
-                        Made(node.Widget, node.Key, "says \"" + claim + "\" with nothing that draws", null)
+                        Made(
+                            node.Widget,
+                            node.Key,
+                            "declares a tooltip to review with nothing that draws",
+                            null
+                        )
                     );
                     continue;
                 }
@@ -768,7 +773,7 @@ namespace ES2Access.Dev
                         Made(
                             node.Widget,
                             node.Key,
-                            "says \"" + claim + "\" and points at a tooltip that draws nothing",
+                            "declares a tooltip to review and points at one that draws nothing",
                             null
                         )
                     );
@@ -822,6 +827,37 @@ namespace ES2Access.Dev
                     );
                 }
             }
+        }
+
+        /// <summary>
+        /// Whether this node undertakes to have something in its review buffer that only the game's
+        /// own hover can put there: a <see cref="TooltipMode.Indicate"/> section whose own
+        /// would-it-draw test passes right now. That test is the section's, asked here rather than
+        /// re-derived, so the check and the reading cannot disagree about which tooltips are real.
+        ///
+        /// <see cref="TooltipMode.Announce"/> sections are not asked: their words are read straight off
+        /// the tooltip and spoken, so they reach the player whether or not anything ever draws, and
+        /// nothing about the aim can take them away. <see cref="TooltipMode.None"/> sections are the
+        /// control's own drawn text and involve no tooltip at all.
+        /// </summary>
+        private static bool Promises(Declared node)
+        {
+            NodeVtable vtable = node.Node != null ? node.Node.Vtable : null;
+            IList<NodeSection> sections = vtable != null ? vtable.Sections : null;
+            for (int i = 0; sections != null && i < sections.Count; i++)
+            {
+                NodeSection section = sections[i];
+                if (
+                    section != null
+                    && section.Mode == TooltipMode.Indicate
+                    && (section.Indicates == null || section.Indicates())
+                )
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         /// <summary>Whether anything on this widget, inside it or around it would draw a tooltip -
