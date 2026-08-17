@@ -304,9 +304,15 @@ space typed into a LIVE search is text — the carry key takes it for the search
 is one of the three conditions of Space's claim, above). Screens opt out with `AllowsTypeahead`
 (the key-rebind capture rows, and the cutscene where letters belong to the game's skip) or
 `CapturesRawInput` (the frames between asking for a key capture / text editor and the
-game taking the keyboard). Edit fields are entered explicitly: Enter on the field hands the
-keyboard over, and Escape steps back OUT of editing before a second Escape closes the surface —
-both halves the engine's own gestures (the rename box is the worked example).
+game taking the keyboard). Edit fields are entered explicitly and share ONE editor
+(`TextFieldEditor`): Enter on the field hands the keyboard over ("editing"); typing echoes
+each character and Backspace speaks the deleted one; caret moves (arrows/Home/End) speak the
+character under the caret; Enter commits ("edited"); Escape — or ANY loss of the keyboard
+that is not Return: a click elsewhere, a right click — cancels, restoring the pre-edit text
+and saying "Cancelled", before a second Escape closes the surface. Role words: "editable",
+and "numeric editable" for the stepper boxes whose Left/Right adjust announces the new value
+(owner rulings 2026-08-17; the cancel-restore is wholly mod-authored — the engine has no
+cancel semantics of its own).
 
 **Escape is the game's, except over a surface the mod invented.** A screen answers
 `ConsumesBack` (asked BEFORE the press), and `ModInput` latches EVERY consumed key until the

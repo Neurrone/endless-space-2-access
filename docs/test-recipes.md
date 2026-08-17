@@ -990,13 +990,20 @@ found via `GetComponentInChildren` on `StarSystemScreen` has a NULL `RenameButto
 instance) — drive the opener through the mod's node. The one-Escape contract —
 the first Escape steps OUT of editing, the second closes the box — is proved in halves, because
 Escape itself cannot be injected: simulate the FIRST one with
-`AgeManager.Instance.FocusedControl = null` and prove the mod's consumption with
-`DevProbe.Claims("Escape")`. The same-frame commit bug is not provable through `/input ui.activate`
+`AgeManager.Instance.FocusedControl = null` — which since the unified editor (2026-08-17) IS the
+cancel path: expect the pre-edit text restored and "Cancelled" — and prove the mod's consumption
+with `DevProbe.Claims("Escape")`. An edit's endings are injectable through the levers:
+`DevProbe.EndEdit(false)` cancels, `DevProbe.EndEdit(true)` / `DevProbe.ArmCommit()` before the
+game's own validate commits ("edited") — a commit is otherwise a physical Return nothing can
+inject. The same-frame commit bug is not provable through `/input ui.activate`
 (no physical key exists), but the latch half is: `POST /wait` on
 `ModEntry.Input.ConsumedKeys.Count > 0`. Reaching a mod internal from `/eval` at all needs the
 loaded-from-bytes assembly by name — scan `AppDomain.CurrentDomain.GetAssemblies()` for the
 `modAssemblyName` that `/status` reports, then `GetType` off it; the plain type name does not
-resolve.
+resolve. Real keystrokes — per-character echo, Backspace, caret arrows, physical Escape/Return —
+are manual-test-only, always. Fixture blocks for the numeric editables: `[Beginner] test` refuses
+the Marketplace tab (no Galactic Commodities Exchange), and the negotiation quantity needs a
+diplomacy contact no current fixture has.
 
 **The assigned-governor side panel** is measurable without a save that has a governor, and the
 CHEAPER of the two routes is the one that gives real words. No fixture has a governor — in

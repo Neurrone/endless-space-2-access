@@ -37,14 +37,21 @@ parts, all text `Func<string>` resolved at speak time:
   a 20-entry list doesn't say "list item" 20 times.
 - **Edit field** — the game's own text editor, announced with an edit-field role word and its
   current text as the value. Activating it hands the engine's keyboard focus to the field (a
-  spoken prompt says typing has begun — silence is indistinguishable from a broken key) and
-  the mod stands down while the game edits; the game's own commit/cancel keys end the edit
-  and the field re-reads its new text when focus returns. **The handoff must not happen on
+  spoken word says typing has begun — silence is indistinguishable from a broken key) and
+  the mod stands down while the game edits; the commit key ends the edit with a spoken
+  confirmation and the field's new text, anything else that takes the keyboard cancels it.
+  **The whole editing experience is the mod's** — an engine-drawn field is invisible to
+  every accessibility API, so the screen reader cannot echo it: the mod speaks the character
+  typed or deleted as it happens and the character under the caret as it moves (an earlier
+  revision of this doc assigned echo to the screen reader; that was wrong for exactly this
+  reason and left fields typing silently). Expect the engine to have NO cancel semantics of
+  its own — losing focus typically just keeps whatever was typed — so a cancel that restores
+  the pre-edit text is mod-authored state: snapshot on entry, write back on the way out.
+  **The handoff must not happen on
   the activating key's frame** — the engine would deliver that same Enter to the field — see
   the late-frame rule in [input.md](input.md). The pending handover is also a flag every
   raw-key reader consults (input.md's typed-text rule) — typing meant for the field must
-  never feed a type-ahead search, including on the deferral frames. Typed-character echo is
-  the screen reader's own, not the mod's.
+  never feed a type-ahead search, including on the deferral frames.
 - **Step indicators** (page dots, carousel marks) — the game draws position as a row of
   marks, not text: declare each mark as a read-only page indicator carrying the Selected
   part (never invent a spoken "N of M" the game doesn't show), and if the game's marks are

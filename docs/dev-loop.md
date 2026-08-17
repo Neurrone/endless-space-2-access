@@ -36,8 +36,9 @@ Gates: off by default — `devServer = true` under `[Dev]` in
 `ES2ACCESS_NO_DEV=1` forces off; `ES2ACCESS_DEV_PORT` overrides; `ES2ACCESS_NO_SPEECH=1`
 mutes voicing but `/speech` still captures.
 
-- `GET /status` — mod state, `modAssemblyName`, the `keyStandDown` patch tripwire (FOUR
-  prefixes now: the three key scans plus `AgeControlTextField.KeyDown`)
+- `GET /status` — mod state, `modAssemblyName`, the `keyStandDown` patch tripwire (SIX
+  prefixes now: the three key scans, `AgeControlTextField.KeyDown`,
+  `InGameChatPanel.HandleInput`, and `AgeManager.set_FocusedControl`)
 - `GET /speech?since=N&wait=MS` — spoken ring buffer (resets on reload); `wait` long-polls
 - `GET /gui/graph?edges=1&buffers=1` — the focused screen's whole accessible tree
 - `GET /gui/graph?screen=KEY` — what an UNFOCUSED registered screen would offer, built without

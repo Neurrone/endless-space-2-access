@@ -100,9 +100,6 @@ files above.
   navigator loses the WHOLE page's build for that frame, not just the panel's walk. The two
   warnings always arrive as a consecutive pair. Two fixes, and the second is the general one: key
   the legend, and make a screen's own catch close what it opened (or the builder tolerate it).
-- SettingRows editors end in silence: no watcher notices the game's field letting go, so a
-  committed or cancelled settings edit re-reads nothing (the rename box now does this
-  right; hoist its field-released re-read into the shared editor).
 - **An "entered vision" watcher for the galaxy map** (owner-requested 2026-08-16): announce when a
   foreign fleet newly becomes perceived — a sighted player sees a lozenge appear, and there is no
   game notification to carry it (the ~162-entry mapping in `GuiNotificationManager` :576-740 has
