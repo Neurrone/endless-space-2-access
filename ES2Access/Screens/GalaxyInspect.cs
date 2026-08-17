@@ -63,10 +63,13 @@ namespace ES2Access.Screens
         /// everything else in the game moves at.</summary>
         private const float CameraDamping = 0.3f;
 
-        /// <summary>The rung of the game's zoom ladder the mode opens at (owner's ruling, 2026-08-17:
-        /// rung 9 of 0=furthest..12=closest). Entry only: the wheel still works inside the mode, and
+        /// <summary>The CLOSEST the camera may be when the mode opens - internal rung 8 of
+        /// 0=furthest..12=closest, which the ladder speaks as "Zoom level 9" (owner's ruling,
+        /// 2026-08-17). A ceiling, not a framing: entering pulls a closer camera out to here so
+        /// enough of the map is visible around the square, and a player who has already zoomed
+        /// further OUT keeps their view. Entry only: the wheel still works inside the mode, and
         /// leaving keeps whatever the player zoomed to.</summary>
-        private const int EntryZoomStep = 9;
+        private const int EntryZoomCeiling = 8;
 
         public GalaxyInspect(GalaxyHudScreen screen)
         {
@@ -542,16 +545,18 @@ namespace ES2Access.Screens
             // Entry announces the mode and reads the cell itself; the resume line is for coming BACK.
             _wasOnMap = true;
             _resume = 0;
-            // The mode opens at a KNOWN framing (owner's ruling: rung 9) rather than wherever the
-            // player left the wheel: what the sighted eye gets from the square is its surroundings,
-            // and a sweep begun from the full overview drew a square too small to see. Set on entry
-            // only - the wheel still works inside the mode, and leaving keeps whatever the player
-            // zoomed to.
-            GalaxyPosition opened = GalaxyCoordinates.Origin();
-            GalaxyViewLevels.SetZoom(
-                EntryZoomStep,
-                new Vector3(opened.X + _x, 0f, opened.Y + _y)
-            );
+            // A camera closer than the ceiling is pulled out to it, so enough of the map is visible
+            // around the square; one already further out is the player's own choice and stays
+            // (owner's ruling - the floor guarantees visibility, it does not impose a framing).
+            int zoom = GalaxyViewLevels.ZoomStep;
+            if (zoom > EntryZoomCeiling)
+            {
+                GalaxyPosition opened = GalaxyCoordinates.Origin();
+                GalaxyViewLevels.SetZoom(
+                    EntryZoomCeiling,
+                    new Vector3(opened.X + _x, 0f, opened.Y + _y)
+                );
+            }
             Voice.Say(
                 new MessageBuilder()
                     .Fragment(ModStrings.Get(ModStrings.GalaxyInspectEntered))
