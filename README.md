@@ -1,19 +1,13 @@
 # Endless Space 2 Access
 
-A screen reader accessibility mod for [Endless Space 2](https://store.steampowered.com/app/392110/Endless_Space_2/), a turn-based 4X strategy game. It narrates the game's screens and gives every one of them keyboard navigation, so that a blind or visually impaired player can run an empire without a mouse.
+A screen reader accessibility mod for [Endless Space 2](https://store.steampowered.com/app/392110/Endless_Space_2/), a turn-based 4X strategy game set in the Endless universe. It provides full narration of the game’s screens, allowing blind and visually impaired players full access to the game.
 
 ## Features
 
-- Full keyboard operation of the game: every screen the mod covers is walked with Tab and the arrow keys, and every command is a key
-- Tree-based reading of each screen: panels are Tab stops, and what is inside them is a tree you expand, collapse and search
-- A galaxy map read as a tree of places, each with coordinates measured from your home system, where a starlane is something you travel down rather than a line you look at
-- A scanner that answers "what is near me" by category, nearest first, without changing anything on screen
-- An inspect mode that sweeps a square of galaxy with the arrow keys and reads out everything inside it, fog included
-- The game's own scan mode made usable: the lens is announced whenever the zoom changes it, and its legend is readable
-- Review buffers for re-reading long tooltips, dossiers and the chat log a line at a time
-- Type-ahead search on every list and tree: start typing and the focused panel jumps to what you named
-- Keyboard drag and drop for the queues, populations, ships and cards the game only lets a mouse move
-- Speech through your own screen reader via Prism, with SAPI as a fallback
+- Full narration of menus, text, tooltips and other game UI elements
+- Support for the Windows version of the game with a keyboard
+- Keyboard-based drag-and-drop
+- Buffer system for review of tooltips, lengthy text elements and event notifications
 
 ## Documentation
 
@@ -23,6 +17,8 @@ Installation instructions and the player's manual are at
 ## Links
 
 - [Latest release](https://github.com/Neurrone/endless-space-2-access/releases/latest)
+- [Discord](https://discord.gg/4wgAFFyPCH)
+- [Patreon](https://patreon.com/NeurronesMods)
 - [Endless Space 2 on Steam](https://store.steampowered.com/app/392110/Endless_Space_2/)
 - [Endless Space 2 on GOG](https://www.gog.com/en/game/endless_space_2)
 

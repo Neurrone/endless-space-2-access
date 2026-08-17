@@ -22,6 +22,8 @@ This is version 0.1.0, the first public test release. Treat it as a test build: 
 
 - [Mod GitHub repository](https://github.com/Neurrone/endless-space-2-access)
 - [Latest mod release](https://github.com/Neurrone/endless-space-2-access/releases/latest)
+- [Discord](https://discord.gg/4wgAFFyPCH)
+- [Patreon](https://patreon.com/NeurronesMods)
 - [Endless Space 2 on Steam](https://store.steampowered.com/app/392110/Endless_Space_2/)
 - [Endless Space 2 on GOG](https://www.gog.com/en/game/endless_space_2)
 - [Changelog](changelog.md)

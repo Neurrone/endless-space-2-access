@@ -1,38 +1,36 @@
 # Research
 
-## The technology wheel
+## The Technology Wheel
 
-The game draws its 385 technologies as dots on a wheel: four quadrants, each of five stages out from the middle plus the victory ring, with arcs between dots that mean something.
+The game draws its technologies as dots on a wheel: four quadrants, each with five stages running outward from the centre, plus the victory ring. The mod exposes the wheel as a tree: quadrant, then stage, then the technologies of that stage in the order they are drawn. Only the stage you have expanded lists its technologies.
 
-A wheel is not a list, so the mod declares it as a tree — quadrant, then stage, then the technologies along that arc, in the order they are drawn clockwise. Only the stage you have opened lists its technologies.
+Use `Tab` to cycle through three panels:
 
-Tab walks three panels:
-
-- **Status**: what is being researched, the queue, and the game's own words for there being no queue
-- **Suggested**: the technologies the game's own science department is recommending. The game marks these with a badge on each dot, scattered around a wheel of 385, which is fine to see and no way to find anything — so the mod gathers them into a stop. Each row *is* its dot seen from elsewhere: focusing one takes the view to the technology, and `Enter` opens the branch it lives in and leaves the cursor there
+- **Status**: the current research and the research queue
+- **Suggested**: the technologies the game recommends. On screen these are badges scattered around the wheel; the mod gathers them into one list. Focusing a suggestion moves the view to that technology, and `Enter` expands the branch it lives in and puts focus there
 - **Tree**: the wheel itself
 
-The camera follows the tree, because the game only draws what is near the middle of the screen: a technology two rings out does not exist to the renderer until the view has moved onto it. Opening a quadrant aims the view at that quarter, opening a stage aims it at that ring, and closing the last branch puts the whole wheel back.
+The camera follows your position in the tree, because the game only draws the technologies near the centre of the screen. Expanding a quadrant aims the view at that quarter, expanding a stage aims it at that ring, and collapsing everything restores the whole wheel.
 
-A technology says its state in the game's own words, what it would cost, how long it would take, and where it sits in the queue if it is in one. Its arcs are spoken from the end you are standing on, and the whole list of one dot's relationships is on the dot.
+A technology reads its state in the game's own words, its cost, its research time, and its queue position if queued. Its connections to other technologies are read from the end you are on.
 
 ### Queueing
 
-- `Enter` on a technology queues it, or takes it out of the queue if it is already in — the dot's own click, with the sound and the tutorial event the game attaches to it
-- `Enter` on a queue line dequeues it. No confirmation: queue it again to undo
-- `Alt+Enter` is the Alt-click, which is the game's "queue this at the head"
-- The queue is **reordered by carrying**: `Space` on a queued technology, `Up` or `Down` to the line whose place it should take, `Enter` to drop
+- `Enter` on a technology queues it, or removes it from the queue if it is already queued
+- `Enter` on a queue entry removes it. There is no confirmation; queue it again to undo
+- `Alt+Enter` queues a technology at the head of the queue
+- To reorder the queue: press `Space` on a queued technology, `Up` or `Down` to the new position, then `Enter` to drop
 
-### Missing prerequisites
+### Missing Prerequisites
 
-Where the game has left a control switched on only so that a click can explain itself, `Ctrl+Enter` is that explanation — it runs the game's own jump to the technology you are missing. It works on the wheel, on cards elsewhere in the game whose action is technology-blocked, and on locked rows such as a ground-troop type. Those controls still announce themselves as unavailable, and `Enter` on them does nothing, exactly as a plain click does.
+On a control that is disabled because a technology is missing, press `Ctrl+Enter` to jump to that technology. This works on the wheel, on locked rows such as ground troop types, and on cards elsewhere whose action is technology-blocked. The controls still announce themselves as unavailable, and `Enter` on them does nothing.
 
 ### Searching
 
-Typing searches every technology on the wheel, not just the ones on screen — the point of a search here is to reach the thing you cannot find. Landing on a result opens the branch it is buried in.
+Type to search every technology on the wheel, not just the ones currently drawn. Landing on a result expands the branch it is in.
 
-## The quest journal
+## The Quest Journal
 
-The quest journal walks four panels: the side panels the game draws, the filters, the list of quests, and the detail of the one you have selected. A quest's objectives, lore and rewards are in the detail panel and in the review buffer.
+The quest journal has four panels: the game's side panels, the filters, the quest list, and the detail of the selected quest. A quest's objectives, lore and rewards are in the detail panel and the [review buffer](buffers.md).
 
-The quest you are tracking is also a stop on the HUD of every view level, so its current step is one Tab away from the map.
+The quest you are tracking is also a stop on the HUD of every view, so its current step is one `Tab` away from the map.

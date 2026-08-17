@@ -1538,6 +1538,18 @@ generic graduates to the generic docs.
   `!AgeManager.IsMouseCovered`. Camera layers per step: 0 Painting, 1 GalaxyMap,
   2-3 InformativeGalaxy, 4-5 Constellation, 6-9 Systems, 10-11 System, 12 SystemOverview
   (13 steps, default 9).
+- **A layer band is NOT a lens: nine descriptors map onto six lens titles**
+  (`TopTitlePanel.Load`, :116-124 — Painting+GalaxyMap = Diplomacy, InformativeGalaxy+Constellation
+  = Trade, Systems = Economy, System+SystemOverview = the system overview, plus SystemManagement
+  and PlanetOverview from the view LEVELS). So three descriptor boundaries fall inside one title
+  (steps 0→1, 3→4, 11→12), and crossing one still re-runs the per-layer alpha/position tables over
+  the lens window, its sections and every label (`GuiLayeredScanViewWindow.cs:64-88`,
+  `LabelMetaModifier.cs:233-262`) — sub-panels and label lines appear and disappear.
+  `GalaxyLayerController.cs:78-83` early-returns on an unchanged DESCRIPTOR name, so the descriptor
+  is the identity of the drawing and the title is only its heading.
+  Mod policy (owner ruling 2026-08-17): `ScanViewScreen.AnnounceLens` speaks the lens at every
+  descriptor change, same-name boundaries included — a repeated "Trade" is cheaper than a silent
+  redraw.
 - **The scan system BAND never draws planets**: `StarSystemManagementScanViewWindow` binds only
   while `FocusedStarSystemNode != null` — the planets belong to the management lens one rung in.
   `StarSystemManagementScanViewPopulationSynergyItem` carries NO AgeTooltip anywhere (the icon

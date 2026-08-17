@@ -1,30 +1,30 @@
 # Politics
 
-## The senate
+## The Senate
 
-The senate screen walks four panels: the assembly, the senators, the laws in force, and the census. Each card carries its full text in the review buffer, and a card's costs are read inside the card they belong to rather than as separate rows.
+The senate screen has four panels: the assembly, the senators, the laws in force, and the census. Each card's full text is in the [review buffer](buffers.md), and a card's costs are read as part of the card.
 
 ## Government
 
-The government modal walks its heading, the government you have, the ones you could change to, what a change would cost, and its buttons. A choice you cannot make says why.
+The government window has a heading, your current government, the governments you could change to, the cost of a change, and buttons. A choice you cannot make says why.
 
 ## Laws
 
-The laws screen walks its heading, the filters, the law cards, the detail of the selected law, and its buttons. Filters are a choose-one group. An emptied card stops speaking its old words rather than lying about what is on screen.
+The laws screen has a heading, the filters, the law cards, the detail of the selected law, and buttons. Filters are a choose-one group.
 
 ## Population
 
-The population screen walks its heading, the list of your populations, the detail of the selected one, its politics, and its buttons — which is where a population's own traits and its political leanings are read.
+The population screen has a heading, the list of your populations, the detail of the selected one, its politics, and buttons. This is where a population's traits and political leanings are read.
 
 ## Elections
 
-An election arrives as a wizard of twelve steps, and every step announces itself. `Next Step` and `Previous` are its own buttons; each step has its own panels, and Tab walks them as usual.
+An election runs as a wizard of twelve steps, and every step announces itself. `Next Step` and `Previous` are its own buttons; each step has its own panels, and `Tab` cycles through them as usual.
 
-Two steps are worth describing, because the game says most of what they mean in pictures.
+Two steps deserve explanation, because the game shows most of their content as graphics.
 
-### Vote breakdown by system
+### Vote Breakdown by System
 
-Focus lands on the system's row, and the system and its parties are **one row** — `Right` walks along it, however many parties there are and however the game happens to wrap their icons:
+Focus lands on the system's row. The system and its parties are one row; press `Right` to walk along it:
 
 ```text
 Dusay, System 1 of 1, 1 of 4
@@ -33,12 +33,12 @@ Scientists, 2, has tooltip, 3 of 4
 Militarists, 1, has tooltip, 4 of 4
 ```
 
-Each party's whole dossier — what it is, what it wants, and what supports it — is in its review buffer. `Up` from the row reaches the previous-system and next-system arrows.
+Each party's description — what it is, what it wants, and what supports it — is in its review buffer. Press `Up` from the row to reach the previous-system and next-system arrows.
 
-Tab reaches the Political Trends column, which the game draws as six wordless bars. It reads as a list: "Industrialists, 1 of 4", "Scientists, 2 of 4", and so on, then "Overall Empire 4 Total representatives" and the counting progress as a sentence — "4 of 4 representatives counted" — which the game draws as three coloured segments with no words on them.
+`Tab` reaches the Political Trends column, which the game draws as six unlabeled bars. It reads as a list — `Industrialists, 1 of 4`, `Scientists, 2 of 4`, and so on — followed by the empire total and the counting progress as a sentence, for example `4 of 4 representatives counted`.
 
-The game normally steps to the next system every second and a half while you read. The mod stops that carousel when you arrive, so the system under the cursor stays put; the arrows move it when you want it moved.
+The game normally advances to the next system every second and a half. The mod stops that rotation while you are on this step, so the current system stays put; use the arrows to change system.
 
 ### Results
 
-The results step reads the winners, the laws that passed, and the outcomes, with each winner's card and badges walked as one row.
+The results step reads the winners, the laws that passed, and the outcomes. Each winner's card and badges are walked as one row.

@@ -1,49 +1,53 @@
 # Star Systems
 
-Opening a system takes you out of the galaxy view and onto that system's own page. Two routes reach it: `Right` on the zoom control past the map's closest step, which opens the page for one of your own colonies and merely zooms in on anything else; and a double click (`Ctrl+Alt+Enter`) on the system's row in the empire screen's table. `Escape` leaves, and the zoom's `Left` steps back out as well.
+There are 3 ways to open a system's management page:
 
-## The system management page
+- Zoom in past the map's closest level (`Right` on the zoom slider). This opens the page for your own colonies; on anything else it just zooms in.
+- The "Open system" button under systems you own in the systems tree
+- Press `Ctrl+Alt+Enter` (double click) on the system's row in the empire screen's table.
 
-Tab walks five panels:
+Press `Escape` to leave, or `Left` on the zoom slider to step back out.
 
-- **Page**: what the system as a whole is — its name and the rename button, its owner, its approval and politics, the improvements it has, the buttons the game draws across the top. Readouts with no control behind them still carry their tooltips, so the numbers behind a figure are in the review buffer.
-- **Planets**: one card per planet, with its type, size, outputs, anomalies and the actions available on it — colonize, terraform, and whatever the game offers this turn. A card's buttons are child nodes: `Right` on the card opens them.
-- **Constructibles**: what you can build here, with the filter group above the list. The filters are one choose-one set, so `Enter` on a filter switches to it.
-- **Queue**: the construction queue. `Enter` on a line cancels it — instantly while nothing is invested, and behind the game's own confirmation once something is. `Alt+Enter` on a constructible queues it at the head. Buy-out buttons are child nodes of the line.
-- **Hangar**: the ships parked here, with the toolbar the game draws over them. "No ships in the hangar" where it is empty.
+## The System Management Page
 
-Closing any modal opened over this page puts the cursor back on the planets panel.
+Use `Tab` to cycle through five panels:
 
-### Reordering the queue
+- **Page**: the system as a whole — its name and rename button, owner, approval and politics, built improvements, and the buttons along the top. Read-only numbers still have tooltips, so their breakdowns are in the [review buffer](buffers.md).
+- **Planets**: one card per planet, with its type, size, outputs, anomalies and available actions such as colonize or terraform. Press `Right` on a card to reach its buttons.
+- **Constructibles**: what you can build here, with a filter group above the list. Filters are a choose-one set; `Enter` on a filter switches to it.
+- **Queue**: the construction queue. `Enter` on an entry cancels it — immediately while nothing has been invested, behind the game's own confirmation once something has. `Alt+Enter` on a constructible queues it at the head of the queue. Buy-out buttons are child entries of a queue line.
+- **Hangar**: the ships parked here and their toolbar. An empty hangar reads `No ships in the hangar`.
 
-Queue order is a drag, not a separate key:
+### Reordering the Queue
 
-1. `Space` on the line you want to move.
-2. `Up` or `Down` to the line whose place it should take.
-3. `Enter` to drop: "Moved Settler to position 2".
+To move a queue entry:
 
-### Moving population
+1. Press `Space` on the entry to move.
+2. Press `Up` or `Down` to the position it should take.
+3. Press `Enter` to drop. The mod confirms, for example `Moved Settler to position 2`.
 
-Where the system allows it, a planet's population is dragged the same way: `Space` on the population you are moving, walk to the destination planet, `Enter` to drop. A refusal speaks the game's own reason and you keep carrying.
+### Moving Population
+
+Where the system allows it, population is moved the same way: press `Space` on the population unit, move to the destination planet, press `Enter` to drop. If the game refuses, its reason is spoken and you keep holding the unit.
 
 ## Improvements
 
-The improvements modal opens from the management page and walks a summary, the list of improvements, and its action buttons. Each row carries its full description in the review buffer.
+The improvements window opens from the management page. It has a summary, the list of improvements, and action buttons. Each row's full description is in the review buffer.
 
-## System politics
+## System Politics
 
-The system politics modal opens from the management page too: a heading, the parties with their support, and the events that have moved them. "Show all events" expands the list.
+The system politics window also opens from the management page: a heading, the parties with their support, and the events that influenced them. `Show all events` expands the list.
 
-## The planet page
+## The Planet Page
 
-Going one step further in — `Right` on the zoom from a system, or `Enter` on a planet card — opens one planet's own page, with three panels: the planet's information, its population, and the card itself with the actions on it. Stepping between planets re-enters the same page with a new planet, and the mod re-reads it.
+Zoom in one more level from a system (`Right` on the zoom slider), or press `Enter` on a planet card, to open a single planet's page. It has three panels: the planet's information, its population, and the planet card with its actions. Moving between planets reopens the page for the new planet and reads it out.
 
-A planet's own constructibles panel slides out from under its card and is a screen of its own while it is open.
+A planet's constructibles panel opens over the page and is a screen of its own while it is up.
 
 ## Renaming
 
-The rename box walks its heading, the text field, Cancel and Confirm. `Enter` on the field starts editing, `Enter` again commits the text — and then Confirm is what actually renames the system, because committing an edit never presses a screen's button for you.
+The rename window has a heading, a text field, and Cancel and Confirm buttons. Press `Enter` on the field to start editing and `Enter` again to commit the text. Then press Confirm — committing the edit does not press the button for you.
 
-## Discovering a system
+## System Discovery
 
-The first time you reach a system, the game plays its discovery cinematic. It is read out as it goes, and any key skips it, exactly as the game's own "press anything" does.
+The first time you reach a system, the game plays a discovery cinematic. The mod reads it as it plays. Press any key to skip it, as in the unmodded game.
