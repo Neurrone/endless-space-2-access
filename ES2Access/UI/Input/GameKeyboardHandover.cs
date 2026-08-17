@@ -30,10 +30,17 @@ namespace ES2Access.UI.Input
     /// engine's focused control and still key-exclusive, so the mod stands down for a field nobody can
     /// see or type into, and every key in the mod goes dead with no way back.
     ///
-    /// Telling the ways OUT of an edit apart is not done here and cannot be: Escape never reaches this
-    /// method at all, because the InputManager clears the focus from Update before the engine's
-    /// LateUpdate dispatch runs. That question belongs to the focus setter - see
-    /// <see cref="GameTextFocus"/>.
+    /// The OTHER key this dispatch decides is the commit. Enter in a text field runs the window's
+    /// validate callback, and a validate is the SCREEN's action rather than the edit's - it writes the
+    /// save and closes the save screen, it posts the rename and closes the box - so a player who only
+    /// meant to stop typing has performed the screen's primary button (owner-reported). While the mod
+    /// owns a live edit the key is therefore taken here and the edit is ended the mod's way
+    /// (<see cref="Screens.TextFieldEditor.CommitInsteadOfTheGamesValidate"/>), which leaves the
+    /// surface standing. Chat is exempt: its Enter SENDS, and taking it would leave chat unusable.
+    ///
+    /// Escape is not decided here and cannot be: it never reaches this method at all, because the
+    /// InputManager clears the focus from Update before the engine's LateUpdate dispatch runs. That
+    /// question belongs to the focus setter - see <see cref="GameTextFocus"/>.
     /// </summary>
     internal static class GameKeyboardHandover
     {
@@ -138,6 +145,22 @@ namespace ES2Access.UI.Input
             {
                 ModInput input = ModEntry.Input;
                 if (input != null && input.ActedOnAKeyGoingDown())
+                {
+                    return false;
+                }
+
+                // THE COMMIT KEY. Asked after the latch above, so the Return that OPENED this box -
+                // which the mod spent on the activation - can never be read as the Return that ends
+                // the edit. What the game would do with it is its VALIDATE, which is the SCREEN's
+                // action (the save-name box writes a save and closes the whole screen); the edit ends
+                // here instead and the surface is left standing.
+                if (
+                    (
+                        UnityEngine.Input.GetKeyDown(KeyCode.Return)
+                        || UnityEngine.Input.GetKeyDown(KeyCode.KeypadEnter)
+                    )
+                    && Screens.TextFieldEditor.CommitInsteadOfTheGamesValidate(__instance)
+                )
                 {
                     return false;
                 }

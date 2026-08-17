@@ -19,16 +19,27 @@ namespace ES2Access.Screens
         public Action HandOver;
 
         /// <summary>
-        /// Whether the game REFUSED what was typed, asked once after a commit: null for taken, and
-        /// any string - the game's own reason, or empty where it gives none - for refused. A refusal
-        /// puts the keyboard back into the field rather than closing it, because cancelling on the
-        /// player's behalf would throw away what they wrote.
+        /// Whether the mod ENDS THE EDIT ITSELF when the player presses Enter, instead of letting the
+        /// key reach the field and fire whatever the game has wired to it.
         ///
-        /// Empty and null are different answers on purpose. A game can refuse without saying why (the
-        /// rename box only writes its reason for some refusals), and "no words" must still mean "you
-        /// are back in the box", never "it worked".
+        /// The game's own answer to Enter in a text field is to run the window's validate callback
+        /// (<c>AgeControlTextField.KeyDown</c> :76-89) - which for the save-name box WRITES A SAVE AND
+        /// CLOSES THE WHOLE SCREEN and for the rename box posts the rename and closes the box. That
+        /// makes the commit key of the EDIT also the primary button of the SCREEN, so a player who
+        /// only wanted to stop typing has performed the screen's action and lost the surface they were
+        /// standing on (owner-reported). The owner's ruling: the commit Enter ends the EDIT and
+        /// nothing else - the screen's own Save or Confirm is an ordinary control, activated
+        /// deliberately. So the key is taken from the game at the engine's own dispatch
+        /// (<see cref="UI.Input.GameKeyboardHandover"/>) and the edit is ended here instead.
+        ///
+        /// The chat box is the exception: its Enter is not a validate that closes something, it is how
+        /// a message is SENT, and taking it would leave chat unusable.
+        ///
+        /// With no validate ever asked, there is nothing left to REFUSE a commit either: a box that
+        /// will not take what was typed says so when its own Confirm button is pressed, which is where
+        /// the game writes the reason (the rename box's empty name).
         /// </summary>
-        public Func<string> Refusal;
+        public bool OwnCommit = true;
 
         /// <summary>Whether a commit says so. The chat box is the exception: its Enter SENDS, and the
         /// line arriving back through the chat service is the announcement (<see cref="UI.SessionChat"/>) -
@@ -46,7 +57,7 @@ namespace ES2Access.Screens
     /// happens, the character under the caret as it moves, and "edited" or "Cancelled" on the way out
     /// with the pre-edit text put back for a cancel.
     ///
-    /// THREE SEAMS, and each is the only place its question can be answered:
+    /// FOUR SEAMS, and each is the only place its question can be answered:
     ///
     /// <b>The deferred hand-over</b> (<see cref="Update"/>, per screen). The engine delivers key events
     /// to the focused control in its own LateUpdate, after the mod's frame, and a text field's answer
@@ -55,6 +66,12 @@ namespace ES2Access.Screens
     /// the wait is for the RELEASE, not for the next frame: a press lasts as long as the finger, and a
     /// field that has the keyboard while Return is still down is one engine dispatch from committing
     /// the keystroke that only asked to start editing.
+    ///
+    /// <b>The commit key</b> (<see cref="CommitInsteadOfTheGamesValidate"/>, from the engine's key
+    /// dispatch). Enter in one of these boxes is the game's VALIDATE, and a validate is the screen's
+    /// action rather than the edit's - it saves the game and closes the save screen, it posts the
+    /// rename and closes the box. So the key is taken from the game there and the edit is ended here,
+    /// leaving the surface standing and its own Save or Confirm button to be pressed on purpose.
     ///
     /// <b>The focus setter</b> (<see cref="FocusLeaving"/>). Escape never reaches the field:
     /// <c>InputManager</c> clears the focus from Update, before the engine's KeyDown dispatch runs at
@@ -312,9 +329,11 @@ namespace ES2Access.Screens
 
         /// <summary>
         /// Answer the next release as a COMMIT whatever the keyboard says, and forget it again
-        /// immediately. The dev server's lever (<c>DevProbe.EndEdit</c>), and nothing else sets it:
-        /// a commit is a physical Return, and no injection can press one - so without this the whole
-        /// "edited" half of an edit could only ever be tested by hand.
+        /// immediately. Two things set it: the mod's own commit
+        /// (<see cref="CommitInsteadOfTheGamesValidate"/>), which has already decided that this is one
+        /// and does not need the keyboard asked a second time, and the dev server's lever
+        /// (<c>DevProbe.EndEdit</c>) - a commit is otherwise a physical Return, and no injected ACTION
+        /// can press one.
         /// </summary>
         internal static bool CommitTheNextRelease;
 
@@ -447,10 +466,8 @@ namespace ES2Access.Screens
         private static void Finish()
         {
             Ending ending = _ending;
-            AgeControlTextField field = _editing;
             ControlId row = _editingRow;
             TextEditOptions options = _editingOptions;
-            string snapshot = _snapshot;
             Clear();
             _finishedOnFrame = UnityEngine.Time.frameCount;
 
@@ -461,35 +478,18 @@ namespace ES2Access.Screens
 
             if (ending == Ending.Committed)
             {
-                string refusal = Refusal(options);
-                if (refusal != null)
-                {
-                    // The game would not take it. Handing the keyboard back rather than closing is
-                    // what keeps what the player typed; the words are the game's where it has any,
-                    // and "editing" where it has none - a refusal the player cannot hear is a box
-                    // they think they have left.
-                    PutTheKeyboardBack(field, snapshot, row, options);
-                    Voice.Say(
-                        refusal.Length > 0 ? refusal : ModStrings.Get(ModStrings.EditStarted),
-                        true
-                    );
-                    return;
-                }
-
-                // QUEUED, not interrupting. A commit can take the whole surface away with it (the
-                // rename box closes and the page under it announces its own arrival), and a word that
-                // interrupts that landing costs the player the landing and tells them less than it
-                // takes away. Nothing else is ever speaking when the surface stays.
+                // QUEUED, not interrupting. The mod's own commit leaves the surface standing, so
+                // nothing else is speaking - and where the game's Enter is still the game's (chat
+                // sends with it) the answer coming back is what the player is waiting for, which a
+                // word of the mod's would cut off.
                 if (options == null || options.AnnounceCommit)
                 {
                     Voice.Say(ModStrings.Get(ModStrings.EditCommitted), false);
                 }
 
-                // And the field again, with what is in it now - but only where the cursor is still
-                // standing on it. A commit that closed the surface has already handed the player
-                // somewhere else, and that landing is its own announcement. QUEUED behind "edited"
-                // rather than interrupting it, or the word the player is waiting for is the one they
-                // never hear.
+                // And the field again, with what is in it now - the text the commit kept - but only
+                // where the cursor is still standing on it. QUEUED behind "edited" rather than
+                // interrupting it, or the word the player is waiting for is the one they never hear.
                 if (OnRow(row))
                 {
                     GraphNavigator navigator = ModEntry.Navigator;
@@ -509,42 +509,50 @@ namespace ES2Access.Screens
             Voice.Say(ModStrings.Get(ModStrings.EditCancelled), false);
         }
 
-        private static string Refusal(TextEditOptions options)
+        /// <summary>
+        /// THE COMMIT KEY, TAKEN FROM THE GAME. Called from the engine's own key dispatch to the
+        /// focused control (<see cref="UI.Input.GameKeyboardHandover"/>) on a frame Return or
+        /// KeypadEnter went down; true when the mod took the key, which means the game's
+        /// <c>KeyDown</c> - its validate callback AND the base class's unfocus - must not run.
+        ///
+        /// Ending the edit is done exactly as every other way out of one is: the engine's focus is
+        /// dropped, and the setter's own prefix (<see cref="FocusLeaving"/>) is what decides this was
+        /// a commit and marks it. Nothing is spoken here - this runs inside the engine's dispatch,
+        /// where nothing may speak - and nothing about the SCREEN is touched: the surface stays
+        /// standing, with the text the player typed still in the box.
+        ///
+        /// The press that OPENED the box cannot reach this: a Return the mod itself has just spent is
+        /// refused one step earlier, by the consumed-key latch the handover asks about first.
+        /// </summary>
+        internal static bool CommitInsteadOfTheGamesValidate(AgeControlTextField field)
         {
-            try
+            if (_editing == null || !ReferenceEquals(_editing, field))
             {
-                return options == null || options.Refusal == null ? null : options.Refusal();
+                return false;
             }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
 
-        private static void PutTheKeyboardBack(
-            AgeControlTextField field,
-            string snapshot,
-            ControlId row,
-            TextEditOptions options
-        )
-        {
+            if (_editingOptions != null && !_editingOptions.OwnCommit)
+            {
+                return false;
+            }
+
             try
             {
                 AgeManager age = AgeManager.Instance;
-                if (age == null || field == null || age.FocusedControl != null)
+                if (age == null)
                 {
-                    return;
+                    return false;
                 }
 
-                age.FocusedControl = field;
-                if (Typing(field))
-                {
-                    Begin(field, snapshot, row, options);
-                }
+                CommitTheNextRelease = true;
+                age.FocusedControl = null;
+                return true;
             }
             catch (Exception e)
             {
-                Warn("edit: handing the keyboard back after a refusal threw: " + e);
+                CommitTheNextRelease = false;
+                Warn("edit: ending an edit on the commit key threw: " + e);
+                return false;
             }
         }
 

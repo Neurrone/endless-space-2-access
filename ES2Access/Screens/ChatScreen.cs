@@ -278,7 +278,11 @@ namespace ES2Access.Screens
         /// chord the player may have rebound.
         ///
         /// It goes through the shared editor like every other text box (<see cref="TextFieldEditor"/>),
-        /// with two things of its own. The hand-over is the panel's <c>SetFocus</c> rather than a bare
+        /// with three things of its own. Enter stays the GAME's: everywhere else the mod takes the
+        /// commit key so that ending an edit does not also fire the screen's validate
+        /// (<see cref="TextEditOptions.OwnCommit"/>), but here the validate is how a message is SENT
+        /// and taking it would leave the box unable to do the one thing it is for. The hand-over is the
+        /// panel's <c>SetFocus</c> rather than a bare
         /// change of the engine's focus, because that call also brings the panel out of its discreet
         /// state. And a COMMIT says nothing: Enter here SENDS, and the line coming back through the
         /// chat service is what announces it (<see cref="ES2Access.UI.SessionChat"/>) - "edited" on top
@@ -307,6 +311,7 @@ namespace ES2Access.Screens
                 {
                     HandOver = () => it.SetFocus(),
                     AnnounceCommit = false,
+                    OwnCommit = false,
                 };
                 NodeVtable vtable = GraphNodes.EditField(
                     () => ModStrings.Get(ModStrings.ChatMessageBox),

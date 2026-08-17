@@ -21,8 +21,9 @@ namespace ES2Access.Screens
     ///
     /// Everything about the edit itself - the words on the way in, the typing, the two ways out and the
     /// text a cancel puts back - is <see cref="TextFieldEditor"/>'s, shared with every other text box in
-    /// the game. What is left here is the one thing only this box has: the game's own reason for
-    /// refusing a name (<see cref="RefusalIfTheBoxIsStillUp"/>).
+    /// the game, and so is the commit: Enter ends the EDIT and leaves the box standing on its field
+    /// (<see cref="TextEditOptions.OwnCommit"/>). Renaming is what the Confirm button does, and a name
+    /// the game will not take is refused there, with the game's own words on that button.
     /// </summary>
     public sealed class RenameModalScreen : Screen
     {
@@ -98,38 +99,6 @@ namespace ES2Access.Screens
         {
             TakeBackTheOpeningFocus();
             _editor.Update();
-        }
-
-        /// <summary>
-        /// The one thing about this box that is not the shared editor's: whether the GAME took the
-        /// name, and what it says when it did not.
-        ///
-        /// Return unfocuses the field and asks the game to take it
-        /// (<c>RenameModalWindow.OnTextFieldValidateCb</c>). When the game took it, the box is already
-        /// going - so a box still STANDING is the refusal, whether or not the game wrote a reason for
-        /// it, and that is what puts the keyboard back into the field
-        /// (<see cref="TextEditOptions.Refusal"/>) rather than throwing away what the player typed.
-        ///
-        /// Any words are the game's own, written onto the accept button's tooltip by
-        /// <c>RenameModalWindow.CheckButtons</c> and already localized - and it often writes none
-        /// (measured: an empty name is refused with an empty tooltip), which is exactly why "still up"
-        /// rather than "has words" is the test.
-        /// </summary>
-        private readonly TextEditOptions _editing = new TextEditOptions
-        {
-            Refusal = RefusalIfTheBoxIsStillUp,
-        };
-
-        private static string RefusalIfTheBoxIsStillUp()
-        {
-            RenameModalWindow window = Window();
-            if (window == null || !window.Shown)
-            {
-                return null;
-            }
-
-            AgeTooltip tooltip = AgeWidgets.Raw(AgeWidgets.Transform(window.ValidateButton));
-            return tooltip == null ? string.Empty : (AgeText.Clean(tooltip.Content) ?? string.Empty);
         }
 
         /// <summary>
@@ -247,8 +216,7 @@ namespace ES2Access.Screens
                     null,
                     null,
                     id,
-                    _editor,
-                    _editing
+                    _editor
                 );
                 if (cell != null)
                 {

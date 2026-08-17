@@ -284,7 +284,7 @@ namespace ES2Access.Screens
                     case UiActions.Activate:
                         return Activate();
                     case UiActions.Back:
-                        Exit(true, false);
+                        Exit(false);
                         return true;
                     case MapActions.InspectGrow:
                         return Resize(InspectGrid.Grow(_size));
@@ -307,7 +307,7 @@ namespace ES2Access.Screens
         {
             if (_live)
             {
-                Exit(true, true);
+                Exit(true);
             }
             else
             {
@@ -458,15 +458,24 @@ namespace ES2Access.Screens
         /// <summary>Leave the mode. <paramref name="deferred"/> is the ending that happened during a
         /// screen change, whose line has to wait for the new page to finish announcing itself.
         /// </summary>
-        private void Exit(bool announce, bool deferred)
+        private void Exit(bool deferred)
         {
-            Exit(announce, deferred, null);
+            Exit(deferred, null, false);
         }
 
-        /// <summary><paramref name="landing"/> is the node a key of the mode is sending the cursor to
-        /// instead of back where the mode was opened from - Enter naming the one thing in the cell.
+        /// <summary>
+        /// EVERY way out of the mode says so (owner's ruling): the player has been driving a cell
+        /// about the map, and the arrows meaning the tree again is news whether they left with Escape
+        /// or by naming a thing with Enter. A select that only announced the thing it landed on left
+        /// the player unable to tell a landing from a cell that happened to hold one thing.
+        ///
+        /// <paramref name="selected"/> is that second way out - a key of the mode sending the player
+        /// somewhere rather than putting them back where they started - and it is what decides the two
+        /// things that differ: whatever the cursor ends up on is announced (<paramref name="landing"/>
+        /// where the tree has a row for the thing, and the stop the mode was opened from where it does
+        /// not), and the camera is left on what was just landed on rather than flown back.
         /// </summary>
-        private void Exit(bool announce, bool deferred, ControlId landing)
+        private void Exit(bool deferred, ControlId landing, bool selected)
         {
             _live = false;
             _driving = null;
@@ -486,19 +495,20 @@ namespace ES2Access.Screens
                 // The cell's reading goes out of the review buffer with the cell, and the control the
                 // cursor is left on fills it again on the next frame.
                 navigator.ReleaseBuffer();
-                // Where the mode says nothing of its own - the landing Enter made - whatever the cursor
-                // is left on is said out loud, even where it is the very stop the mode was opened from:
-                // focus never moved while the mode was up, so the ordinary "only when the cursor moved"
-                // rule would leave the player with total silence and no way to tell the mode had ended
-                // (owner-reported). An exit that DOES say so keeps the tree quiet; the player has not
-                // gone anywhere.
-                if (!announce)
+                // Where the mode SENT the player, whatever the cursor is left on is said out loud, even
+                // where it is the very stop the mode was opened from: focus never moved while the mode
+                // was up, so the ordinary "only when the cursor moved" rule would leave the player
+                // hearing the exit line and nothing about where they now are (owner-reported). Leaving
+                // by Escape keeps the tree quiet; the player has not gone anywhere.
+                if (selected)
                 {
                     navigator.AnnounceNextLanding();
                 }
             }
 
-            string line = announce ? ModStrings.Get(ModStrings.GalaxyInspectExited) : null;
+            // Queued behind this line, both of them: the landing above announces itself with a queued
+            // line of the navigator's own, so the exit is heard first and whole.
+            string line = ModStrings.Get(ModStrings.GalaxyInspectExited);
             if (deferred)
             {
                 PrismSpeech speech = ModEntry.Speech;
@@ -518,7 +528,7 @@ namespace ES2Access.Screens
                     // Only where leaving is all that happened. A landing that Enter made goes on to
                     // put the cursor somewhere else entirely, and pulling the camera back to where the
                     // mode was opened from would fly it off the very thing that was just landed on.
-                    if (announce && landing == null)
+                    if (!selected)
                     {
                         Recentre();
                     }
@@ -689,8 +699,14 @@ namespace ES2Access.Screens
         // ---- what Enter does ----
 
         /// <summary>
-        /// Enter names the ONE thing in the cell, where there is exactly one: the mode ends and the
-        /// cursor lands on it, with the announcement that node makes for itself.
+        /// Enter names the ONE thing in the cell, where there is exactly one: the mode ends, saying
+        /// so, and the cursor lands on it with the announcement that node makes for itself.
+        ///
+        /// A PLACE is anything the map draws in the place of a star - a star system, and equally the
+        /// nebulae, dust clouds and other special nodes the galaxy is strung with, which have rows in
+        /// the tree exactly as systems do. Counting only star systems here left Enter doing nothing at
+        /// all on a cell holding one special node, which is a key that is claimed, taken, and then
+        /// silent (owner-reported; measured on B10 6805, a Solar Nebula).
         ///
         /// A place wins over a fleet standing at it, because the fleet is a child of the place in the
         /// tree and landing on the place is a step away from it. Anything else - two places, two
@@ -701,12 +717,13 @@ namespace ES2Access.Screens
         private bool Activate()
         {
             Contents contents = Read();
+            int places = contents.Places.Count + contents.Special.Count;
             IGameEntityWithGalaxyPosition thing = null;
-            if (contents.Places.Count == 1)
+            if (places == 1)
             {
-                thing = contents.Places[0];
+                thing = contents.Places.Count == 1 ? contents.Places[0] : contents.Special[0];
             }
-            else if (contents.Places.Count == 0 && contents.Fleets.Count == 1)
+            else if (places == 0 && contents.Fleets.Count == 1)
             {
                 thing = contents.Fleets[0];
             }
@@ -729,7 +746,7 @@ namespace ES2Access.Screens
                 return true;
             }
 
-            Exit(false, false, landing);
+            Exit(false, landing, true);
             if (landing != null)
             {
                 return true;
@@ -738,9 +755,10 @@ namespace ES2Access.Screens
             // A fleet the tree has no row for - parked at a system the map does not name, or flying a
             // lane it does not draw. The only "go to this fleet" the game has for one is the camera and
             // the selection, and it announces nothing of its own, so the cell's own reading is said
-            // again: the same answer the scanner gives for the same fleet.
+            // again: the same answer the scanner gives for the same fleet. QUEUED behind the exit line
+            // the mode has just said, which the player is owed whole.
             GalaxyHudScreen.SelectFleet(fleet);
-            Voice.Say(CellText(contents, FogText()), true);
+            Voice.Say(CellText(contents, FogText()), false);
             return true;
         }
 
