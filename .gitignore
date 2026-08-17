@@ -12,3 +12,14 @@ obj/
 
 # Session evidence (audit screenshots, crops)
 .scratch/
+
+# Release zips and the rendered player docs
+releases/
+docs_src/book/
+
+# The mod payload build_release.ps1 stages into release-template; only the BepInEx
+# runtime skeleton is committed.
+release-template/prism.dll
+release-template/prism-NOTICE.txt
+release-template/prism-LICENSE-MPL-2.0.txt
+release-template/BepInEx/plugins/

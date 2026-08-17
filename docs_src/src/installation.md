@@ -12,7 +12,7 @@
 2. Download the [latest release](https://github.com/Neurrone/endless-space-2-access/releases/latest) zip.
 3. Extract it into the game's installation folder — the folder that holds `EndlessSpace2.exe` — so that `winhttp.dll` ends up next to `EndlessSpace2.exe`.
 
-The zip carries everything the mod needs, including BepInEx 5 (the loader the mod runs on) and `prism.dll`, the speech library, which lands in the game folder beside the exe. There are no settings to configure and no configuration files in the zip.
+The zip carries everything the mod needs, including BepInEx 5 (the loader the mod runs on) and `prism.dll`, the speech library, which lands in the game folder beside the exe. There are no settings for you to configure — the only file in the zip that looks like configuration, `doorstop_config.ini`, is the loader's own bootstrap and is not something to edit.
 
 ## Verifying
 
@@ -30,4 +30,4 @@ Download the newer release and extract it over the game folder again, overwritin
 
 ## Uninstalling
 
-Delete the files the zip added: `winhttp.dll`, `prism.dll`, the `BepInEx` folder, and `doorstop_config.ini` if it is present. The game then runs exactly as it did before.
+Delete the files the zip added: `winhttp.dll`, `prism.dll`, `prism-NOTICE.txt`, `prism-LICENSE-MPL-2.0.txt`, `doorstop_config.ini`, `.doorstop_version`, and the `BepInEx` folder. The game then runs exactly as it did before.
