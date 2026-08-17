@@ -131,9 +131,45 @@ namespace ES2Access.Screens
             return true;
         }
 
+        /// <summary>Once per frame from the pump, after the screens have settled and before the
+        /// pointer commits: where the game's own tooltip is pointed while the cell drives the map,
+        /// and an ending that is waiting to be spoken.</summary>
+        public static void Tick()
+        {
+            Point();
+            Ending();
+        }
+
+        /// <summary>
+        /// Keep the game's own tooltip on what the CELL is over, for as long as the cell is driving
+        /// the map.
+        ///
+        /// The pointer is otherwise aimed by the focused control's own focus visual, and focus does
+        /// not move at all while the cursor sweeps - so without this the tooltip of whatever the mode
+        /// was opened from stayed drawn over an empty quarter of the galaxy, for the rest of the
+        /// session (owner-reported).
+        ///
+        /// From the pump rather than from the page's own Update: a focus visual is re-committed
+        /// during the screens tick whenever the camera changes what the map draws for the focused
+        /// system (<c>GalaxyHudScreen.FollowCamera</c>), and the cell moving IS the camera
+        /// moving, so a request made before that would be overwritten by it. Here it is after the
+        /// screens have settled and before the pointer commits (<c>PointerFocus.Tick</c>), which is
+        /// where every other visual lands.
+        /// </summary>
+        private static void Point()
+        {
+            GalaxyInspect mode = _driving;
+            if (mode == null || !Active)
+            {
+                return;
+            }
+
+            mode.PointAtCell();
+        }
+
         /// <summary>
         /// Speak an ending that happened during a screen change, AFTER the page that took over has
-        /// announced itself. Called from the pump right after the screens tick.
+        /// announced itself.
         ///
         /// It has to WAIT for that announcement rather than merely come after the screens tick: a page
         /// arriving takes a frame or two to seat its cursor, and it announces in a BURST - the page's
@@ -144,7 +180,7 @@ namespace ES2Access.Screens
         /// and nothing more has been said for a moment. The frame budget is the other ending - a page
         /// that announces nothing at all still owes the player this line.
         /// </summary>
-        public static void Tick()
+        private static void Ending()
         {
             if (_pending == null)
             {
@@ -190,6 +226,7 @@ namespace ES2Access.Screens
         {
             InspectMarker.Hide();
             _live = false;
+            _driving = null;
             _pending = null;
             _spokenWhenLeft = null;
             _lastHeard = null;
@@ -306,7 +343,7 @@ namespace ES2Access.Screens
 
             if (--_resume == 0 && onMap)
             {
-                Voice.Say(CellText(), false);
+                Voice.Say(Look(), false);
             }
         }
 
@@ -318,6 +355,12 @@ namespace ES2Access.Screens
         // ---- the mode ----
 
         private static bool _live;
+
+        /// <summary>The mode that has the map, so the pump can point the game's own tooltip at the
+        /// cell (<see cref="Point"/>). Static for the same reason the rest of the mode's state is:
+        /// there is exactly one map, and the pump has no page to ask.</summary>
+        private static GalaxyInspect _driving;
+
         private static string _pending;
         private static string _spokenWhenLeft;
         private static string _lastHeard;
@@ -336,6 +379,13 @@ namespace ES2Access.Screens
         /// </summary>
         private int _x;
         private int _y;
+
+        /// <summary>What the cell is standing on, in the order it was read out - the things the
+        /// pointer offers the game's own tooltip, best first (<see cref="PointAtCell"/>). The things
+        /// themselves and not their widgets: the map pools its labels and re-points them as the
+        /// camera slides.</summary>
+        private readonly List<IGameEntityWithGalaxyPosition> _aim =
+            new List<IGameEntityWithGalaxyPosition>();
 
         /// <summary>How wide the cell is. An instance field, so the size the player settled on is
         /// still there the next time they open the mode in this session.</summary>
@@ -380,6 +430,7 @@ namespace ES2Access.Screens
 
             MeasureGalaxy();
             _live = true;
+            _driving = this;
             // Entry announces the mode and reads the cell itself; the resume line is for coming BACK.
             _wasOnMap = true;
             _resume = 0;
@@ -399,9 +450,22 @@ namespace ES2Access.Screens
         private void Exit(bool announce, bool deferred)
         {
             _live = false;
+            _driving = null;
             _wasOnMap = false;
             _resume = 0;
             InspectMarker.Hide();
+            // The game's tooltip was the CELL's while the mode drove the map (Point), so the mode
+            // takes its own aim down and the control the tree cursor is standing on takes the pointer
+            // back. That control has to be asked for its focus visual again: focus itself never
+            // moved, so nothing else on the frame would ask.
+            _aim.Clear();
+            PointerFocus.Release();
+            GraphNavigator navigator = ModEntry.Navigator;
+            if (navigator != null)
+            {
+                navigator.ClearVisual();
+            }
+
             string line = announce ? ModStrings.Get(ModStrings.GalaxyInspectExited) : null;
             if (deferred)
             {
@@ -415,7 +479,6 @@ namespace ES2Access.Screens
             else
             {
                 Voice.Say(line, true);
-                GraphNavigator navigator = ModEntry.Navigator;
                 if (navigator != null && _entry != null)
                 {
                     navigator.FocusNode(_entry);
@@ -496,7 +559,78 @@ namespace ES2Access.Screens
                 (float)(origin.Y + InspectGrid.Low(_y, _size)),
                 (float)(origin.Y + InspectGrid.High(_y, _size))
             );
-            Voice.Say(CellText(), interrupt);
+            Voice.Say(Look(), interrupt);
+        }
+
+        /// <summary>Read the cell: the sentence it is said in, and what the game's own tooltip should
+        /// be showing while the player stands here. One walk of the map for both, so what is drawn on
+        /// the screen and what is in the player's ear can never be about different things.</summary>
+        private string Look()
+        {
+            Contents contents = Read();
+            _aim.Clear();
+            for (int i = 0; i < contents.Places.Count; i++)
+            {
+                _aim.Add(contents.Places[i]);
+            }
+
+            for (int i = 0; i < contents.Special.Count; i++)
+            {
+                _aim.Add(contents.Special[i]);
+            }
+
+            for (int i = 0; i < contents.Fleets.Count; i++)
+            {
+                _aim.Add(contents.Fleets[i]);
+            }
+
+            for (int i = 0; i < contents.Probes.Count; i++)
+            {
+                Probe probe = contents.Probes[i].Entity as Probe;
+                if (probe != null)
+                {
+                    _aim.Add(probe);
+                }
+            }
+
+            for (int i = 0; i < contents.Projectiles.Count; i++)
+            {
+                _aim.Add(contents.Projectiles[i]);
+            }
+
+            for (int i = 0; i < contents.Pins.Count; i++)
+            {
+                _aim.Add(contents.Pins[i]);
+            }
+
+            return CellText(contents);
+        }
+
+        /// <summary>
+        /// Point the game's own tooltip at the first thing in the cell the map has one for - which is
+        /// the first thing the cell NAMES, so what a watcher sees is what the player was just told.
+        /// The star system standing here wins over a fleet parked at it, and both over the motes
+        /// between the stars (owner's ruling); a cell with nothing in it, or nothing the map draws a
+        /// tooltip for, shows nothing at all.
+        ///
+        /// Walked every frame rather than resolved once when the cell moved: the camera is still
+        /// sliding when the cell is read, and the label a tooltip hangs on may not be bound to this
+        /// place until it arrives (<see cref="GalaxyHudScreen.MapMark"/>).
+        /// </summary>
+        private void PointAtCell()
+        {
+            for (int i = 0; i < _aim.Count; i++)
+            {
+                AgeTooltip tooltip;
+                AgeTransform anchor;
+                if (_screen.MapMark(_aim[i], out tooltip, out anchor))
+                {
+                    PointerFocus.MoveTo(null, tooltip, anchor);
+                    return;
+                }
+            }
+
+            PointerFocus.Release();
         }
 
         private string SizeText()
@@ -570,11 +704,10 @@ namespace ES2Access.Screens
         /// "empty", because hearing the pair alone IS the answer and a word on every empty cell of a
         /// sweep would be most of what the sweep said.
         /// </summary>
-        private string CellText()
+        private string CellText(Contents contents)
         {
             MessageBuilder message = new MessageBuilder();
             message.Fragment(MapCoordinates.Text(_x, _y, 0.0, 0.0));
-            Contents contents = Read();
             for (int i = 0; i < contents.Places.Count; i++)
             {
                 Place(message, contents.Places[i]);

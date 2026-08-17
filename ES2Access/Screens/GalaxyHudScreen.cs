@@ -5782,6 +5782,99 @@ namespace ES2Access.Screens
         }
 
         /// <summary>
+        /// The tooltip the map is drawing for one thing standing on it, and the widget that tooltip
+        /// should be drawn under - what the pointer is aimed at for a thing the player is looking AT
+        /// without standing on its node (<see cref="GalaxyInspect"/>).
+        ///
+        /// Asked of the THING every frame rather than remembered as a widget: the map pools its
+        /// labels and re-points them at other places as the camera slides, so a widget taken when a
+        /// cell was read can be drawing another star by the time the camera has arrived - and a
+        /// label the map only binds once it gets there starts showing its tooltip without the player
+        /// having to move the cursor again.
+        ///
+        /// The same widget each of these things' own node points at, because it is the same
+        /// question: a system's star tooltip once the camera is in on it and its map label
+        /// otherwise (<see cref="AddSystem"/>), a fleet's lozenge rather than its label
+        /// (<see cref="FleetLozenge"/>), and the mote the map draws for anything out between the
+        /// stars.
+        /// </summary>
+        internal bool MapMark(
+            IGameEntityWithGalaxyPosition thing,
+            out AgeTooltip tooltip,
+            out AgeTransform anchor
+        )
+        {
+            tooltip = null;
+            anchor = null;
+            try
+            {
+                StarSystemNode place = thing as StarSystemNode;
+                if (place != null)
+                {
+                    AgeTooltip star = OrbitalStarTooltip(place);
+                    if (star != null)
+                    {
+                        tooltip = star;
+                        anchor = star.AgeTransform;
+                        return true;
+                    }
+
+                    StarSystemLabel label = LabelFor(place, SystemLabels());
+                    if (label != null && Visible(label.AgeTransform))
+                    {
+                        tooltip = label.StarTooltip;
+                        anchor = label.AgeTransform;
+                    }
+
+                    return tooltip != null;
+                }
+
+                Fleet fleet = thing as Fleet;
+                if (fleet != null)
+                {
+                    anchor = FleetLozenge(fleet, DockLabels(), FleetLabels());
+                    tooltip = Raw(anchor);
+                    return tooltip != null;
+                }
+
+                Probe probe = thing as Probe;
+                if (probe != null)
+                {
+                    ProbeLabel mote = LabelFor(probe);
+                    anchor = mote == null ? null : mote.AgeTransform;
+                    tooltip = mote == null ? null : mote.Tooltip;
+                    return tooltip != null;
+                }
+
+                ObliteratorProjectile shot = thing as ObliteratorProjectile;
+                if (shot != null)
+                {
+                    ObliteratorProjectileLabel mote = LabelFor(shot);
+                    anchor = mote == null ? null : mote.AgeTransform;
+                    tooltip = mote == null ? null : mote.Tooltip;
+                    return tooltip != null;
+                }
+
+                CoordinationRequest pin = thing as CoordinationRequest;
+                if (pin != null)
+                {
+                    CoordinationRequestLabel mote = LabelFor(pin);
+                    anchor = mote == null ? null : mote.AgeTransform;
+                    tooltip = mote == null ? null : mote.RequestTooltip;
+                    return tooltip != null;
+                }
+
+                return false;
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: finding what the map draws for a thing on it threw: " + e);
+                tooltip = null;
+                return false;
+            }
+        }
+
+        /// <summary>
         /// Take the camera to a fleet and select it.
         ///
         /// A fleet PARKED somewhere goes through the turn window's own routine for exactly that: it
