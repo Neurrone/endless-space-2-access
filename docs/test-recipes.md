@@ -200,10 +200,11 @@ now leads with `HeaderFor(cells[0], 0)`), so stepping Left back onto a save says
 before the save's name, or stays silent if the game drew that heading as a bare icon. Which of the two
 this table does has not been sighted live; it is a manual-test step. The Mods column is the one column that overrides the
 shared `ModeFor` rule (`LoadSaveScreen.CellTooltipReading`, keyed on the header's `PropertyName`
-`RuntimeModules`, never on the translated caption): its Content is a whole module dossier, so it
-says "has tooltip" and the dossier is read from the buffer. Measured on the Autosave row:
-`loadsave:…c7` says *"Valid, has tooltip"*, buffer *"Mods, Valid" / "The mod configuration of this
-game is valid and the same as yours." / "Configuration:" / "- Endless Space 2"*.
+`RuntimeModules`, never on the translated caption): its Content is a whole module dossier, so the
+dossier is read from the buffer rather than announced. Measured on the Autosave row (transcript
+predates the "has tooltip" removal): `loadsave:…c7` says *"Valid"*, buffer *"Mods, Valid" / "The
+mod configuration of this game is valid and the same as yours." / "Configuration:" / "- Endless
+Space 2"*.
 
 **Working the technology wheel.** Open/close it from `/eval` with
 `Gui.GuiService.GetWindow<GameOverlayWindow>().ControlBanner.ToggleScreen("TechnologyScreen")`
@@ -406,7 +407,7 @@ holds nine minor-faction homes but only Osulo is perceived at turn 21; an earlie
 claiming ~9 of them were visible was wrong. Coming back to systems from
 fleets with the memory on special says the whole scope,
 `Systems: special, B10 6805, -5, -26, 26 south, 5 west, 1 of 1`, and `galaxy.scanGoTo` from there
-lands on the tree row `B10 6805, -5, -26, group, Solar Nebula, collapsed, has tooltip, 10 of 13` —
+lands on the tree row `B10 6805, -5, -26, group, Solar Nebula, collapsed, 10 of 13` —
 which is the check that the scanner and the tree agree about what is on the map.
 **HOMEWORLD is fixture-blocked past the player's own.** The oracle is the `EmpirePosition` table:
 `me.GetAgency<DepartmentOfIntelligence>().GetEmpirePosition(other).Known` for each `MajorEmpire`.
@@ -434,8 +435,8 @@ in `ProbeLabelsWindow.LabelsContainer` gives `visible=0`, and the scanner still 
 `Probes: all, Probe, Neurrone, 4 Turn, -55, -30, …, 1 of 1`, identical to the drawn reading (which
 also proves the label-free name and countdown are word-for-word the label's). The TREE row under
 the same hand-cull reads `Probe, -55, -30, Neurrone, west of Heracles, 2 turns out, 4 Turn, 3 of 3`
-— identical to the drawn reading minus `has tooltip`, since the dossier is assembled onto the
-label and there is no label. Restore with
+— identical to the drawn reading (the label-culled row's buffer simply lacks the dossier, which is
+assembled onto the label and there is no label). Restore with
 `l.CulledIn = true; l.ShowOrHideIfVisibleByEmpire(Gui.PlayerEmpire)` — the window's own refresh only
 runs when the camera POSITION moves, so it does not put them back by itself.
 Foreign-probe subcategories are fixture-blocked (the sighted probe is the player's own; the save
@@ -489,7 +490,7 @@ its ordinary announcement, and a lane fleet opens its host branch and lands on
 `galaxy:system/535/fleet/1622`. A FREE-MOVEMENT fleet lands the same way, on its DESTINATION's row
 (2026-08-16): `galaxy.scanGoTo` on `1st Conquerors Navy` opens **Heka's** branch and lands on
 `galaxy:system/522/fleet/1570`, heard as "1st Conquerors Navy, -1, -6, free moving to Heka,
-1 ships, Moving to Heka, 0 movement points, Arrives in 2 turns, has tooltip, 8 of 9" (no role word —
+1 ships, Moving to Heka, 0 movement points, Arrives in 2 turns, 8 of 9" (no role word —
 it is an automated fleet, below). There is only
 one row to pick now — the source branch no longer holds one. Move the tree cursor somewhere else
 before pressing it: landing on the node the cursor is already on is silent, and after a type-ahead
@@ -501,7 +502,7 @@ row, top-level if its destination is unperceived (`AddAdrift`). No fixture produ
 **Free-moving fleets in the galaxy tree** (`[Beginner] test`, destination-only since 2026-08-16;
 the both-ends design shipped earlier that day was reversed — see es2-facts). The two free movers
 both fly Dusay → Heka, and each gets ONE row, under Heka: "1st Conquerors Navy, -1, -6,
-free moving to Heka, 1 ships, Moving to Heka, 0 movement points, Arrives in 2 turns, has tooltip,
+free moving to Heka, 1 ships, Moving to Heka, 0 movement points, Arrives in 2 turns,
 8 of 9" and the Vanquishers the same at `9 of 9`. **No role word on those two** — they are automated
 fleets and the map refuses them to the mouse, so the mod declares them `ControlTypes.Text` (below).
 Dusay's branch holds its three LANE fleets and
@@ -1051,7 +1052,7 @@ one addition: on the LAST step Escape presses Finish, and the law cards' `Double
 not be activated either. Safe: `/reload`, arrow/Tab injection, `/gui/graph?buffers=1`,
 `DevProbe.Tooltip()` with a delay set (restore `TooltipDelay(-1)`). Measured 2026-08-16 on the
 owner's save (two winners, one redirection badge each). What the dump should show: one ROW per
-winner — `Militarists, Established, has tooltip` then `+Industrialists, The votes for the
+winner — `Militarists, Established` then `+Industrialists, The votes for the
 " Industrialists" political party have been redirected to the " Militarists" political party.` —
 never the glued `Militarists Established +Industrialists`. The winner's place is stamped as a ROW
 position, so "1 of 2" is heard arriving at a card and on stepping to the other winner, and NOT on
@@ -1118,7 +1119,7 @@ route to the zoom slider, not one Shift+Tab. With the mode armed and the slider 
 /`ui.right` answer `5 of 15`/`4 of 15` like any slider, and the marker's reflected world rect is
 unchanged — that rect is the "the cell did not move" oracle, since a suspended cell says nothing.
 `ui.next` back to the map answers with the map node's own announcement and then, ~12 frames later,
-the retained cell (`Ita, 5, 34, group, collapsed, has tooltip, 1 of 13` then `3, 0`); the next
+the retained cell (`Ita, 5, 34, group, collapsed, 1 of 13` then `3, 0`); the next
 `ui.right` reads `6, 0`. **Arming is a key of the map too (2026-08-17, owner's veto of the jump):**
 `galaxy.inspect` pressed from a stop that is NOT the map is not claimed and does nothing — no focus
 move, no arming, no speech. Its evidence is a state probe, since a key that does nothing looks in
@@ -1445,8 +1446,8 @@ lists, restored to index 3), which `Sort` sweeps into the top strip; **tooltip p
 `AgeTooltip` with `Content` to a card's `DoubleClickControlButton` (**and set `privateTooltip` by
 reflection** — es2-gui-framework: the runtime getter reads the cached field, so a plain
 `AddComponent` is invisible to the engine as well as to the mod). The one direction NOT seedable is
-a "has tooltip" claim with nothing to draw: the claim and the check are the same `AgeWidgets.Draws`
-predicate, so game state cannot separate them.
+a declared-tooltip expectation with nothing to draw: the expectation and the check are the same
+`AgeWidgets.Draws` predicate, so game state cannot separate them.
 
 **Sweeping the whole family** (the apparatus lives in `%TEMP%\parity`: `tmpl.txt` + `run.sh` for
 bind-and-show, `tmplfs.txt` + `runfs.sh` for lent-data force-shows, `reduce.sh` to collapse the
@@ -1499,7 +1500,7 @@ walk-past-it fixture). Its shape, live-verified 2026-08-15: `notification:top` =
 Pop up automatically; `notification:body` = the words node first, then the four
 `PoliticalSupportLine00N` buttons in drawn order, three of them (Industrialists, Militarists,
 Ecologists) banded into ONE row walked with Left/Right and the fourth (Scientists) on the row below,
-each reading "N%, Party, button, has tooltip" with a Class-backed `Politics` dossier in its buffer
+each reading "N%, Party, button" with a Class-backed `Politics` dossier in its buffer
 once focused; `notification:bottom` = Minimize / Done. **One body region, not four** — the party
 lines are rows inside `PoliticalSupportLinesTable`, and a build that gives each of them a
 `notification:body/N/PoliticalSupportLine00N` region has re-broken the card rule
@@ -1520,7 +1521,7 @@ detail panel it keeps FADED (es2-facts), and each toggle is declared through the
 field and named from its own tooltip's opening sentence. Live-verified 2026-08-15 on a forced
 IonWave: collapsed = `notification:words`, the icon label, then
 `notification:expander/ReportToggle` reading "Click to display the details of the report, checkbox,
-not checked, has tooltip, 2 of 2" and NO detail rows; `ui.activate` says "checked" and the body
+not checked, 2 of 2" and NO detail rows; `ui.activate` says "checked" and the body
 grows `notification:body/2/Title` "Damage Report" and `notification:body/3/Title` "You lost 0 Ships
 to your enemy's Ion Wave"; parity `clean:true` in BOTH states, and `crop-shot.ps1 -Rect
 704,216,442,200` shows empty sky collapsed and the drawn panel expanded. A build where the detail

@@ -9,7 +9,9 @@ namespace ES2Access.Core.UI.Graph
     ///
     /// Two parts, in this order:
     ///
-    /// - an automatic HEAD, read off the control's own readout: its FIRST declared part, then the state
+    /// - a HEAD, read off the control's own readout unless the control declared one
+    ///   (<see cref="NodeVtable.BufferHead"/>, for a readout that leaves out a word the buffer needs -
+    ///   a table cell, whose caption is the crossed edge): its FIRST declared part, then the state
     ///   words the readout appends ("unavailable", "checked", "expanded"). The role word and the
     ///   auto-stamped position are left out - they describe the control, and the buffer is for what the
     ///   control has to say - and so is the tooltip part, whether it announces the text or only says
@@ -35,7 +37,7 @@ namespace ES2Access.Core.UI.Graph
                 return lines;
             }
 
-            string label = GraphAnnouncer.FirstPartText(node);
+            string label = Head(node);
             Add(lines, label);
 
             IList<NodeAnnouncement> declared = node.Vtable.Announcements;
@@ -88,6 +90,19 @@ namespace ES2Access.Core.UI.Graph
             }
 
             return lines;
+        }
+
+        /// <summary>The line the buffer opens with: what the control declared
+        /// (<see cref="NodeVtable.BufferHead"/>), or its readout where it declared nothing. Only the
+        /// head LINE is the control's to choose - the state words and the sections that follow are
+        /// composed the same way either way, and the part the readout's own head was read off is
+        /// still not read twice.</summary>
+        private static string Head(GraphNode node)
+        {
+            string declared = Resolve(node.Vtable.BufferHead);
+            return string.IsNullOrEmpty(declared)
+                ? GraphAnnouncer.FirstPartText(node)
+                : declared;
         }
 
         private static readonly List<string> None = new List<string>();

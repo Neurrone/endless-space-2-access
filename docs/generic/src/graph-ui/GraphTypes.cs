@@ -102,16 +102,37 @@ namespace ES2Access.Core.UI.Graph
         /// the one it would give now. Null or an empty list = the section contributes nothing.</summary>
         public Func<IList<string>> Lines;
 
-        /// <summary>How the section reaches the focus readout. <see cref="TooltipMode.None"/> is a
-        /// buffer-only section: content the control DRAWS (a planet card's output rows, a chart's
-        /// series), never announced and never indicated, because the readout already named the control
-        /// and the substance is there to be walked.</summary>
+        /// <summary>How the section reaches the focus readout. Only
+        /// <see cref="TooltipMode.Announce"/> puts anything there; <see cref="TooltipMode.None"/>
+        /// (content the control DRAWS - a planet card's output rows, a chart's series) and
+        /// <see cref="TooltipMode.Indicate"/> (a dossier the game assembles on hover) are both
+        /// buffer-only, because the readout already named the control and the substance is there to
+        /// be walked.</summary>
         public TooltipMode Mode;
 
-        public NodeSection(Func<IList<string>> lines, TooltipMode mode)
+        /// <summary>Whether there is really a tooltip here, asked EVERY frame. Only consulted for
+        /// <see cref="TooltipMode.Indicate"/>, and null - the default - means "always", which is the
+        /// right answer for a section the mod itself invented and therefore knows is real.
+        ///
+        /// It exists for the sections read off a game widget, where "the control has a tooltip" and
+        /// "the game would draw one" are different questions: a prefab hangs an empty tooltip on a
+        /// widget it has nothing to say about, and aiming the focus pointer at one parks the game's
+        /// own tooltip countdown for good. The question is asked per frame rather than when the node
+        /// is declared because a tooltip the game fills in later has to start counting the moment it
+        /// becomes real. Nothing SPEAKS off this any more - the pointer and the tooltip-parity audit
+        /// are its two readers.
+        ///
+        /// Note what this is NOT: a check that the section's LINES resolve to something. A tooltip the
+        /// renderer assembles has no words until it is drawn, which is well after the readout that
+        /// mentions it is composed, so asking for lines answers "empty" on exactly the controls that
+        /// most need indicating.</summary>
+        public Func<bool> Indicates;
+
+        public NodeSection(Func<IList<string>> lines, TooltipMode mode, Func<bool> indicates = null)
         {
             Lines = lines;
             Mode = mode;
+            Indicates = indicates;
         }
 
         /// <summary>Content the control draws: reviewable, never spoken on focus.</summary>
@@ -148,6 +169,32 @@ namespace ES2Access.Core.UI.Graph
 
         /// <summary>Optional. Secondary activation — the right-click equivalent.</summary>
         public Action OnSecondary;
+
+        /// <summary>
+        /// Optional. This control NAMES A PLACE that already exists elsewhere in the graph, and Right
+        /// goes there — a reference-shaped leaf: a lane naming the system at its far end, a link
+        /// naming the row it points at, a search result naming the thing it found.
+        ///
+        /// It exists because the alternative is worse. Such a node could be made a GROUP that
+        /// re-declares the named place underneath it, and then every object has two nodes - which
+        /// breaks the one-object-one-node rule (reference identity is followed before the structural
+        /// key, so the copy either teleports the cursor or has to be keyed structurally and lose its
+        /// identity), and the tree has no bottom unless the copy is deliberately made poorer than the
+        /// original. Following the reference instead keeps ONE node per place: Right REBASES the
+        /// cursor onto it.
+        ///
+        /// The contract, which the engine holds the caller to:
+        /// - Only asked where the node is NOT expandable. A group's own expansion wins - a control
+        ///   that has children of its own is not standing in for somewhere else.
+        /// - It is NOT a click. Right opens branches all over a tree and a player presses it
+        ///   speculatively; a handler that posts an order or confirms a mode the game has armed would
+        ///   fire on a keystroke nobody meant as a command.
+        /// - The handler MOVES FOCUS itself (through the host's own put-the-cursor-here route) and the
+        ///   engine says nothing: <see cref="KeyGraph.TreeMove.Followed"/> is consumed silently, and
+        ///   the landing announces itself exactly once, by the one code path every focus change goes
+        ///   through. A handler that speaks as well is that landing said twice.
+        /// </summary>
+        public Action OnFollow;
 
         /// <summary>Optional. The control's OTHER activation — what the game's own modified click does
         /// (queue this at the head of the queue rather than the end). Distinct from
@@ -214,6 +261,22 @@ namespace ES2Access.Core.UI.Graph
         /// from their modes (<see cref="TooltipParts.Part(IList{NodeSection})"/>). Null = the control
         /// has nothing beyond its readout, which is a complete buffer in itself.</summary>
         public IList<NodeSection> Sections;
+
+        /// <summary>
+        /// Optional. What the review buffer OPENS with, for a control whose readout deliberately
+        /// leaves out a word the buffer needs.
+        ///
+        /// The buffer's head is normally the readout itself (<see cref="NodeBuffer"/>), and that is
+        /// right wherever the readout is the whole of what the control says. A table CELL is the
+        /// exception the type exists for: its column's caption is spoken as the EDGE the player
+        /// crossed to reach it rather than by the cell, so the cell's readout is the bare value while
+        /// the buffer - which nobody arrives at across an edge - needs the caption with it. Declaring
+        /// the head is how the caption gets there once: the control's own first content line then
+        /// matches it and the head dedupe drops the copy.
+        ///
+        /// Null - the ordinary case - is the readout.
+        /// </summary>
+        public Func<string> BufferHead;
 
         /// <summary>Optional. Horizontal value adjust (a slider): sign is -1 (decrease) / +1 (increase),
         /// large requests a coarse step. When set, left/right do NOT navigate.</summary>

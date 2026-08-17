@@ -63,9 +63,9 @@ popup, where the game shows it.
 **The buffer is the widget's face.** Populate it from what the drawn widget shows, never
 from the model behind it: the same model value can be drawn as a number (readable) or as
 pips/a rating, and reading the model then describes a control that does not exist on
-screen. The face deliberately extends to the widget's own indicated tooltip: an indicated
+screen. The face deliberately extends to the widget's own hover-drawn tooltip: an expected
 tooltip must be readable from the buffer. That invariant holds **by construction** — the
-indication and the buffer both derive from the same declared section
+expectation and the buffer both derive from the same declared section
 (`NodeVtable.Sections`, [ui-navigation.md](ui-navigation.md)), never from two separately
 wired channels — but not instantly or unconditionally: a render-composed tooltip's lines
 only exist once the game draws them, so the buffer advertises before it holds — and if
@@ -89,8 +89,8 @@ Cursor rules, all load-bearing:
   current.
 
 In the graph engine this hangs off `NodeVtable.Sections` — ordered content blocks (each a
-live lines-func with a surfacing mode: a tooltip announced or indicated per the mode rule,
-or buffer-only for an aggregate face) — and the engine composes the buffer itself: an auto
+live lines-func with a surfacing mode: a tooltip announced or buffer-only per the mode
+rule, or buffer-only for an aggregate face) — and the engine composes the buffer itself: an auto
 HEAD from the node's own readout (label + state words, so a node with **no** sections
 already buffers correctly — its label lines, for free), then the sections in declared
 order, with the first-line-duplicates-label dedup. That dedup is exactly one comparison — the
@@ -102,7 +102,7 @@ LEAVES the section. The navigator's single focus-commit
 site does the fill — one hook, no per-screen buffer code, and no screen or factory
 constructs buffer content by hand.
 Announcement parts of the tooltip kind are excluded from the auto head: the sections
-already carry that content, and the "has tooltip" indicator is meta, not content.
+already carry that content.
 
 ## Reload safety
 

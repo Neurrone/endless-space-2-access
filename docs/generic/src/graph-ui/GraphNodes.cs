@@ -345,9 +345,22 @@ namespace ES2Access.UI
         public static NodeSection TooltipSection(AgeTooltip tooltip, TooltipMode? mode = null)
         {
             Func<IList<string>> lines = TooltipDetails(tooltip);
-            return lines == null
-                ? null
-                : new NodeSection(lines, mode.HasValue ? mode.Value : ModeFor(tooltip));
+            if (lines == null)
+            {
+                return null;
+            }
+
+            // Every indicated section that comes off a GAME widget carries the engine's own can-draw
+            // test, so the pointer is never aimed and the parity audit never held to a tooltip the
+            // game would draw nothing for - and both start counting it the frame the game fills one
+            // in. Declared here, once, because this is the single door every screen's tooltips come
+            // through.
+            AgeTooltip it = tooltip;
+            return new NodeSection(
+                lines,
+                mode.HasValue ? mode.Value : ModeFor(tooltip),
+                () => AgeWidgets.Draws(it)
+            );
         }
 
         /// <summary>The same for a control that carries its tooltip on its transform.</summary>

@@ -56,7 +56,6 @@ namespace ES2Access.Core.Speech
         public const string NavSelected = "nav.selected";
 
         public const string NavDisabled = "nav.disabled";
-        public const string NavHasTooltip = "nav.has-tooltip";
         public const string NavNoDetails = "nav.no-details";
 
         // Typing letters on a screen searches what is on it. Both are whole phrases: the text the
@@ -95,7 +94,7 @@ namespace ES2Access.Core.Speech
         public const string CarryDropTarget = "carry.drop-target";
 
         /// <summary>What a control the player could pick something up from says while nothing is being
-        /// carried - the drag's half of "has tooltip". Not said while something IS held: the useful fact
+        /// carried. Not said while something IS held: the useful fact
         /// about a control then is whether the thing can go there.</summary>
         public const string CarryDraggable = "carry.draggable";
 
@@ -155,7 +154,6 @@ namespace ES2Access.Core.Speech
             { NavUnchecked, "not checked" },
             { NavSelected, "selected" },
             { NavDisabled, "unavailable" },
-            { NavHasTooltip, "has tooltip" },
             { NavNoDetails, "Nothing in here" },
             { SearchNoMatch, "No match for {0}" },
             { SearchCleared, "Search cleared" },

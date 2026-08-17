@@ -20,7 +20,6 @@
   "nav.unchecked": "not checked",
   "nav.selected": "selected",
   "nav.disabled": "unavailable",
-  "nav.has-tooltip": "has tooltip",
   "nav.no-details": "Nothing in here",
   "search.no-match": "No match for {0}",
   "search.cleared": "Search cleared",

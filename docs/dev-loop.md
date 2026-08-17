@@ -174,8 +174,8 @@ is `DevProbe.TooltipPipe()`'s `timer` near 999, invisible to every drawn-window 
 the lines it produced — plus the measured rows/rects/assets), `/gui/graph?buffers=1`. A feature
 class sitting on `"default"` whose lines divorce a value from its caption is the defect to look
 for — but the prefab may already carry the caption as sibling labels, so read the DRAWN
-feature before believing the class; nothing about it shows in the spoken lines alone. `shown:false` on a control whose readout
-says "has tooltip" is the OTHER signature — the pointer was aimed with the 2-arg
+feature before believing the class; nothing about it shows in the spoken lines alone. `shown:false` on a focused node whose
+buffer stays empty despite a declared tooltip is the OTHER signature — the pointer was aimed with the 2-arg
 `AgeWidgets.Point`, which re-derives the tooltip from the control's own transform instead of using
 the one the screen resolved.
 `/gui/graph` alone misleads here: it moves no pointer, so a renderer-drawn tooltip is
@@ -184,7 +184,7 @@ undrawn and its buffer reads empty on a control that is fine live. `TooltipDelay
 
 **A card's tooltip is rarely on the card.** `PointerFocus` shows the tooltip of the widget it is
 pointed AT, so pointing at a row whose tooltip hangs off a child inside it (the planet card's
-anomaly rows) draws nothing while the readout still says "has tooltip". Point at
+anomaly rows) draws nothing while the node still declares the tooltip and its buffer stays empty. Point at
 `tooltip.AgeTransform`, not at the row — and prove it with `DevProbe.Tooltip()`, which is the
 only thing that catches it.
 

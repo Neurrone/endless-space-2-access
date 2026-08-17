@@ -20,6 +20,12 @@ namespace ES2Access.Core.UI.Graph
     /// <see cref="ExpandedStateText"/>) are static because every node's readout flows through them and
     /// threading them per-call would touch every node factory. They are process state, so
     /// <see cref="Reset"/> exists for mod teardown and for test isolation.
+    ///
+    /// WHERE a part lands in the readout is decided by its KIND, not its declaration order: the
+    /// control type's kind order sorts first, declaration index only breaks ties within one kind.
+    /// So "speak this immediately after the name" means giving the part the name's own kind (a
+    /// second Label), never inserting it early in the part list — an early Value-kind part still
+    /// sorts after the role word.
     /// </summary>
     public static class GraphAnnouncer
     {
@@ -173,8 +179,8 @@ namespace ES2Access.Core.UI.Graph
             // The drag indication ("draggable" / "drop target"), derived for the same reason and in the
             // same place: which controls can be picked up and which will take a drop is already written
             // down in the vtable, so no screen composes the word and every screen with a drag has it.
-            // Kindless, so it sits at the tail of the readout beside "has tooltip" - what a control has
-            // to SAY about itself, after everything it IS.
+            // Kindless, so it sits at the tail of the readout - what a control has to SAY about
+            // itself, after everything it IS.
             if (Carry != null)
             {
                 NodeAnnouncement source = Carry.DraggablePart(vt);

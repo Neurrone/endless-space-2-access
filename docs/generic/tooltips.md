@@ -37,11 +37,16 @@ Three proven shapes:
    exist; placed after the state words, before the position). For **short** tooltips — the
    one-sentence description the game's author wrote to be read whole, including any appended
    disabled reason. Resolve at speak time so those reasons arrive automatically.
-2. **Indicate + buffer** — the announcement says only "has tooltip"; the full content sits
-   in the review buffer ([buffers.md](buffers.md)) for line-by-line reading at the player's
-   own pace. For **long** tooltips — stat panels, dossiers, anything render-composed. In
-   **both** modes the full content also populates the buffer, so review behaves identically
-   everywhere.
+2. **Buffer-only (Indicate mode)** — the announcement says nothing about it; the full
+   content sits in the review buffer ([buffers.md](buffers.md)) for line-by-line reading at
+   the player's own pace, and the convention — stated once in the mod's documentation, not
+   per control — is that the player always checks the buffer. For **long** tooltips — stat
+   panels, dossiers, anything render-composed. (This mod originally spoke a "has tooltip"
+   indicator here; the owner later removed it, because on content-dense screens it was true
+   of most controls and a near-constant cue carries no information.) In **both** modes the
+   full content also populates the buffer, so review behaves identically everywhere. The
+   mode stays distinct from plain drawn content even with no spoken output: it is what
+   tells the pointer-aim and the parity audit that a hover-drawn tooltip is expected here.
 3. **A navigable tooltip reader** (wotr-access) — a modal child screen the user arrows
    through, with drill-in. This exists **only** because that game's tooltips form a link
    graph (glossary terms leading to further tooltips); the reader is how you follow links.
@@ -61,13 +66,14 @@ every future screen inherits it.
 
 Rules that came out of shipping this, all hit in practice:
 
-- **Indication must never gate on rendered content existing.** A render-composed tooltip's
-  words do not exist until the game draws them — a hover-delay *after* focus arrives — so
-  "say 'has tooltip' only if the lines are non-empty" is silent every single time. For a
-  renderer-assembled tooltip, having content is definitional: indicate unconditionally —
-  but indicate only a tooltip the engine's own can-draw test accepts (its two-field
-  content/target check); prefabs routinely hang class-backed tooltips with no target on
-  decoration, and indicating one promises a review buffer that is always empty.
+- **Never gate the mode's machinery on rendered content existing.** A render-composed
+  tooltip's words do not exist until the game draws them — a hover-delay *after* focus
+  arrives — so any per-readout "only if the lines are non-empty" test answers "empty" every
+  single time. For a renderer-assembled tooltip, having content is definitional: treat it
+  as expected unconditionally — but only where the engine's own can-draw test accepts it
+  (its two-field content/target check); prefabs routinely hang class-backed tooltips with
+  no target on decoration, and treating one as expected promises a review buffer that is
+  always empty.
 - **Reading a render-composed tooltip back**: where provider interfaces are readable
   headlessly, prefer them — and the REFUSAL is the part that nearly always is: the failure
   feature is typically one call over a provider on the tooltip's target, populated at bind
@@ -112,21 +118,23 @@ Rules that came out of shipping this, all hit in practice:
   nothing else, and silently, because the reading itself succeeds.
 - **Point at the widget that owns the tooltip, not its row.** A row's tooltip often hangs
   off a child (the title label), and pointing at the container draws nothing — while the
-  tree dump still looks plausible and the readout still says "has tooltip". Verify tooltip
-  rendering with the drawn-tooltip probe, never with the tree dump: an INDICATED tooltip is
-  accepted only once the review buffer, with the node focused, actually holds its words —
-  indication itself stays unconditional (above), which is exactly why a mis-aimed pointer
-  advertises content the player can never reach and nothing in the speech says so.
+  tree dump still looks plausible and the node still declares the tooltip. Verify tooltip
+  rendering with the drawn-tooltip probe, never with the tree dump: an expected long
+  tooltip is accepted only once the review buffer, with the node focused, actually holds
+  its words — the declaration itself stays unconditional (above), which is exactly why a
+  mis-aimed pointer strands content the player can never reach and nothing in the speech
+  says so.
 - **A row can carry more than one tooltip** (the heading's explanation and the value's
-  description): announce the value's — the last-drawn — by the short/long rule, **and
-  indicate whenever any tooltip in the row is long**; put every tooltip in the row into
+  description): announce the value's — the last-drawn — by the short/long rule; a long one
+  anywhere in the row goes to the buffer; put every tooltip in the row into
   the row's buffer **in drawn order** (the heading's explanation first, then the value's
   dossier), so review follows the screen. "Last-drawn speaks" is the caption-then-value
   rule, not a universal: where the row is a card's own tooltip plus a badge's, the
   important one is the card's — the screen names which tooltip speaks. And a tooltip whose
   words are the row's own always-drawn text is not a second thing to say or buffer — the
   game reused the printed paragraph as its hover copy; skip it; when only its FIRST LINE
-  repeats the label and more follows, indicate instead — the label is not the tooltip.
+  repeats the label and more follows, buffer it whole instead — the label is not the
+  tooltip.
 - **The mode is a per-frame answer — never store it.** A widget can swap its tooltip class
   with its state (ES2's stage-deed marker: a plain-text placeholder while locked, a
   class-composed dossier once its stage is researched), so one control's short/long mode
@@ -145,10 +153,10 @@ Rules that came out of shipping this, all hit in practice:
   it. The mode test and the content reader must ask the same helper.
 - **A hand-added announcement part of the tooltip kind is ADDITIVE, never a suppressor.**
   A screen may speak its own live line under the tooltip kind (a refusal reason on a
-  blocked entry); the engine-derived part (the announced words or "has tooltip") still
+  blocked entry); the engine-derived part (a short tooltip's announced words) still
   contributes, and both read in the control type's kind order — "unavailable, ⟨reason⟩,
-  has tooltip". Suppressing derivation because a screen added a part would silently
-  un-indicate the buffer that section still fills.
+  ⟨tooltip sentence⟩". Suppressing derivation because a screen added a part would silently
+  drop words only the derivation speaks.
 - **Captions for bare numbers come from the game's registries — the tooltip is not the name.**
   A widget whose drawn text is a bare value is named from the caption the game keeps
   elsewhere (a `%…Title` key, the element/property title, a sibling caption), asked before

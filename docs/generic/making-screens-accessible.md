@@ -59,7 +59,7 @@ not show: no placeholder nodes for empty states, no spoken position text where t
 dots — a stop with nothing in it does not exist that frame. "Invent nothing" has a companion:
 **say everything the game always draws.** The discriminator is *always drawn* vs *revealed on
 hover* — permanently drawn text (a card's description paragraph) is spoken in full as part of
-the control's readout; hover-revealed text is announced or indicated by the tooltip rule
+the control's readout; hover-revealed text is announced or buffered by the tooltip rule
 ([tooltips.md](tooltips.md)). Applying the tooltip rule to always-drawn text silences words
 that are on the player's screen. And what a screen says and what it draws are not
 alternatives: a body composer written as "if there is a description, else the drawn

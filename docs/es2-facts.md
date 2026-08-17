@@ -282,8 +282,8 @@ generic graduates to the generic docs.
   through `GalaxyFleet.Fleet`); exactly one is bound at a time, so searching both windows is the
   whole test. **The tooltip the engine DRAWS is the lozenge's** (`GarrisonsLabelButton.Tooltip`,
   i.e. `lozenge.AgeTransform.AgeTooltip`), not the label's `CenterTooltip` — both are filled from
-  the same fleet data and both read `Class=FleetGroup`, so declaring the label's leaves the readout
-  saying "has tooltip" over a review buffer that never fills (`DrawnTooltip` checks bind identity).
+  the same fleet data and both read `Class=FleetGroup`, so declaring the label's leaves the node
+  expecting a tooltip over a review buffer that never fills (`DrawnTooltip` checks bind identity).
   Point at, and declare, the widget the pointer lands on. A dock label covers the whole SLOT, so
   two fleets parked together share one "2 Fleets" tooltip - which is what the game shows a hoverer.
 - **The two fleet repositories PARTITION the map's fleets, and each label window filters further.**
@@ -817,7 +817,7 @@ generic graduates to the generic docs.
   - An item **names itself nowhere on the card**: it draws only a cost. The name, category,
     description, duration, effects and cost all live on `GuiOutpostAction`, the wrapper hung
     on the item's own tooltip, whose `Title` is readable at bind time (no drawing needed) and
-    whose `TooltipClass` is `"OutpostAction"` (renderer-assembled → indicated + buffered).
+    whose `TooltipClass` is `"OutpostAction"` (renderer-assembled → buffer-only, Indicate mode).
   - **A renderer-assembled tooltip's refusal is computable without drawing it**:
     `PanelFeatureFailureInfos.Bind` is literally
     `Gui.FormatFailureInfos(((IFailureInfosProvider)target).FailureInfos)`, and the target is
@@ -1192,9 +1192,9 @@ generic graduates to the generic docs.
     walking it (`SettingRows.RowSections`) buffers the dossier three times.
   - **`ExperienceTooltip` is content-backed** (`%SenatePoliticsExperienceDescription`, :116-119),
     so the shared short/long rule would ANNOUNCE that definition on every landing on a winner.
-    Mod policy: the card names which tooltip speaks — the party dossier is indicated, the
-    experience sentence is declared buffer-only (`TooltipMode.None`), because it explains a word
-    rather than the card.
+    Mod policy: the card names which tooltip speaks — the party dossier is Indicate mode
+    (buffer-only, hover-drawn), the experience sentence is declared `TooltipMode.None`,
+    because it explains a word rather than the card.
   - **The vote-redirection badges exist only where both halves hold**: `redirectedVotes.Count > 0`
     AND `GuiGovernment.CanRedirectVotes(empire)` (`WinnerSenatorCard.cs:85-92`). They are pooled
     children of `AdditionalPoliticsContainer` (`ReserveChildren`/`RefreshChildrenIList` :88-89),
