@@ -113,7 +113,25 @@ namespace ES2Access.Screens
         /// the panel is let go with it, or the game keeps drawing a panel nobody can reach.</summary>
         public override void OnPop()
         {
+            _editor.Cancel();
             ChatHold.ChildClosed();
+        }
+
+        /// <summary>The deferred hand-over of the keyboard to the box, and everything the edit itself
+        /// says - shared with every other text box in the game (<see cref="TextFieldEditor"/>).
+        /// </summary>
+        private readonly TextFieldEditor _editor = new TextFieldEditor();
+
+        public override void OnUpdate()
+        {
+            _editor.Update();
+        }
+
+        /// <summary>False while the box has been asked for and the keyboard has not changed hands yet:
+        /// what the player types next belongs in the message, not in a search.</summary>
+        public override bool CapturesRawInput
+        {
+            get { return _editor.Pending; }
         }
 
         /// <summary>The panel's controls, in the order it draws them down the corner: the tab bar, the
@@ -259,18 +277,19 @@ namespace ES2Access.Screens
         /// the chat key does, so the keyboard has a way back into typing that does not depend on a
         /// chord the player may have rebound.
         ///
-        /// Nothing is deferred and nothing is announced here, unlike every other of the mod's text
-        /// boxes. The game hands the field the keyboard inside that one call with no gap state to sit
-        /// in, the Enter that asked for it is not delivered to the field (the mod's own consumed-key
-        /// latch, <see cref="ES2Access.UI.Input.GameKeyboardHandover"/>, suppresses exactly the
-        /// transition frame), and what has just happened is announced by
-        /// <see cref="ES2Access.UI.ChatField"/> in the words the chat key already uses - so arriving by
-        /// key and arriving by node sound the same.
+        /// It goes through the shared editor like every other text box (<see cref="TextFieldEditor"/>),
+        /// with two things of its own. The hand-over is the panel's <c>SetFocus</c> rather than a bare
+        /// change of the engine's focus, because that call also brings the panel out of its discreet
+        /// state. And a COMMIT says nothing: Enter here SENDS, and the line coming back through the
+        /// chat service is what announces it (<see cref="ES2Access.UI.SessionChat"/>) - "edited" on top
+        /// of that would be the same event said twice. Escape is still a cancel, and a cancel still
+        /// puts back what was in the box when the player entered it, which for a half-typed message
+        /// means losing the draft (owner ruling).
         ///
         /// It is never refusing, though the widget is disabled whenever the player is not typing: that
         /// flag says which state the panel is in, not whether chat can be opened.
         /// </summary>
-        private static void Field(GraphBuilder builder, InGameChatPanel panel)
+        private void Field(GraphBuilder builder, InGameChatPanel panel)
         {
             try
             {
@@ -282,13 +301,20 @@ namespace ES2Access.Screens
 
                 AgeControlTextField box = field;
                 InGameChatPanel it = panel;
+                ControlId row = ControlId.Referenced(field, FieldKey);
+                TextFieldEditor editor = _editor;
+                TextEditOptions how = new TextEditOptions
+                {
+                    HandOver = () => it.SetFocus(),
+                    AnnounceCommit = false,
+                };
                 NodeVtable vtable = GraphNodes.EditField(
                     () => ModStrings.Get(ModStrings.ChatMessageBox),
                     () => TextFieldEditor.Typing(box) ? null : SettingRows.FieldText(box),
-                    () => it.SetFocus()
+                    () => editor.Request(box, null, null, row, how)
                 );
                 vtable.OnFocusVisual = AgeWidgets.ReleasePointer;
-                ControlId id = ControlId.Referenced(field, FieldKey);
+                ControlId id = row;
                 builder.AddItem(id, vtable);
                 // The page opens ON the box - focus lands on it, not inside it (owner ruling
                 // 2026-08-14): the box is what the player came for, the newest message is one Up

@@ -1498,6 +1498,9 @@ namespace ES2Access.Screens
                 MarketplaceTradableItemsPanel it = owner;
                 cell.Vtable.OnAdjust = (sign, large) => Step(it, sign);
                 cell.Vtable.StateText = QuantityText;
+                // The arrows work the stepper here rather than a caret, which is the whole of the
+                // difference between this box and every other one - so the role word says so.
+                cell.Vtable.ControlType = ControlTypes.NumericEditField;
             }
 
             cells.Add(cell);
@@ -1603,6 +1606,7 @@ namespace ES2Access.Screens
                         sign < 0 ? it.DecreaseTaxRateButton : it.IncreaseTaxRateButton
                     );
                 cell.Vtable.StateText = () => SettingRows.FieldText(field);
+                cell.Vtable.ControlType = ControlTypes.NumericEditField;
             }
 
             cells.Add(cell);

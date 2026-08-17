@@ -134,14 +134,21 @@ namespace ES2Access.Screens
 
         public override void OnUpdate()
         {
-            HandOverWhenKeyboardIsQuiet();
+            _editor.Update();
+        }
+
+        /// <summary>False while the field has been asked for and the keyboard has not changed hands
+        /// yet: what the player types next belongs in the field, not in a search.</summary>
+        public override bool CapturesRawInput
+        {
+            get { return _editor.Pending; }
         }
 
         /// <summary>Something else has the player's attention. An edit that was asked for and not yet
         /// handed over is abandoned rather than left armed to fire under whatever comes next.</summary>
         public override void OnUnfocus()
         {
-            _editing = null;
+            _editor.Cancel();
         }
 
         public override void Build(GraphBuilder builder)
@@ -233,13 +240,15 @@ namespace ES2Access.Screens
 
         // ---- the save-name field ----
 
-        /// <summary>The window and field whose editor has been asked for and not yet opened.</summary>
-        private LoadSaveModalWindow _editing;
+        /// <summary>The deferred hand-over of the keyboard to the game's field, and everything the edit
+        /// itself says - shared with every other text box in the game
+        /// (<see cref="TextFieldEditor"/>).</summary>
+        private readonly TextFieldEditor _editor = new TextFieldEditor();
 
         /// <summary>The save-name field, declared while the save skin shows it. Its value is whatever
         /// the field holds - the game's "enter a name here" prompt included, because that prompt is
         /// what a sighted player is looking at - and nothing at all while the player is typing into
-        /// it: the screen reader is already echoing the keys, and re-reading the whole field after
+        /// it: the editor is reading the keys out one at a time, and re-reading the whole field after
         /// every letter would bury them.</summary>
         private ControlId AddNameField(GraphBuilder builder, LoadSaveModalWindow window)
         {
@@ -249,140 +258,26 @@ namespace ES2Access.Screens
                 return null;
             }
 
-            LoadSaveModalWindow owner = window;
-            NodeVtable vtable = new NodeVtable
-            {
-                ControlType = ControlTypes.EditField,
-                Announcements = new List<NodeAnnouncement>
-                {
-                    GraphNodes.LabelPart(() => ModStrings.Get(ModStrings.LoadSaveSaveName)),
-                    GraphNodes.ValuePart(() => Typing(owner) ? null : FieldText(owner)),
-                },
-                Sections = GraphNodes.Sections(() => new List<string> { FieldText(owner) }, null),
-                OnActivate = () => RequestEdit(owner),
-                // The other single-item row at this level: paired with the cloud toggle it would
-                // count as "2 of 2" of nothing either control is a member of.
-                SpeaksOwnPosition = true,
-            };
             ControlId id = ControlId.Referenced(field, "loadsave:name");
-            builder.AddItem(id, vtable);
-            return id;
-        }
-
-        /// <summary>
-        /// Ask for the game's editor, and say so - entering an editor is not a thing a player can be
-        /// left to infer from silence.
-        ///
-        /// The keyboard changes hands a frame later, and that wait is the whole point. The engine
-        /// hands the focused control every key that goes down IN ITS OWN LateUpdate, which is after
-        /// this; and the text field's answer to Return is to hand the focus straight back (and, when
-        /// the name is one the game would accept, to save under it there and then). So handing over
-        /// during the frame the player pressed Enter gave the field the press that asked for it: the
-        /// editor opened and closed inside one frame, and nothing could be typed into it. Waiting for
-        /// a frame on which nothing new went down costs the player nothing and is the same shape as
-        /// the options page's key capture, which waits for the same reason.
-        /// </summary>
-        private void RequestEdit(LoadSaveModalWindow window)
-        {
-            if (_editing != null || window.SaveNameTextField == null)
-            {
-                return;
-            }
-
-            _editing = window;
-            Voice.Say(ModStrings.Get(ModStrings.LoadSaveEditName), true);
-        }
-
-        /// <summary>Hand the field the keyboard, exactly as clicking it would: the field takes the
-        /// engine's focus (the mod's input layer stands down for a key-exclusive control, which is
-        /// correct - the letters belong in the name), and the game's gain-focus handler runs so the
-        /// placeholder clears the way it does for the mouse. Both of the game's ways out - Enter
-        /// saves, Escape abandons - clear the focus again, and the layer wakes up on its own.
-        /// </summary>
-        private void HandOverWhenKeyboardIsQuiet()
-        {
-            LoadSaveModalWindow window = _editing;
-            if (window == null)
-            {
-                return;
-            }
-
-            // Moving off the field during the wait is the player changing their mind, and the request
-            // has to go with them - otherwise the keyboard would be handed to a field they have left.
-            if (!OnField(window))
-            {
-                _editing = null;
-                return;
-            }
-
-            // Spelled out: the game has its own Input in the global namespace.
-            if (UnityEngine.Input.anyKeyDown)
-            {
-                return;
-            }
-
-            _editing = null;
-            try
-            {
-                AgeManager age = AgeManager.Instance;
-                if (age == null || window.SaveNameTextField == null || !window.Shown)
-                {
-                    return;
-                }
-
-                age.FocusedControl = window.SaveNameTextField;
-                OptionsScreen.Call(NameFieldGainFocus, window, OptionsScreen.NoSender);
-            }
-            catch (Exception e)
-            {
-                Log.Warn("load save: opening the name editor threw: " + e);
-            }
-        }
-
-        /// <summary>Whether the cursor is still on the field that asked for its editor.</summary>
-        private static bool OnField(LoadSaveModalWindow window)
-        {
-            try
-            {
-                GraphNavigator navigator = ModEntry.Navigator;
-                GraphNode node = navigator == null ? null : navigator.CurrentNode;
-                return node != null && node.Id.ReferenceMatches(window.SaveNameTextField);
-            }
-            catch (Exception)
-            {
-                return false;
-            }
-        }
-
-        /// <summary>Whether the game currently has the keyboard on the name field - asked of the
-        /// engine's own focus, so an edit the game ended is over here the same instant.</summary>
-        private static bool Typing(LoadSaveModalWindow window)
-        {
-            try
-            {
-                AgeManager age = AgeManager.Instance;
-                return age != null
-                    && window.SaveNameTextField != null
-                    && ReferenceEquals(age.FocusedControl, window.SaveNameTextField);
-            }
-            catch (Exception)
-            {
-                return false;
-            }
-        }
-
-        private static string FieldText(LoadSaveModalWindow window)
-        {
-            try
-            {
-                return window.SaveNameTextField != null
-                    ? AgeText.Clean(window.SaveNameTextField.Label.Text)
-                    : null;
-            }
-            catch (Exception)
+            Cell cell = SettingRows.TextFieldCell(
+                field,
+                () => ModStrings.Get(ModStrings.LoadSaveSaveName),
+                null,
+                window,
+                NameFieldGainFocus,
+                id,
+                _editor
+            );
+            if (cell == null)
             {
                 return null;
             }
+
+            // The other single-item row at this level: paired with the cloud toggle it would count as
+            // "2 of 2" of nothing either control is a member of.
+            cell.Vtable.SpeaksOwnPosition = true;
+            builder.AddItem(id, cell.Vtable);
+            return id;
         }
 
         // ---- the commands along the bottom ----

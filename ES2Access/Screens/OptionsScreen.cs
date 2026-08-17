@@ -368,20 +368,11 @@ namespace ES2Access.Screens
                 return keys;
             }
 
-            // No option in the game uses one, so this is defensive rather than designed: hand the
-            // field the game's own keyboard focus and let its editing take over. The mod's input
-            // layer stands down on its own while a field is exclusive.
-            OptionTextFieldItem field = item as OptionTextFieldItem;
-            if (field != null && field.TextField != null)
-            {
-                return GraphNodes.Button(
-                    () => FieldText(field),
-                    () => Edit(field),
-                    enabled,
-                    tooltip
-                );
-            }
-
+            // No option in the game is a text field, and the row this page used to declare for one was
+            // a Button that handed the keyboard over with no words, no way back and no cancel - a
+            // second, worse copy of an editor that now exists once (<see cref="TextFieldEditor"/>).
+            // Deleted rather than migrated: nothing draws it, so nothing could test it. An option that
+            // ever becomes one falls through to the read-only row below, which is honest.
             return ReadOnly(label, enabled, tooltip);
         }
 
@@ -565,14 +556,6 @@ namespace ES2Access.Screens
         private static string KeyText(AgeControlKeyBindingField field)
         {
             return field == null ? null : AgeText.Label(field.Label);
-        }
-
-        private static string FieldText(OptionTextFieldItem item)
-        {
-            return new MessageBuilder()
-                .ListItem(AgeText.Label(item.TitleLabel))
-                .ListItem(AgeText.Label(item.TextFieldLabel))
-                .Build();
         }
 
         // ---- rebinding a key ----
@@ -803,22 +786,6 @@ namespace ES2Access.Screens
             catch (Exception e)
             {
                 Log.Warn("options: abandoning a key capture threw: " + e);
-            }
-        }
-
-        private static void Edit(OptionTextFieldItem item)
-        {
-            try
-            {
-                AgeManager age = AgeManager.Instance;
-                if (age != null)
-                {
-                    age.FocusedControl = item.TextField;
-                }
-            }
-            catch (Exception e)
-            {
-                Log.Warn("options: opening a text field for editing threw: " + e);
             }
         }
 

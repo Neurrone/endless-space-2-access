@@ -459,12 +459,14 @@ namespace ES2Access.Dev
                     MethodInfo[] scans = GameKeyStandDown.KeyScans();
                     MethodInfo[] dispatches = GameKeyboardHandover.KeyDispatches();
                     MethodInfo[] chat = ChatEscape.Handlers();
+                    MethodInfo[] focus = GameTextFocus.FocusSetters();
                     MethodInfo[] all = new MethodInfo[
-                        scans.Length + dispatches.Length + chat.Length
+                        scans.Length + dispatches.Length + chat.Length + focus.Length
                     ];
                     scans.CopyTo(all, 0);
                     dispatches.CopyTo(all, scans.Length);
                     chat.CopyTo(all, scans.Length + dispatches.Length);
+                    focus.CopyTo(all, scans.Length + dispatches.Length + chat.Length);
                     _targets = all;
                 }
                 catch (Exception e)
@@ -827,6 +829,51 @@ namespace ES2Access.Dev
         /// ever writes it. The first change caches what it displaced; a later load with no cache falls
         /// back to the registry.
         /// </summary>
+        /// <summary>
+        /// End the text edit that is running right now, as either of its two endings, and report what
+        /// the box held on the way out.
+        ///
+        /// A COMMIT is a physical Return and a cancel is a physical Escape, and neither can be
+        /// injected - the mod's own <c>/input</c> queue carries actions, not keystrokes, and the
+        /// engine reads both of these keys straight off Unity. So the only way to drive the two
+        /// endings from a test is to answer the question the focus setter asks
+        /// (<c>TextFieldEditor.CommitTheNextRelease</c>) and then let go of the keyboard for real:
+        /// everything downstream - the restore, the words, the refusal path - runs exactly as it does
+        /// for the player.
+        /// </summary>
+        public static string EndEdit(bool commit)
+        {
+            return Guarded(json =>
+            {
+                json.WritePropertyName("wasEditing");
+                json.WriteValue(ES2Access.Screens.TextFieldEditor.Editing);
+                ES2Access.Screens.TextFieldEditor.CommitTheNextRelease = commit;
+                AgeManager age = AgeManager.Instance;
+                if (age != null)
+                {
+                    age.FocusedControl = null;
+                }
+
+                ES2Access.Screens.TextFieldEditor.CommitTheNextRelease = false;
+                json.WritePropertyName("commit");
+                json.WriteValue(commit);
+            });
+        }
+
+        /// <summary>The same lever, ARMED and left armed, for the endings the mod does not cause: the
+        /// game's own validate callback releases the keyboard itself (and hides the surface around it),
+        /// so a successful commit is driven by arming this and then invoking that callback - which is
+        /// the real sequence, with only the physical Return replaced.</summary>
+        public static string ArmCommit()
+        {
+            return Guarded(json =>
+            {
+                ES2Access.Screens.TextFieldEditor.CommitTheNextRelease = true;
+                json.WritePropertyName("armed");
+                json.WriteValue(true);
+            });
+        }
+
         public static string TooltipDelay(double seconds)
         {
             return Guarded(json =>

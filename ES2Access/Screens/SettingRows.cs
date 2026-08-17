@@ -407,7 +407,8 @@ namespace ES2Access.Screens
             object owner,
             MethodInfo gainFocus,
             ControlId id,
-            TextFieldEditor editor
+            TextFieldEditor editor,
+            TextEditOptions options = null
         )
         {
             AgeTransform widget = AgeWidgets.Transform(field);
@@ -415,6 +416,8 @@ namespace ES2Access.Screens
             {
                 return null;
             }
+
+            TextEditOptions how = options;
 
             AgeControlTextField it = field;
             object host = owner;
@@ -429,7 +432,7 @@ namespace ES2Access.Screens
             NodeVtable vtable = GraphNodes.EditField(
                 label,
                 () => TextFieldEditor.Typing(it) ? null : FieldText(it),
-                () => editing.Request(it, host, handler, row),
+                () => editing.Request(it, host, handler, row, how),
                 enabled
             );
             vtable.Sections = RowSections(tooltip, own, () => FieldText(it));
@@ -730,135 +733,5 @@ namespace ES2Access.Screens
             typeof(SettingTextFieldItem),
             "OnTextFieldGainFocusCb"
         );
-    }
-
-    /// <summary>
-    /// The deferred hand-over of the keyboard to one of the game's text editors, held per screen so
-    /// that a reload takes it with the screen and two screens never fight over one request.
-    ///
-    /// The wait is the whole point. The engine delivers key events to the focused control in its own
-    /// LateUpdate, after the mod's frame, and a text field's answer to Return is to hand the focus
-    /// straight back - which for these fields is also what commits what is in them. Handing over
-    /// during the frame Enter was pressed therefore gives the field that very Enter: the editor opens
-    /// and closes inside one frame with nothing typed. Waiting for a frame on which nothing new went
-    /// down costs the player nothing, and is the same wait the save-name box and the key-capture rows
-    /// make.
-    /// </summary>
-    public sealed class TextFieldEditor
-    {
-        private AgeControlTextField _field;
-        private ControlId _row;
-        private object _owner;
-        private MethodInfo _gainFocus;
-
-        /// <summary>Ask for the game's editor, and say so - entering an editor is not a thing a player
-        /// can be left to infer from silence.</summary>
-        public void Request(
-            AgeControlTextField field,
-            object owner,
-            MethodInfo gainFocus,
-            ControlId row
-        )
-        {
-            if (_field != null)
-            {
-                return;
-            }
-
-            _field = field;
-            _owner = owner;
-            _gainFocus = gainFocus;
-            _row = row;
-            Voice.Say(ModStrings.Get(ModStrings.RenameTypePrompt), true);
-        }
-
-        /// <summary>Whether an editor has been asked for and the keyboard has not changed hands yet.
-        /// The screen that owns this editor answers <c>CapturesRawInput</c> with it: during the wait
-        /// the mod's keys are still live, and what the player types next is meant for the field.
-        /// </summary>
-        public bool Pending
-        {
-            get { return _field != null; }
-        }
-
-        /// <summary>Called from the owning screen's per-frame update.</summary>
-        public void Update()
-        {
-            AgeControlTextField field = _field;
-            if (field == null)
-            {
-                return;
-            }
-
-            // Moving off the row during the wait is the player changing their mind, and the request has
-            // to go with them - otherwise the keyboard would be handed to a field they have left.
-            if (!OnRow(_row))
-            {
-                Cancel();
-                return;
-            }
-
-            // Spelled out: the game has its own Input in the global namespace.
-            if (UnityEngine.Input.anyKeyDown)
-            {
-                return;
-            }
-
-            object owner = _owner;
-            MethodInfo gainFocus = _gainFocus;
-            Cancel();
-            try
-            {
-                AgeManager age = AgeManager.Instance;
-                if (age == null || !AgeWidgets.Operable(AgeWidgets.Transform(field)))
-                {
-                    return;
-                }
-
-                age.FocusedControl = field;
-                OptionsScreen.Call(gainFocus, owner, OptionsScreen.NoSender);
-            }
-            catch (Exception e)
-            {
-                Log.Warn("settings: opening a text editor threw: " + e);
-            }
-        }
-
-        public void Cancel()
-        {
-            _field = null;
-            _owner = null;
-            _gainFocus = null;
-            _row = null;
-        }
-
-        /// <summary>Whether the game currently has the keyboard on this field - asked of the engine's
-        /// own focus, so an edit the game ended is over here the same instant.</summary>
-        public static bool Typing(AgeControlTextField field)
-        {
-            try
-            {
-                AgeManager age = AgeManager.Instance;
-                return age != null && ReferenceEquals(age.FocusedControl, field);
-            }
-            catch (Exception)
-            {
-                return false;
-            }
-        }
-
-        private static bool OnRow(ControlId id)
-        {
-            try
-            {
-                GraphNavigator navigator = ModEntry.Navigator;
-                GraphNode node = navigator == null ? null : navigator.CurrentNode;
-                return id != null && node != null && id.Equals(node.Id);
-            }
-            catch (Exception)
-            {
-                return false;
-            }
-        }
     }
 }

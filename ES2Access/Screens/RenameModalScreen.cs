@@ -19,8 +19,10 @@ namespace ES2Access.Screens
     /// on it, the same activation every other edit field in the mod takes (<see cref="SettingRows"/>) -
     /// and Escape out of it is a step back onto the field rather than out of the box.
     ///
-    /// That leaves this screen watching one thing: the frame the field lets go of the keyboard, which
-    /// is the only place the three ways out of an edit are told apart. See <see cref="OnUpdate"/>.
+    /// Everything about the edit itself - the words on the way in, the typing, the two ways out and the
+    /// text a cancel puts back - is <see cref="TextFieldEditor"/>'s, shared with every other text box in
+    /// the game. What is left here is the one thing only this box has: the game's own reason for
+    /// refusing a name (<see cref="RefusalIfTheBoxIsStillUp"/>).
     /// </summary>
     public sealed class RenameModalScreen : Screen
     {
@@ -88,106 +90,46 @@ namespace ES2Access.Screens
             get { return _editor.Pending; }
         }
 
-        // Whether the field held the engine's keyboard on the previous frame, so the frame it lets go
-        // can be told from all the frames after it.
-        private bool _fieldHadKeyboard;
-
         // How long the box has been the mod's, in frames. Only the first few are counted, and only to
         // bound the take-back below.
         private int _framesOpen;
 
-        /// <summary>
-        /// The one frame worth watching: the field held the keyboard and no longer does. Three
-        /// different things look like that, and only the engine's own seams tell them apart.
-        ///
-        /// <b>Escape</b> unfocused the field and ate the key (<c>InputManager.HandleInput</c>
-        /// :1212-1227). The box is still up and is still the player's - so the edit is simply over,
-        /// and the cursor is read back out on the field it was in. Silence here would be the trap:
-        /// nothing on screen changes, and a player who cannot see the caret has no way to know whether
-        /// they are still typing or have left the box entirely.
-        ///
-        /// <b>Return</b> unfocuses the field too, and asks the game to take the name
-        /// (<c>RenameModalWindow.OnTextFieldValidateCb</c>). When the game took it, the box is already
-        /// going and there is nothing to do; a box left standing means the name was REFUSED, and
-        /// cancelling on the player's behalf would throw away what they typed - so the keyboard goes
-        /// straight back into the field with the game's own reason for the refusal.
-        /// <c>GameKeyboardHandover.TookTheValidateKey</c> is what tells this from the Escape above;
-        /// without it, "Escape on a name the game would refuse" and "Return on one" are identical.
-        ///
-        /// <b>Something else took the keyboard</b> - a message box raised over this one - and is
-        /// holding it for a reason of its own. The box the player was typing into is still theirs to
-        /// come back to, so nothing happens here.
-        ///
-        /// Watched rather than hooked because all three arrive through the engine's own focus handling,
-        /// which the mod does not sit in the middle of.
-        /// </summary>
         public override void OnUpdate()
         {
             TakeBackTheOpeningFocus();
             _editor.Update();
-
-            if (_fieldHadKeyboard && !FieldHasKeyboard())
-            {
-                FinishWhatLetGoOfTheKeyboard();
-            }
-
-            // Re-read rather than reused: the refusal path above puts the keyboard back, and that must
-            // not read as a second hand-back on the next frame.
-            _fieldHadKeyboard = FieldHasKeyboard();
         }
 
-        private void FinishWhatLetGoOfTheKeyboard()
+        /// <summary>
+        /// The one thing about this box that is not the shared editor's: whether the GAME took the
+        /// name, and what it says when it did not.
+        ///
+        /// Return unfocuses the field and asks the game to take it
+        /// (<c>RenameModalWindow.OnTextFieldValidateCb</c>). When the game took it, the box is already
+        /// going - so a box still STANDING is the refusal, whether or not the game wrote a reason for
+        /// it, and that is what puts the keyboard back into the field
+        /// (<see cref="TextEditOptions.Refusal"/>) rather than throwing away what the player typed.
+        ///
+        /// Any words are the game's own, written onto the accept button's tooltip by
+        /// <c>RenameModalWindow.CheckButtons</c> and already localized - and it often writes none
+        /// (measured: an empty name is refused with an empty tooltip), which is exactly why "still up"
+        /// rather than "has words" is the test.
+        /// </summary>
+        private readonly TextEditOptions _editing = new TextEditOptions
         {
-            try
-            {
-                RenameModalWindow window = Window();
-                if (window == null || !window.Shown)
-                {
-                    return;
-                }
+            Refusal = RefusalIfTheBoxIsStillUp,
+        };
 
-                AgeManager age = AgeManager.Instance;
-                if (age == null || age.FocusedControl != null)
-                {
-                    return;
-                }
-
-                AgeControlTextField field = window.TextField;
-                if (GameKeyboardHandover.TookTheValidateKey(field))
-                {
-                    age.FocusedControl = field;
-                    string refusal = Refusal(window);
-                    if (!string.IsNullOrEmpty(refusal))
-                    {
-                        Voice.Say(refusal, true);
-                    }
-
-                    return;
-                }
-
-                // The edit ended and the box did not: the cursor never left the field's own stop, so
-                // reading it out again is both the "you have stopped typing" and the "here is what is
-                // in it now" - and it is the field, not the mod, that says what the name is.
-                GraphNavigator navigator = ModEntry.Navigator;
-                if (navigator != null)
-                {
-                    navigator.AnnounceCurrent();
-                }
-            }
-            catch (Exception)
-            {
-                // Nothing here is worth a throw into the pump: the worst a failure costs is a silent
-                // return from an edit the player can still see their way out of with Escape.
-            }
-        }
-
-        /// <summary>The game's own words for why it will not take this name - written onto the accept
-        /// button's tooltip by <c>RenameModalWindow.CheckButtons</c>, already localized.</summary>
-        private static string Refusal(RenameModalWindow window)
+        private static string RefusalIfTheBoxIsStillUp()
         {
-            AgeControlButton validate = window.ValidateButton;
-            AgeTooltip tooltip = AgeWidgets.Raw(AgeWidgets.Transform(validate));
-            return tooltip == null ? null : AgeText.Clean(tooltip.Content);
+            RenameModalWindow window = Window();
+            if (window == null || !window.Shown)
+            {
+                return null;
+            }
+
+            AgeTooltip tooltip = AgeWidgets.Raw(AgeWidgets.Transform(window.ValidateButton));
+            return tooltip == null ? string.Empty : (AgeText.Clean(tooltip.Content) ?? string.Empty);
         }
 
         /// <summary>
@@ -219,6 +161,9 @@ namespace ES2Access.Screens
 
             try
             {
+                // The mod taking back what the box focused for itself, not the player leaving an edit:
+                // nothing is put back and nothing is said.
+                TextFieldEditor.Abandon();
                 AgeManager.Instance.FocusedControl = null;
             }
             catch (Exception)
@@ -235,7 +180,6 @@ namespace ES2Access.Screens
             _editor.Cancel();
             _framesOpen = 0;
             TakeBackTheOpeningFocus();
-            _fieldHadKeyboard = FieldHasKeyboard();
         }
 
         public override void OnPop()
@@ -303,7 +247,8 @@ namespace ES2Access.Screens
                     null,
                     null,
                     id,
-                    _editor
+                    _editor,
+                    _editing
                 );
                 if (cell != null)
                 {

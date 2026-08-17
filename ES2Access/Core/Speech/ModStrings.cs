@@ -33,7 +33,22 @@ namespace ES2Access.Core.Speech
         public const string ControlSlider = "control.slider";
         public const string ControlComboBox = "control.combo-box";
         public const string ControlEditField = "control.edit-field";
+
+        /// <summary>A box that only takes a number and carries its own stepper: the arrows change the
+        /// value where an ordinary edit field's arrows would move a caret, so the role word has to say
+        /// so before the player tries.</summary>
+        public const string ControlNumericEditField = "control.numeric-edit-field";
         public const string ControlMenuItem = "control.menu-item";
+
+        // The four things an edit of a text box says about itself. The game says none of them: it
+        // draws a caret and nothing else, so entering, leaving, and every character between are
+        // silent without these. "space" and "blank" are the two places in a line of text that have no
+        // sound of their own - a space, and the empty place past the last character.
+        public const string EditStarted = "edit.started";
+        public const string EditCommitted = "edit.committed";
+        public const string EditCancelled = "edit.cancelled";
+        public const string EditCaretSpace = "edit.space";
+        public const string EditCaretBlank = "edit.blank";
 
         // One of a set where exactly one is in force. Not a checkbox: activating it can only ever
         // make it the chosen one, and the box the player would expect to untick does not exist.
@@ -85,11 +100,6 @@ namespace ES2Access.Core.Speech
         public const string ChatSaid = "chat.said";
         public const string ChatWhispered = "chat.whispered";
         public const string ChatToAlliance = "chat.to-alliance";
-
-        // Said when the game's own chat box takes the keyboard, which it does silently. The keys are
-        // named because they are the game's, not the mod's: Enter posts the line and Escape hands the
-        // keyboard back.
-        public const string ChatTyping = "chat.typing";
 
         // The chat panel's own controls. The tab bar is the game's, and what the game draws on it is a
         // name per tab and a bare dot for a tab holding something unseen - so the dot needs words and the
@@ -538,10 +548,9 @@ namespace ES2Access.Core.Speech
         public const string GameMenuGameSettings = "gamemenu.game-settings";
         public const string GameMenuReadOnlySettings = "gamemenu.read-only-settings";
 
-        // The save page: the name field, the prompt for typing into it, the cloud toggle, and what an
-        // empty cell of the save table says.
+        // The save page: the name field, the cloud toggle, and what an empty cell of the save table
+        // says.
         public const string LoadSaveSaveName = "loadsave.save-name";
-        public const string LoadSaveEditName = "loadsave.edit-name";
         public const string LoadSaveCloud = "loadsave.cloud";
         public const string NavCellEmpty = "nav.cell-empty";
 
@@ -708,10 +717,8 @@ namespace ES2Access.Core.Speech
         public const string ScreenSystemDiscovery = "screen.system-discovery";
         public const string DiscoverySystem = "discovery.system";
 
-        /// <summary>The rename box the game opens over a page: what it is, and that typing has begun.
-        /// </summary>
+        /// <summary>The rename box the game opens over a page.</summary>
         public const string ScreenRename = "screen.rename";
-        public const string RenameTypePrompt = "rename.type-prompt";
 
         // The research screen - the wheel of technologies the game draws over the galaxy. The three
         // panel names are the mod's, because the game labels none of them; the quadrants, the stages
@@ -1096,7 +1103,13 @@ namespace ES2Access.Core.Speech
             { ControlCheckbox, "checkbox" },
             { ControlSlider, "slider" },
             { ControlComboBox, "combo box" },
-            { ControlEditField, "edit field" },
+            { ControlEditField, "editable" },
+            { ControlNumericEditField, "numeric editable" },
+            { EditStarted, "editing" },
+            { EditCommitted, "edited" },
+            { EditCancelled, "Cancelled" },
+            { EditCaretSpace, "space" },
+            { EditCaretBlank, "blank" },
             { ControlMenuItem, "menu item" },
             { ControlRadioButton, "radio button" },
             { NavExpanded, "expanded" },
@@ -1122,7 +1135,6 @@ namespace ES2Access.Core.Speech
             { ChatSaid, "{0}: {1}" },
             { ChatWhispered, "{0} whispers: {1}" },
             { ChatToAlliance, "{0}, to the alliance: {1}" },
-            { ChatTyping, "Chat. Type a message, Enter sends it, Escape leaves." },
             { ChatPanel, "Chat" },
             { ChatUnread, "unread messages" },
 
@@ -1323,7 +1335,6 @@ namespace ES2Access.Core.Speech
             { GameMenuGameSettings, "Game settings" },
             { GameMenuReadOnlySettings, "read only" },
             { LoadSaveSaveName, "Save name" },
-            { LoadSaveEditName, "Type the save name, then press Enter." },
             { LoadSaveCloud, "Cloud saves" },
             { NavCellEmpty, "empty" },
             { SaveStarted, "Saving the game" },
@@ -1392,10 +1403,6 @@ namespace ES2Access.Core.Speech
             { ScreenSystemDiscovery, "System discovery" },
             { DiscoverySystem, "Discovering {0}" },
             { ScreenRename, "Rename" },
-            {
-                RenameTypePrompt,
-                "Type the new name, then press Enter to confirm or Escape to stop editing."
-            },
             { ScreenResearch, "Research" },
             { ResearchStatusPanel, "Research status" },
             { ResearchKeyPanel, "Research key" },

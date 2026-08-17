@@ -285,8 +285,11 @@ namespace ES2Access.UI
             _pendingAnnounce = announce;
         }
 
-        /// <summary>Re-read the focused control in full, ancestors included.</summary>
-        public void AnnounceCurrent()
+        /// <summary>Re-read the focused control in full, ancestors included.
+        /// <paramref name="interrupt"/> false QUEUES it instead, for a caller that has just said
+        /// something of its own about the same control and would otherwise cut its own line off (the
+        /// shared text editor's "edited", followed by the field's new value).</summary>
+        public void AnnounceCurrent(bool interrupt = true)
         {
             if (_graph == null || !_graph.Rerender())
             {
@@ -299,7 +302,7 @@ namespace ES2Access.UI
                 return;
             }
 
-            Voice.Say(GraphAnnouncer.ComposeFull(node), true);
+            Voice.Say(GraphAnnouncer.ComposeFull(node), interrupt);
             _lastSpokenKey = node.Id;
             _lastSpokenNode = node;
 

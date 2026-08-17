@@ -240,6 +240,9 @@ namespace ES2Access
             // And the same for the control the game has focused, which is handed the frame's keys after
             // the mod has already acted on them.
             GameKeyboardHandover.Install();
+            // And the setter every way out of a text box passes through, which is the only place a
+            // commit can be told from a cancel and the last moment a cancel can put the text back.
+            GameTextFocus.Install();
             // The one key that still reaches the game while it holds the keyboard for the chat box:
             // Escape, which the panel answers by shutting itself instead of letting go.
             ChatEscape.Install();
@@ -598,6 +601,10 @@ namespace ES2Access
             PointerFocus.Shutdown();
             GameKeyStandDown.Remove();
             GameKeyboardHandover.Remove();
+            GameTextFocus.Remove();
+            // And the edit that patch was watching, so the next load's first keystroke has nothing
+            // left over to speak about.
+            TextFieldEditor.Stop();
             ChatEscape.Remove();
             // And the chat panel is let go, or the game keeps drawing one nobody is reading.
             ChatHold.Stop();
@@ -685,6 +692,12 @@ namespace ES2Access
             Navigator.TypeAheadTick();
 
             Screens.Tick();
+
+            // After the screens, because the screens are where an edit is ASKED for: the hand-over
+            // lands in Screens.Tick and this reads the box it landed in on the next frame. Everything
+            // a live edit says - the character typed, the one under the caret, "edited", "Cancelled" -
+            // is spoken from here, off state the focus patch and the box itself have already settled.
+            TextFieldEditor.Tick();
 
             // Right after the screens, and only ever with something to say: the map's inspect cursor
             // ends when the map stops being the page the player is on, and the line saying so has to

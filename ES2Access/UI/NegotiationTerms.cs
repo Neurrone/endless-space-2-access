@@ -261,6 +261,9 @@ namespace ES2Access.UI
                 enabled,
                 AgeWidgets.Raw(host)
             );
+            // The arrows work the stepper here rather than a caret, which is the whole of the
+            // difference between this box and every other one - so the role word says so.
+            vtable.ControlType = ControlTypes.NumericEditField;
             vtable.OnAdjust = (sign, large) =>
             {
                 if (!enabled())

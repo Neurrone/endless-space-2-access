@@ -16,10 +16,13 @@ namespace ES2Access.UI
     /// field. But the game draws the change and says nothing, so without this the key is silent both
     /// ways: the player cannot tell whether chat opened, and cannot tell whether Escape got them out.
     ///
-    /// Only those two edges are announced. What happens BETWEEN them is already covered: the screen
-    /// reader echoes the typing, a sent line is narrated by <see cref="SessionChat"/> (the message comes
-    /// back through the chat service, one's own included), and the whole log stays re-readable in the
-    /// chat review buffer once the field lets go.
+    /// Only those two edges are announced, and only for a box the GAME opened: entering one through the
+    /// mod's own Enter is the shared editor's business end to end (<see cref="Screens.TextFieldEditor"/>
+    /// - "editing", the characters as they are typed, "edited" or "Cancelled" on the way out), so this
+    /// stands aside for as long as it owns the box. What happens BETWEEN the two edges of a box the game
+    /// opened is covered elsewhere: a sent line is narrated by <see cref="SessionChat"/> (the message
+    /// comes back through the chat service, one's own included), and the whole log stays re-readable in
+    /// the chat review buffer once the field lets go.
     ///
     /// Only the LOBBY's field is reported on the way OUT, and by re-reading the control the cursor is
     /// on rather than with a line of its own: the player pressed Escape to get back somewhere, and where
@@ -59,9 +62,19 @@ namespace ES2Access.UI
                 }
 
                 _typing = typing;
+
+                // Only for a box the GAME opened - the chat key, a click, the new-message button. One
+                // the mod opened is the shared editor's (<see cref="Screens.TextFieldEditor"/>), which
+                // says "editing" on the way in, reads the typing out and says how the edit ended; every
+                // word of that here would be the second copy.
+                if (Screens.TextFieldEditor.Owned)
+                {
+                    return;
+                }
+
                 if (typing)
                 {
-                    Voice.Say(ModStrings.Get(ModStrings.ChatTyping), true);
+                    Voice.Say(ModStrings.Get(ModStrings.EditStarted), true);
                     return;
                 }
 
