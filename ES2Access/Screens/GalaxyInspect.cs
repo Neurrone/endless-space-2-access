@@ -145,10 +145,14 @@ namespace ES2Access.Screens
         /// One log line for every PHYSICAL press of the inspect chord's letter, while the dev server
         /// is up: the whole claim decision as it stood on that frame. The chord's refusals are silent
         /// by design - off the map the key is not the mod's, another modifier spoils the
-        /// exact-modifier match, and the game answers Ctrl+I with nothing - so a press that is lost
-        /// (owner-reported: the first Ctrl+I after a Down sometimes arms nothing, and only a second
-        /// one enters) leaves no trace anywhere. This is that trace, written on the exact frame the
-        /// letter went down, so the next lost press names its own cause in the log.
+        /// exact-modifier match, and the game answers Ctrl+I with nothing - so a lost press leaves no
+        /// trace anywhere but here, written on the exact frame the letter went down.
+        ///
+        /// One cause is SETTLED and must not be "fixed" (owner's ruling, 2026-08-17): a letter whose
+        /// keydown lands a frame before its modifier's - the near-simultaneous press - reads
+        /// ctrl=False here and the chord does not match. That is working as intended: the matcher is
+        /// exact and modifier-first, and no grace window is wanted. This observer stays because the
+        /// OTHER causes (off the map, a stray modifier) are still worth a trace.
         /// </summary>
         private static void ObserveChordKey()
         {
