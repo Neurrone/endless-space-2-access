@@ -304,6 +304,33 @@ namespace ES2Access.UI
             }
         }
 
+        /// <summary>
+        /// Whether the game could never draw anything for this tooltip, whatever happened next: it has
+        /// no words of its own, nothing for a renderer to assemble words from, and no class naming a
+        /// renderer at all. Prefabs hang these on decoration - the picture inside a table line carries
+        /// one with all three empty - and a reading that picks one up aims the pointer at a tooltip the
+        /// game draws nothing for, while a real one hanging beside it is never shown.
+        ///
+        /// Not the opposite of <see cref="Draws"/>. That is the question of whether the game would draw
+        /// this tooltip NOW, asked every frame, and a class-backed tooltip the game has not filled in
+        /// yet answers no to it and yes the moment it is filled. This one is about a tooltip that names
+        /// no renderer at all, so there is nothing left for the game to fill in.
+        /// </summary>
+        public static bool NeverDraws(AgeTooltip tooltip)
+        {
+            try
+            {
+                return tooltip != null
+                    && string.IsNullOrEmpty(tooltip.Class)
+                    && string.IsNullOrEmpty(tooltip.Content)
+                    && tooltip.Target == null;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
         /// <summary>What the player would read on a tooltip, resolved when they ask to read it - off
         /// the widget when the words are there, off the drawn tooltip window when they are not.
         /// </summary>
@@ -348,6 +375,11 @@ namespace ES2Access.UI
         /// nothing when the words hang on the piece inside it, and the readout still says "has tooltip"
         /// while the buffer stays empty (see <see cref="PointAt(NodeVtable, AgeTransform, AgeTooltip)"/>
         /// for the other half of that failure).
+        ///
+        /// A tooltip the game could never draw anything for (<see cref="NeverDraws"/>) is not one of
+        /// them: callers take the LAST tooltip found here as the one to point at, and a prefab's empty
+        /// decoration tooltip sitting after the real one is how a row came to promise a dossier and
+        /// draw nothing.
         /// </summary>
         public static void Tooltips(AgeTransform widget, List<AgeTooltip> into, int maxDepth = 4)
         {
@@ -367,7 +399,7 @@ namespace ES2Access.UI
             }
 
             AgeTooltip tooltip = Raw(widget);
-            if (tooltip != null && !into.Contains(tooltip))
+            if (tooltip != null && !NeverDraws(tooltip) && !into.Contains(tooltip))
             {
                 into.Add(tooltip);
             }

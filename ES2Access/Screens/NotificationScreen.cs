@@ -996,7 +996,7 @@ namespace ES2Access.Screens
                 sections[i] = GraphNodes.TooltipSection(explaining[i]);
             }
 
-            AgeTooltip tooltip = explaining.Count == 0 ? null : explaining[explaining.Count - 1];
+            AgeTooltip tooltip = Last(explaining);
             AgeTransform hover = tooltip == null ? null : Holder(tooltip);
             NodeVtable vtable = new NodeVtable
             {
@@ -1267,9 +1267,15 @@ namespace ES2Access.Screens
         /// <summary>The tooltip, unless its words are the words already being read - the game both
         /// prints a technology's description under its card and offers the same text on hover, and
         /// saying it twice is not saying it better. A tooltip the game assembles as it draws it has
-        /// nothing to compare, and is always kept.</summary>
+        /// nothing to compare, and is always kept - unless it is one the game could never draw
+        /// anything for, which explains nothing to anybody.</summary>
         private static AgeTooltip Explains(AgeTooltip tooltip, string text)
         {
+            if (AgeWidgets.NeverDraws(tooltip))
+            {
+                return null;
+            }
+
             string written = AgeText.Tooltip(tooltip);
             if (string.IsNullOrEmpty(written) || string.IsNullOrEmpty(text))
             {
@@ -1567,12 +1573,25 @@ namespace ES2Access.Screens
         /// <summary>A line's pieces, one per column: which caption each was drawn under, answered by
         /// the rectangles the game laid them out at. Null where the line does not read as a row of
         /// that table - two pieces landing in one column, or running back across the page, is the
-        /// answer that the captions are not columns over these lines at all.</summary>
+        /// answer that the captions are not columns over these lines at all.
+        ///
+        /// Where the line writes everything it says inside ONE piece that lies across several captions,
+        /// that piece is the line's own wrapper rather than a column - a prefab draws a frame, a block
+        /// holding all the words, and a frame again - and the columns are what is drawn inside it. So
+        /// the pieces of THAT are what the captions are asked about instead. One level down, and no
+        /// further: a wrapper inside a wrapper is a shape nothing measured has, and the rows are the
+        /// safe reading for anything this does not recognise.</summary>
         private static AgeTransform[] Columns(AgeTransform line, List<Line> headers)
+        {
+            return Columns(line, headers, 0);
+        }
+
+        private static AgeTransform[] Columns(AgeTransform line, List<Line> headers, int depth)
         {
             AgeTransform[] cells = new AgeTransform[headers.Count];
             int filled = 0;
             int last = -1;
+            AgeTransform only = null;
             List<AgeTransform> children = line.Children;
             for (int i = 0; children != null && i < children.Count; i++)
             {
@@ -1591,9 +1610,33 @@ namespace ES2Access.Screens
                 cells[column] = child;
                 last = column;
                 filled++;
+                only = child;
+            }
+
+            if (depth == 0 && filled == 1 && Spans(only, headers) > 1)
+            {
+                return Columns(only, headers, depth + 1);
             }
 
             return filled > 1 && cells[0] != null ? cells : null;
+        }
+
+        /// <summary>How many captions a piece was drawn across - one for a column, more for the block a
+        /// prefab wrapped a whole line in.</summary>
+        private static int Spans(AgeTransform cell, List<Line> headers)
+        {
+            Rect it = cell.GetGlobalPosition();
+            int across = 0;
+            for (int i = 0; i < headers.Count; i++)
+            {
+                Rect header = headers[i].Widget.GetGlobalPosition();
+                if (Mathf.Min(it.xMax, header.xMax) - Mathf.Max(it.xMin, header.xMin) > 0f)
+                {
+                    across++;
+                }
+            }
+
+            return across;
         }
 
         /// <summary>Which caption a piece of a line was drawn under: the one it shares most of its
@@ -1779,7 +1822,7 @@ namespace ES2Access.Screens
 
             // The tooltip hangs off the picture inside the cell rather than the cell, and pointing at
             // anything else draws nothing.
-            AgeTooltip tooltip = tooltips.Count == 0 ? null : tooltips[tooltips.Count - 1];
+            AgeTooltip tooltip = Last(tooltips);
             AgeTransform hover = tooltip == null ? null : Holder(tooltip);
             vtable.OnFocusVisual =
                 hover == null ? ReleasePointer : () => PointerFocus.MoveTo(hover, tooltip);
@@ -1795,6 +1838,19 @@ namespace ES2Access.Screens
             return tooltips;
         }
 
+        /// <summary>The tooltip a reading of this widget points at: the LAST one the game hung inside
+        /// it, which is what a row and a cell alike aim the pointer at. Written down once so the parity
+        /// check asks the question the reading answers rather than a second opinion of it.</summary>
+        internal static AgeTooltip Aimed(AgeTransform widget)
+        {
+            return Last(Tooltips(widget));
+        }
+
+        private static AgeTooltip Last(List<AgeTooltip> tooltips)
+        {
+            return tooltips.Count == 0 ? null : tooltips[tooltips.Count - 1];
+        }
+
         private static void CollectTooltips(AgeTransform widget, List<AgeTooltip> into, int depth)
         {
             if (widget == null || depth > MaxCellDepth || !widget.Visible)
@@ -1802,8 +1858,11 @@ namespace ES2Access.Screens
                 return;
             }
 
+            // A tooltip the game could never draw anything for is not one of these: the pointer goes to
+            // the last one found, and a prefab's empty decoration tooltip drawn after the real one is
+            // how a line came to promise a dossier and show nothing (AgeWidgets.NeverDraws).
             AgeTooltip tooltip = widget.AgeTooltip;
-            if (tooltip != null && !into.Contains(tooltip))
+            if (tooltip != null && !AgeWidgets.NeverDraws(tooltip) && !into.Contains(tooltip))
             {
                 into.Add(tooltip);
             }

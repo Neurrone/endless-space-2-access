@@ -715,10 +715,12 @@ namespace ES2Access.Dev
         // ---- 4. tooltip parity ----
 
         /// <summary>
-        /// The two directions a tooltip claim can be wrong.
+        /// The three directions a tooltip claim can be wrong.
         ///
         /// A control that says "has tooltip" must have one the game would draw - the promise is that
-        /// there is something to read, and a tooltip with neither words nor a target draws nothing.
+        /// there is something to read, and a tooltip with neither words nor a target draws nothing -
+        /// and the tooltip it POINTS AT must be that one, since a control carrying two of them shows
+        /// only what the pointer is sent to.
         /// And a tooltip the game WOULD draw on a control the player can reach must be reachable
         /// from the node that covers it: the luxury popup hung the resource's dossier on the block
         /// around the words rather than on the words, and the reading that only ever asked the widget
@@ -750,6 +752,25 @@ namespace ES2Access.Dev
                 {
                     result.Tooltips.Add(
                         Made(node.Widget, node.Key, "says \"" + claim + "\" with nothing that draws", null)
+                    );
+                    continue;
+                }
+
+                // A tooltip EXISTING near the widget is not the promise: the promise is that the one the
+                // pointer goes to draws, and a line carrying two - the law's dossier and an empty one on
+                // the picture inside it - used to aim at the empty one and draw nothing while saying
+                // this. Asked of the screen's own aim rather than re-derived here, so the check and the
+                // reading cannot disagree about which tooltip a node points at.
+                AgeTooltip aimed = NotificationScreen.Aimed(node.Widget);
+                if (aimed != null && !AgeWidgets.Draws(aimed))
+                {
+                    result.Tooltips.Add(
+                        Made(
+                            node.Widget,
+                            node.Key,
+                            "says \"" + claim + "\" and points at a tooltip that draws nothing",
+                            null
+                        )
                     );
                 }
             }
