@@ -152,6 +152,34 @@ namespace ES2Access.UI.Input
         /// A key that was never physically down - an injected action - is latched too and released on
         /// the next tick, and is never GetKeyDown, so an injection cannot suppress anything.
         /// </summary>
+        /// <summary>
+        /// Whether a key the mod has already spent is STILL physically down.
+        ///
+        /// The other half of <see cref="ActedOnAKeyGoingDown"/>, and the one a hand-over waits on. A
+        /// press is several frames long: the key goes down, the mod acts on it, and it stays down
+        /// until the player lets go. Anything the mod hands the GAME during those frames is handed it
+        /// with the mod's own key still held - and a text field given the keyboard while Return is
+        /// down is a field one repeat away from validating the press that only asked to start editing
+        /// (owner-reported: the first Enter on the rename box and the save-name box committed and
+        /// closed them).
+        ///
+        /// An INJECTED action latches its keys the same way and none of them is ever physically down,
+        /// so this reads false for every automated run - which is exactly why the bug it prevents
+        /// cannot be caught by <c>POST /input</c> and needs <c>POST /key</c>.
+        /// </summary>
+        public bool StillHoldingASpentKey()
+        {
+            for (int i = 0; i < _consumed.Count; i++)
+            {
+                if (UnityEngine.Input.GetKey(_consumed[i]))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         public bool ActedOnAKeyGoingDown()
         {
             for (int i = 0; i < _consumed.Count; i++)

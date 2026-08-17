@@ -51,7 +51,10 @@ namespace ES2Access.Screens
     /// <b>The deferred hand-over</b> (<see cref="Update"/>, per screen). The engine delivers key events
     /// to the focused control in its own LateUpdate, after the mod's frame, and a text field's answer
     /// to Return is to hand the focus straight back - which for these fields is also what commits.
-    /// Handing over during the frame Enter was pressed therefore gives the field that very Enter.
+    /// Handing over during the frame Enter was pressed therefore gives the field that very Enter. So
+    /// the wait is for the RELEASE, not for the next frame: a press lasts as long as the finger, and a
+    /// field that has the keyboard while Return is still down is one engine dispatch from committing
+    /// the keystroke that only asked to start editing.
     ///
     /// <b>The focus setter</b> (<see cref="FocusLeaving"/>). Escape never reaches the field:
     /// <c>InputManager</c> clears the focus from Update, before the engine's KeyDown dispatch runs at
@@ -138,17 +141,25 @@ namespace ES2Access.Screens
                 return;
             }
 
-            // Wait for a frame on which nothing new went down. Spelled out: the game has its own
-            // Input in the global namespace.
+            // WAIT FOR THE KEY THAT ASKED TO BE LET GO.
             //
-            // KEPT rather than removed, deliberately. GameKeyboardHandover now suppresses the engine's
-            // whole KeyDown dispatch on a frame the mod already spent a key, which should make this
-            // wait redundant - but "should" is the wrong word for the bug it prevents (an editor that
-            // opens and commits inside one frame), and it cannot be measured from a test: an injected
-            // activation presses no physical key, so `anyKeyDown` is already false and the wait is a
-            // no-op for every automated run. Removing it needs a physical Enter on a real field, which
-            // is a manual test, not a probe.
-            if (UnityEngine.Input.anyKeyDown)
+            // A press is several frames long, and the field is the game's the moment it has the
+            // keyboard: the engine delivers KeyDown to the focused control from its own LateUpdate,
+            // the field's answer to Return is to VALIDATE (AgeControlTextField.KeyDown - which for the
+            // rename box posts the rename and for the save-name box writes the save and closes the
+            // screen), and the window's own Validate handler is a second door onto the same thing. So
+            // handing the keyboard over while the activating Return is still down puts the field one
+            // engine dispatch away from committing the press that only asked to start editing - which
+            // is what shipped (owner-reported: the first Enter on both boxes committed and closed
+            // them). Waiting for the release closes every one of those doors at once, because none of
+            // them can be reached by a key that is no longer down.
+            //
+            // The one-frame anyKeyDown wait is kept alongside it: a key going down on the hand-over
+            // frame that the mod did NOT spend is somebody else's, and the field should not be given
+            // that one either.
+            //
+            // Spelled out: the game has its own Input in the global namespace.
+            if (UnityEngine.Input.anyKeyDown || StillHoldingTheKeyThatAsked())
             {
                 return;
             }
@@ -189,6 +200,23 @@ namespace ES2Access.Screens
             catch (Exception e)
             {
                 Log.Warn("settings: opening a text editor threw: " + e);
+            }
+        }
+
+        /// <summary>Whether the press that asked for this edit is still under the player's finger.
+        /// False for every injected activation - nothing was physically pressed - which is what makes
+        /// the wait invisible to <c>POST /input</c> and provable only with <c>POST /key</c>.</summary>
+        private static bool StillHoldingTheKeyThatAsked()
+        {
+            try
+            {
+                ES2Access.UI.Input.ModInput input = ModEntry.Input;
+                return input != null && input.StillHoldingASpentKey();
+            }
+            catch (Exception)
+            {
+                // Never wedge an edit shut on a question that could not be answered.
+                return false;
             }
         }
 
@@ -254,6 +282,11 @@ namespace ES2Access.Screens
         private static string _lastText;
         private static int _lastCaret;
         private static Ending _ending;
+
+        /// <summary>The frame the live edit began on - what tells the Return that OPENED the box from
+        /// the Return that commits it (<see cref="FocusLeaving"/>).</summary>
+        private static int _beganOnFrame;
+
         private static FieldInfo _caret;
         private static bool _reportedFailure;
 
@@ -297,6 +330,7 @@ namespace ES2Access.Screens
             _editingRow = row;
             _editingOptions = options;
             _ending = Ending.None;
+            _beganOnFrame = UnityEngine.Time.frameCount;
             Baseline();
         }
 
@@ -326,10 +360,19 @@ namespace ES2Access.Screens
 
             // Return is the only key that can commit one of these boxes; everything else that takes
             // the keyboard away - Escape, a right click, a click elsewhere - abandons the edit.
+            //
+            // And it has to be a Return pressed AFTER the edit began. The press that OPENS a box is
+            // still going while the box opens, so reading the keyboard on the opening frame would
+            // manufacture a commit out of the very keystroke that asked to start typing.
             bool committed =
                 CommitTheNextRelease
-                || UnityEngine.Input.GetKeyDown(UnityEngine.KeyCode.Return)
-                || UnityEngine.Input.GetKeyDown(UnityEngine.KeyCode.KeypadEnter);
+                || (
+                    UnityEngine.Time.frameCount > _beganOnFrame
+                    && (
+                        UnityEngine.Input.GetKeyDown(UnityEngine.KeyCode.Return)
+                        || UnityEngine.Input.GetKeyDown(UnityEngine.KeyCode.KeypadEnter)
+                    )
+                );
             CommitTheNextRelease = false;
 
             if (!committed)

@@ -72,6 +72,10 @@ namespace ES2Access.UI
         private string _bufferReadout;
         private List<string> _bufferLines;
 
+        // A MODE's reading standing in for the focused control's, while the mode owns the screen -
+        // see OverrideBuffer.
+        private List<string> _bufferOverride;
+
         // Which control the game is currently being made to look hovered on, and the node whose
         // hooks will undo it. Kept by id, not by object: the graph is rebuilt every frame, so the
         // node standing for a control is a different instance each time.
@@ -197,6 +201,7 @@ namespace ES2Access.UI
             _bufferKey = null;
             _bufferReadout = null;
             _bufferLines = null;
+            _bufferOverride = null;
             _pendingFocus = null;
             _pendingStop = null;
             // Nowhere to have moved FROM: the first commit on a page is a cursor being seated, not a
@@ -272,9 +277,26 @@ namespace ES2Access.UI
             _bufferKey = null;
             _bufferReadout = null;
             _bufferLines = null;
+            _bufferOverride = null;
             // Giving up the cursor is not moving it: whatever it is seated on next is a landing.
             _visualFrom = null;
             ClearVisual();
+        }
+
+        /// <summary>
+        /// Treat whatever the cursor is standing on next as NEWS, even where it is what it was
+        /// standing on before.
+        ///
+        /// For a MODE handing the player back to the tree. Focus never moved while the mode was up, so
+        /// a landing on the very stop the mode was opened from is silent by the ordinary rule ("say it
+        /// only when the cursor moved") - and the player, who has been somewhere else entirely, hears
+        /// nothing at all and cannot tell the mode has ended (owner-reported, the galaxy's inspect
+        /// cell).
+        /// </summary>
+        public void AnnounceNextLanding()
+        {
+            _lastSpokenKey = null;
+            _lastSpokenNode = null;
         }
 
         /// <summary>Ask for focus to land on a control (a screen choosing where to put the player).
@@ -562,9 +584,60 @@ namespace ES2Access.UI
         /// player's place in the buffer, and a control that changes under them (a button that becomes
         /// available, its reason gone) refills with the truth.
         /// </summary>
+        /// <summary>
+        /// Put a MODE's own reading in the review buffer instead of the focused control's, and keep it
+        /// there until the mode gives it back.
+        ///
+        /// A mode of one widget (the galaxy's inspect cell) moves the player about something the tree
+        /// cursor is not standing on: focus never leaves the map, so the buffer would go on offering
+        /// the map's own stop for as long as the mode was up, and the one thing the player most wants
+        /// to re-read - what is in the cell they have just moved to - would be the one thing they
+        /// could not (owner-reported).
+        ///
+        /// Called on every reading rather than once, because the reading is what changed; the lines are
+        /// compared before they are pushed, so standing still keeps the player's place in the buffer
+        /// exactly as an unchanged control does.
+        /// </summary>
+        public void OverrideBuffer(List<string> lines)
+        {
+            if (_buffers == null || lines == null)
+            {
+                return;
+            }
+
+            _bufferOverride = lines;
+            // The focused control's fill is invalidated as well as suspended: whatever it left in the
+            // buffer is now stale, and the frame the mode ENDS on has to refill from scratch rather
+            // than decide nothing changed.
+            _bufferKey = null;
+            _bufferReadout = null;
+            if (Same(_bufferLines, lines))
+            {
+                return;
+            }
+
+            _bufferLines = lines;
+            _buffers.ReplaceUiLines(lines);
+        }
+
+        /// <summary>Give the review buffer back to the focused control - the mode has ended, and the
+        /// next frame refills from wherever the cursor has been left.</summary>
+        public void ReleaseBuffer()
+        {
+            if (_bufferOverride == null)
+            {
+                return;
+            }
+
+            _bufferOverride = null;
+            _bufferKey = null;
+            _bufferReadout = null;
+            _bufferLines = null;
+        }
+
         private void FillBuffer(GraphNode node)
         {
-            if (_buffers == null)
+            if (_buffers == null || _bufferOverride != null)
             {
                 return;
             }

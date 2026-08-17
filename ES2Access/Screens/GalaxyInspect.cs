@@ -334,6 +334,17 @@ namespace ES2Access.Screens
             {
                 _resume = ResumeFrames;
             }
+            else if (!onMap && _wasOnMap)
+            {
+                // Suspended. The review buffer goes back to the stop the player is now standing on -
+                // the cell is not what they are reading while they are off the map, and it is put back
+                // by the same reading that says the cell out loud when they return.
+                GraphNavigator suspended = ModEntry.Navigator;
+                if (suspended != null)
+                {
+                    suspended.ReleaseBuffer();
+                }
+            }
 
             _wasOnMap = onMap;
             if (_resume <= 0)
@@ -449,6 +460,14 @@ namespace ES2Access.Screens
         /// </summary>
         private void Exit(bool announce, bool deferred)
         {
+            Exit(announce, deferred, null);
+        }
+
+        /// <summary><paramref name="landing"/> is the node a key of the mode is sending the cursor to
+        /// instead of back where the mode was opened from - Enter naming the one thing in the cell.
+        /// </summary>
+        private void Exit(bool announce, bool deferred, ControlId landing)
+        {
             _live = false;
             _driving = null;
             _wasOnMap = false;
@@ -464,6 +483,19 @@ namespace ES2Access.Screens
             if (navigator != null)
             {
                 navigator.ClearVisual();
+                // The cell's reading goes out of the review buffer with the cell, and the control the
+                // cursor is left on fills it again on the next frame.
+                navigator.ReleaseBuffer();
+                // Where the mode says nothing of its own - the landing Enter made - whatever the cursor
+                // is left on is said out loud, even where it is the very stop the mode was opened from:
+                // focus never moved while the mode was up, so the ordinary "only when the cursor moved"
+                // rule would leave the player with total silence and no way to tell the mode had ended
+                // (owner-reported). An exit that DOES say so keeps the tree quiet; the player has not
+                // gone anywhere.
+                if (!announce)
+                {
+                    navigator.AnnounceNextLanding();
+                }
             }
 
             string line = announce ? ModStrings.Get(ModStrings.GalaxyInspectExited) : null;
@@ -479,13 +511,14 @@ namespace ES2Access.Screens
             else
             {
                 Voice.Say(line, true);
-                if (navigator != null && _entry != null)
+                ControlId to = landing ?? _entry;
+                if (navigator != null && to != null)
                 {
-                    navigator.FocusNode(_entry);
+                    navigator.FocusNode(to);
                     // Only where leaving is all that happened. A landing that Enter made goes on to
                     // put the cursor somewhere else entirely, and pulling the camera back to where the
                     // mode was opened from would fly it off the very thing that was just landed on.
-                    if (announce)
+                    if (announce && landing == null)
                     {
                         Recentre();
                     }
@@ -568,6 +601,23 @@ namespace ES2Access.Screens
         private string Look()
         {
             Contents contents = Read();
+            Aim(contents);
+            // Sampled once and handed to both readings: the fog is up to 121 lookups into the
+            // empire's distance field, and the sentence and the buffer are the same cell.
+            string fog = FogText();
+            GraphNavigator navigator = ModEntry.Navigator;
+            if (navigator != null)
+            {
+                navigator.OverrideBuffer(CellLines(contents, fog));
+            }
+
+            return CellText(contents, fog);
+        }
+
+        /// <summary>What the pointer offers the game's own tooltip, best first - the cell's own things
+        /// in the order the cell names them.</summary>
+        private void Aim(Contents contents)
+        {
             _aim.Clear();
             for (int i = 0; i < contents.Places.Count; i++)
             {
@@ -602,8 +652,6 @@ namespace ES2Access.Screens
             {
                 _aim.Add(contents.Pins[i]);
             }
-
-            return CellText(contents);
         }
 
         /// <summary>
@@ -653,29 +701,46 @@ namespace ES2Access.Screens
         private bool Activate()
         {
             Contents contents = Read();
+            IGameEntityWithGalaxyPosition thing = null;
             if (contents.Places.Count == 1)
             {
-                StarSystemNode node = contents.Places[0];
-                Exit(false, false);
-                GraphNavigator navigator = ModEntry.Navigator;
-                if (navigator != null)
-                {
-                    navigator.FocusNode(
-                        ControlId.Structural("galaxy:system/" + node.GUID)
-                    );
-                }
-
-                return true;
+                thing = contents.Places[0];
             }
-
-            if (contents.Places.Count == 0 && contents.Fleets.Count == 1)
+            else if (contents.Places.Count == 0 && contents.Fleets.Count == 1)
             {
-                Fleet fleet = contents.Fleets[0];
-                Exit(false, false);
-                GalaxyHudScreen.SelectFleet(fleet);
+                thing = contents.Fleets[0];
+            }
+
+            if (thing == null)
+            {
                 return true;
             }
 
+            // Asked of the PAGE, and asked before the mode is taken down: the page knows where each
+            // thing it draws lives in the tree and opens the branch that holds it on the way
+            // (GalaxyHudScreen.NodeFor - the same landing the scanner's "go to" makes). Reaching for
+            // the system's id directly was the old way, and it could only ever answer for a system: a
+            // fleet's row hangs under whichever system the map files it at, and Enter on a fleet
+            // therefore ended the mode and landed on nothing at all (owner-reported).
+            ControlId landing = _screen.NodeFor(thing);
+            Fleet fleet = thing as Fleet;
+            if (landing == null && fleet == null)
+            {
+                return true;
+            }
+
+            Exit(false, false, landing);
+            if (landing != null)
+            {
+                return true;
+            }
+
+            // A fleet the tree has no row for - parked at a system the map does not name, or flying a
+            // lane it does not draw. The only "go to this fleet" the game has for one is the camera and
+            // the selection, and it announces nothing of its own, so the cell's own reading is said
+            // again: the same answer the scanner gives for the same fleet.
+            GalaxyHudScreen.SelectFleet(fleet);
+            Voice.Say(CellText(contents, FogText()), true);
             return true;
         }
 
@@ -704,7 +769,7 @@ namespace ES2Access.Screens
         /// "empty", because hearing the pair alone IS the answer and a word on every empty cell of a
         /// sweep would be most of what the sweep said.
         /// </summary>
-        private string CellText(Contents contents)
+        private string CellText(Contents contents, string fog)
         {
             MessageBuilder message = new MessageBuilder();
             message.Fragment(MapCoordinates.Text(_x, _y, 0.0, 0.0));
@@ -762,8 +827,109 @@ namespace ES2Access.Screens
                 message.ListItemForcedComma(contents.Lanes[i]);
             }
 
-            message.ListItemForcedComma(FogText());
+            message.ListItemForcedComma(fog);
             return message.Build();
+        }
+
+        /// <summary>
+        /// The same cell, as the lines the player REVIEWS it by - one per thing in it, in the order
+        /// the sentence names them.
+        ///
+        /// The sentence is one breath and says everything; the buffer is for going back over it a
+        /// thing at a time, which is the whole point of a cell that can hold a dozen. So the split is
+        /// per THING and not per fragment: a fleet's name and where it stands are one line, because
+        /// they are one answer.
+        /// </summary>
+        private List<string> CellLines(Contents contents, string fog)
+        {
+            List<string> lines = new List<string>();
+            lines.Add(MapCoordinates.Text(_x, _y, 0.0, 0.0));
+            for (int i = 0; i < contents.Places.Count; i++)
+            {
+                Line(lines, PlaceLine(contents.Places[i]));
+            }
+
+            for (int i = 0; i < contents.Special.Count; i++)
+            {
+                Line(lines, PlaceLine(contents.Special[i]));
+            }
+
+            for (int i = 0; i < contents.Fleets.Count; i++)
+            {
+                Fleet fleet = contents.Fleets[i];
+                MessageBuilder line = new MessageBuilder();
+                line.Fragment(fleet.LocalizedName);
+                line.ListItemForcedComma(PairOf(fleet.GalaxyPosition));
+                Line(lines, line);
+            }
+
+            for (int i = 0; i < contents.Probes.Count; i++)
+            {
+                ProbeLabel label = contents.Probes[i];
+                Probe probe = label.Entity as Probe;
+                MessageBuilder line = new MessageBuilder();
+                line.Fragment(AgeWidgets.TooltipTitle(label.Tooltip));
+                if (probe != null)
+                {
+                    line.ListItemForcedComma(PairOf(probe.GalaxyPosition));
+                }
+
+                Line(lines, line);
+            }
+
+            for (int i = 0; i < contents.Projectiles.Count; i++)
+            {
+                ObliteratorProjectile shot = contents.Projectiles[i];
+                MessageBuilder line = new MessageBuilder();
+                line.Fragment(ModStrings.Get(ModStrings.GalaxyObliteratorProjectile));
+                line.ListItemForcedComma(PairOf(shot.GalaxyPosition));
+                Line(lines, line);
+            }
+
+            for (int i = 0; i < contents.Pins.Count; i++)
+            {
+                CoordinationRequest pin = contents.Pins[i];
+                MessageBuilder line = new MessageBuilder();
+                line.Fragment(GalaxyHudScreen.PinKind(pin));
+                line.ListItemForcedComma(PairOf(pin.GalaxyPosition));
+                Line(lines, line);
+            }
+
+            for (int i = 0; i < contents.Lanes.Count; i++)
+            {
+                lines.Add(contents.Lanes[i]);
+            }
+
+            if (fog != null)
+            {
+                lines.Add(fog);
+            }
+
+            return lines;
+        }
+
+        /// <summary>One place as its own line - the same three things the sentence says about it, with
+        /// no comma in front, because a line does not follow anything.</summary>
+        private string PlaceLine(StarSystemNode node)
+        {
+            MessageBuilder message = new MessageBuilder();
+            message.Fragment(node.LocalizedName);
+            message.ListItemForcedComma(PairOf(node.GalaxyPosition));
+            message.ListItemForcedComma(GalaxyHudScreen.SpecialKind(node));
+            return message.Build();
+        }
+
+        private static void Line(List<string> lines, MessageBuilder message)
+        {
+            Line(lines, message.Build());
+        }
+
+        private static void Line(List<string> lines, string said)
+        {
+            if (!string.IsNullOrEmpty(said))
+            {
+                lines.Add(said);
+            }
         }
 
         /// <summary>One place in the cell: its name, where it stands, and - where the map has drawn

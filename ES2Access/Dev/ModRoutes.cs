@@ -31,6 +31,9 @@ namespace ES2Access.Dev
     ///   POST /input             body = an action key; run it as a keypress would (see ModInput)
     ///   POST /type              body = characters; type them at the focused screen (the type-ahead
     ///                           search), and report what it made of them
+    ///   POST /key?hold=MS&amp;gap=MS&amp;text=1
+    ///                           body = a key sequence (or, with text=1, characters); pressed as REAL
+    ///                           OS key events at the game's window (see RawKeyboard)
     ///   POST /loadsave          body = a save title, or empty for the most recent save
     ///
     /// /speech reads the thread-safe buffer straight from the HTTP thread; /status, /gui/age,
@@ -71,6 +74,7 @@ namespace ES2Access.Dev
             _host.RegisterRoute("GET", "/gui/graph", Graph, "edges", "buffers", "screen");
             _host.RegisterRoute("POST", "/input", Input);
             _host.RegisterRoute("POST", "/type", Type);
+            _host.RegisterRoute("POST", "/key", Key, "hold", "gap", "text");
             _host.RegisterRoute("POST", "/loadsave", LoadSave);
         }
 
@@ -387,6 +391,80 @@ namespace ES2Access.Dev
                     json.WriteValue(report.Results);
                     json.WritePropertyName("focus");
                     json.WriteValue(report.Focus);
+                    json.WritePropertyName("speech");
+                    json.WriteStartArray();
+                    foreach (SpeechLog.Entry entry in spoken)
+                    {
+                        json.WriteValue(entry.Text);
+                    }
+
+                    json.WriteEndArray();
+                    json.WriteEndObject();
+                })
+            );
+        }
+
+        /// <summary>
+        /// Press keys the way a hand presses them - real OS key events at the game's window
+        /// (<see cref="RawKeyboard"/>) - and report what the mod said about them.
+        ///
+        /// The one route that is NOT a shortcut into the mod: /input runs an action with no key
+        /// physically down, and everything that branches on a key being down (the consumed-key latch,
+        /// <c>anyKeyDown</c>, the engine's own KeyDown delivery, the Return a commit is decided by) is
+        /// invisible to it. This is how those are tested.
+        ///
+        /// Never on the main thread: a sequence holds keys down across frames, so the game has to keep
+        /// running while it is sent.
+        /// </summary>
+        private DevResponse Key(DevRequest request)
+        {
+            int hold = request.QueryInt("hold", RawKeyboard.DefaultHoldMilliseconds);
+            int gap = request.QueryInt("gap", RawKeyboard.DefaultGapMilliseconds);
+            if (hold < 0 || gap < 0)
+            {
+                return DevResponse.Json(
+                    400,
+                    DevJson.Error("hold= and gap= are milliseconds, and cannot be negative")
+                );
+            }
+
+            bool asText;
+            string textFlag = request.QueryValue("text");
+            if (!ParseFlag(textFlag, false, out asText))
+            {
+                return DevResponse.Json(
+                    400,
+                    DevJson.Error("text= expects 1/0 or true/false, not '" + textFlag + "'")
+                );
+            }
+
+            string body = request.Body ?? string.Empty;
+            long spokenBefore = _speech.Cursor;
+            RawKeyboard.Result result = asText
+                ? RawKeyboard.Type(body, gap)
+                : RawKeyboard.Send(body, hold, gap);
+            if (!result.Ok)
+            {
+                // 409 for "the game does not have the foreground" - the caller can fix that one and
+                // ask again; 400 for a key name or a body the route cannot make sense of.
+                return DevResponse.Json(result.Refused ? 409 : 400, DevJson.Error(result.Error));
+            }
+
+            List<SpeechLog.Entry> spoken = Settled(spokenBefore);
+            return DevResponse.Json(
+                DevJson.Write(json =>
+                {
+                    json.WriteStartObject();
+                    json.WritePropertyName("ok");
+                    json.WriteValue(true);
+                    json.WritePropertyName("sent");
+                    json.WriteStartArray();
+                    foreach (string step in result.Sent)
+                    {
+                        json.WriteValue(step);
+                    }
+
+                    json.WriteEndArray();
                     json.WritePropertyName("speech");
                     json.WriteStartArray();
                     foreach (SpeechLog.Entry entry in spoken)
