@@ -175,6 +175,32 @@ namespace ES2Access.UI
             }
         }
 
+        /// <summary>Put the galaxy camera on one exact rung of its ladder, centred on
+        /// <paramref name="at"/> - the same call the wheel's own no-hover branch makes, so the view
+        /// arrives the way every other zoom does. For a mode that wants a KNOWN framing on entry (the
+        /// inspect cursor) rather than a step from wherever the player left the wheel. Clamped to the
+        /// ladder; false where there is no galaxy camera to ask.</summary>
+        public static bool SetZoom(int step, Vector3 at)
+        {
+            try
+            {
+                GalaxyViewCameraController camera = GalaxyCamera();
+                if (camera == null)
+                {
+                    return false;
+                }
+
+                int wanted = Math.Max(0, Math.Min(camera.ZoomStepsCount - 1, step));
+                camera.ForceZoomingOnPosition(wanted, at);
+                return true;
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: setting the zoom threw: " + e);
+                return false;
+            }
+        }
+
         /// <summary>The first step on either side of <paramref name="rung"/> that draws a DIFFERENT layer
         /// of the map, or the end of the ladder where there is no further boundary.</summary>
         private static int BandStep(GalaxyViewCameraController camera, int rung, int sign)

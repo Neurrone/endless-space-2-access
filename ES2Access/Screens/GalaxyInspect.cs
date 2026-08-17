@@ -63,6 +63,11 @@ namespace ES2Access.Screens
         /// everything else in the game moves at.</summary>
         private const float CameraDamping = 0.3f;
 
+        /// <summary>The rung of the game's zoom ladder the mode opens at (owner's ruling, 2026-08-17:
+        /// rung 9 of 0=furthest..12=closest). Entry only: the wheel still works inside the mode, and
+        /// leaving keeps whatever the player zoomed to.</summary>
+        private const int EntryZoomStep = 9;
+
         public GalaxyInspect(GalaxyHudScreen screen)
         {
             _screen = screen;
@@ -537,6 +542,16 @@ namespace ES2Access.Screens
             // Entry announces the mode and reads the cell itself; the resume line is for coming BACK.
             _wasOnMap = true;
             _resume = 0;
+            // The mode opens at a KNOWN framing (owner's ruling: rung 9) rather than wherever the
+            // player left the wheel: what the sighted eye gets from the square is its surroundings,
+            // and a sweep begun from the full overview drew a square too small to see. Set on entry
+            // only - the wheel still works inside the mode, and leaving keeps whatever the player
+            // zoomed to.
+            GalaxyPosition opened = GalaxyCoordinates.Origin();
+            GalaxyViewLevels.SetZoom(
+                EntryZoomStep,
+                new Vector3(opened.X + _x, 0f, opened.Y + _y)
+            );
             Voice.Say(
                 new MessageBuilder()
                     .Fragment(ModStrings.Get(ModStrings.GalaxyInspectEntered))
@@ -587,15 +602,12 @@ namespace ES2Access.Screens
                 // The cell's reading goes out of the review buffer with the cell, and the control the
                 // cursor is left on fills it again on the next frame.
                 navigator.ReleaseBuffer();
-                // Where the mode SENT the player, whatever the cursor is left on is said out loud, even
-                // where it is the very stop the mode was opened from: focus never moved while the mode
-                // was up, so the ordinary "only when the cursor moved" rule would leave the player
-                // hearing the exit line and nothing about where they now are (owner-reported). Leaving
-                // by Escape keeps the tree quiet; the player has not gone anywhere.
-                if (selected)
-                {
-                    navigator.AnnounceNextLanding();
-                }
+                // EVERY exit says where the cursor now stands, even where it is the very stop the
+                // mode was opened from: focus never moved while the mode was up, so the ordinary
+                // "only when the cursor moved" rule would leave the player hearing the exit line and
+                // nothing about where they are (owner-reported twice - first for the Enter landing,
+                // then for Escape; an earlier revision kept Escape quiet and that was wrong).
+                navigator.AnnounceNextLanding();
             }
 
             // Queued behind this line, both of them: the landing above announces itself with a queued
