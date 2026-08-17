@@ -30,6 +30,11 @@ worked example — method and full findings in the game-specific `es2-gui-framew
 
 ## Then: pick the surfacing strategy
 
+The choice in this section is the owner's taste call, reversible in a sentence; the rules
+after it (the aim, the can-draw gate, the buffer fill) are correctness and are not. Keep
+the two apart when writing them down — an earlier revision of this document interleaved
+them, and one reversed taste call left five paragraphs stale at once.
+
 Three proven shapes:
 
 1. **Announce inline** — the tooltip text joins the focus announcement as a trailing part
@@ -46,7 +51,8 @@ Three proven shapes:
    of most controls and a near-constant cue carries no information.) In **both** modes the
    full content also populates the buffer, so review behaves identically everywhere. The
    mode stays distinct from plain drawn content even with no spoken output: it is what
-   tells the pointer-aim and the parity audit that a hover-drawn tooltip is expected here.
+   tells the pointer-aim and the parity audit that a hover-drawn tooltip is expected here —
+   a surfacing mode earns its existence from every consumer, not only from what it speaks.
 3. **A navigable tooltip reader** (wotr-access) — a modal child screen the user arrows
    through, with drill-in. This exists **only** because that game's tooltips form a link
    graph (glossary terms leading to further tooltips); the reader is how you follow links.
@@ -128,7 +134,10 @@ Rules that came out of shipping this, all hit in practice:
   description): announce the value's — the last-drawn — by the short/long rule; a long one
   anywhere in the row goes to the buffer; put every tooltip in the row into
   the row's buffer **in drawn order** (the heading's explanation first, then the value's
-  dossier), so review follows the screen. "Last-drawn speaks" is the caption-then-value
+  dossier), so review follows the screen. Before picking which one to POINT AT, drop the
+  tooltips the engine could never draw anything for (no class, no content, no target):
+  prefabs hang empty ones on decoration, and a last-one-wins aim lands on them while the
+  real tooltip beside them is never shown — invisible in speech, dump and buffer alike. "Last-drawn speaks" is the caption-then-value
   rule, not a universal: where the row is a card's own tooltip plus a badge's, the
   important one is the card's — the screen names which tooltip speaks. And a tooltip whose
   words are the row's own always-drawn text is not a second thing to say or buffer — the

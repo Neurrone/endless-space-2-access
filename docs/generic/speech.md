@@ -56,7 +56,11 @@ internals and makes interruption deterministic.
 Interrupt policy tiers, consistent across the reference mods: direct responses to a
 deliberate keypress interrupt; ambient/event narration queues; safety-critical lines are
 emitted last-in-frame with interrupt. Silence the previous utterance only once an action is
-confirmed to do something — not on every keypress.
+confirmed to do something — not on every keypress. One exception to "a deliberate keypress
+interrupts": a confirmation word for an action that can CLOSE its surface must QUEUE — the
+replacement surface announces itself first with an interrupt in the same breath, and an
+interrupting confirmation eats that landing (measured: a commit word swallowed the page
+announcement the commit caused).
 
 ## Speech ownership and recovery
 

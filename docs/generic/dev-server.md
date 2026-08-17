@@ -52,6 +52,7 @@ The contract that has proven out (shapes are JSON):
 | `POST /input` | One action key through the **production dispatch point** — a queue drained inside the input layer's tick, honoring the stand-down — never a direct navigator call. The response attributes the outcome (`consumed (navigator/buffers)` / `unconsumed` / `standing down: …`) and carries the speech it caused; an unknown key answers with every registered action (self-documenting). A screen that answers `/eval` but not `/input` is a screen whose keys don't reach it. Injection never touches the engine's physical key state — see "What this loop cannot verify". |
 | `POST /type` | Body = characters, fed to the navigator's abstracted typed-char source. Exists because an action queue cannot carry *text*: a game with type-ahead search needs this second injection route — and the char-source abstraction behind it — or the feature is untestable without a human at the keyboard. |
 | `POST /loadsave` | Body = save title (empty = newest). Loads from the menu, or tears down a running session via the game's own in-session path; answers a retryable `[not ready] …` until it can act, so the launch script polls from cold boot straight into a fixture (tangledeep/wotr's convention). Two ready-states per game: "menu can start a load" and "session must disconnect first". |
+| `POST /key` | Body = a key sequence pressed as **real OS key events** at the game's window (`SendInput` or the platform equivalent) — the only route where a key is physically DOWN, and therefore the only one that can test held-key state, chord timing, the engine's key delivery to a focused widget, and every mod/game collision the action queue is blind to. Part of the standard kit, not an option: without it, every behavior that branches on a physical key is untestable and ships on inspection (this repo shipped two such bugs before building it). **The foreground proof is a requirement**: refuse — sending nothing — unless the foreground window is verified to belong to the game's process, re-checked before every step, so a locked desktop or an unfocused game answers an error instead of typing into whatever else is on the owner's screen. |
 
 `/status` also carries the **patch tripwire** when the mod ships input-suppression patches:
 per-target prefix count + owner id (see [input.md](input.md) — a silently stripped patch is
@@ -226,7 +227,9 @@ spots:
   physical sequence — key down → mod acts → key up → game's input handling reacts. (ES2's
   rebind capture ended on the activating Enter's own release; both contributing facts were
   known before handover, and the collision only surfaced in manual testing because HTTP
-  presses no keys.)
+  presses no keys.) The raw-key route (`/key` above) closes this class — when it can run;
+  a locked desktop refuses OS key injection, and then the claim stays honestly unproven
+  rather than silently downgraded to "verified".
 - **Same-key double handling.** The mod and the game poll the same physical key; a
   dispatched action exercises only the mod's half. See [input.md](input.md) — the collision
   checklist and the suppression doctrine.

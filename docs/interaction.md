@@ -307,12 +307,16 @@ is one of the three conditions of Space's claim, above). Screens opt out with `A
 game taking the keyboard). Edit fields are entered explicitly and share ONE editor
 (`TextFieldEditor`): Enter on the field hands the keyboard over ("editing"); typing echoes
 each character and Backspace speaks the deleted one; caret moves (arrows/Home/End) speak the
-character under the caret; Enter commits ("edited"); Escape — or ANY loss of the keyboard
+character under the caret; Enter commits ("edited") and the SURFACE STAYS — the mod takes
+the key from the game's validate dispatch, so committing an edit never performs the
+screen's action (saving, renaming are the Save/Confirm buttons; a game that will not take
+a value refuses at its own button); Escape — or ANY loss of the keyboard
 that is not Return: a click elsewhere, a right click — cancels, restoring the pre-edit text
-and saying "Cancelled", before a second Escape closes the surface. Role words: "editable",
+and saying "Cancelled", before a second Escape closes the surface. The chat box is the one
+exemption: its Enter sends, through the game. Role words: "editable",
 and "numeric editable" for the stepper boxes whose Left/Right adjust announces the new value
 (owner rulings 2026-08-17; the cancel-restore is wholly mod-authored — the engine has no
-cancel semantics of its own).
+cancel semantics of its own, and the hand-over waits for the activating key's release).
 
 **Escape is the game's, except over a surface the mod invented.** A screen answers
 `ConsumesBack` (asked BEFORE the press), and `ModInput` latches EVERY consumed key until the

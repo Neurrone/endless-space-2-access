@@ -185,6 +185,16 @@ which no dump reveals. Key such lines on the game's *data* object, never the wid
   and screenshots**, never existence checks — both anchoring lessons above were found only
   after "the tooltip appeared" passed automated verification while rendering somewhere
   absurd.
+  **A mode whose cursor is not the focus cursor owns all three of these itself.** A focus
+  visual is committed per focus CHANGE, and a mode that moves a cursor (a map cell, a grid
+  reticle) without moving keyboard focus never gets a second one — the pointer stays pinned
+  to whatever the mode was opened from, invisibly to speech, dump and buffer. Such a mode
+  aims the pointer from the per-frame pump — after the navigator's own visual commit, before
+  the pointer applies — and releases it when its cursor is on nothing. The same ownership
+  extends to the review buffer (which otherwise keeps offering the focused control the whole
+  time) and to the exit: returning to the stop the mode was opened from reads as "no cursor
+  movement" to the ordinary announce rule, so the mode must explicitly ask for the ending
+  AND the landing to be spoken, on every way out.
 - **Scroll-into-view** (`ScrollIntoView.cs`): whenever focus lands on a control inside a
   scrollable view, scroll minimally until it is fully visible. Hook the **single
   focus-commit site** (beside the focus-visual application), resolve the container from the

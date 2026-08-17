@@ -73,6 +73,15 @@ mutes voicing but `/speech` still captures.
   ~60 s whatever is asked for, so a longer silence is proved by repeating the poll
 - `POST /loadsave` — body = save title (empty = newest); retryable `[not ready]` until it acts —
   except from a LOBBY, where not-ready is the answer until the lobby is left, never a retry
+- `POST /key?hold=MS&gap=MS&text=1` — body = a key SEQUENCE pressed as real OS key events at
+  the game's window (`Return`, `Ctrl+I`, `Shift+Tab`; `+Name` holds, `-Name` releases;
+  `text=1` makes the body characters to type; arrows are `UpArrow`/`DownArrow`/…). The only
+  route where a key is physically DOWN — so the only one that can test the consumed-key
+  latch, `anyKeyDown`, the engine's KeyDown delivery to a focused control, and "was Return
+  still down when the focus left". REFUSES (409, nothing sent) unless the foreground window
+  is proved to belong to the game's process, re-checked before every step — a locked
+  workstation or unfocused game answers 409 rather than typing into the owner's desktop;
+  400 for an unknown key name (the answer lists the vocabulary)
 - `GET /log?since=N&grep=TEXT` — no `since` answers only the last 100 entries (`capped:true`);
   `grep` still searches the whole ring; `GET /screenshot`; `POST /quit` — shutdown takes
   20–100 s: poll the PROCESS (not the port) every 2 s and only conclude a hang past 120 s
@@ -194,11 +203,6 @@ reading, then `Gui.GuiService.GetWindow<GuiTooltipWindow>(false).AgeTransform.Ge
 for the rect and `crop-shot.ps1` on it — the tooltip is anchored to the pointer, so its rect
 moves between runs and a crop from an earlier probe lands on empty sky.
 
-**Reading a tooltip the game only writes for somebody else.** A content-backed tooltip the fixture
-leaves empty (the orbital card's `OutpostTooltip`, written only for a FOREIGN outpost) is still
-provable: set `.Content` from `/eval` to what the game would write, focus the node, and read
-`/gui/graph?buffers=1`. The card's next refresh blanks it again, so nothing is left behind.
-
 **Testing a type-ahead search.** `POST /type` with the letters (`res`), read the `speech` array it
 answers with, then drive the results through `/input ui.down|ui.up|ui.home|ui.end` and end with
 `/input ui.back` ("Search cleared"). The key-claim half is `DevProbe.Claims("Escape,R,Space")`: with
@@ -229,6 +233,13 @@ unreachable by Down) — then
 read `/speech?since=N` — `next` from a `since=0` read before the sequence is the baseline. The
 Bash tool mangles `python -c` here (it injects `|| goto :error`); keep the JSON formatting in a
 `.py` file in the scratchpad.
+
+**A behaviour that branches on a key BEING DOWN cannot be tested with `/input`.** An injected
+action presses nothing, so `Input.anyKeyDown`, `GetKey`, the consumed-key latch and every
+engine dispatch gated on them read as if the keyboard were idle — a green injected run is
+silent about the whole press. Use `POST /key`; if it answers 409 the desktop is locked or the
+game is not focused, and the claim stays UNPROVEN rather than becoming a manual-test line by
+default.
 
 **Silence in `/speech` is only evidence for controls that would have spoken.** An enabled
 button's activation is also silent, so a transcript cannot distinguish "refused" from
@@ -282,24 +293,11 @@ de-duplicates ACROSS sections. After moving a tooltip out of a details function,
 node's buffer FOCUSED: a drawn tooltip repeating a computed line is invisible in the unfocused
 dump.
 
-**Multi-row tables** need a real fixture with several saves/rows — do not mutate the game's
-data structures to fake one.
-
 **Opening a game modal from `/eval`** (to measure it without walking there): set what its
-opener sets, then show it — for the improvements list,
-`var w = Gui.GuiService.GetWindow<ImprovementsManagementModalWindow>(); w.ColonizedStarSystem =
-...ColonizedStarSystems[0]; Gui.GuiService.ShowWindow(w);`. Close it the way Escape does:
-`w.HandleInput(InputAction.Exit)` (`InputAction` is Assembly-CSharp's, NOT
-`Amplitude.Unity.Input`'s). Escape itself cannot be injected — `POST /input ui.back` only
-proves the mod does not consume it.
-A modal whose opener installs DELEGATES has to be opened through the opener's own handler —
-reflection for a private `Cb(GameObject obj = null)`, since `SendMessage` with no argument
-logs an arity error and does nothing (es2-facts). The worked route for
-`SystemSelectionModalWindow`, with its never-press warnings, is in `docs/test-recipes.md`.
-
-**Launcher stuck in session 0.** A `launcher-x64` orphaned into the *Services* session
-never exits and cannot be killed; the launch guard skips other sessions, but if a launch
-still fails, `tasklist /FI "PID eq <pid>"` tells you which session you are fighting.
+opener sets, then show it; close it the way Escape does (`w.HandleInput(InputAction.Exit)` —
+Assembly-CSharp's `InputAction`, not `Amplitude.Unity.Input`'s). Worked routes per window —
+improvements list, rename box, load/save in Save mode, delegate-installed openers — are in
+`docs/test-recipes.md` ("Opening game modals from /eval").
 
 **State restoration etiquette.** Leave the fixture as found: tutorial popup MINIMIZED, no
 notifications pending, camera at home (`DevProbe.Camera()` before and after), no text field

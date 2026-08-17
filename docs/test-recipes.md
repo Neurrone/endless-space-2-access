@@ -982,28 +982,51 @@ code-verified only.
 the `ShipsSpawnPointSidePanel` validator delegate with `CreateDelegate` and show the window with it.
 Same warning, doubled — **never press Confirm** on that purpose either: it NPEs.
 
+**Multi-row tables** need a real fixture with several saves/rows — do not mutate the game's
+data structures to fake one. **Reading a tooltip the game only writes for somebody else**: a
+content-backed tooltip the fixture leaves empty (the orbital card's `OutpostTooltip`, written
+only for a FOREIGN outpost) is still provable — set `.Content` from `/eval` to what the game
+would write, focus the node, read `/gui/graph?buffers=1`; the card's next refresh blanks it
+again, so nothing is left behind.
+
+**Opening game modals from /eval** (to measure one without walking there): set what its opener
+sets, then show it — for the improvements list, `var w =
+Gui.GuiService.GetWindow<ImprovementsManagementModalWindow>(); w.ColonizedStarSystem =
+...ColonizedStarSystems[0]; Gui.GuiService.ShowWindow(w);`. Close the way Escape does:
+`w.HandleInput(InputAction.Exit)`. A modal whose opener installs DELEGATES has to be opened
+through the opener's own handler — reflection for a private `Cb(GameObject obj = null)`, since
+`SendMessage` with no argument logs an arity error and does nothing (es2-facts); the worked
+route for `SystemSelectionModalWindow`, with its never-press warnings, is below. The two
+text-box surfaces, for a keyboard-focus probe: `GetWindow<LoadSaveModalWindow>()`, set
+`LoadSaveMode = LoadSaveType.Save`, `ShowWindow`; and `GetWindow<RenameModalWindow>()`, set
+`OriginalName`, `ShowWindow` — at rest on BOTH, `AgeManager.Instance.FocusedControl` is null and
+`DevProbe.Claims("Return")` is `claims:true`, the "game is not holding the keyboard" check the
+edit-field defects turn on. The chat page without a chat key: `ChatHold.OpenOnTheBox(panel)` by
+reflection on the loaded assembly opens the panel AND pushes the chat screen; stepping out of
+typing (`FocusedControl = null`) closes both — the game's own validate on an empty box shuts the
+panel, leaving nothing behind.
+
 **The rename box.** It walks heading / field / Cancel / Confirm. Its openers are the star-system
 name line (the Colony panel's name node opens it directly), the planet card's rename button
 (unreachable on a unique home planet) and the fleet panel; close it with
 `window.HandleInput(InputAction.Exit)`, which is the route the key takes. A `ColonyInfoSidePanel`
 found via `GetComponentInChildren` on `StarSystemScreen` has a NULL `RenameButton` (wrong
-instance) — drive the opener through the mod's node. The one-Escape contract —
-the first Escape steps OUT of editing, the second closes the box — is proved in halves, because
-Escape itself cannot be injected: simulate the FIRST one with
-`AgeManager.Instance.FocusedControl = null` — which since the unified editor (2026-08-17) IS the
-cancel path: expect the pre-edit text restored and "Cancelled" — and prove the mod's consumption
-with `DevProbe.Claims("Escape")`. An edit's endings are injectable through the levers:
-`DevProbe.EndEdit(false)` cancels, `DevProbe.EndEdit(true)` / `DevProbe.ArmCommit()` before the
-game's own validate commits ("edited") — a commit is otherwise a physical Return nothing can
-inject. The same-frame commit bug is not provable through `/input ui.activate`
-(no physical key exists), but the latch half is: `POST /wait` on
-`ModEntry.Input.ConsumedKeys.Count > 0`. Reaching a mod internal from `/eval` at all needs the
-loaded-from-bytes assembly by name — scan `AppDomain.CurrentDomain.GetAssemblies()` for the
-`modAssemblyName` that `/status` reports, then `GetType` off it; the plain type name does not
-resolve. Real keystrokes — per-character echo, Backspace, caret arrows, physical Escape/Return —
-are manual-test-only, always. Fixture blocks for the numeric editables: `[Beginner] test` refuses
-the Marketplace tab (no Galactic Commodities Exchange), and the negotiation quantity needs a
-diplomacy contact no current fixture has.
+instance) — drive the opener through the mod's node. **The whole edit-field round trip is
+`/key`-driven end to end** (since `POST /key`, 2026-08-17): `/key Return` → "editing", surface
+stays; `/key?text=1 "zz"` → per-character echo; `/key Return` → "edited", surface STILL up, text
+kept (the commit no longer performs the screen's action — saving and renaming are the Save and
+Confirm buttons now); `/key Escape` → pre-edit text restored + "Cancelled"; a second `/key
+Escape` closes the box without acting. `/key` arrow names are `UpArrow`/`DownArrow`/`LeftArrow`/
+`RightArrow` (`Down` alone is rejected with the full vocabulary). The levers
+(`DevProbe.EndEdit(bool)`, `DevProbe.ArmCommit()`) remain as the FALLBACK for a locked desktop,
+where `/key` answers 409. `AgeManager.Instance.FocusedControl = null` from `/eval` is also the
+cancel path (restore + "Cancelled"); prove Escape consumption with `DevProbe.Claims("Escape")`,
+and the latch half with `POST /wait` on `ModEntry.Input.ConsumedKeys.Count > 0`. Reaching a mod
+internal from `/eval` needs the loaded-from-bytes assembly by name — scan
+`AppDomain.CurrentDomain.GetAssemblies()` for the `modAssemblyName` that `/status` reports, then
+`GetType` off it; the plain type name does not resolve. Fixture blocks for the numeric
+editables: `[Beginner] test` refuses the Marketplace tab (no Galactic Commodities Exchange), and
+the negotiation quantity needs a diplomacy contact no current fixture has.
 
 **The assigned-governor side panel** is measurable without a save that has a governor, and the
 CHEAPER of the two routes is the one that gives real words. No fixture has a governor — in
@@ -1173,7 +1196,24 @@ without waiting for one — the cell's aim must survive it. Measured cells in `[
 (-1,-6) at 11×11 = Heka + 2 fleets (system wins), (-12,-6) at 11×11 = Rigel + 1st Protectors Navy,
 (-56,-28) at 11×11 = probe only, (0,22) = Qarius, (6,0)/(0,3)/(-56,-17) = empty. Leaving the mode
 releases the aim and re-commits the standing control's focus visual (focus never moved, so nothing
-else would ask). Camera zoom for the size/zoom matrix is set directly:
+else would ask).
+**The mode's review buffer is the CELL's, and its oracle is `/input buffer.first` +
+`buffer.lineDown`, never `/gui/graph?buffers=1`** — the graph dump renders the NODE's declared
+buffer lines and cannot see an override. Measured: at (0,0) `0, 0` / `Dusay` / the three lanes;
+at (0,-3) `0, -3` / `1st Vanquishers Navy`; off the map `Galaxy View`; after Enter, the landed
+row's own lines. **Enter on a fleet cell lands on the fleet's own tree row** through
+`GalaxyHudScreen.NodeFor`, opening the branch: from Dusay, `ui.down` to (0,-3) then Enter gives
+focus `galaxy:system/522/fleet/1642` and Heka `expanded` — restore the fixture by focusing
+`galaxy:system/522` and `ui.left` (collapsed at rest). **Enter on the cell the mode was ARMED on
+is the regression test for the silent landing**: expect "Exited inspect mode" and the stop
+announcing itself again. Every exit (Escape included) speaks the exit line THEN the landing.
+Entry enforces the zoom ceiling: a camera closer than spoken "Zoom level 9" is pulled out to it
+(the watcher announces), one already further out stays, silently. **Fixture pairs**: `B10 6805`
+at (-5,-26) is a `SpecialNode` (Solar Nebula) — the only special in `[Beginner] test`, so it is
+the fixture for "Enter on a special". Perceived systems: Heracles (-43,-30), Osulo (-31,-32),
+Electra (-17,-21), Rigel (-16,-5), Qarius (-5,23), Ita (5,34), Heka (-1,-9), Dusay (0,0),
+Primus (17,21), Leo (23,33), Byrtus (-25,-42), Libra (-11,11). Byrtus is the south-edge fixture:
+1×1 at (-25,-41), Down must land "-25, -42, Byrtus" and a second Down "Map edge". Camera zoom for the size/zoom matrix is set directly:
 `cam.ForceZoomingOnPosition(step, cam.TargetPositionCurrent)`, step 0 = full overview, 12 = closest
 (`ZoomStepsCount` 13).
 Fixture-blocked in the cell reading, for the same reasons the tree's own nodes are: an obliterator
@@ -1463,6 +1503,15 @@ reflection** — es2-gui-framework: the runtime getter reads the cached field, s
 `AddComponent` is invisible to the engine as well as to the mod). The one direction NOT seedable is
 a declared-tooltip expectation with nothing to draw: the expectation and the check are the same
 `AgeWidgets.Draws` predicate, so game state cannot separate them.
+
+**The Laws Cancelled popup reads as a SHEET** (post-fix shape, 2026-08-17): region
+`notification:table:reg:0`, row key `notification:table:row<hash>c0`, cell `…c1`, captions
+"Laws"/"Political Ideologies" spoken as the crossings, and the law's dossier on the ROW (the
+class-backed `Law` tooltip draws on focus and fills the buffer). Fixture notes: no route exists
+to re-summon a laws-cancelled popup once dismissed, and a raised popup cannot displace an open
+one (`ShowGuiNotification` does not bring it to front) — regression checks on this family wait
+for a naturally pending one. The research/construction table popups (the other sheet-reading
+family) still owe a walk from before the wrapper-descent change.
 
 **Sweeping the whole family** (the apparatus lives in `%TEMP%\parity`: `tmpl.txt` + `run.sh` for
 bind-and-show, `tmplfs.txt` + `runfs.sh` for lent-data force-shows, `reduce.sh` to collapse the

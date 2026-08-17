@@ -165,15 +165,31 @@ In Unity-style engines the GUI framework delivers key events to the focused cont
 `LateUpdate` — *after* the mod's `Update`-time action ran. Two corollaries, each of which
 caused a shipped bug on ES2 before the rule was recognized:
 
-- **Never hand the engine's focus to a text widget on the frame of the activating key.** The
-  Enter that activated "edit this field" reaches the field itself the same frame: the editor
-  opens and instantly commits/closes (and a validate handler wired to the field can silently
-  act on stale content). Record the request and perform the handoff on the first frame where
-  no key is down. Unless the mod suppresses that delivery globally: a prefix on the engine's
-  own key-to-focused-control path, gated on the same consumed-key latch the game's key scans
-  ask about, takes the transition frame out for EVERY focused control. Then the hand-over is
-  immediate, and the deferral is a cost rather than a safeguard — it carries its own spoken
-  prompt, which double-announces against whatever already watches that field.
+- **Hand the engine's focus to a text widget only once the activating key is RELEASED — not
+  merely on a later frame.** A press lasts many frames, and a field holding the keyboard
+  while that key is down is one engine dispatch from acting on it: the Enter that activated
+  "edit this field" reaches the field itself and the editor opens and instantly
+  commits/closes (a validate handler wired to the field can silently act on stale content).
+  The one-frame version of this rule — "the first frame where no key went down" — shipped
+  exactly that bug: `anyKeyDown` clears on the press's second frame while the key is still
+  physically held. Wait on "the key the mod spent is no longer down" (the consumed-key
+  latch already knows which one). Caveat on testing any change here: an injected action
+  presses no physical key, so `anyKeyDown`, `GetKey` and the latch all read idle on every
+  automated run — this path is provable only with real OS key events (a raw-key dev route)
+  or a hand on the keyboard, never with action injection.
+- **The key that ENDS an edit is typically consumed above the widget.** An input dispatcher
+  (or the engine's focus handling) acts on Escape/cancel before the widget's own key path
+  ever runs, so the widget sees only the commit; the engine's focus SETTER is the single
+  choke point every way out of an edit passes through — commit, cancel, click-elsewhere —
+  and the place to tell them apart. And a cancel that restores text must write it back
+  BEFORE the engine's lose-focus handlers run: panels commonly commit whatever they find in
+  the box from that handler, so a restore one frame later restores the display and not the
+  value.
+- **Consider diffing the widget against itself once a frame instead of hooking its key
+  path.** For echo and caret-reading, one per-frame reading of (text, caret) catches typed
+  characters, deletions, caret moves AND the engine's own held-key repeat — which often runs
+  from a coroutine no key dispatch passes through — with no patch and reload safety by
+  construction.
 - A key-*up* consumer (a rebind capture that ends on release) has the mirror problem: the
   activating key's release lands in the capture. Wait out the release too.
 

@@ -46,9 +46,11 @@ parts, all text `Func<string>` resolved at speak time:
   revision of this doc assigned echo to the screen reader; that was wrong for exactly this
   reason and left fields typing silently). Expect the engine to have NO cancel semantics of
   its own — losing focus typically just keeps whatever was typed — so a cancel that restores
-  the pre-edit text is mod-authored state: snapshot on entry, write back on the way out.
-  **The handoff must not happen on
-  the activating key's frame** — the engine would deliver that same Enter to the field — see
+  the pre-edit text is mod-authored state: snapshot on entry, write back on the way out
+  (before the engine's lose-focus handlers run — input.md).
+  **The handoff waits for the activating key's RELEASE, not merely a later frame** — a press
+  lasts many frames, and a field holding the keyboard while that key is down is one engine
+  dispatch from acting on it — see
   the late-frame rule in [input.md](input.md). The pending handover is also a flag every
   raw-key reader consults (input.md's typed-text rule) — typing meant for the field must
   never feed a type-ahead search, including on the deferral frames.

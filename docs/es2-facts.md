@@ -982,6 +982,18 @@ generic graduates to the generic docs.
   permanently — and it happens on the rename box's own hide path.
   `AgeManager.FocusedControl`'s setter runs FocusLoss/FocusGain (:277-301), so clearing it is
   the game's own hand-back.
+- **A focused text field acts on Return itself, twice over — and the validate is the
+  SCREEN's action, not the edit's.** `AgeControlTextField.KeyDown` (firstpass :76-89) fires
+  the field's validate callback on `Input.GetKeyDown(Return)`: for `LoadSaveModalWindow`
+  that is `OnSaveNameTextFieldValidateCb` (:509-516) → `OnSaveCb()`, which writes the save
+  and closes the screen; for `RenameModalWindow` it posts the rename and closes the box.
+  Separately, `InputManager.HandleInput` (Assembly-CSharp :1210-1243) swallows `Validate`
+  ONLY while a key-exclusive control holds focus — on every frame the field does NOT hold
+  it, the window's own Validate handler is live. **Mod policy that follows:** never hand a
+  game text field the keyboard while the key that asked for the edit is still down (both
+  doors shut by that one rule), and while the mod owns a live edit it takes Return/
+  KeypadEnter from the KeyDown dispatch and ends the edit itself, leaving the surface
+  standing — the chat box is the single exemption (its Enter sends).
 
 ## Windows, layers and the modal stack
 
@@ -1326,6 +1338,17 @@ generic graduates to the generic docs.
 
 ## Galaxy labels, probes and the scan view
 
+- **A `SpecialNode` IS a `StarSystemNode`.** Nebulae, dust clouds and the rest are drawn in
+  a star's place, perceived through the same gate, and have rows in the galaxy tree. Any
+  code branching on "is this a place" must count them — counting only non-special nodes
+  made inspect mode's Enter a silent no-op on the Solar Nebula (B10 6805, the one special
+  in `[Beginner] test`). Mod policy: places = systems + specials.
+- **`Fleet.IsAutomated` is true for the free-movement fleets in `[Beginner] test`**, so
+  `FleetPresence.Selectable` refuses them and `GalaxyHudScreen.SelectFleet` is a silent
+  no-op on that fixture — any "go to this fleet" relying on selection alone reads as a dead
+  key there. The game's own tooltip says so: feature class
+  `PanelFeatureGarrisonInfoAutomatedFleet`.
+
 - **A starlane is ONE `Link` shared by both end systems**, so per-system nodes built from a link
   must key STRUCTURALLY (measured as a focus teleport on a fog-off build).
 - **Camera culling is not an information gate.** Every `VisibleEntityLabelsWindow` (probes,
@@ -1580,6 +1603,12 @@ generic graduates to the generic docs.
 
 ## Endings, notifications and the journal
 
+- **The Laws Cancelled prefab hangs TWO tooltips per line** — the real `Law` dossier on
+  `CancelledLawLine000` itself and a completely empty one (no class, no content, no target)
+  on `LawDetails/Icon` — and wraps the whole line in `LawDetails`, a group spanning both
+  captioned columns. Empty decoration tooltips on prefab icons likely generalize; the
+  never-drawable filter (`AgeWidgets.NeverDraws`) exists because of this window.
+
 - **The elimination popup's groups hold no text**, and it hides Dismiss and Minimize — so its
   sentence has to ride something else (the mod puts it on the screen name).
 - **`EndGameSummary` is written at popup-SHOW time**, which is what makes the journal's ending
@@ -1615,6 +1644,10 @@ generic graduates to the generic docs.
   lookup would have resolved.
 
 ## Multiplayer, session and the install
+
+- **Launcher stuck in session 0.** A `launcher-x64` orphaned into the *Services* session
+  never exits and cannot be killed; the launch guard skips other sessions, but if a launch
+  still fails, `tasklist /FI "PID eq <pid>"` tells you which session you are fighting.
 
 - **The game has NO store code besides Steam** — no GOG/Galaxy/Epic assemblies or branches
   anywhere; the single branch is "did `SteamAPI_Init()` succeed", and the failure path is

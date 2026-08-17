@@ -8,6 +8,9 @@ files above.
 
 ## To build
 
+- Regression walk owed: the research/construction table popups (the other sheet-reading
+  family) after the wrapper-descent change to `Columns` — additive-by-construction argument
+  only so far; walk one the next time a session has one pending.
 - Notification variants awaiting a live sighting (baseline ships; upgrade per popup on
   sighting): election survey; ground-battle outcome selection; SimpleDescription-family
   members with own fields (alliance update, diplomatic relation change, constellation
