@@ -142,7 +142,8 @@ namespace ES2Access.Screens
             Cells.Emit(builder, _cells);
         }
 
-        /// <summary>The tactics the empire has: the game's own count of them, then one card each. A card
+        /// <summary>The tactics the empire has: the game's own count of them, then one card each, one
+        /// per row - the strip is peers of one kind and where it wrapped is the table's business. A card
         /// already in the set is drawn switched off with the game's sentence for why
         /// (<c>BindAvailableBattlePlayCard</c> :312-329), so it stays declared and refuses.</summary>
         private void BuildAvailable(GraphBuilder builder, PlayCardDeckModalWindow window)
@@ -171,11 +172,12 @@ namespace ES2Access.Screens
                 AddCard(cards[i], "tactics:available/" + i);
             }
 
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
         }
 
-        /// <summary>The set itself: the line the game draws over it, its caption, then the six slots.
-        /// </summary>
+        /// <summary>The set itself: the line the game draws over it, its caption - which stays a row
+        /// because the game hangs a sentence of its own on it that lives nowhere else - then the six
+        /// slots, one per row.</summary>
         private void BuildDeck(GraphBuilder builder, PlayCardDeckModalWindow window)
         {
             AgeTransform table = window.MyDeckPlayCardsTable;
@@ -205,7 +207,7 @@ namespace ES2Access.Screens
                 AddSlot(slots[i], "tactics:slot/" + i);
             }
 
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
             AddRemoveTarget(builder, table);
         }
 
@@ -252,7 +254,7 @@ namespace ES2Access.Screens
             if (_cells.Count > 0)
             {
                 builder.BeginStop(ActionsStop);
-                Cells.Emit(builder, _cells);
+                Cells.EmitLinear(builder, _cells);
             }
         }
 
