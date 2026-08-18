@@ -251,7 +251,7 @@ namespace ES2Access.Screens
 
                 builder.BeginStop(ActionsStop);
                 builder.PushContext(ModStrings.Get(ModStrings.FleetsActionsPanel));
-                Cells.Emit(builder, _cells);
+                Cells.EmitLinear(builder, _cells);
                 builder.PopContext();
             }
             catch (Exception e)
@@ -344,8 +344,8 @@ namespace ES2Access.Screens
         // ---- the fleets parked here ----
 
         /// <summary>
-        /// The list of garrisons at this place and the buttons that act on the selection, declared in
-        /// the rows they are drawn in - the banner above, then one line per garrison.
+        /// The list of garrisons at this place and the buttons that act on the selection, one control
+        /// per row in the order they are drawn - the banner's buttons above, then one line per garrison.
         ///
         /// The hangar of a colonized system is one of those lines, which is why the list can hold
         /// something that is not a fleet at all: the game puts it first
@@ -371,7 +371,7 @@ namespace ES2Access.Screens
 
                 builder.BeginStop(ManagementStop);
                 builder.PushContext(ModStrings.Get(ModStrings.FleetsFleetsPanel));
-                Cells.Emit(builder, _cells);
+                Cells.EmitLinear(builder, _cells);
                 builder.PopContext();
             }
             catch (Exception e)
@@ -751,7 +751,7 @@ namespace ES2Access.Screens
 
             opened = Open(builder, opened);
             builder.PushContext(ModStrings.Get(ModStrings.FleetsHeroPanel));
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
             builder.PopContext();
             return opened;
         }
@@ -843,7 +843,7 @@ namespace ES2Access.Screens
 
             opened = Open(builder, opened);
             builder.PushContext(ModStrings.Get(ModStrings.FleetsShipsPanel));
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
             builder.PopContext();
             return opened;
         }
