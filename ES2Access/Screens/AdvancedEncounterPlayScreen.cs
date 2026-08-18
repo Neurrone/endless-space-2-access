@@ -249,7 +249,7 @@ namespace ES2Access.Screens
                 Cells.Add(_cells, widget, ControlId.Structural(prefix + "/" + i), vtable);
             }
 
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
         }
 
         /// <summary>What the opponent has played against you recently - a record, not a choice (see the
@@ -283,7 +283,7 @@ namespace ES2Access.Screens
                 Cells.Add(_cells, widget, ControlId.Structural(prefix + "/" + i), vtable);
             }
 
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
         }
 
         /// <summary>What a plan is called: the game's own title for it, else the words the card drew (which
@@ -331,7 +331,7 @@ namespace ES2Access.Screens
                 Choice(toggles[i], "advanced-play:stat/" + i);
             }
 
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
 
             _cells.Clear();
             AgeTransform[] panels = window.StatsPanels;
@@ -343,7 +343,7 @@ namespace ES2Access.Screens
                 }
             }
 
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
 
             Balance(builder, window);
             Note(builder, window.FightersStanceRatioLabel, "advanced-play/fighters");
@@ -421,7 +421,7 @@ namespace ES2Access.Screens
             Command(window.RetreatButton, RetreatTitleKey, "advanced-play:retreat");
             Countdown(window, "advanced-play:timer");
             Cells.AddControl(_cells, ByHandler(window, "OnBackCb"), "advanced-play:back");
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
         }
 
         /// <summary>The three ways the window can distribute ships between flotillas. Each is a wordless

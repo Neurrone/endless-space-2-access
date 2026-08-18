@@ -99,7 +99,7 @@ namespace ES2Access.Screens
             // The paging arrows are left out on purpose (see the class comment); everything else the
             // window drew - Validate, and whatever way out the prefab draws - is read off what is there.
             WindowShape.Controls(_cells, target.Window, Prefix, target.Selector);
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
         }
 
         /// <summary>

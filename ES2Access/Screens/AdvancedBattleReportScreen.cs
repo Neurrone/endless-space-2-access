@@ -604,7 +604,7 @@ namespace ES2Access.Screens
                 "battle-advanced:show-missed"
             );
             Cells.AddControl(_cells, Back(window), "battle-advanced:back");
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
         }
 
         /// <summary>The way out, which the window keeps in no field of its own: it is found by the

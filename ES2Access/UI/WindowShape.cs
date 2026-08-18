@@ -124,9 +124,11 @@ namespace ES2Access.UI
         ///
         /// The other half of a shape reading: a page whose content the mod has no model of is still a page
         /// the game wrote words on, and those words are what the player came for. Each visible label is one
-        /// readout, so two drawn side by side are two facts walked with left and right (the rows come out
-        /// of <see cref="Cells.Emit"/>, which bands them the way they are drawn) and a paragraph the game
-        /// wrapped is one node holding its own wrapping.
+        /// readout, so two drawn side by side are two facts - walked one after the other, because a page
+        /// nobody has modelled has no columns to preserve - and a paragraph the game wrapped is one node
+        /// holding its own wrapping. This fills a caller-owned list and belongs to no host's layout:
+        /// which emitter the cells go out through is the host's own call, and the default there is
+        /// <see cref="Cells.EmitLinear"/>.
         ///
         /// A hidden branch is skipped rather than read: these windows keep a block per case and hide the
         /// ones that do not apply. <paramref name="maxDepth"/> bounds the walk, which is also what bounds
