@@ -355,16 +355,16 @@ namespace ES2Access.Screens
         }
 
         /// <summary>
-        /// What the player is looking at, as the game writes it across the top centre: the name of the
-        /// view is the stop's own NAME, and what the stop holds is the lens that would X-ray it and,
-        /// where the page has one, the zoom ladder - one control per row.
+        /// What the player is looking at, as the game writes it across the top centre: the lens that
+        /// would X-ray the view and, where the page has one, the zoom ladder - one control per row.
         ///
-        /// The name is a caption over the cluster, not a control, so it is the level the cluster sits in
-        /// rather than a row of its own. The game does draw a control there - a Close button carrying
-        /// the same words on every page above the galaxy (<c>TopTitlePanel.Setup</c>) - and it is
-        /// deliberately NOT declared (owner ruling, 2026-08-18): Escape already leaves the page, and a
-        /// button called "Technology Screen" that closes the technology screen reads as the way IN.
-        /// The words survive as the name of the stop, which is where the page says where the player is.
+        /// The words the game draws over the cluster - the view's name - are declared NOWHERE (owner
+        /// ruling, 2026-08-18, superseding the level-label reading): the screen already says which page
+        /// the player is on when it arrives, so a level repeating it prefixes the first thing in this
+        /// stop with a word the player has just heard. The control those words sit on is not declared
+        /// either - a Close button carrying the same caption on every page above the galaxy
+        /// (<c>TopTitlePanel.Setup</c>) - because Escape already leaves the page and a button called
+        /// "Technology Screen" that closes the technology screen reads as the way IN.
         ///
         /// The lens is named by the game, and what it is named changes as the camera climbs: the map's
         /// zoom step picks a layer descriptor and the descriptor picks the lens, so the same button
@@ -394,46 +394,13 @@ namespace ES2Access.Screens
             }
 
             builder.BeginStop(ViewTitleStop);
-            string name = ViewName(panel);
-            bool named = !string.IsNullOrEmpty(name);
-            if (named)
-            {
-                builder.PushContext(name);
-            }
-
             if (ladder)
             {
                 zoom.Build(builder, "hud:view-title/zoom");
             }
 
             AddScanToggle(builder, panel);
-            if (named)
-            {
-                builder.PopContext();
-            }
-
             return true;
-        }
-
-        /// <summary>The words the game wrote across the top centre - the plain title on the galaxy, and
-        /// the caption of the Close button on every page drawn over it, which is the same sentence in
-        /// the widget the page happens to use.</summary>
-        private static string ViewName(TopTitlePanel panel)
-        {
-            AgePrimitiveLabel title = panel.TitleLabel;
-            if (title != null && AgeWidgets.Visible(title.AgeTransform))
-            {
-                string drawn = AgeText.Label(title);
-                if (!string.IsNullOrEmpty(drawn))
-                {
-                    return drawn;
-                }
-            }
-
-            AgeTransform button = AgeWidgets.Transform(panel.CloseButton);
-            return button != null && AgeWidgets.Visible(button)
-                ? AgeText.Label(panel.CloseButtonLabel)
-                : null;
         }
 
         /// <summary>The lens toggle. The tooltip explaining it is hung on the GROUP around the label
