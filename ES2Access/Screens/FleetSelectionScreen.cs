@@ -122,8 +122,9 @@ namespace ES2Access.Screens
 
         /// <summary>Cancel and Confirm, taken from the band they share rather than named: the window
         /// exposes Validate and leaves Cancel as its sibling, and reading the band keeps them in the order
-        /// they are drawn in. Validate is disabled until a fleet the caller accepts is picked, which is
-        /// what makes it read unavailable with the caller's own sentence for why.</summary>
+        /// they are drawn in - one per row, the reading every bar of buttons gets. Validate is disabled
+        /// until a fleet the caller accepts is picked, which is what makes it read unavailable with the
+        /// caller's own sentence for why.</summary>
         private void BuildActions(GraphBuilder builder, FleetSelectionModalWindow window)
         {
             AgeTransform validate = ValidateTransform(window);
@@ -156,7 +157,6 @@ namespace ES2Access.Screens
             }
 
             AgeTooltip refusal = ValidateTooltip(window);
-            builder.StartRow();
             for (int i = 0; i < buttons.Count; i++)
             {
                 AgeTransform button = buttons[i];
@@ -175,8 +175,6 @@ namespace ES2Access.Screens
                     vtable
                 );
             }
-
-            builder.EndRow();
         }
 
         // ---- reading the window ----
