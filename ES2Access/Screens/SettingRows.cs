@@ -282,11 +282,13 @@ namespace ES2Access.Screens
             builder.AddItem(ControlId.Referenced(button, key), vtable);
         }
 
-        /// <summary>A bar of buttons as ONE row, left to right the way they are drawn - the shape every
-        /// screen's cancel-and-confirm row has. <paramref name="widgets"/> is whatever the caller found
-        /// in the band; it is ordered here, so a caller only has to say which widgets are in it.
+        /// <summary>A bar of buttons, one node per row, in the order they are drawn - the shape every
+        /// out-game page's cancel-and-confirm band has. The buttons are peers of one kind and which of
+        /// them the layout put beside which is a fact about the box, not about the choices, so the
+        /// player walks the whole band with one key. <paramref name="widgets"/> is whatever the caller
+        /// found in the band; it is ordered here, so a caller only has to say which widgets are in it.
         /// </summary>
-        public static void AddButtonRow(
+        public static void AddButtons(
             GraphBuilder builder,
             List<AgeTransform> widgets,
             string keyPrefix
@@ -301,14 +303,6 @@ namespace ES2Access.Screens
                 }
             }
 
-            if (drawn.Count == 0)
-            {
-                return;
-            }
-
-            // Opened only once something is going to go in it: an empty row is a build-time throw,
-            // and a throw out of Build empties the whole screen.
-            builder.StartRow();
             foreach (List<AgeTransform> row in AgeLayout.Rows(drawn, Itself))
             {
                 for (int i = 0; i < row.Count; i++)
@@ -316,8 +310,6 @@ namespace ES2Access.Screens
                     AddButton(builder, AgeWidgets.Button(row[i]), keyPrefix + Name(row[i]));
                 }
             }
-
-            builder.EndRow();
         }
 
         private static readonly Func<AgeTransform, AgeTransform> Itself = widget => widget;

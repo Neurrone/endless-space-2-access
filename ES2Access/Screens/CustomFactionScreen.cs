@@ -15,8 +15,9 @@ namespace ES2Access.Screens
     ///
     /// Five drawn bands and a button bar, each band a Tab stop announced by the heading the game wrote
     /// on it, declared in the order they are drawn: Faction details, Starting set-up, Population,
-    /// Available Traits, Selected Traits. Headings are focusable nodes in reading order rather than a
-    /// spoken screen name, so the page reads the way it looks.
+    /// Available Traits, Selected Traits. Each of those headings is the LEVEL its band's rows sit in -
+    /// spoken on the way in, never walked past, because none of them carries anything a row would have
+    /// to hold. The window's own title stays a node, the way every modal's does.
     ///
     /// The three panels of settings are read off the drawn tree rather than from a list of the controls
     /// the game happens to have today (<see cref="Walk"/>): every one of them is a caption label
@@ -159,8 +160,8 @@ namespace ES2Access.Screens
 
         // ---- the three bands of settings ----
 
-        /// <summary>One drawn band: the heading the game wrote on it as a node of its own, then a row
-        /// per control it holds.</summary>
+        /// <summary>One drawn band: the heading the game wrote on it as the LEVEL its controls sit in,
+        /// then a row per control it holds.</summary>
         private void BuildBand(
             GraphBuilder builder,
             string stop,
@@ -177,19 +178,27 @@ namespace ES2Access.Screens
             builder.BeginStop(stop);
 
             // The window's own heading leads the page, once, where it is drawn - above the first band.
+            // It stays a row: it is the window's title, which every modal declares as a node.
             if (first)
             {
                 AddHeading(builder, OptionsScreen.LabelIn(Transform(Panel())), "custom-faction:title");
             }
 
-            AddHeading(builder, HeadingOf(band), "custom-faction:" + key + "/heading");
-            _start = null;
-            Walk(builder, Content(band), "custom-faction:" + key + "/", GroupDepth, null, null);
-            if (first && _start != null)
+            bool named = PushHeading(builder, HeadingOf(band));
+            try
             {
-                // Focus starts on the first thing the player can work, not on the heading that is
-                // also the screen's spoken name.
-                builder.SetStart(_start);
+                _start = null;
+                Walk(builder, Content(band), "custom-faction:" + key + "/", GroupDepth, null, null);
+                if (first && _start != null)
+                {
+                    // Focus starts on the first thing the player can work, not on the title that is
+                    // also the screen's spoken name.
+                    builder.SetStart(_start);
+                }
+            }
+            finally
+            {
+                Pop(builder, named);
             }
         }
 
@@ -278,20 +287,20 @@ namespace ES2Access.Screens
 
                 if (depth > 0)
                 {
-                    // A caption the game drew over SEVERAL controls is a line of its own, not a word
-                    // glued to the front of each of them: "Politics" is drawn once above three lists,
-                    // and hearing it three times says less than being able to stand on it once.
+                    // A caption the game drew over SEVERAL controls is the LEVEL they sit in, not a
+                    // word glued to the front of each of them: "Politics" is drawn once above three
+                    // lists, and it is spoken once, on the way in.
                     AgePrimitiveLabel shared = CaptionIn(child);
-                    if (shared != null)
+                    bool named = PushHeading(builder, shared);
+                    try
                     {
-                        SettingRows.AddReadout(
-                            builder,
-                            Transform(shared),
-                            childKey + "/caption"
-                        );
+                        Walk(builder, child, childKey + "/", depth - 1, null, shared);
+                    }
+                    finally
+                    {
+                        Pop(builder, named);
                     }
 
-                    Walk(builder, child, childKey + "/", depth - 1, null, shared);
                     pending = null;
                     continue;
                 }
@@ -445,8 +454,23 @@ namespace ES2Access.Screens
             }
 
             builder.BeginStop(AvailableStop);
-            AddHeading(builder, HeadingOf(band), "custom-faction:available/heading");
+            bool named = PushHeading(builder, HeadingOf(band));
+            try
+            {
+                BuildAvailableContent(builder, panel, table);
+            }
+            finally
+            {
+                Pop(builder, named);
+            }
+        }
 
+        private void BuildAvailableContent(
+            GraphBuilder builder,
+            CustomFactionTraitsSelectionPanel panel,
+            GuiTable table
+        )
+        {
             builder.SetRegion(FiltersRegion);
             AgeTransform filters =
                 panel.FiltersRadioGroup == null ? null : panel.FiltersRadioGroup.TogglesTable;
@@ -477,8 +501,23 @@ namespace ES2Access.Screens
             }
 
             builder.BeginStop(SelectedStop);
-            AddHeading(builder, HeadingOf(band), "custom-faction:selected/heading");
+            bool named = PushHeading(builder, HeadingOf(band));
+            try
+            {
+                BuildSelectedContent(builder, panel, table);
+            }
+            finally
+            {
+                Pop(builder, named);
+            }
+        }
 
+        private void BuildSelectedContent(
+            GraphBuilder builder,
+            CustomFactionTraitsSelectionPanel panel,
+            GuiTable table
+        )
+        {
             builder.SetRegion(LinesRegion);
             AddLines(builder, table, "custom-faction:selected/");
 
@@ -581,14 +620,21 @@ namespace ES2Access.Screens
                 _cells.Add(children[i]);
             }
 
-            SettingRows.AddButtonRow(builder, _cells, "custom-faction:button/");
+            SettingRows.AddButtons(builder, _cells, "custom-faction:button/");
         }
 
         // ---- shared ----
 
-        /// <summary>A heading the game drew, as a node of its own in reading order - the standard for
-        /// any page whose bands are titled. It carries whatever the game hung on the title as its
-        /// tooltip, which on this page is what the band is for.</summary>
+        /// <summary>
+        /// A heading the game drew, as a node of its own in reading order.
+        ///
+        /// This is the WINDOW's own title only. A heading over a band inside the content is that
+        /// band's level instead (<see cref="PushHeading"/>): it names what is under it, it is spoken
+        /// once on the way in, and none of them carries a tooltip that would have nowhere else to
+        /// live (measured on every one of the seven this page draws). The window's title is the
+        /// exception every modal makes - the drawn heading is a node, the screen's spoken name says
+        /// the same words, and focus starts below it.
+        /// </summary>
         private static void AddHeading(GraphBuilder builder, AgePrimitiveLabel label, string key)
         {
             AgeTransform widget = Transform(label);
@@ -598,6 +644,35 @@ namespace ES2Access.Screens
             }
 
             SettingRows.AddReadout(builder, widget, key);
+        }
+
+        /// <summary>The caption over a band, as the level its rows sit in: announced on the way in and
+        /// never walked past. A caption the game drew nothing under would be a level with nothing in
+        /// it, so an empty one is not pushed at all.</summary>
+        private static bool PushHeading(GraphBuilder builder, AgePrimitiveLabel label)
+        {
+            AgeTransform widget = Transform(label);
+            if (label == null || !SettingRows.Drawn(widget))
+            {
+                return false;
+            }
+
+            string title = AgeText.Label(label);
+            if (string.IsNullOrEmpty(title))
+            {
+                return false;
+            }
+
+            builder.PushContext(title);
+            return true;
+        }
+
+        private static void Pop(GraphBuilder builder, bool named)
+        {
+            if (named)
+            {
+                builder.PopContext();
+            }
         }
 
         private static readonly Func<string> Nothing = () => null;

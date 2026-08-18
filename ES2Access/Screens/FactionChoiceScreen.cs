@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using ES2Access.Core.Speech;
 using ES2Access.Core.UI.Graph;
+using ES2Access.Core.Util;
 using ES2Access.UI;
 
 namespace ES2Access.Screens
@@ -13,7 +15,9 @@ namespace ES2Access.Screens
     /// picked: its ship hulls, its affinity and traits and starting situation, and its lore. Each drawn
     /// band is a Tab stop announced by the heading the game wrote on it, and inside a band every
     /// control is a row of its own - the thirteen cards included, because a grid whose columns an arrow
-    /// key crosses is a grid you have to be able to see.
+    /// key crosses is a grid you have to be able to see. The hulls band is the one that is not a band
+    /// of controls at all but a page turner, and it is read as the list it turns
+    /// (<see cref="BuildHulls"/>).
     ///
     /// The game's model is SELECT then LEAVE, and it is kept: a card's own click path
     /// (<c>FactionCard.OnToggleFactionCb</c> -> <c>OnToggleGuiFaction</c> :498-514) only moves the
@@ -241,9 +245,20 @@ namespace ES2Access.Screens
 
         // ---- what the chosen faction is ----
 
-        /// <summary>The ship hulls band: which hull is being shown, and under it the pair of arrows
-        /// that step through them - one row, walked left and right, the way every bar of two buttons in
-        /// the mod is walked.</summary>
+        /// <summary>
+        /// The ship hulls the faction flies, one row per hull.
+        ///
+        /// What the game draws is a page turner: one hull, a pair of arrows under it, and a bar per
+        /// hull showing which of them is up. So the band is the LIST the arrows step through - a row
+        /// per hull, the row the cursor is on being the hull the window is showing - and the engine's
+        /// own "n of m" takes the bars' place. Arriving on a row turns the window to that hull through
+        /// the arrow the mouse would click, and the row then reads whatever the window drew: the hull's
+        /// name, with the description the game hangs on it in the buffer. The arrows and the separate
+        /// readout row are gone; they were the mouse's way of doing what the cursor now does.
+        ///
+        /// The hulls are counted from the list the window filtered for this faction, never from the
+        /// bars it drew - that table pools its children and keeps the surplus alive.
+        /// </summary>
         private void BuildHulls(GraphBuilder builder, FactionChoiceModalWindow window)
         {
             AgeTransform title = Transform(window.HullTitle);
@@ -257,19 +272,171 @@ namespace ES2Access.Screens
                 return;
             }
 
+            // A window whose private list cannot be read still draws a hull, and the one row that says
+            // so is worth more than an empty band.
+            int count = Math.Max(1, HullCount(window));
+            AgeTooltip tooltip = SettingRows.LastTooltip(title);
+            IList<NodeSection> sections = SettingRows.RowSections(title, tooltip);
+
             builder.BeginStop(HullsStop);
             bool named = Push(builder, group);
             try
             {
-                SettingRows.AddReadout(builder, title, "faction-choice:hull");
-                _cells.Clear();
-                _cells.Add(Transform(window.PreviousHullButton));
-                _cells.Add(Transform(window.NextHullButton));
-                SettingRows.AddButtonRow(builder, _cells, "faction-choice:hull/");
+                for (int i = 0; i < count; i++)
+                {
+                    int index = i;
+                    AgeTransform it = title;
+                    NodeVtable vtable = new NodeVtable
+                    {
+                        // No role word: the hull is not a control the player works, it is what the
+                        // window is showing them.
+                        Announcements = new List<NodeAnnouncement>
+                        {
+                            GraphNodes.LabelPart(() =>
+                            {
+                                Show(index);
+                                return AgeWidgets.TextOf(it);
+                            }),
+                        },
+                        Sections = sections,
+                    };
+                    AgeWidgets.PointAt(vtable, Holder(tooltip) ?? title);
+
+                    // No start node: SetStart is the whole graph's landing, and the page's is the
+                    // faction card the game has selected. The stop lands on its first row, which is
+                    // the hull the window binds itself to.
+                    builder.AddItem(ControlId.Structural(HullKey + index), vtable);
+                }
             }
             finally
             {
                 Pop(builder, named);
+            }
+        }
+
+        /// <summary>
+        /// Turn the window to hull <paramref name="index"/> the way clicking its arrow does, if it is
+        /// not showing it already and if that hull's row is the one the cursor is standing on.
+        ///
+        /// Reading the label is where the turn happens because it is the only thing that runs between
+        /// the cursor arriving and the landing being spoken. It is guarded twice over: the window is
+        /// already on the hull for every read but the first, and a read on a row that is not the
+        /// focused one (a graph dump, a type-ahead pass over the stop) turns nothing.
+        ///
+        /// The step itself is the game's own arrow button, pressed the way a mouse presses it, taking
+        /// whichever way round the set is shorter - the window's own handlers are what wrap the index
+        /// and rebind the picture, and nothing here reproduces them.
+        /// </summary>
+        private static void Show(int index)
+        {
+            try
+            {
+                FactionChoiceModalWindow window = Window();
+                if (window == null || FocusedHull() != index)
+                {
+                    return;
+                }
+
+                int count = HullCount(window);
+                int current = CurrentHull(window);
+                if (count < 2 || current < 0 || index >= count || current == index)
+                {
+                    return;
+                }
+
+                int forwards = (index - current + count) % count;
+                bool ahead = forwards * 2 <= count;
+                AgeControlButton arrow = ahead ? window.NextHullButton : window.PreviousHullButton;
+                for (int step = 0; step < count && CurrentHull(window) != index; step++)
+                {
+                    int before = CurrentHull(window);
+                    AgeWidgets.Press(arrow);
+                    if (CurrentHull(window) == before)
+                    {
+                        // The arrow answered with nothing - the window is not stepping, and pressing
+                        // it again would only be a louder way of not moving.
+                        break;
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("faction choice: turning to the hull under the cursor threw: " + e);
+            }
+        }
+
+        /// <summary>Which hull's row the cursor is on, or -1 for anywhere else.</summary>
+        private static int FocusedHull()
+        {
+            ControlId key = ModEntry.Navigator == null ? null : ModEntry.Navigator.FocusedKey;
+            string structural = key == null ? null : key.StructuralKey as string;
+            if (structural == null || !structural.StartsWith(HullKey, StringComparison.Ordinal))
+            {
+                return -1;
+            }
+
+            int index;
+            return int.TryParse(structural.Substring(HullKey.Length), out index) ? index : -1;
+        }
+
+        private const string HullKey = "faction-choice:hull/";
+
+        /// <summary>How many hulls this faction flies: the list the window filtered for it, which is
+        /// the same list its arrows step through. -1 where the window will not say.</summary>
+        private static int HullCount(FactionChoiceModalWindow window)
+        {
+            System.Collections.IList hulls =
+                Field(ref _hulls, "filteredShipHulls", window) as System.Collections.IList;
+            return hulls == null ? -1 : hulls.Count;
+        }
+
+        /// <summary>Which of them the window is showing, or -1 where it will not say.</summary>
+        private static int CurrentHull(FactionChoiceModalWindow window)
+        {
+            object current = Field(ref _current, "currentHull", window);
+            return current is int ? (int)current : -1;
+        }
+
+        private static FieldInfo _hulls;
+        private static FieldInfo _current;
+
+        private static object Field(ref FieldInfo cache, string name, FactionChoiceModalWindow window)
+        {
+            try
+            {
+                if (window == null)
+                {
+                    return null;
+                }
+
+                if (cache == null)
+                {
+                    cache = typeof(FactionChoiceModalWindow).GetField(
+                        name,
+                        BindingFlags.Instance | BindingFlags.NonPublic
+                    );
+                }
+
+                return cache == null ? null : cache.GetValue(window);
+            }
+            catch (Exception e)
+            {
+                Log.Warn("faction choice: reading " + name + " threw: " + e);
+                return null;
+            }
+        }
+
+        /// <summary>The widget a tooltip hangs on - what has to be pointed at for the game to draw
+        /// it.</summary>
+        private static AgeTransform Holder(AgeTooltip tooltip)
+        {
+            try
+            {
+                return tooltip == null ? null : tooltip.AgeTransform;
+            }
+            catch (Exception)
+            {
+                return null;
             }
         }
 
@@ -405,15 +572,15 @@ namespace ES2Access.Screens
 
         // ---- the bottom row ----
 
-        /// <summary>Cancel and Select, one row, in the order they are drawn - the cancel-and-confirm
-        /// bar every screen in the mod walks the same way. Both carry the game's own words; that both
+        /// <summary>Cancel and Select, one node per row, in the order they are drawn - the
+        /// cancel-and-confirm bar every screen in the mod walks the same way. Both carry the game's own words; that both
         /// of them in fact commit is on the test script, not pasted over what the game wrote.</summary>
         private void BuildActions(GraphBuilder builder, FactionChoiceModalWindow window)
         {
             AddBand(builder, Parent(Transform(window.ValidateButton)), "faction-choice:button/");
         }
 
-        /// <summary>Every drawn button of a band, as one row.</summary>
+        /// <summary>Every drawn button of a band, one node per row.</summary>
         private void AddBand(GraphBuilder builder, AgeTransform band, string key)
         {
             _cells.Clear();
@@ -423,7 +590,7 @@ namespace ES2Access.Screens
                 _cells.Add(children[i]);
             }
 
-            SettingRows.AddButtonRow(builder, _cells, key);
+            SettingRows.AddButtons(builder, _cells, key);
         }
 
         // ---- shared ----

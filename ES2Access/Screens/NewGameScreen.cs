@@ -669,7 +669,7 @@ namespace ES2Access.Screens
                 }
             }
 
-            SettingRows.AddButtonRow(builder, _entries, "newgame:button/");
+            SettingRows.AddButtons(builder, _entries, "newgame:button/");
         }
 
         // ---- the shapes only this page has ----

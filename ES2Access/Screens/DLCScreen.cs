@@ -86,7 +86,22 @@ namespace ES2Access.Screens
             Tabs(builder, window);
 
             builder.BeginStop(ItemsStop);
+
+            // Which of the three kinds is being listed, in the game's own tab word: the list itself
+            // says nothing about it, so a player who tabbed straight past the bar would be reading an
+            // unnamed list. Spoken once, on the way in.
+            string tab = SelectedTab(window);
+            bool named = !string.IsNullOrEmpty(tab);
+            if (named)
+            {
+                builder.PushContext(tab);
+            }
+
             Items(builder, window);
+            if (named)
+            {
+                builder.PopContext();
+            }
 
             builder.BeginStop(ActionsStop);
             Buttons(builder, window);
@@ -108,7 +123,7 @@ namespace ES2Access.Screens
                 _buttons.Add(children[i]);
             }
 
-            SettingRows.AddButtonRow(builder, _buttons, "dlc:button/");
+            SettingRows.AddButtons(builder, _buttons, "dlc:button/");
         }
 
         private static AgeTransform Band(DLCModalWindow window)
@@ -122,6 +137,30 @@ namespace ES2Access.Screens
             {
                 return null;
             }
+        }
+
+        /// <summary>The tab the window is showing, in the words it is drawn with.</summary>
+        private static string SelectedTab(DLCModalWindow window)
+        {
+            try
+            {
+                AgeTransform table = Toggles(window);
+                IList<AgeTransform> children = table == null ? null : table.Children;
+                for (int i = 0; children != null && i < children.Count; i++)
+                {
+                    AgeControlToggle toggle = children[i].GetComponent<AgeControlToggle>();
+                    if (toggle != null && toggle.State && AgeWidgets.Visible(children[i]))
+                    {
+                        return AgeWidgets.TextOf(children[i]);
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("dlc: reading the selected tab threw: " + e);
+            }
+
+            return null;
         }
 
         /// <summary>The three kinds of content, as the one-of-N the game made them.</summary>
@@ -142,7 +181,7 @@ namespace ES2Access.Screens
                 Log.Warn("dlc: reading the tabs threw: " + e);
             }
 
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
         }
 
         private void Tab(AgeTransform widget, int index)
@@ -194,7 +233,7 @@ namespace ES2Access.Screens
                 Log.Warn("dlc: reading the content list threw: " + e);
             }
 
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
         }
 
         /// <summary>One piece of content: what it is, and the one control the game offers on it.</summary>

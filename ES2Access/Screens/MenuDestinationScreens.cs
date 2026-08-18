@@ -99,7 +99,7 @@ namespace ES2Access.Screens
 
             _cells.Clear();
             WindowShape.Controls(_cells, window, Prefix);
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
         }
 
         protected static T Get<T>()
@@ -293,7 +293,7 @@ namespace ES2Access.Screens
                 _buttons.Add(children[i]);
             }
 
-            SettingRows.AddButtonRow(builder, _buttons, "join-game:button/");
+            SettingRows.AddButtons(builder, _buttons, "join-game:button/");
         }
 
         /// <summary>Whether the Steam search is running, read off the page's own drawing: the state
