@@ -76,6 +76,14 @@ namespace ES2Access.Screens
         private static readonly object LocalSupportStop = "election:local/support";
         private static readonly object LocalSystemStop = "election:local/system";
 
+        /// <summary>The three sections of the vote-breakdown column, in the order it draws them: the
+        /// step's own question, the bars the prefab captions, and the empire's running total with how
+        /// far the count has got. Declared whatever the panel holds, so the region jump means the same
+        /// thing on every system.</summary>
+        private const string LocalTitleRegion = "election:local/title";
+        private const string TrendsRegion = "election:local/trends";
+        private const string LocalEmpireRegion = "election:local/empire";
+
         private static readonly object FinalWinnersStop = "election:final/winners";
 
         /// <summary>Shared by every winner's row, so the step between two winners keeps the column the
@@ -314,7 +322,7 @@ namespace ES2Access.Screens
             }
 
             AddStepMarks(_cells, window);
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
         }
 
         /// <summary>
@@ -405,7 +413,7 @@ namespace ES2Access.Screens
             AddPanelTitle(_cells, panel);
             int firstCard = _cells.Count;
             AddCandidates(_cells, panel);
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
 
             // The cards, not the question above them: the question is what arriving announces, and
             // the selected card's own Selected part then refines the landing onto the party the game
@@ -445,7 +453,7 @@ namespace ES2Access.Screens
                 }
             }
 
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
 
             builder.BeginStop(BeforeResourcesStop);
             _cells.Clear();
@@ -465,7 +473,7 @@ namespace ES2Access.Screens
                 );
             }
 
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
         }
 
         /// <summary>
@@ -566,9 +574,27 @@ namespace ES2Access.Screens
             LocalCounts counts = Counts(panel);
 
             builder.BeginStop(LocalSupportStop);
+            builder.SetRegion(LocalTitleRegion);
             _cells.Clear();
             AddPanelTitle(_cells, panel);
+            Cells.EmitLinear(builder, _cells);
+
+            // The bars under the caption the prefab draws over them. The caption is the game's own
+            // word for the column and nothing else on the page says it, so it is the level the bars
+            // are announced under; a caption this hunt does not find pushes nothing rather than an
+            // empty one.
+            builder.SetRegion(TrendsRegion);
+            bool named = Trends(builder, panel);
+            _cells.Clear();
             AddSupportGauges(_cells, panel, counts);
+            Cells.EmitLinear(builder, _cells);
+            if (named)
+            {
+                builder.PopContext();
+            }
+
+            builder.SetRegion(LocalEmpireRegion);
+            _cells.Clear();
             // The empire's running total is a bare "37" on its own label: the words for it are the two
             // captions the prefab draws BESIDE it in the same group - "Overall Empire" above and "Total
             // representatives" below (measured on the prefab; neither the label nor the group carries a
@@ -583,13 +609,14 @@ namespace ES2Access.Screens
                 Raw(box) ?? Raw(panel.TotalElectorsValue)
             );
             AddCountingProgress(_cells, panel, counts);
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
+            builder.SetRegion(null);
 
             builder.BeginStop(LocalSystemStop);
             _cells.Clear();
             AddButton(_cells, panel.PreviousSystemButton, "previous-system");
             AddButton(_cells, panel.NextSystemButton, "next-system");
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
 
             // The system and its representatives as ONE row, declared rather than derived: the game
             // wraps the representative icons onto a second line as soon as there are three of them
@@ -914,7 +941,7 @@ namespace ES2Access.Screens
                 AddLawCards(_cells, panel.UnlockedLawLinesTable, "election:final/law");
             }
 
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
 
             // What choosing an election action came to. Declared from visibility like everything else,
             // which for the shipped game means never: Refresh sets the outcomes group AND the
@@ -1141,10 +1168,80 @@ namespace ES2Access.Screens
             _cells.Clear();
             AddButton(_cells, Widget(window.NextStepButton), "next-step");
             AddButton(_cells, Widget(window.SkipElectionButton), "skip");
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
         }
 
         // ---- shared ----
+
+        /// <summary>
+        /// The caption the prefab draws over the column of party bars, as the level they are announced
+        /// under.
+        ///
+        /// The words are serialized in the prefab - the panel has no label field for them
+        /// (<c>ElectionLocalPanel.cs:36-66</c>) - so they are hunted the way a board's heading is:
+        /// the group's own "Title" child first, then the first drawn child of the group that is not
+        /// the gauge table and says something. Whatever comes back is the GAME's word; where nothing
+        /// does, nothing is pushed, so the bars are never announced under an empty level.
+        /// </summary>
+        private static bool Trends(GraphBuilder builder, ElectionLocalPanel panel)
+        {
+            AgeTransform group = panel.PoliticsSupportGroup;
+            if (group == null || !AgeWidgets.Visible(group))
+            {
+                return false;
+            }
+
+            string text = AgeWidgets.TextOf(AgeWidgets.ChildNamed(group, "Title", 2));
+            if (string.IsNullOrEmpty(text))
+            {
+                text = Caption(group, panel.PoliticsCumulativeSupportGaugesTable);
+            }
+
+            if (string.IsNullOrEmpty(text))
+            {
+                return false;
+            }
+
+            builder.PushContext(text);
+            return true;
+        }
+
+        /// <summary>The first drawn child of <paramref name="group"/> that says something and is not
+        /// the table of bars (nor an ancestor of it), read one level deep so a container of bars can
+        /// never be mistaken for a caption.</summary>
+        private static string Caption(AgeTransform group, AgeTransform bars)
+        {
+            IList<AgeTransform> children = Children(group);
+            for (int i = 0; children != null && i < children.Count; i++)
+            {
+                AgeTransform child = children[i];
+                if (child == null || !AgeWidgets.Visible(child) || Holds(child, bars))
+                {
+                    continue;
+                }
+
+                string text = AgeWidgets.TextOf(child, 1);
+                if (!string.IsNullOrEmpty(text))
+                {
+                    return text;
+                }
+            }
+
+            return null;
+        }
+
+        private static bool Holds(AgeTransform container, AgeTransform widget)
+        {
+            for (AgeTransform at = widget; at != null; at = at.Parent)
+            {
+                if (ReferenceEquals(at, container))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
 
         /// <summary>The step's own question, as its panel drew it.</summary>
         private static void AddPanelTitle(List<Cell> cells, ElectionPanel panel)
