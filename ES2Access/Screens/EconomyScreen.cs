@@ -98,8 +98,8 @@ namespace ES2Access.Screens
         private readonly List<Cell> _cells = new List<Cell>();
         private readonly List<GuiPanel> _boards = new List<GuiPanel>();
         private readonly List<AgeTransform> _bands = new List<AgeTransform>();
-        private readonly List<GridCell> _grid = new List<GridCell>();
-        private readonly List<GridCell> _gridHeaders = new List<GridCell>();
+        private readonly List<Cell> _grid = new List<Cell>();
+        private readonly List<Cell> _gridHeaders = new List<Cell>();
         private readonly List<float> _columnCentres = new List<float>();
 
         public EconomyScreen()
@@ -251,7 +251,7 @@ namespace ES2Access.Screens
                     builder.PushContext(PanelName(panel));
                     _cells.Clear();
                     SidePanels.Readouts(_cells, panel, "economy:side/" + i + "/", null, null);
-                    Cells.Emit(builder, _cells);
+                    Cells.EmitLinear(builder, _cells);
                     builder.PopContext();
                 }
             }
@@ -320,7 +320,7 @@ namespace ES2Access.Screens
                 Log.Warn("economy: reading the tab bar threw: " + e);
             }
 
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
         }
 
         /// <summary>The strip the tab toggles sit in - found from the one toggle the window names, so it
@@ -494,19 +494,9 @@ namespace ES2Access.Screens
                 Log.Warn("economy: reading the trading companies threw: " + e);
             }
 
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
             Unname(builder, named);
         }
-
-        /// <summary>One cell of a resource grid, with the FAMILY COLUMN it is drawn in - which is a fact
-        /// about the game's data and not about the layout, so it survives the rows being ragged.</summary>
-        private sealed class GridCell
-        {
-            public Cell Cell;
-            public int Column;
-        }
-
-        private static readonly Func<GridCell, AgeTransform> GridWidget = cell => cell.Cell.Widget;
 
         /// <summary>
         /// One of the resource grids: a row of family icons across the top, then the resources the empire
@@ -515,17 +505,19 @@ namespace ES2Access.Screens
         /// The icons ARE the columns' headings - measured: each sits centred over one column of items -
         /// and each is named by the effect its family improves, taken from the game's own list in the
         /// order the game filled the header table from it (<c>EconomyPanel.RefreshResourcesTables</c>
-        /// :187-206). The COLUMNS ARE MEANINGFUL: the game's own data gives every eighth luxury the same
+        /// :187-206). The FAMILY IS MEANINGFUL: the game's own data gives every eighth luxury the same
         /// target effect (<c>GuiElements[Luxuries].xml</c>, <c>RecipeIngredientDefinitions.xml</c>), so the
-        /// resource under the Food heading is the one that improves Food. That is why vertical moves
-        /// preserve the column and why crossing sideways speaks the family being entered, exactly as a
-        /// table's crossed edge does.
+        /// resource under the Food heading is the one that improves Food - which is why every item says
+        /// which family it belongs to.
         ///
-        /// The rows are RAGGED rather than dense: the panel keeps every resource in the table and fades
-        /// the ones the empire has nothing of (<c>ResourcesPanel.RefreshResourceItem</c> :190-225), so a
-        /// row can hold one cell drawn under the fifth heading. Vertical navigation therefore pairs cells
-        /// by the column they are DRAWN in - the header they sit under - and falls to the neighbouring
-        /// row's first cell only where that column is empty there, so nothing dead-ends.
+        /// It is not a table, though, because the lattice is SPARSE: the panel keeps every resource in
+        /// the table and fades the ones the empire has nothing of
+        /// (<c>ResourcesPanel.RefreshResourceItem</c> :190-225), so a drawn line can hold one cell under
+        /// the fifth heading and column-preserving moves pair cells across the holes - measured on this
+        /// very grid, where seven of the eight family headings' Down edges landed on the one cell of the
+        /// second line. So the drawn cells are LINEARISED - one per row, in drawn order, each carrying
+        /// its family word - and the headings become a legend the player can walk, a region of their own
+        /// inside the same stop (<c>ui-navigation.md</c>'s sparse-grid rule).
         ///
         /// A faded item is not declared at all, which is why the drawn test here asks for alpha and not
         /// just visibility - the game leaves those items Visible and simply makes them invisible.
@@ -549,17 +541,22 @@ namespace ES2Access.Screens
             bool named = AddHeading(builder, band, stop + "/heading");
             _grid.Clear();
             _gridHeaders.Clear();
-            string[] columns = null;
             try
             {
                 ReadColumnCentres(headers, _columnCentres);
-                columns = FamilyNames(type, families, _columnCentres.Count);
+                string[] columns = FamilyNames(type, families, _columnCentres.Count);
                 AddFamilyHeaders(_gridHeaders, headers, columns, stop);
                 AgeTransform table = panel.ResourceItemsTable;
                 IList<AgeTransform> items = table == null ? null : table.Children;
                 for (int i = 0; items != null && i < items.Count; i++)
                 {
-                    AddResourceItem(_grid, items[i], stop, i, ColumnOf(items[i], _columnCentres));
+                    AddResourceItem(
+                        _grid,
+                        items[i],
+                        stop,
+                        i,
+                        Column(columns, ColumnOf(items[i], _columnCentres))
+                    );
                 }
             }
             catch (Exception e)
@@ -567,14 +564,14 @@ namespace ES2Access.Screens
                 Log.Warn("economy: reading a resource grid threw: " + e);
             }
 
-            EmitGrid(builder, _gridHeaders, _grid, columns, stop);
+            EmitGrid(builder, _gridHeaders, _grid, stop);
             Unname(builder, named);
         }
 
         /// <summary>Where each column of the grid is drawn across the screen, taken off the headings -
-        /// which is what tells an item which column it is in whatever the game filtered out of the row
-        /// above it.</summary>
-        private static void ReadColumnCentres(AgeTransform headers, List<float> centres)
+        /// which is what tells an item which family it belongs to whatever the game faded out of the
+        /// line above it. Shared with the recipe window, which draws the same grid.</summary>
+        internal static void ReadColumnCentres(AgeTransform headers, List<float> centres)
         {
             centres.Clear();
             IList<AgeTransform> children = headers == null ? null : headers.Children;
@@ -592,7 +589,7 @@ namespace ES2Access.Screens
         }
 
         /// <summary>Which column a cell is drawn in: the heading it sits under.</summary>
-        private static int ColumnOf(AgeTransform widget, List<float> centres)
+        internal static int ColumnOf(AgeTransform widget, List<float> centres)
         {
             if (widget == null)
             {
@@ -616,10 +613,11 @@ namespace ES2Access.Screens
             return best;
         }
 
-        /// <summary>The family icons, named by the effect each family improves - which is also the caption
-        /// the grid speaks as the column a player crosses into.</summary>
+        /// <summary>The family icons, named by the effect each family improves - the legend the player
+        /// walks to learn which families the grid has, and the same word every item of that family says
+        /// for itself.</summary>
         private static void AddFamilyHeaders(
-            List<GridCell> cells,
+            List<Cell> cells,
             AgeTransform headers,
             string[] columns,
             object stop
@@ -650,171 +648,54 @@ namespace ES2Access.Screens
                     Sections = GraphNodes.Sections(null, tooltip),
                 };
                 AgeWidgets.PointAt(vtable, widget);
-                Add(
-                    cells,
-                    widget,
-                    ControlId.Referenced(widget, stop + "/family/" + i),
-                    vtable,
-                    i
+                cells.Add(
+                    new Cell
+                    {
+                        Widget = widget,
+                        Id = ControlId.Referenced(widget, stop + "/family/" + i),
+                        Vtable = vtable,
+                    }
                 );
             }
-        }
-
-        private static void Add(
-            List<GridCell> cells,
-            AgeTransform widget,
-            ControlId id,
-            NodeVtable vtable,
-            int column
-        )
-        {
-            cells.Add(
-                new GridCell
-                {
-                    Cell = new Cell { Widget = widget, Id = id, Vtable = vtable },
-                    Column = column,
-                }
-            );
         }
 
         /// <summary>
-        /// The grid, wired the way the columns mean: the headings across the top, then a row per drawn
-        /// line, with Up and Down staying in the family column the cursor is in.
+        /// The grid as a legend and a list: the family icons first, then every drawn resource one per
+        /// row in the order the game drew them.
         ///
-        /// Left and Right speak the family being entered, which is the table convention - a cell says
-        /// its own value and the sheet says which column it is in as the player crosses into it - and it
-        /// is not said on the heading row, where each node's own name is already the family.
+        /// The two are REGIONS of the one stop, so the region jump steps between "which families are
+        /// there" and "what do I hold" without Tab leaving the box. They share the stop's own "N of M"
+        /// counting, which is what a region is - a landing place inside a list, not a list of its own.
         ///
-        /// The positions are the table's, not a menu bar's: a drawn line says which LINE of the grid it
-        /// is ("2 of 4") when the player arrives in it or moves to another, and no node counts the
-        /// columns, which is what a row of family icons would otherwise be heard as.
+        /// No sideways moves and no column-preserving ones: which line a cell landed on is a fact about
+        /// the width of the box, and the family it belongs to - the one thing the layout WAS carrying -
+        /// is said by the cell itself instead.
         /// </summary>
         private static void EmitGrid(
             GraphBuilder builder,
-            List<GridCell> headers,
-            List<GridCell> items,
-            string[] columns,
+            List<Cell> headers,
+            List<Cell> items,
             object stop
         )
         {
-            List<List<GridCell>> rows = AgeLayout.Rows(items, GridWidget);
-            bool headed = headers.Count > 0;
-            if (headed)
-            {
-                rows.Insert(0, headers);
-            }
-
-            int lines = headed ? rows.Count - 1 : rows.Count;
-            for (int r = 0; r < rows.Count; r++)
-            {
-                List<GridCell> row = rows[r];
-                TableRow at = headed && r == 0
-                    ? null
-                    : new TableRow
-                    {
-                        Key = stop + "/line/" + r,
-                        Index = headed ? r : r + 1,
-                        Count = lines,
-                    };
-                builder.StartRow(positions: false);
-                for (int i = 0; i < row.Count; i++)
-                {
-                    row[i].Cell.Vtable.Row = at;
-                    builder.AddItem(row[i].Cell.Id, row[i].Cell.Vtable);
-                }
-
-                builder.EndRow();
-            }
-
-            for (int r = 0; r < rows.Count; r++)
-            {
-                if (r > 0 || headers.Count == 0)
-                {
-                    WireAcross(builder, rows[r], columns);
-                }
-
-                if (r > 0)
-                {
-                    WireColumns(builder, rows[r - 1], rows[r], columns);
-                }
-            }
+            builder.SetRegion(stop + "/legend");
+            Cells.EmitLinear(builder, headers);
+            builder.SetRegion(stop + "/items");
+            Cells.EmitLinear(builder, items);
+            builder.SetRegion(null);
         }
 
-        /// <summary>Left and Right along one drawn line, each crossing announced with the family it lands
-        /// in.</summary>
-        private static void WireAcross(GraphBuilder builder, List<GridCell> row, string[] columns)
-        {
-            for (int i = 1; i < row.Count; i++)
-            {
-                builder.Connect(
-                    row[i - 1].Cell.Id,
-                    GraphDir.Right,
-                    row[i].Cell.Id,
-                    Column(columns, row[i].Column)
-                );
-                builder.Connect(
-                    row[i].Cell.Id,
-                    GraphDir.Left,
-                    row[i - 1].Cell.Id,
-                    Column(columns, row[i - 1].Column)
-                );
-            }
-        }
-
-        /// <summary>Up and Down between two drawn lines: the same family column where both lines have
-        /// one, and the other line's first cell where they do not - which is a column change, so it says
-        /// which column it landed in.</summary>
-        private static void WireColumns(
-            GraphBuilder builder,
-            List<GridCell> above,
-            List<GridCell> below,
-            string[] columns
-        )
-        {
-            for (int i = 0; i < above.Count; i++)
-            {
-                GridCell landing = At(below, above[i].Column);
-                builder.Connect(
-                    above[i].Cell.Id,
-                    GraphDir.Down,
-                    landing.Cell.Id,
-                    landing.Column == above[i].Column ? null : Column(columns, landing.Column)
-                );
-            }
-
-            for (int i = 0; i < below.Count; i++)
-            {
-                GridCell landing = At(above, below[i].Column);
-                builder.Connect(
-                    below[i].Cell.Id,
-                    GraphDir.Up,
-                    landing.Cell.Id,
-                    landing.Column == below[i].Column ? null : Column(columns, landing.Column)
-                );
-            }
-        }
-
-        private static GridCell At(List<GridCell> row, int column)
-        {
-            for (int i = 0; i < row.Count; i++)
-            {
-                if (row[i].Column == column)
-                {
-                    return row[i];
-                }
-            }
-
-            return row[0];
-        }
-
-        private static string Column(string[] columns, int index)
+        /// <summary>The word for one family of the legend, or nothing where the game never named it.
+        /// </summary>
+        internal static string Column(string[] columns, int index)
         {
             return columns != null && index >= 0 && index < columns.Length ? columns[index] : null;
         }
 
-        /// <summary>What each family's column is called, off the game's own registry, in the order the
-        /// game filled the heading table from it.</summary>
-        private static string[] FamilyNames(
+        /// <summary>What each family is called, off the game's own registry, in the order the game
+        /// filled the heading table from it. Shared with the recipe window, which draws the same grid of
+        /// the same families.</summary>
+        internal static string[] FamilyNames(
             ResourceDefinition.Type type,
             int families,
             int drawn
@@ -842,8 +723,12 @@ namespace ES2Access.Screens
         /// A family with no short name of its own - the compound strategic ones - keeps that title, which
         /// is the only thing the game says about them. A name the corpus never wrote comes back as its
         /// own key - parked text, which is not a name to speak.
+        ///
+        /// Shared with the recipe window, which draws the same grid of the same families: the copy it
+        /// had went straight to the title and so read the family DESCRIPTION - including the icon typo
+        /// ("Improves Industry Food") this one exists to step around.
         /// </summary>
-        private static string FamilyName(ResourceDefinition.Type type, int families, int index)
+        internal static string FamilyName(ResourceDefinition.Type type, int families, int index)
         {
             try
             {
@@ -973,13 +858,17 @@ namespace ES2Access.Screens
         /// been found (<c>ResourceItem.SetTooltipProperties</c> - the target is set only for a resource
         /// the empire knows). That sentence is what the item is called, and it is then not announced a
         /// second time as a tooltip.
+        ///
+        /// <paramref name="family"/> trails all of it: which family a resource belongs to is a fact of
+        /// the game's data that the grid used to say by WHERE it drew the cell, and the linearised list
+        /// has no columns left to say it with.
         /// </summary>
         private static void AddResourceItem(
-            List<GridCell> cells,
+            List<Cell> cells,
             AgeTransform widget,
             object stop,
             int index,
-            int column
+            string family
         )
         {
             ResourceItem item = widget == null ? null : widget.GetComponent<ResourceItem>();
@@ -1007,13 +896,20 @@ namespace ES2Access.Screens
                     named ? GraphNodes.ModeFor(tooltip) : TooltipMode.None
                 ),
             };
+            if (!string.IsNullOrEmpty(family))
+            {
+                string said = family;
+                vtable.Announcements.Add(GraphNodes.ValuePart(() => said, false));
+            }
+
             AgeWidgets.PointAt(vtable, widget);
-            Add(
-                cells,
-                widget,
-                ControlId.Referenced(widget, stop + "/item/" + index),
-                vtable,
-                column
+            cells.Add(
+                new Cell
+                {
+                    Widget = widget,
+                    Id = ControlId.Referenced(widget, stop + "/item/" + index),
+                    Vtable = vtable,
+                }
             );
         }
 
@@ -1073,7 +969,7 @@ namespace ES2Access.Screens
                 Log.Warn("economy: reading the development projects threw: " + e);
             }
 
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
             Unname(builder, named);
         }
 
