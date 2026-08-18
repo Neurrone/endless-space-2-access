@@ -1950,19 +1950,12 @@ namespace ES2Access.UI
 
         // ---- shared ----
 
-        /// <summary>Emit one node per cell, in the order the game drew them: peers of one kind read as
-        /// a list, whatever shape the layout happens to wrap them into. Public for the window's own
-        /// bands - the row of buttons along its bottom is the same kind of set as the module strip, and
-        /// the host must not grow a private copy of this loop.</summary>
+        /// <summary>Emit one node per cell, in the order the game drew them - <see
+        /// cref="Cells.EmitLinear"/>, which is where this loop lives now that every screen's bands read
+        /// that way. Kept as the name this file's own emit calls have always used.</summary>
         public static void EmitLinear(GraphBuilder builder, List<Cell> cells)
         {
-            foreach (List<Cell> row in AgeLayout.Rows(cells, CellWidget))
-            {
-                for (int i = 0; i < row.Count; i++)
-                {
-                    builder.AddItem(row[i].Id, row[i].Vtable);
-                }
-            }
+            Cells.EmitLinear(builder, cells);
         }
 
         /// <summary>Emit one node per cell in the order they were DECLARED, for a set whose reading order
@@ -1975,8 +1968,6 @@ namespace ES2Access.UI
                 builder.AddItem(cells[i].Id, cells[i].Vtable);
             }
         }
-
-        private static readonly Func<Cell, AgeTransform> CellWidget = cell => cell.Widget;
 
         /// <summary>Push a drawn caption as the LEVEL the rows under it sit in - a stop's name or a
         /// region's - and say whether it has to be popped. A band the game left uncaptioned gets no level

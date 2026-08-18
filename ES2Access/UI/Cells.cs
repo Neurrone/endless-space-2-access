@@ -15,16 +15,18 @@ namespace ES2Access.UI
     }
 
     /// <summary>
-    /// Declaring a panel's controls in the rows the game draws them in.
+    /// Declaring a panel's controls in the order the game drew them.
     ///
     /// Collection order is whatever the reading code happened to walk; the player's order is the one on
-    /// screen. Gathering cells and emitting them through <see cref="AgeLayout.Rows"/> means a bar the
-    /// engine laid out over two lines is walked as two lines with nothing being told, and a screen that
-    /// lists its buttons in a different order from the prefab still reads left to right.
+    /// screen. Gathering cells and banding them through <see cref="AgeLayout.Rows"/> means a screen that
+    /// lists its buttons in a different order from the prefab still reads left to right, top to bottom.
     ///
-    /// Geometry answers what ORDER, though, not what BELONGS TOGETHER. Where the second line is the
-    /// layout box running out of width rather than a new line of content, the screen knows the set is
-    /// one line and says so: <see cref="EmitRow"/>.
+    /// What the bands are FOR is the choice each host makes. The default is <see cref="EmitLinear"/>:
+    /// one node per row, because a bar of buttons, a strip of toggles, a grid of cards or of stat
+    /// figures are peers of one kind and the wrap points are a rendering accident, not columns.
+    /// <see cref="Emit"/> - a graph row per drawn band, walked sideways - is reserved for a real table,
+    /// whose columns are a fact of the game's own data. <see cref="EmitRow"/> is the third case: a set
+    /// the screen KNOWS is one line that the layout box wrapped anyway.
     /// </summary>
     public static class Cells
     {
@@ -83,6 +85,34 @@ namespace ES2Access.UI
                 }
 
                 builder.EndRow();
+            }
+        }
+
+        /// <summary>
+        /// One node per cell, in the order the game drew them, and no rows at all.
+        ///
+        /// This is the DEFAULT for a band the game draws side by side - a window's bottom row of
+        /// buttons, a strip of filter toggles, a grid of stat figures, a grid of cards. Those members
+        /// are peers of one kind, so a sideways move buys nothing and the wrap points are a rendering
+        /// accident: the player walks them with one key. <see cref="Emit"/> is for the other case only -
+        /// a real table, whose columns are a fact of the game's own data.
+        ///
+        /// The reading ORDER is still the drawn one (<see cref="AgeLayout.Rows"/> bands the cells and
+        /// they are emitted band by band, left to right), which is why this takes the same list
+        /// <see cref="Emit"/> does and differs only in not opening a row.
+        ///
+        /// Flattening happens at the HOST's own emit call: a collector shared between screens fills a
+        /// caller-owned list and belongs to no host's layout, so the host swaps which emitter it calls
+        /// rather than the collector growing a mode flag.
+        /// </summary>
+        public static void EmitLinear(GraphBuilder builder, List<Cell> cells)
+        {
+            foreach (List<Cell> row in AgeLayout.Rows(cells, CellWidget))
+            {
+                for (int i = 0; i < row.Count; i++)
+                {
+                    builder.AddItem(row[i].Id, row[i].Vtable);
+                }
             }
         }
 

@@ -436,7 +436,7 @@ namespace ES2Access.Screens
 
             _cells.Clear();
             AddFittedModules(box);
-            EmitLinear(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
 
             _cells.Clear();
             AddStats(box);
@@ -446,21 +446,6 @@ namespace ES2Access.Screens
                 builder.PopContext();
             }
         }
-
-        /// <summary>One node per cell, in the order the game drew them, and no rows: peers of one kind
-        /// read as a list whatever shape the layout scattered them into.</summary>
-        private static void EmitLinear(GraphBuilder builder, List<Cell> cells)
-        {
-            foreach (List<Cell> row in AgeLayout.Rows(cells, CellWidget))
-            {
-                for (int i = 0; i < row.Count; i++)
-                {
-                    builder.AddItem(row[i].Id, row[i].Vtable);
-                }
-            }
-        }
-
-        private static readonly Func<Cell, AgeTransform> CellWidget = cell => cell.Widget;
 
         /// <summary>
         /// The dots the game draws over the rendered ship, one per slot the hull has.
