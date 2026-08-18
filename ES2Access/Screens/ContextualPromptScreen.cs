@@ -206,7 +206,7 @@ namespace ES2Access.Screens
                     "prompt:close"
                 )
             );
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
         }
 
         /// <summary>The heading, and only where the prompt is DRAWING one. <c>Refresh</c> hides the

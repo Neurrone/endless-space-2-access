@@ -297,7 +297,7 @@ namespace ES2Access.Screens
                 Log.Warn("modding: reading the selected mod threw: " + e);
             }
 
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
             builder.PopContext();
         }
 
@@ -333,7 +333,7 @@ namespace ES2Access.Screens
                 Log.Warn("modding: reading the log threw: " + e);
             }
 
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
             builder.PopContext();
         }
 
