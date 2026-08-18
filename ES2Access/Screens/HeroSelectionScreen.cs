@@ -158,8 +158,9 @@ namespace ES2Access.Screens
         // ---- the cards ----
 
         /// <summary>
-        /// One card per hero the empire has, in the rows the game laid them out in - a strip of cards
-        /// reads as cards in drawn order, left to right, because they are peers of one kind.
+        /// One card per hero the empire has, one per row in the order the game laid them out - left to
+        /// right, then down - because the cards are peers of one kind and where the strip wrapped is a
+        /// fact about the table rather than about the heroes.
         ///
         /// Keyed on the HERO, not the card: the table pools its cards and re-binds them by index on every
         /// refresh (<c>BindHeroCard</c> :86-107), so a cursor keyed on the widget would act on a
@@ -187,7 +188,7 @@ namespace ES2Access.Screens
                 Log.Warn("hero selection: reading the cards threw: " + e);
             }
 
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
             if (start != null)
             {
                 builder.SetStart(start);
@@ -268,7 +269,7 @@ namespace ES2Access.Screens
                 Log.Warn("hero selection: reading the button band threw: " + e);
             }
 
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
         }
 
         private static void AddButton(List<Cell> cells, AgeTransform widget)

@@ -136,7 +136,7 @@ namespace ES2Access.Screens
                 Log.Warn("academy: reading a panel threw: " + e);
             }
 
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
             if (named)
             {
                 builder.PopContext();
@@ -164,7 +164,7 @@ namespace ES2Access.Screens
                 Log.Warn("academy: reading the named ships threw: " + e);
             }
 
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
             AcademyWindows.Switch(builder, window, Keys);
             builder.PopContext();
         }
