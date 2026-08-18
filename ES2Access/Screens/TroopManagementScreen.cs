@@ -68,8 +68,11 @@ namespace ES2Access.Screens
         private static readonly object CostStop = "troops:cost";
         private static readonly object ActionsStop = "troops:actions";
 
-        // Reused across builds rather than allocated per frame: Build runs every tick.
+        // Reused across builds rather than allocated per frame: Build runs every tick. The second list
+        // is the cost band's, whose two groups are read before either is declared so that a stop is
+        // opened only when one of them has something in it.
         private readonly List<Cell> _cells = new List<Cell>();
+        private readonly List<Cell> _stocks = new List<Cell>();
 
         public override string Key
         {
@@ -374,8 +377,16 @@ namespace ES2Access.Screens
 
         // ---- Evolution ----
 
-        /// <summary>The right column: the caption, then one row per troop type holding the chain of
-        /// upgrades that type can be given.</summary>
+        /// <summary>
+        /// The right column: the caption, then one row per troop type holding the chain of upgrades that
+        /// type can be given - one upgrade per row, because column 3 of Infantry and column 3 of Armor
+        /// are different upgrades and not one attribute, so the grid is a layout rather than a table.
+        ///
+        /// Each type's chain is a region as well as a level, so the jump key steps between the chains
+        /// instead of walking fifteen cards - and the caption over the column takes one too, because a
+        /// stop only some of whose nodes are in a region has nodes the jump cannot leave from. Only
+        /// while there is more than one of them: a lone region is a jump key that swallows silently.
+        /// </summary>
         private void BuildEvolution(GraphBuilder builder, GroundTroopManagementModalWindow window)
         {
             AgeTransform table = window.UpgradeListsTable;
@@ -384,10 +395,17 @@ namespace ES2Access.Screens
                 return;
             }
 
+            IList<AgeTransform> rows = table.Children;
+            bool regions = Lists(rows) > 1;
+
             builder.BeginStop(EvolutionStop);
+            if (regions)
+            {
+                builder.SetRegion("troops:evolution/caption");
+            }
+
             Caption(builder, table, "EvolutionLabel", "troops:evolution-caption");
 
-            IList<AgeTransform> rows = table.Children;
             for (int i = 0; rows != null && i < rows.Count; i++)
             {
                 GroundTroopUpgradeList list =
@@ -397,12 +415,34 @@ namespace ES2Access.Screens
                     continue;
                 }
 
+                if (regions)
+                {
+                    builder.SetRegion("troops:evolution/type/" + i);
+                }
+
                 builder.PushContext(TroopName(window, list.TroopType));
                 _cells.Clear();
                 AddUpgrades(list, i);
-                Cells.Emit(builder, _cells);
+                Cells.EmitLinear(builder, _cells);
                 builder.PopContext();
             }
+        }
+
+        /// <summary>How many troop types the column is actually drawing a chain for.</summary>
+        private static int Lists(IList<AgeTransform> rows)
+        {
+            int count = 0;
+            for (int i = 0; rows != null && i < rows.Count; i++)
+            {
+                GroundTroopUpgradeList list =
+                    rows[i] == null ? null : rows[i].GetComponent<GroundTroopUpgradeList>();
+                if (list != null && AgeWidgets.Visible(list.AgeTransform))
+                {
+                    count++;
+                }
+            }
+
+            return count;
         }
 
         private void AddUpgrades(GroundTroopUpgradeList list, int row)
@@ -653,50 +693,81 @@ namespace ES2Access.Screens
         /// there are any, and the empire's own stocks beside it.</summary>
         private void BuildCost(GraphBuilder builder, GroundTroopManagementModalWindow window)
         {
+            AgeTransform cost = AgeWidgets.ChildNamed(
+                window.AgeTransform,
+                "ModificationCostGroup",
+                2
+            );
+            AgeTransform stock = AgeWidgets.ChildNamed(
+                window.AgeTransform,
+                "EmpireResourcesGroup",
+                2
+            );
             _cells.Clear();
-            AddResources(
-                AgeWidgets.ChildNamed(window.AgeTransform, "ModificationCostGroup", 2),
-                "ModificationCostTitle",
-                "troops:modification-cost"
-            );
-            AddResources(
-                AgeWidgets.ChildNamed(window.AgeTransform, "EmpireResourcesGroup", 2),
-                "EmpireResourcesTitle",
-                "troops:empire-resources"
-            );
-            if (_cells.Count > 0)
+            _stocks.Clear();
+            AddResources(_cells, cost, "troops:modification-cost");
+            AddResources(_stocks, stock, "troops:empire-resources");
+            if (_cells.Count == 0 && _stocks.Count == 0)
             {
-                builder.BeginStop(CostStop);
-                Cells.Emit(builder, _cells);
+                return;
             }
+
+            builder.BeginStop(CostStop);
+            EmitResources(builder, _cells, cost, "ModificationCostTitle");
+            EmitResources(builder, _stocks, stock, "EmpireResourcesTitle");
         }
 
-        /// <summary>A captioned strip of resource amounts: the caption, then one node per amount named
-        /// by the resource the game hangs on its tooltip - the same reading the economy screen's
-        /// resource grid gets, and for the same reason (the symbol beside the number is a picture).
-        /// </summary>
-        private void AddResources(AgeTransform group, string caption, string keyPrefix)
+        /// <summary>The amounts in one captioned strip, one node per amount named by the resource the
+        /// game hangs on its tooltip - the same reading the economy screen's resource grid gets, and for
+        /// the same reason (the symbol beside the number is a picture).</summary>
+        private void AddResources(List<Cell> cells, AgeTransform group, string keyPrefix)
         {
             if (group == null || !AgeWidgets.Visible(group))
             {
                 return;
             }
 
-            Cells.AddReadout(
-                _cells,
-                AgeWidgets.ChildNamed(group, caption, 2),
-                keyPrefix + "/caption"
-            );
-
             AgeTransform table = AgeWidgets.ChildNamed(group, "ResourceItemsTable", 2);
             IList<AgeTransform> items = table == null ? null : table.Children;
             for (int i = 0; items != null && i < items.Count; i++)
             {
-                AddResource(items[i], keyPrefix + "/" + i);
+                AddResource(cells, items[i], keyPrefix + "/" + i);
             }
         }
 
-        private void AddResource(AgeTransform widget, string key)
+        /// <summary>One strip, one amount per row, under the game's own word for what the strip is.
+        ///
+        /// That word is the LEVEL rather than a row of its own: the game hangs no explanation on either
+        /// caption (measured focused - no tooltip is drawn and the node's buffer holds nothing but the
+        /// caption itself), so nothing is lost by making it the thing the player hears on the way in
+        /// instead of a line they have to step over to reach the numbers.</summary>
+        private static void EmitResources(
+            GraphBuilder builder,
+            List<Cell> cells,
+            AgeTransform group,
+            string caption
+        )
+        {
+            if (cells.Count == 0)
+            {
+                return;
+            }
+
+            string name = AgeWidgets.TextOf(AgeWidgets.ChildNamed(group, caption, 2));
+            bool named = !string.IsNullOrEmpty(name);
+            if (named)
+            {
+                builder.PushContext(name);
+            }
+
+            Cells.EmitLinear(builder, cells);
+            if (named)
+            {
+                builder.PopContext();
+            }
+        }
+
+        private static void AddResource(List<Cell> cells, AgeTransform widget, string key)
         {
             ResourceItem item = widget == null ? null : widget.GetComponent<ResourceItem>();
             if (item == null || !AgeWidgets.Visible(widget))
@@ -715,14 +786,14 @@ namespace ES2Access.Screens
                 named ? tooltip : null
             );
             AgeWidgets.PointAt(vtable, widget);
-            Cells.Add(_cells, widget, ControlId.Referenced(widget, key), vtable);
+            Cells.Add(cells, widget, ControlId.Referenced(widget, key), vtable);
         }
 
         // ---- the bottom row ----
 
-        /// <summary>Close, Reset and Confirm, in the order the band draws them. Confirm carries the
-        /// game's own sentence for why it cannot be pressed - "cannot afford", "no changes" - written
-        /// onto its tooltip by <c>UpdateBottomButtons</c> (:306-318).</summary>
+        /// <summary>Close, Reset and Confirm, one per row in the order the band draws them. Confirm
+        /// carries the game's own sentence for why it cannot be pressed - "cannot afford", "no changes"
+        /// - written onto its tooltip by <c>UpdateBottomButtons</c> (:306-318).</summary>
         private void BuildActions(GraphBuilder builder, GroundTroopManagementModalWindow window)
         {
             _cells.Clear();
@@ -744,7 +815,7 @@ namespace ES2Access.Screens
             if (_cells.Count > 0)
             {
                 builder.BeginStop(ActionsStop);
-                Cells.Emit(builder, _cells);
+                Cells.EmitLinear(builder, _cells);
             }
         }
 
