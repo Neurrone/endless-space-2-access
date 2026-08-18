@@ -12,6 +12,8 @@
     - Star system (side panels, improvements, politics, rename, and system selection dialogs)
     - Empire screen (tabs and side panels)
     - Economy screen and the recipe creation dialog
+    - Senate screen and the government, laws, population, and election dialogs
+- Drawn captions across the senate family now label their sections instead of occupying rows, and the laws/population dialogs gained section jumps (Alt+Up/Down)
 - The constructibles and hangar panels (star system and empire screens) are now labelled, with the constructible filters in a "Filters" section, the hangar's buttons in an "Actions" section, and every constructible or ship read one per row in an "Available" section
 - The luxury and strategic resource grids (economy screen and recipe dialog) read as a legend of resource families followed by one resource per row, each saying its family; the recipe dialog's family names are fixed ("Industry" instead of "Improves Industry Food")
 - Tutorial pop-ups are now a list of pages: moving up and down turns the game's own pages and reads them, so the previous/next page buttons are gone. The minimized bar is a labelled "Tutorial" panel reading its title, then Minimize, then Close
