@@ -150,7 +150,7 @@ namespace ES2Access.Screens
                 AgeWidgets.ChildNamed(window.AgeTransform, "TitleLabel", 3),
                 "troops:title"
             );
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
         }
 
         // ---- Composition ----
@@ -301,7 +301,7 @@ namespace ES2Access.Screens
                 _cells.Clear();
                 AddTypeName(row, i);
                 AddStats(row, i);
-                Cells.Emit(builder, _cells);
+                Cells.EmitLinear(builder, _cells);
                 builder.PopContext();
             }
         }
@@ -856,7 +856,7 @@ namespace ES2Access.Screens
                 column == null ? null : AgeWidgets.ChildNamed(column, name, 3),
                 key
             );
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
         }
 
         /// <summary>What the game calls a troop type. Drawn once per visual row, in the middle column,

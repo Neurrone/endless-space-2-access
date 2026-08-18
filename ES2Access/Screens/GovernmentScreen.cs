@@ -112,7 +112,7 @@ namespace ES2Access.Screens
             builder.BeginStop(HeadingStop);
             _cells.Clear();
             Cells.AddReadout(_cells, AgeWidgets.ChildNamed(window.AgeTransform, "TitleGroup", 2), "government:title");
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
         }
 
         /// <summary>The government in force, under the caption the window draws over it - which is one

@@ -516,7 +516,7 @@ namespace ES2Access.Screens
                 {
                     _cells.Clear();
                     Cells.AddReadout(_cells, blank, Keys + key + "/empty");
-                    Cells.Emit(builder, _cells);
+                    Cells.EmitLinear(builder, _cells);
                     builder.PopContext();
                     return;
                 }
@@ -652,7 +652,7 @@ namespace ES2Access.Screens
                 Log.Warn("negotiation: reading the deal approval threw: " + e);
             }
 
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
         }
 
         /// <summary>Where the approval gauge stands, as the number the gauge itself is set from.</summary>

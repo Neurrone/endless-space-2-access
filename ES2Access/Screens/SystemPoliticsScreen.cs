@@ -150,7 +150,7 @@ namespace ES2Access.Screens
 
             _cells.Clear();
             AddReadout(_cells, title, "politics:title");
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
         }
 
         // ---- the parties ----
@@ -255,7 +255,7 @@ namespace ES2Access.Screens
                 AddReadout(_cells, empty, "politics:no-party");
             }
 
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
 
             GuiTable table = panel.PopulationGuiTable;
             if (table == null || !AgeWidgets.Visible(table.AgeTransform))

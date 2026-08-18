@@ -326,7 +326,7 @@ namespace ES2Access.Screens
             builder.BeginStop(TitleStop);
             _cells.Clear();
             Cells.AddReadout(_cells, heading, Keys + "heading");
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
         }
 
         /// <summary>
@@ -670,7 +670,7 @@ namespace ES2Access.Screens
             builder.BeginStop(StoryStop);
             _cells.Clear();
             Cells.AddReadout(_cells, story, Keys + "story");
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
         }
 
         // ---- the skill-tree page ----

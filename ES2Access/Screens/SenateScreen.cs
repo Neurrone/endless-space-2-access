@@ -186,7 +186,7 @@ namespace ES2Access.Screens
                         ElectionActionCell,
                         null
                     );
-                    Cells.Emit(builder, _cells);
+                    Cells.EmitLinear(builder, _cells);
                     builder.PopContext();
                 }
             }

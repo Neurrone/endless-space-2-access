@@ -129,7 +129,7 @@ namespace ES2Access.Screens
                 AgeWidgets.ChildNamed(window.AgeTransform, "Title", 3),
                 "population:title"
             );
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
         }
 
         /// <summary>The peoples of the empire, under the caption the window draws over them - a bare

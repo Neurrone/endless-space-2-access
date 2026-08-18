@@ -139,7 +139,7 @@ namespace ES2Access.Screens
                 AgeWidgets.ChildNamed(window.AgeTransform, "TitleLabel", 3),
                 "tactics:title"
             );
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
         }
 
         /// <summary>The tactics the empire has: the game's own count of them, then one card each, one
@@ -163,7 +163,7 @@ namespace ES2Access.Screens
                     : window.AvailablePlayCardsCountLabel.AgeTransform,
                 "tactics:available-count"
             );
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
 
             _cells.Clear();
             IList<AgeTransform> cards = table.Children;
@@ -198,7 +198,7 @@ namespace ES2Access.Screens
                 AgeWidgets.ChildNamed(window.MyDeckGroup, "PanelTitle", 1),
                 "tactics:deck-caption"
             );
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
 
             _cells.Clear();
             IList<AgeTransform> slots = table.Children;

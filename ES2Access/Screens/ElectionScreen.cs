@@ -437,7 +437,7 @@ namespace ES2Access.Screens
                 AddElectionActions(_cells, panel);
             }
 
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
 
             builder.BeginStop(BeforeLawsStop);
             _cells.Clear();
@@ -917,7 +917,7 @@ namespace ES2Access.Screens
             builder.BeginStop(FinalWinnersStop);
             _cells.Clear();
             AddPanelTitle(_cells, panel);
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
             ControlId firstWinner = AddWinners(builder, _cells, panel);
             if (firstWinner != null)
             {
@@ -968,7 +968,7 @@ namespace ES2Access.Screens
                 AddOutcomeLines(_cells, panel);
             }
 
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
         }
 
         /// <summary>

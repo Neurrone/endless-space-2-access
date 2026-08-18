@@ -141,7 +141,7 @@ namespace ES2Access.Screens
                     ?? AgeWidgets.ChildNamed(window.AgeTransform, "TitleGroup", 2),
                 "recipe:title"
             );
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
         }
 
         /// <summary>
@@ -462,7 +462,7 @@ namespace ES2Access.Screens
 
             builder.BeginStop(EffectsStop);
             bool named = AddCaption(builder, window.AgeTransform, EffectsStop, "RecipeEffectsGroup");
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
             if (named)
             {
                 builder.PopContext();
