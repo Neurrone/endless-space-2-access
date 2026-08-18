@@ -12,7 +12,9 @@ infrastructure); starting with the seam costs nearly nothing.
    keys even while every on-screen label shows translated text (ES2's droplist entry tables
    hold `%`-prefixed keys). Anything spoken from data rather than from a rendered label must
    pass through the game's localizer — and confirm that localizer passes plain,
-   non-key strings through unchanged, since the same table can mix both.
+   non-key strings through unchanged, since the same table can mix both. Where the engine's
+   localizer returns its own key on a miss, filter unresolved keys once in the shared text
+   reader — per-caller guards will be missed by the next reader.
    **And preserve it exactly.** Never insert the mod's separators or punctuation into game
    text: multi-line game text joins with a space, not the list separator — "disabled., Once"
    is a defect, and it appears the moment game *lines* are fed through a list-item builder

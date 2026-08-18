@@ -81,7 +81,12 @@ which no dump reveals. Key such lines on the game's *data* object, never the wid
     announced and never focused, so it is also nowhere to PUT words: a drawn heading the game
     attached an explanation or a tooltip to must land on a node — its own, or the single
     control it captions ([making-screens-accessible.md](making-screens-accessible.md) §0) —
-    or that text has no surface it can ever be reviewed from.
+    or that text has no surface it can ever be reviewed from. The working form: a caption
+    whose tooltip carries a sentence that exists nowhere else stays a ROW as well as naming
+    its region, because a label has no buffer to hold the sentence; only a bare caption
+    converts to a label. And a context re-bases positions: siblings group by (parent,
+    stop), so a context opened mid-stop restarts "n of m" and the count is no longer
+    monotone down the stop. That is the audible cost of turning a caption into a level.
   - **Stops and regions — two tiers, one division of labor.** `BeginStop` partitions a
     screen into Tab-cyclable stops with remembered positions; regions subdivide a stop.
     Tab moves between panels (stops); the region jump (WotR: Ctrl+arrows; ES2 Access:
@@ -90,7 +95,10 @@ which no dump reveals. Key such lines on the game's *data* object, never the wid
     filters on the stop key) — a screen that models its visual panels as stops has no
     region jumps between them, and that is the intended model, not a gap (WotR's
     inventory: five panels as stops; regions used inside a panel — quest groups within
-    the journal list, action-bar segments).
+    the journal list, action-bar segments). Declare regions unconditionally — a lone
+    region's jump is silently consumed, by design — but never region only PART of a
+    stop: the jump is asked of the focused node's own region key, so an unregioned node
+    answers it with silence.
   - **Expandable groups** give tree semantics to Left/Right, under two rules: `IsExpanded`
     is the cost gate — declaring children only when expanded is the whole of how a tree
     stays inside [performance.md](performance.md)'s bounded-rebuild rule — and the
@@ -132,7 +140,10 @@ which no dump reveals. Key such lines on the game's *data* object, never the wid
 
 - **Navigator** (`GraphNavigator`): binds input actions to KeyGraph operations; the single
   `EnsureFocus` site announces the focus diff, fills the review buffer, applies focus
-  visuals, and baselines the live-part watch. Navigation moves interrupt speech (held-key
+  visuals, and baselines the live-part watch. A move announces synchronously in the key
+  handler; `EnsureFocus` only catches focus changes nothing announced — so `OnFocusVisual`
+  runs AFTER the landing has spoken, and a node that must change game state before it reads
+  does it where its announcement parts resolve. Navigation moves interrupt speech (held-key
   repeat reads where you land); screen-entry announcements queue — the interrupt-policy
   tiers in [speech.md](speech.md).
 - **Screens** (`Screen`/`ScreenManager`): poll-and-diff. Each screen declares `Key`, `Layer`,
@@ -431,7 +442,13 @@ which no dump reveals. Key such lines on the game's *data* object, never the wid
   hiding it, hand the keyboard to the surface beneath (the collapsed screen stands down) and
   declare the leftover bar's controls where they are drawn — as a stop on the screen below
   (and note the screen below *changes*: see the persistent-overlay pattern next) — because
-  the game's restore affordance is mouse-only.
+  the game's restore affordance is mouse-only. A game's own page-turner (dots + prev/next +
+  one drawn page) is modelled as the LIST of pages, one row each, the row's arrival driving
+  the game's own page switch — the position stamp replaces the dots. The switch lives where
+  the row's announcement parts resolve, guarded on being the focused node (dumps and
+  searches must turn nothing); where the game's affordance is a STEP rather than a jump,
+  the landing presses it repeatedly, shortest way round, bailing when a press moves
+  nothing.
 - **A persistent overlay is a contributor, not a screen.** A HUD cluster drawn over several
   pages (end-turn controls, resource banners, a collapsed tutorial bar) must not be declared
   by whichever page first met it — when the player moves to another page under the same
