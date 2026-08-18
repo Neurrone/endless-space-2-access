@@ -38,8 +38,12 @@ namespace ES2Access.Screens
         private static readonly object DetailStop = "laws:detail";
         private static readonly object ActionsStop = "laws:actions";
 
-        /// <summary>Shared by the card rows, so up and down across the grid keep the column.</summary>
-        private static readonly object CardRowKey = "laws:card-row";
+        /// <summary>The three sections of the detail pane, in the order it draws them: the law itself,
+        /// the effects the game captions, and the band that would enact it. Declared whatever the pane
+        /// happens to hold, so the region jump means the same thing on every law.</summary>
+        private const string LawRegion = "laws:detail/law";
+        private const string EffectsRegion = "laws:detail/effects";
+        private const string ActionRegion = "laws:detail/action";
 
         // Reused across builds rather than allocated per frame: Build runs every tick.
         private readonly List<Cell> _cells = new List<Cell>();
@@ -116,7 +120,7 @@ namespace ES2Access.Screens
             );
             Cells.AddReadout(_cells, Widget(window.VotedLawSlotsLabel), "laws:slots-left");
             AddInfluence(_cells, window);
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
         }
 
         /// <summary>What the empire has to spend on laws, and what the next turn adds. The window draws
@@ -160,7 +164,7 @@ namespace ES2Access.Screens
                 AddFilter(_cells, children[i], i);
             }
 
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
         }
 
         private static void AddFilter(List<Cell> cells, AgeTransform widget, int index)
@@ -188,7 +192,7 @@ namespace ES2Access.Screens
             builder.BeginStop(CardsStop);
             _cells.Clear();
             LawCards.Cards(_cells, window.LawCardsTable, "laws:card/");
-            Emit(builder, _cells, CardRowKey);
+            Cells.EmitLinear(builder, _cells);
         }
 
         /// <summary>
@@ -198,6 +202,13 @@ namespace ES2Access.Screens
         ///
         /// The pane is not drawn at all until something is selected (<c>LawDetails.Visible</c>), and a
         /// stop with nothing in it does not exist that frame.
+        ///
+        /// The pane's three sections are regions, declared whether or not this law fills them, so the
+        /// region jump lands in the same place on every law rather than moving with the content. Only
+        /// the middle one has a drawn caption; the game writes none over the law itself or over the
+        /// band that enacts it, so those two are keyed and nothing is said over them that the game does
+        /// not say. "Effects" carries nothing on hover (measured), so it names its section instead of
+        /// standing in it.
         /// </summary>
         private void BuildDetail(GraphBuilder builder, LawsManagementModalWindow window)
         {
@@ -208,25 +219,27 @@ namespace ES2Access.Screens
             }
 
             builder.BeginStop(DetailStop);
+            builder.SetRegion(LawRegion);
             _cells.Clear();
             Cells.AddReadout(_cells, Widget(window.LawTitle), "laws:law-title");
             Cells.AddReadout(_cells, Widget(window.LawShortTitle), "laws:law-short-title");
             AddDescription(_cells, window);
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
 
-            _cells.Clear();
-            AddEffects(_cells, window.PanelFeatureEffects);
-            Cells.Emit(builder, _cells);
+            builder.SetRegion(EffectsRegion);
+            AddEffects(builder, window.PanelFeatureEffects);
 
             // The upkeep total and the cost are drawn INSIDE the two blocks above them - the total in
             // the upkeep block, the cost in the button it is the price of - so they are read as part of
             // those and never declared a second time.
+            builder.SetRegion(ActionRegion);
             _cells.Clear();
             Cells.AddReadout(_cells, Widget(window.PanelFeatureExperience), "laws:experience");
             Cells.AddReadout(_cells, Widget(window.PanelFeatureLawUpkeep), "laws:upkeep");
             AddAction(_cells, window.VoteButton, "laws:vote");
             AddAction(_cells, window.AbrogateButton, "laws:abolish");
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
+            builder.SetRegion(null);
         }
 
         /// <summary>
@@ -292,8 +305,9 @@ namespace ES2Access.Screens
         }
 
         /// <summary>The block of effect lines under its caption - one line each, because each is a
-        /// separate sentence the game wrote about a separate effect.</summary>
-        private static void AddEffects(List<Cell> cells, PanelFeatureEffects effects)
+        /// separate sentence the game wrote about a separate effect. The caption is the block's name: a
+        /// caption the game leaves empty pushes nothing rather than a blank level.</summary>
+        private void AddEffects(GraphBuilder builder, PanelFeatureEffects effects)
         {
             AgeTransform group = effects == null ? null : effects.AgeTransform;
             if (group == null || !AgeWidgets.Visible(group))
@@ -303,8 +317,14 @@ namespace ES2Access.Screens
 
             AgeTransform caption =
                 effects.TitleLabel == null ? null : effects.TitleLabel.AgeTransform;
-            Cells.AddReadout(cells, caption, "laws:effects-caption");
+            string name = caption == null ? null : AgeWidgets.TextOf(caption);
+            bool named = !string.IsNullOrEmpty(name);
+            if (named)
+            {
+                builder.PushContext(name);
+            }
 
+            _cells.Clear();
             IList<AgeTransform> bands = group.Children;
             for (int i = 0; bands != null && i < bands.Count; i++)
             {
@@ -317,8 +337,14 @@ namespace ES2Access.Screens
                 IList<AgeTransform> lines = band.Children;
                 for (int j = 0; lines != null && j < lines.Count; j++)
                 {
-                    Cells.AddReadout(cells, lines[j], "laws:effect/" + i + "/" + j);
+                    Cells.AddReadout(_cells, lines[j], "laws:effect/" + i + "/" + j);
                 }
+            }
+
+            Cells.EmitLinear(builder, _cells);
+            if (named)
+            {
+                builder.PopContext();
             }
         }
 
@@ -335,7 +361,7 @@ namespace ES2Access.Screens
             if (_cells.Count > 0)
             {
                 builder.BeginStop(ActionsStop);
-                Cells.Emit(builder, _cells);
+                Cells.EmitLinear(builder, _cells);
             }
         }
 
@@ -367,22 +393,6 @@ namespace ES2Access.Screens
         {
             return AgeWidgets.Transform(button);
         }
-
-        private static void Emit(GraphBuilder builder, List<Cell> cells, object rowKey)
-        {
-            foreach (List<Cell> row in AgeLayout.Rows(cells, CellWidget))
-            {
-                builder.StartRow(rowKey);
-                foreach (Cell cell in row)
-                {
-                    builder.AddItem(cell.Id, cell.Vtable);
-                }
-
-                builder.EndRow();
-            }
-        }
-
-        private static readonly Func<Cell, AgeTransform> CellWidget = cell => cell.Widget;
 
         private static LawsManagementModalWindow Window()
         {
