@@ -97,7 +97,7 @@ namespace ES2Access.Screens
                 SteamWorkshop.LegalAgreementButton(window),
                 "modding:legal"
             );
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
 
             builder.BeginStop(LibraryStop);
             Library(builder, window);
@@ -113,7 +113,7 @@ namespace ES2Access.Screens
             Cells.AddControl(_cells, window.ValidateButton, "modding:confirm");
             Cells.AddControl(_cells, SteamWorkshop.OpenButton(window), "modding:workshop");
             Cells.AddControl(_cells, Back(window), "modding:back");
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
         }
 
         /// <summary>The mods the game found, under the two filters that decide which of them are listed.
@@ -150,7 +150,7 @@ namespace ES2Access.Screens
                 Log.Warn("modding: reading the mod library threw: " + e);
             }
 
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
             builder.PopContext();
         }
 

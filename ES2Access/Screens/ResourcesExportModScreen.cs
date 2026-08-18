@@ -278,7 +278,7 @@ namespace ES2Access.Screens
                 AgeWidgets.ChildNamed(window.AgeTransform, "BackButton", 2),
                 "resources-export:back"
             );
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
         }
 
         /// <summary>The assets the game found, or the curtain it is still finding them behind.</summary>
@@ -370,7 +370,7 @@ namespace ES2Access.Screens
             Filter(window.ShipsToggle, "resources-export:filter/ships");
             Filter(window.WeaponsToggle, "resources-export:filter/weapons");
             Filter(window.PlanetsToggle, "resources-export:filter/planets");
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
         }
 
         private void Filter(AgeControlToggle toggle, string key)
@@ -419,7 +419,7 @@ namespace ES2Access.Screens
                         panel.NoResourceSelectedGroup,
                         "resources-export:no-selection"
                     );
-                    Cells.Emit(builder, _cells);
+                    Cells.EmitLinear(builder, _cells);
                 }
                 else
                 {
@@ -524,7 +524,7 @@ namespace ES2Access.Screens
                 "resources-export:export-textures"
             );
             OpenFolder(panel);
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
 
             Line(builder, panel.ExportResultLabel, "resources-export:result");
         }

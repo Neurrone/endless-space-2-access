@@ -35,10 +35,6 @@ namespace ES2Access.Screens
         private static readonly object ChoicesStop = "tutorial-selection:choices";
         private static readonly object ActionsStop = "tutorial-selection:actions";
 
-        /// <summary>Shared by the three cards, so up and down between the choices and the button row
-        /// keep the column they were in.</summary>
-        private static readonly object ChoiceRowKey = "tutorial-selection:choice-row";
-
         /// <summary>Topmost first - what the player reads first is what the card is called.</summary>
         private static readonly Comparison<AgePrimitiveLabel> Drawn = CompareByTop;
 
@@ -169,7 +165,7 @@ namespace ES2Access.Screens
             AddCard(_cells, window.BeginnerToggle, 0);
             AddCard(_cells, window.AdvancedToggle, 1);
             AddCard(_cells, window.ExpertToggle, 2);
-            Emit(builder, _cells, ChoiceRowKey);
+            Emit(builder, _cells);
 
             // Focus starts on the cards, not on the heading above them: the heading is also what
             // arriving announces, and hearing it twice in a row is the cost of having it both ways.
@@ -267,7 +263,7 @@ namespace ES2Access.Screens
             }
             catch (Exception) { }
 
-            Emit(builder, _cells, null);
+            Emit(builder, _cells);
         }
 
         private static void AddButton(List<Cell> cells, AgeTransform widget)
@@ -372,17 +368,17 @@ namespace ES2Access.Screens
 
         private static readonly Func<Cell, AgeTransform> CellWidget = cell => cell.Widget;
 
-        private static void Emit(GraphBuilder builder, List<Cell> cells, object rowKey)
+        /// <summary>One node per row, in the order the game drew them. The three cards are peers of one
+        /// kind and so are the two buttons under them: the line the window drew each set on is a fact
+        /// about its layout box, so the player walks the whole page with one key.</summary>
+        private static void Emit(GraphBuilder builder, List<Cell> cells)
         {
             foreach (List<Cell> row in AgeLayout.Rows(cells, CellWidget))
             {
-                builder.StartRow(rowKey);
                 foreach (Cell cell in row)
                 {
                     builder.AddItem(cell.Id, cell.Vtable);
                 }
-
-                builder.EndRow();
             }
         }
 

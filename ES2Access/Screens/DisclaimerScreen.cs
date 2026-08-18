@@ -80,7 +80,7 @@ namespace ES2Access.Screens
             builder.BeginStop(ActionsStop);
             _cells.Clear();
             WindowShape.Controls(_cells, window, Prefix);
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
         }
 
         /// <summary>The statement itself. The title is not declared beside it: it is this screen's NAME,
