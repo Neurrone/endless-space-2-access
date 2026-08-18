@@ -907,13 +907,10 @@ namespace ES2Access.Screens
         {
             ApplyPendingExpansions(builder);
             _hud.Empire(builder);
-            // Under the name of the view rather than beside it: the two the game draws there are a row,
-            // and left and right on the zoom are the zoom's own keys - a slider in that row would take
-            // the only keys that walk it.
-            if (_hud.ViewTitle(builder))
-            {
-                _zoom.Build(builder, "hud:view-title/zoom");
-            }
+            // The map's own ladder, handed to the cluster that names the view rather than appended
+            // after it: the two are one control per row and the ladder comes first, which is the
+            // cluster's ordering to make.
+            _hud.ViewTitle(builder, _zoom);
 
             builder.BeginStop(SystemStop);
             BuildSystems(builder);

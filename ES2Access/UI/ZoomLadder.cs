@@ -58,11 +58,19 @@ namespace ES2Access.UI
             return false;
         }
 
+        /// <summary>Whether there is a rung to declare at all - a battle or the system-discovery view has
+        /// none. Asked by the cluster the ladder is declared INTO before it begins its stop, because a
+        /// stop with nothing in it is a Tab press that lands nowhere.</summary>
+        public static bool Rungs
+        {
+            get { return GalaxyViewLevels.ZoomRung >= 0; }
+        }
+
         /// <summary>Declared only where the question applies at all - a battle or the system-discovery
         /// view has no rung.</summary>
         public void Build(GraphBuilder builder, object key)
         {
-            if (GalaxyViewLevels.ZoomRung < 0)
+            if (!Rungs)
             {
                 return;
             }
