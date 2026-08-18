@@ -150,7 +150,7 @@ namespace ES2Access.Screens
                 Log.Warn("minor diplomacy: reading the faction threw: " + e);
             }
 
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
             builder.PopContext();
         }
 
@@ -212,7 +212,7 @@ namespace ES2Access.Screens
                 Log.Warn("minor diplomacy: reading the relation threw: " + e);
             }
 
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
             builder.PopContext();
         }
 
@@ -233,7 +233,7 @@ namespace ES2Access.Screens
                 Log.Warn("minor diplomacy: reading the gains threw: " + e);
             }
 
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
             builder.PopContext();
         }
 
@@ -280,7 +280,7 @@ namespace ES2Access.Screens
                 Log.Warn("minor diplomacy: reading the treasury threw: " + e);
             }
 
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
             builder.PopContext();
         }
 

@@ -197,7 +197,7 @@ namespace ES2Access.Screens
                 Log.Warn("pirate diplomacy: reading the standing threw: " + e);
             }
 
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
             builder.PopContext();
         }
 
@@ -238,7 +238,7 @@ namespace ES2Access.Screens
                 Log.Warn("pirate diplomacy: reading the next fleet threw: " + e);
             }
 
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
             builder.PopContext();
         }
 
@@ -401,7 +401,7 @@ namespace ES2Access.Screens
                 Log.Warn("pirate diplomacy: reading the treasury threw: " + e);
             }
 
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
             builder.PopContext();
         }
 
