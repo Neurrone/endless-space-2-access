@@ -156,7 +156,8 @@ namespace ES2Access.Screens
         // ---- the parties ----
 
         /// <summary>
-        /// One radio per party the game is drawing, in the row it drew them in: the party's name, whether
+        /// One radio per party the game is drawing, one per row in the order it drew them - a strip of
+        /// choices of one kind, where a sideways step buys nothing a step down does not: the party's name, whether
         /// it is the one being explained, and the support figure written under the name.
         ///
         /// Keyed STRUCTURALLY by the toggle's place in the group, deliberately: the party wrapper a
@@ -186,7 +187,7 @@ namespace ES2Access.Screens
                 Log.Warn("politics: reading the parties threw: " + e);
             }
 
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
         }
 
         private static void AddParty(List<Cell> cells, AgeTransform widget, int index)
@@ -437,7 +438,7 @@ namespace ES2Access.Screens
                 Log.Warn("politics: reading the bottom band threw: " + e);
             }
 
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
         }
 
         // ---- shared ----
