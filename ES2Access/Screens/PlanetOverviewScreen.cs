@@ -48,9 +48,6 @@ namespace ES2Access.Screens
         /// too, and until they were declared here they were on the screen and out of reach.</summary>
         private readonly GlobalHud _hud = new GlobalHud();
 
-        /// <summary>Shared by the population units so up and down across them keep the column.</summary>
-        private static readonly object PopulationRowKey = "planet:population-row";
-
         /// <summary>How far into a row to look for the tooltips that belong to it.</summary>
         private const int TooltipDepth = 4;
 
@@ -347,8 +344,9 @@ namespace ES2Access.Screens
 
         // ---- the info panel ----
 
-        /// <summary>The planet's name with the game's own two navigation buttons beside it, then the
-        /// five outputs under them, in the two bands they are drawn in.</summary>
+        /// <summary>The planet's name, the game's own two navigation buttons, then the five outputs
+        /// under them - one per row, in the order the panel draws them. The two bands are how the panel
+        /// packs them in, not columns of anything.</summary>
         private void BuildInfo(GraphBuilder builder, PlanetInfoSidePanel panel, Planet planet)
         {
             _cells.Clear();
@@ -363,7 +361,7 @@ namespace ES2Access.Screens
             );
             AddButton(_cells, panel.NextPlanetButton, "planet:next", ModStrings.PlanetNext);
             AddFidsi(_cells, panel, planet);
-            Emit(builder, _cells, null);
+            EmitLinear(builder, _cells);
         }
 
         /// <summary>
@@ -439,7 +437,7 @@ namespace ES2Access.Screens
             _cells.Clear();
             AgeTransform count = Transform(panel.PopulationCountLabel);
             AddReadout(_cells, count == null ? null : count.Parent, "planet:population-summary");
-            Emit(builder, _cells, null);
+            EmitLinear(builder, _cells);
 
             _cells.Clear();
             IList<AgeTransform> units = Children(panel.PopulationsContainer);
@@ -448,7 +446,7 @@ namespace ES2Access.Screens
                 AddPopulation(_cells, units[i], i);
             }
 
-            Emit(builder, _cells, PopulationRowKey);
+            EmitLinear(builder, _cells);
         }
 
         private static void AddPopulation(List<Cell> cells, AgeTransform widget, int index)
@@ -515,7 +513,7 @@ namespace ES2Access.Screens
                 AddCardRows(_cells, rows[i]);
             }
 
-            Emit(builder, _cells, null);
+            EmitLinear(builder, _cells);
         }
 
         /// <summary>
@@ -710,19 +708,18 @@ namespace ES2Access.Screens
 
         private static readonly Func<Cell, AgeTransform> CellWidget = cell => cell.Widget;
 
-        /// <summary>Declare a panel's controls in the bands they are drawn in - measured, so a row the
-        /// game inserts between two others is walked where it appears.</summary>
-        private static void Emit(GraphBuilder builder, List<Cell> cells, object rowKey)
+        /// <summary>Declare a panel's controls one per row, in the order the game drew them - measured,
+        /// so a control the game inserts between two others is walked where it appears. The bands the
+        /// page draws are a layout, not columns: the five outputs are peers of one kind and so are the
+        /// kinds of people living here, so the player walks all of them with one key.</summary>
+        private static void EmitLinear(GraphBuilder builder, List<Cell> cells)
         {
             foreach (List<Cell> row in AgeLayout.Rows(cells, CellWidget))
             {
-                builder.StartRow(rowKey);
-                foreach (Cell cell in row)
+                for (int i = 0; i < row.Count; i++)
                 {
-                    builder.AddItem(cell.Id, cell.Vtable);
+                    builder.AddItem(row[i].Id, row[i].Vtable);
                 }
-
-                builder.EndRow();
             }
         }
 
