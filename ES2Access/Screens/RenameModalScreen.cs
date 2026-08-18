@@ -230,19 +230,19 @@ namespace ES2Access.Screens
                 return;
             }
 
-            // The two buttons along the bottom edge, emitted through the layout so that the row the box
-            // draws them in is the row the player walks: Cancel at the left and Confirm at the right
-            // (measured: x 340 and x 856, both at y 424, of a 600-wide box), one row, Left and Right
-            // between them. Adding them straight to the builder made each its own row, which is how a
-            // pair of buttons drawn side by side came to need Down between them. Cancel is the button
-            // the window keeps no field for, so it is found by the name the prefab gives it.
+            // The two buttons along the bottom edge, one per row in the order the box draws them:
+            // Cancel at the left and Confirm at the right (measured: x 340 and x 856, both at y 424, of
+            // a 600-wide box). They are a window's bottom bar - two answers of one kind - and such a
+            // band is walked with one key, because a sideways move buys nothing a step down does not
+            // and the line they landed on is the layout's business. Cancel is the button the window
+            // keeps no field for, so it is found by the name the prefab gives it.
             _buttons.Clear();
             AddButton(
                 AgeWidgets.Button(AgeWidgets.ChildNamed(window.AgeTransform, "CancelButton", 3)),
                 "rename:cancel"
             );
             AddButton(window.ValidateButton, "rename:confirm");
-            Cells.Emit(builder, _buttons);
+            Cells.EmitLinear(builder, _buttons);
         }
 
         // Reused across builds rather than allocated per frame: Build runs every tick.
