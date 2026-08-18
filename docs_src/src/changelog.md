@@ -9,6 +9,8 @@
     - Confirmation dialogs
     - End turn controls
     - Fleet panel
+    - Star system (side panels, improvements, politics, rename, and system selection dialogs)
+- The constructibles and hangar panels (star system and empire screens) are now labelled, with the filters/toolbar in a "Filters" section and every constructible or ship read one per row in an "Available" section
 - Tutorial pop-ups are now a list of pages: moving up and down turns the game's own pages and reads them, so the previous/next page buttons are gone. The minimized bar is a labelled "Tutorial" panel reading its title, then Minimize, then Close
 - The screen title's close button is no longer in the tab order — press Escape to close a screen instead. On the galaxy map, the view title now labels the panel holding the zoom and scan controls
 
