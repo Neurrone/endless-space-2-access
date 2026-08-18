@@ -161,7 +161,7 @@ namespace ES2Access.Screens
                 notification == null ? (Func<float>)null : notification.GetTimeLeftRatio,
                 "battle-setup/timer"
             );
-            Cells.Emit(builder, controls);
+            Cells.EmitLinear(builder, controls);
         }
 
         /// <summary>
@@ -238,7 +238,7 @@ namespace ES2Access.Screens
                 notification == null ? (Func<float>)null : notification.GetReplayTimeLeftRatio,
                 "battle-report/replay-timer"
             );
-            Cells.Emit(builder, controls);
+            Cells.EmitLinear(builder, controls);
         }
 
         /// <summary>
@@ -293,7 +293,7 @@ namespace ES2Access.Screens
                 notification == null ? (Func<float>)null : notification.GetTimeLeftRatio,
                 "ground-setup/timer"
             );
-            Cells.Emit(builder, controls);
+            Cells.EmitLinear(builder, controls);
         }
 
         /// <summary>
@@ -347,7 +347,7 @@ namespace ES2Access.Screens
             Command(controls, window.StandByButton, GroundStandByTitleKey, "ground-report/stand-by");
             Command(controls, window.ContinueButton, GroundContinueTitleKey, "ground-report/continue");
             Command(controls, window.ReplayButton, GroundReplayTitleKey, "ground-report/replay");
-            Cells.Emit(builder, controls);
+            Cells.EmitLinear(builder, controls);
         }
 
         // ---- the pieces both popups are made of ----
