@@ -17,7 +17,14 @@
     - Troop management, battle tactics, and fleet selection dialogs
     - Academy screen, hero inspection, hero selection, and the academy dialogs
     - Research screen, quest journal, and the diplomacy screens (including negotiation, minor faction, and pirate dialogs)
+    - Notification pop-ups, battle pop-ups and battle screens
+    - All dialogs (error, non-blocking messages, victory, journal, chat tabs, and more)
+    - The whole out-game family (options, load/save, new game lobby, faction chooser, custom faction editor, tutorial picker, DLC browser, mod manager, and asset exporter)
 - The diplomacy screen now says whose ring of empires is shown (the centre empire is a readable line at the top of the list)
+- Notification pop-ups read their content first; the browse controls (previous/next) and the window controls come after it
+- The faction chooser's ship hull viewer is a list: moving through it shows and reads each hull, replacing the previous/next buttons
+- The options screen's settings say which category tab they belong to; the DLC browser's list says which tab it is showing
+- The pause menu names itself from the game's own drawn title
 - Drawn captions across the senate family now label their sections instead of occupying rows, and the laws/population dialogs gained section jumps (Alt+Up/Down)
 - The ship designer's module filters share one row again inside their "Filters" section, matching the constructibles pattern
 - The view title is no longer in the tab order anywhere: the galaxy map keeps the zoom and scan controls, other views keep just their scan button, and Escape remains the way to close a screen
