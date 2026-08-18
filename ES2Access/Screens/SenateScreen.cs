@@ -51,10 +51,6 @@ namespace ES2Access.Screens
         private static readonly object LawsStop = "senate:laws";
         private static readonly object CensusStop = "senate:census";
 
-        /// <summary>Shared by the law slots and by the senator cards, so up and down out of a strip of
-        /// cards keeps the column it was in.</summary>
-        private static readonly object SlotRowKey = "senate:slot-row";
-
         /// <summary>The clusters the game draws over every page. They are drawn over this one too.
         /// </summary>
         private readonly GlobalHud _hud = new GlobalHud();
@@ -427,7 +423,7 @@ namespace ES2Access.Screens
 
             _cells.Clear();
             Cells.AddReadout(_cells, TotalGroup(panel), "senate:assembly/total");
-            Emit(builder, _cells, null);
+            Cells.EmitLinear(builder, _cells);
             Unname(builder, named);
         }
 
@@ -499,7 +495,7 @@ namespace ES2Access.Screens
                 AddSenatorCard(_cells, cards[i], i);
             }
 
-            Emit(builder, _cells, SlotRowKey);
+            Cells.EmitLinear(builder, _cells);
             Unname(builder, named);
         }
 
@@ -626,7 +622,7 @@ namespace ES2Access.Screens
 
             _cells.Clear();
             LawCards.Cards(_cells, panel.LawCardsTable, "senate:law-slot/");
-            Emit(builder, _cells, SlotRowKey);
+            Cells.EmitLinear(builder, _cells);
 
             _cells.Clear();
             Cells.AddControl(_cells, AgeWidgets.Transform(panel.VoteLawsButton), "senate:laws/vote");
@@ -636,7 +632,7 @@ namespace ES2Access.Screens
                 panel.LawUpkeepLabel == null ? null : panel.LawUpkeepLabel.AgeTransform,
                 "senate:laws/upkeep"
             );
-            Emit(builder, _cells, null);
+            Cells.EmitLinear(builder, _cells);
             Unname(builder, named);
         }
 
@@ -660,7 +656,7 @@ namespace ES2Access.Screens
 
             _cells.Clear();
             AddCensusTotal(_cells, panel);
-            Emit(builder, _cells, null);
+            Cells.EmitLinear(builder, _cells);
 
             _cells.Clear();
             AgeTransform container = panel.PopulationCensusArcsContainer;
@@ -670,7 +666,7 @@ namespace ES2Access.Screens
                 AddCensusArc(_cells, arcs[i], i);
             }
 
-            Emit(builder, _cells, null);
+            Cells.EmitLinear(builder, _cells);
 
             _cells.Clear();
             Cells.AddControl(
@@ -683,7 +679,7 @@ namespace ES2Access.Screens
                 AgeWidgets.Transform(panel.GeneManagementButton),
                 "senate:census/genes"
             );
-            Emit(builder, _cells, null);
+            Cells.EmitLinear(builder, _cells);
             Unname(builder, named);
         }
 
@@ -830,22 +826,6 @@ namespace ES2Access.Screens
                 return null;
             }
         }
-
-        private static void Emit(GraphBuilder builder, List<Cell> cells, object rowKey)
-        {
-            foreach (List<Cell> row in AgeLayout.Rows(cells, CellWidget))
-            {
-                builder.StartRow(rowKey);
-                foreach (Cell cell in row)
-                {
-                    builder.AddItem(cell.Id, cell.Vtable);
-                }
-
-                builder.EndRow();
-            }
-        }
-
-        private static readonly Func<Cell, AgeTransform> CellWidget = cell => cell.Widget;
 
         private static string ScreenTitle()
         {
