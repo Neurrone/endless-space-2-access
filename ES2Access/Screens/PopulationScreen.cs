@@ -41,9 +41,14 @@ namespace ES2Access.Screens
         private static readonly object PoliticsStop = "population:politics";
         private static readonly object ActionsStop = "population:actions";
 
-        /// <summary>Shared by the list rows, so up and down between a people and its boost button keep
-        /// the column they were in.</summary>
-        private static readonly object ListRowKey = "population:list-row";
+        /// <summary>The sections of the two right-hand stops, declared whatever the selected people
+        /// happens to fill, so the region jump means the same thing on every people. The captioned
+        /// blocks key themselves on the prefix their lines are keyed with.</summary>
+        private const string AffinityRegion = "population:detail/affinity";
+        private const string AssimilateRegion = "population:detail/assimilate";
+        private const string PoliticsIntroRegion = "population:politics/intro";
+        private const string TraitsRegion = "population:politics/traits";
+        private const string ReactionsRegion = "population:politics/reactions";
 
         // Reused across builds rather than allocated per frame: Build runs every tick.
         private readonly List<Cell> _cells = new List<Cell>();
@@ -127,18 +132,17 @@ namespace ES2Access.Screens
             Cells.Emit(builder, _cells);
         }
 
-        /// <summary>The peoples of the empire, with the caption the window draws over them. Each row is
-        /// the people and, where the game offers one, the button that would favour them.</summary>
+        /// <summary>The peoples of the empire, under the caption the window draws over them - a bare
+        /// word with nothing on hover (measured), so it names the list rather than standing in it. A
+        /// people and the button that would favour them are two controls, walked one per step: the
+        /// button is a control of its own kind and there is nothing to preserve a column of.</summary>
         private void BuildList(GraphBuilder builder, PopulationModalWindow window)
         {
             builder.BeginStop(ListStop);
-            _cells.Clear();
-            Cells.AddReadout(
-                _cells,
-                AgeWidgets.ChildNamed(window.AgeTransform, "EmpirePopulationTitle", 3),
-                "population:list-caption"
+            bool named = Caption(
+                builder,
+                AgeWidgets.ChildNamed(window.AgeTransform, "EmpirePopulationTitle", 3)
             );
-            Cells.Emit(builder, _cells);
 
             _cells.Clear();
             AgeTransform table = window.PopulationAffinityFiltersTable;
@@ -148,7 +152,31 @@ namespace ES2Access.Screens
                 AddPeople(_cells, rows[i], i);
             }
 
-            Emit(builder, _cells, ListRowKey);
+            Cells.EmitLinear(builder, _cells);
+            Unname(builder, named);
+        }
+
+        /// <summary>The caption the window draws over a band, as the band's own name. A caption the
+        /// game left empty pushes nothing, so nothing is announced under a blank level.</summary>
+        private static bool Caption(GraphBuilder builder, AgeTransform widget)
+        {
+            string text =
+                widget == null || !AgeWidgets.Visible(widget) ? null : AgeWidgets.TextOf(widget);
+            if (string.IsNullOrEmpty(text))
+            {
+                return false;
+            }
+
+            builder.PushContext(text);
+            return true;
+        }
+
+        private static void Unname(GraphBuilder builder, bool named)
+        {
+            if (named)
+            {
+                builder.PopContext();
+            }
         }
 
         /// <summary>One people: their name, how many of them there are, whether they are the one the
@@ -236,18 +264,23 @@ namespace ES2Access.Screens
         /// paragraph about them, the collection thresholds, then the three captioned blocks - what they
         /// do to a planet, what collecting them unlocks, what they contribute politically - and the
         /// assimilation band when the game draws one.
+        ///
+        /// Each captioned block is a region of its own, declared whether or not this people fills it,
+        /// so the region jump means the same thing on every people; the people's own name and paragraph
+        /// and the assimilation button are the two sections the game captions nothing over, and they
+        /// are keyed rather than given a word the game does not draw. None of the four captions carries
+        /// anything on hover (measured), so each names its block instead of standing in it.
         /// </summary>
         private void BuildDetail(GraphBuilder builder, PopulationModalWindow window)
         {
             builder.BeginStop(DetailStop);
+            builder.SetRegion(AffinityRegion);
             _cells.Clear();
             Cells.AddReadout(_cells, Widget(window.AffinityTitle), "population:affinity");
             AddParagraph(_cells, window.AffinityDescription, "population:affinity-description");
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
 
-            _cells.Clear();
-            AddThresholds(_cells, window);
-            Cells.Emit(builder, _cells);
+            AddThresholds(builder, window);
 
             // One emission per captioned block. The window draws two of them SIDE BY SIDE, so laying
             // the lot out by where they are drawn read across both at once and put each caption three
@@ -261,22 +294,39 @@ namespace ES2Access.Screens
             Block(builder, Widget(window.PoliticalOpinion), "population:political-output");
             Block(builder, Widget(window.AssimilationEffects), "population:assimilation");
 
+            builder.SetRegion(AssimilateRegion);
             _cells.Clear();
             Cells.AddControl(_cells, AgeWidgets.Transform(window.AssimilateButton), "population:assimilate");
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
+            builder.SetRegion(null);
         }
 
         private void Block(GraphBuilder builder, AgeTransform group, string keyPrefix)
         {
+            if (group == null || !AgeWidgets.Visible(group))
+            {
+                return;
+            }
+
+            builder.SetRegion(keyPrefix);
+            bool named = Caption(builder, AgeWidgets.ChildNamed(group, "Title", 1));
             _cells.Clear();
-            AddBlock(_cells, group, keyPrefix);
-            Cells.Emit(builder, _cells);
+            AgeTransform table = AgeWidgets.ChildNamed(group, "EffectsTable", 4);
+            IList<AgeTransform> lines = table == null ? null : table.Children;
+            for (int i = 0; lines != null && i < lines.Count; i++)
+            {
+                Cells.AddReadout(_cells, lines[i], keyPrefix + "/" + i);
+            }
+
+            Cells.EmitLinear(builder, _cells);
+            Unname(builder, named);
         }
 
         /// <summary>How many of a people it takes to unlock each collection bonus, and what each one
         /// gives - which the window draws as a row of circles with the effect on each circle's own
-        /// tooltip and no words anywhere.</summary>
-        private static void AddThresholds(List<Cell> cells, PopulationModalWindow window)
+        /// tooltip and no words anywhere. They are peers of one kind, so they are walked one per step
+        /// rather than sideways.</summary>
+        private void AddThresholds(GraphBuilder builder, PopulationModalWindow window)
         {
             AgeTransform group = AgeWidgets.ChildNamed(window.AgeTransform, "CollectionUnlockGroup", 5);
             if (group == null || !AgeWidgets.Visible(group))
@@ -284,18 +334,19 @@ namespace ES2Access.Screens
                 return;
             }
 
-            Cells.AddReadout(
-                cells,
-                AgeWidgets.ChildNamed(group, "Title", 1),
-                "population:thresholds-caption"
-            );
+            builder.SetRegion("population:thresholds");
+            bool named = Caption(builder, AgeWidgets.ChildNamed(group, "Title", 1));
 
+            _cells.Clear();
             AgeTransform table = window.PopulationThresholdsTable;
             IList<AgeTransform> items = table == null ? null : table.Children;
             for (int i = 0; items != null && i < items.Count; i++)
             {
-                AddThreshold(cells, items[i], i);
+                AddThreshold(_cells, items[i], i);
             }
+
+            Cells.EmitLinear(builder, _cells);
+            Unname(builder, named);
         }
 
         /// <summary>One collection threshold. The circle says nothing in words, so its name is the
@@ -332,27 +383,6 @@ namespace ES2Access.Screens
             );
         }
 
-        /// <summary>A captioned block of lines - the caption first, then one node per line the game
-        /// wrote under it. Each of those lines is a separate statement about the people, so gluing them
-        /// into one readout would turn a list into a paragraph.</summary>
-        private static void AddBlock(List<Cell> cells, AgeTransform group, string keyPrefix)
-        {
-            if (group == null || !AgeWidgets.Visible(group))
-            {
-                return;
-            }
-
-            AgeTransform caption = AgeWidgets.ChildNamed(group, "Title", 1);
-            Cells.AddReadout(cells, caption, keyPrefix + "/caption");
-
-            AgeTransform table = AgeWidgets.ChildNamed(group, "EffectsTable", 4);
-            IList<AgeTransform> lines = table == null ? null : table.Children;
-            for (int i = 0; lines != null && i < lines.Count; i++)
-            {
-                Cells.AddReadout(cells, lines[i], keyPrefix + "/" + i);
-            }
-        }
-
         /// <summary>
         /// How this people reacts to what happens in politics: the paragraph explaining the idea, the
         /// political traits they have, and one row per party saying what they would do to its support.
@@ -361,6 +391,10 @@ namespace ES2Access.Screens
         /// sector carries the party's name AND the sentence, and the column is the same six words drawn
         /// again as a legend. The sectors all occupy the same rectangle, so they are declared in the
         /// game's own order rather than laid out by where they are drawn.
+        ///
+        /// The panel's own caption names the whole stop and the traits' caption names the traits;
+        /// neither carries anything on hover (measured), so neither is a node. Three regions, declared
+        /// whatever this people has: the paragraph, the traits, and the ring.
         /// </summary>
         private void BuildPolitics(GraphBuilder builder, PopulationModalWindow window)
         {
@@ -371,24 +405,22 @@ namespace ES2Access.Screens
             }
 
             builder.BeginStop(PoliticsStop);
-            _cells.Clear();
-            Cells.AddReadout(
-                _cells,
-                AgeWidgets.ChildNamed(group, "PoliticalAffinityTitle", 2),
-                "population:politics-title"
+            bool titled = Caption(
+                builder,
+                AgeWidgets.ChildNamed(group, "PoliticalAffinityTitle", 2)
             );
+
+            builder.SetRegion(PoliticsIntroRegion);
+            _cells.Clear();
             Cells.AddReadout(
                 _cells,
                 AgeWidgets.ChildNamed(group, "PoliticalAffinityDescription", 2),
                 "population:politics-description"
             );
-            Cells.AddReadout(
-                _cells,
-                AgeWidgets.ChildNamed(group, "PsychoTraitsTitle", 3),
-                "population:traits-caption"
-            );
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
 
+            builder.SetRegion(TraitsRegion);
+            bool named = Caption(builder, AgeWidgets.ChildNamed(group, "PsychoTraitsTitle", 3));
             _cells.Clear();
             AgeTransform traits = window.PsychoTraitItemsTable;
             IList<AgeTransform> items = traits == null ? null : traits.Children;
@@ -397,14 +429,19 @@ namespace ES2Access.Screens
                 Cells.AddReadout(_cells, items[i], "population:trait/" + i);
             }
 
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
+            Unname(builder, named);
 
+            builder.SetRegion(ReactionsRegion);
             AgeTransform sectors = window.PoliticsFiltersContainer;
             IList<AgeTransform> wheel = sectors == null ? null : sectors.Children;
             for (int i = 0; wheel != null && i < wheel.Count; i++)
             {
                 AddReaction(builder, wheel[i], i);
             }
+
+            builder.SetRegion(null);
+            Unname(builder, titled);
         }
 
         private static void AddReaction(GraphBuilder builder, AgeTransform widget, int index)
@@ -463,7 +500,7 @@ namespace ES2Access.Screens
             if (_cells.Count > 0)
             {
                 builder.BeginStop(ActionsStop);
-                Cells.Emit(builder, _cells);
+                Cells.EmitLinear(builder, _cells);
             }
         }
 
@@ -517,22 +554,6 @@ namespace ES2Access.Screens
                 return null;
             }
         }
-
-        private static void Emit(GraphBuilder builder, List<Cell> cells, object rowKey)
-        {
-            foreach (List<Cell> row in AgeLayout.Rows(cells, CellWidget))
-            {
-                builder.StartRow(rowKey);
-                foreach (Cell cell in row)
-                {
-                    builder.AddItem(cell.Id, cell.Vtable);
-                }
-
-                builder.EndRow();
-            }
-        }
-
-        private static readonly Func<Cell, AgeTransform> CellWidget = cell => cell.Widget;
 
         private static PopulationModalWindow Window()
         {
