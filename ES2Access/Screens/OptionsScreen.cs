@@ -139,7 +139,18 @@ namespace ES2Access.Screens
             BuildTabs(builder, window);
 
             builder.BeginStop(RowStop);
+            string category = SelectedCategory(window);
+            bool named = !string.IsNullOrEmpty(category);
+            if (named)
+            {
+                builder.PushContext(category);
+            }
+
             BuildRows(builder);
+            if (named)
+            {
+                builder.PopContext();
+            }
 
             builder.BeginStop(ButtonStop);
             BuildButtons(builder, window);
@@ -161,8 +172,6 @@ namespace ES2Access.Screens
                 return;
             }
 
-            List<ControlId> ids = new List<ControlId>(tabs.Count);
-            builder.StartRow();
             foreach (OptionsTabToggle tab in tabs)
             {
                 OptionsTabToggle entry = tab;
@@ -184,13 +193,33 @@ namespace ES2Access.Screens
                 vtable.OnBlurVisual = ReleasePointer;
                 vtable.OnActivate = () => Switch(entry);
 
-                ControlId id = ControlId.Referenced(entry, "options:tab/" + CategoryOf(entry));
-                ids.Add(id);
-                builder.AddItem(id, vtable);
+                builder.AddItem(
+                    ControlId.Referenced(entry, "options:tab/" + CategoryOf(entry)),
+                    vtable
+                );
+            }
+        }
+
+        /// <summary>The category the window is showing, in the words its tab is drawn with - the same
+        /// label the tab itself is named from. It is what the rows below belong to, and the player who
+        /// tabbed straight past the bar has otherwise no way to hear which page they are on.</summary>
+        private static string SelectedCategory(OptionsModalWindow window)
+        {
+            GuiRadioGroup group = window == null ? null : window.RadioGroup;
+            if (group == null || group.TogglesTable == null)
+            {
+                return null;
             }
 
-            builder.EndRow();
-            LinkVertically(builder, ids);
+            foreach (OptionsTabToggle tab in Tabs(group))
+            {
+                if (Selected(tab))
+                {
+                    return AgeText.Label(tab.TitleLabel);
+                }
+            }
+
+            return null;
         }
 
         /// <summary>Switch to a category the way clicking its tab does. The radio group's own callback
@@ -818,8 +847,6 @@ namespace ES2Access.Screens
             }
 
             HashSet<string> taken = new HashSet<string>();
-            List<ControlId> ids = new List<ControlId>(commands.Count);
-            builder.StartRow();
             foreach (Command entry in commands)
             {
                 Command command = entry;
@@ -836,16 +863,14 @@ namespace ES2Access.Screens
                     PointerFocus.MoveTo(command.Button, tooltip, AnchorOf(caption));
                 vtable.OnBlurVisual = ReleasePointer;
 
-                ControlId id = ControlId.Referenced(
-                    command.Button,
-                    "options:button/" + Distinct(taken, KeyOf(command.Button))
+                builder.AddItem(
+                    ControlId.Referenced(
+                        command.Button,
+                        "options:button/" + Distinct(taken, KeyOf(command.Button))
+                    ),
+                    vtable
                 );
-                ids.Add(id);
-                builder.AddItem(id, vtable);
             }
-
-            builder.EndRow();
-            LinkVertically(builder, ids);
         }
 
         /// <summary>The buttons the bar is currently showing, left to right as they are drawn - the
@@ -1185,17 +1210,6 @@ namespace ES2Access.Screens
             }
 
             method.Invoke(target, arguments);
-        }
-
-        // A row in a bar walks left and right on its own; wiring up and down as well means nobody has
-        // to guess which axis a bar of two or three buttons is on.
-        private static void LinkVertically(GraphBuilder builder, List<ControlId> ids)
-        {
-            for (int i = 1; i < ids.Count; i++)
-            {
-                builder.Connect(ids[i - 1], GraphDir.Down, ids[i]);
-                builder.Connect(ids[i], GraphDir.Up, ids[i - 1]);
-            }
         }
 
         /// <summary>Where a focused control's tooltip is drawn from: the transform hugging the visible

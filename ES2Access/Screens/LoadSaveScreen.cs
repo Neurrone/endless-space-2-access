@@ -299,8 +299,6 @@ namespace ES2Access.Screens
                 return;
             }
 
-            List<ControlId> ids = new List<ControlId>(commands.Count);
-            builder.StartRow();
             foreach (AgeControlButton entry in commands)
             {
                 AgeControlButton command = entry;
@@ -314,13 +312,11 @@ namespace ES2Access.Screens
                 vtable.OnFocusVisual = () => PointerFocus.MoveTo(command, tooltip);
                 vtable.OnBlurVisual = ReleasePointer;
 
-                ControlId id = ControlId.Referenced(command, "loadsave:command/" + KeyOf(command));
-                ids.Add(id);
-                builder.AddItem(id, vtable);
+                builder.AddItem(
+                    ControlId.Referenced(command, "loadsave:command/" + KeyOf(command)),
+                    vtable
+                );
             }
-
-            builder.EndRow();
-            LinkVertically(builder, ids);
         }
 
         /// <summary>The wired buttons the window is drawing below its table, left to right. The
@@ -697,17 +693,6 @@ namespace ES2Access.Screens
             catch (Exception)
             {
                 return false;
-            }
-        }
-
-        // A row of commands walks left and right on its own; wiring up and down as well means nobody
-        // has to guess which axis a bar of three buttons is on.
-        private static void LinkVertically(GraphBuilder builder, List<ControlId> ids)
-        {
-            for (int i = 1; i < ids.Count; i++)
-            {
-                builder.Connect(ids[i - 1], GraphDir.Down, ids[i]);
-                builder.Connect(ids[i], GraphDir.Up, ids[i - 1]);
             }
         }
 
