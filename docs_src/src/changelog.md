@@ -16,6 +16,8 @@
     - Planet overview
     - Troop management, battle tactics, and fleet selection dialogs
     - Academy screen, hero inspection, hero selection, and the academy dialogs
+    - Research screen, quest journal, and the diplomacy screens (including negotiation, minor faction, and pirate dialogs)
+- The diplomacy screen now says whose ring of empires is shown (the centre empire is a readable line at the top of the list)
 - Drawn captions across the senate family now label their sections instead of occupying rows, and the laws/population dialogs gained section jumps (Alt+Up/Down)
 - The ship designer's module filters share one row again inside their "Filters" section, matching the constructibles pattern
 - The view title is no longer in the tab order anywhere: the galaxy map keeps the zoom and scan controls, other views keep just their scan button, and Escape remains the way to close a screen
