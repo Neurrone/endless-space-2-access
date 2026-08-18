@@ -61,6 +61,7 @@ namespace ES2Access.Screens
         private readonly List<PlanetLabel_SystemManagement> _planets =
             new List<PlanetLabel_SystemManagement>();
         private readonly List<SidePanel> _panels = new List<SidePanel>();
+        private readonly List<AgeTransform> _blocks = new List<AgeTransform>();
 
         public override string Key
         {
@@ -251,7 +252,7 @@ namespace ES2Access.Screens
             }
 
             builder.BeginStop(PageStop);
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
         }
 
         private static void BuildBottomPanel(
@@ -1187,9 +1188,19 @@ namespace ES2Access.Screens
                     builder.BeginStop("system:side/" + panel.GetType().Name);
                     builder.PushContext(PanelName(panel));
                     ColonyInfoSidePanel colony = panel as ColonyInfoSidePanel;
+                    RepresentativesStarSystemSidePanel representatives =
+                        panel as RepresentativesStarSystemSidePanel;
                     if (colony != null)
                     {
                         BuildColonyInfo(builder, colony);
+                    }
+                    else if (representatives != null)
+                    {
+                        BuildRepresentatives(
+                            builder,
+                            representatives,
+                            "system:side/" + i + "/"
+                        );
                     }
                     else
                     {
@@ -1313,7 +1324,7 @@ namespace ES2Access.Screens
 
             AddFidsiCells(_cells, panel);
             AddPolicy(_cells, panel);
-            Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
         }
 
         /// <summary>The system's five outputs, one readout each, named by the game's own titles for the
@@ -1436,7 +1447,121 @@ namespace ES2Access.Screens
         {
             _cells.Clear();
             SidePanels.Readouts(_cells, panel, keyPrefix, SpecialCell, Transparent);
-            Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
+        }
+
+        /// <summary>
+        /// The representatives panel, which is the one side panel the game draws as two CAPTIONED
+        /// blocks: who this system sends to the senate, and how its citizens react to what happens.
+        ///
+        /// Both captions carry a sentence the game writes nowhere else, so both stay rows AND name the
+        /// block under them - a context has no buffer, so converting them would delete the sentence.
+        /// The blocks are read off the drawn layout: the sensitivity block is the group the breakdown
+        /// graph is drawn in, and everything above it is the representatives block.
+        /// </summary>
+        private void BuildRepresentatives(
+            GraphBuilder builder,
+            RepresentativesStarSystemSidePanel panel,
+            string keyPrefix
+        )
+        {
+            AgeTransform sensitivity =
+                panel.PoliticalSensitivityBreakdown == null
+                    ? null
+                    : panel.PoliticalSensitivityBreakdown.Parent;
+            _blocks.Clear();
+            IList<AgeTransform> children =
+                panel.ContentGroup == null ? null : panel.ContentGroup.Children;
+            for (int i = 0; children != null && i < children.Count; i++)
+            {
+                if (children[i] != null && AgeWidgets.Visible(children[i]))
+                {
+                    _blocks.Add(children[i]);
+                }
+            }
+
+            _blocks.Sort(ByDrawnY);
+            int split = _blocks.IndexOf(sensitivity);
+            if (split <= 0)
+            {
+                BuildReadouts(builder, panel, keyPrefix);
+                return;
+            }
+
+            EmitBlock(builder, panel, keyPrefix, "representatives", 0, split);
+            EmitBlock(builder, panel, keyPrefix, "sensitivity", split, _blocks.Count);
+        }
+
+        private static readonly Comparison<AgeTransform> ByDrawnY = (left, right) =>
+            left.GetGlobalPosition().y.CompareTo(right.GetGlobalPosition().y);
+
+        /// <summary>One captioned block of a panel read in pieces: its own lines, one per row, under the
+        /// caption the game drew over them - which is the topmost line the block produced, and is a row
+        /// of the block as well as its name.</summary>
+        private void EmitBlock(
+            GraphBuilder builder,
+            SidePanel panel,
+            string keyPrefix,
+            string name,
+            int from,
+            int to
+        )
+        {
+            _cells.Clear();
+            for (int i = from; i < to; i++)
+            {
+                SidePanels.Block(_cells, panel, _blocks[i], keyPrefix, SpecialCell, Transparent);
+            }
+
+            if (_cells.Count == 0)
+            {
+                return;
+            }
+
+            string caption = Caption(_cells);
+            builder.SetRegion(keyPrefix + name);
+            if (caption != null)
+            {
+                builder.PushContext(caption);
+            }
+
+            try
+            {
+                Cells.EmitLinear(builder, _cells);
+            }
+            finally
+            {
+                if (caption != null)
+                {
+                    builder.PopContext();
+                }
+            }
+        }
+
+        /// <summary>The caption a block is called by: the topmost line the game drew in it, where that
+        /// line is words rather than a control. A block whose first line is a control has no caption and
+        /// is named by nothing rather than by its first button.</summary>
+        private static string Caption(List<Cell> cells)
+        {
+            Cell top = null;
+            float y = 0f;
+            for (int i = 0; i < cells.Count; i++)
+            {
+                float at = cells[i].Widget.GetGlobalPosition().y;
+                if (top == null || at < y)
+                {
+                    top = cells[i];
+                    y = at;
+                }
+            }
+
+            if (top == null || AgeWidgets.Button(top.Widget) != null)
+            {
+                return null;
+            }
+
+            string text = AgeWidgets.TextOf(top.Widget);
+            return string.IsNullOrEmpty(text) ? null : text;
         }
 
         private static bool SpecialCell(
@@ -2098,16 +2223,6 @@ namespace ES2Access.Screens
         }
 
         // ---- shared ----
-
-        /// <summary>A control on its way into the graph, still carrying the widget it was read from: the
-        /// rows are worked out from a whole panel at once, which cannot be done while declaring it row
-        /// by row.</summary>
-        /// <summary>Declare a panel's controls in the rows they are drawn in - shared with every other
-        /// screen that reads a panel that way (<see cref="Cells"/>).</summary>
-        private static void Emit(GraphBuilder builder, List<Cell> cells)
-        {
-            Cells.Emit(builder, cells);
-        }
 
         private static void Add(List<Cell> cells, AgeTransform widget, ControlId id, NodeVtable vtable)
         {

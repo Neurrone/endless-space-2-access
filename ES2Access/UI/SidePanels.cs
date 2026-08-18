@@ -210,6 +210,37 @@ namespace ES2Access.UI
             Collect(cells, panel.ContentGroup, keyPrefix, 0, panel, special, transparent, titled);
         }
 
+        /// <summary>
+        /// ONE block of a panel a screen is declaring in pieces, because the game captions the blocks
+        /// and the player needs to hear which one a line belongs to.
+        ///
+        /// <paramref name="block"/> is a child of the panel's content group, so the walk starts where
+        /// <see cref="Readouts"/>' own recursion would have reached it: the same depth, the same panel,
+        /// the same keys. A screen that splits a panel this way changes where the lines are ANNOUNCED,
+        /// never what they are called.
+        /// </summary>
+        public static void Block(
+            List<Cell> cells,
+            SidePanel panel,
+            AgeTransform block,
+            string keyPrefix,
+            SpecialCells special,
+            TransparentTest transparent
+        )
+        {
+            AgePrimitiveLabel title = TitleLabel(panel);
+            Collect(
+                cells,
+                block,
+                keyPrefix,
+                1,
+                panel,
+                special,
+                transparent,
+                title == null ? null : title.AgeTransform
+            );
+        }
+
         /// <summary>Whether a tooltip has anything for the player: words the game wrote into it, or a
         /// class, which means the tooltip window assembles it and having content is definitional.
         /// </summary>
