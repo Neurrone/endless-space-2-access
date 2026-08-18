@@ -1420,15 +1420,11 @@ namespace ES2Access.Screens
                 // (<see cref="AddProbesNear"/>), and counting them here would declare a region with
                 // nothing in it.
                 int drifting = Adrift() + _projectiles.Count + _pins.Count;
-                // A region jump with one region to jump to swallows the key and moves nothing, which
-                // sounds like the key being broken - so the map declares its halves only while it
-                // really has more than one of them, whichever ones those are.
-                bool split =
-                    (_systems.Count + _adrift.Count > 0 ? 1 : 0) + (drifting > 0 ? 1 : 0) > 1;
-                if (split)
-                {
-                    builder.SetRegion(SystemsRegion);
-                }
+                // Declared whichever halves the map has: a lone region's jump is swallowed silently,
+                // which is what the key doing nothing here should sound like, and a section that
+                // appears and disappears with the fleet count is a stop that changes shape under the
+                // player (owner ruling, 2026-08-18).
+                builder.SetRegion(SystemsRegion);
 
                 // Fetched once for the whole stop rather than once per system: the labels the map
                 // draws are pooled by the window, not rebuilt per frame, so one walk of the label
@@ -1468,7 +1464,7 @@ namespace ES2Access.Screens
                     }
                 }
 
-                if (split && drifting > 0)
+                if (drifting > 0)
                 {
                     builder.SetRegion(OpenSpaceRegion);
                 }

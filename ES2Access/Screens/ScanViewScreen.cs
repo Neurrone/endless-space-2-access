@@ -1108,20 +1108,15 @@ namespace ES2Access.Screens
                     : null;
                 IList<AgeTransform> children =
                     window.PlanetLabelsGroup == null ? null : window.PlanetLabelsGroup.Children;
-                // Regions only where there is more than one place to jump between; a lone region makes
-                // the jump key swallow the press and move nothing, which sounds like a broken key.
-                int groups =
-                    (trade != null && trade.Count > 0 ? 1 : 0)
-                    + (Planets(children) > 0 ? 1 : 0)
-                    + (HeroPanelDrawn(window) ? 1 : 0);
-                bool regions = groups > 1;
-
-                builder.SetRegion(regions ? TradeRegion : null);
+                // Every section the lens draws is a region, however many of them there happen to be: a
+                // lone region's jump is swallowed silently, and a section that comes and goes with the
+                // count is a panel that changes shape under the player (owner ruling, 2026-08-18).
+                builder.SetRegion(TradeRegion);
                 AddDrawnLines(builder, trade, "scan:trade");
 
-                AddHeroPanel(builder, window, regions);
+                AddHeroPanel(builder, window);
 
-                builder.SetRegion(regions ? PlanetsRegion : null);
+                builder.SetRegion(PlanetsRegion);
                 for (int i = 0; children != null && i < children.Count; i++)
                 {
                     PlanetLabel_SystemManagementScanView label =
@@ -1206,8 +1201,7 @@ namespace ES2Access.Screens
         /// </summary>
         private static void AddHeroPanel(
             GraphBuilder builder,
-            StarSystemManagementScanViewWindow window,
-            bool regions
+            StarSystemManagementScanViewWindow window
         )
         {
             if (!HeroPanelDrawn(window))
@@ -1215,7 +1209,7 @@ namespace ES2Access.Screens
                 return;
             }
 
-            builder.SetRegion(regions ? HeroRegion : null);
+            builder.SetRegion(HeroRegion);
             StarSystemManagementScanViewHeroPanel it = window.HeroPanel;
             NodeVtable vtable = new NodeVtable
             {
@@ -1501,11 +1495,9 @@ namespace ES2Access.Screens
                 AgeTransform left = window.PlanetStatsCategoryItemsTableLeft;
                 AgeTransform right = window.PlanetStatsCategoryItemsTableRight;
                 AgeTransform remains = window.PlanetRemainsItemsTable;
-                bool regions =
-                    Categories(left) + Categories(right) + (Remains(remains) > 0 ? 1 : 0) > 1;
-                AddCategories(builder, left, "left", regions);
-                AddCategories(builder, right, "right", regions);
-                AddRemains(builder, remains, regions);
+                AddCategories(builder, left, "left");
+                AddCategories(builder, right, "right");
+                AddRemains(builder, remains);
                 builder.SetRegion(null);
             }
             catch (Exception e)
@@ -1562,7 +1554,7 @@ namespace ES2Access.Screens
 
         /// <summary>One node per thing left on the planet - its name and the paragraph the lens writes
         /// under it, which is the whole of what the game says about it.</summary>
-        private static void AddRemains(GraphBuilder builder, AgeTransform table, bool regions)
+        private static void AddRemains(GraphBuilder builder, AgeTransform table)
         {
             IList<AgeTransform> children = table == null ? null : table.Children;
             for (int i = 0; children != null && i < children.Count; i++)
@@ -1573,7 +1565,7 @@ namespace ES2Access.Screens
                     continue;
                 }
 
-                builder.SetRegion(regions ? RemainsRegion : null);
+                builder.SetRegion(RemainsRegion);
                 PlanetRemainsItem it = item;
                 NodeVtable vtable = new NodeVtable
                 {
@@ -1588,12 +1580,7 @@ namespace ES2Access.Screens
             }
         }
 
-        private static void AddCategories(
-            GraphBuilder builder,
-            AgeTransform table,
-            string side,
-            bool regions
-        )
+        private static void AddCategories(GraphBuilder builder, AgeTransform table, string side)
         {
             IList<AgeTransform> children = table == null ? null : table.Children;
             for (int i = 0; children != null && i < children.Count; i++)
@@ -1608,7 +1595,7 @@ namespace ES2Access.Screens
                 }
 
                 string key = "scan:stats/" + side + "/" + i;
-                builder.SetRegion(regions ? key : null);
+                builder.SetRegion(key);
                 PlanetStatsCategoryItem it = category;
                 builder.AddLabel(
                     ControlId.Structural(key),
@@ -1808,9 +1795,6 @@ namespace ES2Access.Screens
             List<ScanViewCaptionGroupGuiElement> declared = Declared(panel);
             IList<AgeTransform> children =
                 panel.CaptionsTable == null ? null : panel.CaptionsTable.Children;
-            // One region is no region: the jump key would swallow the press and move nothing. Decided
-            // before anything is tagged, because a node keeps the region it was added under.
-            bool regions = declared.Count > 1;
             int groups = 0;
             for (int i = 0; children != null && i < children.Count && groups < declared.Count; i++)
             {
@@ -1825,8 +1809,10 @@ namespace ES2Access.Screens
                     declared[groups].ScanViewCaptionItemGuiElements;
                 string key = "scan:legend/" + i;
                 // A heading the game draws over several lines is somewhere to be as well as a word: it
-                // is the region the lines under it belong to, and a place the jump key can land.
-                builder.SetRegion(regions ? key : null);
+                // is the region the lines under it belong to, and a place the jump key can land - one
+                // heading or twenty (owner ruling, 2026-08-18: a lone region's jump is swallowed
+                // silently, and a section that appears with the count changes the panel's shape).
+                builder.SetRegion(key);
                 ScanViewCaptionGroup it = group;
                 builder.AddLabel(ControlId.Structural(key), () => AgeText.Label(it.Title));
                 AddCaptionItems(builder, group.ItemsTable, key, items == null ? 0 : items.Length);
