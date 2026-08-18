@@ -1843,3 +1843,23 @@ nobody can see.
   keyboard through the hint even though the mouse cannot click it.
 - **A refusal's own wording is keyed by its flag**: `%Failure<flag>Description` — so the sentence a
   blocked control shows can be looked up from the flag alone, with no tooltip drawn.
+- **RepresentativesStarSystemSidePanel draws its captions non-uniformly** (2026-08-18): one block's
+  caption is a bare sibling title label, the other's sits INSIDE its group — the mod takes each
+  block's caption as the topmost line the block produced, never by tree position.
+- **The recipe window and the economy screen draw the same family grid** from the same
+  `GuiResources` list; the recipe copy read `ExtendedGuiElement.Title` (the family DESCRIPTION,
+  carrying the shipped icon typo "Improves Industry Food") while the economy copy maps
+  `TargetEffect` to the game's short `%SubCategory…Title` words. One reader now, internal on
+  `EconomyScreen` (2026-08-18).
+- **A prefab tooltip's `%…` Content can be a placeholder the game overwrites at bind**
+  (`NegotiationModalWindow` swaps in the war/influence pressure title and description at bind) — a
+  caption test that localizes the prefab key alone answers "no sentence" for a caption that has one.
+- **`QuestJournal.ActiveTutorial` picks the in-progress tutorial quest by popup layer then
+  priority, and `TutorialWindow.Update` re-derives it every frame** — a hand-`Bind` of a different
+  tutorial is overwritten next frame; a tutorial is raised only by making its quest win that
+  comparison.
+- **`FactionChoiceModalWindow` keeps its hull set in the private `filteredShipHulls` and its
+  position in `currentHull`; `OnNextHullCb`/`OnPreviousHullCb` are the only movers and they wrap**
+  — the mod's hull pager steps those callbacks, shortest way round.
+- **`GameMenuModalWindow.Title` holds `%GameMenuModalWindowTitle`, localizing to "Game\nMenu"** —
+  the only place the pause menu names itself; the mod joins the two drawn lines with a space.

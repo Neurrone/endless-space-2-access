@@ -8,6 +8,22 @@ files above.
 
 ## To build
 
+- **One-per-row rollout (landed 2026-08-18) — remaining live checks only**: battle
+  popups/screens (all code-only; incl. whether the battle popup speaks its title twice);
+  the election wizard incl. the Political Trends label; a hangar with ships; a populated
+  Active Events panel; multi-slot recipe projects; the strategics grid; diplomacy side
+  panels/metaplot and the three diplomacy modals; the victory family; DLC modals;
+  join-game rows; the hull pager across a faction switch; a mod-manager library with a
+  mod installed. The marketplace half of the economy page is still 2D — deferred until
+  measured.
+- Colony info side panel: game content the mod never declares — military status/
+  ownership states (besieged/blockaded/invaded), resources banner, special features +
+  temporary effects tables, the Mothership group with its Detach button, the
+  DecolonizeGhostToggle, citadel manpower, info icons. Two are player ACTIONS currently
+  unreachable by keyboard. None drawn at turn 1 (code-only sweep, 2026-08-18).
+- Battle tactics deck: the window's influence stock
+  (`EmpireResourcesGroup`/`EmpireInfluenceLabel`) is declared nowhere — the Confirm
+  cost's funding is unreadable.
 - Regression walk owed: the research/construction table popups (the other sheet-reading
   family) after the wrapper-descent change to `Columns` — additive-by-construction argument
   only so far; walk one the next time a session has one pending.
@@ -73,12 +89,11 @@ files above.
 - The planet page's population-entry click has no opener node yet (the window itself,
   StarSystemPopulationModalWindow, is covered — SystemPoliticsScreen binds it).
 - Skill-tree type-ahead: a TypeAheadScope so search reaches skills in collapsed branches.
-- Election, vote breakdown: the "Political Trends" caption the game draws over the party
-  bars is not declared, so the six bar rows arrive with no heading of their own (the group
-  caption convention this file's own step-0 code follows). Owner call — it is one node.
-  Step 0 of the wizard is still code-verified only (step 1 was sighted 2026-08-16, step 2
-  measured and reworked the same day — what its one live card could not show is in
-  `test-recipes.md`).
+- Election, vote breakdown: the "Political Trends" caption is now declared as the bars'
+  region label (one-per-row rollout, 2026-08-18) — code-only, and the drawn child's name
+  is a guarded guess. On the first real election turn: check the bars arrive under the
+  word, and walk the wizard's flattened bands (step 0 remains code-verified only; step 1
+  sighted 2026-08-16).
 - ReadCell cells on EmpireScreen/MilitaryScreen/SystemSelectionScreen can say
   "unavailable" twice (own part + the shared tail); the split-cell fix exists
   (`Adorn(availability:false)`) but SystemSelectionScreen's combo needs care — a refused
@@ -89,20 +104,13 @@ files above.
 - Notification arrival-focus race: a popup's first build can run before its description
   label is visible, landing arrival focus on the first control instead of the words (why
   the elimination sentence had to ride the screen name).
-- `screen.empire.Build threw: Cannot begin a stop inside an open row`
-  (`EmpireScreen.BuildTabs`) — seen once in an earlier session's ring; empties the whole
-  empire page when it fires. Reproduce and fix.
 - Departing-fade stand-down: the spurious "unavailable" frame when a game confirmation
   opens over a mod screen (general fix).
-- `system: reading the side panels threw: Duplicate control id: system:side/2/Key/2` —
-  **REPRODUCED** (2026-08-14, `unlocked`, Xiu): it fires on every visit to the star system page,
-  three for three. Two children named "Key" at the same depth under the representatives panel is
-  the shape (its sensitivity legend); key it by index-in-parent. And it is worse than recorded: the
-  throw is caught with the menu ROW still open, so the very next declaration —
-  `Screen.BuildShared`'s `BeginStop` — throws `Cannot begin a stop inside an open row` and the
-  navigator loses the WHOLE page's build for that frame, not just the panel's walk. The two
-  warnings always arrive as a consecutive pair. Two fixes, and the second is the general one: key
-  the legend, and make a screen's own catch close what it opened (or the builder tolerate it).
+- General open-row hardening: a screen's own catch should close what it opened (or the
+  builder tolerate it). The two known instances are gone — the `system:side/2/Key/2`
+  duplicate-id pair is fixed by `SidePanels.PathKey`, and the empire open-row crash is
+  structurally removed (side panels emit linear, 2026-08-18) — but an unbalanced
+  `PushContext` after a swallowed throw remains the lesser surviving form.
 - **An "entered vision" watcher for the galaxy map** (owner-requested 2026-08-16): announce when a
   foreign fleet newly becomes perceived — a sighted player sees a lozenge appear, and there is no
   game notification to carry it (the ~162-entry mapping in `GuiNotificationManager` :576-740 has

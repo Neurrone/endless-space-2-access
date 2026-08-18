@@ -72,7 +72,10 @@ mutes voicing but `/speech` still captures.
 - `POST /wait?timeout=MS` — body = bool expression, evaluated every frame; the wait is capped at
   ~60 s whatever is asked for, so a longer silence is proved by repeating the poll
 - `POST /loadsave` — body = save title (empty = newest); retryable `[not ready]` until it acts —
-  except from a LOBBY, where not-ready is the answer until the lobby is left, never a retry
+  except from a LOBBY, where not-ready is the answer until the lobby is left, never a retry.
+  Issued while the PLANET-OVERVIEW page is up it can wedge the loading window at "Game launched
+  and ready" indefinitely (`wait-game.ps1 ingame` then times out silently with exit 0);
+  re-issuing the same `POST /loadsave` recovers in ~8 s
 - `POST /key?hold=MS&gap=MS&text=1` — body = a key SEQUENCE pressed as real OS key events at
   the game's window (`Return`, `Ctrl+I`, `Shift+Tab`; `+Name` holds, `-Name` releases;
   `text=1` makes the body characters to type; arrows are `UpArrow`/`DownArrow`/…). The only
@@ -269,8 +272,14 @@ fires once per focus CHANGE); `Navigator.ClearVisual()` from OnUpdate re-commits
 `GET /gui/graph?screen=KEY&buffers=1` reaches screens whose
 window exists without a game running — out of a session `screen.game-menu` and
 `screen.rename` both declare real content, `screen.galaxy` and friends answer "not active".
+An INACTIVE screen's by-key dump holds only the shared HUD stops plus stale content — worthless
+as a baseline for the screen's own content; open the screen first.
 
-**Sighting a surface the fixture never draws.** Four tiers, cheapest first: `Show()` the
+**Sighting a surface the fixture never draws.** Tier zero, before any of the four below: read the
+prefab's own fields off the UNSHOWN window instance (`GetWindow<T>(false)`, no Bind, no Show,
+nothing to restore) — enough for a caption's tooltip class/content, but beware prefab `%key`
+content the game rewrites at bind (read the bind code before believing "no sentence"). Then four
+tiers, cheapest first: `Show()` the
 game's own pooled widget, read, `Hide()` — the game's next visibility pass restores truth by
 itself; or set the game's OWN `Visible` flags and private fields from `/eval`, dump, restore,
 and re-diff the dump against the untouched one to prove nothing was left behind (this is how a

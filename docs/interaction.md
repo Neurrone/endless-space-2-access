@@ -202,9 +202,26 @@ from the rest (owner ruling 2026-08-16), so Alt+Up/Down on this stop jumps only 
 what is drifting out between them, and declares nothing at all while there is nothing drifting. **Zoom is an adjustable node**
 on the existing
 Left/Right + Shift chords (no new binding), and it lives on BOTH the scan view and the galaxy's
-`hud:view-title` stop, in a row of its own beside the name of what the player is looking at; its
+`hud:view-title` stop, in a row of its own (the view-name label and its close-button node are gone —
+owner-ruled 2026-08-18, Escape closes screens); its
 coarse step is a LAYER-BAND jump rather than ≈10 increments — an owner-approved deviation, since
 ten of the camera's thirteen steps would be the whole range.
+
+**Region keys added by the one-per-row rollout (2026-08-18)**, all key-only unless named — labelled
+ones carry drawn text or the named ModStrings word: `system:constructibles/filters|list` and
+`system:hangar/toolbar|ships` (labels Filters/Available; hangar toolbar = Actions; same pairs under
+the `empire:` prefix on the detail tabs); `economy:luxuries/legend|items`,
+`economy:strategics/legend|items`, `recipe:luxuries/legend|items`, `recipe:strategics/legend|items`;
+`laws:detail/{law,effects,action}` ("Effects" labelled); `population:detail/affinity`,
+`population:thresholds`, one per captioned block, `population:detail/assimilate`,
+`population:politics/{intro,traits,reactions}`; `election:local/{title,trends,empire}`;
+`hero:ship/{characteristics,modules,figures}`; `troops:evolution/caption` + `/type/<i>`;
+the notification popup's top/bottom control regions. ControlIds retired by the rollout (per-stop
+cursor memory for them is gone): the ~25 caption rows converted to labels (each named in the batch
+reports in the session ledger), `hud:view-title/name` everywhere, the faction chooser's
+`faction-choice:hull` readout and its Previous/Next hull buttons (replaced by
+`faction-choice:hull/<i>` pager rows), and the tutorial popup's page controls (replaced by
+`tutorial:page/<i>`). New walkable ids: `diplomacy:center` (whose ring is centred).
 
 **Ctrl+I is the galaxy's INSPECT MODE** — a square of galaxy the player moves about the map and hears
 the contents of, instead of walking the tree (`GalaxyInspect` — `docs/helpers.md`). Ctrl+I is free in

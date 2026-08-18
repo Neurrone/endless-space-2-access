@@ -532,6 +532,12 @@ from `/eval`. Take the panel from `FindObjectsOfType<TutorialPopupPanel>()` and 
 `IsBound && Shown` — `FindObjectOfType` (singular) handed back an unbound instance on one launch and
 `OnMinimizeCb` threw an NRE inside itself (its `tutorial` field is null there). Guard on
 `MinimizeToggle != null && !MinimizeToggle.State` so a re-run is idempotent.
+**A MULTI-page tutorial popup is fixture-blocked in `[Beginner] test`** (its only in-progress
+tutorial has one page); `[Midgame] quests fleets` has the 6-page `Tutorial_Fleets` in progress —
+selecting a fleet in the galaxy tree raises it. Page counts per tutorial:
+`Public/Gui/GuiElements[Tutorials].xml`; the in-progress set is
+`DepartmentOfInternalAffairs.QuestJournal[QuestState.InProgress]` filtered to
+`TutorialDefinition`.
 
 **`[Beginner] test` perceives NO foreign fleet at all.** Measured 2026-08-16 by walking
 `Gui.Game.Empires` and each empire's `DepartmentOfDefense.Fleets` (as `System.Collections.IList`),
@@ -869,6 +875,8 @@ faded leftover sitting on the curiosity's rect, so the audit is `/gui/graph` aga
 the dump prunes nothing here but shows no alpha, and only the crop says which lines are on the
 screen. Raia (planet 2) is the unique one, and the only planet that draws the lore paragraph and
 the "Unique Planet" subtitle. Deposits, anomalies and depletion have no planet anywhere in Xiu.
+In `[Beginner] test`, Raia (Next planet from `Planets[0]`) draws THREE population kinds — the
+fixture for the populated population panel; Dusay I draws only the summary.
 
 **Opening the star system page.** `GalaxyViewLevels.OpenSystem(Gui.PlayerEmpire.GetAgency
 <DepartmentOfTheInterior>().ColonizedStarSystems[0].Node)` from `/eval` (Dusay, GUID 535 in the
@@ -1026,7 +1034,10 @@ internal from `/eval` needs the loaded-from-bytes assembly by name — scan
 `AppDomain.CurrentDomain.GetAssemblies()` for the `modAssemblyName` that `/status` reports, then
 `GetType` off it; the plain type name does not resolve. Fixture blocks for the numeric
 editables: `[Beginner] test` refuses the Marketplace tab (no Galactic Commodities Exchange), and
-the negotiation quantity needs a diplomacy contact no current fixture has.
+the negotiation quantity needs a diplomacy contact no current fixture has. The heading's TEXT
+depends on the opening route: the `/eval` `OriginalName`+ShowWindow route draws it empty, the
+player gesture draws "Enter a new name for your System …" — do not chase the empty heading as a
+defect off the `/eval` route.
 
 **The assigned-governor side panel** is measurable without a save that has a governor, and the
 CHEAPER of the two routes is the one that gives real words. No fixture has a governor — in
@@ -1045,7 +1056,10 @@ tooltip, and theirs are class-backed with empty content, so their existence is a
 
 **The system-politics modal.** Open it from the star-system page's own node. "Show all events" is
 persistent WINDOW state — restore it — while the party pick is not. The table binds
-`canSelect:false`, so nothing in it commits.
+`canSelect:false`, so nothing in it commits. In `[Beginner] test` the representatives panel's
+"Shows in detail…" button is unavailable, so the modal has no player-gesture route there —
+`Bind(ColonizedStarSystems[0])` + ShowWindow stays the only in, and it raises BREAD AND CIRCUSES
+(minimize after).
 
 **Hero selection and the hero list.** The pickers are reachable from the academy family. **Never
 press Confirm and never press the card's own Content button**; selecting a card commits nothing,
@@ -1058,6 +1072,10 @@ rename too.
 non-committing, and the outcomes are never drawn (es2-facts).
 `GovernmentAction_ForceElections` is the game's own way to raise a real one and is UNVERIFIED — do
 not spend a fixture on it without the owner's say-so.
+`election:local/support` declares `election:local/{title,trends,empire}` regions and pushes the
+`PoliticsSupportGroup` caption over the party bars; the caption child's name is a guess guarded by
+`string.IsNullOrEmpty` — on the first real election, check whether the bars arrive under a word or
+bare, and walk the wizard's flattened bands (all code-only so far).
 
 **The vote breakdown (step 1) can only be tested on a real election turn**, i.e. on the owner's own
 save, and it is then the ONLY test surface — so treat it as live and non-disposable: **never press
@@ -1329,10 +1347,17 @@ carries between visits. Expect a ~1 s `unavailable` on the page under a just-clo
 the game's fade, not a defect; re-read. **Save-blocked**: the gene hunter, assimilation, relics, a
 real election, an enabled Abolish, a drawn history graph, an empty senator slot, and the outpost
 panel.
+Since the one-per-row rollout (2026-08-18) every band in the senate family is one node per row — a
+`left ->`/`right ->` edge under a `senate:`/`government:`/`laws:`/`population:` stop is a
+regression. Ten caption ids became level labels (lists in the session's batch-4 report); the words
+arrive prefixed onto each block's first node. Regions to expect: `laws:detail/{law,effects,action}`;
+`population:detail/affinity`, `population:thresholds`, one per captioned block,
+`population:detail/assimilate`; `population:politics/{intro,traits,reactions}`.
 
 **The empire page.** The interactive cells are columns 1/2/4/11/13. Nothing closes an opened band
 except leaving the page. The tab switch and the panel instances are both probeable from `/eval`;
-`SidePanels`' `PanelTitle` branch first got exercised here.
+`SidePanels`' `PanelTitle` branch first got exercised here. `ui.end` does not move inside a
+`GraphSheet` row (it answers consumed and speaks nothing) — walk columns with `ui.right`.
 
 **The economy page and the recipe modal.** Which rows draw at all is the stage-8 gate table (this
 save is screen-unlocked, not tech-unlocked) — which also means the **Marketplace tab is refused**
@@ -1340,6 +1365,11 @@ save is screen-unlocked, not tech-unlocked) — which also means the **Marketpla
 resources grids are the only economy tables that can be walked. The recipe modal is reachable with zero slots via
 `new GuiRecipeSlot(0,false)` + `ShowWindow`. **NEVER press Confirm** — it is enabled even with an
 empty recipe and posts `OrderCreateRecipe` — and note Reset does NOT clear `RecipeModified`.
+Both luxury grids are a legend region plus an items region in ONE stop since 2026-08-18; each item
+trails its FIDSI family word, and Giga Lattice sits under Influence (item index 12). The recipe
+modal's legend reads the economy screen's short titles ("Industry"), not the family descriptions.
+The modal's project stop draws ONE slot in `unlocked` (multi-slot strip unmeasured); the strategics
+grid is drawn by no save.
 
 **Military and fleet-selection.** **Never press Retrofit**: it is immediate, with no confirmation.
 A ship tile's SECOND click (Ctrl+Alt+Enter) opens that ship's design read-only and is a safe round
@@ -1367,7 +1397,9 @@ anything.
 
 **Hero inspection.** Bind, open, switch pages and close from `/eval`. An unrecruited `GuiHero` is
 the read-only fixture. For a skill point, set `Level = 2` and `Refresh`, then restore by reloading
-the save. Page switches raise tutorial popups — minimize them.
+the save. Page switches raise tutorial popups — minimize them. Cheaper than `/eval`: the whole
+family — overview → ship design page → skill tree page — walks from the Academy's own Inspect
+button with `/input` in `unlocked`; each page switch raises a tutorial to minimize.
 
 **Troops and the tactics deck** are both non-committing until Confirm, which makes them safe to walk
 whole. A refusal is provable from BOTH sides by injecting one: force the game's own refusal state,
@@ -1410,7 +1442,10 @@ reachable. Per page, `Gui.GuiService.ShowWindow<T>()` and `HandleInput(InputActi
 EXCEPT the disclaimer, which swallows every action (es2-facts) — close it through its own Accept
 node. **Never press**: Decline on the disclaimer (quits the game), Confirm on the mod manager
 (reloads the runtime), or any store/web button (leaves the game). The DLC browser REMEMBERS its
-selected tab across opens — put the tab back when done.
+selected tab across opens — put the tab back when done. The whole family also walks from the main
+menu with `/input`: Content opens the DLC browser, Mods opens the mod manager (its Back node
+closes it), and the Mods flyout's "Game asset export" child is the exporter's player route — no
+`ShowWindow` needed for any of the three.
 **The asset exporter** (`ShowWindow<ResourcesExportScreen>()`): never press either export button
 (they write files) or Open folder; progress is drivable by setting the panel's private
 `lastMessage` + the private `ExportInProgress` setter, restoring both; a row's click goes through
@@ -1418,7 +1453,9 @@ reflection on `OnResourceExportPropertyItemClick(int)` — `SendMessage` from `/
 argument; the page reloads its manifests every visit, so wait for them. Known game bugs:
 `ResourceExportPropertyItem.Refresh` NREs on some assets (page stays "No asset selected"), and
 re-entering resets the filter TICKS without firing their callbacks, so the ticks can contradict
-the drawn list until one is toggled.
+the drawn list until one is toggled. Selecting an asset with `ui.activate` on a row is safe and
+DOES draw the `resources-export:export` band even though `Refresh` NREs and the Selected panel
+first reads "No asset selected" — the panel fills a moment later.
 
 **The elimination popup and the journal.** `OrderEliminateEmpire` writes a REAL `EndGameSummary`,
 which is what makes the journal's ending entries readable; delete the entry afterwards through the
@@ -1436,7 +1473,12 @@ which hides the journal and shows the MAIN MENU. Enter on the score-screen cell 
 modal binds a tutorial ("A MATTER OF INFLUENCE" / "BREAD AND CIRCUSES") and closing that window
 unbinds it; `((GuiManager)Gui.GuiService).ShowError(flags, message, stack,
 UnityEngine.LogType.Error)` raises the error box — dismiss with its Continue button, never Exit
-Game. In `unlocked` the star system page itself binds one
+Game — and `((GuiManager)Gui.GuiService).ShowMessageNonBlocking(message,
+MessageBoxType.INFORMATIVE, null)` raises the non-blocking box (dismiss via Cancel; enum members
+are UPPERCASE). Both work from the main menu too.
+`Gui.GuiGameWindowService.RequestStarSystemManagementViewLevel(new GameEntityGUID((ulong)<id>))`
+opens a system's page from `/eval` — the `ulong` cast is required or the constructor is ambiguous;
+`ToggleScanView()` is the scan view's in and out. In `unlocked` the star system page itself binds one
 (`Gui.GuiGameWindowService.RequestStarSystemManagementViewLevel(...Node.GUID)`), which arrives
 EXPANDED and takes the keyboard; collapse and expand it without walking to it by replaying its own
 arrow — `MinimizeToggle.State = true/false` then `SendMessage(OnSwitchMethod)`.
