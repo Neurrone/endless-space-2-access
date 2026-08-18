@@ -597,11 +597,13 @@ namespace ES2Access.UI
         /// the module category each one keeps, which the toggle's index gives (see
         /// <see cref="CategoryTitles"/>).
         ///
-        /// Two regions: the switches that decide what is drawn, and what is drawn. The
-        /// game draws them as one strip across the top and a wrapping list under it, and the switches are
-        /// one per row for the same reason the modules are - they are a bar of choices the layout
-        /// happens to have put side by side, and stepping between them sideways buys nothing a step down
-        /// does not. The band's own "Modules" caption is the stop's name.
+        /// Two regions: the switches that decide what is drawn, and what is drawn. The game draws them
+        /// as one strip across the top and a wrapping list under it. The switches stay ONE row - the
+        /// same reading the star system's constructible filters get (owner ruling): they are a
+        /// select-one group the panel re-derives from the filter in force, and the row they are drawn in
+        /// is the row the player walks. The modules under them are one per row, because a wrapping grid
+        /// of tiles wraps where the table ran out of width. The band's own "Modules" caption is the
+        /// stop's name.
         ///
         /// The game captions neither half, so each carries a word of the mod's own as its LEVEL -
         /// "Filters" over the switches, "Available" over the list. Without them the two halves are told
@@ -635,7 +637,7 @@ namespace ES2Access.UI
                     cells.Clear();
                     AddCategories(cells, panel, prefix);
                     AddObsolete(cells, panel, prefix);
-                    EmitLinear(builder, cells);
+                    Cells.Emit(builder, cells);
                 }
                 finally
                 {
