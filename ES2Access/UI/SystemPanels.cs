@@ -738,10 +738,12 @@ namespace ES2Access.UI
         /// with no placeholder of any kind, so all a player heard was a row of buttons refusing - and
         /// "nothing here" and "here are five things you cannot do" are not the same news.
         ///
-        /// Two regions, the same pair the constructibles panel gets: the toolbar the game draws across
+        /// Two regions, the same shape the constructibles panel gets: the toolbar the game draws across
         /// the top stays one row, and the ships under it are one per row. The ships half always says
         /// something - the empty hangar has a line of its own - so the pair stands or falls with the
-        /// toolbar.
+        /// toolbar. The toolbar's word is "Actions" (owner-ruled 2026-08-18: these are commands, not
+        /// filters), reusing the key the diplomacy band already carries for the same phrase; the ships
+        /// keep the shared "Available".
         /// </summary>
         public static void Hangar(GraphBuilder builder, ShipsManagementPanel panel, string keyPrefix)
         {
@@ -759,7 +761,7 @@ namespace ES2Access.UI
                 ShipRows.Ships(Grid, panel, keys, false);
 
                 bool regions = Bar.Count > 0;
-                Half(builder, keys + "/toolbar", ModStrings.ShipDesignFilters, regions, Bar, false);
+                Half(builder, keys + "/toolbar", ModStrings.DiplomacyActionsBand, regions, Bar, false);
                 if (regions)
                 {
                     builder.SetRegion(keys + "/ships");

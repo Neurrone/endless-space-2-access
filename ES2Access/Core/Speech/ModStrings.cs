@@ -846,10 +846,11 @@ namespace ES2Access.Core.Speech
         public const string ShipDesignSlots = "ship-design.slots";
 
         /// <summary>The two halves of a bar-of-switches-over-a-grid band, which several panels draw and
-        /// none of them caption: these two are the words for ALL of them (the module band, the star
-        /// system's constructibles and its hangar), because a player who has learned the pair on one
-        /// panel should not meet a synonym on the next. The key names are the band they were first
-        /// written for.</summary>
+        /// none of them caption: these two are the words for ALL of them (the module band and the star
+        /// system's constructibles), because a player who has learned the pair on one panel should not
+        /// meet a synonym on the next. The key names are the band they were first written for. The
+        /// hangar's bar is NOT one of these: its buttons are commands, so its word is "Actions"
+        /// (DiplomacyActionsBand, owner-ruled 2026-08-18) while its ships keep "Available".</summary>
         public const string ShipDesignFilters = "ship-design.filters";
         public const string ShipDesignAvailable = "ship-design.available";
         public const string ShipDesignModuleFitted = "ship-design.module-fitted";
