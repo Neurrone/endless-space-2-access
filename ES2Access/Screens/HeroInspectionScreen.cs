@@ -417,10 +417,12 @@ namespace ES2Access.Screens
                 builder.PushContext(title);
             }
 
-            // Three runs, because the box is three different shapes: the pencil and the four
-            // characteristics are drawn as a small grid and read as one, the dots over the ship are
-            // peers of one kind scattered by a 3D projection and read as a list (ui-navigation's
-            // roster-grid rule), and the six figures along the bottom are a grid again.
+            // Three runs, and a region each, because the box draws three things: what the design IS, the
+            // dots over the rendered ship, and the figures along the bottom. Every one of them reads one
+            // node per row - a grid of characteristics and a grid of figures are peers of one kind whose
+            // wrap points belong to the box, not to the data - so the regions are what tells the three
+            // apart, and they cover the whole stop so the jump key can leave from anywhere in it.
+            builder.SetRegion("hero:ship/characteristics");
             _cells.Clear();
             AddPencil(box.AgeTransform, EditShipHandler, "overview/edit-ship");
             // The name comes from the design and not from the box the game squeezed it into - see
@@ -432,15 +434,17 @@ namespace ES2Access.Screens
             AddLine(box.RoleLabel, box.RoleTooltip, "overview/role");
             AddLine(box.Bonus1Label, box.Bonus1Tooltip, "overview/bonus1");
             AddLine(box.Bonus2Label, box.Bonus2Tooltip, "overview/bonus2");
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
 
+            builder.SetRegion("hero:ship/modules");
             _cells.Clear();
             AddFittedModules(box);
             Cells.EmitLinear(builder, _cells);
 
+            builder.SetRegion("hero:ship/figures");
             _cells.Clear();
             AddStats(box);
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
             if (named)
             {
                 builder.PopContext();
@@ -557,7 +561,7 @@ namespace ES2Access.Screens
                 vtable
             );
             HeroCards.Buttons(_cells, card, Keys + "card");
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
         }
 
         /// <summary>
@@ -588,7 +592,7 @@ namespace ES2Access.Screens
             _cells.Clear();
             AddPencil(box.AgeTransform, EditSkillsHandler, "overview/edit-skills");
             AddRow(box.SkillPointsGroup, "overview/points");
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
 
             // The branches are drawn as slices of one circle - the icons sit wherever the middle of each
             // slice happens to fall - so they read as the list of three they are, in the order the game
@@ -1232,7 +1236,7 @@ namespace ES2Access.Screens
                 Log.Warn("hero inspection: reading the skill page's right column threw: " + e);
             }
 
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
         }
 
         /// <summary>A box of the right-hand column: whatever heading it draws, and then one line per row
@@ -1458,7 +1462,7 @@ namespace ES2Access.Screens
             }
 
             builder.BeginStop(ActionsStop);
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
         }
 
         /// <summary>The row of buttons along the bottom, found through one of its members: the window
