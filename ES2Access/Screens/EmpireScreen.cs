@@ -207,7 +207,8 @@ namespace ES2Access.Screens
         // ---- the panels down the left edge ----
 
         /// <summary>A stop per panel the game is drawing down the left edge, top to bottom, read off
-        /// what is in them.</summary>
+        /// what is in them - one line per thing the panel says, whatever the box wrapped onto the same
+        /// row.</summary>
         private void BuildSidePanels(GraphBuilder builder)
         {
             try
@@ -226,7 +227,7 @@ namespace ES2Access.Screens
                         SpecialCell,
                         Transparent
                     );
-                    Cells.Emit(builder, _cells);
+                    Cells.EmitLinear(builder, _cells);
                     builder.PopContext();
                 }
             }
@@ -460,7 +461,7 @@ namespace ES2Access.Screens
             _cells.Clear();
             AddTab(_cells, window.ToggleSystems, 0);
             AddTab(_cells, window.ToggleVictory, 1);
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
         }
 
         private static void AddTab(List<Cell> cells, AgeControlToggle toggle, int index)
