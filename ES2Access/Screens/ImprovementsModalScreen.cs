@@ -36,9 +36,6 @@ namespace ES2Access.Screens
         private static readonly object ListStop = "improvements:list";
         private static readonly object ActionsStop = "improvements:actions";
 
-        /// <summary>Every tile row shares it, so up and down across the grid keep the column.</summary>
-        private static readonly object TileRowKey = "improvements:tile-row";
-
         /// <summary>Reused across builds rather than allocated per frame: Build runs every tick.
         /// </summary>
         private readonly List<Cell> _cells = new List<Cell>();
@@ -152,7 +149,7 @@ namespace ES2Access.Screens
             _cells.Clear();
             AddReadout(_cells, HeadingBeside(upkeep), "improvements:title");
             AddReadout(_cells, upkeep, "improvements:upkeep");
-            Emit(builder, _cells, null);
+            Cells.EmitLinear(builder, _cells);
         }
 
         /// <summary>The window's title, found as the other label in the band the upkeep line is drawn
@@ -185,9 +182,10 @@ namespace ES2Access.Screens
         // ---- the improvements ----
 
         /// <summary>
-        /// One tile per improvement, in the rows the engine wrapped them onto. Nothing is declared for
-        /// a system with none: the game draws an empty area there, with no caption and no placeholder,
-        /// and a stop with nothing in it does not exist.
+        /// One tile per improvement, one per row in the order the grid draws them: the tiles are peers
+        /// of one kind and the line an engine wrapped them onto is a fact about the box, not about the
+        /// improvements. Nothing is declared for a system with none: the game draws an empty area there,
+        /// with no caption and no placeholder, and a stop with nothing in it does not exist.
         ///
         /// An improvement the game will not let go of - a colony's own base, an empire's capital - has
         /// its tile disabled, so it reads as unavailable and Enter does nothing. It stays on the grid
@@ -221,7 +219,7 @@ namespace ES2Access.Screens
                 AddTile(_cells, _tiles[i], i);
             }
 
-            Emit(builder, _cells, TileRowKey);
+            Cells.EmitLinear(builder, _cells);
         }
 
         /// <summary>The tile's place in the grid is its structural key, not its widget name: the game
@@ -293,7 +291,7 @@ namespace ES2Access.Screens
             }
             catch (Exception) { }
 
-            Emit(builder, _cells, null);
+            Cells.EmitLinear(builder, _cells);
         }
 
         private static void AddButton(List<Cell> cells, AgeTransform widget)
@@ -342,34 +340,6 @@ namespace ES2Access.Screens
         }
 
         // ---- shared ----
-
-        /// <summary>A control on its way into the graph, still carrying the widget it was read from: the
-        /// rows are worked out from a whole band at once, which cannot be done while declaring it row by
-        /// row.</summary>
-        private sealed class Cell
-        {
-            public AgeTransform Widget;
-            public ControlId Id;
-            public NodeVtable Vtable;
-        }
-
-        private static readonly Func<Cell, AgeTransform> CellWidget = cell => cell.Widget;
-
-        /// <summary>Declare a band's controls in the rows they are drawn in - measured, so a grid the
-        /// engine wraps onto a second line is walked as two lines without being told.</summary>
-        private static void Emit(GraphBuilder builder, List<Cell> cells, object rowKey)
-        {
-            foreach (List<Cell> row in AgeLayout.Rows(cells, CellWidget))
-            {
-                builder.StartRow(rowKey);
-                foreach (Cell cell in row)
-                {
-                    builder.AddItem(cell.Id, cell.Vtable);
-                }
-
-                builder.EndRow();
-            }
-        }
 
         private static void Add(
             List<Cell> cells,
