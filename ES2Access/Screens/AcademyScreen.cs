@@ -212,7 +212,7 @@ namespace ES2Access.Screens
                         DrawnLines,
                         DeadOrGodModeClick
                     );
-                    Cells.Emit(builder, _cells);
+                    Cells.EmitLinear(builder, _cells);
                     builder.PopContext();
                 }
             }
@@ -489,8 +489,9 @@ namespace ES2Access.Screens
         // ---- the heroes ----
 
         /// <summary>
-        /// One card per hero, left to right in the row the game laid them out in, under the heading it
-        /// wrote over them ("Heroes List").
+        /// One card per hero, one per row in the order the game laid them out - left to right, then down
+        /// - under the heading it wrote over them ("Heroes List"). The cards are peers of one kind, so
+        /// where the strip wrapped is a fact about the table and not about the heroes.
         ///
         /// Keyed on the HERO, not the card: the table pools its cards and re-binds them by index on every
         /// refresh (<c>RefreshHeroCard</c> :380-401), so a cursor keyed on the widget would act on a
@@ -526,7 +527,7 @@ namespace ES2Access.Screens
                 Log.Warn("academy: reading the hero cards threw: " + e);
             }
 
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
             if (start != null)
             {
                 builder.SetStart(start);
@@ -729,7 +730,7 @@ namespace ES2Access.Screens
                 Log.Warn("academy: reading the hero buttons threw: " + e);
             }
 
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
             builder.PopContext();
         }
 
