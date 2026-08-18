@@ -29,13 +29,27 @@ namespace ES2Access.UI
     /// </summary>
     public static class SystemPanels
     {
-        /// <summary>Reused across builds rather than allocated per frame: these run every tick, and one
-        /// page builds at a time.</summary>
-        private static readonly List<Cell> Scratch = new List<Cell>();
+        /// <summary>
+        /// Reused across builds rather than allocated per frame: these run every tick, and one page
+        /// builds at a time. Two lists because both halves of a panel are counted before either is
+        /// declared - a region is only worth naming where there is a second one to jump to.
+        /// </summary>
+        private static readonly List<Cell> Bar = new List<Cell>();
+        private static readonly List<Cell> Grid = new List<Cell>();
 
         /// <summary>
         /// What this system can be told to build: the filters that decide which of them are shown, then
         /// the items themselves in the order the grid lays them out.
+        ///
+        /// Two regions, because the game draws two halves and neither is captioned: the switches that
+        /// decide what is listed, and the list. The words over them are the mod's own, and are the ones
+        /// the ship designer's module band already uses for the same two halves - a player who has met
+        /// one meets the same pair here.
+        ///
+        /// The switches stay ONE row: they are a select-one group the panel re-derives from the filter
+        /// in force, and the row they are drawn in is the row the player walks (owner ruling). The items
+        /// under them are one per row - a grid of tiles whose wrap points are the table's, not the
+        /// game's.
         ///
         /// Enter puts one at the end of the queue and Alt and Enter at the front, which are the game's
         /// own click and its own Alt-click. A confirmation the game wants for a particular thing -
@@ -55,20 +69,18 @@ namespace ES2Access.UI
                     return;
                 }
 
-                Scratch.Clear();
+                Bar.Clear();
                 AgeTransform filters = panel.ConstructibleFiltersTable;
                 if (filters != null && AgeWidgets.Visible(filters))
                 {
                     ConstructibleFilter[] all = filters.GetComponentsInChildren<ConstructibleFilter>(true);
                     for (int i = 0; i < all.Length; i++)
                     {
-                        AddFilter(Scratch, all[i], keyPrefix);
+                        AddFilter(Bar, all[i], keyPrefix);
                     }
                 }
 
-                Cells.Emit(builder, Scratch);
-
-                Scratch.Clear();
+                Grid.Clear();
                 AgeTransform table = panel.ConstructibleTable;
                 if (table != null)
                 {
@@ -76,15 +88,65 @@ namespace ES2Access.UI
                         table.GetComponentsInChildren<StarSystemConstructibleItem>(true);
                     for (int i = 0; i < items.Length; i++)
                     {
-                        AddConstructible(Scratch, items[i], panel, keyPrefix);
+                        AddConstructible(Grid, items[i], panel, keyPrefix);
                     }
                 }
 
-                Cells.Emit(builder, Scratch);
+                bool regions = Bar.Count > 0 && Grid.Count > 0;
+                Half(builder, keyPrefix + "constructibles/filters", ModStrings.ShipDesignFilters, regions, Bar, false);
+                Half(builder, keyPrefix + "constructibles/list", ModStrings.ShipDesignAvailable, regions, Grid, true);
             }
             catch (Exception e)
             {
                 Log.Warn("system panels: reading the constructibles threw: " + e);
+            }
+        }
+
+        /// <summary>
+        /// One half of a panel the game draws as a bar of switches over a grid of things, named by the
+        /// word the mod puts over it.
+        ///
+        /// <paramref name="regions"/> is the whole-panel answer, asked once and passed to both halves:
+        /// a lone region is a region jump that swallows the key silently, so a panel drawing only one
+        /// of its halves declares neither.
+        /// </summary>
+        private static void Half(
+            GraphBuilder builder,
+            string regionKey,
+            string nameKey,
+            bool regions,
+            List<Cell> cells,
+            bool linear
+        )
+        {
+            if (cells.Count == 0)
+            {
+                return;
+            }
+
+            if (regions)
+            {
+                builder.SetRegion(regionKey);
+                builder.PushContext(ModStrings.Get(nameKey));
+            }
+
+            try
+            {
+                if (linear)
+                {
+                    Cells.EmitLinear(builder, cells);
+                }
+                else
+                {
+                    Cells.Emit(builder, cells);
+                }
+            }
+            finally
+            {
+                if (regions)
+                {
+                    builder.PopContext();
+                }
             }
         }
 
@@ -675,6 +737,11 @@ namespace ES2Access.UI
         /// An EMPTY hangar says so, in the mod's own words. The game draws the toolbar over an empty area
         /// with no placeholder of any kind, so all a player heard was a row of buttons refusing - and
         /// "nothing here" and "here are five things you cannot do" are not the same news.
+        ///
+        /// Two regions, the same pair the constructibles panel gets: the toolbar the game draws across
+        /// the top stays one row, and the ships under it are one per row. The ships half always says
+        /// something - the empty hangar has a line of its own - so the pair stands or falls with the
+        /// toolbar.
         /// </summary>
         public static void Hangar(GraphBuilder builder, ShipsManagementPanel panel, string keyPrefix)
         {
@@ -686,27 +753,45 @@ namespace ES2Access.UI
                 }
 
                 string keys = keyPrefix + "hangar";
-                Scratch.Clear();
-                ShipRows.Toolbar(Scratch, panel, keys);
-                Cells.Emit(builder, Scratch);
+                Bar.Clear();
+                ShipRows.Toolbar(Bar, panel, keys);
+                Grid.Clear();
+                ShipRows.Ships(Grid, panel, keys, false);
 
-                Scratch.Clear();
-                ShipRows.Ships(Scratch, panel, keys, false);
-                if (Scratch.Count == 0)
+                bool regions = Bar.Count > 0;
+                Half(builder, keys + "/toolbar", ModStrings.ShipDesignFilters, regions, Bar, false);
+                if (regions)
                 {
-                    builder.AddItem(
-                        ControlId.Structural(keys + "/empty"),
-                        GraphNodes.Readout(
-                            () => ModStrings.Get(ModStrings.SystemHangarEmpty),
-                            null,
-                            null,
-                            null
-                        )
-                    );
-                    return;
+                    builder.SetRegion(keys + "/ships");
+                    builder.PushContext(ModStrings.Get(ModStrings.ShipDesignAvailable));
                 }
 
-                Cells.Emit(builder, Scratch);
+                try
+                {
+                    if (Grid.Count == 0)
+                    {
+                        builder.AddItem(
+                            ControlId.Structural(keys + "/empty"),
+                            GraphNodes.Readout(
+                                () => ModStrings.Get(ModStrings.SystemHangarEmpty),
+                                null,
+                                null,
+                                null
+                            )
+                        );
+                    }
+                    else
+                    {
+                        Cells.EmitLinear(builder, Grid);
+                    }
+                }
+                finally
+                {
+                    if (regions)
+                    {
+                        builder.PopContext();
+                    }
+                }
             }
             catch (Exception e)
             {

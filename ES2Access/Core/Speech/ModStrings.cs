@@ -844,6 +844,12 @@ namespace ES2Access.Core.Speech
         // state of a slot itself. What a slot ACCEPTS has no key here: the categories are read out as
         // the GAME's own titles for them, in the game's own list separators.
         public const string ShipDesignSlots = "ship-design.slots";
+
+        /// <summary>The two halves of a bar-of-switches-over-a-grid band, which several panels draw and
+        /// none of them caption: these two are the words for ALL of them (the module band, the star
+        /// system's constructibles and its hangar), because a player who has learned the pair on one
+        /// panel should not meet a synonym on the next. The key names are the band they were first
+        /// written for.</summary>
         public const string ShipDesignFilters = "ship-design.filters";
         public const string ShipDesignAvailable = "ship-design.available";
         public const string ShipDesignModuleFitted = "ship-design.module-fitted";
@@ -1378,7 +1384,7 @@ namespace ES2Access.Core.Speech
             { SystemRepresentativesPanel, "Representatives" },
             { SystemOutpostPanel, "Outpost" },
             { SystemGovernorPanel, "Governor" },
-            { SystemConstructiblesPanel, "Available constructions" },
+            { SystemConstructiblesPanel, "Constructibles" },
             { SystemQueuePanel, "Construction queue" },
             { SystemHangarPanel, "Hangar" },
             { SystemColonize, "Colonize" },
