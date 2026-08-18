@@ -211,7 +211,7 @@ namespace ES2Access.Screens
                 Log.Warn("negotiation: reading the header threw: " + e);
             }
 
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
             builder.PopContext();
         }
 
@@ -419,7 +419,7 @@ namespace ES2Access.Screens
                 Log.Warn("negotiation: reading the pressure band threw: " + e);
             }
 
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
             builder.PopContext();
         }
 
@@ -706,7 +706,7 @@ namespace ES2Access.Screens
                 Log.Warn("negotiation: reading the offer buttons threw: " + e);
             }
 
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
             builder.PopContext();
         }
 
