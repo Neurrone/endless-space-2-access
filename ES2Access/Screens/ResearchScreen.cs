@@ -451,11 +451,13 @@ namespace ES2Access.Screens
 
         /// <summary>
         /// The key panel: the three view switches the game puts at the top of it, then the legend
-        /// itself, one line per row it draws.
+        /// itself, one line per row it draws under the heading the game drew it under.
         ///
         /// The legend is read off the shape of the panel rather than modelled row by row - every row
         /// is a swatch, a word and a tooltip explaining the state, and there is nothing to do to any
-        /// of them.
+        /// of them. The panel draws its three sections one under another with a heading over each,
+        /// and those headings are levels rather than lines: they explain the rows below them and
+        /// carry nothing of their own to review.
         /// </summary>
         private void BuildKey(GraphBuilder builder, ResearchKeySidePanel panel)
         {
@@ -467,10 +469,55 @@ namespace ES2Access.Screens
             IList<AgeTransform> rows = content == null || !AgeWidgets.Visible(content)
                 ? null
                 : content.Children;
+            bool section = false;
             for (int i = 0; rows != null && i < rows.Count; i++)
             {
+                string heading = Heading(rows[i]);
+                if (heading != null)
+                {
+                    if (section)
+                    {
+                        builder.PopContext();
+                    }
+
+                    builder.PushContext(heading);
+                    section = true;
+                    continue;
+                }
+
                 AddDrawnLine(builder, rows[i], "research:key/" + i, null);
             }
+
+            if (section)
+            {
+                builder.PopContext();
+            }
+        }
+
+        /// <summary>
+        /// The words a legend row is a HEADING rather than an entry, or nothing at all for an entry.
+        ///
+        /// The panel draws an entry as a group of two pieces - a swatch and a word - and a heading as
+        /// a bare label spanning the panel, so being a label in its own right is what tells the two
+        /// apart (measured: the three headings are <c>TechnologiesKeyTitle</c>, <c>LinksKeyTitle</c>
+        /// and <c>DeedsKeyTitle</c>, the entries <c>Technology…Group</c>/<c>Link…Group</c>/
+        /// <c>Deed…Group</c>). A heading the game hung a sentence on would be a line worth reading in
+        /// its own right and stays one; none of these three has any tooltip at all.
+        /// </summary>
+        private static string Heading(AgeTransform row)
+        {
+            if (
+                row == null
+                || !AgeWidgets.Visible(row)
+                || row.GetComponent<AgePrimitiveLabel>() == null
+                || AgeWidgets.Raw(row) != null
+            )
+            {
+                return null;
+            }
+
+            string text = AgeWidgets.TextOf(row);
+            return string.IsNullOrEmpty(text) ? null : text;
         }
 
         private static void AddSwitch(GraphBuilder builder, AgeControlToggle toggle, string key)
