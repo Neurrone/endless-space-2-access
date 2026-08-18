@@ -411,8 +411,8 @@ namespace ES2Access.Core.UI.Graph
         /// stops in first-appearance order, landing on the stop's remembered position.</summary>
         public object StopKey;
 
-        /// <summary>The region (within a stop) this node belongs to, or null. Ctrl+Up/Down jumps between
-        /// regions in first-appearance order.</summary>
+        /// <summary>The region (within a stop) this node belongs to, or null. The host's region-jump chord
+        /// (ES2 Access: Alt+Up/Down) jumps between regions in first-appearance order.</summary>
         public object RegionKey;
 
         /// <summary>Auto-stamped sibling position (1-based) and count, from the builder: menu-mode nodes

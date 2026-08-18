@@ -17,10 +17,17 @@ namespace ES2Access.UI
     /// declares only its own frame - the heading it writes and the row of buttons along its bottom -
     /// which is where the two differ (Apply/Create/Auto/Reset against Apply/Reset/Auto/Back).
     ///
-    /// The bands are Tab stops, in the order they are drawn across the window: the structural
-    /// information and costs down the left edge (x40), the module list beside it (x350), the ship's
-    /// statistics on the right (x980), and the ship's own module slots in the middle (y304 and below,
-    /// under all three). Measured rects, not the widget tree, which nests all four under one panel.
+    /// The bands are Tab stops: the structural information and costs down the left edge (x40), the
+    /// module list beside it (x350), the ship's own module slots in the middle (y304 and below, under
+    /// all three), and the ship's statistics on the right (x980). Measured rects, not the widget tree,
+    /// which nests all four under one panel. Slots come before statistics rather than after, because
+    /// the slots are what the player is here to change and the statistics are what those changes come
+    /// out as - the owner's ordering, 2026-08-18.
+    ///
+    /// Each band's own drawn caption is the LEVEL its rows sit under (<c>PushContext</c>) rather than a
+    /// row of its own: a caption is heard on the way in, and a heading that is also a row is a row that
+    /// says nothing the arrival did not already say. Inside a band, a captioned group is a labelled
+    /// region and the rest are key-only regions, so Alt+Up/Down walks the band's sections either way.
     ///
     /// Two of those bands are read from the SHAPE of what is drawn rather than modelled field by field
     /// (<see cref="SidePanels.Content"/>): the costs table and the statistics table are stacks of
@@ -53,6 +60,9 @@ namespace ES2Access.UI
     /// - moving a module into a particular slot is the game's DRAG, so it is the mod's carry: Space on
     ///   a module row (or on a filled slot, which the game also lets the mouse drag from) picks it up,
     ///   every slot that would take it says so while it is held, and Enter on one puts it there.
+    /// - taking a module OFF the ship is the same drag released over nothing, which is nowhere a
+    ///   keyboard can aim, so the slots end with a node of the mod's own that stands for "nothing"
+    ///   (<see cref="AddRemoveTarget"/>).
     ///
     /// The carry commits through the game's own <c>IDragDropClient.ApplyDrop</c> with the dragged-item
     /// record filled in exactly as <c>OnModuleItemDragStarted</c> fills it, which is what buys the
@@ -226,20 +236,27 @@ namespace ES2Access.UI
 
             BuildInfo(builder, panel, prefix, editor, cells);
             BuildModules(builder, panel, prefix, cells);
-            BuildStats(builder, panel, prefix, cells);
             BuildSlots(builder, panel, prefix, cells);
+            BuildStats(builder, panel, prefix, cells);
         }
 
         // ---- the left edge: what the design is, and what it costs ----
 
         /// <summary>
-        /// The two captioned boxes down the left edge - the game draws "Structural Information" over the
-        /// first and "Costs" over the second, and a row has to be heard in the box it belongs to, so
-        /// each is a region of the one stop.
+        /// The two captioned boxes down the left edge, as one stop under the caption of the first: the
+        /// game draws "Structural Information" over the characteristics and "Costs" over the box below
+        /// it, and a row has to be heard in the box it belongs to, so each box is a region.
         ///
-        /// Only while both are drawn, though: until a hull is chosen the design is invalid and the game
-        /// hides the costs outright (<c>Refresh</c> :713-731), and one region on its own is a region
-        /// jump that swallows every press.
+        /// Three of the four regions carry no label of their own. The leading block's caption has become
+        /// the STOP's, so repeating it as a region name would say it twice on the way in; the Ark notice
+        /// has no caption at all. A region with no label is still a jump target - what a key-only region
+        /// buys is that Alt+Up/Down reaches those rows and does not dead-end on them.
+        ///
+        /// A region jump with nowhere to go is silent and consumed either way (<c>KeyGraph.MoveRegion</c>
+        /// returns unmoved for a lone region exactly as it does for a node with no region at all), so the
+        /// regions are declared whatever the box is drawing - including the state the earlier shape was
+        /// careful about, a design with no hull yet, where the game hides the costs outright
+        /// (<c>Refresh</c> :713-731) and the leading block is all there is.
         /// </summary>
         private static void BuildInfo(
             GraphBuilder builder,
@@ -249,6 +266,7 @@ namespace ES2Access.UI
             List<Cell> cells
         )
         {
+            bool labelled = false;
             try
             {
                 bool characteristics = AgeWidgets.Visible(panel.CharacteristicsTable);
@@ -260,41 +278,30 @@ namespace ES2Access.UI
                 }
 
                 builder.BeginStop(InfoStop(prefix));
-                bool regions = characteristics && costed;
+                labelled = Caption(builder, FirstLabel(panel.CharacteristicsTable));
                 if (characteristics)
                 {
-                    if (regions)
-                    {
-                        builder.SetRegion(prefix + "/info/characteristics");
-                    }
-
+                    builder.SetRegion(prefix + "/info/characteristics");
                     BuildCharacteristics(builder, panel, prefix, editor);
                 }
 
-                if (!costed)
+                if (costed)
                 {
-                    return;
+                    BuildCosts(builder, panel, prefix, cells);
                 }
-
-                if (regions)
-                {
-                    builder.SetRegion(prefix + "/info/costs");
-                }
-
-                cells.Clear();
-                SidePanels.Content(cells, costs, prefix + "/cost/", Resources, null);
-                Cells.Emit(builder, cells);
 
                 // The last band of the same box, drawn under the costs (y538) and only for a mothership
                 // design: the game's own warning about what an Ark can carry. It belongs to neither
-                // captioned group, so it is declared after both and in no region.
-                builder.SetRegion(null);
+                // captioned group, so it is declared after both and gets a region of its own - unlabelled,
+                // because the game drew no caption over it, and its own so that the jump out of the costs
+                // reaches it and the jump back leaves it.
                 AgeTransform notice =
                     panel.ArksVisualNoticeLabel == null
                         ? null
                         : panel.ArksVisualNoticeLabel.AgeTransform;
                 if (notice != null && AgeWidgets.Visible(notice))
                 {
+                    builder.SetRegion(prefix + "/info/notice");
                     SettingRows.AddReadout(builder, notice, prefix + "/info/notice");
                 }
             }
@@ -302,10 +309,106 @@ namespace ES2Access.UI
             {
                 Log.Warn("ship design: reading the left-hand column threw: " + e);
             }
+            finally
+            {
+                if (labelled)
+                {
+                    builder.PopContext();
+                }
+            }
         }
 
         /// <summary>
-        /// The name, hull, size, role and hull bonuses, in the order the panel stacks them.
+        /// What the design costs to build and to keep, and what the empire has in the bank - the two
+        /// halves of the second box, each a region of the info stop under the caption the game drew over
+        /// it.
+        ///
+        /// One cost per row, rather than the columns the box lays them out in: a strategic-resource cost
+        /// is a number beside a symbol and the row it landed in is the width of the box, not a fact about
+        /// the cost (ui-navigation's roster-grid rule). The caption of each half is that half's region
+        /// name and no longer a row, so the box is walked by what it says rather than by its own
+        /// headings.
+        ///
+        /// Split by the game's own bands rather than by rect: the empire's stock is the group holding
+        /// <c>EmpireMoneyLabel</c>, everything else the box draws (construction, the retrofit cost the
+        /// game shows while upgrading, upkeep) is the cost half, and whichever band holds the caption is
+        /// left out of both.
+        /// </summary>
+        private static void BuildCosts(
+            GraphBuilder builder,
+            ShipDesignEditionPanel panel,
+            string prefix,
+            List<Cell> cells
+        )
+        {
+            AgeTransform costs = panel.CostsTable;
+            AgeTransform caption = FirstLabel(costs);
+            AgeTransform captioned = BandOf(costs, caption);
+            AgeTransform stock = Group(panel.EmpireMoneyLabel);
+            AgeTransform stocked = BandOf(costs, stock) ?? stock;
+
+            builder.SetRegion(prefix + "/info/costs");
+            bool labelled = Caption(builder, caption);
+            try
+            {
+                cells.Clear();
+                IList<AgeTransform> children = costs.Children;
+                for (int i = 0; children != null && i < children.Count; i++)
+                {
+                    AgeTransform child = children[i];
+                    if (
+                        child == null
+                        || ReferenceEquals(child, captioned)
+                        || ReferenceEquals(child, stocked)
+                    )
+                    {
+                        continue;
+                    }
+
+                    SidePanels.Content(cells, child, prefix + "/cost/", Resources, null);
+                }
+
+                EmitLinear(builder, cells);
+            }
+            finally
+            {
+                if (labelled)
+                {
+                    builder.PopContext();
+                }
+            }
+
+            if (stocked == null || !AgeWidgets.Visible(stocked))
+            {
+                return;
+            }
+
+            builder.SetRegion(prefix + "/info/stock");
+            // The heading of this half stays a ROW as well as the region's name: the game hung the
+            // explanation of the whole reminder on it ("A reminder of your current strategic resources
+            // stock..."), a region name is a spoken phrase with no buffer behind it, and there is nowhere
+            // else that sentence could be read from - the same rule the side panels follow
+            // (<see cref="SidePanels.Readouts"/>). The announcer drops the duplicate on arrival.
+            bool named = Caption(builder, FirstLabel(stocked));
+            try
+            {
+                cells.Clear();
+                SidePanels.Content(cells, stocked, prefix + "/cost/", Resources, null);
+                EmitLinear(builder, cells);
+            }
+            finally
+            {
+                if (named)
+                {
+                    builder.PopContext();
+                }
+            }
+        }
+
+        /// <summary>
+        /// The name, hull, size, role and hull bonuses, in the order the panel stacks them - the whole of
+        /// what the box says once its caption has become the stop's own name, which is why the first row
+        /// here is the one Tab lands on.
         ///
         /// Written out rather than walked, for the reason the class remarks on: the name is a box to
         /// type in, the hull is a list to open while a design is being CREATED and a plain label
@@ -320,12 +423,6 @@ namespace ES2Access.UI
             TextFieldEditor editor
         )
         {
-            AgeTransform caption = FirstLabel(panel.CharacteristicsTable);
-            if (caption != null)
-            {
-                SettingRows.AddReadout(builder, caption, prefix + "/info/caption");
-            }
-
             AddName(builder, panel, prefix, editor);
             AddHull(builder, panel, prefix);
             SettingRows.AddReadout(builder, Group(panel.SizeLabel), prefix + "/info/size");
@@ -499,6 +596,17 @@ namespace ES2Access.UI
         /// toggles are drawn as bare icons except the first. What names them is the game's own word for
         /// the module category each one keeps, which the toggle's index gives (see
         /// <see cref="CategoryTitles"/>).
+        ///
+        /// Two regions: the switches that decide what is drawn, and what is drawn. The
+        /// game draws them as one strip across the top and a wrapping list under it, and the switches are
+        /// one per row for the same reason the modules are - they are a bar of choices the layout
+        /// happens to have put side by side, and stepping between them sideways buys nothing a step down
+        /// does not. The band's own "Modules" caption is the stop's name.
+        ///
+        /// The game captions neither half, so each carries a word of the mod's own as its LEVEL -
+        /// "Filters" over the switches, "Available" over the list. Without them the two halves are told
+        /// apart only by what happens to be under the cursor, and a jump between them lands on a row
+        /// with nothing saying which half it is in.
         /// </summary>
         private static void BuildModules(
             GraphBuilder builder,
@@ -507,6 +615,7 @@ namespace ES2Access.UI
             List<Cell> cells
         )
         {
+            bool labelled = false;
             try
             {
                 if (panel.ModulesGroup == null || !AgeWidgets.Visible(panel.ModulesGroup))
@@ -515,37 +624,56 @@ namespace ES2Access.UI
                 }
 
                 builder.BeginStop(ModulesStop(prefix));
-                cells.Clear();
                 // The panel names the label it writes "Modules" into after the statistics box it was
                 // copied from; what it DRAWS is the caption over this band.
-                AgeTransform caption = FirstLabel(panel.ModulesGroup);
-                if (caption != null)
+                labelled = Caption(builder, FirstLabel(panel.ModulesGroup));
+
+                builder.SetRegion(prefix + "/modules/filters");
+                builder.PushContext(ModStrings.Get(ModStrings.ShipDesignFilters));
+                try
                 {
-                    cells.Add(
-                        Cells.Readout(caption, AgeWidgets.Raw(caption), prefix + "/modules/caption")
-                    );
+                    cells.Clear();
+                    AddCategories(cells, panel, prefix);
+                    AddObsolete(cells, panel, prefix);
+                    EmitLinear(builder, cells);
+                }
+                finally
+                {
+                    builder.PopContext();
                 }
 
-                AddCategories(cells, panel, prefix);
-                AddObsolete(cells, panel, prefix);
-                Cells.Emit(builder, cells);
-
-                cells.Clear();
-                AgeTransform table = panel.ModulesTable;
-                ShipDesignModuleItem[] items =
-                    table == null
-                        ? new ShipDesignModuleItem[0]
-                        : table.GetComponentsInChildren<ShipDesignModuleItem>(true);
-                for (int i = 0; i < items.Length; i++)
+                builder.SetRegion(prefix + "/modules/list");
+                builder.PushContext(ModStrings.Get(ModStrings.ShipDesignAvailable));
+                try
                 {
-                    AddModule(cells, panel, items[i], prefix, i);
-                }
+                    cells.Clear();
+                    AgeTransform table = panel.ModulesTable;
+                    ShipDesignModuleItem[] items =
+                        table == null
+                            ? new ShipDesignModuleItem[0]
+                            : table.GetComponentsInChildren<ShipDesignModuleItem>(true);
+                    for (int i = 0; i < items.Length; i++)
+                    {
+                        AddModule(cells, panel, items[i], prefix, i);
+                    }
 
-                EmitLinear(builder, cells);
+                    EmitLinear(builder, cells);
+                }
+                finally
+                {
+                    builder.PopContext();
+                }
             }
             catch (Exception e)
             {
                 Log.Warn("ship design: reading the module list threw: " + e);
+            }
+            finally
+            {
+                if (labelled)
+                {
+                    builder.PopContext();
+                }
             }
         }
 
@@ -757,9 +885,21 @@ namespace ES2Access.UI
         /// The shape alone is not enough to NAME them, though: the game draws a caption beside some of
         /// these numbers (the range accuracies, the two military powers' icons, the mining rates) and
         /// none at all beside the rest, so every figure whose caption exists only in the game's string
-        /// table is declared by name FIRST and its group is then skipped by the walk. Declaration order
-        /// does not affect reading order - <see cref="Cells.Emit"/> puts every cell back in the rows the
-        /// panel drew them in.
+        /// table is declared by name FIRST and its group is then skipped by the walk.
+        ///
+        /// FOUR REGIONS, and the shape walk's own cells are split between two of them by the band the
+        /// game drew them in - anything under <c>RangeEfficienciesTable</c> is a per-range figure, the
+        /// rest is the combat block. In order: the switch on its own (a region of one, so Alt+Up/Down
+        /// reaches it and leaves it rather than dead-ending there); the four RUNNING TOTALS, which are
+        /// what a design is judged by and are emitted in the owner's order rather than the panel's -
+        /// health, manpower, movement, command points, where the panel draws offence and defence in
+        /// between; the whole combat block in drawn order; and the per-range figures under the game's own
+        /// word for them, "Accuracy" (<c>%AccuracyTitle</c>) - the accuracies always, and the damage
+        /// figures beside them once the switch is on.
+        ///
+        /// The band's "Ship Statistics" caption is the stop's name and no longer a row, and the walk is
+        /// told to leave it (and the switch, declared here) alone through the same skip list the named
+        /// figures use.
         /// </summary>
         private static void BuildStats(
             GraphBuilder builder,
@@ -768,6 +908,7 @@ namespace ES2Access.UI
             List<Cell> cells
         )
         {
+            bool labelled = false;
             try
             {
                 AgeTransform table = panel.StatisticsTable;
@@ -776,43 +917,160 @@ namespace ES2Access.UI
                     return;
                 }
 
+                string keys = prefix + "/stat/";
+                AgeTransform caption = FirstLabel(table);
+                AgeTransform ranges = panel.RangeEfficienciesTable;
+
+                _namedStats.Clear();
+                if (caption != null)
+                {
+                    _namedStats.Add(caption);
+                }
+
+                AgeTransform switched = AgeWidgets.Transform(panel.ShowDetailedStatsToggle);
+                if (switched != null)
+                {
+                    _namedStats.Add(switched);
+                }
+
+                _switchCells.Clear();
+                _runningCells.Clear();
+                _combatCells.Clear();
+                _rangeCells.Clear();
+                AddDetailedSwitch(_switchCells, panel, keys);
+                AddRunningStats(_runningCells, panel, keys, _namedStats);
+                AddCombatStats(_combatCells, panel, keys, _namedStats);
+                AddRangeStats(_rangeCells, panel, keys, _namedStats);
+
                 cells.Clear();
-                _statsPanel = panel;
+                SidePanels.Content(cells, table, keys, Stats, null);
+                for (int i = 0; i < cells.Count; i++)
+                {
+                    (Under(cells[i].Widget, ranges) ? _rangeCells : _combatCells).Add(cells[i]);
+                }
+
                 _namedStats.Clear();
-                AddSimpleStats(cells, panel, prefix + "/stat/", _namedStats);
-                AddEditionStats(cells, panel, prefix + "/stat/", _namedStats);
-                SidePanels.Content(cells, table, prefix + "/stat/", Stats, null);
-                _statsPanel = null;
-                _namedStats.Clear();
-                if (cells.Count == 0)
+                if (
+                    _switchCells.Count == 0
+                    && _runningCells.Count == 0
+                    && _combatCells.Count == 0
+                    && _rangeCells.Count == 0
+                )
                 {
                     return;
                 }
 
                 builder.BeginStop(StatsStop(prefix));
-                Cells.Emit(builder, cells);
+                labelled = Caption(builder, caption);
+
+                builder.SetRegion(keys + "switch");
+                EmitOrdered(builder, _switchCells);
+                builder.SetRegion(keys + "running");
+                EmitOrdered(builder, _runningCells);
+                builder.SetRegion(keys + "combat");
+                EmitLinear(builder, _combatCells);
+                builder.SetRegion(keys + "range");
+                EmitRanges(builder, _rangeCells);
             }
             catch (Exception e)
             {
-                _statsPanel = null;
-                _namedStats.Clear();
                 Log.Warn("ship design: reading the statistics threw: " + e);
+            }
+            finally
+            {
+                _namedStats.Clear();
+                _switchCells.Clear();
+                _runningCells.Clear();
+                _combatCells.Clear();
+                _rangeCells.Clear();
+                if (labelled)
+                {
+                    builder.PopContext();
+                }
             }
         }
 
-        /// <summary>The panel whose statistics are being read, for <see cref="Stats"/> - the walk's own
-        /// callback shape carries a side panel, and this band is not one. Main-thread only, and set
-        /// only across the one call.</summary>
-        private static ShipDesignEditionPanel _statsPanel;
+        /// <summary>The per-range figures under the game's own word for what they are. Not a caption the
+        /// panel draws - it draws none over this band at all - but the title the game keeps for the
+        /// statistic itself, which is the same string the hidden accuracy figure is named from.</summary>
+        private static void EmitRanges(GraphBuilder builder, List<Cell> cells)
+        {
+            string title = AgeText.Clean("%AccuracyTitle");
+            bool named =
+                !string.IsNullOrEmpty(title) && title[0] != '%' && cells.Count > 0;
+            if (named)
+            {
+                builder.PushContext(title);
+            }
 
-        /// <summary>The groups whose figures were already declared with the caption the game keeps in
-        /// its string table, so the shape walk leaves them alone rather than reading the number on its
-        /// own. Refilled per band, main-thread only.</summary>
+            try
+            {
+                EmitLinear(builder, cells);
+            }
+            finally
+            {
+                if (named)
+                {
+                    builder.PopContext();
+                }
+            }
+        }
+
+        // The statistics band's four regions, gathered before anything is declared because two of them
+        // are filled by the shape walk and have to be split by the band each cell was drawn in. Reused
+        // rather than allocated per frame, main-thread only, like the skip list below.
+        private static readonly List<Cell> _switchCells = new List<Cell>(1);
+        private static readonly List<Cell> _runningCells = new List<Cell>(4);
+        private static readonly List<Cell> _combatCells = new List<Cell>(24);
+        private static readonly List<Cell> _rangeCells = new List<Cell>(8);
+
+        /// <summary>What the shape walk is to leave alone: the groups whose figures were already declared
+        /// with the caption the game keeps in its string table (so the walk does not read the number on
+        /// its own), plus the two widgets this band declares itself - the caption, which is the stop's
+        /// name, and the detailed-stats switch, which is a region of one. Refilled per band, main-thread
+        /// only.</summary>
         private static readonly List<AgeTransform> _namedStats = new List<AgeTransform>();
 
+        /// <summary>The four running totals a design is judged by, in the order the owner asked to hear
+        /// them rather than the order the panel draws them in: the panel puts the two military powers
+        /// between manpower and movement, and those belong with the combat block below. Named from the
+        /// game's own titles, the same six <see cref="AddSimpleStats"/> gives every other host of the
+        /// prefab - two of which are declared here instead, in <see cref="AddCombatStats"/>.</summary>
+        private static void AddRunningStats(
+            List<Cell> cells,
+            ShipDesignEditionPanel panel,
+            string keyPrefix,
+            List<AgeTransform> declared
+        )
+        {
+            AddStat(cells, panel.HealthLabel, "%ShipStatHealthTitle", keyPrefix + "health", declared);
+            AddStat(
+                cells,
+                panel.ManPowerLabel,
+                "%ShipStatManpowerTitle",
+                keyPrefix + "manpower",
+                declared
+            );
+            AddStat(
+                cells,
+                panel.MovementPointsLabel,
+                "%ShipStatMovementTitle",
+                keyPrefix + "movement",
+                declared
+            );
+            AddStat(
+                cells,
+                panel.CommandPointsLabel,
+                "%ShipStatCommandPointsTitle",
+                keyPrefix + "command-points",
+                declared
+            );
+        }
+
         /// <summary>
-        /// The figures this panel adds to the six the base panel draws, each named from the game's own
-        /// title for it.
+        /// The two military powers the base panel draws, plus the figures this panel adds to them, each
+        /// named from the game's own title for it - the whole combat block, in the order the panel lays
+        /// it out.
         ///
         /// Measured on the live prefab, with the hidden rows included: NOT ONE of these groups holds a
         /// caption label (<c>DetailedOffensiveStatsPanel</c>, <c>DetailedDefensiveStatsPanel</c> and
@@ -841,13 +1099,27 @@ namespace ES2Access.UI
         /// actually reads (<c>SimulationProperties.Ship.ShipHealth</c> -> <c>%ShipHealthTitle</c>) is
         /// the word "Health", which is already the caption of the ship's own health two rows up.
         /// </summary>
-        private static void AddEditionStats(
+        private static void AddCombatStats(
             List<Cell> cells,
             ShipDesignEditionPanel panel,
             string keyPrefix,
             List<AgeTransform> declared
         )
         {
+            AddStat(
+                cells,
+                panel.OffensivePowerLabel,
+                "%ShipStatOffensiveMilitaryPowerTitle",
+                keyPrefix + "offence",
+                declared
+            );
+            AddStat(
+                cells,
+                panel.DefensivePowerLabel,
+                "%ShipStatDefensiveMilitaryPowerTitle",
+                keyPrefix + "defence",
+                declared
+            );
             AddStat(
                 cells,
                 panel.KineticPowerLabel,
@@ -920,11 +1192,24 @@ namespace ES2Access.UI
                 keyPrefix + "shield-absorption",
                 declared
             );
+        }
 
-            // The three damage-per-second figures are three labels of ONE group, so the Nth of them is
-            // paired with the Nth range title - the same title the accuracy column above it draws for
-            // itself. Reading the group instead is what produced three identical "(0)"s with nothing
-            // saying which range each belonged to.
+        /// <summary>
+        /// The damage the design does at each range, which the game draws under the accuracies of the
+        /// same three ranges and only while its detailed switch is on.
+        ///
+        /// The three figures are three labels of ONE group, so the Nth of them is paired with the Nth
+        /// range title - the same title the accuracy column above it draws for itself. Reading the group
+        /// instead is what produced three identical "(0)"s with nothing saying which range each belonged
+        /// to; passing each label as its own row is what keeps the three off one id and one rect.
+        /// </summary>
+        private static void AddRangeStats(
+            List<Cell> cells,
+            ShipDesignEditionPanel panel,
+            string keyPrefix,
+            List<AgeTransform> declared
+        )
+        {
             AddStat(
                 cells,
                 panel.LongRangeDPSLabel,
@@ -958,19 +1243,10 @@ namespace ES2Access.UI
             SidePanel panel
         )
         {
-            ShipDesignEditionPanel owner = _statsPanel;
+            // The skip list covers both what was declared by name and what the band declares itself -
+            // its caption and its switch - so a widget on it is simply not walked into.
             if (_namedStats.Contains(widget))
             {
-                return true;
-            }
-
-            if (
-                owner != null
-                && owner.ShowDetailedStatsToggle != null
-                && ReferenceEquals(widget, owner.ShowDetailedStatsToggle.AgeTransform)
-            )
-            {
-                AddDetailedSwitch(cells, owner, keyPrefix);
                 return true;
             }
 
@@ -1155,6 +1431,7 @@ namespace ES2Access.UI
                 builder.BeginStop(SlotsStop(prefix));
                 builder.PushContext(ModStrings.Get(ModStrings.ShipDesignSlots));
                 EmitLinear(builder, cells);
+                AddRemoveTarget(builder, panel, prefix);
                 builder.PopContext();
             }
             catch (Exception e)
@@ -1168,9 +1445,11 @@ namespace ES2Access.UI
         /// the module categories it is restricted to, the multiplier it applies, and the resource it
         /// costs on top of the module.
         ///
-        /// Filled, it is the module's name and a button that takes the module out; empty, it is the
-        /// game's own word for a slot and no action, because that is what a click on it does. Either
-        /// way it is where a carried module is put down, and it says so while one is held.
+        /// Filled, it is the module's name and nothing else, and a button that takes the module out;
+        /// empty, it is the word "empty" and the markers, and no action, because that is what a click on
+        /// it does. Either way it is where a carried module is put down, and it says so while one is
+        /// held. The markers are the SLOT's own facts, so on a filled slot they move out of the readout
+        /// and into the review buffer, where they cannot be mistaken for the module's.
         ///
         /// Keyed on the GuiSlot rather than on the item drawing it: the container pools its items and
         /// rebinds them on every refresh of the ship, so a cursor keyed on <c>Item000</c> would be
@@ -1213,9 +1492,17 @@ namespace ES2Access.UI
                         kind: AnnouncementKinds.Label
                     ),
                     GraphNodes.DisabledPart(enabled),
-                    GraphNodes.ValuePart(() => SlotMarkers(it), false),
+                    // What the slot ITSELF is - the categories it takes, its multiplier, what it costs -
+                    // and only while it is empty. Full, those words are a statement about the SLOT read
+                    // straight after the name of the MODULE in it, and they read as the module's own
+                    // roles ("Titanium Slug, defence module, support module"); the module's name is the
+                    // whole of what a filled slot is called, and the slot's own facts move to the review
+                    // buffer below. Kept as a PART that answers null rather than a part that goes away:
+                    // the live watch re-baselines when the part list changes shape, which is exactly the
+                    // fill/unfill transition the watch above exists to announce.
+                    GraphNodes.ValuePart(() => Filled(it) ? null : SlotMarkers(it), false),
                 },
-                Sections = GraphNodes.Sections(null, tooltip),
+                Sections = GraphNodes.Sections(() => SlotDetails(it), tooltip),
                 DropKind = ModuleKind,
                 OnDrop = held => Drop(owner, it, held),
                 // The slot's own click, empty or filled, is "take the module out"
@@ -1256,13 +1543,24 @@ namespace ES2Access.UI
             }
         }
 
-        /// <summary>What the slot is called: the module in it, or the game's own word for an empty slot
-        /// (<c>GuiSlot.Title</c> answers both).</summary>
+        /// <summary>What the slot is called: the module in it, or "empty".
+        ///
+        /// <c>GuiSlot.Title</c> answers both, but its answer for an empty slot is the game's generic
+        /// title for the CategorySlot element - a phrase about slots in general, in front of the marker
+        /// list that says what THIS slot takes. The state is the thing the player is walking the ship
+        /// for, so the state is what the name says.</summary>
         private static string SlotName(ShipDesignEditionSlotItem slot)
         {
             try
             {
-                return slot.GuiSlot == null ? null : AgeText.Clean(slot.GuiSlot.Title);
+                if (slot.GuiSlot == null)
+                {
+                    return null;
+                }
+
+                return Filled(slot)
+                    ? AgeText.Clean(slot.GuiSlot.Title)
+                    : ModStrings.Get(ModStrings.ShipDesignSlotEmpty);
             }
             catch (Exception)
             {
@@ -1282,28 +1580,80 @@ namespace ES2Access.UI
             try
             {
                 MessageBuilder message = new MessageBuilder();
-                string[] categories = slot.GuiSlot.ModuleTypeRestrictions;
-                if (slot.SlotCategoriesTable != null && slot.SlotCategoriesTable.Visible)
-                {
-                    for (int i = 0; categories != null && i < categories.Length; i++)
-                    {
-                        string title = AgeText.Clean(Gui.GetTitle(categories[i]));
-                        if (!string.IsNullOrEmpty(title) && title[0] != '%')
-                        {
-                            Add(message, title);
-                        }
-                    }
-                }
-
-                Add(message, Marker(slot.SlotMultiplier2));
-                Add(message, Marker(slot.SlotMultiplier3));
-                Add(message, Marker(slot.SlotMultiplier4));
-                if (slot.SpecialCostMarker != null && slot.SpecialCostMarker.Visible)
-                {
-                    Add(message, AgeText.Clean(slot.GuiSlot.SpecialCost));
-                }
-
+                Add(message, SlotCategories(slot));
+                Add(message, SlotCosts(slot));
                 return message.Build();
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>The module categories the slot is restricted to, as the game's own titles for them,
+        /// and only while the game is drawing their icons.</summary>
+        private static string SlotCategories(ShipDesignEditionSlotItem slot)
+        {
+            if (slot.SlotCategoriesTable == null || !slot.SlotCategoriesTable.Visible)
+            {
+                return null;
+            }
+
+            MessageBuilder message = new MessageBuilder();
+            string[] categories = slot.GuiSlot.ModuleTypeRestrictions;
+            for (int i = 0; categories != null && i < categories.Length; i++)
+            {
+                string title = AgeText.Clean(Gui.GetTitle(categories[i]));
+                if (!string.IsNullOrEmpty(title) && title[0] != '%')
+                {
+                    Add(message, title);
+                }
+            }
+
+            return message.Build();
+        }
+
+        /// <summary>The rest of what the game draws round the slot's edge: the multiplier it applies to
+        /// whatever is fitted, and the resource the slot itself costs on top of the module.</summary>
+        private static string SlotCosts(ShipDesignEditionSlotItem slot)
+        {
+            MessageBuilder message = new MessageBuilder();
+            Add(message, Marker(slot.SlotMultiplier2));
+            Add(message, Marker(slot.SlotMultiplier3));
+            Add(message, Marker(slot.SlotMultiplier4));
+            if (slot.SpecialCostMarker != null && slot.SpecialCostMarker.Visible)
+            {
+                Add(message, AgeText.Clean(slot.GuiSlot.SpecialCost));
+            }
+
+            return message.Build();
+        }
+
+        /// <summary>
+        /// What a FILLED slot has to say about itself that its name no longer does: the markers the game
+        /// draws round its edge - the multiplier it applies and the resource it costs on top of the
+        /// module.
+        ///
+        /// NOT what it accepts, even though that is the other half of what the markers say: the module
+        /// in it carries the game's own tooltip, and that tooltip already ends with a "Slot Information /
+        /// Module Type Restriction" section listing exactly those categories (measured on the live
+        /// panel). The tooltip is in this node's buffer too, so a line of the mod's would be the same
+        /// sentence twice, one of them a paraphrase.
+        ///
+        /// Empty, the markers are in the readout already (<see cref="SlotMarkers"/>) and repeating them
+        /// here would be the same words twice on one control.
+        /// </summary>
+        private static IList<string> SlotDetails(ShipDesignEditionSlotItem slot)
+        {
+            try
+            {
+                if (!Filled(slot))
+                {
+                    return null;
+                }
+
+                string costs = SlotCosts(slot);
+                return string.IsNullOrEmpty(costs) ? null : new string[] { costs };
             }
             catch (Exception)
             {
@@ -1477,11 +1827,134 @@ namespace ES2Access.UI
             }
         }
 
+        /// <summary>
+        /// Where a module is dropped to take it off the ship - the mod's own node, at the end of the
+        /// slots, and the one gesture on this panel with no widget of its own behind it.
+        ///
+        /// The mouse's way of removing a module is to drag it off the ship and let go over nothing
+        /// (<c>ApplyDrop(null)</c> -> <c>RemoveModuleFromSlot</c>), and "nothing" is not somewhere a
+        /// keyboard can aim. Declared even while nothing is being carried, because a place the player has
+        /// to already know about is a place they will never find: walking to the end of the slots is how
+        /// the removal announces that it exists. It says "drop target" only while a module that could
+        /// actually come off is held, which is the standard indication and needs no words of its own.
+        ///
+        /// Not declared at all while the design is read-only: there is no gesture to explain on a page
+        /// nothing can be taken off, and an inert instruction is worse than none.
+        ///
+        /// Keyed on the container, which the panel keeps for as long as the page is up - the slot items
+        /// under it are pooled and rebound on every refresh.
+        /// </summary>
+        private static void AddRemoveTarget(
+            GraphBuilder builder,
+            ShipDesignEditionPanel panel,
+            string prefix
+        )
+        {
+            if (!Editable(panel))
+            {
+                return;
+            }
+
+            ShipDesignEditionPanel owner = panel;
+            NodeVtable vtable = new NodeVtable
+            {
+                // No control type, like every other line this mod draws itself: it is an instruction the
+                // player reads, and a role word on it would name a widget the game never drew.
+                Announcements = new List<NodeAnnouncement>
+                {
+                    GraphNodes.LabelPart(() => ModStrings.Get(ModStrings.ShipDesignRemoveTarget)),
+                },
+                DropKind = ModuleKind,
+                OnDrop = held => Remove(owner, held),
+                // The same test the drop makes, so the word and the outcome cannot disagree - the
+                // <see cref="Takes"/> rule, on the one target that is not a slot.
+                DropAccepts = held => Removable(owner, held),
+            };
+
+            builder.AddItem(
+                ControlId.Referenced(
+                    panel.ShipDesignSlotItemsContainer,
+                    prefix + "/slot/remove-target"
+                ),
+                vtable
+            );
+        }
+
+        private static bool Editable(ShipDesignEditionPanel panel)
+        {
+            try
+            {
+                return panel.GuiShipDesign != null
+                    && panel.CurrentMode != ShipDesignEditionPanel.Mode.ReadOnly;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Whether taking the carried module off the ship is a thing that could happen here, which is
+        /// what both the "drop target" word and the drop itself ask.
+        ///
+        /// A module carried off the LIST is the case this rules out: it was never fitted, so there is
+        /// nothing to take off, and the game's own <c>ApplyDrop</c> (:345-351, which acts only with a
+        /// slot on one end or the other) does nothing with it either. It is not somewhere that module
+        /// can go, and it says so both ways - no drop word while it is held, and the ordinary refusal
+        /// on a press.
+        /// </summary>
+        private static bool Removable(ShipDesignEditionPanel panel, CarryItem held)
+        {
+            return held != null
+                && held.Cargo is ShipDesignEditionSlotItem
+                && Editable(panel)
+                && Carried(held) != null;
+        }
+
+        /// <summary>
+        /// Take the carried module off the ship, the way letting go over nothing does it: the same
+        /// dragged-item record the drag fills in, and then <c>ApplyDrop</c> with no target at all, which
+        /// is what the game's own drag hands it when the pointer is over nothing it recognises.
+        /// </summary>
+        private static DropResult Remove(ShipDesignEditionPanel panel, CarryItem held)
+        {
+            try
+            {
+                if (!Removable(panel, held))
+                {
+                    return DropResult.Refused(null);
+                }
+
+                GuiModule module = Carried(held);
+                DragDropWindow window = Gui.GuiServiceAvailable
+                    ? Gui.GuiService.GetWindow<DragDropWindow>(false)
+                    : null;
+                if (window == null || window.ShipDesignModuleDraggedItem == null)
+                {
+                    return DropResult.Refused(null);
+                }
+
+                window.ShipDesignModuleDraggedItem.SourceItem = held.Cargo as GuiBehaviour;
+                window.ShipDesignModuleDraggedItem.GuiModule = module;
+                ((IDragDropClient)panel).ApplyDrop(null);
+                return DropResult.Done(
+                    ModStrings.Format(ModStrings.ShipDesignModuleRemoved, held.Name)
+                );
+            }
+            catch (Exception e)
+            {
+                Log.Warn("ship design: removing a carried module threw: " + e);
+                return DropResult.Refused(null);
+            }
+        }
+
         // ---- shared ----
 
         /// <summary>Emit one node per cell, in the order the game drew them: peers of one kind read as
-        /// a list, whatever shape the layout happens to wrap them into.</summary>
-        private static void EmitLinear(GraphBuilder builder, List<Cell> cells)
+        /// a list, whatever shape the layout happens to wrap them into. Public for the window's own
+        /// bands - the row of buttons along its bottom is the same kind of set as the module strip, and
+        /// the host must not grow a private copy of this loop.</summary>
+        public static void EmitLinear(GraphBuilder builder, List<Cell> cells)
         {
             foreach (List<Cell> row in AgeLayout.Rows(cells, CellWidget))
             {
@@ -1492,7 +1965,77 @@ namespace ES2Access.UI
             }
         }
 
+        /// <summary>Emit one node per cell in the order they were DECLARED, for a set whose reading order
+        /// is a decision rather than a rect - the running totals, which the panel draws with the military
+        /// powers interleaved.</summary>
+        private static void EmitOrdered(GraphBuilder builder, List<Cell> cells)
+        {
+            for (int i = 0; i < cells.Count; i++)
+            {
+                builder.AddItem(cells[i].Id, cells[i].Vtable);
+            }
+        }
+
         private static readonly Func<Cell, AgeTransform> CellWidget = cell => cell.Widget;
+
+        /// <summary>Push a drawn caption as the LEVEL the rows under it sit in - a stop's name or a
+        /// region's - and say whether it has to be popped. A band the game left uncaptioned gets no level
+        /// rather than an empty one.</summary>
+        private static bool Caption(GraphBuilder builder, AgeTransform caption)
+        {
+            string text = caption == null ? null : AgeWidgets.TextOf(caption);
+            if (string.IsNullOrEmpty(text))
+            {
+                return false;
+            }
+
+            builder.PushContext(text);
+            return true;
+        }
+
+        /// <summary>Whether a widget is drawn inside a band - which is how the shape walk's cells are
+        /// split between the regions of the statistics box, whose bands are the game's own grouping and
+        /// not something a rect could answer.</summary>
+        private static bool Under(AgeTransform widget, AgeTransform band)
+        {
+            if (band == null)
+            {
+                return false;
+            }
+
+            AgeTransform at = widget;
+            int guard = 0;
+            while (at != null && guard++ < 12)
+            {
+                if (ReferenceEquals(at, band))
+                {
+                    return true;
+                }
+
+                at = at.Parent;
+            }
+
+            return false;
+        }
+
+        /// <summary>Which child of a band a widget sits in, for splitting a box by the groups the game
+        /// laid it out in rather than by name.</summary>
+        private static AgeTransform BandOf(AgeTransform band, AgeTransform inside)
+        {
+            AgeTransform at = inside;
+            int guard = 0;
+            while (at != null && guard++ < 12)
+            {
+                if (ReferenceEquals(at.Parent, band))
+                {
+                    return at;
+                }
+
+                at = at.Parent;
+            }
+
+            return null;
+        }
 
         /// <summary>The caption a band draws across its own top: the first label in it, which is where
         /// every one of these boxes puts its heading.</summary>

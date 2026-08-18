@@ -194,6 +194,11 @@ namespace ES2Access.Screens
         /// question, and the game answers it by hiding them. The one thing in the band that is not a
         /// button is the sentence the window writes for a design it will not edit, which is declared
         /// as the line of text it is.
+        ///
+        /// One button per row, not the columns the window lays them out in: they are peers of one kind
+        /// and which of them the game happened to draw side by side is a fact about the window's width
+        /// (ui-navigation's roster-grid rule, the same reading the module strip and the costs get). The
+        /// order across the band is still the drawn one.
         /// </summary>
         private void BuildActions(GraphBuilder builder, ShipDesignModalWindow window)
         {
@@ -228,7 +233,7 @@ namespace ES2Access.Screens
             }
 
             builder.BeginStop(ActionsStop);
-            Cells.Emit(builder, _cells);
+            ShipDesignRows.EmitLinear(builder, _cells);
         }
 
         private static AgeTransform Band(ShipDesignModalWindow window)

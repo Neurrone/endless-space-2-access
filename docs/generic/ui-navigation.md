@@ -385,10 +385,16 @@ which no dump reveals. Key such lines on the game's *data* object, never the wid
   collapsed-help bar, a persistent HUD fixture) is declared by the pages whose LAYOUT owns
   it — measured by where the game places the control, not by where its pixels remain
   visible: an overlay drawn over a modal is not thereby part of the modal's tab order.
-- **A roster grid linearises.** A grid of cards (factions, loadouts, portraits) reads as
-  one row per card in drawn order — left-to-right, top-to-bottom — not as a 2D table: the
-  cells are peers of one kind, so column-preserving vertical moves buy nothing and the
-  grid's wrap points are a rendering accident. A card's permanently-drawn description
+- **Columns only where the column is a fact of the game's data; everything else is one
+  node per row.** The default for any band the game draws side by side — a window's bottom
+  row of buttons, a strip of filter toggles, a grid of stat figures, a grid of cards
+  (factions, loadouts, portraits) — is one row per member in drawn order — left-to-right,
+  top-to-bottom — never a 2D reading: the members are peers of one kind, so sideways and
+  column-preserving moves buy nothing, and the wrap points are a rendering accident. The
+  2D reading is reserved for a real table (below), whose columns are the game's own data.
+  When the cells come from a reader shared between hosts, flatten at the host's emit call,
+  never in the shared collector — it fills a caller-owned list and belongs to no host's
+  layout. A card's permanently-drawn description
   follows the always-shown-text rule ([making-screens-accessible.md](making-screens-accessible.md)
   §0); the card's substance lives in its buffer ([buffers.md](buffers.md)'s card example).
   A **sparse grid** is not a table either: when the game keeps the full lattice and hides most

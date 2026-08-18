@@ -839,11 +839,19 @@ namespace ES2Access.Core.Speech
         public const string ScreenHeroCompleteList = "screen.hero-complete-list";
 
         // The ship designer. Its heading is the game's own and is declared where it is drawn, so the
-        // only mod words here are for the band the game draws with no caption at all - the module slots
-        // it draws over the rendered ship - and for a module having been fitted into one, which is the
-        // mod's own drag ending and has no game sentence.
+        // only mod words here are for the bands the game draws with no caption at all - the module slots
+        // it draws over the rendered ship, and the two halves of the module band (the switches that
+        // decide what is listed, and the list itself) - for a module having been fitted into one or
+        // taken out again, which is the mod's own drag ending and has no game sentence, and for the
+        // state of a slot itself. What a slot ACCEPTS has no key here: the categories are read out as
+        // the GAME's own titles for them, in the game's own list separators.
         public const string ShipDesignSlots = "ship-design.slots";
+        public const string ShipDesignFilters = "ship-design.filters";
+        public const string ShipDesignAvailable = "ship-design.available";
         public const string ShipDesignModuleFitted = "ship-design.module-fitted";
+        public const string ShipDesignModuleRemoved = "ship-design.module-removed";
+        public const string ShipDesignSlotEmpty = "ship-design.slot-empty";
+        public const string ShipDesignRemoveTarget = "ship-design.remove-target";
 
         // The battle popups and the two cinematics. Everything a battle SAYS on screen is the game's
         // own text; what is left here is the counting, the two sides' names and the things the game
@@ -1448,7 +1456,12 @@ namespace ES2Access.Core.Speech
             { MilitaryShipsPanel, "Ships" },
             { MilitaryDesignActions, "Ship design actions" },
             { ShipDesignSlots, "Module slots" },
+            { ShipDesignFilters, "Filters" },
+            { ShipDesignAvailable, "Available" },
             { ShipDesignModuleFitted, "Fitted {0}" },
+            { ShipDesignModuleRemoved, "Removed {0}" },
+            { ShipDesignSlotEmpty, "empty" },
+            { ShipDesignRemoveTarget, "Drop here to remove" },
             { ScreenHeroInspection, "Hero inspection" },
             { HeroSkillTrees, "Skill branches" },
             { HeroSkillLevel, "level {0} of {1}" },

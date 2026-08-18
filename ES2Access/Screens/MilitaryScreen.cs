@@ -18,6 +18,14 @@ namespace ES2Access.Screens
     /// missing - so the refusal is already read where the player presses, by the icon strip, and this
     /// screen simply never becomes active. Nothing here reproduces that test.
     ///
+    /// **Everything on this page except the fleets table is ONE NODE PER ROW.** The boxes down the left
+    /// edge, the fleet buttons, the ship tiles, the design strip and the overview box are all sets of
+    /// peers that a layout box happened to wrap into lines and columns, and stepping sideways through
+    /// them buys nothing a step down does not (ui-navigation's roster-grid rule). The fleets table is
+    /// the one real table here - it has sort headers and one attribute per column - so it keeps its 2D
+    /// reading, and Left/Right there still walk a fleet's figures. A drawn heading is the LEVEL its rows
+    /// sit under (<c>PushContext</c> / <see cref="GroupTitle"/>) and never also a row of its own.
+    ///
     /// Two things about the fleets table are this screen's own; everything else about the reading of a
     /// <c>GuiTable</c> is inherited (<see cref="TableSheet"/>).
     ///
@@ -225,7 +233,11 @@ namespace ES2Access.Screens
                         PanelCell,
                         GodModeClick
                     );
-                    Cells.Emit(builder, _cells);
+                    // One node per row: what a box draws across its own top - the four manpower
+                    // figures, the six tactic slots - is a bar of peers the layout happened to put
+                    // side by side, not a table (ui-navigation's roster-grid rule). The box's heading
+                    // is already the stop's name (PanelName) and is never also a row.
+                    ShipDesignRows.EmitLinear(builder, _cells);
                     builder.PopContext();
                 }
             }
@@ -537,8 +549,8 @@ namespace ES2Access.Screens
 
         // ---- what can be done to the picked fleet ----
 
-        /// <summary>Rename, Retrofit and Disband, in the order the band draws them. Each carries the
-        /// game's own sentence for why it cannot be used - written onto its tooltip by
+        /// <summary>Rename, Retrofit and Disband, in the order the band draws them, one per row. Each
+        /// carries the game's own sentence for why it cannot be used - written onto its tooltip by
         /// <c>RefreshFleetButtons</c> (:443-473) - so a refusal needs nothing of the mod's.</summary>
         private void BuildFleetActions(GraphBuilder builder, global::MilitaryScreen window)
         {
@@ -554,7 +566,7 @@ namespace ES2Access.Screens
             AddButton(window.RenameFleetButton, "rename");
             AddButton(window.RetrofitFleetButton, "retrofit");
             AddButton(window.DisbandFleetButton, "disband");
-            Cells.Emit(builder, _cells);
+            ShipDesignRows.EmitLinear(builder, _cells);
             builder.PopContext();
         }
 
@@ -581,7 +593,11 @@ namespace ES2Access.Screens
 
         /// <summary>The ship list the game slides out under the fleets once one is picked, read by the
         /// shared garrison reader. Declared only while it is drawn, which is the game's own answer to
-        /// whether a fleet has been picked.</summary>
+        /// whether a fleet has been picked.
+        ///
+        /// One node per row - the toolbar's icons and the ship tiles alike. Both are peers of one kind
+        /// wrapped by a layout box; the emission is the HOST's, so the other pages that draw this same
+        /// panel (the fleet panel, the star system's hangar) keep the reading they had.</summary>
         private void BuildShips(GraphBuilder builder, global::MilitaryScreen window)
         {
             MilitaryShipsListPanel panel = window.ShipsListPanel;
@@ -595,16 +611,16 @@ namespace ES2Access.Screens
             _cells.Clear();
             ShipRows.Toolbar(_cells, panel, Keys + "ships", false);
             ShipRows.Ships(_cells, panel, Keys + "ships", false);
-            Cells.Emit(builder, _cells);
+            ShipDesignRows.EmitLinear(builder, _cells);
             builder.PopContext();
         }
 
         // ---- the ship designs ----
 
         /// <summary>The templates the empire builds ships from, one row each, then the four things that
-        /// can be done to the picked one. A row is a radio: the panel keeps exactly one design picked
-        /// (<c>ShipDesignsListPanel.OnToggleShipDesignItem</c> :121-138) and the buttons act on it.
-        /// </summary>
+        /// can be done to the picked one, also one per row. A row is a radio: the panel keeps exactly
+        /// one design picked (<c>ShipDesignsListPanel.OnToggleShipDesignItem</c> :121-138) and the
+        /// buttons act on it.</summary>
         private void BuildDesigns(GraphBuilder builder, global::MilitaryScreen window)
         {
             ShipDesignsListPanel panel = window.ShipDesignsPanel;
@@ -623,7 +639,7 @@ namespace ES2Access.Screens
 
             _cells.Clear();
             AddDesigns(panel);
-            Cells.Emit(builder, _cells);
+            ShipDesignRows.EmitLinear(builder, _cells);
             if (named)
             {
                 builder.PopContext();
@@ -636,13 +652,14 @@ namespace ES2Access.Screens
             AddButton(panel.EditShipDesignButton, "design-edit");
             AddButton(panel.DeleteShipDesignButton, "design-delete");
             AddButton(panel.AutoUpgradeShipDesignButton, "design-auto-upgrade");
-            Cells.Emit(builder, _cells);
+            ShipDesignRows.EmitLinear(builder, _cells);
             builder.PopContext();
         }
 
         /// <summary>The designs the panel is drawing. They are a wrapping STRIP rather than a column -
-        /// tiles laid out left to right - so they go through the shared layout reader and are walked the
-        /// way they are drawn.</summary>
+        /// tiles laid out left to right - so they go through the shared layout reader for their ORDER
+        /// and are then walked one per row: which line a tile wrapped onto is a fact about the box, not
+        /// about the design.</summary>
         private void AddDesigns(ShipDesignsListPanel panel)
         {
             try
@@ -751,7 +768,11 @@ namespace ES2Access.Screens
 
         /// <summary>The box the game writes the picked design or the picked ship into, while it is
         /// drawing it - read-only: it has no controls in it at all, and the two bonus lines are there
-        /// only for a design that has them (<c>ShipDesignOverviewPanel.Refresh</c> :46-79).</summary>
+        /// only for a design that has them (<c>ShipDesignOverviewPanel.Refresh</c> :46-79).
+        ///
+        /// One readout per row. The box lays its lines out in bands and its six figures in two rows of
+        /// three, and neither shape is a fact about the design - the ORDER stays the drawn one, only the
+        /// sideways step goes.</summary>
         private void BuildOverview(GraphBuilder builder, global::MilitaryScreen window)
         {
             ShipDesignOverviewPanel panel = window.ShipDesignOverviewPanel;
@@ -761,7 +782,14 @@ namespace ES2Access.Screens
             }
 
             builder.BeginStop(OverviewStop);
+            // This prefab leaves the TitleLabel field empty and draws its "Ship Overview"
+            // heading in a child named Title - the same place the designs strip keeps its own.
             string title = AgeText.Label(panel.TitleLabel);
+            if (string.IsNullOrEmpty(title))
+            {
+                title = GroupTitle(panel.AgeTransform);
+            }
+
             bool named = !string.IsNullOrEmpty(title);
             if (named)
             {
@@ -784,7 +812,7 @@ namespace ES2Access.Screens
             AddReadout(panel.Bonus1Label, panel.Bonus1Tooltip, "overview/bonus1");
             AddReadout(panel.Bonus2Label, panel.Bonus2Tooltip, "overview/bonus2");
             ShipDesignRows.AddSimpleStats(_cells, panel, Keys + "overview/");
-            Cells.Emit(builder, _cells);
+            ShipDesignRows.EmitLinear(builder, _cells);
             if (named)
             {
                 builder.PopContext();

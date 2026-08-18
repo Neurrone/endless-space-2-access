@@ -24,7 +24,9 @@ namespace ES2Access.Screens
     /// It is walked the way it is drawn, which is the same shape every popup in the game has: the
     /// question is a block of text with a row of answers under it, so the text is a control in its own
     /// right and the one focus lands on - it is what the player has to read before any button means
-    /// anything - and up and down move between it and the answers while left and right walk them.
+    /// anything - and down walks from it through the answers, one to a row. The game draws the answers
+    /// side by side, but they are alternatives to one question and not columns of anything, so they
+    /// are a list (ui-navigation's one-node-per-row rule); left and right say nothing here.
     ///
     /// The box's heading is spoken as the screen's name on arrival and the question is not, because
     /// the question is what focus is about to read: saying it as the screen's name too would say it
@@ -114,8 +116,8 @@ namespace ES2Access.Screens
             }
 
             // Walked in the order they are drawn rather than the order the window declares its
-            // fields: the box puts Cancel on the left and the answer that goes ahead on the right, and
-            // left and right have to mean what they look like.
+            // fields: the box puts Cancel on the left and the answer that goes ahead on the right, so
+            // reading order down the list is the order the player sees across the box.
             choices.Sort(ReadingOrder);
 
             // The dialog's own heading, first, where it is drawn - a node the player can go back to
@@ -128,9 +130,8 @@ namespace ES2Access.Screens
                 "messagebox:heading"
             );
 
-            // Declared before the answers and outside their row, so the builder wires the row under
-            // it: the question is a block of text, not one answer among them, and it takes no place
-            // in their count.
+            // Declared before the answers, so the builder wires them under it: the question is a block
+            // of text, not one answer among them.
             AgePrimitiveLabel message = window.MessageLabel;
             if (message != null)
             {
@@ -154,7 +155,6 @@ namespace ES2Access.Screens
                 builder.SetStart(id);
             }
 
-            builder.StartRow();
             for (int i = 0; i < choices.Count; i++)
             {
                 Choice choice = choices[i];
@@ -179,8 +179,6 @@ namespace ES2Access.Screens
                     vtable
                 );
             }
-
-            builder.EndRow();
         }
 
         private static readonly Comparison<Choice> ReadingOrder = delegate(Choice a, Choice b)

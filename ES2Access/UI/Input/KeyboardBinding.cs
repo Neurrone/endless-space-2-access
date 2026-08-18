@@ -8,7 +8,7 @@ namespace ES2Access.UI.Input
     ///
     /// The modifiers must match EXACTLY, not merely be present: a bare-A binding declares
     /// <c>Ctrl = false</c>, so it stays silent while Ctrl is held, and Ctrl+A therefore fires only
-    /// the Ctrl+A binding. Without that, every chord would also trigger its unmodified twin - Ctrl+Up
+    /// the Ctrl+A binding. Without that, every chord would also trigger its unmodified twin - Alt+Up
     /// (jump region) would move the cursor up as well.
     ///
     /// Left and right variants of each modifier are one logical flag; there is no Windows-key
