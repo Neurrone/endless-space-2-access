@@ -10,9 +10,13 @@ namespace ES2Access.Screens
     /// Choosing how the empire is governed: the window the senate's "Change Government" button opens.
     ///
     /// The shape is the shape it is drawn in: a heading across the top, the government in force on the
-    /// left under its own caption, the ones that could replace it in a row on the right under theirs,
-    /// the empire's money, influence and approval along the bottom, and Cancel and Validate under
-    /// those.
+    /// left under its own caption, the ones that could replace it on the right under theirs, the
+    /// empire's money, influence and approval along the bottom, and Cancel and Validate under those.
+    ///
+    /// Each of those bands is walked one member per step. The cards are peers of one kind and so are
+    /// the three figures and the two buttons, so a sideways move buys nothing and where the layout box
+    /// wrapped them is a rendering accident. The two captions are the bands' NAMES rather than nodes in
+    /// them: neither carries anything on hover (measured), so there is nothing in them to review.
     ///
     /// The governments are RADIO buttons and Validate is a separate press, because that is the game's
     /// own model: a government item's toggle only makes it the selection
@@ -40,10 +44,6 @@ namespace ES2Access.Screens
         private static readonly object ChoicesStop = "government:choices";
         private static readonly object ResourcesStop = "government:resources";
         private static readonly object ActionsStop = "government:actions";
-
-        /// <summary>Shared by the cards, so up and down out of the row keeps the column it was in.
-        /// </summary>
-        private static readonly object CardRowKey = "government:card-row";
 
         // Reused across builds rather than allocated per frame: Build runs every tick.
         private readonly List<Cell> _cells = new List<Cell>();
@@ -117,30 +117,32 @@ namespace ES2Access.Screens
 
         /// <summary>The government in force, under the caption the window draws over it - which is one
         /// of two, because a government the game is hiding is announced as the NEXT one instead
-        /// (<c>RefreshActiveGovernment</c> :272-290). Whichever is drawn is what is read.</summary>
+        /// (<c>RefreshActiveGovernment</c> :272-290). Whichever is drawn is what is read.
+        ///
+        /// The caption is a bare word over the one card below it, with nothing on hover (measured: no
+        /// tooltip on either label), so it names the band rather than standing in it: a level the
+        /// announcer says on the way in, not a node to walk past.</summary>
         private void BuildCurrent(GraphBuilder builder, GovernmentModalWindow window)
         {
             builder.BeginStop(CurrentStop);
-            _cells.Clear();
-            Cells.AddReadout(_cells, window.ActiveGovernmentTitle, "government:current-caption");
-            Cells.AddReadout(_cells, window.NextGovernmentTitle, "government:next-caption");
-            Cells.Emit(builder, _cells);
+            bool named = Caption(
+                builder,
+                Shown(window.ActiveGovernmentTitle) ?? Shown(window.NextGovernmentTitle)
+            );
 
             _cells.Clear();
             AddCard(_cells, window.ActiveGovernmentItem, "government:active");
-            Emit(builder, _cells, CardRowKey);
+            Cells.EmitLinear(builder, _cells);
+            Unname(builder, named);
         }
 
         private void BuildChoices(GraphBuilder builder, GovernmentModalWindow window)
         {
             builder.BeginStop(ChoicesStop);
-            _cells.Clear();
-            Cells.AddReadout(
-                _cells,
-                AgeWidgets.ChildNamed(window.GovernmentSelectionGroup, "SelectionTitleGroup", 2),
-                "government:choices-caption"
+            bool named = Caption(
+                builder,
+                Shown(AgeWidgets.ChildNamed(window.GovernmentSelectionGroup, "SelectionTitleGroup", 2))
             );
-            Cells.Emit(builder, _cells);
 
             _cells.Clear();
             AgeTransform table = window.AvailableGovernmentsTable;
@@ -154,7 +156,35 @@ namespace ES2Access.Screens
                 );
             }
 
-            Emit(builder, _cells, CardRowKey);
+            Cells.EmitLinear(builder, _cells);
+            Unname(builder, named);
+        }
+
+        /// <summary>The caption the window draws over a band, as the band's own name. A caption the
+        /// game left empty pushes nothing, so the band is never announced under a blank level.</summary>
+        private static bool Caption(GraphBuilder builder, AgeTransform widget)
+        {
+            string text = widget == null ? null : AgeWidgets.TextOf(widget);
+            if (string.IsNullOrEmpty(text))
+            {
+                return false;
+            }
+
+            builder.PushContext(text);
+            return true;
+        }
+
+        private static void Unname(GraphBuilder builder, bool named)
+        {
+            if (named)
+            {
+                builder.PopContext();
+            }
+        }
+
+        private static AgeTransform Shown(AgeTransform widget)
+        {
+            return widget != null && AgeWidgets.Visible(widget) ? widget : null;
         }
 
         /// <summary>
@@ -337,7 +367,7 @@ namespace ES2Access.Screens
             AddTotal(_cells, Parent(window.EmpirePointLabel), "government:influence");
             AddTotal(_cells, window.EmpireHappinessGroup, "government:approval");
             Cells.AddReadout(_cells, window.AnarchyDurationGroup, "government:anarchy");
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
         }
 
         /// <summary>One of the empire's running totals along the bottom. The game writes the number and
@@ -377,7 +407,7 @@ namespace ES2Access.Screens
                 Cells.AddControl(_cells, children[i], "government:button/" + i);
             }
 
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
         }
 
         private static AgeTransform Parent(AgePrimitiveLabel label)
@@ -393,22 +423,6 @@ namespace ES2Access.Screens
                 return null;
             }
         }
-
-        private static void Emit(GraphBuilder builder, List<Cell> cells, object rowKey)
-        {
-            foreach (List<Cell> row in AgeLayout.Rows(cells, CellWidget))
-            {
-                builder.StartRow(rowKey);
-                foreach (Cell cell in row)
-                {
-                    builder.AddItem(cell.Id, cell.Vtable);
-                }
-
-                builder.EndRow();
-            }
-        }
-
-        private static readonly Func<Cell, AgeTransform> CellWidget = cell => cell.Widget;
 
         private static GovernmentModalWindow Window()
         {
