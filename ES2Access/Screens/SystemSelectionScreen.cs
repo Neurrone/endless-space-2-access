@@ -154,8 +154,9 @@ namespace ES2Access.Screens
 
         /// <summary>Cancel and Confirm, taken from the band they share rather than named: the window
         /// exposes Confirm and leaves Cancel as its sibling, and reading the band keeps them in the
-        /// order they are drawn in. Confirm is disabled until a system is picked, which is what makes
-        /// it read unavailable with the game's own sentence for what it would do.</summary>
+        /// order they are drawn in - one per row, the way a window's bottom bar is walked. Confirm is
+        /// disabled until a system is picked, which is what makes it read unavailable with the game's
+        /// own sentence for what it would do.</summary>
         private void BuildActions(GraphBuilder builder, SystemSelectionModalWindow window)
         {
             AgeTransform validate = ValidateTransform(window);
@@ -187,7 +188,6 @@ namespace ES2Access.Screens
                 return;
             }
 
-            builder.StartRow();
             for (int i = 0; i < buttons.Count; i++)
             {
                 AgeTransform button = buttons[i];
@@ -203,8 +203,6 @@ namespace ES2Access.Screens
                     vtable
                 );
             }
-
-            builder.EndRow();
         }
 
         // ---- reading the window ----
