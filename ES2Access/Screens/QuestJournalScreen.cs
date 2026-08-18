@@ -212,6 +212,15 @@ namespace ES2Access.Screens
             }
         }
 
+        /// <summary>
+        /// One side panel as a region, under the heading the game drew over it where it drew one.
+        ///
+        /// A panel's leading line is sometimes a heading naming the whole panel ("Active Events") and
+        /// sometimes a line of its own with a number and a sentence in it (the report's "Quests"
+        /// gauge). The two are told apart by whether the game hung an explanation on it: a heading with
+        /// nothing to review is the region's name and a level rather than a line, while one carrying a
+        /// sentence stays a line, because a level is nowhere to put words.
+        /// </summary>
         private void AddPanel(
             GraphBuilder builder,
             AgeTransform content,
@@ -225,7 +234,63 @@ namespace ES2Access.Screens
             }
 
             builder.SetRegion(region);
-            Collect(builder, content, keyPrefix, 0);
+            AgeTransform caption = Caption(content);
+            if (caption == null)
+            {
+                Collect(builder, content, keyPrefix, 0);
+                return;
+            }
+
+            builder.PushContext(AgeWidgets.TextOf(caption));
+            IList<AgeTransform> children = content.Children;
+            for (int i = 0; children != null && i < children.Count; i++)
+            {
+                if (!ReferenceEquals(children[i], caption))
+                {
+                    Collect(builder, children[i], keyPrefix, 1);
+                }
+            }
+
+            builder.PopContext();
+        }
+
+        /// <summary>The heading the panel names itself with, or nothing where its first line is a line
+        /// of its own: a heading is the first thing drawn, says something, has no explanation hanging
+        /// off it, would have read as ONE line rather than a band, and has other lines under it to
+        /// name.</summary>
+        private static AgeTransform Caption(AgeTransform content)
+        {
+            // Only where the panel would have been read as a band of lines at all: one the shape rule
+            // reads as a SINGLE line has no lines under a heading to name.
+            if (!HasGroupChild(content))
+            {
+                return null;
+            }
+
+            IList<AgeTransform> children = content.Children;
+            AgeTransform first = null;
+            int drawn = 0;
+            for (int i = 0; children != null && i < children.Count; i++)
+            {
+                if (children[i] == null || !AgeWidgets.Visible(children[i]))
+                {
+                    continue;
+                }
+
+                drawn++;
+                if (first == null)
+                {
+                    first = children[i];
+                }
+            }
+
+            return drawn > 1
+                && first != null
+                && !HasGroupChild(first)
+                && Explanation(first) == null
+                && !string.IsNullOrEmpty(AgeWidgets.TextOf(first))
+                ? first
+                : null;
         }
 
         /// <summary>How deep to go looking for the lines of a panel nobody has modelled.</summary>
@@ -837,6 +902,11 @@ namespace ES2Access.Screens
         /// A quest several empires are racing on gets a PODIUM instead - one line per place, saying
         /// what that place is worth - and the game swaps one table for the other in the same slot. Both
         /// are read from whichever is drawn rather than from what kind of quest this is.
+        ///
+        /// The caption is a level over those lines rather than a line of its own: the game hangs no
+        /// explanation on it (measured), so there is nothing about it to review. It is only a level
+        /// while there is something under it - a caption over an empty table is what a sighted player
+        /// reads too, and stays a line.
         /// </summary>
         private static void AddRewards(
             GraphBuilder builder,
@@ -849,20 +919,61 @@ namespace ES2Access.Screens
                 return;
             }
 
-            AddReadout(builder, Widget(OptionsScreen.LabelIn(group)), "quests:reward-title");
+            AgeTransform title = Widget(OptionsScreen.LabelIn(group));
 
             QuestRewardsTable rewards = panel.Rewards;
+            AgeTransform table = null;
+            string keyPrefix = null;
             if (rewards != null && AgeWidgets.Visible(rewards.AgeTransform))
             {
-                AddItems(builder, rewards.RewardsTable, "quests:reward/");
+                table = rewards.RewardsTable;
+                keyPrefix = "quests:reward/";
+            }
+            else
+            {
+                QuestPodiumTable podium = panel.Podium;
+                if (podium != null && AgeWidgets.Visible(podium.AgeTransform))
+                {
+                    table = podium.PodiumLineTable;
+                    keyPrefix = "quests:podium/";
+                }
+            }
+
+            string caption =
+                title == null || !Drawn(table) || AgeWidgets.Raw(title) != null
+                    ? null
+                    : AgeWidgets.TextOf(title);
+            if (string.IsNullOrEmpty(caption))
+            {
+                AddReadout(builder, title, "quests:reward-title");
+                AddItems(builder, table, keyPrefix);
                 return;
             }
 
-            QuestPodiumTable podium = panel.Podium;
-            if (podium != null && AgeWidgets.Visible(podium.AgeTransform))
+            builder.PushContext(caption);
+            AddItems(builder, table, keyPrefix);
+            builder.PopContext();
+        }
+
+        /// <summary>Whether the table has a line in it the player would hear - the same test
+        /// <see cref="AddReadout"/> makes, asked before the caption over it is turned into a level that
+        /// would otherwise name nothing.</summary>
+        private static bool Drawn(AgeTransform table)
+        {
+            IList<AgeTransform> items = table == null ? null : table.Children;
+            for (int i = 0; items != null && i < items.Count; i++)
             {
-                AddItems(builder, podium.PodiumLineTable, "quests:podium/");
+                if (
+                    items[i] != null
+                    && AgeWidgets.Visible(items[i])
+                    && !string.IsNullOrEmpty(AgeWidgets.TextOf(items[i]))
+                )
+                {
+                    return true;
+                }
             }
+
+            return false;
         }
 
         private static void AddItems(GraphBuilder builder, AgeTransform table, string keyPrefix)
