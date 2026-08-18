@@ -127,7 +127,7 @@ namespace ES2Access.Screens
             List<Cell> answers = new List<Cell>();
             Answer(answers, window.ValidateButton, window.ValidateLabel, "validate", Validate);
             Answer(answers, window.CancelButton, window.CancelLabel, "cancel", Cancel);
-            Cells.Emit(builder, answers);
+            Cells.EmitLinear(builder, answers);
         }
 
         /// <summary>One answer the box is offering. The window shows a button exactly when the caller

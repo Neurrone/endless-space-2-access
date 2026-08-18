@@ -105,7 +105,7 @@ namespace ES2Access.Screens
                 Log.Warn("victory: reading the outcome threw: " + e);
             }
 
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
             if (_cells.Count > 0)
             {
                 builder.SetStart(_cells[0].Id);
@@ -113,7 +113,7 @@ namespace ES2Access.Screens
 
             _cells.Clear();
             WindowShape.Controls(_cells, window, "victory-achieved");
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
         }
 
         /// <summary>A line per winner and per victory, where the game drew a list at all - it draws one

@@ -58,9 +58,41 @@ namespace ES2Access.Screens
             get { return 50; }
         }
 
+        /// <summary>The window's own drawn heading, which is the only place it is ever said: the game
+        /// writes the title across the top of the ring and nothing else declares it, so arriving reads
+        /// the words the player sees. Drawn over two lines ("Game" over "Menu"), which is a fact about
+        /// the box it was drawn in - the lines join with a space, the way any multi-line game text
+        /// does. The mod's own word stands in where the window has not written its title yet.</summary>
         public override string ScreenName
         {
-            get { return ModStrings.Get(ModStrings.ScreenGameMenu); }
+            get { return Title() ?? ModStrings.Get(ModStrings.ScreenGameMenu); }
+        }
+
+        private static string Title()
+        {
+            try
+            {
+                GameMenuModalWindow window = Window();
+                AgeTransform title = window == null ? null : window.Title;
+                string drawn = title == null
+                    ? null
+                    : AgeText.Label(title.GetComponent<AgePrimitiveLabel>());
+                MessageBuilder message = new MessageBuilder();
+                foreach (string line in AgeText.Lines(drawn))
+                {
+                    message.Fragment(line);
+                }
+
+                string words = message.IsEmpty ? null : message.Build();
+
+                // A key the localizer handed back unchanged is text the game has not written: parked,
+                // not shown, and never spoken.
+                return string.IsNullOrEmpty(words) || words[0] == '%' ? null : words;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
         }
 
         public override bool IsActive()

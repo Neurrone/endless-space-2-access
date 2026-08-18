@@ -133,7 +133,7 @@ namespace ES2Access.Screens
             if (_cells.Count > 0)
             {
                 builder.BeginStop(ActionsStop);
-                Cells.Emit(builder, _cells);
+                Cells.EmitLinear(builder, _cells);
             }
         }
 

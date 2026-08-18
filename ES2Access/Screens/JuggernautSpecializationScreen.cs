@@ -215,7 +215,7 @@ namespace ES2Access.Screens
                 );
             }
 
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
         }
 
         /// <summary>The rest of what a card draws, in the order it is drawn: what the specialization does,
@@ -283,7 +283,7 @@ namespace ES2Access.Screens
                 AddResource(_cells, items[i], i);
             }
 
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
         }
 
         /// <summary>
@@ -386,7 +386,7 @@ namespace ES2Access.Screens
             if (_cells.Count > 0)
             {
                 builder.BeginStop(ControlsStop);
-                Cells.Emit(builder, _cells);
+                Cells.EmitLinear(builder, _cells);
             }
         }
 

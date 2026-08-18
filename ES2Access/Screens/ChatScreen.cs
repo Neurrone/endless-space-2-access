@@ -151,9 +151,7 @@ namespace ES2Access.Screens
 
             builder.BeginStop(Stop);
             builder.PushContext(ModStrings.Get(ModStrings.ChatPanel));
-            builder.StartRow();
             Tabs(builder, panel);
-            builder.EndRow();
             Messages(builder);
             Field(builder, panel);
             builder.PopContext();

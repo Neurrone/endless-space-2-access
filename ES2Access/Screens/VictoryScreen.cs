@@ -116,7 +116,7 @@ namespace ES2Access.Screens
             builder.BeginStop(ActionsStop);
             _cells.Clear();
             WindowShape.Controls(_cells, window, "victory", Tables(window));
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
         }
 
         /// <summary>The pages across the top, as the one-of-N the game made them.</summary>
@@ -137,7 +137,7 @@ namespace ES2Access.Screens
                 Log.Warn("victory: reading the tabs threw: " + e);
             }
 
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
         }
 
         private void Tab(AgeTransform widget, int index)
@@ -185,7 +185,7 @@ namespace ES2Access.Screens
                 Log.Warn("victory: reading the shown panel threw: " + e);
             }
 
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
         }
 
         /// <summary>What a tab is called: the words the game drew on it, else the sentence its tooltip

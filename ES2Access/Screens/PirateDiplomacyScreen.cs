@@ -138,7 +138,7 @@ namespace ES2Access.Screens
                 Log.Warn("pirate diplomacy: reading the power gauge threw: " + e);
             }
 
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
             builder.PopContext();
         }
 

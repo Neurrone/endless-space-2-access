@@ -127,7 +127,7 @@ namespace ES2Access.Screens
 
             _cells.Clear();
             WindowShape.Controls(_cells, window, "error");
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
         }
 
         /// <summary>What the box says, as the buffer holds it: the message a line at a time, then the
