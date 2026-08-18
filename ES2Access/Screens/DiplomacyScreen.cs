@@ -213,7 +213,7 @@ namespace ES2Access.Screens
                     builder.PushContext(SidePanels.Name(panel));
                     _cells.Clear();
                     SidePanels.Readouts(_cells, panel, Keys + "side/" + i + "/", null, null);
-                    Cells.Emit(builder, _cells);
+                    Cells.EmitLinear(builder, _cells);
                     builder.PopContext();
                 }
             }
@@ -231,6 +231,7 @@ namespace ES2Access.Screens
             builder.PushContext(ModStrings.Get(ModStrings.DiplomacyEmpires));
             try
             {
+                AddCenter(builder, window);
                 AgeTransform container = window.EmpireSectorsContainer;
                 IList<AgeTransform> children = container == null ? null : container.Children;
                 for (int i = 0; children != null && i < children.Count; i++)
@@ -244,6 +245,33 @@ namespace ES2Access.Screens
             }
 
             builder.PopContext();
+        }
+
+        /// <summary>
+        /// Whose relations the ring is showing: the leader name the game writes over the hologram in
+        /// the middle of it (<c>Refresh</c> :493 sets it from <c>CenterGuiEmpire</c>).
+        ///
+        /// It is the only place the page says who it is centred on, and swap mode rewrites it - so
+        /// without it a player who has swapped the ring onto somebody else has no way to hear whose
+        /// ring they are reading. Declared as the line the game draws it as, at the head of the ring,
+        /// and nothing more: whether the swap should also ANNOUNCE the new centre is a question for
+        /// the owner, not a behaviour to invent here.
+        /// </summary>
+        private void AddCenter(GraphBuilder builder, global::DiplomacyScreen window)
+        {
+            AgeTransform widget =
+                window.CenterEmpireTitle == null ? null : window.CenterEmpireTitle.AgeTransform;
+            if (
+                widget == null
+                || !AgeWidgets.Visible(widget)
+                || string.IsNullOrEmpty(AgeWidgets.TextOf(widget))
+            )
+            {
+                return;
+            }
+
+            Cell cell = Cells.Readout(widget, AgeWidgets.Raw(widget), Keys + "center");
+            builder.AddItem(cell.Id, cell.Vtable);
         }
 
         /// <summary>
@@ -552,7 +580,7 @@ namespace ES2Access.Screens
                 Log.Warn("diplomacy: reading the page's controls threw: " + e);
             }
 
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
             builder.PopContext();
         }
 
@@ -602,7 +630,8 @@ namespace ES2Access.Screens
         }
 
         /// <summary>The board of teams a metaplot minigame draws over the ring, while one is running.
-        /// Read as the band of labels it is.</summary>
+        /// Read one team per row: they are peers of one kind and the wrap points are the board's
+        /// layout, not columns of anything.</summary>
         private void BuildMetaplot(GraphBuilder builder, global::DiplomacyScreen window)
         {
             AgeTransform panel = window.MetaplotTeamsPanel;
@@ -622,7 +651,7 @@ namespace ES2Access.Screens
                 Log.Warn("diplomacy: reading the metaplot panel threw: " + e);
             }
 
-            Cells.Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
         }
 
         // ---- reading widgets ----
