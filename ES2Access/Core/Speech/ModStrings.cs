@@ -144,12 +144,10 @@ namespace ES2Access.Core.Speech
 
         // The tutorial popup's own controls, and the name of one of the dots it marks its pages
         // with - the game draws them as dots and writes nothing on them.
-        public const string TutorialPreviousPage = "tutorial.previous-page";
-        public const string TutorialNextPage = "tutorial.next-page";
+        public const string TutorialBar = "tutorial.bar";
         public const string TutorialMinimize = "tutorial.minimize";
         public const string TutorialShowLocation = "tutorial.show-location";
         public const string TutorialClose = "tutorial.close";
-        public const string TutorialPageMark = "tutorial.page-mark";
 
         // The galaxy: the controls the game draws as icons and never names, and the shapes its
         // numbers are spoken in.
@@ -1165,12 +1163,10 @@ namespace ES2Access.Core.Speech
             { NotifyAutoPopup, "Pop up automatically" },
             { PromptScreen, "Prompt" },
             { PromptClose, "Close" },
-            { TutorialPreviousPage, "Previous page" },
-            { TutorialNextPage, "Next page" },
+            { TutorialBar, "Tutorial" },
             { TutorialMinimize, "Minimize" },
             { TutorialShowLocation, "Show location" },
             { TutorialClose, "Close tutorial" },
-            { TutorialPageMark, "Page {0}" },
             { GalaxyTurn, "Turn {0}" },
             { GalaxyEndTurn, "End turn" },
             { GalaxyApplyMovements, "Apply movements" },

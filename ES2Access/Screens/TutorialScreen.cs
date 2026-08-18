@@ -27,25 +27,26 @@ namespace ES2Access.Screens
     /// Nothing in the game's own notification strip stands for a minimised tutorial, so the bar is
     /// modelled as the bar: its title, its close button, and the arrow that brings it back.
     ///
-    /// It is walked the way it is drawn: the strip across the top of the box - closing it, collapsing
-    /// it - then the page itself, then the strip along the bottom that turns the pages, marks which
-    /// page this is and points at the thing being talked about. Which strip a control belongs to is
-    /// read off the rectangle the game drew it at, so a control the tutorial only shows sometimes
-    /// lands where the player sees it.
+    /// It is walked as the list of pages it is: one row per page in the first stop, then the arrow that
+    /// points at what the step is talking about, then the arrow that collapses the box, then the button
+    /// that closes it - a stop each, one control per row. Standing on a page's row is what turns the box
+    /// to that page, so up and down read the tutorial and the box follows visibly; the dots and the
+    /// page arrows the box draws are not declared, because the list does their whole job and the
+    /// engine's place-in-list stamp says which page this is.
     ///
-    /// The page's text is a control in its own right and the one focus starts on: what the tutorial is
-    /// asking for is the reason the box is there. Every other control speaks its own tooltip on focus
-    /// and carries it as review-buffer content - the game wrote one sentence on each of them saying
-    /// what it does - while the text carries the whole page, so a long objective can be re-read from
-    /// where the words are.
+    /// Focus starts on the page the box is already showing: what the tutorial is asking for is the
+    /// reason the box is there. Every other control speaks its own tooltip on focus and carries it as
+    /// review-buffer content - the game wrote one sentence on each of them saying what it does - while
+    /// the page carries the whole of what it says, so a long objective can be re-read from where the
+    /// words are.
     ///
     /// It sits above everything else of ours bar the error box and the confirmation box, because the game
     /// draws most tutorial popups over its own windows and a tutorial nobody can reach is worse than no
     /// tutorial at all. Minimising it is what gives the keyboard back.
     ///
-    /// Pages are turned through the selector the popup itself turns them with, rather than by
-    /// pressing its arrows, because the selector is the thing that actually holds the page number and
-    /// tells the popup to redraw.
+    /// Pages are turned through the dot the popup itself turns them with, rather than by pressing its
+    /// arrows, because the dots' group is the thing that actually holds the page number and tells the
+    /// popup to redraw.
     ///
     /// Closing raises the game's question about switching the tutorial off, and that question is the
     /// same confirmation box every other question uses, so nothing here has to know about it.
@@ -270,6 +271,22 @@ namespace ES2Access.Screens
             }
         }
 
+        /// <summary>
+        /// The popup as the list of pages it is, and then the two things that put it away.
+        ///
+        /// The box turns pages with a row of dots, arrows either side and one page of words in the
+        /// middle - a shape that costs the keyboard three controls to read one sentence. Here the PAGES
+        /// are the list: one row each, and standing on a row is what turns the box to it (owner ruling,
+        /// 2026-08-18). Up and down therefore walk the tutorial, the box follows visibly, and the arrows
+        /// and dots are gone because the list has taken over their whole job. Where the page number was
+        /// said by the dots it is now the engine's own place-in-list stamp.
+        ///
+        /// The page switch happens where the row's WORDS are read rather than in a focus hook, and that
+        /// is not a detail: the navigator composes a landing's speech the moment the cursor moves, long
+        /// before any focus visual runs, so a switch driven from the hook would read the page the player
+        /// just left. It is guarded on the row being the focused one, so a dump or a type-ahead pass
+        /// that resolves every row's label turns no pages.
+        /// </summary>
         public override void Build(GraphBuilder builder)
         {
             TutorialPopupPanel panel = Panel();
@@ -278,26 +295,11 @@ namespace ES2Access.Screens
                 return;
             }
 
-            List<Control> controls = new List<Control>();
+            BuildPages(builder, panel);
 
-            // The popup hides the next-page arrow on the last page rather than greying it out, so
-            // the last page simply does not have one; the same goes for the arrow that points at what
-            // the step is talking about, on a step that points at nothing.
-            Collect(
-                controls,
-                panel.PreviousPageButton,
-                "previous-page",
-                ModStrings.TutorialPreviousPage,
-                () => Previous(panel)
-            );
-            Collect(controls, panel.PageSelector);
-            Collect(
-                controls,
-                panel.NextPageButton,
-                "next-page",
-                ModStrings.TutorialNextPage,
-                () => Next(panel)
-            );
+            // The arrow that points at what the step is talking about, on the steps that point at
+            // something. Its own stop, drawn below the page as it is.
+            List<Control> controls = new List<Control>();
             Collect(
                 controls,
                 panel.ShowLocationButton,
@@ -305,47 +307,67 @@ namespace ES2Access.Screens
                 ModStrings.TutorialShowLocation,
                 null
             );
+            Rows(builder, controls, LocationStop, "tutorial:");
+
+            controls.Clear();
             Collect(controls, panel.MinimizeToggle, "minimize", ModStrings.TutorialMinimize);
+            Rows(builder, controls, MinimizeStop, "tutorial:");
+
+            controls.Clear();
             Collect(controls, panel.CloseButton, "close", ModStrings.TutorialClose, null);
+            Rows(builder, controls, CloseStop, "tutorial:");
+        }
 
+        /// <summary>One row per page the tutorial has, the row of the page on show being where focus
+        /// lands. Every row reads the words the box is drawing, because standing on a row is what makes
+        /// the box draw that page.</summary>
+        private void BuildPages(GraphBuilder builder, TutorialPopupPanel panel)
+        {
             AgePrimitiveLabel label = panel.DescriptionLabel;
-            AgeTransform words = label == null ? null : label.AgeTransform;
-
-            List<Control> above = new List<Control>();
-            List<Control> below = new List<Control>();
-            foreach (Control control in controls)
+            if (label == null || !Visible(label.AgeTransform))
             {
-                if (words != null && AgeLayout.Band(control.Widget, words) > 0)
-                {
-                    below.Add(control);
-                }
-                else
-                {
-                    above.Add(control);
-                }
+                return;
             }
 
-            above.Sort(ReadingOrder);
-            below.Sort(ReadingOrder);
-
-            Strip(builder, above, "tutorial:");
-            if (words != null)
+            int pages = Pages(panel);
+            int current = Current(panel);
+            builder.BeginStop(PagesStop);
+            for (int i = 0; i < pages; i++)
             {
-                // Declared outside the rows: the page is a block of text, not one item of a list, so
-                // it takes no place in a count. The builder wires the strips above and below it to it.
-                ControlId id = WordsId(label);
-                builder.AddNode(id, Page());
-                builder.SetStart(id);
+                ControlId id = ControlId.Structural(PageKey + i);
+                builder.AddItem(id, Page(i));
+                if (i == current)
+                {
+                    builder.SetStart(id);
+                }
             }
+        }
 
-            Strip(builder, below, "tutorial:");
+        /// <summary>How many pages the box has. The selector only sets itself up for more than one
+        /// (<c>StepSelector.Setup</c>), so a box with no dots is a box with a single page.</summary>
+        private static int Pages(TutorialPopupPanel panel)
+        {
+            StepSelector selector = panel.PageSelector;
+            return selector != null && selector.IsSetUp ? selector.StepNb : 1;
+        }
+
+        /// <summary>Which page the box is drawing, counted among the pages this tutorial made
+        /// available rather than among the ones it defines - which is what the dots count too.</summary>
+        private static int Current(TutorialPopupPanel panel)
+        {
+            StepSelector selector = panel.PageSelector;
+            return selector != null && selector.IsSetUp ? selector.CurrentSelection : 0;
         }
 
         /// <summary>
         /// The bar a collapsed tutorial leaves on screen, declared wherever the player is once this
-        /// screen has stood down - which is whatever page the game handed the keyboard back to. It is
-        /// modelled as it is drawn: the close button, the title saying which tutorial is waiting, and the
-        /// arrow that brings it back, in the order the bar reads.
+        /// screen has stood down - which is whatever page the game handed the keyboard back to.
+        ///
+        /// The bar is named rather than described: the stop is called "Tutorial" and holds its three
+        /// things one per row - the title saying which tutorial is waiting, the arrow that brings it
+        /// back, and the button that closes it (owner ruling, 2026-08-18). That order is deliberately
+        /// not the drawn one: the drawn bar puts Close first, and what the player wants first is which
+        /// tutorial this is.
         ///
         /// The gate is the game's own drawing, which is why callers need no rule of their own: the panel
         /// is bound, shown and cropped to its title bar. A tutorial the game has HIDDEN for the window
@@ -369,29 +391,42 @@ namespace ES2Access.Screens
             }
 
             List<Control> bar = new List<Control>();
-            Collect(bar, panel.CloseButton, "close", ModStrings.TutorialClose, null);
-            Collect(bar, panel.MinimizeToggle, "minimize", ModStrings.TutorialMinimize);
             Collect(bar, panel.TitleLabel);
+            Collect(bar, panel.MinimizeToggle, "minimize", ModStrings.TutorialMinimize);
+            Collect(bar, panel.CloseButton, "close", ModStrings.TutorialClose, null);
             if (bar.Count == 0)
             {
                 return false;
             }
 
-            bar.Sort(ReadingOrder);
-            Strip(builder, bar, "hud:tutorial/");
+            builder.PushContext(ModStrings.Get(ModStrings.TutorialBar));
+            Rows(builder, bar, null, "hud:tutorial/");
+            builder.PopContext();
             return true;
         }
 
-        /// <summary>One strip of controls: left and right walk it, and up and down reach the page and
-        /// the other strip because they are separate rows.</summary>
-        private static void Strip(GraphBuilder builder, List<Control> controls, string prefix)
+        /// <summary>One node per row, in the order they were handed over: the bar's members are peers of
+        /// one kind, so up and down walk them and nothing has to be guessed about which way the game
+        /// packed them. <paramref name="stop"/> begins a stop first where the caller has one to begin,
+        /// and nothing is declared at all for an empty set - an empty stop is a Tab press that lands
+        /// nowhere.</summary>
+        private static void Rows(
+            GraphBuilder builder,
+            List<Control> controls,
+            object stop,
+            string prefix
+        )
         {
             if (controls.Count == 0)
             {
                 return;
             }
 
-            builder.StartRow();
+            if (stop != null)
+            {
+                builder.BeginStop(stop);
+            }
+
             foreach (Control control in controls)
             {
                 Control it = control;
@@ -401,22 +436,31 @@ namespace ES2Access.Screens
                 vtable.OnBlurVisual = ReleasePointer;
                 builder.AddItem(ControlId.Referenced(it.Widget, prefix + it.Key), vtable);
             }
-
-            builder.EndRow();
         }
 
-        /// <summary>What the page says, and nothing else: where it sits among the pages is drawn as
-        /// the row of dots below it and read there, so saying it here as well would be the mod adding
-        /// words the box does not have.</summary>
-        private static NodeVtable Page()
+        /// <summary>
+        /// One page of the tutorial: the words the box is drawing, and - asked first - the box being
+        /// turned to this page in the first place.
+        ///
+        /// Reading the label is where the turn happens because it is the only thing that runs between
+        /// the cursor arriving and the landing being spoken. It is guarded twice over: the box is
+        /// already on the page for every read but the first, and a read on a row that is not the
+        /// focused one (a graph dump, a type-ahead pass over the stop) turns nothing.
+        /// </summary>
+        private NodeVtable Page(int page)
         {
+            int it = page;
             return new NodeVtable
             {
                 // No role word: the page is not a control the player works, it is what the tutorial
                 // is telling them to do.
                 Announcements = new List<NodeAnnouncement>
                 {
-                    GraphNodes.LabelPart(() => Words(Panel())),
+                    GraphNodes.LabelPart(() =>
+                    {
+                        Show(it);
+                        return Words(Panel());
+                    }),
                 },
                 Sections = GraphNodes.Sections(Content, null),
 
@@ -427,10 +471,64 @@ namespace ES2Access.Screens
             };
         }
 
-        private static ControlId WordsId(AgePrimitiveLabel label)
+        /// <summary>Turn the box to <paramref name="page"/> the way clicking its dot does, if it is not
+        /// there already and if that page's row is the one the cursor is standing on. What the box then
+        /// says is remembered, so the watcher that reads pages the GAME turned stays quiet about a page
+        /// the player turned to and is about to hear.</summary>
+        private void Show(int page)
         {
-            return ControlId.Referenced(label, "tutorial:page");
+            try
+            {
+                TutorialPopupPanel panel = Panel();
+                StepSelector selector = panel == null ? null : panel.PageSelector;
+                if (
+                    selector == null
+                    || !selector.IsSetUp
+                    || selector.CurrentSelection == page
+                    || FocusedPage() != page
+                )
+                {
+                    return;
+                }
+
+                List<AgeTransform> marks = selector.MarksTable.Children;
+                AgeTransform mark = page >= 0 && page < marks.Count ? marks[page] : null;
+                AgeControlToggle dot =
+                    mark == null ? null : mark.GetComponent<AgeControlToggle>();
+                if (dot == null)
+                {
+                    return;
+                }
+
+                Pick(dot);
+                Remember();
+            }
+            catch (Exception e)
+            {
+                Log.Warn("tutorial: turning to the page under the cursor threw: " + e);
+            }
         }
+
+        /// <summary>Which page's row the cursor is on, or -1 for anywhere else.</summary>
+        private static int FocusedPage()
+        {
+            ControlId key = ModEntry.Navigator == null ? null : ModEntry.Navigator.FocusedKey;
+            string structural = key == null ? null : key.StructuralKey as string;
+            if (structural == null || !structural.StartsWith(PageKey, StringComparison.Ordinal))
+            {
+                return -1;
+            }
+
+            int page;
+            return int.TryParse(structural.Substring(PageKey.Length), out page) ? page : -1;
+        }
+
+        private const string PageKey = "tutorial:page/";
+
+        private static readonly object PagesStop = "tutorial:pages";
+        private static readonly object LocationStop = "tutorial:show-location";
+        private static readonly object MinimizeStop = "tutorial:minimize";
+        private static readonly object CloseStop = "tutorial:close";
 
         /// <summary>One thing the popup draws in a strip: the rectangle it is drawn at - which is what
         /// decides where it is walked - the button under it when there is one to light up, and how it
@@ -528,94 +626,6 @@ namespace ES2Access.Screens
                     },
                 }
             );
-        }
-
-        /// <summary>
-        /// The dots the popup marks its pages with, one per page, the current one filled in. The game
-        /// writes nothing on them, so each is named for the page it stands for; they are the position
-        /// indicator the box actually draws, which is why the page itself says no position of its own.
-        ///
-        /// They are radio buttons, and pressing one jumps to its page - so pressing one does exactly
-        /// that, through the group the dots belong to, which is what tells the popup to redraw.
-        /// </summary>
-        private static void Collect(List<Control> controls, StepSelector selector)
-        {
-            try
-            {
-                if (selector == null || !selector.IsSetUp || !Visible(selector.AgeTransform))
-                {
-                    return;
-                }
-
-                List<AgeTransform> marks = selector.MarksTable.Children;
-                for (int i = 0; i < marks.Count; i++)
-                {
-                    AgeTransform mark = marks[i];
-                    AgeControlToggle dot =
-                        mark == null ? null : mark.GetComponent<AgeControlToggle>();
-                    if (dot == null || !Visible(mark))
-                    {
-                        continue;
-                    }
-
-                    AgeControlToggle it = dot;
-                    int page = i + 1;
-                    NodeVtable vtable = new NodeVtable
-                    {
-                        // No role word: a dot is not a control the player came here to work, it is
-                        // where the box says they are among the pages.
-                        Announcements = new List<NodeAnnouncement>
-                        {
-                            GraphNodes.LabelPart(
-                                () => ModStrings.Format(ModStrings.TutorialPageMark, page)
-                            ),
-                            GraphNodes.SelectedPart(() => it.State),
-                        },
-                        OnActivate = () => Pick(it),
-                    };
-                    controls.Add(
-                        new Control
-                        {
-                            Key = "page-mark/" + page,
-                            Widget = mark,
-                            Vtable = vtable,
-                        }
-                    );
-                }
-            }
-            catch (Exception e)
-            {
-                Log.Warn("tutorial: reading the page marks threw: " + e);
-            }
-        }
-
-        private static readonly Comparison<Control> ReadingOrder = delegate(Control a, Control b)
-        {
-            return AgeLayout.ReadingOrder(a.Widget, b.Widget);
-        };
-
-        private static void Previous(TutorialPopupPanel panel)
-        {
-            try
-            {
-                panel.PageSelector.Previous();
-            }
-            catch (Exception e)
-            {
-                Log.Warn("tutorial: turning back a page threw: " + e);
-            }
-        }
-
-        private static void Next(TutorialPopupPanel panel)
-        {
-            try
-            {
-                panel.PageSelector.Next();
-            }
-            catch (Exception e)
-            {
-                Log.Warn("tutorial: turning a page threw: " + e);
-            }
         }
 
         /// <summary>Press a control the way the engine presses it: every AGE button carries the
