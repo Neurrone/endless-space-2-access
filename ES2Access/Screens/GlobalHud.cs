@@ -1805,23 +1805,13 @@ namespace ES2Access.Screens
             AddPlayers(found, window);
             AddTimers(found, window);
 
+            // One control per row: the cluster's members are peers of one kind - things to do with the
+            // turn - and which of them the game drew beside which is a fact about the corner they are
+            // packed into, not about what they are. Up and down walk the lot.
             builder.BeginStop(TurnStop);
-            builder.StartRow();
-            List<ControlId> ids = new List<ControlId>();
             for (int i = 0; i < found.Count; i++)
             {
-                ids.Add(found[i].Id);
                 builder.AddItem(found[i].Id, found[i].Vtable);
-            }
-
-            builder.EndRow();
-
-            // The controls sit in a cluster rather than along one axis, so up and down walk them too
-            // and nobody has to guess which way they are laid out.
-            for (int i = 1; i < ids.Count; i++)
-            {
-                builder.Connect(ids[i - 1], GraphDir.Down, ids[i]);
-                builder.Connect(ids[i], GraphDir.Up, ids[i - 1]);
             }
         }
 
