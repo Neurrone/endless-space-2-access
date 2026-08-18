@@ -395,15 +395,16 @@ namespace ES2Access.Screens
             above.Sort(ReadingOrder);
             below.Sort(ReadingOrder);
 
-            // One stop, four regions walked top to bottom the way the popup is drawn - Alt+Up/Down
-            // jump straight between them, and the ordinary row wiring Strip and the words node already
-            // set up still walks every control in between one at a time. The empire-info region is
-            // declared here, between the top strip and the words, because that is where the panel
-            // actually opens - beside the portrait, above the description - and it is simply absent
-            // from this list on a build where BuildEmpireInfo finds nothing to say.
-            builder.SetRegion(TopRegion);
-            Strip(builder, above);
-
+            // One stop, four regions - the popup's own content first, then the strip along its title
+            // bar, then the buttons along its bottom (owner-prescribed order). What the popup says is
+            // why it interrupted, so it is what the walk opens with; browsing to another notification
+            // and dismissing this one are what the player reaches for after reading it, and they are
+            // the same two strips on every popup, so they sit at the end where they can be stepped to
+            // without walking back through the content. Alt+Up/Down jump straight between the regions,
+            // and the ordinary row wiring the words node already sets up still walks every control in
+            // between one at a time. The empire-info region is declared ahead of the content because
+            // that is where the panel actually opens - beside the portrait, above the description - and
+            // it is simply absent from this list on a build where BuildEmpireInfo finds nothing to say.
             BuildEmpireInfo(builder, window);
 
             builder.SetRegion(BodyRegion);
@@ -480,6 +481,9 @@ namespace ES2Access.Screens
                     BuildSheet(builder, window, sheet, lead);
                 }
             }
+
+            builder.SetRegion(TopRegion);
+            Strip(builder, above);
 
             builder.SetRegion(BottomRegion);
             Strip(builder, below);
@@ -764,7 +768,13 @@ namespace ES2Access.Screens
             items.Sort(DownThePage);
             List<AgeTransform> cards = Cards(items);
             object region = null;
-            for (int index = 0; index < items.Count; )
+
+            // One node per row, whatever the popup laid out side by side. The things a technology
+            // unlocks, the technologies a panel suggests, the outcomes a choice offers are peers of one
+            // kind: the wrap points are the content box's doing, so a sideways move buys nothing and the
+            // player walks the whole content with one key. Which CARD each item was drawn in is still
+            // the game's own grouping and still a region (see Cards).
+            for (int index = 0; index < items.Count; index++)
             {
                 Item item = items[index];
                 object here = cards == null ? BodyRegion : RegionOf(cards, item.Widget);
@@ -774,69 +784,13 @@ namespace ES2Access.Screens
                     region = here;
                 }
 
-                int end = Band(items, index);
-                bool band = end > index + 1;
-                if (band)
+                ControlId id = item.IsControl
+                    ? Declare(builder, item.Control)
+                    : AddRow(builder, item.Lines, index, item.Group);
+                if (index == 0)
                 {
-                    builder.StartRow();
+                    builder.SetStart(id);
                 }
-
-                for (; index < end; index++)
-                {
-                    Item one = items[index];
-                    ControlId id = one.IsControl
-                        ? Declare(builder, one.Control)
-                        : AddRow(builder, one.Lines, index, one.Group);
-                    if (index == 0)
-                    {
-                        builder.SetStart(id);
-                    }
-                }
-
-                if (band)
-                {
-                    builder.EndRow();
-                }
-            }
-        }
-
-        /// <summary>
-        /// How far the band starting at <paramref name="from"/> runs: the items after it that the popup
-        /// drew BESIDE it inside the same container.
-        ///
-        /// Things laid out side by side are one row and are walked with left and right - the two things
-        /// a technology unlocks, the four technologies a panel suggests - because that is how they are on
-        /// the screen, and reading them as a column tells the player about a stack that is not there.
-        /// Being level is the test (the rectangles, which is what the player sees); sharing a container
-        /// is what stops a row spanning the seam between two panels that merely happen to be drawn at
-        /// the same height.
-        /// </summary>
-        private static int Band(List<Item> items, int from)
-        {
-            int end = from + 1;
-            AgeTransform holder = Parent(items[from].Widget);
-            while (
-                holder != null
-                && end < items.Count
-                && ReferenceEquals(Parent(items[end].Widget), holder)
-                && AgeLayout.SameRow(items[from].Widget, items[end].Widget)
-            )
-            {
-                end++;
-            }
-
-            return end;
-        }
-
-        private static AgeTransform Parent(AgeTransform widget)
-        {
-            try
-            {
-                return widget == null ? null : widget.Parent;
-            }
-            catch (Exception)
-            {
-                return null;
             }
         }
 
@@ -2333,22 +2287,16 @@ namespace ES2Access.Screens
             return EmpireDossier.Open(panel);
         }
 
-        /// <summary>One strip of controls: left and right walk it, and up and down reach the strips
-        /// above and below because they are separate rows.</summary>
+        /// <summary>One strip of controls, one node per row: the browsing arrows and the pop-up-again
+        /// box, or dismissing and putting aside, are peers of one kind and the line the game drew them
+        /// on is a rendering accident, so up and down walk the whole strip and nothing is reached
+        /// sideways.</summary>
         private static void Strip(GraphBuilder builder, List<Control> controls)
         {
-            if (controls.Count == 0)
-            {
-                return;
-            }
-
-            builder.StartRow();
             foreach (Control control in controls)
             {
                 Add(builder, control);
             }
-
-            builder.EndRow();
         }
 
         private static ControlId WordsId(AgePrimitiveLabel label)
