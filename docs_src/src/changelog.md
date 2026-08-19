@@ -2,24 +2,8 @@
 
 ## Unreleased
 
+- Remove the use of unneeded columns everywhere to reduce confusion
 - Ship design: add a way to remove modules, fixed confusing wording for installed modules, add labels to various panels
-- Remove the use of unneeded columns in the following screens to reduce confusion:
-    - Ship design
-    - Military
-    - Confirmation dialogs
-    - End turn controls
-    - Fleet panel
-    - Star system (side panels, improvements, politics, rename, and system selection dialogs)
-    - Empire screen (tabs and side panels)
-    - Economy screen and the recipe creation dialog
-    - Senate screen and the government, laws, population, and election dialogs
-    - Planet overview
-    - Troop management, battle tactics, and fleet selection dialogs
-    - Academy screen, hero inspection, hero selection, and the academy dialogs
-    - Research screen, quest journal, and the diplomacy screens (including negotiation, minor faction, and pirate dialogs)
-    - Notification pop-ups, battle pop-ups and battle screens
-    - All dialogs (error, non-blocking messages, victory, journal, chat tabs, and more)
-    - The whole out-game family (options, load/save, new game lobby, faction chooser, custom faction editor, tutorial picker, DLC browser, mod manager, and asset exporter)
 - The constructibles and hangar panels (star system and empire screens) are now labelled, with the constructible filters in a "Filters" section, the hangar's buttons in an "Actions" section, and every constructible or ship read one per row in an "Available" section
 - The ship designer's module filters share one row again inside their "Filters" section, matching the constructibles pattern
 - Mod manager: the mods library now reads as a "Filters" section holding the folder switches on one row, followed by an "Available" section with the library's contents one per row, matching the constructibles pattern
@@ -30,7 +14,7 @@
 - Queuing now speaks, on both queues. On the star system and empire screens, queuing a construction says what went into the queue ("Queued Interplanetary Transport Network") instead of answering the key with silence, and the research screen answers with the same words ("Queued Survival Suits"). Queuing at the front says so ("Queued Infinite Supermarkets as first item"), and taking a line out — from either queue, or by re-pressing a technology's dot on the wheel — says "Cancelled Survival Suits"
 - The Alt-click chord is `Ctrl+Shift+Enter`, not `Alt+Enter`. `Alt+Enter` is Unity's own fullscreen switch, below anything the mod can take a key off, so pressing it resized the game window as well as doing what you asked. `Ctrl+Shift+Enter` does everything the game gives an Alt-click — queuing a construction or a technology at the head of its queue, and every other place the game gives a click an Alt variant
 - Economy screen: the luxury resources are now an eight column table, one column per resource family. The family names are the table's column headings and nothing you walk through: tabbing in lands on the first line of the table and says which family you are in, moving sideways says which family you have crossed into, and what a family does for a system's development is in the review buffer of every resource in its column. Moving up and down keeps the column, and a family with no resource on that line says "empty" so the columns stay lined up. Typing still finds a resource by name from any column
-- The strategic resource grid (economy screen) and both resource grids in the recipe dialog read as a legend of resource families followed by one resource per row, each saying its family; the recipe dialog's family names are fixed ("Industry" instead of "Improves Industry Food")
+- The strategic resources (economy screen) and both component grids in the recipe dialog are the same table, read the same way — tabbing in lands on the first line and says which family you are in, sideways says which family you crossed into, up and down keeps the column, and a family with nothing on a line says "empty". Choosing a component in the recipe dialog is unchanged: Enter still puts it into the project, and Enter on a project slot still takes it back out. The recipe dialog's family names are fixed as well ("Industry" instead of "Improves Industry Food")
 - Galaxy map: a probe in flight is now listed at the top level of the map, in the same section as obliterator missiles and ally pins, instead of being hidden inside whichever system it happened to be flying nearest to. Its row still says which star it is out from, which way and how many turns
 - Galaxy map: tabbing between the panels now says which one you have landed in — "Map", "Quest", "Notifications" and "View Controls" (the zoom and scan controls). The quest and notification panels say their name on every screen that draws them
 - Galaxy map: inspect mode (Ctrl+I) now opens on a single square instead of a three by three one — press plus to widen it. Pressing plus or minus when the cursor is already at its largest or smallest now says nothing at all, instead of repeating the size you are already on
@@ -47,7 +31,6 @@
 - The view title is no longer in the tab order anywhere: the galaxy map keeps the zoom and scan controls, other views keep just their scan button, and Escape remains the way to close a screen
 - The screen title's close button is no longer in the tab order — press Escape to close a screen instead
 - Review buffers: Ctrl+Left and Ctrl+Right now step over any buffer with nothing in it, so a single-player game no longer cycles through an empty chat log to get back to where it started
-- A control's description now reaches the review buffer one frame sooner after you arrow onto it. If it still feels slow, raise the frame rate limit in the game's video options — the wait is a fixed number of frames, so a 20 frame per second cap makes it five times longer than the game's default does
 
 ## V0.1.1
 

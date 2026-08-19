@@ -25,12 +25,12 @@ namespace ES2Access.Screens
     ///
     /// A resource the empire has never located is drawn as a question mark with no name
     /// (<c>IngredientItem.Bind</c> fades it to nothing when it does not exist for this empire), so the
-    /// grid declares only the components a sighted player can see, alpha included - and the walk is a
-    /// LIST rather than a table of crossed edges: most columns have no drawn cell, so column-preserving
-    /// vertical moves would pair a lone cell with the wrong family (measured on the economy screen's own
-    /// copy of the same grid). The family icons are a legend the player can walk, a region of their own
-    /// inside the same stop, and every component says which family it belongs to for itself - in the
-    /// economy screen's words for those families, which is the one reader both grids share.
+    /// grid declares only the components a sighted player can see, alpha included. Both halves read as
+    /// the TABLE the game draws them as - families the columns, a place the game faded a cell in
+    /// speaking the word for empty so the column stays under a player walking down it - which is the
+    /// same reading and the same machinery as the economy page's copy of the same lattice
+    /// (<see cref="ResourceGrid"/>, owner ruling 2026-08-19), down to the economy screen's words for
+    /// the families.
     ///
     /// There is no screen name. The window's heading is a drawn element with its own explanation on its
     /// tooltip, so it is declared where it is drawn and focus lands on it - which says what has just
@@ -51,7 +51,11 @@ namespace ES2Access.Screens
 
         // Reused across builds rather than allocated per frame: Build runs every tick.
         private readonly List<Cell> _cells = new List<Cell>();
-        private readonly List<float> _columnCentres = new List<float>();
+
+        /// <summary>The two component lattices this window draws, one instance each so a build never
+        /// measures one grid over the other's.</summary>
+        private readonly ResourceGrid _luxuries = new ResourceGrid();
+        private readonly ResourceGrid _strategics = new ResourceGrid();
 
         public override string Key
         {
@@ -108,7 +112,8 @@ namespace ES2Access.Screens
                     window.AvailableIngredientsLuxuriesGroup,
                     window.IngredientHeaderLuxuriesTable,
                     window.IngredientItemsLuxuriesTable,
-                    ResourceDefinition.Type.Luxury
+                    ResourceDefinition.Type.Luxury,
+                    _luxuries
                 );
                 BuildComponents(
                     builder,
@@ -116,7 +121,8 @@ namespace ES2Access.Screens
                     window.AvailableIngredientsStrategicsGroup,
                     window.IngredientHeaderStrategicsTable,
                     window.IngredientItemsStrategicsTable,
-                    ResourceDefinition.Type.Strategic
+                    ResourceDefinition.Type.Strategic,
+                    _strategics
                 );
                 BuildProject(builder, window);
                 BuildEffects(builder, window);
@@ -145,11 +151,20 @@ namespace ES2Access.Screens
         }
 
         /// <summary>
-        /// One half of the components on offer: the caption the window writes over it, the family icons
-        /// heading the columns, and the resources the empire can see.
+        /// One half of the components on offer, read as the table the game draws: the caption the window
+        /// writes over it, then a row per drawn line of the lattice with the families as its columns
+        /// (<see cref="ResourceGrid"/>).
+        ///
+        /// The header widget keeps no reference to the resource it was built from, so the column names
+        /// come from the game's own resource list, asked for the same first-N-of-a-type the table was
+        /// filled from (<c>OnGameCreated</c> :155-179) - the same list, in the same order, by the same
+        /// reader the economy screen's copy of this grid uses, which is what keeps the columns saying
+        /// "Industry" rather than the family's own "Improves Industry Food" description.
         ///
         /// Enter on a component is the item's own click, which puts it into the project - and a component
-        /// already in the project is drawn switched off, which is how the game says it is spent.
+        /// already in the project is drawn switched off, which is how the game says it is spent. The
+        /// table reading changes none of that: a cell of this grid is the same button it was, and the
+        /// sheet only stamps which row and column it sits in.
         /// </summary>
         private void BuildComponents(
             GraphBuilder builder,
@@ -157,7 +172,8 @@ namespace ES2Access.Screens
             AgeTransform group,
             AgeTransform headers,
             AgeTransform items,
-            ResourceDefinition.Type type
+            ResourceDefinition.Type type,
+            ResourceGrid grid
         )
         {
             if (group == null || !AgeWidgets.Visible(group))
@@ -166,108 +182,31 @@ namespace ES2Access.Screens
             }
 
             builder.BeginStop(stop);
-            bool named = AddCaption(builder, group, stop);
-
-            EconomyScreen.ReadColumnCentres(headers, _columnCentres);
-            string[] columns = EconomyScreen.FamilyNames(
-                type,
-                _columnCentres.Count,
-                _columnCentres.Count
-            );
-
+            // The caption belongs to the same region as the table under it, and is set before the
+            // caption node so the stop's first node is regioned like the rest.
             builder.SetRegion(stop + "/legend");
-            _cells.Clear();
-            AddFamilyHeaders(_cells, headers, columns, stop);
-            Cells.EmitLinear(builder, _cells);
-
-            builder.SetRegion(stop + "/items");
-            _cells.Clear();
-            IList<AgeTransform> children = items == null ? null : items.Children;
-            for (int i = 0; children != null && i < children.Count; i++)
-            {
-                AddIngredient(
-                    _cells,
-                    children[i],
-                    stop,
-                    i,
-                    EconomyScreen.Column(
-                        columns,
-                        EconomyScreen.ColumnOf(children[i], _columnCentres)
-                    )
-                );
-            }
-
-            Cells.EmitLinear(builder, _cells);
-            builder.SetRegion(null);
-            if (named)
+            string caption = AddCaption(builder, group, stop);
+            int drawn = grid.Columns(headers);
+            grid.Read(items, IngredientCell);
+            grid.Emit(builder, EconomyScreen.FamilyNames(type, drawn, drawn), stop, caption);
+            if (!string.IsNullOrEmpty(caption))
             {
                 builder.PopContext();
             }
         }
 
-        /// <summary>The family icons, named by the effect each family improves - the legend the player
-        /// walks, one per row. The header widget keeps no reference to the resource it was built from, so
-        /// the names come from the game's own resource list, asked for the same first-N-of-a-type the
-        /// table was filled from (<c>OnGameCreated</c> :155-179) - the same list, in the same order, by
-        /// the same reader the economy screen's copy of this grid uses.</summary>
-        private static void AddFamilyHeaders(
-            List<Cell> cells,
-            AgeTransform headers,
-            string[] columns,
-            object stop
-        )
-        {
-            IList<AgeTransform> children = headers == null ? null : headers.Children;
-            if (children == null || !AgeWidgets.Visible(headers))
-            {
-                return;
-            }
-
-            for (int i = 0; i < children.Count; i++)
-            {
-                AgeTransform widget = children[i];
-                if (widget == null || !SettingRows.Drawn(widget))
-                {
-                    continue;
-                }
-
-                string name = EconomyScreen.Column(columns, i);
-                AgeTooltip tooltip = AgeWidgets.Raw(widget);
-                NodeVtable vtable = new NodeVtable
-                {
-                    Announcements = new List<NodeAnnouncement>
-                    {
-                        GraphNodes.LabelPart(() => name),
-                    },
-                    Sections = GraphNodes.Sections(null, tooltip),
-                };
-                AgeWidgets.PointAt(vtable, widget);
-                Cells.Add(
-                    cells,
-                    widget,
-                    ControlId.Referenced(widget, stop + "/family/" + i),
-                    vtable
-                );
-            }
-        }
-
         /// <summary>One component the empire could put into a project: what it is, how much of it there
-        /// is, which family it belongs to, and its own dossier in the review buffer. Named off the
-        /// wrapper the game hangs on its tooltip, because the item draws a picture and a stock figure and
-        /// no words; the family word trails, because the linearised grid has no column left to say it
-        /// with.</summary>
-        private static void AddIngredient(
-            List<Cell> cells,
-            AgeTransform widget,
-            object stop,
-            int index,
-            string family
-        )
+        /// is, and its own dossier in the review buffer. Named off the wrapper the game hangs on its
+        /// tooltip, because the item draws a picture and a stock figure and no words. Which family it
+        /// belongs to is the column it sits in, said by the edge the player crossed to reach it, and its
+        /// family's sentence rides in the review buffer
+        /// (<see cref="ResourceGrid.FamilySection"/>).</summary>
+        private static NodeVtable IngredientCell(AgeTransform widget, AgeTooltip familyTip)
         {
             IngredientItem item = widget == null ? null : widget.GetComponent<IngredientItem>();
             if (item == null || !SettingRows.Drawn(widget))
             {
-                return;
+                return null;
             }
 
             IngredientItem it = item;
@@ -282,7 +221,10 @@ namespace ES2Access.Screens
                     GraphNodes.ValuePart(() => AgeText.Label(it.StockLabel)),
                     GraphNodes.DisabledPart(offered),
                 },
-                Sections = GraphNodes.Sections(null, tooltip),
+                Sections = ResourceGrid.Append(
+                    GraphNodes.Sections(null, tooltip),
+                    ResourceGrid.FamilySection(familyTip)
+                ),
                 OnActivate = () =>
                 {
                     if (offered())
@@ -291,21 +233,10 @@ namespace ES2Access.Screens
                     }
                 },
             };
-            if (!string.IsNullOrEmpty(family))
-            {
-                string said = family;
-                vtable.Announcements.Add(GraphNodes.ValuePart(() => said, false));
-            }
-
             GraphNodes.AddRefusal(vtable, tooltip, offered);
 
             AgeWidgets.PointAt(vtable, widget);
-            Cells.Add(
-                cells,
-                widget,
-                ControlId.Referenced(widget, stop + "/component/" + index),
-                vtable
-            );
+            return vtable;
         }
 
         /// <summary>
@@ -325,7 +256,7 @@ namespace ES2Access.Screens
             }
 
             builder.BeginStop(ProjectStop);
-            bool named = AddCaption(builder, group, ProjectStop);
+            bool named = !string.IsNullOrEmpty(AddCaption(builder, group, ProjectStop));
             RecipeLine line = Line(window);
             _cells.Clear();
             if (line != null)
@@ -461,7 +392,9 @@ namespace ES2Access.Screens
             }
 
             builder.BeginStop(EffectsStop);
-            bool named = AddCaption(builder, window.AgeTransform, EffectsStop, "RecipeEffectsGroup");
+            bool named = !string.IsNullOrEmpty(
+                AddCaption(builder, window.AgeTransform, EffectsStop, "RecipeEffectsGroup")
+            );
             Cells.EmitLinear(builder, _cells);
             if (named)
             {
@@ -541,8 +474,10 @@ namespace ES2Access.Screens
         }
 
         /// <summary>The caption the window writes over a box, as the box's name and its first node - the
-        /// same three-part treatment every captioned band in the mod gets.</summary>
-        private bool AddCaption(
+        /// same three-part treatment every captioned band in the mod gets. Answers the words it used, so
+        /// a caller that also has to NAME something inside the box - a table's region - names it with the
+        /// one the box was named by rather than reading the caption a second time.</summary>
+        private string AddCaption(
             GraphBuilder builder,
             AgeTransform group,
             object key,
@@ -555,13 +490,13 @@ namespace ES2Access.Screens
             string text = caption == null ? null : AgeWidgets.TextOf(caption);
             if (string.IsNullOrEmpty(text))
             {
-                return false;
+                return null;
             }
 
             builder.PushContext(text);
             Cell cell = Cells.Readout(caption, AgeWidgets.Raw(caption), key.ToString());
             builder.AddItem(cell.Id, cell.Vtable);
-            return true;
+            return text;
         }
 
         /// <summary>The first label a box draws, which is the caption it draws across its top - the three
