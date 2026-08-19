@@ -192,9 +192,7 @@ namespace ES2Access.Screens
             }
 
             builder.BeginStop(DeckStop);
-            // "Tactics set", not the drawn "Tactics" caption: the owner dictated the exact label
-            // (ruling 2026-08-19) so the stop cannot share a word with the tactic rows it holds.
-            builder.PushContext(ModStrings.Get(ModStrings.TacticsDeckPanel));
+            builder.PushContext(DeckName(window));
             _cells.Clear();
             Cells.AddReadout(
                 _cells,
@@ -213,6 +211,25 @@ namespace ES2Access.Screens
             Cells.EmitLinear(builder, _cells);
             AddRemoveTarget(builder, table);
             builder.PopContext();
+        }
+
+        /// <summary>What the set is called: the heading the game draws over it, and a word of the mod's
+        /// only where the build draws none.</summary>
+        private static string DeckName(PlayCardDeckModalWindow window)
+        {
+            try
+            {
+                string drawn = AgeWidgets.TextOf(
+                    AgeWidgets.ChildNamed(window.MyDeckGroup, "PanelTitle", 1)
+                );
+                return string.IsNullOrEmpty(drawn)
+                    ? ModStrings.Get(ModStrings.TacticsDeckPanel)
+                    : drawn;
+            }
+            catch (Exception)
+            {
+                return ModStrings.Get(ModStrings.TacticsDeckPanel);
+            }
         }
 
         /// <summary>
