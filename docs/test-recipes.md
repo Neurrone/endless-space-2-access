@@ -12,7 +12,24 @@ TECHNOLOGIES not (turn 1; the gate table is in the stage-8 report). Recipes belo
 save" without naming one mean that save, and it is why so many screens read structurally right
 and content-poor.
 
-**Raising a notification on demand** (the fixture has none pending):
+**`[Beginner] test` has TWO notifications waiting, so next/previous browsing is NOT
+fixture-blocked** (measured 2026-08-19): `NotificationLawCancelled` ("Laws Cancelled" — one table
+row, "Improvement Completion Incentivisation Scheme / Industrialists") and
+`NotificationTechnologyNeeded` ("Research queue Empty" — 13 body rows and a bottom bar carrying its
+own "Technology Screen" button). Open one without touching the event bus:
+`Gui.GuiNotificationService.ShowGuiNotification((GuiNotification)((System.Collections.IList)Gui.GuiNotificationService.GetPlayerEmpireGuiNotifications())[0])`,
+restore with `Gui.GuiNotificationService.HideAllGuiNotifications()`.
+**Putting a DISMISSED notification back**, without `POST /loadsave` and without the event bus (this
+is how one dismissed by accident was restored in a single eval): `GetPlayerEmpireGuiNotifications()`
+returns the manager's LIVE list, so `RecordEventForEmpire` can be replayed by hand —
+`new NotificationLawCancelled()` → `RegisterComponents()` → `Bind(new EventLawCancelled(empire,
+lawDef))` → `Load()` → `AlreadyRead = true` → `list.Insert(0, n)` → the private
+`OnPlayerEmpireNotificationsCollectionChanged(CollectionChangeAction.Add, n)` by reflection so the
+HUD strip refreshes. Verified: the strip read "Notifications, Laws Cancelled, button, 1 of 2" again.
+The event bus is exactly the route to avoid here — `EventLawCancelled` is an `EventOnPolitics`,
+which `QuestManager` reads as a quest trigger (`QueryPoliticsNameFromGameEvent` :2934).
+
+**Raising a notification on demand** (for a popup family neither fixture holds pending):
 `Amplitude.Unity.Framework.Services.GetService<Amplitude.Unity.Event.IEventService>().Notify(new EventEmpireIntroduction(Gui.PlayerEmpire))`
 — dismiss afterwards (`Gui.GuiNotificationService.DismissGuiNotification(...)`); minimizing
 leaves it in the icon strip, which is a fixture change. **For a notification whose event has
@@ -177,6 +194,15 @@ is the before/after probe (fixture: `FactionTerrans`). Selecting a card does NOT
 the same `OnCancelCb`); the lobby stands down while either is up. The advanced window builds a
 table per CATEGORY once and shows only `CurrentCategory`'s — read whichever is drawn, never the
 container's first child.
+**The settings walk, and how to leave it as found** (the route the value-tooltip re-read was proved
+on): main menu → `ui.activate` on New Game — its flyout's two children, Quick start and Beginner,
+both LAUNCH, so never activate either — then Tab×4 lands on Gameplay. Every change is lobby data and
+is restored by moving it back (`ng.Session.GetLobbyData<string>("gamespeed")` is the before/after
+probe). The advanced settings modal is the Gameplay stop's last item and only calls `ShowWindow`
+(`NewGameScreen` :550-552), so opening it is safe; leaving either surface is
+`HandleInput(InputAction.Exit)` on the window. The pause menu's own settings panels are behind the
+game-menu checkboxes "Show Game Settings" / "Modify Timer Settings", which are OFF by default — put
+them back.
 
 **What the outgame fixtures cannot show.** Lobby: the multiplayer-only states (chat, Join/Kick/Ready,
 the DLC strip) have no fixture at all, and renaming the player needs Steam. Advanced settings: no
@@ -215,7 +241,17 @@ Space 2"*.
 permitted round trip is queue-then-cancel — probe with
 `Gui.PlayerEmpire.GetAgency<DepartmentOfScience>().ResearchQueue.Length` and
 `.PendingConstructions[i].ConstructibleElement.Name` before and after — but queueing fires
-`EventTutorial_TechnologySelected`, so do it LAST and restore with `POST /loadsave`.
+`EventTutorial_TechnologySelected`, so do it LAST (cancelling restores the QUEUE, not that event's
+own effect on the tutorial — `POST /loadsave` is the only restore for it).
+**The queue round trip's route is FIVE injections, and the first Enter does not queue** (measured on
+`[Beginner] test` turn 21, whose research queue is empty): `ui.prev` to the `research:suggested`
+stop, `ui.down` onto a cheap technology, then Enter — which **JUMPS to that dot** rather than
+queueing, `research:suggested`'s activate being `Jump` — and it is the SECOND Enter, on the dot
+itself, that queues and says *"Queued …"* on top of the dot's own state word flipping to "In
+progress". "Survival Suits" and "Ubiquitous Surveillance" are the fixture's two available Military I
+dots (195 Science each); "Military II" expands to four "Not available" dots, the ready-made research
+REFUSAL controls. Restore by cancelling what was added — `ResearchQueue.Length` back to 0, measured
+2026-08-19, no `POST /loadsave` needed.
 **Driving the game's own "go and look at this technology"** (the Ctrl+click hint jump, which no
 injection can reproduce because the game reads the physically held Control): call what the game
 calls — `var w = Gui.GuiService.GetWindow<TechnologyScreen>(); w.FocusTechnology(
@@ -446,6 +482,12 @@ runs when the camera POSITION moves, so it does not put them back by itself.
 Foreign-probe subcategories are fixture-blocked (the sighted probe is the player's own; the save
 holds two probes, one of them not sighted); the affiliation test is the same
 `Scope(owner, empire, foreign)` the fleets use.
+**The fixture's one sighted probe, in full** (`[Beginner] test` turn 21): empire 0's, GUID **1621**,
+`GalaxyPosition(13.59, -52.30)`, nearest declared system **Heracles/488** at ~12 units; empire 3's is
+not sighted. So the save covers "a probe with a star to measure from" and nothing else — a probe with
+no star near it, and any foreign probe, are both unsighted here. **Ctrl to "Probes: all" then
+`galaxy.scanGoTo` (Alt+Home) is the cheapest route to it**, cheaper than opening the system branch
+the probe's bearing sentence names.
 
 **The three "what is there" categories** — quest markers, ally pins, obliterator missiles — sit
 after probes in the Ctrl ring, each with a single subcategory. A Shift press on one comes round to
@@ -948,7 +990,15 @@ and the queue's names/order before and after (`ConstructionQueue.PendingConstruc
 never `foreach`ed). Queue two or three and the line becomes a drag source as well, which is how the
 reorder is exercised inside the same round trip; the research queue is the same shape
 (`DepartmentOfScience.ResearchQueue`, queued from the wheel's `research:suggested` stop in two key
-presses). Both were run against a LIVE owner session and restored exactly. The home planet is
+presses). Both were run against a LIVE owner session and restored exactly.
+**That round trip has a SPOKEN oracle since 2026-08-19**: Enter on "Interplanetary Transport
+Network" answers *"Queued Interplanetary Transport Network"* while `ConstructionQueue.Length` grows,
+and Enter on its queue line answers *"Cancelled …"* with the ABBREVIATED title the line draws
+("Interplanetary Transport N." — es2-facts). ITER ("Cannot afford the resource cost") is the
+fixture's ready-made REFUSAL control on the same panel. **The confirmation branch has no fixture
+here**: all seven of Dusay's constructibles report `NeedsConfirmation = false` (nothing is invested),
+so the game's own message box — and the suppressed outcome line that goes with it — is code-verified
+only. The home planet is
 `IsUnique` so planet rename is unreachable; `StarSystemPopulationModalWindow`'s opener is
 tutorial-locked; and at turn 3 no buy-out button is drawn at all
 (`BuyoutTechnologyNotUnlocked` — es2-facts), so the queue line's buy-out children have no fixture.
@@ -1399,6 +1449,24 @@ show them) and `SpecialStatsTable` only fills for a mining probe. Reopening from
 `GuiShipDesign`: take one off the `ShipDesignItem` children rather than constructing it. **Edit
 raises the Architects tutorial**, whose page node swallows navigation — minimize it before walking
 anything.
+**The slots are grouped by module TYPE** (`SlotOrder` — helpers.md), so the drawn order survives
+only inside one type. On the Patrol design (a Small Zolya-class hull) the "Module slots" panel walks
+*"Module slots, empty, button, Defense Module, 1 of 6" / "String Gravitics Engine, button,
+draggable, 2 of 6" / "Improved Probes, button, draggable, 3 of 6" / "empty, button, Weapon Module,
+4 of 6" / "Basic High-I Slugs, button, draggable, 5 of 6" / "Drop here to remove, 6 of 6"* — the
+engine slot is a defence-AND-support slot, which is why it reads with the defence ones. Fitting or
+removing a module must never move a slot: the key is the slot's, not the module's.
+**Two of the three slot markers need another RULESET, not just a bigger hull.** Multiplier and
+pairing exist only in `HullDefinitions[Balancing].xml` (es2-facts), so no faction hull in this save
+draws either, and a heavy mount needs a medium or large hull (its medium-hull instance is behind
+`TechnologyImproveHull3`). Sight them by LENDING hull data — designer opened in Create mode with
+`Bind(null)`, hull taken from `Gui.GuiWrapperProviderService.GuiHulls`, left through the
+confirm-lose-changes path (measured 2026-08-19, the design list 9 before and 9 after):
+`HullMedium01Balancing` reads *"empty, button, Weapon Module, Times 2 Multiplier, Symmetrical (x2
+cost), 6 of 9"*, `HullLarge01Balancing` reads Times 4, and `HullLarge01Terrans` — a real rendered
+faction hull — reads *"empty, button, Weapon Module, Special Module, Heavy Mount, 6 of 11"* with the
+slot measuring 57×57 against its neighbours' 44×44. A FILLED slot says none of the three. A
+perceptual pass on the dots and the pairing circle needs a game started on the Balancing ruleset.
 
 **Hero inspection.** Bind, open, switch pages and close from `/eval`. An unrecruited `GuiHero` is
 the read-only fixture. For a skill point, set `Level = 2` and `Refresh`, then restore by reloading
@@ -1409,6 +1477,12 @@ button with `/input` in `unlocked`; each page switch raises a tutorial to minimi
 **Troops and the tactics deck** are both non-committing until Confirm, which makes them safe to walk
 whole. A refusal is provable from BOTH sides by injecting one: force the game's own refusal state,
 read the spoken reason, and put it back.
+**The deck opens straight from `/eval`** — `Gui.GuiService.ShowWindow<PlayCardDeckModalWindow>()`,
+no military screen needed — and closes with `HandleInput(InputAction.Exit)`. `[Beginner] test` turn
+21 draws four available tactics (Team Spirit, Barrage Fire, Power to Shields, Revive and Rebuild),
+three of them already in the set, plus two locked slots. **Opening it advances the game's own
+tutorial page to "Military"** — harmless while the popup is minimized, but it is a fixture change to
+know about.
 
 **The battle fixture** is a 14-step script (in the session report) because a battle cannot be
 created from `/eval` — it needs two hostile fleets meeting. Everything before the meeting is
@@ -1451,6 +1525,12 @@ selected tab across opens — put the tab back when done. The whole family also 
 menu with `/input`: Content opens the DLC browser, Mods opens the mod manager (its Back node
 closes it), and the Mods flyout's "Game asset export" child is the exporter's player route — no
 `ShowWindow` needed for any of the three.
+**The mod manager's library is EMPTY in this install** (no local mod, no Workshop subscription), so
+the page draws only its "No mods" placeholder and no mod row can be walked — everything about a mod
+row is code-verified only. Its top band is one drawn line of 32 px (`FolderFiltersTable`, rect
+`44,117,724,32`) holding the two folder toggles in drawn order Workshop then Local;
+`DisableCustomConfigButton` joins that same band but is invisible unless the runtime was started
+with a custom mod configuration.
 **The asset exporter** (`ShowWindow<ResourcesExportScreen>()`): never press either export button
 (they write files) or Open folder; progress is drivable by setting the panel's private
 `lastMessage` + the private `ExportInProgress` setter, restoring both; a row's click goes through

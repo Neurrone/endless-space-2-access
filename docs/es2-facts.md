@@ -422,6 +422,29 @@ generic graduates to the generic docs.
   (`Gui.FormatFailureInfos("%ConstructionBuyoutDescription", …)`). So the gate for declaring one is
   VISIBLE and the gate for offering it is `Enable` — not the hint test the planet cards need. At
   turn 3 both currencies read `BuyoutTechnologyNotUnlocked`, so no buy-out is drawn at all.
+- **The game writes NO word when a construction is queued** — the click answers with a sound and a
+  flying icon and nothing else — and every construction-queue string in the corpus is a REFUSAL
+  (`%FailureConstructionAlreadyQueuedDescription`, "You already queued this construction"). The one
+  "Queued" the corpus has, `%TechnologyStatusQueuedTitle`, is a TECHNOLOGY's own state word, which
+  the research dot changes to under the cursor and a constructible tile has no equivalent of.
+  **Mod policy**: the queue phrases are mod-authored (`queue.queued`, `queue.queued-first`,
+  `queue.cancelled`), shared by both queues — a deliberate deviation from game-sourced words, made
+  because four of the seven queue gestures answered the key with no word at all.
+- **The construction queue line draws an ABBREVIATED title.** `ConstructionLine.RefreshTitle` writes
+  `GuiConstructible.GetFullTitle(Title, Title.WordWrap)`, so "Interplanetary Transport Network" is
+  drawn — and therefore read — as "Interplanetary Transport N." on the queue line while the
+  constructible tile beside it draws the full name. Any mod sentence naming a queue line inherits the
+  abbreviation, which is the drawn word and so the right one.
+- **God mode re-purposes BOTH queue-removal buttons.** `ConstructionLine.OnCancelCb` (:378-392) buys
+  the construction out instead of cancelling it, and `TechnologyItem2.OnToggleCb` (:734-745) unlocks
+  the technology outright instead of queueing or dequeueing. Any announcement attached to those two
+  controls has to ask `GodGalaxyCursor.IsGuiInGodMode()` before saying what the press did.
+- **Research has no cancel confirmation and construction has one — the two queues are the same shape
+  everywhere else and differ exactly there.** `TechnologyScreen.DequeueTechnology` (:189-202) posts
+  `OrderCancelResearch` unconditionally, while `StarSystemQueuePanel.OnCancelConstruction` (:425-442)
+  branches on `Construction.IsAlreadyInvested` and raises the game's own message box first (the bullet
+  above). So an outcome line for a cancel is honest on the research queue and on an uninvested
+  construction, and must be withheld where the game has still to ask its own question.
 - **A list the game selects with modifier-clicks asks the REAL keyboard, which is what makes the mod's
   selection chords free.** `FleetsManagementPanel.OnToggleFleetLine` (:277-299) and
   `ShipsManagementPanel.OnToggleShipItem` (:707-750) both branch on
@@ -1116,8 +1139,8 @@ generic graduates to the generic docs.
   and `EmpirePerformanceTracker` titles can be parked (the game itself draws "?").
   `EmpireBanner` draws exactly ONE buy-out button (Influence) for the UE at turn 1.
 - Economy: **`GuiLocatedResource.TargetEffect` always throws** (its ctor never assigns the
-  element — go through `Gui.GetGuiElement`). `ResourcesPanel.RefreshResourceItem` decays a
-  soft-hidden item's alpha by ×0.3 per refresh and never restores it, so alpha is the only drawn
+  element — go through `Gui.GetGuiElement`). `ResourcesPanel.RefreshResourceItem` soft-hides an
+  item by MULTIPLYING its bound alpha by 0.3 (the two fades below), so alpha is the only drawn
   test there. A tooltip's CLASS is rebind-fresh while its TARGET can be stale (slots, resources,
   salables) — take a name from the target only when the class says the rich variant is bound.
   `AdCreationModalWindow` is a dead stub (unregistered, its opener never shown);
@@ -1133,6 +1156,24 @@ generic graduates to the generic docs.
 - Economy, luxuries: **the luxury grid is a GRID** — the items cycle through 8 target effects with a
   period of 8, so the columns are the FIDSI families and a row read as a flat strip loses which
   family each figure belongs to.
+- Economy, luxuries: **the grid is a 24-slot 3×8 lattice with TWO fades, and they mean different
+  things** (measured 2026-08-19 on all 24 slots, correcting an earlier draft of this line).
+  `ResourceItem.Bind` sets alpha 1 for a luxury that `Exists` for this empire and 0 for one that does
+  not; `ResourcesPanel.RefreshResourceItem` (:203-215) then multiplies by 0.3 when both stock and net
+  are zero (`SoftHide`). So **alpha 0.3 = drawn, and the empire holds none of it** — true of an
+  unlocated resource AND of a located-but-empty one alike (Eden Incense and Giga Lattice are both
+  known and both at 0.3) — while **alpha 0 = a pool row the game is not drawing at all**, still
+  carrying the previous bind's icon and tooltip class (nine of them read
+  `Strategic01Small`/`StrategicResourceBanner`). A lattice line the game faded out entirely is not a
+  row of eight empty cells, it is a line nobody can see: the mod reads one row per DRAWN line and
+  says `nav.cell-empty` ("empty") in the faded cells of a line it does read.
+- Economy, luxuries: **a luxury the empire has not located is drawn ANONYMOUSLY, on purpose.**
+  `GuiResource` (:108-133) substitutes a placeholder in every drawn thing about it: `GetName` →
+  `UnknownLuxury`, `GetImage` → the single shared `UnknownLuxurySmall` texture, `GetColor` → the
+  `UnknownLuxury` colour; `ResourceItem.SetTooltipProperties` clears the tooltip's class and target
+  and writes `Gui.GetDescription(GuiResource.UnknownLuxuryName)` as its whole content. The model
+  still knows the slot is `Luxury1`, so a mod reading the model would name a resource the screen
+  refuses to show. **Mod policy**: the economy grid speaks that sentence and never the name.
 - Empire, the side panels: `EmpireDescriptionSidePanel` hangs its tooltips on the LABELS inside each
   group and on each icon — never on the group itself, so a group-level read finds nothing.
   `EmpireStatusSidePanel.PanelTitle` is the ONLY side-panel heading in the family that carries a
@@ -1241,6 +1282,31 @@ generic graduates to the generic docs.
   `OnSlotUnequipCb` to BOTH the empty frame and the fitted button. The category filter DIMS
   slots, so enabled ≠ will-take-this-module — `CanModuleBeBound` is the test, and the game's own
   drag re-enables the compatible ones.
+- **A ship slot draws three separate facts as wordless pictures, and the game has a title for each.**
+  `AgeWidgets.TextOf` answers empty on all three markers — the transforms hold only image children
+  (`Dot1`, `Dot2`, …), which is why the designer's first attempt to read them was dead code:
+  - **Effect multiplier** — `Slot.Definition.EffectMultiplier` → `GuiSlot.Multiplier`, drawn as 2, 3
+    or 4 DOTS (`SlotMultiplierx2/x3/x4`, shown at `== 2`, `== 3`, `>= 4` — `ShipDesignEditionSlotItem
+    .Bind` :82-84). The game's words: `%PanelFeatureSlotMultiplierTitle` = "{0} Multiplier",
+    description "{0} instances of the module are installed in this slot".
+  - **Symmetrical pairing** — `Slot.EditingListeners` → `GuiSlot.IsSymetrical`, drawn as the single
+    `SlotPairingFlag` circle. `%PanelFeatureSlotSymetricalTitle` = "Symmetrical (x2 cost)" — the
+    doubled COST is this flag's, while the dots multiply the module's effect.
+  - **Heavy mount** — `Slot.Definition.IsLargeSlot` → `GuiSlot.IsLarge`, with no marker at all: the
+    slot is simply drawn 1.3× bigger (`ShipDesignBaseSlotItem.Bind` :21-26; measured 57×57 against
+    its neighbours' 44×44). `%PanelFeatureSlotLargeTitle` = "Heavy Mount".
+
+  **A symmetrical pair can never be split by a re-sort, because only one of the pair is ever drawn**:
+  every `ListenerSlot` target is `IsEditable="false" IsHidden="true"` (25 listeners ↔ 25 hidden slots,
+  exact match, in `HullDefinitions[Balancing].xml` — the only file defining them),
+  `ShipDesignBasePanel.RefreshShipSlots` (:222) filters `IsHidden` before creating drawn items, and
+  fitting the driver copies the module into the hidden twin silently (`Slot.BindModule` →
+  `EditingListeners[i].BindModule(silentSlot: true)`). **Fixture limit**: multiplier and pairing exist
+  ONLY in `HullDefinitions[Balancing].xml` (12 `EffectMultiplier`, 25 `ListenerSlot`, and ZERO of
+  either across the other 19 hull files), so no faction hull in an ordinary game draws either marker
+  and the heavy mount is the only one of the three a normal game reaches. **Mod policy**: the three
+  are spoken on EMPTY slots only, at the end of the line — a filled slot's module tooltip already
+  ends with a "Slot Information" section drawing the multiplier.
 - **A drag can be COMMITTED without starting one**: fill
   `DragDropWindow.ShipDesignModuleDraggedItem` and call `ApplyDrop` — never `StartDragDrop`.
 - `ShipDesignItem.OnToggleCb` forces `State=true`, so there is no de-select click (null the
@@ -1286,6 +1352,14 @@ generic graduates to the generic docs.
   hand), and manpower upgrades have no `GuiElement` names at all.
 - The mini battle cards hide `PlayTitle` and their tooltip omits the name —
   `GuiBattlePlaySlot.Title` is the only source.
+- **The tactics deck window's two panels are asymmetric about captions.** The SET draws its own
+  `MyDeckGroup/PanelTitle` = "Tactics", with the tooltip "Displays all your selected tactics"; the
+  AVAILABLE list draws no caption of any kind, only
+  `%PlayCardDeckModalWindowAvailablePlayCardsCountTitle` ("4 tactics available"), which is a count
+  sentence and not a name. So one of the two stops is named by the game's own drawn word and the
+  other's name is necessarily the mod's (`tactics.available-panel` = "Available"). The panel name is
+  announced on arrival and never focused, so the caption's own tooltip has nowhere to live — the
+  parity cost of not declaring the caption as a row (owner ruling 2026-08-19).
 - Nine `EndBattleStatus` words; the realization labels are subjectless; the WatchBattle opt-outs
   are the game's own; the pre-roll is a raw-input gate; battle-speed keys are
   Plus/Minus/Asterisk/Pause, none of which the mod claims.
@@ -1512,6 +1586,16 @@ generic graduates to the generic docs.
   (F1-F8 screens), arrows, `KeypadEnter` end turn, `Space`/`Mouse2` scan view, `Return`/`Tab` chat,
   `KeypadMinus` sleep-for-this-turn, `Ctrl+F` search, `PageUp`/`PageDown` zoom, the debug chords, and
   the encounter camera's `Minus,KeypadMinus`/`Plus,KeypadPlus` speed keys — so `Ctrl+I` was free.
+- **`TopTitlePanel` is the only captioned cluster on the HUD.** It draws the view's own name over
+  the zoom/scan controls (`TitleLabel` = "Galaxy View" on the map), while the pinned-quest panel, the
+  notification strip and the top-left banner rows draw NO caption at all — measured on
+  `/gui/age?window=GameOverlayWindow`: `ControlBanner` holds only `ScreenTogglesTable`,
+  `EmpireBanner` only its three value areas plus `CurrentResearchArea`, and `StrategicsBanner` only
+  `ResourceItemsTable`. So every word naming those panels and rows is necessarily mod-authored (the
+  keys are listed in `interaction.md`), and the one cluster the game DOES caption is the one whose
+  mod word deliberately overrides it — "View Controls" over the drawn "GALAXY VIEW", because the
+  view's name says which page the player is on and the screen has already said that on arrival
+  (owner ruling 2026-08-19).
 - **The scan view is a MODE, not a view level**: `IsInNormalView` goes false and only
   `EndTurnWindow` survives, while `TopTitlePanel` keeps the lens-naming label even hidden.
   `ScanViewWindowCaptionsPanel` is a pool that does not clean up (surplus children stay fully
@@ -1717,6 +1801,17 @@ generic graduates to the generic docs.
   returns true for EVERY action and acts on none, so Escape cannot dismiss it and only its own two
   buttons can (Decline quits the game). The credit roll is 598 items and exits itself after
   ≈8.5 minutes.
+
+- **A `SettingItem` carries TWO tooltips and only one of them moves with the value.**
+  `SettingTitle.AgeTransform.AgeTooltip.Content` — what the setting IS — is written once at `Bind`
+  :33, while `CurrentSettingTooltip.Content` is rewritten for every value the setting lands on
+  (`SettingSliderItem.CurrentValue` :52-55, `SettingCheckBoxItem.Refresh` :50-53,
+  `SettingDropListItem.Refresh` :72-75, each also setting `DirtyTarget`). The options screen's
+  `OptionItem` has ONE tooltip, written at `Load` :23 and never rewritten. That difference is the
+  whole discriminator for which settings re-read the game's sentence after a change
+  (`SettingRows.SayValueTooltip` — helpers.md): the new-game lobby, the advanced settings modal and
+  the pause menu's settings panels all do, and the options screen deliberately does not, because
+  there the sentence has not changed and a re-read would repeat it on every keypress.
 
 - **A lobby has chat history the moment it becomes multiplayer**: switching Session Mode posts
   `%LobbyChatRenamed` through the chat service, so the log is never empty in a session that was

@@ -234,7 +234,11 @@ the `empire:` prefix on the detail tabs); `economy:luxuries/legend|items`,
 `population:politics/{intro,traits,reactions}`; `election:local/{title,trends,empire}`;
 `hero:ship/{characteristics,modules,figures}`; `troops:evolution/caption` + `/type/<i>`;
 the notification popup's top/bottom control regions (since 2026-08-19 those two regions live on a
-stop of their own, `notification:controls`, beside `notification:content`). ControlIds retired by
+stop of their own, `notification:controls` — the title-bar strip then the bottom bar, whatever
+buttons this popup added to it included — beside `notification:content`, which is the empire-info
+band then the body; focus still starts on the content and Tab wraps between the two. The popup
+declared no stop of its own before that split, building into the builder's auto `stop#0`).
+ControlIds retired by
 the rollout (per-stop
 cursor memory for them is gone): the ~25 caption rows converted to labels (each named in the batch
 reports in the session ledger), `hud:view-title/name` everywhere, the faction chooser's
@@ -243,6 +247,25 @@ reports in the session ledger), `hud:view-title/name` everywhere, the faction ch
 `tutorial:page/<i>`), and (2026-08-19) `tactics:available-count` and `tactics:deck-caption` — the
 deck editor's two stops are labelled instead ("Available" mod-worded, the set by its drawn
 "Tactics" caption). New walkable ids: `diplomacy:center` (whose ring is centred).
+**The galaxy view names its four PANELS** (2026-08-19) with `GraphBuilder.PushContext` levels, said
+once on arrival and never repeated while walking inside: Map (`galaxy.map-panel`), Quest
+(`hud.quest-panel`), Notifications (`hud.notifications-panel`) and View Controls
+(`hud.view-controls-panel`). Quest and Notifications ride the one shared `GlobalHud` contribution,
+so those two words are said on every one of the thirteen screens that draw those panels; "View
+Controls" is the galaxy's alone (gated on the zoom ladder no other page passes) and is the one name
+that overrides a word the game DRAWS — "GALAXY VIEW" on `TopTitlePanel`, owner ruling 2026-08-19,
+because the view's name says which page the player is on and the screen has already said that
+(es2-facts).
+**The shared HUD's empire stop carries a row region per drawn band**, on every page in the game:
+`hud:empire/{controls,key-resources,research,strategics}` (labelled Controls / Key Resources /
+Research — reusing `galaxy.research` — / Strategic Resources) plus the seven faction bands
+`hud:empire/{lifeforce,genes,singularities,golden-age,pirate-mark,honor,relics}` (Essence, Manage
+Population, Singularities, Golden Age, Pirate Mark, Keii, Relics — the game's own words except
+Singularities and Pirate Mark, which have no standalone title key in the corpus and ship as
+`hud.singularities-panel` / `hud.pirate-mark-panel`). No new stop and no new ControlIds: the regions
+are `PushContext` levels around each MEASURED row, the word riding on that row's cells, so a line two
+panels contribute to gets neither word nor key (`hud:empire/line/<n>`) rather than the leftmost
+contributor's.
 
 **Ctrl+I is the galaxy's INSPECT MODE** — a square of galaxy the player moves about the map and hears
 the contents of, instead of walking the tree (`GalaxyInspect` — `docs/helpers.md`). Ctrl+I is free in
@@ -252,7 +275,11 @@ its keys at MODE level, ahead of the review chords and of navigation (`Screen.An
 the cutscene uses, and the same displacement the map already lives with under an armed targeting
 cursor): **arrows** move the cell by exactly its own size, **Enter** lands on the one thing in the
 cell (silent for none or several), **Escape** leaves ("Exited inspect mode"), **`+`/`-`** grow and
-shrink it through 1/3/5/7/9/11 units. Every other key falls through untouched. **Ctrl+I only ARMS
+shrink it through 1/3/5/7/9/11 units. **The cursor opens at 1 by 1** (owner ruling 2026-08-19), and
+at either END of that ladder the size key is consumed and SILENT rather than repeating the size it
+could not change — the checkbox/slider refusal convention, applied to a mode's own adjust key. The
+size is remembered for the rest of the session, so a re-entry opens at whatever it was last set to.
+Every other key falls through untouched. **Ctrl+I only ARMS
 the mode — it is not a toggle**: pressed again while the cursor is up it is taken and does nothing,
 silently, on the same ruling as Enter on an empty cell (the key is pressed speculatively mid-sweep,
 and dropping the cursor there would cost the player the cell they were standing on). The three ways
