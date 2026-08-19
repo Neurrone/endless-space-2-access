@@ -1492,14 +1492,17 @@ namespace ES2Access.UI
 
         /// <summary>
         /// One slot: what is in it, what it will take, and the markers the game draws round its edge -
-        /// the module categories it is restricted to, the multiplier it applies, and the resource it
-        /// costs on top of the module.
+        /// the module categories it is restricted to, the multiplier it applies, whether it is mirrored
+        /// on the far side of the ship, whether it is a heavy mount, and the resource it costs on top of
+        /// the module.
         ///
         /// Filled, it is the module's name and nothing else, and a button that takes the module out;
         /// empty, it is the word "empty" and the markers, and no action, because that is what a click on
         /// it does. Either way it is where a carried module is put down, and it says so while one is
-        /// held. The markers are the SLOT's own facts, so on a filled slot they move out of the readout
-        /// and into the review buffer, where they cannot be mistaken for the module's.
+        /// held. The markers are the SLOT's own facts, so a filled slot does not read them out where
+        /// they would be mistaken for the module's - and all but the special cost it does not say at
+        /// all, because the module's own tooltip, already in this node's buffer, ends with the game's
+        /// own "Slot Information" section saying them (owner ruling, 2026-08-19).
         ///
         /// Keyed on the GuiSlot rather than on the item drawing it: the container pools its items and
         /// rebinds them on every refresh of the ship, so a cursor keyed on <c>Item000</c> would be
@@ -1657,8 +1660,14 @@ namespace ES2Access.UI
 
         /// <summary>
         /// The markers the game draws round a slot: the module categories it accepts (icons, one per
-        /// restriction), the multiplier it applies to whatever is fitted, and the resource the slot
-        /// itself costs.
+        /// restriction), the multiplier it applies to whatever is fitted, whether it is mirrored on the
+        /// far side of the ship, whether it is a heavy mount, and the resource the slot itself costs.
+        ///
+        /// Three of those five are drawn with no words at all - the multiplier is a row of DOTS, the
+        /// pairing is one circle, and a heavy mount is not marked AT ALL (the slot is simply drawn 1.3x
+        /// bigger, <c>ShipDesignBaseSlotItem.Bind</c> :21-26) - which is why reading their transforms'
+        /// text answered empty and the mod said nothing about any of them. Each is read from the fact
+        /// the game drew the picture FROM, and gated on the picture being drawn.
         ///
         /// Asked when the row is read rather than watched, because it walks the slot's definition.
         /// </summary>
@@ -1668,6 +1677,9 @@ namespace ES2Access.UI
             {
                 MessageBuilder message = new MessageBuilder();
                 Add(message, SlotCategories(slot));
+                Add(message, SlotMultiplier(slot));
+                Add(message, SlotPairing(slot));
+                Add(message, SlotHeavyMount(slot));
                 Add(message, SlotCosts(slot));
                 return message.Build();
             }
@@ -1700,14 +1712,61 @@ namespace ES2Access.UI
             return message.Build();
         }
 
-        /// <summary>The rest of what the game draws round the slot's edge: the multiplier it applies to
-        /// whatever is fitted, and the resource the slot itself costs on top of the module.</summary>
+        /// <summary>
+        /// How much of a fitted module's effect the slot applies, as the dots the game draws round the
+        /// slot say it: two, three or four of them (<c>ShipDesignEditionSlotItem.Bind</c> :82-84).
+        ///
+        /// The DOTS are the gate rather than the number, so the mod never states a multiplier the
+        /// player cannot see - and the number is the slot's own, which is what a fifth dot the game has
+        /// no picture for would still be. The words are the mod's, the one deviation from the game's
+        /// own in this band: see <see cref="ModStrings.ShipDesignSlotMultiplier"/>.
+        /// </summary>
+        private static string SlotMultiplier(ShipDesignEditionSlotItem slot)
+        {
+            if (
+                !Drawn(slot.SlotMultiplier2)
+                && !Drawn(slot.SlotMultiplier3)
+                && !Drawn(slot.SlotMultiplier4)
+            )
+            {
+                return null;
+            }
+
+            return ModStrings.Format(
+                ModStrings.ShipDesignSlotMultiplier,
+                Amplitude.Extensions.FloatExtensions.ToString(slot.GuiSlot.Multiplier)
+            );
+        }
+
+        /// <summary>Whether fitting this slot fits the mirrored one on the far side of the ship too,
+        /// in the game's own words for the fact ("Symmetrical (x2 cost)"), and only while the game is
+        /// drawing its flag.
+        ///
+        /// The twin itself is never a row of its own: every listener slot in the hull data is hidden
+        /// and <c>ShipDesignBasePanel.RefreshShipSlots</c> :222 filters those out before an item is
+        /// made for them, so the pair cannot be split by the grouping (<see cref="SlotOrder"/>) - there
+        /// is only ever one of it.</summary>
+        private static string SlotPairing(ShipDesignEditionSlotItem slot)
+        {
+            return Drawn(slot.SlotPairingFlag) ? Title("%PanelFeatureSlotSymetricalTitle") : null;
+        }
+
+        /// <summary>Whether the slot takes a heavy version of the module, in the game's own words for
+        /// it ("Heavy Mount").
+        ///
+        /// The only marker with no picture to gate on: the game draws a heavy mount by making the slot
+        /// 1.3x wider than the rest (<c>ShipDesignBaseSlotItem.Bind</c> :21-26), which is a size a
+        /// sighted player reads and a dump cannot, so the slot's own flag is the gate.</summary>
+        private static string SlotHeavyMount(ShipDesignEditionSlotItem slot)
+        {
+            return slot.GuiSlot.IsLarge ? Title("%PanelFeatureSlotLargeTitle") : null;
+        }
+
+        /// <summary>The resource the slot itself costs on top of the module, which the game draws as a
+        /// symbol beside the slot and keeps the words for on <c>GuiSlot.SpecialCost</c>.</summary>
         private static string SlotCosts(ShipDesignEditionSlotItem slot)
         {
             MessageBuilder message = new MessageBuilder();
-            Add(message, Marker(slot.SlotMultiplier2));
-            Add(message, Marker(slot.SlotMultiplier3));
-            Add(message, Marker(slot.SlotMultiplier4));
             if (slot.SpecialCostMarker != null && slot.SpecialCostMarker.Visible)
             {
                 Add(message, AgeText.Clean(slot.GuiSlot.SpecialCost));
@@ -1716,16 +1775,30 @@ namespace ES2Access.UI
             return message.Build();
         }
 
+        private static bool Drawn(AgeTransform marker)
+        {
+            return marker != null && marker.Visible;
+        }
+
+        /// <summary>The game's own words for a fact it drew as a picture, or nothing when the corpus
+        /// has no such string: the localizer hands an unknown key straight back, and a "%key" is text
+        /// the game never finished writing.</summary>
+        private static string Title(string key)
+        {
+            string title = AgeText.Clean(key);
+            return string.IsNullOrEmpty(title) || title[0] == '%' ? null : title;
+        }
+
         /// <summary>
-        /// What a FILLED slot has to say about itself that its name no longer does: the markers the game
-        /// draws round its edge - the multiplier it applies and the resource it costs on top of the
-        /// module.
+        /// What a FILLED slot has to say about itself that its name no longer does: the resource it
+        /// costs on top of the module.
         ///
-        /// NOT what it accepts, even though that is the other half of what the markers say: the module
-        /// in it carries the game's own tooltip, and that tooltip already ends with a "Slot Information /
-        /// Module Type Restriction" section listing exactly those categories (measured on the live
-        /// panel). The tooltip is in this node's buffer too, so a line of the mod's would be the same
-        /// sentence twice, one of them a paraphrase.
+        /// NOT what it accepts, nor its multiplier, its pairing or its mount size, even though those
+        /// are the rest of what the markers say: the module in it carries the game's own tooltip, and
+        /// that tooltip already ends with a "Slot Information" section listing exactly those
+        /// categories and drawing exactly those three markers (measured on the live panel; owner
+        /// ruling, 2026-08-19 - a filled slot changes nothing). The tooltip is in this node's buffer
+        /// too, so a line of the mod's would be the same sentence twice, one of them a paraphrase.
         ///
         /// Empty, the markers are in the readout already (<see cref="SlotMarkers"/>) and repeating them
         /// here would be the same words twice on one control.
@@ -1746,11 +1819,6 @@ namespace ES2Access.UI
             {
                 return null;
             }
-        }
-
-        private static string Marker(AgeTransform marker)
-        {
-            return marker == null || !marker.Visible ? null : AgeWidgets.TextOf(marker);
         }
 
         private static void Add(MessageBuilder message, string fragment)

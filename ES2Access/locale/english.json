@@ -350,6 +350,7 @@
   "ship-design.module-fitted": "Fitted {0}",
   "ship-design.module-removed": "Removed {0}",
   "ship-design.slot-empty": "empty",
+  "ship-design.slot-multiplier": "Times {0} Multiplier",
   "ship-design.remove-target": "Drop here to remove",
   "screen.fleet-selection": "Fleet selection",
   "tactics.slot-filled": "Put {0} in your Tactics Set",

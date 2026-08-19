@@ -859,6 +859,14 @@ namespace ES2Access.Core.Speech
         public const string ShipDesignModuleFitted = "ship-design.module-fitted";
         public const string ShipDesignModuleRemoved = "ship-design.module-removed";
         public const string ShipDesignSlotEmpty = "ship-design.slot-empty";
+
+        /// <summary>How much of a fitted module's effect a slot applies - the one slot marker whose
+        /// words are the mod's rather than the game's. The game draws the fact as two, three or four
+        /// DOTS and titles it "{0} Multiplier" (<c>%PanelFeatureSlotMultiplierTitle</c>), which read
+        /// aloud after the slot's other markers is a bare number in front of a noun; the phrase names
+        /// the multiplication instead (owner ruling, 2026-08-19). A complete phrase, so a translator
+        /// may put the number wherever the language needs it.</summary>
+        public const string ShipDesignSlotMultiplier = "ship-design.slot-multiplier";
         public const string ShipDesignRemoveTarget = "ship-design.remove-target";
 
         // The battle popups and the two cinematics. Everything a battle SAYS on screen is the game's
@@ -1467,6 +1475,7 @@ namespace ES2Access.Core.Speech
             { ShipDesignModuleFitted, "Fitted {0}" },
             { ShipDesignModuleRemoved, "Removed {0}" },
             { ShipDesignSlotEmpty, "empty" },
+            { ShipDesignSlotMultiplier, "Times {0} Multiplier" },
             { ShipDesignRemoveTarget, "Drop here to remove" },
             { ScreenHeroInspection, "Hero inspection" },
             { HeroSkillTrees, "Skill branches" },

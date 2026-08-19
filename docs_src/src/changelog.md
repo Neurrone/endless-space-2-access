@@ -36,6 +36,7 @@
 - Ship design: the statistics panel's module health figure is now called "Health Bonus" instead of announcing only its explanation and a bare number
 - Research screen: the branches and stages of the technology tree now say only their names ("Military", "Military I") — the researched-over-available counts in front of every group are gone
 - Star system and empire screens: queuing a construction now says what went into the queue ("Queued Interplanetary Transport Network"), instead of answering the key with silence
+- Ship design: an empty slot now reads the three markers the game only draws as pictures — "Times 2 Multiplier" for the dots that multiply a fitted module, "Symmetrical (x2 cost)" for a slot mirrored on the far side of the ship, and "Heavy Mount" for the slot the game only draws bigger. A filled slot is unchanged: its module's own tooltip already says all three
 
 ## V0.1.1
 
