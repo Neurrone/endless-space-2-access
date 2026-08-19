@@ -77,10 +77,47 @@ namespace ES2Access.Tests.UI
         {
             ReviewBufferManager buffers = Registered();
             buffers.SetVisible(new[] { Combat });
+            buffers.ReplaceLines(Ui, new[] { "New Game" });
+            buffers.ReplaceLines(Combat, new[] { "hit" });
 
             Assert.Equal(Combat, buffers.MoveBuffer(1).Key);
             Assert.Equal(Ui, buffers.MoveBuffer(1).Key);
             Assert.Equal(Combat, buffers.MoveBuffer(-1).Key);
+        }
+
+        [Fact]
+        public void SwitchingSkipsAVisibleBufferWithNothingInIt()
+        {
+            ReviewBufferManager buffers = Registered();
+            buffers.SetVisible(new[] { Notifications, Combat });
+            buffers.ReplaceLines(Ui, new[] { "New Game" });
+            buffers.ReplaceLines(Combat, new[] { "hit" });
+
+            // Notifications is reachable and empty: the cycle steps straight over it, both ways.
+            Assert.Equal(Combat, buffers.MoveBuffer(1).Key);
+            Assert.Equal(Ui, buffers.MoveBuffer(-1).Key);
+        }
+
+        [Fact]
+        public void SwitchingWithOnlyOneBufferHoldingAnythingLandsBackOnIt()
+        {
+            ReviewBufferManager buffers = Registered();
+            buffers.SetVisible(new[] { Combat });
+            buffers.ReplaceLines(Ui, new[] { "New Game" });
+
+            Assert.Equal(Ui, buffers.MoveBuffer(1).Key);
+            Assert.Equal(Ui, buffers.MoveBuffer(-1).Key);
+        }
+
+        [Fact]
+        public void SwitchingWithEveryBufferEmptyStaysWhereThePlayerIs()
+        {
+            ReviewBufferManager buffers = Registered();
+            buffers.SetVisible(new[] { Combat });
+
+            // Nowhere worth landing, so the cursor is left where it stood rather than stranded.
+            Assert.Equal(Ui, buffers.MoveBuffer(1).Key);
+            Assert.Equal(Ui, buffers.CurrentKey);
         }
 
         [Fact]
@@ -111,6 +148,7 @@ namespace ES2Access.Tests.UI
             ReviewBufferManager buffers = Registered();
             buffers.SetVisible(new[] { Combat });
             buffers.ReplaceLines(Ui, new[] { "New Game", "Start a new game" });
+            buffers.ReplaceLines(Combat, new[] { "hit" });
             buffers.MoveNextLine();
             buffers.MoveBuffer(1);
 

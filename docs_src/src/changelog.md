@@ -43,6 +43,7 @@
 - Galaxy map: inspect mode (Ctrl+I) now opens on a single square instead of a three by three one — press plus to widen it. Pressing plus or minus when the cursor is already at its largest or smallest now says nothing at all, instead of repeating the size you are already on
 - Notification pop-ups: the controls are now a Tab stop of their own, separate from what the notification says. Tab moves between reading the notification and working it — browsing to the next or previous one, popping this kind up automatically, minimizing and Done — so a long report is read to its end without the controls in the way, and they are one key away from anywhere in it
 - Battle tactics: the two lists now say which one you have tabbed into — "Available" for the tactics you can pick up, and "Tactics set" for the set below. The "4 tactics available" count row and the repeated "Tactics" caption row are gone
+- Review buffers: Ctrl+Left and Ctrl+Right now step over any buffer with nothing in it, so a single-player game no longer cycles through an empty chat log to get back to where it started
 - Ship design: an empty slot now reads the three markers the game only draws as pictures — "Times 2 Multiplier" for the dots that multiply a fitted module, "Symmetrical (x2 cost)" for a slot mirrored on the far side of the ship, and "Heavy Mount" for the slot the game only draws bigger. A filled slot is unchanged: its module's own tooltip already says all three
 
 ## V0.1.1
