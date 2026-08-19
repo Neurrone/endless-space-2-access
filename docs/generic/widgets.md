@@ -8,7 +8,14 @@ value exposes them as its drawn buttons — the gesture-parity pattern in
 ## The vocabulary
 
 One node factory per widget kind (see `src/graph-ui/GraphNodes.cs`), all built from the same
-parts, all text `Func<string>` resolved at speak time:
+parts, all text `Func<string>` resolved at speak time.
+
+**A control's kind is decided by its WIRING — what the game runs when it is clicked,
+adjusted or toggled — never by the layout around it.** A layout heuristic (captions
+present, row shape, piece count) may change how a control is grouped or named, but must
+never change whether it is a control: the same wired table line once read as a button
+under one caption style and as inert text under another, and the inert half was a
+keyboard-unreachable click.
 
 - **Checkbox** — activate toggles; a **live** Value part speaks checked/unchecked, so a
   game-driven flip under the cursor announces itself. A disclosure/expander — a tick whose

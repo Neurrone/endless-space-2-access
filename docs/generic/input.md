@@ -102,6 +102,10 @@ patch site per input path (`src/graph-ui/GameKeyStandDown.cs`, an exemplar to im
   flag covers the other ordering). It is also a different question from "did I handle it":
   a game-owned popup can need its back-handler run AND the key still visible to the
   engine, so the deny-predicate is never a mirror of the handler's return value.
+  **The order among the MOD's own claimers is a rule of its own**: when two mod-invented
+  surfaces are live at once — a mode of a widget and a live type-ahead search — Escape
+  ends the INNERMOST one and the next press ends the next; a hook asked before navigation
+  must decline the key while an inner surface holds it, or one press throws both away.
 - A key the mod deliberately leaves to the game can also be *made* to be consumed by the
   game's own authority: give the game's focus system a key-exclusive widget and its
   dispatcher swallows Escape itself (its mouse flows rely on this). Never depend on

@@ -105,6 +105,10 @@ affordance the mouse has is a separate, louder decision than withholding a name.
   state. A window measured correctly while its existence-gate goes unread is how a whole
   feature gets missed. There is often one central method listing every window's gate; find
   it first.
+- **When a report reads "X happens after Y", measure X without Y first.** Half of
+  "after Y" reports are coincidence, the negative control is one call, and every flag
+  hunted before it is run is spent on a cause that may not exist (a selection swap
+  blamed on a fleet having acted collapsed under one cancel with nothing spent).
 - **A measured constant can be a plateau, not a boundary.** A threshold observed once ("this
   zoom step draws the full label") can be true and still wrong as a limit. When a numeric
   threshold matters, find the game code that *compares* against it and read the limit from

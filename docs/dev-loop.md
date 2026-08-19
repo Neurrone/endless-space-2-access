@@ -190,9 +190,11 @@ the lines it produced — plus the measured rows/rects/assets), `/gui/graph?buff
 class sitting on `"default"` whose lines divorce a value from its caption is the defect to look
 for — but the prefab may already carry the caption as sibling labels, so read the DRAWN
 feature before believing the class; nothing about it shows in the spoken lines alone. `shown:false` on a focused node whose
-buffer stays empty despite a declared tooltip is the OTHER signature — the pointer was aimed with the 2-arg
-`AgeWidgets.Point`, which re-derives the tooltip from the control's own transform instead of using
-the one the screen resolved.
+buffer stays empty despite a declared tooltip is the OTHER signature — a mis-aimed pointer (the
+2-arg `AgeWidgets.Point`, re-deriving from the control's transform). The parity audit's "points at
+one that draws nothing" is a DIFFERENT finding with a different fix: it judges by the audit's own
+aim derivation — exact for control nodes since 1016af3, an approximation for drawn rows/cells — so
+confirm with `DevProbe.Tooltip()` before touching any pointing call.
 `/gui/graph` alone misleads here: it moves no pointer, so a renderer-drawn tooltip is
 undrawn and its buffer reads empty on a control that is fine live. `TooltipDelay(-1)` after.
 

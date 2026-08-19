@@ -240,6 +240,21 @@ generic graduates to the generic docs.
   fleet from `SelectFleetWhenViewReady`, a coroutine that waits out the 0.3 s slide. So the selection
   standing when the reveal arrives is the PREVIOUS answer; a landing that reads it immediately picks
   the wrong fleet whenever two fleets are parked at the same system (measured).
+- **Every targeting-mode cancel at a multi-fleet system hands the panel to the slot's FIRST
+  fleet** (measured 2026-08-20, keyboard Escape and mouse right-click byte-identical):
+  `ProbeLaunchingCursor.SwitchToGalaxyCursor` (:55-70) selects the DOCKING SLOT, not the origin
+  fleet; the arming hid the panel and `FleetsScreen.OnBeginHide` (:925-943) ran
+  `UnselectAllGarrisons`, so `FleetsScreen.RefreshGarrisonSelection` (:1116-1129) defaults
+  positionally — `Garrisons[0]`, or `[1]` past a Hangar. The actor's spent state is irrelevant
+  (control run: cancel with nothing launched swaps identically). This positional default owns
+  every "panel opened for the wrong fleet" symptom; Enter on a fleet's own row is correct in
+  every measured state. Known issue + fix options: `docs/fleet-selection-cancel-swap.md`.
+- **`FleetsScreen.OnBeginHide` removes garrisons with a forward loop and leaves a residue list**
+  (measured: `Garrisons=[1296]` still standing after the panel closed).
+- **`DockLabel.OnClick` accumulates duplicate subscribers** — `DockLabelsWindow.OnDockLabelClicked`
+  re-subscribes on every pooled `ShowLabel` (4 measured), so one dock-label click advances the
+  garrison cycle N times; at even cycle parity the mouse's click-cycling never changes the
+  selection at all.
 - **Every `GuiTableLine` in the game carries a `DoubleClickButton`** (`GuiTableLine.Bind` :96-99
   wires it to `OnLineDoubleClickCb` → the table client's `OnLineDoubleClick`) — measured: 14 lines
   live in `unlocked`, none without one. Only eight classes implement the handler

@@ -486,6 +486,43 @@ which no dump reveals. Key such lines on the game's *data* object, never the wid
   where the page names itself on arrival, reads its drawn controls, and Escape is verified —
   so even a deferred screen is never an entry into silence.
 
+## The spatial cursor — when the tree cannot answer "what is over there"
+
+A tree of a map answers "what things exist and what is next to which"; it cannot answer
+the question a sighted player settles at a glance — what lies in *that* direction, *that*
+far away, whether or not anything is there. Two games (Songs of Conquest's adventure map,
+ES2's galaxy — `soc-access` `TileSkipNavigator.cs`, ES2 `Core/UI/InspectGrid.cs` +
+`CellSkip.cs`, both unit-tested off-engine) independently converged on the same answer: a
+**cell cursor** — a square of map the arrows move, speaking position first and contents
+second. The rules both arrived at:
+
+- **The cell is a mode OF the map widget, not of the screen.** Off the map stop it
+  suspends (keeping place, size and its drawn square) rather than ends — a mode that
+  claims arrows screen-wide takes the screen's sliders with them. Anything that removes
+  the map ends the mode, and says so.
+- **Odd sizes only, step = the cursor's own size.** The centre stays a whole coordinate
+  pair and the cells tile: no strip of map is skipped or heard twice. An empty cell
+  speaks its coordinates and stops — the pair alone IS "nothing here", and a word for
+  empty would be most of what a sweep says.
+- **Absence the sighted player reads from a wash of color must be spoken explicitly.**
+  Fog-of-war is the type case: "nothing there" and "nobody has ever seen there" are
+  opposite answers that sound identical as silence.
+- **Refusals split by intent**: a key pressed speculatively mid-sweep (grow past the
+  ladder's end, act on an empty cell) refuses silently-but-consumed; a deliberate move
+  that cannot happen (off the map's edge) refuses with a word.
+- **Skip-to-the-next-difference** (Shift+arrow in both games): compute a **signature** of
+  the origin cell — the identity set of everything the cell's reading names, plus
+  bucketed states for continuous properties (three-state fog, never the raw count: a raw
+  count stops at every step along a gradient), coordinates excluded — then step cell by
+  cell and land on the first whose signature differs **from the origin**, not from the
+  predecessor. Nothing different all the way out lands on the last in-bounds cell; not
+  one step possible is the edge refusal. Say how many alike cells were passed, then read
+  the landing.
+- **Travel by contents** (jump to a lane's end, a crossing unit's destination): act only
+  when the answer is unambiguous, refuse silently otherwise, never exit the mode on a
+  refusal — and derive the answer only from what the map DRAWS for the player, never
+  from sim data, or the key leaks other players' information.
+
 ## Type-ahead search
 
 Typing finds controls. There is deliberately **no key that starts a search** — the first

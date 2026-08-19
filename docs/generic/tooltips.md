@@ -135,7 +135,9 @@ Rules that came out of shipping this, all hit in practice:
   anywhere in the row goes to the buffer; put every tooltip in the row into
   the row's buffer **in drawn order** (the heading's explanation first, then the value's
   dossier), so review follows the screen. Before picking which one to POINT AT, drop the
-  tooltips the engine could never draw anything for (no class, no content, no target):
+  tooltips the engine could never draw anything for (no class, no content, no target —
+  and note "never draws" and "draws" are different tests: a class-ONLY tooltip survives
+  this filter yet still renders nothing, so never judge an aim with the collector's test):
   prefabs hang empty ones on decoration, and a last-one-wins aim lands on them while the
   real tooltip beside them is never shown — invisible in speech, dump and buffer alike. "Last-drawn speaks" is the caption-then-value
   rule, not a universal: where the row is a card's own tooltip plus a badge's, the
@@ -161,7 +163,10 @@ Rules that came out of shipping this, all hit in practice:
 - **One implementation of the short/long test, shared with the lines reader.** Two copies
   of "are this tooltip's words on the widget" that disagree produce a tooltip announced
   from one source and reviewed from another — and nothing in the spoken output reveals
-  it. The mode test and the content reader must ask the same helper.
+  it. The mode test and the content reader must ask the same helper. The AIM obeys the
+  same law: a parity check asks the READING which tooltip it points at — it never
+  re-derives one from the widget tree, because the deepest prefab tooltip is often
+  decoration and the check then reports a defect on a screen whose pointer is correct.
 - **A hand-added announcement part of the tooltip kind is ADDITIVE, never a suppressor.**
   A screen may speak its own live line under the tooltip kind (a refusal reason on a
   blocked entry); the engine-derived part (a short tooltip's announced words) still
