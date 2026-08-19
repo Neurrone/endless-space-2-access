@@ -559,6 +559,11 @@ namespace ES2Access.Screens
             }
 
             builder.BeginStop(stop);
+            // The panel's own caption belongs to the same region as the family band under it - what this
+            // box is and what its columns are, the two things above the figures. Set BEFORE the heading
+            // rather than in the emitters, because a stop that regions everything except its first node
+            // is a stop where the jump key does nothing exactly where the player lands.
+            builder.SetRegion(stop + "/legend");
             bool named = AddHeading(builder, band, stop + "/heading");
             _grid.Clear();
             _gridHeaders.Clear();
@@ -809,6 +814,14 @@ namespace ES2Access.Screens
             }
 
             sheet.Finish();
+
+            // Tab into the box lands on a ROW of the table and not on the caption band above it, the
+            // same landing every other table in the mod has (<c>TableSheet.Rows</c>). The band is where
+            // the eye finds it - one Up from the first row - rather than three nodes the player walks
+            // through on the way in, which is what made it read as a list of headings in front of the
+            // table instead of the table's own headings (owner-reported, 2026-08-19). The headings
+            // themselves have been the crossed EDGE all along, and still are.
+            builder.LandStopOn(sheet.FirstRow);
             builder.SetRegion(null);
         }
 

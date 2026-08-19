@@ -50,6 +50,7 @@
 - Changing a game setting now says the game's own sentence about the value you have moved to, not just its name — "Slow, A slow-paced game takes about 450 turns maximum" instead of "Slow". This covers the new game lobby, its advanced settings, and the settings panels in the pause menu; the options screen is unchanged, because its sliders and tick boxes keep one description whatever they are set to
 - Mod manager: the mods library now reads as a "Filters" section holding the folder switches on one row, followed by an "Available" section with the library's contents one per row, matching the constructibles pattern
 - The top-left corner of every screen: Alt+Up and Alt+Down now jump between its rows — Controls, Key Resources, Research, Strategic Resources, and the faction rows below them — instead of only naming them
+- Economy screen: tabbing into the luxury resources now lands on the first line of the table rather than above its family headings, so you reach the figures straight away. The headings are still one press of Up away, and moving down from one lands in that family's column
 
 ## V0.1.1
 
