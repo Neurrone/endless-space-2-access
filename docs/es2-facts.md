@@ -268,13 +268,14 @@ generic graduates to the generic docs.
   child each frame to between 0.25 and 1 — the fade over the cards near either edge of the viewport —
   so a faded card is a real card and no card ever reads 0.
 - **`GraphNavigator.Alternate` speaks the node's `StateText`.** A node built by a factory that
-  supplies one (radio, checkbox, slider) answers Alt+Enter with the word for the PRIMARY action:
-  the quest card's Alt+Enter pinned a quest and said "selected". A node with two activations has to
-  own its `StateText` and answer for whichever one just ran — which is a wrapper the journal's card
-  carried until the pin became a node of its own. **The real lesson is the one above it**: the card had
-  no modified click in the game at all, so the second activation was invented, and the honest fix was
-  to declare the control the card DRAWS (`QuestCard.PinToggle`) as a child node and leave Alt+Enter
-  unwired. The game names that action, though never on the toggle: `%NotificationQuestBegunPinTitle`
+  supplies one (radio, checkbox, slider) answers the alternate-click chord with the word for the
+  PRIMARY action: the quest card's alternate click pinned a quest and said "selected". A node with two
+  activations has to own its `StateText` and answer for whichever one just ran — which is a wrapper the
+  journal's card carried until the pin became a node of its own. **The real lesson is the one above
+  it**: the card had no modified click in the game at all, so the second activation was invented, and
+  the honest fix was to declare the control the card DRAWS (`QuestCard.PinToggle`) as a child node and
+  leave the chord unwired. (The chord itself was Alt+Enter until 2026-08-19 and is now
+  Ctrl+Shift+Enter — `docs/interaction.md`.) The game names that action, though never on the toggle: `%NotificationQuestBegunPinTitle`
   ("Pin Quest"), the button the quest-begun notification offers for the same thing, with
   `%NarrativeScreenActiveQuestPinDescription` as the toggle's own tooltip.
 - **Two controls that name the same backing object are one control to the cursor.**

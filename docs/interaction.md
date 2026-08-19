@@ -79,8 +79,8 @@ alone, which is complete rather than a gap: entering a system swaps the cursor t
 
 **ES2 key map, in one place** (defaults in `ModEntry.BindKeys`; the generic table is
 `docs/generic/input.md`). On top of arrows/Tab/Enter/Backspace/Escape/Home/End, Alt+arrows and
-the Ctrl review chords: **Shift+Left/Right** coarse slider step, **Alt+Enter** the control's other
-activation (queue at the head), **Backslash** the control's right-click command
+the Ctrl review chords: **Shift+Left/Right** coarse slider step, **Ctrl+Shift+Enter** the control's
+other activation — the game's ALT-click (queue at the head) — **Backslash** the control's right-click command
 (`NodeVtable.OnContextual`), **Ctrl+Backslash** the game's Ctrl+right-click — the SAME `Contextual`
 action bound as a second chord, never a wired variant, because the game runs one handler for both
 clicks and reads the physical modifier inside it (on the map: a free-movement-only route,
@@ -90,13 +90,28 @@ clicks and reads the physical modifier inside it (on the map: a free-movement-on
 of the game's own selection (`OnSelectToggle`), **Shift+Enter** extend that selection to here
 (`OnSelectRange`). There is NO reorder chord: moving an item within its list is a drag like any other.
 **Each of those keys means the game's own gesture and nothing else** — Backslash is the right click,
-Alt+Enter the Alt-click, Ctrl+Enter the Ctrl-click, Ctrl+Alt+Enter the second click. The three
-modified LEFT clicks (Alt+Enter, Ctrl+Enter, Shift+Enter) **fall back to the control's plain click**
+Ctrl+Shift+Enter the Alt-click, Ctrl+Enter the Ctrl-click, Ctrl+Alt+Enter the second click.
+**The Alt-click is the one chord whose keys are not its gesture's, and that is deliberate**: Alt+Enter
+is Unity's own built-in fullscreen toggle, handled inside the player's D3D11 window code below every
+managed layer, so the mod's claim never reaches it and the window resizes on every press. Nothing
+suppressible reaches it either — boot flags, a window subclass, DXGI's `MakeWindowAssociation` were
+all checked and rejected (bug 17) — so the gesture moved to Ctrl+Shift+Enter, which the game binds
+nothing to (its only Ctrl+Shift chords are two debug ones) and which keeps the family: every modified
+click is still a modified Enter. Owner ruling 2026-08-19.
+The three
+modified LEFT clicks (Ctrl+Shift+Enter, Ctrl+Enter, Shift+Enter) **fall back to the control's plain click**
 where the screen wires no handler of their own (`KeyGraph.ModifiedClick`): the player is physically
 holding the modifier, so replaying the click is what lets the GAME's handler branch on it —
-Ctrl+click to locate a technology, Alt+click to queue at the head — with no per-screen wiring, and a
+Ctrl+click to locate a technology — with no per-screen wiring, and a
 handler that ignores modifiers just does its ordinary thing, exactly as a modified mouse click would.
 A wired slot stays an OVERRIDE, for the controls where the game runs a genuinely different handler.
+**The Alt-click's fall-back is the exception the move cost us**: the modifier the player now holds is
+Ctrl+Shift, so a game handler reading `Input.IsAltKeyDown()` inside its own click no longer sees it.
+The two queues are unaffected because both wire `OnAlternate` and move the item themselves
+(`ResearchScreen.Queue`, `SystemPanels.QueueConstruction`); the game's other Alt-clicks —
+`PlanetCard`/`PlanetLabelsWindow_SystemManagement` (a curiosity expedition at the head) and
+`NotificationItemsWindow.OnCloseAllCb` (dismiss-all, whose Shift branch the new chord would take
+instead) — must be WIRED if they are ever declared, never left to the fall-back.
 Backslash and Ctrl+Alt+Enter keep absent-means-silent: a right click or a second click that does not
 exist has nothing to replay. On a `GuiTable` row, the second click is wired by `TableSheet` for EVERY
 table and every cell of a row (its `DoubleClickButton`, the row selected first because the game's
@@ -300,7 +315,7 @@ otherwise do nothing at all. Escape is never offered to it and stays the game's.
 
 Backslash and every Enter chord are claimed on every mod screen. **Backslash and Ctrl+Alt+Enter are
 SILENT where the control has no such command** — pressed speculatively all over a page, a cue on
-each is noise; silent but consumed, never a fall back. Alt+Enter, Ctrl+Enter and Shift+Enter DO fall
+each is noise; silent but consumed, never a fall back. Ctrl+Shift+Enter, Ctrl+Enter and Shift+Enter DO fall
 back to the control's plain click (above), and are silent-and-consumed only where the control has no
 click either. Space while something is carried is the same: consumed on a control that will not take
 it, silent, carry kept.

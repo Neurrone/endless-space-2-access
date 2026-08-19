@@ -51,6 +51,7 @@
 - Mod manager: the mods library now reads as a "Filters" section holding the folder switches on one row, followed by an "Available" section with the library's contents one per row, matching the constructibles pattern
 - The top-left corner of every screen: Alt+Up and Alt+Down now jump between its rows — Controls, Key Resources, Research, Strategic Resources, and the faction rows below them — instead of only naming them
 - Economy screen: tabbing into the luxury resources now lands on the first line of the table, so you reach the figures straight away
+- The Alt-click chord has moved from `Alt+Enter` to `Ctrl+Shift+Enter`. `Alt+Enter` is Unity's own fullscreen switch, below anything the mod can take a key off, so pressing it resized the game window as well as doing what you asked. `Ctrl+Shift+Enter` now does everything `Alt+Enter` did — queuing a construction or a technology at the head of its queue, and every other place the game gives a click an Alt variant
 - A control's description now reaches the review buffer one frame sooner after you arrow onto it. If it still feels slow, raise the frame rate limit in the game's video options — the wait is a fixed number of frames, so a 20 frame per second cap makes it five times longer than the game's default does
 
 ## V0.1.1

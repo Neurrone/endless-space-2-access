@@ -393,11 +393,24 @@ namespace ES2Access
             input.Register(UiActions.Next).Bind(KeyCode.Tab).Repeating();
             input.Register(UiActions.Prev).Bind(KeyCode.Tab, shift: true).Repeating();
             input.Register(UiActions.Activate).Bind(KeyCode.Return).Bind(KeyCode.KeypadEnter);
-            // The other thing Enter could have meant, on the controls that have one - Alt and Enter,
-            // because Alt and a click is what the game itself puts it on.
+            // The other thing Enter could have meant, on the controls that have one - the game's own
+            // ALT-click (queue at the head of a queue, and every other modified click it reads Alt
+            // for). It is NOT on Alt and Enter, which is what the gesture it stands for would want:
+            // Alt+Enter is Unity's own built-in fullscreen toggle, handled inside the player's D3D11
+            // window code below every managed layer, so the mod's claim never reaches it and the
+            // window resizes on every press. Nothing suppressible reaches it (boot flags, a window
+            // subclass, DXGI's MakeWindowAssociation - all rejected, bug 17), so the chord moved to
+            // Control+Shift+Enter, which the game binds nothing to and which keeps the family: every
+            // modified click is still a modified Enter (owner ruling 2026-08-19).
+            //
+            // The cost of the move, and the reason the screens that HAVE an alt-click wire
+            // OnAlternate rather than leaning on the fall-back: the plain-click fall back replays the
+            // click with whatever the player is physically holding, and what they are holding is now
+            // Control and Shift, not Alt. A game handler reading Input.IsAltKeyDown() inside its own
+            // click no longer sees it.
             input.Register(UiActions.Alternate)
-                .Bind(KeyCode.Return, alt: true)
-                .Bind(KeyCode.KeypadEnter, alt: true);
+                .Bind(KeyCode.Return, ctrl: true, shift: true)
+                .Bind(KeyCode.KeypadEnter, ctrl: true, shift: true);
             input.Register(UiActions.Secondary).Bind(KeyCode.Backspace);
             // The right click, which in this game is a command in its own right rather than a menu.
             // Claimed on every screen of ours, because it always answers - with the control's command
