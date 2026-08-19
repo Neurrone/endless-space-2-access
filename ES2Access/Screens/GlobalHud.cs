@@ -309,6 +309,21 @@ namespace ES2Access.Screens
         /// before any of it is declared. Four panels contribute to it and none of them knows about
         /// the others, so where their lines fall relative to each other is a question only this can
         /// answer - and it answers it by looking.
+        ///
+        /// EACH ROW IS ITS OWN REGION (owner ruling, 2026-08-19). This is the first stop on every
+        /// page in the game, and it is four unrelated things stacked in one corner: the strip that
+        /// opens the game's screens, the three totals the empire is spending, what is being
+        /// researched, and the stockpiles. Walked as one flat stop, the eighth screen icon and the
+        /// first total were neighbours with nothing between them saying the player had crossed from
+        /// one thing to another. So the rows carry the levels, announced on the way in and not on
+        /// every node, which is the shape the galaxy's own panels already have.
+        ///
+        /// The names are the mod's own: the game draws these banners as icons and figures with no
+        /// caption anywhere on them (measured - <c>ControlBanner</c>, <c>EmpireBanner</c> and
+        /// <c>ResourcesPanel</c> hold tables and value areas and no label of their own), so there is
+        /// no game word to prefer. A row nothing has named - the faction panels the game stacks
+        /// underneath for the empires that have them - is declared exactly as it was, with no level
+        /// at all, rather than under a word this file invented for it.
         /// </summary>
         public void Empire(GraphBuilder builder)
         {
@@ -320,15 +335,29 @@ namespace ES2Access.Screens
             }
 
             List<Cell> cells = new List<Cell>();
+            int from = cells.Count;
             AddScreenToggles(cells, window.ControlBanner);
+            Name(cells, from, ModStrings.Get(ModStrings.HudControlsPanel));
+            from = cells.Count;
             AddTotals(cells, window.EmpireBanner, empire);
+            Name(cells, from, ModStrings.Get(ModStrings.HudKeyResourcesPanel));
+            from = cells.Count;
             AddResearch(cells, window.EmpireBanner, empire);
+            Name(cells, from, ModStrings.Get(ModStrings.GalaxyResearch));
+            from = cells.Count;
             AddStockpiles(cells, window.StrategicsBanner);
+            Name(cells, from, ModStrings.Get(ModStrings.HudStrategicResourcesPanel));
             AddFactionPanels(cells, window);
 
             builder.BeginStop(EmpireStop);
             foreach (List<Cell> row in AgeLayout.Rows(cells, CellWidget))
             {
+                string named = RowName(row);
+                if (named != null)
+                {
+                    builder.PushContext(named);
+                }
+
                 builder.StartRow();
                 foreach (Cell cell in row)
                 {
@@ -336,7 +365,42 @@ namespace ES2Access.Screens
                 }
 
                 builder.EndRow();
+                if (named != null)
+                {
+                    builder.PopContext();
+                }
             }
+        }
+
+        /// <summary>Name the cells one contributor has just added, so that the row they fall into can
+        /// say what it is. Applied AFTER the contributor rather than passed into it: which panel a
+        /// cell came from is this method's own knowledge, and the helpers that read the banners have
+        /// no business carrying a word about the player's ear.</summary>
+        private static void Name(List<Cell> cells, int from, string named)
+        {
+            for (int i = from; i < cells.Count; i++)
+            {
+                cells[i].Row = named;
+            }
+        }
+
+        /// <summary>What a row is called - which is a question about the whole row and not about its
+        /// first cell. The rows fall out of the RECTANGLES, so nothing here can promise that one
+        /// contributor's cells are a row of their own; a line that has picked up cells from two of
+        /// them is a line no single word describes, and it is declared with no level rather than under
+        /// the name of whichever cell happened to be leftmost.</summary>
+        private static string RowName(List<Cell> row)
+        {
+            string named = row.Count == 0 ? null : row[0].Row;
+            for (int i = 1; i < row.Count; i++)
+            {
+                if (row[i].Row != named)
+                {
+                    return null;
+                }
+            }
+
+            return named;
         }
 
         /// <summary>
@@ -457,6 +521,10 @@ namespace ES2Access.Screens
             public AgeTransform Widget;
             public ControlId Id;
             public NodeVtable Vtable;
+
+            /// <summary>What the row this cell lands in is called, or null where nothing has named it
+            /// (<see cref="RowName"/>).</summary>
+            public string Row;
         }
 
         private static readonly Func<Cell, AgeTransform> CellWidget = cell => cell.Widget;

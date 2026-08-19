@@ -550,6 +550,14 @@ namespace ES2Access.Core.Speech
         public const string HudNotificationsPanel = "hud.notifications-panel";
         public const string HudViewControlsPanel = "hud.view-controls-panel";
 
+        // The rows of the empire cluster in the top-left corner, which is the first Tab stop on every
+        // page in the game. Four unrelated things are stacked there and the game captions none of
+        // them, so each row's name is the mod's own (owner wordings, 2026-08-19). The research row is
+        // named by the word it already used, GalaxyResearch.
+        public const string HudControlsPanel = "hud.controls-panel";
+        public const string HudKeyResourcesPanel = "hud.key-resources-panel";
+        public const string HudStrategicResourcesPanel = "hud.strategic-resources-panel";
+
         // The pause menu's icon-only toggle, and the word for a settings panel the game will only
         // show, not let you change.
         public const string GameMenuGameSettings = "gamemenu.game-settings";
@@ -1372,6 +1380,9 @@ namespace ES2Access.Core.Speech
             { HudQuestPanel, "Quest" },
             { HudNotificationsPanel, "Notifications" },
             { HudViewControlsPanel, "View Controls" },
+            { HudControlsPanel, "Controls" },
+            { HudKeyResourcesPanel, "Key Resources" },
+            { HudStrategicResourcesPanel, "Strategic Resources" },
             { GameMenuGameSettings, "Game settings" },
             { GameMenuReadOnlySettings, "read only" },
             { LoadSaveSaveName, "Save name" },
