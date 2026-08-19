@@ -32,6 +32,7 @@
 - The luxury and strategic resource grids (economy screen and recipe dialog) read as a legend of resource families followed by one resource per row, each saying its family; the recipe dialog's family names are fixed ("Industry" instead of "Improves Industry Food")
 - Tutorial pop-ups are now a list of pages: moving up and down turns the game's own pages and reads them, so the previous/next page buttons are gone. The minimized bar is a labelled "Tutorial" panel reading its title, then Minimize, then Close
 - The screen title's close button is no longer in the tab order — press Escape to close a screen instead. On the galaxy map, the view title now labels the panel holding the zoom and scan controls
+- Ship design: the statistics panel's module health figure is now called "Health Bonus" instead of announcing only its explanation and a bare number
 
 ## V0.1.1
 

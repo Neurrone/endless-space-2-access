@@ -1095,11 +1095,17 @@ namespace ES2Access.UI
         /// titled after the property it reads (<c>%ShieldTitle</c> = "Shield power", from
         /// <c>SimulationProperties.Ship.Shield</c>).
         ///
-        /// One row has NO title anywhere in the game's strings - the plating health bonus - so it
-        /// passes a null key and is named by the first line of its own description, which is then not
-        /// announced twice. A mod paraphrase is not an option, and the title of the property it
-        /// actually reads (<c>SimulationProperties.Ship.ShipHealth</c> -> <c>%ShipHealthTitle</c>) is
-        /// the word "Health", which is already the caption of the ship's own health two rows up.
+        /// One row has no title under its own name - the plating health bonus, which the panel writes
+        /// from <c>GuiShipDesign.HealthBonus</c> and explains with <c>%PlatingHealthBonusDescription</c>,
+        /// "The cumulative health bonus given by modules." Unnamed it announced that sentence and then a
+        /// bare number, which says what the figure means and never what it is. It is named from
+        /// <c>%PanelFeatureModuleEffectsDefenseHealthTitle</c> = "Health Bonus", which is the game's own
+        /// caption for the effect this row is the sum OF: a defence module's <c>SectionHealthBonus</c> is
+        /// listed under exactly that title in the module tooltip every one of these modules carries
+        /// (<c>Public\Gui\Miscellaneous\PanelFeatureModuleEffectsDefinition.xml</c> :98,155). The title
+        /// of the property it reads (<c>SimulationProperties.Ship.ShipHealth</c> -> <c>%ShipHealthTitle</c>,
+        /// via the <c>ShipHealth</c> GuiElement) is the bare word "Health", which is already the caption
+        /// of the ship's own health two rows up and would put the same word on two different numbers.
         /// </summary>
         private static void AddCombatStats(
             List<Cell> cells,
@@ -1172,7 +1178,13 @@ namespace ES2Access.UI
                 declared
             );
             AddStat(cells, panel.EvasionLevelLabel, "%EvasionTitle", keyPrefix + "evasion", declared);
-            AddStat(cells, panel.PlatingHealthBonusLabel, null, keyPrefix + "plating-health", declared);
+            AddStat(
+                cells,
+                panel.PlatingHealthBonusLabel,
+                "%PanelFeatureModuleEffectsDefenseHealthTitle",
+                keyPrefix + "plating-health",
+                declared
+            );
             AddStat(
                 cells,
                 panel.PlatingAbsorptionLabel,
