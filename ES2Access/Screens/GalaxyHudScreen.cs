@@ -4381,6 +4381,32 @@ namespace ES2Access.Screens
             }
         }
 
+        /// <summary>
+        /// Where a fleet under way is heading, or null while it is parked - the ONE thing the map
+        /// exposes about a fleet's journey, and the very thing this tree files a fleet in transit
+        /// under (<see cref="Bound"/>, <see cref="FreeMovingAt"/>).
+        ///
+        /// Shared with the inspect cursor's travel key, which must not read any more of a route than
+        /// this: the current leg's goal is drawn - the fleet is animated along it, and its own row
+        /// says it - while the rest of a foreign fleet's plan is the simulation's and not the
+        /// player's. One accessor, so that "what the map exposes" cannot drift between the two
+        /// readers.
+        /// </summary>
+        internal static GameNode DestinationOf(Fleet fleet)
+        {
+            try
+            {
+                return GoalOf(
+                    Amplitude.Unity.Framework.Services.GetService<IPositioningService>(),
+                    fleet
+                );
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
         /// <summary>The node a fleet's current leg is flying to, or null while it is not under way.
         /// </summary>
         private static GameNode GoalOf(IPositioningService positioning, Fleet fleet)

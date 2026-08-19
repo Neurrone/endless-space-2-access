@@ -79,7 +79,10 @@ alone, which is complete rather than a gap: entering a system swaps the cursor t
 
 **ES2 key map, in one place** (defaults in `ModEntry.BindKeys`; the generic table is
 `docs/generic/input.md`). On top of arrows/Tab/Enter/Backspace/Escape/Home/End, Alt+arrows and
-the Ctrl review chords: **Shift+Left/Right** coarse slider step, **Ctrl+Shift+Enter** the control's
+the Ctrl review chords: **Shift+Left/Right** coarse slider step — and, while the galaxy's inspect
+cursor is driving the map, that mode's skip instead, since a coarse step means nothing on a map
+(below); **Shift+Up/Down** and **Alt+Left/Right** are the inspect cursor's alone and are inert
+everywhere else — **Ctrl+Shift+Enter** the control's
 other activation — the game's ALT-click (queue at the head) — **Backslash** the control's right-click command
 (`NodeVtable.OnContextual`), **Ctrl+Backslash** the game's Ctrl+right-click — the SAME `Contextual`
 action bound as a second chord, never a wired variant, because the game runs one handler for both
@@ -208,8 +211,11 @@ consumed and silent. A system opened BY travel is **collapsed on the way out** (
 and one the player opened is left alone — and neither runs the collapse's own un-zoom, since travel
 scripts the camera itself. The trail survives an excursion to another screen (the page keeps its
 state on pop) and dies with the game instance. A lane into the dark is a silent leaf under Right.
-Fleets on a LANE hang under BOTH end systems, after the parked ones, each saying which lane and which
-bearing off the same lane list the lane nodes number themselves from; a fleet crossing OPEN SPACE
+A fleet on a LANE hangs under the end it is heading FOR, after the parked ones, saying which lane and
+which bearing off the same lane list the lane nodes number themselves from (`GalaxyHudScreen.Bound`,
+2026-08-16: the map draws where a fleet is going and never where it came from, so a lane fleet in
+transit is filed like a free mover); one STOPPED between two stars is heading for neither end and
+keeps its row under both; a fleet crossing OPEN SPACE
 hangs under its DESTINATION only — the map draws where a fleet is going and never where it came from
 (es2-facts) — and one whose destination is unperceived gets a top-level row instead, walked into the
 system list by its own pair. **The systems stop is ONE region, not two**: colonies are not split off
@@ -277,7 +283,8 @@ its keys at MODE level, ahead of the review chords and of navigation (`Screen.An
 the cutscene uses, and the same displacement the map already lives with under an armed targeting
 cursor): **arrows** move the cell by exactly its own size, **Enter** lands on the one thing in the
 cell (silent for none or several), **Escape** leaves ("Exited inspect mode"), **`+`/`-`** grow and
-shrink it through 1/3/5/7/9/11 units. **The cursor opens at 1 by 1** (owner ruling 2026-08-19), and
+shrink it through 1/3/5/7/9/11 units, **Shift+arrows** go to the next INTERESTING cell and
+**Alt+Left/Right** travel by what the cell holds. **The cursor opens at 1 by 1** (owner ruling 2026-08-19), and
 at either END of that ladder the size key is consumed and SILENT rather than repeating the size it
 could not change — the checkbox/slider refusal convention, applied to a mode's own adjust key. The
 size is remembered for the rest of the session, so a re-entry opens at whatever it was last set to.
@@ -303,6 +310,31 @@ else. `+` is THREE chords — bare Equals, Shift+Equals and KeypadPlus (plus `Ke
 the matcher is exact-modifier and "+" is Shift and the equals key on most layouts. The mode cannot
 outlive the page: anything that takes the player off the map ends it, and the line saying so is
 spoken from the pump once the arriving page's announcement burst has gone quiet.
+
+**Shift+arrows go to the next INTERESTING cell** (2026-08-19; `CellSkip` — `docs/helpers.md`): the
+same cells the plain arrow walks, in the same steps, stopping at the first one that is not what the
+player is standing on — where "what" is the identity of everything the cell's reading names plus a
+three-state fog bucket, and never the coordinates. Running off the map lands on the last cell still
+on it; a walk with not one step possible says "Map edge", the plain arrow's own refusal. Cells passed
+over are counted and said FIRST ("Skipped 12 tiles") and only where there were any, ahead of the
+landing's ordinary cell reading. The chords are **Shift+Left/Right — the existing coarse-step actions,
+taken by the mode rather than double-bound** (a coarse step means nothing on the map stop, and the
+zoom slider that chord really adjusts is a stop of its own, where the mode is suspended and keeps its
+own coarse step) — plus two new actions on **Shift+Up/Down**, all four repeating.
+**Alt+Left/Right travel by what the cell holds**, non-repeating, and each ACTS whenever there is no
+ambiguity and is otherwise taken and silent: **Alt+Left** goes to the westmost end of the ONE lane in
+the cell — the end the cell's own sentence names first — whether or not fleets are there, since a
+fleet has no exposed origin at all; **Alt+Right** goes to where the in-transit fleets in the cell are
+going (one fleet, or several agreeing, beats the lane it rides), and falls back to that one lane's
+eastmost end where no fleet in the cell offers a destination. The destination is the current leg's
+goal alone (`GalaxyHudScreen.DestinationOf`), which is the very thing the tree files an in-transit
+fleet under: **no foreign fleet's route is ever read out of sim data the map does not draw** (owner
+ruling 2026-08-19), and a fleet whose destination the map does not name contributes no candidate and
+blocks none. A lane with one end in the dark has a first end and no second, so Alt+Left travels and
+Alt+Right is silent. Every landing is the scanner-style arrival on the target's ROUNDED pair —
+camera, square, cell reading — and NO refusal ever exits the mode. The four arrow KeyCodes are
+already claimed from the game outright, so none of the six chords needed a new claim (measured with
+`DevProbe.Chord`); off the map, and with no cursor up, all six are unconsumed and do nothing.
 
 **The galaxy's SCANNER is on the Page keys with a modifier, and it is NOT a mode** — no arm key,
 nothing to exit, Escape never touches it; the chords are live for as long as the tree cursor stands

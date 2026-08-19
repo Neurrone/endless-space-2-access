@@ -18,6 +18,19 @@ namespace ES2Access.UI.Input
         public const string InspectGrow = "galaxy.inspectGrow";
         public const string InspectShrink = "galaxy.inspectShrink";
 
+        // GO TO THE NEXT INTERESTING CELL, north and south. The east-west pair of the same gesture is
+        // not here: Shift and the side arrows are already the coarse step (<see cref="UiActions"/>),
+        // which means nothing on a map, so the inspect cursor takes those two actions instead of
+        // double-binding the chord.
+        public const string InspectSkipNorth = "galaxy.inspectSkipNorth";
+        public const string InspectSkipSouth = "galaxy.inspectSkipSouth";
+
+        // TRAVEL BY WHAT THE CELL HOLDS: west along the one lane here, or east to where the fleets
+        // here are going (<see cref="ES2Access.Screens.GalaxyInspect"/>). Keys of the inspect cursor
+        // and of nothing else - off the map, and with no cursor up, they do nothing at all.
+        public const string InspectFollowWest = "galaxy.inspectFollowWest";
+        public const string InspectFollowEast = "galaxy.inspectFollowEast";
+
         // The SCANNER - "what is near me, of this kind" (<see cref="ES2Access.Screens.GalaxyScanner"/>).
         // Three tiers, each on the same pair of keys with a different modifier: the kind of thing, the
         // way of looking at that kind, and one thing at a time. They are not a mode - nothing arms them

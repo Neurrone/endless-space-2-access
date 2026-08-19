@@ -487,6 +487,30 @@ namespace ES2Access
                 .Bind(KeyCode.Minus)
                 .Bind(KeyCode.KeypadMinus)
                 .ClaimedWhile(ES2Access.Screens.GalaxyInspect.KeysClaimed);
+            // Go to the next INTERESTING cell - a whole stretch of unchanging map crossed in one
+            // press. Shift and an arrow, which is where "the bigger version of this move" already
+            // lives: east and west are the coarse-step actions above, which the cursor takes for
+            // itself while it is driving the map (a coarse step means nothing there), so only the
+            // two vertical chords need declaring. Repeating, like the coarse step they join.
+            //
+            // No conditional claim: the arrows are claimed from the game outright for ordinary
+            // navigation and a claim is per key code, so these chords are already the mod's wherever
+            // one of its screens is focused. What keeps them harmless everywhere else is that
+            // nothing but the inspect cursor answers them.
+            input
+                .Register(MapActions.InspectSkipNorth)
+                .Bind(KeyCode.UpArrow, shift: true)
+                .Repeating();
+            input
+                .Register(MapActions.InspectSkipSouth)
+                .Bind(KeyCode.DownArrow, shift: true)
+                .Repeating();
+            // Travel by what the cell holds: west along the one lane in it, or east to where the
+            // fleets in it are going. Alt and the side arrows - beside Alt and the vertical ones,
+            // which are the region jump - and not repeating, because each press is a jump across the
+            // map rather than a step.
+            input.Register(MapActions.InspectFollowWest).Bind(KeyCode.LeftArrow, alt: true);
+            input.Register(MapActions.InspectFollowEast).Bind(KeyCode.RightArrow, alt: true);
 
             // The map's SCANNER (<see cref="ES2Access.Screens.GalaxyScanner"/>): three tiers of "what
             // is near me" on one pair of keys, each tier a different modifier - the kind of thing, the

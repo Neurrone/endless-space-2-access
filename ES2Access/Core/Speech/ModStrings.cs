@@ -389,6 +389,12 @@ namespace ES2Access.Core.Speech
         public const string GalaxyInspectFogOne = "galaxy.inspect.fog-one";
         public const string GalaxyInspectFogMany = "galaxy.inspect.fog-many";
 
+        // How far the modified arrow carried the cursor, said before the cell it landed on and only
+        // where it passed over anything: the number is how the player hears that the next thing on
+        // this bearing was a long way off rather than next door.
+        public const string GalaxyInspectSkippedOne = "galaxy.inspect.skipped-one";
+        public const string GalaxyInspectSkippedMany = "galaxy.inspect.skipped-many";
+
         // The map's SCANNER - "what is near me, of this kind". The scope is said as a CATEGORY and a
         // SUBCATEGORY, in that order, because that is the shape of the two keys that move it: one
         // steps the category, the other the subcategory, and a player who hears the two halves named
@@ -1333,6 +1339,8 @@ namespace ES2Access.Core.Speech
             { GalaxyInspectFog, "Unexplored" },
             { GalaxyInspectFogOne, "1 square unexplored" },
             { GalaxyInspectFogMany, "{0} squares unexplored" },
+            { GalaxyInspectSkippedOne, "Skipped 1 tile" },
+            { GalaxyInspectSkippedMany, "Skipped {0} tiles" },
             { GalaxyScannerScope, "{0}: {1}" },
             { GalaxyScannerSystems, "Systems" },
             { GalaxyScannerFleets, "Fleets" },

@@ -1298,6 +1298,29 @@ Primus (17,21), Leo (23,33), Byrtus (-25,-42), Libra (-11,11). Byrtus is the sou
 Fixture-blocked in the cell reading, for the same reasons the tree's own nodes are: an obliterator
 missile (none drawn) and an ally coordination pin (no alliance) — both share the cell's enumeration,
 visibility and wording with the tree, so the tree's route is the only place either can be sighted.
+**Skip and travel (2026-08-19)**: `ui.coarseDecrease`/`ui.coarseIncrease` are the WEST/EAST skip
+while the mode drives the map, `galaxy.inspectSkipNorth`/`…South` the other two, and
+`galaxy.inspectFollowWest`/`…FollowEast` the travel keys. Measured on `[Beginner] test` at 1×1 from
+Ita (5,34): north gives `5, 35`, then `Skipped 2 tiles` + `5, 38, Unexplored` (the fog bucket
+changing is a stop), then `Skipped 49 tiles` + `5, 88, Unexplored` (the run to the north edge — the
+landing is not counted, hence 49 and not 50), then `Map edge`; southward is the mirror
+(`Skipped 50 tiles` + `5, 37`). At 5×5 from (5,34) north gives `5, 39, 21 squares unexplored`, the
+crop pair for "the square landed where the speech says". The travel keys' fixture is the SIX fleets,
+all the player's own and all in transit — `1st Patriots Navy` Heracles→Osulo, `1st Defenders Navy`
+Primus→Dusay, `1st Victors Navy` Dusay→Primus (those two share the cell `12, 15`, heading OPPOSITE
+ways, which is the ambiguity fixture), `1st Protectors Navy` Dusay→Rigel (the discriminating case:
+its destination is the lane's WESTmost end, so Alt+Right landing on Rigel and not on Dusay is what
+proves the fleet beats the lane), `1st Conquerors Navy` and `1st Vanquishers Navy` both Dusay→Heka
+across open space (the agreeing-fleets fixture: 7×7 at (0,-3) holds both). Route to any of them:
+`galaxy.scanCategoryNext` to Fleets, `galaxy.scanNext` until the name is right, `galaxy.scanGoTo`.
+Measured landings: the one-lane cell (-4,23) gives Qarius westward / Ita eastward; the 2- and 3-lane
+cells (Qarius, Dusay at 7×7) are silent both ways; the half-dark lane at (-19,-5)
+(`Star lane from Rigel going west`) travels west to Rigel and is silent eastward; the free mover at
+(-1,-6) is silent westward (no lane) and lands on Heka eastward. A refusal's evidence is
+`DevProbe.Camera()` unchanged as well as the silence, since a jump is an action and silence alone
+cannot tell "refused" from "acted". **Fixture-blocked**: a FOREIGN fleet in transit (no contact on
+this save) and a fleet bound for a system the player has not perceived — both would exercise the
+no-leak rule, and neither can be staged here.
 **Visual evidence: crop the screen centre, at every zoom.** The cell's centre is
 `GalaxyViewCameraController.TargetPositionCurrent`, which the mode keeps at the screen centre, so a
 crop is aimed by halving the window rather than by projecting corners. The window is **1280×800**
