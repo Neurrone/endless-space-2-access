@@ -718,6 +718,13 @@ namespace ES2Access
             // screen's type-ahead search decides for itself whether it is listening for them.
             Navigator.TypeAheadTick();
 
+            // BEFORE the screens, because all this does is notice that the game has drawn a tooltip and
+            // mark the focused control's buffer stale: raised after the screens, the refill it asks for
+            // happens on the NEXT frame, and that frame is a quarter of the wait between arrowing onto
+            // a control and hearing what it says. Pointing the engine at the focus is a different job
+            // and stays at the bottom of the frame (<c>PointerFocus.Tick</c>).
+            PointerFocus.WatchDrawn();
+
             Screens.Tick();
 
             // After the screens, because the screens are where an edit is ASKED for: the hand-over

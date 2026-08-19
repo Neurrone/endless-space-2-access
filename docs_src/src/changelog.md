@@ -51,6 +51,7 @@
 - Mod manager: the mods library now reads as a "Filters" section holding the folder switches on one row, followed by an "Available" section with the library's contents one per row, matching the constructibles pattern
 - The top-left corner of every screen: Alt+Up and Alt+Down now jump between its rows — Controls, Key Resources, Research, Strategic Resources, and the faction rows below them — instead of only naming them
 - Economy screen: tabbing into the luxury resources now lands on the first line of the table rather than above its family headings, so you reach the figures straight away. The headings are still one press of Up away, and moving down from one lands in that family's column
+- A control's description now reaches the review buffer one frame sooner after you arrow onto it. If it still feels slow, raise the frame rate limit in the game's video options — the wait is a fixed number of frames, so a 20 frame per second cap makes it five times longer than the game's default does
 
 ## V0.1.1
 

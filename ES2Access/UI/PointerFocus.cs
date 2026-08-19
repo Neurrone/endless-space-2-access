@@ -201,14 +201,24 @@ namespace ES2Access.UI
             }
 
             _showing = _wanted;
-            WatchDrawnTooltip();
         }
 
-        /// <summary>Whether the tooltip window has changed what it is drawing since the last frame -
-        /// a different tooltip, or the same one rebuilt. The height is what says "rebuilt": the window
-        /// re-assembles a tooltip a few seconds in to add the detail the compact form left out, and
-        /// growing is what that looks like from outside.</summary>
-        private static void WatchDrawnTooltip()
+        /// <summary>
+        /// Whether the tooltip window has changed what it is drawing since the last frame - a different
+        /// tooltip, or the same one rebuilt. The height is what says "rebuilt": the window re-assembles
+        /// a tooltip a few seconds in to add the detail the compact form left out, and growing is what
+        /// that looks like from outside.
+        ///
+        /// Asked at the TOP of the mod's frame, before the screens fill the focused control's buffer,
+        /// and deliberately not from <see cref="Tick"/> at the bottom of it. The hook only INVALIDATES
+        /// the buffer, so an invalidation raised after the fill is one the fill answers a whole frame
+        /// later - which is a frame of the wait between arrowing onto a control and its description
+        /// landing, paid on every single move (measured 2026-08-19: 4 frames from the keypress to the
+        /// filled buffer, 3 after this moved). Watching first is also the more honest reading: what the
+        /// window is drawing NOW is what the engine drew last frame, and nothing this frame has yet
+        /// pointed anywhere else.
+        /// </summary>
+        public static void WatchDrawn()
         {
             AgeTooltip drawn = null;
             float height = 0f;
