@@ -76,14 +76,6 @@ namespace ES2Access.Core.Speech
             return message.Build();
         }
 
-        /// <summary>How much of a quadrant or one of its stages is done, folded into the group's
-        /// own name: researched over available, counted over the technologies the game is willing
-        /// to draw, which is the same set the player can walk.</summary>
-        public static string TitleWithCounts(string title, int researched, int available)
-        {
-            return ModStrings.Format(ModStrings.ResearchCounts, title, researched, available);
-        }
-
         /// <summary>
         /// What a technology is going to take: what the game says it costs, and where it sits in the
         /// queue - the two things wherever a technology is read, on the wheel or in the list of the

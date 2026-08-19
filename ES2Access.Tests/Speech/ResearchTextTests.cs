@@ -109,16 +109,6 @@ namespace ES2Access.Tests.Speech
             );
         }
 
-        [Fact]
-        public void CountsRideOnTheGroupsOwnName()
-        {
-            Assert.Equal("Military I (1 / 3)", ResearchText.TitleWithCounts("Military I", 1, 3));
-            Assert.Equal(
-                "Science and Exploration IV (0 / 0)",
-                ResearchText.TitleWithCounts("Science and Exploration IV", 0, 0)
-            );
-        }
-
         /// <summary>The same two facts wherever a technology is read - on its dot, and in the list
         /// of the ones the game is recommending. A turn count is not one of them: the wheel draws
         /// none anywhere, so one computed for an unqueued technology would be the mod's own

@@ -1893,42 +1893,18 @@ namespace ES2Access.Screens
                 : string.CompareOrdinal(left.GuiTechnology.Title, right.GuiTechnology.Title);
         };
 
-        /// <summary>A quadrant's name with how much of it is done - researched over available,
-        /// counted over every stage of it.</summary>
+        /// <summary>A quadrant's name, which is all the wheel writes across it. It used to carry a
+        /// researched-over-available count the mod counted for itself; the game draws no such number
+        /// anywhere on the wheel, and hearing one in front of every group was noise.</summary>
         private static string QuadrantTitle(TechnologyQuadrantItem quadrant)
         {
-            int available = 0;
-            int researched = 0;
-            int total = 0;
-            IList<AgeTransform> stages = quadrant.TechnologyStagesContainer.Children;
-            for (int i = 0; stages != null && i < stages.Count; i++)
-            {
-                BaseTechnologyStageItem stage = stages[i].GetComponent<BaseTechnologyStageItem>();
-                if (stage != null)
-                {
-                    Count(stage, ref available, ref researched, ref total);
-                }
-            }
-
-            return ResearchText.TitleWithCounts(
-                AgeText.Clean(Gui.Localize(quadrant.QuadrantGuiElement.Title)),
-                researched,
-                available
-            );
+            return AgeText.Clean(Gui.Localize(quadrant.QuadrantGuiElement.Title));
         }
 
-        /// <summary>A stage's name with how much of it is done - researched over available.</summary>
+        /// <summary>A stage's name, in the game's own full form ("Military I").</summary>
         private static string StageTitle(BaseTechnologyStageItem stage)
         {
-            int available = 0;
-            int researched = 0;
-            int total = 0;
-            Count(stage, ref available, ref researched, ref total);
-            return ResearchText.TitleWithCounts(
-                AgeText.Clean(stage.GuiTechnologyStage.GetFullTitle(null, true)),
-                researched,
-                available
-            );
+            return AgeText.Clean(stage.GuiTechnologyStage.GetFullTitle(null, true));
         }
 
         /// <summary>While a stage is locked, the game's own sentence about what is holding it -
@@ -1962,34 +1938,6 @@ namespace ES2Access.Screens
             }
 
             return message.Build();
-        }
-
-        private static void Count(
-            BaseTechnologyStageItem stage,
-            ref int available,
-            ref int researched,
-            ref int total
-        )
-        {
-            List<TechnologyItem2> items = stage.TechnologyItems;
-            for (int i = 0; items != null && i < items.Count; i++)
-            {
-                TechnologyItem2 item = items[i];
-                if (item == null || !item.VisibleByDefinition)
-                {
-                    continue;
-                }
-
-                total++;
-                if (item.TechnologyState == ScienceConstructibleElement.State.Available)
-                {
-                    available++;
-                }
-                else if (item.TechnologyState == ScienceConstructibleElement.State.Researched)
-                {
-                    researched++;
-                }
-            }
         }
 
         /// <summary>What the game says the technology's state is, asked of the game rather than read

@@ -305,7 +305,6 @@
   "research.status-panel": "Research status",
   "research.key-panel": "Research key",
   "research.tree-panel": "Technology tree",
-  "research.counts": "{0} ({1} / {2})",
   "research.queue-position": "position {0}",
   "research.link-reduces": "Reduces the cost of {0}",
   "research.link-reduced-by": "Cost reduced by {0}",

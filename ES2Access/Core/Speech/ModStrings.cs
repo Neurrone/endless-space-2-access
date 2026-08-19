@@ -726,10 +726,6 @@ namespace ES2Access.Core.Speech
         public const string ResearchKeyPanel = "research.key-panel";
         public const string ResearchTreePanel = "research.tree-panel";
 
-        /// <summary>How much of a quadrant or a stage is done, over the technologies the game draws.
-        /// </summary>
-        public const string ResearchCounts = "research.counts";
-
         /// <summary>Where a technology sits in the research queue.</summary>
         public const string ResearchQueuePosition = "research.queue-position";
 
@@ -1418,7 +1414,6 @@ namespace ES2Access.Core.Speech
             { ResearchStatusPanel, "Research status" },
             { ResearchKeyPanel, "Research key" },
             { ResearchTreePanel, "Technology tree" },
-            { ResearchCounts, "{0} ({1} / {2})" },
             { ResearchQueuePosition, "position {0}" },
 
             { ResearchLinkReduces, "Reduces the cost of {0}" },
