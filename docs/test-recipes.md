@@ -1418,13 +1418,18 @@ except leaving the page. The tab switch and the panel instances are both probeab
 save is screen-unlocked, not tech-unlocked) — which also means the **Marketplace tab is refused**
 (missing Galactic Commodities Exchange), so the buy table has NO fixture in `unlocked` and the
 resources grids are the only economy tables that can be walked. The recipe modal is reachable with zero slots via
-`new GuiRecipeSlot(0,false)` + `ShowWindow`. **NEVER press Confirm** — it is enabled even with an
+`w.GuiRecipeSlot = new GuiRecipeSlot(0, false); Gui.GuiService.ShowWindow(w)`; close with
+`HideWindow(w)`, and a RE-SHOW is the restore — `OnBeginShow` clears `currentRecipeIngredients`
+and `RecipeModified` (measured 2026-08-19). **NEVER press Confirm** — it is enabled even with an
 empty recipe and posts `OrderCreateRecipe` — and note Reset does NOT clear `RecipeModified`.
-Both luxury grids are a legend region plus an items region in ONE stop since 2026-08-18; each item
-trails its FIDSI family word, and Giga Lattice sits under Influence (item index 12). The recipe
-modal's legend reads the economy screen's short titles ("Industry"), not the family descriptions.
-The modal's project stop draws ONE slot in `unlocked` (multi-slot strip unmeasured); the strategics
-grid is drawn by no save.
+All four family grids are 8-column tables since 2026-08-19 (one shared `ResourceGrid` reading;
+families as column headers, family sentences in every cell's buffer, "empty" holes, blank lines
+undeclared). The column headers read the economy screen's short titles ("Industry"), not the
+family descriptions. The modal's project stop draws ONE slot in `unlocked` (multi-slot strip
+unmeasured). The two STRATEGIC grids draw only for an empire with Material Expertise — no save
+here has it, but `SimulationProperties.Empire.CanUseStrategicForRecipe` DOES stick under
+`SetPropertyBaseValue` + `Refresh(false)`: set it, the game draws the real grid itself, set it
+back (verified round trip 2026-08-19).
 
 **Military and fleet-selection.** **Never press Retrofit**: it is immediate, with no confirmation.
 A ship tile's SECOND click (Ctrl+Alt+Enter) opens that ship's design read-only and is a safe round

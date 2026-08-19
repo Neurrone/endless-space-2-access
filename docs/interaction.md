@@ -227,8 +227,10 @@ ten of the camera's thirteen steps would be the whole range.
 **Region keys added by the one-per-row rollout (2026-08-18)**, all key-only unless named — labelled
 ones carry drawn text or the named ModStrings word: `system:constructibles/filters|list` and
 `system:hangar/toolbar|ships` (labels Filters/Available; hangar toolbar = Actions; same pairs under
-the `empire:` prefix on the detail tabs); `economy:luxuries/legend|items`,
-`economy:strategics/legend|items`, `recipe:luxuries/legend|items`, `recipe:strategics/legend|items`;
+the `empire:` prefix on the detail tabs); `economy:luxuries/legend`, `economy:strategics/legend`,
+`recipe:luxuries/legend`, `recipe:strategics/legend` (since 2026-08-19 the caption alone — all four
+grids are 8-column tables and the items live in the sheet's own `reg:0`; the `/items` keys are
+retired);
 `laws:detail/{law,effects,action}` ("Effects" labelled); `population:detail/affinity`,
 `population:thresholds`, one per captioned block, `population:detail/assimilate`,
 `population:politics/{intro,traits,reactions}`; `election:local/{title,trends,empire}`;
