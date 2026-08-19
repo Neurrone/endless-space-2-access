@@ -279,6 +279,13 @@ namespace ES2Access.Screens
             IList<NodeSection> sections = SettingRows.RowSections(title, tooltip);
 
             builder.BeginStop(HullsStop);
+
+            // Entering the band for the first time lands on the hull the window is ALREADY showing,
+            // not on row one: the band is a view of the window's own page turner, and a landing that
+            // ignored which page is up would turn the picture out from under a player who had only
+            // come to read it.
+            builder.LandStopOn(ControlId.Structural(HullKey + CurrentHull(window)));
+
             bool named = Push(builder, group);
             try
             {
@@ -302,9 +309,10 @@ namespace ES2Access.Screens
                     };
                     AgeWidgets.PointAt(vtable, Holder(tooltip) ?? title);
 
-                    // No start node: SetStart is the whole graph's landing, and the page's is the
-                    // faction card the game has selected. The stop lands on its first row, which is
-                    // the hull the window binds itself to.
+                    // Not SetStart: that is the whole GRAPH's landing, and the page's is the faction
+                    // card the game has selected. Which hull row this one stop opens on is the
+                    // stop-scoped tool - LandStopOn above - and a position the player left here
+                    // still outranks it, which is the order a remembered place should come in.
                     builder.AddItem(ControlId.Structural(HullKey + index), vtable);
                 }
             }
