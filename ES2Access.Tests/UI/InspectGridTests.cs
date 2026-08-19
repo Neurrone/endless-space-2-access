@@ -22,6 +22,22 @@ namespace ES2Access.Tests.UI
             Assert.Equal(1, InspectGrid.Shrink(1));
         }
 
+        /// <summary>The cursor opens on a single square, and the two ends of the ladder answer a
+        /// resize with the size that is already in force - which is what lets the mode stay silent
+        /// rather than announce a change that did not happen.</summary>
+        [Fact]
+        public void TheCursorOpensAtOneSquareAndTheLadderEndsRefuseByStandingStill()
+        {
+            Assert.Equal(1, InspectGrid.DefaultSize);
+            Assert.Equal(InspectGrid.SmallestSize, InspectGrid.DefaultSize);
+            Assert.Equal(
+                InspectGrid.SmallestSize,
+                InspectGrid.Shrink(InspectGrid.SmallestSize)
+            );
+            Assert.Equal(InspectGrid.LargestSize, InspectGrid.Grow(InspectGrid.LargestSize));
+            Assert.NotEqual(InspectGrid.DefaultSize, InspectGrid.Grow(InspectGrid.DefaultSize));
+        }
+
         [Fact]
         public void AnEvenOrOutOfRangeSizeIsBroughtBackToTheLadder()
         {

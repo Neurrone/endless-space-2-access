@@ -29,8 +29,12 @@ namespace ES2Access.Core.UI
         /// reading stops being a place and becomes a list.</summary>
         public const int LargestSize = 11;
 
-        /// <summary>What the cursor is when the player has never resized it.</summary>
-        public const int DefaultSize = 3;
+        /// <summary>What the cursor is when the player has never resized it: the SMALLEST cell, one
+        /// unit across (owner ruling, 2026-08-19). A cursor that opens on a single square answers
+        /// "what is exactly here" and grows from there, which is one press away; opening three units
+        /// wide made the first reading of every entry a small list the player had not asked for.
+        /// </summary>
+        public const int DefaultSize = SmallestSize;
 
         /// <summary>The next size up, or the same size at the top of the ladder.</summary>
         public static int Grow(int size)

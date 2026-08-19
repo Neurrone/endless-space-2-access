@@ -689,8 +689,18 @@ namespace ES2Access.Screens
             return true;
         }
 
+        /// <summary>Grow or shrink the cell. A size that is not a CHANGE says nothing at all - the two
+        /// ends of the ladder are where this happens, and a reading that repeated the size the player
+        /// is already standing on would report a move that never took place. Silence is the refusal,
+        /// the same way a slider already at its end refuses (owner ruling, 2026-08-19); the key is
+        /// still taken, so the page underneath never sees it.</summary>
         private bool Resize(int size)
         {
+            if (size == _size)
+            {
+                return true;
+            }
+
             _size = size;
             Voice.Say(SizeText(), true);
             Settle(false);
