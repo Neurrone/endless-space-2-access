@@ -201,8 +201,11 @@ namespace ES2Access.Screens
         /// the game's press-anything handler, every claimed key EATS the skip. A screen with something to
         /// navigate never wants this, which is why it is opt-in per screen rather than a mode.
         ///
-        /// Escape is not offered - it stays the game's like everywhere else (<see cref="ConsumesBack"/>),
-        /// so the screen underneath keeps whatever the engine's own cancel does.
+        /// Escape MAY arrive here - the galaxy's inspect cursor takes it to leave the mode - but a
+        /// screen only sees it where <see cref="ConsumesBack"/> has denied the game the key, and a live
+        /// type-ahead search's Escape outranks every answer given here: the dispatch withholds the key
+        /// from this hook while a search is up, so the innermost surface ends first (owner ruling
+        /// 2026-08-19, <c>ModEntry.Dispatch</c>). The cutscene declines the key outright.
         /// </summary>
         public virtual bool AnyKey(string actionKey)
         {

@@ -34,7 +34,10 @@ namespace ES2Access.Screens
     /// already lives with while the game has armed a targeting cursor. Escape is claimed FROM the game
     /// under the same condition, or leaving the mode would also raise the pause menu; the two size keys
     /// are claimed the same way, so the game keeps its own keypad minus (Sleep for this turn) the rest
-    /// of the time.
+    /// of the time. THE ONE KEY THIS MODE DOES NOT GET FIRST IS ESCAPE WHILE A TYPE-AHEAD SEARCH IS
+    /// LIVE: the search is the innermost surface, so that Escape clears it and leaves the player in the
+    /// mode, and the next one exits (owner ruling 2026-08-19, routed in <c>ModEntry.Dispatch</c> so
+    /// every mode of this shape obeys it).
     ///
     /// OFF THE MAP THE MODE IS SUSPENDED, not ended. Tab and Shift+Tab still walk the galaxy screen's
     /// other stops while the cursor is up, and a stop that is not the map - the zoom slider above all -

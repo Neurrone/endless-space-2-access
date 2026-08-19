@@ -292,7 +292,13 @@ Every other key falls through untouched. **Ctrl+I only ARMS
 the mode — it is not a toggle**: pressed again while the cursor is up it is taken and does nothing,
 silently, on the same ruling as Enter on an empty cell (the key is pressed speculatively mid-sweep,
 and dropping the cursor there would cost the player the cell they were standing on). The three ways
-out are Escape, a landing Enter made, and the map going away. **A MODE OF A WIDGET, NOT OF THE
+out are Escape, a landing Enter made, and the map going away. **A LIVE TYPE-AHEAD SEARCH TAKES
+ESCAPE AHEAD OF THE MODE** (owner ruling 2026-08-19): the first Escape clears the search and leaves
+the player IN the mode — the square still drawn, the arrows still the cell's — and the next one
+exits. The rule is not the mode's own: `ModEntry.Dispatch` routes Escape past `Screen.AnyKey`
+whenever `GraphNavigator.SearchIsActive`, so every mode of that shape obeys it and the innermost
+mod-invented surface is always the one Escape ends. The claim never changes hands (`claimsBack`
+reads true with either alive, or both). **A MODE OF A WIDGET, NOT OF THE
 SCREEN (2026-08-17).** Every sentence above holds while the tree cursor is on the MAP stop
 (`GalaxyHudScreen.IsMapStop`); off it the mode is SUSPENDED, not ended — Tab and Shift+Tab walk the
 screen's other stops as usual and the stop landed on gets every key exactly as if no cursor were
@@ -394,7 +400,9 @@ down and goes no further** (`claimsBack` reads true only then), and the carry di
 player leaves the page it started on — a menu opened over that page is still that page.
 
 **Typing a letter searches the focused stop** (no search key: the first printable character starts
-one; Up/Down step the matches, Home/End their ends, Escape clears it and goes no further, **Backspace
+one; Up/Down step the matches, Home/End their ends, Escape clears it and goes no further — ahead of
+every other Escape the mod claims, a mode of the mod's own included (owner ruling 2026-08-19: the
+search is the innermost surface, so one Escape never ends two of them), **Backspace
 does exactly what Escape does** — ends the search, "Search cleared", and goes no further, so it never
 also runs the page's own second command on the match it landed on; any other action ends it and then
 does its own job). Backspace is the way OUT of a search rather than an editor for it: a search is

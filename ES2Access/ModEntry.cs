@@ -319,8 +319,19 @@ namespace ES2Access
             // A screen where every key means one thing answers first, before the review chords and
             // before navigation: on a playing cutscene ANY key is the game's own skip, and a mod that
             // spent the press on a review buffer would have eaten it - see Screen.AnyKey.
+            //
+            // ESCAPE WHILE A SEARCH IS LIVE IS THE ONE KEY THAT GOES ROUND THIS HOOK (owner ruling
+            // 2026-08-19). A type-ahead search is the innermost surface the mod invented, and the key
+            // that ends one goes no further (GraphNavigator.SearchAction). A screen answering AnyKey
+            // with a MODE of its own - the galaxy's inspect cursor - would otherwise end the mode and
+            // take the live search down with it: two surfaces for one press, and no way to keep the
+            // mode while dropping the search. So the search clears first and the NEXT Escape leaves
+            // the mode. The rule is stated here rather than in each mode because every mode has the
+            // same shape; the cutscene is unaffected, since a screen that opts out of type-ahead can
+            // never have a live search.
             ES2Access.Screens.Screen focused = Navigator.Screen;
-            if (focused != null && focused.AnyKey(action.Key))
+            bool searchOwnsBack = action.Key == UiActions.Back && Navigator.SearchIsActive;
+            if (!searchOwnsBack && focused != null && focused.AnyKey(action.Key))
             {
                 return true;
             }

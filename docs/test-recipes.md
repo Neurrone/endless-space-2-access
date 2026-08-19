@@ -1248,7 +1248,24 @@ still reads `hud:view-title/zoom` afterwards, `DevProbe.Claims("Escape,Minus")` 
 `claims:false`/`claimsBack:false`, and `/speech` gains nothing. The same probe is the ONLY way to
 check that `galaxy.inspect` re-injected while the mode is live does nothing: claims still true plus
 an unchanged cell reading on the next `ui.*` is the evidence. `galaxy.inspect` does not toggle out; the exits are `ui.back`, a landing
-Enter made, and leaving the map. Enter on a one-place cell lands on `galaxy:system/<guid>`
+Enter made, and leaving the map.
+**Escape with a type-ahead search live takes TWO presses (2026-08-19).** From the map stop:
+`galaxy.inspect`, `POST /type "qa"` (→ `Qarius, -5, 23, group, collapsed, 3 of 14`, focus
+`galaxy:system/508`, still a map node so the mode stays Active), then `ui.back` → **"Search
+cleared"** with the mode intact, and a second `ui.back` → **"Exited inspect mode"** plus the map
+node's own line. The mode's survival needs a state probe, since "Search cleared" alone cannot
+tell a live mode from a dead one: reflect `ES2Access.Screens.GalaxyInspect`'s static `Live`/`Active`
+(both internal — go through `typeof(ES2Access.Dev.DevProbe).Assembly.GetType(…)`) and
+`ES2Access.UI.InspectMarker`'s private static `_drawer`, which reads non-null while armed and
+**null** the moment the mode ends; the cheap live half is one `ui.right`, which must answer with
+the next cell pair (`5, 34` → `6, 34`). `DevProbe.Claims("Escape")` is `claims:true` with the
+search live, with only the mode live, and with both — and `false` once both are down, so nothing
+leaks to the game and no claim sticks. The same two-press order is the TARGETING cursor's
+(`ChangeCursor(typeof(TakeSystemCursor), new AcademyDiplomacyGiveSystemAction())` → search →
+`ui.back` "Search cleared", cursor still `TakeSystemCursor` → `ui.back` "Target selection ended")
+and the CARRY's (`ModEntry.Carry.PickUp(...)` → search → "Search cleared", `IsCarrying` still true
+→ "Cancelled drag"); both of those come free from `SearchAction` running ahead of the switch in
+`GraphNavigator.Dispatch` and neither needed a change. Enter on a one-place cell lands on `galaxy:system/<guid>`
 with the tree's own announcement; Enter on a fleet-only cell (shrink to 1x1 and walk to `-1, -6`,
 `1st Conquerors Navy`) answers `Fleet panel open for …` — but only from a CLEAN cursor: with a
 `GalaxyGarrisonCursor` already up holding nothing, the selection did not take (seen once, unexplained;
