@@ -71,6 +71,8 @@ Press `Escape` or `Space` to leave. The mod announces the view you return to.
 Press `Ctrl+I` on the map to enter inspect mode: a square cursor you move around the galaxy to hear what is in each area.
 
 - `Arrows`: move the cursor by exactly its own size, so no area is skipped or heard twice
+- `Shift+Arrows`: move to the next cell in that direction that differs from where you are — in what it contains or in how much of it is unexplored. Cells identical to the one you left are skipped, and the mod says how many (`Skipped 12 squares`) before reading the landing. If nothing differs all the way out, you land on the last cell before the map edge
+- `Alt+Left` / `Alt+Right`: travel along what the cursor holds. On a cell whose only feature is a single starlane, jump to the system at its end: `Alt+Left` goes to the first system in the lane's announcement (the western end of a fully explored lane, or the one known end of a lane running into unexplored space), `Alt+Right` to the second. On a cell with fleets in transit, `Alt+Right` jumps to their destination instead, when the map shows one and every moving fleet in the cell is going to the same place — a single fleet's destination wins over the lane it is flying. The keys are silent when the answer would be ambiguous or the target is unexplored, and they never exit the mode
 - `+` / `-`: grow or shrink the cursor through 1, 3, 5, 7, 9 and 11 units
 - `Enter`: move tree focus to the object in the cursor. Does nothing if the cursor holds nothing, or more than one thing
 - `Escape`: exit, announced as `Exited inspect mode`. The camera returns to where you entered the mode
@@ -78,6 +80,8 @@ Press `Ctrl+I` on the map to enter inspect mode: a square cursor you move around
 Each cell speaks its coordinates, then its contents: systems and special objects, fleets, probes, obliterator missiles, ally pins, any starlanes crossing the cell, and how much of the cell is unexplored (`Unexplored`, or `34 squares unexplored`). An empty cell speaks only its coordinates. Moving past the edge of the galaxy announces `Map edge`.
 
 While inspect mode is active, the review buffer holds the current cell's contents, and the mod draws a visible square around the area being inspected.
+
+Type-ahead search also works while the cursor is up: typing letters searches the map's entries as usual and moves tree focus to the match. The inspect cursor stays where it is. While a search is open, the first `Escape` clears only the search (`Search cleared`) and leaves you in inspect mode; the next `Escape` exits the mode.
 
 ## The Scanner
 

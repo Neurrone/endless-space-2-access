@@ -39,7 +39,7 @@ Some fleet actions arm a targeting mode instead of acting at once — launching 
 
 While a mode is armed, the review buffer of any target you focus holds the game's requirement text for it, for example `Must be a Academy Owned System`.
 
-A probe launch also offers a `Launch towards` group with the eight compass bearings, for aiming into open space where no starlane goes.
+A probe launch also offers a `Launch towards` group with the eight compass bearings, for aiming into open space where no starlane goes. When the mode arms, focus moves straight to this group's first bearing (north), wherever you were reading — walk the bearings with `Up` and `Down`, `Enter` launches.
 
 ## Moving Ships Between Fleets
 

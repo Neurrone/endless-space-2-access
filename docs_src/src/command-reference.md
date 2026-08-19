@@ -91,6 +91,9 @@ Available while focus is on the map.
 | ------------------------------ | ------------------------------------------------------ |
 | `Ctrl+I`                       | Enter inspect mode (only on the map; not a toggle)     |
 | `Arrows`                       | Move the cursor by its own size                        |
+| `Shift+Arrows`                 | Move to the next cell that differs in that direction   |
+| `Alt+Left`                     | Jump to a lone starlane's first-named end              |
+| `Alt+Right`                    | Jump to its second end, or a moving fleet's destination |
 | `+` (or `Shift+=`, keypad `+`) | Grow the cursor — 1, 3, 5, 7, 9, 11 units              |
 | `-` (or keypad `-`)            | Shrink the cursor                                      |
 | `Enter`                        | Move tree focus to the object in the cursor            |

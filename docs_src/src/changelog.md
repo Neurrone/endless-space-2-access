@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Galaxy map: in inspect mode, `Shift+arrows` move to the next square in that direction that differs from where you stand — squares with the same contents and the same fog cover are skipped, and the mod says how many ("Skipped 12 squares") before reading the landing. When nothing differs all the way out, you land on the last square before the map edge
+- Galaxy map: in inspect mode, `Alt+Left` and `Alt+Right` travel by what the cursor holds — to the first- or second-named end of a lone starlane, or, with `Alt+Right`, to the destination of the fleets crossing the square when the map shows one and they all agree (a single fleet's destination wins over the lane it is flying). An ambiguous or unexplored answer does nothing, and never ends the mode
+- In inspect mode with a type-ahead search open, `Escape` now clears only the search; the next `Escape` exits the mode — matching how a search's Escape behaves everywhere else
+- The construction-queue-empty pop-up's idle systems are now buttons: `Enter` opens that system's management view, as the mouse click does. They previously read as plain text and `Enter` did nothing
+- The research-queue-empty pop-up now offers the game's suggested technologies as cards — technology, branch, cost, each a button that queues it — the same reading the research-complete pop-up already had. It previously read as twelve loose labels
+- Launching probes from the fleet actions now lands you on the "Launch towards" group's north button, wherever you were reading — the direction picker no longer has to be found by walking back to the fleet's system
 - The turn controls now read the in-game clock when you have it turned on (Options → "Display In-Game Clock") — "Clock, 5:50 PM", in whichever format you chose. It is read only when you land on it, never by itself
 - In a scan view the game holds notification pop-ups back; a "Show pending notifications" button now appears among the turn controls when pop-ups are waiting — pressing it closes the scan view and the waiting pop-ups open. In the normal view the button never exists, and its arrival is not announced
 - The colony panel's defense value is captioned "System Garrison" — the game's own word for it, matching the Hissho "Citadel Garrison" row — instead of the mod's "Security"
