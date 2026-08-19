@@ -1257,6 +1257,16 @@ namespace ES2Access.Screens
         /// The colony panel, hand-modelled because it is the one side panel that is mostly controls:
         /// the system's name is a rename button, the upkeep line opens the improvements list, and the
         /// automation policy is a list to choose from.
+        ///
+        /// Most of what the panel can draw it draws for nobody: an Ark exploiting the system, a
+        /// citadel's second garrison, a ghost's decolonize tick, a siege or a blockade, the empires
+        /// that have seen through a cloak. Every one of those is declared here and gated on the game's
+        /// own drawn flag - the same rule the side panels themselves are chosen by - so a save that
+        /// reaches the state gets the line without anything here modelling the state.
+        ///
+        /// The order is the panel's own, top to bottom, and <see cref="Cells.EmitLinear"/> takes it off
+        /// the rectangles rather than off the order the cells are added, so a group the game collapses
+        /// takes its line with it.
         /// </summary>
         private void BuildColonyInfo(GraphBuilder builder, ColonyInfoSidePanel panel)
         {
@@ -1273,6 +1283,8 @@ namespace ES2Access.Screens
                     )
             );
 
+            AddMothership(_cells, panel);
+
             AgeControlButton rename = panel.RenameButton;
             if (rename != null && AgeWidgets.Visible(AgeWidgets.Transform(rename)))
             {
@@ -1288,6 +1300,9 @@ namespace ES2Access.Screens
                 Add(_cells, AgeWidgets.Transform(rename), ControlId.Referenced(rename, "system:colony/rename"), vtable);
             }
 
+            AddInfoIcons(_cells, panel);
+            AddTemporaryEffects(_cells, panel);
+
             // The garrison dossier - what the defence is, how efficient it is, which troops it is made
             // of - is a tooltip the panel keeps in a field of its own and hangs on the GROUP around the
             // number, not on the number: read from the number's own transform there is no tooltip at
@@ -1300,6 +1315,7 @@ namespace ES2Access.Screens
                 () => AgeText.Label(panel.SecurityValue),
                 panel.SecurityAndTroopsTooltip
             );
+            AddCitadelManpower(_cells, panel);
             AddReadout(
                 _cells,
                 panel.UpkeepLabel == null ? null : panel.UpkeepLabel.AgeTransform,
@@ -1322,9 +1338,395 @@ namespace ES2Access.Screens
                 Add(_cells, it, ControlId.Referenced(it, "system:colony/improvements"), vtable);
             }
 
+            AddDecolonizeGhost(_cells, panel);
+            AddMilitaryStatus(_cells, panel);
+            AddOwnership(_cells, panel);
             AddFidsiCells(_cells, panel);
+            AddResources(_cells, panel);
+            AddWreckedMotherships(_cells, panel);
             AddPolicy(_cells, panel);
             Cells.EmitLinear(builder, _cells);
+        }
+
+        /// <summary>
+        /// The Ark parked on this system, which a Vodyani colony IS: the panel draws its name and a
+        /// button that sends it back out into the galaxy
+        /// (<c>ColonyInfoSidePanel.RefreshExploited</c> :650-667), and draws neither for anybody else.
+        ///
+        /// The NAME is a control and not a readout - the button behind it opens the game's rename box
+        /// (<c>OnMothershipRenameCb</c> :953), exactly as the system's own title does - so it is
+        /// declared the same way the title is: called by the name written on it, with the ship's
+        /// dossier behind it. That dossier hangs on the LABEL rather than on the button, and the
+        /// button's own tooltip is a key the game's corpus has no entry for (measured:
+        /// <c>%StarSystemSideRenameMothershipDescription</c> localizes to itself), so the label's is
+        /// the one declared and the one the pointer is aimed at.
+        ///
+        /// Detach is the game's own word for its button (<c>%StarSystemSideDetachMothershipTitle</c>);
+        /// what it does, and why it cannot be done today, are in its own tooltip, which the panel
+        /// rewrites with the ship's refusals every refresh.
+        /// </summary>
+        private static void AddMothership(List<Cell> cells, ColonyInfoSidePanel panel)
+        {
+            AgePrimitiveLabel name = panel.MothershipNameLabel;
+            if (
+                panel.MothershipGroup == null
+                || !AgeWidgets.Visible(panel.MothershipGroup)
+                || name == null
+            )
+            {
+                return;
+            }
+
+            AgeTransform label = name.AgeTransform;
+            AgeControlButton open = label.Parent == null
+                ? null
+                : label.Parent.AgeControl as AgeControlButton;
+            AgeTooltip ship = AgeWidgets.Raw(label);
+            NodeVtable vtable = GraphNodes.Button(
+                () => AgeText.Label(name),
+                () => AgeWidgets.Press(open),
+                () => AgeWidgets.Operable(label),
+                ship
+            );
+            AgeWidgets.Point(vtable, open, ship, label);
+            Add(cells, label, ControlId.Referenced(label, "system:colony/mothership"), vtable);
+
+            AgeControlButton detach = panel.DetachButton;
+            AgeTransform widget = AgeWidgets.Transform(detach);
+            if (widget == null || !AgeWidgets.Visible(widget))
+            {
+                return;
+            }
+
+            AgeControlButton it = detach;
+            AgeTooltip tooltip = AgeWidgets.Raw(widget);
+            NodeVtable button = GraphNodes.Button(
+                CardActions.GameText("%StarSystemSideDetachMothershipTitle"),
+                () => AgeWidgets.Press(it),
+                () => AgeWidgets.Operable(widget),
+                tooltip
+            );
+            AgeWidgets.Point(button, it);
+            Add(cells, widget, ControlId.Referenced(detach, "system:colony/detach"), button);
+        }
+
+        /// <summary>
+        /// The row of badges beside the system's name: that this is somebody's home system, that a
+        /// trading company keeps its headquarters or a subsidiary here, and that the system is cloaked
+        /// (<c>ColonyInfoSidePanel.Refresh</c> :439-483). Each is drawn only when it is true of this
+        /// system, and each is one node, because each carries a sentence of its own.
+        ///
+        /// The game writes no caption on any of them and hangs no wrapper on their tooltips, so each is
+        /// called by the sentence its own tooltip explains it with - the same naming a wordless symbol
+        /// gets everywhere else in this mod. That sentence is therefore not announced a second time:
+        /// it is indicated, which leaves the whole of it - including the list of empires that have
+        /// seen through the cloak, which is the only place that list exists - in the review buffer.
+        /// </summary>
+        private static void AddInfoIcons(List<Cell> cells, ColonyInfoSidePanel panel)
+        {
+            AddInfoIcon(cells, panel.HomeSystemImage, "home");
+            AddInfoIcon(cells, panel.TradeInfrastructuremage, "trade");
+            AddInfoIcon(cells, panel.InvisibilityImage, "cloak");
+        }
+
+        private static void AddInfoIcon(List<Cell> cells, AgePrimitiveImage icon, string key)
+        {
+            AgeTransform widget = icon == null ? null : icon.AgeTransform;
+            if (widget == null || !AgeWidgets.Visible(widget))
+            {
+                return;
+            }
+
+            AgeTooltip tooltip = AgeWidgets.Raw(widget);
+            NodeVtable vtable = new NodeVtable
+            {
+                Announcements = new List<NodeAnnouncement>
+                {
+                    GraphNodes.LabelPart(() => FirstLine(tooltip)),
+                },
+                Sections = GraphNodes.Sections(
+                    GraphNodes.TooltipSection(tooltip, TooltipMode.Indicate)
+                ),
+            };
+            AgeWidgets.PointAt(vtable, widget);
+            cells.Add(
+                new Cell
+                {
+                    Widget = widget,
+                    Id = ControlId.Referenced(widget, "system:colony/icon/" + key),
+                    Vtable = vtable,
+                }
+            );
+        }
+
+        /// <summary>
+        /// The buffs and curses running on this system (<c>RefreshTemporaryEffects</c> :711-736). The
+        /// panel has two layouts for the same list and shows exactly one of them - a line with the
+        /// effect's name and how long it has left while there are one or two, a strip of bare symbols
+        /// once there are more - so whichever table is drawn is the one read, and the reading is the
+        /// same either way: what the item says, and its dossier behind it.
+        ///
+        /// The strip's items carry no label at all (measured: the simple prefab's
+        /// <c>TemporaryEffectLine.Label</c> is null), so there each effect is called by the wrapper on
+        /// its own tooltip, which is where the game keeps its title.
+        /// </summary>
+        private static void AddTemporaryEffects(List<Cell> cells, ColonyInfoSidePanel panel)
+        {
+            AddTemporaryEffects(cells, panel.TemporaryEffectsLineTable, "line");
+            AddTemporaryEffects(cells, panel.TemporaryEffectsSimpleItemTable, "item");
+        }
+
+        private static void AddTemporaryEffects(
+            List<Cell> cells,
+            AgeTransform table,
+            string key
+        )
+        {
+            if (table == null || !AgeWidgets.Visible(table))
+            {
+                return;
+            }
+
+            IList<AgeTransform> items = table.Children;
+            for (int i = 0; items != null && i < items.Count; i++)
+            {
+                AgeTransform item = items[i];
+                TemporaryEffectLine line =
+                    item == null ? null : item.GetComponent<TemporaryEffectLine>();
+                if (line == null || !AgeWidgets.Visible(item))
+                {
+                    continue;
+                }
+
+                TemporaryEffectLine it = line;
+                AddReadout(
+                    cells,
+                    item,
+                    "system:colony/effect/" + key + "/" + i,
+                    () =>
+                        Drawn(it.Label)
+                        ?? AgeWidgets.TooltipTitle(it.Tooltip),
+                    null,
+                    line.Tooltip
+                );
+            }
+        }
+
+        /// <summary>The second pool of troops a Hissho citadel keeps, drawn beside the system's own
+        /// (<c>RefreshSecurityAndUpkeep</c> :556-564) and only where the system has a citadel. The
+        /// number is a stock over a maximum and the game writes no word beside it; the word is the one
+        /// on the wrapper the panel hangs on the group's tooltip - "Citadel Garrison" - which is also
+        /// where the breakdown of those troops lives.</summary>
+        private static void AddCitadelManpower(List<Cell> cells, ColonyInfoSidePanel panel)
+        {
+            AgeTransform group = panel.CitadelManpowerGroup;
+            if (group == null || !AgeWidgets.Visible(group))
+            {
+                return;
+            }
+
+            AgeTooltip tooltip = AgeWidgets.Raw(group);
+            AgePrimitiveLabel value = panel.CitadelManpowerValue;
+            AddReadout(
+                cells,
+                group,
+                "system:colony/citadel-manpower",
+                () => AgeWidgets.TooltipTitle(tooltip),
+                () => AgeText.Label(value),
+                tooltip
+            );
+        }
+
+        /// <summary>
+        /// The tick a GHOST system draws where a colony draws its upkeep: schedule this sanctuary to be
+        /// abandoned at the end of the turn, or unschedule it
+        /// (<c>OnDecolonizeGhostToggleCb</c> :1002-1019). It is a real two-state box - the panel reads
+        /// its state back off the standing order every refresh - so it is declared as one, and Enter is
+        /// its own click, which posts the order or cancels it.
+        ///
+        /// The game names it on the action rather than on the tick
+        /// (<c>%DecolonizeGhostActionTitle</c>), and the tooltip is that action's description with the
+        /// panel's own reasons for refusing appended.
+        /// </summary>
+        private static void AddDecolonizeGhost(List<Cell> cells, ColonyInfoSidePanel panel)
+        {
+            AgeControlToggle toggle = panel.DecolonizeGhostToggle;
+            AgeTransform widget = AgeWidgets.Transform(toggle);
+            if (widget == null || !AgeWidgets.Visible(widget))
+            {
+                return;
+            }
+
+            AgeControlToggle it = toggle;
+            NodeVtable vtable = GraphNodes.Checkbox(
+                CardActions.GameText("%DecolonizeGhostActionTitle"),
+                () => it.State,
+                () => AgeWidgets.Toggle(it),
+                () => AgeWidgets.Operable(widget),
+                AgeWidgets.Raw(widget)
+            );
+            // Ticking it posts an ORDER and the tick only becomes true once the department holds the
+            // action, so the state read back on the keypress is the state before it - doubly so here,
+            // because the game's own handler flips the box a second time on top of the click's flip
+            // (<c>AgeControlToggle.HandleMouseUpOrDown</c> :211-215 flips, then dispatches;
+            // <c>OnDecolonizeGhostToggleCb</c> :1004 flips again). The live value part is what says
+            // what actually happened, when it happens.
+            vtable.StateText = null;
+            AgeWidgets.Point(vtable, it);
+            Add(cells, widget, ControlId.Referenced(toggle, "system:colony/decolonize"), vtable);
+        }
+
+        /// <summary>
+        /// The banner the panel puts up when something military is happening to this system - it is
+        /// frozen in a time bubble, being invaded, being converted, under siege, or blockaded
+        /// (<c>RefreshMilitaryStatusAndOwnership</c> :569-615). One of the five at most, and nothing
+        /// at all the rest of the time.
+        ///
+        /// The game writes the state's own word on the banner and assembles the paragraph behind it
+        /// from the descriptor doing it, so the word is the line and the paragraph is the review.
+        /// </summary>
+        private static void AddMilitaryStatus(List<Cell> cells, ColonyInfoSidePanel panel)
+        {
+            AgeTransform group = panel.SystemMilitaryStatusGroup;
+            if (group == null || !AgeWidgets.Visible(group))
+            {
+                return;
+            }
+
+            AgePrimitiveLabel label = panel.SystemMilitaryStatusLabel;
+            AddReadout(
+                cells,
+                group,
+                "system:colony/military-status",
+                () => AgeText.Label(label)
+            );
+        }
+
+        /// <summary>
+        /// How much of this system its owner actually holds, drawn only while somebody else holds some
+        /// of it (<c>RefreshMilitaryStatusAndOwnership</c> :633-646). The panel draws the percentage
+        /// beside a symbol and writes no caption, so the caption is the game's own title for the
+        /// property the number comes from - the same naming the five outputs above it get.
+        ///
+        /// The group answers a click, but only in the developers' god mode
+        /// (<c>OnOwnershipGroupCb</c> :889-900), so it is a readout here rather than a button that
+        /// does nothing - the same treatment the population panel's approval box gets.
+        /// </summary>
+        private static void AddOwnership(List<Cell> cells, ColonyInfoSidePanel panel)
+        {
+            AgeTransform group = panel.OwnershipGroup;
+            if (group == null || !AgeWidgets.Visible(group))
+            {
+                return;
+            }
+
+            AgePrimitiveLabel label = panel.OwnershipLabel;
+            AddReadout(
+                cells,
+                group,
+                "system:colony/ownership",
+                () =>
+                    AgeText.Clean(
+                        Gui.GetLocalizedTitle(SimulationProperties.StarSystem.Ownership)
+                    ),
+                () => AgeText.Label(label),
+                panel.OwnershipTooltip
+            );
+        }
+
+        /// <summary>
+        /// The strategics and luxuries this system is exploiting. The panel keeps the banner hidden
+        /// until it has something in it (<c>ResourcesBanner_Refresh</c> :847-851), so being drawn is
+        /// the gate and an empty banner contributes nothing.
+        ///
+        /// One row per resource, read the way the empire's own stockpile strip is read
+        /// (<see cref="GlobalHud"/>): the resource's name, then what is held and what the next turn
+        /// does to it, computed rather than read off the labels - the labels are animated towards
+        /// their targets and a reading taken mid-slide is a number the game never displayed.
+        /// </summary>
+        private static void AddResources(List<Cell> cells, ColonyInfoSidePanel panel)
+        {
+            ResourcesPanel banner = panel.ResourcesBanner;
+            AgeTransform table = banner == null ? null : banner.ResourceItemsTable;
+            if (table == null || !AgeWidgets.Visible(banner.AgeTransform))
+            {
+                return;
+            }
+
+            try
+            {
+                IList<AgeTransform> items = table.Children;
+                for (int i = 0; items != null && i < items.Count; i++)
+                {
+                    AgeTransform widget = items[i];
+                    ResourceItem item =
+                        widget == null ? null : widget.GetComponent<ResourceItem>();
+                    GuiLocatedResource resource =
+                        item == null ? null : item.GuiLocatedResource;
+                    if (resource == null || !AgeWidgets.Visible(widget))
+                    {
+                        continue;
+                    }
+
+                    GuiLocatedResource it = resource;
+                    NodeVtable vtable = GraphNodes.Readout(
+                        () => AgeText.Clean(it.Title),
+                        () =>
+                            GlobalHud.StockAndNet(
+                                it.GetStockValueFromCache(),
+                                it.GetNetValueFromCache(),
+                                it.GetStockValueFromCache() < 10f ? 1 : 0
+                            ),
+                        null,
+                        item.Tooltip
+                    );
+                    AgeWidgets.Point(vtable, item.Button, item.Tooltip, widget);
+                    cells.Add(
+                        new Cell
+                        {
+                            Widget = widget,
+                            Id = ControlId.Referenced(
+                                item,
+                                "system:colony/resource/" + resource.Name
+                            ),
+                            Vtable = vtable,
+                        }
+                    );
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("system: reading the colony panel's resources threw: " + e);
+            }
+        }
+
+        /// <summary>How many wrecked Arks are drifting in this system, which is the only thing the
+        /// panel's special-features table has ever held (<c>RefreshSpecialFeatures</c> :686-709) and is
+        /// drawn only where there is at least one. The count is a bare number beside a symbol; the
+        /// caption is the game's own title for the property it counts, and what the wrecks are worth
+        /// and who may salvage them is the sentence on its own tooltip.</summary>
+        private static void AddWreckedMotherships(List<Cell> cells, ColonyInfoSidePanel panel)
+        {
+            AgeTransform group = panel.MothershipsGroup;
+            if (group == null || !AgeWidgets.Visible(group))
+            {
+                return;
+            }
+
+            AgePrimitiveLabel count = panel.MothershipsLabel;
+            AddReadout(
+                cells,
+                group,
+                "system:colony/wrecked-motherships",
+                () =>
+                    AgeText.Clean(
+                        Gui.GetLocalizedTitle(
+                            SimulationProperties.StarSystem.WreckedMothershipCount
+                        )
+                    ),
+                () => AgeText.Label(count),
+                panel.MothershipsTooltip
+            );
         }
 
         /// <summary>The system's five outputs, one readout each, named by the game's own titles for the

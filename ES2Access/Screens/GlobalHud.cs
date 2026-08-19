@@ -2576,8 +2576,9 @@ namespace ES2Access.Screens
         // ---- shared ----
 
         /// <summary>A stock and what the next turn does to it, in the game's own number formatting -
-        /// grouped, rounded down, and signed for the part that is a change.</summary>
-        private static string StockAndNet(float stock, float net, int decimals)
+        /// grouped, rounded down, and signed for the part that is a change. Shared with the star
+        /// system page, whose colony panel draws the same resource strip for one system.</summary>
+        internal static string StockAndNet(float stock, float net, int decimals)
         {
             return ModStrings.Format(
                 ModStrings.GalaxyStockAndNet,
