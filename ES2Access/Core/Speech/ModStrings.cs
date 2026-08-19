@@ -720,7 +720,6 @@ namespace ES2Access.Core.Speech
 
         public const string SystemImprovements = "system.improvements";
         public const string SystemLevel = "system.level";
-        public const string SystemSecurity = "system.security";
 
         /// <summary>How many outposts this colony is feeding part of its growth to. The population
         /// panel draws the number alone beside a symbol and says what it means nowhere but on the row's
@@ -1474,7 +1473,6 @@ namespace ES2Access.Core.Speech
             { SystemPopulationMoved, "Moved {0} to {1}" },
             { SystemImprovements, "System improvements" },
             { SystemLevel, "System level {0}" },
-            { SystemSecurity, "Security" },
             { SystemSupplyingOutpost, "Supplying {0} outpost" },
             { SystemSupplyingOutposts, "Supplying {0} outposts" },
 

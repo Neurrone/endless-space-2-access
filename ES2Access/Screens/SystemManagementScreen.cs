@@ -1308,17 +1308,13 @@ namespace ES2Access.Screens
             // number, not on the number: read from the number's own transform there is no tooltip at
             // all, which is how this line came to say "240/240" and nothing else. The caption is the
             // game's own word for the value - the dossier wrapper's title, "System Garrison" (owner
-            // ruled 2026-08-19, matching the citadel row) - with the old mod phrase kept only as the
-            // fallback for a tooltip that yields no title.
+            // ruled 2026-08-19, matching the citadel row). No fallback word: a tooltip yielding no
+            // title leaves the bare value (owner ruled 2026-08-19, unauthorized fallbacks disallowed).
             AddReadout(
                 _cells,
                 panel.SecurityValue == null ? null : panel.SecurityValue.AgeTransform,
                 "system:colony/security",
-                () =>
-                {
-                    string title = AgeWidgets.TooltipTitle(panel.SecurityAndTroopsTooltip);
-                    return string.IsNullOrEmpty(title) ? ModStrings.Get(ModStrings.SystemSecurity) : title;
-                },
+                () => AgeWidgets.TooltipTitle(panel.SecurityAndTroopsTooltip),
                 () => AgeText.Label(panel.SecurityValue),
                 panel.SecurityAndTroopsTooltip
             );
