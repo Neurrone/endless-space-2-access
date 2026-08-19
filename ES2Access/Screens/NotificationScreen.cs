@@ -963,19 +963,31 @@ namespace ES2Access.Screens
 
             AgeTooltip tooltip = Last(explaining);
             AgeTransform hover = tooltip == null ? null : Holder(tooltip);
-            NodeVtable vtable = new NodeVtable
-            {
-                // No role word and no state: this is something the game wrote down for the player to
-                // read, not a control they work.
-                Announcements = new List<NodeAnnouncement>
+
+            // A table line the game wired a click to is a control the player works, exactly as it is in
+            // a popup whose captions let the same lines read as a sheet (<see cref="RowNode"/>) - so it
+            // says so and Enter is the game's own click, whichever reading the popup's captions bought.
+            AgeTransform clicked = group != null && Wired(group) ? group : null;
+            NodeVtable vtable = clicked == null
+                ? new NodeVtable
                 {
-                    GraphNodes.LabelPart(() => RowText(it)),
-                },
-                Sections = GraphNodes.Sections(sections),
-                OnFocusVisual =
-                    hover == null ? ReleasePointer : () => PointerFocus.MoveTo(hover, tooltip),
-                OnBlurVisual = ReleasePointer,
-            };
+                    // No role word and no state: this is something the game wrote down for the player to
+                    // read, not a control they work.
+                    Announcements = new List<NodeAnnouncement>
+                    {
+                        GraphNodes.LabelPart(() => RowText(it)),
+                    },
+                }
+                : GraphNodes.Button(
+                    () => RowText(it),
+                    () => AgeWidgets.Press(clicked),
+                    () => AgeWidgets.Operable(clicked)
+                );
+
+            vtable.Sections = GraphNodes.Sections(sections);
+            vtable.OnFocusVisual =
+                hover == null ? ReleasePointer : () => PointerFocus.MoveTo(hover, tooltip);
+            vtable.OnBlurVisual = ReleasePointer;
 
             AgeTransform named = group ?? it[0].Widget;
             ControlId id = ControlId.Referenced(
@@ -1164,14 +1176,14 @@ namespace ES2Access.Screens
         }
 
         /// <summary>The table line a whole row was read out of - all of its pieces and nothing else's.
-        /// A row of one piece is never one: see the reading in <see cref="DrawnRows"/>.</summary>
+        ///
+        /// A row of one piece is normally not a line: see the reading in <see cref="DrawnRows"/>. The
+        /// exception is a line the game WIRED A CLICK to - the systems whose construction queue has run
+        /// dry, each drawn as its name and nothing else and each a button that opens that system. Such a
+        /// line is the control the row is, so the row has to know which widget it came out of whether the
+        /// game wrote one word on it or four.</summary>
         private static AgeTransform GroupOf(List<Line> row, List<AgeTransform> lines)
         {
-            if (row.Count < 2)
-            {
-                return null;
-            }
-
             AgeTransform group = In(row[0].Widget, lines);
             for (int i = 1; group != null && i < row.Count; i++)
             {
@@ -1181,7 +1193,7 @@ namespace ES2Access.Screens
                 }
             }
 
-            return group;
+            return row.Count > 1 || (group != null && Wired(group)) ? group : null;
         }
 
         /// <summary>One thing drawn in the content area: a control the popup added there, or a row of
@@ -3011,6 +3023,11 @@ namespace ES2Access.Screens
                         ),
                 }
             );
+            // The systems that have run out of things to build. The prefab draws one caption over the
+            // lines rather than a band of them, so they stay rows - and each line is a BUTTON that opens
+            // that system's management view (<c>ConstructionQueueEmptyNotificationLine.OnSelectSystemCb</c>),
+            // which is why declaring the container matters here beyond the reading: it is what tells the
+            // row which widget carries the click.
             variants.Add(
                 typeof(ConstructionQueueEmptyNotificationWindow),
                 new Variant
