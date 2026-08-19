@@ -46,8 +46,9 @@
 - Review buffers: Ctrl+Left and Ctrl+Right now step over any buffer with nothing in it, so a single-player game no longer cycles through an empty chat log to get back to where it started
 - Economy screen: the luxury resources are now an eight column table, one column per resource family. The family icons are the heading row above it, moving sideways says which family you have crossed into, moving up and down keeps the column, and a family with no resource on that line says "empty" so the columns stay lined up. Typing still finds a resource by name from any column
 - The top-left corner of every screen now names the faction rows too, for the empires that have them: "Essence", "Manage Population", "Singularities", "Golden Age", "Pirate Mark", "Keii" and "Relics"
-- Changing a game setting now says the game's own sentence about the value you have moved to, not just its name — "Slow, A slow-paced game takes about 450 turns maximum" instead of "Slow". This covers the new game lobby, its advanced settings, and the settings panels in the pause menu; the options screen is unchanged, because its sliders and tick boxes keep one description whatever they are set to
 - Ship design: an empty slot now reads the three markers the game only draws as pictures — "Times 2 Multiplier" for the dots that multiply a fitted module, "Symmetrical (x2 cost)" for a slot mirrored on the far side of the ship, and "Heavy Mount" for the slot the game only draws bigger. A filled slot is unchanged: its module's own tooltip already says all three
+- Changing a game setting now says the game's own sentence about the value you have moved to, not just its name — "Slow, A slow-paced game takes about 450 turns maximum" instead of "Slow". This covers the new game lobby, its advanced settings, and the settings panels in the pause menu; the options screen is unchanged, because its sliders and tick boxes keep one description whatever they are set to
+- Mod manager: the mods library now reads as a "Filters" section holding the folder switches on one row, followed by an "Available" section with the library's contents one per row, matching the constructibles pattern
 
 ## V0.1.1
 

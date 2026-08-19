@@ -54,6 +54,10 @@ namespace ES2Access.Screens
 
         private readonly List<Cell> _cells = new List<Cell>();
 
+        // The library's top band, collected apart from what the library lists so the two can be declared
+        // as their own regions.
+        private readonly List<Cell> _filters = new List<Cell>();
+
         public override string Key
         {
             get { return "screen.modding"; }
@@ -116,7 +120,15 @@ namespace ES2Access.Screens
             Cells.EmitLinear(builder, _cells);
         }
 
-        /// <summary>The mods the game found, under the two filters that decide which of them are listed.
+        /// <summary>
+        /// The mods the game found, under the switches that decide which of them are listed.
+        ///
+        /// The same two halves the star system's constructibles panel has, under the same two words: the
+        /// band the game draws across the top of the library is one row called "Filters" - the folder
+        /// switches and, where the game is drawing it, the button that drops a custom configuration, all
+        /// three of which the game lays out in the same 32-pixel band at the top of the panel (measured),
+        /// so reading the band off the drawing is what puts them on one row and keeps them in the order
+        /// they are drawn in - and everything the library LISTS is one per row under "Available".
         /// </summary>
         private void Library(GraphBuilder builder, GameModdingScreen window)
         {
@@ -127,12 +139,13 @@ namespace ES2Access.Screens
             }
 
             builder.PushContext(PanelName(panel.AgeTransform));
+            _filters.Clear();
             _cells.Clear();
             try
             {
-                AddCheckbox(panel.LocalFilterToggle, "modding:filter/local");
-                AddCheckbox(SteamWorkshop.FilterToggle(panel), "modding:filter/workshop");
-                Cells.AddControl(_cells, panel.DisableCustomConfigButton, "modding:custom-config");
+                AddCheckbox(_filters, panel.LocalFilterToggle, "modding:filter/local");
+                AddCheckbox(_filters, SteamWorkshop.FilterToggle(panel), "modding:filter/workshop");
+                Cells.AddControl(_filters, panel.DisableCustomConfigButton, "modding:custom-config");
                 if (AgeWidgets.Visible(panel.NoDataAvailableGroup))
                 {
                     Cells.AddReadout(_cells, panel.NoDataAvailableGroup, "modding:no-mods");
@@ -150,7 +163,23 @@ namespace ES2Access.Screens
                 Log.Warn("modding: reading the mod library threw: " + e);
             }
 
-            Cells.EmitLinear(builder, _cells);
+            bool regions = _filters.Count > 0 && _cells.Count > 0;
+            Cells.EmitRegion(
+                builder,
+                "modding:library/filters",
+                ModStrings.ShipDesignFilters,
+                regions,
+                _filters,
+                Cells.AsDrawnRows
+            );
+            Cells.EmitRegion(
+                builder,
+                "modding:library/available",
+                ModStrings.ShipDesignAvailable,
+                regions,
+                _cells,
+                Cells.OnePerRow
+            );
             builder.PopContext();
         }
 
@@ -187,6 +216,7 @@ namespace ES2Access.Screens
             Cells.Add(_cells, at, ControlId.Structural(key), vtable);
 
             AddCheckbox(
+                _cells,
                 item.ActivationToggle,
                 key + "/activate",
                 ModStrings.ModdingActivated,
@@ -365,6 +395,7 @@ namespace ES2Access.Screens
         }
 
         private void AddCheckbox(
+            List<Cell> cells,
             AgeControlToggle toggle,
             string key,
             string nameKey = null,
@@ -396,7 +427,7 @@ namespace ES2Access.Screens
             );
             GraphNodes.AddRefusal(vtable, tooltip, offered);
             AgeWidgets.Point(vtable, box, tooltip, at);
-            Cells.Add(_cells, widget, ControlId.Structural(key), vtable);
+            Cells.Add(cells, widget, ControlId.Structural(key), vtable);
         }
 
         /// <summary>Whether the page is describing a mod at all - the screen's own answer, since the panel

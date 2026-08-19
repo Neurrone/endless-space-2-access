@@ -93,60 +93,26 @@ namespace ES2Access.UI
                 }
 
                 bool regions = Bar.Count > 0 && Grid.Count > 0;
-                Half(builder, keyPrefix + "constructibles/filters", ModStrings.ShipDesignFilters, regions, Bar, false);
-                Half(builder, keyPrefix + "constructibles/list", ModStrings.ShipDesignAvailable, regions, Grid, true);
+                Cells.EmitRegion(
+                    builder,
+                    keyPrefix + "constructibles/filters",
+                    ModStrings.ShipDesignFilters,
+                    regions,
+                    Bar,
+                    Cells.AsDrawnRows
+                );
+                Cells.EmitRegion(
+                    builder,
+                    keyPrefix + "constructibles/list",
+                    ModStrings.ShipDesignAvailable,
+                    regions,
+                    Grid,
+                    Cells.OnePerRow
+                );
             }
             catch (Exception e)
             {
                 Log.Warn("system panels: reading the constructibles threw: " + e);
-            }
-        }
-
-        /// <summary>
-        /// One half of a panel the game draws as a bar of switches over a grid of things, named by the
-        /// word the mod puts over it.
-        ///
-        /// <paramref name="regions"/> is the whole-panel answer, asked once and passed to both halves:
-        /// a lone region is a region jump that swallows the key silently, so a panel drawing only one
-        /// of its halves declares neither.
-        /// </summary>
-        private static void Half(
-            GraphBuilder builder,
-            string regionKey,
-            string nameKey,
-            bool regions,
-            List<Cell> cells,
-            bool linear
-        )
-        {
-            if (cells.Count == 0)
-            {
-                return;
-            }
-
-            if (regions)
-            {
-                builder.SetRegion(regionKey);
-                builder.PushContext(ModStrings.Get(nameKey));
-            }
-
-            try
-            {
-                if (linear)
-                {
-                    Cells.EmitLinear(builder, cells);
-                }
-                else
-                {
-                    Cells.Emit(builder, cells);
-                }
-            }
-            finally
-            {
-                if (regions)
-                {
-                    builder.PopContext();
-                }
             }
         }
 
@@ -811,7 +777,14 @@ namespace ES2Access.UI
                 ShipRows.Ships(Grid, panel, keys, false);
 
                 bool regions = Bar.Count > 0;
-                Half(builder, keys + "/toolbar", ModStrings.DiplomacyActionsBand, regions, Bar, false);
+                Cells.EmitRegion(
+                    builder,
+                    keys + "/toolbar",
+                    ModStrings.DiplomacyActionsBand,
+                    regions,
+                    Bar,
+                    Cells.AsDrawnRows
+                );
                 if (regions)
                 {
                     builder.SetRegion(keys + "/ships");

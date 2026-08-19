@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using ES2Access.Core.Speech;
 using ES2Access.Core.UI.Graph;
 
 namespace ES2Access.UI
@@ -180,6 +181,56 @@ namespace ES2Access.UI
 
             builder.EndRow();
         }
+
+        /// <summary>
+        /// One half of a panel the game draws as a band of switches over a list of things, under the word
+        /// the mod puts over it: the star system's constructibles, the ship hangar, the mod library.
+        ///
+        /// <paramref name="regions"/> is the WHOLE panel's answer, asked once by the caller and handed to
+        /// both halves: a lone region is a region jump that swallows the key silently, so a panel drawing
+        /// only one of its halves declares neither.
+        ///
+        /// <paramref name="emit"/> is how the half reads - <see cref="Emit"/> for the band the game drew
+        /// as one line, <see cref="EmitLinear"/> for the list under it, <see cref="EmitRow"/> for a band
+        /// the layout box wrapped that is still one line.
+        /// </summary>
+        public static void EmitRegion(
+            GraphBuilder builder,
+            object regionKey,
+            string nameKey,
+            bool regions,
+            List<Cell> cells,
+            Action<GraphBuilder, List<Cell>> emit
+        )
+        {
+            if (cells.Count == 0)
+            {
+                return;
+            }
+
+            if (regions)
+            {
+                builder.SetRegion(regionKey);
+                builder.PushContext(ModStrings.Get(nameKey));
+            }
+
+            try
+            {
+                emit(builder, cells);
+            }
+            finally
+            {
+                if (regions)
+                {
+                    builder.PopContext();
+                }
+            }
+        }
+
+        /// <summary>The emitters as arguments, so a caller of <see cref="EmitRegion"/> names which one its
+        /// half reads by rather than passing a flag that has to be decoded there.</summary>
+        public static readonly Action<GraphBuilder, List<Cell>> AsDrawnRows = Emit;
+        public static readonly Action<GraphBuilder, List<Cell>> OnePerRow = EmitLinear;
 
         /// <summary>A control the game drew, activated the way a mouse activates it - the shape every
         /// page's plain buttons take, so a screen that has nothing to say about a button beyond "the
