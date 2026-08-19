@@ -35,6 +35,7 @@
 - Ship design: the ship's module slots are now read grouped by the type of module they take (defence, then support, then weapon), instead of wherever the hull happens to draw them. A slot that takes several types is read with the first of them, and what is fitted in a slot never changes where it is read
 - Ship design: the statistics panel's module health figure is now called "Health Bonus" instead of announcing only its explanation and a bare number
 - Research screen: the branches and stages of the technology tree now say only their names ("Military", "Military I") — the researched-over-available counts in front of every group are gone
+- Star system and empire screens: queuing a construction now says what went into the queue ("Queued Interplanetary Transport Network"), instead of answering the key with silence
 
 ## V0.1.1
 

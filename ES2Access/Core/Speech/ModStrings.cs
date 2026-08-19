@@ -669,6 +669,13 @@ namespace ES2Access.Core.Speech
         public const string SystemRenamePlanet = "system.rename-planet";
         public const string SystemRenameSystem = "system.rename-system";
         public const string SystemPopulationMoved = "system.population-moved";
+
+        /// <summary>That a constructible has gone into the system's construction queue. The game
+        /// answers a click with a flying icon and a sound and writes no word anywhere, so unlike a
+        /// technology - whose dot changes to the game's own "Queued" under the cursor - a tile has
+        /// nothing of the game's own to say.</summary>
+        public const string SystemConstructionQueued = "system.construction-queued";
+
         public const string SystemImprovements = "system.improvements";
         public const string SystemLevel = "system.level";
         public const string SystemSecurity = "system.security";
@@ -1388,6 +1395,7 @@ namespace ES2Access.Core.Speech
             { SystemRenamePlanet, "Rename planet" },
             { SystemRenameSystem, "Rename system" },
             { SystemPopulationMoved, "Moved {0} to {1}" },
+            { SystemConstructionQueued, "Queued {0}" },
             { SystemImprovements, "System improvements" },
             { SystemLevel, "System level {0}" },
             { SystemSecurity, "Security" },

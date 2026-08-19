@@ -428,6 +428,20 @@ namespace ES2Access.UI
                         item.Icon.Image
                     );
                 }
+
+                // The tile itself says nothing about what just happened - it stays exactly as it was,
+                // and the queue that grew is a panel away - so this is the only answer a player gets to
+                // the key they pressed. Said the moment the mod posts the order, which is the same
+                // moment the game plays its own click sound and flies its icon; the tile is only ever
+                // reached here after the game's own enablement has been asked, so a refused tile
+                // returns before this and keeps the game's silence.
+                Voice.Say(
+                    ModStrings.Format(
+                        ModStrings.SystemConstructionQueued,
+                        ConstructibleName(item)
+                    ),
+                    true
+                );
             }
             catch (Exception e)
             {
