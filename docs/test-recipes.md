@@ -708,10 +708,14 @@ mid-lane at turn 21 (`Position.IsInOrbit` false on every one, measured 2026-08-1
 direction group is declared only at the node the acting fleet orbits. The fixture is
 `[Midgame] quests fleets`: `1st Patriots Navy` orbits Dusay (node 535) carrying 2 probes, and its
 "Launch Probes" action is enabled. Selecting a fleet there raises the 6-page `Tutorial_Fleets`
-popup — minimize it before injecting anything else. Beware `hud:next-idle-fleet` semantics on the
-map's own fleet node: with a probe already launched, Enter on `…/fleet/1298` selected the OTHER
-fleet (the actions stop then reads "Colonize"), so check the actions stop's own words before
-activating.
+popup — minimize it before injecting anything else. **Cancelling ANY targeting mode at a
+multi-fleet system re-selects the FIRST fleet at the slot, not the actor** (the game's own
+`ProbeLaunchingCursor.SwitchToGalaxyCursor` selects the docking slot and
+`FleetsScreen.RefreshGarrisonSelection` defaults positionally — measured 2026-08-20, keyboard and
+mouse identical), so after a cancel the panel and `fleets:actions` belong to that first fleet.
+Enter on a fleet's own map row is CORRECT in every measured state (a 2026-08-19 report that it
+"selected the other fleet" was this cancel-swap still standing) — just re-read the actions stop
+AFTER the Enter, never before.
 
 **Confirming a targeting mode on a LANE** (the probe-down-the-dark-lane repro): arm the
 cursor from `/eval` with `Fleets[0]`, focus the lane node (`galaxy:system/543/lane/662` on
