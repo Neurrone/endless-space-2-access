@@ -316,7 +316,8 @@ same cells the plain arrow walks, in the same steps, stopping at the first one t
 player is standing on — where "what" is the identity of everything the cell's reading names plus a
 three-state fog bucket, and never the coordinates. Running off the map lands on the last cell still
 on it; a walk with not one step possible says "Map edge", the plain arrow's own refusal. Cells passed
-over are counted and said FIRST ("Skipped 12 tiles") and only where there were any, ahead of the
+over are counted and said FIRST ("Skipped 12 squares" — the mode's own word, counting CURSOR-sized
+cells, owner-ruled 2026-08-19) and only where there were any, ahead of the
 landing's ordinary cell reading. The chords are **Shift+Left/Right — the existing coarse-step actions,
 taken by the mode rather than double-bound** (a coarse step means nothing on the map stop, and the
 zoom slider that chord really adjusts is a stop of its own, where the mode is suspended and keeps its

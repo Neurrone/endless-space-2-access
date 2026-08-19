@@ -1301,10 +1301,10 @@ visibility and wording with the tree, so the tree's route is the only place eith
 **Skip and travel (2026-08-19)**: `ui.coarseDecrease`/`ui.coarseIncrease` are the WEST/EAST skip
 while the mode drives the map, `galaxy.inspectSkipNorth`/`…South` the other two, and
 `galaxy.inspectFollowWest`/`…FollowEast` the travel keys. Measured on `[Beginner] test` at 1×1 from
-Ita (5,34): north gives `5, 35`, then `Skipped 2 tiles` + `5, 38, Unexplored` (the fog bucket
-changing is a stop), then `Skipped 49 tiles` + `5, 88, Unexplored` (the run to the north edge — the
+Ita (5,34): north gives `5, 35`, then `Skipped 2 squares` + `5, 38, Unexplored` (the fog bucket
+changing is a stop), then `Skipped 49 squares` + `5, 88, Unexplored` (the run to the north edge — the
 landing is not counted, hence 49 and not 50), then `Map edge`; southward is the mirror
-(`Skipped 50 tiles` + `5, 37`). At 5×5 from (5,34) north gives `5, 39, 21 squares unexplored`, the
+(`Skipped 50 squares` + `5, 37`). At 5×5 from (5,34) north gives `5, 39, 21 squares unexplored`, the
 crop pair for "the square landed where the speech says". The travel keys' fixture is the SIX fleets,
 all the player's own and all in transit — `1st Patriots Navy` Heracles→Osulo, `1st Defenders Navy`
 Primus→Dusay, `1st Victors Navy` Dusay→Primus (those two share the cell `12, 15`, heading OPPOSITE
