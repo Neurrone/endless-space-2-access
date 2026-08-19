@@ -410,7 +410,11 @@ which no dump reveals. Key such lines on the game's *data* object, never the wid
   row of buttons, a strip of filter toggles, a grid of stat figures, a grid of cards
   (factions, loadouts, portraits) — is one row per member in drawn order — left-to-right,
   top-to-bottom — never a 2D reading: the members are peers of one kind, so sideways and
-  column-preserving moves buy nothing, and the wrap points are a rendering accident. The
+  column-preserving moves buy nothing, and the wrap points are a rendering accident. One
+  node per member is a capacity rule as much as an order rule: a node carries ONE tooltip
+  and one focus visual, so merging N explaining widgets into one node silently drops N−1
+  explanations — the merged node still speaks all the words and still shows a tooltip,
+  which is what makes the loss invisible. The
   2D reading is reserved for a real table (below), whose columns are the game's own data.
   When the cells come from a reader shared between hosts, flatten at the host's emit call,
   never in the shared collector — it fills a caller-owned list and belongs to no host's
@@ -455,7 +459,12 @@ which no dump reveals. Key such lines on the game's *data* object, never the wid
   the row's announcement parts resolve, guarded on being the focused node (dumps and
   searches must turn nothing); where the game's affordance is a STEP rather than a jump,
   the landing presses it repeatedly, shortest way round, bailing when a press moves
-  nothing.
+  nothing. And the stop LANDS on the page the surface is currently showing — declared with
+  the stop-scoped landing (the graph-wide start is one field for the whole page and belongs
+  to its opening node), re-declared each build so it tracks the game's own page state; a
+  position the player left in the stop still outranks it, and first entry without the
+  declaration turns the page out from under the reader — the same reason a table's landing
+  is pinned to its first data row (above).
 - **A persistent overlay is a contributor, not a screen.** A HUD cluster drawn over several
   pages (end-turn controls, resource banners, a collapsed tutorial bar) must not be declared
   by whichever page first met it — when the player moves to another page under the same
