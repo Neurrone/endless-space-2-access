@@ -79,6 +79,10 @@ files above.
   cursor-targets; `HackingOperationCursor` route building rides the Penumbra wait; the
   instruction banner can speak the previous mode's caption for a frame (cheap fix: skip
   an instruction that is not the current cursor's).
+- Targeting-cancel fleet swap (measured 2026-08-20, owner-ruled leave-at-parity): a
+  cancel at a multi-fleet system hands the panel to the slot's first fleet, not the
+  actor. Fix only if it becomes a problem — the issue, mechanism and preferred fix
+  (Harmony postfix) are in `docs/fleet-selection-cancel-swap.md`.
 - Chat: the child screen ships whole (tabs, message log, box, the page-level new-message
   button) and is verified in a single-player fixture; what no fixture here has shown is the
   MULTIPLAYER half — the alliance tab, the new-message button actually being raised (in
