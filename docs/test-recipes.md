@@ -695,12 +695,23 @@ TimeBubbleDefinition database>, node)`; quest markers — `IQuestManagementServi
 Citadel1))`, undone by `UnbindCitadel(true)`. Lowering an `EntityVisibility` LAYER (unlike
 exploration) needs reflection on the private `layers` array.
 
-**Free-aiming a probe by compass** (arm through the fleet-actions stop — that list walks
-with Left/Right, not Up/Down; landing is the "Launch towards" group, last in the system
-branch): End/Right/Down to a bearing, `ui.activate`; oracle
+**Free-aiming a probe by compass** (arm through the fleet-actions stop — that list walks with
+Up/Down, `ui.right` answers `unconsumed`; **arming seats the cursor on the group's FIRST bearing,
+north**, with the fleet's system branch and the "Launch towards" group both opened for it — fixed
+2026-08-19, it used to leave the cursor wherever it stood): `ui.down` from north to another
+bearing, `ui.activate`; oracle
 `DepartmentOfDefense.Probes[i].Direction` against the unit vector (X=east, world-z=north).
 Primus's lanes run NE/SW/NW, so N/E/SE/S/W are lane-free bearings. Anchor-migration and
 at-star cases: set `Probe.GalaxyPosition` from `/eval`, restore by `/loadsave`.
+**The mode needs a fleet IN ORBIT, so `[Beginner] test` cannot arm it** — all six of its fleets are
+mid-lane at turn 21 (`Position.IsInOrbit` false on every one, measured 2026-08-19), and the
+direction group is declared only at the node the acting fleet orbits. The fixture is
+`[Midgame] quests fleets`: `1st Patriots Navy` orbits Dusay (node 535) carrying 2 probes, and its
+"Launch Probes" action is enabled. Selecting a fleet there raises the 6-page `Tutorial_Fleets`
+popup — minimize it before injecting anything else. Beware `hud:next-idle-fleet` semantics on the
+map's own fleet node: with a probe already launched, Enter on `…/fleet/1298` selected the OTHER
+fleet (the actions stop then reads "Colonize"), so check the actions stop's own words before
+activating.
 
 **Confirming a targeting mode on a LANE** (the probe-down-the-dark-lane repro): arm the
 cursor from `/eval` with `Fleets[0]`, focus the lane node (`galaxy:system/543/lane/662` on

@@ -657,8 +657,11 @@ generic graduates to the generic docs.
   culling + `Visibility >= 3`, so the drawn position licenses direction-and-distance words.
 - **Arming a targeting mode from the fleet-actions stop closes the fleet panel and seats the
   cursor back in the acting fleet's system branch** — the last node if the branch is open,
-  the system node if closed (which is why the mod's "Launch towards" group sits last: arming
-  lands the player directly on it).
+  the system node if closed. That is reconciliation's doing, not a landing, and it only holds
+  when the cursor was in that branch to begin with: from anywhere else the player was left
+  standing where they were, with the mode up and no way to it. So the mod no longer relies on
+  it — arming seats the cursor on the probe mode's own first bearing itself
+  (`GalaxyHudScreen.FollowProbeArming`, 2026-08-19).
 - **A `GalaxyLink` game object carries TWO mirrored `GalaxyLinkCursorTarget` halves**
   (start/destination swapped; `GetCursorTarget` picks by where along the line the pointer
   is), and **no targeting cursor consumes a link target** — only the garrison cursor and

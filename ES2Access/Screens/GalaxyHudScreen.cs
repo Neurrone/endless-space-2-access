@@ -364,6 +364,9 @@ namespace ES2Access.Screens
         {
             _hud.Baseline();
             _fleetPanel.Baseline();
+            // A mode already armed when the page is arrived at is not one the player has just armed,
+            // and seating them on it would move the cursor for something that happened elsewhere.
+            _armedProbe = ArmedProbeFleet();
         }
 
         public override void OnPop()
@@ -380,6 +383,7 @@ namespace ES2Access.Screens
             // now is, and a square still drawn on a map nobody is looking at would be a mode nothing
             // could end.
             _inspect.Forget();
+            _armedProbe = null;
         }
 
         public override void OnUpdate()
@@ -392,8 +396,82 @@ namespace ES2Access.Screens
             // Before the camera is followed and before the graph is next built, so that the landing
             // and the branch it opens both happen on the frame the page arrives on.
             FollowTheGame();
+            // After it, because the two write the same one landing slot and this one is the player's
+            // own key of a moment ago - a probe armed on the same frame the game asked to be shown
+            // somewhere is still armed, and the mode is where the player has to be.
+            FollowProbeArming();
             FollowCamera();
         }
+
+        /// <summary>
+        /// Where the player is put when the launch-probe mode is armed: on the first of the eight
+        /// bearings that mode offers (<see cref="AddProbeDirections"/>), with the acting fleet's system
+        /// and that group both opened to get there.
+        ///
+        /// The button that arms the mode is on the fleet panel, and arming takes the whole panel off the
+        /// screen (the game draws it for the garrison cursor alone) - so the control the player pressed
+        /// is gone and the cursor is left wherever the rebuild's reconciliation puts it. That was the
+        /// acting fleet's own system only when the player happened to be standing in that branch;
+        /// having walked anywhere else in between, they were left with the mode up, its one keyboard
+        /// control several stops away, and nothing saying where (owner-reported). So the mode seats the
+        /// cursor itself, from wherever it was.
+        ///
+        /// Nothing is spoken here. The landing announces itself through the same path every focus
+        /// change goes through, naming the group it entered and the bearing it is on, which is the
+        /// whole of what there is to say.
+        ///
+        /// Watched by the FLEET the mode is armed for rather than by a bare flag, so re-arming - the
+        /// same fleet after a cancel, or a second fleet - seats again, and a mode that simply goes on
+        /// being up seats nothing.
+        /// </summary>
+        private void FollowProbeArming()
+        {
+            try
+            {
+                Fleet fleet = ArmedProbeFleet();
+                if (ReferenceEquals(fleet, _armedProbe))
+                {
+                    return;
+                }
+
+                _armedProbe = fleet;
+                StarSystemNode node = fleet == null
+                    ? null
+                    : FleetOrders.Orbit(fleet) as StarSystemNode;
+                if (node == null)
+                {
+                    return;
+                }
+
+                // The branch first, the group inside it second, the cursor last - the order the frame
+                // applies them in (<see cref="Arrive"/>): both expansions belong to the build that
+                // declares the bearing the cursor is being sent to.
+                string place = "galaxy:system/" + node.GUID;
+                _pendingExpand.Add(RootId(node));
+                _pendingExpand.Add(ControlId.Structural(place + "/launch"));
+                GraphNavigator navigator = ModEntry.Navigator;
+                if (navigator != null)
+                {
+                    navigator.FocusNode(ControlId.Structural(place + "/launch/0"));
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: seating the probe's launch directions threw: " + e);
+            }
+        }
+
+        /// <summary>The fleet the launch-probe mode is waiting on, or null while no probe mode is up.
+        /// </summary>
+        private static Fleet ArmedProbeFleet()
+        {
+            ProbeLaunchingCursor cursor = CursorTargeting.ArmedProbe;
+            return cursor == null ? null : cursor.ProbeOriginFleet;
+        }
+
+        /// <summary>The fleet the probe mode was armed for when it was last looked at - instance state,
+        /// so it is reload-safe and each page keeps its own.</summary>
+        private Fleet _armedProbe;
 
         /// <summary>
         /// Keep the game's own pointer feedback pointed at whatever the map is drawing for the focused
@@ -3672,12 +3750,14 @@ namespace ES2Access.Screens
         /// north - deliberately overlapping, because a lane running north does not stop north from being
         /// a direction.
         ///
-        /// They sit here, LAST in the system's branch, because that is where the mode leaves the
-        /// player: arming it hides the fleet panel (the game draws that panel for the garrison cursor
-        /// alone), and the cursor is put back into the acting fleet's own system - onto the last node
-        /// of the branch where it is open, which is this group, and onto the system itself where it is
-        /// closed. Measured both ways. They exist only while the mode does, which is the same rule the
-        /// map's own "click a target" banner is drawn by.
+        /// They sit here, LAST in the system's branch, after everything the map really draws at this
+        /// place: they are eight ways OUT of it rather than anything in it, and they are gone again the
+        /// moment the mode ends. The player does not have to walk to them: arming
+        /// the mode seats the cursor on the first bearing itself, opening this group and the system's
+        /// branch to do it (<see cref="FollowProbeArming"/>), because the fleet panel the mode is armed
+        /// from is taken off the screen by the arming and the player would otherwise be left standing
+        /// wherever they happened to be. They exist only while the mode does, which is the same rule
+        /// the map's own "click a target" banner is drawn by.
         /// </summary>
         private static void AddProbeDirections(
             GraphBuilder builder,
