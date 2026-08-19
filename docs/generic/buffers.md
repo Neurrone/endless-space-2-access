@@ -35,11 +35,14 @@ All Ctrl-modified so they never collide with plain-arrow navigation, and all **o
 |---|---|---|
 | Ctrl+Up / Ctrl+Down | Previous / next line | The raw line text only — no "line n of m", no label prefix |
 | Ctrl+Home / Ctrl+End | First / last line | Same |
-| Ctrl+Left / Ctrl+Right | Previous / next visible buffer (wraps) | "{buffer label}. {current line}" — the only place a buffer's name is spoken |
+| Ctrl+Left / Ctrl+Right | Previous / next non-empty visible buffer (wraps) | "{buffer label}. {current line}" — the only place a buffer's name is spoken |
 
 - Ends **clamp, never wrap**; hearing the same line repeat *is* the boundary cue (no error
   tone, no boundary message).
-- An empty buffer speaks a fixed "Buffer empty" phrase, not silence.
+- An empty buffer speaks a fixed "Buffer empty" phrase, not silence — but cycling visits
+  buffers with CONTENT, not buffers that exist: visibility answers whether the buffer
+  belongs, emptiness answers whether there is anything to land on — cycle on both, keeping
+  the "Buffer empty" phrase for the buffer the player is already in.
 - Buffer speech is **queued, not interrupting** — navigation announcements interrupt, review
   must not stomp them.
 

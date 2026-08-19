@@ -144,7 +144,9 @@ Rules that came out of shipping this, all hit in practice:
   game reused the printed paragraph as its hover copy; skip it; when only its FIRST LINE
   repeats the label and more follows, buffer it whole instead — the label is not the
   tooltip.
-- **The mode is a per-frame answer — never store it.** A widget can swap its tooltip class
+- **The mode is a per-frame answer — never store it — and neither is the CONTENT: a
+  tooltip the game rewrites per value is part of what a change to that value has to
+  re-speak.** A widget can swap its tooltip class
   with its state (ES2's stage-deed marker: a plain-text placeholder while locked, a
   class-composed dossier once its stage is researched), so one control's short/long mode
   flips over its lifetime. Asking the marker at every declaration is what makes the shared

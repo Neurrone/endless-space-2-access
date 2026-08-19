@@ -95,7 +95,11 @@ which no dump reveals. Key such lines on the game's *data* object, never the wid
     filters on the stop key) — a screen that models its visual panels as stops has no
     region jumps between them, and that is the intended model, not a gap (WotR's
     inventory: five panels as stops; regions used inside a panel — quest groups within
-    the journal list, action-bar segments). Declare regions unconditionally — a lone
+    the journal list, action-bar segments). A band of controls that is the same on every
+    instance of the surface and is reached AFTER reading rather than while reading (a
+    popup's browse/dismiss rails, a wizard's Back/Next) is a STOP — putting it in the
+    reading walk makes the length of the content the price of reaching it. A band that is
+    part of what the surface is SHOWING stays a region. Declare regions unconditionally — a lone
     region's jump is silently consumed, by design — but never region only PART of a
     stop: the jump is asked of the focused node's own region key, so an unregioned node
     answers it with silence.
@@ -133,7 +137,12 @@ which no dump reveals. Key such lines on the game's *data* object, never the wid
   tell a primary cell from its columns — ask the node instead of rediscovering table shape.
   Its node ids are private: a sheet names its first row (`FirstRow`, for the start node) and
   can be told to continue below a node the screen declared (`Follows`) — an adapter
-  reconstructing a cell key is the defect those two exist to prevent.
+  reconstructing a cell key is the defect those two exist to prevent. Before making a grid
+  a table, ask whether column 0 NAMES the row or is only its first cell. Where the rows
+  are just the lines the game wrapped one lattice onto, turn row naming off — or a
+  vertical crossing announces a neighbouring cell's words as the row's name — and let each
+  cell search as itself, or the one-result-per-row filter makes every other column
+  unfindable.
 - **`TypeAheadSearch`** — tiered fuzzy matching (ported to WotR from OniAccess), engine-side; the behavior contract is the "Type-ahead search" section below.
 
 ## The adapter (per game; imitate, don't copy)

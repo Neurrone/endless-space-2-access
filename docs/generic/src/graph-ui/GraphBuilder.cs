@@ -156,7 +156,11 @@ namespace ES2Access.Core.UI.Graph
 
         /// <summary>Push one NON-FOCUSABLE level of presentation hierarchy ("Difficulty settings",
         /// "list") onto nodes added from here — pure structure: never navigable, announced when focus
-        /// enters from outside. Close with <see cref="PopContext"/>.</summary>
+        /// enters from outside. Close with <see cref="PopContext"/>.
+        ///
+        /// A pushed level must be popped on EVERY exit path of the method that pushed it — an early
+        /// return or a catch that skips the pop does not throw at Build(); it silently adopts every
+        /// node every later stop declares.</summary>
         public GraphBuilder PushContext(string label, string role = null, bool positions = true)
         {
             GraphNode parent = CurrentParent;
