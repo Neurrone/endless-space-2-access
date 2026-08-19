@@ -44,7 +44,10 @@ namespace ES2Access.Core.UI
         ///
         /// A tabular row contributes ONE item, its primary cell (<see cref="NodeVtable.Column"/> 0):
         /// the metadata cells all search as their row's name, so without this every row would appear
-        /// once per column and stepping the results would walk cells rather than rows.
+        /// once per column and stepping the results would walk cells rather than rows. The exception is
+        /// a cell that searches as ITSELF (<see cref="NodeVtable.SearchesAsItself"/>) - a table whose
+        /// rows have no name, where each cell is a thing of its own and the filter would make seven
+        /// columns of eight unreachable by typing.
         /// </summary>
         public static SearchScope OverStop(GraphRender render, object stopKey)
         {
@@ -57,7 +60,7 @@ namespace ES2Access.Core.UI
                     if (
                         Equals(node.StopKey, stopKey)
                         && !vtable.ExcludeFromSearch
-                        && vtable.Column <= 0
+                        && (vtable.Column <= 0 || vtable.SearchesAsItself)
                     )
                     {
                         nodes.Add(node);

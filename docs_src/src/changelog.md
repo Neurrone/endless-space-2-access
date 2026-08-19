@@ -29,7 +29,7 @@
 - The ship designer's module filters share one row again inside their "Filters" section, matching the constructibles pattern
 - The view title is no longer in the tab order anywhere: the galaxy map keeps the zoom and scan controls, other views keep just their scan button, and Escape remains the way to close a screen
 - The constructibles and hangar panels (star system and empire screens) are now labelled, with the constructible filters in a "Filters" section, the hangar's buttons in an "Actions" section, and every constructible or ship read one per row in an "Available" section
-- The luxury and strategic resource grids (economy screen and recipe dialog) read as a legend of resource families followed by one resource per row, each saying its family; the recipe dialog's family names are fixed ("Industry" instead of "Improves Industry Food")
+- The strategic resource grid (economy screen) and both resource grids in the recipe dialog read as a legend of resource families followed by one resource per row, each saying its family; the recipe dialog's family names are fixed ("Industry" instead of "Improves Industry Food")
 - Tutorial pop-ups are now a list of pages: moving up and down turns the game's own pages and reads them, so the previous/next page buttons are gone. The minimized bar is a labelled "Tutorial" panel reading its title, then Minimize, then Close
 - The screen title's close button is no longer in the tab order — press Escape to close a screen instead
 - Ship design: the ship's module slots are now read grouped by the type of module they take (defence, then support, then weapon), instead of wherever the hull happens to draw them. A slot that takes several types is read with the first of them, and what is fitted in a slot never changes where it is read
@@ -44,6 +44,7 @@
 - Notification pop-ups: the controls are now a Tab stop of their own, separate from what the notification says. Tab moves between reading the notification and working it — browsing to the next or previous one, popping this kind up automatically, minimizing and Done — so a long report is read to its end without the controls in the way, and they are one key away from anywhere in it
 - Battle tactics: the two lists now say which one you have tabbed into — "Available" for the tactics you can pick up, and "Tactics set" for the set below. The "4 tactics available" count row and the repeated "Tactics" caption row are gone
 - Review buffers: Ctrl+Left and Ctrl+Right now step over any buffer with nothing in it, so a single-player game no longer cycles through an empty chat log to get back to where it started
+- Economy screen: the luxury resources are now an eight column table, one column per resource family. The family icons are the heading row above it, moving sideways says which family you have crossed into, moving up and down keeps the column, and a family with no resource on that line says "empty" so the columns stay lined up. Typing still finds a resource by name from any column
 - Ship design: an empty slot now reads the three markers the game only draws as pictures — "Times 2 Multiplier" for the dots that multiply a fitted module, "Symmetrical (x2 cost)" for a slot mirrored on the far side of the ship, and "Heavy Mount" for the slot the game only draws bigger. A filled slot is unchanged: its module's own tooltip already says all three
 
 ## V0.1.1

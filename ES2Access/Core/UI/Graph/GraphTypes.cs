@@ -300,6 +300,13 @@ namespace ES2Access.Core.UI.Graph
         /// primary, because every cell of it searches as the row's name.</summary>
         public int Column;
 
+        /// <summary>Type-ahead matches this cell BY ITS OWN words rather than by its row's - which is
+        /// what a table whose rows have no name is made of (<see cref="GraphSheet.NamedRows"/>). The
+        /// one-result-per-row filter exists because every cell of a named row searches as that row;
+        /// where the row has no name, dropping the non-primary cells would make the columns
+        /// unsearchable instead of un-duplicated. Stamped by <see cref="GraphSheet"/>.</summary>
+        public bool SearchesAsItself;
+
         /// <summary>Which ROW of a table this control sits in - the same <see cref="TableRow"/> object
         /// on every cell of the row, null outside a table. See <see cref="TableRow"/> for what the
         /// announcer does with it.</summary>

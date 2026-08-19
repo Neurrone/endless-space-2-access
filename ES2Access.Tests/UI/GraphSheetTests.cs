@@ -175,6 +175,69 @@ namespace ES2Access.Tests.UI
             Assert.Equal("3", GraphAnnouncer.LeafText(up.To));
         }
 
+        /// <summary>A grid whose rows are only the lines the game wrapped one lattice onto: column 0 is
+        /// a cell like any other, so a vertical crossing names no row - saying one would announce a
+        /// NEIGHBOURING cell's words in front of the cell landed on.</summary>
+        [Fact]
+        public void UnnamedRowsLabelNoVerticalCrossing()
+        {
+            GraphState state = new GraphState();
+            KeyGraph g = new KeyGraph(() =>
+            {
+                GraphBuilder b = new GraphBuilder();
+                GraphSheet s = new GraphSheet(b, "t:");
+                s.NamedRows = false;
+                s.Region("Luxuries", new[] { "Food", "Industry" });
+                s.Row(Vt("Alpha"), null, () => "3");
+                s.Row(Vt("Beta"), null, () => "2");
+                s.Finish();
+                return b.Build();
+            }, state);
+            g.Rerender();
+            g.Move(GraphDir.Right);
+
+            MoveResult down = g.Move(GraphDir.Down);
+            Assert.True(down.Moved);
+            Assert.Null(down.TransitionLabel);
+            Assert.Equal("2", GraphAnnouncer.LeafText(down.To));
+            Assert.Null(g.Move(GraphDir.Up).TransitionLabel);
+        }
+
+        /// <summary>And every cell of such a grid is its own search result: the one-result-per-row filter
+        /// exists because a named row's cells all search as that row, which here would make seven columns
+        /// of eight unreachable by typing.</summary>
+        [Fact]
+        public void UnnamedRowsMakeEveryCellSearchable()
+        {
+            GraphBuilder b = new GraphBuilder();
+            b.BeginStop("lux");
+            GraphSheet s = new GraphSheet(b, "t:");
+            s.NamedRows = false;
+            s.Region("Luxuries", new[] { "Food", "Industry" });
+            s.Row(Vt("Alpha"), null, () => "Transvine");
+            s.Finish();
+            GraphRender render = b.Build();
+
+            SearchScope scope = SearchScope.OverStop(render, "lux");
+            Assert.Equal(2, scope.Count);
+            Assert.Equal("Transvine", scope.TextOf(1));
+        }
+
+        /// <summary>The default is unchanged: a table whose rows are things offers one result per row.
+        /// </summary>
+        [Fact]
+        public void NamedRowsStillOfferOneSearchResultPerRow()
+        {
+            GraphBuilder b = new GraphBuilder();
+            b.BeginStop("fleets");
+            GraphSheet s = new GraphSheet(b, "t:");
+            s.Region("Fleets", new[] { "Name", "Ships" });
+            s.Row(Vt("Alpha"), _rowA, () => "3");
+            s.Finish();
+
+            Assert.Equal(1, SearchScope.OverStop(b.Build(), "fleets").Count);
+        }
+
         [Fact]
         public void MovingDownThePrimaryColumnIsUnlabeled()
         {

@@ -1556,12 +1556,17 @@ namespace ES2Access.UI
         // A search over a table matches rows and lands on their primary cell; the player was
         // reading a column, so step sideways back into it. Bounded rather than "while": a table
         // whose edges are wired in a circle must not take the frame with it.
+        //
+        // A cell that matched BY ITS OWN words is the thing the player asked for, so the column is not
+        // followed off it: a table whose rows have no name (NodeVtable.SearchesAsItself) offers every
+        // cell as a result, and stepping right from one would read a different cell than the one that
+        // matched.
         private void FollowSearchColumn()
         {
             for (int step = 0; step < 64 && _searchColumn > 0; step++)
             {
                 GraphNode node = _graph.CurrentNode;
-                if (node == null || node.Vtable.Column >= _searchColumn)
+                if (node == null || node.Vtable.SearchesAsItself || node.Vtable.Column >= _searchColumn)
                 {
                     return;
                 }
