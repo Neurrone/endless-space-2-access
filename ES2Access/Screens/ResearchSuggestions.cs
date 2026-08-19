@@ -69,6 +69,12 @@ namespace ES2Access.Screens
                         Name = Name(item),
                         Acts = true,
                         Details = Details(item),
+
+                        // The technology's own dossier, named rather than looked for: it is the one
+                        // the card carries in the buffer and so the one the pointer has to draw, and
+                        // saying which tooltip that is here is what makes the drawn one and the
+                        // declared one the same object rather than two answers that happen to agree.
+                        Tip = item.Tooltip,
                     }
                 );
             }

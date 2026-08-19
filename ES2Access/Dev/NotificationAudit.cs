@@ -332,7 +332,7 @@ namespace ES2Access.Dev
             CheckCompleteness(painted, spokenAnywhere, result);
             CheckHonesty(painted, declared, name, result);
             CheckPlacement(root, declared, result);
-            CheckTooltips(painted, declared, result);
+            CheckTooltips(window, painted, declared, result);
             return result;
         }
 
@@ -738,7 +738,12 @@ namespace ES2Access.Dev
         /// reader's own test, not an empty content field - a renderer-assembled tooltip's content field
         /// holds the key its dossier is looked up by.
         /// </summary>
-        private static void CheckTooltips(Painted painted, List<Declared> declared, Result result)
+        private static void CheckTooltips(
+            NotificationWindow window,
+            Painted painted,
+            List<Declared> declared,
+            Result result
+        )
         {
             for (int i = 0; i < declared.Count; i++)
             {
@@ -766,7 +771,7 @@ namespace ES2Access.Dev
                 // the picture inside it - used to aim at the empty one and draw nothing while saying
                 // this. Asked of the screen's own aim rather than re-derived here, so the check and the
                 // reading cannot disagree about which tooltip a node points at.
-                AgeTooltip aimed = NotificationScreen.Aimed(node.Widget);
+                AgeTooltip aimed = NotificationScreen.Aimed(window, node.Widget);
                 if (aimed != null && !AgeWidgets.Draws(aimed))
                 {
                     result.Tooltips.Add(

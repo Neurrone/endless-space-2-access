@@ -1815,11 +1815,33 @@ namespace ES2Access.Screens
             return tooltips;
         }
 
-        /// <summary>The tooltip a reading of this widget points at: the LAST one the game hung inside
-        /// it, which is what a row and a cell alike aim the pointer at. Written down once so the parity
-        /// check asks the question the reading answers rather than a second opinion of it.</summary>
-        internal static AgeTooltip Aimed(AgeTransform widget)
+        /// <summary>
+        /// The tooltip a reading of this widget points at. Written down once so the parity check asks
+        /// the question the reading answers rather than a second opinion of it.
+        ///
+        /// A CONTROL is aimed at the tooltip the screen RESOLVED for it (<see cref="Tip"/>) - its own
+        /// where the game hung one there, else the one the popup's own code knows about - so a control
+        /// is asked of the control list rather than of its tree. Walking the tree would answer for a
+        /// card what the prefab happened to hang deepest inside it: the suggestion cards carry a
+        /// class-backed tooltip on their turn counter with nothing for the renderer to assemble, and
+        /// that is what a second opinion called the aim while the pointer was on the technology's
+        /// dossier all along. Everything else here - a drawn row, a table cell - does aim at the LAST
+        /// tooltip the game hung inside the widget, and that is what the walk answers for them.
+        ///
+        /// The control list is re-derived rather than remembered: it is the same list
+        /// <see cref="Build"/> declares from, so the two cannot drift apart. It costs a walk of the
+        /// popup and nothing but the dev audit ever asks.
+        /// </summary>
+        internal static AgeTooltip Aimed(NotificationWindow window, AgeTransform widget)
         {
+            foreach (Control control in Controls(window, BodyOf(window) == null))
+            {
+                if (ReferenceEquals(control.Widget, widget))
+                {
+                    return Tip(control);
+                }
+            }
+
             return Last(Tooltips(widget));
         }
 
@@ -2559,9 +2581,12 @@ namespace ES2Access.Screens
             /// it just gave. Null leaves the shared rule alone.</summary>
             public TooltipMode? TipMode;
 
-            /// <summary>The tooltip that explains this control where the game hung it somewhere other
-            /// than on the control - a choice card's reason for refusing sits on the CARD, and the switch
-            /// that refuses is a piece inside it.</summary>
+            /// <summary>The tooltip that explains this control, where the popup's own code is what
+            /// knows which one that is - a choice card's reason for refusing sits on the CARD and the
+            /// switch that refuses is a piece inside it, a suggestion card's dossier is the one it also
+            /// carries in the buffer. The control's own tooltip still wins where the game hung one
+            /// there (<see cref="Tip(Control)"/>), so naming the same object costs nothing and says
+            /// which tooltip the card meant.</summary>
             public AgeTooltip Tip;
 
             /// <summary>A toggle the game uses as a one-shot ACTION rather than as a setting: clicking a
