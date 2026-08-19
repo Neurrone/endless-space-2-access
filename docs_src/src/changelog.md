@@ -37,6 +37,7 @@
 - Research screen: the branches and stages of the technology tree now say only their names ("Military", "Military I") — the researched-over-available counts in front of every group are gone
 - Star system and empire screens: queuing a construction now says what went into the queue ("Queued Interplanetary Transport Network"), instead of answering the key with silence. Queuing one at the front says so ("Queued Infinite Supermarkets as first item"), and taking a line out of the queue says "Cancelled Infinite Supermarkets"
 - Research screen: the same words now answer the research queue — "Queued Survival Suits" for a technology you queue, "Queued Survival Suits as first item" for one you queue at the front, and "Cancelled Survival Suits" for one you take out, whether from its dot on the wheel or from the queue itself
+- Galaxy map: a probe in flight is now listed at the top level of the map, in the same section as obliterator missiles and ally pins, instead of being hidden inside whichever system it happened to be flying nearest to. Its row still says which star it is out from, which way and how many turns
 - Ship design: an empty slot now reads the three markers the game only draws as pictures — "Times 2 Multiplier" for the dots that multiply a fitted module, "Symmetrical (x2 cost)" for a slot mirrored on the far side of the ship, and "Heavy Mount" for the slot the game only draws bigger. A filled slot is unchanged: its module's own tooltip already says all three
 
 ## V0.1.1

@@ -797,7 +797,8 @@ namespace ES2Access.Screens
             Spot won = spots[pick.Index];
             if (won.Site < 0)
             {
-                RevealRow(won.Id);
+                // A probe, a missile and an ally's pin all sit at the top of the stop, so there is
+                // never a branch to open before the cursor can be sent to one.
                 return won.Id;
             }
 
@@ -1416,10 +1417,9 @@ namespace ES2Access.Screens
                 _adrift.Sort(FleetReadingOrder);
 
                 Drifting();
-                // Only the probes with no star to hang under: the rest are children of one
-                // (<see cref="AddProbesNear"/>), and counting them here would declare a region with
-                // nothing in it.
-                int drifting = Adrift() + _projectiles.Count + _pins.Count;
+                // Every probe the map is drawing: they all sit at the top of the open-space region
+                // now (<see cref="AddProbes"/>), so every one of them is a reason to declare it.
+                int drifting = _drifting.Count + _projectiles.Count + _pins.Count;
                 // Declared whichever halves the map has: a lone region's jump is swallowed silently,
                 // which is what the key doing nothing here should sound like, and a section that
                 // appears and disappears with the fleet count is a stop that changes shape under the
@@ -1699,7 +1699,7 @@ namespace ES2Access.Screens
             // Only what is open costs anything: a galaxy of closed systems declares one node each.
             if (builder.IsExpanded(id))
             {
-                AddInside(builder, "galaxy:system/" + node.GUID, node, empire, label, _drifting);
+                AddInside(builder, "galaxy:system/" + node.GUID, node, empire, label);
             }
 
             builder.EndGroup();
@@ -1755,8 +1755,7 @@ namespace ES2Access.Screens
             string key,
             StarSystemNode node,
             Empire empire,
-            StarSystemLabel label,
-            IList<DriftingProbe> probes
+            StarSystemLabel label
         )
         {
             List<Lane> lanes = LanesOf(node, empire);
@@ -1765,7 +1764,6 @@ namespace ES2Access.Screens
             AddPlanets(builder, key, node, empire, label);
             AddWrecks(builder, key, node);
             AddStarlanes(builder, key, node, empire, lanes);
-            AddProbesNear(builder, key, probes, node);
             AddFleets(builder, key, FleetPresence.FleetsAt(node));
             AddEnRoute(builder, key, EnRouteOn(node, lanes));
             AddFreeMoving(builder, key, node, FreeMovingAt(node));
@@ -4931,26 +4929,28 @@ namespace ES2Access.Screens
             public ProbeLabel Label;
             public Probe Probe;
 
-            /// <summary>The system it hangs under, or null while the map is showing no system at all
-            /// for it to hang under.</summary>
+            /// <summary>The star its row measures its bearing from, or null while the map is naming no
+            /// system at all to measure from. Not a parent: every probe's row is at the top of the stop
+            /// (<see cref="AddProbes"/>).</summary>
             public StarSystemNode Near;
         }
 
         /// <summary>
-        /// Which star each probe belongs to, which is the question the PICTURE answers: the map draws
+        /// Which star each probe is out from, which is the question the PICTURE answers: the map draws
         /// the mote at the probe's own position (<c>VisibleEntityLabel.RefreshPositionAndSize</c> puts
         /// the label on <c>camera.WorldToScreenPoint</c> of it), and a sighted player reads where it is
         /// by seeing which star it is out from and how far. So the nearest system the map is naming is
-        /// what this tree hangs it under.
+        /// what its row measures from (<see cref="ProbeBearing"/>) - the row itself is at the top of
+        /// the stop whatever the answer is (<see cref="AddProbes"/>).
         ///
         /// Nearest is asked afresh on every build rather than remembered from the launch, because the
         /// answer MIGRATES: a probe crosses about six units of galaxy a turn and the fixture's
         /// neighbouring stars are sixteen to twenty-seven apart, so one flying towards a neighbour
-        /// belongs to the star it launched from for two turns and to the neighbour after that -
+        /// reads from the star it launched from for two turns and from the neighbour after that -
         /// which is exactly what the picture shows.
         ///
         /// The candidates are the systems this page is DECLARING, not every system in the galaxy: a
-        /// probe hung under a star the player cannot see would be a node with no parent to reach it by.
+        /// bearing measured from a star the player cannot see names a place they have never heard of.
         ///
         /// The probes themselves come from the SIMULATION rather than from the motes the map is
         /// drawing, because the mote is subject to a camera cull that has nothing to do with what the
@@ -5018,8 +5018,8 @@ namespace ES2Access.Screens
         }
 
         /// <summary>The declared system nearest a point on the map, with no radius: the point is one
-        /// the map is drawing something at, so leaving it unplaced would drop that thing out of the
-        /// tree rather than leave it in open space.</summary>
+        /// the map is drawing something at, and the nearest star is what a sighted player reads its
+        /// position against however far off it is.</summary>
         private StarSystemNode NearestSystem(GalaxyPosition position)
         {
             NearestPick pick = new NearestPick(double.PositiveInfinity);
@@ -5031,13 +5031,13 @@ namespace ES2Access.Screens
             return pick.Found ? _systems[pick.Index] : null;
         }
 
-        /// <summary>Where a probe's node hangs: under the star it is nearest to, or out in open space
-        /// while there is no star on the map to hang it under.</summary>
+        /// <summary>Where a probe's node hangs: out in open space, at the top of the stop, wherever the
+        /// map happens to be drawing it (owner ruling 2026-08-19). The star it is nearest to is still
+        /// worked out - it is what its row measures the bearing from - but it is a thing the row SAYS,
+        /// never a place the row lives under.</summary>
         private static string ProbeKey(DriftingProbe probe)
         {
-            return probe.Near == null
-                ? "galaxy:probe/" + probe.Probe.GUID
-                : "galaxy:system/" + probe.Near.GUID + "/probe/" + probe.Probe.GUID;
+            return "galaxy:probe/" + probe.Probe.GUID;
         }
 
         private static ControlId ProbeId(DriftingProbe probe)
@@ -5047,7 +5047,7 @@ namespace ES2Access.Screens
 
         /// <summary>One travelling probe as the SCANNER needs it: what it is called, what else its row
         /// says about it, and the node that row is - the last of which only this page can work out,
-        /// since a probe's key hangs off the star the map draws it nearest to.</summary>
+        /// since a probe's key is the page's own to build.</summary>
         internal struct ScannedProbe
         {
             public Probe Probe;
@@ -5109,27 +5109,6 @@ namespace ES2Access.Screens
             return found;
         }
 
-        /// <summary>Open whatever branch a row hangs under, so that a request to show that row lands
-        /// on a node that is really there. Recorded rather than done, like a search's own reveal: the
-        /// expansion set belongs to the next build. A probe is the only row on this page that hangs
-        /// under something (the star its mote is nearest to); a missile, an ally pin and a probe with
-        /// no star to hang under are all declared at the top of the open-space region, so asking for
-        /// one of those is answered by finding nothing to open, which is the right answer.</summary>
-        internal void RevealRow(ControlId id)
-        {
-            for (int i = 0; i < _drifting.Count; i++)
-            {
-                StarSystemNode near = _drifting[i].Near;
-                if (near != null && ProbeId(_drifting[i]).Equals(id))
-                {
-                    _pendingExpand.Add(
-                        ControlId.Referenced(near, "galaxy:system/" + near.GUID)
-                    );
-                    return;
-                }
-            }
-        }
-
         private static void Collect<TLabel>(AgeTransform container, List<TLabel> found)
             where TLabel : Component
         {
@@ -5179,69 +5158,25 @@ namespace ES2Access.Screens
         ///
         /// There is nothing to activate. A probe is not a thing the game lets anyone click.
         ///
-        /// Almost every probe hangs under a STAR instead (<see cref="AddProbesNear"/>), which is where
-        /// the picture puts it; this is what is left when the map is naming no system at all for one to
-        /// hang under, so that a probe is never dropped from the tree.
+        /// EVERY probe is here, at the top of the open-space region beside the missiles and the pins,
+        /// and none of them under a star (owner ruling 2026-08-19). A probe is not going anywhere the
+        /// map can name - it has neither node nor link, only a position and a heading - so hanging it
+        /// under the star it happens to be nearest to buried it in a branch the player has no reason to
+        /// open and made a probe the one thing on this page whose place changed while it flew. Which
+        /// star it is out from is still the way a sighted player reads the mote's position, and the row
+        /// still says it (<see cref="ProbeBearing"/>) - as a sentence about where it is, not as a
+        /// parent.
         /// </summary>
         private void AddProbes(GraphBuilder builder)
         {
             for (int i = 0; i < _drifting.Count; i++)
             {
-                if (_drifting[i].Near == null)
-                {
-                    builder.AddItem(ProbeId(_drifting[i]), ProbeNode(_drifting[i]));
-                }
+                builder.AddItem(ProbeId(_drifting[i]), ProbeNode(_drifting[i]));
             }
         }
 
-        /// <summary>How many probes the map is drawing with no star of their own to hang under - the
-        /// only ones the open-space region has to be declared for.</summary>
-        private int Adrift()
-        {
-            int adrift = 0;
-            for (int i = 0; i < _drifting.Count; i++)
-            {
-                if (_drifting[i].Near == null)
-                {
-                    adrift++;
-                }
-            }
-
-            return adrift;
-        }
-
-        /// <summary>
-        /// The probes the map is drawing out from THIS star, as children of it - siblings of its
-        /// starlanes, which is what they look like on the screen: motes standing off the star, some of
-        /// them along a line and some of them nowhere near one.
-        ///
-        /// A probe is not attached to a lane the way a fleet is. A fleet has a leg - the game stores the
-        /// two nodes it is flying between - and a probe has neither node nor link, only a position and a
-        /// heading, so hanging one on a lane would be the mod inventing a relation the game does not
-        /// have. What a sighted player really reads off the map is the mote's position against the
-        /// nearest star, and that is what this says: which way out it lies and how far.
-        /// </summary>
-        private static void AddProbesNear(
-            GraphBuilder builder,
-            string place,
-            IList<DriftingProbe> probes,
-            StarSystemNode node
-        )
-        {
-            for (int i = 0; probes != null && i < probes.Count; i++)
-            {
-                if (ReferenceEquals(probes[i].Near, node))
-                {
-                    builder.AddItem(
-                        ControlId.Structural(place + "/probe/" + probes[i].Probe.GUID),
-                        ProbeNode(probes[i])
-                    );
-                }
-            }
-        }
-
-        /// <summary>What one probe says, wherever it is hung: whose it is, where it is, and - for the
-        /// player's own - how many turns it has left before it burns out.</summary>
+        /// <summary>What one probe's row says: whose it is, where it is, and - for the player's own -
+        /// how many turns it has left before it burns out.</summary>
         private static NodeVtable ProbeNode(DriftingProbe drifting)
         {
             DriftingProbe found = drifting;
@@ -5328,7 +5263,7 @@ namespace ES2Access.Screens
         }
 
         /// <summary>
-        /// Where a probe is, said from the star it hangs under: which way out it lies, in the same eight
+        /// Where a probe is, said from the star it is nearest to: which way out it lies, in the same eight
         /// words a starlane's direction is said in, and how far out in turns of the probe's OWN flight.
         ///
         /// Turns rather than a bare length, because a length in galaxy units is a number nothing else in

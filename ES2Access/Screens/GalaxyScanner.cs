@@ -548,13 +548,11 @@ namespace ES2Access.Screens
             GraphNavigator navigator = ModEntry.Navigator;
 
             // The rows the tree keys STRUCTURALLY - a probe, an ally's pin, a missile in flight - carry
-            // their own node here, because those keys are the page's to build and a probe's hangs off
-            // whichever star the map draws it nearest to. Opening whatever the row hangs under is the
-            // page's own reveal; there is no fallback below it, because none of the three is a thing
-            // the game lets anybody select (a fleet is).
+            // their own node here, because those keys are the page's to build. All three sit at the top
+            // of the stop, so there is no branch to open first; there is no fallback below this either,
+            // because none of the three is a thing the game lets anybody select (a fleet is).
             if (found.Row != null)
             {
-                _screen.RevealRow(found.Row);
                 if (navigator != null)
                 {
                     navigator.FocusNode(found.Row);
