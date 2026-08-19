@@ -15,8 +15,10 @@ and content-poor.
 **`[Beginner] test` has TWO notifications waiting, so next/previous browsing is NOT
 fixture-blocked** (measured 2026-08-19): `NotificationLawCancelled` ("Laws Cancelled" — one table
 row, "Improvement Completion Incentivisation Scheme / Industrialists") and
-`NotificationTechnologyNeeded` ("Research queue Empty" — 13 body rows and a bottom bar carrying its
-own "Technology Screen" button). Open one without touching the event bus:
+`NotificationTechnologyNeeded` ("Research queue Empty" — since 2026-08-19 its
+`SuggestedTechnologiesPanel` reads as the research-complete popup's does: the instruction row then
+one named card per branch, and a bottom bar carrying its own "Technology Screen" button. It read as
+13 loose body rows until that variant was registered). Open one without touching the event bus:
 `Gui.GuiNotificationService.ShowGuiNotification((GuiNotification)((System.Collections.IList)Gui.GuiNotificationService.GetPlayerEmpireGuiNotifications())[0])`,
 restore with `Gui.GuiNotificationService.HideAllGuiNotifications()`.
 **Putting a DISMISSED notification back**, without `POST /loadsave` and without the event bus (this
@@ -124,6 +126,10 @@ research queue): `EmptyNextTechnologyGroup` (queue empty, nothing suggested) and
 arrive as body controls) are both drawn only when `DepartmentOfScience.ResearchQueue.Length == 0`
 (`TechnologyUnlockedNotificationWindow.Refresh` :131-159). Do not fake it by emptying the queue —
 that is a fixture change; reach it by playing a save whose queue has run dry.
+The PANEL itself is no longer unsighted, though: `TechnologyNeededNotificationWindow` draws the same
+`SuggestedTechnologiesPanel` whenever the queue is empty, and `[Beginner] test` has one pending — so
+the cards' wording, ordering and buffers are testable there, and only the research-COMPLETE popup's
+two queue-empty branches still need a played-dry save.
 
 **No quest in either fixture is in CHOICE state**, so a popup's choice cards have never been drawn:
 the checkbox side of the radio/checkbox rule (the quest popup's own Pin toggle) is live-verified and

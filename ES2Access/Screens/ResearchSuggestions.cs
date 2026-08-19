@@ -13,6 +13,13 @@ namespace ES2Access.Screens
     /// the technology tree, and picking one is how the player starts the next research without leaving
     /// the popup.
     ///
+    /// TWO popups draw this panel and the player cannot tell them apart by what it offers: the one that
+    /// reports a technology finished and finds nothing queued behind it
+    /// (<c>TechnologyUnlockedNotificationWindow</c>), and the one the game raises when the queue is empty
+    /// at the start of a turn (<c>TechnologyNeededNotificationWindow</c>). Neither declares the panel on a
+    /// shared base, so which window is asked is the only thing that differs here - the reading, the
+    /// naming and the pick-up are one and the same.
+    ///
     /// The game draws a card as a picture with its words scattered AROUND it: the technology's name
     /// above the disk, the branch it belongs to below it, the cost in turns below that, and the things
     /// it would unlock as icons around the rim. Nothing is written on the click target itself, so the
@@ -35,10 +42,7 @@ namespace ES2Access.Screens
         internal static IList<Control> Cards(NotificationWindow window)
         {
             List<Control> cards = new List<Control>();
-            TechnologyUnlockedNotificationWindow research =
-                window as TechnologyUnlockedNotificationWindow;
-            SuggestedTechnologiesPanel panel =
-                research == null ? null : research.SuggestedTechnologiesPanel;
+            SuggestedTechnologiesPanel panel = Panel(window);
             AgeTransform table = panel == null ? null : panel.SuggestedTechnologiesTable;
             if (table == null || !Shown(table))
             {
@@ -70,6 +74,23 @@ namespace ES2Access.Screens
             }
 
             return cards;
+        }
+
+        /// <summary>The suggestions panel this popup drew, whichever of the two it is. The field is
+        /// public on both windows and declared on neither's base, so this is the whole of the
+        /// difference between them.</summary>
+        private static SuggestedTechnologiesPanel Panel(NotificationWindow window)
+        {
+            TechnologyUnlockedNotificationWindow completed =
+                window as TechnologyUnlockedNotificationWindow;
+            if (completed != null)
+            {
+                return completed.SuggestedTechnologiesPanel;
+            }
+
+            TechnologyNeededNotificationWindow needed =
+                window as TechnologyNeededNotificationWindow;
+            return needed == null ? null : needed.SuggestedTechnologiesPanel;
         }
 
         /// <summary>

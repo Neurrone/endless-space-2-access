@@ -3333,6 +3333,14 @@ namespace ES2Access.Screens
                 new Variant { Cards = ResearchSuggestions.Cards }
             );
 
+            // Nothing is being researched at all: a popup of its own, drawing the SAME suggestions panel
+            // over its own description - which the game hides while the panel has anything to offer. The
+            // player is being asked the identical question, so it is read identically.
+            variants.Add(
+                typeof(TechnologyNeededNotificationWindow),
+                new Variant { Cards = ResearchSuggestions.Cards }
+            );
+
             // The academy having granted a role: the same roles panel the exchange popup above draws,
             // in a popup of its own, so the same cloned lines read the same way.
             variants.Add(
