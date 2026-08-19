@@ -1413,6 +1413,11 @@ namespace ES2Access.UI
         /// (<c>ComputeModuleSlotPosition2D</c>), so they are put in reading order and then walked as a
         /// list: they are peers of one kind and a 2D walk over where a hull happens to put its guns
         /// would be a walk over nothing.
+        ///
+        /// And that reading order is then GROUPED by the type of module each slot takes
+        /// (<see cref="SlotOrder"/>), because where a hull's model puts its guns is not an order at all:
+        /// the drawn one runs weapon, support, weapon down the ship. The drawn order survives inside one
+        /// type. The remove target is not a slot and stays where it is, at the end.
         /// </summary>
         private static void BuildSlots(
             GraphBuilder builder,
@@ -1444,13 +1449,44 @@ namespace ES2Access.UI
 
                 builder.BeginStop(SlotsStop(prefix));
                 builder.PushContext(ModStrings.Get(ModStrings.ShipDesignSlots));
-                EmitLinear(builder, cells);
+                EmitGrouped(builder, cells);
                 AddRemoveTarget(builder, panel, prefix);
                 builder.PopContext();
             }
             catch (Exception e)
             {
                 Log.Warn("ship design: reading the module slots threw: " + e);
+            }
+        }
+
+        // The slots on their way to being declared: the drawn order, and the type key each one is
+        // grouped under, parallel to it. Reused rather than allocated per frame, main-thread only, like
+        // the statistics band's four lists above.
+        private static readonly List<Cell> _slotOrder = new List<Cell>(12);
+        private static readonly List<string[]> _slotTypes = new List<string[]>(12);
+
+        /// <summary>The slots grouped by the type of module they take, keeping the drawn order inside
+        /// one type - the walk a player can predict over a set the hull scattered round its
+        /// model.</summary>
+        private static void EmitGrouped(GraphBuilder builder, List<Cell> cells)
+        {
+            try
+            {
+                Cells.Drawn(cells, _slotOrder);
+                _slotTypes.Clear();
+                for (int i = 0; i < _slotOrder.Count; i++)
+                {
+                    _slotTypes.Add(_slotOrder[i].Order);
+                }
+
+                SlotOrder.Arrange(_slotOrder, _slotTypes);
+                EmitOrdered(builder, _slotOrder);
+            }
+            finally
+            {
+                // Nothing of the game's is held between builds, so a teardown has nothing to unhook.
+                _slotOrder.Clear();
+                _slotTypes.Clear();
             }
         }
 
@@ -1543,6 +1579,43 @@ namespace ES2Access.UI
                 ControlId.Referenced(slot.GuiSlot, prefix + "/slot/" + index),
                 vtable
             );
+            cells[cells.Count - 1].Order = SlotTypes(slot);
+        }
+
+        /// <summary>
+        /// The types of module a slot takes, as the words the player hears for them and in the order
+        /// they are compared in - what the ship's slots are grouped by (<see cref="SlotOrder"/>).
+        ///
+        /// The slot's own restriction list, NOT the categories table beside it: the game hides that
+        /// table for a slot with four or more restrictions and the item's own drawn state says nothing
+        /// about a filled slot, while the ordering has to hold for every slot on the ship whatever is in
+        /// it. Answered from the definition, so it is the same answer every frame.
+        /// </summary>
+        private static string[] SlotTypes(ShipDesignEditionSlotItem slot)
+        {
+            try
+            {
+                string[] categories = slot.GuiSlot.ModuleTypeRestrictions;
+                if (categories == null || categories.Length == 0)
+                {
+                    return null;
+                }
+
+                string[] names = new string[categories.Length];
+                for (int i = 0; i < categories.Length; i++)
+                {
+                    string title = AgeText.Clean(Gui.GetTitle(categories[i]));
+                    names[i] =
+                        string.IsNullOrEmpty(title) || title[0] == '%' ? null : title;
+                }
+
+                SlotOrder.Alphabetical(names);
+                return names;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
         }
 
         private static bool Filled(ShipDesignEditionSlotItem slot)

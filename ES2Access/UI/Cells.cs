@@ -12,6 +12,12 @@ namespace ES2Access.UI
         public AgeTransform Widget;
         public ControlId Id;
         public NodeVtable Vtable;
+
+        /// <summary>What the host reads this cell under, where the reading order is a fact about the
+        /// THING and not about where the game drew it - the ship designer's slots, grouped by the type
+        /// of module each takes (<see cref="ES2Access.Core.UI.SlotOrder"/>). Null everywhere else, and
+        /// the drawn order is then the whole of the answer.</summary>
+        public string[] Order;
     }
 
     /// <summary>
@@ -112,6 +118,26 @@ namespace ES2Access.UI
                 for (int i = 0; i < row.Count; i++)
                 {
                     builder.AddItem(row[i].Id, row[i].Vtable);
+                }
+            }
+        }
+
+        /// <summary>
+        /// The cells in the order the game DREW them, flattened into one list rather than emitted.
+        ///
+        /// For the host that has to reorder that reading order before it declares anything - the ship
+        /// designer's slots, which are grouped by the type of module each takes and keep the drawn order
+        /// only inside one type. Everyone else emits straight from <see cref="EmitLinear"/>, which is
+        /// this walk and the emit in one.
+        /// </summary>
+        public static void Drawn(List<Cell> cells, List<Cell> into)
+        {
+            into.Clear();
+            foreach (List<Cell> row in AgeLayout.Rows(cells, CellWidget))
+            {
+                for (int i = 0; i < row.Count; i++)
+                {
+                    into.Add(row[i]);
                 }
             }
         }
