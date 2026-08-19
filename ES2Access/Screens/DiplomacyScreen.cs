@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using ES2Access.Core.Speech;
+using ES2Access.Core.UI;
 using ES2Access.Core.UI.Graph;
 using ES2Access.Core.Util;
 using ES2Access.UI;
@@ -54,7 +55,9 @@ namespace ES2Access.Screens
     /// it is on, Enter re-centres instead of negotiating - the game's own branch (:753-761) - and the mod
     /// declares no separate gesture for it. Escape while it is on is the GAME's: <c>HandleInput</c>
     /// :318-327 consumes Exit to leave swap mode rather than closing the page, so <c>ConsumesBack</c>
-    /// stays false and the first Escape puts the ring back on the player.
+    /// stays false and the first Escape puts the ring back on the player. Every one of those re-centrings
+    /// is ANNOUNCED (<see cref="WatchCenter"/>): it rewrites the whole page under the player, and the one
+    /// thing that says whose ring it now is is a label in the middle they would have to go and read.
     ///
     /// Not declared, and why: the arcs behind the ring (<c>RelationStateSector</c>) draw a colour and an
     /// icon for a grouping the reading order already carries; the tribute buttons on a wedge have no click
@@ -86,6 +89,13 @@ namespace ES2Access.Screens
         private readonly GlobalHud _hud = new GlobalHud();
         private readonly List<SidePanel> _panels = new List<SidePanel>();
         private readonly List<Cell> _cells = new List<Cell>();
+
+        /// <summary>Whose ring the player has been told they are reading, as the game's own index for
+        /// that empire - the identity rather than the drawn name, because an unmet empire is drawn
+        /// with the same "Unknown Empire" title as every other unmet one and a watch keyed on the
+        /// words would sit silent through a swap between two of them. Instance state, so a hot reload
+        /// starts it over rather than inheriting a stale answer.</summary>
+        private readonly StepWatch _center = new StepWatch();
 
         public override string Key
         {
@@ -160,19 +170,93 @@ namespace ES2Access.Screens
             }
         }
 
+        /// <summary>Opening the page is not a re-centring: the game puts the ring back on the player
+        /// before it is drawn (<c>OnBeginShow</c> :429-433), so the watch starts already knowing whose
+        /// ring this is and arriving says nothing. A hot reload pushes the screen afresh over a page
+        /// that is already open and baselines the same way, which is what keeps a reload silent.
+        /// </summary>
         public override void OnPush()
         {
             _hud.Baseline();
+            _center.Baseline(Center(Window()));
         }
 
         public override void OnPop()
         {
             _hud.Forget();
+            _center.Forget();
         }
 
         public override void OnUpdate()
         {
             _hud.Update();
+            WatchCenter();
+        }
+
+        /// <summary>
+        /// The ring has been re-centred, said passively in the game's own name for whose relations
+        /// are drawn now.
+        ///
+        /// Watched rather than hooked one path at a time, because the game re-centres from three
+        /// places and they all end in the same call: the swap click
+        /// (<c>OnClickEmpireSector</c> :751-767), Escape or a right click leaving swap mode
+        /// (<c>HandleInput</c> :318-327), and the tick box being turned off again
+        /// (<c>OnSwitchSwapModeCb</c> :799-806) - the last two both snapping the ring back to the
+        /// player, which is as much of a re-centring to a listener as swapping away was.
+        ///
+        /// Nothing is committed until the words for the new centre exist. <c>ChangeCenterEmpire</c>
+        /// :713-734 only sets <c>Dirty</c>, and the title over the hologram is not rewritten until
+        /// the refresh the GUI manager runs off that flag (<c>GuiManager.Update</c> :325-338,
+        /// <c>Refresh</c> :493) - so a frame in between carries the new empire under the old name,
+        /// and announcing there would name the empire the ring has just LEFT. The flag is the game's
+        /// own answer to "has the page caught up", and the watermark moves only where it is down and
+        /// the label has words.
+        /// </summary>
+        private void WatchCenter()
+        {
+            try
+            {
+                global::DiplomacyScreen window = Window();
+                if (window == null)
+                {
+                    return;
+                }
+
+                int center = Center(window);
+                if (!_center.IsNew(center) || window.Dirty)
+                {
+                    return;
+                }
+
+                string name = Words(window.CenterEmpireTitle);
+                if (string.IsNullOrEmpty(name))
+                {
+                    return;
+                }
+
+                _center.Told(center);
+                Voice.Say(ModStrings.Format(ModStrings.DiplomacyViewingFrom, name), false);
+            }
+            catch (Exception e)
+            {
+                Log.Warn("diplomacy: watching the ring's centre threw: " + e);
+            }
+        }
+
+        /// <summary>The game's own index for the empire the ring is centred on, and -1 for a page with
+        /// no centre at all - which <see cref="StepWatch"/> never announces.</summary>
+        private static int Center(global::DiplomacyScreen window)
+        {
+            try
+            {
+                return window == null || window.CenterGuiEmpire == null
+                    ? -1
+                    : window.CenterGuiEmpire.Empire.EmpireIndex;
+            }
+            catch (Exception)
+            {
+                return -1;
+            }
         }
 
         public override void Build(GraphBuilder builder)
@@ -253,9 +337,9 @@ namespace ES2Access.Screens
         ///
         /// It is the only place the page says who it is centred on, and swap mode rewrites it - so
         /// without it a player who has swapped the ring onto somebody else has no way to hear whose
-        /// ring they are reading. Declared as the line the game draws it as, at the head of the ring,
-        /// and nothing more: whether the swap should also ANNOUNCE the new centre is a question for
-        /// the owner, not a behaviour to invent here.
+        /// ring they are reading. Declared as the line the game draws it as, at the head of the ring:
+        /// the place to go back and re-read it, while a re-centring as it happens is announced by
+        /// <see cref="WatchCenter"/>.
         /// </summary>
         private void AddCenter(GraphBuilder builder, global::DiplomacyScreen window)
         {

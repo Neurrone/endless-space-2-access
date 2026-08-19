@@ -456,6 +456,7 @@
   "diplomacy.controls": "Screen controls",
   "diplomacy.new-options": "new diplomatic options",
   "diplomacy.not-your-ring": "You can only negotiate from your own empire's ring",
+  "diplomacy.viewing-from": "Viewing relations from the perspective of {0}",
   "screen.negotiation": "Negotiation",
   "negotiation.header": "The two empires",
   "negotiation.dossier": "Empire information",

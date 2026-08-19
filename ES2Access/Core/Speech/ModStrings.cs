@@ -1081,6 +1081,12 @@ namespace ES2Access.Core.Speech
         /// </summary>
         public const string DiplomacyNotYourRing = "diplomacy.not-your-ring";
 
+        /// <summary>Whose relations the ring has just been re-centred on. Swap mode rewrites every card
+        /// on the page at once and the only thing that says whose ring it now is, is the name over the
+        /// hologram in the middle - so the change is announced. {0} is the empire, as the game writes
+        /// it there.</summary>
+        public const string DiplomacyViewingFrom = "diplomacy.viewing-from";
+
         public const string ScreenNegotiation = "screen.negotiation";
 
         /// <summary>The negotiation table's eight bands. The game titles the pressure gauge and writes
@@ -1633,6 +1639,7 @@ namespace ES2Access.Core.Speech
             { DiplomacyControls, "Screen controls" },
             { DiplomacyNewOptions, "new diplomatic options" },
             { DiplomacyNotYourRing, "You can only negotiate from your own empire's ring" },
+            { DiplomacyViewingFrom, "Viewing relations from the perspective of {0}" },
             { ScreenNegotiation, "Negotiation" },
             { NegotiationHeader, "The two empires" },
             { NegotiationDossier, "Empire information" },
