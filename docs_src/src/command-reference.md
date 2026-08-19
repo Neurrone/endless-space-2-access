@@ -22,7 +22,7 @@ This page summarizes the mod's keys in one place. Keys the game itself owns are 
 | `Shift+Right` / `Shift+Left` | Coarse increase / decrease                                                  |
 | `Home` / `End`               | First / last item of the panel                                              |
 | `Alt+Up` / `Alt+Down`        | Previous / next region within the panel                                     |
-| `Alt+Enter`                  | The game's Alt-click (queue at the head)                                    |
+| `Ctrl+Shift+Enter`           | The game's Alt-click (queue at the head) — `Alt+Enter` itself is Unity's fullscreen switch |
 | `Ctrl+Enter`                 | The game's Ctrl-click; on a blocked control, jump to the missing technology |
 | `Shift+Enter`                | The game's Shift-click (extend the selection)                               |
 | `Ctrl+Alt+Enter`             | The game's double click                                                     |

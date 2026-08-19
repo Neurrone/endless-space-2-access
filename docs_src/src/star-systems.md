@@ -15,7 +15,7 @@ Use `Tab` to cycle through five panels:
 - **Page**: the system as a whole — its name and rename button, owner, approval and politics, built improvements, and the buttons along the top. Read-only numbers still have tooltips, so their breakdowns are in the [review buffer](buffers.md).
 - **Planets**: one card per planet, with its type, size, outputs, anomalies and available actions such as colonize or terraform. Press `Right` on a card to reach its buttons.
 - **Constructibles**: what you can build here, with a filter group above the list. Filters are a choose-one set; `Enter` on a filter switches to it.
-- **Queue**: the construction queue. `Enter` on an entry cancels it — immediately while nothing has been invested, behind the game's own confirmation once something has. `Alt+Enter` on a constructible queues it at the head of the queue. Buy-out buttons are child entries of a queue line.
+- **Queue**: the construction queue. `Enter` on an entry cancels it — immediately while nothing has been invested, behind the game's own confirmation once something has. `Ctrl+Shift+Enter` on a constructible queues it at the head of the queue. Buy-out buttons are child entries of a queue line.
 - **Hangar**: the ships parked here and their toolbar. An empty hangar reads `No ships in the hangar`.
 
 ### Reordering the Queue

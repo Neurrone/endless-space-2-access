@@ -14,7 +14,7 @@ Every screen is divided into stops. A stop is one panel of the game: a list, a t
 ## Acting on things
 
 - `Enter` or `Numpad Enter`: left click, this is the primary confirmation gesture
-- `Alt+Enter`: Alt-click — on queues, this is "queue this at the head"
+- `Ctrl+Shift+Enter`: Alt-click — on queues, this is "queue this at the head". (`Alt+Enter` itself belongs to Unity, the game's engine: it switches between fullscreen and windowed, and nothing the mod does can take it back)
 - `Ctrl+Enter`: Ctrl-click — adds one item to or removes it from the game's own selection, locate missing technology
 - `Shift+Enter`: Shift-click — extends the selection to here
 - `Ctrl+Alt+Enter`: double click — the game's second click, which some controls (a ship tile, a table row, a designer module) need

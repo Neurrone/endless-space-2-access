@@ -18,7 +18,7 @@ A technology reads its state in the game's own words, its cost, its research tim
 
 - `Enter` on a technology queues it, or removes it from the queue if it is already queued
 - `Enter` on a queue entry removes it. There is no confirmation; queue it again to undo
-- `Alt+Enter` queues a technology at the head of the queue
+- `Ctrl+Shift+Enter` queues a technology at the head of the queue
 - To reorder the queue: press `Space` on a queued technology, `Up` or `Down` to the new position, then `Enter` to drop
 
 ### Missing Prerequisites

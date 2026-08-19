@@ -283,7 +283,8 @@ follow have no fixture at all. The Failed filter draws none, which IS the testab
 `quests:list` and `quests:detail` stops both disappear. **The pin is a child node of the card**, not a
 gesture on it: `ui.right` opens the card, `ui.down` lands on "Pin Quest", Enter toggles, and
 `QuestJournal.ActiveQuest` is the probe; unpinning speaks "not checked" from the toggle and "No quest
-is pinned" from the HUD's watcher, even with the journal covering the panel. Alt+Enter on a card is
+is pinned" from the HUD's watcher, even with the journal covering the panel. The alternate click
+(Ctrl+Shift+Enter since 2026-08-19; it was Alt+Enter) on a card is
 now silent by design (the game has no modified click there). **Also unverified at turn 3**: the
 Show-location marker (the quest has none, so the game hides the button), the minor-faction button,
 the podium a cooperative quest gets instead of a reward table, and the "Pending objective choice…"
