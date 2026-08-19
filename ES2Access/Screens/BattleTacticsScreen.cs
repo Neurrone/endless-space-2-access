@@ -142,10 +142,17 @@ namespace ES2Access.Screens
             Cells.EmitLinear(builder, _cells);
         }
 
-        /// <summary>The tactics the empire has: the game's own count of them, then one card each, one
-        /// per row - the strip is peers of one kind and where it wrapped is the table's business. A card
-        /// already in the set is drawn switched off with the game's sentence for why
-        /// (<c>BindAvailableBattlePlayCard</c> :312-329), so it stays declared and refuses.</summary>
+        /// <summary>The tactics the empire has, one card per row - the strip is peers of one kind and
+        /// where it wrapped is the table's business. A card already in the set is drawn switched off
+        /// with the game's sentence for why (<c>BindAvailableBattlePlayCard</c> :312-329), so it stays
+        /// declared and refuses.
+        ///
+        /// The game writes "4 tactics available" over the strip
+        /// (<c>%PlayCardDeckModalWindowAvailablePlayCardsCountTitle</c>) and that used to be the stop's
+        /// first row. It is gone (owner ruling 2026-08-19): the count is the length of a list the
+        /// player is about to walk, which every row of the walk already says, and it stood between the
+        /// Tab and the first card. The panel's NAME takes its place, said on the Tab in - a deliberate
+        /// departure from what the popup draws.</summary>
         private void BuildAvailable(GraphBuilder builder, PlayCardDeckModalWindow window)
         {
             AgeTransform table = window.AvailablePlayCardsTable;
@@ -155,16 +162,7 @@ namespace ES2Access.Screens
             }
 
             builder.BeginStop(AvailableStop);
-            _cells.Clear();
-            Cells.AddReadout(
-                _cells,
-                window.AvailablePlayCardsCountLabel == null
-                    ? null
-                    : window.AvailablePlayCardsCountLabel.AgeTransform,
-                "tactics:available-count"
-            );
-            Cells.EmitLinear(builder, _cells);
-
+            builder.PushContext(ModStrings.Get(ModStrings.TacticsAvailablePanel));
             _cells.Clear();
             IList<AgeTransform> cards = table.Children;
             for (int i = 0; cards != null && i < cards.Count; i++)
@@ -173,11 +171,18 @@ namespace ES2Access.Screens
             }
 
             Cells.EmitLinear(builder, _cells);
+            builder.PopContext();
         }
 
-        /// <summary>The set itself: the line the game draws over it, its caption - which stays a row
-        /// because the game hangs a sentence of its own on it that lives nowhere else - then the six
-        /// slots, one per row.</summary>
+        /// <summary>The set itself: the line the game draws over it telling the player what to do, then
+        /// the six slots, one per row, then the place a tactic is dropped to take it out.
+        ///
+        /// The caption the game writes over the set - "Tactics" - used to be a row of its own between
+        /// the two. It is the panel's NAME now (owner ruling 2026-08-19), said on the Tab in and never
+        /// also walked, which is what every drawn heading in the mod is. The sentence the game hangs on
+        /// that caption ("Displays all your selected tactics") goes with the row: a name is announced,
+        /// not focused, so there is nowhere left to carry it - and it says what the six slots under it
+        /// already show.</summary>
         private void BuildDeck(GraphBuilder builder, PlayCardDeckModalWindow window)
         {
             AgeTransform table = window.MyDeckPlayCardsTable;
@@ -187,16 +192,14 @@ namespace ES2Access.Screens
             }
 
             builder.BeginStop(DeckStop);
+            // "Tactics set", not the drawn "Tactics" caption: the owner dictated the exact label
+            // (ruling 2026-08-19) so the stop cannot share a word with the tactic rows it holds.
+            builder.PushContext(ModStrings.Get(ModStrings.TacticsDeckPanel));
             _cells.Clear();
             Cells.AddReadout(
                 _cells,
                 AgeWidgets.ChildNamed(window.AgeTransform, "DropCardBelowLabel", 3),
                 "tactics:drop-hint"
-            );
-            Cells.AddReadout(
-                _cells,
-                AgeWidgets.ChildNamed(window.MyDeckGroup, "PanelTitle", 1),
-                "tactics:deck-caption"
             );
             Cells.EmitLinear(builder, _cells);
 
@@ -209,6 +212,7 @@ namespace ES2Access.Screens
 
             Cells.EmitLinear(builder, _cells);
             AddRemoveTarget(builder, table);
+            builder.PopContext();
         }
 
         /// <summary>

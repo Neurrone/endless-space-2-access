@@ -365,6 +365,8 @@
   "tactics.slot-filled": "Put {0} in your Tactics Set",
   "tactics.slot-emptied": "{0} removed",
   "tactics.remove-target": "Drop tactic here to remove",
+  "tactics.available-panel": "Available",
+  "tactics.deck-panel": "Tactics set",
   "screen.battle": "Space battle",
   "screen.ground-battle": "Ground battle",
   "screen.battle-report-advanced": "Advanced battle report",

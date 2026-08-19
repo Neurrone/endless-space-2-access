@@ -854,6 +854,13 @@ namespace ES2Access.Core.Speech
         public const string TacticsSlotEmptied = "tactics.slot-emptied";
         public const string TacticsRemoveTarget = "tactics.remove-target";
 
+        /// <summary>The names of the deck editor's two panels, said on the Tab into each. The list of
+        /// unlocked tactics has no drawn heading at all - only the count sentence over it, which is
+        /// not a name - so its word is the mod's. The set below DOES draw one, and the drawn word is
+        /// what is used; this is the fallback for a build that hides it.</summary>
+        public const string TacticsAvailablePanel = "tactics.available-panel";
+        public const string TacticsDeckPanel = "tactics.deck-panel";
+
         // The hero page and the galaxy-wide hero list its Academy box opens. Both screen names are
         // fallbacks for the frames before the window has written its own heading. The third is for the
         // band of hero actions the page draws along its bottom with no caption of its own.
@@ -1519,6 +1526,8 @@ namespace ES2Access.Core.Speech
             { TacticsSlotFilled, "Put {0} in your Tactics Set" },
             { TacticsSlotEmptied, "{0} removed" },
             { TacticsRemoveTarget, "Drop tactic here to remove" },
+            { TacticsAvailablePanel, "Available" },
+            { TacticsDeckPanel, "Tactics set" },
             { ScreenBattle, "Space battle" },
             { ScreenGroundBattle, "Ground battle" },
             { ScreenAdvancedBattleReport, "Advanced battle report" },
