@@ -434,10 +434,12 @@ namespace ES2Access.UI
                 // the key they pressed. Said the moment the mod posts the order, which is the same
                 // moment the game plays its own click sound and flies its icon; the tile is only ever
                 // reached here after the game's own enablement has been asked, so a refused tile
-                // returns before this and keeps the game's silence.
+                // returns before this and keeps the game's silence. Where the front was asked for,
+                // the phrase says so: the two keys do different things and the queue they change is a
+                // panel away, so hearing the same six words for both leaves the player to go and look.
                 Voice.Say(
                     ModStrings.Format(
-                        ModStrings.SystemConstructionQueued,
+                        atHead ? ModStrings.QueueQueuedFirst : ModStrings.QueueQueued,
                         ConstructibleName(item)
                     ),
                     true
@@ -556,10 +558,7 @@ namespace ES2Access.UI
                     GraphNodes.ValuePart(() => QueueLineState(it)),
                 },
                 Sections = GraphNodes.Sections(null, tooltip),
-                // The line's own click - the game's cancel, with the game's own confirmation where it
-                // wants one. Pressed through MainButton rather than through the panel's handler, so
-                // the god-mode branch and the mid-drag guard the game puts in front of it stay in.
-                OnActivate = () => AgeWidgets.Press(it.MainButton),
+                OnActivate = () => CancelConstruction(it),
                 DropKind = QueueKind,
                 OnDrop = held => DropInQueue(it, owner, held),
             };
@@ -586,6 +585,43 @@ namespace ES2Access.UI
             }
 
             builder.EndGroup();
+        }
+
+        /// <summary>
+        /// Take a line out of the queue - the line's own click, which is the game's cancel. Pressed
+        /// through MainButton rather than through the panel's handler, so the god-mode branch and the
+        /// mid-drag guard the game puts in front of it stay in.
+        ///
+        /// The queue answers a cancel the way it answers a queueing: the line is gone and no word is
+        /// written anywhere, and the cursor is left on whatever the rebuild puts under it - so the
+        /// word is the mod's. It is said only where the game cancels OUTRIGHT: a construction with
+        /// industry already in it gets the game's own confirmation box instead
+        /// (<c>StarSystemQueuePanel.OnCancelConstruction</c> :425-442), which announces itself and can
+        /// still be answered no, and in god mode the same button buys the construction out rather than
+        /// cancelling it (<c>ConstructionLine.OnCancelCb</c> :378-392).
+        /// </summary>
+        private static void CancelConstruction(ConstructionLine line)
+        {
+            try
+            {
+                if (!Queued(line))
+                {
+                    return;
+                }
+
+                string name = AgeText.Label(line.Title);
+                bool cancels =
+                    !line.Construction.IsAlreadyInvested && !GodGalaxyCursor.IsGuiInGodMode();
+                AgeWidgets.Press(line.MainButton);
+                if (cancels)
+                {
+                    Voice.Say(ModStrings.Format(ModStrings.QueueCancelled, name), true);
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("system panels: cancelling a construction threw: " + e);
+            }
         }
 
         /// <summary>

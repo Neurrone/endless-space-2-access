@@ -585,6 +585,17 @@ namespace ES2Access.Core.Speech
         /// go there.</summary>
         public const string CarryDraggable = "carry.draggable";
 
+        // Putting something in a queue and taking it out again - the system's construction queue and
+        // the empire's research queue, which are the same gesture on two screens and so the same
+        // words. The game writes no word for either outcome: a construction answers with a sound and
+        // a flying icon, and a technology's own dot does swap to the game's "Queued" but only for the
+        // player standing on that dot, and never for the queue LINE that has just gone. Three whole
+        // phrases rather than a shared "Queued" with a fragment after it, so a language that frames
+        // "first in the queue" differently has somewhere to do it.
+        public const string QueueQueued = "queue.queued";
+        public const string QueueQueuedFirst = "queue.queued-first";
+        public const string QueueCancelled = "queue.cancelled";
+
         // The scan view. The lens names itself in the game's own words, so the only strings here are
         // for the two boxes the game draws bare and the pairing of a number with the output it counts.
         public const string ScreenScanView = "screen.scan-view";
@@ -669,12 +680,6 @@ namespace ES2Access.Core.Speech
         public const string SystemRenamePlanet = "system.rename-planet";
         public const string SystemRenameSystem = "system.rename-system";
         public const string SystemPopulationMoved = "system.population-moved";
-
-        /// <summary>That a constructible has gone into the system's construction queue. The game
-        /// answers a click with a flying icon and a sound and writes no word anywhere, so unlike a
-        /// technology - whose dot changes to the game's own "Queued" under the cursor - a tile has
-        /// nothing of the game's own to say.</summary>
-        public const string SystemConstructionQueued = "system.construction-queued";
 
         public const string SystemImprovements = "system.improvements";
         public const string SystemLevel = "system.level";
@@ -1368,6 +1373,9 @@ namespace ES2Access.Core.Speech
             { CarryMovedToPosition, "Moved {0} to position {1}" },
             { CarryDropTarget, "drop target" },
             { CarryDraggable, "draggable" },
+            { QueueQueued, "Queued {0}" },
+            { QueueQueuedFirst, "Queued {0} as first item" },
+            { QueueCancelled, "Cancelled {0}" },
             { ScreenScanView, "Scan view" },
             { ScanSystemInfo, "System information" },
             { ScanLegend, "Legend" },
@@ -1403,7 +1411,6 @@ namespace ES2Access.Core.Speech
             { SystemRenamePlanet, "Rename planet" },
             { SystemRenameSystem, "Rename system" },
             { SystemPopulationMoved, "Moved {0} to {1}" },
-            { SystemConstructionQueued, "Queued {0}" },
             { SystemImprovements, "System improvements" },
             { SystemLevel, "System level {0}" },
             { SystemSecurity, "Security" },

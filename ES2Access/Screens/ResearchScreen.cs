@@ -305,8 +305,7 @@ namespace ES2Access.Screens
         }
 
         /// <summary>
-        /// One technology waiting its turn. Enter is the item's own click, which is the game's dequeue
-        /// - no confirmation, and reversible by queueing it again.
+        /// One technology waiting its turn. Enter takes it out of the queue (<see cref="Dequeue"/>).
         ///
         /// The queue is REORDERED by carrying: Space picks the technology up, Enter on another item
         /// drops it there, and it lands at that item's own position - which is what the game's drag
@@ -335,7 +334,7 @@ namespace ES2Access.Screens
                     GraphNodes.ValuePart(() => QueueItemState(technology)),
                 },
                 Sections = GraphNodes.Sections(null, item.Tooltip),
-                OnActivate = () => AgeWidgets.Press(it.Button),
+                OnActivate = () => Dequeue(it),
                 DropKind = QueueKind,
                 OnDrop = held => DropInQueue(technology, held),
             };
@@ -349,6 +348,43 @@ namespace ES2Access.Screens
                 ControlId.Referenced(technology, "research:queue/" + technology.Name),
                 vtable
             );
+        }
+
+        /// <summary>
+        /// Take a technology out of the queue - the item's own click, which is the game's dequeue
+        /// (<c>ResearchQueueItem.OnActivateCb</c> -&gt; <c>TechnologyScreen.DequeueTechnology</c>
+        /// :189-202): no confirmation, and reversible by queueing it again.
+        ///
+        /// The item vanishes and the cursor is left on whatever the rebuild puts under it, so the
+        /// outcome has no words of its own - unlike the wheel, where the dot the player is standing on
+        /// says its new state. Said only where the game will really dequeue: it refuses a technology
+        /// its queue does not hold, and only logs an error for it.
+        /// </summary>
+        private static void Dequeue(ResearchQueueItem item)
+        {
+            try
+            {
+                if (!Queued(item))
+                {
+                    return;
+                }
+
+                GuiTechnology2 technology = item.GuiTechnology;
+                DepartmentOfScience science = Science();
+                bool dequeues =
+                    science != null
+                    && science.ResearchQueue.Get(technology.TechnologyDefinition) != null;
+                string name = AgeText.Clean(technology.Title);
+                AgeWidgets.Press(item.Button);
+                if (dequeues)
+                {
+                    Voice.Say(ModStrings.Format(ModStrings.QueueCancelled, name), true);
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("research: dequeueing a technology threw: " + e);
+            }
         }
 
         /// <summary>Which cargo a research queue line takes - its own queue's, so a ship or a
@@ -1482,6 +1518,10 @@ namespace ES2Access.Screens
         /// game's own code; the move afterwards is for every other way of getting here - an injected
         /// keypress, a keyboard the OS reports no modifier for - and does nothing when the game has
         /// already put it there.
+        ///
+        /// What happened is said in the mod's own words, the same three the construction queue uses.
+        /// In god mode the same toggle unlocks the technology outright instead
+        /// (<c>TechnologyItem2.OnToggleCb</c> :734-745), so nothing is claimed about a queue there.
         /// </summary>
         private void Queue(TechnologyItem2 item, bool atHead)
         {
@@ -1494,12 +1534,36 @@ namespace ES2Access.Screens
                 }
 
                 bool queued = QueuePosition(technology) >= 0;
+                bool godMode = GodGalaxyCursor.IsGuiInGodMode();
                 AgeWidgets.Toggle(item.Toggle);
                 if (atHead && !queued)
                 {
                     _moveToHead = technology;
                     _moveToHeadFrames = MoveToHeadPatience;
                 }
+
+                if (godMode)
+                {
+                    return;
+                }
+
+                // The same words the construction queue answers with, because it is the same act on
+                // another screen. The dot's own state word changes under the cursor a moment later and
+                // is left alone - it says what the technology IS now, which is a different sentence
+                // from what the key just did, and it is only ever heard by a player standing on the
+                // dot they pressed.
+                string name = AgeText.Clean(technology.Title);
+                Voice.Say(
+                    ModStrings.Format(
+                        queued
+                            ? ModStrings.QueueCancelled
+                            : atHead
+                                ? ModStrings.QueueQueuedFirst
+                                : ModStrings.QueueQueued,
+                        name
+                    ),
+                    true
+                );
             }
             catch (Exception e)
             {
