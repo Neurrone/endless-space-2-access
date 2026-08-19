@@ -577,7 +577,9 @@ namespace ES2Access.Screens
                 vtable.OnDrop = held => Ship(at, held);
             }
 
-            return vtable;
+            // Its own "unavailable" already covers the row's, since the row's own answer is one of the
+            // three this cell asks - so the sheet leaves the shared one off (TableSheet.SaysRowRefusal).
+            return _table.SaysRowRefusal(vtable);
         }
 
         private static GuiTableCellSystemPopulation PopulationCell(AgeTransform cell)

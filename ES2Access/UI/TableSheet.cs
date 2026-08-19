@@ -89,7 +89,9 @@ namespace ES2Access.UI
         public delegate string RowLabel(GuiTableLine line);
 
         /// <summary>A cell the screen reads itself, for a column the game draws a control in. Null for
-        /// every other column, which is the shared value cell.</summary>
+        /// every other column, which is the shared value cell. The cell it answers with still gets the
+        /// row's own refusal said over the top of it, unless the screen says its cell already says it
+        /// (<see cref="SaysRowRefusal"/>).</summary>
         public delegate NodeVtable CellReader(
             GuiTableLine line,
             AgeTransform cell,
@@ -229,6 +231,11 @@ namespace ES2Access.UI
 
         private readonly string _key;
         private readonly RowObject _rowRef;
+
+        /// <summary>The cell the screen last stamped with <see cref="SaysRowRefusal"/>, read and cleared
+        /// by the one <see cref="ReadCell"/> call that could have stamped it.</summary>
+        private NodeVtable _saysRowRefusal;
+
         private readonly List<GuiTableHeader> _headers = new List<GuiTableHeader>();
         private readonly List<AgeTransform> _cells = new List<AgeTransform>();
 
@@ -669,7 +676,10 @@ namespace ES2Access.UI
             GuiTableHeader heading = header;
             Func<bool> selected = () => Selected(owner, row);
             Func<bool> enabled = Operable(table, line);
+            _saysRowRefusal = null;
             NodeVtable vtable = ReadCell == null ? null : ReadCell(row, it, heading, enabled);
+            bool saysRefusal = vtable != null && ReferenceEquals(vtable, _saysRowRefusal);
+            _saysRowRefusal = null;
             if (vtable == null)
             {
                 vtable = new NodeVtable
@@ -718,7 +728,7 @@ namespace ES2Access.UI
             // Declared for the screen's own cells too: a cell reads its caption from the edge the
             // player crossed, so its buffer is the one surface that has to carry the pair itself.
             vtable.BufferHead = () => CellHead(heading, it);
-            Adorn(table, line, vtable, true);
+            Adorn(table, line, vtable, !saysRefusal);
             AgeWidgets.PointAt(vtable, it);
             return vtable;
         }
@@ -744,6 +754,29 @@ namespace ES2Access.UI
         }
 
         /// <summary>
+        /// The screen's answer for one cell of its own whose availability ALREADY includes the row's -
+        /// wrap the vtable in it and return the answer (<c>return sheet.SaysRowRefusal(vtable);</c>).
+        ///
+        /// A cell the screen reads itself says its own control's availability, and the ROW's refusal is
+        /// said over the top of it by the sheet, because the two are different questions: the Empire
+        /// screen's construction column is switched off on an outpost whose row is perfectly available.
+        /// Where the screen composed the cell's answer FROM the row's - the Empire screen's action
+        /// buttons and the Military screen's hero button both refuse whenever their row does - the cell
+        /// already says the word, and the shared one would make a refused row say "unavailable" twice.
+        ///
+        /// Per CELL rather than per screen, and matched by IDENTITY, because one <see cref="ReadCell"/>
+        /// answers different shapes for different columns: the Empire screen's policy column is a combo
+        /// box whose own availability is the DROP LIST's and not the row's, so it is not stamped and
+        /// keeps the shared word. Anything else - a vtable stamped and not returned, a stamp left over
+        /// from an earlier cell - keeps it too, which is the safe half of the choice.
+        /// </summary>
+        public NodeVtable SaysRowRefusal(NodeVtable vtable)
+        {
+            _saysRowRefusal = vtable;
+            return vtable;
+        }
+
+        /// <summary>
         /// What every cell of a row says beyond its own words, however the cell was read: whether the row
         /// it belongs to is the one taken, whether the row is refused, and the row's name as what a typed
         /// letter searches - so one row is one search result whichever column the player is standing in.
@@ -751,7 +784,8 @@ namespace ES2Access.UI
         /// The pointer is deliberately not here: a cell the screen read itself has already aimed it at the
         /// control it declared. <paramref name="availability"/> is off for a cell read as SEVERAL controls
         /// (<see cref="SplitCell"/>), each of which says whether its own button is refused - a closer
-        /// answer than the row's, and a second one would say "unavailable" twice.
+        /// answer than the row's, and a second one would say "unavailable" twice - and off for a cell the
+        /// screen answered for the row itself (<see cref="SaysRowRefusal"/>), for the same reason.
         /// </summary>
         private void Adorn(
             GuiTable table,
