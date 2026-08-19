@@ -88,6 +88,7 @@ namespace ES2Access.Screens
                     enabled
                 );
                 vtable.Sections = RowSections(caption, value);
+                SayValueTooltip(vtable, value);
                 PointAtTooltip(vtable, value);
                 builder.AddItem(id, vtable);
                 return;
@@ -112,6 +113,7 @@ namespace ES2Access.Screens
                     enabled
                 );
                 vtable.Sections = RowSections(caption, value);
+                SayValueTooltip(vtable, value);
                 AgeWidgets.Point(vtable, box.Toggle);
                 builder.AddItem(id, vtable);
                 return;
@@ -681,6 +683,54 @@ namespace ES2Access.Screens
                     lines.Add(source[i]);
                 }
             }
+        }
+
+        /// <summary>
+        /// Say the game's own sentence about the value again the moment the player changes it.
+        ///
+        /// Every setting the game draws keeps TWO tooltips: what the setting IS, on its title, and one
+        /// the game rewrites for every value the setting lands on (<c>SettingSliderItem.CurrentValue</c>
+        /// :52-55, <c>SettingCheckBoxItem.Refresh</c> :50-53). The second is the ANSWER to the change the
+        /// player has just made - what a slow game costs in turns - so a step that reported only the
+        /// value's name sent the player to the review buffer for the half they had asked for by pressing
+        /// the key.
+        ///
+        /// Wrapped around the control's own acted state, which keeps the refusal swallow: a setting the
+        /// game will not let the player move still says nothing at all. Asked through the tooltip's own
+        /// mode, so a description the game assembles at draw time stays in the review buffer where the
+        /// long ones live, exactly as the focus readout leaves it - and asked at speak time, because the
+        /// mode is a per-frame answer.
+        ///
+        /// A setting whose tooltip does NOT move with its value gets nothing here: the options screen's
+        /// sliders and tick boxes carry one tooltip written once at load (<c>OptionItem.Load</c> :23), and
+        /// repeating it on every keypress would say what has not changed.
+        /// </summary>
+        public static void SayValueTooltip(NodeVtable vtable, AgeTooltip value)
+        {
+            Func<string> state = vtable == null ? null : vtable.StateText;
+            if (state == null || value == null)
+            {
+                return;
+            }
+
+            AgeTooltip it = value;
+            vtable.StateText = () =>
+            {
+                string said = state();
+                if (string.IsNullOrEmpty(said))
+                {
+                    return said;
+                }
+
+                NodeAnnouncement part = TooltipParts.Part(
+                    GraphNodes.ModeFor(it),
+                    GraphNodes.TooltipDetails(it)
+                );
+                return new MessageBuilder()
+                    .ListItem(said)
+                    .ListItem(part == null || part.Text == null ? null : part.Text())
+                    .Build();
+            };
         }
 
         /// <summary>Point at the widget the tooltip hangs on rather than at the row: a row's tooltip

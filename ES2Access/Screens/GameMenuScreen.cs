@@ -368,10 +368,13 @@ namespace ES2Access.Screens
         /// <summary>A setting's content, the same pair every other page declares (SettingRows): what
         /// the game says the setting is FOR, then what it says about the value it is currently ON -
         /// which is the half a player standing on "Normal" actually wants, and which is therefore the
-        /// one the readout speaks.</summary>
+        /// one the readout speaks, and the one said again the moment the player moves the setting
+        /// (<see cref="SettingRows.SayValueTooltip"/>).</summary>
         private static NodeVtable Detailed(NodeVtable vtable, AgeTooltip tooltip, SettingItem item)
         {
-            vtable.Sections = SettingRows.RowSections(tooltip, CurrentValueTooltip(item));
+            AgeTooltip value = CurrentValueTooltip(item);
+            vtable.Sections = SettingRows.RowSections(tooltip, value);
+            SettingRows.SayValueTooltip(vtable, value);
             return vtable;
         }
 
