@@ -321,9 +321,9 @@ namespace ES2Access.Screens
         /// The names are the mod's own: the game draws these banners as icons and figures with no
         /// caption anywhere on them (measured - <c>ControlBanner</c>, <c>EmpireBanner</c> and
         /// <c>ResourcesPanel</c> hold tables and value areas and no label of their own), so there is
-        /// no game word to prefer. A row nothing has named - the faction panels the game stacks
-        /// underneath for the empires that have them - is declared exactly as it was, with no level
-        /// at all, rather than under a word this file invented for it.
+        /// no game word to prefer. The faction panels the game stacks underneath for the empires that
+        /// have them are named too (<see cref="AddFactionPanels"/>), and five of those seven DO have a
+        /// game word, because the thing each of them counts is a titled thing in the game's own data.
         /// </summary>
         public void Empire(GraphBuilder builder)
         {
@@ -378,9 +378,29 @@ namespace ES2Access.Screens
         /// no business carrying a word about the player's ear.</summary>
         private static void Name(List<Cell> cells, int from, string named)
         {
+            if (string.IsNullOrEmpty(named))
+            {
+                return;
+            }
+
             for (int i = from; i < cells.Count; i++)
             {
                 cells[i].Row = named;
+            }
+        }
+
+        /// <summary>The game's own word for something, or nothing where the corpus never wrote one - a
+        /// key that came back as itself is parked text, not a name to say over a row.</summary>
+        private static string GameWord(string key)
+        {
+            try
+            {
+                string said = AgeText.Clean(Gui.Localize(key));
+                return string.IsNullOrEmpty(said) || said[0] == '%' ? null : said;
+            }
+            catch (Exception)
+            {
+                return null;
             }
         }
 
@@ -882,17 +902,40 @@ namespace ES2Access.Screens
         // panel's own click is that and nothing else - so those are readouts, exactly as the dust and
         // manpower totals beside them are. Only a click the game would really act on is a button.
 
+        // Each of the seven is a ROW of its own and says what it is on the way in, the same way the four
+        // banner rows above them do (owner ruling 2026-08-19, which supersedes the "no level at all"
+        // reading recorded on <see cref="Empire"/>). Five are named by the game's own title for the
+        // thing the panel counts and two by the mod's, because the corpus has no bare title for them -
+        // see the ModStrings comment on <see cref="ModStrings.HudSingularitiesPanel"/>.
+        //
+        // The word rides on the CELLS, not on the call order: these rows fall out of the rectangles like
+        // every other row of this stop, so a panel the game happened to draw level with another gets no
+        // level at all rather than the wrong one (<see cref="RowName"/>).
         private static void AddFactionPanels(List<Cell> cells, GameOverlayWindow window)
         {
             try
             {
+                int from = cells.Count;
                 AddLifeforce(cells, window.LifeforceStatusPanel);
+                Name(cells, from, GameWord("%NetEmpireLifeforceTitle"));
+                from = cells.Count;
                 AddGenes(cells, window.GeneManagementShortcutPanel);
+                Name(cells, from, GameWord("%AssimilationShortcutTitle"));
+                from = cells.Count;
                 AddTimeBubbles(cells, window.TimeBubbleStockPanel);
+                Name(cells, from, ModStrings.Get(ModStrings.HudSingularitiesPanel));
+                from = cells.Count;
                 AddGoldenAge(cells, window.GoldenAgePanel);
+                Name(cells, from, GameWord("%GoldenAgeTitle"));
+                from = cells.Count;
                 AddPirateMark(cells, window.PirateMarkPanel);
+                Name(cells, from, ModStrings.Get(ModStrings.HudPirateMarkPanel));
+                from = cells.Count;
                 AddHonor(cells, window.HonorManagementPanel);
+                Name(cells, from, GameWord("%HonorTitle"));
+                from = cells.Count;
                 AddRelics(cells, window.RelicManagementPanel);
+                Name(cells, from, GameWord("%RelicsTitle"));
             }
             catch (Exception e)
             {

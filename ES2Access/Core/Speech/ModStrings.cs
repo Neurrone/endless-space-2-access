@@ -558,6 +558,16 @@ namespace ES2Access.Core.Speech
         public const string HudKeyResourcesPanel = "hud.key-resources-panel";
         public const string HudStrategicResourcesPanel = "hud.strategic-resources-panel";
 
+        // The two faction rows of that cluster the game has no standalone name for. The other five are
+        // named by the game's own titles (%NetEmpireLifeforceTitle, %AssimilationShortcutTitle,
+        // %GoldenAgeTitle, %HonorTitle, %RelicsTitle - all five verified to resolve). These two do not
+        // exist as a bare title anywhere in the corpus: "Singularities" is only ever inside a sentence
+        // or as another screen's source label, and "Pirate Mark" only inside one
+        // (%PirateMarkPanelTargetSystemTitle is "Mark Pirate Target", an instruction). So they are the
+        // mod's own words, chosen to be exactly the game's (owner ruling 2026-08-19).
+        public const string HudSingularitiesPanel = "hud.singularities-panel";
+        public const string HudPirateMarkPanel = "hud.pirate-mark-panel";
+
         // The pause menu's icon-only toggle, and the word for a settings panel the game will only
         // show, not let you change.
         public const string GameMenuGameSettings = "gamemenu.game-settings";
@@ -1390,6 +1400,8 @@ namespace ES2Access.Core.Speech
             { HudControlsPanel, "Controls" },
             { HudKeyResourcesPanel, "Key Resources" },
             { HudStrategicResourcesPanel, "Strategic Resources" },
+            { HudSingularitiesPanel, "Singularities" },
+            { HudPirateMarkPanel, "Pirate Mark" },
             { GameMenuGameSettings, "Game settings" },
             { GameMenuReadOnlySettings, "read only" },
             { LoadSaveSaveName, "Save name" },

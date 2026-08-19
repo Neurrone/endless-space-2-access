@@ -238,6 +238,8 @@
   "hud.controls-panel": "Controls",
   "hud.key-resources-panel": "Key Resources",
   "hud.strategic-resources-panel": "Strategic Resources",
+  "hud.singularities-panel": "Singularities",
+  "hud.pirate-mark-panel": "Pirate Mark",
   "gamemenu.game-settings": "Game settings",
   "gamemenu.read-only-settings": "read only",
   "loadsave.save-name": "Save name",
