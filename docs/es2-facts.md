@@ -1167,6 +1167,13 @@ generic graduates to the generic docs.
   `Strategic01Small`/`StrategicResourceBanner`). A lattice line the game faded out entirely is not a
   row of eight empty cells, it is a line nobody can see: the mod reads one row per DRAWN line and
   says `nav.cell-empty` ("empty") in the faded cells of a line it does read.
+- Economy and the development window: **one property gates BOTH strategic grids** —
+  `SimulationProperties.Empire.CanUseStrategicForRecipe` (Material Expertise): `EconomyPanel.Refresh`
+  sets `StrategicsGroup.Visible` from it every refresh, and the development window's strategic
+  component grid derives from the same predicate. Measured 2026-08-19: unlike the descriptor-driven
+  properties that shrug writes off, this one DOES stick under `SetPropertyBaseValue` +
+  `Refresh(false)` — set it and the game draws the real grid itself, set it back and it is gone
+  (the sighting route is in test-recipes).
 - Economy, luxuries: **a luxury the empire has not located is drawn ANONYMOUSLY, on purpose.**
   `GuiResource` (:108-133) substitutes a placeholder in every drawn thing about it: `GetName` →
   `UnknownLuxury`, `GetImage` → the single shared `UnknownLuxurySmall` texture, `GetColor` → the

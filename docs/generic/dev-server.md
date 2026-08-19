@@ -233,6 +233,10 @@ spots:
 - **Same-key double handling.** The mod and the game poll the same physical key; a
   dispatched action exercises only the mod's half. See [input.md](input.md) — the collision
   checklist and the suppression doctrine.
+- **Surfaces the fixture never draws.** Before forcing widget flags to sight one, look for
+  the single game-state predicate the drawn-ness is DERIVED from and set that — the game
+  then draws real content by itself, which a forced Visible never does. Restore the
+  predicate afterwards and prove the round trip with a probe.
 - **Keys whose job is handing control back to the game.** An injected action is dropped
   when no mod screen is focused, so any key that returns control to the game (Escape out of
   a game view, back on a game-owned page) is structurally untestable in-harness: only the
