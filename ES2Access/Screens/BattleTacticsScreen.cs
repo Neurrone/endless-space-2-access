@@ -41,7 +41,9 @@ namespace ES2Access.Screens
     ///
     /// Nothing is committed until Confirm, which posts <c>OrderUpdatePlayDeck</c> behind the game's own
     /// confirmation box while a battle is running (:388-397); its refusals - a battle in progress, no
-    /// changes, the influence cost unaffordable - are the game's own sentences on its tooltip.
+    /// changes, the influence cost unaffordable - are the game's own sentences on its tooltip. What it
+    /// would spend is drawn on the button itself and so read with it; what the empire HAS is the strip
+    /// above the bottom row (<see cref="BuildStock"/>), drawn only while the change costs anything.
     ///
     /// The two arrows beside the tactics list are the scroll view's own furniture
     /// (<c>OnCardListLeftButtonCb</c> shifts the strip by one card and says nothing); they carry no words
@@ -56,6 +58,7 @@ namespace ES2Access.Screens
         private static readonly object HeadingStop = "tactics:heading";
         private static readonly object AvailableStop = "tactics:available";
         private static readonly object DeckStop = "tactics:deck";
+        private static readonly object StockStop = "tactics:stock";
         private static readonly object ActionsStop = "tactics:actions";
 
         /// <summary>What the carry holds here, so a ship or a population unit can never be dropped into
@@ -122,6 +125,7 @@ namespace ES2Access.Screens
                 BuildHeading(builder, window);
                 BuildAvailable(builder, window);
                 BuildDeck(builder, window);
+                BuildStock(builder, window);
                 BuildActions(builder, window);
             }
             catch (Exception e)
@@ -261,6 +265,58 @@ namespace ES2Access.Screens
             builder.StartRow();
             builder.AddItem(ControlId.Structural("tactics:remove-target"), vtable);
             builder.EndRow();
+        }
+
+        /// <summary>
+        /// The strip above the bottom row: what the empire has of the resource Confirm would spend.
+        ///
+        /// The game draws it only while the change would cost anything - a deck changed less than
+        /// <c>PlayDeckChangeCostTurnsMax</c> turns ago - and hides the whole group and writes "FREE" onto
+        /// the button otherwise (<c>RefreshButtons</c> :239-252), so the strip comes and goes with the
+        /// window's own drawing rather than being conjured for a screen that is not showing it.
+        ///
+        /// The COST is not a node of its own: the game draws it INSIDE the Confirm button
+        /// (<c>ValidateCostLabel</c> is a child of <c>ValidateButton</c> - measured, the button reads
+        /// "Confirm changes Cost: 50 Influence"), so the action already says what it would spend and a
+        /// second reading would only say it twice.
+        ///
+        /// The amount names itself: the game writes the resource's icon into the label
+        /// (<c>EmpireInfluenceLabel.Text += " [prestigeColored]"</c> :250) and the icon table turns that
+        /// into the word, so the row reads "175 Influence" and takes the game's own drawn caption over
+        /// the strip - "Empire Resources" - as the level, exactly as the troop window's stock band does.
+        /// </summary>
+        private void BuildStock(GraphBuilder builder, PlayCardDeckModalWindow window)
+        {
+            AgeTransform group = window.EmpireResourcesGroup;
+            AgePrimitiveLabel label = window.EmpireInfluenceLabel;
+            AgeTransform amount = label == null ? null : label.AgeTransform;
+            if (group == null || !AgeWidgets.Visible(group))
+            {
+                return;
+            }
+
+            _cells.Clear();
+            Cells.AddReadout(_cells, amount, "tactics:influence");
+            if (_cells.Count == 0)
+            {
+                return;
+            }
+
+            builder.BeginStop(StockStop);
+            string caption = AgeWidgets.TextOf(
+                AgeWidgets.ChildNamed(group, "EmpireResourcesTitle", 2)
+            );
+            bool named = !string.IsNullOrEmpty(caption);
+            if (named)
+            {
+                builder.PushContext(caption);
+            }
+
+            Cells.EmitLinear(builder, _cells);
+            if (named)
+            {
+                builder.PopContext();
+            }
         }
 
         private void BuildActions(GraphBuilder builder, PlayCardDeckModalWindow window)
