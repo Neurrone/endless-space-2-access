@@ -17,7 +17,9 @@ namespace ES2Access.Core.UI
     ///    table is easier to hold on to when every column announces itself the same way, and a caption
     ///    the game DREW must be sayable — the audit counted the unsaid one as painted-but-unsaid.)
     ///  - row name when off in a metadata column = vertical edge labels into non-primary cells, unless
-    ///    the rows have no name to give (<see cref="NamedRows"/>);
+    ///    the rows have no name to give (<see cref="NamedRows"/>) - and a table with no row names says
+    ///    the column's caption on ARRIVING in it instead (<see cref="NodeVtable.ColumnHeader"/>), since
+    ///    a landing there would otherwise name neither the row nor the column;
     ///  - the whole-row readout = the PRIMARY (column 0) cell's announcement list carrying the row's
     ///    metadata as extra parts — vertical navigation rides column 0, so moving down the table reads
     ///    the whole row, per-part filterable like any control;
@@ -258,6 +260,12 @@ namespace ES2Access.Core.UI
             // per column. Stamped here so no caller can forget it.
             vt.Column = col;
             if (col > 0 && !NamedRows) vt.SearchesAsItself = true;
+
+            // A table whose rows have no name is the one where a landing identifies nothing: the row
+            // cannot say where it is and the cell is another cell like it. So its cells carry the
+            // column's caption for the announcer to say on arrival (NodeVtable.ColumnHeader) - the same
+            // words the sideways edge already crosses with, in the case where no edge was crossed.
+            if (!NamedRows) vt.ColumnHeader = Header(col);
 
             // Which row it is in, for the position the announcer speaks on row CHANGES only.
             vt.Row = _rowPos;

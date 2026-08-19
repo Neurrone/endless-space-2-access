@@ -47,9 +47,15 @@ namespace ES2Access.Core.UI.Graph
             List<string> parts = new List<string>();
             if (!string.IsNullOrEmpty(transitionLabel)) parts.Add(transitionLabel);
 
+            // The column the landing is IN, where no edge was crossed to say it - said next to the
+            // control rather than at the head of the line, because the levels above it (the table's
+            // own name) are outside it and read first.
+            string column = string.IsNullOrEmpty(transitionLabel) ? ColumnEntered(from, to) : null;
+
             if (i >= toPath.Count)
             {
                 // Ascended (or same node): announce just the now-innermost focus.
+                if (!string.IsNullOrEmpty(column)) parts.Add(column);
                 string text = LeafText(to);
                 if (!string.IsNullOrEmpty(text)) parts.Add(text);
             }
@@ -57,6 +63,7 @@ namespace ES2Access.Core.UI.Graph
             {
                 for (int j = i; j < toPath.Count; j++)
                 {
+                    if (j == toPath.Count - 1 && !string.IsNullOrEmpty(column)) parts.Add(column);
                     string text = LeafText(toPath[j]);
                     if (string.IsNullOrEmpty(text)) continue;
                     // Dedupe: a level whose label just duplicates the next level down (or the control
@@ -76,6 +83,25 @@ namespace ES2Access.Core.UI.Graph
             if (!string.IsNullOrEmpty(row)) parts.Add(row);
 
             return Join(parts);
+        }
+
+        /// <summary>
+        /// The column heading a landing has just arrived under, or null.
+        ///
+        /// Only cells that carry one (<see cref="NodeVtable.ColumnHeader"/> - a table whose rows have
+        /// no name) and only where the column CHANGED: walking down a column says its heading once, and
+        /// a step sideways is already labelled by the edge it crossed, which is why the caller asks
+        /// this only when there was no such label. Compared by the heading's WORDS rather than by the
+        /// column number, because everything outside a table sits at column 0 and a Tab landing on the
+        /// primary would otherwise look like a move that had not left the column.
+        /// </summary>
+        private static string ColumnEntered(GraphNode from, GraphNode to)
+        {
+            NodeVtable vt = to != null ? to.Vtable : null;
+            string header = vt != null ? vt.ColumnHeader : null;
+            if (string.IsNullOrEmpty(header)) return null;
+            NodeVtable was = from != null ? from.Vtable : null;
+            return was != null && header == was.ColumnHeader ? null : header;
         }
 
         /// <summary>

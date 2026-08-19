@@ -307,6 +307,19 @@ namespace ES2Access.Core.UI.Graph
         /// unsearchable instead of un-duplicated. Stamped by <see cref="GraphSheet"/>.</summary>
         public bool SearchesAsItself;
 
+        /// <summary>
+        /// The caption of the column this cell sits in, said on ARRIVING in the column by any means
+        /// other than the sideways step that already labels its own edge - a Tab into the table, a
+        /// search landing, a re-read, a vertical crossing that fell to another column.
+        ///
+        /// Only a table whose rows have no name stamps it (<see cref="GraphSheet.NamedRows"/>). Where
+        /// the rows ARE named, column 0 says which row it is and that is the orientation a landing
+        /// needs; where they are not, a cell landed on out of the blue says neither its row nor its
+        /// column, and the column heading is the only place left for it to sit. Suppressed whenever the
+        /// player came from a cell under the same heading, so walking a column says it once.
+        /// </summary>
+        public string ColumnHeader;
+
         /// <summary>Which ROW of a table this control sits in - the same <see cref="TableRow"/> object
         /// on every cell of the row, null outside a table. See <see cref="TableRow"/> for what the
         /// announcer does with it.</summary>
