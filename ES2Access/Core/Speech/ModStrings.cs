@@ -158,6 +158,16 @@ namespace ES2Access.Core.Speech
         public const string GalaxyIdleFleets = "galaxy.idle-fleets";
         public const string GalaxyGameMenu = "galaxy.game-menu";
 
+        /// <summary>The button the scan view offers when notifications are queued up behind it. The game
+        /// draws it as a bare icon whose tooltip is a sentence about what a click would do, so there is
+        /// no name of the game's to use.</summary>
+        public const string GalaxyPendingNotifications = "galaxy.pending-notifications";
+
+        /// <summary>The clock of real time the game can draw above the End Turn button. The game's only
+        /// words for it are the OPTION that switches it on ("Display In-Game Clock"), which names a
+        /// setting rather than the reading, so the caption here is the mod's.</summary>
+        public const string GalaxyRealTimeClock = "galaxy.real-time-clock";
+
         /// <summary>The switch beside the turn controls that shows an alliance's coordination requests.
         /// The game draws it as a bare icon and its tooltip is a sentence about what a click would do,
         /// so there is no name of the game's to use.</summary>
@@ -1230,6 +1240,8 @@ namespace ES2Access.Core.Speech
             { GalaxyNextIdleFleet, "Next idle fleet" },
             { GalaxyIdleFleets, "{0} idle fleets" },
             { GalaxyGameMenu, "Game menu" },
+            { GalaxyPendingNotifications, "Show pending notifications" },
+            { GalaxyRealTimeClock, "Clock" },
             { GalaxyAllianceRequests, "Alliance requests" },
             { GalaxySyncState, "Multiplayer synchronization" },
             { GalaxyReturnToLobby, "Return all players to the lobby" },

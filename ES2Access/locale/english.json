@@ -72,6 +72,8 @@
   "galaxy.next-idle-fleet": "Next idle fleet",
   "galaxy.idle-fleets": "{0} idle fleets",
   "galaxy.game-menu": "Game menu",
+  "galaxy.pending-notifications": "Show pending notifications",
+  "galaxy.real-time-clock": "Clock",
   "galaxy.alliance-requests": "Alliance requests",
   "galaxy.sync-state": "Multiplayer synchronization",
   "galaxy.return-to-lobby": "Return all players to the lobby",

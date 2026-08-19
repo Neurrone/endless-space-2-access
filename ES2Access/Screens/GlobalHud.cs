@@ -1945,10 +1945,12 @@ namespace ES2Access.Screens
             AddTurnButton(found, window.ApplyMovementsButton, "apply-movements", ModStrings.GalaxyApplyMovements, null);
             AddTurnButton(found, window.NextIdleFleetButton, "next-idle-fleet", ModStrings.GalaxyNextIdleFleet, IdleFleetsText);
             AddTurnButton(found, window.GameMenuButton, "game-menu", ModStrings.GalaxyGameMenu, null);
+            AddPendingNotifications(found, window.PendingNotificationButton);
             AddRequestToggle(found, window.RequestToggle);
             AddSync(found, window);
             AddPlayers(found, window);
             AddTimers(found, window);
+            AddRealTimeClock(found, window);
 
             // One control per row: the cluster's members are peers of one kind - things to do with the
             // turn - and which of them the game drew beside which is a fact about the corner they are
@@ -1991,6 +1993,51 @@ namespace ES2Access.Screens
                 {
                     Widget = AgeWidgets.Transform(it),
                     Id = ControlId.Referenced(it, "hud:" + key),
+                    Vtable = vtable,
+                }
+            );
+        }
+
+        /// <summary>
+        /// The way back to the notifications the scan view is holding up.
+        ///
+        /// The scan view suppresses every notification pop-up while it is open
+        /// (<c>GuiManager.CanShowNotifications</c> :1584), and this button is how the game offers the
+        /// player the ones that queued up behind it: a click is <c>ToggleScanView</c>
+        /// (<c>EndTurnWindow.OnPendingNotificationCb</c> :1368-1371), which leaves the scan view and lets
+        /// the pop-ups arrive.
+        ///
+        /// It lives in the window's <c>ScanViewGroup</c>, so normal view never draws it whatever starts
+        /// its fade - and the game does FADE it rather than hide it (modifiers started on a notification
+        /// arriving :1708-1714 and on the turn being ended in scan view :1684-1690, run backwards when
+        /// the turn validates :1692-1706, reset on every view switch :1678-1682). A faded-out control is
+        /// still <c>Visible</c>, so the node exists only while the player can actually SEE it
+        /// (<see cref="AgeWidgets.Painted"/>). Nothing announces its arrival: it is there to be found,
+        /// not to interrupt.
+        ///
+        /// The game writes no caption on it - a bare icon whose tooltip is a sentence about what a click
+        /// would do - so the name is the mod's.
+        /// </summary>
+        private void AddPendingNotifications(List<Cell> found, AgeTransform button)
+        {
+            if (!AgeWidgets.Painted(button))
+            {
+                return;
+            }
+
+            AgeTransform at = button;
+            NodeVtable vtable = GraphNodes.Button(
+                () => ModStrings.Get(ModStrings.GalaxyPendingNotifications),
+                () => AgeWidgets.Press(at),
+                () => AgeWidgets.Enabled(at),
+                AgeWidgets.Readable(AgeWidgets.Raw(at))
+            );
+            AgeWidgets.PointAt(vtable, at);
+            found.Add(
+                new Cell
+                {
+                    Widget = at,
+                    Id = ControlId.Referenced(at, "hud:pending-notifications"),
                     Vtable = vtable,
                 }
             );
@@ -2182,6 +2229,47 @@ namespace ES2Access.Screens
                     Widget = arc,
                     Id = ControlId.Referenced(arc, "hud:turn-timer"),
                     Vtable = turnTimer,
+                }
+            );
+        }
+
+        /// <summary>
+        /// The wall clock the game can draw above the End Turn button - the real time of day, not
+        /// anything about the game.
+        ///
+        /// The player switches it on in the options ("Display In-Game Clock") and picks its format
+        /// there, and the game writes the label once a minute from <c>DateTime.Now</c>
+        /// (<c>EndTurnWindow.UpdateRealTimeClockCoroutine</c> :946-969). The row is exactly the label:
+        /// no arithmetic, no format of the mod's, so a player who chose 24-hour time hears 24-hour time.
+        ///
+        /// Declared only while the game is drawing it - the option on, no global timer in the way, and
+        /// no save in flight, which is one flag the window itself computes
+        /// (<c>Refresh</c> :880) - and not watched, for the same reason as the timers above.
+        /// </summary>
+        private void AddRealTimeClock(List<Cell> found, EndTurnWindow window)
+        {
+            AgeTransform clock = window.RealTimeClockLabel == null
+                ? null
+                : window.RealTimeClockLabel.AgeTransform;
+            if (!AgeWidgets.Visible(clock))
+            {
+                return;
+            }
+
+            EndTurnWindow it = window;
+            NodeVtable vtable = GraphNodes.Readout(
+                () => ModStrings.Get(ModStrings.GalaxyRealTimeClock),
+                () => OneLine(AgeText.Label(it.RealTimeClockLabel)),
+                null,
+                null,
+                false
+            );
+            found.Add(
+                new Cell
+                {
+                    Widget = clock,
+                    Id = ControlId.Referenced(clock, "hud:real-time-clock"),
+                    Vtable = vtable,
                 }
             );
         }
