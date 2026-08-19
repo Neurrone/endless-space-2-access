@@ -149,6 +149,14 @@ namespace ES2Access.UI
         /// there is no role word and no state - just the words, the tooltip where the game hung one, and
         /// the pointer aimed at it so a Class tooltip is actually drawn.
         ///
+        /// A drawn row is a row of NODES, not one node. Where the game draws two explaining things side
+        /// by side - two faction traits on one line - each carries its own tooltip, and a row that kept
+        /// only the first one's would leave the second's description with nowhere to be read from. So a
+        /// row is split where the tooltip changes: consecutive lines under the SAME tooltip (which is
+        /// how a label under the widget the tooltip hangs on arrives here, and how a run of plain prose
+        /// arrives with none at all) are one node, and the next tooltip starts the next node. The nodes
+        /// of one row stay peers of that row, so left and right walk the line and up and down cross it.
+        ///
         /// The region is begun only once there is a row to put in it: an empty <c>SetRegion</c> would
         /// re-tag whatever the caller declares next.
         /// </summary>
@@ -175,23 +183,40 @@ namespace ES2Access.UI
             int index = 0;
             foreach (List<DrawnLine> row in AgeLayout.Rows(lines, LineWidget))
             {
-                List<DrawnLine> it = row;
-                AgeTooltip tooltip = it[0].Tooltip;
-                AgeTransform under = it[0].Owner;
-                NodeVtable vtable = new NodeVtable
+                builder.StartRow();
+                int part = 0;
+                for (int at = 0; at < row.Count; part++)
                 {
-                    Announcements = new List<NodeAnnouncement>
+                    int end = at + 1;
+                    while (end < row.Count && ReferenceEquals(row[end].Tooltip, row[at].Tooltip))
                     {
-                        GraphNodes.LabelPart(() => RowText(it)),
-                    },
-                    Sections = GraphNodes.Sections(null, tooltip),
-                    OnFocusVisual = () => PointerFocus.MoveTo(null, tooltip, under),
-                    OnBlurVisual = AgeWidgets.ReleasePointer,
-                };
-                builder.AddItem(
-                    ControlId.Referenced(it[0].Widget, keyPrefix + index + "/" + it[0].Widget.name),
-                    vtable
-                );
+                        end++;
+                    }
+
+                    List<DrawnLine> it = row.GetRange(at, end - at);
+                    at = end;
+                    AgeTooltip tooltip = it[0].Tooltip;
+                    AgeTransform under = it[0].Owner;
+                    NodeVtable vtable = new NodeVtable
+                    {
+                        Announcements = new List<NodeAnnouncement>
+                        {
+                            GraphNodes.LabelPart(() => RowText(it)),
+                        },
+                        Sections = GraphNodes.Sections(null, tooltip),
+                        OnFocusVisual = () => PointerFocus.MoveTo(null, tooltip, under),
+                        OnBlurVisual = AgeWidgets.ReleasePointer,
+                    };
+                    builder.AddItem(
+                        ControlId.Referenced(
+                            it[0].Widget,
+                            keyPrefix + index + "." + part + "/" + it[0].Widget.name
+                        ),
+                        vtable
+                    );
+                }
+
+                builder.EndRow();
                 index++;
             }
         }
