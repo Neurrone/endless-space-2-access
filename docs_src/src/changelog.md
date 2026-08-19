@@ -49,6 +49,7 @@
 - Ship design: an empty slot now reads the three markers the game only draws as pictures — "Times 2 Multiplier" for the dots that multiply a fitted module, "Symmetrical (x2 cost)" for a slot mirrored on the far side of the ship, and "Heavy Mount" for the slot the game only draws bigger. A filled slot is unchanged: its module's own tooltip already says all three
 - Changing a game setting now says the game's own sentence about the value you have moved to, not just its name — "Slow, A slow-paced game takes about 450 turns maximum" instead of "Slow". This covers the new game lobby, its advanced settings, and the settings panels in the pause menu; the options screen is unchanged, because its sliders and tick boxes keep one description whatever they are set to
 - Mod manager: the mods library now reads as a "Filters" section holding the folder switches on one row, followed by an "Available" section with the library's contents one per row, matching the constructibles pattern
+- The top-left corner of every screen: Alt+Up and Alt+Down now jump between its rows — Controls, Key Resources, Research, Strategic Resources, and the faction rows below them — instead of only naming them
 
 ## V0.1.1
 

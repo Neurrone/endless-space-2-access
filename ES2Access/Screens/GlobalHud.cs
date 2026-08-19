@@ -316,7 +316,12 @@ namespace ES2Access.Screens
         /// researched, and the stockpiles. Walked as one flat stop, the eighth screen icon and the
         /// first total were neighbours with nothing between them saying the player had crossed from
         /// one thing to another. So the rows carry the levels, announced on the way in and not on
-        /// every node, which is the shape the galaxy's own panels already have.
+        /// every node, which is the shape the galaxy's own panels already have - and each row is a
+        /// REGION as well as a level, so that Alt+Up/Down jumps panel to panel down the corner. The two
+        /// halves ride on different mechanisms and shipped apart once: a level is announced by the path
+        /// diff and a region jump reads the node's own region key, so the rows read as four things and
+        /// the jump key still did nothing (owner-reported, 2026-08-19). They are set together now
+        /// (<see cref="Name"/>) for exactly that reason.
         ///
         /// The names are the mod's own: the game draws these banners as icons and figures with no
         /// caption anywhere on them (measured - <c>ControlBanner</c>, <c>EmpireBanner</c> and
@@ -337,22 +342,30 @@ namespace ES2Access.Screens
             List<Cell> cells = new List<Cell>();
             int from = cells.Count;
             AddScreenToggles(cells, window.ControlBanner);
-            Name(cells, from, ModStrings.Get(ModStrings.HudControlsPanel));
+            Name(cells, from, ModStrings.Get(ModStrings.HudControlsPanel), "controls");
             from = cells.Count;
             AddTotals(cells, window.EmpireBanner, empire);
-            Name(cells, from, ModStrings.Get(ModStrings.HudKeyResourcesPanel));
+            Name(cells, from, ModStrings.Get(ModStrings.HudKeyResourcesPanel), "key-resources");
             from = cells.Count;
             AddResearch(cells, window.EmpireBanner, empire);
-            Name(cells, from, ModStrings.Get(ModStrings.GalaxyResearch));
+            Name(cells, from, ModStrings.Get(ModStrings.GalaxyResearch), "research");
             from = cells.Count;
             AddStockpiles(cells, window.StrategicsBanner);
-            Name(cells, from, ModStrings.Get(ModStrings.HudStrategicResourcesPanel));
+            Name(cells, from, ModStrings.Get(ModStrings.HudStrategicResourcesPanel), "strategics");
             AddFactionPanels(cells, window);
 
             builder.BeginStop(EmpireStop);
+            int line = 0;
             foreach (List<Cell> row in AgeLayout.Rows(cells, CellWidget))
             {
                 string named = RowName(row);
+                // EVERY row carries a region, not only the named ones: the jump is asked of the focused
+                // node's own region key, so one unregioned line in the middle of the stop is a key that
+                // does nothing exactly there. A line two panels share has no name to take one from and
+                // takes its place in the stop instead.
+                string region = RowRegion(row);
+                builder.SetRegion(EmpireStop + "/" + (region ?? "line/" + line));
+                line++;
                 if (named != null)
                 {
                     builder.PushContext(named);
@@ -370,13 +383,20 @@ namespace ES2Access.Screens
                     builder.PopContext();
                 }
             }
+
+            builder.SetRegion(null);
         }
 
         /// <summary>Name the cells one contributor has just added, so that the row they fall into can
-        /// say what it is. Applied AFTER the contributor rather than passed into it: which panel a
-        /// cell came from is this method's own knowledge, and the helpers that read the banners have
-        /// no business carrying a word about the player's ear.</summary>
-        private static void Name(List<Cell> cells, int from, string named)
+        /// say what it is and be jumped to. Applied AFTER the contributor rather than passed into it:
+        /// which panel a cell came from is this method's own knowledge, and the helpers that read the
+        /// banners have no business carrying a word about the player's ear.
+        ///
+        /// The word and the region key are set together and never apart: a row the player hears as a
+        /// thing of its own is a row the region jump has to be able to land on, and the two coming from
+        /// one call is what stops a later contributor from adding the level and forgetting the key
+        /// (which is exactly what the four banner rows shipped with).</summary>
+        private static void Name(List<Cell> cells, int from, string named, string region)
         {
             if (string.IsNullOrEmpty(named))
             {
@@ -386,6 +406,7 @@ namespace ES2Access.Screens
             for (int i = from; i < cells.Count; i++)
             {
                 cells[i].Row = named;
+                cells[i].Region = region;
             }
         }
 
@@ -421,6 +442,22 @@ namespace ES2Access.Screens
             }
 
             return named;
+        }
+
+        /// <summary>Which region a row is, on the same terms as <see cref="RowName"/>: the panel every
+        /// cell of it came from, or nothing where the rectangles put two panels on one line.</summary>
+        private static string RowRegion(List<Cell> row)
+        {
+            string region = row.Count == 0 ? null : row[0].Region;
+            for (int i = 1; i < row.Count; i++)
+            {
+                if (row[i].Region != region)
+                {
+                    return null;
+                }
+            }
+
+            return region;
         }
 
         /// <summary>
@@ -545,6 +582,12 @@ namespace ES2Access.Screens
             /// <summary>What the row this cell lands in is called, or null where nothing has named it
             /// (<see cref="RowName"/>).</summary>
             public string Row;
+
+            /// <summary>Which region of the stop the row this cell lands in IS - the panel it was read
+            /// off, in a word that is not the player's, because a region key has to be the same string
+            /// on every rebuild and the name is a localized one. Null where nothing has named it
+            /// (<see cref="RowRegion"/>).</summary>
+            public string Region;
         }
 
         private static readonly Func<Cell, AgeTransform> CellWidget = cell => cell.Widget;
@@ -917,25 +960,25 @@ namespace ES2Access.Screens
             {
                 int from = cells.Count;
                 AddLifeforce(cells, window.LifeforceStatusPanel);
-                Name(cells, from, GameWord("%NetEmpireLifeforceTitle"));
+                Name(cells, from, GameWord("%NetEmpireLifeforceTitle"), "lifeforce");
                 from = cells.Count;
                 AddGenes(cells, window.GeneManagementShortcutPanel);
-                Name(cells, from, GameWord("%AssimilationShortcutTitle"));
+                Name(cells, from, GameWord("%AssimilationShortcutTitle"), "genes");
                 from = cells.Count;
                 AddTimeBubbles(cells, window.TimeBubbleStockPanel);
-                Name(cells, from, ModStrings.Get(ModStrings.HudSingularitiesPanel));
+                Name(cells, from, ModStrings.Get(ModStrings.HudSingularitiesPanel), "singularities");
                 from = cells.Count;
                 AddGoldenAge(cells, window.GoldenAgePanel);
-                Name(cells, from, GameWord("%GoldenAgeTitle"));
+                Name(cells, from, GameWord("%GoldenAgeTitle"), "golden-age");
                 from = cells.Count;
                 AddPirateMark(cells, window.PirateMarkPanel);
-                Name(cells, from, ModStrings.Get(ModStrings.HudPirateMarkPanel));
+                Name(cells, from, ModStrings.Get(ModStrings.HudPirateMarkPanel), "pirate-mark");
                 from = cells.Count;
                 AddHonor(cells, window.HonorManagementPanel);
-                Name(cells, from, GameWord("%HonorTitle"));
+                Name(cells, from, GameWord("%HonorTitle"), "honor");
                 from = cells.Count;
                 AddRelics(cells, window.RelicManagementPanel);
-                Name(cells, from, GameWord("%RelicsTitle"));
+                Name(cells, from, GameWord("%RelicsTitle"), "relics");
             }
             catch (Exception e)
             {
