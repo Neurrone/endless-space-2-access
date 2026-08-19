@@ -199,7 +199,9 @@ hangs under its DESTINATION only — the map draws where a fleet is going and ne
 (es2-facts) — and one whose destination is unperceived gets a top-level row instead, walked into the
 system list by its own pair. **The systems stop is ONE region, not two**: colonies are not split off
 from the rest (owner ruling 2026-08-16), so Alt+Up/Down on this stop jumps only between the stars and
-what is drifting out between them, and declares nothing at all while there is nothing drifting. **Zoom is an adjustable node**
+what is drifting out between them, and declares nothing at all while there is nothing drifting
+(since 2026-08-19 every sighted probe is a top-level drifting row — `galaxy:probe/<guid>` —
+never a child of its nearest star). **Zoom is an adjustable node**
 on the existing
 Left/Right + Shift chords (no new binding), and it lives on BOTH the scan view and the galaxy's
 `hud:view-title` stop, in a row of its own (the view-name label and its close-button node are gone —
@@ -216,12 +218,16 @@ the `empire:` prefix on the detail tabs); `economy:luxuries/legend|items`,
 `population:thresholds`, one per captioned block, `population:detail/assimilate`,
 `population:politics/{intro,traits,reactions}`; `election:local/{title,trends,empire}`;
 `hero:ship/{characteristics,modules,figures}`; `troops:evolution/caption` + `/type/<i>`;
-the notification popup's top/bottom control regions. ControlIds retired by the rollout (per-stop
+the notification popup's top/bottom control regions (since 2026-08-19 those two regions live on a
+stop of their own, `notification:controls`, beside `notification:content`). ControlIds retired by
+the rollout (per-stop
 cursor memory for them is gone): the ~25 caption rows converted to labels (each named in the batch
 reports in the session ledger), `hud:view-title/name` everywhere, the faction chooser's
 `faction-choice:hull` readout and its Previous/Next hull buttons (replaced by
-`faction-choice:hull/<i>` pager rows), and the tutorial popup's page controls (replaced by
-`tutorial:page/<i>`). New walkable ids: `diplomacy:center` (whose ring is centred).
+`faction-choice:hull/<i>` pager rows), the tutorial popup's page controls (replaced by
+`tutorial:page/<i>`), and (2026-08-19) `tactics:available-count` and `tactics:deck-caption` — the
+deck editor's two stops are labelled instead ("Available" mod-worded, the set by its drawn
+"Tactics" caption). New walkable ids: `diplomacy:center` (whose ring is centred).
 
 **Ctrl+I is the galaxy's INSPECT MODE** — a square of galaxy the player moves about the map and hears
 the contents of, instead of walking the tree (`GalaxyInspect` — `docs/helpers.md`). Ctrl+I is free in

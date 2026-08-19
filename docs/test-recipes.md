@@ -43,9 +43,10 @@ not against the code: the tree lists `TechnologyStageUnlockedNotificationWindow`
 BEFORE its title groups, and only the rects put them in reading order. Each unlock's tooltip is
 Class-backed (`Constructible`), so its buffer is empty until the row is focused — audit it with the
 tooltip pattern in `dev-loop.md` §2. **The drawn body is one region per CARD** where the popup drew
-cards — the research popup answers `ui.regionNext` with top strip → "Just Completed, Xenobiology" →
-"Next Research, Plasma Metallurgy" → "Minimize", while plain Down still walks all seven rows across
-the boundary — and stays a single `notification:body` region where it drew one thing (the stage
+cards — since the 2026-08-19 stop split the walk is per stop: on `notification:content`,
+`ui.regionNext` steps "Just Completed, Xenobiology" → "Next Research, Plasma Metallurgy", and the
+strips are walked on `notification:controls` — and the body stays a single region where it drew
+one thing (the stage
 popup, which draws no captioned control in the body). Checking a region change means
 dumping `/gui/graph` for the region HEADERS and walking `ui.regionNext`/`Prev`: the row list alone
 looks identical either way.
@@ -64,11 +65,12 @@ cells indicate a Class-backed `Constructible` dossier and carry it in the buffer
 Enter on a row while testing**: it is the game's own click (`OnSelectSystemCb`), which opens that
 system's management view and puts the notification away — two fixture changes at once. Prove it
 from `ConstructionCompletedNotificationWindow` :75-79 and leave the press to the manual test.
-**The seams around the table are the BUILDER's, not the screen's** (`StitchModeBoundaries`, unit-tested
-in `GraphBuilderTests`): every cell of the table's top row reaches the strip above and every cell of its
-bottom row reaches the strip below, and coming back lands on the row's primary — live-verified
-2026-08-11, all six crossings spoken. A `NotificationScreen` that grows hand-written `Connect` calls
-around its sheet again is a regression, not a fix; the engine rule is the place to change.
+**The strips are a different STOP from the body since the 2026-08-19 split**
+(`notification:content` = empire-info band + body, `notification:controls` = top strip + bottom
+bar), so the table no longer reaches the strips by Up/Down at all — a sheet row's vertical edges
+stop at the table's boundary (re-measured live 2026-08-19 on Laws Cancelled: the row's only edges
+are `left`/`right` within the table) and Tab is the crossing. A `NotificationScreen` that grows
+hand-written `Connect` calls around its sheet is still a regression; the stop split is the design.
 **Multi-row is no longer fixture-blocked** — the popup is STACKABLE, so a two-row one is built by
 binding the same notification twice before showing it, and nothing joins the empire's list:
 `var n = new NotificationConstructionsCompleted(); n.Bind(new EventConstructionCompleted(PEMP,
@@ -113,7 +115,8 @@ the `GuiRadioGroup` side is code-verified only. **Sighted once on a player's own
 the lore paragraph as ONE row (node `notification:body/0/QuestLoreSW`, and the start of the walk),
 `notification:body/1/StatusContentGroup` = "Choose an objective", the three
 `QuestChoiceItem00N` radios banded into one row, then the objective line, "Reward" and the reward
-label; `notification:bottom` = Minimize / Pin Quest / Confirm; `notification:top` the usual three.
+label; Minimize / Pin Quest / Confirm and the usual three top controls are all on the
+`notification:controls` stop (2026-08-19 split), walked with Down.
 Two body regions, not three — a build that puts `StatusTitleGroup` and `QuestChoicePanel` back in
 regions of their own has lost the lore, because it is the lore that makes
 `QuestDescriptionContent` the cards' container.
@@ -1122,9 +1125,9 @@ NREs; index `GameNodes` instead). The free oracle is the ORBIT invariant: walk e
 `DepartmentOfDefense.Fleets`, and for each fleet with a `FleetOrders.Orbit` the fleet's pair
 must equal that node's — 8 orbiting fleets, 0 mismatches on `[Beginner] test`, and none of
 them the player's, so this is a model check rather than a spoken one. What the fixture DOES
-reach spoken: a special node (`B10 6805, -5, -26, Solar Nebula`), a drifting probe (expand
-Heracles — the probe hangs under the nearest DECLARED system, so it is invisible while that
-system is collapsed), and fleets under way (`1st Defenders Navy, 12, 15` on Dusay's lane to
+reach spoken: a special node (`B10 6805, -5, -26, Solar Nebula`), a drifting probe (a TOP-LEVEL
+row in the open-space region since 2026-08-19 — no branch to expand; its sentence names the star
+it is out from), and fleets under way (`1st Defenders Navy, 12, 15` on Dusay's lane to
 Primus). Fixture-blocked: an orbiting fleet of the player's own, an obliterator projectile,
 and an ally coordination pin. The negative half is one dump of `screen.star-system`: the
 rename button reads `Dusay, button, …` with no pair.
@@ -1140,7 +1143,8 @@ row with no thing of its own (a planet, a lane) still answers with its system, a
 the empire stop (no place under the cursor) gives home. So entering from the empire stop and from
 `galaxy:system/535` (Dusay) both give "0, 0" on
 `[Beginner] test` — pick a non-home system to tell the two apart. The measured expectations there:
-entry says `Inspect mode, Cursor 3 by 3` then `0, 0, Dusay, Star lane from Rigel to Dusay, Star lane
+entry says `Inspect mode, Cursor 1 by 1` (default since 2026-08-19; the size persists per
+session, so a re-entry repeats whatever was last set) then `0, 0, Dusay, Star lane from Rigel to Dusay, Star lane
 from Qarius to Dusay, Star lane from Dusay to Primus`; the cell lists systems, special nodes,
 fleets, probes, obliterator missiles, ally pins, then the lanes crossing it and the fog — the three
 open-space kinds in the tree's own declaration order (`AddProbes`/`AddProjectiles`/`AddPins`), off
