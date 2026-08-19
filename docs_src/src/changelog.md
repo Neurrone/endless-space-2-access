@@ -41,6 +41,7 @@
 - Galaxy map: tabbing between the panels now says which one you have landed in — "Map", "Quest", "Notifications" and "View Controls" (the zoom and scan controls). The quest and notification panels say their name on every screen that draws them
 - The top-left corner of every screen now says which of its four rows you are on: "Controls" for the strip of buttons that open the game's screens, "Key Resources" for dust, manpower and influence, "Research", and "Strategic Resources" for the stockpiles
 - Galaxy map: inspect mode (Ctrl+I) now opens on a single square instead of a three by three one — press plus to widen it. Pressing plus or minus when the cursor is already at its largest or smallest now says nothing at all, instead of repeating the size you are already on
+- Notification pop-ups: the controls are now a Tab stop of their own, separate from what the notification says. Tab moves between reading the notification and working it — browsing to the next or previous one, popping this kind up automatically, minimizing and Done — so a long report is read to its end without the controls in the way, and they are one key away from anywhere in it
 - Ship design: an empty slot now reads the three markers the game only draws as pictures — "Times 2 Multiplier" for the dots that multiply a fitted module, "Symmetrical (x2 cost)" for a slot mirrored on the far side of the ship, and "Heavy Mount" for the slot the game only draws bigger. A filled slot is unchanged: its module's own tooltip already says all three
 
 ## V0.1.1

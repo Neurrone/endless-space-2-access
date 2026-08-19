@@ -24,11 +24,13 @@ namespace ES2Access.Screens
     /// for the controls it put a caption on, because a caption is the game saying "this is a thing
     /// the player chooses".
     ///
-    /// The popup is walked the way it is drawn: the strip of controls along the title bar, the
-    /// content, and the strip of buttons along the bottom. Which of the three a control belongs to is
-    /// read off the CONTAINER the game drew it in rather than from a list of names, so a control a
-    /// popup adds of its own - Accept and Refuse along the bottom bar, Empire Information out in the
-    /// content - is walked where the player sees it without anything here knowing it exists.
+    /// The popup is TWO Tab stops: what it says and draws, and then the rails it is worked with - the
+    /// browsing arrows, the pop-up-again box, Minimize and Done, plus whatever buttons this popup put
+    /// in its own bottom bar. Which of the three drawn bands a control belongs to is read off the
+    /// CONTAINER the game drew it in rather than from a list of names, so a control a popup adds of
+    /// its own - Accept and Refuse along the bottom bar, Empire Information out in the content - is
+    /// walked where the player sees it without anything here knowing it exists; the two rails then
+    /// make up the second stop between them.
     ///
     /// Not every popup fills that description in. A window that draws its own content - the research
     /// report, with a card per technology and a line per thing it unlocked - leaves the shared
@@ -98,8 +100,9 @@ namespace ES2Access.Screens
     /// what arriving reads, rather than turning up as one more thing drawn in the middle.
     ///
     /// A popup that can open a panel beside itself - the dossier behind Empire Information - gets a
-    /// Tab stop for it while it is open, because that is what the panel is to the player: somewhere
-    /// else to be, there only while it is on screen. Its lines are that region's and nobody else's: they
+    /// band of the content stop for it while it is open, because that is what the panel is to the
+    /// player: more of what this popup is showing, there only while it is on screen. Its lines are
+    /// that region's and nobody else's: they
     /// are drawn level with the content, so a popup that draws its own content leaves them out of it.
     ///
     /// Walking to the next notification keeps the same screen up with different words in it, so the
@@ -120,9 +123,16 @@ namespace ES2Access.Screens
         /// <summary>The key the body's table emits its cells under.</summary>
         private const string SheetKey = "notification:table:";
 
-        // The four bands Alt+Up/Down jump between, top to bottom as the popup draws them. All four
-        // sit in the one stop the popup already is: regions are a faster way to cross it, not a
-        // second Tab stop competing with the first for the keyboard.
+        // The popup's two Tab stops. What it SAYS and what it DRAWS are one place - the reason it
+        // interrupted - and the rails it is worked with are another: the same five controls on every
+        // popup, which the player reaches for after reading rather than while reading (owner ruling
+        // 2026-08-19). Tab is the step between the two, and the regions below stay the faster way
+        // across each.
+        private static readonly object ContentStop = "notification:content";
+        private static readonly object ControlsStop = "notification:controls";
+
+        // The four bands Alt+Up/Down jump between, top to bottom as the popup draws them: the first
+        // two belong to the content stop and the last two to the controls stop.
         private static readonly object TopRegion = "notification:top";
         private static readonly object InfoRegion = "notification:empire-info";
         private static readonly object BodyRegion = "notification:body";
@@ -395,16 +405,16 @@ namespace ES2Access.Screens
             above.Sort(ReadingOrder);
             below.Sort(ReadingOrder);
 
-            // One stop, four regions - the popup's own content first, then the strip along its title
-            // bar, then the buttons along its bottom (owner-prescribed order). What the popup says is
-            // why it interrupted, so it is what the walk opens with; browsing to another notification
-            // and dismissing this one are what the player reaches for after reading it, and they are
-            // the same two strips on every popup, so they sit at the end where they can be stepped to
-            // without walking back through the content. Alt+Up/Down jump straight between the regions,
-            // and the ordinary row wiring the words node already sets up still walks every control in
-            // between one at a time. The empire-info region is declared ahead of the content because
-            // that is where the panel actually opens - beside the portrait, above the description - and
-            // it is simply absent from this list on a build where BuildEmpireInfo finds nothing to say.
+            // Two stops - what the popup says and draws, then the rails it is worked with (owner
+            // ruling 2026-08-19). What the popup says is why it interrupted, so it is what the walk
+            // opens with; browsing to another notification and dismissing this one are the same two
+            // strips on every popup, and putting them behind Tab means a long report is read to its
+            // end without the controls in the way and reached in one key from anywhere in it. Within
+            // each stop Alt+Up/Down jump straight between the regions. The empire-info region is
+            // declared ahead of the content because that is where the panel actually opens - beside
+            // the portrait, above the description - and it is simply absent on a build where
+            // BuildEmpireInfo finds nothing to say.
+            builder.BeginStop(ContentStop);
             BuildEmpireInfo(builder, window);
 
             builder.SetRegion(BodyRegion);
@@ -482,6 +492,7 @@ namespace ES2Access.Screens
                 }
             }
 
+            builder.BeginStop(ControlsStop);
             builder.SetRegion(TopRegion);
             Strip(builder, above);
 
@@ -2197,9 +2208,9 @@ namespace ES2Access.Screens
         /// popup - the game draws it as a sheet of its own, beside the popup rather than inside it - so
         /// it is A REGION OF ITS OWN while the box is ticked, and stops existing when it is unticked.
         /// The tick box that opened it is still what closes it, so the cursor is never left standing in
-        /// a panel that has gone. A region rather than a second Tab stop: the panel is still part of
-        /// the one place this popup is, reached by walking down from the top strip exactly as every
-        /// other control here is, with Alt+Down/Up there only to cross it in one step.
+        /// a panel that has gone. A region of the CONTENT stop rather than a stop of its own: the panel
+        /// is what the popup is showing, walked with the rest of it, with Alt+Down/Up there only to
+        /// cross it in one step.
         ///
         /// Its contents are read off what is drawn rather than out of the panel's fields: it is a page
         /// of prose and headings, a different set of them per empire (a computer-run rival adds what it
