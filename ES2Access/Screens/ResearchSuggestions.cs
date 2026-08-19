@@ -29,8 +29,8 @@ namespace ES2Access.Screens
     /// so the card is handed to the screen already named.
     ///
     /// One card per branch is the game's own guarantee (<c>DepartmentOfScience.ComputeSuggestedTechnologies</c>
-    /// keys its answer by quadrant), which is why the branch can lead the name: it is what tells the four
-    /// cards apart at a glance, and every player choosing between them is choosing a direction first.
+    /// keys its answer by quadrant), so the branch beside each technology is what tells the four cards
+    /// apart: choosing between them is choosing a direction.
     ///
     /// Pressing one is the game's own click and it is not a selection - <c>SuggestedTechnologiesPanel.OnToggleItem</c>
     /// posts an <c>OrderQueueResearch</c> there and then - so the card is a BUTTON, and the tick the
@@ -94,9 +94,9 @@ namespace ES2Access.Screens
         }
 
         /// <summary>
-        /// What the card says: the branch it comes from, the technology, and what it would cost - the
-        /// three things the game wrote on it, read in one line because they are drawn in three places
-        /// around a picture and a listener needs them together.
+        /// What the card says, top to bottom as the game drew it: the technology, the branch it comes
+        /// from, and what it would cost - the three things the game wrote on it, read in one line
+        /// because they are drawn in three places around a picture and a listener needs them together.
         ///
         /// Every word is the game's own and nothing joins them but the list separator every readout
         /// uses. The cost in particular is the DRAWN text rather than a recomputed number: the game
