@@ -13,17 +13,17 @@ files above.
   the election wizard incl. the Political Trends label; a hangar with ships; a populated
   Active Events panel; multi-slot recipe projects; the strategics grid; diplomacy side
   panels/metaplot and the three diplomacy modals; the victory family; DLC modals;
-  join-game rows; the hull pager across a faction switch; a mod-manager library with a
+  join-game rows; a mod-manager library with a
   mod installed. The marketplace half of the economy page is still 2D — deferred until
   measured.
-- Colony info side panel: game content the mod never declares — military status/
-  ownership states (besieged/blockaded/invaded), resources banner, special features +
-  temporary effects tables, the Mothership group with its Detach button, the
-  DecolonizeGhostToggle, citadel manpower, info icons. Two are player ACTIONS currently
-  unreachable by keyboard. None drawn at turn 1 (code-only sweep, 2026-08-18).
-- Battle tactics deck: the window's influence stock
-  (`EmpireResourcesGroup`/`EmpireInfluenceLabel`) is declared nowhere — the Confirm
-  cost's funding is unreadable.
+- Colony info side panel (declared 2026-08-19, forced-show verified): remaining is the
+  live sighting of each conditional state — siege/blockade/invasion/conversion/frozen,
+  partial ownership, an exploiting system's resources, wrecked arks, temporary effects,
+  a Vodyani ark (name + Detach), a ghost system's Decolonize, a Hissho citadel. Only the
+  home-system badge has been heard on real data.
+- Battle tactics deck influence stock (declared 2026-08-19): the costed state was forced;
+  the natural post-change cost and the in-battle drawing ride the battle live-check line
+  above.
 - Regression walk owed: the research/construction table popups (the other sheet-reading
   family) after the wrapper-descent change to `Columns` — additive-by-construction argument
   only so far; walk one the next time a session has one pending.
@@ -94,10 +94,6 @@ files above.
   is a guarded guess. On the first real election turn: check the bars arrive under the
   word, and walk the wizard's flattened bands (step 0 remains code-verified only; step 1
   sighted 2026-08-16).
-- ReadCell cells on EmpireScreen/MilitaryScreen/SystemSelectionScreen can say
-  "unavailable" twice (own part + the shared tail); the split-cell fix exists
-  (`Adorn(availability:false)`) but SystemSelectionScreen's combo needs care — a refused
-  row's word must survive.
 - `screen.victory` announces the raw key `%VictoryScreenPlayingPlayerTitle` — the mod's
   lookup does not resolve it even though the drawn label localizes (the AGE
   draw-time-localization trap, live-caught).
