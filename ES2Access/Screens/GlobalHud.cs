@@ -366,6 +366,11 @@ namespace ES2Access.Screens
         /// (<c>TopTitlePanel.Setup</c>) - because Escape already leaves the page and a button called
         /// "Technology Screen" that closes the technology screen reads as the way IN.
         ///
+        /// What the cluster IS called on the map is "View Controls", the mod's own words (owner ruling
+        /// 2026-08-19): the view's name says which page the player is on, which the screen has already
+        /// said on arrival, while what this stop holds is the two controls over how that page is being
+        /// looked at.
+        ///
         /// The lens is named by the game, and what it is named changes as the camera climbs: the map's
         /// zoom step picks a layer descriptor and the descriptor picks the lens, so the same button
         /// reads "Diplomacy scan" from far out and "System scan" up close. The label is read live for
@@ -394,12 +399,19 @@ namespace ES2Access.Screens
             }
 
             builder.BeginStop(ViewTitleStop);
-            if (ladder)
+            if (!ladder)
             {
-                zoom.Build(builder, "hud:view-title/zoom");
+                AddScanToggle(builder, panel);
+                return true;
             }
 
+            // Named only where the ladder is - the galaxy map, the one page whose cluster holds more
+            // than the lens button. A page showing the lens alone is one control, and a level over a
+            // single control is a word said before every reading of it (owner ruling 2026-08-19).
+            builder.PushContext(ModStrings.Get(ModStrings.HudViewControlsPanel));
+            zoom.Build(builder, "hud:view-title/zoom");
             AddScanToggle(builder, panel);
+            builder.PopContext();
             return true;
         }
 
@@ -1394,6 +1406,9 @@ namespace ES2Access.Screens
             );
 
             builder.BeginStop(QuestStop);
+            // The panel carries no caption of its own (below), so the word is the mod's: without it
+            // Tab lands on a quest title with nothing saying which corner of the screen it came from.
+            builder.PushContext(ModStrings.Get(ModStrings.HudQuestPanel));
             builder.AddItem(ControlId.Referenced(panel.PinnedQuest, "hud:quest"), vtable);
             AddQuestButton(
                 builder,
@@ -1402,6 +1417,7 @@ namespace ES2Access.Screens
                 "hud:quest/location"
             );
             AddQuestButton(builder, panel.UnpinButton, ModStrings.HudQuestUnpin, "hud:quest/unpin");
+            builder.PopContext();
         }
 
         /// <summary>One of the icons the panel draws on itself, where the game is drawing it. Drawn AND
@@ -1624,6 +1640,10 @@ namespace ES2Access.Screens
         public void Notifications(GraphBuilder builder)
         {
             builder.BeginStop(NotificationStop);
+            // The strip is a column of bare icons with no caption over it, so the word is the mod's.
+            // Popped in a finally because the walk below has an early return and a catch of its own,
+            // and a level left open would take every stop declared after this one with it.
+            builder.PushContext(ModStrings.Get(ModStrings.HudNotificationsPanel));
             int count = 0;
             try
             {
@@ -1652,6 +1672,10 @@ namespace ES2Access.Screens
             catch (Exception e)
             {
                 Log.Warn("hud: reading the notifications threw: " + e);
+            }
+            finally
+            {
+                builder.PopContext();
             }
         }
 

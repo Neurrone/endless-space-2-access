@@ -541,6 +541,15 @@ namespace ES2Access.Core.Speech
         public const string HudQuestPinned = "hud.quest-pinned";
         public const string HudQuestUnpinned = "hud.quest-unpinned";
 
+        // What the four panels of the galaxy view are called when the player Tabs into one. The game
+        // captions none of them - the map is the whole screen, the quest panel, the notification strip
+        // and the zoom-and-lens cluster are drawn as bare icons and figures - so all four names are the
+        // mod's own (owner wordings, 2026-08-19).
+        public const string GalaxyMapPanel = "galaxy.map-panel";
+        public const string HudQuestPanel = "hud.quest-panel";
+        public const string HudNotificationsPanel = "hud.notifications-panel";
+        public const string HudViewControlsPanel = "hud.view-controls-panel";
+
         // The pause menu's icon-only toggle, and the word for a settings panel the game will only
         // show, not let you change.
         public const string GameMenuGameSettings = "gamemenu.game-settings";
@@ -1359,6 +1368,10 @@ namespace ES2Access.Core.Speech
             { HudQuestUnpin, "Unpin quest" },
             { HudQuestPinned, "Pinned quest: {0}" },
             { HudQuestUnpinned, "No quest is pinned" },
+            { GalaxyMapPanel, "Map" },
+            { HudQuestPanel, "Quest" },
+            { HudNotificationsPanel, "Notifications" },
+            { HudViewControlsPanel, "View Controls" },
             { GameMenuGameSettings, "Game settings" },
             { GameMenuReadOnlySettings, "read only" },
             { LoadSaveSaveName, "Save name" },

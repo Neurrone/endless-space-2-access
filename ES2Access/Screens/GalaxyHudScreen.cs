@@ -914,7 +914,11 @@ namespace ES2Access.Screens
             _hud.ViewTitle(builder, _zoom);
 
             builder.BeginStop(SystemStop);
+            // The map has no caption anywhere on it - it IS the screen - so the word is the mod's
+            // (owner ruling 2026-08-19). Popped before the fleet panel, which is a stop of its own.
+            builder.PushContext(ModStrings.Get(ModStrings.GalaxyMapPanel));
             BuildSystems(builder);
+            builder.PopContext();
 
             // The selected-fleet panel, where the game draws it: over the bottom of the map, between
             // what the map shows and the clusters down its right-hand edge. Nothing at all while no
