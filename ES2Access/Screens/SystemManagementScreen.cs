@@ -1306,12 +1306,19 @@ namespace ES2Access.Screens
             // The garrison dossier - what the defence is, how efficient it is, which troops it is made
             // of - is a tooltip the panel keeps in a field of its own and hangs on the GROUP around the
             // number, not on the number: read from the number's own transform there is no tooltip at
-            // all, which is how this line came to say "240/240" and nothing else.
+            // all, which is how this line came to say "240/240" and nothing else. The caption is the
+            // game's own word for the value - the dossier wrapper's title, "System Garrison" (owner
+            // ruled 2026-08-19, matching the citadel row) - with the old mod phrase kept only as the
+            // fallback for a tooltip that yields no title.
             AddReadout(
                 _cells,
                 panel.SecurityValue == null ? null : panel.SecurityValue.AgeTransform,
                 "system:colony/security",
-                () => ModStrings.Get(ModStrings.SystemSecurity),
+                () =>
+                {
+                    string title = AgeWidgets.TooltipTitle(panel.SecurityAndTroopsTooltip);
+                    return string.IsNullOrEmpty(title) ? ModStrings.Get(ModStrings.SystemSecurity) : title;
+                },
                 () => AgeText.Label(panel.SecurityValue),
                 panel.SecurityAndTroopsTooltip
             );
