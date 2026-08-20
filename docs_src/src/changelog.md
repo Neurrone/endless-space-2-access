@@ -2,9 +2,9 @@
 
 ## Unreleased
 
-- A star system shared by several empires now says so in its details — "Colonies here: ⟨you⟩, ⟨them⟩", your own empire first — reading the data behind the row of empire-colored bars the game draws under the label. Systems with a single owner are unchanged
+- A star system shared by several empires now says so in its details — "Colonies here:" followed by the empire names, your own empire first — reading the data behind the row of empire-colored bars the game draws under the label. Systems with a single owner are unchanged
 - A special node whose exploration contest has been won now reads the game's own line about who discovered it, alongside the node's other badges
-- Galaxy map: inspect mode names the constellation you are in — on entry when you start inside one, and while moving only when it changes: "⟨name⟩ constellation" crossing in, "Out of ⟨name⟩ constellation" crossing into unclaimed space, spoken before the cell. Cells in unexplored fog read as before, with no constellation words. The regions are the mod's own reading of the map — the game draws no borders — derived from each constellation's member systems
+- Galaxy map: inspect mode names the constellation you are in — on entry when you start inside one, and while moving only when it changes: "Andromeda constellation" crossing in, "Out of Andromeda constellation" crossing into unclaimed space, spoken before the cell. Cells in unexplored fog read as before, with no constellation words. The regions are the mod's own reading of the map — the game draws no borders — derived from each constellation's member systems
 - Galaxy map: inspect mode no longer names a starlane on squares where the fog hides it — the game draws a lane into unexplored space only as a stub out of the end you can see, and the reading now stops exactly where the drawing stops
 - The zoom announcement drops its layer-band word while the game's scan mode is up — the lens titles ("Trade", "Economy") name the steps there, so the band word only speaks in the normal view
 - A constellation's details read without the decorative icon words: "Owner: No owner" instead of "Crown Owner: No owner"; icons that carry meaning mid-sentence are kept
