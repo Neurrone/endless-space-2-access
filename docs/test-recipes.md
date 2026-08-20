@@ -860,8 +860,9 @@ reachable transfer would destroy a fleet.
 
 **The game's own "show me this fleet", and what the galaxy page does when it lands.** The repro for
 "the map snapped back to where I was" needs the locate to happen while the galaxy page is DOWN:
-focus a system node (`Navigator.FocusNode(ControlId.Structural("galaxy:system/<GUID>"))`, which
-pans the camera there), `Gui.GuiService.ShowWindow<MilitaryScreen>()`, then run the locate from
+focus a system node (type-ahead via `POST /type` with the system's name — the map ids are
+`galaxy:constellation/<c>/system/<id>` under the constellation grouping, so a hand-built
+`FocusNode` id is fragile; the focus pans the camera there), `Gui.GuiService.ShowWindow<MilitaryScreen>()`, then run the locate from
 es2-facts (`ICursorService.Select(galaxyFleet.CursorTarget)` → `ChangeCursor(typeof
 (GalaxyGarrisonCursor), galaxyFleet)` → `RequestGalaxyOverviewViewLevel(fleet)`). That last call
 closes the screen by itself, so the galaxy page comes back in the same `/eval` and its speech is in
