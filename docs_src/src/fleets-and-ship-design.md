@@ -38,7 +38,7 @@ Some fleet actions arm a targeting mode instead of acting at once — launching 
 - `\` is the mode's right click — cancel for most modes.
 - A completed action is announced, for example `Probe launched towards Dusay, 1 probe remaining`. An invalid target does nothing, as with the mouse.
 - The map panel names itself with the mode's instruction instead of "Map" while the mode is armed, so tabbing out and back re-reads it.
-- Arming a mode ends inspect mode if it was up: "Exited inspect mode", then the instruction, then the control you are standing on. You can re-enter inspect mode while aiming: sweep to your target, `Enter` lands on it and exits inspect, and a second `Enter` confirms the mode there. With both up, the first `Escape` exits inspect and the next cancels the mode.
+- Arming a mode ends inspect mode if it was up: "Exited inspect mode", then one line that begins with the game's instruction and runs on into the control you are standing on. (If you were reading somewhere off the map — the zoom slider, say — the instruction is spoken on its own instead, then your control.) You can re-enter inspect mode while aiming: sweep to your target, `Enter` lands on it and exits inspect, and a second `Enter` confirms the mode there. With both up, the first `Escape` exits inspect and the next cancels the mode.
 - Opening a target picker window (Attack, Invade) ends inspect mode rather than pausing it.
 - If a mode has no cancel of its own, `Escape` runs the mode's cancel rather than opening the pause menu.
 

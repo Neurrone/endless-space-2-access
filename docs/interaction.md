@@ -206,11 +206,14 @@ HERE" — `Lit` samples the cell's unit squares through `IVisibilityService.IsEx
 same field the cell's "Unexplored" word uses; the tree's lane rows keep the link-level gate
 (they hang under the system, a thing not a place). The scanner has SIX categories —
 constellations were removed 2026-08-20 (owner: not a discrete point). **A targeting cursor
-arming now re-reads the standing control** after the exit phrase and instruction
-(`AnnounceNextLanding` from the arming path only; the seat actions and modal-picker pop stay
-re-read-free) — note the fresh landing's path starts at the map stop, whose context IS the
-instruction while armed, so the third utterance currently opens by repeating it (owner ruling
-pending on suppressing the already-inside levels). **The zoom band word is silent while the
+arming now re-reads the standing control** (`AnnounceNextLanding`, arming path only; seat
+actions and the modal-picker pop stay re-read-free). The standalone instruction utterance is
+SKIPPED when the landing will carry it — i.e. the cursor is inside the map stop, whose context
+IS the instruction while armed — so on-map arming is exactly two utterances (exit phrase, then
+one line opening with the instruction and ending on the control); off the map stop the
+standalone instruction survives, since that landing's path would not contain it (owner ruling
+2026-08-20). A context label sourced from live game text has two speakers — the guard is "is
+the cursor inside the level whose label is that text", asked from the same accessor. **The zoom band word is silent while the
 game's scan mode is up** (`ZoomBand` returns null under `Scanning`; the lens titles carry the
 naming there). **A focused constellation node HOLDS its culled label shown**
 (`ConstellationLabelHold`, re-asserted per frame because culling recomputes on camera-position

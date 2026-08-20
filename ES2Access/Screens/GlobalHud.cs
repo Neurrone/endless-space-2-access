@@ -256,36 +256,48 @@ namespace ES2Access.Screens
                     // A mode the game has just armed takes the map, and the galaxy's inspect cell is a
                     // mode OF the map: with both up the arrows would mean the square while the banner
                     // asked for a target, and Enter would land the cell rather than confirm. So the
-                    // cell goes first and says so, and the instruction is the last thing heard
-                    // (owner ruling 2026-08-20). Every one of the nine cursors, not the fleet ones
-                    // alone - this is the one place the mod sees an instruction appear.
+                    // cell goes first and says so (owner ruling 2026-08-20). Every one of the nine
+                    // cursors, not the fleet ones alone - this is the one place the mod sees an
+                    // instruction appear.
                     dismissed = GalaxyInspect.Dismiss();
                 }
 
-                Voice.Say(
-                    ended ? OptionalText.Phrase(ModeEndedKey) : instruction,
-                    false
-                );
-
+                // ...AND THEN WHERE THE PLAYER IS STANDING, which the landing says for itself. The
+                // tree cursor never moved while the cell was up, so the ordinary "say it only when the
+                // cursor moved" rule would leave the player with a mode ended, an instruction to obey,
+                // and no idea which control the keys have gone back to. Asking the navigator for its
+                // next landing is the mode's own Escape route (<c>GalaxyInspect.Exit</c>) requested by
+                // somebody else, rather than a line composed here.
+                //
+                // Only the ARMING path. The six zoom-in fleet actions dismiss the cell too and each
+                // goes on to seat the cursor somewhere new, which announces itself; a re-read there
+                // would say the seat twice.
+                bool landingCarriesIt = dismissed && GalaxyHudScreen.CursorOnMap();
                 if (dismissed)
                 {
-                    // ...and then WHERE THE PLAYER IS STANDING (owner ruling 2026-08-20). The tree
-                    // cursor never moved while the cell was up, so the ordinary "say it only when the
-                    // cursor moved" rule leaves the player with a mode ended, an instruction to obey,
-                    // and no idea which control the keys have gone back to. This is the mode's own
-                    // Escape route asked for by somebody else (<c>GalaxyInspect.Exit</c>), which is
-                    // why it is the navigator's next landing rather than a line composed here: the
-                    // landing speaks queued, so the three utterances arrive in the order they happened.
-                    //
-                    // Only the ARMING path. The six zoom-in fleet actions dismiss the cell too, and
-                    // each of them goes on to seat the cursor somewhere new, which announces itself;
-                    // a re-read there would say the seat twice.
                     GraphNavigator navigator = ModEntry.Navigator;
                     if (navigator != null)
                     {
                         navigator.AnnounceNextLanding();
                     }
                 }
+
+                // The instruction is said ONCE. Standing on the map stop, that landing already opens
+                // with it - the stop names itself after the game's banner while a mode is waiting
+                // (<c>GalaxyHudScreen.MapContext</c>, reading this very sentence) - so a standalone
+                // line ahead of it is the same words twice in a row (owner ruling 2026-08-20). The
+                // guard is the map stop and nothing weaker: the cell can be SUSPENDED on the zoom
+                // slider or the HUD strip, where the landing is named after that stop instead and
+                // dropping the line would lose the instruction altogether.
+                if (landingCarriesIt)
+                {
+                    return;
+                }
+
+                Voice.Say(
+                    ended ? OptionalText.Phrase(ModeEndedKey) : instruction,
+                    false
+                );
             }
             catch (Exception e)
             {
