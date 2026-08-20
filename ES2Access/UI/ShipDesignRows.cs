@@ -1267,7 +1267,7 @@ namespace ES2Access.UI
             RepartitionHorizontalGauge gauge = widget.GetComponent<RepartitionHorizontalGauge>();
             if (gauge != null)
             {
-                AddGauge(cells, gauge, keyPrefix + widget.name);
+                BalanceGauges.Add(cells, gauge, keyPrefix + widget.name);
                 return true;
             }
 
@@ -1300,107 +1300,6 @@ namespace ES2Access.UI
             );
             AgeWidgets.Point(vtable, it);
             Cells.Add(cells, widget, ControlId.Referenced(toggle, keyPrefix + "detailed"), vtable);
-        }
-
-        /// <summary>
-        /// A balance bar: two halves growing out of the middle, with no words anywhere on it. What it
-        /// says is the PROPORTION each half was given (<c>RepartitionHorizontalGauge.Refresh</c> turns
-        /// a value into a percentage of the bar's half-width), and what the two halves ARE is the
-        /// sentence on its own tooltip - "the balance between projectile and energy weapons". Read off
-        /// the drawn geometry, which is the only place the game put it.
-        ///
-        /// Which half is which IS drawn, though, once: the caption row between the two gauges
-        /// (<c>ProjectileTitle</c> / <c>EnergyTitle</c>, measured as siblings of both gauges inside
-        /// <c>BalanceGauges</c>) heads the left and right columns of BOTH bars - the offensive bar's
-        /// halves are kinetic+missile against laser+beam, and the defensive bar's are the hull plating
-        /// and shield absorptions those two weapon families are stopped by, which is what those
-        /// captions' own tooltips say. Without them the bar read out a naked "100%".
-        /// </summary>
-        private static void AddGauge(
-            List<Cell> cells,
-            RepartitionHorizontalGauge gauge,
-            string key
-        )
-        {
-            AgeTransform widget = gauge.AgeTransform;
-            if (!AgeWidgets.Visible(widget))
-            {
-                return;
-            }
-
-            RepartitionHorizontalGauge it = gauge;
-            AgeTooltip tooltip = AgeWidgets.Raw(widget);
-            NodeVtable vtable = GraphNodes.Readout(() => null, () => GaugeText(it), null, tooltip);
-            AgeWidgets.PointAt(vtable, widget);
-            Cells.Add(cells, widget, ControlId.Referenced(widget, key), vtable);
-        }
-
-        private static string GaugeText(RepartitionHorizontalGauge gauge)
-        {
-            try
-            {
-                AgeTransform band = gauge.AgeTransform == null ? null : gauge.AgeTransform.Parent;
-                MessageBuilder message = new MessageBuilder();
-                Half(
-                    message,
-                    band,
-                    "ProjectileTitle",
-                    gauge.LeftGauge,
-                    50f - gauge.LeftGauge.PercentLeft
-                );
-                Half(
-                    message,
-                    band,
-                    "EnergyTitle",
-                    gauge.RightGauge,
-                    gauge.RightGauge.PercentRight - 50f
-                );
-                return message.Build();
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        /// <summary>One half of a balance bar under the caption the game drew over its column, so the
-        /// share is not read out on its own. A half the game left at nothing is drawn at zero width and
-        /// hidden, and is skipped here for the same reason.</summary>
-        private static void Half(
-            MessageBuilder message,
-            AgeTransform band,
-            string captionName,
-            AgeTransform half,
-            float reach
-        )
-        {
-            string share = Share(half, reach);
-            if (share == null)
-            {
-                return;
-            }
-
-            message.ListItem(AgeWidgets.TextOf(AgeWidgets.ChildNamed(band, captionName, 0)));
-            message.Fragment(share);
-        }
-
-        /// <summary>One half of a balance bar as the share it was drawn at. Each half is anchored at
-        /// the middle and stretched out to its own side by half of its share
-        /// (<c>RepartitionHorizontalGauge.Refresh</c>), so <paramref name="reach"/> - how far its outer
-        /// edge got from the middle - is half the proportion. The two halves reach in OPPOSITE
-        /// directions and each has to be measured from the middle its own way, which is what an earlier
-        /// reading of the right half against the bar's far END got wrong: with the right half at 37% it
-        /// said 163%, and the fixture hid it because a half the game gives nothing to is drawn at zero
-        /// width and hidden.</summary>
-        private static string Share(AgeTransform half, float reach)
-        {
-            if (half == null || !half.Visible)
-            {
-                return null;
-            }
-
-            int percent = (int)Math.Abs(Math.Round(reach * 2f));
-            return percent + "%";
         }
 
         // ---- the ship's own module slots ----

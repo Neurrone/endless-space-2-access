@@ -978,65 +978,21 @@ namespace ES2Access.UI
             }
         }
 
-        /// <summary>
-        /// A bar split between two things, read as the split with each half under the game's own
-        /// name for its side - "Projectile 100%" - the same reading the ship design screen gives
-        /// the same bar.
-        ///
-        /// The gauge writes no text at all: it says what it says by how far each half is drawn out
-        /// from the centre, in percent (<c>RepartitionHorizontalGauge.Refresh</c>). A half worth
-        /// nothing is left at the centre and hidden, and a hidden half is skipped rather than read
-        /// as "0%" - which also drops the whole line on a bar with neither half drawn, a bar about
-        /// nothing. The side names are the keys the design screen's own caption columns carry
-        /// (<c>%ShipDesignProjectileTitle</c>/<c>%ShipDesignEnergyTitle</c>): this prefab draws no
-        /// captions of its own, only the block heading, and the game heads BOTH bars with these two
-        /// words - the defensive bar's halves are the plating and shield absorptions those weapon
-        /// families are stopped by.
+        /// <summary>The split a balance bar draws, as the words the bar itself never writes - see
+        /// <see cref="BalanceGauges"/>, which is also what the ship designer's own copy of this bar
+        /// reads through. This prefab draws no captions over the two columns, only the block heading,
+        /// so without the substitution the split a sighted player reads off the bar is never said.
         /// </summary>
         private static void Balance(
             Dictionary<AgeTransform, Naming> named,
             RepartitionHorizontalGauge gauge
         )
         {
-            if (gauge == null || gauge.LeftGauge == null || gauge.RightGauge == null)
+            string text = BalanceGauges.Text(gauge);
+            if (!string.IsNullOrEmpty(text))
             {
-                return;
-            }
-
-            try
-            {
-                MessageBuilder message = new MessageBuilder();
-                if (gauge.LeftGauge.Visible)
-                {
-                    message.ListItem(AgeText.Clean("%ShipDesignProjectileTitle"));
-                    message.Fragment(Percent(50f - gauge.LeftGauge.PercentLeft));
-                }
-
-                if (gauge.RightGauge.Visible)
-                {
-                    message.ListItem(AgeText.Clean("%ShipDesignEnergyTitle"));
-                    message.Fragment(Percent(gauge.RightGauge.PercentRight - 50f));
-                }
-
-                string text = message.Build();
-                if (string.IsNullOrEmpty(text))
-                {
-                    return;
-                }
-
                 named[gauge.AgeTransform] = new Naming { Text = text };
             }
-            catch (Exception e)
-            {
-                Log.Warn("tooltip: reading a balance gauge threw: " + e);
-            }
-        }
-
-        /// <summary>How far one half of the bar was pushed out, as a share of the half it could have
-        /// filled.</summary>
-        private static string Percent(float half)
-        {
-            return Mathf.RoundToInt(half * 2f) + "%";
         }
     }
 }

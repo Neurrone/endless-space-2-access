@@ -144,7 +144,8 @@ namespace ES2Access.Screens
         }
 
         /// <summary>The strip of named ships, while the window is showing it, and the button that switches
-        /// to the Academy's diplomacy window.</summary>
+        /// to the Academy's diplomacy window. The strip's own stat block is the one thing in it the shape
+        /// of the tree cannot read - see <see cref="NamedShipStats"/>.</summary>
         private void BuildShips(GraphBuilder builder, AcademyModalWindow window)
         {
             AgeTransform container = window.NamedShipGroupContainer;
@@ -156,7 +157,7 @@ namespace ES2Access.Screens
             {
                 if (drawn)
                 {
-                    SidePanels.Content(_cells, container, Keys + "ships/", null, null);
+                    SidePanels.Content(_cells, container, Keys + "ships/", NamedShipStats.Cell, null);
                 }
             }
             catch (Exception e)
@@ -196,6 +197,147 @@ namespace ES2Access.Screens
             {
                 return null;
             }
+        }
+    }
+
+    /// <summary>
+    /// The stat block of the named ship the Academy is offering, read the way a ship's tooltip reads the
+    /// same figures.
+    ///
+    /// <c>PanelFeatureNamedShipInfo</c> is the Academy's own copy of the ship stat block, and the shape
+    /// walk cannot read it for two reasons. It is buried SEVEN groups under the window's named-ship
+    /// container (the panel puts its features inside a scroll view, which is three more groups), one past
+    /// the walk's depth limit, so the whole feature came out as a single line of every word in it run
+    /// together - "Role Colonizer Size Small ... 60000/60000 ... 26000 13500". And half of what it draws
+    /// is a bare number beside a picture: health, manpower, movement, command points and the two military
+    /// powers carry no caption anywhere on the panel, and the two balance bars carry no text at all.
+    ///
+    /// So the feature answers for itself (<see cref="Cell"/>): the captionless figures are declared by
+    /// FIELD under the game's own title for each statistic - the same <c>%ShipStat…Title</c> strings the
+    /// ship designer's copy of these figures is read under - the two bars are declared as the split they
+    /// draw (<see cref="BalanceGauges"/>), and the rest of the feature is then read by shape from the
+    /// feature's OWN root, where the depth limit starts again from zero. The rows that already caption
+    /// themselves - role, size, probes, cargo, and the "Projectile-Energy Balance" heading - come out of
+    /// that walk unchanged, which is why they are not modelled here.
+    ///
+    /// The fighter and bomber counts are the one pair the game keeps no <c>%ShipStat…Title</c> for (the
+    /// prefab points their tooltips at <c>%ShipStatFighterDescription</c>, which is not in the game's
+    /// strings at all). They take the game's own words for the two squadron kinds instead - the titles it
+    /// heads their module sub-categories with - because the alternative is two bare counts of 99.
+    /// </summary>
+    internal static class NamedShipStats
+    {
+        /// <summary>What the game calls the two kinds of squadron, where it names them as things rather
+        /// than as a statistic of the ship carrying them.</summary>
+        private const string FighterTitle = "%SubCategoryModuleSquadronFighterTitle";
+
+        private const string BomberTitle = "%SubCategoryModuleSquadronBomberTitle";
+
+        /// <summary>What the shape walk is to leave alone: the group each declared figure was drawn in,
+        /// and the two bars. Refilled per read, main-thread only, like the ship designer's own.</summary>
+        private static readonly List<AgeTransform> _declared = new List<AgeTransform>();
+
+        /// <summary>The named-ship stat block's answer for itself, as
+        /// <see cref="SidePanels.SpecialCells"/> asks it.</summary>
+        public static bool Cell(
+            List<Cell> cells,
+            AgeTransform widget,
+            string keyPrefix,
+            SidePanel panel
+        )
+        {
+            PanelFeatureNamedShipInfo ship = widget.GetComponent<PanelFeatureNamedShipInfo>();
+            if (ship == null)
+            {
+                return false;
+            }
+
+            Read(cells, ship, keyPrefix);
+            return true;
+        }
+
+        private static void Read(List<Cell> cells, PanelFeatureNamedShipInfo ship, string keyPrefix)
+        {
+            try
+            {
+                _declared.Clear();
+                Stat(cells, ship.HealthLabel, "%ShipStatHealthTitle", keyPrefix + "health");
+                Stat(cells, ship.ManpowerLabel, "%ShipStatManpowerTitle", keyPrefix + "manpower");
+                Stat(cells, ship.MovementPointsLabel, "%ShipStatMovementTitle", keyPrefix + "movement");
+                Stat(
+                    cells,
+                    ship.CommandPointsLabel,
+                    "%ShipStatCommandPointsTitle",
+                    keyPrefix + "command-points"
+                );
+                Stat(
+                    cells,
+                    ship.OffensivePowerLabel,
+                    "%ShipStatOffensiveMilitaryPowerTitle",
+                    keyPrefix + "offence"
+                );
+                Stat(
+                    cells,
+                    ship.DefensivePowerLabel,
+                    "%ShipStatDefensiveMilitaryPowerTitle",
+                    keyPrefix + "defence"
+                );
+                Stat(cells, ship.FighterLabel, FighterTitle, keyPrefix + "fighters");
+                Stat(cells, ship.BomberLabel, BomberTitle, keyPrefix + "bombers");
+                Gauge(cells, ship.OffensiveBalanceGauge, keyPrefix + "offensive-balance");
+                Gauge(cells, ship.DefensiveBalanceGauge, keyPrefix + "defensive-balance");
+                SidePanels.Content(cells, ship.AgeTransform, keyPrefix, Declared, null);
+            }
+            catch (Exception e)
+            {
+                Log.Warn("academy: reading the named ship's stats threw: " + e);
+            }
+            finally
+            {
+                _declared.Clear();
+            }
+        }
+
+        private static void Stat(
+            List<Cell> cells,
+            AgePrimitiveLabel label,
+            string titleKey,
+            string key
+        )
+        {
+            AgeTransform at = label == null ? null : label.AgeTransform;
+            if (at == null)
+            {
+                return;
+            }
+
+            Cells.AddStat(cells, label, titleKey, key);
+            _declared.Add(at.Parent ?? at);
+        }
+
+        private static void Gauge(
+            List<Cell> cells,
+            RepartitionHorizontalGauge gauge,
+            string key
+        )
+        {
+            if (gauge == null)
+            {
+                return;
+            }
+
+            BalanceGauges.Add(cells, gauge, key);
+            _declared.Add(gauge.AgeTransform);
+        }
+
+        private static bool Declared(
+            List<Cell> cells,
+            AgeTransform widget,
+            string keyPrefix,
+            SidePanel panel
+        )
+        {
+            return _declared.Contains(widget);
         }
     }
 
