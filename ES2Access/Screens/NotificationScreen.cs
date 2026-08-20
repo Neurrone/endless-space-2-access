@@ -2507,6 +2507,13 @@ namespace ES2Access.Screens
         /// icons and stays there, so the strip is where the player is now, and its own stop is what
         /// remembers which icon. Every other exit - Done, Inspect, the buttons that open a page - is going
         /// somewhere, and those keep the landing the page they opened chose.
+        ///
+        /// WHICH list it goes to is the notification's own answer: the game's own go back to the icon
+        /// strip, and the MOD's - which the strip does not draw at all - go back to the turn log they
+        /// are read in (<see cref="GlobalHud.TurnLog"/>). Asked of the popup being put aside rather
+        /// than remembered from the way in, because Previous/Next walks between the two families
+        /// inside one popup and it is the notification the player is looking at now that has a place
+        /// to go back to.
         /// </summary>
         private static void HandBackOnMinimize(Control control, NodeVtable vtable)
         {
@@ -2516,15 +2523,38 @@ namespace ES2Access.Screens
             }
 
             Action press = vtable.OnActivate;
+            AgeTransform widget = control.Widget;
             vtable.OnActivate = () =>
             {
+                // Read before the press: minimising unbinds the popup.
+                object stop = ListOf(widget);
                 press();
                 GraphNavigator navigator = ModEntry.Navigator;
                 if (navigator != null)
                 {
-                    navigator.LandOnStopAfterClose(GlobalHud.NotificationStop);
+                    navigator.LandOnStopAfterClose(stop);
                 }
             };
+        }
+
+        /// <summary>The stop the notification this popup is showing is read on. The popup's own window
+        /// is what holds it, and the window is above every control it drew.</summary>
+        private static object ListOf(AgeTransform widget)
+        {
+            try
+            {
+                NotificationWindow window =
+                    widget == null ? null : widget.GetComponentInParent<NotificationWindow>();
+                GuiNotification notification = window == null ? null : window.GuiNotification;
+                return notification is ModNotification
+                    ? GlobalHud.TurnLogStop
+                    : GlobalHud.NotificationStop;
+            }
+            catch (Exception e)
+            {
+                Log.Warn("notification: finding the list a minimized notification goes to threw: " + e);
+                return GlobalHud.NotificationStop;
+            }
         }
 
         private const string MinimizeKey = "minimize";

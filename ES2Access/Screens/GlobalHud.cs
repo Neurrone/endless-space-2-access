@@ -52,6 +52,7 @@ namespace ES2Access.Screens
         public static readonly object QuestStop = "hud:quest";
         public static readonly object TutorialStop = "hud:tutorial";
         public static readonly object NotificationStop = "hud:notifications";
+        public static readonly object TurnLogStop = "hud:turn-log";
         public static readonly object TurnStop = "hud:turn";
 
         private List<Fleet> _idleFleets = new List<Fleet>();
@@ -1850,6 +1851,11 @@ namespace ES2Access.Screens
         /// and opening it is what this stop's Enter is for. Putting the whole text in the buffer here
         /// made the strip a second place to read the message, one that answered before the player had
         /// asked and disagreed with the screen as drawn.
+        ///
+        /// The MOD's own notifications share the same list but are not drawn on the strip at all
+        /// (<see cref="NotificationStrip"/>), so they are left out of here and read in
+        /// <see cref="TurnLog"/> instead: this stop is what the game is showing, and that one is the
+        /// log of what the game never showed.
         /// </summary>
         public void Notifications(GraphBuilder builder)
         {
@@ -1870,6 +1876,11 @@ namespace ES2Access.Screens
                 NotificationItem[] items = NotificationItems();
                 foreach (GuiNotification notification in service.GetPlayerEmpireGuiNotifications())
                 {
+                    if (notification is ModNotification)
+                    {
+                        continue;
+                    }
+
                     GuiNotification it = notification;
                     NodeVtable vtable = GraphNodes.Button(
                         () => AgeText.Clean(it.GetTitle()),
@@ -1890,6 +1901,130 @@ namespace ES2Access.Screens
             finally
             {
                 builder.PopContext();
+            }
+        }
+
+        /// <summary>
+        /// The mod's own notifications - the things that happened this turn and the last few that the
+        /// game itself never mentions: a system revealed, a fleet arrived, somebody else's fleet
+        /// sighted or lost. They live in the game's list beside the game's own and behave exactly like
+        /// them (Enter opens the same popup, Backslash throws the same one away), but the game draws
+        /// none of them on its strip, so they are read here rather than beside the icons the player
+        /// can see.
+        ///
+        /// Grouped under the turn each one happened on, NEWEST TURN FIRST, because the news a player
+        /// walks a log for is the news that has just landed; within a turn they keep the order they
+        /// arrived in. The turn is the one stamped when the notification was made
+        /// (<see cref="ModNotification.Turn"/>), so a log spanning the five turns one lives for says
+        /// which day each line is from without any line having to say it itself. Each turn is a REGION
+        /// as well as a spoken level, so Alt+Up/Down steps a turn at a time.
+        ///
+        /// No tooltip section, unlike the stop above: the strip binds a mod item's tooltip to its own
+        /// title (and then deactivates the item), so a section here would be the row's own words a
+        /// second time - measured 2026-08-20, the game notifications' buffers hold exactly their title
+        /// for the same reason.
+        ///
+        /// With nothing logged the stop is not there at all, which is the rule every stop on this HUD
+        /// follows. It is the one place that rule is arguable - a sighted player cannot glance at this
+        /// list, because there is nothing drawn to glance at - so it is on the owner's list to settle.
+        /// </summary>
+        public void TurnLog(GraphBuilder builder)
+        {
+            List<ModNotification> logged = Logged();
+            if (logged.Count == 0)
+            {
+                return;
+            }
+
+            List<int> turns = new List<int>();
+            for (int i = 0; i < logged.Count; i++)
+            {
+                if (!turns.Contains(logged[i].Turn))
+                {
+                    turns.Add(logged[i].Turn);
+                }
+            }
+
+            turns.Sort();
+            turns.Reverse();
+
+            builder.BeginStop(TurnLogStop);
+            builder.PushContext(ModStrings.Get(ModStrings.HudTurnLogPanel));
+            try
+            {
+                for (int t = 0; t < turns.Count; t++)
+                {
+                    int turn = turns[t];
+                    builder.SetRegion("hud:turn-log/turn/" + turn);
+                    builder.PushContext(ModStrings.Format(ModStrings.HudTurnLogTurn, turn));
+                    try
+                    {
+                        int within = 0;
+                        for (int i = 0; i < logged.Count; i++)
+                        {
+                            ModNotification it = logged[i];
+                            if (it.Turn != turn)
+                            {
+                                continue;
+                            }
+
+                            NodeVtable vtable = GraphNodes.Button(
+                                () => AgeText.Clean(it.GetTitle()),
+                                () => Open(it)
+                            );
+                            vtable.OnContextual = () => Dismiss(it);
+                            builder.AddItem(
+                                ControlId.Referenced(it, "hud:turn-log/" + turn + "/" + within),
+                                vtable
+                            );
+                            within++;
+                        }
+                    }
+                    finally
+                    {
+                        builder.PopContext();
+                    }
+                }
+            }
+            finally
+            {
+                builder.PopContext();
+            }
+        }
+
+        private static readonly List<ModNotification> NoneLogged = new List<ModNotification>();
+
+        /// <summary>Every mod notification standing in the player's list, in the list's own order. The
+        /// same list the stop above walks - one list is what makes the popup's Previous/Next cross
+        /// between the game's news and the mod's.</summary>
+        private static List<ModNotification> Logged()
+        {
+            try
+            {
+                IGuiNotificationService service = Gui.GuiNotificationService;
+                List<GuiNotification> standing =
+                    service == null ? null : service.GetPlayerEmpireGuiNotifications();
+                if (standing == null)
+                {
+                    return NoneLogged;
+                }
+
+                List<ModNotification> found = new List<ModNotification>();
+                for (int i = 0; i < standing.Count; i++)
+                {
+                    ModNotification mine = standing[i] as ModNotification;
+                    if (mine != null)
+                    {
+                        found.Add(mine);
+                    }
+                }
+
+                return found;
+            }
+            catch (Exception e)
+            {
+                Log.Warn("hud: reading the turn log threw: " + e);
+                return NoneLogged;
             }
         }
 

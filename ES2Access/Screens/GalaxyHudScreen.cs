@@ -1445,6 +1445,7 @@ namespace ES2Access.Screens
             _hud.Quest(builder);
             _hud.Tutorial(builder);
             _hud.Notifications(builder);
+            _hud.TurnLog(builder);
             _hud.Turn(builder);
         }
 
