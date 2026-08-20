@@ -624,13 +624,13 @@ namespace ES2Access.UI
         };
 
         /// <summary>
-        /// The two military power figures of the fleet a gauge is drawn for.
+        /// The two military power figures of the fleet a gauge is drawn for, and the split each gauge
+        /// draws - the same block a ship's tooltip carries, fed by the fleet's totals.
         ///
         /// The feature is the balance bars and these two numbers, and only the bars' shared caption is
-        /// written in words - so without this the panel says "74" and "123" under "Projectile-Energy
-        /// Balance". The bars themselves are left to the default reader, which says nothing for them:
-        /// they carry no text, and the split they draw is about which weapon types make up the power,
-        /// not about the power.
+        /// written in words - so without the naming the panel says "74" and "123" under
+        /// "Projectile-Energy Balance", and without <see cref="Balance"/> the split the sighted player
+        /// reads off the bars is never said at all.
         /// </summary>
         private static Dictionary<AgeTransform, Naming> PowerBalanceNames(
             PanelFeatureMilitaryPowerBalance power
@@ -639,6 +639,8 @@ namespace ES2Access.UI
             Dictionary<AgeTransform, Naming> named = new Dictionary<AgeTransform, Naming>();
             Name(named, power.OffenseLabel, GuiShipDesign.ShipStatOffensiveMilitaryPower);
             Name(named, power.DefenseLabel, GuiShipDesign.ShipStatDefensiveMilitaryPower);
+            Balance(named, power.OffensiveBalanceGauge);
+            Balance(named, power.DefensiveBalanceGauge);
             return named;
         }
 
