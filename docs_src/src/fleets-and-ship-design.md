@@ -4,8 +4,8 @@
 
 Press `Enter` on a fleet's entry in the galaxy tree to select it. The mod announces this, for example `Fleet panel open for 1st Patriots Navy`. The fleet panel adds three stops to the Tab cycle, and the map stays reachable, since destinations are chosen on it:
 
-- **Fleet management**: the fleet's own line and the other fleets at the same location, with command points, movement points, and, while it is moving, `En route to Rigel, arrives in 3 turns`
-- **Ships**: the ships in the fleet and the toolbar above them
+- **Fleets**: the fleet's own line and the other fleets at the same location, one per line with command points, movement points, and, while it is moving, `En route to Rigel, arrives in 3 turns`. The buttons that act on the selection sit in an `Actions` section above the list — `Alt+Up` reaches them; `Tab` lands on the first line
+- **Ships**: the ships in the fleet one per line, with the toolbar in an `Actions` section above them and, when a hero is aboard, a `Hero` section before both. `Tab` lands on the first ship
 - **Fleet actions**: what the fleet can do — expeditions, probe launches, and so on
 
 Six actions pick their target inside the system rather than arming a targeting mode: Colonize, Super Colonize, Destroy Planet, Start Expedition, Launch Mining Probe and Reclaim Mothership. Each says where it will put you ("moves focus to the first curiosity in the system"), and pressing it opens the system and lands the cursor on that control — `Enter` there gives the real order, and `Up`/`Down` reach the alternatives when the system has several. If the system-discovery video plays first, the landing waits for it: the video reads its planet cards, "Galaxy" announces the return, and then the cursor moves. Pressing any arrow after the return, before the landing, cancels it — your own key always wins. If the system offers no such target, the branch opens and the cursor stays where it was.

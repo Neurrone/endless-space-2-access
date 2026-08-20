@@ -193,6 +193,11 @@ namespace ES2Access.UI
         /// <paramref name="emit"/> is how the half reads - <see cref="Emit"/> for the band the game drew
         /// as one line, <see cref="EmitLinear"/> for the list under it, <see cref="EmitRow"/> for a band
         /// the layout box wrapped that is still one line.
+        ///
+        /// <paramref name="nameKey"/> null is a region with no word of its own: still a jump target, but
+        /// nothing pushed over it - for the half the STOP's own name already covers, which is the fleet
+        /// panel's list of fleets under a stop called "Fleets" and its ships under a stop called "Ships".
+        /// Naming that half would say the same word twice on the way in.
         /// </summary>
         public static void EmitRegion(
             GraphBuilder builder,
@@ -208,9 +213,14 @@ namespace ES2Access.UI
                 return;
             }
 
+            bool named = regions && nameKey != null;
             if (regions)
             {
                 builder.SetRegion(regionKey);
+            }
+
+            if (named)
+            {
                 builder.PushContext(ModStrings.Get(nameKey));
             }
 
@@ -220,7 +230,7 @@ namespace ES2Access.UI
             }
             finally
             {
-                if (regions)
+                if (named)
                 {
                     builder.PopContext();
                 }

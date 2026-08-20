@@ -32,6 +32,18 @@ namespace ES2Access.Screens
     ///   whatever its Visible flag says.
     /// - the HERO and the SHIPS, the game's own select-then-act model kept intact: the ships are picked
     ///   out and the toolbar above acts on whatever is picked.
+    ///
+    /// The first two are the shape the constructibles and the hangar already have: a band of things to
+    /// DO and the list they are done to, as REGIONS of one stop, so Alt and an arrow steps between the
+    /// commands and the list without walking through either. A half the game is not drawing declares no
+    /// region, and a stop left with one declares none - a lone region is a jump that swallows the key
+    /// silently. What the player came to this panel for is the LIST, so that is where Tab lands
+    /// (<c>GraphBuilder.LandStopOn</c>): the first fleet line, the first ship, with the buttons one jump
+    /// away. Only the bands are named - "Actions", "Hero" - because the list is what the stop is already
+    /// called, and naming it would say "Fleets" or "Ships" twice on the way in.
+    ///
+    /// The sentence the game writes in place of those buttons for somebody ELSE's fleet is not a command
+    /// and so is not a band: it goes in with the list it heads, in the place the game drew it.
     /// - the fleet ACTIONS, one button per thing this fleet could be ordered to do. The roster is closed
     ///   and data-driven (<c>Public/Gui/Screens/GuiElements[FleetsScreen].xml</c>, read once at load), and
     ///   the game hides every button whose failure is flagged "Discard" - so what is drawn IS the answer
@@ -71,9 +83,20 @@ namespace ES2Access.Screens
         public static readonly object ManagementStop = "fleets:management";
         public static readonly object ShipsStop = "fleets:ships";
 
-        /// <summary>Reused across builds rather than allocated per frame: Build runs every tick.
-        /// </summary>
+        // The regions inside those stops: the band of commands, and the list it acts on.
+        private static readonly object ManagementActionsRegion = "fleets:mgmt/actions";
+        private static readonly object ManagementListRegion = "fleets:mgmt/list";
+        private static readonly object HeroRegion = "fleets:ships/hero";
+        private static readonly object ShipsActionsRegion = "fleets:ships/toolbar";
+        private static readonly object ShipsListRegion = "fleets:ships/list";
+
+        /// <summary>Reused across builds rather than allocated per frame: Build runs every tick. Three
+        /// of them, because a stop's halves are gathered separately to be declared as separate regions -
+        /// <see cref="_bar"/> is the band of things to do, <see cref="_cells"/> the list they are done
+        /// to, and <see cref="_hero"/> the band above the ships.</summary>
         private readonly List<Cell> _cells = new List<Cell>();
+        private readonly List<Cell> _bar = new List<Cell>();
+        private readonly List<Cell> _hero = new List<Cell>();
 
         /// <summary>Whether the window has already been seen ready once this visit - see
         /// <see cref="Available"/>. Instance state, so a hot reload starts it over.</summary>
@@ -428,12 +451,13 @@ namespace ES2Access.Screens
         // ---- the fleets parked here ----
 
         /// <summary>
-        /// The list of garrisons at this place and the buttons that act on the selection, one control
-        /// per row in the order they are drawn - the banner's buttons above, then one line per garrison.
+        /// The list of garrisons at this place and the buttons that act on the selection - the band of
+        /// buttons the game draws above, then one line per garrison, as the stop's two regions.
         ///
         /// The hangar of a colonized system is one of those lines, which is why the list can hold
         /// something that is not a fleet at all: the game puts it first
         /// (<c>FleetsScreen.AddGarrison</c> :626-647) and draws it with a system name and no movement.
+        /// It is a line like any other, so it is also where Tab lands when it is the first of them.
         /// </summary>
         private void BuildManagement(GraphBuilder builder, global::FleetsScreen window)
         {
@@ -445,17 +469,39 @@ namespace ES2Access.Screens
                     return;
                 }
 
+                _bar.Clear();
                 _cells.Clear();
-                AddBanner(_cells, panel);
                 AddFleetLines(_cells, panel, window);
-                if (_cells.Count == 0)
+                // The line the stop opens on, read before the banner is gathered: the sentence the game
+                // writes for somebody else's fleets goes into the same list, and it is not what the
+                // player came for.
+                ControlId landing = _cells.Count == 0 ? null : _cells[0].Id;
+                AddBanner(_bar, _cells, panel);
+                if (_bar.Count == 0 && _cells.Count == 0)
                 {
                     return;
                 }
 
+                bool regions = _bar.Count > 0 && _cells.Count > 0;
                 builder.BeginStop(ManagementStop);
                 builder.PushContext(ModStrings.Get(ModStrings.FleetsFleetsPanel));
-                Cells.EmitLinear(builder, _cells);
+                Cells.EmitRegion(
+                    builder,
+                    ManagementActionsRegion,
+                    ModStrings.DiplomacyActionsBand,
+                    regions,
+                    _bar,
+                    regions ? Cells.AsDrawnRows : Cells.OnePerRow
+                );
+                Cells.EmitRegion(
+                    builder,
+                    ManagementListRegion,
+                    null,
+                    regions,
+                    _cells,
+                    Cells.OnePerRow
+                );
+                builder.LandStopOn(landing);
                 builder.PopContext();
             }
             catch (Exception e)
@@ -464,16 +510,27 @@ namespace ES2Access.Screens
             }
         }
 
-        /// <summary>The strip above the list: either the buttons, or - when the fleets belong to
-        /// somebody else - the sentence the game writes there instead of them.</summary>
-        private static void AddBanner(List<Cell> cells, FleetsManagementPanel panel)
+        /// <summary>
+        /// The strip above the list: either the buttons, or - when the fleets belong to somebody else -
+        /// the sentence the game writes there instead of them.
+        ///
+        /// The two go to different places. The buttons are the band the list's region is paired with;
+        /// the sentence is not a command at all, so it joins the LIST rather than standing as a region
+        /// of commands with no command in it - and the drawn order puts it back on top of the lines
+        /// where the game wrote it.
+        /// </summary>
+        private static void AddBanner(
+            List<Cell> bar,
+            List<Cell> lines,
+            FleetsManagementPanel panel
+        )
         {
             if (panel.OtherEmpireBanner != null && AgeWidgets.Visible(panel.OtherEmpireBanner))
             {
                 AgePrimitiveLabel content = panel.OtherEmpireContent;
                 AgeTooltip tooltip = AgeWidgets.Raw(panel.OtherEmpireBanner);
                 Cells.Add(
-                    cells,
+                    lines,
                     panel.OtherEmpireBanner,
                     ControlId.Structural("fleets:mgmt/other-empire"),
                     GraphNodes.Readout(() => AgeText.Label(content), null, null, tooltip)
@@ -481,10 +538,10 @@ namespace ES2Access.Screens
                 return;
             }
 
-            AddManagementButton(cells, panel.SelectAllButton, "%FleetSelectAllTitle", "select-all");
-            AddManagementButton(cells, panel.CreateButton, "%FleetCreateFromHangarTitle", "create");
-            AddManagementButton(cells, panel.MergeButton, "%FleetMergeTitle", "merge");
-            AddManagementButton(cells, panel.DisbandButton, "%FleetDisbandTitle", "disband");
+            AddManagementButton(bar, panel.SelectAllButton, "%FleetSelectAllTitle", "select-all");
+            AddManagementButton(bar, panel.CreateButton, "%FleetCreateFromHangarTitle", "create");
+            AddManagementButton(bar, panel.MergeButton, "%FleetMergeTitle", "merge");
+            AddManagementButton(bar, panel.DisbandButton, "%FleetDisbandTitle", "disband");
         }
 
         private static void AddManagementButton(
@@ -760,9 +817,16 @@ namespace ES2Access.Screens
 
         // ---- the hero and the ships ----
 
-        /// <summary>The right-hand panel: the hero band, then the ships and the row of things that can
-        /// be done to the ones picked out. Both halves are the same panel the star system page draws
-        /// its hangar with, so both read them through <see cref="ShipRows"/>.</summary>
+        /// <summary>
+        /// The right-hand panel: the hero band, then the ships and the row of things that can be done to
+        /// the ones picked out. Both halves are the same panel the star system page draws its hangar
+        /// with, so both read them through <see cref="ShipRows"/>.
+        ///
+        /// One stop with up to three regions - the hero band, the commands, the ships - and the stop is
+        /// called "Ships" whatever is in it (owner ruling 2026-08-20), which is why the ships themselves
+        /// are the region with no word of its own. Regions at all only where two of the three are drawn:
+        /// one region is a jump that goes nowhere.
+        /// </summary>
         private void BuildHeroAndShips(GraphBuilder builder, global::FleetsScreen window)
         {
             try
@@ -775,8 +839,46 @@ namespace ES2Access.Screens
                     return;
                 }
 
-                bool opened = BuildHero(builder, window, false);
-                BuildShips(builder, window, opened);
+                _hero.Clear();
+                _bar.Clear();
+                _cells.Clear();
+                AddHero(_hero, window);
+                ControlId landing = AddShips(_bar, _cells, window.ShipsManagementPanel);
+                if (_hero.Count == 0 && _bar.Count == 0 && _cells.Count == 0)
+                {
+                    return;
+                }
+
+                int halves =
+                    (_hero.Count > 0 ? 1 : 0)
+                    + (_bar.Count > 0 ? 1 : 0)
+                    + (_cells.Count > 0 ? 1 : 0);
+                bool regions = halves > 1;
+                Action<GraphBuilder, List<Cell>> band = regions
+                    ? Cells.AsDrawnRows
+                    : Cells.OnePerRow;
+
+                builder.BeginStop(ShipsStop);
+                builder.PushContext(ModStrings.Get(ModStrings.FleetsShipsPanel));
+                Cells.EmitRegion(
+                    builder,
+                    HeroRegion,
+                    ModStrings.FleetsHeroPanel,
+                    regions,
+                    _hero,
+                    band
+                );
+                Cells.EmitRegion(
+                    builder,
+                    ShipsActionsRegion,
+                    ModStrings.DiplomacyActionsBand,
+                    regions,
+                    _bar,
+                    band
+                );
+                Cells.EmitRegion(builder, ShipsListRegion, null, regions, _cells, Cells.OnePerRow);
+                builder.LandStopOn(landing);
+                builder.PopContext();
             }
             catch (Exception e)
             {
@@ -786,15 +888,14 @@ namespace ES2Access.Screens
 
         /// <summary>The hero band: who is aboard, the button that puts one aboard or takes them off,
         /// and the hero's own ship, which is a ship tile like any other.</summary>
-        private bool BuildHero(GraphBuilder builder, global::FleetsScreen window, bool opened)
+        private static void AddHero(List<Cell> cells, global::FleetsScreen window)
         {
             FleetHeroPanel panel = window.FleetHeroPanel;
             if (panel == null || !AgeWidgets.Visible(panel.AgeTransform))
             {
-                return opened;
+                return;
             }
 
-            _cells.Clear();
             FleetHeroPanel it = panel;
             if (
                 panel.GuiHero != null
@@ -803,7 +904,7 @@ namespace ES2Access.Screens
             )
             {
                 Cells.Add(
-                    _cells,
+                    cells,
                     panel.HeroPortraitIcon.AgeTransform,
                     ControlId.Structural("fleets:hero/portrait"),
                     GraphNodes.Readout(
@@ -815,29 +916,18 @@ namespace ES2Access.Screens
                 );
             }
 
-            AddHeroButton(_cells, panel);
+            AddHeroButton(cells, panel);
 
             if (panel.HeroShipContainer != null)
             {
                 ShipRows.Ship(
-                    _cells,
+                    cells,
                     panel.HeroShipContainer.GetComponentInChildren<ShipItem>(true),
                     window.ShipsManagementPanel,
                     "fleets:hero",
                     true
                 );
             }
-
-            if (_cells.Count == 0)
-            {
-                return opened;
-            }
-
-            opened = Open(builder, opened);
-            builder.PushContext(ModStrings.Get(ModStrings.FleetsHeroPanel));
-            Cells.EmitLinear(builder, _cells);
-            builder.PopContext();
-            return opened;
         }
 
         /// <summary>
@@ -890,20 +980,32 @@ namespace ES2Access.Screens
             return null;
         }
 
-        private bool BuildShips(GraphBuilder builder, global::FleetsScreen window, bool opened)
+        /// <summary>
+        /// The ships and the row of commands above them - <paramref name="bar"/> the commands,
+        /// <paramref name="cells"/> the ships, so the two can be declared as regions of their own.
+        ///
+        /// Somebody else's fleet gets a sentence where the commands would be, and that sentence is not a
+        /// command: it joins the SHIPS rather than making a band of its own with nothing to do in it.
+        /// The ships are gathered first so the tile Tab lands on is the first SHIP, never that sentence.
+        /// </summary>
+        private static ControlId AddShips(
+            List<Cell> bar,
+            List<Cell> cells,
+            ShipsManagementPanel panel
+        )
         {
-            ShipsManagementPanel panel = window.ShipsManagementPanel;
             if (panel == null || !AgeWidgets.Visible(panel.AgeTransform))
             {
-                return opened;
+                return null;
             }
 
-            _cells.Clear();
+            ShipRows.Ships(cells, panel, "fleets:ships", true);
+            ControlId landing = cells.Count == 0 ? null : cells[0].Id;
             if (panel.OtherEmpireBanner != null && AgeWidgets.Visible(panel.OtherEmpireBanner))
             {
                 AgePrimitiveLabel content = panel.OtherEmpireContent;
                 Cells.Add(
-                    _cells,
+                    cells,
                     panel.OtherEmpireBanner,
                     ControlId.Structural("fleets:ships/other-empire"),
                     GraphNodes.Readout(
@@ -916,32 +1018,10 @@ namespace ES2Access.Screens
             }
             else
             {
-                ShipRows.Toolbar(_cells, panel, "fleets:ships");
+                ShipRows.Toolbar(bar, panel, "fleets:ships");
             }
 
-            ShipRows.Ships(_cells, panel, "fleets:ships", true);
-            if (_cells.Count == 0)
-            {
-                return opened;
-            }
-
-            opened = Open(builder, opened);
-            builder.PushContext(ModStrings.Get(ModStrings.FleetsShipsPanel));
-            Cells.EmitLinear(builder, _cells);
-            builder.PopContext();
-            return opened;
-        }
-
-        /// <summary>The hero band and the ships share one stop - they are one panel on screen - so
-        /// whichever of the two has something to declare opens it.</summary>
-        private static bool Open(GraphBuilder builder, bool opened)
-        {
-            if (!opened)
-            {
-                builder.BeginStop(ShipsStop);
-            }
-
-            return true;
+            return landing;
         }
 
         // ---- shared ----
