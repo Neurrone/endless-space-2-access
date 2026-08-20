@@ -1358,7 +1358,20 @@ generic graduates to the generic docs.
 - The inspection hub's slide is ONE 0.3 s offset interpolation, and the engine re-enables the
   arriving panel only AFTER `ModifiersRunning` ends.
 - The game's own `%SkillTreeAvailableSkillPointsTitle` is abbreviated, and every starting skill
-  titles as "Starting Skill" (only the dossiers differ).
+  titles as "Starting Skill" (only the dossiers differ). A starting skill's real identity is its
+  mastery: `HeroSkillDefinition.SkillLevels[0].MasteryLevels[*].MasteryName`, localized
+  `%<name>Title` (`HeroMasteryCommand` → "Command", `HeroMasteryLabour` → "Labor") — the mask is
+  deliberate (`GuiHeroSkill.Title` answers the generic word whenever `isStartingSkill`, and the
+  underlying defs are hero-unique with no usable localized names).
+- **`PanelFeatureEffectsSets.TitleLabel` ("Effects:") belongs to the FEATURE**, not to a separate
+  header feature — and a multi-level skill tooltip is N sibling copies of
+  `PanelFeatureSkillEffectsSets`, one per level (current, then next), each with its own "Effects:"
+  caption. Only the visible siblings read (0 levels → next only; maxed → current only).
+- `GuiEffectMapper.UnloadEffects` retires effect lines by setting **Alpha = 0** while `Visible`
+  stays true — the pooled-table alpha trap, in a second place (first: retired table rows).
+- In this install the player's registry `TooltipDisplayDelay` is genuinely **0.0**, so
+  `TooltipDelay(-1)` restoring to 0 is correct, not a leaked override (`RegisteredTooltipDelay()`
+  reads `Application.Registry` and agrees).
 - Hero-card figure captions are `%HeroCardExperienceTitle` and friends; unspent points, cooldown
   and relics borrow `%HeroInspectionRemainingSkillPointsTitle`,
   `%AssignmentCooldownBaseDurationTitle` and `%HeroRelicTitle`.

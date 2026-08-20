@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Hero skills: the effects table in a skill's tooltip now reads level by level — "Level 1", then the situation it applies in ("On System (if assigned)"), then each effect on its own line. Before, the level number was glued onto the first effect ("1 +1 Industry per Population on Planets") and read like a quantity. A part-levelled skill reads its current level's block and then the next level's; starting skills, relic skills and senator skills read the same way
+- The hero skill page opens on the skill wheel, and the wheel calls itself "Skill Tree" — the game's own heading — instead of the mod's "Skill branches". The heading-only tab stop before the wheel is gone; the overview and ship-design pages keep theirs
+- The skill page's right-hand column is sections now: `Alt+Up` and `Alt+Down` jump between the skill stats, the starting skills, the masteries, and — on heroes that have one — the relics box
+- A starting-skill row says its mastery — "Command", "Labor" — instead of every row reading "Starting Skill". The row's tooltip still carries the skill's effects
 - Galaxy map: in inspect mode, `Shift+arrows` move to the next square in that direction that differs from where you stand — squares with the same contents and the same fog cover are skipped, and the mod says how many ("Skipped 12 squares") before reading the landing. When nothing differs all the way out, you land on the last square before the map edge
 - Galaxy map: in inspect mode, `Alt+Left` and `Alt+Right` travel by what the cursor holds — to the first- or second-named end of a lone starlane, or, with `Alt+Right`, to the destination of the fleets crossing the square when the map shows one and they all agree (a single fleet's destination wins over the lane it is flying). An ambiguous or unexplored answer does nothing, and never ends the mode
 - In inspect mode with a type-ahead search open, `Escape` now clears only the search; the next `Escape` exits the mode — matching how a search's Escape behaves everywhere else

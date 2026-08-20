@@ -240,7 +240,10 @@ retired);
 `laws:detail/{law,effects,action}` ("Effects" labelled); `population:detail/affinity`,
 `population:thresholds`, one per captioned block, `population:detail/assimilate`,
 `population:politics/{intro,traits,reactions}`; `election:local/{title,trends,empire}`;
-`hero:ship/{characteristics,modules,figures}`; `troops:evolution/caption` + `/type/<i>`;
+`hero:ship/{characteristics,modules,figures}`;
+`hero:tree-stats/{completion,starting,mastery,relics,box/N}` (2026-08-20, one per drawn box in the
+skill page's statistics column — `box/N` is the fallback for a box the mod does not recognise);
+`troops:evolution/caption` + `/type/<i>`;
 the notification popup's top/bottom control regions (since 2026-08-19 those two regions live on a
 stop of their own, `notification:controls` — the title-bar strip then the bottom bar, whatever
 buttons this popup added to it included — beside `notification:content`, which is the empire-info

@@ -18,6 +18,8 @@ The hero inspection window has three pages: the overview, the skill wheel, and t
 
 On the overview, `Tab` cycles through the hero's title and identity, their ship, their card, their skills summary, their story, and the buttons: assign, unassign, and whatever else the game offers.
 
-The **skill page** adds the skill wheel and the panels beside it. The wheel has three branches of four rings each, with one or two skills per ring, and the mod exposes it as that tree: branch, then ring, then skill. Each skill reads its state, cost and effect. A skill you cannot take yet says what it is waiting for.
+The **skill page** opens on the skill wheel, which announces itself with the game's own heading, "Skill Tree". The wheel has three branches of four rings each, with one or two skills per ring, and the mod exposes it as that tree: branch, then ring, then skill. Each skill reads its state, cost and effect. A skill you cannot take yet says what it is waiting for. A skill's tooltip reads its effects level by level: "Level 1", the situation the effects apply in, then each effect on its own line — and a part-levelled skill follows with the next level's block.
+
+Beside the wheel, `Tab` reaches the points-and-bonuses column on one side and the statistics column on the other. The statistics column is sections — the skill stats, the starting skills, the masteries, and a relics box on heroes that have one — and `Alt+Up`/`Alt+Down` jump between them. A starting-skill row says its mastery ("Command", "Labor"); the game names all of them "Starting Skill", so the mastery is what tells them apart, and the row's tooltip still carries the effects.
 
 Spending a point is not immediate: `Enter` on a skill adds it to a pending set. Apply commits the pending picks; Reset discards them.

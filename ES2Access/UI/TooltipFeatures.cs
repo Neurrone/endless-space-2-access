@@ -27,9 +27,11 @@ namespace ES2Access.UI
     /// So the reading is scoped: a feature's own subtree is banded, never the window. Two shapes the
     /// bands cannot express are recognised by what the game itself does rather than by a list of
     /// class names - a run of items spawned from one prefab, and a bar that draws a proportion and
-    /// writes no number - and four features have readers of their own because the game gives their
-    /// numbers names that are nowhere in the panel: a ship's stats, a fleet's, the two military power
-    /// figures, and a hero's card. Everything else keeps the banding, which is what it was
+    /// writes no number - and five features have readers of their own. Four of them because the game
+    /// gives their numbers names that are nowhere in the panel: a ship's stats, a fleet's, the two
+    /// military power figures, and a hero's card. The fifth is the stack of effect blocks a skill or a
+    /// planet would gain, whose captions are drawn in a column BESIDE the blocks rather than in them.
+    /// Everything else keeps the banding, which is what it was
     /// always right about, and a feature nobody has written a reader for lands there too. Which
     /// reader each feature used is reported so a gap shows up in a probe rather than in the player's
     /// ears.
@@ -86,6 +88,14 @@ namespace ES2Access.UI
                 // guessed from a three-pixel-high rectangle full of nothing.
                 if (widget == null || (feature != null && (feature.IsSeparator || feature.IsSpacing)))
                 {
+                    return reading;
+                }
+
+                PanelFeatureEffectsSets sets = feature as PanelFeatureEffectsSets;
+                if (sets != null)
+                {
+                    reading.Reader = "effect-sets";
+                    EffectSets(sets, reading.Lines);
                     return reading;
                 }
 
@@ -816,6 +826,77 @@ namespace ES2Access.UI
             catch (Exception e)
             {
                 Log.Warn("tooltip: naming a hero's masteries threw: " + e);
+            }
+        }
+
+        // ---- the blocks of effects ----
+
+        /// <summary>
+        /// What a skill, a hero, a planet or an honor action would DO, read as the stack of blocks the
+        /// panel draws it as.
+        ///
+        /// The feature is a caption ("Effects:") over a table of blocks, each block a situation the
+        /// effects apply in over one line per effect
+        /// (<c>PanelFeatureEffectsSets.Bind</c> fills the table from one prefab,
+        /// <c>PanelFeatureEffectsSetsItem.Bind</c> fills a block). Bands cannot express it: the SKILL
+        /// variant draws the level this block is about in a narrow column down the left, one row per
+        /// block, so the caption "Level" bands with the first block's situation and the figure under it
+        /// bands with that block's first effect - "Level On System (if assigned)" and
+        /// "1 +1 Industry per Population on Planets", every word present and every one of them attached
+        /// to the wrong thing. The blocks are therefore walked as the game filled them, and the level
+        /// said once, in front of the block it belongs to.
+        ///
+        /// A tooltip with two levels in it is two of these features side by side
+        /// (<c>SkillTreeEditionPanel</c> binds a current-level panel and a next-level one), each read
+        /// on its own, so "Level 1" and "Level 2" fall out of reading them in order.
+        /// </summary>
+        private static void EffectSets(PanelFeatureEffectsSets sets, List<string> lines)
+        {
+            TooltipText.AddLines(lines, AgeText.Label(sets.TitleLabel));
+
+            PanelFeatureSkillEffectsSets skill = sets as PanelFeatureSkillEffectsSets;
+            if (skill != null)
+            {
+                TooltipText.AddLines(
+                    lines,
+                    TooltipText.Captioned(Word(HeroLevelTitle), AgeText.Label(skill.LevelLabel))
+                );
+            }
+
+            AgeTransform table = sets.SetsTable;
+            List<AgeTransform> blocks = table == null ? null : table.Children;
+            for (int i = 0; blocks != null && i < blocks.Count; i++)
+            {
+                if (!AgeWidgets.Paints(table, blocks[i]))
+                {
+                    continue;
+                }
+
+                PanelFeatureEffectsSetsItem block =
+                    blocks[i].GetComponent<PanelFeatureEffectsSetsItem>();
+                if (block == null)
+                {
+                    continue;
+                }
+
+                TooltipText.AddLines(lines, AgeText.Label(block.TitleLabel));
+                AgeTransform effects = block.EffectMapper == null
+                    ? null
+                    : block.EffectMapper.EffectLinesTable;
+                List<AgeTransform> drawn = effects == null ? null : effects.Children;
+                for (int line = 0; drawn != null && line < drawn.Count; line++)
+                {
+                    // The table retires a line it no longer needs by fading it out rather than hiding
+                    // it (GuiEffectMapper.UnloadEffects), so a block that shrank still holds the
+                    // previous binding's words in a child that is still Visible.
+                    if (AgeWidgets.Paints(effects, drawn[line]))
+                    {
+                        TooltipText.AddLines(
+                            lines,
+                            AgeText.Label(drawn[line].GetComponent<AgePrimitiveLabel>())
+                        );
+                    }
+                }
             }
         }
 

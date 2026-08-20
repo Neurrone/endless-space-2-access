@@ -1539,6 +1539,16 @@ the read-only fixture. For a skill point, set `Level = 2` and `Refresh`, then re
 the save. Page switches raise tutorial popups — minimize them. Cheaper than `/eval`: the whole
 family — overview → ship design page → skill tree page — walks from the Academy's own Inspect
 button with `/input` in `unlocked`; each page switch raises a tutorial to minimize.
+`HandleInput(InputAction.Exit)` BACK-STEPS hub modes (skill page → overview → closed), one call
+per level — verify closure by the `/gui/graph` header, never by absence of an error; reopen with
+`Bind(ActiveHeroes[0])` + `SwitchHubMode(mode, true)` + `ShowWindow<HeroInspectionModalWindow>()`.
+**A two-level skill tooltip without a skill point** (reversible, no Apply): reflect the
+definition into `SkillTreeEditionPanel`'s private `leveledUpSkillDefinitions`, call
+`heroPreview.UnlockSkill(def, GetTotalSkillLevel(def), true)`, set `Dirty = true`, then LEAVE the
+node and RETURN before probing (a still-focused node's tooltip answers pre-mutation content);
+reset with `window.gameObject.SendMessage("OnResetSkillsCb", DontRequireReceiver)` and assert
+`IsSkillsModified == false` and points back to 0. `unlocked` has no relic-skill hero, no
+two-mastery starting skill, and no natural skill point.
 
 **Troops and the tactics deck** are both non-committing until Confirm, which makes them safe to walk
 whole. A refusal is provable from BOTH sides by injecting one: force the game's own refusal state,

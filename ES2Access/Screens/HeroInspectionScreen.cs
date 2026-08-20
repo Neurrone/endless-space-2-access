@@ -18,8 +18,10 @@ namespace ES2Access.Screens
     /// middle, the skill tree on the right. Which page is up is the game's own state
     /// (<c>CurrentHubMode</c>), and that is what this screen is built off: during the slide BOTH panels
     /// are still drawn, so "what is visible" would declare two pages at once for a fifth of a second.
-    /// The page's own drawn heading is a node, first in reading order, and a page change puts the cursor
-    /// back on the page's landing - which is what says a page changed, in the game's own words for it.
+    /// The page's own drawn heading is a node, first in reading order - except on the skill page, where
+    /// the heading names the wheel that is the whole page and is said as the wheel's own name instead -
+    /// and a page change puts the cursor back on the page's landing, which is what says a page changed,
+    /// in the game's own words for it.
     ///
     /// The game's own way into the side pages is Left and Right (<c>HandleInput</c> :125-148), and those
     /// arrows are the mod's while this screen is focused, so that route is dead. It costs nothing: each
@@ -231,16 +233,17 @@ namespace ES2Access.Screens
 
             try
             {
-                BuildHeading(builder, window);
                 switch (window.CurrentHubMode)
                 {
                     case HeroInspectionModalWindow.HeroHubMode.SkillTree:
                         BuildSkillPage(builder, window);
                         break;
                     case HeroInspectionModalWindow.HeroHubMode.ShipDesign:
+                        BuildHeading(builder, window);
                         BuildShipPage(builder, window);
                         break;
                     default:
+                        BuildHeading(builder, window);
                         BuildOverview(builder, window);
                         break;
                 }
@@ -313,8 +316,14 @@ namespace ES2Access.Screens
 
         // ---- the page's own heading ----
 
-        /// <summary>The one line the game writes across the top of whichever page is up. Declared once,
-        /// in the first stop, and never repeated per band.</summary>
+        /// <summary>
+        /// The one line the game writes across the top of whichever page is up. Declared once, in the
+        /// first stop, and never repeated per band.
+        ///
+        /// Not on the SKILL page, where the same words are the name of the panel below them and are
+        /// said there instead (<see cref="BuildTrees"/>): the page is the wheel, so a stop holding
+        /// nothing but its heading is a stop between the player and the only thing on the page.
+        /// </summary>
         private void BuildHeading(GraphBuilder builder, HeroInspectionModalWindow window)
         {
             AgeTransform heading = Heading(window);
@@ -687,7 +696,9 @@ namespace ES2Access.Screens
             }
 
             BuildTreeInfo(builder, panel);
-            BuildTrees(builder, panel);
+            // The wheel wears the page's own drawn heading, which is why the page declares no heading
+            // stop of its own - see BuildHeading.
+            BuildTrees(builder, panel, AgeWidgets.TextOf(Heading(window)));
             BuildTreeStats(builder, panel);
         }
 
@@ -778,8 +789,12 @@ namespace ES2Access.Screens
         /// leaves each dot's own Enable flag ON and switches the RING off, so the answer comes from the
         /// ancestor walk rather than from the dot (measured - all 21 dots read Enable true while three
         /// rings of each branch are disabled).
+        ///
+        /// <paramref name="label"/> is the page's own drawn heading, which is what the wheel is called
+        /// on this page and therefore what names the stop - so the heading is said where the thing it
+        /// names is, and the page needs no heading stop of its own.
         /// </summary>
-        private void BuildTrees(GraphBuilder builder, SkillTreeEditionPanel panel)
+        private void BuildTrees(GraphBuilder builder, SkillTreeEditionPanel panel, string label)
         {
             AgeTransform table = panel.SkillTreesTable;
             IList<AgeTransform> trees = table == null ? null : table.Children;
@@ -789,7 +804,12 @@ namespace ES2Access.Screens
             }
 
             builder.BeginStop(TreeStop);
-            builder.PushContext(ModStrings.Get(ModStrings.HeroSkillTrees));
+            bool named = !string.IsNullOrEmpty(label);
+            if (named)
+            {
+                builder.PushContext(label);
+            }
+
             try
             {
                 for (int i = 0; i < trees.Count; i++)
@@ -819,7 +839,10 @@ namespace ES2Access.Screens
                 Log.Warn("hero inspection: reading the wheel threw: " + e);
             }
 
-            builder.PopContext();
+            if (named)
+            {
+                builder.PopContext();
+            }
         }
 
         /// <summary>One branch of the wheel: what the game calls it, how much of it is done, and the
@@ -1175,6 +1198,10 @@ namespace ES2Access.Screens
         /// Read box by box because three of the four say their figures with an icon and no words: a
         /// starting skill and a mastery line are named only on the wrapper behind their tooltips, and a
         /// completion line is a figure and a name drawn side by side.
+        ///
+        /// Each box is also a REGION, so the jump key steps down the column a box at a time rather than
+        /// making the player walk a dozen rows to reach the masteries. They carry no label of the mod's:
+        /// the game draws a heading over every box, and that heading is the region's first row.
         /// </summary>
         private void BuildTreeStats(GraphBuilder builder, SkillTreeEditionPanel panel)
         {
@@ -1186,7 +1213,6 @@ namespace ES2Access.Screens
             }
 
             builder.BeginStop(TreeStatsStop);
-            _cells.Clear();
             try
             {
                 for (int i = 0; i < boxes.Count; i++)
@@ -1202,41 +1228,55 @@ namespace ES2Access.Screens
                         continue;
                     }
 
+                    // A region per box, keyed and unlabelled: the box already draws its own heading as
+                    // the first row of the region, so a label of the mod's would say it twice.
+                    _cells.Clear();
                     if (Holds(box, panel.TreeCompletionLinesTable))
                     {
+                        builder.SetRegion(Keys + "tree-stats/completion");
                         AddBox(box, panel.TreeCompletionLinesTable, "tree/completion");
                     }
                     else if (Holds(box, panel.StartingSkillItemsTable))
                     {
-                        AddNamedBox(box, panel.StartingSkillItemsTable, "tree/starting");
+                        builder.SetRegion(Keys + "tree-stats/starting");
+                        AddNamedBox(
+                            box,
+                            panel.StartingSkillItemsTable,
+                            "tree/starting",
+                            StartingSkillName
+                        );
                     }
                     else if (
                         panel.HeroMasteryPanel != null
                         && Holds(box, panel.HeroMasteryPanel.MasteryLinesContainer)
                     )
                     {
+                        builder.SetRegion(Keys + "tree-stats/mastery");
                         AddNamedBox(
                             box,
                             panel.HeroMasteryPanel.MasteryLinesContainer,
-                            "tree/mastery"
+                            "tree/mastery",
+                            Named
                         );
                     }
                     else if (Holds(box, panel.RelicSkillItemsTable))
                     {
+                        builder.SetRegion(Keys + "tree-stats/relics");
                         AddRelics(box, panel);
                     }
                     else
                     {
+                        builder.SetRegion(Keys + "tree-stats/box/" + i);
                         AddBox(box, null, "tree/box/" + i);
                     }
+
+                    Cells.EmitLinear(builder, _cells);
                 }
             }
             catch (Exception e)
             {
                 Log.Warn("hero inspection: reading the skill page's right column threw: " + e);
             }
-
-            Cells.EmitLinear(builder, _cells);
         }
 
         /// <summary>A box of the right-hand column: whatever heading it draws, and then one line per row
@@ -1268,10 +1308,17 @@ namespace ES2Access.Screens
             }
         }
 
-        /// <summary>The same for a box whose rows draw an icon and a figure and keep their NAME on the
-        /// wrapper behind a tooltip: a mastery line (the level reached out of the highest this hero can
-        /// reach) and a starting skill (which draws nothing but its own symbol).</summary>
-        private void AddNamedBox(AgeTransform box, AgeTransform table, string key)
+        /// <summary>The same for a box whose rows draw an icon and a figure and say what they are
+        /// nowhere in the row: a mastery line (the level reached out of the highest this hero can reach)
+        /// and a starting skill (which draws nothing but its own symbol). Both keep what they are on the
+        /// wrapper behind the row's tooltip, and <paramref name="name"/> is how the box says which of
+        /// the two questions to ask it.</summary>
+        private void AddNamedBox(
+            AgeTransform box,
+            AgeTransform table,
+            string key,
+            Func<AgeTooltip, string> name
+        )
         {
             AddHeads(box, table, key);
             IList<AgeTransform> rows = table == null ? null : table.Children;
@@ -1284,10 +1331,10 @@ namespace ES2Access.Screens
                 }
 
                 AgeTooltip tooltip = AgeWidgets.Raw(row);
-                string name = Named(tooltip);
+                string said = name(tooltip);
                 AgeTransform at = row;
                 NodeVtable vtable = GraphNodes.Readout(
-                    () => name,
+                    () => said,
                     () => AgeWidgets.TextOf(at),
                     null,
                     tooltip
@@ -1297,22 +1344,60 @@ namespace ES2Access.Screens
             }
         }
 
-        /// <summary>
-        /// What a row drawn as a bare symbol is called: the name the game keeps on the wrapper behind
-        /// its tooltip.
-        ///
-        /// For a starting skill that name is the game's own word for the KIND of thing - "Starting
-        /// Skill" (<c>GuiHeroSkill.Title</c> :22-32 answers that for a starting skill and not the
-        /// skill's own title) - so a hero with two of them has two rows saying the same words, and what
-        /// tells them apart is the dossier each draws. That is the game's own reading of its own icons,
-        /// and it was re-measured on Dmitri Lenko's two: <c>Gui.GetTitle</c> on their definitions answers
-        /// the engine's "HeroSkill01Terrans04 (missing GuiElement)" for one and, for the other, a key that
-        /// resolves to the HERO's own name ("Dmitri Lenko"). So there is nothing better to say, and both
-        /// alternatives would be worse than the game's own word for the kind.
-        /// </summary>
+        /// <summary>What a row drawn as a bare symbol is called: the name the game keeps on the wrapper
+        /// behind its tooltip. A mastery line's is the mastery.</summary>
         private static string Named(AgeTooltip tooltip)
         {
             return AgeWidgets.TooltipTitle(tooltip);
+        }
+
+        /// <summary>
+        /// Which masteries a starting skill counts towards, which is what tells one of them from the
+        /// next.
+        ///
+        /// The tooltip's own title will not do it: the game answers "Starting Skill" for every one of
+        /// them (<c>GuiHeroSkill.Title</c> :22-32 returns that instead of the skill's own for a starting
+        /// skill), so a hero with two has two rows saying the same words. Nor will the skill's own name -
+        /// <c>Gui.GetTitle</c> on Dmitri Lenko's two answers the engine's "HeroSkill01Terrans04 (missing
+        /// GuiElement)" for one and the HERO's name for the other.
+        ///
+        /// What the skill really is, in words the game keeps for exactly this, is the mastery its first
+        /// level counts towards (<c>HeroSkillDefinition.HeroSkillLevelDefinition.MasteryLevels</c>) -
+        /// "Command", "Labor" - which is also what the Masteries box below reads out, so the two rows
+        /// say the same words about the same thing.
+        /// </summary>
+        private static string StartingSkillName(AgeTooltip tooltip)
+        {
+            try
+            {
+                GuiHeroSkill skill = tooltip == null ? null : tooltip.Target as GuiHeroSkill;
+                HeroSkillDefinition definition =
+                    skill == null ? null : skill.HeroSkillDefinition;
+                HeroSkillDefinition.HeroSkillLevelDefinition[] levels =
+                    definition == null ? null : definition.SkillLevels;
+                HeroSkillDefinition.MasteryLevel[] masteries =
+                    levels == null || levels.Length == 0 ? null : levels[0].MasteryLevels;
+                MessageBuilder said = new MessageBuilder();
+                for (int i = 0; masteries != null && i < masteries.Length; i++)
+                {
+                    said.ListItem(MasteryName(masteries[i].MasteryName));
+                }
+
+                return said.Build();
+            }
+            catch (Exception e)
+            {
+                Log.Warn("hero inspection: naming a starting skill threw: " + e);
+                return null;
+            }
+        }
+
+        /// <summary>What the game calls a mastery, under the naming convention its own mastery rows are
+        /// titled by. Silence rather than the key, which is never worth saying out loud.</summary>
+        private static string MasteryName(Amplitude.StaticString mastery)
+        {
+            string title = AgeText.Clean(Gui.Localize("%" + mastery + "Title"));
+            return string.IsNullOrEmpty(title) || title[0] == '%' ? null : title;
         }
 
         /// <summary>
