@@ -208,12 +208,17 @@ same field the cell's "Unexplored" word uses; the tree's lane rows keep the link
 constellations were removed 2026-08-20 (owner: not a discrete point). **A targeting cursor
 arming now re-reads the standing control** (`AnnounceNextLanding`, arming path only; seat
 actions and the modal-picker pop stay re-read-free). The standalone instruction utterance is
-SKIPPED when the landing will carry it — i.e. the cursor is inside the map stop, whose context
-IS the instruction while armed — so on-map arming is exactly two utterances (exit phrase, then
-one line opening with the instruction and ending on the control); off the map stop the
-standalone instruction survives, since that landing's path would not contain it (owner ruling
-2026-08-20). A context label sourced from live game text has two speakers — the guard is "is
-the cursor inside the level whose label is that text", asked from the same accessor. **The zoom band word is silent while the
+SKIPPED whenever a readout of the map stop will carry it: the cursor is inside the map stop
+(with a dismissed-inspect re-read coming), OR a pending focus request targets a node inside it
+(`GraphNavigator.PendingStopKey`, resolved through the same ancestor walk landings use — a
+request into a still-collapsed branch answers correctly). This also fixed a pre-existing
+double with NO inspect involved: probe arming's own seat lands inside the map, whose context
+IS the instruction, so the watcher's line + the landing spoke it twice. The standalone line
+is the plain else-branch (dev-injected arming with nothing pending); "Target selection ended"
+is never swallowed — a landing in flight would not carry it (`!ended` guard). Pump-order
+caveat: a request made AFTER the watcher runs in the same frame is invisible to it — the
+guard works because deferred landings into collapsed branches outlive their frame (owner
+rulings 2026-08-20). **The zoom band word is silent while the
 game's scan mode is up** (`ZoomBand` returns null under `Scanning`; the lens titles carry the
 naming there). **A focused constellation node HOLDS its culled label shown**
 (`ConstellationLabelHold`, re-asserted per frame because culling recomputes on camera-position

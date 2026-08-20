@@ -272,24 +272,35 @@ namespace ES2Access.Screens
                 // Only the ARMING path. The six zoom-in fleet actions dismiss the cell too and each
                 // goes on to seat the cursor somewhere new, which announces itself; a re-read there
                 // would say the seat twice.
-                bool landingCarriesIt = dismissed && GalaxyHudScreen.CursorOnMap();
-                if (dismissed)
+                GraphNavigator navigator = ModEntry.Navigator;
+                if (dismissed && navigator != null)
                 {
-                    GraphNavigator navigator = ModEntry.Navigator;
-                    if (navigator != null)
-                    {
-                        navigator.AnnounceNextLanding();
-                    }
+                    navigator.AnnounceNextLanding();
                 }
 
-                // The instruction is said ONCE. Standing on the map stop, that landing already opens
-                // with it - the stop names itself after the game's banner while a mode is waiting
-                // (<c>GalaxyHudScreen.MapContext</c>, reading this very sentence) - so a standalone
-                // line ahead of it is the same words twice in a row (owner ruling 2026-08-20). The
-                // guard is the map stop and nothing weaker: the cell can be SUSPENDED on the zoom
-                // slider or the HUD strip, where the landing is named after that stop instead and
-                // dropping the line would lose the instruction altogether.
-                if (landingCarriesIt)
+                // THE INSTRUCTION IS SAID ONCE (owner rulings 2026-08-20). While a mode is waiting the
+                // map stop names ITSELF after the game's banner - <c>GalaxyHudScreen.MapContext</c>
+                // reads this very sentence - so anything that reads that stop out says the instruction
+                // too, and a standalone line in front of it is the same words twice in a row.
+                //
+                // Two things read it out, and the check is one question about the map stop rather than
+                // anything about which cursor was armed. The re-read just asked for above, when the
+                // player is standing in the stop already; or a landing ALREADY IN FLIGHT into it - the
+                // launch-probe mode seats the cursor on its first bearing, which lives under the acting
+                // fleet's system and so inside this stop, and that landing stays outstanding for the
+                // frames its collapsed branches take to open.
+                //
+                // Anything else falls through and the line is spoken on its own, which is what an
+                // arming the mod did not see coming (a dev-injected cursor) has to have: the
+                // instruction may be redundant, but it must never be missing.
+                // The mode ENDING is never carried by either: the stop goes back to being called "Map"
+                // the moment the banner goes, so nothing else is going to say that it is over.
+                bool reReadCarriesIt = dismissed && GalaxyHudScreen.CursorOnMap();
+                bool landingCarriesIt =
+                    !ended
+                    && navigator != null
+                    && GalaxyHudScreen.IsMapStop(navigator.PendingStopKey);
+                if (reReadCarriesIt || landingCarriesIt)
                 {
                     return;
                 }

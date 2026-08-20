@@ -315,6 +315,54 @@ namespace ES2Access.UI
             _pendingFocus = id == null ? null : new FocusRequest(id, announce);
         }
 
+        /// <summary>
+        /// The STOP an outstanding landing is aimed at, or null while none is outstanding.
+        ///
+        /// For a caller deciding whether something it is about to say will be said again by a landing
+        /// already in flight - a panel that names itself after live game text has two speakers, and a
+        /// landing that enters it reads that name (the galaxy's map stop under a targeting mode,
+        /// <c>GalaxyHudScreen.MapContext</c>). Asked of the STOP rather than of the id, so no caller
+        /// has to know which ids a panel declares.
+        ///
+        /// A landing is routinely aimed INSIDE a collapsed branch and stays outstanding for the frames
+        /// that branch takes to open (<see cref="FocusRequest"/>), so the node itself usually does not
+        /// exist in the render yet. The stop is then read off the deepest ancestor that does exist -
+        /// the same walk the landing's own <c>Reach</c> makes, by the id's own <c>/</c>-separated path
+        /// (<see cref="KeyGraph.AncestorKeys"/>) - and is null where not even an ancestor is declared,
+        /// which is the honest answer: that landing may never happen.
+        /// </summary>
+        public object PendingStopKey
+        {
+            get
+            {
+                FocusRequest request = _pendingFocus;
+                ControlId id = request == null ? null : request.Id;
+                GraphRender render = _graph == null ? null : _graph.Current;
+                if (id == null || render == null)
+                {
+                    return null;
+                }
+
+                GraphNode node = render.NodeAt(id);
+                if (node != null)
+                {
+                    return node.StopKey;
+                }
+
+                IList<object> keys = KeyGraph.AncestorKeys(id.StructuralKey);
+                for (int i = 0; i < keys.Count; i++)
+                {
+                    GraphNode ancestor = render.NodeAt(ControlId.Structural(keys[i]));
+                    if (ancestor != null)
+                    {
+                        return ancestor.StopKey;
+                    }
+                }
+
+                return null;
+            }
+        }
+
         /// <summary>Re-read the focused control in full, ancestors included.
         /// <paramref name="interrupt"/> false QUEUES it instead, for a caller that has just said
         /// something of its own about the same control and would otherwise cut its own line off (the
