@@ -35,13 +35,24 @@ over simulated clicks everywhere; simulate interaction state only when a mouse-b
 demands it — and then prefer patching the *sensor* (make the game read your cursor as the
 mouse position, WotR's pointer patch) so all downstream game logic runs untouched.
 One reading caveat: handlers often open with a cheat/god-mode branch — read past the guard
-before concluding what a handler does for a real player.
+before concluding what a handler does for a real player. And when hooking an action's END
+rather than posting one: a finalize/teardown step usually runs for success and every abort
+alike (cancel, replace, intercept) — detect success with the game's own success predicate
+(the state the successful path sets), never by the absence of an abort you know about.
 
 **4. An event/narration stream.** Where the game announces to itself that things happened: a
 typed event bus (ES2: `IEventService.EventRaised`, ~280 event classes), a combat/game log
 sink every message funnels through (Tangledeep's `GameLogWrite` — "the biggest early win"),
 or a notification system feeding the game's own notification UI. This powers narration
-(event-log buffers: [buffers.md](buffers.md)); expect to de-noise it later.
+(event-log buffers: [buffers.md](buffers.md)); expect to de-noise it later. The bus's
+consumer side is often a closed event→handler map beside a public raise API (ES2: a private
+`Dictionary<eventType, notificationType>` + `IEventService.Notify`) — a
+supported-by-accident extension point: define your own event type, reflect one entry into
+the map, raise through the public API, and the whole downstream pipeline (UI, dismissal,
+navigation) treats your entries as native. Three legs make it safe: opt out of any
+serialization the framework applies to live entries; re-assert the entry per game/session
+(such tables rebuild); and tear down by NAME, never type identity (see
+[hot-reload.md](hot-reload.md)).
 
 **5. Localization service.** How a key becomes display text (and the key convention, e.g.
 `%`-prefixed), so the mod can localize the same strings the game does and detect

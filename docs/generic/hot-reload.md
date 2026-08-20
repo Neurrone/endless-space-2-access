@@ -66,7 +66,13 @@ not an afterthought): unregister routes; clear the update handler; stop coroutin
 speech/native handles; null static back-references so the old object graph collects;
 unpatch Harmony. And on the host side: never hold mod types, `MemberInfo`s, or delegates in
 host caches — anything mod-shaped the host keeps must be cleared on unload, or it serves
-stale types from the dead assembly after the next reload.
+stale types from the dead assembly after the next reload. Two more for state pushed INTO
+the game: anything the mod placed in a game-owned collection (an entry in a game
+dictionary, mod-typed objects in a game list) comes out by NAME, not type — after the
+assembly swap the new load's types never equal the old entries' — and anything registered
+against a per-game/per-session service (table entries, subscriptions) dies silently when
+the game rebuilds that service on load or new game: re-assert it per game instance, not
+once at Start.
 
 **Harmony rule**: create the Harmony instance with a **unique-per-load id**
 (`"<modid>." + Guid`). With a fixed id, an old module's `UnpatchSelf` (which removes by owner

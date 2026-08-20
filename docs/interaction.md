@@ -346,6 +346,19 @@ Controls" is the galaxy's alone (gated on the zoom ladder no other page passes) 
 that overrides a word the game DRAWS — "GALAXY VIEW" on `TopTitlePanel`, owner ruling 2026-08-19,
 because the view's name says which page the player is on and the screen has already said that
 (es2-facts).
+**The Turn log** (2026-08-20): a second notifications stop, `hud:turn-log` (context word
+`hud.turn-log-panel`, "Turn log"), rides the shared `GlobalHud` contribution immediately after
+`hud:notifications` on all eleven HUD pages. The game's own notifications keep the first stop
+— `GlobalHud.Notifications` now filters `ModNotification`s out — and the mod's (sightings,
+arrivals, sieges, dispatches; `ModNotifications`) live in the second, grouped under
+`PushContext` regions `hud:turn-log/turn/<n>` ("Turn {n}", `hud.turn-log-turn`), newest turn
+first, arrival order within a turn. Enter opens the shared popup and Backslash dismisses — the
+existing stop's behaviors, NO new bindings — and the stop is absent while the log is empty
+(owner ruling 2026-08-20). Rows carry no tooltip section: the icon tooltip is the title again
+(es2-facts). And the popup's Minimize hands back to the stop that OWNS the minimized
+notification, not a remembered one — the popup's own Previous/Next walks game↔mod inside one
+popup, so the way out is asked of the notification being put aside
+(`NotificationScreen.HandBackOnMinimize`).
 **The shared HUD's empire stop carries a row region per drawn band**, on every page in the game:
 `hud:empire/{controls,key-resources,research,strategics}` (labelled Controls / Key Resources /
 Research — reusing `galaxy.research` — / Strategic Resources) plus the seven faction bands

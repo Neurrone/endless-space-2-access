@@ -49,6 +49,20 @@ is on `Gui.GuiGameWindowService`, not on the notification service. Raising the q
 the "Tracking Quests" tutorial page, so re-minimize afterwards. **No save shows an UNLOCKED End
 Turn** either, so the turn cluster's operable state stays code-verified.
 
+**Raising a MOD notification** (populating the Turn log) is bus-safe — mod event types have no
+game listeners: `ES2Access.UI.ModNotifications.Raise(new ES2Access.UI.EventModFleetArrived(player,
+fleet, fleet.GetGameNode()))`, enumerating fleets by binding `DepartmentOfDefense.Fleets` as a
+non-generic `IList`. For a GAME event with listeners, keep to the `RecordEventForEmpire` replay
+above. End-of-turn news is stamped with the turn that ENDED, not the one you wake in — expect the
+"Turn {n}" region one lower than the HUD reads after the boundary. Related fixture tools:
+**make a whole empire's fleets genuinely visible** with `player.VisionSharingBits |= other.Bits`
+then `IVisibilityService.ForceRefresh(-1L, true)` — sharing propagates only on a layer CHANGE, so
+without the forced refresh nothing happens; **`IEndTurnService.TryToEndTurn()` answers false the
+first time** (validators speak their warnings) — call it twice; **after `POST /loadsave`, re-run
+the REPL setup** — a `var` bank silently keeps the DEAD game's objects (cost one false "the mod is
+broken"); and a **save round trip without touching the fixture** is
+`IGameSerializationService.SaveGame(...)` to a scratch title, reload, delete the file.
+
 **Working a popup that draws its own content** (the research family: "Research Complete",
 "Technology Stage unlocked", "Construction Complete" — reachable by pressing Next/Previous
 notification on a turn where research finished). Browsing between them is SAFE and reversible;

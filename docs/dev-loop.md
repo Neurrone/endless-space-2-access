@@ -125,6 +125,9 @@ During boot/loading, main-thread routes 503 — retry; `/speech` and `/log` keep
 - The IIFE-lambda crutch does NOT work as a `POST /wait` predicate — it silently evaluates
   false every frame. A wait body must be a plain expression; side effects are fine
   (`DevProbe.TooltipTrace(...)` is one), lambdas are not.
+- `DevProbe.Notifications()` is the one answer for the notification engine's state
+  (mappings + owning assembly, patch owners, subscriptions, table sizes) — ask it before
+  hand-probing that machinery.
 - SOME descriptor-driven simulation properties shrug off `SetPropertyBaseValue` + `Refresh` —
   the descriptor recomputes them (measured: `Fleet.FreeMovementSpeed` stayed 0) — but not all:
   `Empire.CanUseStrategicForRecipe` took the write and stuck (measured 2026-08-19). Try the

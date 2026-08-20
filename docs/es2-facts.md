@@ -606,6 +606,23 @@ generic graduates to the generic docs.
   `GuiFleetStatus` icon on the lozenge — so polling `Fleet.Path` is the faithful watch
   (`FleetRouteWatch`), and arrival is told from loss by whether the fleet stands at the remembered
   destination (the same test `GoToFleetAction` :307 makes).
+- **Every `GoToFleetAction` ending funnels through `ClientFinalize` → `Fleet.OnGoToEnd`** —
+  arrival, cancellation, replacement and interception alike (`EntityAction.ClientExecute`
+  :467-492 runs `ClientCancel` → `WaitingForFinalization` → `ClientFinalize` :695-702;
+  `GoToFleetAction.ClientFinalize` :258-268 calls `OnGoToEnd` unconditionally). A hook there
+  tells arrival by the game's own success test (standing on `Path.Destination`, :307-311),
+  never by the absence of an abort. `Fleet.HasBeenIntercepted` is cleared at
+  `ClientInitialize` (:271-279) — the start of the NEXT journey — so at a journey's end it
+  still reports that journey; and `OnGoToEnd`'s first act is `SetPath(null)`, so a PREFIX is
+  the only place the destination is still readable (`FleetArrivals`).
+- **Client visibility writes all pass `EntityVisibility.SetLayer`, and nothing calls it
+  silent**: no call site in either assembly passes `silent: true` (the only explicit argument
+  anywhere is `silent: false`, `GameClient.cs` :5022), and the server's refresh transients
+  (`ServerPreRefreshVisibility` :237-247) touch `serverLayers` only — the post-refresh diff
+  ships net changes, so client `SetLayer` never sees a spurious downgrade (measured: 384 idle
+  frames, 7 visible foreign fleets, zero events). `FleetPresence.Drawing()` reads a view-side
+  repository and answers EMPTY for fleets parked at a system — not a visibility oracle
+  (possible `GalaxyScanner` defect; roadmap).
 - **The map's NAME gate is `StarSystemLabel`'s, and it is looser than the mouse's.** The label
   shows at exploration ≥ 2 AND (visibility Known or ≥ 3) (`ShowOrHideIfVisibleByEmpire`
   :1514-1522), draws `GameNode.LocalizedName` at ≥ 2 and the literal `"???"` below it
@@ -1804,6 +1821,39 @@ generic graduates to the generic docs.
 
 ## Endings, notifications and the journal
 
+- **The notification pipeline is a closed map the mod has joined** (2026-08-20):
+  `IEventService.EventRaised` → `GuiNotificationManager.RecordEventForEmpire` (:742-804)
+  looks up `gameEvent.GetType()` EXACTLY (no base-class fallback) in the private ~162-entry
+  `guiNotificationTypeByEventType`, `Activator.CreateInstance`s the notification, `Bind`s it
+  (`Bind` returning false vetoes creation), inserts by ascending `Priority` (game types use
+  only -2/-1/0), and fires the public `PlayerEmpireNotificationsCollectionChanged`;
+  `EmpireEvent`s route to the event's empire only (:847-855). The mod's entries
+  (`ModNotifications`) are reflected into that dictionary and re-asserted per frame (the
+  manager is per-game), and its types override `SkipSerialization => true` — the save writer
+  honors `ISerializationFilter` per list element (`BinarySerializer` :643-664), so mod
+  notifications never enter a save. On read an unresolvable type name is caught, skipped by
+  its length prefix, and left as a NULL list entry (:326-340) that downstream game code would
+  NPE on — the opt-out, not the graceful read, is the real safety.
+- **`EventSystemBesieged`/`EventSystemBlockaded` discard their aggressor**: `base(empire,
+  instigator)` binds the two-arg `EmpireEvent(Empire, params object[])`, so `Instigator` is
+  the VICTIM and the aggressor lands in the unused params array; the real aggressor survives
+  on `PopulationEventRaisingContext.Instigator`. Check which ctor a `base(...)` binds before
+  trusting a field name.
+- **The obliterator events say less than their names**: `EventObliteratorFired` carries the
+  FIRING fleet's node and routes to the firer only (`FireObliteratorFleetAction` :86);
+  `EventObliteratorFireObserved` is the observer's copy; and
+  `EventObliteratorProjectileImpactOnStarSystem` fires at impact to the same empires as
+  `EventObliteratorVictimReport` two lines earlier (`MoveToObliteratorProjectileAction`
+  :160) — mapping it double-notifies the victim.
+- **`EventEmpireSeen` is two sightings in one type** — a foreign FLEET rising to Visible
+  (`Fleet.cs` :1216, raised from the fleet's own `Visibility_OnLayerChanged`, routed to the
+  OBSERVER) and a foreign COLONIZED SYSTEM (`ColonizedStarSystem` :4822) — told apart by the
+  entity. The five-step `Layer` ladder re-raises it on Visible→Exposed, so a consumer needs
+  its own dedupe. Loading a save raises NO sighting burst.
+- **`NotificationItem.Bind` sets the icon tooltip's content to `GetTitle()`** — a tooltip
+  section on any notification row is always the row's own title again.
+- **The turn number the player reads is `Game.Turn + 1`**; `FleetRoute.DisplayedTurn()` is
+  the one shared answer — never a fresh copy of the sum.
 - **The Laws Cancelled prefab hangs TWO tooltips per line** — the real `Law` dossier on
   `CancelledLawLine000` itself and a completely empty one (no class, no content, no target)
   on `LawDetails/Icon` — and wraps the whole line in `LawDetails`, a group spanning both

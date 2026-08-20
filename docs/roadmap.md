@@ -133,14 +133,13 @@ files above.
   duplicate-id pair is fixed by `SidePanels.PathKey`, and the empire open-row crash is
   structurally removed (side panels emit linear, 2026-08-18) — but an unbalanced
   `PushContext` after a swallowed throw remains the lesser surviving form.
-- **An "entered vision" watcher for the galaxy map** (owner-requested 2026-08-16): announce when a
-  foreign fleet newly becomes perceived — a sighted player sees a lozenge appear, and there is no
-  game notification to carry it (the ~162-entry mapping in `GuiNotificationManager` :576-740 has
-  none). The signal to watch is `EntityVisibility.OnLayerChanged` or a poll of
-  `FleetPresence.Drawing()` against the previous frame's set, on the pattern `FleetRouteWatch`
-  already uses. Blocked for live testing in `[Beginner] test`, which perceives no foreign fleet at
-  all (test-recipes) — a fixture where one crosses the border has to be made first.
-- Event narration (turn events) via `IEventService.EventRaised`.
+- `ScanNotificationItemsPanel`/`ScanNotificationItem` — the hacking/scan chip row in Scan
+  View is uncovered by the mod (found during the notifications session; not part of the
+  main notification strip or its stops).
+- Possible `GalaxyScanner` Fleets-category defect: it reads `FleetPresence.Drawing()`
+  (a view-side repository), which measured EMPTY for the player's own fleets parked at a
+  system (notifications session, Stage 2) — investigate whether the scanner drops parked
+  fleets.
 - Rebindable mod keys (long-standing, from input.md).
 - The contextual prompt's component tables: modelled from the four data-defined shapes, but no
   fixture draws a table with ROWS — re-measure when one can be sighted.

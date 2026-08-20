@@ -17,7 +17,10 @@ Several **named buffers**, not one global one and not one per widget:
   rolling histories — SoC keeps map-notification and combat-event logs. These are the
   *second sink* of the same event stream that drives live narration: the announcer speaks an
   event once, the recorder also appends it for later review. Cleared at lifecycle boundaries
-  (new combat, back to main menu).
+  (new combat, back to main menu). When an event narrates something the player can no longer
+  see (a unit lost from view), compose the line from a cache captured while it was visible —
+  reading the entity at announcement time fails or leaks fog-of-war state. A correctness
+  rule, not a performance one.
 
 Data structure (`ReviewBuffer`): trimmed non-empty `Lines`, a clamped `CurrentLineIndex`,
 `ReplaceLines` (clear + refill, cursor → 0), `AppendLine` (cursor jumps to the end only when
