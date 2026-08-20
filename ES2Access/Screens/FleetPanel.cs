@@ -493,14 +493,13 @@ namespace ES2Access.Screens
                     _bar,
                     regions ? Cells.AsDrawnRows : Cells.OnePerRow
                 );
-                Cells.EmitRegion(
-                    builder,
-                    ManagementListRegion,
-                    null,
-                    regions,
-                    _cells,
-                    Cells.OnePerRow
-                );
+                // The list takes no word of its own - "Fleets" is what the stop is already called.
+                if (regions)
+                {
+                    builder.SetRegion(ManagementListRegion);
+                }
+
+                Cells.EmitLinear(builder, _cells);
                 builder.LandStopOn(landing);
                 builder.PopContext();
             }
@@ -876,7 +875,13 @@ namespace ES2Access.Screens
                     _bar,
                     band
                 );
-                Cells.EmitRegion(builder, ShipsListRegion, null, regions, _cells, Cells.OnePerRow);
+                // The ships take no word of their own - "Ships" is what the stop is already called.
+                if (regions && _cells.Count > 0)
+                {
+                    builder.SetRegion(ShipsListRegion);
+                }
+
+                Cells.EmitLinear(builder, _cells);
                 builder.LandStopOn(landing);
                 builder.PopContext();
             }
