@@ -93,6 +93,19 @@ files above.
 - The planet page's population-entry click has no opener node yet (the window itself,
   StarSystemPopulationModalWindow, is covered — SystemPoliticsScreen binds it).
 - Skill-tree type-ahead: a TypeAheadScope so search reaches skills in collapsed branches.
+- Hero skill page (2026-08-20): the base-class `PanelFeatureEffectsSets` tooltip variants
+  (hero, planet colonization, honor actions, hacking programs) read through the new
+  `effect-sets` typed reader but are UNSIGHTED — one `DevProbe.Tooltip()` on any of them
+  should answer `"effect-sets"` with no "Level" line. The relics box/region and a
+  two-mastery starting skill also await a fixture (Nakalim/Templar hero).
+- Hero skill page: the heading now speaks twice on arrival (screen name or FollowPage line,
+  then the tree stop's "Skill Tree" context) — user ruling pending on which line yields.
+- Constellations (in progress 2026-08-20): `Core/Map` hull geometry landed
+  (`ConvexHull`/`ConstellationRegions` + `Audit()` oracle); remaining: the runtime layer
+  (explored-constellation groups, the merged "Unexplored constellation" bucket,
+  `ConstellationLines` removal), inspect-mode announcements, the scanner category, and one
+  live `Audit()` run per fixture galaxy to record `OutsideOwnHull` (expect 0) and the real
+  `InsideAnotherHull` interlock count.
 - Election, vote breakdown: the "Political Trends" caption is now declared as the bars'
   region label (one-per-row rollout, 2026-08-18) — code-only, and the drawn child's name
   is a guarded guess. On the first real election turn: check the bars arrive under the
