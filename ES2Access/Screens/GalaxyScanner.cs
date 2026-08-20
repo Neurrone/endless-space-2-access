@@ -67,7 +67,12 @@ namespace ES2Access.Screens
         private const int CategoryMarkers = 3;
         private const int CategoryPins = 4;
         private const int CategoryProjectiles = 5;
-        private const int CategoryCount = 6;
+
+        /// <summary>The stretches of sky the map has drawn a name across. A REGION rather than a thing
+        /// standing somewhere, which is why its entry is computed per press rather than gathered like
+        /// the rest (<see cref="Constellations"/>).</summary>
+        private const int CategoryConstellations = 6;
+        private const int CategoryCount = 7;
 
         private const int ScopeAll = ScannerScopes.All;
         private const int ScopeFriendly = ScannerScopes.Friendly;
@@ -82,6 +87,7 @@ namespace ES2Access.Screens
             ScannerScopes.SystemWidth,
             ScannerScopes.AffiliationWidth,
             ScannerScopes.AffiliationWidth,
+            ScannerScopes.SingleWidth,
             ScannerScopes.SingleWidth,
             ScannerScopes.SingleWidth,
             ScannerScopes.SingleWidth,
@@ -470,6 +476,7 @@ namespace ES2Access.Screens
             ModStrings.GalaxyScannerQuestMarkers,
             ModStrings.GalaxyScannerPins,
             ModStrings.GalaxyScannerProjectiles,
+            ModStrings.GalaxyScannerConstellations,
         };
 
         private static readonly string[][] ScopeKeys = new string[][]
@@ -501,6 +508,7 @@ namespace ES2Access.Screens
             new string[] { ModStrings.GalaxyScannerQuestMarkersAll },
             new string[] { ModStrings.GalaxyScannerPinsAll },
             new string[] { ModStrings.GalaxyScannerProjectilesAll },
+            new string[] { ModStrings.GalaxyScannerConstellationsAll },
         };
 
         // ---- going there ----
@@ -547,10 +555,10 @@ namespace ES2Access.Screens
 
             GraphNavigator navigator = ModEntry.Navigator;
 
-            // The rows the tree keys STRUCTURALLY - a probe, an ally's pin, a missile in flight - carry
-            // their own node here, because those keys are the page's to build. All three sit at the top
-            // of the stop, so there is no branch to open first; there is no fallback below this either,
-            // because none of the three is a thing the game lets anybody select (a fleet is).
+            // The rows whose keys are the PAGE's to build - a probe, an ally's pin, a missile in
+            // flight, a constellation's group - carry their own node here. All four sit at the top of
+            // the stop, so there is no branch to open first; there is no fallback below this either,
+            // because none of the four is a thing the game lets anybody select (a fleet is).
             if (found.Row != null)
             {
                 if (navigator != null)
@@ -626,6 +634,10 @@ namespace ES2Access.Screens
                     Markers(world[CategoryMarkers]);
                     Pins(world[CategoryPins]);
                     Projectiles(world[CategoryProjectiles]);
+                    // The one list that has to know where the player is reading BEFORE it is sorted:
+                    // a region has no one position, so which point stands for it is a question about
+                    // the reading point (<see cref="Constellations"/>).
+                    Constellations(world[CategoryConstellations], east, north);
                 }
             }
             catch (Exception e)
@@ -706,6 +718,75 @@ namespace ES2Access.Screens
                 made.Row = GalaxyHudScreen.ProjectileId(shot);
                 found.Add(made);
             }
+        }
+
+        /// <summary>
+        /// Every stretch of sky the map has drawn a name across.
+        ///
+        /// EXPLORED ONLY, which falls out of asking <see cref="ConstellationMap"/> rather than the
+        /// galaxy: the model holds exactly the constellations whose names the map is writing, which is
+        /// the same gate the tree's own grouping uses, so the scanner cannot name a region the player
+        /// has never been shown.
+        ///
+        /// WHAT POSITION A REGION HAS is the whole difficulty, and it is answered per press. A
+        /// constellation is not a thing standing somewhere - the point the game keeps for one is where
+        /// its NAME is written, which is a place nothing stands and a place that can lie outside the
+        /// region entirely. So the point that stands for it here is the member the player is nearest
+        /// to: read from inside, that is somewhere in the region and the distance comes out at nothing,
+        /// which is the honest answer to "how far is Herkules" asked from inside Herkules; read from
+        /// outside, it is the nearest corner of the region, which is the answer to "how far would I
+        /// have to go". Both need the reading point, which is why this is the one builder that takes
+        /// it.
+        ///
+        /// The row is the tree's own group node for the constellation, so Alt+Home lands on the very
+        /// node the player would have walked to - and the tree's ancestry-from-the-key rule opens it
+        /// if they had closed it.
+        /// </summary>
+        private static void Constellations(List<Found> found, double east, double north)
+        {
+            int count = ConstellationMap.Count;
+            for (int i = 0; i < count; i++)
+            {
+                Constellation it = ConstellationMap.At(i);
+                GameNode nearest = it == null ? null : NearestMember(it, east, north);
+                if (nearest == null)
+                {
+                    continue;
+                }
+
+                Found made = Make(
+                    it.LocalizedName,
+                    nearest.GalaxyPosition,
+                    ScannerScopes.Only(),
+                    null,
+                    null
+                );
+                made.Row = GalaxyHudScreen.ConstellationId(it);
+                found.Add(made);
+            }
+        }
+
+        /// <summary>The member of a constellation nearest the place the player is reading from, which
+        /// is the point that stands for the whole region for this one press.</summary>
+        private static GameNode NearestMember(Constellation it, double east, double north)
+        {
+            IList<GameNode> nodes = it.GameNodes;
+            GameNode nearest = null;
+            double best = 0.0;
+            for (int i = 0; nodes != null && i < nodes.Count; i++)
+            {
+                double x;
+                double y;
+                GalaxyCoordinates.Offsets(nodes[i].GalaxyPosition, out x, out y);
+                double away = (x - east) * (x - east) + (y - north) * (y - north);
+                if (nearest == null || away < best)
+                {
+                    nearest = nodes[i];
+                    best = away;
+                }
+            }
+
+            return nearest;
         }
 
         /// <summary>

@@ -383,6 +383,8 @@ namespace ES2Access.Screens
             // now is, and a square still drawn on a map nobody is looking at would be a mode nothing
             // could end.
             _inspect.Forget();
+            // A constellation name the mod was holding drawn belongs to the map that is going away.
+            ConstellationLabelHold.Release();
             _armedProbe = null;
             // A seat still being waited for belongs to the map that is going away; answered on some
             // later visit it would move the cursor for a button nobody remembers pressing.
@@ -407,6 +409,9 @@ namespace ES2Access.Screens
             // landing waits for the camera the game is still flying into the system.
             FollowActionSeat();
             FollowCamera();
+            // Re-asserted rather than done once: the labels window re-marks its culling on every
+            // camera MOVE, and would take a held label away underneath a standing cursor.
+            ConstellationLabelHold.Tick();
         }
 
         /// <summary>
@@ -2203,16 +2208,22 @@ namespace ES2Access.Screens
             AgeTooltip tooltip = drawn == null ? null : drawn.ConstellationTooltip;
             NodeVtable vtable = GraphNodes.Group(() => it.LocalizedName, tooltip: tooltip);
             AgeTooltip tip = tooltip;
+            ConstellationLabel showing = drawn;
             vtable.OnFocusVisual = () =>
             {
+                // The label the name and the dossier both live on is one the map CULLS at every
+                // camera position the game is played at, and a hidden label draws no tooltip - so it
+                // is held drawn for as long as the cursor stands here, and given back to the game the
+                // moment it leaves (<see cref="ConstellationLabelHold"/>).
+                ConstellationLabelHold.Hold(showing);
                 if (tip != null)
                 {
                     PointerFocus.MoveTo(null, tip, tip.AgeTransform);
                 }
             };
-            vtable.OnBlurVisual = ReleasePointer;
+            vtable.OnBlurVisual = ReleaseConstellation;
 
-            ControlId id = ControlId.Referenced(it, ConstellationKey + it.GUID);
+            ControlId id = ConstellationId(it);
             HashSet<ControlId> expansion = builder.Expansion;
             ControlId closing = id;
             Constellation leaving = it;
@@ -6401,6 +6412,14 @@ namespace ES2Access.Screens
             return ControlId.Structural("galaxy:projectile/" + shot.GUID);
         }
 
+        /// <summary>Where a constellation's GROUP node stands in the tree - built here, beside the one
+        /// place that declares it (<see cref="AddConstellation"/>), so the scanner's jump and the
+        /// declaration cannot drift apart.</summary>
+        internal static ControlId ConstellationId(Constellation constellation)
+        {
+            return ControlId.Referenced(constellation, ConstellationKey + constellation.GUID);
+        }
+
         /// <summary>The same, for an ally's pin.</summary>
         internal static ControlId PinId(CoordinationRequest request)
         {
@@ -6975,6 +6994,15 @@ namespace ES2Access.Screens
         }
 
         private static readonly Action ReleasePointer = PointerFocus.Release;
+
+        /// <summary>The same, for a node that also had the map drawing something for it: the pointer
+        /// goes down and the constellation label the mod was holding shown goes back to the game.
+        /// </summary>
+        private static readonly Action ReleaseConstellation = () =>
+        {
+            ConstellationLabelHold.Release();
+            PointerFocus.Release();
+        };
 
         private static AgeTransform Transform(AgeControl control)
         {

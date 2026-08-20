@@ -665,6 +665,10 @@ namespace ES2Access
             GalaxyCoordinates.Forget();
             // And the constellation outlines derived from it, which hold the galaxy's own nodes.
             ConstellationMap.Forget();
+            // A constellation NAME the mod was holding drawn is a change to what the game is showing,
+            // so it is put back rather than merely let go of - a reload that left one drawn would leave
+            // it drawn for the rest of the session with nothing left to take it down.
+            ConstellationLabelHold.Release();
             // And the map's inspect cursor, whose lines the page gave back when it was popped just
             // above: what is left is the flag the input layer's own claim reads.
             GalaxyInspect.Reset();

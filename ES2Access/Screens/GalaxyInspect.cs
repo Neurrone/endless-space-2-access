@@ -610,6 +610,10 @@ namespace ES2Access.Screens
             }
 
             MeasureGalaxy();
+            // Nothing has been crossed yet, so the first reading names the stretch of sky the cursor
+            // opened in and says nothing at all where it opened between them.
+            _sky = null;
+            _skyKnown = false;
             _live = true;
             _driving = this;
             // Entry announces the mode and reads the cell itself; the resume line is for coming BACK.
@@ -1042,6 +1046,83 @@ namespace ES2Access.Screens
             return true;
         }
 
+        /// <summary>
+        /// WHICH STRETCH OF SKY THE CELL IS IN, said only when it has changed.
+        ///
+        /// The map writes a constellation's name across the middle of a region and draws no boundary
+        /// anywhere; the boundary the mod derives from the region's own members
+        /// (<see cref="ConstellationMap"/>) is what makes "which one am I in" a question a walked cell
+        /// can answer at all. It is a fact about the WHOLE stretch, so repeating it on every cell of a
+        /// crossing would be most of what a sweep said: it is news on the press that changes it and
+        /// silent on every other, which is the same rule the size key already follows.
+        ///
+        /// There are exactly two changes. Arriving in a named region says its name. Leaving the last
+        /// named region for the space between them names the region being LEFT, because the space
+        /// itself has no name and "out of Herkules" is the only thing that can be said about it that
+        /// the player did not already know.
+        ///
+        /// Only the constellations this empire has EXPLORED are in the model, so a cell in a stretch of
+        /// sky the map has drawn no name across is in no region at all and this says nothing about it -
+        /// the fog's own reading is the whole answer there.
+        ///
+        /// Entering the mode on a cell that is in no region says nothing: there is nothing to name and
+        /// nothing has been left.
+        /// </summary>
+        private string Crossing()
+        {
+            try
+            {
+                // The classification only depends on the cell, and Settle is called for a resize and a
+                // re-centre as well as for a move - so the cell it was last asked about is remembered
+                // and a Settle that did not move the cursor asks nothing.
+                if (_skyKnown && _skyX == _x && _skyY == _y)
+                {
+                    return null;
+                }
+
+                Constellation now = ConstellationMap.Classify(_x, _y);
+                Constellation was = _sky;
+                bool known = _skyKnown;
+                _sky = now;
+                _skyKnown = true;
+                _skyX = _x;
+                _skyY = _y;
+                if (known && ReferenceEquals(now, was))
+                {
+                    return null;
+                }
+
+                if (now != null)
+                {
+                    return ModStrings.Format(
+                        ModStrings.GalaxyInspectConstellation,
+                        now.LocalizedName
+                    );
+                }
+
+                return known && was != null
+                    ? ModStrings.Format(
+                        ModStrings.GalaxyInspectConstellationLeft,
+                        was.LocalizedName
+                    )
+                    : null;
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: naming the cell's constellation threw: " + e);
+                return null;
+            }
+        }
+
+        /// <summary>The stretch of sky the cursor was last read as standing in, and the cell that
+        /// answer was taken for. Reset on entry, never on a suspend: coming back to the map re-reads
+        /// the cell the player left the cursor on, and a cell that has not moved has crossed nothing.
+        /// </summary>
+        private Constellation _sky;
+        private bool _skyKnown;
+        private int _skyX;
+        private int _skyY;
+
         /// <summary>Put the camera and the drawn square on the cell, then say what is in it.</summary>
         private void Settle(bool interrupt)
         {
@@ -1056,6 +1137,18 @@ namespace ES2Access.Screens
                 (float)(origin.Y + InspectGrid.Low(_y, _size)),
                 (float)(origin.Y + InspectGrid.High(_y, _size))
             );
+            // Ahead of the cell, and as its own line: it is news about the MOVE rather than about what
+            // is standing here, which is the place the skip key's own count already occupies. The
+            // cell's reading keeps the interrupt it was going to have; where both are said the
+            // crossing takes it and the cell queues behind, so the pair is heard whole and in order.
+            string crossing = Crossing();
+            if (crossing != null)
+            {
+                Voice.Say(crossing, interrupt);
+                Voice.Say(Look(), false);
+                return;
+            }
+
             Voice.Say(Look(), interrupt);
         }
 

@@ -195,6 +195,20 @@ the game left with no Escape route: there the mod claims Escape (`ConsumesBack` 
 runs that cursor's own right-click cancel, so Escape cannot raise the pause menu over a map still
 waiting for a target (owner-ruled deviation, 2026-08-12).
 
+**Inspect mode names constellation crossings** (2026-08-20): its own utterance AHEAD of the cell
+(the "Skipped N squares" precedent, taking the interrupt the cell would have had) — on entry when
+the initial tile is inside an explored hull, then change-only: "{0} constellation" crossing in,
+"Out of {0} constellation" crossing out to unassigned space. `ConstellationMap` is explored-only
+so fog leaks nothing; cell identity for Shift+arrows is UNCHANGED (the skip runs through
+boundaries); suspend/resume re-reads the cell only, never the crossing. **The scanner's 7th
+category is Constellations** (explored only, no subcategories beyond "all"): per-query
+representative point = the member node nearest the reading point ("here" when inside);
+Alt+Home lands on the group node (auto-expand), or moves the inspect cell to the representative
+point while the mode is live. **A focused constellation node HOLDS its culled label shown**
+(`ConstellationLabelHold`, re-asserted per frame because culling recomputes on camera-position
+change; released on blur/pop/reload through the window's own re-decide) so the game's
+"Constellation" tooltip has a widget to fill.
+
 **The galaxy map stop is constellation-grouped** (2026-08-20): top level = one group per
 EXPLORED constellation (gate: `Constellation.Exploration[player] > 0`, the label's own check,
 stale aggregate included), drifting rows at their own positions, and the merged

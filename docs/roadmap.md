@@ -100,13 +100,16 @@ files above.
   two-mastery starting skill also await a fixture (Nakalim/Templar hero).
 - Hero skill page: the heading now speaks twice on arrival (screen name or FollowPage line,
   then the tree stop's "Skill Tree" context) — user ruling pending on which line yields.
-- Constellations (in progress 2026-08-20): hull geometry AND the grouped tree are done
-  (`ConstellationMap`, `unlocked` audit: outside-own-hull 0, inside-another 22, all
-  tie-broken). Remaining: inspect-mode announcements, the scanner category, and the
-  constellation node's tooltip DRAW problem — labels are culled in `unlocked` at every
-  camera position, so the "Constellation" tooltip never fills naturally; the mod node
-  likely needs the force-show dance on focus, and the tooltip's line-splitting is
-  unverified (a force-shown label's rows all rect (0,0,0,0) and band into one line).
+- Constellations, remaining edges (feature shipped 2026-08-20): (a) Alt+Home onto a
+  constellation with inspect live lands the cell on the ROUNDED representative point,
+  which can fall just outside the hull and speak "Out of X constellation" on arrival
+  at X (measured 0.286 outside on Andromeda) — owner ruling wanted on landing on a
+  contained cell instead; (b) an explored constellation with NO perceived member has
+  no tree row, so Alt+Home onto it is a silent no-op — fixture-only shape in
+  practice, but FocusNode-on-undeclared-forever is unruled; (c) the constellation
+  tooltip's first lines lead with the inline icon word ("Crown Owner: No owner") —
+  wording nit awaiting owner taste; (d) constellation-to-constellation direct
+  boundary crossing (no outside cell between) has no live evidence.
 - Election, vote breakdown: the "Political Trends" caption is now declared as the bars'
   region label (one-per-row rollout, 2026-08-18) — code-only, and the drawn child's name
   is a guarded guess. On the first real election turn: check the bars arrive under the

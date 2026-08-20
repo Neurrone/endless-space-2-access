@@ -396,6 +396,15 @@ namespace ES2Access.Core.Speech
         public const string GalaxyInspectSkippedOne = "galaxy.inspect.skipped-one";
         public const string GalaxyInspectSkippedMany = "galaxy.inspect.skipped-many";
 
+        // Which stretch of sky the cell is in, said ONLY when it changes - on the way in where the
+        // cursor opens inside one, and afterwards on the press that crosses a boundary. There are
+        // exactly two things a crossing can be: arriving somewhere named, and leaving the last named
+        // place for the space between them, which is why the second names the constellation being LEFT
+        // and not the nothing being entered. Whole phrases, because a language may want the word for
+        // "constellation" in front of the name or inflected by it.
+        public const string GalaxyInspectConstellation = "galaxy.inspect.constellation";
+        public const string GalaxyInspectConstellationLeft = "galaxy.inspect.constellation-left";
+
         // The map's SCANNER - "what is near me, of this kind". The scope is said as a CATEGORY and a
         // SUBCATEGORY, in that order, because that is the shape of the two keys that move it: one
         // steps the category, the other the subcategory, and a player who hears the two halves named
@@ -438,6 +447,13 @@ namespace ES2Access.Core.Speech
         public const string GalaxyScannerPinsAll = "galaxy.scanner.pins-all";
         public const string GalaxyScannerProjectiles = "galaxy.scanner.projectiles";
         public const string GalaxyScannerProjectilesAll = "galaxy.scanner.projectiles-all";
+
+        /// <summary>The stretches of sky the map has drawn a name across. Asked "what is there" like
+        /// the three above - a constellation has no owner the scanner could split it by, only member
+        /// systems that each have their own - so it takes the same single subcategory, named rather
+        /// than left blank for the same reason.</summary>
+        public const string GalaxyScannerConstellations = "galaxy.scanner.constellations";
+        public const string GalaxyScannerConstellationsAll = "galaxy.scanner.constellations-all";
 
         /// <summary>A scope the player is parked in that has run out under them. The scope's own name
         /// goes INSIDE the sentence rather than in front of it, so a language that says "there are no
@@ -1370,6 +1386,8 @@ namespace ES2Access.Core.Speech
             { GalaxyInspectFogMany, "{0} squares unexplored" },
             { GalaxyInspectSkippedOne, "Skipped 1 square" },
             { GalaxyInspectSkippedMany, "Skipped {0} squares" },
+            { GalaxyInspectConstellation, "{0} constellation" },
+            { GalaxyInspectConstellationLeft, "Out of {0} constellation" },
             { GalaxyScannerScope, "{0}: {1}" },
             { GalaxyScannerSystems, "Systems" },
             { GalaxyScannerFleets, "Fleets" },
@@ -1395,6 +1413,8 @@ namespace ES2Access.Core.Speech
             { GalaxyScannerPinsAll, "all" },
             { GalaxyScannerProjectiles, "Obliterator missiles" },
             { GalaxyScannerProjectilesAll, "all" },
+            { GalaxyScannerConstellations, "Constellations" },
+            { GalaxyScannerConstellationsAll, "all" },
             { GalaxyScannerEmpty, "{0}, none found" },
             { GalaxyScannerHere, "here" },
             { GalaxyFleetShips, "{0} ships" },

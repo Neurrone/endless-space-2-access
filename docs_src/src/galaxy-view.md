@@ -85,6 +85,8 @@ Press `Ctrl+I` on the map to enter inspect mode: a square cursor you move around
 
 Each cell speaks its coordinates, then its contents: systems and special objects, fleets, probes, obliterator missiles, ally pins, any starlanes crossing the cell, and how much of the cell is unexplored (`Unexplored`, or `34 squares unexplored`). An empty cell speaks only its coordinates. Moving past the edge of the galaxy announces `Map edge`.
 
+The mode also names the constellation you are in, before the cell: on entry when you start inside one, and afterwards only when it changes — `⟨name⟩ constellation` crossing in, `Out of ⟨name⟩ constellation` crossing into unclaimed space. Only constellations the game has named to you count, so fog stays quiet. These regions are the mod's own reading of the map, derived from each constellation's member systems; the game itself draws no borders.
+
 While inspect mode is active, the review buffer holds the current cell's contents, and the mod draws a visible square around the area being inspected.
 
 Type-ahead search also works while the cursor is up: typing letters searches the map's entries as usual and moves tree focus to the match. The inspect cursor stays where it is. While a search is open, the first `Escape` clears only the search (`Search cleared`) and leaves you in inspect mode; the next `Escape` exits the mode.
@@ -98,7 +100,7 @@ The scanner is a directory of everything on the map, sorted nearest first from w
 - `Alt+PageUp` / `Alt+PageDown`: previous / next result, wrapping at both ends
 - `Alt+Home`: jump to the current result
 
-The categories are systems, fleets, probes, quest markers, ally pins and obliterator missiles. The systems category has subcategories: all, friendly, neutral, enemy, homeworld, minor factions and special. Empty categories and subcategories are skipped, so a press always lands on something.
+The categories are systems, fleets, probes, quest markers, ally pins, obliterator missiles and constellations. The systems category has subcategories: all, friendly, neutral, enemy, homeworld, minor factions and special. Empty categories and subcategories are skipped, so a press always lands on something. A constellation's distance is measured to its nearest member system — `here` when you stand inside it.
 
 Changing category announces the full scope and the result you land on, for example `Systems: friendly, Dusay, 0, 0, here, 1 of 2`. Changing subcategory announces the subcategory and the result. Stepping through results announces the result alone: name, coordinates, distance and direction, and position in the list, for example `Heka, -1, -9, 9 south, 1 west, 2 of 13`. The very first scanner press of a game announces where you already are without moving.
 

@@ -99,6 +99,15 @@ namespace ES2Access.UI
                     return reading;
                 }
 
+                PanelFeatureConstellationControl sky =
+                    feature as PanelFeatureConstellationControl;
+                if (sky != null)
+                {
+                    reading.Reader = "constellation";
+                    ConstellationDossier(sky, reading.Lines);
+                    return reading;
+                }
+
                 PanelFeatureShipInfo ship = feature as PanelFeatureShipInfo;
                 PanelFeatureGarrisonInfo garrison = feature as PanelFeatureGarrisonInfo;
                 PanelFeatureMilitaryPowerBalance power =
@@ -897,6 +906,66 @@ namespace ES2Access.UI
                         );
                     }
                 }
+            }
+        }
+
+        // ---- a constellation's dossier ----
+
+        /// <summary>
+        /// What the map's own dossier on a stretch of sky says: who holds it, who found it, how far
+        /// off holding it the player is, and what holding it is worth.
+        ///
+        /// Four separate facts, and the panel writes each of them into a LABEL OF ITS OWN
+        /// (<c>PanelFeatureConstellationControl.Bind</c>) - so the feature already knows where the
+        /// lines are and there is nothing for a geometric reading to work out. Which is what makes
+        /// this one worth typing: the label the game hangs a constellation's name on is CULLED at
+        /// every camera position the player ever plays at (es2-facts), so the panel is only ever drawn
+        /// with its rows unmeasured - every rect reads (0,0,0,0) - and row banding, having nothing to
+        /// band by, fuses all four facts into one line. Read off the feature's own fields the answer
+        /// does not depend on the panel having been laid out at all.
+        ///
+        /// The bonus block is the one conditional half: a constellation whose ownership grants nothing
+        /// has its caption and its effect table HIDDEN rather than emptied, and the effect lines
+        /// themselves are retired by FADING (<c>GuiEffectMapper.UnloadEffects</c>), so a block that
+        /// shrank still holds the previous binding's words in children that are still Visible.
+        /// </summary>
+        private static void ConstellationDossier(
+            PanelFeatureConstellationControl panel,
+            List<string> lines
+        )
+        {
+            AddLabel(lines, panel.OwnerLabel);
+            AddLabel(lines, panel.DiscovererLabel);
+            AddLabel(lines, panel.OwnershipControlLabel);
+            AddLabel(lines, panel.ConstellationBonusLabel);
+
+            GuiEffectMapper mapper = panel.ConstellationEffectMapper;
+            if (mapper == null || mapper.AgeTransform == null || !mapper.AgeTransform.Visible)
+            {
+                return;
+            }
+
+            AgeTransform table = mapper.EffectLinesTable;
+            List<AgeTransform> drawn = table == null ? null : table.Children;
+            for (int i = 0; drawn != null && i < drawn.Count; i++)
+            {
+                if (AgeWidgets.Paints(table, drawn[i]))
+                {
+                    TooltipText.AddLines(
+                        lines,
+                        AgeText.Label(drawn[i].GetComponent<AgePrimitiveLabel>())
+                    );
+                }
+            }
+        }
+
+        /// <summary>One of a feature's own labels as its own line, skipped where the feature has
+        /// switched that label off.</summary>
+        private static void AddLabel(List<string> lines, AgePrimitiveLabel label)
+        {
+            if (label != null && label.Visible)
+            {
+                TooltipText.AddLines(lines, AgeText.Label(label));
             }
         }
 

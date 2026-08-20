@@ -1390,11 +1390,15 @@ generic graduates to the generic docs.
 - **`EntityExploration.GetCurrentStates()` is public and by-reference** — no reflection needed
   to force/restore an exploration byte (the states array IS the storage).
 - **`ConstellationLabel` is CULLED, not just alpha-faded**: `ConstellationLabelsWindow` hides any
-  label whose `CulledIn` is false, and `MarkLabelsCulling` reruns only on camera-position change.
-  In `unlocked` no `GalaxyConstellation` is ever culled in at ANY camera position — the
-  constellation tooltip never fills naturally there and needs the force-show recipe
-  (test-recipes). Constellation GUIDs in `unlocked`: Canista 1, Andromeda 72, Vela 264,
-  Herkules 516 (home), Fornax 713.
+  label whose `CulledIn` is false, and `MarkLabelsCulling` reruns on every camera-POSITION change
+  (`SpecificUpdate`) — a one-shot force is undone by any pan, which is why `ConstellationLabelHold`
+  re-asserts per frame; `window.Dirty = true` is a complete reflection-free restore (`Refresh`
+  calls `MarkLabelsCulling` unconditionally). In `unlocked` no `GalaxyConstellation` is ever
+  culled in at ANY camera position. Constellation GUIDs in `unlocked`: Canista 1, Andromeda 72,
+  Vela 264, Herkules 516 (home), Fornax 713.
+- **Alpha is not a gate for the constellation tooltip family**: a held label at play zoom is
+  `Shown=True, Alpha=0` and its tooltip still fills and reads — `ConstellationLabel.Refresh`
+  writes Content/Target/Class regardless of alpha.
 - Live hull-oracle result for `unlocked` (2026-08-20): `regions 5, members 136, outside own
   hull 0, inside another hull 22, classified elsewhere 0` — the interlock is real (22 members
   sit inside a neighbour's hull) and the nearest-member tie-break resolves every one.
