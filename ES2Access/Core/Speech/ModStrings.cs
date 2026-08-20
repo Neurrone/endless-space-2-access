@@ -84,10 +84,6 @@ namespace ES2Access.Core.Speech
         public const string NavPressPrimaryKey = "nav.press-primary-key";
         public const string NavPressSecondaryKey = "nav.press-secondary-key";
 
-        // A tooltip drew a bar split between two things and wrote no number on it. The bar's own
-        // caption names the two sides in this order, so the proportions follow it unnamed.
-        public const string TooltipBalance = "tooltip.balance";
-
         // The review buffers - the text the player walks line by line.
         public const string BufferUi = "buffer.ui";
         public const string BufferEmpty = "buffer.empty";
@@ -1277,10 +1273,9 @@ namespace ES2Access.Core.Speech
         public const string DiplomacyActionsBand = "diplomacy.actions-band";
         public const string DiplomacyTreasury = "diplomacy.treasury";
 
-        /// <summary>The band of buttons a window draws along its bottom edge, and the pane one of these
-        /// windows writes the selected thing out in. The game gives neither a heading of its own.
+        /// <summary>The pane one of the senate windows writes the selected thing out in; the game gives
+        /// it no heading of its own. Its button band shares <see cref="DiplomacyActionsBand"/>.
         /// </summary>
-        public const string SenateActionsBand = "senate.actions-band";
         public const string SenateDetailPane = "senate.detail-pane";
 
         /// <summary>The tutorial picker the game raises over a new game. Only ever spoken if the
@@ -1347,7 +1342,6 @@ namespace ES2Access.Core.Speech
             { NavNotBound, "not bound" },
             { NavPressPrimaryKey, "Press the new key combination." },
             { NavPressSecondaryKey, "Press the new secondary key combination." },
-            { TooltipBalance, "{0} to {1}" },
             { BufferUi, "UI" },
             { BufferEmpty, "Buffer empty" },
             { BufferLine, "{0}. {1}" },
@@ -1868,7 +1862,6 @@ namespace ES2Access.Core.Speech
             { AcademyNamedShips, "Named ships" },
             { DiplomacyActionsBand, "Actions" },
             { DiplomacyTreasury, "Treasury" },
-            { SenateActionsBand, "Actions" },
             { SenateDetailPane, "Details" },
             { ScreenTutorialSelection, "Tutorial selection" },
             { ScreenNewGame, "New game" },
