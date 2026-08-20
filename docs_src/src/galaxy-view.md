@@ -83,7 +83,7 @@ Press `Ctrl+I` on the map to enter inspect mode: a square cursor you move around
 - `Enter`: move tree focus to the object in the cursor. Does nothing if the cursor holds nothing, or more than one thing
 - `Escape`: exit, announced as `Exited inspect mode`. The camera returns to where you entered the mode
 
-Each cell speaks its coordinates, then its contents: systems and special objects, fleets, probes, obliterator missiles, ally pins, any starlanes crossing the cell, and how much of the cell is unexplored (`Unexplored`, or `34 squares unexplored`). An empty cell speaks only its coordinates. Moving past the edge of the galaxy announces `Map edge`.
+Each cell speaks its coordinates, then its contents: systems and special objects, fleets, probes, obliterator missiles, ally pins, any starlanes the fog still draws across the cell, and how much of the cell is unexplored (`Unexplored`, or `34 squares unexplored`). An empty cell speaks only its coordinates. Moving past the edge of the galaxy announces `Map edge`.
 
 The mode also names the constellation you are in, before the cell: on entry when you start inside one, and afterwards only when it changes — `Andromeda constellation` crossing in, `Out of Andromeda constellation` crossing into unclaimed space. Only constellations the game has named to you count, so fog stays quiet. These regions are the mod's own reading of the map, derived from each constellation's member systems; the game itself draws no borders.
 
