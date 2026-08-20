@@ -671,6 +671,17 @@ the byte directly: `node.Exploration.GetCurrentStates()[empire.Index]` is by-ref
 it, dump the graph or invoke the predicate, put the original back in the same `/eval`.
 (Proved the lane gate both directions: a PartiallyRevealed link dropped to Identified left
 the tree; restored, it returned with its original numbering.)
+**`unlocked` turn-1 fleet/orbit realities** (2026-08-20): NO player fleet is in orbit (1100 and
+1108 both mid-lane, `NodeIndex=-1`), Xiu (GUID 548) is the only explored system, no wreck exists
+anywhere in the galaxy, and fleet 1108's action panel draws 8 buttons, all "must be orbiting" —
+of the six seat actions only Start Expedition is drawn at all. Xiu's orbital rows:
+`planet/0|1|3/action/0` = Colonize, `planet/1/action/1` = Signal (curiosity).
+**Verifying the fleet-action seat without an orbiting fleet**: in one `/eval`,
+`view.ZoomInOnNode(node)` (or `SelectGameNode`) + `page.SeatAfterFleetAction(node, kind)` via
+`ES2Access.ModEntry.Screens.Current as GalaxyHudScreen`.
+**Firing a real mod node whose game control is disabled**: `FleetActionItem.SetEnable(true, null)`
+then `ModEntry.Navigator.CurrentNode.Vtable.OnActivate()` in one `/eval` (the panel's next refresh
+restores the flag) — proves the real closure instead of re-implementing it.
 **RAISING to `MapVisibility.Perceived` needs TWO writes** (2026-08-20): `Exploration ≥
 Identified` alone is not enough — also reflect `EntityVisibility`'s private `layers[]`
 (`GetField("layers", Instance|NonPublic)`) to `Layer.Known`; restore both from saved bytes.

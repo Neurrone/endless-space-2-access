@@ -250,6 +250,17 @@ namespace ES2Access.Screens
 
                 bool ended = string.IsNullOrEmpty(instruction);
                 _instruction = instruction;
+                if (!ended)
+                {
+                    // A mode the game has just armed takes the map, and the galaxy's inspect cell is a
+                    // mode OF the map: with both up the arrows would mean the square while the banner
+                    // asked for a target, and Enter would land the cell rather than confirm. So the
+                    // cell goes first and says so, and the instruction is the last thing heard
+                    // (owner ruling 2026-08-20). Every one of the nine cursors, not the fleet ones
+                    // alone - this is the one place the mod sees an instruction appear.
+                    GalaxyInspect.Dismiss();
+                }
+
                 Voice.Say(
                     ended ? OptionalText.Phrase(ModeEndedKey) : instruction,
                     false

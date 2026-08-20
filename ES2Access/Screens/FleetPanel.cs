@@ -189,7 +189,7 @@ namespace ES2Access.Screens
 
         /// <summary>The panel's three stops - fleets, ships, actions, the approved deviation from drawn
         /// order explained on the class - or nothing at all while no fleet is selected.</summary>
-        public void Build(GraphBuilder builder)
+        public void Build(GraphBuilder builder, GalaxyHudScreen page)
         {
             if (!Available())
             {
@@ -204,7 +204,7 @@ namespace ES2Access.Screens
 
             BuildManagement(builder, window);
             BuildHeroAndShips(builder, window);
-            BuildActions(builder, window);
+            BuildActions(builder, window, page);
         }
 
         // ---- what this fleet can do ----
@@ -222,7 +222,11 @@ namespace ES2Access.Screens
         /// A button carries no words - it is an icon - and the game names it under the action it
         /// carries out, not under the widget.
         /// </summary>
-        private void BuildActions(GraphBuilder builder, global::FleetsScreen window)
+        private void BuildActions(
+            GraphBuilder builder,
+            global::FleetsScreen window,
+            GalaxyHudScreen page
+        )
         {
             try
             {
@@ -241,7 +245,7 @@ namespace ES2Access.Screens
                     panel.FleetActionsTable.GetComponentsInChildren<FleetActionItem>(true);
                 for (int i = 0; i < items.Length; i++)
                 {
-                    AddAction(_cells, items[i]);
+                    AddAction(_cells, items[i], page);
                 }
 
                 if (_cells.Count == 0)
@@ -271,8 +275,13 @@ namespace ES2Access.Screens
         /// which tooltip to show and what to draw it under. Pointing at the button alone re-derives the
         /// tooltip from the button's own transform, which every one of these leaves empty - and the
         /// row's review buffer then waits on a window that never draws.
+        ///
+        /// Six of these buttons order nothing at all when they are pressed - they select the fleet's
+        /// system and fly the camera in, and the real order is a control drawn inside it
+        /// (<see cref="GalaxyHudScreen.SeatTarget"/>). Those six say where pressing them puts the
+        /// cursor, and the page then puts it there. Every other action is untouched.
         /// </summary>
-        private static void AddAction(List<Cell> cells, FleetActionItem item)
+        private static void AddAction(List<Cell> cells, FleetActionItem item, GalaxyHudScreen page)
         {
             if (item == null || !AgeWidgets.Visible(item.AgeTransform) || item.AgeTransform.Alpha == 0f)
             {
@@ -280,6 +289,8 @@ namespace ES2Access.Screens
             }
 
             FleetActionItem it = item;
+            GalaxyHudScreen owner = page;
+            GalaxyHudScreen.SeatTarget seat = GalaxyHudScreen.SeatTargetOf(item);
             AgeTooltip tooltip = AgeWidgets.Raw(item.AgeTransform);
             Func<string> label = () => ActionTitle(it.name);
             Func<bool> enabled = () => it.IsEnabled;
@@ -290,7 +301,7 @@ namespace ES2Access.Screens
                 vtable = GraphNodes.Checkbox(
                     label,
                     () => it.Toggle.State,
-                    () => AgeWidgets.Toggle(it.Toggle),
+                    () => Act(owner, it, seat, true),
                     enabled,
                     tooltip
                 );
@@ -300,7 +311,7 @@ namespace ES2Access.Screens
             {
                 vtable = GraphNodes.Button(
                     label,
-                    () => AgeWidgets.Press(it.Button),
+                    () => Act(owner, it, seat, false),
                     enabled,
                     tooltip
                 );
@@ -308,12 +319,85 @@ namespace ES2Access.Screens
             }
 
             AddRefusal(vtable, tooltip, enabled);
+            AddSeatPhrase(vtable, seat);
             Cells.Add(
                 cells,
                 item.AgeTransform,
                 ControlId.Referenced(item, "fleets:action/" + item.name),
                 vtable
             );
+        }
+
+        /// <summary>
+        /// The action's own gesture - and, for the six whose gesture only brings the camera in, the
+        /// seat that follows it.
+        ///
+        /// Which system the fleet is acting at is read BEFORE the click, because the click closes this
+        /// panel and takes the selection the fleet was read from with it; the seat is asked for AFTER
+        /// it, because the click is what opens the system the target is drawn in. The inspect cell goes
+        /// down first of all: it is a mode of the map, and the map is about to be driven somewhere else
+        /// (owner ruling 2026-08-20).
+        /// </summary>
+        private static void Act(
+            GalaxyHudScreen page,
+            FleetActionItem item,
+            GalaxyHudScreen.SeatTarget seat,
+            bool toggle
+        )
+        {
+            StarSystemNode system =
+                seat == GalaxyHudScreen.SeatTarget.None ? null : ActingSystem();
+            if (seat != GalaxyHudScreen.SeatTarget.None)
+            {
+                GalaxyInspect.Dismiss();
+            }
+
+            if (toggle)
+            {
+                AgeWidgets.Toggle(item.Toggle);
+            }
+            else
+            {
+                AgeWidgets.Press(item.Button);
+            }
+
+            if (page != null && system != null)
+            {
+                page.SeatAfterFleetAction(system, seat);
+            }
+        }
+
+        /// <summary>The star system the fleet this panel is acting for is orbiting. The actions panel is
+        /// drawn for exactly one fleet of the player's (<c>FleetActionsPanel.Refresh</c>), and all six
+        /// of the seating actions require an orbit, so anything else is no answer at all.</summary>
+        private static StarSystemNode ActingSystem()
+        {
+            try
+            {
+                List<Fleet> fleets = FleetOrders.Selected();
+                return fleets.Count == 1
+                    ? FleetOrders.Orbit(fleets[0]) as StarSystemNode
+                    : null;
+            }
+            catch (Exception e)
+            {
+                Log.Warn("fleets: finding the acting fleet's system threw: " + e);
+                return null;
+            }
+        }
+
+        /// <summary>What one of the six adds to its own announcement: where pressing it puts the cursor.
+        /// Kindless, so it sits at the tail of the readout - what the control has to SAY about itself,
+        /// after everything it IS and after the game's own reason for refusing it.</summary>
+        private static void AddSeatPhrase(NodeVtable vtable, GalaxyHudScreen.SeatTarget seat)
+        {
+            string key = GalaxyHudScreen.SeatPhrase(seat);
+            if (key == null || vtable.Announcements == null)
+            {
+                return;
+            }
+
+            vtable.Announcements.Add(new NodeAnnouncement(() => ModStrings.Get(key)));
         }
 
         /// <summary>What the game calls a fleet action. The element database holds the title as a key

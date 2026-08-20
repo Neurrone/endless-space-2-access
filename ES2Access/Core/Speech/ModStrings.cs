@@ -777,6 +777,22 @@ namespace ES2Access.Core.Speech
         /// the game says nothing when a drag completes, it simply redraws.</summary>
         public const string FleetsShipMoved = "fleets.ship-moved";
 
+        /// <summary>
+        /// What the six zoom-in fleet actions really do, said on the button that carries them.
+        ///
+        /// None of these six ORDERS anything: the game's button selects the fleet's own system and
+        /// brings the camera in, because the order is a control drawn INSIDE the zoomed system - a
+        /// planet's colonize or destroy button, a curiosity in orbit, a probe site, the wreck. A
+        /// sighted player watches the map fly in and finds the target under the pointer; a keyboard
+        /// player heard a button that appeared to do nothing. So each button says where pressing it
+        /// puts the cursor, and the page puts it there.
+        /// </summary>
+        public const string FleetsActionSeatsColonize = "fleets.action-seats-colonize";
+        public const string FleetsActionSeatsDestroy = "fleets.action-seats-destroy";
+        public const string FleetsActionSeatsExpedition = "fleets.action-seats-expedition";
+        public const string FleetsActionSeatsProbeSite = "fleets.action-seats-probe-site";
+        public const string FleetsActionSeatsWreck = "fleets.action-seats-wreck";
+
         // The first-visit cutscene. It draws no heading of its own, so the mod says which system is
         // being shown; everything about each planet comes from the card in the game's own words.
         public const string ScreenSystemDiscovery = "screen.system-discovery";
@@ -1515,6 +1531,11 @@ namespace ES2Access.Core.Speech
             { FleetsShipsPanel, "Ships" },
             { FleetsShipsRange, "{0} ships selected, {1} to {2}" },
             { FleetsShipMoved, "Moved {0} to {1}" },
+            { FleetsActionSeatsColonize, "moves focus to the first planet that can be colonized" },
+            { FleetsActionSeatsDestroy, "moves focus to the first planet that can be destroyed" },
+            { FleetsActionSeatsExpedition, "moves focus to the first curiosity in the system" },
+            { FleetsActionSeatsProbeSite, "moves focus to the first probe site in the system" },
+            { FleetsActionSeatsWreck, "moves focus to the wreck" },
             { ScreenSystemDiscovery, "System discovery" },
             { DiscoverySystem, "Discovering {0}" },
             { ScreenRename, "Rename" },

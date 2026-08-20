@@ -384,6 +384,9 @@ namespace ES2Access.Screens
             // could end.
             _inspect.Forget();
             _armedProbe = null;
+            // A seat still being waited for belongs to the map that is going away; answered on some
+            // later visit it would move the cursor for a button nobody remembers pressing.
+            ForgetActionSeat();
         }
 
         public override void OnUpdate()
@@ -400,6 +403,9 @@ namespace ES2Access.Screens
             // own key of a moment ago - a probe armed on the same frame the game asked to be shown
             // somewhere is still armed, and the mode is where the player has to be.
             FollowProbeArming();
+            // After both, and outstanding over several frames rather than answered on one: this
+            // landing waits for the camera the game is still flying into the system.
+            FollowActionSeat();
             FollowCamera();
         }
 
@@ -472,6 +478,336 @@ namespace ES2Access.Screens
         /// <summary>The fleet the probe mode was armed for when it was last looked at - instance state,
         /// so it is reload-safe and each page keeps its own.</summary>
         private Fleet _armedProbe;
+
+        // ---- the fleet actions that only bring the camera in ----
+
+        /// <summary>
+        /// Which control INSIDE the fleet's own system a fleet action's button is really asking for.
+        ///
+        /// Six of the game's fleet actions order nothing when they are pressed: Colonize, Super
+        /// Colonize, Destroy Planet, Expedition, Launch Mining Probe and Reclaim Mothership all just
+        /// select the fleet's system and fly the camera in (<c>FleetActionButtonColonize.OnClick</c>
+        /// and its four siblings; <c>FleetActionToggleReclaimMothership.OnToggle</c>), because the real
+        /// order is a control the map draws once it is there - a planet's own colonize or destroy
+        /// button, a curiosity in orbit, a probe site, the wreck. <see cref="None"/> is every other
+        /// action: the ones that post an order themselves and the ones that arm a targeting cursor.
+        /// </summary>
+        public enum SeatTarget
+        {
+            None,
+            Colonize,
+            Destroy,
+            Expedition,
+            MiningProbe,
+            Wreck,
+        }
+
+        /// <summary>Which of the six, if any, this action button is - asked of the GAME's own control
+        /// class rather than of the definition name, because that is what decides the click's
+        /// behaviour. Super Colonize is a subclass of Colonize and lands on the same card button, which
+        /// is the game's own arrangement (<c>PlanetLabel_SystemOrbital.RefreshColonizationButton</c>
+        /// drives one button from both).</summary>
+        public static SeatTarget SeatTargetOf(FleetActionItem item)
+        {
+            try
+            {
+                FleetActionControl control =
+                    item == null ? null : item.GetComponent<FleetActionControl>();
+                if (control is FleetActionButtonColonize)
+                {
+                    return SeatTarget.Colonize;
+                }
+
+                if (control is FleetActionButtonDestroyPlanet)
+                {
+                    return SeatTarget.Destroy;
+                }
+
+                if (control is FleetActionButtonExpedition)
+                {
+                    return SeatTarget.Expedition;
+                }
+
+                if (control is FleetActionButtonLaunchMiningProbe)
+                {
+                    return SeatTarget.MiningProbe;
+                }
+
+                if (control is FleetActionToggleReclaimMothership)
+                {
+                    return SeatTarget.Wreck;
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: reading a fleet action's control class threw: " + e);
+            }
+
+            return SeatTarget.None;
+        }
+
+        /// <summary>The phrase such a button appends to its own announcement, or null where it has
+        /// nothing to add.</summary>
+        public static string SeatPhrase(SeatTarget seat)
+        {
+            switch (seat)
+            {
+                case SeatTarget.Colonize:
+                    return ModStrings.FleetsActionSeatsColonize;
+                case SeatTarget.Destroy:
+                    return ModStrings.FleetsActionSeatsDestroy;
+                case SeatTarget.Expedition:
+                    return ModStrings.FleetsActionSeatsExpedition;
+                case SeatTarget.MiningProbe:
+                    return ModStrings.FleetsActionSeatsProbeSite;
+                case SeatTarget.Wreck:
+                    return ModStrings.FleetsActionSeatsWreck;
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// One of the six has just been pressed: open the acting fleet's system and put the cursor on
+        /// the control that gives the order.
+        ///
+        /// Asked for rather than done, and asked for over several frames: the game answers the click by
+        /// flying the camera in, and the cards, the curiosities and the wrecks are all drawn by windows
+        /// that bind to the system the camera ARRIVES at - none of them exists on the frame the button
+        /// was pressed. So the target is looked for every frame until it is there, and the seat itself
+        /// goes through the same pending-focus path every other screen-driven landing uses, because the
+        /// tree re-declares itself each frame and the row only exists in the build that follows the
+        /// branch being opened.
+        ///
+        /// The branch is opened straight away whatever happens next, so an action whose target the
+        /// fixture has nothing to offer still leaves the player in the system the game flew them to.
+        /// Nothing is spoken here: the landing announces itself.
+        /// </summary>
+        public void SeatAfterFleetAction(StarSystemNode system, SeatTarget seat)
+        {
+            if (system == null || seat == SeatTarget.None)
+            {
+                return;
+            }
+
+            _seatSystem = system;
+            _seatTarget = seat;
+            _seatFrames = SeatWaitFrames;
+            _pendingExpand.Add(RootId(system));
+        }
+
+        /// <summary>About five seconds of frames - several times the camera's own flight into a system,
+        /// and short enough that a target the game never draws stops being looked for.</summary>
+        private const int SeatWaitFrames = 300;
+
+        /// <summary>
+        /// How long the answer has to STOP CHANGING before the cursor is sent to it - a third of a
+        /// second.
+        ///
+        /// A card's buttons do not all appear on one frame: the window blanks every one of them when it
+        /// binds a planet and its refresh turns back on the ones that apply, so a card that ends up
+        /// drawing Colonize and a curiosity draws the curiosity alone for a frame or two first. The row
+        /// id is the button's POSITION in the card's action list, so seating on that frame put the
+        /// cursor on the curiosity's id - which the very next build handed to Colonize (measured
+        /// 2026-08-20: the seat spoke "Signal" and the cursor was reading "Colonize" a frame later).
+        /// </summary>
+        private const int SeatSteadyFrames = 20;
+
+        private StarSystemNode _seatSystem;
+        private SeatTarget _seatTarget;
+        private int _seatFrames;
+        private ControlId _seatRow;
+        private ControlId _seatGroup;
+        private int _seatSteady;
+
+        /// <summary>Per frame while a seat is outstanding: the target once the map has settled on
+        /// drawing it, the planet branch it hangs in opened in the same breath (the order the build
+        /// applies them in), and nothing at all once the wait has run out.</summary>
+        private void FollowActionSeat()
+        {
+            if (_seatTarget == SeatTarget.None)
+            {
+                return;
+            }
+
+            try
+            {
+                if (--_seatFrames <= 0)
+                {
+                    ForgetActionSeat();
+                    return;
+                }
+
+                ControlId group;
+                ControlId row = SeatRow(_seatSystem, _seatTarget, out group);
+                if (row == null)
+                {
+                    _seatRow = null;
+                    _seatSteady = 0;
+                    return;
+                }
+
+                if (row.Equals(_seatRow))
+                {
+                    _seatSteady++;
+                }
+                else
+                {
+                    _seatRow = row;
+                    _seatGroup = group;
+                    _seatSteady = 1;
+                }
+
+                if (_seatSteady < SeatSteadyFrames)
+                {
+                    return;
+                }
+
+                if (_seatGroup != null)
+                {
+                    _pendingExpand.Add(_seatGroup);
+                }
+
+                GraphNavigator navigator = ModEntry.Navigator;
+                if (navigator != null)
+                {
+                    navigator.FocusNode(_seatRow);
+                }
+
+                ForgetActionSeat();
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: seating a fleet action's target threw: " + e);
+                ForgetActionSeat();
+            }
+        }
+
+        private void ForgetActionSeat()
+        {
+            _seatTarget = SeatTarget.None;
+            _seatSystem = null;
+            _seatFrames = 0;
+            _seatRow = null;
+            _seatGroup = null;
+            _seatSteady = 0;
+        }
+
+        /// <summary>
+        /// The row the map is drawing for this action's target, and the branch it hangs in - both null
+        /// until the game has drawn it.
+        ///
+        /// The index is worked out from the very list the tree builds the row from
+        /// (<see cref="OrbitalActions"/>), never guessed from the order the card's buttons are
+        /// declared in: which of them are drawn changes with the planet, so a fixed index would name a
+        /// different button on the next world.
+        /// </summary>
+        private static ControlId SeatRow(StarSystemNode node, SeatTarget seat, out ControlId group)
+        {
+            group = null;
+            if (node == null)
+            {
+                return null;
+            }
+
+            string place = "galaxy:system/" + node.GUID;
+            if (seat == SeatTarget.Wreck)
+            {
+                return FirstWreckRow(node, place);
+            }
+
+            PlanetLabel_SystemOrbital[] cards = OrbitalLabels(node);
+            if (cards.Length == 0)
+            {
+                return null;
+            }
+
+            for (int i = 0; i < node.Planets.Count; i++)
+            {
+                PlanetLabel_SystemOrbital card = CardFor(node.Planets[i], cards);
+                AgeTransform want = card == null ? null : SeatWidget(card, seat);
+                if (want == null)
+                {
+                    continue;
+                }
+
+                List<CardActions.CardAction> actions = OrbitalActions(card);
+                for (int j = 0; j < actions.Count; j++)
+                {
+                    if (!ReferenceEquals(actions[j].Widget, want))
+                    {
+                        continue;
+                    }
+
+                    string key = place + "/planet/" + i;
+                    group = ControlId.Structural(key);
+                    return ControlId.Structural(key + "/action/" + j);
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>Which of the card's own controls this action is really after. A button the game is
+        /// not drawing is simply not in the card's action list, so no drawn-ness test is needed here -
+        /// the search below fails and the next planet is tried.</summary>
+        private static AgeTransform SeatWidget(PlanetLabel_SystemOrbital card, SeatTarget seat)
+        {
+            switch (seat)
+            {
+                case SeatTarget.Colonize:
+                    return AgeWidgets.Transform(card.ColonizeButton);
+                case SeatTarget.Destroy:
+                    return AgeWidgets.Transform(card.DestroyButton);
+                case SeatTarget.MiningProbe:
+                    return AgeWidgets.Transform(card.MiningProbeButton);
+                case SeatTarget.Expedition:
+                    return FirstCuriosity(card);
+            }
+
+            return null;
+        }
+
+        /// <summary>The first curiosity the card is drawing - PAINTED, the same gate
+        /// <see cref="AddCuriosities"/> declares them by, because the ring pools its items and retires
+        /// a surplus one by fading it rather than hiding it.</summary>
+        private static AgeTransform FirstCuriosity(PlanetLabel_SystemOrbital card)
+        {
+            AgeTransform table = card.PlanetCuriositiesTable;
+            if (table == null || !Visible(table))
+            {
+                return null;
+            }
+
+            IList<AgeTransform> items = table.Children;
+            for (int i = 0; items != null && i < items.Count; i++)
+            {
+                if (AgeWidgets.Painted(items[i]))
+                {
+                    return items[i];
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>The first wreck row this system has, which is always index 0 of the group
+        /// <see cref="AddWrecks"/> emits - that list holds the visible items alone, in order.</summary>
+        private static ControlId FirstWreckRow(StarSystemNode node, string place)
+        {
+            WreckedMothershipLabelWindow window = WreckWindow(node);
+            AgeTransform table = window == null ? null : window.CuriositiesTable;
+            IList<AgeTransform> items = table == null ? null : table.Children;
+            for (int i = 0; items != null && i < items.Count; i++)
+            {
+                if (items[i] != null && Visible(items[i]))
+                {
+                    return ControlId.Structural(place + "/wreck/action/0");
+                }
+            }
+
+            return null;
+        }
 
         /// <summary>
         /// Keep the game's own pointer feedback pointed at whatever the map is drawing for the focused
@@ -1000,7 +1336,7 @@ namespace ES2Access.Screens
             // The selected-fleet panel, where the game draws it: over the bottom of the map, between
             // what the map shows and the clusters down its right-hand edge. Nothing at all while no
             // fleet is selected.
-            _fleetPanel.Build(builder);
+            _fleetPanel.Build(builder, this);
 
             _hud.Quest(builder);
             _hud.Tutorial(builder);

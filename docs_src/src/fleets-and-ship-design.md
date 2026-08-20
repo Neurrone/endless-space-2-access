@@ -8,6 +8,8 @@ Press `Enter` on a fleet's entry in the galaxy tree to select it. The mod announ
 - **Ships**: the ships in the fleet and the toolbar above them
 - **Fleet actions**: what the fleet can do — expeditions, probe launches, and so on
 
+Six actions pick their target inside the system rather than arming a targeting mode: Colonize, Super Colonize, Destroy Planet, Start Expedition, Launch Mining Probe and Reclaim Mothership. Each says where it will put you ("moves focus to the first curiosity in the system"), and pressing it opens the system and lands the cursor on that control — `Enter` there gives the real order, and `Up`/`Down` reach the alternatives when the system has several. If the system offers no such target, the branch opens and the cursor stays where it was.
+
 Selection works like mouse clicks: `Ctrl+Enter` adds a fleet to the selection or removes it, `Shift+Enter` extends the selection. Orders apply to every selected fleet.
 
 ## Sending a Fleet
@@ -35,6 +37,9 @@ Some fleet actions arm a targeting mode instead of acting at once — launching 
 - `Enter` on a map entry confirms the target; the entry's normal click is not performed.
 - `\` is the mode's right click — cancel for most modes.
 - A completed action is announced, for example `Probe launched towards Dusay, 1 probe remaining`. An invalid target does nothing, as with the mouse.
+- The map panel names itself with the mode's instruction instead of "Map" while the mode is armed, so tabbing out and back re-reads it.
+- Arming a mode ends inspect mode if it was up, with "Exited inspect mode" spoken first. You can re-enter inspect mode while aiming: sweep to your target, `Enter` lands on it and exits inspect, and a second `Enter` confirms the mode there. With both up, the first `Escape` exits inspect and the next cancels the mode.
+- Opening a target picker window (Attack, Invade) ends inspect mode rather than pausing it.
 - If a mode has no cancel of its own, `Escape` runs the mode's cancel rather than opening the pause menu.
 
 While a mode is armed, the review buffer of any target you focus holds the game's requirement text for it, for example `Must be a Academy Owned System`.

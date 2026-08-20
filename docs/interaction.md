@@ -195,6 +195,18 @@ the game left with no Escape route: there the mod claims Escape (`ConsumesBack` 
 runs that cursor's own right-click cancel, so Escape cannot raise the pause menu over a map still
 waiting for a target (owner-ruled deviation, 2026-08-12).
 
+**The six zoom-in fleet actions name where they put the cursor and then put it there**
+(2026-08-20): Colonize/Super Colonize/Destroy Planet/Expedition/Mining Probe/Reclaim Mothership
+append a "moves focus to the first …" phrase and, on activation, expand the acting system and seat
+the cursor on the first matching action row (`SeatAfterFleetAction`/`FollowActionSeat`; a
+positional row id must hold steady 20 frames before the seat commits — the orbital card's buttons
+arrive over several frames). No match = branch open, cursor unmoved, silent. **A targeting cursor
+arming ends a live-or-suspended inspect mode** with the mode's own exit line spoken ahead of the
+instruction (`GalaxyInspect.Dismiss` from `GlobalHud.AnnounceCursorMode` — all nine cursors — and
+from the six seat actions); entering inspect over an armed mode stays allowed, its landing Enter
+leaves the found node focused for the mode's confirm, and Escape unwinds innermost-first. A modal
+target picker ENDS the mode (page pop), never suspends it.
+
 **Enter on a NAMED starlane travels when the click would be a structural no-op** (owner ruling
 2026-08-20, a deliberate exception to Enter-is-click-parity): `LaneClick` runs
 `ConfirmAt` → `Deselect()` → travel, so an armed mode still confirms, a carried fleet is still put

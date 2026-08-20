@@ -1372,6 +1372,20 @@ generic graduates to the generic docs.
 - In this install the player's registry `TooltipDisplayDelay` is genuinely **0.0**, so
   `TooltipDelay(-1)` restoring to 0 is correct, not a leaked override (`RegisteredTooltipDelay()`
   reads `Application.Registry` and agrees).
+- **`GalaxyView.SelectGameNode` on a colonized system does NOT leave the galaxy view** — it
+  branches to `RequestGalaxyViewLevelChange(typeof(GalaxyViewLevel_SystemManagement), …)`
+  (`GalaxyView.cs:155-166`) but measured lands where `ZoomInOnNode` does: zoom step 13, galaxy
+  page still focused, orbital cards drawn (2026-08-20).
+- **`FleetActionButton*.OnClick` indexes `GameNodes[NodePosition.NodeIndex]`, which is -1 for a
+  fleet in transit** — the game's orbit gate is all that stops it throwing; never force-enable
+  these buttons off-orbit.
+- **The orbital card's button set is not final on the frame the card appears**:
+  `PlanetLabel_SystemOrbital` blanks its buttons at bind (:444-450) and the refresh re-enables the
+  applicable ones over the next frames — a positional child id can change owner between frames
+  (measured 2026-08-20; why `FollowActionSeat` requires 20 steady frames).
+- **`FleetActionToggleReclaimMothership.OnToggle` has two branches** — no running action →
+  `ZoomInOnNode`; already running → the game's `%ConfirmCancelReclaimDescription` message box,
+  no zoom.
 - Hero-card figure captions are `%HeroCardExperienceTitle` and friends; unspent points, cooldown
   and relics borrow `%HeroInspectionRemainingSkillPointsTitle`,
   `%AssignmentCooldownBaseDurationTitle` and `%HeroRelicTitle`.

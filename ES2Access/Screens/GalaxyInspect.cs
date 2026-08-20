@@ -336,6 +336,57 @@ namespace ES2Access.Screens
         }
 
         /// <summary>
+        /// End the mode because something else is taking the map - a fleet action about to seat the
+        /// cursor on the control that gives its real order, or the game arming a targeting cursor.
+        /// Answers whether there was a mode to end.
+        ///
+        /// Two cursors on one widget is the thing this prevents: with the cell up, the arrows mean the
+        /// square and Enter means the cell's landing, so a player told to "click a target" would be
+        /// pressing keys that belong to something else, and a fleet action's seat would put the tree
+        /// cursor somewhere the arrows no longer move. The mode's OWN exit line is said, interrupting,
+        /// so it is ahead of whatever the caller says next - the game's targeting instruction, or the
+        /// landing the seat makes.
+        ///
+        /// Unlike every other way out, this one puts NOTHING back: no cursor seat, no camera recentre,
+        /// no re-announcement of where the player is standing. The caller is the reason the mode ended
+        /// and it is about to decide all three - and where it decides nothing (a mode armed from a
+        /// panel, the cursor left on the button that armed it) the player has not moved at all.
+        /// </summary>
+        public static bool Dismiss()
+        {
+            GalaxyInspect mode = _driving;
+            if (!_live || mode == null)
+            {
+                return false;
+            }
+
+            mode.Leave();
+            return true;
+        }
+
+        /// <summary>Take the cell down and say so, leaving the tree cursor exactly where it is.
+        /// <see cref="Exit(bool, ControlId, bool)"/>'s teardown without its landing.</summary>
+        private void Leave()
+        {
+            _live = false;
+            _driving = null;
+            _wasOnMap = false;
+            _resume = 0;
+            _entry = null;
+            InspectMarker.Hide();
+            _aim.Clear();
+            PointerFocus.Release();
+            GraphNavigator navigator = ModEntry.Navigator;
+            if (navigator != null)
+            {
+                navigator.ClearVisual();
+                navigator.ReleaseBuffer();
+            }
+
+            Voice.Say(ModStrings.Get(ModStrings.GalaxyInspectExited), true);
+        }
+
+        /// <summary>
         /// One key, offered to the mode before anything else on the page sees it. True when the mode
         /// took it.
         /// </summary>
