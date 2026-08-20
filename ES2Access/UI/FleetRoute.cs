@@ -678,7 +678,7 @@ namespace ES2Access.UI
                 return null;
             }
 
-            int today = Displayed();
+            int today = DisplayedTurn();
             int destination = route.Places.Length - 1;
             List<string> lines = new List<string>(route.Turns.Count);
             for (int i = 0; i < route.Turns.Count; i++)
@@ -742,7 +742,7 @@ namespace ES2Access.UI
         /// every other turn the player reads is expressed in (the End Turn window does the same sum:
         /// <c>GlobalHud.Turn</c>). Zero where there is no game, which leaves the itinerary counting from
         /// now rather than saying a wrong absolute turn.</summary>
-        private static int Displayed()
+        internal static int DisplayedTurn()
         {
             try
             {

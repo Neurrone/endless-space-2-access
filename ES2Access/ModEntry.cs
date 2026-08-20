@@ -278,6 +278,16 @@ namespace ES2Access
             // which between them are where every one of those buttons lands.
             ResearchLocate.Install();
             GalaxyLocate.Install();
+            // The mod's own notifications ride in the game's list; the strip is left looking exactly
+            // as it did, which is what this patch is for (see NotificationStrip). The mappings
+            // themselves are re-asserted from the pump, because the manager holding them is built
+            // per game.
+            NotificationStrip.Install();
+            // The two things the game notices and puts on no bus at all: a fleet of the player's
+            // reaching where it was sent, and somebody else's fleet going out of sight or standing
+            // somewhere else this turn. Both feed the same notification pipeline.
+            FleetArrivals.Install();
+            ForeignFleetWatch.Install();
 
             _routes = new ModRoutes(host);
             _routes.Register();
@@ -691,6 +701,15 @@ namespace ES2Access
             ChatHold.Stop();
             ResearchLocate.Remove();
             GalaxyLocate.Remove();
+            // Before the patch comes off: the mappings are removed from the game's own dictionary and
+            // every mod notification still standing is dismissed, so nothing from this assembly is
+            // left in a list the game will keep asking for titles.
+            ModNotifications.Stop();
+            NotificationStrip.Remove();
+            // And the two detection points that feed it, each giving back its patch, its
+            // subscription and what it was remembering about the galaxy.
+            FleetArrivals.Remove();
+            ForeignFleetWatch.Remove();
 
             if (Input != null)
             {
@@ -812,6 +831,19 @@ namespace ES2Access
             // Alongside the save spinner and for the same reason: a route dying is news the game gives
             // no words to, and it queues behind whatever the player asked for.
             _fleetRoutes.Tick();
+
+            // Just before the notifications are spoken, because these two are what RAISES some of
+            // them: a fleet of the player's arriving, and somebody else's fleet lost from sight or
+            // moved since the turn began. Raising from the pump rather than from their hooks is what
+            // lets the line land in the same frame the news does.
+            FleetArrivals.Tick();
+            ForeignFleetWatch.Tick();
+
+            // The same lane again, for the eight things the game puts on its event bus and then never
+            // mentions - a system revealed, a fleet sighted, a siege, an Obliterator - and the four
+            // the mod raises itself. This also re-asserts the event mappings, which a new game or a
+            // loaded save wipes.
+            ModNotifications.Tick();
 
             // After the screens have settled: the game's own hover, flyout and tooltip follow the
             // focus they just decided on.

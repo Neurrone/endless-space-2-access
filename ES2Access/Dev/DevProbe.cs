@@ -313,6 +313,102 @@ namespace ES2Access.Dev
             });
         }
 
+        /// <summary>
+        /// The mod's own notifications, from both ends: the reflected entries in the game's
+        /// event-to-notification dictionary (with the ASSEMBLY each maps to, which is what tells a
+        /// live entry from one an unfinished teardown left behind), who is patching the strip's
+        /// refresh, and every mod notification currently standing in the player's list.
+        ///
+        /// The three answers together are the reload check: after a hot reload every mapping must
+        /// name the CURRENT assembly, the strip must have exactly one patch owner, and the list must
+        /// hold nothing from the load that just ended.
+        /// </summary>
+        public static string Notifications()
+        {
+            return Guarded(json =>
+            {
+                json.WritePropertyName("assembly");
+                json.WriteValue(typeof(ModNotifications).Assembly.GetName().Name);
+                json.WritePropertyName("installed");
+                json.WriteValue(ModNotifications.Installed);
+                json.WritePropertyName("stripPatch");
+                json.WriteValue(NotificationStrip.Installed);
+                json.WritePropertyName("stripOwners");
+                json.WriteStartArray();
+                foreach (string owner in NotificationStrip.Owners())
+                {
+                    json.WriteValue(owner);
+                }
+
+                json.WriteEndArray();
+
+                // The two detection points that raise the mod's OWN events. Each is a patch plus, for
+                // the foreign-fleet watch, a subscription to a service that outlives this assembly
+                // and a table of what the galaxy looked like - all three of which a teardown has to
+                // give back.
+                json.WritePropertyName("arrivalPatch");
+                json.WriteValue(FleetArrivals.Installed);
+                json.WritePropertyName("arrivalOwners");
+                json.WriteStartArray();
+                foreach (string owner in FleetArrivals.Owners())
+                {
+                    json.WriteValue(owner);
+                }
+
+                json.WriteEndArray();
+
+                json.WritePropertyName("visibilityPatch");
+                json.WriteValue(ForeignFleetWatch.Installed);
+                json.WritePropertyName("visibilityOwners");
+                json.WriteStartArray();
+                foreach (string owner in ForeignFleetWatch.Owners())
+                {
+                    json.WriteValue(owner);
+                }
+
+                json.WriteEndArray();
+                json.WritePropertyName("turnSubscribed");
+                json.WriteValue(ForeignFleetWatch.Subscribed);
+                json.WritePropertyName("foreignFleetsWatched");
+                json.WriteValue(ForeignFleetWatch.Watching);
+
+                json.WritePropertyName("mapped");
+                json.WriteStartArray();
+                foreach (KeyValuePair<string, string> entry in ModNotifications.Mapped())
+                {
+                    json.WriteStartObject();
+                    json.WritePropertyName(entry.Key);
+                    json.WriteValue(entry.Value);
+                    json.WriteEndObject();
+                }
+
+                json.WriteEndArray();
+
+                json.WritePropertyName("pending");
+                json.WriteStartArray();
+                IGuiNotificationService service = Gui.GuiNotificationService;
+                List<GuiNotification> standing =
+                    service == null ? null : service.GetPlayerEmpireGuiNotifications();
+                for (int i = 0; standing != null && i < standing.Count; i++)
+                {
+                    ModNotification mine = standing[i] as ModNotification;
+                    if (mine == null)
+                    {
+                        continue;
+                    }
+
+                    json.WriteStartObject();
+                    json.WritePropertyName("title");
+                    json.WriteValue(mine.GetTitle());
+                    json.WritePropertyName("turnsLeft");
+                    json.WriteValue(mine.TurnsBeforeAutoDismiss);
+                    json.WriteEndObject();
+                }
+
+                json.WriteEndArray();
+            });
+        }
+
         private static void WriteVector(JsonTextWriter json, string name, Vector3 value)
         {
             json.WritePropertyName(name);

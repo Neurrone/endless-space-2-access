@@ -34,6 +34,13 @@ namespace ES2Access.UI
     /// Everything here is rebuilt from the live game (<see cref="Baseline"/>), so a hot reload or a
     /// loaded save starts from what is on the screen and announces nothing about state it was not
     /// there for.
+    ///
+    /// Of the two endings only the CANCELLED one is spoken from here now. Being stopped is raised as
+    /// a mod event instead (<see cref="EventModFleetStopped"/>) and reaches the player as a
+    /// notification in the same words, so that it also has a row in the turn log and a Show Location
+    /// button - see <see cref="FleetStoppedNotification"/>. The detection stays here rather than
+    /// moving to the move order's end, because the flag can be set on a fleet that had no move order
+    /// running and this poll sees that too.
     /// </summary>
     public sealed class FleetRouteWatch
     {
@@ -146,12 +153,18 @@ namespace ES2Access.UI
             bool intercepted = fleet.HasBeenIntercepted;
             if (intercepted && !watched.Intercepted && announce)
             {
-                Say(
-                    fleet,
-                    ModStrings.FleetInterceptedAt,
-                    ModStrings.FleetIntercepted,
-                    FleetRoute.Named(FleetOrders.Orbit(fleet))
-                );
+                // Said as a NOTIFICATION rather than spoken from here (2026-08-20): the words are
+                // the same ones, and going through the pipeline puts the stop with a place in the
+                // turn log and a Show Location button on it. The flag is watched here rather than at
+                // the move order's end because a fleet can be stopped whether or not one was running,
+                // and this poll catches both.
+                Empire player = Gui.PlayerEmpire;
+                if (player != null && ReferenceEquals(fleet.Empire, player))
+                {
+                    ModNotifications.Raise(
+                        new EventModFleetStopped(player, fleet, FleetOrders.Orbit(fleet))
+                    );
+                }
             }
 
             watched.Intercepted = intercepted;

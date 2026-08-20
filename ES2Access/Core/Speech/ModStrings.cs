@@ -562,6 +562,92 @@ namespace ES2Access.Core.Speech
         public const string FleetRouteCancelledTo = "fleet.route-cancelled-to";
         public const string FleetRouteCancelled = "fleet.route-cancelled";
 
+        // The notifications the MOD raises into the game's own pipeline, for the eight things the
+        // game puts on the event bus and then tells nobody about. Each family has a TITLE - what is
+        // spoken as it arrives, and what the popup writes across the top - and, where the game has a
+        // second thing to say, a BODY sentence the popup shows under it. The "-plain" forms are the
+        // same news with a place the map has not named left out, rather than a sentence with a hole
+        // in it. Every popup body is prefixed with the turn it happened on, because a popup reached
+        // by Previous/Next from a game notification otherwise carries no clue.
+        public const string NotificationTurnPrefix = "notification.turn-prefix";
+
+        public const string NotificationSystemRevealed = "notification.system-revealed";
+        public const string NotificationSystemRevealedPlain = "notification.system-revealed-plain";
+
+        /// <summary>The discovery with nothing known about it - what is left when the notification has
+        /// outlived the node it was about (a reload replacing the assembly under a standing one is how
+        /// this was first seen). The news is still true; only the name is gone.</summary>
+        public const string NotificationSystemRevealedUnknown =
+            "notification.system-revealed-unknown";
+        public const string NotificationSystemRevealedBody = "notification.system-revealed-body";
+        public const string NotificationSystemRevealedInConstellation =
+            "notification.system-revealed-in-constellation";
+
+        public const string NotificationFleetSighted = "notification.fleet-sighted";
+        public const string NotificationFleetSightedNowhere = "notification.fleet-sighted-nowhere";
+        public const string NotificationFleetSightedBody = "notification.fleet-sighted-body";
+        public const string NotificationFleetSightedBodyNowhere =
+            "notification.fleet-sighted-body-nowhere";
+
+        /// <summary>How big a sighted fleet is, as its own whole sentence beside the sighting one -
+        /// a count glued into another language's sentence is exactly what
+        /// <see cref="Plural"/> exists to avoid.</summary>
+        public const string NotificationFleetShipsOne = "notification.fleet-ships-one";
+        public const string NotificationFleetShipsMany = "notification.fleet-ships-many";
+
+        public const string NotificationColonySighted = "notification.colony-sighted";
+        public const string NotificationColonySightedBody = "notification.colony-sighted-body";
+
+        public const string NotificationFleetDispatched = "notification.fleet-dispatched";
+        public const string NotificationFleetDispatchedTo = "notification.fleet-dispatched-to";
+        public const string NotificationFleetDispatchedPlain = "notification.fleet-dispatched-plain";
+
+        public const string NotificationSystemBesieged = "notification.system-besieged";
+        public const string NotificationSystemBesiegedPlain = "notification.system-besieged-plain";
+        public const string NotificationSystemBesiegedBody = "notification.system-besieged-body";
+
+        public const string NotificationSystemBlockaded = "notification.system-blockaded";
+        public const string NotificationSystemBlockadedPlain = "notification.system-blockaded-plain";
+        public const string NotificationSystemBlockadedBody = "notification.system-blockaded-body";
+
+        public const string NotificationTradeBlockadeEnded = "notification.trade-blockade-ended";
+        public const string NotificationTradeBlockadeEndedPlain =
+            "notification.trade-blockade-ended-plain";
+
+        public const string NotificationObliteratorFired = "notification.obliterator-fired";
+        public const string NotificationObliteratorFiredPlain =
+            "notification.obliterator-fired-plain";
+        public const string NotificationObliteratorObserved = "notification.obliterator-observed";
+        public const string NotificationObliteratorObservedPlain =
+            "notification.obliterator-observed-plain";
+
+        /// <summary>A fleet of the player's reaching the place it was sent to. The journey ENDING is
+        /// also how a fleet stopped short reads, so the two are separate families with separate
+        /// sentences - being stopped keeps the wording it already had
+        /// (<see cref="FleetInterceptedAt"/>).</summary>
+        public const string NotificationFleetArrived = "notification.fleet-arrived";
+        public const string NotificationFleetArrivedPlain = "notification.fleet-arrived-plain";
+
+        /// <summary>Somebody else's fleet going out of sight. Four whole sentences rather than one
+        /// with holes in it: the fleet's name and the place it was last seen at are each things the
+        /// map may not have known, and a language that inflects around either cannot be handed a
+        /// fragment.</summary>
+        public const string NotificationFleetLostSight = "notification.fleet-lost-sight";
+        public const string NotificationFleetLostSightUnnamed =
+            "notification.fleet-lost-sight-unnamed";
+        public const string NotificationFleetLostSightNowhere =
+            "notification.fleet-lost-sight-nowhere";
+        public const string NotificationFleetLostSightUnnamedNowhere =
+            "notification.fleet-lost-sight-unnamed-nowhere";
+
+        /// <summary>Somebody else's fleet that was already in sight standing somewhere else when the
+        /// turn came round. A fleet under way is at no place the map names, which is what the second
+        /// and third forms are for.</summary>
+        public const string NotificationForeignFleetMoved = "notification.foreign-fleet-moved";
+        public const string NotificationForeignFleetMovedTo = "notification.foreign-fleet-moved-to";
+        public const string NotificationForeignFleetMovedAway =
+            "notification.foreign-fleet-moved-away";
+
         // The pinned quest the game draws in the top right corner. Its title, its status and its
         // objective are the game's own words; what a player can DO with the panel is not written
         // anywhere on it - the game draws two of the three as bare icons and the third as a click on
@@ -581,6 +667,12 @@ namespace ES2Access.Core.Speech
         public const string HudQuestPanel = "hud.quest-panel";
         public const string HudNotificationsPanel = "hud.notifications-panel";
         public const string HudViewControlsPanel = "hud.view-controls-panel";
+
+        /// <summary>The stop beside the notification strip holding the news the game raises no icon
+        /// for - the mod's own notifications, grouped by the turn they happened on. Both words are the
+        /// mod's: the game draws neither the list nor the grouping.</summary>
+        public const string HudTurnLogPanel = "hud.turn-log-panel";
+        public const string HudTurnLogTurn = "hud.turn-log-turn";
 
         // The rows of the empire cluster in the top-left corner, which is the first Tab stop on every
         // page in the game. Four unrelated things are stacked there and the game captions none of
@@ -1461,6 +1553,47 @@ namespace ES2Access.Core.Speech
             { FleetIntercepted, "{0} was intercepted" },
             { FleetRouteCancelledTo, "The route of {0} to {1} was cancelled" },
             { FleetRouteCancelled, "The route of {0} was cancelled" },
+            { NotificationTurnPrefix, "Turn {0}: {1}" },
+            { NotificationSystemRevealed, "New system discovered: {0} at {1}" },
+            { NotificationSystemRevealedPlain, "New system discovered: {0}" },
+            { NotificationSystemRevealedUnknown, "New system discovered" },
+            { NotificationSystemRevealedBody, "{0} has been discovered." },
+            {
+                NotificationSystemRevealedInConstellation,
+                "{0} has been discovered, in the {1} constellation."
+            },
+            { NotificationFleetSighted, "{0} fleet sighted at {1}" },
+            { NotificationFleetSightedNowhere, "{0} fleet sighted" },
+            { NotificationFleetSightedBody, "The {0} fleet {1} was sighted at {2}." },
+            { NotificationFleetSightedBodyNowhere, "The {0} fleet {1} was sighted." },
+            { NotificationFleetShipsOne, "It has 1 ship." },
+            { NotificationFleetShipsMany, "It has {0} ships." },
+            { NotificationColonySighted, "{0} colony sighted at {1}" },
+            { NotificationColonySightedBody, "A {0} colony was sighted at {1}." },
+            { NotificationFleetDispatched, "{0} dispatched from {1} to {2}" },
+            { NotificationFleetDispatchedTo, "{0} dispatched to {1}" },
+            { NotificationFleetDispatchedPlain, "{0} dispatched" },
+            { NotificationSystemBesieged, "{0} under siege by {1}" },
+            { NotificationSystemBesiegedPlain, "{0} is under siege" },
+            { NotificationSystemBesiegedBody, "{1} is besieging {0}." },
+            { NotificationSystemBlockaded, "{0} blockaded by {1}" },
+            { NotificationSystemBlockadedPlain, "{0} is blockaded" },
+            { NotificationSystemBlockadedBody, "{1} is blockading {0}." },
+            { NotificationTradeBlockadeEnded, "Trade blockade ended at {0}" },
+            { NotificationTradeBlockadeEndedPlain, "Trade blockade ended" },
+            { NotificationObliteratorFired, "{0} fired an Obliterator from {1}" },
+            { NotificationObliteratorFiredPlain, "{0} fired an Obliterator" },
+            { NotificationObliteratorObserved, "{0} fired an Obliterator from {1}" },
+            { NotificationObliteratorObservedPlain, "{0} fired an Obliterator" },
+            { NotificationFleetArrived, "{0} arrived at {1}" },
+            { NotificationFleetArrivedPlain, "{0} arrived" },
+            { NotificationFleetLostSight, "Lost sight of {0} fleet {1}, last seen at {2}" },
+            { NotificationFleetLostSightUnnamed, "Lost sight of {0} fleet, last seen at {1}" },
+            { NotificationFleetLostSightNowhere, "Lost sight of {0} fleet {1}" },
+            { NotificationFleetLostSightUnnamedNowhere, "Lost sight of {0} fleet" },
+            { NotificationForeignFleetMoved, "{0} fleet moved from {1} to {2}" },
+            { NotificationForeignFleetMovedTo, "{0} fleet moved to {1}" },
+            { NotificationForeignFleetMovedAway, "{0} fleet moved away from {1}" },
             { HudQuestShowLocation, "Show location" },
             { HudQuestUnpin, "Unpin quest" },
             { HudQuestPinned, "Pinned quest: {0}" },
@@ -1468,6 +1601,8 @@ namespace ES2Access.Core.Speech
             { GalaxyMapPanel, "Map" },
             { HudQuestPanel, "Quest" },
             { HudNotificationsPanel, "Notifications" },
+            { HudTurnLogPanel, "Turn log" },
+            { HudTurnLogTurn, "Turn {0}" },
             { HudViewControlsPanel, "View Controls" },
             { HudControlsPanel, "Controls" },
             { HudKeyResourcesPanel, "Key Resources" },
