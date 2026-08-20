@@ -108,7 +108,8 @@ During boot/loading, main-thread routes 503 — retry; `/speech` and `/log` keep
   over `AgeTransform.Children`, `GetPlayerEmpireGuiNotifications()` or any `List<GameType>`
   declares one implicitly**, and it poisons the WHOLE session — every later request answers
   with a `MakeGenericType` InternalErrorException. Iterate by index or bind as
-  `System.Collections.IList`. Recover with `POST /reload`. (REPL-only crutch: in shipped
+  `System.Collections.IList` — some collections reject that cast outright; fall back to
+  `((IEnumerable)x).GetEnumerator()`. Recover with `POST /reload`. (REPL-only crutch: in shipped
   code, `as IList` over a yield iterator answers null silently — walk the declared
   interface.)
 - Bare `Time` binds to `InteractiveBase.Time(Action)`; write `UnityEngine.Time`.
@@ -196,14 +197,18 @@ one that draws nothing" is a DIFFERENT finding with a different fix: it judges b
 aim derivation — exact for control nodes since 1016af3, an approximation for drawn rows/cells — so
 confirm with `DevProbe.Tooltip()` before touching any pointing call.
 `/gui/graph` alone misleads here: it moves no pointer, so a renderer-drawn tooltip is
-undrawn and its buffer reads empty on a control that is fine live. `TooltipDelay(-1)` after.
+undrawn and its buffer reads empty on a control that is fine live. Re-probing a still-focused
+node after mutating its backing state answers the PRE-mutation content — leave the node and
+return before re-probing. `TooltipDelay(-1)` after.
 
 
 **A card's tooltip is rarely on the card.** `PointerFocus` shows the tooltip of the widget it is
 pointed AT, so pointing at a row whose tooltip hangs off a child inside it (the planet card's
 anomaly rows) draws nothing while the node still declares the tooltip and its buffer stays empty. Point at
 `tooltip.AgeTransform`, not at the row — and prove it with `DevProbe.Tooltip()`, which is the
-only thing that catches it.
+only thing that catches it. The same trap bites reading, not just aiming: a component's tooltip
+may hang off a descendant, so a group walk reading `widget.AgeTooltip` gets silence — read the
+component's own Tooltip field.
 
 **A tooltip family's evidence pair.** Focus the control, `DevProbe.Tooltip()` for the typed
 reading, then `Gui.GuiService.GetWindow<GuiTooltipWindow>(false).AgeTransform.GetGlobalPosition()`
@@ -295,7 +300,9 @@ beats all three where the empty widget is generic over an INTERFACE: lend it ano
 implementor's data (`Bind(otherOwner, client)` + `RefreshNow()`) and the game itself draws real
 content into the unreachable panel — the mod's rows, their wording, their ordering and the
 pick-up all verified live, with one `Bind` back to restore. A force-show proves structure; only
-lent data proves content. Never commit an action while the binding is lent.
+lent data proves content. Never commit an action while the binding is lent. When a forced show
+fights a live per-frame gate, read the underlying authored data (the curve table) instead of
+the animated runtime value.
 
 **Proving a watcher stays silent** is a long poll on the watched flag, not a scan of `/speech`:
 `POST /wait` on the game's own condition, then read `/speech?since=N` for the window that

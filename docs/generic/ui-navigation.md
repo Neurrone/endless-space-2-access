@@ -52,7 +52,8 @@ which no dump reveals. Key such lines on the game's *data* object, never the wid
   a widget name: pooled/recycled widgets share names transiently, and a duplicate key
   throws out of `Build`. The symptom of that throw is three layers from the cause — the
   whole screen silently declares nothing — so the first diagnostic for an unexpectedly
-  empty screen is the log, not the model.
+  empty screen is the log, not the model. And make the structural key a path whose head is
+  the containing control, so ancestry survives the control not being declared.
 - **`GraphTypes`** — `GraphNode` (4-way `Transitions`, `Parent` chain, stop/region keys,
   expandability, auto position) and `NodeVtable`: **behaviors as data**. Announcement parts
   (`NodeAnnouncement`, each a `Func<string>` resolved at speak time — read live, never cache),
@@ -476,6 +477,17 @@ which no dump reveals. Key such lines on the game's *data* object, never the wid
 - **When one screen swaps whole PAGES in place**, announce the new page and blur the cursor so
   seating re-runs: reconciliation's nearest-survivor tier would otherwise keep a node of the
   old page alive and read its business over the new one.
+- **A programmatic landing — a locate, a scanner jump, a deferred seat — must survive more
+  than one frame**: a collapsed branch declares no children, so the request opens one level
+  of ancestry per build, found from the id's own path, and dies two ways — at once when
+  nothing in the render leads to it, and on a budget when the branch never produces it. Size
+  the budget in frames-of-flight, not rebuilds: an auto-expanded level may run its own camera
+  move. The player's next move cancels a pending landing; one that waits out a camera flight
+  and then fires yanks them somewhere they no longer asked to go.
+- **A seat computed from a POSITION in a list must resolve to the same id for several
+  consecutive frames before it commits**: a container's children can arrive over several
+  frames, and a positional id silently changes owner — the announcement is right for the
+  frame it was made and wrong one frame later, with nothing in any transcript to show it.
 - **A control the game wires to a screen you haven't modelled yet** is a named tradeoff,
   decided explicitly and reported: declare it read-only (the player loses an affordance but
   hears no dead end), or declare the action and accept that it opens a silent screen until
@@ -552,7 +564,10 @@ once from WotR source and now written down so the next game doesn't have to:
   land(i))` — for items not declared in the graph (a collapsed tree's leaves). The landing
   callback does the screen's own work (expand the ancestors) and *returns the id to focus*,
   so the navigator still owns the announce-and-track step and the architecture's core
-  invariant holds: a focus change is announced exactly once, by one code path.
+  invariant holds: a focus change is announced exactly once, by one code path. And the scope
+  is re-checked whenever a level is added to the tree: a tier that used to be
+  always-declared becomes hideable, and a scope that does not grow a range for it loses that
+  tier from search with nothing in any dump to show it.
 
 ## Gesture parity and child screens
 

@@ -237,6 +237,9 @@ spots:
   the single game-state predicate the drawn-ness is DERIVED from and set that — the game
   then draws real content by itself, which a forced Visible never does. Restore the
   predicate afterwards and prove the round trip with a probe.
+- **Triggers the fixture cannot press.** When a flow's trigger is fixture-blocked, do not
+  simulate the trigger — reproduce the state it creates, using the mod's own call in the
+  same frame relationship, and report which link is simulated and which are real.
 - **Keys whose job is handing control back to the game.** An injected action is dropped
   when no mod screen is focused, so any key that returns control to the game (Escape out of
   a game view, back on a game-owned page) is structurally untestable in-harness: only the

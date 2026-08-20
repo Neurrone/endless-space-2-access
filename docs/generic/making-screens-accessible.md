@@ -186,6 +186,11 @@ reload-safe ([hot-reload.md](hot-reload.md)) and per-frame cheap — `Build` run
   check even though it matches the pixels perfectly — "1500/1500" beside an unnamed icon
   satisfies spoken-equals-drawn and tells the player nothing. Matching is necessary;
   comprehensible is the bar.
+- **For anything the game draws with extent — a line, a border, a range ring — the engine's
+  can-draw gate answers whether it is drawn, not where.** A reader that reports a place must
+  ask a second, position-aware question; the usual second gate is whatever occludes world
+  geometry (fog, culling, a mask), which is typically applied in a shader and has no C# gate
+  at all — there, the cropped screenshot is the only oracle.
 - **When N prefabs share one reader, per-screen evidence pairs do not scale** — ship a
   mechanical parity check that re-derives both sides (the drawn tree, the declared graph)
   and runs itself on whatever the player meets; a shared reader's premises are per-prefab
