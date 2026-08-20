@@ -1402,6 +1402,18 @@ generic graduates to the generic docs.
 - Live hull-oracle result for `unlocked` (2026-08-20): `regions 5, members 136, outside own
   hull 0, inside another hull 22, classified elsewhere 0` — the interlock is real (22 members
   sit inside a neighbour's hull) and the nearest-member tie-break resolves every one.
+- `MetaplotBattleRulesIcon` lives INSIDE `HomeAndTradingTable` (child 10) — it was always read
+  by the table walk; a field-by-field audit counts it as an unread field.
+- **A drawn empire colour cannot identify a minor faction**: all twelve minor empires share one
+  grey (0.627³), and the neutral/unknown fills are white differing only in alpha (0.753/0.251).
+  Where colour is not injective, gate on the drawn COUNT and read identity from the writer's own
+  data source (`RefreshEmpireColoredBar` :1851-1867 — not Lost, not Ghost, visibility ≥ 1,
+  player inserted first).
+- On the pooled `StarSystemLabel` set only labels whose ROOT `Visible` is true have run their
+  `Refresh*`: 135 of 136 hold prefab-default `Visible=true` on the badge groups, and the
+  ancestor walk in `AgeWidgets.Visible` is the only thing keeping them silent.
+- `GuiBehaviour.AgeTransform` and `AgeTransform.AgeTooltip` are Awake-cached — NULL on prefabs;
+  instantiate before touching either.
 - **A planet row is a LEAF until the map binds its orbital card** — a landing inside a collapsed
   system therefore costs a camera flight (expand system → wait for the flight → the planet becomes
   a group → expand planet → land; measured 28 frames vs 3 with the camera already in). Budgets on

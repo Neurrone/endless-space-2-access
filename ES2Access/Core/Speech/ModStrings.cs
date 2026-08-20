@@ -265,6 +265,12 @@ namespace ES2Access.Core.Speech
         public const string GalaxySystemPiratePower = "galaxy.system-pirate-power";
         public const string GalaxySystemMinorRelation = "galaxy.system-minor-relation";
 
+        // Who holds a colony at a system several empires share. The label draws this as a row of
+        // little bars tinted with each empire's colour and writes nothing at all on them - no
+        // number, no name, not even a tooltip - so the caption is the mod's and the names inside it
+        // are the game's own.
+        public const string GalaxySystemEmpireBars = "galaxy.system-empire-bars";
+
         // What has been found in the ground, and whether the system is working it. The label says the
         // second half by drawing the deposit's picture lit or faded and writes no word for either
         // state, so both phrases are the mod's and each carries the deposit's own name.
@@ -1337,6 +1343,7 @@ namespace ES2Access.Core.Speech
             { GalaxySystemRebellion, "Rebellion at {0} percent, {1} to go" },
             { GalaxySystemPiratePower, "Pirate power level {0}" },
             { GalaxySystemMinorRelation, "Relations {0} percent" },
+            { GalaxySystemEmpireBars, "Colonies here: {0}" },
             { GalaxySystemDepositExploited, "{0}, exploited" },
             { GalaxySystemDepositIdle, "{0}, not exploited" },
             { GalaxySystemFriendlyShip, "{0} friendly ship" },

@@ -113,6 +113,7 @@
   "galaxy.system-rebellion": "Rebellion at {0} percent, {1} to go",
   "galaxy.system-pirate-power": "Pirate power level {0}",
   "galaxy.system-minor-relation": "Relations {0} percent",
+  "galaxy.system-empire-bars": "Colonies here: {0}",
   "galaxy.system-deposit-exploited": "{0}, exploited",
   "galaxy.system-deposit-idle": "{0}, not exploited",
   "galaxy.system-friendly-ship": "{0} friendly ship",

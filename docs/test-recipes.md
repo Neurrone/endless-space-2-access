@@ -671,6 +671,13 @@ the byte directly: `node.Exploration.GetCurrentStates()[empire.Index]` is by-ref
 it, dump the graph or invoke the predicate, put the original back in the same `/eval`.
 (Proved the lane gate both directions: a PartiallyRevealed link dropped to Identified left
 the tree; restored, it returned with its original numbering.)
+**The 136-label SystemLabelReadout census** is the byte-identical regression oracle for any
+galaxy-label change: one `/eval` calling `Lines/Population/Sleepers` over every pooled label,
+diffed before/after (on `unlocked` turn 1: 135 labels answer 0 lines, Xiu answers 2).
+**Force-showing a label badge** (exploration winner and kin): instantiate the game's own prefab
+into the drawn label, set the tooltip the way `Refresh` does, read, then `DestroyImmediate` +
+`RebuildInternalChildrenList(false)` + re-derive the private `metaModifiers` array (it is
+indexed with no null guard).
 **Force-showing a constellation label** (its tooltip never fills naturally in `unlocked` —
 labels are culled, es2-facts): `label.CulledIn = true` + `ShowOrHideIfVisibleByEmpire(
 window.LookingEmpire)` + `Dirty = true`; restore with `CulledIn = false` + `Hide(true)`.

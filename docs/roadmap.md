@@ -93,6 +93,11 @@ files above.
 - The planet page's population-entry click has no opener node yet (the window itself,
   StarSystemPopulationModalWindow, is covered — SystemPoliticsScreen binds it).
 - Skill-tree type-ahead: a TypeAheadScope so search reaches skills in collapsed branches.
+- Galaxy-map audit remainder (2026-08-20): `StarSystemLabel`'s 32 public widget fields are
+  now fully covered (bars wording awaits owner approval; exploration-winner and shared-system
+  readings are fixture-blocked to mid-game saves). Still open from the audit: the Riftborn
+  time bubble (needs a Riftborn fixture) and the latent hacking beacon (deferred with
+  Penumbra).
 - Hero skill page (2026-08-20): the base-class `PanelFeatureEffectsSets` tooltip variants
   (hero, planet colonization, honor actions, hacking programs) read through the new
   `effect-sets` typed reader but are UNSIGHTED — one `DevProbe.Tooltip()` on any of them

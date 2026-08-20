@@ -85,6 +85,10 @@ namespace ES2Access.UI
 
             try
             {
+                // Under the name, ahead of the icons that flank it: who is living here, where that is
+                // more than one empire.
+                AddEmpireBars(lines, label);
+
                 // Left of the name: what is happening AT the system.
                 Say(lines, label.ContextualIconBattle);
                 Say(lines, label.ContextualIconPortal);
@@ -108,7 +112,11 @@ namespace ES2Access.UI
                 AddKingOfTheHill(lines, label);
                 AddDeposits(lines, label.DepositsMainTable);
                 AddDeposits(lines, label.DepositsSecondaryTable);
+                // The strip of standing icons, which is also where the label parks the metaplot's
+                // "special battle rules apply here" picture (it is a child of that table, so it is
+                // read by the walk below rather than by a reader of its own).
                 AddTable(lines, label.HomeAndTradingTable);
+                AddExplorationWinner(lines, label);
                 Say(lines, label.MinorRelationPraiseGroup);
                 Say(lines, label.MinorRelationQuestStartedGroup);
                 AddMinorRelation(lines, label);
@@ -281,6 +289,147 @@ namespace ES2Access.UI
                     Add(lines, AgeWidgets.ItemText(rows[i]));
                     AddContent(lines, rows[i]);
                 }
+            }
+        }
+
+        /// <summary>
+        /// Who has a colony at a system more than one empire is living in.
+        ///
+        /// This is the one thing on the label with no words anywhere near it at all: a row of little
+        /// bars under the name, each tinted with an empire's colour and carrying no text, no picture
+        /// and no tooltip (<c>StarSystemLabel.RefreshEmpireColoredBar</c> :1847-1892 sets a TintColor
+        /// and nothing else). So the row is read in two halves - the bars say HOW MANY and the game's
+        /// own colony repository says WHO, walked with the same filter and in the same order the
+        /// writer uses: the player's own first, then the rest as the repository hands them over.
+        ///
+        /// The colours themselves cannot be the reading. Every minor civilization in the game is
+        /// painted the same grey (measured: twelve of them at 0.627, 0.627, 0.627), so a bar names no
+        /// one on its own - which is also why <see cref="EmpireColors"/>, which does name a drawn
+        /// colour, is no use here.
+        ///
+        /// Nothing is said where the row is a single bar, and that is every ordinary system: one
+        /// owner is the star's own dossier's business, and an unexplored or unclaimed system draws
+        /// one bar in a flat colour that stands for nobody. Nothing is said either where the two
+        /// halves disagree about how many there are - the row is then showing something this reader
+        /// does not understand, and a guess is worse than silence.
+        /// </summary>
+        private static void AddEmpireBars(List<string> lines, StarSystemLabel label)
+        {
+            AgeTransform table = label.EmpireColoredBarsTable;
+            if (!AgeWidgets.Visible(table))
+            {
+                return;
+            }
+
+            // The table is pooled and never shrinks: the writer lights the bars it wants and retires
+            // the rest by setting their alpha to zero, so alpha is what "drawn" means here.
+            int drawn = 0;
+            IList<AgeTransform> bars = table.Children;
+            for (int i = 0; bars != null && i < bars.Count; i++)
+            {
+                if (bars[i] != null && bars[i].Alpha > 0f)
+                {
+                    drawn++;
+                }
+            }
+
+            if (drawn < 2)
+            {
+                return;
+            }
+
+            IList<string> holders = Holders(label);
+            if (holders.Count != drawn)
+            {
+                return;
+            }
+
+            MessageBuilder named = new MessageBuilder();
+            for (int i = 0; i < holders.Count; i++)
+            {
+                named.ListItem(holders[i]);
+            }
+
+            Add(lines, ModStrings.Format(ModStrings.GalaxySystemEmpireBars, named.Build()));
+        }
+
+        /// <summary>The empires the bar row is drawn from, in the row's own order - the same colonies
+        /// <c>RefreshEmpireColoredBar</c> takes a colour from (:1851-1867): the ones that are neither
+        /// lost nor a ghost and that the player has seen, with the player's own put in front.</summary>
+        private static IList<string> Holders(StarSystemLabel label)
+        {
+            List<string> names = new List<string>();
+            StarSystemNode node = label.StarSystemNode;
+            if (node == null)
+            {
+                return names;
+            }
+
+            IColonizedStarSystemRepositoryService repository =
+                Amplitude.Unity.Framework.Services.GetService<IColonizedStarSystemRepositoryService>();
+            IList<ColonizedStarSystem> here =
+                repository == null ? null : repository.GetValuesAsAList(node.NodePosition);
+            for (int i = 0; here != null && i < here.Count; i++)
+            {
+                ColonizedStarSystem colony = here[i];
+                if (
+                    colony.State == StarSystemState.Lost
+                    || colony.State == StarSystemState.Ghost
+                    || (int)colony.Visibility[Gui.PlayerEmpire] < 1
+                )
+                {
+                    continue;
+                }
+
+                string called = AgeText.Clean(colony.Empire.LocalizedName);
+                if (colony.Empire == Gui.PlayerEmpire)
+                {
+                    names.Insert(0, called);
+                }
+                else
+                {
+                    names.Add(called);
+                }
+            }
+
+            return names;
+        }
+
+        /// <summary>
+        /// Which empire got to a special node first, in the game's own sentence for it.
+        ///
+        /// This is the OTHER contest the metaplot runs on a node - a race to discover it, where King
+        /// of the Hill is a race to hold it - and the label draws the result as one small badge with
+        /// the winner's emblem on it. The sentence naming them
+        /// (<c>StarSystemLabelExplorationWinner.Refresh</c>) is written into a tooltip on a piece
+        /// INSIDE that badge rather than on the badge itself, so the reading goes through the badge's
+        /// own component: the outer transform carries no tooltip at all and a walk of the group would
+        /// read silence.
+        ///
+        /// The badge hides itself while nobody has won yet, so the group being drawn is not enough on
+        /// its own - each badge is asked whether it is drawn as well.
+        /// </summary>
+        private static void AddExplorationWinner(List<string> lines, StarSystemLabel label)
+        {
+            AgeTransform group = label.ExplorationWinnerGroup;
+            if (!AgeWidgets.Visible(group))
+            {
+                return;
+            }
+
+            IList<AgeTransform> badges = group.Children;
+            for (int i = 0; badges != null && i < badges.Count; i++)
+            {
+                StarSystemLabelExplorationWinner badge =
+                    badges[i] == null
+                        ? null
+                        : badges[i].GetComponent<StarSystemLabelExplorationWinner>();
+                if (badge == null || !AgeWidgets.Visible(badges[i]))
+                {
+                    continue;
+                }
+
+                AddWords(lines, AgeText.Lines(AgeText.Tooltip(AgeWidgets.Readable(badge.Tooltip))));
             }
         }
 
