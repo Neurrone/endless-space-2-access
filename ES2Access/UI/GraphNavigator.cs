@@ -50,9 +50,9 @@ namespace ES2Access.UI
         private ControlId _lastSpokenKey;
         private GraphNode _lastSpokenNode;
 
-        // A requested landing, applied on the next EnsureFocus.
-        private ControlId _pendingFocus;
-        private bool _pendingAnnounce;
+        // A requested landing, applied on the next EnsureFocus - and kept across the frames a branch
+        // takes to open where the control asked for is inside a collapsed one (see FocusRequest).
+        private FocusRequest _pendingFocus;
         private object _pendingStop;
 
         // A stop the NEXT screen attached should land on - see LandOnStopAfterClose.
@@ -299,12 +299,20 @@ namespace ES2Access.UI
             _lastSpokenNode = null;
         }
 
-        /// <summary>Ask for focus to land on a control (a screen choosing where to put the player).
-        /// Applied on the next tick, when the control is in the render.</summary>
+        /// <summary>
+        /// Ask for focus to land on a control (a screen choosing where to put the player). Applied on
+        /// the next tick.
+        ///
+        /// The control does not have to be in the render: a landing aimed inside a COLLAPSED branch
+        /// opens that branch on the way, one level per build, for as deep as the branches go - and
+        /// waits out the frames the game takes to draw what the branch reads from. A control the
+        /// render leads nowhere near is dropped at once, and a branch that never produces the control
+        /// gives up on its own (<see cref="FocusRequest"/>), so nothing is left armed over the
+        /// player's own navigation.
+        /// </summary>
         public void FocusNode(ControlId id, bool announce = true)
         {
-            _pendingFocus = id;
-            _pendingAnnounce = announce;
+            _pendingFocus = id == null ? null : new FocusRequest(id, announce);
         }
 
         /// <summary>Re-read the focused control in full, ancestors included.
@@ -446,19 +454,21 @@ namespace ES2Access.UI
 
                 if (_pendingFocus != null)
                 {
-                    // One frame of grace: a control requested mid-build may only appear now. Still
-                    // missing means it was removed, so drop the request rather than chase it forever.
-                    if (_graph.Current.Nodes.ContainsKey(_pendingFocus))
+                    FocusOutcome outcome = PendingOutcome();
+                    if (outcome == FocusOutcome.Land)
                     {
-                        _graph.Focus(_pendingFocus);
-                        if (!_pendingAnnounce)
+                        _graph.Focus(_pendingFocus.Id);
+                        if (!_pendingFocus.Announce)
                         {
-                            _lastSpokenKey = _pendingFocus;
+                            _lastSpokenKey = _pendingFocus.Id;
                             _lastSpokenNode = _graph.CurrentNode;
                         }
                     }
 
-                    _pendingFocus = null;
+                    if (outcome != FocusOutcome.Wait)
+                    {
+                        _pendingFocus = null;
+                    }
                 }
 
                 if (_pendingStop != null)
@@ -494,6 +504,36 @@ namespace ES2Access.UI
             SyncVisual(node);
             FillBuffer(node);
             WatchLive(node);
+        }
+
+        /// <summary>
+        /// What to do with the outstanding landing this frame: land on it, keep waiting for the branch
+        /// it is in to open, or give up (<see cref="FocusRequest"/>).
+        ///
+        /// With NO cursor on the page at all the request gets its old single attempt instead. An
+        /// unseated cursor is a page still waiting to be seated, and waiting for a branch would leave
+        /// the player on a screen with no focus and nothing said until the budget ran out - seating
+        /// beats a landing that can be re-asked for.
+        /// </summary>
+        private FocusOutcome PendingOutcome()
+        {
+            if (_state.CurKey == null)
+            {
+                return _graph.Current.Nodes.ContainsKey(_pendingFocus.Id)
+                    ? FocusOutcome.Land
+                    : FocusOutcome.Drop;
+            }
+
+            return _pendingFocus.Step(_graph.Reach(_pendingFocus.Id));
+        }
+
+        /// <summary>Give up an outstanding landing because the player has moved the cursor themselves.
+        /// A landing waits out the frames a branch takes to open, and over that window the player is
+        /// still navigating: a request that survived one would yank them off wherever they had got to,
+        /// for a reason they could not connect to anything they did.</summary>
+        private void CancelPendingFocus()
+        {
+            _pendingFocus = null;
         }
 
         /// <summary>
@@ -1162,6 +1202,7 @@ namespace ES2Access.UI
             }
 
             Voice.Say(GraphAnnouncer.LeafText(node), true);
+            CancelPendingFocus();
             _lastSpokenKey = node.Id;
             _lastSpokenNode = node;
             _liveKey = null;
@@ -1176,6 +1217,7 @@ namespace ES2Access.UI
             }
 
             Voice.Say(GraphAnnouncer.Compose(result.From, node, result.TransitionLabel), true);
+            CancelPendingFocus();
             _lastSpokenKey = node.Id;
             _lastSpokenNode = node;
         }
@@ -1548,6 +1590,7 @@ namespace ES2Access.UI
             }
 
             Voice.Say(GraphAnnouncer.Compose(_lastSpokenNode, node), true);
+            CancelPendingFocus();
             _lastSpokenKey = node.Id;
             _lastSpokenNode = node;
             return node.Id;

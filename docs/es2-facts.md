@@ -1383,6 +1383,10 @@ generic graduates to the generic docs.
   `PlanetLabel_SystemOrbital` blanks its buttons at bind (:444-450) and the refresh re-enables the
   applicable ones over the next frames — a positional child id can change owner between frames
   (measured 2026-08-20; why `FollowActionSeat` requires 20 steady frames).
+- **A planet row is a LEAF until the map binds its orbital card** — a landing inside a collapsed
+  system therefore costs a camera flight (expand system → wait for the flight → the planet becomes
+  a group → expand planet → land; measured 28 frames vs 3 with the camera already in). Budgets on
+  pending landings must be sized in frames-of-flight, not frames-of-rebuild.
 - **`FleetActionToggleReclaimMothership.OnToggle` has two branches** — no running action →
   `ZoomInOnNode`; already running → the game's `%ConfirmCancelReclaimDescription` message box,
   no zoom.

@@ -195,6 +195,12 @@ the game left with no Escape route: there the mod claims Escape (`ConsumesBack` 
 runs that cursor's own right-click cancel, so Escape cannot raise the pause menu over a map still
 waiting for a target (owner-ruled deviation, 2026-08-12).
 
+**Structural keys are PATHS, and that is load-bearing** (2026-08-20): `KeyGraph.AncestorKeys`
+reads a landing's ancestry out of the id's own `/`-separated key, so programmatic landings
+(locate, scanner go-to, deferred seats) auto-expand collapsed ancestors one level per build.
+Renaming a key's HEAD silently breaks landings into that branch; a non-path key simply gets no
+ancestry (as reachable as before). A landing in flight is cancelled by the player's own next move.
+
 **The six zoom-in fleet actions name where they put the cursor and then put it there**
 (2026-08-20): Colonize/Super Colonize/Destroy Planet/Expedition/Mining Probe/Reclaim Mothership
 append a "moves focus to the first …" phrase and, on activation, expand the acting system and seat

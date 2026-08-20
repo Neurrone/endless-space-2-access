@@ -580,6 +580,105 @@ namespace ES2Access.Core.UI.Graph
             return result;
         }
 
+        // ---- reaching a control that is not declared yet ----
+
+        /// <summary>
+        /// How close the standing render is to being able to focus <paramref name="id"/>, opening one
+        /// level of ancestry towards it where that is what is missing.
+        ///
+        /// A collapsed group declares no children, so a landing aimed inside one is aimed at nothing:
+        /// the id cannot be looked up, and the node it hangs under cannot be read off the render
+        /// either. What CAN be read is the id itself - see <see cref="AncestorKeys"/> - so the deepest
+        /// declared ancestor is found by key and opened, one per call, because its children only exist
+        /// on the build that follows. Opening goes through <see cref="SetExpanded"/> like every other
+        /// expansion, so a group whose <see cref="NodeVtable.OnExpand"/> is an override does its own
+        /// bookkeeping and its own side effects (a camera flying into the thing being opened).
+        ///
+        /// Asked of the render as it stands rather than re-rendering: the caller is the per-frame
+        /// focus pass, which has just built one.
+        /// </summary>
+        public ReachStep Reach(ControlId id)
+        {
+            if (_current == null || id == null)
+            {
+                return ReachStep.Unreachable;
+            }
+
+            if (_current.Nodes.ContainsKey(id))
+            {
+                return ReachStep.Present;
+            }
+
+            GraphNode ancestor = DeepestDeclaredAncestor(_current, id);
+            if (ancestor == null)
+            {
+                return ReachStep.Unreachable;
+            }
+
+            // Already open, or not a group at all (a row that becomes a group only once the game draws
+            // the control its children are: a planet's card). Either way there is nothing to open here
+            // and the only question left is whether the game produces the child - the caller's budget.
+            if (!ancestor.Expandable || ancestor.Expanded)
+            {
+                return ReachStep.Waiting;
+            }
+
+            SetExpanded(ancestor, true);
+            return ReachStep.Opened;
+        }
+
+        /// <summary>The deepest node in <paramref name="render"/> that <paramref name="id"/> hangs
+        /// under, or null where the render holds none of its ancestry.</summary>
+        public static GraphNode DeepestDeclaredAncestor(GraphRender render, ControlId id)
+        {
+            if (render == null || id == null)
+            {
+                return null;
+            }
+
+            IList<object> keys = AncestorKeys(id.StructuralKey);
+            for (int i = 0; i < keys.Count; i++)
+            {
+                GraphNode node = render.NodeAt(ControlId.Structural(keys[i]));
+                if (node != null)
+                {
+                    return node;
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// The keys of the controls a control hangs under, deepest first - read out of the id, because
+        /// an undeclared control has no node to read a parent chain off.
+        ///
+        /// This is the one place the engine assumes anything about what a structural key IS: a PATH,
+        /// whose <c>/</c>-separated head names the thing this control belongs to
+        /// (<c>galaxy:system/548/planet/0/action/0</c> hangs under <c>galaxy:system/548/planet/0</c>,
+        /// which hangs under <c>galaxy:system/548</c>). Splitting on the separator rather than
+        /// comparing raw string prefixes is what keeps <c>system/5</c> from claiming
+        /// <c>system/548</c>'s children. Not every head is a declared control - the ones that are not
+        /// are simply missed - and a key that is not a path (a composite, an object) answers with
+        /// nothing, which leaves such a control reachable only while it is declared.
+        /// </summary>
+        public static IList<object> AncestorKeys(object structuralKey)
+        {
+            List<object> keys = new List<object>();
+            string path = structuralKey as string;
+            if (path == null)
+            {
+                return keys;
+            }
+
+            for (int cut = path.LastIndexOf('/'); cut > 0; cut = path.LastIndexOf('/', cut - 1))
+            {
+                keys.Add(path.Substring(0, cut));
+            }
+
+            return keys;
+        }
+
         // Change a group's expansion: through its vtable override when declared (an adapter driving a
         // retained game-side container), else the persistent set.
         private void SetExpanded(GraphNode group, bool expanded)
