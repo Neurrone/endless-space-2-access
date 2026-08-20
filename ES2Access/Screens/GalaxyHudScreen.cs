@@ -386,9 +386,36 @@ namespace ES2Access.Screens
             // A constellation name the mod was holding drawn belongs to the map that is going away.
             ConstellationLabelHold.Release();
             _armedProbe = null;
-            // A seat still being waited for belongs to the map that is going away; answered on some
-            // later visit it would move the cursor for a button nobody remembers pressing.
+            // A seat still being waited for is KEPT. Six of the game's fleet actions answer the press by
+            // taking the player somewhere - and the first arrival at a system plays the discovery
+            // cutscene over the map, which stands this page down for as long as it runs. Forgetting the
+            // seat there is the press being silently thrown away: the player heard "moves focus to the
+            // first curiosity", sat through the cutscene, and came back to a cursor that had not moved
+            // (owner-reported). So the wait is SUSPENDED and resumes when the map is back.
+            SuspendActionSeat();
+        }
+
+        /// <summary>
+        /// The player has moved the cursor on the map themselves: a seat still waiting for the game to
+        /// draw its target has been overtaken and is dropped.
+        ///
+        /// The navigator cancels its own outstanding landing on the same keystrokes and calls this
+        /// beside it (<see cref="Screen.CancelLandings"/>). It matters more here than it looks: the seat
+        /// now outlives the page losing focus, so without this a press whose target the player walked
+        /// away from would still be waiting minutes later.
+        /// </summary>
+        public override void CancelLandings()
+        {
             ForgetActionSeat();
+        }
+
+        /// <summary>Whether a landing aimed at this page should be held rather than judged - true while
+        /// the game is flying the camera between view levels, when what the map draws is a frame of a
+        /// transition and not the page the landing was aimed at (<see cref="Screen.LandingSuspended"/>).
+        /// </summary>
+        public override bool LandingSuspended
+        {
+            get { return GalaxyViewLevels.ChangingLevel; }
         }
 
         public override void OnUpdate()
@@ -637,6 +664,17 @@ namespace ES2Access.Screens
 
             try
             {
+                if (GalaxyViewLevels.ChangingLevel)
+                {
+                    // The camera is still on its way. Nothing the map draws mid-flight is the answer -
+                    // the cards belong to wherever the view is leaving - so the frames a flight takes
+                    // are not the wait's to spend, and whatever the last frame settled on is dropped
+                    // rather than counted towards the steady run.
+                    _seatRow = null;
+                    _seatSteady = 0;
+                    return;
+                }
+
                 if (--_seatFrames <= 0)
                 {
                     ForgetActionSeat();
@@ -693,6 +731,15 @@ namespace ES2Access.Screens
             _seatTarget = SeatTarget.None;
             _seatSystem = null;
             _seatFrames = 0;
+            SuspendActionSeat();
+        }
+
+        /// <summary>Keep the wait but throw away everything it had settled on: the row it was closing in
+        /// on was an index into a card the map is no longer drawing, and the run of frames it had held
+        /// steady for says nothing about the map the player will come back to. What survives is the
+        /// action, the system and the budget left.</summary>
+        private void SuspendActionSeat()
+        {
             _seatRow = null;
             _seatGroup = null;
             _seatSteady = 0;

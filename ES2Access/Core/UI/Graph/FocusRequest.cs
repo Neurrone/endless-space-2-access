@@ -45,6 +45,15 @@ namespace ES2Access.Core.UI.Graph
     /// whose branch is open and never produces it dies when the budget runs out, so an impossible id
     /// cannot keep a landing armed over the player's own navigation for the rest of the session.
     ///
+    /// Both deaths only happen on a frame the request is being WORKED ON. A landing belongs to the
+    /// screen that asked for it, and frames where that screen is not the one the player is on cannot
+    /// carry it any further: the game may be playing a cutscene over it, or flying the camera between
+    /// two views, and the render such a frame would be judged against is somebody else's or half built.
+    /// So those frames are SUSPENDED - the request is kept, nothing is spent, and neither "nothing
+    /// leads there" nor the budget can kill it - and it resumes with the budget it had when the player
+    /// comes back (owner-reported: a fleet action's seat died during the system-discovery cutscene and
+    /// the cursor never moved).
+    ///
     /// Off the engine so the budget is testable: the frame that drives it is the navigator's.
     /// </summary>
     public sealed class FocusRequest
@@ -57,13 +66,27 @@ namespace ES2Access.Core.UI.Graph
 
         private readonly ControlId _id;
         private readonly bool _announce;
+        private readonly object _owner;
         private int _frames;
 
         public FocusRequest(ControlId id, bool announce, int frames = DefaultFrames)
+            : this(id, announce, null, frames) { }
+
+        public FocusRequest(ControlId id, bool announce, object owner, int frames = DefaultFrames)
         {
             _id = id;
             _announce = announce;
+            _owner = owner;
             _frames = frames;
+        }
+
+        /// <summary>Who asked for the landing - the screen whose graph the id belongs to, or null where
+        /// the caller does not scope its requests. The one question that decides whether a frame counts:
+        /// only the screen that asked can carry its own landing forward, and only that screen's own
+        /// navigation cancels it. Compared by reference; nothing here reads it.</summary>
+        public object Owner
+        {
+            get { return _owner; }
         }
 
         /// <summary>The control the cursor was asked to land on.</summary>
@@ -90,9 +113,30 @@ namespace ES2Access.Core.UI.Graph
         /// </summary>
         public FocusOutcome Step(ReachStep reach)
         {
+            return Step(reach, false);
+        }
+
+        /// <summary>
+        /// The same, on a frame that may be SUSPENDED - one where nothing about this request can be
+        /// judged, because the screen that asked for it is not the one being drawn or the view is still
+        /// moving.
+        ///
+        /// A suspended frame costs nothing and proves nothing: the budget is not spent and an
+        /// "unreachable" answer is not believed, because the render being asked is not the render the
+        /// landing was aimed at. A control that IS present still lands - being there is the whole of
+        /// what the request wanted, and there is no reason to make the player wait for a transition to
+        /// finish before it does.
+        /// </summary>
+        public FocusOutcome Step(ReachStep reach, bool suspended)
+        {
             if (reach == ReachStep.Present)
             {
                 return FocusOutcome.Land;
+            }
+
+            if (suspended)
+            {
+                return FocusOutcome.Wait;
             }
 
             if (reach == ReachStep.Unreachable)

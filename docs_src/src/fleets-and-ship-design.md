@@ -8,7 +8,7 @@ Press `Enter` on a fleet's entry in the galaxy tree to select it. The mod announ
 - **Ships**: the ships in the fleet and the toolbar above them
 - **Fleet actions**: what the fleet can do — expeditions, probe launches, and so on
 
-Six actions pick their target inside the system rather than arming a targeting mode: Colonize, Super Colonize, Destroy Planet, Start Expedition, Launch Mining Probe and Reclaim Mothership. Each says where it will put you ("moves focus to the first curiosity in the system"), and pressing it opens the system and lands the cursor on that control — `Enter` there gives the real order, and `Up`/`Down` reach the alternatives when the system has several. If the system offers no such target, the branch opens and the cursor stays where it was.
+Six actions pick their target inside the system rather than arming a targeting mode: Colonize, Super Colonize, Destroy Planet, Start Expedition, Launch Mining Probe and Reclaim Mothership. Each says where it will put you ("moves focus to the first curiosity in the system"), and pressing it opens the system and lands the cursor on that control — `Enter` there gives the real order, and `Up`/`Down` reach the alternatives when the system has several. If the system-discovery video plays first, the landing waits for it: the video reads its planet cards, "Galaxy" announces the return, and then the cursor moves. Pressing any arrow after the return, before the landing, cancels it — your own key always wins. If the system offers no such target, the branch opens and the cursor stays where it was.
 
 Selection works like mouse clicks: `Ctrl+Enter` adds a fleet to the selection or removes it, `Shift+Enter` extends the selection. Orders apply to every selected fleet.
 

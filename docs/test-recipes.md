@@ -693,6 +693,14 @@ at turn 1 NO player fleet is in orbit (1100 and 1108 both mid-lane, `NodeIndex=-
 1108's action panel draws 8 buttons, all "must be orbiting" — of the six seat actions only
 Start Expedition is drawn at all. Xiu's orbital rows: `planet/0|1|3/action/0` = Colonize,
 `planet/1/action/1` = Signal (curiosity).
+**Reproducing the discovery cutscene reversibly**: write
+`StarSystemNode.DiscoveryStatuses[empireIndex] = false` on an explored system, then
+`GalaxyView.SelectGameNode(node)` — the game sets the byte back itself at the cutscene's end,
+nothing to restore. In `unlocked`, Kamos (GameNodes index 75) has three curiosity-bearing
+planets; Gistrad (79) is undiscovered outright. **Pressing a real fleet-action button of the
+six seat actions is SAFE** — their `OnClick` posts no order, so
+`FleetActionItem.SetEnable(true, null)` + `Vtable.OnActivate()` fires the true closure without
+spending a probe.
 **Finding a fogged lane cell**: one `/eval` over `GameNodes()` for links where `Drawn(link)`
 but exactly one end is `Perceived`, then sample `IVisibilityService.IsExplored` along the
 segment for the boundary. **Driving the inspect cell from `/eval`**: reflect

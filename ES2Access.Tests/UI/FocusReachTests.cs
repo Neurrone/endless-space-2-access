@@ -237,5 +237,62 @@ namespace ES2Access.Tests.UI
             Assert.Equal(FocusOutcome.Land, request.Step(ReachStep.Present));
             Assert.False(request.Announce);
         }
+
+        // ---- suspension: the frames the request is not being worked on ----
+
+        [Fact]
+        public void ASuspendedFrameSpendsNothingOfTheBudget()
+        {
+            FocusRequest request = new FocusRequest(Id("a"), true, 3);
+            Assert.Equal(FocusOutcome.Wait, request.Step(ReachStep.Waiting, true));
+            Assert.Equal(FocusOutcome.Wait, request.Step(ReachStep.Waiting, true));
+            Assert.Equal(FocusOutcome.Wait, request.Step(ReachStep.Waiting, true));
+            Assert.Equal(3, request.FramesLeft);
+        }
+
+        [Fact]
+        public void ASuspendedRequestResumesWithTheBudgetItHad()
+        {
+            FocusRequest request = new FocusRequest(Id("a"), true, 3);
+            Assert.Equal(FocusOutcome.Wait, request.Step(ReachStep.Waiting));
+            Assert.Equal(FocusOutcome.Wait, request.Step(ReachStep.Waiting, true));
+            Assert.Equal(2, request.FramesLeft);
+            Assert.Equal(FocusOutcome.Wait, request.Step(ReachStep.Waiting));
+            Assert.Equal(FocusOutcome.Drop, request.Step(ReachStep.Waiting));
+        }
+
+        [Fact]
+        public void ASuspendedFrameDoesNotBelieveNothingLeadsThere()
+        {
+            FocusRequest request = new FocusRequest(Id("a"), true, 3);
+            Assert.Equal(FocusOutcome.Wait, request.Step(ReachStep.Unreachable, true));
+            Assert.Equal(3, request.FramesLeft);
+            Assert.Equal(FocusOutcome.Drop, request.Step(ReachStep.Unreachable));
+        }
+
+        [Fact]
+        public void ASuspendedFrameStillLandsOnAControlThatIsThere()
+        {
+            FocusRequest request = new FocusRequest(Id("a"), true, 3);
+            Assert.Equal(FocusOutcome.Land, request.Step(ReachStep.Present, true));
+        }
+
+        // ---- ownership: whose landing is it ----
+
+        [Fact]
+        public void ARequestRemembersTheScreenThatAskedForIt()
+        {
+            object screen = new object();
+            FocusRequest request = new FocusRequest(Id("a"), true, screen);
+            Assert.Same(screen, request.Owner);
+            Assert.Equal(FocusRequest.DefaultFrames, request.FramesLeft);
+        }
+
+        [Fact]
+        public void ARequestWithNoOwnerNamesNobody()
+        {
+            Assert.Null(new FocusRequest(Id("a"), true).Owner);
+            Assert.Null(new FocusRequest(Id("a"), true, 5).Owner);
+        }
     }
 }

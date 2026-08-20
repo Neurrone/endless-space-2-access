@@ -248,7 +248,14 @@ ancestry (as reachable as before). A landing in flight is cancelled by the playe
 append a "moves focus to the first …" phrase and, on activation, expand the acting system and seat
 the cursor on the first matching action row (`SeatAfterFleetAction`/`FollowActionSeat`; a
 positional row id must hold steady 20 frames before the seat commits — the orbital card's buttons
-arrive over several frames). No match = branch open, cursor unmoved, silent. **A targeting cursor
+arrive over several frames). No match = branch open, cursor unmoved, silent. **The seat and the
+navigator's pending landing are SUSPENDED, not forgotten** (2026-08-20), while the galaxy page
+is away (the discovery cutscene POPS it — a sibling view level) or the view is mid-flight:
+suspended frames spend no budget and prove nothing; the landing knows its OWNER screen, so
+another surface's arrival, cursor and keys never touch it; the player's own navigation ON the
+requesting screen's graph still cancels. The expected expedition sequence is: press → the
+discovery video plays (if enabled) and reads its cards → "Galaxy" → the seat lands on the
+first curiosity, once. **A targeting cursor
 arming ends a live-or-suspended inspect mode** with the mode's own exit line spoken ahead of the
 instruction (`GalaxyInspect.Dismiss` from `GlobalHud.AnnounceCursorMode` — all nine cursors — and
 from the six seat actions); entering inspect over an armed mode stays allowed, its landing Enter

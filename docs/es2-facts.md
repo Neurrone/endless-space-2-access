@@ -1424,6 +1424,13 @@ generic graduates to the generic docs.
   ancestor walk in `AgeWidgets.Visible` is the only thing keeping them silent.
 - `GuiBehaviour.AgeTransform` and `AgeTransform.AgeTooltip` are Awake-cached — NULL on prefabs;
   instantiate before touching either.
+- **The system-discovery cutscene is a VIEW LEVEL at the same layer as the galaxy** — a fleet
+  action that selects an undiscovered system POPS the galaxy page 2-3 frames after the click
+  (not a cover). Measured 193-352 frames (~10-18 s at ~20 fps); it hands the camera back at
+  orbital zoom on the system with `DiscoveryStatuses[empire]` set true by the game itself.
+  Gates: `EnableDiscoveryCutscenes` (gameplay option) and
+  `Application.Preferences.DisableSystemDiscoverySequence`/`Force…`
+  (`GalaxyViewLevel_SystemDiscovery.CanBeActivated:152-202`).
 - **A planet row is a LEAF until the map binds its orbital card** — a landing inside a collapsed
   system therefore costs a camera flight (expand system → wait for the flight → the planet becomes
   a group → expand planet → land; measured 28 frames vs 3 with the camera already in). Budgets on

@@ -284,6 +284,37 @@ namespace ES2Access.Screens
 
         public virtual void OnPop() { }
 
+        /// <summary>
+        /// Whether a landing this screen asked for should be held rather than worked on this frame -
+        /// true while the page is in a state where nothing it declares can be judged.
+        ///
+        /// The navigator gives up a landing the render leads nowhere near, and spends a frame of its
+        /// budget on every other frame it waits (<see cref="FocusRequest"/>). Both are the wrong answer
+        /// while the game is mid-flight between views: what the page declares then is a half-built
+        /// render of somewhere the camera has not arrived at, and reading "nothing leads there" off it
+        /// throws away a landing that would have worked a second later. A screen the game never moves
+        /// under says nothing here, which is the default.
+        /// </summary>
+        public virtual bool LandingSuspended
+        {
+            get { return false; }
+        }
+
+        /// <summary>
+        /// The player has just moved the cursor on this screen themselves: give up any landing this
+        /// screen is still waiting to make.
+        ///
+        /// The navigator cancels its own outstanding request on the same three keystrokes, and calls
+        /// this beside it so a screen holding a landing of its OWN - one still waiting for the game to
+        /// draw the control it is aimed at, which the navigator has not been told about yet - dies with
+        /// it. Without it a seat armed by a button press outlives the player walking away from where it
+        /// was going to put them, and lands minutes later on something they have forgotten asking for.
+        ///
+        /// Only ever called for the screen the player is ON, which is what scopes it: another page's
+        /// arrival, and the player reading or dismissing a cutscene, leave this screen's landings alone.
+        /// </summary>
+        public virtual void CancelLandings() { }
+
         // ---- child screens ----
         //
         // One linear chain: a screen has at most one child, which may have one of its own. The player

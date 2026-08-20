@@ -202,7 +202,11 @@ namespace ES2Access.UI
             _bufferReadout = null;
             _bufferLines = null;
             _bufferOverride = null;
-            _pendingFocus = null;
+            // The outstanding landing is deliberately NOT dropped here. It belongs to the screen that
+            // asked for it, and that screen losing the keyboard - to a cutscene, a modal, the game's own
+            // view change - is not the player deciding they no longer want it. It is held, worked on
+            // again the moment its own screen is back (OwnPendingFocus), and cancelled only by that
+            // screen's own navigation.
             _pendingStop = null;
             // Nowhere to have moved FROM: the first commit on a page is a cursor being seated, not a
             // player going somewhere (see CursorMovedHere).
@@ -252,12 +256,20 @@ namespace ES2Access.UI
             _landingStop = stopKey;
         }
 
-        /// <summary>Forget a closed screen's cursor, so re-opening it starts at the top.</summary>
+        /// <summary>Forget a closed screen's cursor, so re-opening it starts at the top - and with it any
+        /// landing that screen was still waiting to make, which is aimed at ids in the very graph state
+        /// being thrown away.</summary>
         public void ScreenClosed(Screen screen)
         {
-            if (screen != null)
+            if (screen == null)
             {
-                _states.Remove(screen);
+                return;
+            }
+
+            _states.Remove(screen);
+            if (_pendingFocus != null && ReferenceEquals(_pendingFocus.Owner, screen))
+            {
+                _pendingFocus = null;
             }
         }
 
@@ -312,7 +324,29 @@ namespace ES2Access.UI
         /// </summary>
         public void FocusNode(ControlId id, bool announce = true)
         {
-            _pendingFocus = id == null ? null : new FocusRequest(id, announce);
+            _pendingFocus = id == null ? null : new FocusRequest(id, announce, _screen);
+        }
+
+        /// <summary>The outstanding landing, but only on a frame the screen that asked for it is the one
+        /// focused - null everywhere else. A request is aimed at an id in ITS OWN screen's graph, so
+        /// every question about it (is it reachable, has the budget run out, has the player moved off it)
+        /// can only be asked of that screen's render; asked of anybody else's the answers are noise.
+        /// </summary>
+        private FocusRequest OwnPendingFocus
+        {
+            get
+            {
+                return _pendingFocus != null && ReferenceEquals(_pendingFocus.Owner, _screen)
+                    ? _pendingFocus
+                    : null;
+            }
+        }
+
+        /// <summary>Drop the outstanding landing whoever it belongs to - for the mod going away, which
+        /// is the one caller that is not a screen deciding about its own request.</summary>
+        public void ForgetPendingLanding()
+        {
+            _pendingFocus = null;
         }
 
         /// <summary>
@@ -335,7 +369,7 @@ namespace ES2Access.UI
         {
             get
             {
-                FocusRequest request = _pendingFocus;
+                FocusRequest request = OwnPendingFocus;
                 ControlId id = request == null ? null : request.Id;
                 GraphRender render = _graph == null ? null : _graph.Current;
                 if (id == null || render == null)
@@ -474,7 +508,11 @@ namespace ES2Access.UI
                 return;
             }
 
-            if (_state.CurKey == null && _pendingFocus == null)
+            // A landing another screen is holding is none of this screen's business: the page still
+            // needs seating, and asking the question of OwnPendingFocus is what keeps a suspended
+            // request from standing in for one.
+            FocusRequest pending = OwnPendingFocus;
+            if (_state.CurKey == null && pending == null)
             {
                 // No content yet - a window still animating in. Reconcile will seat the start node
                 // as soon as there is something to seat it on.
@@ -500,15 +538,15 @@ namespace ES2Access.UI
                     return;
                 }
 
-                if (_pendingFocus != null)
+                if (pending != null)
                 {
-                    FocusOutcome outcome = PendingOutcome();
+                    FocusOutcome outcome = PendingOutcome(pending);
                     if (outcome == FocusOutcome.Land)
                     {
-                        _graph.Focus(_pendingFocus.Id);
-                        if (!_pendingFocus.Announce)
+                        _graph.Focus(pending.Id);
+                        if (!pending.Announce)
                         {
-                            _lastSpokenKey = _pendingFocus.Id;
+                            _lastSpokenKey = pending.Id;
                             _lastSpokenNode = _graph.CurrentNode;
                         }
                     }
@@ -561,27 +599,49 @@ namespace ES2Access.UI
         /// With NO cursor on the page at all the request gets its old single attempt instead. An
         /// unseated cursor is a page still waiting to be seated, and waiting for a branch would leave
         /// the player on a screen with no focus and nothing said until the budget ran out - seating
-        /// beats a landing that can be re-asked for.
+        /// beats a landing that can be re-asked for. Not while the page says it is SUSPENDED, though:
+        /// an unseated cursor is what every page looks like mid-transition, and the single attempt
+        /// there is a coin toss the landing loses.
         /// </summary>
-        private FocusOutcome PendingOutcome()
+        private FocusOutcome PendingOutcome(FocusRequest pending)
         {
+            bool suspended = _screen.LandingSuspended;
             if (_state.CurKey == null)
             {
-                return _graph.Current.Nodes.ContainsKey(_pendingFocus.Id)
-                    ? FocusOutcome.Land
-                    : FocusOutcome.Drop;
+                if (_graph.Current.Nodes.ContainsKey(pending.Id))
+                {
+                    return FocusOutcome.Land;
+                }
+
+                return suspended ? FocusOutcome.Wait : FocusOutcome.Drop;
             }
 
-            return _pendingFocus.Step(_graph.Reach(_pendingFocus.Id));
+            return pending.Step(_graph.Reach(pending.Id), suspended);
         }
 
-        /// <summary>Give up an outstanding landing because the player has moved the cursor themselves.
-        /// A landing waits out the frames a branch takes to open, and over that window the player is
-        /// still navigating: a request that survived one would yank them off wherever they had got to,
-        /// for a reason they could not connect to anything they did.</summary>
+        /// <summary>
+        /// Give up an outstanding landing because the player has moved the cursor themselves. A landing
+        /// waits out the frames a branch takes to open, and over that window the player is still
+        /// navigating: a request that survived one would yank them off wherever they had got to, for a
+        /// reason they could not connect to anything they did.
+        ///
+        /// Scoped to the screen the player is ON, both ways. The navigator's own request is dropped only
+        /// where the focused screen is the one that asked for it, so a cutscene the player reads or
+        /// dismisses over another page cannot kill that page's landing; and the focused screen is told,
+        /// so a landing it is still holding privately - a seat waiting for the game to draw its target -
+        /// dies on the same keystroke.
+        /// </summary>
         private void CancelPendingFocus()
         {
-            _pendingFocus = null;
+            if (OwnPendingFocus != null)
+            {
+                _pendingFocus = null;
+            }
+
+            if (_screen != null)
+            {
+                _screen.CancelLandings();
+            }
         }
 
         /// <summary>
