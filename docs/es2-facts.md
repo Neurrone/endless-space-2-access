@@ -1383,6 +1383,21 @@ generic graduates to the generic docs.
   `PlanetLabel_SystemOrbital` blanks its buttons at bind (:444-450) and the refresh re-enables the
   applicable ones over the next frames — a positional child id can change owner between frames
   (measured 2026-08-20; why `FollowActionSeat` requires 20 steady frames).
+- **`Constellation.Exploration[empire]` is a STALE aggregate**: it recomputes only on
+  node-exploration events, counts member systems at node state ≥ 4 (visited, not merely seen),
+  and at turn 1 all five constellations read 0 — including the one the empire lives in. It is
+  the constellation label's own show gate; the mod's grouping mirrors it exactly.
+- **`EntityExploration.GetCurrentStates()` is public and by-reference** — no reflection needed
+  to force/restore an exploration byte (the states array IS the storage).
+- **`ConstellationLabel` is CULLED, not just alpha-faded**: `ConstellationLabelsWindow` hides any
+  label whose `CulledIn` is false, and `MarkLabelsCulling` reruns only on camera-position change.
+  In `unlocked` no `GalaxyConstellation` is ever culled in at ANY camera position — the
+  constellation tooltip never fills naturally there and needs the force-show recipe
+  (test-recipes). Constellation GUIDs in `unlocked`: Canista 1, Andromeda 72, Vela 264,
+  Herkules 516 (home), Fornax 713.
+- Live hull-oracle result for `unlocked` (2026-08-20): `regions 5, members 136, outside own
+  hull 0, inside another hull 22, classified elsewhere 0` — the interlock is real (22 members
+  sit inside a neighbour's hull) and the nearest-member tie-break resolves every one.
 - **A planet row is a LEAF until the map binds its orbital card** — a landing inside a collapsed
   system therefore costs a camera flight (expand system → wait for the flight → the planet becomes
   a group → expand planet → land; measured 28 frames vs 3 with the camera already in). Budgets on

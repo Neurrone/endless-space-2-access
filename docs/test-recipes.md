@@ -671,6 +671,12 @@ the byte directly: `node.Exploration.GetCurrentStates()[empire.Index]` is by-ref
 it, dump the graph or invoke the predicate, put the original back in the same `/eval`.
 (Proved the lane gate both directions: a PartiallyRevealed link dropped to Identified left
 the tree; restored, it returned with its original numbering.)
+**Force-showing a constellation label** (its tooltip never fills naturally in `unlocked` —
+labels are culled, es2-facts): `label.CulledIn = true` + `ShowOrHideIfVisibleByEmpire(
+window.LookingEmpire)` + `Dirty = true`; restore with `CulledIn = false` + `Hide(true)`.
+Note a force-shown label's tooltip rows all report rect (0,0,0,0), so row banding merges the
+lines — line-splitting claims need a naturally-drawn label. The hull-oracle one-liner:
+`/eval ES2Access.UI.ConstellationMap.AuditWholeGalaxy().ToString()`.
 **`unlocked` turn-1 fleet/orbit realities** (2026-08-20): NO player fleet is in orbit (1100 and
 1108 both mid-lane, `NodeIndex=-1`), Xiu (GUID 548) is the only explored system, no wreck exists
 anywhere in the galaxy, and fleet 1108's action panel draws 8 buttons, all "must be orbiting" —

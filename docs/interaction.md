@@ -195,6 +195,18 @@ the game left with no Escape route: there the mod claims Escape (`ConsumesBack` 
 runs that cursor's own right-click cancel, so Escape cannot raise the pause menu over a map still
 waiting for a target (owner-ruled deviation, 2026-08-12).
 
+**The galaxy map stop is constellation-grouped** (2026-08-20): top level = one group per
+EXPLORED constellation (gate: `Constellation.Exploration[player] > 0`, the label's own check,
+stale aggregate included), drifting rows at their own positions, and the merged
+"Unexplored constellation" group LAST. Key heads: `galaxy:constellation/<guid>` and
+`galaxy:constellation/unexplored`; all system ids live under them (`SystemKey` is the one
+composer). Groups default EXPANDED on first sight (`Seed`, once per group per galaxy).
+Constellation nodes speak no coordinate; opening one never moves the camera; the
+collapse-un-zoom rule now exists at TWO levels (`ZoomOutOf`: collapsing a constellation whose
+member holds `FocusedSystem` runs that system's own zoom-out). Adding a tree LEVEL obliges the
+type-ahead scope to grow a range for the newly-hideable tier (`HiddenSystem`/`RevealSystem` —
+a scope that does not loses the tier from search with nothing in any dump to show it).
+
 **Structural keys are PATHS, and that is load-bearing** (2026-08-20): `KeyGraph.AncestorKeys`
 reads a landing's ancestry out of the id's own `/`-separated key, so programmatic landings
 (locate, scanner go-to, deferred seats) auto-expand collapsed ancestors one level per build.

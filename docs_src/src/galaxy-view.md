@@ -15,7 +15,11 @@ The panels the game draws over every view are separate Tab stops, the same on th
 
 ## The Systems Tree
 
-The map is exposed as a single list of every place you have discovered: star systems, plus special objects such as nebulae and dust clouds. The list is in map reading order: north to south, then west to east.
+The map is exposed as a list grouped by constellation. The top level holds one entry per constellation you have explored, anything drifting in open space at its own position, and an **Unexplored constellation** group at the end, holding every discovered place whose constellation the game has not named to you yet. A constellation becomes explored — and gains its own named group — once one of its systems has been fully explored. Everything is in map reading order: north to south, then west to east; the groups sort by their centre.
+
+A constellation entry reads the game's name for it and no coordinate. Its details are the game's own constellation information: who controls it, who first fully discovered it, your progress toward control ("You control 1/3 Star Systems needed to own this constellation"), and the constellation's control bonus. `Right` opens a constellation without moving the camera; `Left` collapses it, and if the camera was flown into one of its systems, it comes back out.
+
+Inside a constellation sit the star systems and special objects such as nebulae and dust clouds.
 
 Each entry speaks its name followed by its coordinates, a pair of whole numbers measured from your home system. Home is `0, 0`; `-11, 11` is eleven units south and eleven units east of it.
 

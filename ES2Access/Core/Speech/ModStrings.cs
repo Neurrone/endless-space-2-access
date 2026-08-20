@@ -284,10 +284,11 @@ namespace ES2Access.Core.Speech
         // proportion it is drawn at, and the sentence around both is the mod's.
         public const string GalaxySystemAcademyLevel = "galaxy.system-academy-level";
 
-        // The stretch of sky a system stands in. The map writes the constellation's name across the
-        // region rather than on anything in it, and the tree has no level for a region, so the name is
-        // said on the system and the sentence around it is the mod's.
-        public const string GalaxySystemConstellation = "galaxy.system-constellation";
+        // The one stretch of sky the map has no name for. Every system on the map hangs under the
+        // constellation it stands in, and a constellation nobody has explored is one the map draws no
+        // name across - so the systems in all of them share a single group, and what to call THAT is
+        // the mod's, because the game says nothing there at all.
+        public const string GalaxyConstellationUnexplored = "galaxy.constellation-unexplored";
 
         // The one thing the map draws in open space that the game names nowhere: the missile an
         // obliterator fires at a star system. Everything else about it - where it is going and when it
@@ -1327,7 +1328,7 @@ namespace ES2Access.Core.Speech
             { GalaxySystemHostileShip, "{0} hostile ship" },
             { GalaxySystemHostileShips, "{0} hostile ships" },
             { GalaxySystemAcademyLevel, "Academy level {0}, {1} percent to the next level" },
-            { GalaxySystemConstellation, "In the {0} constellation" },
+            { GalaxyConstellationUnexplored, "Unexplored constellation" },
             { GalaxyObliteratorProjectile, "Obliterator missile" },
             { GalaxySystemDiplomacy, "Diplomacy" },
             { GalaxySystemPirateMarkBuyout, "Buy out pirate mark" },

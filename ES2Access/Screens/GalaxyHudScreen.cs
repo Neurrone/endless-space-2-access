@@ -452,8 +452,8 @@ namespace ES2Access.Screens
                 // The branch first, the group inside it second, the cursor last - the order the frame
                 // applies them in (<see cref="Arrive"/>): both expansions belong to the build that
                 // declares the bearing the cursor is being sent to.
-                string place = "galaxy:system/" + node.GUID;
-                _pendingExpand.Add(RootId(node));
+                string place = SystemKey(node);
+                OpenPlace(node);
                 _pendingExpand.Add(ControlId.Structural(place + "/launch"));
                 GraphNavigator navigator = ModEntry.Navigator;
                 if (navigator != null)
@@ -593,7 +593,7 @@ namespace ES2Access.Screens
             _seatSystem = system;
             _seatTarget = seat;
             _seatFrames = SeatWaitFrames;
-            _pendingExpand.Add(RootId(system));
+            OpenPlace(system);
         }
 
         /// <summary>About five seconds of frames - several times the camera's own flight into a system,
@@ -710,7 +710,7 @@ namespace ES2Access.Screens
                 return null;
             }
 
-            string place = "galaxy:system/" + node.GUID;
+            string place = SystemKey(node);
             if (seat == SeatTarget.Wreck)
             {
                 return FirstWreckRow(node, place);
@@ -1124,8 +1124,60 @@ namespace ES2Access.Screens
         private ControlId SystemId(StarSystemNode node)
         {
             return node != null && _systems.Contains(node)
-                ? ControlId.Structural("galaxy:system/" + node.GUID)
+                ? ControlId.Structural(SystemKey(node))
                 : null;
+        }
+
+        /// <summary>
+        /// Where a system's node hangs in the tree, as the PATH its id is
+        /// (<c>galaxy:constellation/516/system/548</c>).
+        ///
+        /// The one place a system's key is composed. Every id under a system is built by appending to
+        /// what this returns, and every landing aimed at one is built by calling it - which is what
+        /// makes the constellation a real ancestor to the engine: a landing inside a collapsed
+        /// constellation opens it, one level per build, by reading the ancestry out of the key
+        /// (<see cref="KeyGraph.AncestorKeys"/>). A second site composing the old flat key would
+        /// silently declare a node nothing could ever reach.
+        ///
+        /// The head CHANGES when the constellation becomes explored - the system moves out of the
+        /// unexplored group and into its own - which is why a system's node carries the system itself
+        /// as its reference: the cursor rides the object across the move rather than the key.
+        /// </summary>
+        private static string SystemKey(StarSystemNode node)
+        {
+            return SystemKey(node, PlayerEmpire());
+        }
+
+        private static string SystemKey(StarSystemNode node, Empire empire)
+        {
+            return GroupKey(node.Constellation, empire) + "/system/" + node.GUID;
+        }
+
+        /// <summary>The head of every key in one stretch of sky - the constellation's own where the
+        /// player has explored it, and the one shared bucket where they have not.</summary>
+        private static string GroupKey(Constellation constellation, Empire empire)
+        {
+            return Explored(constellation, empire)
+                ? ConstellationKey + constellation.GUID
+                : UnexploredKey;
+        }
+
+        private const string ConstellationKey = "galaxy:constellation/";
+
+        /// <summary>Everything the player has not yet been shown a constellation NAME for, in one
+        /// group. Not keyed per constellation: naming five buckets would say by their number how much
+        /// of the galaxy is out there, which is the very thing the map is not showing.</summary>
+        private const string UnexploredKey = "galaxy:constellation/unexplored";
+
+        /// <summary>Whether the map draws this constellation's name at all - the label's own gate
+        /// (<c>ConstellationLabel.ShowOrHideIfVisibleByEmpire</c>), asked the same way so the tree and
+        /// the picture name the same regions. Its staleness is mirrored deliberately: the aggregate
+        /// only recomputes when the game raises a node-exploration event, so on the first turns every
+        /// constellation reads unexplored even the one the empire is sitting in - and the map draws no
+        /// name across it either.</summary>
+        private static bool Explored(Constellation constellation, Empire empire)
+        {
+            return ConstellationMap.Explored(constellation, empire);
         }
 
         /// <summary>One thing the map is drawing, and where it is drawn.</summary>
@@ -1370,19 +1422,21 @@ namespace ES2Access.Screens
         }
 
         /// <summary>
-        /// Typing on the map looks through the systems AND every fleet the map is drawing, wherever
+        /// Typing on the map looks through every system and every fleet the map is drawing, wherever
         /// each is buried.
         ///
-        /// A fleet lives under the place it is standing now, and that place is usually closed - so the
-        /// only thing the ordinary scope (the stop's declared controls) could find is a fleet whose
-        /// system the player had already opened, which is not a search, it is a confirmation. Landing
-        /// on one opens the place it is in, so the branch the player is put into is the branch they can
-        /// then walk. The opening is recorded rather than done: the graph is rebuilt between this call
-        /// and the focus landing, and the expansion set belongs to that rebuild.
+        /// Two things are buried, one level apart. A fleet lives under the place it is standing now,
+        /// and that place is usually closed; a SYSTEM lives under the stretch of sky it stands in,
+        /// which the player may equally have closed. In both cases the only thing the ordinary scope
+        /// (the stop's declared controls) could find is what the player had already opened, which is
+        /// not a search, it is a confirmation. Landing on either opens what it is inside, so the branch
+        /// the player is put into is the branch they can then walk. The opening is recorded rather than
+        /// done: the graph is rebuilt between this call and the focus landing, and the expansion set
+        /// belongs to that rebuild.
         ///
         /// Everything the stop already declares stays searchable - this EXTENDS the ordinary scope
         /// rather than replacing it, so a planet or a starlane of an open system is still found by
-        /// name.
+        /// name, and nothing is offered twice.
         /// </summary>
         public override SearchScope TypeAheadScope(GraphNode focused, GraphRender render)
         {
@@ -1391,28 +1445,94 @@ namespace ES2Access.Screens
                 return null;
             }
 
-            // Only the fleets the stop has NOT already declared: an open system declares its own, and a
-            // fleet offered twice would be two results with one name, which stepping the matches walks
-            // through twice.
-            List<FleetSite> sites = FleetIndex(Declared(render));
-            if (sites.Count == 0)
+            // Only what the stop has NOT already declared: an open constellation declares its systems
+            // and an open system declares its fleets, and either offered twice would be two results
+            // with one name, which stepping the matches walks through twice.
+            HashSet<ControlId> declared = Declared(render);
+            List<HiddenSystem> closed = SystemIndex(declared);
+            List<FleetSite> sites = FleetIndex(declared);
+            if (sites.Count == 0 && closed.Count == 0)
             {
                 return null;
             }
 
             SearchScope basis = SearchScope.OverStop(render, SystemStop);
             int already = basis.Count;
+            int stars = already + closed.Count;
+            List<HiddenSystem> shut = closed;
             List<FleetSite> found = sites;
             GalaxyHudScreen screen = this;
             return new SearchScope(
-                already + found.Count,
+                stars + found.Count,
                 index =>
                     index < already
                         ? basis.TextOf(index)
-                        : found[index - already].Fleet.LocalizedName,
+                        : index < stars
+                            ? shut[index - already].Node.LocalizedName
+                            : found[index - stars].Fleet.LocalizedName,
                 index =>
-                    index < already ? basis.Land(index) : screen.Reveal(found[index - already])
+                    index < already
+                        ? basis.Land(index)
+                        : index < stars
+                            ? screen.RevealSystem(shut[index - already])
+                            : screen.Reveal(found[index - stars])
             );
+        }
+
+        /// <summary>One system the stop is not declaring because the stretch of sky it stands in is
+        /// closed, with the group that has to be opened before its node exists.</summary>
+        private struct HiddenSystem
+        {
+            public StarSystemNode Node;
+            public ControlId Id;
+            public ControlId Group;
+        }
+
+        /// <summary>Every system the map is naming that this build did not declare - the ones inside a
+        /// constellation the player has closed. Built on demand, like the fleet index, and from the
+        /// same list the stop itself is built from, so a search can never offer a place the tree would
+        /// not hold.</summary>
+        private List<HiddenSystem> SystemIndex(HashSet<ControlId> declared)
+        {
+            List<HiddenSystem> hidden = new List<HiddenSystem>();
+            try
+            {
+                Empire empire = PlayerEmpire();
+                for (int i = 0; i < _systems.Count; i++)
+                {
+                    StarSystemNode node = _systems[i];
+                    ControlId id = ControlId.Referenced(node, SystemKey(node, empire));
+                    if (!declared.Contains(id))
+                    {
+                        hidden.Add(
+                            new HiddenSystem
+                            {
+                                Node = node,
+                                Id = id,
+                                Group = GroupId(node),
+                            }
+                        );
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: indexing the closed systems for a search threw: " + e);
+            }
+
+            return hidden;
+        }
+
+        /// <summary>Open the stretch of sky a system is in, and answer with the system itself - the
+        /// same bargain <see cref="Reveal"/> strikes one level down.</summary>
+        private ControlId RevealSystem(HiddenSystem it)
+        {
+            if (it.Group != null)
+            {
+                _pendingExpand.Add(it.Group);
+            }
+
+            return it.Id;
         }
 
         /// <summary>One fleet, the node it is declared as, and the branch that has to be open before
@@ -1423,6 +1543,10 @@ namespace ES2Access.Screens
         {
             public Fleet Fleet;
             public ControlId System;
+
+            /// <summary>And the stretch of sky that system hangs under, which has to be open before the
+            /// system itself is declared - one more level than there used to be.</summary>
+            public ControlId Group;
             public ControlId Node;
         }
 
@@ -1495,9 +1619,10 @@ namespace ES2Access.Screens
                 return;
             }
 
-            string systemKey = "galaxy:system/" + node.GUID;
+            string systemKey = SystemKey(node, empire);
             ControlId system = ControlId.Referenced(node, systemKey);
-            Index(FleetPresence.FleetsAt(node), system, systemKey, sites, declared);
+            ControlId group = GroupId(node);
+            Index(FleetPresence.FleetsAt(node), system, group, systemKey, sites, declared);
             List<EnRoute> flying = EnRouteOn(node, LanesOf(node, empire));
             List<Fleet> crossing = FreeMovingAt(node);
             List<Fleet> nearby = new List<Fleet>(flying.Count + crossing.Count);
@@ -1511,12 +1636,13 @@ namespace ES2Access.Screens
                 nearby.Add(crossing[i]);
             }
 
-            Index(nearby, system, systemKey, sites, declared);
+            Index(nearby, system, group, systemKey, sites, declared);
         }
 
         private static void Index(
             IList<Fleet> fleets,
             ControlId system,
+            ControlId group,
             string key,
             List<FleetSite> sites,
             HashSet<ControlId> declared
@@ -1530,7 +1656,15 @@ namespace ES2Access.Screens
                     continue;
                 }
 
-                sites.Add(new FleetSite { Fleet = fleets[i], System = system, Node = id });
+                sites.Add(
+                    new FleetSite
+                    {
+                        Fleet = fleets[i],
+                        System = system,
+                        Group = group,
+                        Node = id,
+                    }
+                );
             }
         }
 
@@ -1539,6 +1673,11 @@ namespace ES2Access.Screens
         /// whose row is at the top level has nothing to open.</summary>
         private ControlId Reveal(FleetSite site)
         {
+            if (site.Group != null)
+            {
+                _pendingExpand.Add(site.Group);
+            }
+
             if (site.System != null)
             {
                 _pendingExpand.Add(site.System);
@@ -1631,6 +1770,10 @@ namespace ES2Access.Screens
 
             _trailGame = game;
             _trail.Clear();
+            // And the record of which groups have already been given a starting state: a new galaxy has
+            // different constellations, and the ones it does share by key are being met for the first
+            // time (<see cref="Seed"/>).
+            _seeded.Clear();
         }
 
         /// <summary>
@@ -1723,7 +1866,7 @@ namespace ES2Access.Screens
                     _pendingCollapse.Add(RootId(hop.Destination));
                 }
 
-                _pendingExpand.Add(RootId(hop.Origin));
+                OpenPlace(hop.Origin);
                 Arrive(hop.Return, hop.Origin);
                 return true;
             }
@@ -1737,7 +1880,7 @@ namespace ES2Access.Screens
         /// </summary>
         private void Arrive(ControlId id, StarSystemNode where)
         {
-            _pendingExpand.Add(RootId(where));
+            OpenPlace(where);
             GraphNavigator navigator = ModEntry.Navigator;
             if (navigator != null)
             {
@@ -1764,13 +1907,29 @@ namespace ES2Access.Screens
             }
         }
 
-        /// <summary>A system's own node at the root of the stop - the one node that stands for it, keyed
+        /// <summary>A system's own node under its constellation - the one node that stands for it, keyed
         /// exactly as <see cref="AddSystem"/> keys it. Distinct from <see cref="SystemId"/>, which asks
         /// the narrower question of whether the page is DECLARING that system at all: travelling and
         /// backing out have already established that from the map's own perception rules.</summary>
         private static ControlId RootId(StarSystemNode node)
         {
-            return ControlId.Referenced(node, "galaxy:system/" + node.GUID);
+            return ControlId.Referenced(node, SystemKey(node));
+        }
+
+        /// <summary>The group a system's node hangs under - its constellation's, or the one the
+        /// unexplored ones share.</summary>
+        private static ControlId GroupId(StarSystemNode node)
+        {
+            return ControlId.Structural(GroupKey(node.Constellation, PlayerEmpire()));
+        }
+
+        /// <summary>Ask for a system's branch to be open on the next build, and for the stretch of sky
+        /// it hangs in along with it: a system inside a closed constellation is not declared at all, so
+        /// opening only the system would ask for a node that does not exist yet.</summary>
+        private void OpenPlace(StarSystemNode node)
+        {
+            _pendingExpand.Add(GroupId(node));
+            _pendingExpand.Add(RootId(node));
         }
 
         /// <summary>
@@ -1799,25 +1958,36 @@ namespace ES2Access.Screens
         // ---- systems ----
 
         /// <summary>
-        /// The star systems the player can see, in ONE list.
+        /// The star systems the player can see, filed under the stretches of sky the map draws names
+        /// across.
         ///
-        /// Which ones those are is the same question the map asks when it decides whether to draw a
+        /// Which systems those are is the same question the map asks when it decides whether to draw a
         /// system's name: explored at least once, and either remembered or currently in sight. Asking
         /// it the same way is what keeps this list and the map showing the same galaxy.
         ///
-        /// One list and not two. An empire's own colonies used to be held at the front, which made the
-        /// list run north to south twice and put two systems that are neighbours on the map at opposite
-        /// ends of the walk; the map itself draws no such division, and whose a star is is already the
-        /// first thing its own row says (owner ruling 2026-08-16). So the only division left on this
-        /// stop is between what stands AT a place and what is drawn out between the stars, which is a
-        /// division the picture really has.
+        /// The map has exactly one level above a system, and the game already draws it: the
+        /// CONSTELLATION, whose name floats over the region its members are scattered through. Every
+        /// node in the galaxy belongs to one, so grouping by it costs nothing to derive and gives a
+        /// galaxy of forty stars a walk of five entries instead of forty
+        /// (<see cref="AddConstellation"/>). A constellation the player has not explored has no name
+        /// drawn across it and must not be named here either, so everything in all of those shares one
+        /// group with a mod-authored caption (<see cref="AddUnexplored"/>) which goes last, having no
+        /// position of its own to be sorted by.
+        ///
+        /// One list and not two, INSIDE all that. An empire's own colonies used to be held at the
+        /// front, which made the list run north to south twice and put two systems that are neighbours
+        /// on the map at opposite ends of the walk; the map itself draws no such division, and whose a
+        /// star is is already the first thing its own row says (owner ruling 2026-08-16). So the only
+        /// division left on this stop is between what stands AT a place and what is drawn out between
+        /// the stars, which is a division the picture really has.
         ///
         /// The systems are put in the order they would be READ off the map -
-        /// <see cref="ReadingOrder"/> - so that the list runs the same way twice and the same way the
-        /// pairs it speaks do. Home is not held at the front either: it sits wherever its own pair puts
-        /// it. A fleet crossing open space towards somewhere the map has not named is walked into that
-        /// same order by its own position (<see cref="AddAdrift"/>), because it stands at no place and
-        /// there is nowhere else for it to be.
+        /// <see cref="ReadingOrder"/> - and so are the constellation groups, by the centroid the game
+        /// itself stores for each and writes its name at. So the list runs the same way twice and the
+        /// same way the pairs it speaks do. Home is not held at the front either: it sits wherever its
+        /// own pair puts it. A fleet crossing open space towards somewhere the map has not named is
+        /// walked into that same order by its own position (<see cref="AddAdrift"/>), because it stands
+        /// at no place and there is nowhere else for it to be.
         /// </summary>
         private void BuildSystems(GraphBuilder builder)
         {
@@ -1872,32 +2042,29 @@ namespace ES2Access.Screens
                 // draws are pooled by the window, not rebuilt per frame, so one walk of the label
                 // window serves every system this build declares.
                 StarSystemLabel[] labels = SystemLabels();
+                ConstellationLabel[] regions = ConstellationLabels();
+                Partition(empire);
 
                 // Two lists already in the same order, merged as they are declared: a homeless fleet
-                // takes its place among the stars rather than being parked at either end of them.
-                int star = 0;
+                // takes its place among the constellations rather than being parked at either end of
+                // them.
+                int sky = 0;
                 int fleet = 0;
-                while (star < _systems.Count || fleet < _adrift.Count)
+                while (sky < _groups.Count || fleet < _adrift.Count)
                 {
-                    bool takeStar =
+                    bool takeSky =
                         fleet >= _adrift.Count
                         || (
-                            star < _systems.Count
+                            sky < _groups.Count
                             && ComparePositions(
-                                _systems[star].GalaxyPosition,
+                                _groups[sky].Constellation.GalaxyPosition,
                                 _adrift[fleet].GalaxyPosition
                             ) <= 0
                         );
-                    if (takeStar)
+                    if (takeSky)
                     {
-                        AddSystem(
-                            builder,
-                            _systems[star],
-                            empire,
-                            _colonies.Contains(_systems[star]),
-                            labels
-                        );
-                        star++;
+                        AddConstellation(builder, _groups[sky], empire, labels, regions);
+                        sky++;
                     }
                     else
                     {
@@ -1905,6 +2072,8 @@ namespace ES2Access.Screens
                         fleet++;
                     }
                 }
+
+                AddUnexplored(builder, empire, labels);
 
                 if (drifting > 0)
                 {
@@ -1918,6 +2087,302 @@ namespace ES2Access.Screens
             catch (Exception e)
             {
                 Log.Warn("galaxy: reading the systems threw: " + e);
+            }
+        }
+
+        /// <summary>One stretch of sky the map names, and which of this build's member lists holds the
+        /// systems it is showing. The members are held by INDEX into a pool of lists rather than in the
+        /// struct, so the whole partition is rebuilt every frame without allocating one list per
+        /// constellation per build (<see cref="Partition"/>).</summary>
+        private struct SkyGroup
+        {
+            public Constellation Constellation;
+            public int Members;
+        }
+
+        /// <summary>The constellations this build is naming, in the order they read.</summary>
+        private readonly List<SkyGroup> _groups = new List<SkyGroup>();
+
+        /// <summary>The pool <see cref="SkyGroup.Members"/> indexes: reused build after build, cleared
+        /// as each is claimed, and never longer than the galaxy has constellations.</summary>
+        private readonly List<List<StarSystemNode>> _members =
+            new List<List<StarSystemNode>>();
+
+        /// <summary>Everything standing in a constellation the map draws no name across, in reading
+        /// order.</summary>
+        private readonly List<StarSystemNode> _unexplored = new List<StarSystemNode>();
+
+        /// <summary>
+        /// Sort this build's systems into the stretches of sky they stand in.
+        ///
+        /// <see cref="_systems"/> is already in reading order, so appending each system to its own
+        /// group leaves every group in reading order too, and only the groups themselves need sorting.
+        ///
+        /// Rebuilt every frame like the rest of the stop, and allocation-free after the first galaxy:
+        /// the member lists are pooled and the group list keeps its capacity across
+        /// <see cref="List{T}.Clear"/>. Which constellation a node is in never changes; only whether
+        /// the player has been shown its name does, and that is one array read each.
+        /// </summary>
+        private void Partition(Empire empire)
+        {
+            _groups.Clear();
+            _unexplored.Clear();
+            int claimed = 0;
+            for (int i = 0; i < _systems.Count; i++)
+            {
+                StarSystemNode node = _systems[i];
+                Constellation constellation = node.Constellation;
+                if (!Explored(constellation, empire))
+                {
+                    _unexplored.Add(node);
+                    continue;
+                }
+
+                int slot = -1;
+                for (int j = 0; j < _groups.Count; j++)
+                {
+                    if (ReferenceEquals(_groups[j].Constellation, constellation))
+                    {
+                        slot = _groups[j].Members;
+                        break;
+                    }
+                }
+
+                if (slot < 0)
+                {
+                    if (claimed >= _members.Count)
+                    {
+                        _members.Add(new List<StarSystemNode>());
+                    }
+
+                    slot = claimed++;
+                    _members[slot].Clear();
+                    _groups.Add(
+                        new SkyGroup { Constellation = constellation, Members = slot }
+                    );
+                }
+
+                _members[slot].Add(node);
+            }
+
+            _groups.Sort(ConstellationOrder);
+        }
+
+        /// <summary>
+        /// One constellation as a group node: the name the map writes across it, the game's own
+        /// dossier on it as the node's tooltip, and the systems in it as its children.
+        ///
+        /// The label the name is read off is one the window keeps per constellation and shows for any
+        /// the empire has explored. At the zoom the game is played at its alpha is nought - the picture
+        /// fades constellation names out as the camera comes in - and that is deliberately not asked
+        /// about: the label exists, the game keeps it bound, and its tooltip reads. What decides
+        /// whether this group is named at all is the same gate the label itself uses
+        /// (<see cref="Explored"/>), never how faded it happens to be at this moment.
+        ///
+        /// No coordinate pair (owner ruling 2026-08-20). A constellation is a REGION, and the centroid
+        /// the game stores for it is where its name is written rather than a place anything stands - a
+        /// pair here would be a place the player could steer to and find nothing.
+        ///
+        /// Closing the group takes the camera back out, exactly as closing a system does and for the
+        /// same reason: it is the one gesture that means "I am done reading in there". Only while the
+        /// camera is still inside THIS constellation - a player who has since read their way somewhere
+        /// else has a camera that is not this group's to move. Opening moves no camera: there is
+        /// nothing at a constellation's centre to fly to, and the group's own children are what opening
+        /// it is for.
+        /// </summary>
+        private void AddConstellation(
+            GraphBuilder builder,
+            SkyGroup group,
+            Empire empire,
+            StarSystemLabel[] labels,
+            ConstellationLabel[] regions
+        )
+        {
+            Constellation it = group.Constellation;
+            ConstellationLabel drawn = LabelFor(it, regions);
+            AgeTooltip tooltip = drawn == null ? null : drawn.ConstellationTooltip;
+            NodeVtable vtable = GraphNodes.Group(() => it.LocalizedName, tooltip: tooltip);
+            AgeTooltip tip = tooltip;
+            vtable.OnFocusVisual = () =>
+            {
+                if (tip != null)
+                {
+                    PointerFocus.MoveTo(null, tip, tip.AgeTransform);
+                }
+            };
+            vtable.OnBlurVisual = ReleasePointer;
+
+            ControlId id = ControlId.Referenced(it, ConstellationKey + it.GUID);
+            HashSet<ControlId> expansion = builder.Expansion;
+            ControlId closing = id;
+            Constellation leaving = it;
+            vtable.OnCollapse = () =>
+            {
+                if (expansion != null)
+                {
+                    expansion.Remove(closing);
+                }
+
+                ZoomOutOf(leaving);
+            };
+
+            Seed(builder, id);
+            builder.BeginGroup(id, vtable);
+            if (builder.IsExpanded(id))
+            {
+                List<StarSystemNode> members = _members[group.Members];
+                for (int i = 0; i < members.Count; i++)
+                {
+                    AddSystem(builder, members[i], empire, _colonies.Contains(members[i]), labels);
+                }
+            }
+
+            builder.EndGroup();
+        }
+
+        /// <summary>
+        /// Everything standing where the map has drawn no constellation name, in one group.
+        ///
+        /// One group and not one per constellation: the game DOES know which unexplored constellation
+        /// each of these stands in, and saying so - even as five nameless buckets - would tell the
+        /// player how the unseen half of the galaxy is divided up, which the picture does not. The
+        /// caption is the mod's own for the same reason: there is no game text for a region the game is
+        /// not naming.
+        ///
+        /// Last in the stop. It is the one entry with no position of its own - its members are
+        /// scattered over the whole map - so there is no honest place for it in a walk sorted by
+        /// position, and the end is where a group that is really "everything else" belongs.
+        ///
+        /// No tooltip, and expanding or closing it moves no camera: it stands for no place, so there is
+        /// nowhere for a camera to go.
+        /// </summary>
+        private void AddUnexplored(GraphBuilder builder, Empire empire, StarSystemLabel[] labels)
+        {
+            if (_unexplored.Count == 0)
+            {
+                return;
+            }
+
+            NodeVtable vtable = GraphNodes.Group(
+                () => ModStrings.Get(ModStrings.GalaxyConstellationUnexplored)
+            );
+            ControlId id = ControlId.Structural(UnexploredKey);
+            Seed(builder, id);
+            builder.BeginGroup(id, vtable);
+            if (builder.IsExpanded(id))
+            {
+                for (int i = 0; i < _unexplored.Count; i++)
+                {
+                    AddSystem(
+                        builder,
+                        _unexplored[i],
+                        empire,
+                        _colonies.Contains(_unexplored[i]),
+                        labels
+                    );
+                }
+            }
+
+            builder.EndGroup();
+        }
+
+        /// <summary>
+        /// Open a group the first time this session ever declares it, and never again.
+        ///
+        /// A tree of constellations that arrived closed would put a level between the player and every
+        /// system they used to walk straight into, which is a change to how the map READS rather than a
+        /// change to what it holds. Open is therefore the inert default: the walk the player had is the
+        /// walk they still have, and closing a constellation they are done with is something they can
+        /// now choose. Once they have chosen, the choice is theirs - the seed never fires twice for the
+        /// same group, so a group the player closed stays closed.
+        ///
+        /// Keyed on the structural key rather than the id so the record survives the id being rebuilt
+        /// each frame, and cleared with the trail when the galaxy changes.
+        /// </summary>
+        private void Seed(GraphBuilder builder, ControlId id)
+        {
+            HashSet<ControlId> expansion = builder.Expansion;
+            if (expansion == null || !_seeded.Add(id.StructuralKey))
+            {
+                return;
+            }
+
+            expansion.Add(id);
+        }
+
+        /// <summary>The groups this session has already offered a starting state to.</summary>
+        private readonly HashSet<object> _seeded = new HashSet<object>();
+
+        /// <summary>Put the camera back out at the default view when a constellation's branch is
+        /// closed - but only while it is a system of THIS constellation the camera is in on, which is
+        /// the same test closing a system makes (<see cref="Collapse"/>) one level up. The way out is
+        /// the system's own, so the camera lands exactly where collapsing that system would have put
+        /// it, and a camera already out moves not at all.</summary>
+        private static void ZoomOutOf(Constellation constellation)
+        {
+            StarSystemNode inside = GalaxyViewLevels.FocusedSystem;
+            if (inside != null && ReferenceEquals(inside.Constellation, constellation))
+            {
+                ZoomOut(inside);
+            }
+        }
+
+        /// <summary>The map's own label for a constellation - matched by the constellation it was bound
+        /// to, with the entity's identity as the fallback the system labels use for the same reason.
+        /// </summary>
+        private static ConstellationLabel LabelFor(
+            Constellation constellation,
+            ConstellationLabel[] labels
+        )
+        {
+            try
+            {
+                for (int i = 0; i < labels.Length; i++)
+                {
+                    if (ReferenceEquals(labels[i].Constellation, constellation))
+                    {
+                        return labels[i];
+                    }
+                }
+
+                for (int i = 0; i < labels.Length; i++)
+                {
+                    Constellation candidate = labels[i].Constellation;
+                    if (candidate != null && candidate.GUID == constellation.GUID)
+                    {
+                        return labels[i];
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: matching a constellation to its map label threw: " + e);
+            }
+
+            return null;
+        }
+
+        private static readonly ConstellationLabel[] NoConstellationLabels =
+            new ConstellationLabel[0];
+
+        /// <summary>Every constellation label the window is holding, fetched fresh for the same reason
+        /// the system labels are: the window instantiates one per constellation as the game meets
+        /// them.</summary>
+        private static ConstellationLabel[] ConstellationLabels()
+        {
+            try
+            {
+                ConstellationLabelsWindow window = Gui.GuiServiceAvailable
+                    ? Gui.GuiService.GetWindow<ConstellationLabelsWindow>(false)
+                    : null;
+                return window == null
+                    ? NoConstellationLabels
+                    : window.GetComponentsInChildren<ConstellationLabel>(true);
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: finding the constellation labels threw: " + e);
+                return NoConstellationLabels;
             }
         }
 
@@ -1939,6 +2404,18 @@ namespace ES2Access.Screens
         private static readonly Comparison<StarSystemNode> ReadingOrder = CompareReadingOrder;
 
         private static readonly Comparison<Fleet> FleetReadingOrder = CompareFleetReadingOrder;
+
+        /// <summary>The same rule for the stretches of sky, off the centroid the game stores for each
+        /// and writes its name at - so the groups read down the map the way their members do.</summary>
+        private static readonly Comparison<SkyGroup> ConstellationOrder = CompareConstellationOrder;
+
+        private static int CompareConstellationOrder(SkyGroup left, SkyGroup right)
+        {
+            return ComparePositions(
+                left.Constellation.GalaxyPosition,
+                right.Constellation.GalaxyPosition
+            );
+        }
 
         private static int CompareReadingOrder(StarSystemNode left, StarSystemNode right)
         {
@@ -2012,7 +2489,6 @@ namespace ES2Access.Screens
                 // (<see cref="CursorTargeting.PreviewLines"/>). Silent the rest of the time, which is
                 // almost always.
                 NodeSection.Buffer(() => CursorTargeting.PreviewLines(it)),
-                NodeSection.Buffer(() => ConstellationLines(it, empire)),
                 NodeSection.Buffer(() => FleetPresence.LinesAt(it)),
                 // What sending the selection here would mean, turn by turn - nothing at all while no
                 // fleet is selected, which is most of the time (<see cref="FleetRoute"/>).
@@ -2116,7 +2592,8 @@ namespace ES2Access.Screens
 
             // Right means "tell me what is inside this", and what is inside it is whatever the map is
             // drawing there: the circles when the camera is out, the orbital cards when it is in...
-            ControlId id = ControlId.Referenced(it, "galaxy:system/" + it.GUID);
+            string place = SystemKey(node, empire);
+            ControlId id = ControlId.Referenced(it, place);
             // ...except that opening a system is also the one gesture that says "this is the place I am
             // reading now", so the camera comes in on it - owner-ruled, and it is what makes the map draw
             // the very things the branch is about to read out. The bookkeeping is done by hand because
@@ -2141,7 +2618,7 @@ namespace ES2Access.Screens
             // Only what is open costs anything: a galaxy of closed systems declares one node each.
             if (builder.IsExpanded(id))
             {
-                AddInside(builder, "galaxy:system/" + node.GUID, node, empire, label);
+                AddInside(builder, place, node, empire, label);
             }
 
             builder.EndGroup();
@@ -2460,51 +2937,6 @@ namespace ES2Access.Screens
             List<CardActions.CardAction> found = new List<CardActions.CardAction>(4);
             SystemLabelReadout.Actions(found, label);
             CardActions.Emit(builder, key + "/label", found);
-        }
-
-        /// <summary>
-        /// The stretch of sky this system stands in, by the name the map writes across it.
-        ///
-        /// The map draws constellation names as labels of their own, floating over regions rather than
-        /// over anything in them (<c>ConstellationLabel</c>), and the tree has no level for a region: a
-        /// constellation is not a thing to walk into, it is where a system IS. So it is said on the
-        /// system, off the system's own membership - which is where the label gets the name too
-        /// (<c>Constellation.LocalizedName</c> is what <c>BindConstellation</c> writes into it), so the
-        /// two cannot say different words.
-        ///
-        /// Gated on the same question the label asks before it draws at all: a constellation nobody has
-        /// been into yet is nameless on the map, and naming it here would hand the player a name off the
-        /// simulation that nothing on the screen is showing. Reviewed rather than spoken - it is where
-        /// the system has always been, not news, and the systems stop is walked a hundred nodes at a
-        /// time.
-        /// </summary>
-        private static IList<string> ConstellationLines(GameNode node, Empire empire)
-        {
-            try
-            {
-                Constellation constellation = node == null ? null : node.Constellation;
-                if (
-                    constellation == null
-                    || empire == null
-                    || (int)constellation.Exploration[empire] <= 0
-                )
-                {
-                    return null;
-                }
-
-                return new string[]
-                {
-                    ModStrings.Format(
-                        ModStrings.GalaxySystemConstellation,
-                        constellation.LocalizedName
-                    ),
-                };
-            }
-            catch (Exception e)
-            {
-                Log.Warn("galaxy: reading a system's constellation threw: " + e);
-                return null;
-            }
         }
 
         /// <summary>

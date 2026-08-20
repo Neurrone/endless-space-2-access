@@ -663,6 +663,8 @@ namespace ES2Access
             // Same shape: the map's coordinate origin is a cached read, and letting go of it only
             // drops the empire it was taken from.
             GalaxyCoordinates.Forget();
+            // And the constellation outlines derived from it, which hold the galaxy's own nodes.
+            ConstellationMap.Forget();
             // And the map's inspect cursor, whose lines the page gave back when it was popped just
             // above: what is left is the flag the input layer's own claim reads.
             GalaxyInspect.Reset();

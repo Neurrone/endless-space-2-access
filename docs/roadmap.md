@@ -100,12 +100,13 @@ files above.
   two-mastery starting skill also await a fixture (Nakalim/Templar hero).
 - Hero skill page: the heading now speaks twice on arrival (screen name or FollowPage line,
   then the tree stop's "Skill Tree" context) — user ruling pending on which line yields.
-- Constellations (in progress 2026-08-20): `Core/Map` hull geometry landed
-  (`ConvexHull`/`ConstellationRegions` + `Audit()` oracle); remaining: the runtime layer
-  (explored-constellation groups, the merged "Unexplored constellation" bucket,
-  `ConstellationLines` removal), inspect-mode announcements, the scanner category, and one
-  live `Audit()` run per fixture galaxy to record `OutsideOwnHull` (expect 0) and the real
-  `InsideAnotherHull` interlock count.
+- Constellations (in progress 2026-08-20): hull geometry AND the grouped tree are done
+  (`ConstellationMap`, `unlocked` audit: outside-own-hull 0, inside-another 22, all
+  tie-broken). Remaining: inspect-mode announcements, the scanner category, and the
+  constellation node's tooltip DRAW problem — labels are culled in `unlocked` at every
+  camera position, so the "Constellation" tooltip never fills naturally; the mod node
+  likely needs the force-show dance on focus, and the tooltip's line-splitting is
+  unverified (a force-shown label's rows all rect (0,0,0,0) and band into one line).
 - Election, vote breakdown: the "Political Trends" caption is now declared as the bars'
   region label (one-per-row rollout, 2026-08-18) — code-only, and the drawn child's name
   is a guarded guess. On the first real election turn: check the bars arrive under the
