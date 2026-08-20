@@ -1641,6 +1641,13 @@ namespace ES2Access.Screens
         /// lane heard from two neighbouring cells is heard as one lane. A lane whose far end the map
         /// has not named says which way it runs instead, exactly as that lane's own node does under the
         /// system it leaves.
+        ///
+        /// Two gates, not one, and the second is what the cell needs beyond what the tree needs.
+        /// <see cref="MapVisibility.Drawn"/> answers for the LINK - is this line lit at all - and the
+        /// tree, which hangs a lane under the system it leaves, needs no more than that. A cell is a
+        /// PLACE, and a lit line is not lit along the whole of its length
+        /// (<see cref="Lit"/>): the geometry runs end to end whatever anyone has explored, and the fog
+        /// cuts it short.
         /// </summary>
         private void Lanes(Contents contents, List<StarSystemNode> perceived, Empire empire)
         {
@@ -1693,6 +1700,11 @@ namespace ES2Access.Screens
                     }
 
                     seen.Add(link.GUID);
+                    if (!Lit(eastOne, northOne, eastTwo, northTwo))
+                    {
+                        continue;
+                    }
+
                     string said = LaneText(link, empire, wormhole);
                     if (said != null)
                     {
@@ -1700,6 +1712,88 @@ namespace ES2Access.Screens
                         contents.Links.Add(link);
                     }
                 }
+            }
+        }
+
+        /// <summary>
+        /// Whether the map is really painting this lane INSIDE the cell.
+        ///
+        /// <see cref="MapVisibility.Drawn"/> is the link's half of the question and stops there: the
+        /// line is built between the two extremity positions the moment the link is created
+        /// (<c>GalaxyWarplink.Ignite</c>) and the intensity its exploration state buys is applied to
+        /// the whole of it in one colour (<c>GalaxyLink.Refresh</c> passes the SAME state for both
+        /// ends). What cuts a lit line short is the FOG, which is not a property of the line at all: it
+        /// is a shader over the world - <c>FOWRendererService</c> publishes the empire's own distance
+        /// field as a global texture the map's materials sample - so a lane running into unexplored
+        /// space is drawn as a stub out of the end the player can see and fades to nothing where the
+        /// fog begins. Measured on the fixture: the Xiu-to-Procyon lane draws nothing at all at
+        /// (-2, -9) while the cell there named it (owner-reported, 2026-08-20).
+        ///
+        /// This is the one content class the cell reads whose gate does not settle WHERE the thing is
+        /// drawn. Everything else the cell names is a LABEL, and a label window decides for itself
+        /// whether to draw one at all; a lane is world geometry, and the fog is drawn over it.
+        ///
+        /// Asked at the same granularity the cell's own fog count is asked at
+        /// (<see cref="Fogged"/>) - the whole-unit squares of the cell, sampled at their centres - so a
+        /// cell that tells the player it is "Unexplored" can never also name a lane crossing it. At the
+        /// default one-by-one cursor that is a single lookup.
+        /// </summary>
+        private bool Lit(double eastOne, double northOne, double eastTwo, double northTwo)
+        {
+            try
+            {
+                IVisibilityService visibility = Services.GetService<IVisibilityService>();
+                Empire empire = Gui.PlayerEmpire;
+                if (visibility == null || empire == null)
+                {
+                    // The same way out <see cref="Fogged"/> takes: with no fog field to ask, the map
+                    // is not being described as foggier than it is.
+                    return true;
+                }
+
+                GalaxyPosition origin = GalaxyCoordinates.Origin();
+                int half = InspectGrid.HalfWidth(_size);
+                for (int east = -half; east <= half; east++)
+                {
+                    for (int north = -half; north <= half; north++)
+                    {
+                        int x = _x + east;
+                        int y = _y + north;
+                        if (
+                            !InspectGrid.Crosses(
+                                x,
+                                y,
+                                1,
+                                eastOne,
+                                northOne,
+                                eastTwo,
+                                northTwo
+                            )
+                        )
+                        {
+                            continue;
+                        }
+
+                        if (
+                            visibility.IsExplored(
+                                empire,
+                                new GalaxyPosition(origin.X + x, origin.Y + y)
+                            )
+                        )
+                        {
+                            return true;
+                        }
+                    }
+                }
+
+                return false;
+            }
+            catch (Exception e)
+            {
+                Log.Warn(
+                    "galaxy: asking whether the map paints a lane in the inspect cursor threw: " + e
+                );
+                return true;
             }
         }
 

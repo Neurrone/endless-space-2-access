@@ -960,12 +960,19 @@ namespace ES2Access.UI
         }
 
         /// <summary>One of a feature's own labels as its own line, skipped where the feature has
-        /// switched that label off.</summary>
+        /// switched that label off.
+        ///
+        /// Every one of the four is a CAPTION and a value ("Owner: No owner"), and the game bullets
+        /// two of them with a picture of what the caption is about - a crown, an explorer - which is
+        /// the caption's own word said twice over. So the line is read without the icon it opens with
+        /// (<see cref="AgeText.LabelWithoutLeadingIcon"/>, owner ruling 2026-08-20); the icons written
+        /// INSIDE these sentences, which stand in for nouns the sentence has not got, are untouched -
+        /// the ownership line still counts star systems.</summary>
         private static void AddLabel(List<string> lines, AgePrimitiveLabel label)
         {
             if (label != null && label.Visible)
             {
-                TooltipText.AddLines(lines, AgeText.Label(label));
+                TooltipText.AddLines(lines, AgeText.LabelWithoutLeadingIcon(label));
             }
         }
 

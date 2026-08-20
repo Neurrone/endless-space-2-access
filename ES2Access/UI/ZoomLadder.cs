@@ -20,7 +20,10 @@ namespace ES2Access.UI
     /// page's: on the scan view it selects the lens, whose name that screen announces whenever the
     /// layer under it changes - name repeated or not - and repeating it here would say it twice. The
     /// two vocabularies do not collide: the game's nine layer descriptors carry six lens names of
-    /// their own ("Trade", "Economy") and none of them is a band word.
+    /// their own ("Trade", "Economy") and none of them is a band word. In scan mode the band word is
+    /// dropped altogether - the lens title has already said what the rung bought - and that is the
+    /// band's own answer rather than a rule of this class (<see cref="GalaxyViewLevels.ZoomBand"/>),
+    /// so the ladder and the watcher lose it together.
     /// While the game is flying between two view levels there is no rung to report -
     /// the answer is a step behind - so the value says nothing rather than answering "nothing happened" to
     /// a press that did something, and speaks itself as soon as it is true again.

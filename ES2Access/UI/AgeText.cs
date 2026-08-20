@@ -113,6 +113,97 @@ namespace ES2Access.UI
         }
 
         /// <summary>
+        /// A label's spoken text with the icon it OPENS with left unsaid.
+        ///
+        /// The game writes a caption's own picture at the head of the line - "[crown] Owner:",
+        /// "[explorer] Fully discovered by:" - as a bullet for the sentence that follows it, and the
+        /// sentence names the same thing in words. Spoken, the name of that picture is a word in front
+        /// of a caption that did not need one ("Crown Owner: No owner"), so a reading that has already
+        /// decided its lines ARE captions asks for this instead of <see cref="Label"/>. Only the
+        /// leading one: an icon written in the middle of a sentence is standing in for a noun the
+        /// sentence does not otherwise have, and dropping it would cost the sentence its subject.
+        ///
+        /// The engine's own symbol registry is the referee here exactly as it is in
+        /// <see cref="SubstituteIcons"/> - a leading bracket that is not a registered icon is literal
+        /// text and stays - and the token is removed BEFORE anything substitutes a name into it, so
+        /// nothing is ever matched against words this class invented.
+        /// </summary>
+        public static string LabelWithoutLeadingIcon(AgePrimitiveLabel label)
+        {
+            if (label == null)
+            {
+                return null;
+            }
+
+            string raw = null;
+            try
+            {
+                raw = label.Text;
+            }
+            catch (Exception) { }
+
+            if (!string.IsNullOrEmpty(raw))
+            {
+                try
+                {
+                    if (Gui.IsLocalizationKey(raw))
+                    {
+                        raw = Gui.Localize(raw);
+                    }
+                }
+                catch (Exception) { }
+            }
+
+            return string.IsNullOrEmpty(raw) || raw.IndexOf('[') < 0
+                ? Label(label)
+                : Clean(DropLeadingIcon(raw));
+        }
+
+        /// <summary>The string without the icon token it opens with, or unchanged where it opens with
+        /// something else. Leading whitespace and the colour-markup runs the labels are wrapped in are
+        /// looked through: an icon written behind either of them is still the first thing the line
+        /// says.</summary>
+        private static string DropLeadingIcon(string text)
+        {
+            int i = 0;
+            while (i < text.Length)
+            {
+                if (char.IsWhiteSpace(text[i]))
+                {
+                    i++;
+                    continue;
+                }
+
+                if (text[i] == '#')
+                {
+                    int close = text.IndexOf('#', i + 1);
+                    if (close < 0)
+                    {
+                        return text;
+                    }
+
+                    i = close + 1;
+                    continue;
+                }
+
+                break;
+            }
+
+            if (i >= text.Length || text[i] != '[')
+            {
+                return text;
+            }
+
+            int end = text.IndexOf(']', i + 1);
+            if (end < 0 || !EngineExpands(text.Substring(i + 1, end - i - 1)))
+            {
+                return text;
+            }
+
+            return text.Substring(0, i) + text.Substring(end + 1);
+        }
+
+        /// <summary>
         /// The whole of what a label says, for one the game has ellipsized to fit its box.
         ///
         /// <see cref="Label"/> reads <c>TranslatedText</c>, which is what FITS - a tile 96 pixels wide

@@ -200,11 +200,19 @@ waiting for a target (owner-ruled deviation, 2026-08-12).
 the initial tile is inside an explored hull, then change-only: "{0} constellation" crossing in,
 "Out of {0} constellation" crossing out to unassigned space. `ConstellationMap` is explored-only
 so fog leaks nothing; cell identity for Shift+arrows is UNCHANGED (the skip runs through
-boundaries); suspend/resume re-reads the cell only, never the crossing. **The scanner's 7th
-category is Constellations** (explored only, no subcategories beyond "all"): per-query
-representative point = the member node nearest the reading point ("here" when inside);
-Alt+Home lands on the group node (auto-expand), or moves the inspect cell to the representative
-point while the mode is live. **A focused constellation node HOLDS its culled label shown**
+boundaries); suspend/resume re-reads the cell only, never the crossing. **A cell names a starlane only
+where the fog draws it** (2026-08-20): the link gate answers "is this lane lit", never "lit
+HERE" — `Lit` samples the cell's unit squares through `IVisibilityService.IsExplored`, the
+same field the cell's "Unexplored" word uses; the tree's lane rows keep the link-level gate
+(they hang under the system, a thing not a place). The scanner has SIX categories —
+constellations were removed 2026-08-20 (owner: not a discrete point). **A targeting cursor
+arming now re-reads the standing control** after the exit phrase and instruction
+(`AnnounceNextLanding` from the arming path only; the seat actions and modal-picker pop stay
+re-read-free) — note the fresh landing's path starts at the map stop, whose context IS the
+instruction while armed, so the third utterance currently opens by repeating it (owner ruling
+pending on suppressing the already-inside levels). **The zoom band word is silent while the
+game's scan mode is up** (`ZoomBand` returns null under `Scanning`; the lens titles carry the
+naming there). **A focused constellation node HOLDS its culled label shown**
 (`ConstellationLabelHold`, re-asserted per frame because culling recomputes on camera-position
 change; released on blur/pop/reload through the window's own re-decide) so the game's
 "Constellation" tooltip has a widget to fill.

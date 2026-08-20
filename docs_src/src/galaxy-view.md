@@ -58,7 +58,7 @@ The game's own keyboard zoom (`PageUp` and `PageDown`, held down) stops working 
 
 The slider announces its position and the layer band the camera is on, for example `Zoom, slider, 10 of 15, Systems`. The 15 levels run from the whole galaxy through the map camera's thirteen steps, then into a star system's own page, and finally onto a single planet's page — the same range the mouse wheel covers. The bands, from furthest out: Galaxy map, Informative galaxy, Constellation, Systems, System and System Overview; the very furthest step and the two page levels add no band word.
 
-In the normal galaxy view, the zoom level controls how much detail the game draws. Zoom changes are announced wherever you are.
+In the normal galaxy view, the zoom level controls how much detail the game draws. Zoom changes are announced wherever you are. In the game's scan mode the band word goes quiet — the lens titles name the steps there.
 
 ## The Game's Scan Mode
 
@@ -100,7 +100,7 @@ The scanner is a directory of everything on the map, sorted nearest first from w
 - `Alt+PageUp` / `Alt+PageDown`: previous / next result, wrapping at both ends
 - `Alt+Home`: jump to the current result
 
-The categories are systems, fleets, probes, quest markers, ally pins, obliterator missiles and constellations. The systems category has subcategories: all, friendly, neutral, enemy, homeworld, minor factions and special. Empty categories and subcategories are skipped, so a press always lands on something. A constellation's distance is measured to its nearest member system — `here` when you stand inside it.
+The categories are systems, fleets, probes, quest markers, ally pins and obliterator missiles. The systems category has subcategories: all, friendly, neutral, enemy, homeworld, minor factions and special. Empty categories and subcategories are skipped, so a press always lands on something.
 
 Changing category announces the full scope and the result you land on, for example `Systems: friendly, Dusay, 0, 0, here, 1 of 2`. Changing subcategory announces the subcategory and the result. Stepping through results announces the result alone: name, coordinates, distance and direction, and position in the list, for example `Heka, -1, -9, 9 south, 1 west, 2 of 13`. The very first scanner press of a game announces where you already are without moving.
 

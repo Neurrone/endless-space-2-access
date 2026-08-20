@@ -686,11 +686,17 @@ Note a force-shown label's tooltip rows all report rect (0,0,0,0) — no longer 
 FOCUSED constellation node holds its label shown by itself (`ConstellationLabelHold`); the recipe
 is only needed for labels no node focuses. The hull-oracle one-liner:
 `/eval ES2Access.UI.ConstellationMap.AuditWholeGalaxy().ToString()`.
-**`unlocked` turn-1 fleet/orbit realities** (2026-08-20): NO player fleet is in orbit (1100 and
-1108 both mid-lane, `NodeIndex=-1`), Xiu (GUID 548) is the only explored system, no wreck exists
-anywhere in the galaxy, and fleet 1108's action panel draws 8 buttons, all "must be orbiting" —
-of the six seat actions only Start Expedition is drawn at all. Xiu's orbital rows:
-`planet/0|1|3/action/0` = Colonize, `planet/1/action/1` = Signal (curiosity).
+**`unlocked` fleet/orbit realities** (2026-08-20; the live fixture has since ADVANCED to turn 3
+— Gistrad and Hir now perceived, both fleets still mid-lane; re-probe before trusting counts):
+at turn 1 NO player fleet is in orbit (1100 and 1108 both mid-lane, `NodeIndex=-1`), Xiu
+(GUID 548) is the only explored system, no wreck exists anywhere in the galaxy, and fleet
+1108's action panel draws 8 buttons, all "must be orbiting" — of the six seat actions only
+Start Expedition is drawn at all. Xiu's orbital rows: `planet/0|1|3/action/0` = Colonize,
+`planet/1/action/1` = Signal (curiosity).
+**Finding a fogged lane cell**: one `/eval` over `GameNodes()` for links where `Drawn(link)`
+but exactly one end is `Perceived`, then sample `IVisibilityService.IsExplored` along the
+segment for the boundary. **Driving the inspect cell from `/eval`**: reflect
+`GalaxyInspect._driving` + `JumpTo(x,y)` — collapses dozens of arrow injections to one call.
 **Verifying the fleet-action seat without an orbiting fleet**: in one `/eval`,
 `view.ZoomInOnNode(node)` (or `SelectGameNode`) + `page.SeatAfterFleetAction(node, kind)` via
 `ES2Access.ModEntry.Screens.Current as GalaxyHudScreen`.

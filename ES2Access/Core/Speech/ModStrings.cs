@@ -454,13 +454,6 @@ namespace ES2Access.Core.Speech
         public const string GalaxyScannerProjectiles = "galaxy.scanner.projectiles";
         public const string GalaxyScannerProjectilesAll = "galaxy.scanner.projectiles-all";
 
-        /// <summary>The stretches of sky the map has drawn a name across. Asked "what is there" like
-        /// the three above - a constellation has no owner the scanner could split it by, only member
-        /// systems that each have their own - so it takes the same single subcategory, named rather
-        /// than left blank for the same reason.</summary>
-        public const string GalaxyScannerConstellations = "galaxy.scanner.constellations";
-        public const string GalaxyScannerConstellationsAll = "galaxy.scanner.constellations-all";
-
         /// <summary>A scope the player is parked in that has run out under them. The scope's own name
         /// goes INSIDE the sentence rather than in front of it, so a language that says "there are no
         /// friendly fleets" has somewhere to put the words.</summary>
@@ -1420,8 +1413,6 @@ namespace ES2Access.Core.Speech
             { GalaxyScannerPinsAll, "all" },
             { GalaxyScannerProjectiles, "Obliterator missiles" },
             { GalaxyScannerProjectilesAll, "all" },
-            { GalaxyScannerConstellations, "Constellations" },
-            { GalaxyScannerConstellationsAll, "all" },
             { GalaxyScannerEmpty, "{0}, none found" },
             { GalaxyScannerHere, "here" },
             { GalaxyFleetShips, "{0} ships" },

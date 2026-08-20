@@ -218,6 +218,14 @@ namespace ES2Access.UI
         /// two rungs above the camera's own ladder, which are a system's page and a planet's and
         /// announce themselves as pages; and a layer name this mod has no word for, which is what a
         /// patch adding a band looks like from here.
+        ///
+        /// A FOURTH while the game's own scan mode is up (<see cref="Scanning"/>, owner ruling
+        /// 2026-08-20): what the rung buys in that mode is the LENS, and the mod already announces
+        /// the lens's own title at every layer boundary (<c>ScanViewScreen.AnnounceLens</c>), so the
+        /// band word beside it is the same fact said twice in two vocabularies. Asked here rather
+        /// than in the two consumers (<see cref="ZoomWatch"/>, <see cref="ZoomLadder"/>) because the
+        /// rung read from the ladder and the rung heard from the watcher are one reading and must not
+        /// differ by which of them the player happened to hear it from.
         /// </summary>
         public static string ZoomBand
         {
@@ -225,6 +233,11 @@ namespace ES2Access.UI
             {
                 try
                 {
+                    if (Scanning)
+                    {
+                        return null;
+                    }
+
                     GalaxyViewCameraController camera = GalaxyCamera();
                     int rung = ZoomRung;
                     string[] layers =

@@ -1396,6 +1396,16 @@ generic graduates to the generic docs.
   calls `MarkLabelsCulling` unconditionally). In `unlocked` no `GalaxyConstellation` is ever
   culled in at ANY camera position. Constellation GUIDs in `unlocked`: Canista 1, Andromeda 72,
   Vela 264, Herkules 516 (home), Fornax 713.
+- **The lane gate, second half**: a starlane's line is built end-to-end at link creation and
+  tinted uniformly from the link's own state (`GalaxyLink.Refresh` :247-252 passes the SAME
+  state for both extremities); what shortens a lane into the dark to a stub is the FOG SHADER —
+  `FOWRendererService` publishes the empire's distance field as a global `_DistanceToFOW`
+  texture (:347) the map's world materials sample. So `Exploration >= PartiallyRevealed`
+  answers "is this lane lit", never "lit HERE" (measured 2026-08-20).
+- **The labels/geometry split**: everything the map names out in space EXCEPT lanes is an AGE
+  label whose window gates itself — its declaring gate IS the drawn answer. Lanes are world
+  geometry occluded by the fog shader, the one class whose place-reading needs a second,
+  position-aware gate (`IVisibilityService.IsExplored` per unit square).
 - **Alpha is not a gate for the constellation tooltip family**: a held label at play zoom is
   `Shown=True, Alpha=0` and its tooltip still fills and reads — `ConstellationLabel.Refresh`
   writes Content/Target/Class regardless of alpha.

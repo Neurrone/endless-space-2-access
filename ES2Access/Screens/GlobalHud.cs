@@ -250,6 +250,7 @@ namespace ES2Access.Screens
 
                 bool ended = string.IsNullOrEmpty(instruction);
                 _instruction = instruction;
+                bool dismissed = false;
                 if (!ended)
                 {
                     // A mode the game has just armed takes the map, and the galaxy's inspect cell is a
@@ -258,13 +259,33 @@ namespace ES2Access.Screens
                     // cell goes first and says so, and the instruction is the last thing heard
                     // (owner ruling 2026-08-20). Every one of the nine cursors, not the fleet ones
                     // alone - this is the one place the mod sees an instruction appear.
-                    GalaxyInspect.Dismiss();
+                    dismissed = GalaxyInspect.Dismiss();
                 }
 
                 Voice.Say(
                     ended ? OptionalText.Phrase(ModeEndedKey) : instruction,
                     false
                 );
+
+                if (dismissed)
+                {
+                    // ...and then WHERE THE PLAYER IS STANDING (owner ruling 2026-08-20). The tree
+                    // cursor never moved while the cell was up, so the ordinary "say it only when the
+                    // cursor moved" rule leaves the player with a mode ended, an instruction to obey,
+                    // and no idea which control the keys have gone back to. This is the mode's own
+                    // Escape route asked for by somebody else (<c>GalaxyInspect.Exit</c>), which is
+                    // why it is the navigator's next landing rather than a line composed here: the
+                    // landing speaks queued, so the three utterances arrive in the order they happened.
+                    //
+                    // Only the ARMING path. The six zoom-in fleet actions dismiss the cell too, and
+                    // each of them goes on to seat the cursor somewhere new, which announces itself;
+                    // a re-read there would say the seat twice.
+                    GraphNavigator navigator = ModEntry.Navigator;
+                    if (navigator != null)
+                    {
+                        navigator.AnnounceNextLanding();
+                    }
+                }
             }
             catch (Exception e)
             {
