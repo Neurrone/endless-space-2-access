@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Galaxy map: `Enter` on a starlane whose far end you have explored now travels down it, exactly like `Right` — but only when nothing else wants the key: with a targeting mode armed it still confirms the target, and with a fleet selected it still puts the fleet down. A lane into unexplored space still does nothing
+- Galaxy map: `Enter` on a planet now confirms an armed targeting mode instead of opening the planet's page over it. Before, aiming an obliterator or a probe and pressing `Enter` on a planet silently threw the mode away ("Target selection ended") without firing anything
+- Galaxy map: while an action is waiting for a target, the map panel names itself with the game's own instruction ("Left Click to launch a probe, Esc/ Right Click to cancel" and the like) instead of "Map" — so tabbing out and back re-reads what the game is waiting for
+- The zoom announcement now ends with the name of the layer band the camera is on — "Zoom level 5 of 15, Constellation" — on the automatic announcements and on the zoom slider alike. The bands, from furthest out: Galaxy map, Informative galaxy, Constellation, Systems, System, System Overview; the very furthest step and the system/planet pages add no word
 - Hero skills: the effects table in a skill's tooltip now reads level by level — "Level 1", then the situation it applies in ("On System (if assigned)"), then each effect on its own line. Before, the level number was glued onto the first effect ("1 +1 Industry per Population on Planets") and read like a quantity. A part-levelled skill reads its current level's block and then the next level's; starting skills, relic skills and senator skills read the same way
 - The hero skill page opens on the skill wheel, and the wheel calls itself "Skill Tree" — the game's own heading — instead of the mod's "Skill branches". The heading-only tab stop before the wheel is gone; the overview and ship-design pages keep theirs
 - The skill page's right-hand column is sections now: `Alt+Up` and `Alt+Down` jump between the skill stats, the starting skills, the masteries, and — on heroes that have one — the relics box

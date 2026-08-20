@@ -268,8 +268,13 @@ namespace ES2Access.Screens
 
         /// <summary>What the game is instructing the player to do with the cursor, or null while it is
         /// instructing nothing. The window is hidden whenever there is no mode, so its own visibility is
-        /// the whole test.</summary>
-        private static string Instruction()
+        /// the whole test.
+        ///
+        /// Shared rather than private because the galaxy page names its map stop with this sentence
+        /// while a mode is up (<c>GalaxyHudScreen.MapContext</c>): one read of the game's own caption,
+        /// so the words the mode was announced with and the words the stop is called by cannot
+        /// differ.</summary>
+        internal static string Instruction()
         {
             UserInstructionsWindow window = InstructionsWindow();
             try

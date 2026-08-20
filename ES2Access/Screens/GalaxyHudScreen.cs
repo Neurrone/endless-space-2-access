@@ -992,10 +992,9 @@ namespace ES2Access.Screens
             _hud.ViewTitle(builder, _zoom);
 
             builder.BeginStop(SystemStop);
-            // The map has no caption anywhere on it - it IS the screen - so the word is the mod's
-            // (owner ruling 2026-08-19). Popped before the fleet panel, which is a stop of its own.
-            builder.PushContext(ModStrings.Get(ModStrings.GalaxyMapPanel));
+            builder.PushContext(MapContext());
             BuildSystems(builder);
+            // Popped before the fleet panel, which is a stop of its own.
             builder.PopContext();
 
             // The selected-fleet panel, where the game draws it: over the bottom of the map, between
@@ -1007,6 +1006,31 @@ namespace ES2Access.Screens
             _hud.Tutorial(builder);
             _hud.Notifications(builder);
             _hud.Turn(builder);
+        }
+
+        /// <summary>
+        /// What the map calls itself while the player is in it.
+        ///
+        /// Ordinarily the mod's own word: the map has no caption anywhere on it - it IS the screen -
+        /// so there is nothing of the game's to read (owner ruling 2026-08-19).
+        ///
+        /// While one of the game's targeting modes is waiting for a target, the map is not a map any
+        /// more, it is the question the game is asking, and the game writes that question out in a
+        /// banner across it (<c>UserInstructionsWindow</c>, the same sentence the mode was announced
+        /// with - <see cref="GlobalHud.Instruction"/>). So the stop is named after it: a player who
+        /// Tabs away and comes back is told what the map is waiting for instead of being told it is a
+        /// map, which they know. It goes back to being a map the moment the mode ends.
+        ///
+        /// The rename changes the context's identity (its id is derived from parent and label), which
+        /// is what makes leaving and re-entering the stop read the instruction again - the point of
+        /// putting it here. The nodes UNDER it key on their own places and are untouched by it.
+        /// </summary>
+        private static string MapContext()
+        {
+            string instruction = GlobalHud.Instruction();
+            return string.IsNullOrEmpty(instruction)
+                ? ModStrings.Get(ModStrings.GalaxyMapPanel)
+                : instruction;
         }
 
         /// <summary>
@@ -2829,7 +2853,7 @@ namespace ES2Access.Screens
                         // the card's own click - the planet's page - and nothing else, because
                         // everything else the old menu held is now drawn where the game draws it.
                         List<CardActions.CardAction> actions = OrbitalActions(card);
-                        NodeVtable readout = OrbitalReadout(card);
+                        NodeVtable readout = OrbitalReadout(card, system);
                         if (actions.Count == 0)
                         {
                             builder.AddItem(id, readout);
@@ -3014,9 +3038,14 @@ namespace ES2Access.Screens
         /// map would have to open every planet to find out that any exist at all. The count is what a
         /// sighted player takes off the card at a glance, so the card's own line carries it.
         ///
-        /// Enter is the card's own click: the planet's page. It is the only thing the card itself does.
+        /// Enter is the card's own click: the planet's page. It is the only thing the card itself does
+        /// - except while the game has the map waiting for a target, where the left click means
+        /// "confirm here" wherever it lands and the card is no exception (<see cref="PlanetClick"/>).
         /// </summary>
-        private static NodeVtable OrbitalReadout(PlanetLabel_SystemOrbital card)
+        private static NodeVtable OrbitalReadout(
+            PlanetLabel_SystemOrbital card,
+            StarSystemNode system
+        )
         {
             PlanetLabel_SystemOrbital it = card;
             AgeTooltip dossier = it.PlanetInfoTooltip;
@@ -3034,7 +3063,7 @@ namespace ES2Access.Screens
                     // staking a world in your own system is heard while walking past it.
                     GraphNodes.ValuePart(() => MiningProbes.Line(it.Planet), false),
                 },
-                OnActivate = () => GalaxyViewLevels.OpenPlanet(it.Planet),
+                OnActivate = () => PlanetClick(it.Planet, system),
             };
             // What the card DRAWS first, then its dossier - the paragraph the game writes about a
             // world of this kind, its size, its type. The dossier is the long panel behind the card,
@@ -3049,6 +3078,30 @@ namespace ES2Access.Screens
             );
             PointAt(vtable, it.PlanetOrbitalCardContainer ?? it.AgeTransform);
             return vtable;
+        }
+
+        /// <summary>
+        /// The card's own left click: the planet's page - unless the game has the map waiting for a
+        /// target, in which case the click is the order's confirm and nothing else, here as on every
+        /// other thing the map draws (<see cref="ZoomIn"/>, <see cref="LaneClick"/>).
+        ///
+        /// Confirmed at the SYSTEM the card is in orbit around, because a system is what the map
+        /// builds a cursor target for - a planet is drawn inside one and has none of its own - and
+        /// the mouse aiming at a card at this zoom is aiming inside that system.
+        ///
+        /// Asked first, and the answer is yes whenever any mode is armed
+        /// (<see cref="CursorTargeting.ConfirmAt(GameNode)"/>), refusals included: without that the
+        /// card's Enter opened the planet's page and threw the armed mode away with it, which is a
+        /// thing no click of the mouse's can do.
+        /// </summary>
+        private static void PlanetClick(Planet planet, GameNode system)
+        {
+            if (CursorTargeting.ConfirmAt(system))
+            {
+                return;
+            }
+
+            GalaxyViewLevels.OpenPlanet(planet);
         }
 
         /// <summary>How long an outpost of ours has left before it becomes a colony - drawn on the card
@@ -3677,8 +3730,15 @@ namespace ES2Access.Screens
                     // ENTER on a lane is the map's LEFT click on one, and the only thing that click
                     // does is let go of whatever the cursor is holding
                     // (`GalaxyGarrisonCursor.OnCursorClick` :88-95 changes back to the plain cursor for
-                    // a click that landed on a link and nothing else). With nothing selected the click
-                    // does nothing at all, and so does this - there is no action to invent.
+                    // a click that landed on a link and nothing else). With a fleet selected that is
+                    // exactly what Enter does here.
+                    //
+                    // With NOTHING selected and no mode armed the mouse's click does nothing at all,
+                    // and there the keyboard is given the one thing the line is good for: going where
+                    // it leads, the same hop Right already makes (`OnFollow` below). A deliberate
+                    // exception to Enter-is-click-parity, owner ruling 2026-08-20 - the click being a
+                    // no-op is what makes it free to take, and a lane into the dark has nowhere to go
+                    // so it keeps its silence.
                     //
                     // While a targeting mode is armed that same left click means "confirm here" instead,
                     // for a line as much as for a system (<see cref="CursorTargeting"/>) - and a lane is
@@ -3686,7 +3746,6 @@ namespace ES2Access.Screens
                     // only way to name a direction with no system at the end of it.
                     Link target = link;
                     GameNode aim = destination;
-                    vtable.OnActivate = () => LaneClick(target, aim);
                     vtable.OnContextual = () => LaneCommand(target);
 
                     string key = place + "/lane/" + link.GUID;
@@ -3703,6 +3762,7 @@ namespace ES2Access.Screens
                     // second node (<see cref="NodeVtable.OnFollow"/>). A lane running into the dark
                     // wires nothing and answers the key with silence, as a leaf does everywhere.
                     StarSystemNode far = named ? destination as StarSystemNode : null;
+                    Action travel = null;
                     if (far != null)
                     {
                         StarSystemNode from = node;
@@ -3710,9 +3770,14 @@ namespace ES2Access.Screens
                         ControlId here = id;
                         GalaxyHudScreen screen = this;
                         HashSet<ControlId> expanded = expansion;
-                        vtable.OnFollow = () => screen.Travel(from, here, to, expanded);
+                        travel = () => screen.Travel(from, here, to, expanded);
+                        vtable.OnFollow = travel;
                     }
 
+                    // Wired after the hop, because Enter falls through to the very same hop when the
+                    // click it stands for would have done nothing (<see cref="LaneClick"/>): one
+                    // derivation of where this lane leads, used by both keys.
+                    vtable.OnActivate = () => LaneClick(target, aim, travel);
                     builder.AddItem(id, vtable);
                 }
             }
@@ -3829,19 +3894,36 @@ namespace ES2Access.Screens
             SendAll(SendableTo(link, selected, refusals), refusals);
         }
 
-        /// <summary>The map's own left click on a lane: while an order is waiting for a target it is
-        /// aimed down this line (<see cref="CursorTargeting"/>), and the rest of the time it is the
-        /// click that lets go of the selection (<see cref="Deselect"/>). The same first-refusal order
-        /// the click on a system is asked in (<see cref="ZoomIn"/>), so the two cannot drift apart.
+        /// <summary>
+        /// The map's own left click on a lane, and then the one thing that click never had a use for.
+        ///
+        /// Asked in the same first-refusal order the click on a system is asked in
+        /// (<see cref="ZoomIn"/>), so the two cannot drift apart: while an order is waiting for a
+        /// target the click is aimed down this line (<see cref="CursorTargeting"/>), and while the
+        /// cursor is holding fleets it is the click that lets go of them (<see cref="Deselect"/>).
+        ///
+        /// With neither of those true the mouse's click on a lane does nothing whatsoever, and that
+        /// nothing is what this last branch spends: Enter goes where the lane leads, which is the hop
+        /// the descend key already makes (<paramref name="travel"/> IS the node's own
+        /// <c>OnFollow</c>, so there is one derivation of the far end and not two). A deliberate
+        /// exception to the otherwise absolute rule that Enter is the game's left click and invents
+        /// nothing - owner ruling 2026-08-20, on the grounds that a gesture the game answers with
+        /// nothing at all costs the player nothing to give away. A lane running into the dark leads
+        /// nowhere the map has named, wires no hop, and so keeps the silence it had.
         /// </summary>
-        private static void LaneClick(Link lane, GameNode far)
+        private static void LaneClick(Link lane, GameNode far, Action travel)
         {
             if (CursorTargeting.ConfirmAt(lane, far))
             {
                 return;
             }
 
-            Deselect();
+            if (Deselect() || travel == null)
+            {
+                return;
+            }
+
+            travel();
         }
 
         /// <summary>
@@ -3849,23 +3931,32 @@ namespace ES2Access.Screens
         /// starlane does (<c>GalaxyGarrisonCursor.OnCursorClick</c>): the garrison cursor is swapped
         /// back for the plain one, which is also what takes the fleet panel off the screen.
         ///
+        /// Answers whether anything was actually let go, which is how the lane's Enter knows the
+        /// click it stands for would have done nothing (<see cref="LaneClick"/>). The garrison cursor
+        /// being up IS that question: it is the cursor the map wears while it is holding a selection,
+        /// and the same thing the selected-fleet panel's own visibility is gated on.
+        ///
         /// Nothing is said here. The panel going is what the player is being told about, and the
         /// panel's own watcher says it - one announcement, from the one place that knows.
         /// </summary>
-        private static void Deselect()
+        private static bool Deselect()
         {
             try
             {
                 Amplitude.Unity.View.ICursorService cursors =
                     Amplitude.Unity.Framework.Services.GetService<Amplitude.Unity.View.ICursorService>();
-                if (cursors != null && Gui.GetCursor() is GalaxyGarrisonCursor)
+                if (cursors == null || !(Gui.GetCursor() is GalaxyGarrisonCursor))
                 {
-                    cursors.ChangeCursor(typeof(GalaxyCursor), Gui.GetCursor());
+                    return false;
                 }
+
+                cursors.ChangeCursor(typeof(GalaxyCursor), Gui.GetCursor());
+                return true;
             }
             catch (Exception e)
             {
                 Log.Warn("galaxy: letting go of the selection threw: " + e);
+                return false;
             }
         }
 

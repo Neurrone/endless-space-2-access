@@ -26,9 +26,11 @@ After the coordinates, a system reads its status: colonized or outpost, populati
 - `Enter`: left-click the focused item.
 - `\`: right-click the focused item.
 
+While an action is waiting for a target — launching a probe, firing an obliterator — the map panel names itself with the game's instruction instead of "Map", so tabbing out and back re-reads what the game is waiting for. `Enter` on a system, a starlane or a planet confirms the target there; the game refuses an illegal target silently and the mode stays up. `\` cancels the mode.
+
 ### Starlane Travel
 
-Press `Right` on a starlane whose far end you have explored to travel down it: focus moves to the destination system's entry, that system expands, and the camera follows.
+Press `Right` on a starlane whose far end you have explored to travel down it: focus moves to the destination system's entry, that system expands, and the camera follows. `Enter` on the lane travels too, when nothing else wants the key: with a targeting mode armed it confirms the target at the lane, and with a fleet selected it puts the fleet down, as the game's own click does.
 
 Press `Backspace` to go back. Each hop is remembered; going back puts focus on the starlane you travelled from and returns the camera. Systems that were only expanded because you travelled into them are collapsed on the way back; systems you expanded yourself are left alone.
 
@@ -50,7 +52,7 @@ The game's own keyboard zoom (`PageUp` and `PageDown`, held down) stops working 
 - `Left`: zoom out one level
 - `Shift+Right` / `Shift+Left`: jump a whole layer band — a run of zoom levels that draw the same layer of the map
 
-The slider announces its position, for example `Zoom, slider, 10 of 15`. The 15 levels run from the whole galaxy through the map camera's thirteen steps, then into a star system's own page, and finally onto a single planet's page — the same range the mouse wheel covers.
+The slider announces its position and the layer band the camera is on, for example `Zoom, slider, 10 of 15, Systems`. The 15 levels run from the whole galaxy through the map camera's thirteen steps, then into a star system's own page, and finally onto a single planet's page — the same range the mouse wheel covers. The bands, from furthest out: Galaxy map, Informative galaxy, Constellation, Systems, System and System Overview; the very furthest step and the two page levels add no band word.
 
 In the normal galaxy view, the zoom level controls how much detail the game draws. Zoom changes are announced wherever you are.
 

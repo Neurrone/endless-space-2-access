@@ -195,6 +195,18 @@ the game left with no Escape route: there the mod claims Escape (`ConsumesBack` 
 runs that cursor's own right-click cancel, so Escape cannot raise the pause menu over a map still
 waiting for a target (owner-ruled deviation, 2026-08-12).
 
+**Enter on a NAMED starlane travels when the click would be a structural no-op** (owner ruling
+2026-08-20, a deliberate exception to Enter-is-click-parity): `LaneClick` runs
+`ConfirmAt` → `Deselect()` → travel, so an armed mode still confirms, a carried fleet is still put
+down, and only the case the game's own click answers with nothing borrows Right's travel. A dark
+lane stays silent. **Enter on a planet card defers to an armed targeting mode** the same way system
+nodes and lanes do (`PlanetClick`: `ConfirmAt(system)` first, else the planet page) — before
+2026-08-20 the page opened over the mode and silently discarded it. **The map stop names itself
+with the game's targeting instruction while a mode is armed** (`MapContext()`; the label reverts
+to "Map" when the mode ends). Arming while the cursor is inside the stop adds no extra utterance
+(the announcer diffs on focus change); Tab-away/Tab-back re-speaks the instruction, which is the
+point; child node ids and the cursor survive the rename.
+
 **Expanding a galaxy system node (Right) also brings the camera in** through the game's own zoom
 (`GalaxyViewLevels.ZoomTo`); Enter is unchanged, Backslash remains the way out, and **collapse
 un-zooms** while `GalaxyViewLevels.FocusedSystem` is still that system — a camera the player has

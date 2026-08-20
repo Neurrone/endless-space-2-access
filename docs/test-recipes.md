@@ -671,6 +671,13 @@ the byte directly: `node.Exploration.GetCurrentStates()[empire.Index]` is by-ref
 it, dump the graph or invoke the predicate, put the original back in the same `/eval`.
 (Proved the lane gate both directions: a PartiallyRevealed link dropped to Identified left
 the tree; restored, it returned with its original numbering.)
+**RAISING to `MapVisibility.Perceived` needs TWO writes** (2026-08-20): `Exploration ≥
+Identified` alone is not enough — also reflect `EntityVisibility`'s private `layers[]`
+(`GetField("layers", Instance|NonPublic)`) to `Layer.Known`; restore both from saved bytes.
+Verified reversible (a revealed far end returned to "to an unexplored system"). Fixture
+fact: `unlocked` at turn 1 has NO named starlane — Xiu's four lanes are all dark and lane
+944's far end is a SpecialNode (never travelable) — so lane-travel work needs this reveal
+or a later save.
 
 **Trade routes without a trading company** (the fixture cannot make one — preprocessor needs
 the HQ tech and the built improvement): inject a fake company/routes into

@@ -51,7 +51,16 @@ namespace ES2Access.UI
                     return;
                 }
 
-                Voice.Say(ModStrings.Format(ModStrings.ZoomLevel, rung + 1, rungs), false);
+                // The rung, then what the map draws there - a number says how far along the ladder the
+                // camera is and nothing about what changed, and the band is the thing that changed.
+                // Nothing appended on the rungs that have no band (<see cref="GalaxyViewLevels.ZoomBand"/>).
+                Voice.Say(
+                    new MessageBuilder()
+                        .Fragment(ModStrings.Format(ModStrings.ZoomLevel, rung + 1, rungs))
+                        .ListItemForcedComma(GalaxyViewLevels.ZoomBand)
+                        .Build(),
+                    false
+                );
                 _watch.Told(rung);
             }
             catch (Exception e)

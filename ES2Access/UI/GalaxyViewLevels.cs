@@ -1,6 +1,7 @@
 using System;
 using Amplitude.Unity.Framework;
 using Amplitude.Unity.View;
+using ES2Access.Core.Speech;
 using ES2Access.Core.Util;
 using UnityEngine;
 
@@ -198,6 +199,73 @@ namespace ES2Access.UI
             {
                 Log.Warn("galaxy: setting the zoom threw: " + e);
                 return false;
+            }
+        }
+
+        /// <summary>
+        /// What the map is DRAWING at the rung the game is on, in a word - null where the question has
+        /// no answer.
+        ///
+        /// A rung number alone says how far along a ladder the camera is and nothing about what that
+        /// buys. The game's own zoom steps are grouped into LAYERS and each layer is a different map:
+        /// stars become named systems, systems grow their planets. The grouping is the game's own
+        /// table (<c>LayerDescriptorNamesByZoomIndex</c>, read here rather than copied so a patch that
+        /// re-cuts the bands moves this with it), and the words are the mod's, because the table holds
+        /// asset names and the game writes none of them anywhere a player can read.
+        ///
+        /// Three silences, all of them the same rule - say nothing rather than invent a name:
+        /// the furthest-out step, whose layer is the painted backdrop and not a map of anything; the
+        /// two rungs above the camera's own ladder, which are a system's page and a planet's and
+        /// announce themselves as pages; and a layer name this mod has no word for, which is what a
+        /// patch adding a band looks like from here.
+        /// </summary>
+        public static string ZoomBand
+        {
+            get
+            {
+                try
+                {
+                    GalaxyViewCameraController camera = GalaxyCamera();
+                    int rung = ZoomRung;
+                    string[] layers =
+                        camera == null ? null : camera.LayerDescriptorNamesByZoomIndex;
+                    if (layers == null || rung < 0 || rung >= layers.Length)
+                    {
+                        return null;
+                    }
+
+                    string key = BandKey(layers[rung]);
+                    return key == null ? null : ModStrings.Get(key);
+                }
+                catch (Exception e)
+                {
+                    Log.Warn("galaxy: naming the zoom band threw: " + e);
+                    return null;
+                }
+            }
+        }
+
+        /// <summary>The mod's word for one of the map's layers, or null for the ones with nothing to
+        /// say. Measured on the shipped table: thirteen steps over seven layers, the first of them the
+        /// backdrop.</summary>
+        private static string BandKey(string layer)
+        {
+            switch (layer)
+            {
+                case "GalaxyMapLayer":
+                    return ModStrings.ZoomBandGalaxyMap;
+                case "InformativeGalaxyLayer":
+                    return ModStrings.ZoomBandInformativeGalaxy;
+                case "ConstellationLayer":
+                    return ModStrings.ZoomBandConstellation;
+                case "SystemsLayer":
+                    return ModStrings.ZoomBandSystems;
+                case "SystemLayer":
+                    return ModStrings.ZoomBandSystem;
+                case "SystemOverviewLayer":
+                    return ModStrings.ZoomBandSystemOverview;
+                default:
+                    return null;
             }
         }
 

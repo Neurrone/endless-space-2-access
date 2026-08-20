@@ -658,10 +658,23 @@ namespace ES2Access.Core.Speech
 
         /// <summary>How close the game is looking, said whenever it changes wherever the player is
         /// standing - the wheel, the game's own held zoom keys, a click that flies into a system, the
-        /// page a system or a planet opens onto. The rung and how many there are, because the numbers
-        /// are all there is: the game gives its zoom steps no names, and the two view levels above them
-        /// are pages rather than distances. The game writes nothing comparable of its own.</summary>
+        /// page a system or a planet opens onto. The rung and how many there are, said on its own so
+        /// that the band name below can follow it or not. The game writes nothing comparable of its
+        /// own.</summary>
         public const string ZoomLevel = "zoom.level";
+
+        // What the map is DRAWING at a rung, which is the thing a rung number does not say: the game
+        // groups its thirteen zoom steps into layers and swaps whole map at each boundary. The
+        // grouping is the game's (`GalaxyViewCameraController.LayerDescriptorNamesByZoomIndex`); the
+        // words are the mod's, because that table holds asset names - "InformativeGalaxyLayer" - and
+        // the game shows the player none of them. Owner wordings, 2026-08-20. The furthest-out step
+        // is the painted backdrop rather than a map and is deliberately given no word at all.
+        public const string ZoomBandGalaxyMap = "zoom.band.galaxy-map";
+        public const string ZoomBandInformativeGalaxy = "zoom.band.informative-galaxy";
+        public const string ZoomBandConstellation = "zoom.band.constellation";
+        public const string ZoomBandSystems = "zoom.band.systems";
+        public const string ZoomBandSystem = "zoom.band.system";
+        public const string ZoomBandSystemOverview = "zoom.band.system-overview";
 
         /// <summary>One of the icon pairs a planet's card lines up under its ring: which of the empire's
         /// populations does well on that planet, and what they get out of it. The game draws two pictures
@@ -1450,6 +1463,12 @@ namespace ES2Access.Core.Speech
             { ScanHeroEfficiency, "{0}%" },
             { Zoom, "Zoom" },
             { ZoomLevel, "Zoom level {0} of {1}" },
+            { ZoomBandGalaxyMap, "Galaxy map" },
+            { ZoomBandInformativeGalaxy, "Informative galaxy" },
+            { ZoomBandConstellation, "Constellation" },
+            { ZoomBandSystems, "Systems" },
+            { ZoomBandSystem, "System" },
+            { ZoomBandSystemOverview, "System Overview" },
             { ScanSynergy, "{0} for {1}" },
             { ScanBattle, "Battle between {0}" },
             { ScanBattleHere, "Battle" },

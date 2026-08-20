@@ -14,9 +14,14 @@ namespace ES2Access.UI
     /// an adjustable of its own, on the arrows the mod already spends on a value, and the ladder runs all
     /// the way from the whole galaxy to one planet (<see cref="GalaxyViewLevels.StepZoom"/>).
     ///
-    /// The value is the rung and nothing else. What a rung MEANS is a matter for the page: on the scan
-    /// view it is the lens's name, which that screen announces whenever the layer under it changes -
-    /// name repeated or not - and repeating it here would say it twice. While the game is flying between two view levels there is no rung to report -
+    /// The value is the rung and the band of the map's own layer table it falls in
+    /// (<see cref="GalaxyViewLevels.ZoomBand"/>) - what the camera draws at that distance, which the
+    /// number alone does not say. What a rung means to the PAGE is a separate matter and stays the
+    /// page's: on the scan view it selects the lens, whose name that screen announces whenever the
+    /// layer under it changes - name repeated or not - and repeating it here would say it twice. The
+    /// two vocabularies do not collide: the game's nine layer descriptors carry six lens names of
+    /// their own ("Trade", "Economy") and none of them is a band word.
+    /// While the game is flying between two view levels there is no rung to report -
     /// the answer is a step behind - so the value says nothing rather than answering "nothing happened" to
     /// a press that did something, and speaks itself as soon as it is true again.
     ///
@@ -145,7 +150,13 @@ namespace ES2Access.UI
                 return null;
             }
 
-            return new MessageBuilder().PushFraction(rung + 1, rungs).Build();
+            // The rung, then what the map draws there, exactly as the watcher says it
+            // (<see cref="ZoomWatch"/>) - the two are the same reading and must not differ by which
+            // of them the player happened to hear it from.
+            return new MessageBuilder()
+                .PushFraction(rung + 1, rungs)
+                .ListItemForcedComma(GalaxyViewLevels.ZoomBand)
+                .Build();
         }
     }
 }
