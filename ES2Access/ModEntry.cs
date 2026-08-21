@@ -710,6 +710,7 @@ namespace ES2Access
             // subscription and what it was remembering about the galaxy.
             FleetArrivals.Remove();
             ForeignFleetWatch.Remove();
+            InfluenceGroundWatch.Remove();
 
             if (Input != null)
             {
@@ -838,9 +839,13 @@ namespace ES2Access
             // lets the line land in the same frame the news does.
             FleetArrivals.Tick();
             ForeignFleetWatch.Tick();
+            // And the third: ground one of the player's own systems held at the last turn boundary
+            // and does not hold at this one. It subscribes to the turn itself, so there is nothing to
+            // install - only this tick and the teardown.
+            InfluenceGroundWatch.Tick();
 
             // The same lane again, for the eight things the game puts on its event bus and then never
-            // mentions - a system revealed, a fleet sighted, a siege, an Obliterator - and the four
+            // mentions - a system revealed, a fleet sighted, a siege, an Obliterator - and the five
             // the mod raises itself. This also re-asserts the event mappings, which a new game or a
             // loaded save wipes.
             ModNotifications.Tick();

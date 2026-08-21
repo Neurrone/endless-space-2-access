@@ -20,10 +20,11 @@ namespace ES2Access.UI
     /// <c>Bind</c> - which is where a mod type refuses events that are not for the player - inserts
     /// it by priority and raises <c>PlayerEmpireNotificationsCollectionChanged</c>. Eight of the
     /// events are the GAME's own, already flowing through the bus with no notification bound to
-    /// them. The other four are the MOD's, defined below and raised through the same public
+    /// them. The other five are the MOD's, defined below and raised through the same public
     /// <c>IEventService.Notify</c> by the watchers that notice things the game puts on no bus at all
-    /// (<see cref="FleetArrivals"/>, <see cref="ForeignFleetWatch"/>, <see cref="FleetRouteWatch"/>) -
-    /// so those four cost a detection point each and nothing else: one pipeline, one set of
+    /// (<see cref="FleetArrivals"/>, <see cref="ForeignFleetWatch"/>, <see cref="FleetRouteWatch"/>,
+    /// <see cref="InfluenceGroundWatch"/>) -
+    /// so those five cost a detection point each and nothing else: one pipeline, one set of
     /// behaviours, one place the wording lives.
     ///
     /// The manager is per-GAME (its constructor's field initialiser plus <c>BindServices</c>'s
@@ -53,6 +54,7 @@ namespace ES2Access.UI
             typeof(EventModFleetStopped),
             typeof(EventModForeignFleetLost),
             typeof(EventModForeignFleetMoved),
+            typeof(EventModInfluenceGroundLost),
         };
 
         private static readonly Type[] NotificationTypes =
@@ -69,6 +71,7 @@ namespace ES2Access.UI
             typeof(FleetStoppedNotification),
             typeof(ForeignFleetLostNotification),
             typeof(ForeignFleetMovedNotification),
+            typeof(InfluenceGroundLostNotification),
         };
 
         private static GuiNotificationManager _manager;
@@ -943,7 +946,7 @@ namespace ES2Access.UI
         }
     }
 
-    // ---- the mod's own events, for the four things no bus event exists for ----
+    // ---- the mod's own events, for the five things no bus event exists for ----
     //
     // Each is an EmpireEvent so that the game's own dispatch routes it to ONE empire - the player -
     // rather than offering it to every empire in the galaxy in turn
@@ -1042,6 +1045,28 @@ namespace ES2Access.UI
             Owner = owner;
             From = from;
             To = to;
+        }
+    }
+
+    /// <summary>One of the player's own systems whose influence lost ground to a rival over the turn
+    /// just ended (<see cref="InfluenceGroundWatch"/> is what notices). One event per system and
+    /// taker, however many squares of map changed hands.</summary>
+    public sealed class EventModInfluenceGroundLost : EmpireEvent
+    {
+        public ColonizedStarSystem System { get; private set; }
+
+        /// <summary>The empire whose field now wins ground that was the player's.</summary>
+        public Amplitude.Unity.Game.Empire Taker { get; private set; }
+
+        public EventModInfluenceGroundLost(
+            Amplitude.Unity.Game.Empire empire,
+            ColonizedStarSystem system,
+            Amplitude.Unity.Game.Empire taker
+        )
+            : base(empire)
+        {
+            System = system;
+            Taker = taker;
         }
     }
 
@@ -1248,6 +1273,59 @@ namespace ES2Access.UI
         {
             return (IGameEntityWithGalaxyPosition)_to
                 ?? (_fleet == null || _fleet.IsDestroyed ? null : _fleet);
+        }
+    }
+
+    /// <summary>
+    /// A border of the player's moving the wrong way: squares that were provably inside one of their
+    /// systems' influence, and that a rival's field now wins
+    /// (<see cref="InfluenceGroundWatch"/> is what notices).
+    ///
+    /// No repeat refusal, by the owner's ruling: it is news EVERY turn it happens, because a border
+    /// still moving after a turn of it moving is exactly the thing the player needs to keep hearing.
+    /// The taker is never the player - a square is only lost when somebody ELSE wins a point of it -
+    /// so there is no "your empire" form of the sentence.
+    /// </summary>
+    public sealed class InfluenceGroundLostNotification : ModNotification
+    {
+        private ColonizedStarSystem _system;
+        private Amplitude.Unity.Game.Empire _taker;
+
+        protected override bool Accept(GameEvent gameEvent)
+        {
+            EventModInfluenceGroundLost lost = gameEvent as EventModInfluenceGroundLost;
+            if (
+                lost == null
+                || lost.System == null
+                || lost.Taker == null
+                || !IsPlayer(lost.Empire)
+            )
+            {
+                return false;
+            }
+
+            if (string.IsNullOrEmpty(EmpireName(lost.Taker)))
+            {
+                return false;
+            }
+
+            _system = lost.System;
+            _taker = lost.Taker;
+            return true;
+        }
+
+        protected override string Title()
+        {
+            return ModStrings.Format(
+                ModStrings.NotificationInfluenceGroundLost,
+                _system.LocalizedName,
+                EmpireName(_taker)
+            );
+        }
+
+        protected override IGameEntityWithGalaxyPosition Location()
+        {
+            return _system.Node;
         }
     }
 }

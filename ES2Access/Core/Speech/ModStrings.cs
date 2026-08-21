@@ -688,6 +688,12 @@ namespace ES2Access.Core.Speech
         public const string NotificationForeignFleetMovedAway =
             "notification.foreign-fleet-moved-away";
 
+        /// <summary>One of the player's own systems whose influence lost ground this turn - squares
+        /// that were provably inside its reach and that a rival's field now wins. One sentence per
+        /// system and taker however many squares changed: a border moving is one piece of news.
+        /// </summary>
+        public const string NotificationInfluenceGroundLost = "notification.influence-ground-lost";
+
         // The pinned quest the game draws in the top right corner. Its title, its status and its
         // objective are the game's own words; what a player can DO with the panel is not written
         // anywhere on it - the game draws two of the three as bare icons and the third as a click on
@@ -1654,6 +1660,7 @@ namespace ES2Access.Core.Speech
             { NotificationForeignFleetMoved, "{0} fleet moved from {1} to {2}" },
             { NotificationForeignFleetMovedTo, "{0} fleet moved to {1}" },
             { NotificationForeignFleetMovedAway, "{0} fleet moved away from {1}" },
+            { NotificationInfluenceGroundLost, "{0}'s influence lost ground to {1}" },
             { HudQuestShowLocation, "Show location" },
             { HudQuestUnpin, "Unpin quest" },
             { HudQuestPinned, "Pinned quest: {0}" },

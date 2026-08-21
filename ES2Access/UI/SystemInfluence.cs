@@ -423,8 +423,10 @@ namespace ES2Access.UI
 
         /// <summary>The empire index the player may be TOLD about, or -1 - a colony whose node the map
         /// is not showing is nobody as far as the reading is concerned, and its empire is remembered
-        /// only where it can be named.</summary>
-        private static int Nameable(
+        /// only where it can be named. Shared with <see cref="InfluenceGround"/> rather than copied:
+        /// two readings of the same field that disagreed about who may be NAMED would be two different
+        /// fog rules.</summary>
+        internal static int Nameable(
             ColonizedStarSystem colony,
             Empire empire,
             List<Empire> known

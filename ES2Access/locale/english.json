@@ -285,6 +285,7 @@
   "notification.foreign-fleet-moved": "{0} fleet moved from {1} to {2}",
   "notification.foreign-fleet-moved-to": "{0} fleet moved to {1}",
   "notification.foreign-fleet-moved-away": "{0} fleet moved away from {1}",
+  "notification.influence-ground-lost": "{0}'s influence lost ground to {1}",
   "screen.game-menu": "Game menu",
   "screen.load-save": "Load or save",
   "hud.quest-show-location": "Show location",

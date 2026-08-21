@@ -372,6 +372,20 @@ namespace ES2Access.Dev
                 json.WritePropertyName("foreignFleetsWatched");
                 json.WriteValue(ForeignFleetWatch.Watching);
 
+                // The third detection point: the turn-end influence sweep. Its subscription and its
+                // table are what a teardown has to have let go, and its last pass's cost is the one
+                // figure no transcript shows.
+                json.WritePropertyName("groundSubscribed");
+                json.WriteValue(InfluenceGroundWatch.Subscribed);
+                json.WritePropertyName("groundWatched");
+                json.WriteValue(InfluenceGroundWatch.Watching);
+                json.WritePropertyName("groundTiles");
+                json.WriteValue(InfluenceGroundWatch.Tiles);
+                json.WritePropertyName("groundQueries");
+                json.WriteValue(InfluenceGroundWatch.Queries);
+                json.WritePropertyName("groundMilliseconds");
+                json.WriteValue(InfluenceGroundWatch.Milliseconds);
+
                 json.WritePropertyName("mapped");
                 json.WriteStartArray();
                 foreach (KeyValuePair<string, string> entry in ModNotifications.Mapped())
