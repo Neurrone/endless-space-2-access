@@ -4,6 +4,7 @@ using ES2Access.Core.Speech;
 using ES2Access.Core.UI;
 using ES2Access.Core.UI.Graph;
 using ES2Access.Core.Util;
+using ES2Access.UI.Input;
 
 namespace ES2Access.UI
 {
@@ -185,6 +186,12 @@ namespace ES2Access.UI
         /// marketplace's quantity steppers. Handed the row's finished vtable. The table's own double
         /// click is NOT this: it is every table's, and <see cref="ShowOnMap"/> wires it.</summary>
         public Action<GuiTableLine, NodeVtable> Decorate;
+
+        /// <summary>The <see cref="ModStrings"/> key of the USAGE HINT a row ends its buffer with,
+        /// saying what this table's second click does ("{0} to show and select fleet"). Unset - the
+        /// ordinary case - is a table whose client answers the gesture with nothing, or one where the
+        /// game's own tooltip already says it, and then nothing is said.</summary>
+        public string DoubleClickHint;
 
         /// <summary>
         /// See <see cref="ColumnCaption"/>. Unset is the ordinary case.
@@ -596,6 +603,17 @@ namespace ES2Access.UI
             GraphNodes.AddRefusal(vtable, line.Tooltip, enabled);
             ShowOnMap(row, vtable);
 
+            // The USAGE HINT for that second click - on the ROW and not on every cell of it, though
+            // the gesture works from all of them: what the click DOES here is a fact about the row,
+            // and repeating it down eight columns is eight times the sentence for one affordance.
+            // What it does is the table client's business and differs table by table, so the wording
+            // is the screen's to name (<see cref="DoubleClickHint"/>); the tables whose client
+            // answers the gesture with nothing name nothing and stay silent.
+            if (row.DoubleClickButton != null)
+            {
+                NodeHints.Add(vtable, DoubleClickHint, UiActions.DoubleClick);
+            }
+
             if (Decorate != null)
             {
                 Decorate(row, vtable);
@@ -633,6 +651,7 @@ namespace ES2Access.UI
             {
                 return;
             }
+
 
             vtable.OnDoubleClick = () =>
             {

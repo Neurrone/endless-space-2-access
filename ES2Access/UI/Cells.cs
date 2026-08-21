@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using ES2Access.Core.Speech;
 using ES2Access.Core.UI.Graph;
+using ES2Access.UI.Input;
 
 namespace ES2Access.UI
 {
@@ -76,6 +77,16 @@ namespace ES2Access.UI
             {
                 AgeTransform hint = widget;
                 vtable.OnSelectToggle = () => AgeWidgets.Locate(hint);
+                // And a line saying so, since the gesture is the one thing a control in this state
+                // still does and nothing on the control says it. Gated on the hint being live, so it
+                // goes with the technology the player has just researched.
+                NodeHints.Add(
+                    vtable,
+                    ModStrings.HintMissingTechnology,
+                    UiActions.SelectToggle,
+                    0,
+                    () => AgeWidgets.Hinted(hint)
+                );
             }
 
             cells.Add(new Cell { Widget = widget, Id = id, Vtable = vtable });

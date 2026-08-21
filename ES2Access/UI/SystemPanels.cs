@@ -4,6 +4,7 @@ using ES2Access.Core.Speech;
 using ES2Access.Core.UI;
 using ES2Access.Core.UI.Graph;
 using ES2Access.Core.Util;
+using ES2Access.UI.Input;
 using UnityEngine;
 
 namespace ES2Access.UI
@@ -198,6 +199,9 @@ namespace ES2Access.UI
                 OnActivate = () => QueueConstruction(it, owner, false),
                 OnAlternate = () => QueueConstruction(it, owner, true),
             };
+            // The tile draws nothing about the second gesture and the queue it changes is a panel
+            // away, so the buffer says it.
+            NodeHints.Add(vtable, ModStrings.HintQueueFirst, UiActions.Alternate);
             // The tile's tooltip is the renderer-assembled kind, so it is only indicated - and a tile the
             // game is refusing would then say "unavailable" and nothing else. The reason is read off the
             // wrapper the tooltip carries, as its failure panel does.

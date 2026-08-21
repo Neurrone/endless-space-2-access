@@ -7,6 +7,7 @@ using ES2Access.Core.UI;
 using ES2Access.Core.UI.Graph;
 using ES2Access.Core.Util;
 using ES2Access.UI;
+using ES2Access.UI.Input;
 using UnityEngine;
 
 namespace ES2Access.Screens
@@ -1055,6 +1056,9 @@ namespace ES2Access.Screens
                 // changes under the cursor as the order comes back.
                 StateText = () => Operable(technology) ? null : Refusal(technology),
             };
+            // The one gesture on a dot that is not the plain click, said at the end of the buffer
+            // because the wheel writes it nowhere and the queue it changes is a screen away.
+            NodeHints.Add(vtable, ModStrings.HintQueueFirst, UiActions.Alternate);
             ShowDot(vtable, item);
             return vtable;
         }

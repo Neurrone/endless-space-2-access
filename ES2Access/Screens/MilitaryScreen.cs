@@ -101,6 +101,10 @@ namespace ES2Access.Screens
             _table = new TableSheet(Keys, FleetOf);
             _table.RowName = FleetName;
             _table.ReadCell = HeroCell;
+            // What this table's client does with the second click: it puts the fleet on the map and
+            // selects it (<c>FleetsScreen</c>'s own double-click handler), which nothing on the row
+            // says.
+            _table.DoubleClickHint = ModStrings.HintShowAndSelectFleet;
         }
 
         public override string Key

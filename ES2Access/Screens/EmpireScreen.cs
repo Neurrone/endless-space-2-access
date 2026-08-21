@@ -89,6 +89,8 @@ namespace ES2Access.Screens
             _table = new TableSheet(Keys, SystemOf);
             _table.RowName = SystemName;
             _table.ReadCell = ActionCell;
+            // The systems table's own second click opens that system's management page.
+            _table.DoubleClickHint = ModStrings.HintOpenSystemManagement;
         }
 
         public override string Key

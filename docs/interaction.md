@@ -114,7 +114,10 @@ The two queues are unaffected because both wire `OnAlternate` and move the item 
 (`ResearchScreen.Queue`, `SystemPanels.QueueConstruction`); the game's other Alt-clicks —
 `PlanetCard`/`PlanetLabelsWindow_SystemManagement` (a curiosity expedition at the head) and
 `NotificationItemsWindow.OnCloseAllCb` (dismiss-all, whose Shift branch the new chord would take
-instead) — must be WIRED if they are ever declared, never left to the fall-back.
+instead) — must be WIRED if they are ever declared, never left to the fall-back. The curiosity one
+is wired as of 2026-08-21 (`CuriosityExpeditions` — `docs/helpers.md`), attached generically in
+`CardActions.Emit` off the widget's own `CuriosityInteraction`, so the colony card has it and the
+galaxy orbital card's fleet-mode twin does not; dismiss-all is still undeclared.
 Backslash and Ctrl+Alt+Enter keep absent-means-silent: a right click or a second click that does not
 exist has nothing to replay. On a `GuiTable` row, the second click is wired by `TableSheet` for EVERY
 table and every cell of a row (its `DoubleClickButton`, the row selected first because the game's
@@ -152,6 +155,33 @@ is how the game's own selection rules apply rather than a copy of them. Which sc
 chords and which cargo kinds the drag carries (ships, population, both queues) is coverage
 status — `docs/test-recipes.md`'s per-screen paragraphs own it; a drop always puts the carried
 item at the target's own position ("Moved ⟨name⟩ to position ⟨n⟩").
+
+**A control can END ITS REVIEW BUFFER by naming the chord that works there** (2026-08-21;
+`NodeHints`/`ChordNames` — `docs/helpers.md`). A **usage hint** is one short sentence, one per
+line, appended by `NodeBuffer` after everything the control itself has to say — so the hints are
+always the LAST lines of the buffer, in the order the screen declared them, and nothing about them
+reaches the focus readout. The chord in the sentence is never written down: a hint names an ACTION
+KEY plus a BINDING INDEX and the sentence is a ModStrings template with a `{0}`, so a re-bound
+gesture re-words every hint that names it. **The index is load-bearing, not a default** — the map's
+off-lane move is the SECOND binding of the same `ui.contextual` action as the ordinary move
+(Ctrl+Backslash beside Backslash, above), and a hint naming the action alone could not tell the two
+apart. A hint may carry a possibility gate and is silent while it says no.
+**Hints are hand-picked, not a policy**: the uniform right-click-goes-back is deliberately
+unhinted, and every context whose own game tooltip already states its gesture stays silent — there
+is no runtime dedup, so a new hint is an owner decision about that one context. The declared set,
+all owner-approved verbatim: a map target with a fleet selected ("move the fleet here", plus "use
+off-lane free movement" only where the selection really can — the pathfinder's own
+`FreeMovementSpeed` gate); a starlane with a fleet selected ("deselect the fleet", on Enter, only
+where the mod's Enter really deselects); a notification row and a turn-log row ("dismiss"); a
+research technology, a constructible and a colony curiosity ("queue it first"); a fleet row and a
+ship tile in the fleet lists ("add to the selection" / "select up to here"); a control carrying a
+LIVE `GuiButtonHint` ("show missing technology" — declared generically wherever `Cells.Add` or
+`CardActions.Emit` wires the jump, plus the troop list's own copy); the military page's fleet row
+("show and select fleet"), the empire page's systems row ("open system management screen") and the
+load list's row in LOAD mode only ("load"). A table's double-click hint is named by the SCREEN
+(`TableSheet.DoubleClickHint`) and sits on the row's primary cell alone, though the gesture works
+from every cell of the row: what the second click does is a fact about the row, and repeating it
+down eight columns is eight sentences for one affordance.
 
 **Ctrl+Tab is the GAME's chat key, not a mod binding**: at startup `GameChatKey` moves
 `StartChatting` off Enter/Tab to Ctrl+Tab through the game's own options (ONLY while it still has

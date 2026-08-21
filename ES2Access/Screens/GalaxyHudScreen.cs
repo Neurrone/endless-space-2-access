@@ -8,6 +8,7 @@ using ES2Access.Core.UI;
 using ES2Access.Core.UI.Graph;
 using ES2Access.Core.Util;
 using ES2Access.UI;
+using ES2Access.UI.Input;
 using UnityEngine;
 
 namespace ES2Access.Screens
@@ -2633,6 +2634,7 @@ namespace ES2Access.Screens
             // The two clicks the map itself puts on a system, and nothing invented on top of them.
             vtable.OnActivate = () => ZoomIn(it);
             vtable.OnContextual = () => SystemCommand(it);
+            MoveHints(vtable);
 
             // The camera goes where the cursor MOVES, so that whoever is watching the screen is looking
             // at the system being read out. On the galaxy this only slides the camera across; it does
@@ -2863,6 +2865,38 @@ namespace ES2Access.Screens
             }
 
             GalaxyViewLevels.ZoomTo(node);
+        }
+
+        /// <summary>
+        /// What the move keys do on a place a fleet could be sent to, said at the end of the node's
+        /// buffer while there is a selection to send.
+        ///
+        /// Two lines and the same action twice: the map's move click is the Contextual action, and its
+        /// off-lane variant is that action's SECOND chord rather than a wiring of its own, because the
+        /// game runs one handler for both clicks and reads the physical Control inside it
+        /// (<see cref="ES2Access.UI.FleetOrders"/>). So the hints name the action and the chord index,
+        /// and a rebind of either chord re-words its own line.
+        ///
+        /// The second line is gated on the selection really being able to fly off the lanes
+        /// (<see cref="ES2Access.UI.FleetOrders.AnySelectedCanFreeMove"/>): naming a chord that can
+        /// only ever be refused is worse than saying nothing.
+        /// </summary>
+        private static void MoveHints(NodeVtable vtable)
+        {
+            NodeHints.Add(
+                vtable,
+                ModStrings.HintMoveFleetHere,
+                UiActions.Contextual,
+                0,
+                FleetOrders.AnySelected
+            );
+            NodeHints.Add(
+                vtable,
+                ModStrings.HintFreeMovement,
+                UiActions.Contextual,
+                1,
+                FleetOrders.AnySelectedCanFreeMove
+            );
         }
 
         /// <summary>
@@ -4593,6 +4627,16 @@ namespace ES2Access.Screens
                     Link target = link;
                     GameNode aim = destination;
                     vtable.OnContextual = () => LaneCommand(target);
+                    MoveHints(vtable);
+                    // ...and the one thing the map's LEFT click on a line does with a selection up:
+                    // let go of it. Only here and on empty space - Enter on a system zooms instead.
+                    NodeHints.Add(
+                        vtable,
+                        ModStrings.HintDeselectFleet,
+                        UiActions.Activate,
+                        0,
+                        FleetOrders.AnySelected
+                    );
 
                     string key = place + "/lane/" + link.GUID;
                     // Keyed on the pair of GUIDs and NOT carrying the link as a reference: ONE lane runs

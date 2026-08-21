@@ -1961,3 +1961,66 @@ empty panel), so its node is legitimately nameless and carries only its dossier 
 tooltip is `SimpleDescription`, so the parity probe reports it unaccounted until the node is
 FOCUSED. Raising it also pops the "Unforgettable Events" tutorial, which retires itself when the
 popup hides.
+
+## Usage hints — reaching each context
+
+A hint reads in `/gui/graph?buffers=1` without focusing anything (`NodeBuffer` feeds both the live
+buffer and the dump), so every check below is one dump plus whatever it takes to get the context on
+screen. `ES2Access.UI.Input.ChordNames.Of(ES2Access.ModEntry.Input, "<action>", <index>)` from
+`/eval` is the chord half on its own, and the same call on a hand-built `KeyboardBinding` is the
+rebind proof without touching the shipped bindings.
+
+- **Map target + starlane (`[Beginner] test`).** Both fleets in Heka's branch are mid-free-move and
+  declare `ControlTypes.Text` — Enter on them selects NOTHING, so the mod's own select route cannot
+  be driven there. The route that works from `/eval` is the game's three calls IN ONE statement
+  (splitting them leaves the cursor swapped and the panel unshown): find the `GalaxyFleet` in
+  `IVisibleGalaxyFleetRepositoryService.GalaxyFleets`, then `ICursorService.Select(gf.CursorTarget)`,
+  `ChangeCursor(typeof(GalaxyGarrisonCursor), gf)`, `Gui.GuiGameWindowService.
+  RequestGalaxyOverviewViewLevel(gf.Fleet)` — speech says "Fleet panel open for …" and
+  `FleetOrders.Selected().Count` reads 1. Close with `GetWindow<FleetsScreen>().HandleInput(
+  InputAction.Exit)`. `FleetsScreen.AddGarrison`+`SelectGarrison` alone does NOT hold: the window's
+  own refresh unselects everything while it is not shown, so the selection is gone a second later.
+  With the selection up, every system node and every lane node ends its buffer with "Backslash to
+  move the fleet here" + "Ctrl+Backslash to use off-lane free movement", and a LANE adds "Enter to
+  deselect the fleet". **The off-lane negative is fixture-blocked**: all six of the player's fleets
+  carry `FreeMovementSpeed` 0.8, and the property is descriptor-driven (a `SetPropertyBaseValue`
+  write sticks in the base and the computed value stays put). The empty-space half of the deselect
+  hint has no node to sit on — the mod declares no empty-space control, and `Deselect()` is reached
+  only from `LaneClick`.
+- **Curiosities are ALL refused in `[Beginner] test`** — the empire's Expedition Power is 2 and
+  every curiosity on the map needs 3. To run the queue-then-cancel round trip, grant the game's own
+  descriptor: `Databases.GetDatabase<Amplitude.Unity.Simulation.SimulationDescriptor>().GetValue(
+  (StaticString)"EmpireImprovementCuriosityLevel2")` → `Gui.PlayerEmpire.AddDescriptor(d, true)`,
+  then `Refresh(true)` in a SECOND `/eval` (the value reads 2 in the same statement and 3 on the
+  next). The pooled `PlanetCuriosityItem`s do not re-`Refresh` on their own — even across closing
+  and reopening the star-system page — so invoke their private `Refresh()` by reflection over
+  `FindObjectsOfType<PlanetCuriosityItem>()`; that also pops the "Studying Curiosities" tutorial,
+  which needs the usual minimize. Undo with `RemoveDescriptor(d)` + `Refresh(true)` + the same
+  reflected `Refresh()` sweep, and check `enable=False` came back.
+  Measured round trip on Dusay (system node GUID 535, `RequestStarSystemManagementViewLevel`): Enter
+  on `system:constructible/StarSystemImprovementIndustry2` ("Queued Interplanetary Transport
+  Network") → `ui.alternate` on the curiosity `system:planet/536/action/1` → the queue reads
+  `0=CuriosityExpeditionSignal 1=StarSystemImprovementIndustry2`, i.e. the head. The alternate is
+  SILENT (no "Queued … as first item" — the curiosity's own Enter is silent too). Cancel both with
+  Enter on their `system:queue/<guid>` rows.
+- **A live `GuiButtonHint` host in `[Beginner] test`**: Dusay I / Dusay II on the star-system page —
+  expand `system:planet/536` and its Colonize action reads "unavailable, Missing technology
+  Maximized Exploitation" and ends with "Ctrl+Enter to show missing technology". The HUD's
+  tutorial-disabled Empire Summary and Hero Management buttons are NOT hint hosts (they say
+  "disabled during this part of the Tutorial" and carry no hint line), which is the negative worth
+  keeping.
+- **A turn-log row on demand**: `ES2Access.UI.ModNotifications.Raise(new
+  ES2Access.UI.EventModFleetArrived(Gui.PlayerEmpire, fleet, ES2Access.UI.FleetOrders.Orbit(fleet)))`
+  gives one `hud:turn-log/<turn>/0` row ("… arrived", then "Backslash to dismiss"); `ui.contextual`
+  on it dismisses and the whole stop goes, which restores the fixture and proves the wiring in the
+  same press.
+- **The rest, all from `/eval` openers already documented above**: `ShowWindow(GetWindow<
+  TechnologyScreen>())` then expand a quadrant and a stage for "Ctrl+Shift+Enter to queue it first"
+  on a technology (the `research:suggested` stop has no such hint — those nodes only jump);
+  `ShowWindow(GetWindow<MilitaryScreen>())` for "Ctrl+Alt+Enter to show and select fleet" (exactly
+  one per row, on column 0); `ShowWindow(GetWindow<EmpireScreen>())` for "Ctrl+Alt+Enter to open
+  system management screen" (both openings pop a tutorial page — minimize first);
+  `LoadSaveModalWindow` with `LoadSaveMode = LoadFromGame` for "Ctrl+Alt+Enter to load" on all
+  eleven rows, and flipping the same window to `Save` makes every one of them vanish. The fleet
+  panel's own stops carry "Ctrl+Enter to add to the selection" + "Shift+Enter to select up to here"
+  on `fleets:line/<guid>` and `fleets:ships/ship/<id>`.

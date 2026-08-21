@@ -114,6 +114,46 @@ namespace ES2Access.UI
             return found;
         }
 
+        /// <summary>Whether the map's cursor is holding anything at all - the question a hint about
+        /// moving the selection has to ask before it is worth saying.</summary>
+        public static bool AnySelected()
+        {
+            return Selected().Count > 0;
+        }
+
+        /// <summary>
+        /// Whether any fleet in the selection could really fly OFF the lanes.
+        ///
+        /// The pathfinder's own gate, asked of the same number it asks about: a free-movement edge is
+        /// only ever offered while the fleet's <c>FreeMovementSpeed</c> is above epsilon
+        /// (<c>PathfindingManager</c> :219 and :284, reading the value <c>Fleet.cs</c> :1442 copies out
+        /// of the simulation into the pathfinding data). Below it, holding Control asks for a course
+        /// the game will always refuse - so the hint that names the chord is not said.
+        /// </summary>
+        public static bool AnySelectedCanFreeMove()
+        {
+            try
+            {
+                List<Fleet> selected = Selected();
+                for (int i = 0; i < selected.Count; i++)
+                {
+                    if (
+                        selected[i].GetPropertyValue(SimulationProperties.Fleet.FreeMovementSpeed)
+                        > float.Epsilon
+                    )
+                    {
+                        return true;
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("fleets: asking whether the selection can free-move threw: " + e);
+            }
+
+            return false;
+        }
+
         /// <summary>The route this fleet would fly to a place on the map, or null where there is none.
         /// Asking is a pathfinding search, so it belongs to the moment a menu is opened and never to a
         /// frame. Hand it a list and the reasons a missing route is missing are written into it.

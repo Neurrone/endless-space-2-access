@@ -6,6 +6,7 @@ using ES2Access.Core.Speech;
 using ES2Access.Core.UI.Graph;
 using ES2Access.Core.Util;
 using ES2Access.UI;
+using ES2Access.UI.Input;
 using UnityEngine;
 
 namespace ES2Access.Screens
@@ -1889,6 +1890,9 @@ namespace ES2Access.Screens
                         null
                     );
                     vtable.OnContextual = () => Dismiss(it);
+                    // The strip is bare icons: nothing on it says the row can be thrown away, and the
+                    // game's own right click is the only way to do it without opening the popup first.
+                    NodeHints.Add(vtable, ModStrings.HintDismiss, UiActions.Contextual);
                     vtable.Sections = GraphNodes.Sections(GraphNodes.TooltipDetails(IconTooltip(it, items)), null);
                     builder.AddItem(ControlId.Referenced(it, "hud:notification/" + count), vtable);
                     count++;
@@ -1973,6 +1977,7 @@ namespace ES2Access.Screens
                                 () => Open(it)
                             );
                             vtable.OnContextual = () => Dismiss(it);
+                            NodeHints.Add(vtable, ModStrings.HintDismiss, UiActions.Contextual);
                             builder.AddItem(
                                 ControlId.Referenced(it, "hud:turn-log/" + turn + "/" + within),
                                 vtable

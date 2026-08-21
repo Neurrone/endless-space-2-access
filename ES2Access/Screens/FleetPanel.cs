@@ -6,6 +6,7 @@ using ES2Access.Core.UI;
 using ES2Access.Core.UI.Graph;
 using ES2Access.Core.Util;
 using ES2Access.UI;
+using ES2Access.UI.Input;
 
 namespace ES2Access.Screens
 {
@@ -637,6 +638,11 @@ namespace ES2Access.Screens
                 );
                 vtable.OnSelectToggle = () => AgeWidgets.Toggle(it.SelectionToggle);
                 vtable.OnSelectRange = vtable.OnSelectToggle;
+                // Both chords replay the line's own click and the GAME reads the modifier the player
+                // is still holding (<c>FleetsManagementPanel</c> :280), so the two do different things
+                // through one handler - and nothing on the list says either exists.
+                NodeHints.Add(vtable, ModStrings.HintAddToSelection, UiActions.SelectToggle);
+                NodeHints.Add(vtable, ModStrings.HintSelectUpToHere, UiActions.SelectRange);
                 vtable.Announcements.Add(
                     new NodeAnnouncement(
                         () => LineCells(it),

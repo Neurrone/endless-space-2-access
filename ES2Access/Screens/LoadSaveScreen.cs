@@ -159,6 +159,12 @@ namespace ES2Access.Screens
                 return;
             }
 
+            // The row's second click ACTS here rather than showing (owner ruling 2026-08-14), and the
+            // two modes act differently: in Load it loads the row, in Save it writes over it. Only the
+            // load half is named - a hint has one approved sentence, and telling a player in Save mode
+            // that the gesture loads would be wrong.
+            _table.DoubleClickHint = Saving(window) ? null : ModStrings.HintLoad;
+
             builder.BeginStop(ContentStop);
             BuildContents(builder, window);
 

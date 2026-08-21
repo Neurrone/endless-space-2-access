@@ -4,6 +4,7 @@ using ES2Access.Core.Speech;
 using ES2Access.Core.UI;
 using ES2Access.Core.UI.Graph;
 using ES2Access.Core.Util;
+using ES2Access.UI.Input;
 
 namespace ES2Access.UI
 {
@@ -159,6 +160,11 @@ namespace ES2Access.UI
             // which is the handler's own decision). It hangs off the tick rather than off a button,
             // and it picks the tile out itself, so there is nothing to select first.
             vtable.OnDoubleClick = () => AgeWidgets.DoubleClick(it.SelectionToggle);
+
+            // The two selection chords, which the tile draws nothing about: both replay its click and
+            // the GAME branches on the modifier still held (<c>ShipsManagementPanel</c> :713 and :738).
+            NodeHints.Add(vtable, ModStrings.HintAddToSelection, UiActions.SelectToggle);
+            NodeHints.Add(vtable, ModStrings.HintSelectUpToHere, UiActions.SelectRange);
 
             // A range changed every row between the anchor and this one, so this row's new state is not
             // the answer - what the selection now IS, is.

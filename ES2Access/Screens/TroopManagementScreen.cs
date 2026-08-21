@@ -4,6 +4,7 @@ using ES2Access.Core.Speech;
 using ES2Access.Core.UI.Graph;
 using ES2Access.Core.Util;
 using ES2Access.UI;
+using ES2Access.UI.Input;
 
 namespace ES2Access.Screens
 {
@@ -345,6 +346,13 @@ namespace ES2Access.Screens
                 // the declared widget is not the one carrying it.
                 AgeTransform locate = hint;
                 vtable.OnSelectToggle = () => AgeWidgets.Locate(locate);
+                NodeHints.Add(
+                    vtable,
+                    ModStrings.HintMissingTechnology,
+                    UiActions.SelectToggle,
+                    0,
+                    () => AgeWidgets.Visible(locate)
+                );
             }
 
             AgeWidgets.PointAt(vtable, hint ?? widget);
