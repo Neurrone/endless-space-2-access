@@ -411,6 +411,15 @@ Singularities and Pirate Mark, which have no standalone title key in the corpus 
 are `PushContext` levels around each MEASURED row, the word riding on that row's cells, so a line two
 panels contribute to gets neither word nor key (`hud:empire/line/<n>`) rather than the leftmost
 contributor's.
+**The lobby's competitor bands are named** (2026-08-21): the New Game screen's Competitors panel
+already jumped band to band with Alt+Up/Down (`newgame:competitor/<i>`, one per drawn slot), and each
+band is now a `PushContext` level saying "Player {n}" (`new-game.player`) — said on arrival in the
+band and never while walking its four rows. `n` is the slot's PLACE IN THE PANEL counted in drawn
+order (the grid is four across, so the second row starts at Player 5), not `LobbySlot.Index`, and the
+player's own Empire panel is a stop of its own and is not counted. The game captions every slot "AI",
+so nothing it draws tells two of them apart; multiplayer draws the same panel from the same class and
+gets the same words. Cost of the level, as ui-navigation warns: positions re-base, so a row now reads
+"3 of 4" within its band instead of counting the whole stop.
 
 **Ctrl+I is the galaxy's INSPECT MODE** — a square of galaxy the player moves about the map and hears
 the contents of, instead of walking the tree (`GalaxyInspect` — `docs/helpers.md`). Ctrl+I is free in

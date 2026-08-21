@@ -204,6 +204,14 @@ on `NewGameScreen`. Never press Confirm or double-Enter a card in a test: both s
 
 **Working the new game lobby.** Everything is lobby-local and reversible (restore what you
 change; `w.Session.GetLobbyData<string>("competitorcount")` etc. is the before/after probe).
+From the main menu one `ui.activate` on New Game opens the lobby directly — the flyout's Quick start
+and Beginner children both LAUNCH, so never activate either.
+`Session.SetLobbyData(Amplitude.Unity.Session.LobbyData.CompetitorCount, n)` drives the count through
+the game's own path and the panel rebuilds within a settle or two; the default 8 competitors draw
+SEVEN AI slots in a 4×2 grid (y=162: x=424/556/688/820, y=220: x=424/556/688), which is the order the
+"Player 1…7" band labels are numbered in. Shrinking the count while the last band's last row is
+focused is the reconciliation test: focus relocates to the new last band's same column and announces
+once ("Player 6, Color, combo box, Purple, 4 of 4" at 8→7). Put the count back and re-read the probe.
 **Never press Start** (`OnClickStartCb` launches). **Every way out of `FactionChoiceModalWindow`
 COMMITS the highlighted faction** — Escape, Select, and the button labelled "Cancel", because
 `GuiModalWindow.OnCancelCb` is `HandleInput(InputAction.Exit)` and this window routes Exit to

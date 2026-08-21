@@ -1215,6 +1215,12 @@ namespace ES2Access.Core.Speech
         public const string NewGameLobbyLocked = "new-game.lobby-locked";
         public const string NewGameLobbyUnlocked = "new-game.lobby-unlocked";
 
+        /// <summary>Which of the other empires a competitor slot is. The game captions every one of them
+        /// with the same word ("AI"), so the panel's own drawing names none of them apart: the number is
+        /// the slot's place in the panel, counted from the top, and it is the only handle a player has for
+        /// saying which empire they are editing.</summary>
+        public const string NewGamePlayer = "new-game.player";
+
         /// <summary>The lobby's chat history, which the game draws as a scrolling list of lines with no
         /// heading of its own.</summary>
         public const string NewGameChatLog = "new-game.chat-log";
@@ -1898,6 +1904,7 @@ namespace ES2Access.Core.Speech
             { NewGameLockEmpire, "Lock empire" },
             { NewGameLobbyLocked, "The lobby is locked while the game launches" },
             { NewGameLobbyUnlocked, "The lobby is unlocked" },
+            { NewGamePlayer, "Player {0}" },
             { NewGameChatLog, "Chat log" },
             { NotifyOpenNegotiation, "Open negotiation" },
             { NotifyOpenMinorFaction, "Open minor faction diplomacy" },

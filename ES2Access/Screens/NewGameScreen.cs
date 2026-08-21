@@ -451,7 +451,14 @@ namespace ES2Access.Screens
 
         /// <summary>The Competitors grid. Each slot becomes a band the region keys jump between, so
         /// Alt+down goes to the next empire rather than through four rows to reach it, and inside a
-        /// band the four things the game drew are four rows.</summary>
+        /// band the four things the game drew are four rows.
+        ///
+        /// A band is also a named level, because the game names none of them: every slot is captioned
+        /// "AI" and the only thing telling two of them apart on screen is which row of the grid they
+        /// were drawn in. The number is that place in the panel counted from the top, so the empire
+        /// panel above - the player's own, which is not a competitor - is not counted; the level is
+        /// pushed rather than added as a row so that arriving in a band says whose it is and walking
+        /// inside one does not repeat it.</summary>
         private void BuildCompetitors(GraphBuilder builder, NewGameCompetitorSlotsPanel panel)
         {
             _slots.Clear();
@@ -470,7 +477,16 @@ namespace ES2Access.Screens
                 for (int i = 0; i < row.Count; i++)
                 {
                     builder.SetRegion("newgame:competitor/" + index);
-                    BuildCompetitorSlot(builder, Get<CompetitorSlot>(row[i]), index);
+                    builder.PushContext(ModStrings.Format(ModStrings.NewGamePlayer, index + 1));
+                    try
+                    {
+                        BuildCompetitorSlot(builder, Get<CompetitorSlot>(row[i]), index);
+                    }
+                    finally
+                    {
+                        builder.PopContext();
+                    }
+
                     index++;
                 }
             }

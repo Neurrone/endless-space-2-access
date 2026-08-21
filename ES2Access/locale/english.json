@@ -521,6 +521,7 @@
   "new-game.lock-empire": "Lock empire",
   "new-game.lobby-locked": "The lobby is locked while the game launches",
   "new-game.lobby-unlocked": "The lobby is unlocked",
+  "new-game.player": "Player {0}",
   "new-game.chat-log": "Chat log",
   "notify.open-negotiation": "Open negotiation",
   "notify.open-minor-faction": "Open minor faction diplomacy",
