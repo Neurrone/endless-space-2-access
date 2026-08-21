@@ -1253,6 +1253,15 @@ namespace ES2Access.Screens
                 return null;
             }
 
+            // Only a tooltip whose words ARE its content field can repeat the row. A class-backed
+            // one is assembled at draw time and its content holds the row's own words as authoring
+            // leftovers - the quest reward's improvement card carries the reward's name there - so
+            // comparing that field threw away the one place the reward was explained.
+            if (tooltip != null && AgeWidgets.Readable(tooltip) == null)
+            {
+                return tooltip;
+            }
+
             string written = AgeText.Tooltip(tooltip);
             if (string.IsNullOrEmpty(written) || string.IsNullOrEmpty(text))
             {
