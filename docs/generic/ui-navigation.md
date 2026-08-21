@@ -443,12 +443,17 @@ which no dump reveals. Key such lines on the game's *data* object, never the wid
   is a ROW of the table's own stop, above the first data row (Up from row 1 reaches it), never
   a stop of its own — and the stop's Tab landing is then set explicitly on the first data ROW,
   because a sorted heading reads "selected" and would otherwise win the
-  land-on-the-selected-alternative rule. Never drop an empty cell — the shared-column invariant dies — speak an
+  land-on-the-selected-alternative rule. A header band is a row whether or not it sorts: a
+  caption whose tooltip carries a sentence that exists nowhere else must be focusable,
+  because a label has no buffer to hold the sentence. Never drop an empty cell — the shared-column invariant dies — speak an
   "empty" word in it. A cell's review buffer holds that cell's own content (heading, value,
   the cell's own tooltip), not the whole row: the row is a walk away. `GraphSheet` (above) is
   the raw-mode engine for all of this — headings as edge labels, one position per ROW and none
   per cell, and the column stamp that type-ahead's one-result-per-row filter reads; a table built OUTSIDE it
-  must stamp each cell's `Column` by hand, or searching matches every cell of every row. The
+  must stamp each cell's `Column` by hand, or searching matches every cell of every row.
+  Anything declared at a non-zero column that is NOT a row cell must opt back into search —
+  the column filter silently hides it (a sort-header band is findable only by its first
+  column otherwise). The
   drawn-header pairing is the adapter's job, by the game's own column names, never by index.
 - **Minimized is not gone**: when the game collapses a panel to a title bar rather than
   hiding it, hand the keyboard to the surface beneath (the collapsed screen stands down) and
