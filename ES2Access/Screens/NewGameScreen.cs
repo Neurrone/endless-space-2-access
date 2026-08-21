@@ -514,8 +514,12 @@ namespace ES2Access.Screens
                 () => ModStrings.Get(ModStrings.NewGameHost),
                 key + "/host"
             );
-            BuildSlotStates(builder, slot, key);
+            // Faction before the state strip (owner order, 2026-08-21): the game draws the
+            // difficulty marks between the name and the faction, but what a slot IS comes before
+            // how hard it plays - so a band reads name, faction, difficulty and the multiplayer
+            // marks, colour.
             AddDropList(builder, slot.FactionDropList, FactionTitleKey, key + "/faction");
+            BuildSlotStates(builder, slot, key);
             AddDropList(builder, slot.EmpireColorDropList, ColorTitleKey, key + "/color");
         }
 

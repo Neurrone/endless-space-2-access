@@ -14,7 +14,7 @@ The key-rebinding rows are the one place `Backspace` has a meaning of its own: `
 
 ## Starting a Game
 
-The new game lobby has the setup rows — galaxy shape, size, difficulty, the competitors, the victory conditions — plus its action buttons. Each competitor is a named band of rows: entering one says `Player 1`, `Player 2`, and so on, counted down the panel (your own empire's panel is separate and uncounted), and `Alt+Up` / `Alt+Down` jump straight between players. Inside a band sit that player's name, difficulty, faction and colour — and in multiplayer, the join, kick, lock and ready controls the game draws for the slot.
+The new game lobby has the setup rows — galaxy shape, size, difficulty, the competitors, the victory conditions — plus its action buttons. Each competitor is a named band of rows: entering one says `Player 1`, `Player 2`, and so on, counted down the panel (your own empire's panel is separate and uncounted), and `Alt+Up` / `Alt+Down` jump straight between players. Inside a band sit that player's name, faction, difficulty and colour — and in multiplayer, the join, kick, lock and ready controls the game draws for the slot, between the faction and the colour.
 
 The **faction chooser** opens over the lobby, with the faction cards, the custom-faction entry, the hulls, the traits, the faction description, and buttons.
 
