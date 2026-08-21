@@ -48,6 +48,20 @@ Use `Alt+Up` and `Alt+Down` to jump between the systems and anything drifting in
 
 Type to search the whole map, including fleets inside systems you have not expanded.
 
+## Influence
+
+Every colonized system projects a circle of influence around itself, and the circle grows with the influence the system has accumulated since it was founded — outposts project none. Sighted players see the circles as coloured regions painted over the map; nothing in the game speaks them. The rules underneath: every point of the map belongs to whichever single system's influence is strongest at that point, so two empires never share ground — where circles overlap there is a border, and the stronger field holds everything on its side. A system that ends up inside a rival's influence loses part of its Dust, Science and Influence output and starts converting toward the rival; the game's own notifications track that conversion, and the mod reads them like any other.
+
+The mod speaks influence in five places:
+
+- **A system's details** carry its bubble: `Influence radius: 6.6, growing to 6.7 next turn` — or `shrinking to`, or `no change next turn`. The radius is in map units, the same units as the coordinates and the inspect cursor, so a radius of 6.6 means the bubble reaches about six and a half squares out.
+- **The tree** says whose influence holds a place, right after the coordinates: `Under Niris's influence` on any system fully inside a rival's bubble — or `Under your influence` when you have enveloped somebody else's system, worth knowing because nobody can colonize inside hostile influence. A system that rival influence reaches without winning adds `Influence contested by Niris`, every contender named, including `Influence contested by your empire` when yours is the influence pressing in. Both lines can appear on one system: held by one empire, contested by another.
+- **Inspect mode** treats influence like constellations — spoken only when it changes. Crossing into a bubble says `In Niris's influence` (or `In your influence`), a cell the border runs through says `Edge of Niris's influence`, and stepping out into unowned space says `Out of Niris's influence`. Two empires' edges in one cell collapse into a single line (`Edge of Neurrone's and Niris's influence`), and a cell that a rival reaches without holding any of it adds the contested line. `Shift+Arrows` stop at influence borders the way they stop at stars and fog edges, and a wider cursor answers for its whole area. The mod claims a cell is fully inside a bubble only when the game's own answers prove it; anything uncertain reads as an edge.
+- **The scanner** has a Contested Influence category: every square inside one of your own circles that a rival's field currently wins, nearest first, each named by the system whose ground it is (`Near Dusay`). Jumping to a result turns inspect mode on if it was off and lands the cursor on the square.
+- **The end of a turn** reports proven losses: `Dusay's influence lost ground to Niris`, once per system and taker, spoken as it happens and kept in the Turn log with a Show Location button. Only a square that was provably all yours last turn and provably holds a rival now is reported — a border merely creeping closer says nothing.
+
+Like everything else on the map, influence is only spoken where you can see: systems and squares under the fog say nothing about it.
+
 ## Zoom
 
 The game's own keyboard zoom (`PageUp` and `PageDown`, held down) stops working inside a star system, so the mod also exposes the zoom as a slider next to the view title: press `Tab` to the view title, then `Down` to reach it.
@@ -85,7 +99,7 @@ Press `Ctrl+I` on the map to enter inspect mode: a square cursor you move around
 
 Each cell speaks its coordinates, then its contents: systems and special objects, fleets, probes, obliterator missiles, ally pins, any starlanes the fog still draws across the cell, and how much of the cell is unexplored (`Unexplored`, or `34 squares unexplored`). An empty cell speaks only its coordinates. Moving past the edge of the galaxy announces `Map edge`.
 
-The mode also names the constellation you are in, before the cell: on entry when you start inside one, and afterwards only when it changes — `Andromeda constellation` crossing in, `Out of Andromeda constellation` crossing into unclaimed space. Only constellations the game has named to you count, so fog stays quiet. These regions are the mod's own reading of the map, derived from each constellation's member systems; the game itself draws no borders.
+The mode also names the constellation you are in, before the cell: on entry when you start inside one, and afterwards only when it changes — `Andromeda constellation` crossing in, `Out of Andromeda constellation` crossing into unclaimed space. Only constellations the game has named to you count, so fog stays quiet. These regions are the mod's own reading of the map, derived from each constellation's member systems; the game itself draws no borders. Empire influence is read the same change-only way — see [Influence](#influence).
 
 While inspect mode is active, the review buffer holds the current cell's contents, and the mod draws a visible square around the area being inspected.
 
@@ -100,7 +114,7 @@ The scanner is a directory of everything on the map, sorted nearest first from w
 - `Alt+PageUp` / `Alt+PageDown`: previous / next result, wrapping at both ends
 - `Alt+Home`: jump to the current result
 
-The categories are systems, fleets, probes, quest markers, ally pins and obliterator missiles. The systems category has subcategories: all, friendly, neutral, enemy, homeworld, minor factions and special. Empty categories and subcategories are skipped, so a press always lands on something.
+The categories are systems, fleets, probes, quest markers, ally pins, obliterator missiles and contested influence — squares of your own ground a rival's influence currently wins (see [Influence](#influence)). The systems category has subcategories: all, friendly, neutral, enemy, homeworld, minor factions and special. Empty categories and subcategories are skipped, so a press always lands on something.
 
 Changing category announces the full scope and the result you land on, for example `Systems: friendly, Dusay, 0, 0, here, 1 of 2`. Changing subcategory announces the subcategory and the result. Stepping through results announces the result alone: name, coordinates, distance and direction, and position in the list, for example `Heka, -1, -9, 9 south, 1 west, 2 of 13`. The very first scanner press of a game announces where you already are without moving.
 
