@@ -1819,6 +1819,44 @@ generic graduates to the generic docs.
   instruction window can briefly show the PREVIOUS mode's caption on entry (stale until the next
   refresh).
 
+- **Influence is one circle per COLONY, resolved at nodes, strongest source wins** (2026-08-21).
+  Each colonized system carries a radius it grows for itself
+  (`ColonizedStarSystem.LastInfluenceValue`, refreshed from the simulation property
+  `StarSystem.SystemInfluenceRadius` by `ColonizedStarSystemRepository.UpdateInfluence` :219-226)
+  and a strength that falls off inside it, `(1 - (d/R)^InfluenceStrenghtPower) * R` — so a big
+  circle beats a small one even well off its centre. Every node is resolved to the ONE strongest
+  source standing over it (`TryGetInfluence` :77-129, walking the whole galaxy) and the answer is
+  cached on the node as `GameNode.SystemWhichInfluences` (:212) — a plain property, so "whose
+  influence is here" costs nothing, while "how far does this place reach" is
+  `TryGetInfluenceRadius(NodePosition, …)` (:132-173), a dictionary lookup over the colonies at
+  that one node plus, in the 4-argument overload, next turn's estimate off
+  `StarSystem.SystemNextInfluenceRadiusEstimation`. An OUTPOST projects radius 0 (its descriptor
+  forces `SystemInfluenceRadius` to zero), so the service answers FALSE for it — measured on Heka
+  in `[Beginner] test`. A PIRATE base is the other end of the same trap: its colonies answer TRUE
+  with a radius of **1E-08** and a next-turn estimate of 0 (measured on all four pirate systems in
+  that fixture), so a "> 0" gate lets a reach through that speaks as "0.0". **Mod policy:** a
+  figure that speaks as zero is no reach at all and says nothing (`InfluenceText.Radius`), the same
+  silence an outpost gets. The read surface is `Services.GetService<IInfluenceService>()`.
+  **`ColonizedStarSystem.InfluenceState` is a DIPLOMATIC verdict, not the factual comparison**
+  (:2994-3031): it answers None for a foreign influencer the relation grants `NeutralInfluence`,
+  so anything asking "is somebody else's influence over this place" must compare the empires
+  itself. `InfluenceOwner` looks through an integrated minor faction to the empire that absorbed
+  it, while the disk the map draws takes its colour from `SystemWhichInfluences.Empire`
+  (`GalaxyStarSystem.UpdateInfluenceRange` :1932) — mod policy: name and compare the empire the
+  COLOUR is drawn for.
+  **Fog obligation:** every one of those values is global simulation state, identical for every
+  player. The game's own disk is hidden on `Node.Visibility.IsInvisible(playerEmpire)` (:1926), so
+  the mod gates every influence reading on `MapVisibility.Perceived` — measured: on
+  `[Beginner] test` the sim has radii for 17 systems the player has never seen (Baten 6.58,
+  Lonica 6.34, …) and the mod says nothing about any of them.
+  System CONVERSION by influence is the game's own notification territory
+  (`RefreshInfluenceConversion` :175-210 → `EventSystemUnderInfluence`); the mod reports the state,
+  not the event.
+  **Restoring the fixture after probing influence: `IInfluenceService.UpdateInfluence()` recomputes
+  every `LastInfluenceValue` and every node's winner from the simulation**, so it is an exact undo
+  for a probe that wrote either — measured 2026-08-21 (graph dump back to byte-identical bar the
+  clock).
+
 ## Endings, notifications and the journal
 
 - **The notification pipeline is a closed map the mod has joined** (2026-08-20):

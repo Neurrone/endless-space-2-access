@@ -605,6 +605,25 @@ selecting a fleet in the galaxy tree raises it. Page counts per tutorial:
 `DepartmentOfInternalAffairs.QuestJournal[QuestState.InProgress]` filtered to
 `TutorialDefinition`.
 
+**Influence on `[Beginner] test`: two radii, no contest, no foreign influence** (measured
+2026-08-21, turn 21). Perceived systems that project at all: Dusay 6.563 → 6.634 and Osulo 4.584 →
+4.633 (Niris, a minor faction) — both round to the same one-decimal figure, so **the growing and
+shrinking wordings are fixture-blocked here** and only "no change" appears live (the three
+branches are unit-tested in `InfluenceTextTests`). Heka is an outpost and the service answers
+false for it: no line, which is the negative test. Every node's influencer is its own colony, so
+**the "Under … influence" suffix and the contested line never appear on this fixture unaided**.
+The three probes that stand in, each an exact-undo mutation from `/eval`:
+- **A foreign or your own influencer over a place.** `node.SetSystemWhichInfluences(colony)` on a
+  perceived node (Electra is empty and safe — a node with a colony fires
+  `ColonizedStarSystem.RefreshInfluenceState` and rewrites a descriptor), read, restore.
+- **Somebody reaching without winning.** `colony.LastInfluenceValue = 50f` makes that colony's
+  circle cover the whole constellation; read the contested line on any node it now reaches.
+- **Undo for both:** `Services.GetService<IInfluenceService>().UpdateInfluence()` — the game's own
+  pass recomputes every radius and every node's winner from the simulation (es2-facts). Verified
+  by diffing `/gui/graph?buffers=1` before and after: identical bar the HUD clock.
+Empire indexes here: Neurrone (the player) 0, Niris 4 — the contested list is sorted by index, so
+the player sorts first in a mixed list.
+
 **`[Beginner] test` perceives NO foreign fleet at all.** Measured 2026-08-16 by walking
 `Gui.Game.Empires` and each empire's `DepartmentOfDefense.Fleets` (as `System.Collections.IList`),
 printing `(int)f.Visibility[me]`: Neurrone 6 fleets all at 3, and every one of the other 25 fleets

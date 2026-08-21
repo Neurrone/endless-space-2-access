@@ -2553,9 +2553,13 @@ namespace ES2Access.Screens
                 // fleet is selected, which is most of the time (<see cref="FleetRoute"/>).
                 NodeSection.Buffer(() => FleetRoute.PreviewLines(it)),
                 NodeSection.Buffer(() => SystemLabelReadout.Lines(drawn)),
-                // What the map draws AT the place rather than on its label: the ring round a held node,
-                // the disk of a time bubble, the pins a quest has planted. All three are colour and
-                // shape with no words anywhere near them.
+                // What the map draws AT the place rather than on its label: how far this colony's own
+                // influence reaches, the ring round a held node, the disk of a time bubble, the pins a
+                // quest has planted. All four are colour and shape with no words anywhere near them.
+                // The reach is reviewed rather than spoken because it is a number to plan a colony
+                // with, not news - whose influence has WON the place is the spoken half
+                // (<see cref="SystemInfluence"/>).
+                NodeSection.Buffer(() => SystemInfluence.RadiusLines(it, empire)),
                 NodeSection.Buffer(() => GuardLines(it, empire)),
                 NodeSection.Buffer(() => TimeBubbleLines(it, empire)),
                 NodeSection.Buffer(() => QuestMarkerLines(it, empire)),
@@ -2566,6 +2570,21 @@ namespace ES2Access.Screens
             // its own (<see cref="SpecialKind"/>) while its name is a bare catalogue number that
             // gives nothing away. Not watched - a node cannot become a different phenomenon.
             vtable.Announcements.Add(GraphNodes.ValuePart(() => SpecialKind(it), false));
+
+            // Then whose influence is standing over the place, and who else is reaching for it - said
+            // as soon as the row has finished saying what and where the place is, because between them
+            // they answer "can I have this?": a system under somebody else's influence refuses a colony
+            // ship and can change hands on its own, and the contest is the warning that it is about to
+            // (<see cref="SystemInfluence"/>). Nothing at all for the ordinary case, a place inside its
+            // own empire's circle. Not watched: influence moves at the turn's end and the game raises
+            // its own notification when a system is converted, so there is nothing here for a standing
+            // cursor to interrupt itself over.
+            vtable.Announcements.Add(
+                GraphNodes.ValuePart(() => SystemInfluence.UnderInfluence(it, empire), false)
+            );
+            vtable.Announcements.Add(
+                GraphNodes.ValuePart(() => SystemInfluence.Contested(it, empire), false)
+            );
 
             if (owned)
             {

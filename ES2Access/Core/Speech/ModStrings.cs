@@ -326,6 +326,35 @@ namespace ES2Access.Core.Speech
         public const string GalaxySystemQuestMarker = "galaxy.system-quest-marker";
         public const string GalaxySystemQuestMarkerPinned = "galaxy.system-quest-marker-pinned";
 
+        // How far a colony's influence reaches, and which way it is going next turn. The map draws the
+        // reach as a disk and the change as a second, fainter edge outside it, and writes no number on
+        // either - so the sentence around the game's own two figures is the mod's. Three forms rather
+        // than a direction word glued onto a number, because which way it is going is the whole point
+        // of the second figure; the steady one still says the number, since a radius that is not moving
+        // is exactly what a player planning a colony wants to hear.
+        public const string GalaxySystemInfluenceGrowing = "galaxy.system-influence-growing";
+        public const string GalaxySystemInfluenceShrinking = "galaxy.system-influence-shrinking";
+        public const string GalaxySystemInfluenceSteady = "galaxy.system-influence-steady";
+
+        // Whose influence has won a place, where that is not the empire holding it - the one thing on
+        // the map that takes a system from its owner without a shot, and the reason a colony ship is
+        // refused at an empty one. The map says it by painting the place another empire's colour, so
+        // every word of it is the mod's, and the player's own empire is called what the mod calls it
+        // everywhere else rather than by its name.
+        public const string GalaxySystemInfluencedBy = "galaxy.system-influenced-by";
+        public const string GalaxySystemInfluencedByYou = "galaxy.system-influenced-by-you";
+
+        // ...and who else is reaching for the same place without having won it, which is the contest
+        // still in progress. One line however many they are: the single form, the player alone, and the
+        // list form, whose first slot is the empires before the last one - a complete sentence per
+        // shape rather than a conjunction glued between names, so a translator can put the joining
+        // word where their language wants it.
+        public const string GalaxySystemInfluenceContested = "galaxy.system-influence-contested";
+        public const string GalaxySystemInfluenceContestedList =
+            "galaxy.system-influence-contested-list";
+        public const string GalaxySystemInfluenceContestedYou =
+            "galaxy.system-influence-contested-you";
+
         // The ring the map draws round a node somebody is holding: a citadel's, or a fleet standing
         // guard. The ring is a colour and nothing else, so both phrases are the mod's, and each names
         // the empire the ring is PAINTED for - the displayed one, privateers included.
@@ -1442,6 +1471,20 @@ namespace ES2Access.Core.Speech
             { GalaxySystemTimeBubble, "{0}, {1}, {2} turns left" },
             { GalaxySystemQuestMarker, "Quest here: {0}" },
             { GalaxySystemQuestMarkerPinned, "Tracked quest here: {0}" },
+            {
+                GalaxySystemInfluenceGrowing,
+                "Influence radius: {0}, growing to {1} next turn"
+            },
+            {
+                GalaxySystemInfluenceShrinking,
+                "Influence radius: {0}, shrinking to {1} next turn"
+            },
+            { GalaxySystemInfluenceSteady, "Influence radius: {0}, no change next turn" },
+            { GalaxySystemInfluencedBy, "Under {0}'s influence" },
+            { GalaxySystemInfluencedByYou, "Under your influence" },
+            { GalaxySystemInfluenceContested, "Influence contested by {0}" },
+            { GalaxySystemInfluenceContestedList, "Influence contested by {0} and {1}" },
+            { GalaxySystemInfluenceContestedYou, "Influence contested by your empire" },
             { GalaxySystemCitadel, "Citadel, {0}" },
             { GalaxySystemGuarded, "Guarded by {0}" },
             { GalaxyPlanetCuriosityOne, "{0} curiosity" },
