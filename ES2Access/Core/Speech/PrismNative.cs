@@ -5,8 +5,13 @@ using System.Text;
 namespace ES2Access.Core.Speech
 {
     /// <summary>
-    /// Raw P/Invoke surface for prism.dll (Prism v0.16.6, https://github.com/ethindp/prism),
+    /// Raw P/Invoke surface for prism.dll (Prism v0.18.1, https://github.com/ethindp/prism),
     /// pinned against the vendored include/prism.h at vendor/prism/prism.h.
+    ///
+    /// Do not downgrade below 0.18.0: every earlier release measured here (0.16.6, 0.16.7,
+    /// 0.17.3) answered PRISM_ERROR_INVALID_UTF8 for well-formed UTF-8 whose 3-byte sequences
+    /// began at an ODD byte offset, so any line carrying typographic punctuation at such an
+    /// offset was dropped in silence - roughly half the lines containing one.
     ///
     /// ABI facts:
     ///   - Calling convention is <c>__cdecl</c> on Windows (PRISM_CALL).
@@ -29,15 +34,29 @@ namespace ES2Access.Core.Speech
         // by-name reference resolves to the already-loaded module.
         private const string Dll = "prism";
 
-        /// <summary>PrismConfig: a single version byte (see PRISM_CONFIG_VERSION).</summary>
+        /// <summary>
+        /// PrismConfig as of PRISM_CONFIG_VERSION 3. Only <see cref="Version"/> is ever set:
+        /// prism_config_init's own defaults are zero for every other field (measured against
+        /// 0.18.1), and a null availability_callback leaves the three polling fields inert, so a
+        /// zeroed struct is exactly what the library would have handed back.
+        /// </summary>
         [StructLayout(LayoutKind.Sequential)]
         public struct PrismConfig
         {
             public byte Version;
+            public IntPtr Registry;
+            public IntPtr AvailabilityCallback;
+            public IntPtr AvailabilityUserdata;
+            public uint AvailabilityPollIntervalMs;
+            public uint AvailabilityDebounceSamples;
+            public uint AvailabilityBackoffMaxMs;
+
+            [MarshalAs(UnmanagedType.I1)]
+            public bool AvailabilityAutoPowerManage;
         }
 
         /// <summary>Current config schema version expected by prism_init.</summary>
-        public const byte ConfigVersion = 2;
+        public const byte ConfigVersion = 3;
 
         public enum PrismError
         {
@@ -62,6 +81,9 @@ namespace ES2Access.Core.Speech
             InvalidAudioFormat,
             InternalBackendLimitExceeded,
             BackendEnteredUndefinedState,
+            LibraryLoadFailed,
+            LibraryInvalid,
+            IncompatibleAbi,
             Count,
         }
 
