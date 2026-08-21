@@ -522,10 +522,10 @@ namespace ES2Access.Screens
         /// simply makes them invisible. Measured on the luxury grid, turn 21 of the beginner save: 24
         /// items in three lines of eight, the whole third line at alpha 0 and four of the second.
         ///
-        /// What the table reading is, and why the families stopped being a walkable band in front of
-        /// the grid, is <see cref="ResourceGrid"/>. BOTH grids read that way (owner ruling 2026-08-19):
-        /// they are the same lattice of the same shape, and a player who has learnt one has learnt the
-        /// other.
+        /// What the table reading is, and how the families are both its column captions and a header
+        /// ROW above the first line, is <see cref="ResourceGrid"/>. BOTH grids read that way (owner
+        /// ruling 2026-08-19, amended 2026-08-21): they are the same lattice of the same shape, and a
+        /// player who has learnt one has learnt the other.
         /// </summary>
         private void BuildResources(
             GraphBuilder builder,
@@ -733,12 +733,11 @@ namespace ES2Access.Screens
         ///
         /// The cell never says which family it belongs to: the column it sits in is announced as the
         /// edge the player crossed to reach it - or, on a landing that crossed no edge, as the column
-        /// heading itself - and a word on the cell as well would say it twice.
-        /// <paramref name="familyTip"/> is the other half of that swap: the family's own sentence, kept
-        /// in this cell's review buffer because the table reading has no heading row left to keep it on
-        /// (<see cref="ResourceGrid.FamilySection"/>).
+        /// heading itself - and a word on the cell as well would say it twice. What the family DOES is
+        /// on the heading node a step above the column (<see cref="ResourceGrid"/>), not in this cell's
+        /// buffer, which holds the resource's own dossier and nothing else.
         /// </summary>
-        private static NodeVtable ResourceCell(AgeTransform widget, AgeTooltip familyTip)
+        private static NodeVtable ResourceCell(AgeTransform widget)
         {
             ResourceItem item = widget == null ? null : widget.GetComponent<ResourceItem>();
             if (item == null || !SettingRows.Drawn(widget))
@@ -759,13 +758,10 @@ namespace ES2Access.Screens
                     GraphNodes.LabelPart(() => label),
                     GraphNodes.ValuePart(() => StockAndNet(it.StockLabel, it.NetLabel)),
                 },
-                Sections = ResourceGrid.Append(
-                    GraphNodes.Sections(
-                        null,
-                        tooltip,
-                        named ? GraphNodes.ModeFor(tooltip) : TooltipMode.None
-                    ),
-                    ResourceGrid.FamilySection(familyTip)
+                Sections = GraphNodes.Sections(
+                    null,
+                    tooltip,
+                    named ? GraphNodes.ModeFor(tooltip) : TooltipMode.None
                 ),
             };
             AgeWidgets.PointAt(vtable, widget);

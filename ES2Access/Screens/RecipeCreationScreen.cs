@@ -29,8 +29,8 @@ namespace ES2Access.Screens
     /// the TABLE the game draws them as - families the columns, a place the game faded a cell in
     /// speaking the word for empty so the column stays under a player walking down it - which is the
     /// same reading and the same machinery as the economy page's copy of the same lattice
-    /// (<see cref="ResourceGrid"/>, owner ruling 2026-08-19), down to the economy screen's words for
-    /// the families.
+    /// (<see cref="ResourceGrid"/>, owner ruling 2026-08-19, amended 2026-08-21 to give the families a
+    /// header row of their own), down to the economy screen's words for the families.
     ///
     /// There is no screen name. The window's heading is a drawn element with its own explanation on its
     /// tooltip, so it is declared where it is drawn and focus lands on it - which says what has just
@@ -198,10 +198,10 @@ namespace ES2Access.Screens
         /// <summary>One component the empire could put into a project: what it is, how much of it there
         /// is, and its own dossier in the review buffer. Named off the wrapper the game hangs on its
         /// tooltip, because the item draws a picture and a stock figure and no words. Which family it
-        /// belongs to is the column it sits in, said by the edge the player crossed to reach it, and its
-        /// family's sentence rides in the review buffer
-        /// (<see cref="ResourceGrid.FamilySection"/>).</summary>
-        private static NodeVtable IngredientCell(AgeTransform widget, AgeTooltip familyTip)
+        /// belongs to is the column it sits in, said by the edge the player crossed to reach it, and
+        /// what that family DOES is on the heading node above the column
+        /// (<see cref="ResourceGrid"/>).</summary>
+        private static NodeVtable IngredientCell(AgeTransform widget)
         {
             IngredientItem item = widget == null ? null : widget.GetComponent<IngredientItem>();
             if (item == null || !SettingRows.Drawn(widget))
@@ -221,10 +221,7 @@ namespace ES2Access.Screens
                     GraphNodes.ValuePart(() => AgeText.Label(it.StockLabel)),
                     GraphNodes.DisabledPart(offered),
                 },
-                Sections = ResourceGrid.Append(
-                    GraphNodes.Sections(null, tooltip),
-                    ResourceGrid.FamilySection(familyTip)
-                ),
+                Sections = GraphNodes.Sections(null, tooltip),
                 OnActivate = () =>
                 {
                     if (offered())

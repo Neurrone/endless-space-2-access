@@ -1629,10 +1629,23 @@ resources grids are the only economy tables that can be walked. The recipe modal
 `HideWindow(w)`, and a RE-SHOW is the restore — `OnBeginShow` clears `currentRecipeIngredients`
 and `RecipeModified` (measured 2026-08-19). **NEVER press Confirm** — it is enabled even with an
 empty recipe and posts `OrderCreateRecipe` — and note Reset does NOT clear `RecipeModified`.
-All four family grids are 8-column tables since 2026-08-19 (one shared `ResourceGrid` reading;
-families as column headers, family sentences in every cell's buffer, "empty" holes, blank lines
-undeclared). The column headers read the economy screen's short titles ("Industry"), not the
-family descriptions. The modal's project stop draws ONE slot in `unlocked` (multi-slot strip
+All four family grids are tables sharing one `ResourceGrid` reading since 2026-08-19 (luxuries 8
+columns, strategics 6; "empty" holes, blank lines undeclared). The column captions read the economy
+screen's short titles ("Industry"), not the family descriptions. **Since 2026-08-21 the families are
+also a header ROW** — `<stop>/family/<i>`, one node per drawn icon, above the first line and inside
+the sheet's `reg:0`; Tab still lands on the first data row and Up from a cell reaches its own
+column's heading. Each heading carries the family sentence ("This family of resource improves Food
+…") and no cell does any more, so a before/after of that sentence's count in
+`/gui/graph?buffers=1` is the check: 132 buffer lines → 14, one per family, on each page.
+**Whether the strategics grids draw is `CanUseStrategicForRecipe` (above) plus a
+`EconomyPanel.RefreshNow()`** — setting the property alone leaves `StrategicsGroup.Visible` false
+until the panel refreshes.
+**A 0×0 game window makes every grid degenerate to ONE column.** `AgeTransform.GetGlobalPosition()`
+answers all-zero rects when `UnityEngine.Screen.width` is 0 (a locked or disconnected session), so
+`ResourceGrid.ColumnOf` maps every item to column 0 and the luxury lattice reads as 12 rows of one
+resource plus seven "empty"s instead of 3×8. Probe `UnityEngine.Screen.width` before believing a
+layout measurement; the navigation model (8 headers, 8 columns, the column-paired seam) is still
+fully exercised in that state, only the cell-to-column assignment is wrong. The modal's project stop draws ONE slot in `unlocked` (multi-slot strip
 unmeasured). The two STRATEGIC grids draw only for an empire with Material Expertise — no save
 here has it, but `SimulationProperties.Empire.CanUseStrategicForRecipe` DOES stick under
 `SetPropertyBaseValue` + `Refresh(false)`: set it, the game draws the real grid itself, set it

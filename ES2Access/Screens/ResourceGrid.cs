@@ -20,13 +20,20 @@ namespace ES2Access.Screens
     ///   (<see cref="ColumnOf"/>), never off a count of the drawn cells, because the lattice is SPARSE:
     ///   the game keeps every resource in the table and fades the ones the empire has nothing of, so
     ///   counting only the drawn ones would shift every column after the first hole.
-    /// - <b>The families are column headers and nothing else</b> (owner ruling 2026-08-19, replacing a
-    ///   walkable band of icons in front of the grid). A family is what the player crosses an edge into
-    ///   and what a landing in a column is announced by (<see cref="NodeVtable.ColumnHeader"/>, which
-    ///   <see cref="GraphSheet.NamedRows"/> being false turns on). The one thing the band was holding
-    ///   that a caption cannot say - each family's sentence about what it does - moves into the review
-    ///   buffer of every cell of that family's column (<see cref="FamilySection"/>), which is the only
-    ///   surface it is reachable from once the band is gone.
+    /// - <b>The families are a real HEADER ROW as well as the columns' captions</b> (owner ruling
+    ///   2026-08-21, reversing his own 2026-08-19 "column headers and nothing else"). A family is still
+    ///   what the player crosses an edge into and what a landing in a column is announced by
+    ///   (<see cref="NodeVtable.ColumnHeader"/>, which <see cref="GraphSheet.NamedRows"/> being false
+    ///   turns on) - and it is ALSO a node, one per drawn icon, in a row above the first line of the
+    ///   lattice (<see cref="Headings"/>). Up from a cell reaches its own column's heading and Down comes
+    ///   back, which is the shape every sort-header band in this mod has (<c>TableSheet.Headers</c>)
+    ///   minus the press: these headings sort nothing, so nothing is wired to Enter and no state word is
+    ///   said. What the heading node is FOR is the family's own sentence about what the family does
+    ///   ("This family of resource improves Food when used in System Development"): it lives on the
+    ///   heading's own tooltip, so it is declared where the game hung it and reachable from the one node
+    ///   that IS the family, rather than repeated into the review buffer of every cell of the column.
+    ///   One node per icon and never one node for the band: a node carries one tooltip, so a merged band
+    ///   would drop seven of the eight sentences while still sounding complete.
     /// - <b>A faded cell is still a cell</b>, saying the word for empty under the caption its edge
     ///   already said: dropping it would take the column out from under a player walking down it, which
     ///   is the one thing a table is for. A line the game faded WHOLE is not a row of empties - it is
@@ -45,20 +52,22 @@ namespace ES2Access.Screens
     internal sealed class ResourceGrid
     {
         /// <summary>What one drawn cell of the lattice is, in the host screen's terms - null for a
-        /// widget the game is not drawing, which is what makes the place a hole.
-        /// <paramref name="familyTip"/> is the heading tooltip of the column the cell landed in, which
-        /// the cell is expected to carry as a review section (<see cref="FamilySection"/>).</summary>
-        internal delegate NodeVtable Reader(AgeTransform widget, AgeTooltip familyTip);
+        /// widget the game is not drawing, which is what makes the place a hole.</summary>
+        internal delegate NodeVtable Reader(AgeTransform widget);
 
         /// <summary>Where each column is drawn across the screen, taken off the headings - which is
         /// what tells a cell which family it belongs to whatever the game faded out of the line above
         /// it.</summary>
         private readonly List<float> _centres = new List<float>();
 
+        /// <summary>The family icon the game drew over each column, or null where it drew none - the
+        /// widget the heading node is read off and the pointer is aimed at. A heading the game did not
+        /// draw leaves a null rather than shifting the ones after it: the index IS the column.</summary>
+        private readonly List<AgeTransform> _headings = new List<AgeTransform>();
+
         /// <summary>The heading tooltip of each family, by column - the sentence saying what that
-        /// family of resource does, which the table reading has no heading row to keep it on. A heading
-        /// the game did not draw leaves a null rather than shifting the ones after it: the index IS the
-        /// column.</summary>
+        /// family of resource does. Kept beside <see cref="_headings"/> because the tooltip is what the
+        /// heading node is declared with and what the pointer must be aimed through.</summary>
         private readonly List<AgeTooltip> _tips = new List<AgeTooltip>();
 
         // The drawn cells, and which column and which line of the lattice each was drawn in - three
@@ -76,6 +85,7 @@ namespace ES2Access.Screens
         internal int Columns(AgeTransform headers)
         {
             _centres.Clear();
+            _headings.Clear();
             _tips.Clear();
             _cells.Clear();
             _columns.Clear();
@@ -91,8 +101,10 @@ namespace ES2Access.Screens
                 }
 
                 UnityEngine.Rect at = child.GetGlobalPosition();
+                bool drawn = band && SettingRows.Drawn(child);
                 _centres.Add(at.x + at.width * 0.5f);
-                _tips.Add(band && SettingRows.Drawn(child) ? AgeWidgets.Raw(child) : null);
+                _headings.Add(drawn ? child : null);
+                _tips.Add(drawn ? AgeWidgets.Raw(child) : null);
             }
 
             return _centres.Count;
@@ -116,7 +128,7 @@ namespace ES2Access.Screens
                 }
 
                 previous = column;
-                NodeVtable cell = read(children[i], Tip(column));
+                NodeVtable cell = read(children[i]);
                 if (cell != null)
                 {
                     _cells.Add(cell);
@@ -127,12 +139,13 @@ namespace ES2Access.Screens
         }
 
         /// <summary>
-        /// The grid as the table it is drawn as: a row per drawn line of the lattice,
-        /// <paramref name="columns"/> wide, the families its columns and nothing else.
+        /// The grid as the table it is drawn as: the row of family headings, then a row per drawn line
+        /// of the lattice, <paramref name="columns"/> wide.
         ///
-        /// Tab into the box lands on a ROW of the table, the same landing every other table in the mod
-        /// has - and the landing says which column it is in, which is what a table with no row names
-        /// owes a player who arrives in it.
+        /// Tab into the box lands on a ROW of the table and not on the headings above it, the same
+        /// landing every other table in the mod has - and the landing says which column it is in, which
+        /// is what a table with no row names owes a player who arrives in it. The headings are reached
+        /// the way the eye reaches them, with Up from the first line.
         ///
         /// A grid whose heading band the game drew nothing in has no columns to be a table of, and
         /// falls back to the drawn cells one per row.
@@ -143,6 +156,7 @@ namespace ES2Access.Screens
             GraphSheet sheet = new GraphSheet(builder, stop + "/");
             sheet.NamedRows = false;
             sheet.Region(title, width == 0 ? null : columns);
+            Headings(builder, columns, stop);
             if (width == 0)
             {
                 for (int i = 0; i < _cells.Count; i++)
@@ -169,7 +183,7 @@ namespace ES2Access.Screens
                     _row.Clear();
                     for (int column = 0; column < width; column++)
                     {
-                        NodeVtable cell = CellAt(line, column) ?? EmptyCell(Tip(column));
+                        NodeVtable cell = CellAt(line, column) ?? EmptyCell();
                         if (column == 0)
                         {
                             primary = cell;
@@ -190,41 +204,70 @@ namespace ES2Access.Screens
         }
 
         /// <summary>
-        /// What the family heading says about its column, as a section every cell UNDER that heading
-        /// carries - reviewable, never spoken.
+        /// The row of family headings, one node per icon the game drew - declared in the table's OWN
+        /// stop immediately above its first line, so the band is where it is drawn rather than a Tab
+        /// stop of its own.
         ///
-        /// The sentence ("This family of resource improves Food when used in System Development") is
-        /// the one thing the heading band was holding that the column caption does not say, and with
-        /// the band gone this is where it lives: the player reviews it from whichever cell of the
-        /// column they are standing on (owner ruling 2026-08-19). Not an
-        /// <see cref="TooltipMode.Indicate"/> section - it is not this control's own hover tooltip, so
-        /// the pointer is never aimed at it and the tooltip-parity audit does not hold the cell to it.
+        /// Each node says its family's name and carries the heading's own tooltip, which is the
+        /// family's sentence and lives here and nowhere else. Each is stamped with the column it stands
+        /// over (<see cref="NodeVtable.Column"/>), which is what
+        /// <c>GraphBuilder.StitchModeBoundaries</c> pairs the seam by: Up out of a cell reaches the
+        /// heading of the column the player was in rather than the first one.
+        ///
+        /// Nothing is wired to Enter: these headings sort nothing and the game gives their icons no
+        /// click, so the row is a row of readouts and a press on one answers with nothing - which is
+        /// what a click there does. The band carries no position either: "1 of 8" would count the
+        /// table's COLUMNS, which is not a place in a list.
+        ///
+        /// Searched by their own words (<see cref="NodeVtable.SearchesAsItself"/>): every node past
+        /// column 0 is otherwise dropped from type-ahead as a duplicate of a row name, and here there
+        /// are no row names and a family IS a thing to type at.
+        ///
+        /// A column the game drew no icon over, or one whose icon has neither a name nor a sentence, is
+        /// no heading: nothing is declared for it, and a cell of that column crosses the seam to the
+        /// first heading instead. That is the same fallback a column with no caption already gets from
+        /// the sheet, which labels its crossings with the same array.
         /// </summary>
-        internal static NodeSection FamilySection(AgeTooltip tip)
+        private void Headings(GraphBuilder builder, string[] columns, object stop)
         {
-            Func<IList<string>> lines = GraphNodes.TooltipDetails(tip);
-            return lines == null ? null : new NodeSection(lines, TooltipMode.None);
-        }
-
-        /// <summary>One more section after the ones a control declared, dropping a null on either
-        /// side.</summary>
-        internal static IList<NodeSection> Append(IList<NodeSection> sections, NodeSection extra)
-        {
-            if (extra == null)
+            int width = columns == null ? 0 : columns.Length;
+            bool open = false;
+            for (int i = 0; i < width && i < _headings.Count; i++)
             {
-                return sections;
+                AgeTransform widget = _headings[i];
+                string name = columns[i];
+                AgeTooltip tip = Tip(i);
+                if (widget == null || (string.IsNullOrEmpty(name) && tip == null))
+                {
+                    continue;
+                }
+
+                string said = name;
+                NodeVtable vtable = new NodeVtable
+                {
+                    ControlType = ControlTypes.Text,
+                    Announcements = new List<NodeAnnouncement>
+                    {
+                        GraphNodes.LabelPart(() => said),
+                    },
+                    Sections = GraphNodes.Sections(null, tip),
+                    Column = i,
+                    SearchesAsItself = true,
+                };
+                AgeWidgets.PointAt(vtable, widget, tip);
+                if (!open)
+                {
+                    builder.StartRow(positions: false);
+                    open = true;
+                }
+
+                builder.AddItem(ControlId.Structural(stop + "/family/" + i), vtable);
             }
 
-            List<NodeSection> all = new List<NodeSection>(
-                sections == null ? 1 : sections.Count + 1
-            );
-            for (int i = 0; sections != null && i < sections.Count; i++)
+            if (open)
             {
-                all.Add(sections[i]);
+                builder.EndRow();
             }
-
-            all.Add(extra);
-            return all;
         }
 
         /// <summary>Which column a cell is drawn in: the heading it sits under.</summary>
@@ -289,10 +332,10 @@ namespace ES2Access.Screens
         }
 
         /// <summary>A place in the lattice the game is drawing nothing in, in the words every empty
-        /// cell in this mod uses - carrying its column's family sentence like every other cell of that
-        /// column, because which family the hole is in is the one thing there is to know about it.
-        /// </summary>
-        private static NodeVtable EmptyCell(AgeTooltip familyTip)
+        /// cell in this mod uses. Which family the hole is in is said by the column it was crossed into
+        /// (<see cref="NodeVtable.ColumnHeader"/>), and what that family DOES is a step up on the
+        /// heading itself.</summary>
+        private static NodeVtable EmptyCell()
         {
             return new NodeVtable
             {
@@ -301,7 +344,6 @@ namespace ES2Access.Screens
                 {
                     GraphNodes.ValuePart(() => ModStrings.Get(ModStrings.NavCellEmpty)),
                 },
-                Sections = GraphNodes.Sections(FamilySection(familyTip)),
             };
         }
     }
