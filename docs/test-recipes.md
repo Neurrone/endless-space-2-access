@@ -247,7 +247,10 @@ exist and answers `true`) — but Exit takes the game's own route back and RAISE
 that variant is two closes: the modal, then `GetWindow<GameMenuModalWindow>().HandleInput(
 InputAction.Exit)`.
 The type-ahead lands on a save by name (`POST /type "fleet rework"`) and gives ONE result per save
-whichever column focus is in. **Never Enter on a row, never press Load, Save or Delete, and NEVER
+whichever column focus is in — landing in the column focus was in, since a save row matched by its
+NAME. The sort headings are searchable too since 2026-08-21 (`SearchesAsItself` on the band):
+`POST /type "session m"` lands on `loadsave:header/SessionMode/3` and says "Session Mode, button,
+Sort by session mode", with no step sideways off it. **Never Enter on a row, never press Load, Save or Delete, and NEVER
 `ui.doubleClick` a row** — the second click is CARRIED here (owner ruling 2026-08-14): it selects the
 row and fires the load (or, in save mode, the overwrite), with only the game's own confirmation box
 between the chord and a loaded game. The saves are a
@@ -1645,6 +1648,9 @@ the sheet's `reg:0`; Tab still lands on the first data row and Up from a cell re
 column's heading. Each heading carries the family sentence ("This family of resource improves Food
 …") and no cell does any more, so a before/after of that sentence's count in
 `/gui/graph?buffers=1` is the check: 132 buffer lines → 14, one per family, on each page.
+Type-ahead here matches CELLS by their own words (the rows have no name): `POST /type "transv"`
+from any column lands on `economy:luxuries/r0c5` and says "Approval, Transvine, 22, +2 per turn,
+1 of 2" — a landing is never stepped sideways off, and "trad" lands on the family heading.
 **Whether the strategics grids draw is `CanUseStrategicForRecipe` (above) plus a
 `EconomyPanel.RefreshNow()`** — setting the property alone leaves `StrategicsGroup.Visible` false
 until the panel refreshes.

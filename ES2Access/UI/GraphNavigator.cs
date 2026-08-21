@@ -1709,9 +1709,10 @@ namespace ES2Access.UI
         // whose edges are wired in a circle must not take the frame with it.
         //
         // A cell that matched BY ITS OWN words is the thing the player asked for, so the column is not
-        // followed off it: a table whose rows have no name (NodeVtable.SearchesAsItself) offers every
-        // cell as a result, and stepping right from one would read a different cell than the one that
-        // matched.
+        // followed off it: a table whose rows have no name (NodeVtable.SearchesAsItself, stamped on
+        // every cell of such a row, column 0 included) offers every cell as a result, and stepping
+        // right from one would read a different cell than the one that matched. The same is true of a
+        // sort-header band, whose headings are no row's cells.
         private void FollowSearchColumn()
         {
             for (int step = 0; step < 64 && _searchColumn > 0; step++)

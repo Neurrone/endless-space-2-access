@@ -147,15 +147,6 @@ files above.
   fixture draws a table with ROWS — re-measure when one can be sighted.
 - `StockAndNet` now exists in three copies (GlobalHud, EconomyScreen, JuggernautSpecializationScreen)
   — hoist the visibility-correct one and drop the others.
-- **A type-ahead landing on the PRIMARY cell of an unnamed-row sheet is walked off the match**
-  (measured 2026-08-21 on the economy luxuries; predates the family-header stage). `GraphSheet`
-  stamps `SearchesAsItself` on columns 1..N only, so `GraphNavigator.FollowSearchColumn`
-  (:1715-1730) — which exists to stop exactly on a cell that matched by its own words — does not
-  recognise column 0 as one and steps right into the neighbouring cell: searching "transv" from
-  column 3 lands on "Industry, empty" beside Transvine, while the same search from column 0 lands
-  on Transvine. Candidate one-liner: stamp the flag for every column when `NamedRows` is false
-  (the search SCOPE is unaffected — column 0 already passes its filter). Owner ruling wanted before
-  changing shared sheet behaviour.
 - **Expansion surfaces — UNSIGHTABLE here until the DLCs are installed** (2026-08-12 audit,
   `audit-dlc-mechanics.md` at the repo root; none of the four expansions has a depot in
   this install, so every item below is code-verified at best — except where the `*_DLC*`

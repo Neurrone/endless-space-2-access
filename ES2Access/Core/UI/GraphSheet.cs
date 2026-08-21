@@ -259,7 +259,12 @@ namespace ES2Access.Core.UI
             // whose every cell searches as the row's name must offer the player one result, not one
             // per column. Stamped here so no caller can forget it.
             vt.Column = col;
-            if (col > 0 && !NamedRows) vt.SearchesAsItself = true;
+            // Column 0 included: where the rows have no name, the primary is a cell like any other and
+            // its words are its own. Stamping it too is what tells a search that landed there that it
+            // has arrived (type-ahead follows the column the player was reading only off a cell that
+            // matched by its ROW's name) - without it a search from column 3 walks one cell past the
+            // Transvine it found.
+            if (!NamedRows) vt.SearchesAsItself = true;
 
             // A table whose rows have no name is the one where a landing identifies nothing: the row
             // cannot say where it is and the cell is another cell like it. So its cells carry the

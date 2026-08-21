@@ -223,6 +223,33 @@ namespace ES2Access.Tests.UI
             Assert.Equal("Transvine", scope.TextOf(1));
         }
 
+        /// <summary>The primary included. A search made from a metadata column steps back into that
+        /// column after landing, because a named row's cells all matched by the row's NAME and the
+        /// player was reading a column; a cell that matched by its own words is already the thing asked
+        /// for, so the stamp has to be on column 0 too or the landing walks one cell past it.</summary>
+        [Fact]
+        public void UnnamedRowsMatchByTheirOwnWordsInEveryColumnIncludingTheFirst()
+        {
+            GraphBuilder b = new GraphBuilder();
+            b.BeginStop("lux");
+            GraphSheet s = new GraphSheet(b, "t:");
+            s.NamedRows = false;
+            s.Region("Luxuries", new[] { "Food", "Industry" });
+            s.Row(Vt("Transvine"), null, () => "3");
+            s.Finish();
+            foreach (GraphNode node in b.Build().Order)
+                Assert.True(node.Vtable.SearchesAsItself, "column " + node.Vtable.Column);
+
+            GraphBuilder named = new GraphBuilder();
+            named.BeginStop("fleets");
+            GraphSheet n = new GraphSheet(named, "t:");
+            n.Region("Fleets", new[] { "Name", "Ships" });
+            n.Row(Vt("Alpha"), _rowA, () => "3");
+            n.Finish();
+            foreach (GraphNode node in named.Build().Order)
+                Assert.False(node.Vtable.SearchesAsItself);
+        }
+
         /// <summary>The default is unchanged: a table whose rows are things offers one result per row.
         /// </summary>
         [Fact]

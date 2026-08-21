@@ -297,6 +297,9 @@ namespace ES2Access.UI
                 // of the column the player was in rather than on the first one
                 // (<c>GraphBuilder.StitchModeBoundaries</c> pairs the seam by this number).
                 vtable.Column = columns[i];
+                // And searched by its own words: a heading is not a cell of the row below it, so the
+                // one-result-per-row filter would drop every heading past the first from type-ahead.
+                vtable.SearchesAsItself = true;
                 AgeWidgets.PointAt(vtable, widget);
                 builder.AddItem(
                     ControlId.Referenced(header, _key + "header/" + property + "/" + i),

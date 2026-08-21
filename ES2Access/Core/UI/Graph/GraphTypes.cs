@@ -311,7 +311,15 @@ namespace ES2Access.Core.UI.Graph
         /// what a table whose rows have no name is made of (<see cref="GraphSheet.NamedRows"/>). The
         /// one-result-per-row filter exists because every cell of a named row searches as that row;
         /// where the row has no name, dropping the non-primary cells would make the columns
-        /// unsearchable instead of un-duplicated. Stamped by <see cref="GraphSheet"/>.</summary>
+        /// unsearchable instead of un-duplicated. Stamped by <see cref="GraphSheet"/> on EVERY cell of
+        /// an unnamed row, column 0 included.
+        ///
+        /// It is also what stops a landing being walked off: a search made from column 3 steps back into
+        /// that column after landing on the row's primary, because the primary matched by the row's name
+        /// and the player was reading column 3 - but a cell that matched by its OWN words IS the thing
+        /// asked for, and following the column off it reads a neighbour. So anything declared at a
+        /// non-zero column that is not a row cell (a sort-header band) must set this too, or the
+        /// one-result-per-row filter hides all but its first column.</summary>
         public bool SearchesAsItself;
 
         /// <summary>
