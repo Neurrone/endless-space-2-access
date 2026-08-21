@@ -2083,13 +2083,26 @@ namespace ES2Access.Core.Speech
         /// <summary>
         /// The compiled-in English template for <paramref name="key"/>. Exposed so translation
         /// files can be validated against the shipped keys and placeholders. The icon names
-        /// (<see cref="IconDefaults"/>) are as much a shipped string as any other; they are held
-        /// in their own table only because there are hundreds of them.
+        /// (<see cref="IconDefaults"/>) and the key names and usage hints
+        /// (<see cref="HintDefaults"/>) are as much a shipped string as any other; they are held
+        /// in tables of their own only because each is a family read together.
         /// </summary>
         public static bool TryGetDefault(string key, out string template)
         {
             return Defaults.TryGetValue(key, out template)
-                || IconDefaults.TryGetValue(key, out template);
+                || IconDefaults.TryGetValue(key, out template)
+                || HintDefaults.TryGetValue(key, out template);
+        }
+
+        /// <summary>Whether the mod ships a phrase for <paramref name="key"/> at all - asked where a
+        /// key is COMPOSED and may legitimately not exist (a keyboard key the hint table does not
+        /// name), so that <see cref="Get"/>'s warn-once is not spent on a miss that is expected.
+        /// </summary>
+        public static bool Has(string key)
+        {
+            string ignored;
+            return (_overrides != null && _overrides.TryGetValue(key, out ignored))
+                || TryGetDefault(key, out ignored);
         }
 
         private static void WarnOnce(string warnKey, string message)

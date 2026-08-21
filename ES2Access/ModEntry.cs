@@ -607,6 +607,12 @@ namespace ES2Access
             GraphAnnouncer.ExpandedStateText = expanded =>
                 ModStrings.Get(expanded ? ModStrings.NavExpanded : ModStrings.NavCollapsed);
 
+            // How a USAGE HINT spells the gesture it names. Core cannot see the input manager, so the
+            // renderer is injected here and reads the LIVE action table - a re-bound gesture re-words
+            // every hint that names it, with nothing to keep in step.
+            NodeHints.Chord = (actionKey, bindingIndex) =>
+                ChordNames.Of(Input, actionKey, bindingIndex);
+
             GraphSheet.BlankText = () => ModStrings.Get(ModStrings.NavCellEmpty);
             GraphSheet.TableRoleText = () => ModStrings.Get(ModStrings.NavTable);
             GraphSheet.TextCellType = ControlTypes.Text;
@@ -732,6 +738,7 @@ namespace ES2Access
             // installed, they would keep calling into an assembly nobody can reach any more.
             GraphAnnouncer.Reset();
             GraphSheet.Reset();
+            NodeHints.Reset();
 
             ModLocale.Reset();
             ModStrings.Reset();

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using ES2Access.Core.Speech;
 using ES2Access.Core.UI.Graph;
+using ES2Access.UI.Input;
 
 namespace ES2Access.UI
 {
@@ -231,6 +232,27 @@ namespace ES2Access.UI
                 {
                     AgeTransform hint = at;
                     vtable.OnSelectToggle = () => AgeWidgets.Locate(hint);
+                    NodeHints.Add(
+                        vtable,
+                        ModStrings.HintMissingTechnology,
+                        UiActions.SelectToggle,
+                        0,
+                        () => AgeWidgets.Hinted(hint)
+                    );
+                }
+
+                // The colony card's curiosity: the game's own ALT-click queues the expedition at the
+                // FRONT of the system's queue, and the modified click's fall back cannot carry it -
+                // the chord holds Ctrl and Shift, and the game's handler reads Alt
+                // (<c>docs/interaction.md</c>). Asked of the WIDGET, so the galaxy's orbital card -
+                // where the same prefab means a fleet search with no queue behind it - is left alone.
+                PlanetCuriosityItem curiosity = CuriosityExpeditions.ColonyCuriosity(at);
+                if (curiosity != null && vtable.OnAlternate == null)
+                {
+                    PlanetCuriosityItem queueing = curiosity;
+                    AgeTransform icon = at;
+                    vtable.OnAlternate = () => CuriosityExpeditions.QueueFirst(icon, queueing);
+                    NodeHints.Add(vtable, ModStrings.HintQueueFirst, UiActions.Alternate);
                 }
 
                 builder.AddItem(ControlId.Structural(keyPrefix + "/action/" + i), vtable);

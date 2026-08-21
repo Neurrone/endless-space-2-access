@@ -278,6 +278,13 @@ namespace ES2Access.Core.UI.Graph
         /// </summary>
         public Func<string> BufferHead;
 
+        /// <summary>Optional. The USAGE HINTS this control ends its review buffer with - what the
+        /// mod's gesture chords do here, one sentence per hint, in declared order
+        /// (<see cref="NodeHint"/>). Declared where the screen wires the gesture, so the two cannot
+        /// drift apart; null - the ordinary case - is a control whose gestures are the uniform ones
+        /// every control has, or whose own game tooltip already states them.</summary>
+        public IList<NodeHint> Hints;
+
         /// <summary>Optional. Horizontal value adjust (a slider): sign is -1 (decrease) / +1 (increase),
         /// large requests a coarse step. When set, left/right do NOT navigate.</summary>
         public Action<int, bool> OnAdjust;
