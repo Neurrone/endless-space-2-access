@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using ES2Access.Core.Speech;
+using ES2Access.Core.UI;
 using Xunit;
 
 namespace ES2Access.Tests.Speech
@@ -108,6 +109,94 @@ namespace ES2Access.Tests.Speech
         {
             Assert.Null(InfluenceText.Contested(null));
             Assert.Null(InfluenceText.Contested(new List<string>()));
+        }
+
+        [Fact]
+        public void ACellProvedToBeOneEmpiresSaysSoWithoutHedging()
+        {
+            Assert.Equal(
+                "In the Sophons's influence",
+                InfluenceText.Cell(InfluenceCover.Whole, One("the Sophons"), false)
+            );
+            Assert.Equal(
+                "In your influence",
+                InfluenceText.Cell(InfluenceCover.Whole, One("Neurrone"), true)
+            );
+        }
+
+        [Fact]
+        public void ACellTheBorderRunsThroughIsTheEdgeOfIt()
+        {
+            Assert.Equal(
+                "Edge of the Sophons's influence",
+                InfluenceText.Cell(InfluenceCover.Edge, One("the Sophons"), false)
+            );
+            Assert.Equal(
+                "Edge of your influence",
+                InfluenceText.Cell(InfluenceCover.Edge, One("Neurrone"), true)
+            );
+        }
+
+        [Fact]
+        public void SeveralEmpiresSharingACellAreOneLine()
+        {
+            Assert.Equal(
+                "Edge of the Sophons's and the Lumeris's influence",
+                InfluenceText.Cell(
+                    InfluenceCover.Edge,
+                    new List<string> { "the Sophons", "the Lumeris" },
+                    false
+                )
+            );
+            // Past two the possessive can only sit on the two slots the template has, because a
+            // language's own inflection belongs inside the translated sentence and never glued onto a
+            // name by the mod. Three empires overlapping one square is a wording the owner has not
+            // ruled on; this records what it says today.
+            Assert.Equal(
+                "Edge of the Sophons, the Lumeris's and the Cravers's influence",
+                InfluenceText.Cell(
+                    InfluenceCover.Edge,
+                    new List<string> { "the Sophons", "the Lumeris", "the Cravers" },
+                    false
+                )
+            );
+        }
+
+        [Fact]
+        public void ThePlayerInACrowdIsNamedLikeAnybodyElse()
+        {
+            Assert.Equal(
+                "Edge of Neurrone's and Niris's influence",
+                InfluenceText.Cell(
+                    InfluenceCover.Edge,
+                    new List<string> { "Neurrone", "Niris" },
+                    true
+                )
+            );
+        }
+
+        [Fact]
+        public void SteppingOutNamesWhatWasLeft()
+        {
+            Assert.Equal("Out of your influence", InfluenceText.Left(One("Neurrone"), true));
+            Assert.Equal("Out of Niris's influence", InfluenceText.Left(One("Niris"), false));
+            Assert.Equal(
+                "Out of Neurrone's and Niris's influence",
+                InfluenceText.Left(new List<string> { "Neurrone", "Niris" }, false)
+            );
+        }
+
+        [Fact]
+        public void NobodysInfluenceIsSilence()
+        {
+            Assert.Null(InfluenceText.Cell(InfluenceCover.None, One("Niris"), false));
+            Assert.Null(InfluenceText.Cell(InfluenceCover.Edge, new List<string>(), false));
+            Assert.Null(InfluenceText.Left(null, false));
+        }
+
+        private static List<string> One(string name)
+        {
+            return new List<string> { name };
         }
     }
 }

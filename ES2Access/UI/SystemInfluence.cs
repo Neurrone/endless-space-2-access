@@ -2,10 +2,54 @@ using System;
 using System.Collections.Generic;
 using Amplitude.Unity.Framework;
 using ES2Access.Core.Speech;
+using ES2Access.Core.UI;
 using ES2Access.Core.Util;
 
 namespace ES2Access.UI
 {
+    /// <summary>
+    /// Whose influence covers a SQUARE of the map, together with the empires behind the indexes so the
+    /// caller can say it and compare it against the square it came from.
+    ///
+    /// The classification and the names travel together because the "out of" line names what was LEFT:
+    /// the empire that owned the previous cell may own nothing near the new one, and by then there is
+    /// nothing left to look its name up from.
+    /// </summary>
+    public sealed class CellInfluence
+    {
+        private static readonly List<Empire> Nobody = new List<Empire>();
+
+        public static readonly CellInfluence Nothing = new CellInfluence(
+            InfluenceReading.Nothing,
+            Nobody,
+            Nobody
+        );
+
+        public CellInfluence(
+            InfluenceReading reading,
+            List<Empire> owners,
+            List<Empire> contesters
+        )
+        {
+            Reading = reading;
+            Owners = owners;
+            Contesters = contesters;
+        }
+
+        public InfluenceReading Reading { get; private set; }
+
+        /// <summary>The empires holding part of the cell, in the reading's own order.</summary>
+        public List<Empire> Owners { get; private set; }
+
+        /// <summary>The empires reaching into it without holding any of it.</summary>
+        public List<Empire> Contesters { get; private set; }
+
+        public bool Silent
+        {
+            get { return Reading.Silent; }
+        }
+    }
+
     /// <summary>
     /// The influence a system throws over the map, and whose influence a system is standing in.
     ///
@@ -208,6 +252,263 @@ namespace ES2Access.UI
                 Log.Warn("galaxy: reading who is contesting a system's influence threw: " + e);
                 return null;
             }
+        }
+
+        // ---- whose influence covers a square of the map ----
+
+        /// <summary>
+        /// WHOSE INFLUENCE STANDS OVER A CELL of the map - the inspect cursor's question, which is
+        /// about an AREA and so is not a question the game will answer.
+        ///
+        /// The game only ever resolves influence at a POINT (<c>TryGetInfluence</c>), so every identity
+        /// here is one of its own answers, asked at the covering grid and at the exact position of every
+        /// galaxy node inside the cell - exact, because the Unfallen root override only fires on an
+        /// exact position match (<c>ColonizedStarSystemRepository</c> :98-110) and a grid that missed it
+        /// would be certifying a point the game answers differently. Whether those answers hold
+        /// everywhere BETWEEN the samples is the one thing the mod decides, and it decides it with a
+        /// proof rather than a guess (<see cref="InfluenceCell"/>).
+        ///
+        /// The circles are read the way the game builds them: one per galaxy node standing on colonies,
+        /// centred on that node, with the strongest colony there setting the radius - the same walk
+        /// <c>TryGetInfluence</c> makes, so the field the certificate is computed from is the field the
+        /// game is resolving.
+        ///
+        /// A source the player is not being SHOWN is stripped of its name and not of its field: the map
+        /// hides a colony's disk when the node is invisible (<c>GalaxyStarSystem.UpdateInfluenceRange</c>
+        /// :1926), so naming that empire would hand the player a colony they have never seen. Left in
+        /// the field as an anonymous rival it can only cost the cell its certificate, which reads as
+        /// "edge of" and names nobody new.
+        ///
+        /// Whether the cell may be read AT ALL is the caller's: the mode asks its own fog first, and a
+        /// cell nobody has explored is told nothing about (<see cref="Screens.GalaxyInspect"/>).
+        ///
+        /// Cost: nothing at all where no circle reaches the cell, which is most of the map - the grid is
+        /// only asked for once something is there to classify.
+        /// </summary>
+        public static CellInfluence OverCell(
+            double lowX,
+            double lowY,
+            double highX,
+            double highY,
+            Empire empire
+        )
+        {
+            try
+            {
+                IInfluenceService influence = Services.GetService<IInfluenceService>();
+                if (influence == null || empire == null || !GameGalaxy.Present())
+                {
+                    return CellInfluence.Nothing;
+                }
+
+                GameNode[] nodes = GameGalaxy.GameNodes();
+                if (nodes == null)
+                {
+                    return CellInfluence.Nothing;
+                }
+
+                List<InfluenceSource> sources = new List<InfluenceSource>();
+                List<Empire> known = new List<Empire>();
+                List<GameNode> inside = new List<GameNode>();
+                bool anyReaches = false;
+                for (int i = 0; i < nodes.Length; i++)
+                {
+                    GameNode node = nodes[i];
+                    if (node == null)
+                    {
+                        continue;
+                    }
+
+                    double x = node.GalaxyPosition.X;
+                    double y = node.GalaxyPosition.Y;
+                    if (x >= lowX && x < highX && y >= lowY && y < highY)
+                    {
+                        inside.Add(node);
+                    }
+
+                    ColonizedStarSystem colony;
+                    float radius;
+                    if (
+                        !influence.TryGetInfluenceRadius(node.NodePosition, out colony, out radius)
+                        || radius <= 0f
+                    )
+                    {
+                        continue;
+                    }
+
+                    InfluenceSource source = new InfluenceSource();
+                    source.X = x;
+                    source.Y = y;
+                    source.Radius = radius;
+                    source.Empire = Nameable(colony, empire, known);
+                    sources.Add(source);
+                    anyReaches =
+                        anyReaches
+                        || InfluenceCell.Reaches(source, lowX, lowY, highX, highY);
+                }
+
+                List<InfluenceAnswer> answers = new List<InfluenceAnswer>();
+                for (int i = 0; i < inside.Count; i++)
+                {
+                    Ask(influence, inside[i].GalaxyPosition, empire, known, answers);
+                }
+
+                if (anyReaches)
+                {
+                    double[] xs = InfluenceCell.Axis(lowX, highX, InfluenceCell.SamplesPerSide);
+                    double[] ys = InfluenceCell.Axis(lowY, highY, InfluenceCell.SamplesPerSide);
+                    for (int a = 0; a < xs.Length; a++)
+                    {
+                        for (int b = 0; b < ys.Length; b++)
+                        {
+                            Ask(
+                                influence,
+                                new GalaxyPosition((float)xs[a], (float)ys[b]),
+                                empire,
+                                known,
+                                answers
+                            );
+                        }
+                    }
+                }
+
+                InfluenceReading reading = InfluenceCell.Classify(
+                    lowX,
+                    lowY,
+                    highX,
+                    highY,
+                    sources,
+                    influence.InfluenceStrenghtPower,
+                    answers,
+                    InfluenceCell.CoveringRadius(
+                        highX - lowX,
+                        highY - lowY,
+                        InfluenceCell.SamplesPerSide
+                    ),
+                    anyReaches
+                );
+                return new CellInfluence(
+                    reading,
+                    Behind(reading.Empires, known),
+                    Behind(reading.Contesters, known)
+                );
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: classifying the influence over a cell threw: " + e);
+                return CellInfluence.Nothing;
+            }
+        }
+
+        /// <summary>Ask the game whose influence stands at one point, and record its answer at the very
+        /// coordinates it was asked about - the certificate is evaluated at the sampled point, so the
+        /// arithmetic and the query must be talking about the same place down to the float.</summary>
+        private static void Ask(
+            IInfluenceService influence,
+            GalaxyPosition at,
+            Empire empire,
+            List<Empire> known,
+            List<InfluenceAnswer> into
+        )
+        {
+            ColonizedStarSystem colony;
+            InfluenceAnswer answer = new InfluenceAnswer();
+            answer.X = at.X;
+            answer.Y = at.Y;
+            answer.Empire = influence.TryGetInfluence(at, out colony, false)
+                ? Nameable(colony, empire, known)
+                : -1;
+            into.Add(answer);
+        }
+
+        /// <summary>The empire index the player may be TOLD about, or -1 - a colony whose node the map
+        /// is not showing is nobody as far as the reading is concerned, and its empire is remembered
+        /// only where it can be named.</summary>
+        private static int Nameable(
+            ColonizedStarSystem colony,
+            Empire empire,
+            List<Empire> known
+        )
+        {
+            Empire behind = colony == null || colony.Destroyed ? null : colony.Empire;
+            if (behind == null || !MapVisibility.Perceived(colony.Node, empire))
+            {
+                return -1;
+            }
+
+            if (!Held(known, behind))
+            {
+                known.Add(behind);
+            }
+
+            return behind.Index;
+        }
+
+        /// <summary>The empires behind a set of indexes, in the set's own order.</summary>
+        private static List<Empire> Behind(int[] indexes, List<Empire> known)
+        {
+            List<Empire> empires = new List<Empire>(indexes.Length);
+            for (int i = 0; i < indexes.Length; i++)
+            {
+                for (int k = 0; k < known.Count; k++)
+                {
+                    if (known[k].Index == indexes[i])
+                    {
+                        empires.Add(known[k]);
+                        break;
+                    }
+                }
+            }
+
+            return empires;
+        }
+
+        /// <summary>The cell's own influence sentence - "in", "on the edge of", and who. Nothing at all
+        /// where nobody holds any of it: the contested line below is then the whole answer.</summary>
+        public static string Whose(CellInfluence cell)
+        {
+            if (cell == null || cell.Owners.Count == 0)
+            {
+                return null;
+            }
+
+            return InfluenceText.Cell(cell.Reading.Cover, Names(cell.Owners), Alone(cell.Owners));
+        }
+
+        /// <summary>Who is reaching into the cell without holding any of it - the same sentence a
+        /// system's own contested line is said in, because it is the same fact about a different
+        /// shape.</summary>
+        public static string ContestedIn(CellInfluence cell)
+        {
+            return cell == null ? null : Contesters(new List<Empire>(cell.Contesters));
+        }
+
+        /// <summary>Stepping out into space nobody's influence reaches: what was left behind, named the
+        /// way the constellation crossing names the region being left.</summary>
+        public static string LeftBehind(CellInfluence was)
+        {
+            if (was == null || was.Owners.Count == 0)
+            {
+                return null;
+            }
+
+            return InfluenceText.Left(Names(was.Owners), Alone(was.Owners));
+        }
+
+        private static bool Alone(List<Empire> empires)
+        {
+            return empires.Count == 1 && ReferenceEquals(empires[0], Gui.PlayerEmpire);
+        }
+
+        private static List<string> Names(List<Empire> empires)
+        {
+            List<string> names = new List<string>(empires.Count);
+            for (int i = 0; i < empires.Count; i++)
+            {
+                names.Add(Named(empires[i]));
+            }
+
+            return names;
         }
 
         /// <summary>Whether this colony's circle covers that node - the game's own comparison, squared

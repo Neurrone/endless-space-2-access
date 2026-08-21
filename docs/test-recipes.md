@@ -624,6 +624,37 @@ The three probes that stand in, each an exact-undo mutation from `/eval`:
 Empire indexes here: Neurrone (the player) 0, Niris 4 — the contested list is sorted by index, so
 the player sorts first in a mixed list.
 
+**Inspect-cell influence on `[Beginner] test`** (measured 2026-08-21, turn 21).
+`IInfluenceService.InfluenceStrenghtPower` is 4 and the galaxy has 86 `GameNodes`. Only TWO circles
+are perceived — Dusay (yours) R 6.56 at pair 0,0, and Osulo (Niris) R 4.58 at pair −30.85,−31.81 —
+and they are 44.3 apart, so **every multi-empire wording is fixture-blocked unaided**. Sixteen other
+colonies project radii the player has never seen; they are why the perception filter exists, and
+`Sabel` (Amoeba, R 4.58 at −34.72,−4.79) is the nearest of them.
+The two walks that need no mutation, both spoken live:
+- **Your own bubble.** `JumpTo(0, 0)` → "In your influence" (Dusay's own node is in the cell and the
+  node sample agrees), Right ×6 silent, x=7 "Edge of your influence", x=8 "Out of your influence"
+  (that cell is also wholly fogged). Growing the cursor at x=6 from 1 to 3 crosses the rim and says
+  "Edge of your influence" — the size is part of the memo key.
+- **A foreign bubble.** `JumpTo(-29, -32)` → "In Niris's influence", −28/−27 silent, −26 "Edge of
+  Niris's influence", −25 "Out of Niris's influence".
+- **Skip.** From 1,0 Shift+Right answers "Skipped 5 squares" and lands on 7,0 reading the edge.
+The blocked wordings, and the one bounded mutation that produces all of them at once —
+`osulo.LastInfluenceValue = 41.8f` (found by walking `GameNodes` and matching
+`TryGetInfluenceRadius`'s system name), which puts Niris's rim 2.5 from Dusay and the strength
+crossover at 4:
+| cell (diagonal toward Osulo) | reads |
+|---|---|
+| 0,0 and −1,−1 | "In your influence" |
+| −2,−2 | "In your influence" + "Influence contested by Niris" |
+| −3,−3 | "Edge of Neurrone's and Niris's influence" (the LIST form) |
+| −4,−4, −5,−5 | "In Niris's influence" + "Influence contested by your empire" |
+| −6,−6 outwards | "In Niris's influence" |
+**Undo is the same `IInfluenceService.UpdateInfluence()`** the node recipe uses; verified by
+re-running the classification sweep and the radius dump and getting the pre-mutation output back.
+The same inflation is how the FOG GATE is proved: with it up, `-40,-44` is unexplored and inside
+Niris's circle, `SystemInfluence.OverCell` (ungated) answers "In Niris's influence", and the mode
+walking onto it says the coordinates and "Unexplored" and nothing about influence at all.
+
 **`[Beginner] test` perceives NO foreign fleet at all.** Measured 2026-08-16 by walking
 `Gui.Game.Empires` and each empire's `DepartmentOfDefense.Fleets` (as `System.Collections.IList`),
 printing `(int)f.Visibility[me]`: Neurrone 6 fleets all at 3, and every one of the other 25 fleets

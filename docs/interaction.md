@@ -199,8 +199,19 @@ waiting for a target (owner-ruled deviation, 2026-08-12).
 (the "Skipped N squares" precedent, taking the interrupt the cell would have had) — on entry when
 the initial tile is inside an explored hull, then change-only: "{0} constellation" crossing in,
 "Out of {0} constellation" crossing out to unassigned space. `ConstellationMap` is explored-only
-so fog leaks nothing; cell identity for Shift+arrows is UNCHANGED (the skip runs through
-boundaries); suspend/resume re-reads the cell only, never the crossing. **A cell names a starlane only
+so fog leaks nothing; a CONSTELLATION boundary is not part of cell identity for Shift+arrows (the
+skip runs through them); suspend/resume re-reads the cell only, never the crossing.
+**Inspect mode names INFLUENCE crossings the same way** (2026-08-21): a second change-only utterance
+behind the constellation's and ahead of the cell — "In {0}'s / your influence" for a cell PROVED to
+be one empire's throughout, "Edge of …" where the boundary runs through it (several empires collapse
+into one list line), "Out of {0}'s influence" naming what was left on the step into unowned space,
+and the system row's own contested line alongside any of them. Growing the cursor over a rim is a
+crossing too, so the memo is keyed on the SIZE as well as the cell. Unlike the constellation, the
+classification IS part of cell identity: Shift+arrow stops at a border (`in:`/`edge:`/`vs:` +
+empire index tokens in `CellSignature`). Gate: a cell wholly under the fog says nothing about
+influence and contributes no token, and an empire whose colony node the map is not showing is
+stripped of its NAME while its field stays in the arithmetic — so an unseen neighbour can cost a
+cell its "in" and can never be named by one. **A cell names a starlane only
 where the fog draws it** (2026-08-20): the link gate answers "is this lane lit", never "lit
 HERE" — `Lit` samples the cell's unit squares through `IVisibilityService.IsExplored`, the
 same field the cell's "Unexplored" word uses; the tree's lane rows keep the link-level gate

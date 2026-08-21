@@ -436,6 +436,21 @@ namespace ES2Access.Core.Speech
         public const string GalaxyInspectConstellation = "galaxy.inspect.constellation";
         public const string GalaxyInspectConstellationLeft = "galaxy.inspect.constellation-left";
 
+        // Whose influence the cell is standing in, said on the crossing exactly as the constellation
+        // above is. Three states and not two, because a cell is an AREA: provably all one empire's,
+        // partly somebody's - which is what a border sounds like - and out of influenced space
+        // altogether, which names what was left for the same reason the constellation's does. The list
+        // forms carry the joining word inside the sentence; there is no list form of "in", because a
+        // cell proved to be wholly one empire's has exactly one owner.
+        public const string GalaxyInspectInfluenceIn = "galaxy.inspect.influence-in";
+        public const string GalaxyInspectInfluenceInYou = "galaxy.inspect.influence-in-you";
+        public const string GalaxyInspectInfluenceEdge = "galaxy.inspect.influence-edge";
+        public const string GalaxyInspectInfluenceEdgeYou = "galaxy.inspect.influence-edge-you";
+        public const string GalaxyInspectInfluenceEdgeList = "galaxy.inspect.influence-edge-list";
+        public const string GalaxyInspectInfluenceOut = "galaxy.inspect.influence-out";
+        public const string GalaxyInspectInfluenceOutYou = "galaxy.inspect.influence-out-you";
+        public const string GalaxyInspectInfluenceOutList = "galaxy.inspect.influence-out-list";
+
         // The map's SCANNER - "what is near me, of this kind". The scope is said as a CATEGORY and a
         // SUBCATEGORY, in that order, because that is the shape of the two keys that move it: one
         // steps the category, the other the subcategory, and a player who hears the two halves named
@@ -1517,6 +1532,14 @@ namespace ES2Access.Core.Speech
             { GalaxyInspectSkippedMany, "Skipped {0} squares" },
             { GalaxyInspectConstellation, "{0} constellation" },
             { GalaxyInspectConstellationLeft, "Out of {0} constellation" },
+            { GalaxyInspectInfluenceIn, "In {0}'s influence" },
+            { GalaxyInspectInfluenceInYou, "In your influence" },
+            { GalaxyInspectInfluenceEdge, "Edge of {0}'s influence" },
+            { GalaxyInspectInfluenceEdgeYou, "Edge of your influence" },
+            { GalaxyInspectInfluenceEdgeList, "Edge of {0}'s and {1}'s influence" },
+            { GalaxyInspectInfluenceOut, "Out of {0}'s influence" },
+            { GalaxyInspectInfluenceOutYou, "Out of your influence" },
+            { GalaxyInspectInfluenceOutList, "Out of {0}'s and {1}'s influence" },
             { GalaxyScannerScope, "{0}: {1}" },
             { GalaxyScannerSystems, "Systems" },
             { GalaxyScannerFleets, "Fleets" },

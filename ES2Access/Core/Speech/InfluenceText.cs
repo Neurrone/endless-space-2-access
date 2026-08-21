@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using ES2Access.Core.UI;
 
 namespace ES2Access.Core.Speech
 {
@@ -77,6 +78,94 @@ namespace ES2Access.Core.Speech
                 others.Build(),
                 names[names.Count - 1]
             );
+        }
+
+        /// <summary>
+        /// WHOSE INFLUENCE THE CELL IS STANDING IN, as the inspect cursor crosses into it.
+        ///
+        /// Two things separate this from the node reading above. It is about an AREA, so there is a
+        /// third thing to say beyond who and whether: how much of the cell they hold - all of it, or
+        /// only part of it, which is what standing on a border sounds like. And several empires holding
+        /// parts of one cell is ONE line, joined the way the contested line joins its crowd, because
+        /// two sentences about the same square of sky read as two squares.
+        ///
+        /// The player alone is a sentence of its own - "your influence" is what the player is called
+        /// everywhere else in the mod - but in a list they are named like anybody else, which is the
+        /// same rule the contested line follows.
+        /// </summary>
+        public static string Cell(InfluenceCover cover, IList<string> names, bool playerAlone)
+        {
+            if (cover == InfluenceCover.None || names == null || names.Count == 0)
+            {
+                return null;
+            }
+
+            // A cell PROVABLY inside one empire's influence has exactly one owner - that is what the
+            // proof says - so there is no list form of the "in" sentence and no key for one.
+            if (cover == InfluenceCover.Whole)
+            {
+                return playerAlone
+                    ? ModStrings.Get(ModStrings.GalaxyInspectInfluenceInYou)
+                    : ModStrings.Format(ModStrings.GalaxyInspectInfluenceIn, names[0]);
+            }
+
+            return Whose(
+                ModStrings.GalaxyInspectInfluenceEdge,
+                ModStrings.GalaxyInspectInfluenceEdgeYou,
+                ModStrings.GalaxyInspectInfluenceEdgeList,
+                names,
+                playerAlone
+            );
+        }
+
+        /// <summary>Stepping out of influenced space into nobody's - which names what was LEFT, since
+        /// the space arrived in has no owner to name and "out of yours" is the only thing about it the
+        /// player did not already know. The same rule the constellation crossing follows.</summary>
+        public static string Left(IList<string> names, bool playerAlone)
+        {
+            return Whose(
+                ModStrings.GalaxyInspectInfluenceOut,
+                ModStrings.GalaxyInspectInfluenceOutYou,
+                ModStrings.GalaxyInspectInfluenceOutList,
+                names,
+                playerAlone
+            );
+        }
+
+        /// <summary>One sentence for a crowd of empires: the single form, the player's own form, and a
+        /// list form whose first slot is everybody but the last - the same three-template shape
+        /// <see cref="Contested"/> uses, so the joining word always sits inside a translated sentence.
+        /// </summary>
+        private static string Whose(
+            string one,
+            string you,
+            string list,
+            IList<string> names,
+            bool playerAlone
+        )
+        {
+            if (names == null || names.Count == 0)
+            {
+                return null;
+            }
+
+            if (playerAlone && names.Count == 1)
+            {
+                return ModStrings.Get(you);
+            }
+
+            if (names.Count == 1)
+            {
+                return ModStrings.Format(one, names[0]);
+            }
+
+            MessageBuilder others = new MessageBuilder();
+            for (int i = 0; i < names.Count - 1; i++)
+            {
+                others.ListItem(names[i]);
+            }
+
+            return ModStrings.Format(list, others.Build(), names[names.Count - 1]);
         }
 
         /// <summary>A radius as the player hears it: one decimal, and the trailing zero KEPT - the two
