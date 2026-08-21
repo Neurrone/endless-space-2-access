@@ -215,8 +215,9 @@ cell its "in" and can never be named by one. **A cell names a starlane only
 where the fog draws it** (2026-08-20): the link gate answers "is this lane lit", never "lit
 HERE" — `Lit` samples the cell's unit squares through `IVisibilityService.IsExplored`, the
 same field the cell's "Unexplored" word uses; the tree's lane rows keep the link-level gate
-(they hang under the system, a thing not a place). The scanner has SIX categories —
-constellations were removed 2026-08-20 (owner: not a discrete point). **A targeting cursor
+(they hang under the system, a thing not a place). The scanner has SEVEN categories —
+constellations were removed 2026-08-20 (owner: not a discrete point) and Contested Influence added
+2026-08-21. **A targeting cursor
 arming now re-reads the standing control** (`AnnounceNextLanding`, arming path only; seat
 actions and the modal-picker pop stay re-read-free). The standalone instruction utterance is
 SKIPPED whenever a readout of the map stop will carry it: the cursor is inside the map stop
@@ -458,7 +459,16 @@ skipping empties), **Alt+PageUp/Down** steps one thing at a time and wraps at bo
 repeating chord of the three), and **Alt+Home** goes to what it is pointing at — the inspect cell
 onto the thing's ROUNDED spoken pair while that mode is up, otherwise the tree cursor onto the
 thing's own node. The FIRST scanner press of a game says where the cursor already is instead of
-moving it. **Bare PageUp/PageDown remain the GAME's keyboard zoom**, Ctrl+Home stays the review
+moving it.
+**Contested Influence is the one category whose Alt+Home TURNS THE INSPECT CURSOR ON** (owner
+decision 2026-08-21, `GalaxyInspect.ArmAt`): its results are squares of the player's own reach a
+rival's field now wins ("Near Dusay, −7, −1, …"), and a square has no node, no row and nothing to
+select, so leaving the cursor alone could only move the camera and say nothing. Arming announces
+exactly what Ctrl+I announces and opens the cell ON the square, so the arrival is heard once —
+"Inspect mode, Cursor 1 by 1", the constellation crossing, the influence lines, the pair. With the
+cursor already up it is an ordinary jump. No other category force-arms anything. Its one
+subcategory is "all": every result is the player's own ground being taken, so an affiliation scope
+would have exactly one answer. **Bare PageUp/PageDown remain the GAME's keyboard zoom**, Ctrl+Home stays the review
 buffer's first line and plain Home/End the stop's ends.
 **KEYS OF THE MAP WIDGET, like the inspect cursor's (2026-08-17).** Every chord above acts only
 while the focused stop IS the map (`GalaxyHudScreen.CursorOnMap`, over `IsMapStop`); on the zoom

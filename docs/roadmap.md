@@ -40,10 +40,12 @@ files above.
   `AttackSystemPirateDiplomaticAction` — the other five report popups are done);
   DiplomaticInteractionNotificationWindow (MoodMessageLabel, NegotiationContributionPanel).
 - Galaxy-label gaps: constellation ownership bonus; pin-message editing.
-- Scanner (shipped, taxonomy v2 2026-08-16): six categories — systems, fleets, probes, quest
+- Scanner (shipped, taxonomy v2 2026-08-16, Contested Influence added 2026-08-21): seven categories
+  — systems, fleets, probes, quest
   markers (system-anchored ones only, owner's ruling 2026-08-17: a marker with no system is not
-  listed, since the go-to would have nowhere to land), ally pins, obliterator missiles — the last
-  three with only "all" and skipped while
+  listed, since the go-to would have nowhere to land), ally pins, obliterator missiles, contested
+  influence — the last
+  four with only "all" and skipped while
   empty. Systems now include SPECIAL nodes (the tree's 13 rows, not 12) and have six
   subcategories: all / friendly / neutral / enemy / homeworld / special, with many-to-many
   membership. Remaining: FOREIGN homeworlds have never been heard (no fixture where

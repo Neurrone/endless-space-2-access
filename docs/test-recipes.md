@@ -655,6 +655,40 @@ The same inflation is how the FOG GATE is proved: with it up, `-40,-44` is unexp
 Niris's circle, `SystemInfluence.OverCell` (ungated) answers "In Niris's influence", and the mode
 walking onto it says the coordinates and "Unexplored" and nothing about influence at all.
 
+**The influence GROUND sweep and its two readers on `[Beginner] test`** (measured 2026-08-21, turn
+21). `InfluenceGround.Sweep(Gui.PlayerEmpire, out queries)` is public, so the whole classification is
+one `/eval` away and needs no keypress. Pristine: **169 squares, 114 queries, 8 ms, 113 provably
+yours, 0 taken** — so the scanner's **Contested Influence category is EMPTY on this fixture** and its
+"none found" wording is what a press in it answers. With the same `osulo.LastInfluenceValue = 41.8f`
+inflation the inspect recipe above uses (set it and read; do NOT call `UpdateInfluence` after
+setting, which recomputes the value straight back from the simulation and is the UNDO): **41 taken,
+92 still provably yours, 6735 queries, 76 ms** — the worst case, a rival circle swallowing the whole
+of Dusay's reach.
+- **The approaching border, which must stay silent.** `osulo.LastInfluenceValue = 38.0f` is the one
+  radius found where exactly ONE previously-certified square loses its certificate and NO
+  previously-certified square has a taker (7 squares inside Dusay's reach ARE enemy-won at 38, but
+  none of them was ever certified yours). Sweeping ladder against the pristine certified set: 37 and
+  37.5 → nothing changes; **38 → thinned 1, lost 0**; 38.5/39 → lost 3; 40 → lost 9; 41.8 → lost 20.
+- **Driving the turn-end watch without ending a turn.** The mutation cannot survive a real turn — the
+  game's own influence pass recomputes `LastInfluenceValue` before the watch sweeps — so the diff is
+  driven by raising the watch's own boundary flag by reflection:
+  `typeof(ES2Access.UI.ModNotifications).Assembly.GetType("ES2Access.UI.InfluenceGroundWatch")
+  .GetField("_turnBegan", NonPublic|Static).SetValue(null, true)`, then read `/speech`. The same
+  field walk reaches `_empire` (set it null to pretend another galaxy loaded and prove the
+  re-baseline). Measured sequence: flag on the pristine field → silent, `groundWatched` 113 (the
+  baseline); inflate to 41.8 + flag → **"Dusay's influence lost ground to Niris"** once, one line for
+  41 squares, `groundWatched` 92; undo + flag → silent, back to 113; inflate to 38 + flag → silent,
+  113 → 112.
+- **The real hook.** `Gui.GuiService.GetWindow<EndTurnWindow>(false).EndTurnService.Target
+  .TryToEndTurn()` ends the turn — the FIRST call is eaten by the idle-systems/empty-queue validator
+  (it speaks "Construction Queue empty", "Idle Systems") and the second gets through; the window's
+  `EndTurnService.Target.Turn` reads STALE afterwards, so confirm on `/speech` ("Turn 22") instead.
+  Crossing the boundary moved `groundQueries` 1201 → 1082 and `groundWatched` 112 → 113, which is the
+  proof `GameClientState_Turn_Begin` reaches the watch. Ending a turn MUTATES the save's world —
+  `POST /loadsave "[Beginner] test"` afterwards, then re-minimize the tutorial.
+- **The probe** is `DevProbe.Notifications()`: `groundSubscribed`, `groundWatched`, `groundTiles`,
+  `groundQueries`, `groundMilliseconds`.
+
 **`[Beginner] test` perceives NO foreign fleet at all.** Measured 2026-08-16 by walking
 `Gui.Game.Empires` and each empire's `DepartmentOfDefense.Fleets` (as `System.Collections.IList`),
 printing `(int)f.Visibility[me]`: Neurrone 6 fleets all at 3, and every one of the other 25 fleets

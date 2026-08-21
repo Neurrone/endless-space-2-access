@@ -142,6 +142,31 @@ namespace ES2Access.Screens
             return true;
         }
 
+        /// <summary>
+        /// Arm the cursor ON a place another mode of the map chose - the scanner sending the player to
+        /// a square of sky.
+        ///
+        /// The one entry that is not the player's own Ctrl+I, and the one place a mode is turned on by
+        /// something other than its own key (owner decision, 2026-08-21). The reason is that the thing
+        /// found has no other landing: a square is not a node and the tree has no row for one, so a
+        /// "go to it" that did not arm the cursor could only move the camera and say nothing.
+        ///
+        /// Everything else about it is Ctrl+I's - the same entry announcement, the same zoom ceiling,
+        /// the same cursor to leave with Escape - except that the cell opens on the square handed in
+        /// rather than on whatever the tree cursor was standing on, so the player hears the arrival
+        /// once instead of hearing the entry cell and then the jump.
+        /// </summary>
+        public bool ArmAt(int x, int y)
+        {
+            if (_live || !OnMap())
+            {
+                return false;
+            }
+
+            Enter(true, x, y);
+            return true;
+        }
+
         /// <summary>Once per frame from the pump, after the screens have settled and before the
         /// pointer commits: where the game's own tooltip is pointed while the cell drives the map,
         /// and an ending that is waiting to be spoken.</summary>
@@ -588,6 +613,15 @@ namespace ES2Access.Screens
 
         private void Enter()
         {
+            Enter(false, 0, 0);
+        }
+
+        /// <summary>The entry itself. <paramref name="placed"/> is the scanner's entry
+        /// (<see cref="ArmAt"/>), which chooses the square the cell opens on; the place the player is
+        /// STANDING is remembered either way, because that is where leaving puts the cursor and the
+        /// camera back.</summary>
+        private void Enter(bool placed, int atX, int atY)
+        {
             GraphNavigator navigator = ModEntry.Navigator;
             _entry = navigator == null ? null : navigator.FocusedKey;
             GalaxyPosition at;
@@ -607,6 +641,12 @@ namespace ES2Access.Screens
                 _entryAt = GalaxyCoordinates.Origin();
                 _x = 0;
                 _y = 0;
+            }
+
+            if (placed)
+            {
+                _x = atX;
+                _y = atY;
             }
 
             MeasureGalaxy();

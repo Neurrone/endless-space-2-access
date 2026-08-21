@@ -494,6 +494,19 @@ namespace ES2Access.Core.Speech
         public const string GalaxyScannerProjectiles = "galaxy.scanner.projectiles";
         public const string GalaxyScannerProjectilesAll = "galaxy.scanner.projectiles-all";
 
+        /// <summary>Squares inside the player's own influence that somebody else's field is winning -
+        /// where a border is being pushed back, which the map draws as one colour over another and
+        /// writes no word about. Only ever asked "what is there", so its one subcategory is "all".
+        /// </summary>
+        public const string GalaxyScannerContestedInfluence = "galaxy.scanner.contested-influence";
+        public const string GalaxyScannerContestedInfluenceAll =
+            "galaxy.scanner.contested-influence-all";
+
+        /// <summary>What a found square is CALLED. A square of sky has no name of its own, so it is
+        /// named by the system whose ground it is - the whole sentence, because "near" is a word a
+        /// language puts where it wants it.</summary>
+        public const string GalaxyScannerNear = "galaxy.scanner.near";
+
         /// <summary>A scope the player is parked in that has run out under them. The scope's own name
         /// goes INSIDE the sentence rather than in front of it, so a language that says "there are no
         /// friendly fleets" has somewhere to put the words.</summary>
@@ -1571,6 +1584,9 @@ namespace ES2Access.Core.Speech
             { GalaxyScannerPinsAll, "all" },
             { GalaxyScannerProjectiles, "Obliterator missiles" },
             { GalaxyScannerProjectilesAll, "all" },
+            { GalaxyScannerContestedInfluence, "Contested Influence" },
+            { GalaxyScannerContestedInfluenceAll, "all" },
+            { GalaxyScannerNear, "Near {0}" },
             { GalaxyScannerEmpty, "{0}, none found" },
             { GalaxyScannerHere, "here" },
             { GalaxyFleetShips, "{0} ships" },

@@ -68,7 +68,14 @@ namespace ES2Access.Screens
         private const int CategoryPins = 4;
         private const int CategoryProjectiles = 5;
 
-        private const int CategoryCount = 6;
+        /// <summary>Squares of the player's OWN influence that somebody else's field is winning - the
+        /// one category whose things are not things at all but places, and the one whose "whose" is
+        /// already settled by what the category IS (they are all the player's ground, being taken).
+        /// So it has the single subcategory "all" like the three above it, and its affiliation
+        /// question would have exactly one answer.</summary>
+        private const int CategoryContestedInfluence = 6;
+
+        private const int CategoryCount = 7;
 
         private const int ScopeAll = ScannerScopes.All;
         private const int ScopeFriendly = ScannerScopes.Friendly;
@@ -83,6 +90,7 @@ namespace ES2Access.Screens
             ScannerScopes.SystemWidth,
             ScannerScopes.AffiliationWidth,
             ScannerScopes.AffiliationWidth,
+            ScannerScopes.SingleWidth,
             ScannerScopes.SingleWidth,
             ScannerScopes.SingleWidth,
             ScannerScopes.SingleWidth,
@@ -221,6 +229,11 @@ namespace ES2Access.Screens
             /// keys a probe's node on the star it is nearest to, which is a question only the page can
             /// answer.</summary>
             public ControlId Row;
+
+            /// <summary>Whether going to this one means the INSPECT CURSOR and nothing else - a square
+            /// of sky, which has no node, no row and nothing to select. Every other kind has a landing
+            /// in the tree; this one's landing does not exist until the cursor is armed.</summary>
+            public bool Square;
         }
 
         // ---- one press ----
@@ -471,6 +484,7 @@ namespace ES2Access.Screens
             ModStrings.GalaxyScannerQuestMarkers,
             ModStrings.GalaxyScannerPins,
             ModStrings.GalaxyScannerProjectiles,
+            ModStrings.GalaxyScannerContestedInfluence,
         };
 
         private static readonly string[][] ScopeKeys = new string[][]
@@ -502,6 +516,7 @@ namespace ES2Access.Screens
             new string[] { ModStrings.GalaxyScannerQuestMarkersAll },
             new string[] { ModStrings.GalaxyScannerPinsAll },
             new string[] { ModStrings.GalaxyScannerProjectilesAll },
+            new string[] { ModStrings.GalaxyScannerContestedInfluenceAll },
         };
 
         // ---- going there ----
@@ -537,6 +552,22 @@ namespace ES2Access.Screens
             }
 
             Found found = scope[at];
+
+            // A SQUARE OF SKY is the one kind that turns the inspect cursor ON (owner decision,
+            // 2026-08-21). Every other kind has a landing in the tree, so leaving the cursor alone
+            // costs the player nothing; a square has no node, no row and nothing to select, and going
+            // to one without the cursor could only move the camera and say nothing. So the mode is
+            // armed by its own entry path, which announces itself exactly as Ctrl+I does and opens the
+            // cell on the square rather than where the tree cursor was standing.
+            if (found.Square && !GalaxyInspect.Live)
+            {
+                _screen.Inspect.ArmAt(
+                    MapCoordinates.Round(found.East),
+                    MapCoordinates.Round(found.North)
+                );
+                return true;
+            }
+
             if (GalaxyInspect.Live)
             {
                 _screen.Inspect.JumpTo(
@@ -627,6 +658,7 @@ namespace ES2Access.Screens
                     Markers(world[CategoryMarkers]);
                     Pins(world[CategoryPins]);
                     Projectiles(world[CategoryProjectiles]);
+                    ContestedGround(world[CategoryContestedInfluence], empire);
                 }
             }
             catch (Exception e)
@@ -662,6 +694,47 @@ namespace ES2Access.Screens
             {
                 GalaxyHudScreen.ScannedMarker it = markers[i];
                 found.Add(Make(it.Quest, it.At, ScannerScopes.Only(), it.Node, null));
+            }
+        }
+
+        /// <summary>
+        /// EVERY SQUARE OF THE PLAYER'S OWN GROUND SOMEBODY ELSE IS WINNING - one map unit at a time,
+        /// which is the resolution the inspect cursor reads the map at.
+        ///
+        /// Not the inspect readout's question, deliberately. That one asks "whose influence is over
+        /// this cell" about wherever the player is standing, and answers for any empire; this one asks
+        /// only about the player's OWN reach and only about squares inside it that a rival's field now
+        /// wins (<see cref="InfluenceGround"/>). A border being pushed back is a thing to go and do
+        /// something about, and a list of every contested square in the galaxy would bury it.
+        ///
+        /// EVERY SQUARE, no clustering: the scanner has no clustering anywhere - a system, a fleet and
+        /// a missile are each their own entry however close together they stand - and a run of
+        /// adjacent squares stepped through with the instance key IS how the player hears how wide the
+        /// bite is. Each is named by the own system whose ground it is, so the list reads as
+        /// "Near Dusay" four times over rather than as four unnamed places.
+        /// </summary>
+        private static void ContestedGround(List<Found> found, Empire empire)
+        {
+            GalaxyPosition origin = GalaxyCoordinates.Origin();
+            IList<GroundTile> ground = InfluenceGround.Sweep(empire);
+            for (int i = 0; i < ground.Count; i++)
+            {
+                GroundTile tile = ground[i];
+                ColonizedStarSystem whose = tile.Held ?? tile.Reaching;
+                if (tile.Taker == null || whose == null)
+                {
+                    continue;
+                }
+
+                Found made = Make(
+                    ModStrings.Format(ModStrings.GalaxyScannerNear, whose.LocalizedName),
+                    new GalaxyPosition(origin.X + tile.X, origin.Y + tile.Y),
+                    ScannerScopes.Only(),
+                    null,
+                    null
+                );
+                made.Square = true;
+                found.Add(made);
             }
         }
 
