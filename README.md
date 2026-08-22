@@ -75,6 +75,9 @@ changes to `ES2Access.Loader` need a game restart.
 - `ES2Access.Loader/` — the permanent BepInEx plugin.
 - `ES2Access.Tests/` — offline unit tests for `Core/`.
 - `ES2Access/locale/` — mod speech strings per language (`english.json` is the template).
+- `ES2Access/descriptions/` — cutscene audio descriptions per language (`english.json` is
+  the template). Keys are the game's own movie names; each cue has to be speakable between
+  its `at` and its `end`, where the video's own dialogue resumes.
 - `docs/generic/` — the game-agnostic accessibility modding documentation.
 - `docs/` — ES2-specific research, architecture notes and the screen roadmap.
 - `docs_src/` — the player-facing manual (mdBook; `mdbook build docs_src`).
