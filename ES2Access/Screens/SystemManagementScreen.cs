@@ -2059,14 +2059,16 @@ namespace ES2Access.Screens
         }
 
         /// <summary>
-        /// The dossiers a row's own tooltip names INSIDE itself, as further nodes of that row.
+        /// The dossiers a row's own tooltip names INSIDE itself, as CHILDREN of that row.
         ///
         /// A population entry's tooltip ends by naming the political parties those people lean
         /// towards, and each name carries the party's own dossier - reachable by a mouse with one more
         /// hover and by nothing else, because the game draws one tooltip at a time
-        /// (<see cref="PoliticsDossier"/>). They join the row rather than hanging under it: this panel
-        /// emits cells the layout bands into drawn rows, so a party is a node beside the population it
-        /// belongs to, in the row the game drew that population in.
+        /// (<see cref="PoliticsDossier"/>). They hang UNDER the population as a "Tooltips" region, like
+        /// every other node in the game that owns dossiers beyond its own
+        /// (<see cref="TooltipChildren"/>); until 2026-08-22 they were the row BELOW it instead,
+        /// because this panel emits a flat list of cells and a cell could not open a subtree. It can
+        /// now (<see cref="Cells.Declare"/>), so the compromise is retired.
         /// </summary>
         private static void AddNestedDossiers(
             List<Cell> cells,
@@ -2075,25 +2077,20 @@ namespace ES2Access.Screens
         )
         {
             PopulationCount population = widget.GetComponent<PopulationCount>();
-            if (population == null)
+            if (population == null || cells.Count == 0)
             {
                 return;
             }
 
             List<TooltipChildren.Dossier> parties = PoliticsDossier.Parties(population.Tooltip);
-            for (int i = 0; i < parties.Count; i++)
+            if (parties.Count == 0)
             {
-                cells.Add(
-                    new Cell
-                    {
-                        Widget = widget,
-                        Id = ControlId.Structural(
-                            keyPrefix + widget.name + "/politics/" + i
-                        ),
-                        Vtable = TooltipChildren.Node(parties[i]),
-                    }
-                );
+                return;
             }
+
+            Cell owner = cells[cells.Count - 1];
+            owner.Dossiers = parties;
+            owner.Key = keyPrefix + widget.name + "/population";
         }
 
         // ---- the readouts the tree's shape cannot name ----

@@ -269,6 +269,14 @@ namespace ES2Access.Screens
             /// answer.</summary>
             public ControlId Row;
 
+            /// <summary>A landing the PAGE has already resolved for this one - a quest marker, whose
+            /// node is the page's to key and whose kind depends on whether it stands at a system.
+            /// </summary>
+            public MapTarget Target;
+
+            /// <summary>Whether <see cref="Target"/> is filled.</summary>
+            public bool Targeted;
+
             /// <summary>Whether going to this one means the INSPECT CURSOR and nothing else - a square
             /// of sky, which has no node, no row and nothing to select. Every other kind has a landing
             /// in the tree; this one's landing does not exist until the cursor is armed.</summary>
@@ -757,21 +765,15 @@ namespace ES2Access.Screens
         // ---- going there ----
 
         /// <summary>
-        /// Go to whatever the scanner is pointing at, in whichever way the player is reading the map.
+        /// Go to whatever the scanner is pointing at.
         ///
-        /// With the inspect cursor up the square moves onto the thing - onto its ROUNDED pair, the one
-        /// the player was just told, which is what guarantees the thing is inside even the one-unit
-        /// cursor - and lands exactly as an arrow key lands: camera, outline, and the cell read out.
-        /// The scanner then measures from there, because the cursor is where the player is reading.
-        ///
-        /// With the tree, the cursor goes to the thing's own node - a system's, a planet's under its
-        /// system, a lane's under the system it leaves, or a fleet's under whichever system the map
-        /// draws it at - through the page's own landing, so the branch is opened and the node makes
-        /// its ordinary announcement rather than a second one invented here. AND THE CAMERA FOLLOWS
-        /// (owner decision, 2026-08-22): every category lands the way the game's own locate lands
-        /// (<see cref="GalaxyHudScreen"/>'s Arrive - focus, then zoom), because a jump that leaves the
-        /// camera where it was hands a sighted player beside the blind one a screen showing somewhere
-        /// else.
+        /// The scanner's only job here is to say WHAT it found (<see cref="Target"/>) - a place, a
+        /// world, a thing standing at a bare point - and the page's one landing decides the rest:
+        /// whether the free inspect cursor stays up, where the tree cursor goes, and whether the
+        /// camera zooms in or slides across (<see cref="GalaxyHudScreen.GoTo"/>,
+        /// <see cref="MapLandings"/>, owner ruling 2026-08-22). Two kinds are the scanner's own: a
+        /// square of contested sky, which arms the free cursor because it has no node at all, and a
+        /// fleet the tree has no row for, which is announced here because nothing else will.
         /// </summary>
         private bool GoTo()
         {
@@ -802,63 +804,29 @@ namespace ES2Access.Screens
             // to one without the cursor could only move the camera and say nothing. So the mode is
             // armed by its own entry path, which announces itself exactly as Ctrl+I does and opens the
             // cell on the square rather than where the tree cursor was standing.
-            if (found.Square && !GalaxyInspect.Live)
+            if (found.Square)
             {
-                _screen.Inspect.ArmAt(
-                    MapCoordinates.Round(found.East),
-                    MapCoordinates.Round(found.North)
-                );
-                return true;
-            }
-
-            if (GalaxyInspect.Live)
-            {
-                _screen.Inspect.JumpTo(
-                    MapCoordinates.Round(found.East),
-                    MapCoordinates.Round(found.North)
-                );
-                return true;
-            }
-
-            GraphNavigator navigator = ModEntry.Navigator;
-
-            // The rows whose keys are the PAGE's to build - a probe, an ally's pin, a missile in
-            // flight - carry their own node here. All three sit at the top of the stop, so there is
-            // no branch to open first; there is no fallback below this either, because none of the
-            // three is a thing the game lets anybody select (a fleet is).
-            if (found.Row != null)
-            {
-                if (navigator != null)
+                int x = MapCoordinates.Round(found.East);
+                int y = MapCoordinates.Round(found.North);
+                if (!GalaxyInspect.Live)
                 {
-                    navigator.FocusNode(found.Row);
+                    _screen.Inspect.ArmAt(x, y);
+                }
+                else
+                {
+                    _screen.Inspect.JumpTo(x, y);
                 }
 
-                Camera(found);
                 return true;
             }
 
-            // A PLANET's own node, and a LANE's - both keyed under the system they hang from, both
-            // reached by opening that branch on the way in (the ancestry is read out of the key).
-            ControlId id = null;
-            if (found.Planet != null && found.Node != null)
+            // Everything else goes through the PAGE's one landing, which owns the whole decision -
+            // whether the free cursor stays up, where the tree cursor goes and what the camera does
+            // (<see cref="GalaxyHudScreen.GoTo"/>, <see cref="MapLandings"/>). Before 2026-08-22 this
+            // method answered those questions itself and got the planet case wrong: it jumped the CELL
+            // onto a world, which the cell cannot read.
+            if (_screen.GoTo(Target(found), MapCamera.Auto))
             {
-                id = GalaxyHudScreen.PlanetId(found.Node, found.Orbit);
-            }
-            else if (found.Lane != null && found.Node != null)
-            {
-                id = GalaxyHudScreen.LaneId(found.Node, found.Lane);
-            }
-            else
-            {
-                id = _screen.NodeFor(
-                    found.Fleet != null ? (IGameEntityWithGalaxyPosition)found.Fleet : found.Node
-                );
-            }
-
-            if (id != null && navigator != null)
-            {
-                navigator.FocusNode(id);
-                Camera(found);
                 return true;
             }
 
@@ -868,19 +836,9 @@ namespace ES2Access.Screens
             // never named - at the top level of the systems stop. So a free mover always has a row
             // now, and what is left here is a fleet parked at a system the map does not name and a
             // fleet flying a lane the map does not draw (es2-facts): the branch that would hold it
-            // does not exist.
-            // The map still draws such a fleet and the scanner still finds it, so the key answers with
-            // the only "go to this fleet" this game has for one: the camera and the selection, the same
-            // landing the inspect cursor's Enter makes on a fleet in its cell. There is no node to
-            // announce the arrival, and a jump that says nothing at all reads as a key that did
-            // nothing - so the line the scanner found it with is said again, which is the whole of what
-            // arriving there means.
-            if (found.Fleet != null)
-            {
-                GalaxyHudScreen.SelectFleet(found.Fleet);
-            }
-
-            Camera(found);
+            // does not exist. The landing has already selected it and moved the camera - the map's own
+            // "go to that fleet" - and there is no node to announce the arrival, so the line the
+            // scanner found it with is said again, which is the whole of what arriving there means.
             MessageBuilder arrival = new MessageBuilder();
             Instance(arrival, Spoken(found), Detail(found), found, at, scope.Count, east, north);
             Voice.Say(arrival.Build(), true);
@@ -888,33 +846,66 @@ namespace ES2Access.Screens
         }
 
         /// <summary>
-        /// Bring the camera to what the cursor just landed on.
+        /// What one result IS, as the page's landing needs it: which node the tree has for it, which
+        /// kind of thing it is, and where it stands.
         ///
-        /// A thing that stands at a NODE is zoomed to the way the page's own locate zooms to one
-        /// (<c>GalaxyViewLevels.ZoomTo</c>, through the game's own force-zoom so the map's way back out
-        /// keeps working) - and that covers a planet and a lane too, which are drawn at the system
-        /// they belong to. A thing that stands nowhere in particular - a fleet under way, a probe, a
-        /// pin, a missile - has no node to zoom into, so the camera is slid onto its position the way
-        /// the inspect cursor slides onto a cell, which is the only "put the camera there" this game
-        /// has for a point.
+        /// The scanner is the one caller that knows the difference between a world and the system it
+        /// orbits, so it is the one that says so; the landing never re-derives it (a landing that had
+        /// to guess put the free cursor on a planet it cannot read).
         /// </summary>
-        private static void Camera(Found found)
+        private MapTarget Target(Found found)
         {
-            if (found.Node != null)
+            // A quest marker's landing is the page's own, resolved when the list was built: whether it
+            // is a child of a system or a row of its own is a fact about the tree.
+            if (found.Targeted)
             {
-                GalaxyViewLevels.ZoomTo(found.Node);
-                return;
+                return found.Target;
             }
 
-            GalaxyViewLevels.CenterOn(
-                new Vector3(found.At.X, 0f, found.At.Y),
-                CameraDamping
-            );
-        }
+            // The rows whose keys are the PAGE's to build - a probe, an ally's pin, a missile in
+            // flight. All three sit at the top of the stop, so there is no branch to open first.
+            if (found.Row != null)
+            {
+                return MapTarget.Point(found.Row, found.At);
+            }
 
-        /// <summary>The same slide the inspect cursor moves the camera with, so an arrival from the
-        /// scanner looks like every other arrival on this map.</summary>
-        private const float CameraDamping = 0.3f;
+            // A PLANET and everything found ON one: drawn at the star, read from the tree and from the
+            // close-up view, so the free cursor ends and the camera comes in.
+            if (found.Planet != null && found.Node != null)
+            {
+                return MapTarget.Under(
+                    found.Node,
+                    GalaxyHudScreen.PlanetId(found.Node, found.Orbit),
+                    found.At
+                );
+            }
+
+            // A STARLANE is map geometry the cell can read - it names every lane crossing it - and its
+            // spoken place is the system it leaves, so it lands like a place.
+            if (found.Lane != null && found.Node != null)
+            {
+                return MapTarget.Place(
+                    found.Node,
+                    GalaxyHudScreen.LaneId(found.Node, found.Lane),
+                    found.Node.GalaxyPosition
+                );
+            }
+
+            MapTarget named;
+            if (
+                _screen.TargetFor(
+                    found.Fleet != null ? (IGameEntityWithGalaxyPosition)found.Fleet : found.Node,
+                    out named
+                )
+            )
+            {
+                return named;
+            }
+
+            return found.Fleet != null
+                ? MapTarget.LooseFleet(found.Fleet, found.At)
+                : MapTarget.Nowhere(found.At);
+        }
 
         // ---- what is out there ----
 
@@ -948,7 +939,7 @@ namespace ES2Access.Screens
                     Unexplored(world[CategoryUnexplored], empire);
                     Fleets(world[CategoryFleets], empire, foreign);
                     Probes(world[CategoryProbes], empire, foreign);
-                    Markers(world[CategoryMarkers]);
+                    Markers(world[CategoryMarkers], empire);
                     Pins(world[CategoryPins]);
                     Projectiles(world[CategoryProjectiles]);
                     ContestedGround(world[CategoryContestedInfluence], empire);
@@ -975,34 +966,40 @@ namespace ES2Access.Screens
         }
 
         /// <summary>
-        /// Every quest marker the game is showing this empire AT A SYSTEM - the ones the system's own
-        /// row already mentions, gathered here so that "where are my quests" is one sweep rather than
-        /// a walk of the map. A marker planted on a fleet out in a starlane is not listed at all: the
-        /// scanner is a list of places to GO to, and the tree has no row for a marker that is not at a
-        /// system, so that entry could only ever refuse (owner's ruling -
-        /// <see cref="GalaxyHudScreen.ScannedMarkers"/>).
+        /// Every quest marker the game is showing this empire - the ones standing at a system, which
+        /// that system's own row also mentions, AND the ones planted out in the open on a fleet
+        /// crossing a lane, which have a top-level row of their own since 2026-08-22.
         ///
         /// Named by the QUEST, which is the only name a marker has (<c>QuestMarker</c> carries an
-        /// instance id and a target and no words of its own), and gated by the page's own walk of the
-        /// journal (<see cref="GalaxyHudScreen.ScannedMarkers"/>) so the scanner and the system rows
-        /// cannot disagree about which quests are being pointed at.
+        /// instance id and a target and no words of its own), and enumerated by the one walk of the
+        /// journal every surface uses (<see cref="QuestMarkers"/>) so the scanner, the system rows,
+        /// the marker nodes and the inspect cell cannot disagree about which quests are being pointed
+        /// at. The landing is the PAGE's, resolved here, because which node a marker has is a fact
+        /// about the tree.
         /// </summary>
-        private void Markers(List<Found> found)
+        private void Markers(List<Found> found, Empire empire)
         {
-            IList<GalaxyHudScreen.ScannedMarker> markers = _screen.ScannedMarkers();
+            List<QuestMarkers.Marker> markers = QuestMarkers.Of(empire);
             for (int i = 0; i < markers.Count; i++)
             {
-                GalaxyHudScreen.ScannedMarker it = markers[i];
-                found.Add(
-                    Make(
-                        "marker/" + it.Quest + "/" + (it.Node == null ? "?" : it.Node.GUID.ToString()),
-                        it.Quest,
-                        it.At,
-                        ScannerScopes.Only(),
-                        it.Node,
-                        null
-                    )
+                MapTarget target;
+                if (!_screen.MarkerTarget(markers[i], out target))
+                {
+                    // A marker at a system the map is not naming: nowhere to go and nothing to say.
+                    continue;
+                }
+
+                Found made = Make(
+                    "marker/" + markers[i].Pin.GUID,
+                    QuestMarkers.Name(markers[i]),
+                    markers[i].At,
+                    ScannerScopes.Only(),
+                    target.System,
+                    null
                 );
+                made.Target = target;
+                made.Targeted = true;
+                found.Add(made);
             }
         }
 

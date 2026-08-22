@@ -776,3 +776,72 @@ the action key instead: an unregistered action 400s and lists the ones that exis
 Game-mechanism findings (window gates, pool slots, tooltip internals, fleet and quest
 mechanics, the icon numbers) live in [es2-facts.md](es2-facts.md) — a new fact lands there,
 never here.
+
+**Ctrl+L GOES TO WHERE A THING HAPPENED** (owner-approved 2026-08-22; `UiActions.GoToLocation`,
+`ModEntry.BindKeys`, `GraphNavigator.GoToLocation`/`TakesGoToLocation`): the game's own show-location
+button, from the keyboard. Ctrl+L is free in this game — the input manager binds nothing to L at all,
+confirmed live with a physical press that moved neither the camera nor a word — and the letter costs
+nothing, since A–Z are already claimed by type-ahead. It is **exactly what the mouse does clicking
+that button**, and it is offered exactly where the popup DRAWS one: 41 of the 69 prefabs bind a
+show-location button their layout never holds (es2-facts), and the key follows the layout, not the
+binding. On an OPEN popup the SCREEN answers it (`Screen.GoToLocation`, offered before the focused
+node's own — the button is drawn in the bottom bar and the key means it from anywhere on the popup,
+which is why that node's name carries the chord: "Show Location (Ctrl+L)"). On a notification-strip
+row and a turn-log row the NODE answers it (`NodeVtable.OnGoTo`), doing what the window's own
+handler does MINUS its last line, which toggles the popup — from a closed row that toggle would open
+the popup instead of going anywhere (`NotificationScreen.GoToLocation`; the five overriding window
+families are named there). The landing is the map's own (`GalaxyHudScreen.GoTo`, below). The claim is
+`ClaimedWhile` anything on the page offers it and **the handler asks again**; where the answer is no
+the key is inert — no speech, no move (measured: `TakesGoToLocation` false on the end-turn button,
+the physical press silent, the injected action `unconsumed`). Hint on those rows: **"Ctrl+L goes to
+location"** (`hint.go-to-location`), BEFORE "Backslash to dismiss" — going somewhere is what the row
+is usually pressed for and throwing it away is what is done afterwards.
+
+**ONE landing on the galaxy page** (owner ruling 2026-08-22; `GalaxyHudScreen.GoTo(MapTarget,
+MapCamera)`, `MapLandings.Decide` — `docs/helpers.md`). Five things used to send the player somewhere
+on the map and each answered the same three questions for itself; they disagreed, and the scanner's
+answer for a PLANET was wrong (it jumped the inspect CELL onto a world, which the cell cannot read).
+The table, by what the thing IS:
+- **a place** (a star system, a special node): the free cursor STAYS UP where it is up, the cell goes
+  to the place's own tile, the camera ZOOMS in either way, and the tree cursor is moved to the
+  system's node — silently while the cell is up, to be felt when the mode ends.
+- **a thing at a bare point** (a fleet under way, a probe, an ally's pin, a missile, a quest marker
+  planted out in the open): the same, except the camera SLIDES onto the point; in the cell the cell's
+  own slide is the whole camera move.
+- **a world and everything drawn at one** (a planet, an anomaly/curiosity/resource on one, a
+  colonizable world, **and a quest marker standing AT a system**): the free cursor **ENDS FIRST**
+  ("Exited inspect mode", then the landing), the branch opens, the camera zooms in. A marker at a
+  system is a child of that system, not a thing of its own out on the map.
+- **a point with nothing on it**: a DEFECT, not a behaviour (owner ruling 2026-08-22, superseding the
+  force-inspect proposal): everything the game can point the player at is supposed to have a row, so
+  the request is logged where a sweep can find it (`/log?grep=galaxy go-to`), the existing "Shown on
+  the map" line is said, and NOTHING moves — no cursor, no cell, no arming. Never "nearest system" as
+  a stand-in: a bare position is matched against what the map draws with a tight coincidence
+  tolerance (1.5 galaxy units, against a 6.7-unit closest-neighbour), not with a neighbourhood
+  radius. Contested Influence's own Alt+Home still ARMS the cursor — a square of sky is a thing by
+  design, not a lost one.
+Out of the cell **the landing's own announcement is the whole utterance, once, and it is composed
+after the map has caught up with the camera**: `Screen.LandingSuspended` now also covers
+`GalaxyViewLevels.CameraSettling` plus a twenty-frame tail, and a suspended frame holds even a
+control that is already declared (`FocusRequest.Step`). Measured: a scanner jump to Osulo I used to
+say "Osulo I, Colonized, 1 of 7" mid-flight and now says "Osulo I, group, Medium Mediterrane.,
+Colonized, collapsed, 2 of 8".
+
+**QUEST MARKERS ARE NODES** (owner ruling 2026-08-22; `QuestMarkers` — `docs/helpers.md`). A marker
+standing at a system is a child of it, declared LAST — after the planets, the lanes and the fleets —
+keyed `<system>/marker/<pin guid>`; one planted out in the open (on a fleet crossing a lane) is a
+top-level row of the galaxy's drifting region, `galaxy:marker/<pin guid>`, beside the probes and the
+missiles. Both are named by the game's own quest title in the tracked or the ordinary form
+(`galaxy.system-quest-marker[-pinned]`, the phrase the system's buffer already used), carry the
+step's objective in the review buffer, have **no tooltip** (the game hangs none on a marker) and
+**Enter is INERT** — a pin is not clickable on the map either, and there is no journal-opening
+gesture to invent. Backslash likewise. ONE enumeration feeds the system's buffer lines, the marker
+nodes, the scanner's Quest markers category (which now includes the open-space ones and lands on the
+MARKER, not on its system) and the inspect cell — a cell holding a marker reads it after the places
+and before the lanes, and Enter on a cell whose only thing is a marker exits and lands on its node.
+
+**The population side panel's rows are real nodes** (owner ruling 2026-08-22, retiring the batch-2
+compromise): a population entry ("Imperials, 3") is an expandable group whose "Tooltips" region holds
+the political parties nested in its dossier (`Cells.Declare` gives a cell a subtree; `PoliticsDossier`
+supplies the parties). They were the row BELOW their population until now, because a side panel emits
+a flat list of cells and a cell could not open a subtree.

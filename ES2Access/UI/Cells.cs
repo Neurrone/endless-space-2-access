@@ -21,6 +21,17 @@ namespace ES2Access.UI
         /// of module each takes (<see cref="ES2Access.Core.UI.SlotOrder"/>). Null everywhere else, and
         /// the drawn order is then the whole of the answer.</summary>
         public string[] Order;
+
+        /// <summary>The dossiers this cell owns BEYOND its own tooltip. Where there are any the cell is
+        /// declared as an expandable GROUP with a "Tooltips" region under it
+        /// (<see cref="TooltipChildren"/>) instead of as a leaf - which is what lets a row read off a
+        /// flat cell list still own a subtree. Null everywhere else, and the cell is a plain node.
+        /// </summary>
+        public List<TooltipChildren.Dossier> Dossiers;
+
+        /// <summary>What the children of that group are keyed under - the cell's own key path. Only
+        /// read where <see cref="Dossiers"/> is filled.</summary>
+        public string Key;
     }
 
     /// <summary>
@@ -100,7 +111,7 @@ namespace ES2Access.UI
                 builder.StartRow();
                 foreach (Cell cell in row)
                 {
-                    builder.AddItem(cell.Id, cell.Vtable);
+                    Declare(builder, cell);
                 }
 
                 builder.EndRow();
@@ -130,9 +141,32 @@ namespace ES2Access.UI
             {
                 for (int i = 0; i < row.Count; i++)
                 {
-                    builder.AddItem(row[i].Id, row[i].Vtable);
+                    Declare(builder, row[i]);
                 }
             }
+        }
+
+        /// <summary>One cell as a node - or, where it owns dossiers beyond its own tooltip, as the
+        /// expandable group those dossiers hang under (<see cref="TooltipChildren"/>). A collector
+        /// that fills a flat list of cells can still declare a subtree that way, which is what the
+        /// side panels needed: a population entry's tooltip names the political parties those people
+        /// lean towards, and each of those is a dossier of its own that only a mouse could ever reach.
+        /// </summary>
+        private static void Declare(GraphBuilder builder, Cell cell)
+        {
+            if (cell.Dossiers == null || cell.Dossiers.Count == 0 || string.IsNullOrEmpty(cell.Key))
+            {
+                builder.AddItem(cell.Id, cell.Vtable);
+                return;
+            }
+
+            builder.BeginGroup(cell.Id, cell.Vtable);
+            if (builder.IsExpanded(cell.Id))
+            {
+                TooltipChildren.Emit(builder, cell.Key, cell.Dossiers, builder.Region);
+            }
+
+            builder.EndGroup();
         }
 
         /// <summary>

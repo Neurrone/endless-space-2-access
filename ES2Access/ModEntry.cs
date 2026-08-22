@@ -421,6 +421,14 @@ namespace ES2Access
             return StopDeclared(GalaxyHudScreen.SystemStop);
         }
 
+        /// <summary>Whether anything on the focused page answers the go-to-location key - the claim
+        /// half of Control+L (<see cref="GraphNavigator.TakesGoToLocation"/>).</summary>
+        private static bool GoToLocationOffered()
+        {
+            GraphNavigator navigator = Navigator;
+            return navigator != null && navigator.TakesGoToLocation();
+        }
+
         /// <summary>Whether a screen of ours has the keyboard cursor - the question both the
         /// dispatch and the game's stand-down turn on.</summary>
         private static bool ScreenFocused()
@@ -616,6 +624,21 @@ namespace ES2Access
                 .Register(UiActions.EndTurn)
                 .Bind(KeyCode.E, ctrl: true, alt: true)
                 .ClaimedWhile(TurnStopDeclared);
+
+            // GO TO WHERE THIS HAPPENED: the game's own show-location button, from the keyboard
+            // (docs/interaction.md). Control+L is free in this game - the input manager binds nothing
+            // to L at all, confirmed live with a physical press that moved neither the camera nor a
+            // word - and the letter costs the player nothing either, since A-Z are already claimed by
+            // the mod's type-ahead wherever one of its screens is focused.
+            //
+            // Claimed only while the focused screen or the focused control offers one, and the handler
+            // asks the same question again: a claim is answered before the press and the act is never
+            // allowed to run on a stale yes. Where the answer is no the key is inert - no speech, no
+            // move.
+            input
+                .Register(UiActions.GoToLocation)
+                .Bind(KeyCode.L, ctrl: true)
+                .ClaimedWhile(GoToLocationOffered);
 
             // The galaxy map's own mode: a square of galaxy swept with the arrows instead of the tree
             // (<see cref="ES2Access.Screens.GalaxyInspect"/>). Control and I is free in this game - the

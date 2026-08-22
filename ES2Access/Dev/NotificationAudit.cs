@@ -792,7 +792,7 @@ namespace ES2Access.Dev
                     continue;
                 }
 
-                List<Declared> covering = Covering(declared, tip.Owner);
+                List<Declared> covering = Covering(declared, tip.Owner, tip.Tooltip);
                 if (covering.Count == 0)
                 {
                     result.Tooltips.Add(
@@ -913,13 +913,30 @@ namespace ES2Access.Dev
 
         /// <summary>The nodes whose own widget is this one, holds it, or hangs inside it - the ones
         /// a player standing anywhere near this tooltip would be on.</summary>
-        internal static List<Declared> Covering(List<Declared> declared, AgeTransform owner)
+        internal static List<Declared> Covering(
+            List<Declared> declared,
+            AgeTransform owner,
+            AgeTooltip tooltip = null
+        )
         {
             List<Declared> covering = new List<Declared>();
             for (int i = 0; i < declared.Count; i++)
             {
                 AgeTransform widget = declared[i].Widget;
                 if (widget != null && (Under(owner, widget) || Under(widget, owner)))
+                {
+                    covering.Add(declared[i]);
+                    continue;
+                }
+
+                // A DOSSIER NODE covers by its AIM, not by a widget. A node made by
+                // ES2Access.UI.TooltipChildren is keyed structurally and reads off no widget of its
+                // own - it exists precisely because one widget carries several dossiers and only the
+                // one the pointer is on can ever be drawn - so the widget walk above misses every one
+                // of them and the audit filed each as "uncovered" while the player could read it
+                // perfectly well (owner ruling, batch 7). What it declares it POINTS at is the same
+                // authority the misaimed check uses.
+                if (tooltip != null && AgeWidgets.SameTooltip(AimOf(declared[i]), tooltip))
                 {
                     covering.Add(declared[i]);
                 }

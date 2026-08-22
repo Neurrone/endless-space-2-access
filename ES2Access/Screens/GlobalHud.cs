@@ -1910,6 +1910,7 @@ namespace ES2Access.Screens
                         null
                     );
                     vtable.OnContextual = () => Dismiss(it);
+                    GoToLocation(vtable, it);
                     // The strip is bare icons: nothing on it says the row can be thrown away, and the
                     // game's own right click is the only way to do it without opening the popup first.
                     NodeHints.Add(vtable, ModStrings.HintDismiss, UiActions.Contextual);
@@ -1926,6 +1927,42 @@ namespace ES2Access.Screens
             {
                 builder.PopContext();
             }
+        }
+
+        /// <summary>
+        /// GO TO WHERE THIS HAPPENED, on a row whose popup is not open - a notification icon on the
+        /// strip, a line of the turn log.
+        ///
+        /// Offered exactly where the popup would DRAW a show-location button
+        /// (<see cref="NotificationScreen.DrawsShowLocation"/>): the game marks that button visible
+        /// from the notification's own <c>HasLocation</c> without asking whether the prefab laid one
+        /// out, and forty-one of the sixty-nine did not (es2-facts). Offering the key where the mouse
+        /// has no button would be an affordance the sighted player cannot see - and, worse, one whose
+        /// handler moves nothing.
+        ///
+        /// What it DOES is the button's own handler minus its last line, which toggles the popup open
+        /// (<see cref="NotificationScreen.GoToLocation"/>): from a closed row that toggle would open
+        /// the popup instead of going anywhere.
+        ///
+        /// The hint comes FIRST, before "to dismiss": going somewhere is what the row is usually
+        /// pressed for, and throwing it away is what is done afterwards.
+        /// </summary>
+        private static void GoToLocation(NodeVtable vtable, GuiNotification notification)
+        {
+            GuiNotification it = notification;
+            if (!NotificationScreen.DrawsShowLocation(it))
+            {
+                return;
+            }
+
+            vtable.OnGoTo = () => NotificationScreen.GoToLocation(it);
+            NodeHints.Add(
+                vtable,
+                ModStrings.HintGoToLocation,
+                UiActions.GoToLocation,
+                0,
+                () => NotificationScreen.DrawsShowLocation(it)
+            );
         }
 
         /// <summary>
@@ -1997,6 +2034,7 @@ namespace ES2Access.Screens
                                 () => Open(it)
                             );
                             vtable.OnContextual = () => Dismiss(it);
+                            GoToLocation(vtable, it);
                             NodeHints.Add(vtable, ModStrings.HintDismiss, UiActions.Contextual);
                             builder.AddItem(
                                 ControlId.Referenced(it, "hud:turn-log/" + turn + "/" + within),

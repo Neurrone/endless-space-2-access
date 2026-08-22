@@ -69,6 +69,7 @@ namespace ES2Access.Core.Speech
         public const string HintShowAndSelectFleet = "hint.show-and-select-fleet";
         public const string HintOpenSystemManagement = "hint.open-system-management";
         public const string HintLoad = "hint.load";
+        public const string HintGoToLocation = "hint.go-to-location";
 
         private static readonly Dictionary<string, string> HintDefaults = new Dictionary<
             string,
@@ -92,6 +93,7 @@ namespace ES2Access.Core.Speech
             { HintShowAndSelectFleet, "{0} to show and select fleet" },
             { HintOpenSystemManagement, "{0} to open system management screen" },
             { HintLoad, "{0} to load" },
+            { HintGoToLocation, "{0} goes to location" },
             // --- input batch (2026-08-22) ---
             { LabelWithChord, "{0} ({1})" },
             { SystemPrevious, "Previous system" },

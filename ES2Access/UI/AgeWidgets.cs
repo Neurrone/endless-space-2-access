@@ -1165,9 +1165,17 @@ namespace ES2Access.UI
                     {
                         // GetMethod(name, flags) THROWS on an overloaded handler
                         // (AmbiguousMatchException), and one ambiguous component must not
-                        // abort the scan for its siblings - so the lookup enumerates and
-                        // answers "no argument" only when a zero-parameter overload exists,
-                        // which is also the overload SendMessage would prefer.
+                        // abort the scan for its siblings - so the lookup enumerates.
+                        //
+                        // "No argument" means a zero-parameter overload AND NO one-parameter one.
+                        // A handler written with an OPTIONAL argument
+                        // (<c>OnShowLocationCb(GameObject obj = null)</c>) compiles to BOTH
+                        // arities, and Unity's SendMessage resolves by NAME and then insists on the
+                        // arity it found first: sending with no argument to such a pair is refused
+                        // outright ("Calling function OnShowLocationCb with no parameters but the
+                        // function requires 1", measured 2026-08-22 on the quest-begun popup's
+                        // show-location button - the press was silently a no-op). So a name that
+                        // has both is sent the sender, which is what a mouse click sends.
                         bare = false;
                         try
                         {
@@ -1177,17 +1185,26 @@ namespace ES2Access.UI
                                     | BindingFlags.NonPublic
                                     | BindingFlags.FlattenHierarchy
                             );
+                            bool takesOne = false;
                             for (int m = 0; m < methods.Length; m++)
                             {
-                                if (
-                                    methods[m].Name == method
-                                    && methods[m].GetParameters().Length == 0
-                                )
+                                if (methods[m].Name != method)
+                                {
+                                    continue;
+                                }
+
+                                int parameters = methods[m].GetParameters().Length;
+                                if (parameters == 0)
                                 {
                                     bare = true;
-                                    break;
+                                }
+                                else if (parameters == 1)
+                                {
+                                    takesOne = true;
                                 }
                             }
+
+                            bare = bare && !takesOne;
                         }
                         catch (Exception e)
                         {

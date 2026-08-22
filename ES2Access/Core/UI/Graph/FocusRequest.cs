@@ -121,22 +121,26 @@ namespace ES2Access.Core.UI.Graph
         /// judged, because the screen that asked for it is not the one being drawn or the view is still
         /// moving.
         ///
-        /// A suspended frame costs nothing and proves nothing: the budget is not spent and an
-        /// "unreachable" answer is not believed, because the render being asked is not the render the
-        /// landing was aimed at. A control that IS present still lands - being there is the whole of
-        /// what the request wanted, and there is no reason to make the player wait for a transition to
-        /// finish before it does.
+        /// A suspended frame costs nothing and proves nothing: the budget is not spent, an
+        /// "unreachable" answer is not believed, and a control that IS present does not land either -
+        /// because the render being asked is not the render the landing was aimed at, and neither is
+        /// what that control would SAY. A landing announces itself once, and a node read while the
+        /// camera is still flying reads the far view's version of itself (the galaxy's planet rows:
+        /// "Osulo I, Colonized" before the flight, "Osulo I, group, Medium Mediterrane., Colonized,
+        /// collapsed" after it). So the whole judgement waits, landing the frame the screen says it is
+        /// settled. An earlier revision landed a present control mid-transition and shipped exactly
+        /// that defect.
         /// </summary>
         public FocusOutcome Step(ReachStep reach, bool suspended)
         {
-            if (reach == ReachStep.Present)
-            {
-                return FocusOutcome.Land;
-            }
-
             if (suspended)
             {
                 return FocusOutcome.Wait;
+            }
+
+            if (reach == ReachStep.Present)
+            {
+                return FocusOutcome.Land;
             }
 
             if (reach == ReachStep.Unreachable)

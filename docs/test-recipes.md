@@ -2370,3 +2370,71 @@ page. "The chord reaches the mod and not the game" is a MANUAL-TEST line, not an
   expand a group and stay now steps INTO it, so the old walk's "expand the card, then Enter" reaches
   the card's first child instead of the card. Re-record any stored route that opens something with
   Right before diffing it against a pre-batch baseline.
+
+## Going to a place on the map (batch 7, 2026-08-22)
+
+**The scanner's Alt+Home, per kind, out of the inspect cursor.** Ctrl+G to the map, then
+`galaxy.scanCategoryNext/Prev` to the category, `galaxy.scanNext` to the instance, `galaxy.scanGoTo`.
+MEASURED on `[Beginner] test`: a SYSTEM lands on `galaxy:constellation/446/system/491` with the
+camera zoomed (`zoomStep` 9 → 12, focus on Osulo); a PLANET on `…/system/505/planet/0` with the
+camera zoomed; a PROBE on `galaxy:probe/1621` with the camera SLID (zoomStep unchanged, focus
+(13.59, -52.30)). Read the landing from `/speech`, the camera from `DevProbe.Camera()` before and
+after, and the cursor from the `>` line of `/gui/graph`.
+**With the inspect cursor UP** (`galaxy.inspect` first): a SYSTEM keeps the mode, moves the cell to
+its tile, ZOOMS anyway, and the `>` line shows the tree cursor on the system node
+(measured: Byrtus, cell "-25, -42, Byrtus", zoomStep 9 → 12, cursor
+`galaxy:constellation/446/system/572`); a FLEET keeps the mode and only slides (cell "-37, -31, 1st
+Patriots Navy", cursor `…/system/491/fleet/1304`); a PLANET **says "Exited inspect mode" first**,
+`GalaxyInspect.Live` reads false, and the landing is the ordinary one (measured: Rigel I).
+**The settled-row proof.** Zoom out first (`GalaxyViewLevels.SetZoom(5, Vector3.zero)`), move the
+cursor off the target (`ui.home`), then run the go-to and read `/speech`: the landing must be the
+CLOSE-camera reading. Osulo I settled is
+`Osulo I, group, Medium Mediterrane., Colonized, collapsed, 2 of 8`; the pre-2026-08-22 defect said
+`Osulo I, Colonized, 1 of 7`. To time it: fire the input in the background, then
+`POST /wait` on `!GalaxyViewLevels.CameraSettling && GalaxyViewLevels.ZoomStep >= 12` (12-14 frames,
+~0.9 s from the far camera) and dump `/gui/graph` immediately and again 300 ms later - the card's
+words are there at once, its buttons ("group") 300 ms later.
+
+**Quest markers are FIXTURE-BLOCKED in both saves** - `[Beginner] test` has 32 quests in progress and
+`[Midgame] quests fleets` 40, and every one reports `GetMarkers(step).Count == 0`. Register synthetic
+ones to see the whole family (they die with the next `POST /loadsave`):
+`QuestMarker m = new QuestMarker(); m.GUID = new GameEntityGUID(987654321UL);
+m.QuestInstanceID = quest.QuestInstanceID; m.StepName = step.Name; m.BoundTargetGUID = <target>.GUID;
+m.EmpireIndexes = new int[] { Gui.PlayerEmpire.Index }; m.MarkerType = new Amplitude.StaticString("Default");
+m.Load(); Services.GetService<IQuestManagementService>().Register(m);` — bind one to a perceived
+`StarSystemNode` for the at-a-system case and one to a **Ship** for the open-space case (a Ship is not
+one of the five kinds `QuestMarkers` maps to a node, and its `GalaxyPosition` resolves to the galaxy
+origin, which reads as a pair well off home). MEASURED with the pinned quest on
+`[Midgame] quests fleets`: the system's buffer gains
+`Tracked quest here: Prologue: TO THE STARS!`; the marker's node is
+`galaxy:constellation/446/system/535/marker/987654321`, last child ("10 of 10"), buffer =
+the step's objective; the open-space one is `galaxy:marker/987654322` at "-69, 22" in the drifting
+region; the scanner's Quest markers category lists both and its go-to lands on the MARKER (the
+at-a-system one zooms, the open-space one slides); the inspect cell reads
+`0, 0, Dusay, Tracked quest here: …, Star lane …`; Enter on a cell holding only the marker says
+"Exited inspect mode" and lands on its node; Enter and Backslash ON the node are silent and move
+nothing. The quest LOCATE (`Gui.GuiGameWindowService.ShowQuestLocation(quest, step)`) says
+"⟨quest⟩, objective shown on the map" and lands on a marker node - `ShowQuestLocation` cycles
+markers, so two runs land on different ones.
+
+**Ctrl+L, the go-to-location key.** `POST /key` needs a LONGER HOLD than the default for a chord to be
+seen: `POST /key?hold=250&gap=150` with body `Ctrl+L` works, the bare `POST /key` body `Ctrl+L`
+silently does nothing (measured twice, 2026-08-22 - the mod polls once a frame and the default press
+is over before a frame ends). Test surfaces:
+- **an open popup**: raise one with `RecordEventForEmpire` (below), read
+  `notification:show-location`'s name - it must be `Show Location (Ctrl+L)` - and press the chord from
+  anywhere on the popup; the popup goes aside and the map lands.
+- **a strip row**: `Gui.GuiNotificationService.HideAllGuiNotifications()` puts the notification on the
+  strip, `ui.focusNotifications` lands on it, and the row's buffer must read
+  `Ctrl+L goes to location` then `Backslash to dismiss`. The chord must NOT open the popup
+  (`/gui/graph` still says `screen.galaxy`).
+- **a turn-log row**: raise a mod notification with
+  `ES2Access.UI.ModNotifications.Raise(new ES2Access.UI.EventModFleetArrived(Gui.PlayerEmpire, fleet, node))`;
+  `ui.focusTurnLog`, same hint order, same behaviour.
+- **where absent**: on the end-turn button `ES2Access.ModEntry.Navigator.TakesGoToLocation()` is
+  false, the physical chord is silent, and `POST /input ui.goToLocation` answers `unconsumed`.
+**A notification shown with `ShowGuiNotification` is NOT in the empire's list** and so never reaches
+the strip; to get a row, call the manager's private
+`RecordEventForEmpire(gameEvent, empire)` by reflection instead
+(`new EventQuestBegun(Gui.PlayerEmpire, quest)` on the pinned quest raises the quest-begun popup and
+registers it).

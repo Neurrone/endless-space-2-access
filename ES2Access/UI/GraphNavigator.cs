@@ -320,6 +320,38 @@ namespace ES2Access.UI
             _lastSpokenNode = null;
         }
 
+        /// <summary>
+        /// GO TO WHERE THE FOCUSED THING HAPPENED - the game's own show-location, replayed from the
+        /// keyboard.
+        ///
+        /// The SCREEN is offered it first (<see cref="ES2Access.Screens.Screen.GoToLocation"/>), for a
+        /// surface where the affordance belongs to the page - an open notification popup draws the
+        /// button in its own bottom bar and the key means it from anywhere on the popup - and the
+        /// focused control answers otherwise (a notification strip row, a turn-log row). Where neither
+        /// offers one the press did nothing and says nothing.
+        /// </summary>
+        public bool GoToLocation()
+        {
+            if (_screen == null || _graph == null)
+            {
+                return false;
+            }
+
+            return _screen.GoToLocation() || _graph.GoToLocation();
+        }
+
+        /// <summary>The same fact asked before the press, for the key's claim: does anything on this
+        /// page answer the key at all. Read off the standing render, like every other claim.</summary>
+        public bool TakesGoToLocation()
+        {
+            if (_screen == null || _graph == null)
+            {
+                return false;
+            }
+
+            return _screen.OffersGoToLocation || _graph.OffersGoTo;
+        }
+
         /// <summary>Whether the focused screen's LAST render declared this Tab-stop - the availability
         /// half of a jump-to-stop key, and the same question its key CLAIM asks
         /// (<c>docs/interaction.md</c>). Read off the standing render rather than built fresh: the claim
@@ -537,6 +569,8 @@ namespace ES2Access.UI
                     return Contextual();
                 case UiActions.DoubleClick:
                     return DoubleClick();
+                case UiActions.GoToLocation:
+                    return GoToLocation();
                 case UiActions.Carry:
                     return CarryKey();
                 case UiActions.SelectToggle:

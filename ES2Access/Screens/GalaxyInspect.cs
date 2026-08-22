@@ -167,6 +167,25 @@ namespace ES2Access.Screens
             return true;
         }
 
+        /// <summary>
+        /// The tree cursor was moved UNDER the cell by a landing the player asked for (the page's own
+        /// <c>GoTo</c> while the mode is up), so the place leaving the mode puts them back on is that
+        /// landing rather than wherever the mode was opened from.
+        ///
+        /// Without it a go-to made from inside the mode was undone by Escape: the cursor went back to
+        /// the node the player armed the mode on, and the camera with it.
+        /// </summary>
+        public void Reseat(ControlId id, UnityEngine.Vector3 at)
+        {
+            if (!_live)
+            {
+                return;
+            }
+
+            _entry = id;
+            _entryAt = new GalaxyPosition(at);
+        }
+
         /// <summary>Once per frame from the pump, after the screens have settled and before the
         /// pointer commits: where the game's own tooltip is pointed while the cell drives the map,
         /// and an ending that is waiting to be spoken.</summary>
@@ -907,6 +926,11 @@ namespace ES2Access.Screens
 
                 Identify(things, "shot", contents.Projectiles);
                 Identify(things, "pin", contents.Pins);
+                for (int i = 0; i < contents.Markers.Count; i++)
+                {
+                    things.Add("marker:" + contents.Markers[i].Pin.GUID);
+                }
+
                 for (int i = 0; i < contents.Links.Count; i++)
                 {
                     things.Add("lane:" + contents.Links[i].GUID);
@@ -1440,6 +1464,23 @@ namespace ES2Access.Screens
 
             if (thing == null)
             {
+                // A QUEST PIN is the last thing offered, and only where the cell holds exactly one
+                // and nothing else it could have meant: a pin standing at a star is a child of that
+                // star and the star has already won, and a pin planted on a fleet crossing a lane is
+                // beside the fleet, which wins for the same reason. What is left is a pin the player
+                // has swept a cell down onto and nothing else - the one case where "the one thing in
+                // here" IS the marker (owner ruling, 2026-08-22: a marker is a node now, so Enter has
+                // somewhere to go).
+                MapTarget marker;
+                if (
+                    contents.Markers.Count == 1
+                    && _screen.MarkerTarget(contents.Markers[0], out marker)
+                    && marker.Id != null
+                )
+                {
+                    Exit(false, marker.Id, true);
+                }
+
                 return true;
             }
 
@@ -1485,6 +1526,11 @@ namespace ES2Access.Screens
             public readonly List<ObliteratorProjectile> Projectiles =
                 new List<ObliteratorProjectile>();
             public readonly List<CoordinationRequest> Pins = new List<CoordinationRequest>();
+
+            /// <summary>The quest pins standing in the cell - the ones drawn at a star and the ones
+            /// planted out on a fleet crossing a lane alike, since the cell is about what the map
+            /// DRAWS here and a pin is drawn wherever the thing it is bound to stands.</summary>
+            public readonly List<QuestMarkers.Marker> Markers = new List<QuestMarkers.Marker>();
             public readonly List<string> Lanes = new List<string>();
 
             /// <summary>The lanes themselves, in the order the sentence names them - what the travel
@@ -1554,6 +1600,12 @@ namespace ES2Access.Screens
                 CoordinationRequest pin = contents.Pins[i];
                 message.ListItemForcedComma(GalaxyHudScreen.PinKind(pin));
                 message.ListItemForcedComma(PairOf(pin.GalaxyPosition));
+            }
+
+            for (int i = 0; i < contents.Markers.Count; i++)
+            {
+                message.ListItemForcedComma(QuestMarkers.Name(contents.Markers[i]));
+                message.ListItemForcedComma(PairOf(contents.Markers[i].At));
             }
 
             for (int i = 0; i < contents.Lanes.Count; i++)
@@ -1626,6 +1678,14 @@ namespace ES2Access.Screens
                 MessageBuilder line = new MessageBuilder();
                 line.Fragment(GalaxyHudScreen.PinKind(pin));
                 line.ListItemForcedComma(PairOf(pin.GalaxyPosition));
+                Line(lines, line);
+            }
+
+            for (int i = 0; i < contents.Markers.Count; i++)
+            {
+                MessageBuilder line = new MessageBuilder();
+                line.Fragment(QuestMarkers.Name(contents.Markers[i]));
+                line.ListItemForcedComma(PairOf(contents.Markers[i].At));
                 Line(lines, line);
             }
 
@@ -1771,6 +1831,15 @@ namespace ES2Access.Screens
                     if (Holds(pin.GalaxyPosition))
                     {
                         contents.Pins.Add(pin);
+                    }
+                }
+
+                List<QuestMarkers.Marker> markers = QuestMarkers.Of(empire);
+                for (int i = 0; i < markers.Count; i++)
+                {
+                    if (Holds(markers[i].At))
+                    {
+                        contents.Markers.Add(markers[i]);
                     }
                 }
 

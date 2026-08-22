@@ -810,6 +810,28 @@ namespace ES2Access.Core.UI.Graph
             return true;
         }
 
+        /// <summary>Whether the focused control offers a go-to-location - the key's availability, asked
+        /// off the standing render so a key scan can ask it many times a frame.</summary>
+        public bool OffersGoTo
+        {
+            get
+            {
+                GraphNode node = CurrentNode;
+                return node != null && node.Vtable != null && node.Vtable.OnGoTo != null;
+            }
+        }
+
+        /// <summary>Go to where the focused control's thing happened. False = it offers none, and the
+        /// caller leaves the press alone.</summary>
+        public bool GoToLocation()
+        {
+            if (!Rerender()) return false;
+            GraphNode node = CurrentNode;
+            if (node == null || node.Vtable.OnGoTo == null) return false;
+            node.Vtable.OnGoTo();
+            return true;
+        }
+
         /// <summary>Run the focused control's double-click command - the game's own second click.
         /// False = it has none, and the caller says nothing rather than falling back to the single
         /// click.</summary>

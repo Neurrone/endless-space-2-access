@@ -418,11 +418,43 @@ namespace ES2Access.Screens
         /// </summary>
         public override bool LandingSuspended
         {
-            get { return GalaxyViewLevels.ChangingLevel; }
+            get
+            {
+                return GalaxyViewLevels.ChangingLevel
+                    || GalaxyViewLevels.CameraSettling
+                    || _settling > 0;
+            }
         }
+
+        /// <summary>Frames still to wait after the camera has stopped, before a landing is allowed to
+        /// announce itself (<see cref="MapSettleFrames"/>).</summary>
+        private int _settling;
+
+        /// <summary>
+        /// How long after the camera stops the MAP takes to catch up with it.
+        ///
+        /// The camera settling is not the end of the arrival: what a row SAYS depends on what the map
+        /// draws at the new distance, and the orbital cards a system grows when the camera comes in
+        /// bind over several frames after the flight ends - the card's own words first and the row of
+        /// buttons under it after that, which is what turns a planet's row from a leaf into a group.
+        /// Measured 2026-08-22 on Osulo I: at the frame the camera stopped the row read
+        /// "Osulo I, Medium Mediterrane., Colonized, 2 of 8" and 300 ms later
+        /// "Osulo I, group, Medium Mediterrane., Colonized, collapsed, 2 of 8". A landing announces
+        /// itself once, so the earlier reading is simply lost.
+        ///
+        /// Twenty frames is the same wait the fleet-action seat already spends on the same widgets
+        /// (<see cref="SeatAfterFleetAction"/>), for the same measured reason.
+        /// </summary>
+        private const int MapSettleFrames = 20;
 
         public override void OnUpdate()
         {
+            // First, so that everything below decides against the same answer: the map is still
+            // catching up with the camera for a little while after the flight ends
+            // (<see cref="MapSettleFrames"/>).
+            _settling = GalaxyViewLevels.CameraSettling
+                ? MapSettleFrames
+                : Math.Max(0, _settling - 1);
             _hud.Update();
             _fleetPanel.Update();
             _zoom.Update();
@@ -930,12 +962,6 @@ namespace ES2Access.Screens
         /// answer that can still improve - a settled one lands the frame it is found.</summary>
         private const int LocateFrames = 60;
 
-        /// <summary>How near a point has to be to something the tree declares before it IS that thing,
-        /// in the galaxy's own units. Well under the closest two systems in a galaxy ever stand (6.7
-        /// measured on the fixture, 10.6 on average), so nothing is ever mistaken for its neighbour,
-        /// and wide enough for the small offsets the map draws a fleet's berth at.</summary>
-        private const float LocateRadius = 3f;
-
         /// <summary>
         /// Put the cursor where the GAME has just sent the player (<see cref="GalaxyLocate"/>) - the
         /// same landing a search makes, so the place it is buried in is opened and the cursor is left on
@@ -967,7 +993,7 @@ namespace ES2Access.Screens
             try
             {
                 bool settled;
-                ControlId id = Locate(wanted, out settled);
+                MapTarget target = Locate(wanted, out settled);
                 // The budget is for an answer that can still get better - a page that has not declared
                 // anything yet, a berth the game has not yet said which of its fleets it meant. A
                 // settled answer is given now, including the settled answer that nothing on the map is
@@ -979,7 +1005,7 @@ namespace ES2Access.Screens
 
                 GalaxyLocate.Take();
                 _locating = null;
-                Land(id, wanted);
+                Land(target, wanted);
             }
             catch (Exception e)
             {
@@ -999,26 +1025,150 @@ namespace ES2Access.Screens
         /// <summary>Speak what the landing needs saying beyond the node itself, then send the cursor.
         /// The node's own announcement is the whole of an ordinary landing - it names the place the game
         /// went to, which is the answer to the question that was asked.</summary>
-        private void Land(ControlId id, GalaxyLocate.Request wanted)
+        private void Land(MapTarget target, GalaxyLocate.Request wanted)
         {
             if (wanted.Quest != null)
             {
                 Voice.Say(QuestLocated(wanted.Quest), false);
             }
-            else if (id == null)
-            {
-                Voice.Say(ModStrings.Get(ModStrings.GalaxyShownOnMap), false);
-            }
 
-            GraphNavigator navigator = ModEntry.Navigator;
-            if (navigator != null)
+            // Everything else - the cell, the cursor, the camera, and the "shown on the map" line a
+            // request nothing answers gets - is the page's one landing (<see cref="GoTo"/>).
+            GoTo(target, MapCamera.Auto);
+        }
+
+        /// <summary>
+        /// GO AND LOOK AT THIS - the one landing on this page.
+        ///
+        /// Five things used to send the player somewhere on the map and each answered the same three
+        /// questions for itself: does the free inspect cursor stay up, does the tree cursor move, and
+        /// does the camera zoom or slide. They disagreed - the scanner jumped the CELL onto a planet,
+        /// which is a thing the cell cannot read, leaving the player on a square of sky beside the
+        /// world they asked for - so the rules live in one place now
+        /// (<see cref="MapLandings.Decide"/>, off the engine and unit-tested) and every caller hands
+        /// in a resolved <see cref="MapTarget"/>: the game's own show-location
+        /// (<see cref="FollowTheGame"/>), the scanner's go-to, travelling a starlane
+        /// (<see cref="Arrive"/>) and the go-to-location key.
+        ///
+        /// The camera moves are marked as the MOD's own (<see cref="GalaxyLocate.Suppressed"/>): the
+        /// mod pans through the same calls the game leads the player with, and an unmarked pan here
+        /// would come straight back round as a fresh locate request.
+        ///
+        /// Answers whether the cursor was sent to a node - false for a fleet the tree has no row for
+        /// and for a point the map draws nothing at, both of which leave the caller to say its own
+        /// piece.
+        /// </summary>
+        internal bool GoTo(MapTarget target, MapCamera camera)
+        {
+            try
             {
-                // Nothing on the map answers for the point, so the cursor goes to the name of the view -
-                // where the player is told what they are looking at - rather than staying on a place the
-                // camera has left.
-                navigator.FocusNode(id ?? ControlId.Structural("hud:view-title/name"));
+                MapLanding plan = MapLandings.Decide(target.Thing, GalaxyInspect.Live);
+                if (plan.Unplaced || (target.Id == null && target.Select == null))
+                {
+                    // Owner ruling 2026-08-22: everything the game can point the player at is supposed
+                    // to have a row, so a request that lands on nothing is a DEFECT to model and not a
+                    // behaviour to fall back on. The camera HAS moved, so the player is told; the
+                    // request is logged where the dev sweep can find it; and nothing else moves.
+                    Log.Warn(
+                        "galaxy go-to: nothing on the map stands at "
+                            + target.At.x.ToString("F2")
+                            + ", "
+                            + target.At.z.ToString("F2")
+                            + " - the tree has no row for what the game pointed at"
+                    );
+                    Voice.Say(ModStrings.Get(ModStrings.GalaxyShownOnMap), false);
+                    return false;
+                }
+
+                if (plan.ExitInspect)
+                {
+                    GalaxyInspect.Dismiss();
+                }
+
+                if (plan.MoveCell)
+                {
+                    GalaxyPosition origin = GalaxyCoordinates.Origin();
+                    _inspect.JumpTo(
+                        MapCoordinates.Round(target.At.x - origin.X),
+                        MapCoordinates.Round(target.At.z - origin.Y)
+                    );
+                }
+
+                GraphNavigator navigator = ModEntry.Navigator;
+                if (plan.FocusNode && target.Id != null && navigator != null)
+                {
+                    // Silent while the cell is what the player is reading: the tree move is felt when
+                    // the mode ends, which is the whole of what it is for.
+                    navigator.FocusNode(target.Id, plan.AnnounceNode);
+                    if (plan.MoveCell)
+                    {
+                        _inspect.Reseat(target.Id, target.At);
+                    }
+                }
+
+                if (target.Select != null && !plan.MoveCell)
+                {
+                    // The one fleet the tree has no row for: the map's own selection is this game's
+                    // only "go to that fleet".
+                    SelectFleet(target.Select);
+                }
+
+                Camera(target, camera, plan);
+                return target.Id != null;
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: going to a place on the map threw: " + e);
+                return false;
             }
         }
+
+        /// <summary>Bring the camera to what was landed on: IN on a place, and a slide onto a bare
+        /// point. Where the cell is driving, the cell has already slid and only a place's zoom is
+        /// added on top - so the picture is the same whichever way the player is reading the
+        /// map.</summary>
+        private static void Camera(MapTarget target, MapCamera wanted, MapLanding plan)
+        {
+            MapCameraMove move = plan.Camera;
+            switch (wanted)
+            {
+                case MapCamera.Zoom:
+                    move = MapCameraMove.Zoom;
+                    break;
+                case MapCamera.Slide:
+                    move = MapCameraMove.Slide;
+                    break;
+                case MapCamera.None:
+                    move = MapCameraMove.None;
+                    break;
+            }
+
+            if (move == MapCameraMove.None)
+            {
+                return;
+            }
+
+            try
+            {
+                GalaxyLocate.Suppressed = true;
+                if (move == MapCameraMove.Zoom && target.System != null)
+                {
+                    GalaxyViewLevels.ZoomTo(target.System);
+                }
+                else
+                {
+                    GalaxyViewLevels.CenterOn(target.At, LandingDamping);
+                }
+            }
+            finally
+            {
+                GalaxyLocate.Suppressed = false;
+            }
+        }
+
+        /// <summary>The same slide the inspect cursor moves the camera with, so an arrival looks like
+        /// every other arrival on this map.</summary>
+        private const float LandingDamping = 0.3f;
 
         /// <summary>The quest a pin belongs to, in the game's own title for it.</summary>
         private static string QuestLocated(Quest quest)
@@ -1037,16 +1187,29 @@ namespace ES2Access.Screens
             }
         }
 
-        /// <summary>The node for what the game asked to be looked at, or null where the map draws
-        /// nothing there. The thing itself first, since a request that named one is exact; the point
-        /// only where it did not, or where the thing it named is not something this tree declares.
+        /// <summary>
+        /// What the game asked to be looked at, resolved to a target this page can land on.
+        ///
+        /// The QUEST marker first, where the reveal was a quest pin: the position is that marker's own
+        /// (<c>ShowQuestLocation</c> picks the marker and then makes the ordinary position request with
+        /// it), so the marker is found by IDENTITY among the quest's own and never by guessing which
+        /// thing near the point was meant. Then the thing itself, since a request that named one is
+        /// exact; then the point, and only for something standing at it.
         ///
         /// <paramref name="settled"/> is false while a later frame could answer better - the whole of
-        /// what the frame budget is for.</summary>
-        private ControlId Locate(GalaxyLocate.Request wanted, out bool settled)
+        /// what the frame budget is for.
+        /// </summary>
+        private MapTarget Locate(GalaxyLocate.Request wanted, out bool settled)
         {
-            ControlId named = FromEntity(wanted.Entity);
-            if (named != null)
+            MapTarget marker;
+            if (LocatedMarker(wanted, out marker))
+            {
+                settled = true;
+                return marker;
+            }
+
+            MapTarget named;
+            if (FromEntity(wanted.Entity, out named))
             {
                 settled = true;
                 return named;
@@ -1055,13 +1218,74 @@ namespace ES2Access.Screens
             return Nearest(wanted.Position, out settled);
         }
 
+        /// <summary>The marker a quest reveal was made for, found among that quest's own markers by
+        /// the position the request carries. False for every other kind of request, and for a quest
+        /// whose markers the page cannot place.</summary>
+        private bool LocatedMarker(GalaxyLocate.Request wanted, out MapTarget target)
+        {
+            target = default(MapTarget);
+            if (wanted.Quest == null || !Declaring())
+            {
+                return false;
+            }
+
+            List<QuestMarkers.Marker> markers = QuestMarkers.Of(PlayerEmpire());
+            for (int i = 0; i < markers.Count; i++)
+            {
+                if (
+                    !ReferenceEquals(markers[i].Quest, wanted.Quest)
+                    || ((Vector3)markers[i].At - wanted.Position).sqrMagnitude > CoincidesSquared
+                )
+                {
+                    continue;
+                }
+
+                return MarkerTarget(markers[i], out target);
+            }
+
+            return false;
+        }
+
+        /// <summary>Where a marker's node hangs: under the system it stands at, or a row of its own
+        /// out in the open. False where the map is not naming the system it stands at, which is the
+        /// one case that has neither.</summary>
+        internal bool MarkerTarget(QuestMarkers.Marker marker, out MapTarget target)
+        {
+            target = default(MapTarget);
+            StarSystemNode at = MarkerSystem(marker);
+            if (at == null)
+            {
+                if (!marker.Node.IsValid)
+                {
+                    target = MapTarget.Point(MarkerRowId(marker), marker.At);
+                    return true;
+                }
+
+                return false;
+            }
+
+            // A marker standing at a system is a CHILD of it - drawn at the star, not a thing of its
+            // own out on the map - so it lands the way a planet does: the free cursor ends, the branch
+            // opens, and the camera comes in.
+            target = MapTarget.Under(at, MarkerId(at, marker), marker.At);
+            return true;
+        }
+
         /// <summary>The same question the GAME's locate asks, for a caller inside the mod: where on
         /// this page does this thing live. Used by the scanner to send the cursor to what it found -
         /// through the page's own landing, branch opening included, rather than a second route to the
         /// same nodes.</summary>
         internal ControlId NodeFor(IGameEntityWithGalaxyPosition entity)
         {
-            return FromEntity(entity);
+            MapTarget target;
+            return FromEntity(entity, out target) ? target.Id : null;
+        }
+
+        /// <summary>The same, as a landing target - which is what the caller sending the player there
+        /// actually needs, since a fleet and a system are landed on differently.</summary>
+        internal bool TargetFor(IGameEntityWithGalaxyPosition entity, out MapTarget target)
+        {
+            return FromEntity(entity, out target);
         }
 
         /// <summary>
@@ -1120,6 +1344,16 @@ namespace ES2Access.Screens
                     }
                 }
 
+                List<QuestMarkers.Marker> markers = QuestMarkers.Of(PlayerEmpire());
+                for (int i = 0; i < markers.Count; i++)
+                {
+                    if (!markers[i].Node.IsValid && id.Equals(MarkerRowId(markers[i])))
+                    {
+                        at = markers[i].At;
+                        return true;
+                    }
+                }
+
                 List<FleetSite> sites = FleetIndex(new HashSet<ControlId>());
                 for (int i = 0; i < sites.Count; i++)
                 {
@@ -1138,14 +1372,21 @@ namespace ES2Access.Screens
             return false;
         }
 
-        /// <summary>The node for a thing the game named. A fleet is where the map draws it; everything
-        /// that stands at a system - the system, a colony of it, a planet in it - is that system.
+        /// <summary>
+        /// The landing for a thing the game NAMED.
+        ///
+        /// A fleet is where the map draws it - a point of its own, so the free cursor may stay up.
+        /// Everything that stands at a system - the system, a colony of it, a planet in it - is that
+        /// system, and the camera goes IN: the game's own locate for a planet aims at the star (the
+        /// entity overload throws the entity away and keeps the position, es2-facts), so a system is
+        /// the whole of what the request said.
         /// </summary>
-        private ControlId FromEntity(IGameEntityWithGalaxyPosition entity)
+        private bool FromEntity(IGameEntityWithGalaxyPosition entity, out MapTarget target)
         {
+            target = default(MapTarget);
             if (entity == null)
             {
-                return null;
+                return false;
             }
 
             Fleet fleet = entity as Fleet;
@@ -1156,22 +1397,33 @@ namespace ES2Access.Screens
                 {
                     if (ReferenceEquals(sites[i].Fleet, fleet))
                     {
-                        return Reveal(sites[i]);
+                        target = MapTarget.Point(Reveal(sites[i]), Berth(fleet));
+                        return true;
                     }
                 }
 
-                return null;
+                return false;
             }
 
             ColonizedStarSystem colony = entity as ColonizedStarSystem;
             Planet planet = entity as Planet;
-            GameNode node = colony != null
-                ? colony.Node
-                : planet != null
-                    ? planet.StarSystemNode
-                    : entity as GameNode;
-            return SystemId(node as StarSystemNode);
+            StarSystemNode node = (
+                colony != null
+                    ? colony.Node
+                    : planet != null
+                        ? planet.StarSystemNode
+                        : entity as GameNode
+            ) as StarSystemNode;
+            ControlId id = SystemId(node);
+            if (id == null)
+            {
+                return false;
+            }
+
+            target = MapTarget.Place(node, id, node.GalaxyPosition);
+            return true;
         }
+
 
         /// <summary>A system's node id, but only while this page is declaring that system: the map
         /// draws the names of the systems the player has seen, and the tree says the same
@@ -1243,23 +1495,31 @@ namespace ES2Access.Screens
             /// <summary>The node, for everything but a fleet.</summary>
             public ControlId Id;
 
+            /// <summary>The system it is, where it is a place - what the camera zooms in on.</summary>
+            public StarSystemNode System;
+
             /// <summary>Which fleet site this is, or -1. A fleet's node id is not made until it wins,
             /// because making one records a branch to open.</summary>
             public int Site;
         }
 
         /// <summary>
-        /// The nearest thing the map draws to a point, or null when the point is out in the open.
+        /// The thing the map draws AT a point, or nothing where the point is out in the open.
+        ///
+        /// The tolerance is deliberately tight (<see cref="Coincides"/>): the question is "is this
+        /// point where that thing is", not "what is nearest". Owner ruling 2026-08-22 - everything the
+        /// game can point the player at is supposed to have a row of its own, so answering a point
+        /// nothing stands at with the nearest system would hide the missing row behind a landing that
+        /// sounds right, and the honest answer is a logged defect.
         ///
         /// The order candidates are offered in is the tie-break (<see cref="NearestPick"/>), and one tie
         /// is exact rather than coincidental: a fleet parked at a system says its position IS that
         /// system's (<c>FleetPosition</c> sets it from the node), so a request aimed at a star would
         /// otherwise be answered by whichever fleet happens to be sitting there. Places first, then.
         /// A fleet is offered at its BERTH - the slot the map draws it in, which is beside the star
-        /// rather than on it - so the one call that aims at a berth (the next-idle-fleet button) still
-        /// picks the fleet out.
+        /// rather than on it - so a call aiming at a berth still picks the fleet out.
         /// </summary>
-        private ControlId Nearest(Vector3 position, out bool settled)
+        private MapTarget Nearest(Vector3 position, out bool settled)
         {
             // A page arrived at cold has declared nothing, and "nothing is there" would be a wrong
             // answer rather than a late one.
@@ -1268,12 +1528,12 @@ namespace ES2Access.Screens
             List<Spot> spots = new List<Spot>(_systems.Count + sites.Count);
             for (int i = 0; i < _systems.Count; i++)
             {
-                Add(spots, _systems[i].GalaxyPosition, SystemId(_systems[i]), -1);
+                Add(spots, _systems[i].GalaxyPosition, SystemId(_systems[i]), _systems[i], -1);
             }
 
             for (int i = 0; i < _drifting.Count; i++)
             {
-                Add(spots, _drifting[i].Probe.GalaxyPosition, ProbeId(_drifting[i]), -1);
+                Add(spots, _drifting[i].Probe.GalaxyPosition, ProbeId(_drifting[i]), null, -1);
             }
 
             for (int i = 0; i < _projectiles.Count; i++)
@@ -1285,6 +1545,7 @@ namespace ES2Access.Screens
                         spots,
                         shot.GalaxyPosition,
                         ControlId.Structural("galaxy:projectile/" + shot.GUID),
+                        null,
                         -1
                     );
                 }
@@ -1295,16 +1556,33 @@ namespace ES2Access.Screens
                 CoordinationRequest pin = _pins[i].CoordinationRequest;
                 if (pin != null)
                 {
-                    Add(spots, pin.GalaxyPosition, ControlId.Structural("galaxy:pin/" + pin.GUID), -1);
+                    Add(
+                        spots,
+                        pin.GalaxyPosition,
+                        ControlId.Structural("galaxy:pin/" + pin.GUID),
+                        null,
+                        -1
+                    );
+                }
+            }
+
+            // Every quest marker out in the open is a row too, so a quest pin the reveal did not name
+            // as a quest still lands on the pin rather than on the sky it hangs in.
+            List<QuestMarkers.Marker> markers = QuestMarkers.Of(PlayerEmpire());
+            for (int i = 0; i < markers.Count; i++)
+            {
+                if (!markers[i].Node.IsValid)
+                {
+                    Add(spots, markers[i].At, MarkerRowId(markers[i]), null, -1);
                 }
             }
 
             for (int i = 0; i < sites.Count; i++)
             {
-                Add(spots, Berth(sites[i].Fleet), null, i);
+                Add(spots, Berth(sites[i].Fleet), null, null, i);
             }
 
-            NearestPick pick = new NearestPick(LocateRadius);
+            NearestPick pick = new NearestPick(Coincides);
             for (int i = 0; i < spots.Count; i++)
             {
                 pick.Offer(i, (spots[i].At - position).sqrMagnitude);
@@ -1312,28 +1590,49 @@ namespace ES2Access.Screens
 
             if (!pick.Found)
             {
-                return null;
+                return MapTarget.Nowhere(position);
             }
 
             Spot won = spots[pick.Index];
             if (won.Site < 0)
             {
-                // A probe, a missile and an ally's pin all sit at the top of the stop, so there is
-                // never a branch to open before the cursor can be sent to one.
-                return won.Id;
+                return won.System != null
+                    ? MapTarget.Place(won.System, won.Id, won.At)
+                    // A probe, a missile, an ally's pin and an open-space marker all sit at the top of
+                    // the stop, so there is never a branch to open before the cursor can be sent to one.
+                    : MapTarget.Point(won.Id, won.At);
             }
 
             bool holding;
-            ControlId fleet = Reveal(sites[Holding(sites, won, out holding)]);
+            FleetSite site = sites[Holding(sites, won, out holding)];
             settled &= holding;
-            return fleet;
+            return MapTarget.Point(Reveal(site), Berth(site.Fleet));
         }
 
-        private static void Add(List<Spot> spots, Vector3 at, ControlId id, int site)
+        /// <summary>
+        /// How near a point has to be to something the map draws before it IS that thing, in the
+        /// galaxy's own units.
+        ///
+        /// A coincidence, not a neighbourhood: the closest two systems in a galaxy stand 6.7 units
+        /// apart (measured on the fixture; 10.6 on average), so nothing can be mistaken for its
+        /// neighbour, while the small offsets the map draws a fleet's berth and a planet's orbit at
+        /// still land on the thing itself.
+        /// </summary>
+        private const float Coincides = 1.5f;
+
+        private const float CoincidesSquared = Coincides * Coincides;
+
+        private static void Add(
+            List<Spot> spots,
+            Vector3 at,
+            ControlId id,
+            StarSystemNode system,
+            int site
+        )
         {
             if (id != null || site >= 0)
             {
-                spots.Add(new Spot { At = at, Id = id, Site = site });
+                spots.Add(new Spot { At = at, Id = id, System = system, Site = site });
             }
         }
 
@@ -1930,20 +2229,14 @@ namespace ES2Access.Screens
             return false;
         }
 
-        /// <summary>Ask for the branch, then the cursor, then the camera - the order the frame applies
-        /// them in. The expansion belongs to the next build (<see cref="ApplyPendingExpansions"/>) and the
-        /// cursor to the tick after that, so the node the player lands on exists by the time they land.
-        /// </summary>
+        /// <summary>Ask for the branch, then hand the rest to the page's one landing
+        /// (<see cref="GoTo"/>): the cursor, the camera, and the free cell where one is up. The
+        /// expansion belongs to the next build (<see cref="ApplyPendingExpansions"/>) and the cursor to
+        /// the tick after that, so the node the player lands on exists by the time they land.</summary>
         private void Arrive(ControlId id, StarSystemNode where)
         {
             OpenPlace(where);
-            GraphNavigator navigator = ModEntry.Navigator;
-            if (navigator != null)
-            {
-                navigator.FocusNode(id);
-            }
-
-            GalaxyViewLevels.ZoomTo(where);
+            GoTo(MapTarget.Place(where, id, where.GalaxyPosition), MapCamera.Zoom);
         }
 
         /// <summary>Close a system again where this trail is the only reason it is open. The trail's last
@@ -2087,7 +2380,11 @@ namespace ES2Access.Screens
                 Drifting();
                 // Every probe the map is drawing: they all sit at the top of the open-space region
                 // now (<see cref="AddProbes"/>), so every one of them is a reason to declare it.
-                int drifting = _drifting.Count + _projectiles.Count + _pins.Count;
+                int drifting =
+                    _drifting.Count
+                    + _projectiles.Count
+                    + _pins.Count
+                    + OpenSpaceMarkers(empire);
                 // Declared whichever halves the map has: a lone region's jump is swallowed silently,
                 // which is what the key doing nothing here should sound like, and a section that
                 // appears and disappears with the fleet count is a stop that changes shape under the
@@ -2139,6 +2436,10 @@ namespace ES2Access.Screens
                 AddProbes(builder);
                 AddProjectiles(builder);
                 AddPins(builder);
+                // A quest pin planted on a fleet in mid-lane stands at no place at all, so it belongs
+                // here with the other things drifting between the stars rather than under whichever
+                // star happens to be nearest.
+                AddOpenSpaceMarkers(builder, empire);
             }
             catch (Exception e)
             {
@@ -2857,6 +3158,9 @@ namespace ES2Access.Screens
             AddFleets(builder, key, FleetPresence.FleetsAt(node));
             AddEnRoute(builder, key, EnRouteOn(node, lanes));
             AddFreeMoving(builder, key, node, FreeMovingAt(node));
+            // After the planets, the lanes and the fleets: a quest pin is the last thing the map draws
+            // at a place, and it is a thing about the QUEST rather than about the system.
+            AddQuestMarkers(builder, key, node, empire);
             AddHangars(builder, key, node);
             AddProbeDirections(builder, key, node);
         }
@@ -3404,255 +3708,162 @@ namespace ES2Access.Screens
             }
         }
 
+        // ---- quest markers ----
+
         /// <summary>
-        /// The quests whose markers stand at this system, and which of them the player is tracking.
+        /// The markers standing at one system, as lines for its review buffer - which quests have a
+        /// pin here and which of them the player is tracking.
         ///
-        /// There is no all-markers service to ask, so the walk goes the way the player's own journal
-        /// goes: every quest in progress, then the markers of the step it is on
-        /// (<c>Quest.GetMarkers</c> :510-522, which is itself
-        /// <c>IQuestManagementService.GetMarkers(instance, empire)</c> filtered to that step). Walking
-        /// from the QUEST rather than from the map's pins is what makes the quest nameable at all: a pin
-        /// carries an instance id and nothing else.
-        ///
-        /// Gated on the marker listing this empire, which is the pin's own gate
-        /// (<c>GalaxyQuestMarker.UpdateVisibility</c> :157-165 deactivates the object otherwise) - the
-        /// journal is already this empire's, so this only refuses a marker planted for somebody else on
-        /// a quest they share. The tracked form is the map's own distinction: it brightens the pin of
-        /// the pinned quest, which is the journal's <c>ActiveQuest</c>
-        /// (<c>QuestMarker.IsMarkerOfPinnedQuestForEmpire</c> compares exactly that).
-        ///
-        /// A marker is placed on a THING, not on a place, so where it stands is the thing's own node: a
-        /// planet's system, a curiosity's system, the node a fleet is standing at. A marker on a fleet
-        /// in mid-lane belongs to no system and is not said on any - the map draws its pin out in the
-        /// lane, where this tree has no node to hang it on.
+        /// The same list its own child nodes are built from (<see cref="AddQuestMarkers"/>), because
+        /// the buffer says what is here and the nodes are how the player goes to it, and those two
+        /// disagreeing is a place that says a quest is here and has no row for it.
         /// </summary>
-        private static IList<string> QuestMarkerLines(StarSystemNode node, Empire empire)
+        private IList<string> QuestMarkerLines(StarSystemNode node, Empire empire)
         {
-            try
+            List<QuestMarkers.Marker> here = MarkersAt(node, empire);
+            if (here.Count == 0)
             {
-                DepartmentOfInternalAffairs affairs =
-                    empire == null ? null : empire.GetAgency<DepartmentOfInternalAffairs>();
-                QuestJournal journal = affairs == null ? null : affairs.QuestJournal;
-                if (node == null || journal == null)
-                {
-                    return null;
-                }
-
-                Quest pinned = journal.ActiveQuest;
-                List<string> lines = new List<string>();
-                ReadOnlyCollection<Quest> quests = journal.Read(QuestState.InProgress);
-                for (int i = 0; quests != null && i < quests.Count; i++)
-                {
-                    Quest quest = quests[i];
-                    QuestStep step = quest == null ? null : quest.GetCurrentStep();
-                    if (step == null || !MarkedAt(quest, step, node, empire))
-                    {
-                        continue;
-                    }
-
-                    string title = AgeText.Clean(new GuiQuest(quest).Title);
-                    if (string.IsNullOrEmpty(title))
-                    {
-                        continue;
-                    }
-
-                    string line = ModStrings.Format(
-                        ReferenceEquals(quest, pinned)
-                            ? ModStrings.GalaxySystemQuestMarkerPinned
-                            : ModStrings.GalaxySystemQuestMarker,
-                        title
-                    );
-                    if (!lines.Contains(line))
-                    {
-                        lines.Add(line);
-                    }
-                }
-
-                return lines;
-            }
-            catch (Exception e)
-            {
-                Log.Warn("galaxy: reading a system's quest markers threw: " + e);
                 return null;
             }
+
+            List<string> lines = new List<string>(here.Count);
+            for (int i = 0; i < here.Count; i++)
+            {
+                string line = QuestMarkers.Name(here[i]);
+                if (!string.IsNullOrEmpty(line) && !lines.Contains(line))
+                {
+                    lines.Add(line);
+                }
+            }
+
+            return lines;
         }
 
-        /// <summary>One quest marker as the SCANNER needs it: which quest it belongs to, where on the
-        /// map it stands, and the system it stands at - which is the node the go-to sends the cursor
-        /// to, and is never null here (see <see cref="ScannedMarkers"/>).</summary>
-        internal struct ScannedMarker
+        /// <summary>The markers the map draws AT this system, in journal order.</summary>
+        private List<QuestMarkers.Marker> MarkersAt(StarSystemNode node, Empire empire)
         {
-            public string Quest;
-            public GalaxyPosition At;
-            public StarSystemNode Node;
+            List<QuestMarkers.Marker> here = new List<QuestMarkers.Marker>();
+            if (node == null)
+            {
+                return here;
+            }
+
+            List<QuestMarkers.Marker> all = QuestMarkers.Of(empire);
+            for (int i = 0; i < all.Count; i++)
+            {
+                if (all[i].Node.IsValid && all[i].Node == node.NodePosition)
+                {
+                    here.Add(all[i]);
+                }
+            }
+
+            return here;
         }
 
         /// <summary>
-        /// Every quest marker the game is showing this empire that stands AT A SYSTEM.
+        /// A quest marker as a CHILD of the system it stands at - after the planets, the lanes and the
+        /// fleets, which is the order the rest of a system reads in.
         ///
-        /// Walked from the JOURNAL rather than from the pins the map draws, for the reason
-        /// <see cref="QuestMarkerLines"/> records: a pin carries an instance id and nothing else, so
-        /// the quest is nameable only from the quest's own side. The gate is the pin's own -
-        /// <c>GalaxyQuestMarker.UpdateVisibility</c> deactivates a marker that does not list the
-        /// active player's empire - and it is the whole gate: a marker is a game object placed in the
-        /// world, not one of the culled label windows, so nothing here moves with the camera.
-        ///
-        /// The system-anchored markers are the ones <see cref="QuestMarkerLines"/> already says on a
-        /// system row; they are here too, because a player asking "where are my quests" is asking a
-        /// question about the whole map and should not have to walk it to find out.
-        ///
-        /// A FREE-FLOATING marker - one planted on a fleet in mid-lane - is dropped instead of
-        /// listed (owner's ruling): the scanner exists to be swept and then gone to, and the tree has
-        /// nowhere to put a marker that is not at a system, so the go-to would have nowhere to land.
+        /// A marker was a buffer line and nothing else until 2026-08-22, which meant the one place the
+        /// game itself offers a "go here" for - the quest pin - was somewhere the tree could not put
+        /// the player. It is a leaf: no tooltip (the game hangs none on a marker), and ENTER IS INERT,
+        /// because a pin is not clickable on the map either and there is no journal-opening gesture to
+        /// invent. What it carries beyond its name is the step's own objective, in the game's words.
         /// </summary>
-        internal IList<ScannedMarker> ScannedMarkers()
+        private void AddQuestMarkers(
+            GraphBuilder builder,
+            string key,
+            StarSystemNode node,
+            Empire empire
+        )
         {
-            List<ScannedMarker> found = new List<ScannedMarker>();
-            try
+            List<QuestMarkers.Marker> here = MarkersAt(node, empire);
+            for (int i = 0; i < here.Count; i++)
             {
-                Empire empire = Gui.PlayerEmpire;
-                DepartmentOfInternalAffairs affairs =
-                    empire == null ? null : empire.GetAgency<DepartmentOfInternalAffairs>();
-                QuestJournal journal = affairs == null ? null : affairs.QuestJournal;
-                ReadOnlyCollection<Quest> quests =
-                    journal == null ? null : journal.Read(QuestState.InProgress);
-                for (int i = 0; quests != null && i < quests.Count; i++)
+                builder.AddItem(MarkerId(node, here[i]), MarkerNode(here[i]));
+            }
+        }
+
+        /// <summary>Every marker planted out in the OPEN - on a fleet crossing a lane - as a row of
+        /// the galaxy's own drifting region, beside the probes and the missiles, since there is no
+        /// place in the tree for it to hang under.</summary>
+        private void AddOpenSpaceMarkers(GraphBuilder builder, Empire empire)
+        {
+            List<QuestMarkers.Marker> all = QuestMarkers.Of(empire);
+            for (int i = 0; i < all.Count; i++)
+            {
+                if (!all[i].Node.IsValid)
                 {
-                    Quest quest = quests[i];
-                    QuestStep step = quest == null ? null : quest.GetCurrentStep();
-                    if (step == null)
-                    {
-                        continue;
-                    }
-
-                    string title = AgeText.Clean(new GuiQuest(quest).Title);
-                    if (string.IsNullOrEmpty(title))
-                    {
-                        continue;
-                    }
-
-                    foreach (QuestMarker marker in quest.GetMarkers(step))
-                    {
-                        if (!Shown(marker, empire))
-                        {
-                            continue;
-                        }
-
-                        StarSystemNode node = MarkerSystem(marker);
-                        if (node == null)
-                        {
-                            continue;
-                        }
-
-                        found.Add(
-                            new ScannedMarker
-                            {
-                                Quest = title,
-                                At = marker.GalaxyPosition,
-                                Node = node,
-                            }
-                        );
-                    }
+                    builder.AddItem(MarkerRowId(all[i]), MarkerNode(all[i]));
                 }
             }
-            catch (Exception e)
+        }
+
+        /// <summary>Whether the map is drawing any marker out in the open - what decides whether the
+        /// drifting region exists at all.</summary>
+        private int OpenSpaceMarkers(Empire empire)
+        {
+            List<QuestMarkers.Marker> all = QuestMarkers.Of(empire);
+            int loose = 0;
+            for (int i = 0; i < all.Count; i++)
             {
-                Log.Warn("galaxy: listing the quest markers for the scanner threw: " + e);
+                if (!all[i].Node.IsValid)
+                {
+                    loose++;
+                }
             }
 
-            return found;
+            return loose;
+        }
+
+        /// <summary>What one marker's row says: the quest it belongs to, in the tracked or the
+        /// ordinary form, and where it stands; the step's objective is reviewable rather than
+        /// announced.</summary>
+        private static NodeVtable MarkerNode(QuestMarkers.Marker marker)
+        {
+            QuestMarkers.Marker it = marker;
+            return new NodeVtable
+            {
+                Announcements = new List<NodeAnnouncement>
+                {
+                    GraphNodes.LabelPart(() => QuestMarkers.Name(it)),
+                    GalaxyCoordinates.Part(() => it.At),
+                },
+                Sections = GraphNodes.Sections(NodeSection.Buffer(() => QuestMarkers.Objective(it))),
+            };
+        }
+
+        /// <summary>A marker's node under the system it stands at - keyed by the pin, so two markers
+        /// of two quests at one star stay apart and neither moves when the other goes.</summary>
+        private static ControlId MarkerId(StarSystemNode node, QuestMarkers.Marker marker)
+        {
+            return ControlId.Structural(SystemKey(node) + "/marker/" + marker.Pin.GUID);
+        }
+
+        /// <summary>A marker's own top-level row, for one standing out in the open.</summary>
+        private static ControlId MarkerRowId(QuestMarkers.Marker marker)
+        {
+            return ControlId.Structural("galaxy:marker/" + marker.Pin.GUID);
         }
 
         /// <summary>The system a marker stands at, where the map is naming one - which is what decides
-        /// whether the scanner has a node to send the cursor to or only a place on the map.</summary>
-        private StarSystemNode MarkerSystem(QuestMarker marker)
+        /// whether the marker is a child of a place or a row out in the open.</summary>
+        private StarSystemNode MarkerSystem(QuestMarkers.Marker marker)
         {
-            NodePosition at = MarkerNode(marker);
-            if (!at.IsValid)
+            if (!marker.Node.IsValid)
             {
                 return null;
             }
 
             for (int i = 0; i < _systems.Count; i++)
             {
-                if (_systems[i].NodePosition == at)
+                if (_systems[i].NodePosition == marker.Node)
                 {
                     return _systems[i];
                 }
             }
 
             return null;
-        }
-
-        /// <summary>Whether this quest's current step has a marker standing at this system that this
-        /// empire is shown.</summary>
-        private static bool MarkedAt(
-            Quest quest,
-            QuestStep step,
-            StarSystemNode node,
-            Empire empire
-        )
-        {
-            foreach (QuestMarker marker in quest.GetMarkers(step))
-            {
-                if (Shown(marker, empire) && MarkerNode(marker) == node.NodePosition)
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        private static bool Shown(QuestMarker marker, Empire empire)
-        {
-            Empire[] shown = marker == null ? null : marker.Empires;
-            for (int i = 0; shown != null && i < shown.Length; i++)
-            {
-                if (ReferenceEquals(shown[i], empire))
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        /// <summary>Where a marker stands, as the node it is at. The game resolves a marker's position
-        /// through the thing it is bound to (<c>QuestMarker.GalaxyPosition</c>), and the same four kinds
-        /// of thing answer here - a node, a planet's system, a curiosity's system, the node a fleet is
-        /// standing at - because a position on the map is not a place in this tree. Invalid for anything
-        /// else, which includes a fleet in mid-lane.</summary>
-        private static NodePosition MarkerNode(QuestMarker marker)
-        {
-            IGameEntity target = marker == null ? null : marker.Target;
-            GameNode node = target as GameNode;
-            if (node != null)
-            {
-                return node.NodePosition;
-            }
-
-            Planet planet = target as Planet;
-            if (planet != null && planet.StarSystemNode != null)
-            {
-                return planet.StarSystemNode.NodePosition;
-            }
-
-            Curiosity curiosity = target as Curiosity;
-            if (curiosity != null && curiosity.CuriosityController != null)
-            {
-                StarSystemNode at = curiosity.CuriosityController.GetNode();
-                return at == null ? NodePosition.Invalid : at.NodePosition;
-            }
-
-            ColonizedStarSystem colony = target as ColonizedStarSystem;
-            if (colony != null && colony.Node != null)
-            {
-                return colony.Node.NodePosition;
-            }
-
-            Fleet fleet = target as Fleet;
-            return fleet == null ? NodePosition.Invalid : fleet.NodePosition;
         }
 
         /// <summary>

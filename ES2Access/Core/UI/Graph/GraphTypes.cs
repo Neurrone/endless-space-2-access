@@ -208,6 +208,14 @@ namespace ES2Access.Core.UI.Graph
         /// than with silence.</summary>
         public Action OnContextual;
 
+        /// <summary>Optional. GO TO WHERE THIS HAPPENED - the game's own show-location for this row,
+        /// exactly as clicking the button its popup would draw. Distinct from every click above: it
+        /// moves the VIEW rather than doing anything to the control, and it is only ever wired where
+        /// the game itself offers the affordance for this particular thing, so its presence is also
+        /// the key's availability (the claim asks for it before the press, and the handler asks
+        /// again). A control without one leaves the key alone.</summary>
+        public Action OnGoTo;
+
         /// <summary>Optional. The command the game puts on a DOUBLE click here - the second click
         /// inside its own double-click window, which several of this game's controls answer with a
         /// command of their own (a fleet row shows that fleet on the map, a picked choice is

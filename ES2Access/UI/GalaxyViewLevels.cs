@@ -1,4 +1,5 @@
 using System;
+using System.Reflection;
 using Amplitude.Unity.Framework;
 using Amplitude.Unity.View;
 using ES2Access.Core.Speech;
@@ -521,6 +522,74 @@ namespace ES2Access.UI
                 GalaxyView galaxy = GalaxyViewOf();
                 return galaxy != null && !galaxy.CanChangeGalaxyView;
             }
+        }
+
+        /// <summary>
+        /// Whether the galaxy camera is still FLYING - a zoom or a slide in progress.
+        ///
+        /// <see cref="ChangingLevel"/> answers the bigger question (the view is between LEVELS); this
+        /// is the one inside a level, and it is what a landing has to wait for. What a node SAYS
+        /// depends on how close the camera is - a system's planet rows only carry the orbital card's
+        /// words once the map has drawn the cards - so a landing announced while the camera is still
+        /// on its way reads the far view's version of the row and is never said again (measured
+        /// 2026-08-22: "Osulo I, Colonized, 1 of 7" mid-flight against "Osulo I, group, Medium
+        /// Mediterrane., Colonized, collapsed, 2 of 8" settled).
+        ///
+        /// The camera controller keeps two private flags for it and clears both itself
+        /// (<c>StopZooming</c>, <c>StopRecentering</c> - the recentre ends on its own SmoothDamp
+        /// reaching the target, so neither can hang). Read by reflection with the field cached, since
+        /// this is asked every frame there is a landing outstanding; a build whose controller has
+        /// neither field answers false, which is the pre-2026-08-22 behaviour.
+        /// </summary>
+        public static bool CameraSettling
+        {
+            get
+            {
+                try
+                {
+                    GalaxyViewCameraController camera = Camera();
+                    if (camera == null)
+                    {
+                        return false;
+                    }
+
+                    if (!_settleFieldsRead)
+                    {
+                        _settleFieldsRead = true;
+                        _zooming = Field("isZooming");
+                        _recentering = Field("isRecentering");
+                    }
+
+                    return Flag(_zooming, camera) || Flag(_recentering, camera);
+                }
+                catch (Exception)
+                {
+                    return false;
+                }
+            }
+        }
+
+        private static bool _settleFieldsRead;
+        private static FieldInfo _zooming;
+        private static FieldInfo _recentering;
+
+        private static FieldInfo Field(string name)
+        {
+            FieldInfo field = typeof(GalaxyViewCameraController).GetField(
+                name,
+                BindingFlags.Instance | BindingFlags.NonPublic
+            );
+            if (field == null)
+            {
+                Log.Warn("galaxy: the camera controller has no " + name + " to wait on");
+            }
+
+            return field;
+        }
+
+        private static bool Flag(FieldInfo field, GalaxyViewCameraController camera)
+        {
+            return field != null && (bool)field.GetValue(camera);
         }
 
         /// <summary>Whether there is a camera drawing the world right now. The game's own labels

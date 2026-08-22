@@ -270,11 +270,17 @@ namespace ES2Access.Tests.UI
             Assert.Equal(FocusOutcome.Drop, request.Step(ReachStep.Unreachable));
         }
 
+        /// A landing announces itself once, and what a control SAYS depends on the view it is read
+        /// in - a galaxy row reads the far view's version of itself while the camera is still flying.
+        /// So a suspended frame holds even a control that is already there, and spends no budget doing
+        /// it (owner ruling, batch 7).
         [Fact]
-        public void ASuspendedFrameStillLandsOnAControlThatIsThere()
+        public void ASuspendedFrameHoldsEvenAControlThatIsThere()
         {
             FocusRequest request = new FocusRequest(Id("a"), true, 3);
-            Assert.Equal(FocusOutcome.Land, request.Step(ReachStep.Present, true));
+            Assert.Equal(FocusOutcome.Wait, request.Step(ReachStep.Present, true));
+            Assert.Equal(3, request.FramesLeft);
+            Assert.Equal(FocusOutcome.Land, request.Step(ReachStep.Present, false));
         }
 
         // ---- ownership: whose landing is it ----

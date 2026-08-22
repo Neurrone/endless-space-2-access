@@ -217,6 +217,67 @@ namespace ES2Access.Screens
             }
         }
 
+        /// <summary>
+        /// GO TO WHERE THIS HAPPENED, from anywhere on the popup - the key the show-location button's
+        /// own name carries ("Show location (Ctrl+L)").
+        ///
+        /// The popup itself is the one surface where the affordance belongs to the PAGE rather than to
+        /// a row: the button is drawn in the bottom bar and the player is usually reading the body. So
+        /// it is answered here rather than on a node, and it presses the game's own button - the popup
+        /// IS showing, so the toggle at the end of that handler does what it is meant to do and puts
+        /// the popup aside as the mouse would.
+        ///
+        /// Gated on the button being DRAWN, not merely bound: forty-one of the sixty-nine prefabs bind
+        /// one their layout never holds (es2-facts), and the same paint test that keeps those out of
+        /// the walk keeps them out of the key.
+        /// </summary>
+        public override bool GoToLocation()
+        {
+            try
+            {
+                NotificationWindow window = Current();
+                AgeControlButton button =
+                    window == null ? null : Button(window, ShowLocationButton);
+                if (
+                    button == null
+                    || !Painted(button.AgeTransform, Root(window))
+                    || !Enabled(button.AgeTransform)
+                )
+                {
+                    return false;
+                }
+
+                AgeWidgets.Press(button);
+                return true;
+            }
+            catch (Exception e)
+            {
+                Log.Warn("notification: the go-to-location key threw: " + e);
+                return false;
+            }
+        }
+
+        /// <summary>The same fact asked before the press, for the key's claim.</summary>
+        public override bool OffersGoToLocation
+        {
+            get
+            {
+                try
+                {
+                    NotificationWindow window = Current();
+                    AgeControlButton button =
+                        window == null ? null : Button(window, ShowLocationButton);
+                    return button != null
+                        && Painted(button.AgeTransform, Root(window))
+                        && Enabled(button.AgeTransform);
+                }
+                catch (Exception)
+                {
+                    return false;
+                }
+            }
+        }
+
         /// <summary>Where this screen is drawn: whichever popup is up right now, which is the same
         /// window its own four-invariant audit walks.</summary>
         public override AgeTransform RootTransform
@@ -1422,6 +1483,186 @@ namespace ES2Access.Screens
             }
 
             return false;
+        }
+
+        // ---- go to where it happened ----
+
+        /// <summary>
+        /// Whether this notification's popup would DRAW a show-location button.
+        ///
+        /// Two questions in one, and the second is the one that bites: the game marks the button
+        /// visible and enabled from <c>GuiNotification.HasLocation</c> alone
+        /// (<c>NotificationWindow.OnBeginShow</c> :139-140) without asking whether the prefab laid one
+        /// out, and forty-one of the sixty-nine prefabs did not - they answer with an orphan, parked
+        /// at the screen's origin with no parent, which the engine never draws because rendering walks
+        /// the tree (es2-facts). So the test is the paint test, ending AT the window's own root.
+        ///
+        /// Asked of the notification's OWN window instance rather than of a table of type names: each
+        /// notification names its window in its constructor
+        /// (<c>base.NotificationWindow = Gui.GuiService.GetWindow&lt;...&gt;()</c>), so the prefab that
+        /// would show it is a field read away and no list can go stale against the game's own.
+        /// </summary>
+        internal static bool DrawsShowLocation(GuiNotification notification)
+        {
+            try
+            {
+                NotificationWindow window = WindowOf(notification);
+                if (window == null || !notification.HasLocation)
+                {
+                    return false;
+                }
+
+                AgeControlButton button = Button(window, ShowLocationButton);
+                return button != null && LaidOut(button.AgeTransform, Root(window));
+            }
+            catch (Exception e)
+            {
+                Log.Warn("notification: asking whether it draws a show-location threw: " + e);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Whether a widget is part of the window's own LAYOUT - its parent chain reaches the
+        /// window's root - without asking whether anything is being drawn right now.
+        ///
+        /// <see cref="Painted"/> is the question for a popup that is UP: is the player seeing this.
+        /// This is the question for one that is not, and the two are different for exactly the reason
+        /// <see cref="Painted"/> exists: forty-one of the sixty-nine prefabs bind a show-location
+        /// button their layout never holds, an orphan with no parent at all (es2-facts). The orphan is
+        /// what has to be caught, and a closed popup draws nothing at all - so asking
+        /// <see cref="Painted"/> of one answers false for every notification on the strip, which is
+        /// where the go-to-location key is most of the time (measured 2026-08-22: the hint and the
+        /// key both vanished from every strip row).
+        /// </summary>
+        private static bool LaidOut(AgeTransform widget, AgeTransform root)
+        {
+            try
+            {
+                AgeTransform at = widget;
+                for (
+                    int depth = 0;
+                    at != null && !ReferenceEquals(at, root) && depth < MaxAncestors;
+                    depth++
+                )
+                {
+                    at = at.Parent;
+                }
+
+                return ReferenceEquals(at, root) && root != null;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// DO WHAT THE SHOW-LOCATION BUTTON DOES, without opening the popup.
+        ///
+        /// The button's own handler is <c>OnShowLocationCb</c>, and it ends with
+        /// <c>ToggleGuiNotification</c> - which HIDES a popup that is showing and OPENS one that is
+        /// not (<c>GuiNotificationManager</c> :386-406). Pressed from a strip row or a log line the
+        /// popup is not showing, so calling the game's handler there would open the popup rather than
+        /// go anywhere: the toggle is what is left out here, and everything before it is replayed.
+        ///
+        /// Five window families override the callback and each is answered from the NOTIFICATION
+        /// rather than from the window, because the window is shared and bound to whichever
+        /// notification is currently up:
+        /// <list type="bullet">
+        /// <item>the quest-begun popup asks for the quest's own marker
+        /// (<c>ShowQuestLocation</c>, which cycles between a step's markers) - and its notification
+        /// answers <c>HasLocation</c> true while overriding no <c>ShowLocation</c>, so the default
+        /// route would move nothing at all;</item>
+        /// <item>the two space-battle popups aim at the encounter's orbit;</item>
+        /// <item>the two ground-battle popups at the defending node;</item>
+        /// <item>the hacking popup does the ordinary thing and then opens the scan view.</item>
+        /// </list>
+        /// Everything else is <c>GuiNotification.ShowLocation()</c>, which each notification overrides
+        /// for itself.
+        /// </summary>
+        internal static void GoToLocation(GuiNotification notification)
+        {
+            try
+            {
+                if (notification == null || !notification.HasLocation)
+                {
+                    return;
+                }
+
+                NotificationQuestBegun quest = notification as NotificationQuestBegun;
+                if (quest != null && quest.Quest != null)
+                {
+                    Gui.GuiGameWindowService.ShowQuestLocation(
+                        quest.Quest,
+                        quest.Quest.GetCurrentStep()
+                    );
+                    return;
+                }
+
+                NotificationBattleSetup setup = notification as NotificationBattleSetup;
+                if (setup != null)
+                {
+                    Orbit(setup.GetEncounter());
+                    return;
+                }
+
+                NotificationGroundBattleReport ground = notification as NotificationGroundBattleReport;
+                if (ground != null)
+                {
+                    Defender(ground.GroundBattle);
+                    return;
+                }
+
+                NotificationGroundBattleSetup groundSetup =
+                    notification as NotificationGroundBattleSetup;
+                if (groundSetup != null)
+                {
+                    Defender(groundSetup.GroundBattle);
+                    return;
+                }
+
+                notification.ShowLocation();
+                if (notification is NotificationDefenseHackingProgramEncountered)
+                {
+                    // The hacking popup's own second half: the operation is drawn in the scan view and
+                    // nowhere else, so the button opens it.
+                    Gui.GuiGameWindowService.ToggleScanView();
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("notification: going to where it happened threw: " + e);
+            }
+        }
+
+        /// <summary>Where a space battle is: the orbit the encounter is being fought in, which is what
+        /// both battle popups aim at.</summary>
+        private static void Orbit(Encounter encounter)
+        {
+            if (encounter != null && encounter.Groups != null && encounter.Groups.Length >= 2)
+            {
+                Gui.GuiGameWindowService.RequestGalaxyOverviewViewLevel(
+                    encounter.Orbit.GalaxyPosition
+                );
+            }
+        }
+
+        /// <summary>Where a ground battle is: the node being defended.</summary>
+        private static void Defender(GroundBattle battle)
+        {
+            StarSystemNode node = battle == null ? null : battle.DefenderNode;
+            if (node != null)
+            {
+                Gui.GuiGameWindowService.RequestGalaxyOverviewViewLevel(node.GalaxyPosition);
+            }
+        }
+
+        /// <summary>The window a notification would be shown in - its own, named in its constructor.
+        /// </summary>
+        private static NotificationWindow WindowOf(GuiNotification notification)
+        {
+            return notification == null ? null : notification.NotificationWindow as NotificationWindow;
         }
 
         private static AgeTransform Root(NotificationWindow window)
@@ -2879,7 +3120,16 @@ namespace ES2Access.Screens
                     );
                 }
 
-                Add(controls, "show-location", showLocation, ModStrings.NotifyShowLocation);
+                // Named with the key that does the same thing from anywhere on the popup, like the
+                // browsing pair below it: the chord is the whole reason a player reading the body
+                // never has to walk down here (docs/interaction.md).
+                AddPaged(
+                    controls,
+                    "show-location",
+                    showLocation,
+                    ModStrings.NotifyShowLocation,
+                    UiActions.GoToLocation
+                );
                 Add(controls, MinimizeKey, minimize, ModStrings.NotifyMinimize);
                 // The browsing pair, named with the page keys that do the same thing from anywhere on
                 // the popup (Screen.PagePrev/PageNext). Ours follow the BUTTONS' own meaning: the

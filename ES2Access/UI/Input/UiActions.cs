@@ -57,6 +57,11 @@ namespace ES2Access.UI.Input
         public const string FocusTurnLog = "ui.focusTurnLog";
         public const string FocusMap = "ui.focusMap";
 
+        /// <summary>Go to where the thing under the cursor HAPPENED - the game's own show-location, on
+        /// the rows that offer one (a notification, a log line, an open popup). Live exactly while the
+        /// focused screen or the focused control offers it, and inert everywhere else.</summary>
+        public const string GoToLocation = "ui.goToLocation";
+
         /// <summary>End the turn from anywhere the game is drawing the end-turn button, without walking
         /// to it. The game's own end-turn shortcut key is not reachable for a mod user - the mod claims
         /// the keypad Enter it sits on for Activate.</summary>

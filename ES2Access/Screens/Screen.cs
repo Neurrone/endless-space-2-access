@@ -238,6 +238,28 @@ namespace ES2Access.Screens
         }
 
         /// <summary>
+        /// GO TO WHERE THIS HAPPENED, offered to the SCREEN before the focused control's own
+        /// <c>OnGoTo</c> - for a surface where the affordance belongs to the PAGE rather than to one
+        /// control (an open notification popup: the button is drawn in its bottom bar, and the key
+        /// means it wherever the cursor is standing on the popup).
+        ///
+        /// <see cref="OffersGoToLocation"/> is the same fact asked cheaply, for the key's claim; the
+        /// handler asks it again by simply answering false, because a claim is settled before the
+        /// press and the act is never allowed to run on a stale yes.
+        /// </summary>
+        public virtual bool GoToLocation()
+        {
+            return false;
+        }
+
+        /// <summary>Whether this screen answers the go-to-location key at all - asked from the game's
+        /// own key scans, so it stays cheap.</summary>
+        public virtual bool OffersGoToLocation
+        {
+            get { return false; }
+        }
+
+        /// <summary>
         /// Turn the page back or on - the previous/next system, planet, notification, hero - offered to
         /// the SCREEN wherever the cursor is standing on it, because what these turn is the whole
         /// surface rather than the control under the cursor. Return true when the screen took the key.

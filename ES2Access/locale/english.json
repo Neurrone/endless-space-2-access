@@ -341,6 +341,7 @@
   "hint.missing-technology": "{0} to show missing technology",
   "hint.show-and-select-fleet": "{0} to show and select fleet",
   "hint.open-system-management": "{0} to open system management screen",
+  "hint.go-to-location": "{0} goes to location",
   "hint.load": "{0} to load",
   "label.with-chord": "{0} ({1})",
   "system.previous": "Previous system",

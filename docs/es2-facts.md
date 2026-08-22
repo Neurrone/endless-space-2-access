@@ -2430,3 +2430,54 @@ never the transparency. An unlock the empire's affinity hides is bound to no ico
 picture is not showing is not said" line for free. Pointing at an icon draws the FULL dossier —
 description, effects, **cost**, upkeep, political impact — which is the mouse parity the dot's own
 `TechnologyUnlockEmbedded` tooltip cannot give (that class has no cost panel by data design).
+- **"Show location" is a PAN and then a TOGGLE, and the toggle is what a keyboard replay must leave
+  out.** `NotificationWindow.OnShowLocationCb` (:204-209) is `GuiNotification.ShowLocation()` followed
+  by `GuiNotificationManager.ToggleGuiNotification` (:386-406), which HIDES a popup that is showing
+  and OPENS one that is not. So pressing the button on an open popup puts it aside, and replaying the
+  handler from a CLOSED strip row would open the popup instead of going anywhere. **Mod policy**
+  (`NotificationScreen.GoToLocation`): the popup's own key presses the drawn button (toggle included,
+  as the mouse does); a strip or turn-log row replays everything the handler does except the toggle.
+  Five window families override the callback and each is answered from the NOTIFICATION, since the
+  window is shared and bound to whichever notification is up: `QuestBegunNotificationWindow`
+  (:205-209) asks `ShowQuestLocation(quest, currentStep)` — and `NotificationQuestBegun.HasLocation`
+  is true while it overrides NO `ShowLocation`, so the default route moves nothing at all for it;
+  `BattleCommonNotificationWindow` (:79-87) and `BattleSetupNotificationWindow` (:270-278, its button
+  disabled while the player is ready, :371) aim at `encounter.Orbit.GalaxyPosition`;
+  `GroundBattleNotificationWindow` (:153-163) at `GroundBattle.DefenderNode`; and
+  `DefenseHackingProgramEncounteredNotificationWindow` (:27-33) does the ordinary thing and then
+  `ToggleScanView()`.
+- **A notification names its own window in its constructor.** Every `GuiNotification` subclass sets
+  `base.NotificationWindow = Gui.GuiService.GetWindow<...>()`, so "would this notification's popup
+  draw a show-location button" is a field read away and needs no hand-maintained table of the 28 that
+  do. **Mod policy** (`NotificationScreen.DrawsShowLocation`): the test is a LAYOUT walk to the
+  window's root, not the painted walk — a closed popup draws nothing at all, so asking the painted
+  question of one answers false for every row on the strip, which is exactly where the key lives
+  (measured 2026-08-22: the hint and the key vanished from every strip row until the test was split).
+  The orphan is still what has to be caught, and an orphan has no parent at all.
+- **Unity's `SendMessage` refuses a handler written with an OPTIONAL argument when it is called with
+  none.** `OnShowLocationCb(GameObject obj = null)` compiles to BOTH arities on this runtime
+  (measured: `GetMethods` over `QuestBegunNotificationWindow` returns a 0-parameter and a
+  1-parameter `OnShowLocationCb`, both declared by that type), and `SendMessage` resolves by NAME and
+  then insists on the arity it found: the no-argument send is refused outright with
+  "Calling function OnShowLocationCb with no parameters but the function requires 1" and the press is
+  silently a no-op. **Mod policy** (`AgeWidgets.TakesNoArgument`, fixed 2026-08-22): "no argument"
+  now means a zero-parameter overload AND no one-parameter one.
+- **The galaxy camera says when it has stopped flying, in two private fields.**
+  `GalaxyViewCameraController.isZooming` / `isRecentering` (:134, :146) are set synchronously by
+  `StartZoomingOnPosition` / `StartRecentering` and cleared by `StopZooming` (:831-833) and by the
+  recentre's own SmoothDamp reaching its target (:963-978), so neither can hang.
+  **The camera stopping is NOT the end of the arrival**: the orbital cards a system grows when the
+  camera comes in bind over the frames AFTER the flight, the card's own words first and its row of
+  buttons after that. Measured 2026-08-22 on Osulo I: at the frame the camera stopped the row read
+  "Osulo I, Medium Mediterrane., Colonized, 2 of 8" and 300 ms later
+  "Osulo I, group, Medium Mediterrane., Colonized, collapsed, 2 of 8". **Mod policy**
+  (`GalaxyHudScreen.LandingSuspended` + `MapSettleFrames` = 20): a landing waits out the flight and
+  twenty frames more — the same wait the fleet-action seat already spends on the same widgets.
+- **A quest marker's position resolves through the thing it is bound to, and only five kinds of thing
+  have a place in this tree.** `QuestMarker.GalaxyPosition` (:13-45) looks `BoundTargetGUID` up in the
+  entity repository; `QuestMarker.Load()` (:136-151) is what fills its `Target`. A node, a planet's
+  system, a curiosity's system, a colony's system and the node a fleet is standing at all answer with
+  a `NodePosition`; anything else - a fleet in mid-lane included - has none, which is what makes a
+  marker "out in the open". `QuestMarker.GUID` is its own identity, which is how two markers of two
+  quests at one star stay apart. Registering one by hand (`IQuestManagementService.Register` after
+  `Load()`) is the only way to see any of this on either fixture — both have ZERO markers.

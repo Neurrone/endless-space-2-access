@@ -12,13 +12,13 @@ files above.
   hero detailed card's four-symbol row (Academy is tutorial-gated on both fixtures), the
   construction line's festival badge and the honor gauge's own dossier (both Hissho). Still
   to decide/do: a system node declares no `NodeVtable.PointsAt`, so the tooltip audit files
-  every map node under `unknown` rather than judging its aim; the population side panel's
-  party dossiers land as the ROW BELOW their population rather than as children, because a
-  side-panel row is a cell and a cell cannot open a subtree. The population OVERVIEW screen's
-  legend now has its own "Tooltips" region and was verified live 2026-08-22 (six party
-  dossiers, `DevProbe.Tooltip()` on the first answers `shown:true`, class `Politics`) — but the
-  tooltip parity audit still files all six under `uncovered`, so `TooltipChildren` nodes are
-  invisible to that check's coverage test; worth one look at how it matches a node to a dossier.
+  every map node under `unknown` rather than judging its aim. BOTH the other open items are
+  CLOSED by batch 7 (2026-08-22): the population side panel's party dossiers are now children of
+  their population row, not the row below it (`Cells.Declare` lets a cell open a subtree), verified
+  live on Dusay - "Imperials, 3, collapsed" opens onto "Tooltips, Industrialists" with
+  `DevProbe.Tooltip()` `shown:true`; and the parity audit now counts a node that declares its AIM at
+  a dossier as covering it (`NotificationAudit.Covering`), so the population overview's six party
+  dossiers moved out of `uncovered` (0 there now, nothing else rose).
 - **One-per-row rollout (landed 2026-08-18) — remaining live checks only**: battle
   popups/screens (all code-only; incl. whether the battle popup speaks its title twice);
   the election wizard incl. the Political Trends label; a hangar with ships; a populated
@@ -319,3 +319,30 @@ files above.
 | Dialogs: message box / error / non-blocking / game menu / drop list | MessageBoxScreen, ErrorScreen, NonBlockingMessageScreen, GameMenuScreen, DropListScreen |
 | Contextual prompt / Behemoth specialization | ContextualPromptScreen, JuggernautSpecializationScreen |
 | Out-game pages: disclaimer / credits / DLC browser / mod manager / join game / asset exporter | DisclaimerScreen, CreditsScreen, DLCScreen, ModdingConfigScreen, MenuDestinationScreens, ResourcesExportModScreen |
+
+## Batch 7 (2026-08-22) — go to location
+
+**Landed and verified live**: one landing on the galaxy page (`GalaxyHudScreen.GoTo` over
+`MapLandings.Decide`) used by the game's locate, the scanner's Alt+Home, starlane travel and the new
+Ctrl+L; quest markers as NODES (system children and open-space rows) off one enumeration; Ctrl+L as
+the game's own show-location; the population side panel's party dossiers as Tooltips children; the
+parity audit counting an aim as coverage.
+
+**A landing's first utterance no longer precedes the camera** — one of the two pre-existing defects
+recorded in the previous session. `Screen.LandingSuspended` covers the camera flight and a
+twenty-frame tail, and a suspended frame holds even a control already declared. Fixed and proved on
+Osulo I (test-recipes).
+
+**Still OPEN, untouched by batch 7**: turning the STAR-SYSTEM page announces the screen twice and
+seats the cursor on the scan button (the other pre-existing defect from the previous session).
+
+**Fixture-blocked, verified only through synthetic markers**: everything about quest markers. Both
+saves have ZERO markers on every in-progress quest, so the marker nodes, the open-space rows, the
+scanner category, the inspect-cell reading and the quest locate were all proved by registering
+markers by hand (recipe in `docs/test-recipes.md`). The one thing no synthetic marker could produce
+is a real free-floating marker on a fleet crossing a lane — neither save has a mid-lane fleet either,
+so the open-space case was forced with a marker bound to a Ship.
+
+**Unproven**: the two space-battle popups, the two ground-battle popups and the hacking popup's own
+show-location handlers (no fixture raises them) — code-verified against their decompiled overrides
+only. Ctrl+L on those windows would exercise `NotificationScreen.GoToLocation`'s type dispatch.

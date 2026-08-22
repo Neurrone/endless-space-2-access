@@ -265,7 +265,11 @@ namespace ES2Access.Dev
                     continue;
                 }
 
-                List<Declared> covering = NotificationAudit.Covering(declared, tip.Owner);
+                List<Declared> covering = NotificationAudit.Covering(
+                    declared,
+                    tip.Owner,
+                    tip.Tooltip
+                );
                 if (covering.Count == 0)
                 {
                     Breach breach = NotificationAudit.Made(
