@@ -1,8 +1,9 @@
 # ES2 dev loop — build, reload, verify
 
-Fixtures: **`[Beginner] test`** (turn 21 — Dusay a colony, Heka an outpost, two free-movement
-fleets on Dusay→Heka legs; `DevProbe.Saves()` reports titles) and **`[Midgame] quests fleets`**
-(turn 3 — the one with a quest pinned).
+Fixtures: **ask `DevProbe.Saves()` first — the named ones are GONE.** As of 2026-08-22 this
+install holds five `%AutoSaveFileName` autosaves (turns 3-7) and nothing else; `[Beginner] test`
+(turn 21) and `[Midgame] quests fleets` are no longer on disk, and `POST /loadsave` with either
+title answers `no save titled …`. An empty body loads the newest.
 Screen-by-screen status: `docs/roadmap.md`; working a specific screen and its fixture
 limits: `docs/test-recipes.md`. This file is
 ONLY the loop: the dev server, the REPL, and the screen-agnostic verification patterns.

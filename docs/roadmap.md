@@ -8,6 +8,10 @@ files above.
 
 ## To build
 
+- Cutscene descriptions awaiting a live sighting on the game's OWN trigger: every check so
+  far drove `ShowWindow` from the REPL. The colonization scene fires on a real colony
+  landing, the intro needs `EnableFactionIntroductionVideos` back on, the outros need a
+  finished game, and the three metaplot videos need the Academy questline resolved.
 - **One-per-row rollout (landed 2026-08-18) — remaining live checks only**: battle
   popups/screens (all code-only; incl. whether the battle popup speaks its title twice);
   the election wizard incl. the Political Trends label; a hangar with ships; a populated

@@ -65,11 +65,16 @@
     <ItemGroup>
       <!-- Translation tables, named after the game's own language names (locale\french.json). -->
       <LocaleFile Include="$(MSBuildThisFileDirectory)locale\*.json" />
+      <!-- Cutscene audio descriptions, named the same way and built from the authoring folder by
+           build-descriptions.ps1. Unlike the translations, english.json is not optional: there are
+           no built-in descriptions for it to fall back to. -->
+      <DescriptionFile Include="$(MSBuildThisFileDirectory)descriptions\*.json" />
     </ItemGroup>
     <!-- Overwritten while the game is running: the loader holds no lock on it, so POST /reload
          picks up whatever this last copied. -->
     <Copy SourceFiles="$(TargetPath);$(TargetDir)$(AssemblyName).pdb" DestinationFolder="$(PluginDir)" />
     <Copy SourceFiles="@(LocaleFile)" DestinationFolder="$(PluginDir)\locale" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(DescriptionFile)" DestinationFolder="$(PluginDir)\descriptions" SkipUnchangedFiles="true" />
     <Copy SourceFiles="$(MSBuildThisFileDirectory)..\vendor\prism\prism.dll" DestinationFiles="$(GameDir)\prism.dll" SkipUnchangedFiles="true" />
   </Target>
 </Project>

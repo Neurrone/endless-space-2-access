@@ -32,9 +32,18 @@ namespace ES2Access.Screens
     /// Nothing here reads the video's own dialogue where subtitles are off. That would be inventing
     /// content the game does not have, and the option is where a player says whether they want it.
     ///
-    /// The colonization scene additionally draws a planet card, which is read ONCE when the card is bound -
-    /// the same panel the discovery cutscene draws, so the same reading (<see cref="DiscoveryCards"/>).
-    /// The card is what the scene is ABOUT, and it exists nowhere else while the video is up.
+    /// What the video SHOWS is said too, from the mod's own audio descriptions
+    /// (<see cref="CutsceneDescriptions"/>), which are written into the gaps between the spoken lines
+    /// and timed off the same clock the game runs its subtitles on. Those are the mod's words rather
+    /// than the game's, so they carry their own setting and are the one thing here that speaks with
+    /// the game's subtitles turned off.
+    ///
+    /// The colonization scene draws a planet card as well, and it is NOT read here. The description
+    /// track written for that scene takes its place (owner decision 2026-08-22): both would be
+    /// talking over a twelve-second video, and the card is the one a player can go back to - the
+    /// planet's own screen still has it once the ship has landed, while the footage is gone for good.
+    /// The card's reading itself is untouched, and still serves the discovery flythrough that shares
+    /// the panel (<see cref="DiscoveryCards"/>).
     ///
     /// One screen for both windows: they are separate window objects on the same layer and are never up
     /// together (a colonization scene and a quest scene are two different game events), so the screen
@@ -50,10 +59,6 @@ namespace ES2Access.Screens
         /// <summary>The subtitle last spoken, so the same line is not repeated while it stays up. Instance
         /// state, so a hot reload starts the watch over.</summary>
         private string _subtitle;
-
-        /// <summary>The card already read, so the colonization scene describes its world once. Held as the
-        /// PLANET rather than as a flag: the window is reused by the next colonization.</summary>
-        private Planet _described;
 
         public override string Key
         {
@@ -139,9 +144,15 @@ namespace ES2Access.Screens
             Rearm();
         }
 
+        /// <summary>The scene is over, whether it finished or the player cut it short. Anything the
+        /// description track had left goes with it - the footage it was describing is gone.
+        ///
+        /// Only on the way OUT: the window is already shown by the time this screen is pushed, so a
+        /// track armed for the video that just started must survive OnPush.</summary>
         public override void OnPop()
         {
             Rearm();
+            CutsceneDescriptions.Rearm();
         }
 
         public override void OnUpdate()
@@ -159,7 +170,6 @@ namespace ES2Access.Screens
         private void Rearm()
         {
             _subtitle = null;
-            _described = null;
         }
 
         private void Announce()
@@ -170,7 +180,9 @@ namespace ES2Access.Screens
                 return;
             }
 
-            Card(window as ColonizationCutsceneModalWindow);
+            // Descriptions first: they are written to sit in the gaps between the spoken lines, so
+            // a cue and the subtitle that follows it reach the queue in the order the scene has them.
+            CutsceneDescriptions.Tick(window);
             Subtitle(window);
         }
 
@@ -197,45 +209,6 @@ namespace ES2Access.Screens
 
             _subtitle = line;
             Voice.Say(line, false);
-        }
-
-        /// <summary>The world being settled, once, as soon as the scene has bound its card. The window
-        /// binds the card at the END of its show animation (<c>OnEndShow</c>), so the wait is real but
-        /// short; until then there is nothing to describe and nothing is recorded as described.</summary>
-        private void Card(ColonizationCutsceneModalWindow window)
-        {
-            if (window == null)
-            {
-                return;
-            }
-
-            PlanetLabel_SystemDiscovery card = window.PlanetLabel;
-            Planet planet = Bound(card);
-            if (planet == null || ReferenceEquals(planet, _described))
-            {
-                return;
-            }
-
-            string text = DiscoveryCards.Read(card);
-            if (string.IsNullOrEmpty(text))
-            {
-                return;
-            }
-
-            _described = planet;
-            Voice.Say(text, false);
-        }
-
-        private static Planet Bound(PlanetLabel_SystemDiscovery card)
-        {
-            try
-            {
-                return card == null || !AgeWidgets.Visible(card.AgeTransform) ? null : card.Planet;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
         }
 
         /// <summary>Whichever of the two scene windows the game is showing, the colonization one first: it

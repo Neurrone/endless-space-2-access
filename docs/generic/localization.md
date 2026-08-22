@@ -4,7 +4,7 @@ Translatable speech from day one. Retrofitting localization onto frozen English 
 mod-wide rewrite (wotr-access treats it as an audit-level invariant; SoC built `.po`
 infrastructure); starting with the seam costs nearly nothing.
 
-## The three sources of spoken text
+## The four sources of spoken text
 
 1. **Game-authored text** (menu titles, tooltips, entity names) — the game already localizes
    it; read it through the game's localization service and never re-translate it. Trap: only
@@ -42,6 +42,30 @@ infrastructure); starting with the seam costs nearly nothing.
    startup line) — come from the mod's string table, never inline literals.
 3. **Connective structure** (list separators, "N of M", "x N") — also from the string table,
    because they are language-dependent in both wording and word order.
+4. **Mod-authored content** — prose describing what the game SHOWS but never says: audio
+   description for cutscenes, animated stingers, wordless sequences. It is mod-authored like
+   (2), and the temptation is therefore to put it in the string table. Don't. It is bulk prose
+   attached to specific ASSETS, not phrases attached to UI, and it swamps the template a
+   translator works from — one game's cutscenes ran to 4,400 words against a 900-key table.
+   Ship it as a **per-asset table beside the string table** (`descriptions/<language>.json`
+   next to `locale/<language>.json`), following the game's language through the same watcher.
+   Four rules that are the opposite of the string table's, and each one bit before it was
+   written down:
+   - **Key by the game's own asset name, not the human one.** A describer writes "Vodyani
+     Intro"; the game asks for `Vampirilis_Intro`. Do that translation ONCE in a build step,
+     so the runtime carries no mapping table that can drift from the game's files.
+   - **Have the build step FAIL on a name the install does not have.** The mapping is the
+     only place this can be caught; a wrong name at runtime is silence that looks like a
+     missing feature.
+   - **Commit the built table, not what built it.** A describer's output is bulk generator
+     artefact — one game's ran to 208 files against a 40 KB table — and nothing but the build
+     step ever reads one, so ignore it the way the media it describes is ignored. Then carry in
+     the BUILT table anything the runtime does not need but a later editor does — where the
+     video's own dialogue resumes, so a rewritten cue can be checked against the room it has —
+     or that constraint leaves the repository along with the input.
+   - **English is a FILE here, not a compiled-in fallback.** There is nothing to hard-code, so
+     the degradation ladder is per-language-file → English file → silence, and silence is a
+     legitimate rung. Descriptions are additive; a language without them loses nothing it had.
 
 ## The string table (`ModStrings` pattern)
 

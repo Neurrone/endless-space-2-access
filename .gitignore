@@ -16,3 +16,13 @@ obj/
 # Release zips and the rendered player docs
 releases/
 docs_src/book/
+
+# Game cutscene videos copied locally for writing audio descriptions.
+# Amplitude's assets: never committed, never redistributed.
+videos/
+
+# The authored cutscene descriptions: generator output, three files per video, and the input to
+# build-descriptions.ps1. Kept locally like the videos they describe. What ships and what is
+# committed is the table that script builds, ES2Access\descriptions\<language>.json - hence the
+# leading slash, which keeps that folder tracked.
+/descriptions/
