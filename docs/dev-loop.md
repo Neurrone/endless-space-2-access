@@ -55,15 +55,12 @@ mutes voicing but `/speech` still captures.
   moment the field lets go, so a game-owned edit is driven by writing its text from `/eval`
 - `GET /gui/game?path=&depth=` — Unity hierarchy; `GET /gui/age?window=&depth=&visibleOnly=` —
   AGE widgets with rects (`window=` is the filter; `/gui/game` is the one taking `path=`)
-- `window=` matches a registered window, a shown panel, then any named AgeTransform under them,
-  and `depth=`/`visibleOnly=`/`fields=` apply from there; an empty answer always carries an
-  `error`/`note` line, and a node cut off by `depth=` is kept (`more:true`), never pruned. The
-  dump PRUNES any node with no control, no text, no value and no readable tooltip
-  (`AgeDump.Node.Speaks`) — the JSON and the `fields=` forms alike — and "readable" means
-  class-free: a CLASS-backed tooltip does not save a textless icon from the prune even when it
-  DOES carry a content sentence (the minor-faction button's does — `AgeWidgets.Readable`
-  rejects by class, not by absence of content). A panel's icon-only controls are found with an `/eval` walk of
-  `.Children`, never with a tree dump
+- `window=` matches a registered window, a shown panel, then any named AgeTransform under them;
+  `depth=`/`visibleOnly=`/`fields=` apply from there; an empty answer carries an `error`/`note`
+  line; a node cut off by `depth=` is kept (`more:true`). The dump PRUNES any node with no
+  control, text, value or readable tooltip (`AgeDump.Node.Speaks`), and "readable" means
+  class-free — a CLASS-backed tooltip does not save a textless icon from the prune. Icon-only
+  controls are found with an `/eval` walk of `.Children`, never with a tree dump
 - `GET /gui/age?...&fields=name,kind,text,tooltip,rect,interactable,enabled` — flat text, one
   indented line per widget, only those fields, empties omitted
 - `POST /eval?settle=MS&speech=0` — C# REPL (gotchas below); response carries caused speech.
@@ -78,13 +75,10 @@ mutes voicing but `/speech` still captures.
   re-issuing the same `POST /loadsave` recovers in ~8 s
 - `POST /key?hold=MS&gap=MS&text=1` — body = a key SEQUENCE pressed as real OS key events at
   the game's window (`Return`, `Ctrl+I`, `Shift+Tab`; `+Name` holds, `-Name` releases;
-  `text=1` makes the body characters to type; arrows are `UpArrow`/`DownArrow`/…). The only
-  route where a key is physically DOWN — so the only one that can test the consumed-key
-  latch, `anyKeyDown`, the engine's KeyDown delivery to a focused control, and "was Return
-  still down when the focus left". REFUSES (409, nothing sent) unless the foreground window
-  is proved to belong to the game's process, re-checked before every step — a locked
-  workstation or unfocused game answers 409 rather than typing into the owner's desktop;
-  400 for an unknown key name (the answer lists the vocabulary)
+  `text=1` types the body; arrows are `UpArrow`/`DownArrow`/…). The only route where a key is
+  physically DOWN (the consumed-key latch, `anyKeyDown`, engine KeyDown delivery, "was Return
+  still down when the focus left"). REFUSES (409, nothing sent) unless the foreground window is
+  the game's, re-checked every step; 400 for an unknown key name (the answer lists the vocabulary)
 - `GET /log?since=N&grep=TEXT` — no `since` answers only the last 100 entries (`capped:true`);
   `grep` still searches the whole ring; `GET /screenshot`; `POST /quit` — shutdown takes
   20–100 s: poll the PROCESS (not the port) every 2 s and only conclude a hang past 120 s
@@ -128,11 +122,9 @@ During boot/loading, main-thread routes 503 — retry; `/speech` and `/log` keep
 - `DevProbe.Notifications()` is the one answer for the notification engine's state
   (mappings + owning assembly, patch owners, subscriptions, table sizes) — ask it before
   hand-probing that machinery.
-- SOME descriptor-driven simulation properties shrug off `SetPropertyBaseValue` + `Refresh` —
-  the descriptor recomputes them (measured: `Fleet.FreeMovementSpeed` stayed 0) — but not all:
-  `Empire.CanUseStrategicForRecipe` took the write and stuck (measured 2026-08-19). Try the
-  write with a read-back probe first; if it reverts, grant the DESCRIPTOR's source (tech, law)
-  or accept the state as fixture-blocked.
+- Descriptor-driven simulation properties may shrug off `SetPropertyBaseValue` + `Refresh`
+  (`Fleet.FreeMovementSpeed` stayed 0; `Empire.CanUseStrategicForRecipe` stuck): write with a
+  read-back probe first; if it reverts, grant the DESCRIPTOR's source or call it fixture-blocked.
 
 
 ## 2. Verification patterns (screen-agnostic)
@@ -143,8 +135,8 @@ fewer, bigger calls. Scope every grep to a named subtree (unscoped greps over
 bodies you need via offset. `/gui/age` or `/gui/graph` dump FIRST — it answers layout and
 text; decompiled classes only for action paths; re-read the dump already in hand before
 probing or walking. Scope `/eval` probes to the one entity in question; bound `/log` with
-`since=`; print counts, not enumerations. Python helpers as script files, never
-`python -c` (the Bash tool corrupts multiline); `crop-shot.ps1` via the PowerShell tool.
+`since=`; print counts, not enumerations. There is NO Python on this machine — helpers are
+`.sh`/`.ps1`/perl script files in the scratchpad; `crop-shot.ps1` via the PowerShell tool.
 Build from the repo root only; after every reload confirm `modAssemblyName` incremented
 before interpreting live results. Repeated-node `ControlId` keys: index-in-parent, never
 widget names. Interim narration one line — findings go in the final report; never re-Read
@@ -171,51 +163,35 @@ no text, so `/gui/age` prunes it and the dump agrees with whatever the mod decla
 is really a blind spot. Print `Alpha` beside `Visible` in an `/eval` walk and check it against a
 `crop-shot.ps1` of the same rect.
 
-**An un-watched announcement part is still ASKED every frame.** `GraphNavigator.FillBuffer`
-(:470 → :562-570) recomposes the focused node's whole `LeafText` each tick so the buffer can
-notice a control changing underneath the cursor — `watch: false` means "not compared", never "not
-asked". An expensive answer (a pathfinding search) needs a memo keyed on the state it was computed
-from; prove the fix with a call counter read across ~100 frames, because no transcript or dump
-shows the waste (`FleetRoute.Searches`: 121 focused frames → 0 searches).
+**An un-watched announcement part is still ASKED every frame** (`GraphNavigator.FillBuffer`
+recomposes the focused node's `LeafText` each tick; `watch: false` means "not compared"). An
+expensive part needs a memo keyed on its inputs; prove it with a call counter read across ~100
+frames — no transcript or dump shows the waste (`FleetRoute.Searches`: 121 frames → 0 searches).
 
 **The renderer-field oracle.** When the mod recomputes something the game only DRAWS, drive the
-game's own renderer from `/eval` and read its private display list by reflection
-(`IPathRendererService.ClearPathDataAndRenderPath` → `PathRenderer.pathDatasToDisplay`, then
-`ClearPathData()`), and compare classifications, not pixels. It proves parity with the DRAWING
-only — when the drawn thing is a prediction, the second oracle is letting the game run and
-watching what happens (the map's own turn markers were one low; end-turning caught it).
+game's renderer from `/eval`, read its private display list by reflection
+(`PathRenderer.pathDatasToDisplay` after `ClearPathDataAndRenderPath`), and compare classifications,
+not pixels. That proves parity with the DRAWING; a drawn PREDICTION needs the second oracle —
+let the game run and watch (the map's turn markers were one low; end-turning caught it).
 
-**Auditing a tooltip.** `DevProbe.TooltipDelay(0)`, focus via `/input`, then all three
-(caveat: delay 0 changes WHICH frame the game resolves the request on — a tooltip that
-works at 0 is not proof it works at the player's 0.3 s, nor vice versa; a stalled request
-is `DevProbe.TooltipPipe()`'s `timer` near 999, invisible to every drawn-window probe):
-`/screenshot`, `DevProbe.Tooltip()` (a `features` array — class name, the reader that answered,
-the lines it produced — plus the measured rows/rects/assets), `/gui/graph?buffers=1`. A feature
-class sitting on `"default"` whose lines divorce a value from its caption is the defect to look
-for — but the prefab may already carry the caption as sibling labels, so read the DRAWN
-feature before believing the class; nothing about it shows in the spoken lines alone. `shown:false` on a focused node whose
-buffer stays empty despite a declared tooltip is the OTHER signature — a mis-aimed pointer (the
-2-arg `AgeWidgets.Point`, re-deriving from the control's transform). The parity audit's "points at
-one that draws nothing" is a DIFFERENT finding with a different fix: it judges by the audit's own
-aim derivation — exact for control nodes since 1016af3, an approximation for drawn rows/cells — so
-confirm with `DevProbe.Tooltip()` before touching any pointing call.
-`/gui/graph` alone misleads here: it moves no pointer, so a renderer-drawn tooltip is
-undrawn and its buffer reads empty on a control that is fine live. Re-probing a still-focused
-node after mutating its backing state answers the PRE-mutation content — leave the node and
-return before re-probing. `TooltipDelay(-1)` after.
+**Auditing a tooltip.** `DevProbe.TooltipDelay(0)`, focus via `/input`, then all three:
+`/screenshot`, `DevProbe.Tooltip()` (class, the reader that answered, the lines, the measured
+rows/rects), `/gui/graph?buffers=1`. Caveat: delay 0 changes WHICH frame the request resolves on —
+a stalled request is `DevProbe.TooltipPipe()`'s `timer` near 999, invisible to every drawn-window
+probe. A feature on `"default"` whose lines divorce a value from its caption is the defect to look
+for (but read the DRAWN feature first — the prefab may caption it with sibling labels). `shown:false`
+on a focused node whose buffer stays empty despite a declared tooltip = a mis-aimed pointer; confirm
+with `DevProbe.Tooltip()` before touching any pointing call. `/gui/graph` alone misleads: it moves
+no pointer, so a renderer-drawn tooltip reads empty on a control that is fine live. Re-probing a
+still-focused node after mutating its state answers the PRE-mutation content — leave and return.
+A LIST ENTRY's tooltip: open the list, step onto the entry, THEN probe. `TooltipDelay(-1)` after.
 
-
-**The mechanical tooltip check.** `DevProbe.TooltipParity()` runs the notification audit's tooltip
-half on whichever screen is FOCUSED. Four findings — `promised` (a node claims a dossier nothing
-would draw), `misaimed` (it points at one that draws nothing, judged by the node's own `PointsAt`
-and never by a re-derived aim), `uncovered` and `unread` (a tooltip the game would draw that no node
-covers, or whose words no covering node carries) — plus three weaker buckets kept apart:
-`decoration` (the carrier is not a control), `hidden` (only the pass with the alpha gate off sees
-it) and `undescribed` (a GAME defect — no `GuiTooltipDescription` for that class). The painted half
-needs `Screen.RootTransform`; a screen answering null gets the declaration-side buckets only and
-says so with `"root": null`, so a clean answer there is not a clean screen. Auditing a LIST ENTRY's
-tooltip: open the list, step onto the entry, THEN `DevProbe.Tooltip()` — nothing outside an open
-popup can point at its items.
+**The mechanical tooltip check.** `DevProbe.TooltipParity()` — the notification audit's tooltip half
+on whichever screen is FOCUSED: `promised` (a node claims a dossier nothing would draw), `misaimed`
+(judged by the node's own `PointsAt`, never a re-derived aim), `uncovered`/`unread` (a drawable
+tooltip no node covers / whose words none carries), plus `decoration`, `hidden` (alpha gate off) and
+`undescribed` (a GAME defect: no `GuiTooltipDescription`). The painted half needs
+`Screen.RootTransform`; `"root": null` means declaration-side buckets only — not a clean screen.
 
 **A card's tooltip is rarely on the card.** `PointerFocus` shows the tooltip of the widget it is
 pointed AT, so pointing at a row whose tooltip hangs off a child inside it (the planet card's
@@ -257,9 +233,8 @@ DOES fire proves the window was really sampled.
 **Injecting a sequence of keys.** `POST /input` one action key per request, ~0.4 s apart —
 a no-delay loop does not fail loudly, it reports a plausible WRONG route (rows appearing
 unreachable by Down) — then
-read `/speech?since=N` — `next` from a `since=0` read before the sequence is the baseline. The
-Bash tool mangles `python -c` here (it injects `|| goto :error`); keep the JSON formatting in a
-`.py` file in the scratchpad.
+read `/speech?since=N` — `next` from a `since=0` read before the sequence is the baseline. Keep
+the route in a `.sh` script in the scratchpad so the same walk is replayable.
 
 **A behaviour that branches on a key BEING DOWN cannot be tested with `/input`.** An injected
 action presses nothing, so `Input.anyKeyDown`, `GetKey`, the consumed-key latch and every
@@ -278,46 +253,33 @@ end — the cursor swapped back, the banner gone — not the order's effect, and
 key on the same node with no mode up, which must still do the node's own thing.
 
 **Proving a refactor changed no spoken or buffer line.** Walk every reachable screen family
-with `POST /input` and save `GET /gui/graph?buffers=1` per family to a scratchpad `before/`,
-make the change, walk the identical route into `after/`, and `diff`. Normalise the ids that
-carry an instance hash (`droplist:-138580/…`) before diffing. Two things make it work: the
-dump is text and stable, and unfocused Class-backed tooltips read EMPTY on both sides, so
-they cancel. For a family whose "before" you only realise you need afterwards,
-`git stash push -u -- ES2Access ES2Access.Tests` → build → `/reload` → capture → `git stash
-pop` → build → `/reload` costs about three minutes and is how `screen.game-menu` and
-`screen.rename` got baselines. A **sheet** refactor's baseline must be captured in ONE game
-session: `GraphSheet` row keys derive from `GetHashCode()`, which survives a hot reload but not
-a process restart — the stash loop, never two launches. For a purely ADDITIVE announcement
-change there is a cheaper before: null the injected dependency that produces the new part
-(`GraphAnnouncer.Carry = null`) and dump, instead of stashing the source. The stash loop is
-UNSAFE while another stage edits the same trees — the push takes their in-flight files too.
-A camera-dependent focus visual must be re-committed when the camera moves (`OnFocusVisual`
-fires once per focus CHANGE); `Navigator.ClearVisual()` from OnUpdate re-commits same-frame.
-`GET /gui/graph?screen=KEY&buffers=1` reaches screens whose
-window exists without a game running — out of a session `screen.game-menu` and
-`screen.rename` both declare real content, `screen.galaxy` and friends answer "not active".
-An INACTIVE screen's by-key dump holds only the shared HUD stops plus stale content — worthless
-as a baseline for the screen's own content; open the screen first.
+with `POST /input`, save `GET /gui/graph?buffers=1` per family to a scratchpad `before/`, make
+the change, walk the IDENTICAL route into `after/`, `diff` (normalise instance-hash ids such as
+`droplist:-138580/…`). It works because the dump is text and stable, and unfocused Class-backed
+tooltips read EMPTY on both sides, so they cancel. A "before" needed afterwards: `git stash push
+-u -- ES2Access ES2Access.Tests` → build → `/reload` → capture → `git stash pop` → build →
+`/reload` (~3 min). A **sheet** baseline must come from ONE session — `GraphSheet` row keys
+derive from `GetHashCode()`, which survives a hot reload but not a restart — so the stash loop,
+never two launches; the loop is UNSAFE while another stage edits the same trees. For a purely
+ADDITIVE announcement change, null the injected dependency that produces the new part
+(`GraphAnnouncer.Carry = null`) and dump instead of stashing. A camera-dependent focus visual is
+re-committed via `Navigator.ClearVisual()` from OnUpdate (`OnFocusVisual` fires once per focus
+CHANGE). `GET /gui/graph?screen=KEY&buffers=1` reaches screens whose window exists without a game
+(`screen.game-menu`, `screen.rename`); an INACTIVE screen's by-key dump holds only the shared HUD
+stops plus stale content — open the screen first.
 
-**Sighting a surface the fixture never draws.** Tier zero, before any of the four below: read the
-prefab's own fields off the UNSHOWN window instance (`GetWindow<T>(false)`, no Bind, no Show,
-nothing to restore) — enough for a caption's tooltip class/content, but beware prefab `%key`
-content the game rewrites at bind (read the bind code before believing "no sentence"). Then four
-tiers, cheapest first: `Show()` the
-game's own pooled widget, read, `Hide()` — the game's next visibility pass restores truth by
-itself; or set the game's OWN `Visible` flags and private fields from `/eval`, dump, restore,
-and re-diff the dump against the untouched one to prove nothing was left behind (this is how a
-whole DLC feature branch gets sighted); or, for a window with data, `Bind` + `Show`, read, then
-`Unbind` + hide. A forced-show proves STRUCTURE, never content, and a half-bind can outlive the
-probe — restore a monotonic setter through its backing field or private setter, and re-issue
-`POST /loadsave` if a window wedges. Never force-show a DLC modal without its data. The fourth
-beats all three where the empty widget is generic over an INTERFACE: lend it another
-implementor's data (`Bind(otherOwner, client)` + `RefreshNow()`) and the game itself draws real
-content into the unreachable panel — the mod's rows, their wording, their ordering and the
-pick-up all verified live, with one `Bind` back to restore. A force-show proves structure; only
-lent data proves content. Never commit an action while the binding is lent. When a forced show
-fights a live per-frame gate, read the underlying authored data (the curve table) instead of
-the animated runtime value.
+**Sighting a surface the fixture never draws.** Tier zero: read the prefab's fields off the
+UNSHOWN window (`GetWindow<T>(false)`, nothing to restore) — beware prefab `%key` content the game
+rewrites at bind (read the bind code first). Then, cheapest first: `Show()` the game's pooled
+widget, read, `Hide()` (its next visibility pass restores truth); or set the game's OWN `Visible`
+flags/private fields from `/eval`, dump, restore, and re-diff against the untouched dump; or
+`Bind` + `Show` a window with data, read, `Unbind` + hide — a forced show proves STRUCTURE, never
+content, a half-bind can outlive the probe (restore monotonic setters through their backing
+field; `POST /loadsave` if a window wedges; never force-show a DLC modal without its data). Where
+the widget is generic over an INTERFACE, LEND it another implementor's data (`Bind(otherOwner,
+client)` + `RefreshNow()`) and the game draws real content into the unreachable panel — only lent
+data proves content; never commit an action while the binding is lent. When a forced show fights
+a per-frame gate, read the authored data (the curve table), not the animated runtime value.
 
 **Proving a watcher stays silent** is a long poll on the watched flag, not a scan of `/speech`:
 `POST /wait` on the game's own condition, then read `/speech?since=N` for the window that
@@ -328,11 +290,9 @@ de-duplicates ACROSS sections. After moving a tooltip out of a details function,
 node's buffer FOCUSED: a drawn tooltip repeating a computed line is invisible in the unfocused
 dump.
 
-**Opening a game modal from `/eval`** (to measure it without walking there): set what its
-opener sets, then show it; close it the way Escape does (`w.HandleInput(InputAction.Exit)` —
-Assembly-CSharp's `InputAction`, not `Amplitude.Unity.Input`'s). Worked routes per window —
-improvements list, rename box, load/save in Save mode, delegate-installed openers — are in
-`docs/test-recipes.md` ("Opening game modals from /eval").
+**Opening a game modal from `/eval`**: set what its opener sets, then show it; close it the way
+Escape does (`w.HandleInput(InputAction.Exit)` — Assembly-CSharp's `InputAction`). Worked routes
+per window are in `docs/test-recipes.md` ("Opening game modals from /eval").
 
 **State restoration etiquette.** Leave the fixture as found: tutorial popup MINIMIZED, no
 notifications pending, camera at home (`DevProbe.Camera()` before and after), no text field
