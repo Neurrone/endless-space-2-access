@@ -2438,3 +2438,73 @@ the strip; to get a row, call the manager's private
 `RecordEventForEmpire(gameEvent, empire)` by reflection instead
 (`new EventQuestBegun(Gui.PlayerEmpire, quest)` on the pinned quest raises the quest-begun popup and
 registers it).
+
+## Batch-8 recipes (2026-08-22)
+
+**The tooltip panel-feature audit table lives in `docs/es2-facts.md`** ("The tooltip PANEL-FEATURE
+audit"): the corpus counts, the class-to-feature map for the commonest tooltips, which features have
+typed readers, and the measured `StarSystem` reading. Regenerate the map from
+`Public/Gui/GuiTooltipDescriptions*.xml` (strip XML comments first — several features are commented
+out and a naive grep counts them).
+
+**Reading one drawn tooltip feature by feature, when `DevProbe.Tooltip()` refuses.** It answered
+`{"error":"No token to close. Path ''."}` on the research wheel's play-deck child (2026-08-22,
+cause not chased). The same reading is available directly:
+`Gui.GuiService.GetWindow<GuiTooltipWindow>(false)` → `ES2Access.UI.DrawnTooltip.Features(w.AgeTooltip)`
+cast to `System.Collections.IList`, then unbox each entry as `ES2Access.UI.TooltipFeatures.Reading`
+and print `Feature`, `Reader` and `Lines`. That is what produced the `StarSystem` table in
+`es2-facts.md`. Which features the FALLBACK has answered for is
+`ES2Access.UI.TooltipFeatures.DefaultRead` — walk it with a non-generic `IEnumerator`, the REPL will
+not take `foreach` over it.
+
+**The play-deck tooltip** (`PlayDeck` class, the only one in the fixture): on the research wheel,
+Tab to `research:tree`, `POST /type "lethal"` → the second result is
+`research:technology/TechnologyDefinitionMilitary19/tooltip/1` ("Lethal Squadrons"), a Tooltips
+child of a COLLAPSED dot — reachable only since batch 8's search change. Its buffer holds one block
+per tactic: the tactic's name, then "Flotilla 1 Short Range / Flotilla 2 Short Range / Flotilla 3
+Long Range", then the effect paragraph.
+
+**Searching what a collapsed branch would declare.** On the galaxy, `POST /type "raia"` with Dusay
+CLOSED lands on `galaxy:constellation/446/system/535/planet/2` and announces
+"Raia, Medium Terran, Colonized, 4 of 8" — the system opens on the way. The cost of the search's
+one fully-open build is `ES2Access.UI.GraphNavigator.SearchBuildMs` / `SearchBuildNodes` (32-78 ms /
+131 nodes on the galaxy at turn 21). To see the whole enumeration a search is looking through,
+build it by hand from `/eval`: `new GraphBuilder(new HashSet<ControlId>())` with `ExpandAll = true`,
+`screen.Build(b)`, `screen.BuildShared(b)`, then walk `render.Order` printing
+`SearchScope.TextFor(node)`. **Fixture limit:** "antimatter" is NOT findable on the galaxy at turn
+21 — a system's map label carries exactly one dossier (`…/tooltip/0`, the star's) at every camera
+this fixture reaches, so the deposit cards the design mentions are not declared for the search to
+find. Nothing to fix in the search; it needs a save where the label draws deposit icons.
+
+**The star-system page's name and its page turn.** Entering (`to-system.cs`) announces
+"Dusay, System management" once and seats on `system:planet/…`. `POST /input ui.pageNext` then
+announces "Heka, System management" once and, about a second later, the new system's first planet
+row. Expect ONE stray line between the two — the cursor migrating to a HUD stop while the page
+declares nothing between systems. Check with `/speech?since=N` (exactly one screen-name line per
+turn) and `DevProbe.Screen()` (`node` under `system:`). The regression to watch for is the ENTRY
+landing on `hud:view-title/scan` instead: it means the screen went active before its planet cards
+were drawn, and the walk's next Enter then toggles scan mode and poisons every later dump.
+
+**Leaving scan mode from `/eval` is not obvious.** `IGuiGameWindowService` has no `RequestScanView`,
+and pressing `GameOverlayWindow.TopTitlePanel.ScanButton` through `AgeWidgets.Press` did nothing.
+`POST /loadsave` of the fixture is the reliable way out (and then re-minimize the tutorial and
+`POST /reload` before any sheet-keyed comparison).
+
+**Measuring a landing's camera cost.** The sharp instrument is a plain boolean `POST /wait`
+predicate on the game's own gate, which reports `frames` and `elapsedMs`:
+`ES2Access.UI.GalaxyViewLevels.FocusedSystem != null && Gui.GuiService.GetWindow<PlanetLabelsWindow_SystemOrbital>(false).Shown`
+answers "is the orbital-card surface up" (measured 1 frame / 0 ms after `SnapTo`, 8 frames / 598 ms
+after `ZoomTo`), and `!ES2Access.UI.GalaxyViewLevels.CameraSettling` answers "has the flight ended"
+(894 ms / 11 frames for `ZoomTo`). `DevProbe.RowTrace` is the blunter one and reads the navigator's
+last built render, so it under-reports a row that changes without a rebuild.
+
+**Alt+Home end to end** (`POST /key?hold=250&gap=150`, desktop unlocked): `Ctrl+PageDown` to a
+category, `Alt+PageDown` twice to step off the thing the cursor is already on — landing on the
+node you are standing on is silent — then `Alt+Home`. Measured 2026-08-22 with the instant camera:
+the landing announced 394 ms after the key release ("Libra, -11, 11, group, No owner, collapsed,
+5 of 13").
+
+**The colonizable-planet scanner row** (`Ctrl+PageDown` to Colonizable Planets, `Alt+PageDown` to
+step): "Libra II, Tiny Boreal, Binary Moons, Ruins, max population 6, Food 6, Dust 3, Science 5,
+-11, 11, here, 1 of 7" — short resource names, and a resource the world does not make is simply
+absent (Libra II has no Industry or Influence line).

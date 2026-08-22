@@ -336,6 +336,63 @@ member holds `FocusedSystem` runs that system's own zoom-out). Adding a tree LEV
 type-ahead scope to grow a range for the newly-hideable tier (`HiddenSystem`/`RevealSystem` —
 a scope that does not loses the tier from search with nothing in any dump to show it).
 
+
+**TYPING SEARCHES WHAT THE PAGE WOULD DECLARE, not what it has declared** (owner ruling
+2026-08-22; `SearchScope.Extend` + `GraphBuilder.ExpandAll` — `docs/helpers.md`). On every screen,
+the first keystroke of a search builds the page a SECOND time with every group forced open and adds
+everything that build holds for the focused stop and the standing render does not. That covers both
+kinds of hidden content at once, because one build declares both: structural children (a closed
+system's planets, lanes and fleets; a collapsed dot's unlocks; a card's action row) and the
+"Tooltips" dossiers a node hangs (a planet card's, a technology's unlock dossiers, a population's
+parties, the minor gauge's bands). Landing on one opens every branch it is inside, outermost first,
+and then goes through the ordinary pending-focus wait, so the branch the player is put into is the
+branch they can then walk. The scope is built ONCE per search and kept for its life — never per
+keystroke, never per frame (measured 32-78 ms for 131 controls on the galaxy, the biggest tree).
+The two screens that already had a scope of their own KEEP it and are merged into rather than
+replaced: the research wheel's, because it also searches the game's own corpus of keywords and
+unlock names, and the galaxy's, because its systems and fleets have reveal paths already proven.
+A screen with such a scope must supply `SearchScope.IdOf` — the pure "which control is result i",
+beside the `Land` that has side effects — or its results are offered twice.
+Two consequences to expect: a search that walks several near-misses leaves those branches OPEN
+behind it (the pre-existing "expansion is not auto-undone" rule, now reachable in more places), and
+a result only the deep build knew about announces one or two frames after the keystroke rather than
+on it.
+
+**The star-system page is named after the system it is showing** (owner ruling 2026-08-22):
+`ScreenName` is "Heka, System management" — the DRAWN system name (the rename button's own label,
+`ColonyInfoSidePanel.SystemTitleLabel`, which the game writes for an outpost as readily as for a
+colony) composed with the game's own word for the page (`%StarSystemManagementScanViewWindowTitle`)
+through `screen.star-system-named` = "{0}, {1}". `screen.star-system` ("Star system") stays as the
+fallback for a system with no colony panel drawn. Turning the page (Alt+Left/Right, or the game's
+own arrows beside the name) is the reason: it never leaves the screen, so without the system in the
+name the one fact the turn is FOR went unspoken.
+
+**Turning that page is ONE announcement and a seat in the new system's content** (2026-08-22, fixing
+a defect found in batch 3). The view level is re-entered with a new node, and the mod's own gates now
+ride that out: `IsActive` asks `LevelThroughTransitions` and latches on the page having planet cards
+drawn, the way the planet page does, so the screen no longer leaves and comes back (it did that
+TWICE per turn, announcing itself twice). The screen then notices its own system changing
+(`SystemManagementScreen.Turned`), says the new name once, waits 30 frames for the game to rebind the
+window — seating earlier reads a row belonging to the system just left — and seats the cursor on
+`InitialFocusStop` with a 60-frame retry budget for the cards binding. The latch must be gated on the
+cards being DRAWN and not merely on the window being shown: a page that becomes active while it can
+declare nothing gets its cursor seated on the first shared HUD control instead (measured: an entry
+landing on the view-title's scan button, and the walk's next Enter then toggling scan mode).
+Known rough edge: while the page is between systems it declares nothing, so the cursor migrates to a
+HUD stop for a moment and that migration is announced — one stray line between the screen name and
+the landing.
+
+**The minor gauge's four bands are named by the game, twice over** (2026-08-22): "CORDIAL (25)" -
+the relation state the band buys and the relation points it starts at, composed through
+`minor.band` = "{0} ({1})". The state comes off the band's OWN sentence key
+(`%DiplomaticRelationStateMinorCordialDescription` → `…Title`) and the threshold off the segment's
+position on the bar, so neither half is hard-coded and a patch that re-cuts the bands moves both.
+The sentence stays in the buffer (`TooltipMode.None`) rather than being said after the name.
+Beside them, the relation POINTS row is captioned **"Relationship"** (`minor.relationship`, a mod
+phrase — owner ruling 2026-08-22, replacing the gloss sentence the shared last resort had been
+using as the row's name; the sentence is now an ordinary tooltip). The Academy's relation-state row
+keeps its own reading.
+
 **Structural keys are PATHS, and that is load-bearing** (2026-08-20): `KeyGraph.AncestorKeys`
 reads a landing's ancestry out of the id's own `/`-separated key, so programmatic landings
 (locate, scanner go-to, deferred seats) auto-expand collapsed ancestors one level per build.

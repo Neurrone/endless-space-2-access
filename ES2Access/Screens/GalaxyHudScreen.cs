@@ -447,6 +447,22 @@ namespace ES2Access.Screens
         /// </summary>
         private const int MapSettleFrames = 20;
 
+        /// <summary>
+        /// How long a landing waits after the camera has been PUT somewhere rather than flown there.
+        ///
+        /// The twenty frames above are two things at once: the map catching up with a camera that has
+        /// stopped, and the flight's own tail. A snap has no tail, and the surface a system's rows read
+        /// from is up on the frame after it - measured 2026-08-22 with a wait on the mod's own gate
+        /// (<c>GalaxyViewLevels.FocusedSystem</c> plus the orbital labels window shown): 1 frame and
+        /// 0 ms after a snap against 8 frames and 598 ms after the flight. Three frames is that one
+        /// plus margin for the card's own refresh pass, and it is what keeps the landing inside the
+        /// third of a second the whole change was for.
+        ///
+        /// The camera never reports itself settling on this path, so this is armed by the snap itself
+        /// rather than read off the controller (<see cref="Camera"/>).
+        /// </summary>
+        private const int SnapSettleFrames = 3;
+
         public override void OnUpdate()
         {
             // First, so that everything below decides against the same answer: the map is still
@@ -1127,7 +1143,7 @@ namespace ES2Access.Screens
         /// point. Where the cell is driving, the cell has already slid and only a place's zoom is
         /// added on top - so the picture is the same whichever way the player is reading the
         /// map.</summary>
-        private static void Camera(MapTarget target, MapCamera wanted, MapLanding plan)
+        private void Camera(MapTarget target, MapCamera wanted, MapLanding plan)
         {
             MapCameraMove move = plan.Camera;
             switch (wanted)
@@ -1153,10 +1169,18 @@ namespace ES2Access.Screens
                 GalaxyLocate.Suppressed = true;
                 if (move == MapCameraMove.Zoom && target.System != null)
                 {
-                    GalaxyViewLevels.ZoomTo(target.System);
+                    // Instantly (owner ruling 2026-08-22): the flight was nine tenths of a second of
+                    // silence before the landing could say anything (<see cref="GalaxyViewLevels.SnapTo"/>).
+                    GalaxyViewLevels.SnapTo(target.System);
+                    // And the wait is armed by hand, because the camera never reports itself flying
+                    // any more (<see cref="SnapSettleFrames"/>).
+                    _settling = SnapSettleFrames;
                 }
                 else
                 {
+                    // A slide across open sky is left as a slide: there is no card to wait for at the
+                    // other end, so it costs the announcement nothing and the picture stays readable to
+                    // a sighted player beside the keyboard.
                     GalaxyViewLevels.CenterOn(target.At, LandingDamping);
                 }
             }
@@ -1830,7 +1854,16 @@ namespace ES2Access.Screens
                         ? basis.Land(index)
                         : index < stars
                             ? screen.RevealSystem(shut[index - already])
-                            : screen.Reveal(found[index - stars])
+                            : screen.Reveal(found[index - stars]),
+                // Which control each result IS, with nothing opened - so that the shared scope can add
+                // everything ELSE a closed branch would declare without offering these twice
+                // (<see cref="SearchScope.Extend"/>).
+                index =>
+                    index < already
+                        ? basis.IdOf(index)
+                        : index < stars
+                            ? shut[index - already].Id
+                            : found[index - stars].Node
             );
         }
 
@@ -2664,7 +2697,11 @@ namespace ES2Access.Screens
         /// </summary>
         private void Seed(GraphBuilder builder, ControlId id)
         {
-            HashSet<ControlId> expansion = builder.Expansion;
+            // Never off a search build: that build has everything open by construction
+            // (<see cref="GraphBuilder.ExpandAll"/>) and it must not be what decides the tree the
+            // player then walks - spending the once-ever seed there would leave a group they have
+            // never seen already open.
+            HashSet<ControlId> expansion = builder.ExpandAll ? null : builder.Expansion;
             if (expansion == null || !_seeded.Add(id.StructuralKey))
             {
                 return;

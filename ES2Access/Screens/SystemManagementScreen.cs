@@ -76,9 +76,60 @@ namespace ES2Access.Screens
             get { return 10; }
         }
 
+        /// <summary>
+        /// "Heka, System management" - the system the page is showing, then the game's own word for
+        /// the page (<c>%StarSystemManagementScanViewWindowTitle</c>).
+        ///
+        /// The page is turned without leaving it (Alt+Left/Right, and the game's own arrows beside the
+        /// name), so a name that said only "System management" left the one fact the turn is FOR -
+        /// which system - unspoken. The system's name is the DRAWN one, off the rename button's label
+        /// (<c>ColonyInfoSidePanel.SystemTitleLabel</c>), which the game writes for an outpost as
+        /// readily as for a colony. Where the panel is not drawn at all the mod's own word for the page
+        /// stands alone, as it did before.
+        /// </summary>
         public override string ScreenName
         {
-            get { return ModStrings.Get(ModStrings.ScreenStarSystem); }
+            get
+            {
+                string system = SystemTitle();
+                string page = AgeText.Clean(Gui.Localize(SystemManagementTitleKey));
+                if (string.IsNullOrEmpty(system) || string.IsNullOrEmpty(page) || page[0] == '%')
+                {
+                    return ModStrings.Get(ModStrings.ScreenStarSystem);
+                }
+
+                return ModStrings.Format(ModStrings.ScreenStarSystemNamed, system, page);
+            }
+        }
+
+        /// <summary>The game's own word for this page, the one its scan-view header uses.</summary>
+        private const string SystemManagementTitleKey = "%StarSystemManagementScanViewWindowTitle";
+
+        /// <summary>The system's name as the page DRAWS it. Null where the colony panel is not up -
+        /// a system the player owns nothing in.</summary>
+        private string SystemTitle()
+        {
+            try
+            {
+                // Its own list, not the build's: this is asked from outside a build (the screen manager
+                // announcing the page, the dev dumps) and must not disturb one in progress.
+                List<SidePanel> panels = new List<SidePanel>();
+                SidePanels.Drawn(panels);
+                for (int i = 0; i < panels.Count; i++)
+                {
+                    ColonyInfoSidePanel colony = panels[i] as ColonyInfoSidePanel;
+                    if (colony != null)
+                    {
+                        return AgeText.Label(colony.SystemTitleLabel);
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+
+            return null;
         }
 
         /// <summary>The planets, because they are what the player came here to look at and they are
@@ -96,37 +147,76 @@ namespace ES2Access.Screens
             get { return true; }
         }
 
-        /// <summary>Ours while the camera is in a system and nothing has replaced the page. The scan
+        /// <summary>
+        /// Ours while the camera is in a system and nothing has replaced the page. The scan
         /// overlay is the game's own X-ray of this same view level and shows a different set of things,
-        /// so it is not this screen.</summary>
+        /// so it is not this screen.
+        ///
+        /// Asked of <see cref="GalaxyViewLevels.LevelThroughTransitions"/> and latched, the way the
+        /// planet page asks it, because TURNING THE PAGE re-enters this same view level with another
+        /// system: the GUI's copy of the current level and the window's own Shown flag each drop for a
+        /// single frame while that happens, and the screen leaving and coming back is a full focus
+        /// cycle - it announced the page twice and left the cursor wherever the old system's tree had
+        /// put it. The latch is dropped by the level itself going away, so leaving the page for real
+        /// still ends the screen.
+        /// </summary>
         public override bool IsActive()
         {
             try
             {
-                if (!GalaxyViewLevels.At<GalaxyViewLevel_SystemManagement>())
+                if (
+                    !(
+                        GalaxyViewLevels.LevelThroughTransitions
+                        is GalaxyViewLevel_SystemManagement
+                    )
+                    || GalaxyViewLevels.Scanning
+                )
                 {
+                    _arrived = false;
                     return false;
                 }
 
                 GuiManager gui = Gui.GuiServiceAvailable ? Gui.GuiService as GuiManager : null;
                 if (gui == null || gui.IsAnyModalVisible || gui.IsInLoadingWindow)
                 {
+                    _arrived = false;
                     return false;
                 }
 
-                if (GalaxyViewLevels.Scanning)
+                if (!_arrived)
                 {
-                    return false;
+                    // The same gate <see cref="Build"/> declares on, and for the same reason: the
+                    // window is bound and shown a good while before the planet cards are drawn over
+                    // it, and a page that becomes ACTIVE while it can declare nothing gets its cursor
+                    // seated on the first shared HUD control instead - measured 2026-08-22 as an entry
+                    // landing on the view-title's scan button. Asked only until the page has arrived,
+                    // so the extra walk costs nothing once it has.
+                    StarSystemScreen window = Window();
+                    if (window != null && window.Shown && window.StarSystemNode != null)
+                    {
+                        Labels(_arriving);
+                        _arrived = _arriving.Count > 0;
+                        _arriving.Clear();
+                    }
                 }
 
-                StarSystemScreen window = Window();
-                return window != null && window.Shown;
+                return _arrived;
             }
             catch (Exception)
             {
+                _arrived = false;
                 return false;
             }
         }
+
+        /// <summary>Whether the page has been seen bound and drawn since the view level was entered -
+        /// see <see cref="IsActive"/>.</summary>
+        private bool _arrived;
+
+        /// <summary>The arrival check's own scratch list, so asking whether the page has cards yet
+        /// cannot disturb a build that is holding <c>_planets</c>.</summary>
+        private readonly List<PlanetLabel_SystemManagement> _arriving =
+            new List<PlanetLabel_SystemManagement>();
 
         /// <summary>Escape is the game's: from here it takes the camera back out to the galaxy, which
         /// is the same route the page's own close button takes.</summary>
@@ -155,16 +245,95 @@ namespace ES2Access.Screens
         public override void OnPush()
         {
             _hud.Baseline();
+            _showing = null;
+            _turnSettle = 0;
+            _turnSeats = 0;
         }
 
         public override void OnPop()
         {
             _hud.Forget();
+            _showing = null;
+            _turnSettle = 0;
+            _turnSeats = 0;
         }
 
         public override void OnUpdate()
         {
             _hud.Update();
+            Turned();
+        }
+
+        /// <summary>The system the page was showing when it was last looked at - what a page turn is
+        /// measured against (<see cref="Turned"/>).</summary>
+        private StarSystemNode _showing;
+
+        /// <summary>Frames to let the page turn finish before the cursor is seated at all, and then
+        /// attempts left to seat it.
+        ///
+        /// Both halves are needed. The page turn is not one frame: the game rebinds the window to the
+        /// new system, and until it has, <see cref="Build"/> is still declaring the OLD system's
+        /// planets - seating on the first frame reads a row belonging to the system the player just
+        /// left (measured 2026-08-22: "Raia" announced on the way to Heka). And once it has, the page
+        /// still arrives in pieces, so the seat is retried rather than attempted once.</summary>
+        private int _turnSettle;
+
+        private int _turnSeats;
+
+        /// <summary>How long a page turn takes before anything it declares is the new system's -
+        /// measured 2026-08-22 as sixteen frames from the key to a rebuilt page, with the window's own
+        /// bind blinking twice inside that.</summary>
+        private const int TurnSettleFrames = 30;
+
+        /// <summary>And how long the seat is then worth trying for, since the planet cards bind over
+        /// several frames after that.</summary>
+        private const int TurnSeatFrames = 60;
+
+        /// <summary>
+        /// The page has been turned to another system: say which one, once, and put the cursor where a
+        /// fresh arrival puts it.
+        ///
+        /// The screen itself never leaves - the view level is re-entered with a new node and the mod's
+        /// own gates now ride that out (<see cref="IsActive"/>) - so nothing else would speak, and the
+        /// cursor would sit on whichever node of the OLD system's tree the graph state remembered (a
+        /// figure in the colony panel, measured 2026-08-22). Both halves are exactly what the screen
+        /// manager does for a page the player arrives on: the name queued, and the landing on
+        /// <see cref="InitialFocusStop"/> announced when it lands.
+        ///
+        /// The first system seen is adopted silently: that is the arrival, and the screen manager has
+        /// already announced it.
+        /// </summary>
+        private void Turned()
+        {
+            StarSystemScreen window = Window();
+            StarSystemNode node = window == null ? null : window.StarSystemNode;
+            if (node != null && !ReferenceEquals(node, _showing))
+            {
+                bool arriving = _showing == null;
+                _showing = node;
+                if (!arriving)
+                {
+                    Voice.Say(ScreenName, false);
+                    _turnSettle = TurnSettleFrames;
+                    _turnSeats = TurnSeatFrames;
+                }
+            }
+
+            if (_turnSettle > 0)
+            {
+                _turnSettle--;
+                return;
+            }
+
+            if (_turnSeats > 0)
+            {
+                _turnSeats--;
+                GraphNavigator navigator = ModEntry.Navigator;
+                if (navigator != null && navigator.FocusStop(PlanetStop))
+                {
+                    _turnSeats = 0;
+                }
+            }
         }
 
         public override void Build(GraphBuilder builder)

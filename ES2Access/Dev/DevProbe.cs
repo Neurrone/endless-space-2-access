@@ -140,6 +140,41 @@ namespace ES2Access.Dev
             return false;
         }
 
+        /// <summary>
+        /// A per-frame recording of what the FOCUSED control would say - the row trace, driven from a
+        /// <c>POST /wait</c> predicate exactly as <see cref="Trace"/> is.
+        ///
+        /// The question it answers is how long after an arrival the page is still CHANGING what it
+        /// says. A landing announces once, so anything the row gains after that frame is lost, and the
+        /// wait a landing spends is only defensible against a measurement of it: run this across the
+        /// arrival and count the frames from the camera stopping to the last line that differs.
+        /// Always false, so the wait runs to its timeout.
+        /// </summary>
+        public static bool RowTrace(string tag)
+        {
+            try
+            {
+                GraphNavigator navigator = ModEntry.Navigator;
+                GraphNode node = navigator == null ? null : navigator.CurrentNode;
+                Core.Util.Log.Info(
+                    "rowtrace "
+                        + tag
+                        + " f="
+                        + Time.frameCount
+                        + " settling="
+                        + GalaxyViewLevels.CameraSettling
+                        + " | "
+                        + (node == null ? "-" : GraphAnnouncer.ComposeFull(node))
+                );
+            }
+            catch (Exception e)
+            {
+                Core.Util.Log.Warn("rowtrace threw: " + e.Message);
+            }
+
+            return false;
+        }
+
         /// <summary>The popup as the tutorial screen's own gates see it, plus the three window classes
         /// the game hides it for.</summary>
         private static string TutorialState()
@@ -1141,6 +1176,22 @@ namespace ES2Access.Dev
                     json.WriteEndArray();
                     json.WriteEndObject();
                 }
+
+                json.WriteEndArray();
+
+                // Every feature class the fallback reader has answered for since this assembly loaded,
+                // so a feature nobody has judged surfaces in tooling rather than in a player's ears
+                // (<see cref="TooltipFeatures.DefaultRead"/>). Cumulative, not this tooltip's.
+                json.WritePropertyName("defaultRead");
+                json.WriteStartArray();
+                List<string> defaulted = new List<string>(TooltipFeatures.DefaultRead);
+                defaulted.Sort(StringComparer.Ordinal);
+                for (int i = 0; i < defaulted.Count; i++)
+                {
+                    json.WriteValue(defaulted[i]);
+                }
+
+                json.WriteEndArray();
 
                 json.WriteEndArray();
 

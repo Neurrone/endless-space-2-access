@@ -108,6 +108,7 @@ namespace ES2Access.UI
                     return reading;
                 }
 
+                PanelFeaturePlayDeck deck = feature as PanelFeaturePlayDeck;
                 PanelFeatureShipInfo ship = feature as PanelFeatureShipInfo;
                 PanelFeatureGarrisonInfo garrison = feature as PanelFeatureGarrisonInfo;
                 PanelFeatureMilitaryPowerBalance power =
@@ -135,9 +136,15 @@ namespace ES2Access.UI
                     reading.Reader = "hero-card";
                     named = HeroCardNames(hero);
                 }
+                else if (deck != null)
+                {
+                    reading.Reader = "play-deck";
+                    named = PlayDeckNames(deck);
+                }
                 else
                 {
                     reading.Reader = "default";
+                    Defaulted(reading.Feature);
                 }
 
                 bool items;
@@ -502,6 +509,110 @@ namespace ES2Access.UI
             return true;
         }
 
+        // ---- the tactics deck ----
+
+        /// <summary>
+        /// The battle tactics a deck holds, each card's three FLOTILLA rows given the flotilla they
+        /// belong to.
+        ///
+        /// The deck's feature spawns one card per unlocked tactic (<c>PanelFeaturePlayDeck.Bind</c>
+        /// reserves its children from one item prefab), and each card draws its three optimal ranges
+        /// as a diagram plus a bare word - "Short", "Medium", "Long" - one under the other with
+        /// nothing on the card saying which flotilla each row is. The words for both halves are the
+        /// game's own and are used everywhere else it writes this pair:
+        /// <c>%FlotillaNameTitle</c> ("Flotilla {0}") for the row, and
+        /// <c>%AdvancedPlayFlotillaOptimalRangeTitle</c> ("{0} Range") for the word - the second being
+        /// exactly what the game writes into the range diagram's own hover tooltip
+        /// (<c>BattlePlayCardRangeIndicator.Refresh</c> :75), which is the only place a mouse player
+        /// ever sees the two joined.
+        ///
+        /// A substitution like every other typed reader's: the card's title, its family icons and its
+        /// effects paragraph go on reading through the ordinary banding.
+        /// </summary>
+        private static Dictionary<AgeTransform, Naming> PlayDeckNames(PanelFeaturePlayDeck deck)
+        {
+            Dictionary<AgeTransform, Naming> named = new Dictionary<AgeTransform, Naming>();
+            AgeTransform table = deck == null ? null : deck.PlayItemsTable;
+            if (table == null)
+            {
+                return named;
+            }
+
+            List<AgeTransform> cards = table.Children;
+            for (int i = 0; i < cards.Count; i++)
+            {
+                AgeTransform card = cards[i];
+                PanelFeaturePlayItem item =
+                    card == null ? null : card.GetComponent<PanelFeaturePlayItem>();
+                AgePrimitiveLabel[] ranges = item == null ? null : item.Ranges;
+                for (int flotilla = 0; ranges != null && flotilla < ranges.Length; flotilla++)
+                {
+                    AgePrimitiveLabel label = ranges[flotilla];
+                    string drawn = label == null ? null : AgeText.Label(label);
+                    if (string.IsNullOrEmpty(drawn))
+                    {
+                        continue;
+                    }
+
+                    NameAs(
+                        named,
+                        label,
+                        Localized(FlotillaNameKey, flotilla + 1),
+                        Localized(FlotillaRangeKey, drawn)
+                    );
+                }
+            }
+
+            return named;
+        }
+
+        private const string FlotillaNameKey = "%FlotillaNameTitle";
+        private const string FlotillaRangeKey = "%AdvancedPlayFlotillaOptimalRangeTitle";
+
+        /// <summary>One of the game's own templates, filled in. The raw key back where it does not
+        /// resolve, which the caller then reads as itself rather than saying nothing.</summary>
+        private static string Localized(string key, object argument)
+        {
+            try
+            {
+                return AgeText.Clean(Gui.Localize(key, argument));
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        // ---- which features nobody has written a reader for ----
+
+        /// <summary>
+        /// The feature classes that have been read by the DEFAULT reader since this assembly loaded.
+        ///
+        /// The default reader is not a defect - most features lay their words out in rows and the
+        /// banding is right about them - but a feature that divorces a value from its caption is
+        /// invisible in speech, in the tree dump and in the review buffer alike, so the only way one
+        /// ever surfaces is if somebody looks. This is the looking: every class the fallback answers
+        /// for is logged once and kept, so a session's worth of play leaves a list of exactly the
+        /// features nobody has judged, in the log and in <c>DevProbe.Tooltip</c>. Never spoken.
+        /// </summary>
+        public static ICollection<string> DefaultRead
+        {
+            get { return _defaulted; }
+        }
+
+        private static readonly HashSet<string> _defaulted = new HashSet<string>();
+
+        private static void Defaulted(string feature)
+        {
+            if (string.IsNullOrEmpty(feature) || _defaulted.Contains(feature))
+            {
+                return;
+            }
+
+            _defaulted.Add(feature);
+            Log.Info("tooltip feature read by default: " + feature);
+        }
+
         // ---- the ship stat block ----
 
         /// <summary>
@@ -651,6 +762,24 @@ namespace ES2Access.UI
         )
         {
             Name(named, label, StatTitle(stat));
+        }
+
+        /// <summary>A widget named with a value the reader COMPUTED rather than the one drawn on it -
+        /// the play deck's range words, which the game only ever writes out in full on a hover
+        /// tooltip.</summary>
+        private static void NameAs(
+            Dictionary<AgeTransform, Naming> named,
+            AgePrimitiveLabel label,
+            string title,
+            string value
+        )
+        {
+            if (label == null || string.IsNullOrEmpty(title) || string.IsNullOrEmpty(value))
+            {
+                return;
+            }
+
+            named[label.AgeTransform] = new Naming { Text = TooltipText.Captioned(title, value) };
         }
 
         private static void Name(

@@ -1934,7 +1934,11 @@ namespace ES2Access.Screens
             return new SearchScope(
                 found.Count,
                 index => SearchText(found[index].GuiTechnology),
-                index => Reveal(found[index], quadrantIds[index], stageIds[index])
+                index => Reveal(found[index], quadrantIds[index], stageIds[index]),
+                // The dot itself, with nothing opened - so that the shared scope can add what a
+                // collapsed dot would declare (each unlock's own dossier) without offering the dot
+                // twice (<see cref="SearchScope.Extend"/>).
+                index => TechnologyId(found[index])
             );
         }
 

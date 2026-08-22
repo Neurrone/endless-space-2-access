@@ -136,9 +136,11 @@ files above.
   unverified live), whispers and alliance sending.
 - Assigned-governor side panel: `Special` case for its three bare readouts (needs a save
   with a governor).
+- Skill-tree type-ahead: batch 8 gave EVERY screen a search over what its collapsed branches
+  would declare (`GraphBuilder.ExpandAll`), so this should now be covered by construction - it is
+  unverified live because no fixture reaches a hero with a skill tree.
 - The planet page's population-entry click has no opener node yet (the window itself,
   StarSystemPopulationModalWindow, is covered — SystemPoliticsScreen binds it).
-- Skill-tree type-ahead: a TypeAheadScope so search reaches skills in collapsed branches.
 - Galaxy-map audit remainder (2026-08-20): `StarSystemLabel`'s 32 public widget fields are
   now fully covered (bars wording awaits owner approval; exploration-winner and shared-system
   readings are fixture-blocked to mid-game saves). Still open from the audit: the Riftborn
@@ -335,6 +337,7 @@ Osulo I (test-recipes).
 
 **Still OPEN, untouched by batch 7**: turning the STAR-SYSTEM page announces the screen twice and
 seats the cursor on the scan button (the other pre-existing defect from the previous session).
+FIXED in batch 8, below.
 
 **Fixture-blocked, verified only through synthetic markers**: everything about quest markers. Both
 saves have ZERO markers on every in-progress quest, so the marker nodes, the open-space rows, the
@@ -346,3 +349,32 @@ so the open-space case was forced with a marker bound to a Ship.
 **Unproven**: the two space-battle popups, the two ground-battle popups and the hacking popup's own
 show-location handlers (no fixture raises them) — code-verified against their decompiled overrides
 only. Ctrl+L on those windows would exercise `NotificationScreen.GoToLocation`'s type dispatch.
+
+## Batch 8 (2026-08-22) — follow-ups and the feature audit
+
+**Landed and verified live**: the colonizable-planet scanner row's short resource names with zero
+outputs dropped; the galaxy landing's camera made INSTANT (`GalaxyViewLevels.SnapTo`, with the
+map's forced-zoom bookkeeping and `RestoreZoom` intact); type-ahead searching everything a
+collapsed branch WOULD declare on every screen (`GraphBuilder.ExpandAll` + `SearchScope.Extend`);
+the star-system page named "⟨system⟩, System management"; a typed reader for the battle-tactics
+deck ("Flotilla 1 Short Range"); the fallback tooltip reader naming itself
+(`TooltipFeatures.DefaultRead`, `DevProbe.Tooltip().defaultRead`); the minor gauge's four bands
+named "CORDIAL (25)" and its points row captioned "Relationship".
+
+**The star-system page turn is fixed** — the second of the two pre-existing defects carried since
+the previous session. One screen announcement per turn and the cursor lands in the new system's
+content instead of on the view-title scan button. Remaining rough edge: while the page is between
+systems it declares nothing, so the cursor migrates to a HUD stop for a moment and that migration is
+announced — one stray line between the name and the landing. Fixing it wants a screen-level "my
+content is between pages, hold the cursor" gate the navigator does not have yet.
+
+**Fixture-blocked**: the deposit/star dossiers a system's map label is supposed to carry beyond the
+star's own — at every camera `[Beginner] test` reaches, a system label declares exactly one
+Tooltips child, so "antimatter" is not findable on the galaxy and the search's reach into
+map-label dossiers is proved only on the research wheel's unlock children and the population
+panel's parties.
+
+**Unjudged, deliberately**: of the 119 panel-feature component classes, seven have typed readers and
+three more were source-checked and cleared; the rest fall to the default reader, which now names
+itself in the log and in `DevProbe.Tooltip()`. The next play session's `defaultRead` list is the
+work queue, not a desk review.

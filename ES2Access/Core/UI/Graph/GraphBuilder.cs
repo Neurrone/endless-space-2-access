@@ -27,6 +27,14 @@ namespace ES2Access.Core.UI.Graph
     {
         private readonly HashSet<ControlId> _expansion; // persistent expanded-group set (null = all explicit)
 
+        /// <summary>Build every expandable group OPEN, whatever the expansion set or the caller says.
+        ///
+        /// One build with this on answers "what would this page declare if the player had opened
+        /// everything" - which is what a type-ahead search has to look through, because a tree whose
+        /// branches are closed offers a search only what the player has already found. It is never on
+        /// for the build the player is NAVIGATING: that build is the tree as they left it.</summary>
+        public bool ExpandAll;
+
         public GraphBuilder(HashSet<ControlId> expansion = null)
         {
             _expansion = expansion;
@@ -221,7 +229,8 @@ namespace ES2Access.Core.UI.Graph
         {
             if (id == null) throw new ArgumentNullException("id");
             if (_currentRow != null) throw new InvalidOperationException("Cannot begin a group inside an open row");
-            bool isExpanded = expanded ?? (_expansion != null ? _expansion.Contains(id) : defaultExpanded);
+            bool isExpanded = ExpandAll
+                || (expanded ?? (_expansion != null ? _expansion.Contains(id) : defaultExpanded));
 
             GraphNode header = null;
             if (!Suppressed)
@@ -252,9 +261,13 @@ namespace ES2Access.Core.UI.Graph
         /// even BUILDING a collapsed group's children (a lazy hierarchy whose child view models
         /// materialize on first access). Groups with an explicit expanded: argument manage their own
         /// state instead.</summary>
+        /// <summary>Whether a group's children should be emitted. Screens ask this directly to decide
+        /// whether to ENUMERATE a branch at all (the emit is suppressed either way), so it has to
+        /// answer the same question <see cref="BeginGroup"/> does - <see cref="ExpandAll"/> included,
+        /// or a search build would declare group headers and nothing underneath them.</summary>
         public bool IsExpanded(ControlId id)
         {
-            return _expansion != null && id != null && _expansion.Contains(id);
+            return ExpandAll || (_expansion != null && id != null && _expansion.Contains(id));
         }
 
         /// <summary>

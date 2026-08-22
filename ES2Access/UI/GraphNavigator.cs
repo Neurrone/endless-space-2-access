@@ -1525,6 +1525,10 @@ namespace ES2Access.UI
         // at that column, so searching never pulls the player out of the column they were reading.
         private int _searchColumn;
 
+        // What the live search is looking through, built on its first keystroke and kept until it
+        // ends: the fully-open build behind it is the most expensive thing a search does.
+        private SearchScope _searchScope;
+
         /// <summary>
         /// Where typed characters come from this frame - the keyboard, in production. Null means
         /// nothing was typed.
@@ -1624,10 +1628,11 @@ namespace ES2Access.UI
                 return false;
             }
 
-            if (_typeAhead.Strayed(FocusedKey))
+            if (OwnPendingFocus == null && _typeAhead.Strayed(FocusedKey))
             {
                 // Something else moved focus; these letters start a fresh search from where the
-                // player actually is.
+                // player actually is. A landing of OUR OWN still in flight is not that: focus has not
+                // reached the result yet, and the search is still the offer the player is stepping.
                 ClearSearch();
             }
 
@@ -1666,6 +1671,10 @@ namespace ES2Access.UI
         /// silent case is a search that stopped applying to where they are.</summary>
         public void ClearSearch(bool announce = false)
         {
+            // Dropped first and unconditionally: a screen that offered nothing to search built a scope
+            // all the same, and a kept empty one would never be asked for again.
+            _searchScope = null;
+
             // Asked every frame by the tick, so the usual answer - there was no search - costs a
             // pair of flag reads.
             if (!_typeAhead.IsActive && !_typeAhead.HasBuffer)
@@ -1686,7 +1695,7 @@ namespace ES2Access.UI
         // being "in" a mode they cannot see. True = the action was the search's.
         private bool SearchAction(string actionKey)
         {
-            if (_typeAhead.Strayed(FocusedKey))
+            if (OwnPendingFocus == null && _typeAhead.Strayed(FocusedKey))
             {
                 ClearSearch();
                 return false;
@@ -1753,10 +1762,16 @@ namespace ES2Access.UI
         }
 
         // What this search looks through: whatever the screen offers, else the Tab-stop the cursor
-        // is in. A screen answers only when the thing being searched for is not declared - a tree
-        // whose collapsed branches hold most of it.
+        // is in, and either of those PLUS everything the page would declare with its branches open
+        // (SearchScope.Extend). Built once and kept for the life of the search: the deep build is a
+        // whole second render of the page and nothing it holds can change while the player types.
         private SearchScope ScopeFor(GraphNode focused)
         {
+            if (_searchScope != null)
+            {
+                return _searchScope;
+            }
+
             SearchScope declared = null;
             try
             {
@@ -1767,7 +1782,91 @@ namespace ES2Access.UI
                 Log.Warn("nav: " + _screen.Key + ".TypeAheadScope threw: " + e);
             }
 
-            return declared ?? SearchScope.OverStop(_graph.Current, focused.StopKey);
+            SearchScope basis =
+                declared ?? SearchScope.OverStop(_graph.Current, focused.StopKey);
+            _searchScope = SearchScope.Extend(
+                basis,
+                _graph.Current,
+                DeepRender(),
+                focused.StopKey,
+                RevealDeep
+            );
+            return _searchScope;
+        }
+
+        /// <summary>The page as it would be with every group open - what a search looks through beyond
+        /// what is declared. The screen's own build, so the enumerations are the ones the expansion
+        /// itself uses and nothing here has to know what a branch holds.</summary>
+        private GraphRender DeepRender()
+        {
+            try
+            {
+                int start = Environment.TickCount;
+                GraphBuilder builder = new GraphBuilder(_state.Expanded);
+                builder.ExpandAll = true;
+                _screen.Build(builder);
+                _screen.BuildShared(builder);
+                GraphRender render = builder.Build();
+                SearchBuildMs = Environment.TickCount - start;
+                SearchBuildNodes = render == null ? 0 : render.Order.Count;
+                return render;
+            }
+            catch (Exception e)
+            {
+                Log.Warn("nav: " + _screen.Key + ".Build with everything open threw: " + e);
+                return null;
+            }
+        }
+
+        /// <summary>How long the last search's fully-open build took, and how many controls it found.
+        /// Read by the dev probe: this is the one expensive thing a search does and it is paid once per
+        /// search, never per keystroke and never per frame.</summary>
+        public static int SearchBuildMs;
+
+        public static int SearchBuildNodes;
+
+        /// <summary>Land on a control only the fully-open build declared: open every branch it is
+        /// inside, outermost first, and answer with the control itself. A group whose expansion is an
+        /// adapter's own business is opened through its handler, exactly as the tree keys open it;
+        /// everything else goes into the persistent set. A branch the standing render already has open
+        /// is left alone, so nothing is toggled.</summary>
+        private ControlId RevealDeep(GraphNode node)
+        {
+            if (node == null)
+            {
+                return null;
+            }
+
+            List<GraphNode> branches = new List<GraphNode>();
+            for (GraphNode at = node.Parent; at != null; at = at.Parent)
+            {
+                if (at.Expandable && at.Id != null)
+                {
+                    branches.Add(at);
+                }
+            }
+
+            GraphRender standing = _graph == null ? null : _graph.Current;
+            for (int i = branches.Count - 1; i >= 0; i--)
+            {
+                GraphNode branch = branches[i];
+                GraphNode open = standing == null ? null : standing.NodeAt(branch.Id);
+                if (open != null && open.Expanded)
+                {
+                    continue;
+                }
+
+                if (branch.Vtable.OnExpand != null)
+                {
+                    branch.Vtable.OnExpand();
+                }
+                else
+                {
+                    _state.Expanded.Add(branch.Id);
+                }
+            }
+
+            return node.Id;
         }
 
         // A result landing: focus it, keep the column the search started in, and read it out at
@@ -1775,9 +1874,19 @@ namespace ES2Access.UI
         // ended up, which is what the search watches to know it is still current.
         private ControlId LandOnSearchResult(ControlId id)
         {
-            if (id == null || !_graph.Focus(id))
+            if (id == null)
             {
                 return null;
+            }
+
+            if (!_graph.Focus(id))
+            {
+                // Not declared yet - the result was one only the fully-open build knew about, and the
+                // branches it is inside have just been asked to open. Opening them takes a build, or
+                // several, so the landing goes to the pending-focus pass, which walks the ancestry
+                // down and announces the arrival itself.
+                FocusNode(id);
+                return id;
             }
 
             FollowSearchColumn();

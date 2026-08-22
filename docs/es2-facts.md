@@ -2230,6 +2230,126 @@ generic graduates to the generic docs.
   `ChatTab.OnBeginShow` gates on the same predicate, so `CanShowTab` and drawn-ness agree for a
   non-discreet panel and the mod needs only one of them.
 
+## The tooltip PANEL-FEATURE audit (2026-08-22, batch 8)
+
+**The corpus.** `Public/Gui/GuiTooltipDescriptions*.xml` (base + DLC2/3/4) declare **151 tooltip
+classes** naming **136 distinct feature PREFABS**. Prefab names are not component types: **119** of
+them have a component class of the same name in `Assembly-CSharp`, and the other **17** are prefab
+variants that draw through a base component (`ArenaEffects`, `AssimilationInfo`,
+`DescriptionGameplay`, `EffectsReinforcementsThreshold`, `EffectsSetHonorAction`,
+`EffectsSetPlanet`, `EffectsSetsHackingProgram`, `EffectsUnsorted`, `EffectsUpgrade`,
+`EmpireHappinessModifiers`, `ResourceDepositGroup`, `SeparatorEmbedded`, `SimpleDescription`,
+`SkillEffectsSetCurrent`, `SkillEffectsSetNext`, `StarSystemResourcesImprovement`,
+`SynergyEffects`). `TooltipFeatures.Read` reports the COMPONENT type, so a probe's `feature` field
+will never show one of those 17 names. The class-to-feature map is rebuilt by stripping XML comments
+and pairing each `GuiTooltipDescription`'s `TooltipClass` with every `PanelFeatures/PanelFeatureX`
+prefab path inside it (a five-line perl slurp over the four files).
+
+**Which features the tooltips a player meets most are made of** (from that map):
+
+| Tooltip class | Features |
+|---|---|
+| `Planet` / `ColonizedPlanet` | Header, Description, Separator, PlanetProperties, MaxPopulation, Fidsi, FidsiMiningProbe, FidsiFromMiningProbe, Anomalies, EffectsSetPlanet, TerraformationInProgress (+ Simple on the colonized one) |
+| `StarSystem` | Header, DescriptionGameplay, Fidsi, Population, SystemGrowth, SystemDefense, SystemRelics, NodeRooting, TimeBubblesContainer, Effects, FailureInfos, Simple, Separator |
+| `Garrison` / `FleetStatus` / `FleetGroup` | GarrisonInfo, MilitaryPowerBalance, RangeEfficiency, Simple / Header, Description / Header, GarrisonsList, AdditionalGarrisons |
+| `Ship` / `ShipDesign` | HeaderShip, ShipInfo, RangeEfficiency, ShipResourceTransferInfo, Upkeep (+ ShipCosts, EmpirePointGain, PoliticalImpact, FailureInfos on the design) |
+| `ShipModule` / `ShipHull` / `ShipSlot(Equiped)` | Header, Costs, ModuleEffects / HullInfo / SlotInfo, SlotSeparator, Title, DescriptionGameplay |
+| `Constructible` / `StarSystemImprovement` / `EmpireImprovement` | Header, Description, Effects, EffectsInQueue, Costs, Upkeep, EmpirePointGain, PoliticalImpact, FailureInfos, Simple |
+| `Technology` / `TechnologyStage` / `TechnologyUnlockEmbedded` | Header(Embedded), Description(Gameplay), Costs, TechnologyStatus, TechnologyUnlocks, PoliticalImpact, FailureInfos / Effects, EffectsInQueue, Spacing, StarSystemResourcesImprovement |
+| `Population` / `PopulationStarSystem` / `PopulationEmbedded` | Header, Description, Population, PopulationEffects, PopulationBooster, PopulationScore, PoliticalOpinion |
+| `Hero` / `HeroSkill` / `HeroProperty` | Header, HeroInfo, HeroShip / RelicSkill, SkillEffectsSetCurrent, SkillEffectsSetNext, Spacing / HeroClassAffectingOdds |
+| `Law` / `ActiveLaw` | Header, Description, Effects, LawForced, LawUpkeep, Upkeep, PoliticsExperiencePrerequisite |
+| `Resource` / `TradableResource` / `ResourceDeposit` | HeaderWithSymbol, Description, BoostablePopulation, EffectsUpgrade / EffectsResource, MiningProbe, Simple |
+| `TradeEfficiency` / `TradingCompany` | TradeEfficiencyFactors / Header, Description |
+
+**Which have a typed reader** (`ES2Access/UI/TooltipFeatures.cs`), everything else falling to the
+scoped-banding default: `PanelFeatureShipInfo` (ship-stats), `PanelFeatureGarrisonInfo` +
+`…Embedded` (garrison-stats), `PanelFeatureMilitaryPowerBalance` (power-balance),
+`PanelFeatureHeroInfo` (hero-card), `PanelFeatureEffectsSets` (effect-sets),
+`PanelFeatureConstellationControl` (constellation), and **`PanelFeaturePlayDeck` (play-deck, new
+2026-08-22)**. `IsSeparator`/`IsSpacing` features are skipped by the game's own flags.
+
+**What the default reader is measured to do on the commonest tooltip.** `StarSystem`, drawn on
+Dusay, read one feature at a time (`DrawnTooltip.Features`) — every one of these is a DEFAULT read
+and none of them loses a caption:
+
+```
+PanelFeatureHeader   [default]       | Dusay - Imperials Neurrone | Star System (Blue Star)
+PanelFeatureDescription [default]    | These stars have a strong chance of harboring Hot planets.
+PanelFeatureFidsi    [default+items] | Food -35, Industry 85, Dust 59, Science 45, Influence 10
+PanelFeaturePopulation [default]     | System population count: 5 Population
+PanelFeatureSystemGrowth [default]   | Current Stock: 129/300 | System Growth: -34 | Turns until loss: 4 Turn | Population lost: Yuusho
+PanelFeatureSystemDefense [default]  | Defense: 100% (Infantry 48)
+```
+
+The two things that make it work are the two the audit should check anywhere else: the feature
+writes its own caption label beside its value (`SystemGrowth` has a `…Title`/`…Value` pair per
+line; `Population` writes `%PanelFeaturePopulationCount…Title`), or the value's caption is PREFAB
+text the feature never touches (`SystemDefense` writes only `"100% (Infantry 48)"` and the prefab
+draws "Defense:"; `ProbeFleetActionInfo` is the same shape). **A feature on `default` is a defect
+only where the DRAWN feature divorces a value from its caption** — reading the class's source alone
+over-reports, because prefab captions are invisible there (`SystemDefense` looks unsafe and is not).
+
+**The two shapes the banding genuinely cannot express**, and so the two to look for in a new
+feature: a repeated-item grid whose titles are all in one row and values in the next (handled by
+`AddItems` pairing by sibling index), and **a run of rows with no caption anywhere** — which is what
+`PanelFeaturePlayItem` is and why it got a typed reader. Features holding a repeated table or a
+gauge, i.e. the candidates worth reading first, are: `Anomalies`, `GarrisonCompactInfoEmbedded`,
+`GarrisonInfo`, `GroundBattleInfo`, `Ingredients`, `MilitaryPowerBalance`, `MinigameTeam`,
+`MiningProbePreview`, `ModuleEffects`, `PlanetFullDepletionEffects`, `PlanetProperties`,
+`PlayDeck`, `PoliticalOpinion`, `PoliticsExperiencePrerequisite`, `PopulationCollectionBonus`,
+`RangeEfficiency`, `ShipInfo`, `SlotInfo`, `SystemDefenseDetailed`, `TerraformationEffects`. Read
+source-checked and judged default-SAFE of those: `RangeEfficiency` (each item writes
+`Title.Text = Gui.GetTitle(key)` beside `Efficiency.Text`), `Anomalies` (one title per line under
+its own heading), `PlanetProperties` (each item is a `PlanetGameplayTypeItem` that titles itself).
+The rest of the 119 are unjudged, and that is deliberate: the fallback now NAMES itself, so the next
+session's play surfaces the ones a fixture actually draws instead of a desk review guessing.
+
+**The default reader now says so.** Every feature class the fallback answers for is logged once
+(`tooltip feature read by default: <class>`) and kept in `TooltipFeatures.DefaultRead`, which
+`DevProbe.Tooltip()` reports as `defaultRead`. It is silent in speech; the point is that a feature
+nobody has judged shows up in tooling. Measured over one fixture session: 8 classes
+(`Header`, `HeaderWithSymbol`, `Description`, `Fidsi`, `Population`, `SystemGrowth`,
+`SystemDefense`, `ResourceNetIncome`).
+
+**The battle-tactics card draws three unlabelled flotilla rows.**
+`PanelFeaturePlayItem` (`decompiled/…/PanelFeaturePlayItem.cs:28`) is a
+`GuiPanelFeatureContainer` spawned N times inside `PanelFeaturePlayDeck.PlayItemsTable` — it is NOT
+a sibling in the tooltip's own feature table, so `TooltipFeatures.Read` is called on the DECK and
+the items are its children. Each item writes `Ranges[i].Text = Gui.GetLocalizedTitle("Long|Medium|Short")`
+for flotilla `i` and nothing that says which flotilla. The words for both halves are the game's:
+`%FlotillaNameTitle` = "Flotilla {0}" and `%AdvancedPlayFlotillaOptimalRangeTitle` = "{0} Range" —
+the latter being exactly what `BattlePlayCardRangeIndicator.Refresh` (:75) writes into the range
+diagram's own hover tooltip, the only place a mouse player sees the pair joined. Read live on the
+research wheel (Lethal Squadrons' unlock child, tooltip class `PlayDeck`): "Flotilla 1 Short Range /
+Flotilla 2 Short Range / Flotilla 3 Long Range" per tactic.
+
+**The minor-faction relation gauge names its own bands.** `MinorFactionDiplomacyModalWindow`
+`GaugeTooltipsTransformList` is four prefab segments named `Tooltip0/25/50/75`, laid along
+`GaugeLine`: measured 2026-08-22 at x = 0 / 66 / 133 / 200 across a 266-wide bar, i.e. 0 / 25 / 50 /
+75 on the same 0-100 scale the relation POINTS are on (33 points reads CORDIAL). Each carries a
+Content-only tooltip whose key is `%DiplomaticRelationStateMinor<State>Description`, and the game's
+own title for the state is that key with `Description` swapped for `Title`
+(`%DiplomaticRelationStateMinorCordialTitle` = "CORDIAL"). So a band's name is derivable twice over
+without hard-coding either half. The whole list is hidden while at war (`ToggleGaugeTooltips`).
+
+**Finishing a galaxy camera flight instantly.** `GalaxyViewLevel_GalaxyOverview.ZoomInOnNode` is
+`cameraController.ForceZoomingOnPosition(ZoomStepsCount - 1, GetTargetPositionFromGalaxyEntity(node))`
+plus two records — `hasZoomBeenForced = true` and `forcedZoomLinkedGalaxyEntity` — which are what
+make the map's own right-click way back out work. `ForceZoomingOnPosition` itself first saves
+`lastCameraTargetPosition`/`lastZoomStep` (what `RestoreLastCameraParameters` puts back) and then
+starts two SmoothDamps: the zoom value (`isZooming`, `ZoomValueDampingDuration`) and a recentre onto
+the target (`isRecentering`). **Both can be fast-forwarded without touching the bookkeeping**: call
+the game's own `ZoomInOnNode`, then write `cameraTargetTransform.position = recenteringTargetPosition`,
+invoke the controller's private `ResetZoom(ZoomStepCurrent)` (its own "put the zoom where it
+belongs, now" — what a technique change calls) and clear `isRecentering`/`isZooming` and the two
+damping velocities. Measured 2026-08-22: the flight takes **894 ms / 11 frames** to settle and the
+orbital-card surface (`GalaxyViewLevels.FocusedSystem` plus the orbital labels window shown) arrives
+**598 ms / 8 frames** after it; the snap settles in **0 ms** and the card surface is up **1 frame /
+0 ms** later, at the identical camera (focus and eye equal to the flight's, step 12, `ZoomForced`
+still true, and `RestoreZoom` afterwards still returns the camera to where it started).
+
+
 ## Card and tooltip drawing mechanisms
 
 **A block caption's WORD and its EXPLANATION sit on different widgets, and the prefabs repeat the

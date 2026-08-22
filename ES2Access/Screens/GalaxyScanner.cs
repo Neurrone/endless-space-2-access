@@ -1555,27 +1555,28 @@ namespace ES2Access.Screens
         ///
         /// The properties are the ones the game's own enumerator binds for a world nobody has settled
         /// (<c>FidsiEnumerator.LoadPlanet</c>, the uncolonized branch), read off the planet's own
-        /// simulation object and named by the game's titles for them, which is where those words live:
-        /// the panel draws an icon beside each and writes no caption anywhere.
+        /// simulation object. The names beside them are the SHORT resource names rather than the
+        /// simulation properties' own titles, and a figure the page would draw as zero is dropped -
+        /// both rules and the reasons for them in <see cref="ScannerOutputs"/>.
         /// </summary>
         private static void Outputs(MessageBuilder details, Planet planet)
         {
             for (int i = 0; i < Potential.Length; i++)
             {
-                Amplitude.StaticString property = Potential[i];
-                string value = GlobalHud.Amount(planet.GetPropertyValue(property), false, 0);
-                if (value == null)
+                float amount = planet.GetPropertyValue(Potential[i]);
+                if (!ScannerOutputs.Says(amount))
                 {
                     continue;
                 }
 
-                details.ListItem(
-                    ModStrings.Format(
-                        ModStrings.GalaxyScannerOutput,
-                        AgeText.Clean(Gui.GetLocalizedTitle(property)),
-                        value
-                    )
+                string line = ScannerOutputs.Line(
+                    ModStrings.Get(PotentialNames[i]),
+                    GlobalHud.Amount(amount, false, 0)
                 );
+                if (line != null)
+                {
+                    details.ListItem(line);
+                }
             }
         }
 
@@ -1588,6 +1589,19 @@ namespace ES2Access.Screens
             SimulationProperties.Planet.PlanetInitialDust,
             SimulationProperties.Planet.PlanetInitialScience,
             SimulationProperties.Planet.PlanetInitialPrestige,
+        };
+
+        /// <summary>What each of <see cref="Potential"/> is called, index for index - the same short
+        /// words the mod already has for the icons the game draws instead of a caption. The fifth is
+        /// influence: "prestige" is the simulation's old name for it and no player-facing word in the
+        /// game says it.</summary>
+        private static readonly string[] PotentialNames = new string[]
+        {
+            ModStrings.IconFood,
+            ModStrings.IconIndustry,
+            ModStrings.IconDust,
+            ModStrings.IconScience,
+            ModStrings.IconInfluence,
         };
 
         /// <summary>What kind of world this is, in the game's own sentence for the pair - size first,

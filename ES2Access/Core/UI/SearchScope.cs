@@ -32,11 +32,117 @@ namespace ES2Access.Core.UI
         /// screen may do real work here.</summary>
         public readonly Func<int, ControlId> Land;
 
-        public SearchScope(int count, Func<int, string> textOf, Func<int, ControlId> land)
+        /// <summary>Which control item <c>i</c> IS, asked with no side effects - so that two sources of
+        /// results can be merged without offering the same control twice (<see cref="Extend"/>).
+        /// Defaults to <see cref="Land"/>, which is the same answer wherever landing is just focusing.
+        /// A scope whose landing does real work supplies the pure half here instead.</summary>
+        public readonly Func<int, ControlId> IdOf;
+
+        public SearchScope(
+            int count,
+            Func<int, string> textOf,
+            Func<int, ControlId> land,
+            Func<int, ControlId> idOf = null
+        )
         {
             Count = count;
             TextOf = textOf;
             Land = land;
+            IdOf = idOf ?? land;
+        }
+
+        /// <summary>
+        /// Everything the page would declare IF THE PLAYER HAD OPENED IT ALL, added to what a scope
+        /// already offers.
+        ///
+        /// A tree hides most of itself. The ordinary scope can only match controls that exist, so on
+        /// any page with collapsed branches typing finds what the player has already opened - a
+        /// confirmation, not a search. <paramref name="deep"/> is the same page built with every group
+        /// forced open (<c>GraphBuilder.ExpandAll</c>), which is the page's OWN enumeration of its
+        /// contents - structural children and the dossiers a node hangs in its "Tooltips" region alike,
+        /// because both are declared by the same build. Nothing here knows what any of them are.
+        ///
+        /// Offered once each: a control the standing render already holds, or that the scope being
+        /// extended already offers (<see cref="IdOf"/>), is skipped. Landing on one is
+        /// <paramref name="reveal"/>'s job - open the branches it is buried in and answer with the
+        /// control - which is the host's, because opening a group can be a screen's own side effect.
+        ///
+        /// Built ONCE per search, not per keystroke: a whole page rebuilt with everything open is the
+        /// most expensive thing a search does, and what it holds cannot change while the player is
+        /// typing at it.
+        /// </summary>
+        public static SearchScope Extend(
+            SearchScope basis,
+            GraphRender standing,
+            GraphRender deep,
+            object stopKey,
+            Func<GraphNode, ControlId> reveal
+        )
+        {
+            if (basis == null || deep == null || reveal == null)
+            {
+                return basis;
+            }
+
+            HashSet<ControlId> offered = new HashSet<ControlId>();
+            if (standing != null)
+            {
+                foreach (ControlId id in standing.Nodes.Keys)
+                {
+                    offered.Add(id);
+                }
+            }
+
+            if (basis.IdOf != null)
+            {
+                for (int i = 0; i < basis.Count; i++)
+                {
+                    ControlId id = basis.IdOf(i);
+                    if (id != null)
+                    {
+                        offered.Add(id);
+                    }
+                }
+            }
+
+            List<GraphNode> hidden = new List<GraphNode>();
+            foreach (GraphNode node in deep.Order)
+            {
+                NodeVtable vtable = node.Vtable;
+                if (
+                    !Equals(node.StopKey, stopKey)
+                    || vtable.ExcludeFromSearch
+                    || (vtable.Column > 0 && !vtable.SearchesAsItself)
+                    || node.Id == null
+                    || offered.Contains(node.Id)
+                )
+                {
+                    continue;
+                }
+
+                offered.Add(node.Id);
+                hidden.Add(node);
+            }
+
+            if (hidden.Count == 0)
+            {
+                return basis;
+            }
+
+            SearchScope outer = basis;
+            List<GraphNode> found = hidden;
+            Func<GraphNode, ControlId> open = reveal;
+            int already = basis.Count;
+            return new SearchScope(
+                already + found.Count,
+                index => index < already ? outer.TextOf(index) : TextFor(found[index - already]),
+                index =>
+                    index < already ? outer.Land(index) : open(found[index - already]),
+                index =>
+                    index < already
+                        ? (outer.IdOf == null ? null : outer.IdOf(index))
+                        : found[index - already].Id
+            );
         }
 
         /// <summary>

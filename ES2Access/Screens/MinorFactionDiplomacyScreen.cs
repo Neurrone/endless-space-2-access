@@ -5,6 +5,7 @@ using ES2Access.Core.UI;
 using ES2Access.Core.UI.Graph;
 using ES2Access.Core.Util;
 using ES2Access.UI;
+using UnityEngine;
 
 namespace ES2Access.Screens
 {
@@ -347,10 +348,17 @@ namespace ES2Access.Screens
                     Keys + "relation"
                 );
 
-                // The points and their trend, which the game writes into ONE label ("40 (+7/turn)") and
-                // gives no title anywhere: the sentence it hangs on the line becomes the name, as the
-                // shared rule says (<see cref="Cells.AddStat"/>), and is then not said twice.
-                Cells.AddStat(_cells, window.RelationTrendLabel, null, Keys + "trend");
+                // The points and their trend, which the game writes into ONE label ("40 (+7/Turn)") and
+                // gives no title anywhere - not even a description key. The caption is the mod's own
+                // word for what the number IS (owner ruling 2026-08-22); before it, the line fell to
+                // the shared last resort and was named by the SENTENCE the game hangs on it, which
+                // explains what a relation is and never says the number.
+                Cells.AddStat(
+                    _cells,
+                    window.RelationTrendLabel,
+                    ModStrings.Get(ModStrings.MinorRelationship),
+                    Keys + "trend"
+                );
                 Cells.AddStat(
                     _cells,
                     window.AllyLabel,
@@ -372,10 +380,25 @@ namespace ES2Access.Screens
             Captions.Pop(builder, named);
         }
 
-        /// <summary>What each band of the relation gauge is worth. The prefab hangs one sentence per band
-        /// and no caption on any of them, so they are the stop's "Tooltips" region - the uniform answer
-        /// for explanations a surface offers with no words on screen - named by their own first
-        /// lines.</summary>
+        /// <summary>
+        /// What each band of the relation gauge is worth. The prefab hangs one sentence per band and no
+        /// caption on any of them, so they are the stop's "Tooltips" region - the uniform answer for
+        /// explanations a surface offers with no words on screen.
+        ///
+        /// Each band is NAMED "CORDIAL (25)": the relation state the band buys, and the number of
+        /// relation points where it starts. Neither half is invented and neither is hard-coded. The
+        /// STATE is read off the band's own sentence key - the prefab writes
+        /// <c>%DiplomaticRelationStateMinorCordialDescription</c> into the tooltip's content, and the
+        /// game's own title for the same state is that key with Description swapped for Title, which is
+        /// how the game itself builds these keys (state prefix + member name). The THRESHOLD is
+        /// measured off the bar: the segment's left edge as a percentage of the gauge it is laid along,
+        /// which is the same 0-100 scale the relation points are on (measured 2026-08-22: segments at
+        /// 0/66/133/200 across a 266-wide gauge, and 33 points reading CORDIAL).
+        ///
+        /// The sentence itself stays in the buffer and out of the announcement
+        /// (<see cref="TooltipMode.None"/>): it was the name until the states arrived, and saying it
+        /// after the name would say the band twice.
+        /// </summary>
         private void Bands(GraphBuilder builder, MinorFactionDiplomacyModalWindow window)
         {
             _bands.Clear();
@@ -395,10 +418,14 @@ namespace ES2Access.Screens
                 }
 
                 AgeTooltip tip = tooltip;
+                string band = BandName(at, tooltip);
                 _bands.Add(
                     new TooltipChildren.Dossier
                     {
-                        Name = CardActions.NameFromTooltip(tip),
+                        Name =
+                            band != null
+                                ? (Func<string>)(() => band)
+                                : CardActions.NameFromTooltip(tip),
                         Tooltip = tip,
                         Anchor = at,
                         Mode = TooltipMode.None,
@@ -408,6 +435,53 @@ namespace ES2Access.Screens
 
             TooltipChildren.Emit(builder, Keys + "gauge", _bands, null);
         }
+
+        /// <summary>One band's name - the state it buys and the points it starts at. Null where either
+        /// half cannot be read, which leaves the band named by its sentence's first line as it was.
+        /// </summary>
+        private static string BandName(AgeTransform segment, AgeTooltip tooltip)
+        {
+            try
+            {
+                string state = BandState(tooltip);
+                AgeTransform bar = segment.Parent;
+                if (state == null || bar == null || bar.Width <= 0f)
+                {
+                    return null;
+                }
+
+                int points = Mathf.RoundToInt(segment.X / bar.Width * 100f);
+                return ModStrings.Format(ModStrings.MinorBand, state, points);
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>The game's own word for the relation state a band's sentence explains, off that
+        /// sentence's own key. Null where the key is not one of these or the title is missing, which is
+        /// what a patch re-authoring the prefab looks like from here.</summary>
+        private static string BandState(AgeTooltip tooltip)
+        {
+            string content = tooltip == null ? null : tooltip.Content;
+            if (
+                content == null
+                || !content.StartsWith(BandKeyPrefix)
+                || !content.EndsWith(BandKeySuffix)
+            )
+            {
+                return null;
+            }
+
+            string title =
+                content.Substring(0, content.Length - BandKeySuffix.Length) + "Title";
+            string named = AgeText.Clean(Gui.Localize(title));
+            return string.IsNullOrEmpty(named) || named[0] == '%' ? null : named;
+        }
+
+        private const string BandKeyPrefix = "%DiplomaticRelationState";
+        private const string BandKeySuffix = "Description";
 
         /// <summary>What the relationship is worth: the resources the game composes into ONE label, a row
         /// per line of it, or its own sentence for gaining nothing yet.</summary>

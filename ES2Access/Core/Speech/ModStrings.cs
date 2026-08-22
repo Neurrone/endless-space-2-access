@@ -926,6 +926,12 @@ namespace ES2Access.Core.Speech
         // panels as unlabelled boxes with an icon in the corner; everything a panel CONTAINS is read
         // in the game's own words.
         public const string ScreenStarSystem = "screen.star-system";
+
+        /// <summary>The star-system page names itself after the system it is showing: the drawn system
+        /// name and the game's own word for the page ("Heka, System management"), so that turning the
+        /// page says which system the player is now on. A connective, not a phrase - both halves are
+        /// somebody else's words.</summary>
+        public const string ScreenStarSystemNamed = "screen.star-system-named";
         public const string ScreenPlanet = "screen.planet";
 
         /// <summary>The two arrows the planet page draws beside the planet's name, which walk the empire's
@@ -1414,6 +1420,17 @@ namespace ES2Access.Core.Speech
         public const string DiplomacyActionsBand = "diplomacy.actions-band";
         public const string DiplomacyTreasury = "diplomacy.treasury";
 
+        /// <summary>One band of a minor faction's relation gauge, named by the relation state it would
+        /// buy and the number of relation points where that state starts ("CORDIAL (25)"). A
+        /// connective: the state word is the game's (<c>%DiplomaticRelationStateMinor…Title</c>,
+        /// read off the band's own description key) and the number is measured off the bar.</summary>
+        public const string MinorBand = "minor.band";
+
+        /// <summary>What the relation points and their per-turn trend are ("40 (+7/Turn)"). The game
+        /// gives the line no title anywhere - only a sentence explaining what a relation IS - so the
+        /// caption is the mod's (owner ruling 2026-08-22).</summary>
+        public const string MinorRelationship = "minor.relationship";
+
         /// <summary>The pane one of the senate windows writes the selected thing out in; the game gives
         /// it no heading of its own. Its button band shares <see cref="DiplomacyActionsBand"/>.
         /// </summary>
@@ -1832,6 +1849,7 @@ namespace ES2Access.Core.Speech
             { ScanTradeRoutesBlockaded, "{0} trade routes, blockaded" },
             { ScanTradeRoutesMixed, "{0} trade routes, {1} blockaded" },
             { ScreenStarSystem, "Star system" },
+            { ScreenStarSystemNamed, "{0}, {1}" },
             { ScreenPlanet, "Planet" },
             { PlanetPrevious, "Previous planet" },
             { PlanetNext, "Next planet" },
@@ -2054,6 +2072,8 @@ namespace ES2Access.Core.Speech
             { AcademyNamedShips, "Named ships" },
             { DiplomacyActionsBand, "Actions" },
             { DiplomacyTreasury, "Treasury" },
+            { MinorBand, "{0} ({1})" },
+            { MinorRelationship, "Relationship" },
             { SenateDetailPane, "Details" },
             { ScreenTutorialSelection, "Tutorial selection" },
             { ScreenNewGame, "New game" },

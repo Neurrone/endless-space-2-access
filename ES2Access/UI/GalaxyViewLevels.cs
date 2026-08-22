@@ -553,12 +553,7 @@ namespace ES2Access.UI
                         return false;
                     }
 
-                    if (!_settleFieldsRead)
-                    {
-                        _settleFieldsRead = true;
-                        _zooming = Field("isZooming");
-                        _recentering = Field("isRecentering");
-                    }
+                    PrimeSettleFields();
 
                     return Flag(_zooming, camera) || Flag(_recentering, camera);
                 }
@@ -567,6 +562,21 @@ namespace ES2Access.UI
                     return false;
                 }
             }
+        }
+
+        /// <summary>Read the two flags the controller flies on, once. Both the settling QUESTION and
+        /// the snap that ends a flight ask through this, so they can never disagree about which fields
+        /// they are looking at.</summary>
+        private static void PrimeSettleFields()
+        {
+            if (_settleFieldsRead)
+            {
+                return;
+            }
+
+            _settleFieldsRead = true;
+            _zooming = Field("isZooming");
+            _recentering = Field("isRecentering");
         }
 
         private static bool _settleFieldsRead;
@@ -735,6 +745,113 @@ namespace ES2Access.UI
             catch (Exception e)
             {
                 Log.Warn("galaxy: zooming on a node threw: " + e);
+            }
+        }
+
+        /// <summary>
+        /// Bring the camera in on a node with NO FLIGHT - the same arrival <see cref="ZoomTo"/> makes,
+        /// finished on the frame it starts (owner ruling 2026-08-22).
+        ///
+        /// A landing is not a journey the player is watching: the flight is nine tenths of a second in
+        /// which nothing can be said, because what a row READS depends on how close the camera is, and
+        /// then the announcement arrives long after the key. So the game's own route is taken first -
+        /// <c>ZoomInOnNode</c>, which force-zooms and records that the zoom was forced and on what, so
+        /// the map's own way back out (right-click, and the mod's zoom-undo) keeps working - and its
+        /// two SmoothDamps are then fast-forwarded to the values they were heading for:
+        /// <c>ResetZoom</c> is the controller's own "put the zoom where it belongs, now" (it is what a
+        /// technique change calls), and the recentring target is simply written onto the camera's own
+        /// target transform. Both flags end up clear, so <see cref="CameraSettling"/> answers false at
+        /// once and a landing waits only for the map to draw the cards.
+        ///
+        /// Every piece of it is the controller's own state, reached by reflection because the game
+        /// gives no public way to finish a zoom. Where any of it is missing the flight simply plays as
+        /// it did before - the arrival is slower, never wrong.
+        /// </summary>
+        public static void SnapTo(GameNode node)
+        {
+            ZoomTo(node);
+            Settle();
+        }
+
+        /// <summary>Finish whatever flight the galaxy camera is on, at once. Answers whether anything
+        /// was finished, which is what the timing measurements read.</summary>
+        public static bool Settle()
+        {
+            try
+            {
+                GalaxyViewCameraController camera = Camera();
+                if (camera == null)
+                {
+                    return false;
+                }
+
+                if (!_snapRead)
+                {
+                    _snapRead = true;
+                    _resetZoom = typeof(GalaxyViewCameraController).GetMethod(
+                        "ResetZoom",
+                        BindingFlags.Instance | BindingFlags.NonPublic
+                    );
+                    _targetTransform = Field("cameraTargetTransform");
+                    _recenterTarget = Field("recenteringTargetPosition");
+                    _targetVelocity = Field("cameraTargetVelocityCurrent");
+                    _dampingVelocity = Field("cameraTargetDampingVelocityCurrent");
+                    if (_resetZoom == null)
+                    {
+                        Log.Warn("galaxy: the camera controller has no ResetZoom to snap with");
+                    }
+                }
+
+                PrimeSettleFields();
+
+                bool recentring = Flag(_recentering, camera);
+                if (recentring && _targetTransform != null && _recenterTarget != null)
+                {
+                    Transform target = _targetTransform.GetValue(camera) as Transform;
+                    if (target != null)
+                    {
+                        target.position = (Vector3)_recenterTarget.GetValue(camera);
+                    }
+                }
+
+                if (_resetZoom != null)
+                {
+                    _resetZoom.Invoke(camera, new object[] { camera.ZoomStepCurrent });
+                }
+
+                Set(_recentering, camera, false);
+                Set(_zooming, camera, false);
+                if (_targetVelocity != null)
+                {
+                    _targetVelocity.SetValue(camera, Vector3.zero);
+                }
+
+                if (_dampingVelocity != null)
+                {
+                    _dampingVelocity.SetValue(camera, Vector3.zero);
+                }
+
+                return true;
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: finishing the camera flight threw: " + e);
+                return false;
+            }
+        }
+
+        private static bool _snapRead;
+        private static MethodInfo _resetZoom;
+        private static FieldInfo _targetTransform;
+        private static FieldInfo _recenterTarget;
+        private static FieldInfo _targetVelocity;
+        private static FieldInfo _dampingVelocity;
+
+        private static void Set(FieldInfo field, GalaxyViewCameraController camera, bool value)
+        {
+            if (field != null)
+            {
+                field.SetValue(camera, value);
             }
         }
 
