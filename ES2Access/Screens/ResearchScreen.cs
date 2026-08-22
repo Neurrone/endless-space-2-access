@@ -904,8 +904,79 @@ namespace ES2Access.Screens
             for (int i = 0; i < _technologies.Count; i++)
             {
                 TechnologyItem2 item = _technologies[i];
-                builder.AddItem(TechnologyId(item), TechnologyVtable(item));
+                ControlId id = TechnologyId(item);
+                List<TooltipChildren.Dossier> unlocks = Unlocks(item);
+                if (unlocks.Count == 0)
+                {
+                    builder.AddItem(id, TechnologyVtable(item));
+                    continue;
+                }
+
+                // A dot that unlocks something is a branch: the dot keeps its own name, its own
+                // state, its own click and its own dossier, and each thing it unlocks becomes a node
+                // under it carrying the game's full page about that thing - which the wheel shows a
+                // mouse by revealing a strip of icons under the dot on hover and nowhere else.
+                builder.BeginGroup(id, TechnologyVtable(item));
+                if (builder.IsExpanded(id))
+                {
+                    TooltipChildren.Emit(
+                        builder,
+                        UnlockKey(item),
+                        unlocks,
+                        TooltipChildren.Actions(builder, UnlockKey(item))
+                    );
+                }
+
+                builder.EndGroup();
             }
+        }
+
+        /// <summary>
+        /// The things a technology unlocks, as the wheel DRAWS them.
+        ///
+        /// The dot's own tooltip lists them by name and effect and stops there - it has no cost panel
+        /// at all (the game's data says so: the <c>TechnologyUnlockEmbedded</c> class is header,
+        /// effects and nothing else). What a mouse gets instead is a strip of icons the wheel reveals
+        /// under a hovered dot, each carrying the unlocked thing's FULL dossier - description, effects,
+        /// cost, upkeep, political impact. Those icons are what these nodes point at, so the keyboard
+        /// gets the page the mouse gets.
+        ///
+        /// One node per DRAWN icon. A technology can carry an unlock its data hides from this empire -
+        /// one gated on another affinity - and the wheel binds no icon for it, so nothing here declares
+        /// it either: what the picture is not showing is not said.
+        /// </summary>
+        private static List<TooltipChildren.Dossier> Unlocks(TechnologyItem2 item)
+        {
+            List<TooltipChildren.Dossier> found = new List<TooltipChildren.Dossier>(3);
+            try
+            {
+                AgeTransform container = item.TechnologyUnlocksContainer;
+                IList<AgeTransform> icons = container == null ? null : container.Children;
+                for (int i = 0; icons != null && i < icons.Count; i++)
+                {
+                    // The strip is a subtree the wheel REVEALS on hover - it sits at alpha 0 until the
+                    // dot is hovered - so the visibility asked here is the game's own Visible flag and
+                    // never the transparency: an icon judged by alpha would exist only while the mouse
+                    // was already on the dot, which is the one time a keyboard player is not there.
+                    AgeTransform icon = icons[i];
+                    if (icon != null && icon.Visible)
+                    {
+                        TooltipChildren.Add(found, AgeWidgets.Raw(icon), icon);
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("research: reading a technology's unlocks threw: " + e);
+            }
+
+            return found;
+        }
+
+        private static string UnlockKey(TechnologyItem2 item)
+        {
+            GuiTechnology2 technology = item == null ? null : item.GuiTechnology;
+            return "research:technology/" + (technology == null ? "?" : technology.Name.ToString());
         }
 
         /// <summary>One quarter of the wheel. Its own words about itself are in the tooltip the game

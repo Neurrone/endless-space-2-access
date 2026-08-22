@@ -2147,3 +2147,35 @@ save, so the empire screen is fixture-blocked there for anything but a forced `S
 `screen.planet`); `Gui.GuiGameWindowService.RequestGalaxyOverviewViewLevel(node)` is the way back to
 the galaxy, and `RequestStarSystemManagementViewLevel(node.GUID)` — the NODE's GUID — is the way to a
 system page.
+
+**Walking a "Tooltips" region (batch 2, 2026-08-22).** Three surfaces carry one on
+`[Beginner] test`, and each is reached the same way: expand the node with Right twice, step to the
+second region with **Alt+Down** (`ui.regionNext`), and read the dossier nodes there.
+- **Galaxy system.** Route: on `screen.galaxy`, Tab to `galaxy:systems`, `POST /type "osulo"`,
+  `ui.back`, Right twice (the camera comes in). The actions region holds Diplomacy, three planets,
+  three lanes and a fleet; the Tooltips region holds `Osulo` (the system dossier — its header reads
+  "Osulo - Niris" off the LABEL and just "Osulo" off the orbital window the camera swaps to) then
+  `Hyperium`, `Titanium`, `Transvine`. Dusay has the system dossier and no deposits.
+- **System-management planet card.** Route: `steps/to-system.cs`, End to `Dusay I`, Right twice.
+  The actions region is Colonize + two curiosities; the Tooltips region is `Dusay I` then the five
+  pips (`Planet Food production` … `Planet Influence production`). A colonized planet (Raia) swaps
+  the strip: the same five dossiers arrive off the `FidsiEnumerator` duplets instead.
+- **Research dot.** Route: technology screen, expand a quadrant, a stage, then a dot. Only dots the
+  wheel binds unlock icons for become groups — Adamantian Alloys gives four (Advanced Strike
+  Fighter, Adamantian Repairbots, Adamantian Enhancer, Squadron Shifter), Planetary Landscaping two.
+  Each node's buffer is the unlocked thing's FULL page including `Cost:`.
+Evidence per node: `DevProbe.Tooltip()` (`shown:true` plus the dossier's own class), the focused
+`GET /gui/graph?buffers=1`, and a `crop-shot.ps1` of
+`Gui.GuiService.GetWindow<GuiTooltipWindow>(false).AgeTransform.GetGlobalPosition()`.
+
+**The frame-order probe for a NESTED dossier** (one drawn inside another tooltip). Focus the row,
+let its tooltip draw, then walk the tooltip WINDOW for tooltips of its own
+(`GetWindow<GuiTooltipWindow>(false).GetComponentsInChildren<AgeTooltip>(true)`) — the inner ones
+have real targets. Then point at one and re-probe: `shown:false` is the answer, and it is the answer
+by construction (es2-facts). Do this before designing any nested-dossier reading.
+
+**Fixture-blocked in batch 2.** The hero detailed card's four-symbol row (`HeroInspectionScreen`
+`AddRow` → `AddDossierRow`) needs the Academy, which is tutorial-gated on `[Beginner] test`; the
+construction line's festival badge needs a Hissho festival constructible; the honor gauge's own
+dossier needs a Hissho empire. All three are declaration-side only and gated on finding ≥1 (≥2 for
+the hero row) named class-backed dossier, so they are inert everywhere they were not measured.

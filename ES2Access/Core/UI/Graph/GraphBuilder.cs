@@ -164,6 +164,15 @@ namespace ES2Access.Core.UI.Graph
             return this;
         }
 
+        /// <summary>The region nodes added right now belong to — for a contribution that opens
+        /// regions of its own inside somebody else's and has to hand the stop back as it found it.
+        /// Reading it beats remembering it at the call site: the caller may not be the one that set
+        /// it.</summary>
+        public object Region
+        {
+            get { return _regionKey; }
+        }
+
         // ---- the parent stack: contexts + groups ----
 
         /// <summary>Push one NON-FOCUSABLE level of presentation hierarchy ("Difficulty settings",

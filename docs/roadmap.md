@@ -8,6 +8,14 @@ files above.
 
 ## To build
 
+- **"Tooltips" children (landed 2026-08-22, batch 2) — remaining live checks only**: the
+  hero detailed card's four-symbol row (Academy is tutorial-gated on both fixtures), the
+  construction line's festival badge and the honor gauge's own dossier (both Hissho). Still
+  to decide/do: a system node declares no `NodeVtable.PointsAt`, so the tooltip audit files
+  every map node under `unknown` rather than judging its aim; the population side panel's
+  party dossiers land as the ROW BELOW their population rather than as children, because a
+  side-panel row is a cell and a cell cannot open a subtree; and the population OVERVIEW
+  screen's rows have not been given the same treatment (batch 4 owns that screen).
 - **One-per-row rollout (landed 2026-08-18) — remaining live checks only**: battle
   popups/screens (all code-only; incl. whether the battle popup speaks its title twice);
   the election wizard incl. the Political Trends label; a hangar with ships; a populated

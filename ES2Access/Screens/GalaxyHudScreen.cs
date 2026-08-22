@@ -2538,6 +2538,16 @@ namespace ES2Access.Screens
             // (<see cref="GalaxyCoordinates"/>). Taken once here rather than read per frame: a node's
             // position is fixed at galaxy generation.
             vtable.Announcements.Add(GalaxyCoordinates.Part(node.GalaxyPosition));
+            // Then whose place it is - the one thing about a system a player scanning the map wants
+            // before anything else, and the map draws it only as the colour it tints the name in.
+            // The game's own word for the owner, its own word for a place with nobody on it, and
+            // its own word for a home system (<see cref="SystemOwner"/>). Nothing at all for a
+            // system of the player's, which is what "no word" has always meant on this map. Not
+            // watched: ownership changes at the turn's end and the game raises its own notification
+            // for it, and the answer costs a walk of the colonies standing at the node.
+            Empire looking = empire;
+            vtable.Announcements.Add(GraphNodes.ValuePart(() => SystemOwner(it, looking), false));
+            vtable.Announcements.Add(GraphNodes.ValuePart(() => HomeSystemWord(it, looking), false));
             // What is parked here, then everything the map writes on the label itself - the icons it
             // flanks the name with, what is being built, what is in the ground - and last the dossier
             // behind the star. The middle one is a page of detail drawn as pictures, so it is reviewed
@@ -2553,6 +2563,12 @@ namespace ES2Access.Screens
                 // What sending the selection here would mean, turn by turn - nothing at all while no
                 // fleet is selected, which is most of the time (<see cref="FleetRoute"/>).
                 NodeSection.Buffer(() => FleetRoute.PreviewLines(it)),
+                // How many live there. It left the SPOKEN readout when the system's own dossier became
+                // a node of its own - the figure is a line of that dossier, and saying it again on the
+                // way past every system on the map is the same number twice - but it stays in the
+                // buffer, which is where a player reads a place they are considering rather than one
+                // they are passing (owner-ruled).
+                NodeSection.Buffer(() => Line(SystemLabelReadout.Population(drawn))),
                 NodeSection.Buffer(() => SystemLabelReadout.Lines(drawn)),
                 // What the map draws AT the place rather than on its label: how far this colony's own
                 // influence reaches, the ring round a held node, the disk of a time bubble, the pins a
@@ -2595,13 +2611,15 @@ namespace ES2Access.Screens
                 vtable.Announcements.Add(GraphNodes.ValuePart(() => OwnedState(it, owner)));
             }
 
-            // The two numbers the label writes in front of the player: how many live there, and how
-            // many of them are the player's own agents (drawn only where there is one). Everything else
-            // the label says is a page of pictures and is reviewed, not spoken. Not watched - these are
-            // read off widgets the map pools and re-points at other systems as the camera moves.
-            vtable.Announcements.Add(
-                GraphNodes.ValuePart(() => SystemLabelReadout.Population(drawn), false)
-            );
+            // How many of the population are the player's own agents (drawn only where there is one).
+            // Everything else the label says is a page of pictures and is reviewed, not spoken. Not
+            // watched - it is read off a widget the map pools and re-points at other systems as the
+            // camera moves.
+            //
+            // The population COUNT is no longer said here: the figure is one line of the system's own
+            // dossier, and that dossier is a node of its own now (<see cref="TooltipChildren"/>), so
+            // saying it in the readout as well would put the same number in front of the player twice
+            // on the way past every system on the map - owner-ruled.
             vtable.Announcements.Add(
                 GraphNodes.ValuePart(() => SystemLabelReadout.Sleepers(drawn), false)
             );
@@ -2698,10 +2716,81 @@ namespace ES2Access.Screens
             // Only what is open costs anything: a galaxy of closed systems declares one node each.
             if (builder.IsExpanded(id))
             {
+                object outer = TooltipChildren.Actions(builder, place);
                 AddInside(builder, place, node, empire, label);
+                TooltipChildren.Emit(builder, place, SystemDossiers(node, label, tooltip), outer);
             }
 
             builder.EndGroup();
+        }
+
+        /// <summary>One line as a buffer section's list, or nothing where there is no line.</summary>
+        private static IList<string> Line(string text)
+        {
+            return string.IsNullOrEmpty(text) ? null : new string[] { text };
+        }
+
+        /// <summary>
+        /// The dossiers the map hangs on a system beyond the ones its children already carry: the
+        /// system's own stat block, and one per kind of deposit found in the ground.
+        ///
+        /// The star, the name and the population count all carry the SAME dossier - one wrapper, three
+        /// widgets (measured on Osulo: identical <c>GuiStarSystem</c> target on all three) - so it is
+        /// one node, named the way the game's own header names it ("Osulo - Niris"). Which of the two
+        /// star tooltips is asked for is <see cref="StarDossier"/>'s rule: the map keeps one on the
+        /// label and another over the star once the camera is in, and only the one being drawn has any
+        /// words at all.
+        ///
+        /// Everything else on the label that carries a dossier is already a node here - the planets,
+        /// the fleet lozenges, the diplomacy button - so none of them is declared twice.
+        /// </summary>
+        private static List<TooltipChildren.Dossier> SystemDossiers(
+            StarSystemNode node,
+            StarSystemLabel label,
+            AgeTooltip onTheLabel
+        )
+        {
+            List<TooltipChildren.Dossier> found = new List<TooltipChildren.Dossier>(4);
+            try
+            {
+                StarSystemNode it = node;
+                AgeTooltip star = OrbitalStarTooltip(node) ?? onTheLabel;
+                AgeTooltip labelStar = onTheLabel;
+                TooltipChildren.Add(
+                    found,
+                    star,
+                    star == null ? null : star.AgeTransform,
+                    () => StarDossierLines(it, labelStar)
+                );
+                if (label != null)
+                {
+                    AddDeposits(found, label.DepositsMainTable);
+                    AddDeposits(found, label.DepositsSecondaryTable);
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: reading a system's dossiers threw: " + e);
+            }
+
+            return found;
+        }
+
+        /// <summary>One dossier per deposit item the label is DRAWING - the game names each kind of
+        /// deposit only in the wrapper behind its picture, which is the same place the system's buffer
+        /// takes the deposit lines from (<see cref="SystemLabelReadout"/>).</summary>
+        private static void AddDeposits(List<TooltipChildren.Dossier> found, AgeTransform table)
+        {
+            if (!Visible(table))
+            {
+                return;
+            }
+
+            IList<AgeTransform> items = table.Children;
+            for (int i = 0; items != null && i < items.Count; i++)
+            {
+                TooltipChildren.Add(found, items[i]);
+            }
         }
 
         /// <summary>
@@ -2798,6 +2887,138 @@ namespace ES2Access.Screens
             {
                 return null;
             }
+        }
+
+        /// <summary>
+        /// Whose place this is, in the game's own words.
+        ///
+        /// The map answers this with COLOUR - it tints the system's name in the owner's colour - and
+        /// says it in words only inside the system's own dossier, whose header is "Osulo - Niris"
+        /// (<c>GuiStarSystem.Title</c>). So the word here is the one that header uses,
+        /// <c>GuiEmpire.GetLeaderName</c>, which is also what already answers "Unknown Empire" for an
+        /// empire the player has not met and names a minor civilization per SYSTEM rather than by its
+        /// one empire object.
+        ///
+        /// Nothing at all for a system of the player's own: "mine" is the unmarked case on this map,
+        /// and the colonized/outpost word that follows already says it is held.
+        ///
+        /// Gated on the colonies the player can SEE, exactly as <c>SystemInfluence</c> gates its own
+        /// naming (<c>Visibility >= 1</c>): a colony the map is hiding is not named, and the answer for
+        /// a node with none the player can see is the game's own "No owner" - which is what the map is
+        /// showing, whatever the simulation knows.
+        /// </summary>
+        private static string SystemOwner(StarSystemNode node, Empire empire)
+        {
+            try
+            {
+                if (node == null || empire == null || !MapVisibility.Perceived(node, empire))
+                {
+                    return null;
+                }
+
+                ColonizedStarSystem owner = VisibleColony(node, empire);
+                if (owner == null)
+                {
+                    return AgeText.Clean(Gui.Localize(NoOwnerKey));
+                }
+
+                if (ReferenceEquals(owner.Empire, empire))
+                {
+                    return null;
+                }
+
+                GuiEmpire wrapper = Gui.GuiWrapperProviderService.GetGuiEmpire(owner.Empire);
+                return wrapper == null
+                    ? null
+                    : AgeText.Clean(
+                        wrapper.GetLeaderName(owner.GUID, empire, false, false, false)
+                    );
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: reading a system's owner threw: " + e);
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// The game's own word for a home system, on any empire's.
+        ///
+        /// Said only where the player can see a colony standing here - the same gate the owner word
+        /// uses, and the reason the fog gives nothing away: <c>HomeSystemEmpireIndex</c> is set on
+        /// every home system in the galaxy from the moment it is generated, so reading it ungated
+        /// would tell the player which unexplored star an empire they have never met came from.
+        ///
+        /// The map's own icon is narrower than this - it draws one only for a MAJOR empire's home
+        /// system (<c>StarSystemLabel.RefreshHomeSystemLine</c> :2272) - so a minor civilization's
+        /// home, which is the whole of that civilization, would be said nowhere. Owner-ruled to say
+        /// it for any empire's.
+        /// </summary>
+        private static string HomeSystemWord(StarSystemNode node, Empire empire)
+        {
+            try
+            {
+                if (
+                    node == null
+                    || empire == null
+                    || !node.IsHomeSystem
+                    || !MapVisibility.Perceived(node, empire)
+                    || VisibleColony(node, empire) == null
+                )
+                {
+                    return null;
+                }
+
+                // The game's own key ends in a space, because it draws it in front of something else.
+                return AgeText.Clean(Gui.Localize(HomeSystemKey)).Trim();
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: reading whether a system is a home system threw: " + e);
+                return null;
+            }
+        }
+
+        private static readonly string NoOwnerKey = "%MarketplaceScreenNoOwnerTitle";
+
+        private static readonly string HomeSystemKey = "%HomeSystemTitle";
+
+        /// <summary>The colony standing at a node that the player is being SHOWN - the strongest claim
+        /// the map is drawing there. A ghost is not one: an empire keeps a ghost of a system it has
+        /// lost, and the map draws nothing for it.</summary>
+        private static ColonizedStarSystem VisibleColony(StarSystemNode node, Empire empire)
+        {
+            IColonizedStarSystemRepositoryService colonies =
+                Amplitude.Unity.Framework.Services.GetService<IColonizedStarSystemRepositoryService>();
+            if (colonies == null)
+            {
+                return null;
+            }
+
+            ColonizedStarSystem found = null;
+            foreach (ColonizedStarSystem colony in colonies.GetValues(node.NodePosition))
+            {
+                if (
+                    colony.Empire == null
+                    || colony.State == StarSystemState.Ghost
+                    || (int)colony.Visibility[empire] < 1
+                )
+                {
+                    continue;
+                }
+
+                if (ReferenceEquals(colony.Empire, empire))
+                {
+                    return colony;
+                }
+
+                if (found == null)
+                {
+                    found = colony;
+                }
+            }
+
+            return found;
         }
 
         /// <summary>What a system of the player's IS - taken from the state the game paints its label
@@ -5669,6 +5890,8 @@ namespace ES2Access.Screens
                         return Lozenge(label.FleetLozenge);
                     }
                 }
+
+                return MergedLozenge(fleet);
             }
             catch (Exception e)
             {
@@ -7121,6 +7344,76 @@ namespace ES2Access.Screens
             AgeTransform it = widget;
             vtable.OnFocusVisual = () => PointerFocus.MoveTo(it, Raw(it), it);
             vtable.OnBlurVisual = ReleasePointer;
+        }
+
+        /// <summary>
+        /// The lozenge the map is drawing for a fleet whose OWN label it has folded away.
+        ///
+        /// Two fleets that come close enough together on screen are drawn as one marker: the map
+        /// merges their labels (<c>MergedFleetLabels</c>), hides each fleet's own and binds the merged
+        /// marker's button to the whole group. A fleet in that state has a hidden lozenge, so the node
+        /// pointed at nothing, promised the group dossier and drew it nowhere - measured on the
+        /// beginner fixture, where two fleets two turns out share a marker and neither said anything.
+        ///
+        /// The marker's dossier is the GROUP's, which is exactly what the mouse gets for hovering it:
+        /// there is no per-fleet tooltip to be had while the map is drawing them as one thing.
+        /// </summary>
+        private static AgeTransform MergedLozenge(Fleet fleet)
+        {
+            FleetLabelsWindow window = Gui.GuiServiceAvailable
+                ? Gui.GuiService.GetWindow<FleetLabelsWindow>(false)
+                : null;
+            if (window == null)
+            {
+                return null;
+            }
+
+            MergedFleetLabels[] merged = window.GetComponentsInChildren<MergedFleetLabels>(true);
+            for (int i = 0; i < merged.Length; i++)
+            {
+                MergedFleetLabels group = merged[i];
+                DualGarrisonsLabelButtons buttons =
+                    group == null ? null : group.GarrisonsButtons;
+                if (buttons == null || !Visible(group.AgeTransform))
+                {
+                    continue;
+                }
+
+                AgeTransform found =
+                    Holding(buttons.FriendlyGarrisonsButton, fleet)
+                    ?? Holding(buttons.HostileGarrisonsButton, fleet);
+                if (found != null)
+                {
+                    return found;
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>The merged marker's button, where the group it is bound to holds this fleet - asked
+        /// of the wrapper on its own tooltip, which is the list the game itself drew the marker
+        /// from.</summary>
+        private static AgeTransform Holding(GarrisonsLabelButton button, Fleet fleet)
+        {
+            AgeTransform widget = Lozenge(button);
+            AgeTooltip tooltip = button == null ? null : button.Tooltip;
+            GuiFleetGroup group = tooltip == null ? null : tooltip.Target as GuiFleetGroup;
+            if (widget == null || group == null || !Visible(widget))
+            {
+                return null;
+            }
+
+            IList<Garrison> garrisons = group.Garrisons;
+            for (int i = 0; garrisons != null && i < garrisons.Count; i++)
+            {
+                if (garrisons[i] != null && garrisons[i].GUID == fleet.GUID)
+                {
+                    return widget;
+                }
+            }
+
+            return null;
         }
 
         private static AgeTransform Lozenge(GarrisonsLabelButton button)

@@ -689,11 +689,30 @@ namespace ES2Access.Core.UI.Graph
             else _state.Expanded.Remove(group.Id);
         }
 
+        /// <summary>The first node a Right into this group should land on.
+        ///
+        /// A group's children are not always parented straight onto it: a CONTEXT
+        /// (<c>GraphBuilder.PushContext</c>) is a non-focusable level, so a group that puts its
+        /// children under a named section has the section as their parent and the group as their
+        /// grandparent. Comparing parents alone therefore reported such a group EMPTY and
+        /// auto-recollapsed it - "Nothing in here" over a group full of nodes. The chain is walked
+        /// instead, stopping at the first FOCUSABLE level: a node under a nested group belongs to that
+        /// group, not to this one.</summary>
         private GraphNode FirstChildOf(GraphNode group)
         {
             foreach (GraphNode n in _current.Order)
-                if (ReferenceEquals(n.Parent, group)) return n;
+                if (Under(n, group)) return n;
             return null;
+        }
+
+        private static bool Under(GraphNode node, GraphNode group)
+        {
+            for (GraphNode at = node.Parent; at != null; at = at.Parent)
+            {
+                if (ReferenceEquals(at, group)) return true;
+                if (at.Focusable) return false;
+            }
+            return false;
         }
 
         // ---- behavior invokers (the caller announces fallbacks / state) ----

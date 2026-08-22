@@ -29,6 +29,7 @@
   "nav.disabled": "unavailable",
   "nav.no-details": "Nothing in here",
   "nav.table": "table",
+  "node.tooltips-region": "Tooltips",
   "search.no-match": "No match for {0}",
   "search.cleared": "Search cleared",
   "nav.key-binding-secondary": "secondary {0}",

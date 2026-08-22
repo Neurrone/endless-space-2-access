@@ -72,6 +72,12 @@ namespace ES2Access.Core.Speech
         public const string NavNoDetails = "nav.no-details";
         public const string NavTable = "nav.table";
 
+        /// <summary>The name of the region holding a node's dossiers - the explanations the game
+        /// draws for the thing rather than the things the player can do to it. A word of the mod's
+        /// own: the game writes no caption over them, because for a mouse they are hovers rather
+        /// than a block on the screen.</summary>
+        public const string NodeTooltipsRegion = "node.tooltips-region";
+
         // Typing letters on a screen searches what is on it. Both are whole phrases: the text the
         // player typed is quoted inside the sentence, so a language that frames a quotation
         // differently has somewhere to do it.
@@ -1452,6 +1458,7 @@ namespace ES2Access.Core.Speech
             { NavDisabled, "unavailable" },
             { NavNoDetails, "Nothing in here" },
             { NavTable, "table" },
+            { NodeTooltipsRegion, "Tooltips" },
             { SearchNoMatch, "No match for {0}" },
             { SearchCleared, "Search cleared" },
             { NavKeyBindingSecondary, "secondary {0}" },

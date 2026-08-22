@@ -369,11 +369,13 @@ namespace ES2Access.Screens
             List<CardActions.CardAction> buttons = PlanetButtons(label);
             List<CardActions.CardAction> outpost = OutpostActions(label);
             List<Population> populations = Populations(label);
+            List<TooltipChildren.Dossier> dossiers = PlanetDossiers(label);
             if (
                 rename.Count == 0
                 && buttons.Count == 0
                 && outpost.Count == 0
                 && populations.Count == 0
+                && dossiers.Count == 0
             )
             {
                 builder.AddItem(id, vtable);
@@ -385,14 +387,53 @@ namespace ES2Access.Screens
             if (builder.IsExpanded(id))
             {
                 // Down the card, in the order it is drawn: the rename button beside the title, the
-                // population ring in the middle, the action buttons along the bottom.
+                // population ring in the middle, the action buttons along the bottom - and then, as a
+                // region of their own, the dossiers the card draws no words for at all.
+                object outer = TooltipChildren.Actions(builder, key);
                 CardActions.Emit(builder, key + "/name", rename);
                 AddPopulations(builder, key, label, populations, canCarry);
                 CardActions.Emit(builder, key, buttons);
                 CardActions.Emit(builder, key + "/outpost", outpost);
+                TooltipChildren.Emit(builder, key, dossiers, outer);
             }
 
             builder.EndGroup();
+        }
+
+        /// <summary>
+        /// The dossiers a planet card carries beyond the sentence on its status button: the planet's
+        /// own, and one per FIDSI figure in the strip of pips down its side.
+        ///
+        /// The card draws each pip as a picture and a bare number, and keeps everything about what
+        /// that number MEANS - what it is called, what it is made of, what would change it - in a
+        /// dossier behind the pip. The card's buffer already carries the captioned figures
+        /// (<see cref="PlanetDetails"/>); this is the page behind each one.
+        ///
+        /// The card keeps TWO strips and swaps them (<c>FidsiScoreTable</c> for a planet nobody has
+        /// settled, the <c>FidsiEnumerator</c>'s duplets once it is a colony) with the other one left
+        /// bound to whatever it last showed, so the strip is taken from whichever is DRAWN and the
+        /// resolver drops the pips of the hidden one.
+        /// </summary>
+        private static List<TooltipChildren.Dossier> PlanetDossiers(
+            PlanetLabel_SystemManagement label
+        )
+        {
+            List<TooltipChildren.Dossier> found = new List<TooltipChildren.Dossier>(6);
+            try
+            {
+                TooltipChildren.Add(found, label.PlanetTooltipFrame);
+                TooltipChildren.AddInside(found, label.FidsiScoreTable);
+                TooltipChildren.AddInside(
+                    found,
+                    label.FidsiEnumerator == null ? null : label.FidsiEnumerator.AgeTransform
+                );
+            }
+            catch (Exception e)
+            {
+                Log.Warn("system: reading a planet card's dossiers threw: " + e);
+            }
+
+            return found;
         }
 
         /// <summary>Which of the card's own buttons the game is drawing. Rename is emitted separately
@@ -1994,7 +2035,46 @@ namespace ES2Access.Screens
             }
 
             cells.Add(special);
+            AddNestedDossiers(cells, widget, keyPrefix);
             return true;
+        }
+
+        /// <summary>
+        /// The dossiers a row's own tooltip names INSIDE itself, as further nodes of that row.
+        ///
+        /// A population entry's tooltip ends by naming the political parties those people lean
+        /// towards, and each name carries the party's own dossier - reachable by a mouse with one more
+        /// hover and by nothing else, because the game draws one tooltip at a time
+        /// (<see cref="PoliticsDossier"/>). They join the row rather than hanging under it: this panel
+        /// emits cells the layout bands into drawn rows, so a party is a node beside the population it
+        /// belongs to, in the row the game drew that population in.
+        /// </summary>
+        private static void AddNestedDossiers(
+            List<Cell> cells,
+            AgeTransform widget,
+            string keyPrefix
+        )
+        {
+            PopulationCount population = widget.GetComponent<PopulationCount>();
+            if (population == null)
+            {
+                return;
+            }
+
+            List<TooltipChildren.Dossier> parties = PoliticsDossier.Parties(population.Tooltip);
+            for (int i = 0; i < parties.Count; i++)
+            {
+                cells.Add(
+                    new Cell
+                    {
+                        Widget = widget,
+                        Id = ControlId.Structural(
+                            keyPrefix + widget.name + "/politics/" + i
+                        ),
+                        Vtable = TooltipChildren.Node(parties[i]),
+                    }
+                );
+            }
         }
 
         // ---- the readouts the tree's shape cannot name ----

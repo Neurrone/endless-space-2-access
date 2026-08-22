@@ -347,6 +347,72 @@ namespace ES2Access.Tests.UI
             Assert.False(g.Current.NodeAt(Id("g")).Expanded);
         }
 
+        // A group whose children all sit under a NAMED SECTION - the shape the "Tooltips" region of a
+        // dossier-bearing node has, and the one a technology dot has when everything it holds is a
+        // dossier. The section is a context: non-focusable, so it is the children's parent and the
+        // group is their grandparent. Comparing parents alone called the group empty and
+        // auto-recollapsed it, which is "Nothing in here" said over a group full of nodes.
+        private static KeyGraph Sectioned(GraphState state)
+        {
+            return new KeyGraph(
+                Renderer(
+                    b =>
+                    {
+                        b.BeginGroup(Id("g"), Vt("Group"));
+                        b.PushContext("Tooltips");
+                        b.AddItem(Id("t1"), Vt("Dossier 1"));
+                        b.AddItem(Id("t2"), Vt("Dossier 2"));
+                        b.PopContext();
+                        b.EndGroup();
+                    },
+                    state
+                ),
+                state
+            );
+        }
+
+        [Fact]
+        public void AGroupWhoseChildrenAreAllInASectionIsNotEmpty()
+        {
+            GraphState state = new GraphState();
+            KeyGraph g = Sectioned(state);
+            g.Rerender();
+            Assert.Equal("g", Focused(g));
+
+            Assert.Equal(KeyGraph.TreeMove.Expanded, g.TreeRight().Kind);
+            Assert.Contains(Id("g"), state.Expanded);
+
+            KeyGraph.TreeResult descend = g.TreeRight();
+            Assert.Equal(KeyGraph.TreeMove.Descended, descend.Kind);
+            Assert.Equal("t1", Focused(g));
+        }
+
+        [Fact]
+        public void DescendingSkipsPastANestedGroupsOwnChildren()
+        {
+            GraphState state = new GraphState();
+            state.Expanded.Add(Id("outer"));
+            state.Expanded.Add(Id("inner"));
+            KeyGraph g = new KeyGraph(
+                Renderer(
+                    b =>
+                    {
+                        b.BeginGroup(Id("outer"), Vt("Outer"));
+                        b.BeginGroup(Id("inner"), Vt("Inner"));
+                        b.AddItem(Id("deep"), Vt("Deep"));
+                        b.EndGroup();
+                        b.EndGroup();
+                    },
+                    state
+                ),
+                state
+            );
+            g.Rerender();
+            Assert.Equal("outer", Focused(g));
+            Assert.Equal(KeyGraph.TreeMove.Descended, g.TreeRight().Kind);
+            Assert.Equal("inner", Focused(g));
+        }
+
         // ---- following a reference (a leaf that names somewhere else) ----
 
         /// <summary>A tree whose second child NAMES the top-level node rather than holding anything of

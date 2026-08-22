@@ -95,6 +95,14 @@ namespace ES2Access.Dev
             /// the game draws nothing for it however it is pointed at.</summary>
             public readonly List<Breach> Undescribed = new List<Breach>();
 
+            /// <summary>The check cannot answer for this node: what it is read off is not an AGE
+            /// widget at all - a place on the map, a thing the renderer draws - so there is no widget
+            /// tree to ask "would anything here draw". It is not a defect and must not be counted as
+            /// one: every galaxy node landed in <see cref="Promised"/> for exactly this reason, and
+            /// the map's dossiers demonstrably draw. A node like this that DOES declare an aim is
+            /// still judged on the aim, and only one declaring neither ends up here.</summary>
+            public readonly List<Breach> Unknown = new List<Breach>();
+
             public int Findings
             {
                 get { return Promised.Count + Misaimed.Count + Uncovered.Count + Unread.Count; }
@@ -184,7 +192,26 @@ namespace ES2Access.Dev
                     continue;
                 }
 
-                if (node.Widget == null || !NotificationAudit.AnyDrawing(node.Widget))
+                AgeTooltip aimed = NotificationAudit.AimOf(node);
+                if (node.Widget == null)
+                {
+                    // Nothing to walk: this node is read off a place on the map rather than off a
+                    // widget. Its own declared AIM is the only thing that can be judged, and where it
+                    // has none the honest answer is "cannot tell" - not "promises nothing".
+                    if (aimed == null)
+                    {
+                        result.Unknown.Add(
+                            NotificationAudit.Made(
+                                null,
+                                node.Key,
+                                "declares a tooltip on something that is not a widget - cannot tell",
+                                null
+                            )
+                        );
+                        continue;
+                    }
+                }
+                else if (!NotificationAudit.AnyDrawing(node.Widget))
                 {
                     result.Promised.Add(
                         NotificationAudit.Made(
@@ -197,7 +224,6 @@ namespace ES2Access.Dev
                     continue;
                 }
 
-                AgeTooltip aimed = NotificationAudit.AimOf(node);
                 if (aimed != null && !AgeWidgets.Draws(aimed))
                 {
                     result.Misaimed.Add(
@@ -457,6 +483,7 @@ namespace ES2Access.Dev
                 NotificationAudit.WriteBreaches(json, "unread", result.Unread);
                 NotificationAudit.WriteBreaches(json, "hidden", result.Hidden);
                 NotificationAudit.WriteBreaches(json, "undescribed", result.Undescribed);
+                NotificationAudit.WriteBreaches(json, "unknown", result.Unknown);
                 json.WriteEndObject();
             });
         }

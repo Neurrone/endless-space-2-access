@@ -351,6 +351,29 @@ owner-ruled 2026-08-18, Escape closes screens); its
 coarse step is a LAYER-BAND jump rather than ≈10 increments — an owner-approved deviation, since
 ten of the camera's thirteen steps would be the whole range.
 
+**A node that owns dossiers beyond its own tooltip is an expandable group with TWO regions**
+(owner ruling 2026-08-22, batch 2; `UI/TooltipChildren.cs`, `docs/helpers.md`). Right/Left are the
+ordinary group arrows (today's two-press contract). Alt+Up/Down steps between them:
+`<key>/actions` FIRST — the node's own buttons and structural children in the order the surface
+draws them (absent where it has none) — and `<key>/tooltips` SECOND, labelled with the mod word
+**"Tooltips"** (`node.tooltips-region`) as a `PushContext` level, holding one node per dossier keyed
+`<key>/tooltip/<i>`. A dossier node is **named by the game's own header line for that dossier**
+(`AgeWidgets.TooltipTitle`), its buffer is the drawn tooltip, and **Enter on it is consumed and
+silent** — it wires no `OnActivate`, because there is nothing there to do. Positions count within
+the region. Live today on: galaxy system nodes (the system's own stat block, then one per deposit
+in the ground), system-management planet cards (the planet's dossier, then one per FIDSI pip),
+and research-wheel dots (one per DRAWN unlock icon — the strip the wheel reveals under a hovered
+dot, which carries the unlocked thing's full page including its cost).
+
+**The galaxy system readout says whose place it is** (owner ruling 2026-08-22): name, coordinates,
+`group`, then the OWNER WORD — the controlling empire as the game's own system dossier states it
+(`GuiEmpire.GetLeaderName`, so an empire the player has not met reads `%EmpireUnknownTitle`
+"Unknown Empire"), the game's `%MarketplaceScreenNoOwnerTitle` "No owner" where the map shows no
+colony the player can see, and NOTHING at all for a system of the player's own — then
+`%HomeSystemTitle` "Home System" (trailing space trimmed) on any empire's home system whose owner
+the player can see, then the rest as before. The POPULATION FIGURE left the spoken readout: it is
+a line of the system's own dossier, which is now a node, and it stays in the review buffer.
+
 **Region keys added by the one-per-row rollout (2026-08-18)**, all key-only unless named — labelled
 ones carry drawn text or the named ModStrings word: `system:constructibles/filters|list` and
 `system:hangar/toolbar|ships` (labels Filters/Available; hangar toolbar = Actions; same pairs under

@@ -1266,6 +1266,24 @@ namespace ES2Access.Screens
                         Vtable = vtable,
                     }
                 );
+
+                // The segment's own gauge carries a SECOND dossier - the keii property the track is
+                // measuring (<c>HonorGaugeSegment.Refresh</c> :67-69) - and only one tooltip can be
+                // drawn at a time, so it is a node beside the action rather than a promise folded into
+                // it.
+                List<TooltipChildren.Dossier> gauge = new List<TooltipChildren.Dossier>(1);
+                TooltipChildren.Add(gauge, segment.GaugeGroup);
+                for (int g = 0; g < gauge.Count; g++)
+                {
+                    cells.Add(
+                        new Cell
+                        {
+                            Widget = segment.GaugeGroup,
+                            Id = ControlId.Structural("hud:empire/honor-gauge/" + i),
+                            Vtable = TooltipChildren.Node(gauge[g]),
+                        }
+                    );
+                }
             }
         }
 

@@ -213,6 +213,25 @@ namespace ES2Access.UI
                 ControlId.Referenced(item, keyPrefix + "constructible/" + constructible.Name),
                 vtable
             );
+
+            // The tile draws a second badge for a festival, with its own dossier behind it
+            // (<c>StarSystemConstructibleItem.Refresh</c> :81-92 hangs a HisshosFestival tooltip on the
+            // icon). A tile can only ever show ONE tooltip, so folding it into the tile's own reading
+            // would promise words the game would never draw: it is a node beside the tile instead.
+            List<TooltipChildren.Dossier> badges = new List<TooltipChildren.Dossier>(1);
+            TooltipChildren.Add(badges, item.FestivalIcon);
+            for (int i = 0; i < badges.Count; i++)
+            {
+                Cells.Add(
+                    cells,
+                    item.FestivalIcon,
+                    ControlId.Referenced(
+                        item.FestivalIcon,
+                        keyPrefix + "constructible/" + constructible.Name + "/badge/" + i
+                    ),
+                    TooltipChildren.Node(badges[i])
+                );
+            }
         }
 
         /// <summary>The item's full name. The grid clips its caption to fit the tile - "Cerebral ." -

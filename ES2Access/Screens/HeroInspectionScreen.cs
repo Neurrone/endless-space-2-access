@@ -1621,6 +1621,11 @@ namespace ES2Access.Screens
                 return;
             }
 
+            if (AddDossierRow(row, key))
+            {
+                return;
+            }
+
             AgeTooltip tooltip = SettingRows.LastTooltip(row);
             AgeTransform at = row;
             NodeVtable vtable = GraphNodes.Readout(
@@ -1631,6 +1636,42 @@ namespace ES2Access.Screens
             );
             AgeWidgets.PointAt(vtable, tooltip == null ? row : tooltip.AgeTransform);
             Cells.Add(_cells, row, ControlId.Referenced(row, Keys + key), vtable);
+        }
+
+        /// <summary>
+        /// A row that is not one line with one explanation but SEVERAL dossiers side by side - the
+        /// hero's card draws four wordless symbols in one strip (the ship it is on, its affinity, its
+        /// party, its class) and keeps the whole page about each behind its own symbol.
+        ///
+        /// Read as one row it kept the LAST of the four and dropped three, silently: a row carries one
+        /// tooltip in the ordinary reading, and nothing in the speech says the other three exist. So a
+        /// row with more than one dossier becomes a NODE PER DOSSIER, in one row, each named by the
+        /// game's own header for it - which is the same treatment a card's badges get everywhere else.
+        ///
+        /// Only for a row that really has several: one dossier, or several with no names to tell them
+        /// apart, is the ordinary captioned row and is left exactly as it was.
+        /// </summary>
+        private bool AddDossierRow(AgeTransform row, string key)
+        {
+            List<TooltipChildren.Dossier> found = new List<TooltipChildren.Dossier>(4);
+            TooltipChildren.AddInside(found, row);
+            if (found.Count < 2)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < found.Count; i++)
+            {
+                AgeTransform at = found[i].Anchor ?? row;
+                Cells.Add(
+                    _cells,
+                    at,
+                    ControlId.Structural(Keys + key + "/dossier/" + i),
+                    TooltipChildren.Node(found[i])
+                );
+            }
+
+            return true;
         }
 
         /// <summary>One line of a box - the words the game drew in it and the sentence explaining

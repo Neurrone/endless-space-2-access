@@ -2244,3 +2244,60 @@ at all; the second pass with the gate off is the only way they are enumerable
 namespace fail to compile, and `RequestStarSystemManagementViewLevel` wants the NODE's GUID
 (`…ColonizedStarSystems[0].Node.GUID`), not the colonized system's, which throws
 `KeyNotFoundException` out of `GalaxyEntityFactory`.
+
+**A tooltip drawn INSIDE another tooltip cannot be reached at all** (measured 2026-08-22, batch 2).
+The population dossier's `PanelFeaturePoliticalOpinion` builds a `PoliticalOpinionLine` per party
+and writes a real `Politics`/`GuiPolitics` tooltip onto each (`RefreshPoliticalOpinionLine`), and
+those lines DO hold their target while the parent is drawn — probed live inside the drawn window:
+`Item000 cls=Politics tgt=GuiPolitics title=Industrialists`. But pointing at one replaces the
+tooltip that was drawing it (one `GuiTooltipController.CurrentTooltipWindow`, es2-facts above), and
+the replacement runs `PanelFeaturePoliticalOpinion.Unbind`, whose `ReleaseData` clears exactly the
+target the new request needs: `DevProbe.Tooltip()` answers `shown:false`. There is no frame ordering
+that wins. **Mod policy:** a nested dossier is read off the game's own wrapper instead — the three
+panel features the `Politics` class is made of are three properties of `GuiPolitics` (`Title`,
+`CategoryTitle`/`Description`, `PoliticsAffectingEvents`), and the parties come off the same
+`IPoliticalOpinionProvider` the drawn block reads — and its node points at the PARENT tooltip so the
+picture stays the page the player is reading (`UI/PoliticsDossier.cs`).
+
+**A system's star, its name label and its population count all carry the SAME dossier** — one
+`GuiStarSystem`, three widgets on `StarSystemLabel` (`StarTooltip`, `StarSystemNameLabel`,
+`PopulationCountGroup`; measured identical `Target` on Osulo). The deposits are the label's only
+OTHER renderer-assembled dossiers (`LuxuryItem_*`, class `ResourceDepositGroup`), and they are bound
+only while the map is actually drawing that label — a label the camera has pooled away answers with
+the prefab's class `ResourceDeposit`, no target and no title.
+
+**The game's own words for a system's owner and for a home system.** The system dossier's header is
+`GuiStarSystem.Title` = `"{name} - {GuiEmpire.GetLeaderName(colony.GUID, player)}"`, gated on
+`StarSystemNode.PlanetsVisibility[player]`; `GetLeaderName` already answers `%EmpireUnknownTitle`
+("Unknown Empire") for an empire the player has not met and names a MINOR civilization per system
+(`LesserEmpire.GetLesserName(contextGUID)`). There is no game word for "unowned" on a system —
+`%MarketplaceScreenNoOwnerTitle` "No owner" is the nearest (owner-chosen). `%HomeSystemTitle` is
+`"Home System "` WITH a trailing space. The map's own home-system icon is NARROWER than the model:
+`StarSystemLabel.RefreshHomeSystemLine` (:2267-2275) draws it only for `IsMajorHomeSystem`, so a
+minor civilization's home — which is the whole of that civilization — is marked nowhere;
+`StarSystemNode.IsHomeSystem` (`HomeSystemEmpireIndex != -1`) is the model's answer and is set on
+every home system in the galaxy from generation, so reading it ungated would name unexplored stars.
+**Mod policy:** owner and home word alike are gated on a colony the player can SEE at that node
+(`Visibility >= 1`, non-ghost — the same gate `SystemInfluence` already names owners by), so the fog
+gives nothing away.
+
+**Two fleets close together on screen are drawn as ONE marker and their own labels are hidden.**
+`MergedFleetLabels` takes the labels over (`AddLabel` sets `FleetLabel.IsMerged`, the label goes
+`Visible=false, Alpha=0`) and binds its own `DualGarrisonsLabelButtons` to the whole group, whose
+`FriendlyGarrisonsButton.Tooltip` carries the `FleetGroup`/`GuiFleetGroup` dossier for all of them.
+A mod node that looked only at the fleet's own label therefore found no lozenge, declared no tooltip
+and drew nothing — measured on the beginner fixture, two fleets two turns out from Dusay. The way
+back is the marker's own wrapper: `GuiFleetGroup.Garrisons` is a public list, so the fleet is matched
+by GUID against it. What the marker shows is the GROUP's dossier, which is exactly what the mouse
+gets while the map is drawing them as one thing.
+
+**A technology's unlock icons are readable and pointable without the hover.**
+`TechnologyItem2.TechnologyUnlocksContainer` holds one `TechnologyUnlock<i>` per unlock the empire
+may see, each with the unlocked thing's own class-backed tooltip (`Constructible`, `ShipModule`,
+`EmpireImprovement`…) and its game title on the wrapper — present with the technology screen CLOSED.
+The container sits at alpha 0 until the dot is hovered, so the gate to use is the `Visible` FLAG and
+never the transparency. An unlock the empire's affinity hides is bound to no icon at all
+(`GuiTechnology2.TechnologyUnlocks` counts 3 where 2 are drawn), which is the mod's own "what the
+picture is not showing is not said" line for free. Pointing at an icon draws the FULL dossier —
+description, effects, **cost**, upkeep, political impact — which is the mouse parity the dot's own
+`TechnologyUnlockEmbedded` tooltip cannot give (that class has no cost panel by data design).

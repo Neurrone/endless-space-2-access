@@ -521,5 +521,27 @@ namespace ES2Access.Tests.UI
             Assert.Same(Node(r, "g"), Node(r, "child").Parent);
             Assert.Equal("child", DestKey(Node(r, "g"), GraphDir.Down));
         }
+
+        // A contribution that opens regions of its own inside a stop somebody else regioned has to
+        // hand the stop back as it found it, and it cannot know what that was without asking: the two
+        // regions a dossier-bearing node declares sit inside a list whose every OTHER row belongs to
+        // the list's own region, and a stop left tagged with the inner one swallows them all.
+        [Fact]
+        public void TheBuilderAnswersWhichRegionItIsTagging()
+        {
+            GraphBuilder b = new GraphBuilder();
+            b.SetRegion("outer");
+            b.AddItem(Id("before"), Vt("Before"));
+            object restore = b.Region;
+            b.SetRegion("inner");
+            b.AddItem(Id("inside"), Vt("Inside"));
+            b.SetRegion(restore);
+            b.AddItem(Id("after"), Vt("After"));
+
+            GraphRender r = b.Build();
+            Assert.Equal("outer", Node(r, "before").RegionKey);
+            Assert.Equal("inner", Node(r, "inside").RegionKey);
+            Assert.Equal("outer", Node(r, "after").RegionKey);
+        }
     }
 }
