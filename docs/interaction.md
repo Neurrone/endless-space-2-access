@@ -183,6 +183,56 @@ load list's row in LOAD mode only ("load"). A table's double-click hint is named
 from every cell of the row: what the second click does is a fact about the row, and repeating it
 down eight columns is eight sentences for one affordance.
 
+**Six keys name a PLACE and one ends the turn** (owner-approved 2026-08-22; `ModEntry.BindKeys`,
+`ModEntry.HudKey`, `GraphNavigator.FocusStop`): **Ctrl+H** the empire banners (`hud:empire`),
+**Ctrl+N** the notifications (`hud:notifications`), **Ctrl+T** the turn log (`hud:turn-log`),
+**Ctrl+E** the turn controls (`hud:turn`), **Ctrl+G** the galaxy map's own stop (`galaxy:systems`),
+and **Ctrl+Alt+E** ends the turn. Each jump lands where Tab would land in that stop (the remembered
+position, else the selected member, else the first control) and announces the landing; each is
+claimed from the game **exactly while the focused screen's render declares that stop**
+(`KeyGraph.DeclaresStop`, which is `StopLanding` answering non-null asked cheaply enough for a key
+scan), **and the handler asks the same question again** — a claim is answered before the press, so
+the act is never allowed to run on a stale yes. Where the answer is no the key is inert: no speech,
+no move, nothing consumed. Ctrl+Alt+E gates on the game's own three end-turn conditions
+(`GlobalHud.CanEndTurn`) and replays the game's SHORTCUT path — an armed cursor put back to
+`GalaxyCursor` first, then `EndTurnService.Target.TryToEndTurn()` — rather than pressing the button;
+success is silent, exactly as pressing the button is, and a refusal speaks the end-turn NODE's own
+readout ("End turn (Ctrl+Alt+E), button, Turn N, unavailable"; the game's reason stays in that
+node's buffer), because a player pressing it from the far side of the page cannot see the button
+grey out. The keys are free in this game and the letters
+cost nothing (es2-facts).
+**Alt+Left/Right turn the PAGE** (`UiActions.PagePrev/PageNext` → `Screen.PagePrev/PageNext`,
+non-repeating): the previous/next system on the star-system page, planet on the planet page,
+notification on a popup, hero on the academy page — the game's own arrow pair, pressed from anywhere
+on that screen. A screen answers the key wherever the pair is DRAWN, switched off included, and says
+nothing at an end (the checkbox-at-a-limit convention); a screen that draws no such pair leaves the
+key doing nothing at all. **These chords are also the galaxy inspect cursor's travel keys, and BOTH
+actions fire on the press** — `ModInput.Tick` delivers every action whose chord matches and has no
+first-wins rule — which is safe only because no screen answers both: the map answers the inspect
+pair and draws no page pair. Any future action sharing a chord has to be checked the same way.
+The star-system page's pair is also DECLARED, as `system:previous`/`system:next` either side of the
+system's name in the colony panel (the stop that holds the name — the panel the game binds for a
+colony, an outpost and a ghost alike, which is the same condition under which it draws the arrows);
+`Cells.EmitLinear` orders them off the rectangles, so they read previous, name, next. The game gives
+them no title, so they are mod-named ("Previous system" / "Next system") over the game's own
+tooltips, like the planet page's pair.
+**A control may end its NAME with the chord that works on it**, not only its buffer's last line
+(`ChordNames.Label`, template `label.with-chord`): the four paging pairs and the end-turn button
+carry theirs, because the key is the whole reason the pair was worth declaring twice. It is read on
+every landing, which is the cost the owner accepted for these five; hints stay buffer-only.
+`ChordNames.KeyName` now asks the GAME for the key's name first (`%KeyCode<Name>`, 120 rows in each
+of the ten languages) and falls back to the mod's table and then to the engine's `KeyCode` name.
+
+**Right opens a group AND goes inside it, in ONE press; Left comes out AND shuts it** (owner ruling
+2026-08-22, `KeyGraph.TreeRight`/`TreeLeft`): the two presses each direction used to need are one,
+so a shut group and an open one answer Right identically — the child is announced with its position
+and the header's "expanded" word is never heard, while the "collapsed" word rides the parent's own
+announcement on the way out. Left on a header itself is still the plain collapse with the cursor
+unmoved. **A group that turns out to be EMPTY is left OPEN** and says "Nothing in here": expanding a
+galaxy system brings the camera in, and the auto-recollapse this replaces zoomed straight back out.
+Right again on it is a consumed leaf; Left shuts it. `OnFollow` leaves (starlanes) are untouched —
+they were already one press.
+
 **Ctrl+Tab is the GAME's chat key, not a mod binding**: at startup `GameChatKey` moves
 `StartChatting` off Enter/Tab to Ctrl+Tab through the game's own options (ONLY while it still has
 the shipped default; a customised binding is left alone), and whatever chord the binding sits on is
@@ -312,13 +362,15 @@ lane stays silent. **Enter on a planet card defers to an armed targeting mode** 
 nodes and lanes do (`PlanetClick`: `ConfirmAt(system)` first, else the planet page) — before
 2026-08-20 the page opened over the mode and silently discarded it. **The map stop names itself
 with the game's targeting instruction while a mode is armed** (`MapContext()`; the label reverts
-to "Map" when the mode ends). Arming while the cursor is inside the stop adds no extra utterance
+to "Galactic Map" when the mode ends). Arming while the cursor is inside the stop adds no extra utterance
 (the announcer diffs on focus change); Tab-away/Tab-back re-speaks the instruction, which is the
 point; child node ids and the cursor survive the rename.
 
 **Expanding a galaxy system node (Right) also brings the camera in** through the game's own zoom
-(`GalaxyViewLevels.ZoomTo`); Enter is unchanged, Backslash remains the way out, and **collapse
-un-zooms** while `GalaxyViewLevels.FocusedSystem` is still that system — a camera the player has
+(`GalaxyViewLevels.ZoomTo`) — and since 2026-08-22 that one press also lands the cursor on the
+system's first child, so the zoom and the descent are one gesture; a system with nothing under it
+keeps the zoom and says "Nothing in here". Enter is unchanged, Backslash remains the way out, and
+**collapse un-zooms** while `GalaxyViewLevels.FocusedSystem` is still that system — a camera the player has
 since moved elsewhere is left alone, so collapsing moves nothing there. **A starlane is a LEAF and
 Right on a named one TRAVELS** (`NodeVtable.OnFollow` → `KeyGraph.TreeMove.Followed`, consumed
 silently): the cursor lands on the destination system's ONE node at the root of the systems stop,
@@ -403,7 +455,8 @@ reports in the session ledger), `hud:view-title/name` everywhere, the faction ch
 deck editor's two stops are labelled instead ("Available" mod-worded, the set by its drawn
 "Tactics" caption). New walkable ids: `diplomacy:center` (whose ring is centred).
 **The galaxy view names its four PANELS** (2026-08-19) with `GraphBuilder.PushContext` levels, said
-once on arrival and never repeated while walking inside: Map (`galaxy.map-panel`), Quest
+once on arrival and never repeated while walking inside: Galactic Map (`galaxy.map-panel` — renamed
+from "Map" 2026-08-22, owner ruling: the panel Ctrl+G goes to says what it is), Quest
 (`hud.quest-panel`), Notifications (`hud.notifications-panel`) and View Controls
 (`hud.view-controls-panel`). Quest and Notifications ride the one shared `GlobalHud` contribution,
 so those two words are said on every one of the thirteen screens that draw those panels; "View
@@ -476,7 +529,9 @@ arrows, so a mode claiming arrows screen-wide made it unusable. The cell, its si
 square are all kept while suspended, and coming back to the map reads the cell out again (after a
 short wait, so the arriving stop's own announcement is not cut off). ARMING obeys the same rule: Ctrl+I
 pressed from another stop is NOT claimed and does nothing at all — no focus move, no arming, no speech
-(a jump to the map stop was tried and vetoed, 2026-08-17). Escape and the size
+(a jump to the map stop was tried and vetoed, 2026-08-17). **That veto is about a key that ARMS A
+MODE, not about moving the cursor**: Ctrl+G, whose whole job is to go to the map stop, is exactly the
+key the player would have had to press first, and it arms nothing (2026-08-22). Escape and the size
 keys are claimed from the game ONLY while the mode is live AND on the map stop
 (`GalaxyInspect.KeysClaimed` → `Active` through
 `InputAction.ClaimedWhile`, the Space precedent), which is what leaves the game its own KeypadMinus

@@ -1392,10 +1392,11 @@ not be activated either. Safe: `/reload`, arrow/Tab injection, `/gui/graph?buffe
 owner's save (two winners, one redirection badge each). What the dump should show: one ROW per
 winner — `Militarists, Established` then `+Industrialists, The votes for the
 " Industrialists" political party have been redirected to the " Militarists" political party.` —
-never the glued `Militarists Established +Industrialists`. The winner's place is stamped as a ROW
-position, so "1 of 2" is heard arriving at a card and on stepping to the other winner, and NOT on
-walking out to that winner's badges; the winner rows share a row key, so Down from a badge lands on
-the next winner's badge. The card's focused buffer holds the party dossier AND the experience
+never the glued `Militarists Established +Industrialists`. Since 2026-08-22 the card and each badge
+are single-item ROWS sharing the winners' row key (owner ruling): DOWN walks card, badge, next
+card, next badge, RIGHT from the card falls through silently, and the winner's place is still
+stamped as a row position, so "1 of 2" is heard arriving at a card and on stepping to the other
+winner and NOT on walking out to that winner's badges. The card's focused buffer holds the party dossier AND the experience
 sentence ("Reflects the experience gained by this political party…"); the badge announces its own
 sentence and buffers it. Check the badge's tooltip really draws with `DevProbe.Tooltip()` while it
 is focused (`shown:true`, one `PanelFeatureSimple` feature) — the card's own tooltip hangs off a
@@ -2179,3 +2180,56 @@ by construction (es2-facts). Do this before designing any nested-dossier reading
 construction line's festival badge needs a Hissho festival constructible; the honor gauge's own
 dossier needs a Hissho empire. All three are declaration-side only and gated on finding ≥1 (≥2 for
 the hero row) named class-backed dossier, so they are inert everywhere they were not measured.
+||||||| 940f246
+## The input batch (2026-08-22) — verifying the keys
+
+Fixture `[Beginner] test` unless an item says otherwise. The keys inject as ACTIONS (`POST /input`
+with `ui.pageNext`, `ui.focusMap`, …); the CHORD half — that Ctrl+G reaches the mod rather than the
+game — needs `POST /key` with the game focused, plus `DevProbe.Claims("G")` /
+`DevProbe.Chord("Ctrl+G")` for the claim.
+
+- **Tree arrows, one press each way.** On the galaxy map stop, `/input ui.right` on a collapsed
+  system must answer with the system's FIRST CHILD and its position in one utterance ("Dusay II, …,
+  1 of N") — never "expanded" — and `DevProbe.Camera()` must show the zoom-in Right always did.
+  `/input ui.left` from that child must answer with the SYSTEM node reading "collapsed", camera
+  zoomed back out (one camera move, one press). Left again on the header is the ordinary collapse of
+  whatever that is under. A group that opens EMPTY says "Nothing in here" and STAYS open:
+  `/gui/graph` must still show it expanded and the camera still in, a second `ui.right` is silent,
+  and `ui.left` shuts it. No fixture system with no children is known, so the empty case may have to
+  be forced (a group whose children the game is not drawing) or left to the manual pass. Starlane
+  travel (`OnFollow`) must be unchanged: Right on a named lane still travels and says only the
+  landing.
+- **The five place keys.** On the galaxy page, `/input ui.focusEmpire|ui.focusNotifications|
+  ui.focusTurn|ui.focusTurnLog|ui.focusMap` each answer with that stop's landing, and the landing is
+  the same control Tab lands on (walk there with `ui.next` and compare). On a page that does NOT
+  declare one — `ui.focusTurnLog` with an empty log, `ui.focusMap` anywhere but the galaxy — the
+  answer must be total silence and an unmoved cursor (`/gui/graph` cursor before and after).
+  `DevProbe.Chord("Ctrl+G")` on the galaxy page vs on the research screen is the claim half.
+- **Ctrl+Alt+E.** With the turn endable, `/input ui.endTurn` ends it (the turn number on
+  `hud:end-turn` goes up) and says nothing itself. On a turn the game refuses — the tutorial holding
+  it back, or `Gui.GuiGameWindowService.CanEndTurnByShortcut` false — it must speak the end-turn
+  node's own readout ("End turn (Ctrl+Alt+E), button, Turn N, unavailable" — the game's sentence about
+  why stays in that node's review buffer, where the button keeps it) and change nothing. **Encounter check (on a battle screen):** `E` is `EncounterCameraElevationUp` and the
+  encounter cameras poll their bindings PRIVATELY — those matchers are not covered by
+  `GameKeyStandDown` (:49-52) — so press Ctrl+Alt+E with a battle up (`POST /key`, not `/input`) and
+  confirm the camera does not climb. If it does, the encounter camera's own matcher has to join the
+  same patch family; nothing was changed there in this batch.
+- **Alt+Left/Right on each of the four pages.** Star system: `/input ui.pageNext` announces the next
+  colonised system's page and `ui.pagePrev` comes back; with one colony only, both are silent.
+  Planet page and notification popup: the same, and at either end the key must be silent rather than
+  repeating the page. Academy (DLC hero page): at the first hero `ui.pagePrev` is silent,
+  `ui.pageNext` moves. On the galaxy map stop with the inspect cursor up, the same chords must still
+  travel the cell — both actions fire, and the galaxy page answers only the inspect pair.
+- **The declared pairs and their chord labels.** On the star-system page the colony panel's stop
+  must read "Previous system (…)", the system's name, "Next system (…)" in that order
+  (`Cells.EmitLinear` orders them off the rectangles — read the order out of `/gui/graph`, not the
+  source), each with the game's own tooltip ("Navigates to the previous/next System in your
+  empire"). The planet page's pair, the notification popup's pair and the end-turn node carry theirs
+  the same way. `ChordNames.Of(ES2Access.ModEntry.Input, "ui.pagePrev", 0)` from `/eval` is the
+  chord on its own — and it now comes out of the GAME's key-name table (`%KeyCodeLeftArrow` = "Left
+  Arrow"), so read the actual string before calling a label wrong.
+- **"Galactic Map".** The galaxy map stop's context word is now "Galactic Map"; with a targeting
+  cursor armed it is still the game's instruction, and it reverts to "Galactic Map" when the mode
+  ends.
+- **The Academy's own strip arrows are NOT declared as nodes** — only the page keys reach them.
+  Declaring them would be a separate owner decision.

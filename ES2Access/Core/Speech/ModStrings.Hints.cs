@@ -35,6 +35,22 @@ namespace ES2Access.Core.Speech
         /// parts.</summary>
         public const string KeyChordJoiner = "key.chord-joiner";
 
+        // --- input batch (2026-08-22) ---
+
+        /// <summary>A control's name with the chord that works on it - the one place a chord is spoken
+        /// in a READOUT rather than at the end of a review buffer, for the handful of controls whose
+        /// gesture is the point of them (the paging arrows, the end-turn button). Both parts are
+        /// placeholders: a language that says the chord first has somewhere to put it.</summary>
+        public const string LabelWithChord = "label.with-chord";
+
+        /// <summary>The star-system page's own previous/next arrows. The game draws them with no title
+        /// at all - only a sentence in each one's tooltip - so the mod names them, the way it names the
+        /// planet page's pair.</summary>
+        public const string SystemPrevious = "system.previous";
+        public const string SystemNext = "system.next";
+
+        // --- end input batch ---
+
         // The hint sentences. Every one of them is a whole phrase: the chord is a noun the sentence
         // is built around, and a language that puts it elsewhere has somewhere to put it.
         public const string HintMoveFleetHere = "hint.move-fleet-here";
@@ -71,6 +87,11 @@ namespace ES2Access.Core.Speech
             { HintShowAndSelectFleet, "{0} to show and select fleet" },
             { HintOpenSystemManagement, "{0} to open system management screen" },
             { HintLoad, "{0} to load" },
+            // --- input batch (2026-08-22) ---
+            { LabelWithChord, "{0} ({1})" },
+            { SystemPrevious, "Previous system" },
+            { SystemNext, "Next system" },
+            // --- end input batch ---
         };
     }
 }

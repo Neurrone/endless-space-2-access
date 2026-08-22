@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Reflection;
 using Amplitude;
+using Amplitude.Unity.Framework;
+using Amplitude.Unity.View;
 using ES2Access.Core.Speech;
 using ES2Access.Core.UI.Graph;
 using ES2Access.Core.Util;
@@ -2692,13 +2694,87 @@ namespace ES2Access.Screens
 
         /// <summary>The button's own caption, which the game writes over two lines and rewrites while
         /// a turn is being processed - so it says what the button is doing, not only what it is.
-        /// </summary>
+        ///
+        /// It ends with the chord that ends the turn from anywhere (<see cref="UiActions.EndTurn"/>),
+        /// because the one control every turn passes through is the one worth being able to reach
+        /// without walking to it, and a key nothing names is a key nobody finds.</summary>
         private static string EndTurnLabel(EndTurnWindow window)
         {
             string caption = OneLine(AgeText.Label(window.EndTurnTitle));
-            return string.IsNullOrEmpty(caption)
-                ? ModStrings.Get(ModStrings.GalaxyEndTurn)
-                : caption;
+            return ChordNames.Label(
+                string.IsNullOrEmpty(caption)
+                    ? ModStrings.Get(ModStrings.GalaxyEndTurn)
+                    : caption,
+                UiActions.EndTurn,
+                0
+            );
+        }
+
+        /// <summary>
+        /// End the turn the way the game's own end-turn SHORTCUT does (<c>EndTurnWindow.HandleInput</c>
+        /// :637-654): the same three gates, then the armed cursor put back to the plain galaxy one - an
+        /// order still waiting for a target would otherwise eat the turn - and then the session's own
+        /// TryToEndTurn. The button is not pressed: the shortcut path is what a key is, and it is the
+        /// path the game itself takes for a key.
+        ///
+        /// A refusal speaks the END-TURN NODE's own reading - its name, which turn it is and
+        /// "unavailable" - because the player pressing this key from the far side of the page cannot see
+        /// the button greying out. It is read out of the graph rather than composed again here, so the
+        /// key and the button can never say different things; the game's sentence about WHY stays where
+        /// the button keeps it, in the review buffer (<see cref="EndTurnReason"/>). Success says nothing
+        /// at all, exactly as pressing the button says nothing.
+        ///
+        /// False means the key was not this page's business (no turn controls drawn), which is what
+        /// leaves the press alone.
+        /// </summary>
+        public static bool EndTurnByKey()
+        {
+            EndTurnWindow window = TurnWindow();
+            if (window == null || !AgeWidgets.Visible(window.AgeTransform))
+            {
+                return false;
+            }
+
+            if (!CanEndTurn(window))
+            {
+                SpeakEndTurnRefusal();
+                return true;
+            }
+
+            try
+            {
+                ICursorService cursors = Services.GetService<ICursorService>();
+                if (
+                    cursors != null
+                    && cursors.CurrentCursor != null
+                    && cursors.CurrentCursor.GetType() != typeof(GalaxyCursor)
+                )
+                {
+                    cursors.ChangeCursor(typeof(GalaxyCursor));
+                }
+
+                window.EndTurnService.Target.TryToEndTurn();
+            }
+            catch (Exception e)
+            {
+                Log.Warn("hud: ending the turn from the keyboard threw: " + e);
+            }
+
+            return true;
+        }
+
+        /// <summary>What the end-turn control says about itself right now, read out of the graph rather
+        /// than composed again here - the refusal the player would have heard by walking to it.</summary>
+        private static void SpeakEndTurnRefusal()
+        {
+            GraphNavigator navigator = ModEntry.Navigator;
+            GraphRender render = navigator == null ? null : navigator.Render;
+            GraphNode node =
+                render == null ? null : render.NodeAt(ControlId.Structural("hud:end-turn"));
+            if (node != null)
+            {
+                Voice.Say(GraphAnnouncer.LeafText(node), true);
+            }
         }
 
         /// <summary>Which turn it is. Read from the turn service rather than from the label beside the

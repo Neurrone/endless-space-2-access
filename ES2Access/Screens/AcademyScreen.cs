@@ -155,6 +155,23 @@ namespace ES2Access.Screens
             }
         }
 
+        /// <summary>The page keys pick the hero before or after the one picked, the way the arrows at
+        /// either end of the card strip do (<c>AcademyScreen.OnPreviousCb/OnNextCb</c>). The game
+        /// switches an arrow off at its end of the strip (<c>RefreshContent</c> :210-211) rather than
+        /// wrapping, so the key is taken and silent there - the strip has not moved and the hero the
+        /// cursor is on is the hero it was on.</summary>
+        public override bool PagePrev()
+        {
+            global::AcademyScreen window = Window();
+            return window != null && Page(window.HeroNavigationLeftButton);
+        }
+
+        public override bool PageNext()
+        {
+            global::AcademyScreen window = Window();
+            return window != null && Page(window.HeroNavigationRightButton);
+        }
+
         public override void OnPush()
         {
             _hud.Baseline();

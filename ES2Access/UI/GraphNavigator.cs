@@ -125,6 +125,15 @@ namespace ES2Access.UI
             get { return _state == null ? null : _state.CurKey; }
         }
 
+        /// <summary>The render the cursor is standing in - the last one built, which every dispatch and
+        /// every frame's <see cref="EnsureFocus"/> refreshes. For a caller that wants to read what a
+        /// control OTHER than the focused one is saying (a global key speaking a button's refusal from
+        /// the far side of the page); null before the first build.</summary>
+        public GraphRender Render
+        {
+            get { return _graph == null ? null : _graph.Current; }
+        }
+
         /// <summary>How many nodes the focused screen declared on the last rebuild, or -1 when there
         /// is no render. For a trace of a transition: a page that has stopped declaring its own
         /// content while something else still declares its shared strip is the whole of what a
@@ -311,6 +320,44 @@ namespace ES2Access.UI
             _lastSpokenNode = null;
         }
 
+        /// <summary>Whether the focused screen's LAST render declared this Tab-stop - the availability
+        /// half of a jump-to-stop key, and the same question its key CLAIM asks
+        /// (<c>docs/interaction.md</c>). Read off the standing render rather than built fresh: the claim
+        /// is asked from inside the game's key scans several times a frame, and the render is rebuilt by
+        /// every dispatch and every <see cref="EnsureFocus"/> anyway, so it is never more than a frame
+        /// old.</summary>
+        public bool DeclaresStop(object stopKey)
+        {
+            return _screen != null && KeyGraph.DeclaresStop(Render, stopKey);
+        }
+
+        /// <summary>Put the cursor on a Tab-stop NOW and announce the landing - a global key that means
+        /// "take me to that panel". Where the stop is absent the key did nothing and says so by saying
+        /// nothing: the answer is false and the caller leaves the press alone.
+        ///
+        /// It lands where TAB would land (<see cref="KeyGraph.StopLanding(GraphRender,GraphState,object)"/>
+        /// - the remembered position, else the selected member, else the first control), so the key and
+        /// Tab agree about where a panel begins.</summary>
+        public bool FocusStop(object stopKey)
+        {
+            if (_screen == null || _graph == null || !_graph.Rerender())
+            {
+                return false;
+            }
+
+            GraphNode landing = KeyGraph.StopLanding(_graph.Current, _graph.State, stopKey);
+            GraphNode from = _graph.CurrentNode;
+            if (landing == null || !_graph.Focus(landing.Id))
+            {
+                return false;
+            }
+
+            AnnounceMove(
+                new MoveResult { From = from, To = _graph.CurrentNode, Moved = true }
+            );
+            return true;
+        }
+
         /// <summary>
         /// Ask for focus to land on a control (a screen choosing where to put the player). Applied on
         /// the next tick.
@@ -468,6 +515,14 @@ namespace ES2Access.UI
                     return InRegion() && Region(-1);
                 case UiActions.RegionNext:
                     return InRegion() && Region(1);
+                // The page keys are the SCREEN's, wherever the cursor is standing on it: what they turn
+                // is the whole surface (the next system, the next planet, the next notification), which
+                // is a fact about the page and not about the control under the cursor. A screen that
+                // draws no such pair never overrides them and the press does nothing at all.
+                case UiActions.PagePrev:
+                    return _screen.PagePrev();
+                case UiActions.PageNext:
+                    return _screen.PageNext();
                 case UiActions.CoarseIncrease:
                     return Adjust(1, true);
                 case UiActions.CoarseDecrease:
@@ -894,11 +949,12 @@ namespace ES2Access.UI
                     dir == GraphDir.Right ? _graph.TreeRight() : _graph.TreeLeft();
                 switch (tree.Kind)
                 {
-                    case KeyGraph.TreeMove.Expanded:
                     case KeyGraph.TreeMove.Collapsed:
                         SpeakFocusedState();
                         return true;
                     case KeyGraph.TreeMove.EmptyGroup:
+                        // The branch is OPEN and holds nothing. The cursor stays on the header, which is
+                        // the one place left to press Left from to shut it again.
                         Voice.Say(ModStrings.Get(ModStrings.NavNoDetails), true);
                         return true;
                     case KeyGraph.TreeMove.Descended:

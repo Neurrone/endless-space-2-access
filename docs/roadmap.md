@@ -48,6 +48,13 @@ files above.
   `AttackSystemPirateDiplomaticAction` — the other five report popups are done);
   DiplomaticInteractionNotificationWindow (MoodMessageLabel, NegotiationContributionPanel).
 - Galaxy-label gaps: constellation ownership bonus; pin-message editing.
+- Input batch (code landed 2026-08-22, NOT yet live-verified — recipes in `test-recipes.md`
+  "The input batch"): single-press tree arrows, the five place keys + Ctrl+Alt+E, Alt+Left/Right
+  paging on four screens, the star-system pair as nodes, chord labels, the election winner rows.
+  Open on top of the recipes: whether a childless expandable group occurs in play at all (the
+  empty-group branch has only ever been reached in unit tests); whether the encounter cameras
+  need to join `GameKeyStandDown` for Ctrl+Alt+E's `E`; and whether the Academy's own strip
+  arrows should be declared as nodes as well as reached by the page keys (owner decision).
 - Scanner (shipped, taxonomy v2 2026-08-16, Contested Influence added 2026-08-21, taxonomy v3
   2026-08-22): THIRTEEN categories in the owner's order — systems, colonizable planets, unexplored,
   anomalies, curiosities, luxury resources, strategic resources, contested influence, fleets,

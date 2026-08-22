@@ -1,5 +1,6 @@
 using ES2Access.Core.UI;
 using ES2Access.Core.UI.Graph;
+using ES2Access.UI;
 
 namespace ES2Access.Screens
 {
@@ -234,6 +235,47 @@ namespace ES2Access.Screens
         public virtual bool Secondary(GraphNode focused)
         {
             return false;
+        }
+
+        /// <summary>
+        /// Turn the page back or on - the previous/next system, planet, notification, hero - offered to
+        /// the SCREEN wherever the cursor is standing on it, because what these turn is the whole
+        /// surface rather than the control under the cursor. Return true when the screen took the key.
+        ///
+        /// A screen overrides them exactly where the GAME draws such a pair, and answers by pressing the
+        /// game's own button through <see cref="Page"/>. A screen that draws none never overrides them
+        /// and the key does nothing at all.
+        /// </summary>
+        public virtual bool PagePrev()
+        {
+            return false;
+        }
+
+        public virtual bool PageNext()
+        {
+            return false;
+        }
+
+        /// <summary>How a screen answers the page keys: press the game's own arrow while the game has it
+        /// switched on, and say nothing at either end of the run.
+        ///
+        /// The key is taken (true) wherever the pair is DRAWN, switched off included - a page that has
+        /// run out of systems to step to has answered the press, and repeating the name of the page the
+        /// player is already on would be the checkbox that re-reads itself at a limit. A pair the game
+        /// is not drawing is not this screen's key at all.</summary>
+        protected static bool Page(AgeTransform button)
+        {
+            if (button == null || !AgeWidgets.Visible(button))
+            {
+                return false;
+            }
+
+            if (AgeWidgets.Operable(button))
+            {
+                AgeWidgets.Press(button);
+            }
+
+            return true;
         }
 
         /// <summary>
