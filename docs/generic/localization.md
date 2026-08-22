@@ -50,7 +50,7 @@ infrastructure); starting with the seam costs nearly nothing.
    translator works from — one game's cutscenes ran to 4,400 words against a 900-key table.
    Ship it as a **per-asset table beside the string table** (`descriptions/<language>.json`
    next to `locale/<language>.json`), following the game's language through the same watcher.
-   Three rules that are the opposite of the string table's, and each one bit before it was
+   Four rules that are the opposite of the string table's, and each one bit before it was
    written down:
    - **Key by the game's own asset name, not the human one.** A describer writes "Vodyani
      Intro"; the game asks for `Vampirilis_Intro`. Do that translation ONCE in a build step,
@@ -58,6 +58,12 @@ infrastructure); starting with the seam costs nearly nothing.
    - **Have the build step FAIL on a name the install does not have.** The mapping is the
      only place this can be caught; a wrong name at runtime is silence that looks like a
      missing feature.
+   - **Commit the built table, not what built it.** A describer's output is bulk generator
+     artefact — one game's ran to 208 files against a 40 KB table — and nothing but the build
+     step ever reads one, so ignore it the way the media it describes is ignored. Then carry in
+     the BUILT table anything the runtime does not need but a later editor does — where the
+     video's own dialogue resumes, so a rewritten cue can be checked against the room it has —
+     or that constraint leaves the repository along with the input.
    - **English is a FILE here, not a compiled-in fallback.** There is nothing to hard-code, so
      the degradation ladder is per-language-file → English file → silence, and silence is a
      legitimate rung. Descriptions are additive; a language without them loses nothing it had.
