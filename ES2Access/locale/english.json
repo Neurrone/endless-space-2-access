@@ -345,6 +345,8 @@
   "label.with-chord": "{0} ({1})",
   "system.previous": "Previous system",
   "system.next": "Next system",
+  "academy.previous": "Previous hero",
+  "academy.next": "Next hero",
   "gamemenu.game-settings": "Game settings",
   "gamemenu.read-only-settings": "read only",
   "loadsave.save-name": "Save name",

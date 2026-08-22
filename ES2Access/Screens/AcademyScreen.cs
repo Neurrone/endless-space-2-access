@@ -4,6 +4,7 @@ using ES2Access.Core.Speech;
 using ES2Access.Core.UI.Graph;
 using ES2Access.Core.Util;
 using ES2Access.UI;
+using ES2Access.UI.Input;
 using UnityEngine;
 
 namespace ES2Access.Screens
@@ -545,6 +546,7 @@ namespace ES2Access.Screens
                 Log.Warn("academy: reading the hero cards threw: " + e);
             }
 
+            AddHeroPaging(window);
             Cells.EmitLinear(builder, _cells);
             if (start != null)
             {
@@ -555,6 +557,66 @@ namespace ES2Access.Screens
             {
                 builder.PopContext();
             }
+        }
+
+        /// <summary>
+        /// The two arrows the game draws under the card strip, which pick the hero before or after the
+        /// one that is picked (<c>AcademyScreen.OnPreviousCb/OnNextCb</c>) - the same pair
+        /// <see cref="PagePrev"/>/<see cref="PageNext"/> press from anywhere on the page, declared here
+        /// as well so a player walking the strip finds them (owner decision, 2026-08-22).
+        ///
+        /// They are declared with the cards rather than in a stop of their own because that is where the
+        /// game draws them, and <see cref="Cells.EmitLinear"/> takes the reading order off the
+        /// rectangles. The game gives them no title and no tooltip at all, so the mod names them - and
+        /// each name ends with the chord that does the same thing, since the whole point of declaring
+        /// the buttons is that a player who found one has found the gesture too. The game switches an
+        /// arrow off at its end of the strip (<c>RefreshContent</c> :210-211), which is what makes the
+        /// node read unavailable there.
+        /// </summary>
+        private void AddHeroPaging(global::AcademyScreen window)
+        {
+            AddHeroPage(
+                window.HeroNavigationLeftButton,
+                "previous",
+                ModStrings.AcademyPrevious,
+                UiActions.PagePrev
+            );
+            AddHeroPage(
+                window.HeroNavigationRightButton,
+                "next",
+                ModStrings.AcademyNext,
+                UiActions.PageNext
+            );
+        }
+
+        private void AddHeroPage(
+            AgeTransform widget,
+            string key,
+            string nameKey,
+            string actionKey
+        )
+        {
+            if (widget == null || !AgeWidgets.Visible(widget))
+            {
+                return;
+            }
+
+            AgeTransform at = widget;
+            AgeControlButton button = AgeWidgets.Button(widget);
+            string named = nameKey;
+            string action = actionKey;
+            NodeVtable vtable = GraphNodes.Button(
+                () => ChordNames.Label(ModStrings.Get(named), action, 0),
+                () => AgeWidgets.Press(at),
+                () => AgeWidgets.Operable(at),
+                AgeWidgets.Raw(widget)
+            );
+            if (button != null)
+            {
+                AgeWidgets.Point(vtable, button);
+            }
+
+            Cells.Add(_cells, widget, ControlId.Referenced(widget, Keys + key), vtable);
         }
 
         /// <summary>One hero's card. Enter is the card's own toggle, which is what the mouse clicks: the

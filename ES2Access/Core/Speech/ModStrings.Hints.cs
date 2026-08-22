@@ -49,6 +49,11 @@ namespace ES2Access.Core.Speech
         public const string SystemPrevious = "system.previous";
         public const string SystemNext = "system.next";
 
+        /// <summary>The academy strip's own previous/next hero arrows. The game titles them no more
+        /// than it titles the star-system pair, and gives them no tooltip either.</summary>
+        public const string AcademyPrevious = "academy.previous";
+        public const string AcademyNext = "academy.next";
+
         // --- end input batch ---
 
         // The hint sentences. Every one of them is a whole phrase: the chord is a noun the sentence
@@ -91,6 +96,8 @@ namespace ES2Access.Core.Speech
             { LabelWithChord, "{0} ({1})" },
             { SystemPrevious, "Previous system" },
             { SystemNext, "Next system" },
+            { AcademyPrevious, "Previous hero" },
+            { AcademyNext, "Next hero" },
             // --- end input batch ---
         };
     }

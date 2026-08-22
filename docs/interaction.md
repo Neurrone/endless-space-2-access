@@ -210,12 +210,19 @@ key doing nothing at all. **These chords are also the galaxy inspect cursor's tr
 actions fire on the press** — `ModInput.Tick` delivers every action whose chord matches and has no
 first-wins rule — which is safe only because no screen answers both: the map answers the inspect
 pair and draws no page pair. Any future action sharing a chord has to be checked the same way.
-The star-system page's pair is also DECLARED, as `system:previous`/`system:next` either side of the
+The star-system page's pair is also DECLARED, as `system:previous`/`system:next` beside the
 system's name in the colony panel (the stop that holds the name — the panel the game binds for a
 colony, an outpost and a ghost alike, which is the same condition under which it draws the arrows);
-`Cells.EmitLinear` orders them off the rectangles, so they read previous, name, next. The game gives
+`Cells.EmitLinear` orders them off the rectangles, and MEASURED (2026-08-22) that is the name,
+then previous, then next: the arrows do not flank the name at all - the banner is a wide panel at
+the left of the page (x 32-250) and the arrows sit at x 256 and x 1204, one either side of the
+whole page. The game gives
 them no title, so they are mod-named ("Previous system" / "Next system") over the game's own
 tooltips, like the planet page's pair.
+**The ACADEMY strip's pair is declared the same way** (`academy:previous`/`academy:next`, in the
+heroes stop, owner decision 2026-08-22): the game titles them no more than it titles the system
+pair and gives them no tooltip at all, so both parts of the name are the mod's, and the arrow the
+game switches off at its end of the strip reads unavailable.
 **A control may end its NAME with the chord that works on it**, not only its buffer's last line
 (`ChordNames.Label`, template `label.with-chord`): the four paging pairs and the end-turn button
 carry theirs, because the key is the whole reason the pair was worth declaring twice. It is read on

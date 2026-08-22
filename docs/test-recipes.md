@@ -488,30 +488,33 @@ why the mod checks `Known` as well as the position (es2-facts). Minor factions h
 too (Niris/Osulo, Amoeba/Sabel, Epistis/Dyl, Yuusho/Olvaldi… nine of them) and are deliberately
 NOT in this scope.
 
-### Scanner taxonomy v3 (2026-08-22) — the six new categories, NOT YET VERIFIED LIVE
+### Scanner taxonomy v3 (2026-08-22) — the six new categories, VERIFIED LIVE 2026-08-22
 
 The order Ctrl+PageDown now walks is **Systems, Colonizable Planets, Unexplored, Anomalies,
 Curiosities, Luxury Resources, Strategic Resources, Contested Influence, Fleets, Probes, Ally pins,
 Obliterator missiles, Quest markers** — so the paragraphs below that call fleets "the second" and
-probes "the third" describe the WORDING, not the position any more. Everything in this section was
-written offline from the game's code and has never been heard: it is the whole of what the live
-stage has to check. Drive it with the same action keys; count the Ctrl presses from Systems.
+probes "the third" describe the WORDING, not the position any more. Everything below was written offline and then HEARD on `[Beginner] test` (turn 21, reference = the
+map stop's own place); the measured rows and counts are quoted inline. Drive it with the same
+action keys; count the Ctrl presses from Systems. Contested Influence is SKIPPED on this fixture
+(169 ground tiles swept, 0 contested), so the Ctrl ring runs Systems, Colonizable, Unexplored,
+Anomalies, Curiosities, Luxury, Strategic, Fleets, Probes and back.
 
 Per category, what to check:
 
-- **Colonizable Planets** (1 Ctrl press). Two subcategories and NO "all": `unoccupied` first. On
-  `[Beginner] test` the row should read
-  `Colonizable Planets: unoccupied, ⟨planet⟩, ⟨size⟩ ⟨type⟩, ⟨luxuries⟩, ⟨strategics⟩,
-  ⟨anomalies⟩, ⟨curiosities⟩, max population ⟨n⟩, Food ⟨n⟩, Industry ⟨n⟩, Dust ⟨n⟩,
-  Science ⟨n⟩, Influence ⟨n⟩, ⟨pair⟩, ⟨offset⟩, 1 of ⟨m⟩` — check in particular that there is
-  **exactly one comma and no stray one** between the planet name and the size (the description is
-  composed into an empty builder, where a forced comma would lead), that the size comes BEFORE the
-  type, and that the fifth output is called whatever the game calls `PlanetInitialPrestige`
-  (expected "Influence" — unverified). A sparse world drops the absent parts entirely. Oracle for
-  membership: an `/eval` walk of the perceived systems asking `!p.IsColonized &&
-  p.IsColonizable(me)` per planet, which must equal the `unoccupied` count. `occupied` needs a
-  foreign or minor colony this empire can settle — Osulo (Niris) is the fixture's only candidate,
-  so expect at most a handful and possibly zero.
+- **Colonizable Planets** (1 Ctrl press). Two subcategories and NO "all": `unoccupied` first. MEASURED
+  on `[Beginner] test`: `Colonizable Planets: unoccupied, Rigel I, Small Forest, max population 7,
+  Planet Food production 8, Planet Industry production 4, Planet Dust production 4, Planet Science
+  production 3, Planet Influence production 0, -16, -5, 3 south, 1 of 7` and
+  `occupied, Osulo I, Medium Mediterranean, Hyperium, Titanium, max population 7, Planet Food
+  production 6, ..., 1 of 1`. So: exactly ONE comma between the planet's name and its size, size
+  BEFORE type, resource names without the deposit suffix ("Titanium", not "Titanium-70"), and the
+  five outputs carry the GAME's own titles - which are "Planet Food production" and kin, not the
+  bare "Food"/"Influence" this recipe first guessed; `PlanetInitialPrestige` reads "Planet
+  Influence production". A sparse world drops the absent parts entirely (Rigel I has no resources,
+  anomalies or curiosities and says none). Oracle for membership: an `/eval` walk of the perceived
+  systems asking `!p.IsColonized && p.IsColonizable(me)` per planet - measured 7, equal to the
+  `unoccupied` count; the `occupied` half (a foreign or minor colony this empire's tech could
+  settle) is Osulo I alone, and the same walk's `IsColonized && other empire && able` count is 1.
 - **Unexplored** (2 presses). `Unexplored: all, Star lane ⟨n⟩ from ⟨system⟩ heading ⟨direction⟩,
   ⟨the system's pair⟩, ⟨offset⟩, 1 of ⟨m⟩`. Check the lane NUMBER against the tree: focus the same
   system, walk its lane rows, and the numbering must be identical (both come from `LanesOf`).
@@ -519,32 +522,45 @@ Per category, what to check:
   summed. **Each lane must appear once** — a duplicate would mean both ends were perceived, which
   contradicts the gate. A wormhole reads "Wormhole ⟨n⟩ from …"; fixture-blocked unless the empire
   has wormhole technology.
-- **Anomalies / Curiosities / Luxury Resources / Strategic Resources** (3–6 presses). In `all` the
+- **Anomalies / Curiosities / Luxury Resources / Strategic Resources** (3-6 presses). In `all` the
   row is `⟨kind⟩ on ⟨planet⟩`; Shift steps into one KIND at a time, alphabetically, and there the
-  row is the planet alone. Check: (a) the kinds are the game's own words (an anomaly's
-  `GuiAnomaly.Title`, a resource's `GuiResource.Title` — "Titanium", never "Titanium-70"); (b) the
-  subcategory list is alphabetical in the localized names; (c) two anomalies on one planet give TWO
-  rows in `all`; (d) a per-kind scope's count matches the number of `⟨that kind⟩ on …` rows in
-  `all`. Curiosities appear on systems that are NOT surveyed (the gate is
-  `Curiosity.CanBeSeen`), and the planet is then named with the game's "unknown" word — worth
-  hearing once.
+  scope line is the kind's own name and the row is the planet alone ("Acid Rain, Primus I, 17, 21,
+  42 north, 34 east, 1 of 1"). MEASURED on `[Beginner] test`: anomalies 12 in "all" over 10 kinds
+  (Acid Rain 1, Binary Moons 2, Hollow Planet 1, Huygens Rings 1, Mineral Rich 1, Multiple Moons 2,
+  Polar Tempests 1, Single Moon 1, Strong Magnetic Field 1, The Platform of Ys 1); curiosities 16
+  over 5 (Atmospheric 1, Life Form 6, Ruins 4, Signal 2, Subterranean 3); luxuries 10 over 2
+  (Dustciduous Trees 6, Transvine 4); strategics 5 over 3 (Antimatter 1, Hyperium 2, Titanium 2) -
+  every per-kind total sums to its "all", and every list is alphabetical in the localized names.
+  The kinds are the game's own words. One row per (KIND, planet), owner's wording 2026-08-22: two
+  anomalies of the SAME kind on one world are one row, two of different kinds are two.
+  Curiosities appear on systems that are NOT surveyed (the gate is `Curiosity.CanBeSeen`), and the
+  planet is then named with the game's "unknown" word - FIXTURE-BLOCKED here, since all 13
+  perceived systems are surveyed.
 - **The memory is by NAME.** Park on a kind, cycle away to another category and back: the same
   KIND must come back, not the same column index. The offline proof is `ScannerKindsTests`; the
-  live proof is doing it on a fixture where a kind sorts in the middle.
-- **Alt+Home lands AND zooms, on every category.** For a planet result the cursor must land on the
-  PLANET's own row under its system (`galaxy:constellation/…/system/…/planet/⟨orbit⟩`), with the
-  constellation and the system opened on the way in, and the camera brought in on the system
-  (`DevProbe.Camera()` before and after). For a lane result it must land on that system's lane row
-  (`…/lane/⟨GUID⟩`). For a fleet, probe, pin or missile the camera slides to the thing's own point
-  instead (no node to zoom into). With the inspect cursor UP, every category must still jump the
-  cell and nothing else. Contested Influence must still ARM the cursor.
+  live proof is doing it on a fixture where a kind sorts in the middle - DONE 2026-08-22: parked on
+  "Mineral Rich" (5th of 10 anomaly kinds), cycled three categories on and three back, and the
+  scope line came back "Anomalies: Mineral Rich" (Luxury likewise came back on "Transvine").
+- **Alt+Home lands AND zooms, on every category.** MEASURED 2026-08-22: a planet result lands on
+  `galaxy:constellation/446/system/491/planet/0` with both ancestors opened and the camera moved
+  onto the system; a lane result on `…/system/505/lane/650` (camera zoomStep 9 → 12); a mid-lane
+  FLEET keeps its own node (`…/system/522/fleet/1570`) while the camera slides to it, and the probe
+  lands on `galaxy:probe/1621` with the camera slid to (13.59, -52.30). With the inspect cursor UP
+  the cell jumps and nothing else moves (tree cursor unchanged, camera follows the cell).
+  Contested Influence must still ARM the cursor - fixture-blocked, the category is empty here.
+  **The landing UTTERANCE is composed before the camera arrives** (`FocusNode` then `Camera`, the
+  same order the page's own `Arrive` uses): a planet landing said "Osulo I, Colonized, 1 of 7" while
+  the settled row reads "Osulo I, group, Medium Mediterrane., Colonized, collapsed, 2 of 8", because
+  the closer view adds rows and the card's own words. Re-reading the node gives the full line. This
+  is the locate path's own behaviour, not the scanner's.
 - **The cost.** `POST /eval` `ES2Access.UI.ScannerCost.Line()` after a press answers
   `scanner snapshot ⟨ms⟩ ms, ⟨n⟩ colonizability checks, press ⟨n⟩`. Take it (a) on the first press
   of a session and (b) while holding Alt+PageDown. Anything at or over 30 ms also logs itself, so
-  `GET /log?grep=scanner snapshot` is the second reading. Expected shape: colonizability checks ≈
-  the number of UNSETTLED perceived planets (the ABLE half is memoized per planet TYPE and so
-  contributes only a handful), not the number of planets. A count that tracks the planet count
-  means the memo is not working.
+  `GET /log?grep=scanner snapshot` is the second reading. MEASURED 2026-08-22: **32 ms on the
+  session's first press** (the one line in the log) and **5-8 ms** on every press after, including a
+  25-press burst; **30 colonizability checks**, every press. The shape to check is the SUM: one
+  check per planet TYPE seen (19 here) plus one per unsettled world of a settleable type (11) -
+  against 33 declared planets. A count that tracks the PLANET count means the memo is not working.
 
 **PROBES are the third category** (2026-08-16), cycled to by Ctrl after fleets. They are the
 TRAVELLING probes only — the same `_drifting` list the tree's probe rows and the inspect cell read,
@@ -552,8 +568,9 @@ so all three agree. Detection probes (no mote of their own; they surface on syst
 mining probes (planet-anchored) are deliberately absent. The instance line reuses the tree row's
 words for what a probe is called and whose it is, plus the owner-gated countdown, and leaves the
 "N turns out from ⟨star⟩" bearing to the tree row: `Probes: all, Probe, Neurrone, 4 Turn,
--55, -30, 30 south, 55 west, 1 of 1`. `galaxy.scanGoTo` opens the probe's star and lands on
-`galaxy:system/488/probe/1621`; there is no select-the-thing fallback, because the game lets nobody
+-55, -30, 30 south, 55 west, 1 of 1`. `galaxy.scanGoTo` lands on the probe's own top-level row, MEASURED as
+`galaxy:probe/1621` (the three open-space kinds sit at the top of the stop, so no branch is opened
+on the way in); there is no select-the-thing fallback, because the game lets nobody
 click a probe.
 **The probe list is NO LONGER camera-dependent** (fixed 2026-08-16): `_drifting` is built from
 `DepartmentOfDefense.Probes` across every empire under `MapVisibility.Sighted` (the game's own
@@ -2181,55 +2198,79 @@ construction line's festival badge needs a Hissho festival constructible; the ho
 dossier needs a Hissho empire. All three are declaration-side only and gated on finding ≥1 (≥2 for
 the hero row) named class-backed dossier, so they are inert everywhere they were not measured.
 
-## The input batch (2026-08-22) — verifying the keys
+## The input batch (2026-08-22) — verifying the keys, VERIFIED LIVE 2026-08-22
 
 Fixture `[Beginner] test` unless an item says otherwise. The keys inject as ACTIONS (`POST /input`
-with `ui.pageNext`, `ui.focusMap`, …); the CHORD half — that Ctrl+G reaches the mod rather than the
-game — needs `POST /key` with the game focused, plus `DevProbe.Claims("G")` /
-`DevProbe.Chord("Ctrl+G")` for the claim.
+with `ui.pageNext`, `ui.focusMap`, …). **The CHORD half cannot be answered from the dev server at
+all**: `POST /key` refuses with 409 unless the game has the foreground (a locked desktop is enough
+to lose it), and `DevProbe.Chord("Ctrl+G")` does NOT answer it either — its `Claimed` walks the
+combination's KEY CODES and asks `ModInput.ClaimsKey` per key, and type-ahead claims every letter on
+every mod screen, so Ctrl+G reads `suppressed:true` on the research screen exactly as on the galaxy
+page. "The chord reaches the mod and not the game" is a MANUAL-TEST line, not an injectable one.
 
-- **Tree arrows, one press each way.** On the galaxy map stop, `/input ui.right` on a collapsed
-  system must answer with the system's FIRST CHILD and its position in one utterance ("Dusay II, …,
-  1 of N") — never "expanded" — and `DevProbe.Camera()` must show the zoom-in Right always did.
-  `/input ui.left` from that child must answer with the SYSTEM node reading "collapsed", camera
-  zoomed back out (one camera move, one press). Left again on the header is the ordinary collapse of
-  whatever that is under. A group that opens EMPTY says "Nothing in here" and STAYS open:
-  `/gui/graph` must still show it expanded and the camera still in, a second `ui.right` is silent,
-  and `ui.left` shuts it. No fixture system with no children is known, so the empty case may have to
-  be forced (a group whose children the game is not drawing) or left to the manual pass. Starlane
-  travel (`OnFollow`) must be unchanged: Right on a named lane still travels and says only the
-  landing.
-- **The five place keys.** On the galaxy page, `/input ui.focusEmpire|ui.focusNotifications|
-  ui.focusTurn|ui.focusTurnLog|ui.focusMap` each answer with that stop's landing, and the landing is
-  the same control Tab lands on (walk there with `ui.next` and compare). On a page that does NOT
-  declare one — `ui.focusTurnLog` with an empty log, `ui.focusMap` anywhere but the galaxy — the
-  answer must be total silence and an unmoved cursor (`/gui/graph` cursor before and after).
-  `DevProbe.Chord("Ctrl+G")` on the galaxy page vs on the research screen is the claim half.
-- **Ctrl+Alt+E.** With the turn endable, `/input ui.endTurn` ends it (the turn number on
-  `hud:end-turn` goes up) and says nothing itself. On a turn the game refuses — the tutorial holding
-  it back, or `Gui.GuiGameWindowService.CanEndTurnByShortcut` false — it must speak the end-turn
-  node's own readout ("End turn (Ctrl+Alt+E), button, Turn N, unavailable" — the game's sentence about
-  why stays in that node's review buffer, where the button keeps it) and change nothing. **Encounter check (on a battle screen):** `E` is `EncounterCameraElevationUp` and the
-  encounter cameras poll their bindings PRIVATELY — those matchers are not covered by
-  `GameKeyStandDown` (:49-52) — so press Ctrl+Alt+E with a battle up (`POST /key`, not `/input`) and
-  confirm the camera does not climb. If it does, the encounter camera's own matcher has to join the
-  same patch family; nothing was changed there in this batch.
-- **Alt+Left/Right on each of the four pages.** Star system: `/input ui.pageNext` announces the next
-  colonised system's page and `ui.pagePrev` comes back; with one colony only, both are silent.
-  Planet page and notification popup: the same, and at either end the key must be silent rather than
-  repeating the page. Academy (DLC hero page): at the first hero `ui.pagePrev` is silent,
-  `ui.pageNext` moves. On the galaxy map stop with the inspect cursor up, the same chords must still
-  travel the cell — both actions fire, and the galaxy page answers only the inspect pair.
-- **The declared pairs and their chord labels.** On the star-system page the colony panel's stop
-  must read "Previous system (…)", the system's name, "Next system (…)" in that order
-  (`Cells.EmitLinear` orders them off the rectangles — read the order out of `/gui/graph`, not the
-  source), each with the game's own tooltip ("Navigates to the previous/next System in your
-  empire"). The planet page's pair, the notification popup's pair and the end-turn node carry theirs
-  the same way. `ChordNames.Of(ES2Access.ModEntry.Input, "ui.pagePrev", 0)` from `/eval` is the
-  chord on its own — and it now comes out of the GAME's key-name table (`%KeyCodeLeftArrow` = "Left
-  Arrow"), so read the actual string before calling a label wrong.
-- **"Galactic Map".** The galaxy map stop's context word is now "Galactic Map"; with a targeting
-  cursor armed it is still the game's instruction, and it reverts to "Galactic Map" when the mode
-  ends.
-- **The Academy's own strip arrows are NOT declared as nodes** — only the page keys reach them.
-  Declaring them would be a separate owner decision.
+- **Tree arrows, one press each way.** MEASURED: on the galaxy stop, `ui.right` on collapsed **Dusay**
+  answers "Open system, button, 1 of 8" — the system's first child, with its position, no
+  "expanded" word — and the camera goes in (zoomStep 9 → 12, "Zoom level 13 of 15, System
+  Overview"). `ui.left` from that child answers "Dusay, 0, 0, group, Home System, colonized, 1 fleet
+  under way nearby, collapsed, 6 of 13" and one zoom-out (12 → 9). Left on a HEADER is still the
+  plain collapse: from Dusay it answered "Serpens, group, collapsed, 1 of 2". The research wheel is
+  the same one press each way ("Military I, group, collapsed, 1 of 6" in, "Military, group,
+  collapsed, …, 1 of 4" out, no camera). Starlane travel is unchanged: Right on "Starlane 3 to
+  Qarius" travels and says only the landing.
+  **No fixture system has an EMPTY expandable group** — even the SPECIAL node (B10 6805) has two
+  lane children — so "Nothing in here", the group staying open and the second Right being a
+  consumed leaf are still unit-test-only.
+- **The six place keys.** MEASURED on the galaxy page, each landing identical to the one Tab reaches:
+  `ui.focusEmpire` → "Controls, Empire Summary, button, unavailable, …, 1 of 8"; `ui.focusNotifications`
+  → "Notifications, Laws Cancelled, button"; `ui.focusTurn` → "End Turn (Ctrl+Alt+E), button, Turn 21,
+  1 of 6"; `ui.focusMap` → "Galactic Map, …" on the remembered position. Where the stop is absent the
+  key is TOTAL silence with the cursor unmoved, proved twice by `DevProbe.Screen()` either side:
+  `ui.focusTurnLog` on the galaxy (the fixture's Tab ring is Controls → View Controls → Galactic Map
+  → Quest → Tutorial → Notifications → End Turn, with no turn-log stop) and `ui.focusMap` on the
+  research screen.
+- **Ctrl+Alt+E.** MEASURED: `ui.endTurn` on the galaxy page with `CanEndTurnByShortcut` true says
+  nothing of its own and replays the game's shortcut — so the FIRST press answered the game's own
+  idle-system prompt ("Construction Queue empty", "Idle Systems, 1 of 2") and the second ended the
+  turn (`Gui.Game.Turn` 20 → 21, `hud:end-turn` "Turn 21" → "Turn 22"). The refusal branch (the
+  node's own readout) has no fixture: nothing on this save refuses the key.
+  **Encounter check (on a battle screen):** `E` is `EncounterCameraElevationUp` and the encounter
+  cameras poll their bindings PRIVATELY — those matchers are not covered by `GameKeyStandDown`
+  (:49-52). Fixture-blocked: no battle exists on `[Beginner] test`, and it needs `POST /key` anyway.
+- **Alt+Left/Right on each of the four pages.** MEASURED: the STAR-SYSTEM page turns (Dusay → Heka →
+  Dusay, the game's own cycle wraps with two colonies); the PLANET page turns and wraps ("Dusay II,
+  Inhospitable" / "Dusay I, Inhospitable" / "Raia, Colonized"), one clean utterance per press; the
+  NOTIFICATION popup with a single notification draws both arrows switched off and answers both keys
+  with silence. The ACADEMY is fixture-blocked (see below). On the galaxy map stop with the inspect
+  cursor up the same chords still travel the cell.
+  **A pre-existing wart the page keys inherit** (it is identical when the game's own arrow BUTTON is
+  pressed, so it is not the key's): turning the star-system page announces the screen TWICE ("Star
+  system", the landing, again) and seats the cursor on `hud:view-title/scan` instead of the new
+  system's own content. The planet page and the notification popup do neither.
+- **The declared pairs and their chord labels.** MEASURED off `/gui/graph`:
+  - star system, in the colony panel's stop: `system:colony/banner` (1 of 14), then
+    "Previous system (Alt+Left Arrow), button, Navigates to the previous System in your empire"
+    (`system:previous`, 2 of 14), then "Next system (Alt+Right Arrow), …to the next System…"
+    (`system:next`, 3 of 14). The reading order is the NAME, then previous, then next — the arrows
+    do not flank the name: the banner is a wide panel at x 32-250 and the arrows sit at x 256 and
+    x 1204, one either side of the whole page. `Cells.EmitLinear` is faithful to that.
+  - planet page: "Previous planet (Alt+Left Arrow)" / "Next planet (Alt+Right Arrow)", the game's
+    own tooltips, 2 and 3 of 8.
+  - notification popup: "Next notification (Alt+Right Arrow)" FIRST (1 of 5) then "Previous
+    notification (Alt+Left Arrow)" (2 of 5) — the game draws them that way round.
+  - end turn: "End Turn (Ctrl+Alt+E), button, Turn N".
+  - academy: "Previous hero (Alt+Left Arrow)" / "Next hero (Alt+Right Arrow)", 1 and 2 of 2.
+  `ChordNames.Of(ES2Access.ModEntry.Input, "ui.pagePrev", 0)` is the chord on its own, and the key
+  names come out of the GAME's table (`%KeyCodeLeftArrow` = "Left Arrow").
+- **"Galactic Map".** MEASURED: the galaxy map stop's context word is "Galactic Map" on every landing.
+- **The Academy's strip arrows ARE declared** (`academy:previous`/`academy:next`, owner decision
+  2026-08-22). Structure verified on a FORCED show (`Gui.GuiService.ShowWindow(GetWindow<AcademyScreen>
+  (false))` — `ControlBanner.ToggleScreen("AcademyScreen")` does nothing in this save): both nodes
+  appear in `academy:heroes` reading "Previous hero (Alt+Left Arrow), button, unavailable, 1 of 2" and
+  "Next hero (Alt+Right Arrow), button, unavailable, 2 of 2". Behaviour is FIXTURE-BLOCKED: the save
+  has no heroes, so the game keeps both arrows switched off and the page keys have nothing to move.
+- **The election winner rows** are fixture-blocked: `GET /gui/graph?screen=screen.election` answers
+  "screen inactive" on turn 21.
+- **`walk2.sh`'s route changed meaning** with the single-press arrows: a `ui.right` that used to
+  expand a group and stay now steps INTO it, so the old walk's "expand the card, then Enter" reaches
+  the card's first child instead of the card. Re-record any stored route that opens something with
+  Right before diffing it against a pre-batch baseline.

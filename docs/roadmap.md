@@ -48,13 +48,24 @@ files above.
   `AttackSystemPirateDiplomaticAction` — the other five report popups are done);
   DiplomaticInteractionNotificationWindow (MoodMessageLabel, NegotiationContributionPanel).
 - Galaxy-label gaps: constellation ownership bonus; pin-message editing.
-- Input batch (code landed 2026-08-22, NOT yet live-verified — recipes in `test-recipes.md`
-  "The input batch"): single-press tree arrows, the five place keys + Ctrl+Alt+E, Alt+Left/Right
-  paging on four screens, the star-system pair as nodes, chord labels, the election winner rows.
-  Open on top of the recipes: whether a childless expandable group occurs in play at all (the
-  empty-group branch has only ever been reached in unit tests); whether the encounter cameras
-  need to join `GameKeyStandDown` for Ctrl+Alt+E's `E`; and whether the Academy's own strip
-  arrows should be declared as nodes as well as reached by the page keys (owner decision).
+- Input batch (code landed 2026-08-22, LIVE-VERIFIED 2026-08-22 on `[Beginner] test` — recipes in
+  `test-recipes.md` "The input batch"): single-press tree arrows, the six place keys incl.
+  Ctrl+Alt+E, Alt+Left/Right paging on four screens, the star-system pair as nodes, chord labels,
+  the election winner rows. Verified by injection: the arrows one press each way on the galaxy
+  tree and the research wheel (`OnFollow` lane travel unchanged), all six place keys (landing
+  identical to Tab's, silent and cursor-unmoved where the stop is absent), paging on the system
+  page (Dusay ↔ Heka), the planet page (wraps) and a notification popup (silent, pair switched
+  off), every chord label off the game's own `%KeyCode*` names, and `ui.endTurn` (turn 21 → 22,
+  itself silent, the game's idle-system prompt on the first press). Still open: the CHORD half is
+  UNPROVEN — `POST /key` answers 409 while the desktop is locked, and `DevProbe.Chord` cannot
+  answer it (its `Claimed` is asked per KeyCode, and type-ahead claims every letter on every mod
+  screen), so "Ctrl+G reaches the mod, not the game" is a manual-test line; whether a childless
+  expandable group occurs in play at all (no fixture system has one — even the SPECIAL node has
+  lane children, so the empty-group branch is still unit-test-only); whether the encounter cameras
+  need to join `GameKeyStandDown` for Ctrl+Alt+E's `E` (no battle in the fixture); and the
+  ELECTION winner rows (`screen.election` is inactive in the fixture). The Academy's own strip
+  arrows ARE now declared as nodes (owner decision, landed 2026-08-22) — structure verified on a
+  forced show, behaviour fixture-blocked (the save has no heroes, so both arrows read unavailable).
 - Scanner (shipped, taxonomy v2 2026-08-16, Contested Influence added 2026-08-21, taxonomy v3
   2026-08-22): THIRTEEN categories in the owner's order — systems, colonizable planets, unexplored,
   anomalies, curiosities, luxury resources, strategic resources, contested influence, fleets,
@@ -63,13 +74,26 @@ files above.
   listed, since the go-to would have nowhere to land) — the "all"-only ones skipped while
   empty. Systems include SPECIAL nodes (the tree's 13 rows, not 12) and have seven
   subcategories: all / friendly / neutral / enemy / homeworld / minor factions / special, with
-  many-to-many membership. The six categories added in v3 are unverified live — nothing about them
-  has been heard, and the whole of stage 5 of the scanner batch is that verification (recipe in
-  `test-recipes.md`). Remaining: FOREIGN homeworlds have never been heard (no fixture where
+  many-to-many membership. The six v3 categories were LIVE-VERIFIED 2026-08-22 on `[Beginner] test`:
+  colonizable (7 unoccupied / 1 occupied, both counts matching an `IsColonizable` oracle),
+  unexplored (2 lanes, numbering identical to the tree's), anomalies (12 in "all" = 10 kinds),
+  curiosities (16 = 5 kinds), luxury (10 = 2 kinds), strategic (5 = 3 kinds), all kinds
+  alphabetical, memory by NAME proved across a category round trip, and Alt+Home landing on the
+  planet's/lane's own node with the camera brought in (fleet, probe: node focus + camera slide;
+  inspect cursor up: cell jump only). Cost: 32 ms on the session's first press, 5-8 ms after, 30
+  colonizability checks (= 19 planet TYPES + 11 unsettled able worlds, against 33 planets).
+  CONTESTED INFLUENCE has no rows on this fixture either (169 ground tiles swept, 0 contested), so
+  what its live pass proved is the empty-skip, not the row wording.
+  Remaining: FOREIGN homeworlds have never been heard (no fixture where
   `EmpirePosition.Known` is true — es2-facts), and quest markers, pins and missiles have never
   been heard at all (no fixture draws one). Open judgment call for the owner: MINOR-faction home
   systems are deliberately NOT in "homeworld" (the diplomacy lens the gate came from iterates
   major empires only) — including them would add ~9 fixture systems to that scope.
+- Star-system page re-arrival (found 2026-08-22, PRE-EXISTING - the same on the game's own arrow
+  button as on Alt+Left/Right): turning the page announces the screen TWICE ("Star system", the
+  landing, again) and seats the cursor on the HUD's `hud:view-title/scan` rather than on the new
+  system's own content. The planet page and the notification popup do neither. Worth one look at
+  the arrival gate the recipe already warns about ("the page arrives in pieces").
 - Ally pins and obliterator missiles are label-free too (2026-08-16, owner-ruled): enumerated from
   the simulation under the game's own knowledge gates, every word recomposed from the entity, and
   the pin's dismiss routed through the game's own two orders instead of its button. Nothing about
