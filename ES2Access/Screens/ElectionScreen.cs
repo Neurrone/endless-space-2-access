@@ -86,8 +86,11 @@ namespace ES2Access.Screens
 
         private static readonly object FinalWinnersStop = "election:final/winners";
 
-        /// <summary>Shared by every winner's row, so the step between two winners keeps the column the
-        /// player was in - card to card, badge to badge.</summary>
+        /// <summary>Shared by every winner's card and every badge under it, so Down steps from one
+        /// winner's card to the next winner's card and from a badge to the badge below it, rather than
+        /// down one winner's whole column and into the next. Each of them is a row of ONE: a redirect
+        /// badge is a thing in its own right, not a column of the card (owner ruling 2026-08-22), so
+        /// Right from the card falls through silently.</summary>
         private static readonly object WinnersRowKey = "election:final/winner-row";
 
         private static readonly object FinalLawsStop = "election:final/laws";
@@ -990,8 +993,11 @@ namespace ES2Access.Screens
         /// Each badge is its own node saying which party's votes were redirected, with the game's
         /// one-sentence explanation announced (<c>PoliticsMiniature.cs:14-21</c>). They are drawn
         /// scattered around the support gauge at computed angles (<c>WinnerSenatorCard.cs:116-133</c>),
-        /// so their rectangles are no reading order at all - the row is DECLARED, in the order the game
-        /// bound the redirections in. They exist only where votes were redirected and the government
+        /// so their rectangles are no reading order at all - the ORDER is declared, the one the game
+        /// bound the redirections in, and each badge is a row of its own under the card rather than a
+        /// column of it: Down walks card, badge, badge, and Right from the card finds nothing sideways,
+        /// which is the truth about a card with a badge floating beside its gauge (owner ruling
+        /// 2026-08-22). They exist only where votes were redirected and the government
         /// allows redirecting them (:85-92), which the card expresses as the group's own visibility;
         /// the group fades in on a modifier, so it is asked whether it is PAINTED rather than merely
         /// visible.
@@ -1022,6 +1028,7 @@ namespace ES2Access.Screens
 
             ControlId first = null;
             int index = 0;
+            List<Cell> one = new List<Cell>(1);
             for (int i = 0; children != null && i < children.Count; i++)
             {
                 AgeTransform child = children[i];
@@ -1040,7 +1047,18 @@ namespace ES2Access.Screens
                 cells.Clear();
                 ControlId id = AddWinnerCard(cells, card, child, i, row);
                 AddRedirections(cells, card, i, row);
-                Cells.EmitRow(builder, cells, WinnersRowKey, positions: false);
+                // One row per NODE, all sharing the winners' row key: the card and the badges around it
+                // are things of their own rather than columns of one line, so Right from the card has
+                // nowhere sideways to go. Positions stay off - counting single-item rows would number
+                // every card and badge in the stop as one flat list - and the shared TableRow is what
+                // still says "winner 1 of 2", once, on arriving at the card.
+                for (int c = 0; c < cells.Count; c++)
+                {
+                    one.Clear();
+                    one.Add(cells[c]);
+                    Cells.EmitRow(builder, one, WinnersRowKey, positions: false);
+                }
+
                 if (first == null)
                 {
                     first = id;

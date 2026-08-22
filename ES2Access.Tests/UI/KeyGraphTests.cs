@@ -265,6 +265,30 @@ namespace ES2Access.Tests.UI
             Assert.Equal("a1", Focused(g));
         }
 
+        // ---- jumping to a named stop ----
+
+        /// <summary>The availability question a global "go to that panel" key asks, and the claim it is
+        /// taken from the game by. It has to agree with the landing walk: a stop that is there has a
+        /// landing, and one that is not has neither.</summary>
+        [Fact]
+        public void DeclaresStopAgreesWithTheLanding()
+        {
+            GraphState state = new GraphState();
+            KeyGraph g = new KeyGraph(Renderer(b =>
+            {
+                b.BeginStop("s1").AddItem(Id("a1"), Vt("A1"));
+                b.BeginStop("s2").AddItem(Id("b1"), Vt("B1"));
+            }), state);
+            g.Rerender();
+
+            Assert.True(KeyGraph.DeclaresStop(g.Current, "s2"));
+            Assert.NotNull(KeyGraph.StopLanding(g.Current, state, "s2"));
+
+            Assert.False(KeyGraph.DeclaresStop(g.Current, "nowhere"));
+            Assert.Null(KeyGraph.StopLanding(g.Current, state, "nowhere"));
+            Assert.False(KeyGraph.DeclaresStop(null, "s1"));
+        }
+
         // ---- trees ----
 
         private static KeyGraph Tree(GraphState state, bool withChildren = true)
@@ -283,8 +307,10 @@ namespace ES2Access.Tests.UI
             }, state), state);
         }
 
+        // One press opens the group AND lands on its first child: the player hears the child and its
+        // position, never the header's "expanded".
         [Fact]
-        public void TreeRightExpandsThenDescends()
+        public void TreeRightOpensAndDescendsInOnePress()
         {
             GraphState state = new GraphState();
             KeyGraph g = Tree(state);
@@ -292,29 +318,64 @@ namespace ES2Access.Tests.UI
             g.Move(GraphDir.Down);
             Assert.Equal("g", Focused(g));
 
-            Assert.Equal(KeyGraph.TreeMove.Expanded, g.TreeRight().Kind);
+            KeyGraph.TreeResult open = g.TreeRight();
+            Assert.Equal(KeyGraph.TreeMove.Descended, open.Kind);
             Assert.Contains(Id("g"), state.Expanded);
-            Assert.Equal("g", Focused(g));
-
-            KeyGraph.TreeResult descend = g.TreeRight();
-            Assert.Equal(KeyGraph.TreeMove.Descended, descend.Kind);
-            Assert.Equal("c1", Key(descend.Move.To));
+            Assert.Equal("g", Key(open.Move.From));
+            Assert.Equal("c1", Key(open.Move.To));
             Assert.Equal("c1", Focused(g));
         }
 
+        // And an already-open group answers Right exactly the same way, which is what makes the two
+        // states of a group indistinguishable to the key.
         [Fact]
-        public void TreeLeftAscendsThenCollapses()
+        public void TreeRightOnAnOpenGroupDescends()
         {
             GraphState state = new GraphState();
             KeyGraph g = Tree(state);
             g.Rerender();
             g.Move(GraphDir.Down);
             g.TreeRight();
+            g.TreeLeft(); // back up, shutting it
+            Assert.Equal("g", Focused(g));
+
+            state.Expanded.Add(Id("g"));
+            g.Rerender();
+            Assert.Equal(KeyGraph.TreeMove.Descended, g.TreeRight().Kind);
+            Assert.Equal("c1", Focused(g));
+        }
+
+        // One press goes up AND shuts the branch behind it. The parent is announced, and it is a
+        // COLLAPSED parent that is announced.
+        [Fact]
+        public void TreeLeftAscendsAndCollapsesInOnePress()
+        {
+            GraphState state = new GraphState();
+            KeyGraph g = Tree(state);
+            g.Rerender();
+            g.Move(GraphDir.Down);
             g.TreeRight();
             Assert.Equal("c1", Focused(g));
 
             KeyGraph.TreeResult up = g.TreeLeft();
             Assert.Equal(KeyGraph.TreeMove.Ascended, up.Kind);
+            Assert.Equal("g", Key(up.Move.To));
+            Assert.False(up.Move.To.Expanded);
+            Assert.DoesNotContain(Id("g"), state.Expanded);
+            Assert.Equal("g", Focused(g));
+        }
+
+        // Left on the header itself is still the plain collapse, cursor unmoved - which is how a group
+        // opened on an empty answer, or one walked back into with Up, is shut.
+        [Fact]
+        public void TreeLeftOnTheHeaderCollapsesWithoutMoving()
+        {
+            GraphState state = new GraphState();
+            KeyGraph g = Tree(state);
+            g.Rerender();
+            g.Move(GraphDir.Down);
+            g.TreeRight();
+            g.Move(GraphDir.Up);
             Assert.Equal("g", Focused(g));
 
             Assert.Equal(KeyGraph.TreeMove.Collapsed, g.TreeLeft().Kind);
@@ -335,16 +396,36 @@ namespace ES2Access.Tests.UI
             Assert.True(g.Current.NodeAt(Id("g")).Expanded);
         }
 
+        // A group that turns out to be empty stays OPEN, with the cursor still on it: expanding is
+        // allowed to act (a map node's expansion brings the camera in) and bouncing it shut would undo
+        // that. Left is what shuts it.
         [Fact]
-        public void ExpandingAnEmptyGroupRecollapsesIt()
+        public void AnEmptyGroupStaysOpen()
         {
             GraphState state = new GraphState();
             KeyGraph g = Tree(state, false);
             g.Rerender();
             g.Move(GraphDir.Down);
             Assert.Equal(KeyGraph.TreeMove.EmptyGroup, g.TreeRight().Kind);
+            Assert.Contains(Id("g"), state.Expanded);
+            Assert.True(g.Current.NodeAt(Id("g")).Expanded);
+            Assert.Equal("g", Focused(g));
+
+            Assert.Equal(KeyGraph.TreeMove.Collapsed, g.TreeLeft().Kind);
             Assert.DoesNotContain(Id("g"), state.Expanded);
-            Assert.False(g.Current.NodeAt(Id("g")).Expanded);
+        }
+
+        // And Right again on the open-but-empty group is an ordinary consumed press, not a second
+        // "Nothing in here".
+        [Fact]
+        public void RightAgainOnAnEmptyOpenGroupIsALeaf()
+        {
+            GraphState state = new GraphState();
+            KeyGraph g = Tree(state, false);
+            g.Rerender();
+            g.Move(GraphDir.Down);
+            g.TreeRight();
+            Assert.Equal(KeyGraph.TreeMove.Leaf, g.TreeRight().Kind);
         }
 
         // ---- following a reference (a leaf that names somewhere else) ----
@@ -419,12 +500,9 @@ namespace ES2Access.Tests.UI
             g.Rerender();
             g.Move(GraphDir.Down);
             g.TreeRight();
-            g.TreeRight();
             g.Move(GraphDir.Down);
             Assert.Equal("lane", Focused(g));
 
-            Assert.Equal(KeyGraph.TreeMove.Expanded, g.TreeRight().Kind);
-            Assert.Empty(followed);
             Assert.Equal(KeyGraph.TreeMove.Descended, g.TreeRight().Kind);
             Assert.Equal("far", Focused(g));
             Assert.Empty(followed);
@@ -458,7 +536,9 @@ namespace ES2Access.Tests.UI
             g.Rerender();
             g.Move(GraphDir.Down);
             Assert.Equal("g", Focused(g));
-            Assert.Equal(KeyGraph.TreeMove.Expanded, g.TreeRight().Kind);
+            Assert.Equal(KeyGraph.TreeMove.Descended, g.TreeRight().Kind);
+            g.Move(GraphDir.Up); // back onto the header, the branch left open
+            Assert.Equal("g", Focused(g));
 
             MoveResult end = g.MoveToSiblingEdge(false);
             Assert.True(end.Moved);
@@ -544,8 +624,9 @@ namespace ES2Access.Tests.UI
                 return b.Build();
             }, state);
             g.Rerender();
-            Assert.Equal(KeyGraph.TreeMove.Expanded, g.TreeRight().Kind);
+            Assert.Equal(KeyGraph.TreeMove.Descended, g.TreeRight().Kind);
             Assert.True(expanded);
+            Assert.Equal("c1", Focused(g));
             Assert.Empty(state.Expanded); // the persistent set stays out of it
         }
 

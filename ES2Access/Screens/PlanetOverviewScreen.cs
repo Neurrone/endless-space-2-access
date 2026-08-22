@@ -6,6 +6,7 @@ using ES2Access.Core.UI;
 using ES2Access.Core.UI.Graph;
 using ES2Access.Core.Util;
 using ES2Access.UI;
+using ES2Access.UI.Input;
 
 namespace ES2Access.Screens
 {
@@ -184,6 +185,22 @@ namespace ES2Access.Screens
             return false;
         }
 
+        /// <summary>The page keys are the panel's own previous/next planet arrows, reached without
+        /// walking to them. Silent at either end of the system, where the game switches them off.
+        /// </summary>
+        public override bool PagePrev()
+        {
+            PlanetInfoSidePanel panel = Panel<PlanetInfoSidePanel>();
+            return panel != null
+                && Page(AgeWidgets.Transform(panel.PreviousPlanetButton));
+        }
+
+        public override bool PageNext()
+        {
+            PlanetInfoSidePanel panel = Panel<PlanetInfoSidePanel>();
+            return panel != null && Page(AgeWidgets.Transform(panel.NextPlanetButton));
+        }
+
         /// <summary>Arrival baselines the watch on the planet that is showing, so opening the page never
         /// announces a planet twice - the screen name and the focused control already say where you
         /// are.</summary>
@@ -358,9 +375,16 @@ namespace ES2Access.Screens
                 _cells,
                 panel.PreviousPlanetButton,
                 "planet:previous",
-                ModStrings.PlanetPrevious
+                ModStrings.PlanetPrevious,
+                UiActions.PagePrev
             );
-            AddButton(_cells, panel.NextPlanetButton, "planet:next", ModStrings.PlanetNext);
+            AddButton(
+                _cells,
+                panel.NextPlanetButton,
+                "planet:next",
+                ModStrings.PlanetNext,
+                UiActions.PageNext
+            );
             AddFidsi(_cells, panel, planet);
             EmitLinear(builder, _cells);
         }
@@ -758,11 +782,14 @@ namespace ES2Access.Screens
 
         /// <summary>A button the page draws. <paramref name="nameKey"/> is for one the game leaves
         /// wordless and gives no title to; every other button reads the words it draws.</summary>
+        /// <param name="actionKey">The action whose chord does the same thing from anywhere on the page,
+        /// named after the control - for the paging arrows, whose whole point is the gesture.</param>
         private static void AddButton(
             List<Cell> cells,
             AgeControlButton button,
             string key,
-            string nameKey = null
+            string nameKey = null,
+            string actionKey = null
         )
         {
             AgeTransform widget = AgeWidgets.Transform(button);
@@ -774,8 +801,12 @@ namespace ES2Access.Screens
             AgeTransform it = widget;
             AgeTooltip tooltip = Meaningful(AgeWidgets.Raw(widget));
             string named = nameKey;
+            string action = actionKey;
             NodeVtable vtable = GraphNodes.Button(
-                () => Name(it, named),
+                () =>
+                    action == null
+                        ? Name(it, named)
+                        : ChordNames.Label(Name(it, named), action, 0),
                 () => AgeWidgets.Press(it),
                 () => AgeWidgets.Operable(it),
                 tooltip

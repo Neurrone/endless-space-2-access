@@ -6,6 +6,7 @@ using ES2Access.Core.UI;
 using ES2Access.Core.UI.Graph;
 using ES2Access.Core.Util;
 using ES2Access.UI;
+using ES2Access.UI.Input;
 using UnityEngine;
 using Line = ES2Access.UI.EmpireDossier.DrawnLine;
 
@@ -256,6 +257,22 @@ namespace ES2Access.Screens
         private NotificationWindow _settling;
         private int _settleFrames;
         private int _settleWaits;
+
+        /// <summary>The page keys browse the notifications the way the popup's own previous/next
+        /// buttons do - the same direction the BUTTONS mean, which is the opposite of what the game
+        /// wired its own Up/Down to on this window. Silent at either end, where the game switches the
+        /// button off.</summary>
+        public override bool PagePrev()
+        {
+            NotificationWindow window = Current();
+            return Page(AgeWidgets.Transform(Button(window, PreviousNotificationButton)));
+        }
+
+        public override bool PageNext()
+        {
+            NotificationWindow window = Current();
+            return Page(AgeWidgets.Transform(Button(window, NextNotificationButton)));
+        }
 
         /// <summary>Arrival says the notification, so the watch starts from what was just said.
         /// </summary>
@@ -2610,6 +2627,12 @@ namespace ES2Access.Screens
             /// button a choice popup draws as a tick.</summary>
             public string Name;
 
+            /// <summary>The action whose chord does this control's job from anywhere on the popup, said
+            /// after the name ("Next notification (Alt+Right)"). Only the browsing pair carries one:
+            /// they are the controls a player uses over and over, and the key is the whole reason for
+            /// declaring the pair a second time.</summary>
+            public string ChordAction;
+
             /// <summary>One of a set the player picks exactly one of, where the popup wired that
             /// exclusivity by hand instead of with a <c>GuiRadioGroup</c>.</summary>
             public bool Radio;
@@ -2804,8 +2827,12 @@ namespace ES2Access.Screens
 
                 Add(controls, "show-location", showLocation, ModStrings.NotifyShowLocation);
                 Add(controls, MinimizeKey, minimize, ModStrings.NotifyMinimize);
-                Add(controls, "previous", previous, ModStrings.NotifyPrevious);
-                Add(controls, "next", next, ModStrings.NotifyNext);
+                // The browsing pair, named with the page keys that do the same thing from anywhere on
+                // the popup (Screen.PagePrev/PageNext). Ours follow the BUTTONS' own meaning: the
+                // game's own Up/Down keys on this window are the other way round
+                // (NotificationWindow.HandleInput), and the buttons are what a player can see.
+                AddPaged(controls, "previous", previous, ModStrings.NotifyPrevious, UiActions.PagePrev);
+                AddPaged(controls, "next", next, ModStrings.NotifyNext, UiActions.PageNext);
                 Add(controls, "auto-popup", null, autoPopup, ModStrings.NotifyAutoPopup);
 
                 // Every control, rails included, has to be one the popup is DRAWING. The rails are
@@ -2837,6 +2864,25 @@ namespace ES2Access.Screens
         )
         {
             Add(controls, key, button, null, nameKey);
+        }
+
+        /// <summary>A control that also has a key of its own, said after its name.</summary>
+        private static void AddPaged(
+            List<Control> controls,
+            string key,
+            AgeControlButton button,
+            string nameKey,
+            string actionKey
+        )
+        {
+            int before = controls.Count;
+            Add(controls, key, button, null, nameKey);
+            if (controls.Count > before)
+            {
+                Control added = controls[controls.Count - 1];
+                added.ChordAction = actionKey;
+                controls[controls.Count - 1] = added;
+            }
         }
 
         private static void Add(
@@ -3817,6 +3863,13 @@ namespace ES2Access.Screens
         /// for the role it plays - the game draws the browsing arrows and the pop-up-again box as
         /// icons and never names them.</summary>
         private static string Caption(Control control)
+        {
+            return control.ChordAction == null
+                ? Named(control)
+                : ChordNames.Label(Named(control), control.ChordAction, 0);
+        }
+
+        private static string Named(Control control)
         {
             string caption = CaptionOf(control.Widget);
             if (!string.IsNullOrEmpty(caption))

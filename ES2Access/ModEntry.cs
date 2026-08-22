@@ -346,7 +346,79 @@ namespace ES2Access
                 return true;
             }
 
-            return Buffers.Dispatch(action.Key) || Navigator.Dispatch(action.Key);
+            return HudKey(action.Key)
+                || Buffers.Dispatch(action.Key)
+                || Navigator.Dispatch(action.Key);
+        }
+
+        /// <summary>
+        /// The keys that mean a PLACE rather than a move: go to the empire banners, the notifications,
+        /// the turn log, the turn controls, the galaxy map - and end the turn.
+        ///
+        /// Each one re-asks the question its claim asked (is that panel on this page at all), because a
+        /// claim is answered before the press and the mod is never allowed to act on a stale yes
+        /// (<c>docs/interaction.md</c>). Where the answer is no the key is inert: no speech, no move,
+        /// nothing consumed.
+        /// </summary>
+        private static bool HudKey(string actionKey)
+        {
+            switch (actionKey)
+            {
+                case UiActions.FocusEmpire:
+                    return FocusStop(GlobalHud.EmpireStop);
+                case UiActions.FocusNotifications:
+                    return FocusStop(GlobalHud.NotificationStop);
+                case UiActions.FocusTurn:
+                    return FocusStop(GlobalHud.TurnStop);
+                case UiActions.FocusTurnLog:
+                    return FocusStop(GlobalHud.TurnLogStop);
+                case UiActions.FocusMap:
+                    return FocusStop(GalaxyHudScreen.SystemStop);
+                case UiActions.EndTurn:
+                    return GlobalHud.EndTurnByKey();
+                default:
+                    return false;
+            }
+        }
+
+        private static bool FocusStop(object stopKey)
+        {
+            GraphNavigator navigator = Navigator;
+            return navigator != null && navigator.FocusStop(stopKey);
+        }
+
+        /// <summary>Whether the focused page is drawing a panel, asked from the game's own key scans -
+        /// see <see cref="GraphNavigator.DeclaresStop"/>. One predicate per key, because a claim is a
+        /// parameterless question.</summary>
+        private static bool StopDeclared(object stopKey)
+        {
+            GraphNavigator navigator = Navigator;
+            return navigator != null && navigator.DeclaresStop(stopKey);
+        }
+
+        private static bool EmpireStopDeclared()
+        {
+            return StopDeclared(GlobalHud.EmpireStop);
+        }
+
+        private static bool NotificationStopDeclared()
+        {
+            return StopDeclared(GlobalHud.NotificationStop);
+        }
+
+        private static bool TurnStopDeclared()
+        {
+            return StopDeclared(GlobalHud.TurnStop);
+        }
+
+        private static bool TurnLogStopDeclared()
+        {
+            return StopDeclared(GlobalHud.TurnLogStop);
+        }
+
+        private static bool MapStopDeclared()
+        {
+            return StopDeclared(GalaxyHudScreen.SystemStop);
         }
 
         /// <summary>Whether a screen of ours has the keyboard cursor - the question both the
@@ -485,6 +557,65 @@ namespace ES2Access
             input.Register(UiActions.CoarseDecrease)
                 .Bind(KeyCode.LeftArrow, shift: true)
                 .Repeating();
+
+            // Turning the PAGE - the previous or next system, planet, notification, hero - wherever the
+            // cursor is standing on a screen that draws such a pair (Screen.PagePrev/PageNext). Alt and
+            // the side arrows, beside Alt and the vertical ones which are the region jump; not
+            // repeating, because each press re-binds a whole page and leaning on the key would race
+            // through six systems.
+            //
+            // No conditional claim: the arrows are already the mod's on every screen of ours.
+            //
+            // These share their chords with the galaxy inspect cursor's travel keys, and BOTH actions
+            // fire on the press - ModInput.Tick delivers every action whose chord matches, with no
+            // first-wins rule anywhere in it. They coexist because no screen answers both: only the
+            // galaxy map answers the inspect pair, and it draws no page pair.
+            input.Register(UiActions.PagePrev).Bind(KeyCode.LeftArrow, alt: true);
+            input.Register(UiActions.PageNext).Bind(KeyCode.RightArrow, alt: true);
+
+            // Straight to a named panel, from anywhere on the page that draws it. Each is taken from the
+            // game only while the focused screen DECLARES that panel's stop, which is the same question
+            // as "would this key do anything" - and the handler asks it again, because a claim is only
+            // about what the game may see (ModEntry.Dispatch -> GraphNavigator.FocusStop, which answers
+            // false and leaves the press alone where the stop is absent).
+            //
+            // The chords are free in this game: Control+H is a debug high-definition toggle that only
+            // exists in an internal build, Control+E is bound to a debug action with no handler at all,
+            // and Control+N, Control+G, Control+T and Control+Alt+E are bound to nothing
+            // (`InputManager.cs`). The LETTERS cost the player nothing either: A-Z are already claimed
+            // by the mod's type-ahead wherever one of its screens is focused.
+            input
+                .Register(UiActions.FocusEmpire)
+                .Bind(KeyCode.H, ctrl: true)
+                .ClaimedWhile(EmpireStopDeclared);
+            input
+                .Register(UiActions.FocusNotifications)
+                .Bind(KeyCode.N, ctrl: true)
+                .ClaimedWhile(NotificationStopDeclared);
+            input
+                .Register(UiActions.FocusTurn)
+                .Bind(KeyCode.E, ctrl: true)
+                .ClaimedWhile(TurnStopDeclared);
+            input
+                .Register(UiActions.FocusTurnLog)
+                .Bind(KeyCode.T, ctrl: true)
+                .ClaimedWhile(TurnLogStopDeclared);
+            input
+                .Register(UiActions.FocusMap)
+                .Bind(KeyCode.G, ctrl: true)
+                .ClaimedWhile(MapStopDeclared);
+            // End the turn without walking to the button. The game's own end-turn key is the keypad
+            // Enter, which the mod claims for Activate, so a mod user has no shortcut for the one thing
+            // every turn ends with. Live wherever the turn controls are drawn; when the GAME refuses
+            // (`GlobalHud.CanEndTurn`) the key speaks the button's own refusal rather than nothing, since
+            // a global key that is silent both when it works and when it does not is unreadable.
+            //
+            // Every matching action fires (above), so this chord's handler is the only thing that
+            // decides what Control+Alt+E does.
+            input
+                .Register(UiActions.EndTurn)
+                .Bind(KeyCode.E, ctrl: true, alt: true)
+                .ClaimedWhile(TurnStopDeclared);
 
             // The galaxy map's own mode: a square of galaxy swept with the arrows instead of the tree
             // (<see cref="ES2Access.Screens.GalaxyInspect"/>). Control and I is free in this game - the

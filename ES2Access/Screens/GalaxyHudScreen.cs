@@ -110,7 +110,9 @@ namespace ES2Access.Screens
     /// </summary>
     public sealed class GalaxyHudScreen : Screen
     {
-        private static readonly object SystemStop = "galaxy:systems";
+        // Public because a global key names it: Control+G goes to the map from anywhere the map stop is
+        // declared (ModEntry.BindKeys).
+        public static readonly object SystemStop = "galaxy:systems";
 
         /// <summary>The clusters the game draws over every view level - what the empire is worth, the
         /// notifications, a collapsed tutorial, the turn controls. This page is one of three that

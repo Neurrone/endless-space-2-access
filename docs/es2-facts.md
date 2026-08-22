@@ -1023,6 +1023,37 @@ generic graduates to the generic docs.
 
 ## Focus, text fields and the engine's own keyboard
 
+- **The game's own key names are a localized table, and the mod speaks chords out of it.**
+  `%KeyCode<Name>` — 120 rows in the English corpus and present in all ten languages, e.g.
+  `%KeyCodeReturn` "Enter", `%KeyCodeKeypadEnter` "Enter (Keypad)", `%KeyCodeLeftArrow` "Left
+  Arrow", `%KeyCodeBackslash` "Backslash" — is what the options screen writes a binding with
+  (`Amplitude.Unity.Input/KeyCombination.LocalizeKeyCode` :194-208: `%KeyCode` + the enum name
+  through `AgeLocalizer`, a miss answering with the key itself). There are NO rows for the plain
+  letter keys, so those still fall back to the engine's `KeyCode` name. Mod policy:
+  `ChordNames.KeyName` asks this table first, so a player hears the keys named the way their own
+  copy of the game names them.
+- **The game's own end-turn key is the keypad Enter** (`InputManager.cs` :215), which the mod
+  claims for Activate — so a mod user has no end-turn shortcut unless the mod gives them one
+  (Ctrl+Alt+E does, 2026-08-22). Its handler is `EndTurnWindow.HandleInput` :637-654: three gates
+  (`Gui.GuiGameWindowService.CanEndTurnByShortcut`, the tutorial's `EndTurnDisabler`, and
+  `EndTurnService.Target.CanEndTurn()`), then an armed cursor is put back to `GalaxyCursor` before
+  `TryToEndTurn` — a targeting mode left armed would otherwise eat the turn.
+- **The four previous/next pairs the page keys drive, and what the game does with each.**
+  Star system: `StarSystemScreen.PreviousSystemButton`/`NextSystemButton` (:26,28) are drawn only
+  for the player's OWN systems and switched on once a second is colonised (:613-627); they cycle
+  `DepartmentOfTheInterior.ColonizedStarSystems` WITH WRAP (`CycleStarSystemHelper` :180-197), and
+  the game also wires them to its `Next`/`Previous` bindings, which are the bare Right/Left arrows
+  (:206-214) — keys the mod claims on that screen, which is why the pair was unreachable.
+  Planet page: `PlanetInfoSidePanel`'s pair. Notification popup: `NotificationWindow`'s pair — the
+  game's own Up/Down keys on that window are wired the OTHER WAY ROUND from the buttons, so the
+  mod follows the buttons. Academy: `HeroNavigationLeft/RightButton` (:28,30) CLAMP rather than
+  wrap (`Enable = selectedHeroId > 0` / `< Heroes.Count - 1`, :210-211).
+- **Ctrl+H and Ctrl+E are debug bindings with nothing behind them for a player.** Ctrl+H is
+  `DebugSwitchHighDefinition` (:790), live only in an internal build / with `EnableModdingTools`
+  (`GuiManager.cs:2130`); Ctrl+E is `DebugSendNewEvent` (:858) and NO handler in the game answers
+  it. Ctrl+N, Ctrl+G, Ctrl+T and Ctrl+Alt+E are bound to nothing at all. (The mod's whole binding
+  table is `docs/interaction.md`.)
+
 - **The engine delivers keys to the focused control in `LateUpdate`.** `AgeManager.LateUpdate`
   (:919-923) sends `KeyDown` to `FocusedControl` on any `anyKeyDown` frame, and
   `AgeControlTextField.KeyDown` (:76-81) polls `GetKeyDown` itself on top of that. With

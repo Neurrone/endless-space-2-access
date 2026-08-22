@@ -10,14 +10,14 @@ namespace ES2Access.UI.Input
     /// own language.
     ///
     /// The other half of <see cref="InputBinding.DisplayName"/>, which is English-only and exists for
-    /// logs and the dev server. This one is spoken, so every part of it comes out of
-    /// <see cref="ModStrings"/>: the three modifier words, the key names the mod's own gestures use,
-    /// and the joiner between them (a language that spells a chord "Strg und Eingabe" changes three
-    /// strings, not this file).
+    /// logs and the dev server. This one is spoken, so every part of it is a translated word: the
+    /// modifiers and the joiner come out of <see cref="ModStrings"/> (a language that spells a chord
+    /// "Strg und Eingabe" changes three strings, not this file), and the KEY is named by the GAME's own
+    /// key-name table where it has a row for it - see <see cref="KeyName"/>.
     ///
-    /// A key the table does not name falls back to the engine's <c>KeyCode</c> name rather than to
-    /// silence: the table only has to grow when a new gesture is bound to a new key, and a rebind the
-    /// mod has never seen still reads out.
+    /// A key nothing names falls back to the engine's <c>KeyCode</c> name rather than to silence: the
+    /// mod's table only has to grow when a new gesture is bound to a key the game never named, and a
+    /// rebind the mod has never seen still reads out.
     ///
     /// It is addressed by (action key, binding index) rather than by a chord, because that is what a
     /// hint declares: the sentence names the ACTION, and re-binding the action re-words the sentence.
@@ -40,6 +40,26 @@ namespace ES2Access.UI.Input
 
             KeyboardBinding chord = bindings[bindingIndex] as KeyboardBinding;
             return chord == null ? bindings[bindingIndex].DisplayName : Of(chord);
+        }
+
+        /// <summary>A control's name with the chord that works on it after it - "Next system
+        /// (Alt+Right)" - for the few controls whose gesture is worth hearing on every landing rather
+        /// than at the end of the review buffer, where the usage hints live.
+        ///
+        /// The connective is a template with both parts in it, never a bracket glued on here: a
+        /// language that writes the chord first has somewhere to put it. An action nothing is bound to
+        /// leaves the name exactly as it was.</summary>
+        public static string Label(string label, string actionKey, int bindingIndex = 0)
+        {
+            if (string.IsNullOrEmpty(label))
+            {
+                return label;
+            }
+
+            string chord = Of(ModEntry.Input, actionKey, bindingIndex);
+            return string.IsNullOrEmpty(chord)
+                ? label
+                : ModStrings.Format(ModStrings.LabelWithChord, label, chord);
         }
 
         /// <summary>The same for a binding already in hand.</summary>
@@ -71,8 +91,8 @@ namespace ES2Access.UI.Input
             return name.ToString();
         }
 
-        // What the mod's own gestures are bound to. Everything else answers with the engine's name
-        // for the key, which is a readable word for all but the punctuation keys.
+        // The mod's own words for the keys, for a key the GAME has no word for. Everything else answers
+        // with the engine's name for the key, which is a readable word for all but the punctuation keys.
         private static readonly Dictionary<KeyCode, string> Named = new Dictionary<KeyCode, string>
         {
             { KeyCode.Return, ModStrings.KeyEnter },
@@ -80,12 +100,43 @@ namespace ES2Access.UI.Input
             { KeyCode.Backslash, ModStrings.KeyBackslash },
         };
 
+        /// <summary>The game's OWN word for the key comes first: it ships a table of 120 key names in
+        /// every one of its ten languages (<c>%KeyCode&lt;Name&gt;</c>, the same lookup its options
+        /// screen writes a binding out with - <c>KeyCombination.LocalizeKeyCode</c>), so a player hears
+        /// the arrows and the modifiers named the way the game they are playing names them, in
+        /// languages nobody has translated this mod into. The mod's own table is the fallback for the
+        /// keys the game's table has no row for, and the engine's <c>KeyCode</c> name the fallback for
+        /// the rest.</summary>
         private static string KeyName(KeyCode key)
         {
+            string game = GameName(key);
+            if (!string.IsNullOrEmpty(game))
+            {
+                return game;
+            }
+
             string modKey;
             return Named.TryGetValue(key, out modKey) && ModStrings.Has(modKey)
                 ? ModStrings.Get(modKey)
                 : key.ToString();
+        }
+
+        // A miss answers with the key itself, which is how the game tells one apart (its own localizer
+        // returns the key it was given). Nothing is spoken from a raw %key.
+        private static string GameName(KeyCode key)
+        {
+            try
+            {
+                string localizationKey = "%KeyCode" + key;
+                string text = Gui.Localize(localizationKey);
+                return string.IsNullOrEmpty(text) || text == localizationKey
+                    ? null
+                    : AgeText.Clean(text);
+            }
+            catch (System.Exception)
+            {
+                return null;
+            }
         }
 
         private static void Append(StringBuilder name, string part, string joiner)

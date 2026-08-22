@@ -1687,7 +1687,7 @@ namespace ES2Access.Core.Speech
             { HudQuestUnpin, "Unpin quest" },
             { HudQuestPinned, "Pinned quest: {0}" },
             { HudQuestUnpinned, "No quest is pinned" },
-            { GalaxyMapPanel, "Map" },
+            { GalaxyMapPanel, "Galactic Map" },
             { HudQuestPanel, "Quest" },
             { HudNotificationsPanel, "Notifications" },
             { HudTurnLogPanel, "Turn log" },

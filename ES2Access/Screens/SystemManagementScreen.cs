@@ -7,6 +7,7 @@ using ES2Access.Core.UI;
 using ES2Access.Core.UI.Graph;
 using ES2Access.Core.Util;
 using ES2Access.UI;
+using ES2Access.UI.Input;
 using UnityEngine;
 
 namespace ES2Access.Screens
@@ -132,6 +133,23 @@ namespace ES2Access.Screens
         public override bool Back()
         {
             return false;
+        }
+
+        /// <summary>The page keys walk the empire's own colonised systems, the way the game's arrows
+        /// beside the system's name do (<c>StarSystemScreen.CycleStarSystemHelper</c> :180-197) - drawn
+        /// for the player's own systems and switched on once there is a second one to go to
+        /// (:613-627). The buttons themselves are declared beside the name as well: this is the same
+        /// pair reached without walking to it.</summary>
+        public override bool PagePrev()
+        {
+            StarSystemScreen window = Window();
+            return window != null && Page(AgeWidgets.Transform(window.PreviousSystemButton));
+        }
+
+        public override bool PageNext()
+        {
+            StarSystemScreen window = Window();
+            return window != null && Page(AgeWidgets.Transform(window.NextSystemButton));
         }
 
         public override void OnPush()
@@ -1285,6 +1303,7 @@ namespace ES2Access.Screens
             );
 
             AddMothership(_cells, panel);
+            AddSystemPaging(_cells);
 
             AgeControlButton rename = panel.RenameButton;
             if (rename != null && AgeWidgets.Visible(AgeWidgets.Transform(rename)))
@@ -2626,6 +2645,74 @@ namespace ES2Access.Screens
             }
 
             return _parties;
+        }
+
+        /// <summary>
+        /// The two arrows the game draws either side of the system's name, which walk the empire's own
+        /// colonised systems (<c>StarSystemScreen.CycleStarSystemHelper</c> :180-197). They are declared
+        /// with the name rather than in a stop of their own because that is where the game puts them,
+        /// and <see cref="Cells.EmitLinear"/> takes the reading order off the rectangles - so previous,
+        /// the name, next comes out in the order the player sees.
+        ///
+        /// The game gives the arrows no title at all, only a sentence in each one's own tooltip, so the
+        /// mod names them the way it names the planet page's pair - and each name ends with the chord
+        /// that does the same thing from anywhere on the page, since the whole point of declaring the
+        /// buttons is that a player who found one has found the gesture too.
+        ///
+        /// They belong to the colony panel, which the game binds for a colony, an outpost and a ghost
+        /// alike (<c>StarSystemScreen.BindStarSystemNode</c> :555-560) - the same condition under which
+        /// it draws the arrows at all.
+        /// </summary>
+        private static void AddSystemPaging(List<Cell> cells)
+        {
+            StarSystemScreen window = Window();
+            if (window == null)
+            {
+                return;
+            }
+
+            AddSystemPage(
+                cells,
+                window.PreviousSystemButton,
+                "system:previous",
+                ModStrings.SystemPrevious,
+                UiActions.PagePrev
+            );
+            AddSystemPage(
+                cells,
+                window.NextSystemButton,
+                "system:next",
+                ModStrings.SystemNext,
+                UiActions.PageNext
+            );
+        }
+
+        private static void AddSystemPage(
+            List<Cell> cells,
+            AgeControlButton button,
+            string key,
+            string nameKey,
+            string actionKey
+        )
+        {
+            AgeTransform widget = AgeWidgets.Transform(button);
+            if (widget == null || !AgeWidgets.Visible(widget))
+            {
+                return;
+            }
+
+            AgeControlButton it = button;
+            AgeTransform host = widget;
+            string named = nameKey;
+            string action = actionKey;
+            NodeVtable vtable = GraphNodes.Button(
+                () => ChordNames.Label(ModStrings.Get(named), action, 0),
+                () => AgeWidgets.Press(it),
+                () => AgeWidgets.Operable(host),
+                AgeWidgets.Raw(widget)
+            );
+            AgeWidgets.Point(vtable, it);
+            Add(cells, widget, ControlId.Referenced(button, key), vtable);
         }
 
         // ---- shared ----
