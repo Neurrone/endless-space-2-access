@@ -1,0 +1,15 @@
+1
+00:00:00,000 --> 00:00:04,500
+Fireworks burst in a starry night sky above a sleek, futuristic city bathed in glowing cyan light.
+
+2
+00:00:04,500 --> 00:00:10,000
+Hovering vehicles weave between smooth, curved skyscrapers and giant holographic billboards.
+
+3
+00:00:10,000 --> 00:00:11,243
+Inside, a small, grey-skinned Sophon sits at a glowing green console.
+
+4
+00:00:24,529 --> 00:00:27,800
+The Sophon raises a finger. The console's red warning and a massive spinning coil behind them instantly power down, plunging the room into darkness.

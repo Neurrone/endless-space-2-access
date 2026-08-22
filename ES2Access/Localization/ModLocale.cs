@@ -71,6 +71,7 @@ namespace ES2Access.Localization
             _language = null;
             LanguageResolved = false;
             PluginDirectory = null;
+            ModDescriptions.Reset();
         }
 
         private static ILocalizationService LocalizationService()
@@ -89,6 +90,10 @@ namespace ES2Access.Localization
 
         private static void Install(string language)
         {
+            // The audio descriptions follow the language too, and there is no second place that
+            // knows the game has told us what it is.
+            ModDescriptions.Install(PluginDirectory, language);
+
             string path = LocalePath(language);
             if (path == null)
             {

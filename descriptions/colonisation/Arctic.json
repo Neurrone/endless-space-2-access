@@ -1,0 +1,90 @@
+{
+  "meta": {
+    "video": "Arctic.mp4",
+    "model": "google/gemini-3.1-pro-preview",
+    "duration": 12.693,
+    "wpm": 600.0,
+    "cost": 0.048518,
+    "provider": "google-vertex",
+    "effort": "high",
+    "safety": 0.7,
+    "pad_start": 0.25,
+    "pad_end": 0.3,
+    "min_gap": 0.6,
+    "split_above": 8.0,
+    "min_cue": 1.0
+  },
+  "gaps": [
+    {
+      "id": "G1",
+      "index": 1,
+      "speech_start": 0.0,
+      "speech_end": 12.693,
+      "usable": 12.69,
+      "max_words": 88,
+      "splittable": true,
+      "prev_text": "",
+      "next_text": ""
+    }
+  ],
+  "cues": [
+    {
+      "id": "G1.1",
+      "gap": "G1",
+      "start": 1.0,
+      "end": 4.5,
+      "max_words": 24,
+      "word_count": 21,
+      "text": "A pale sun shines over a frozen valley between jagged, snow-covered mountains. Giant, glowing cyan crystals jut from the icy slopes."
+    },
+    {
+      "id": "G1.2",
+      "gap": "G1",
+      "start": 4.5,
+      "end": 8.5,
+      "max_words": 28,
+      "word_count": 20,
+      "text": "A colony ship streaks across the bright sky. Below, silhouettes of large, long-tailed beasts stand motionless in the freezing fog."
+    },
+    {
+      "id": "G1.3",
+      "gap": "G1",
+      "start": 8.5,
+      "end": 11.0,
+      "max_words": 17,
+      "word_count": 8,
+      "text": "Winds whip loose snow across the desolate ice."
+    },
+    {
+      "id": "G1.4",
+      "gap": "G1",
+      "start": 11.0,
+      "end": 12.693,
+      "max_words": 11,
+      "word_count": 4,
+      "text": "Everything fades to black."
+    }
+  ],
+  "beats": [
+    {
+      "time": "0:00",
+      "note": "A frozen valley between jagged mountains. Glowing cyan crystals stick out of the snow."
+    },
+    {
+      "time": "0:02",
+      "note": "In the distance, dark silhouettes of large beasts stand in the fog."
+    },
+    {
+      "time": "0:04",
+      "note": "A bright object leaves a trail as it flies across the sky from left to right."
+    },
+    {
+      "time": "0:08",
+      "note": "Wind blows snow across the icy ground in the foreground."
+    },
+    {
+      "time": "0:11",
+      "note": "The image fades to black."
+    }
+  ]
+}

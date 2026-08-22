@@ -1,0 +1,115 @@
+{
+  "meta": {
+    "video": "Hissho Outro.mp4",
+    "model": "google/gemini-3.1-pro-preview",
+    "duration": 37.0,
+    "wpm": 600.0,
+    "cost": 0.07341,
+    "provider": "google-vertex",
+    "effort": "high",
+    "safety": 0.92,
+    "pad_start": 0.25,
+    "pad_end": 0.3,
+    "min_gap": 0.6,
+    "split_above": 8.0,
+    "min_cue": 1.0
+  },
+  "gaps": [
+    {
+      "id": "G1",
+      "index": 1,
+      "speech_start": 0.0,
+      "speech_end": 1.828,
+      "usable": 1.83,
+      "max_words": 16,
+      "splittable": false,
+      "prev_text": "",
+      "next_text": "Warrior or priest,"
+    },
+    {
+      "id": "G2",
+      "index": 2,
+      "speech_start": 29.733,
+      "speech_end": 30.438,
+      "usable": 0.7,
+      "max_words": 6,
+      "splittable": false,
+      "prev_text": "my people reign supreme",
+      "next_text": "And we are just beginning…"
+    },
+    {
+      "id": "G3",
+      "index": 3,
+      "speech_start": 33.568,
+      "speech_end": 37.0,
+      "usable": 3.43,
+      "max_words": 31,
+      "splittable": false,
+      "prev_text": "And we are just beginning…",
+      "next_text": ""
+    }
+  ],
+  "cues": [
+    {
+      "id": "G1",
+      "gap": "G1",
+      "start": 0.0,
+      "end": 1.828,
+      "max_words": 16,
+      "word_count": 12,
+      "text": "Black ink strokes form an arm, marked with glowing red geometric patterns."
+    },
+    {
+      "id": "G2",
+      "gap": "G2",
+      "start": 29.733,
+      "end": 30.438,
+      "max_words": 6,
+      "word_count": 5,
+      "text": "Banners rise behind the warrior."
+    },
+    {
+      "id": "G3",
+      "gap": "G3",
+      "start": 33.568,
+      "end": 37.0,
+      "max_words": 31,
+      "word_count": 29,
+      "text": "The towering Hissho has a feathered headdress and glowing eyes, his black body covered in white geometric patterns. He rests a sword on his shoulder. Everything fades to grey."
+    }
+  ],
+  "beats": [
+    {
+      "time": "0:00",
+      "note": "Black ink strokes form an arm with glowing red geometric patterns on a white background."
+    },
+    {
+      "time": "0:08",
+      "note": "A second arm is drawn, this one with glowing gold patterns."
+    },
+    {
+      "time": "0:13",
+      "note": "The gold-patterned arm holds a sword."
+    },
+    {
+      "time": "0:16",
+      "note": "A chest is drawn with glowing pink and gold patterns."
+    },
+    {
+      "time": "0:22",
+      "note": "The full figure of a Hissho warrior is revealed. He has a feathered headdress, glowing eyes, and white geometric patterns on his black body. He rests a sword on his shoulder."
+    },
+    {
+      "time": "0:28",
+      "note": "He holds a pendant in his left hand."
+    },
+    {
+      "time": "0:30",
+      "note": "Grey banners appear in the background."
+    },
+    {
+      "time": "0:34",
+      "note": "The entire drawing fades to dark grey."
+    }
+  ]
+}

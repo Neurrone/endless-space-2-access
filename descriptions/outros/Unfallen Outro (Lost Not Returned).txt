@@ -1,0 +1,36 @@
+Audio description review
+Video: Unfallen Outro.mp4
+Model: google/gemini-3.1-pro-preview
+Runtime: 0:30.00   Screen reader rate: 600.0 wpm
+Gaps found: 5   Cues written: 5   Gaps left silent: 0
+Cost: 0.0534 USD
+
+DESCRIPTIONS
+
+G1 at 0:00.00 to 0:02.36, 2.4 seconds.
+  speaks at 0:00.00, 16 of 21 words.
+    A golden streak of light arcs away from a lush planet and into the starry dark.
+
+G2 at 0:06.25 to 0:07.60, 1.4 seconds.
+  speaks at 0:06.25, 8 of 12 words.
+    Glowing roots spread across the planet's dark side.
+
+G3 at 0:14.49 to 0:15.86, 1.4 seconds.
+  speaks at 0:14.49, 8 of 12 words.
+    The streak shoots toward a fiery, swirling galaxy.
+
+G4 at 0:19.60 to 0:20.58, 1.0 seconds.
+  speaks at 0:19.60, 5 of 9 words.
+    Linking stars like a constellation.
+
+G5 at 0:24.75 to 0:30.00, 5.2 seconds.
+  speaks at 0:24.75, 22 of 48 words.
+    The glowing lines spread across the fiery galaxy, forming the shape of a colossal, branching tree of light that spans the cosmos.
+
+OBSERVATION LOG FROM THE MODEL
+
+0:00  A glowing golden streak arcs from a green and blue planet into space.
+0:05  Golden light spreads like roots across the surface of the planet.
+0:14  A massive, swirling, fiery galaxy appears. The golden streak shoots toward it.
+0:18  The golden streak strikes the galaxy and begins connecting stars with bright lines.
+0:24  The connected stars form a massive, branching constellation shaped like a tree.

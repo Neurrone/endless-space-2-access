@@ -1,0 +1,23 @@
+Audio description review
+Video: Boreal.mp4
+Model: google/gemini-3.1-pro-preview
+Runtime: 0:13.42   Screen reader rate: 600.0 wpm
+Gaps found: 1   Cues written: 3   Gaps left silent: 0
+Cost: 0.0267 USD
+
+DESCRIPTIONS
+
+G1 at 0:00.00 to 0:13.42, 13.4 seconds, split into 3 cues.
+  speaks at 0:01.00, 19 of 24 words.
+    A hazy, pale yellow sun warms a rugged landscape of brown grass, scattered pines, and patches of melting snow.
+  speaks at 0:04.50, 25 of 31 words.
+    Beside a massive tree with sprawling roots, three slender, four-legged creatures gather on rocky outcrops. They have long snouts, crested heads, and long, curved tails.
+  speaks at 0:09.00, 25 of 30 words.
+    They look out over a vast lake toward towering rock formations. High above, the bright streak of a landing craft descends through the golden sky.
+
+OBSERVATION LOG FROM THE MODEL
+
+0:00  A rugged boreal landscape with patches of snow, brown grass, and scattered pine trees under a hazy, pale yellow sky.
+0:03  On the right, a massive tree with thick, exposed roots. Three slender, four-legged creatures with long snouts, crested heads, and curved tails stand nearby on rocky outcrops.
+0:06  A bright streak of light appears in the upper left sky, descending toward the horizon.
+0:09  The creatures look out over a vast, calm lake toward towering, sheer rock formations in the distance as the streak of light continues its descent.

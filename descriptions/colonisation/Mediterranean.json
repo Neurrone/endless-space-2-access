@@ -1,0 +1,86 @@
+{
+  "meta": {
+    "video": "Mediterranean.mp4",
+    "model": "google/gemini-3.1-pro-preview",
+    "duration": 12.8,
+    "wpm": 600.0,
+    "cost": 0.053488,
+    "provider": "google-vertex",
+    "effort": "high",
+    "safety": 0.7,
+    "pad_start": 0.25,
+    "pad_end": 0.3,
+    "min_gap": 0.6,
+    "split_above": 8.0,
+    "min_cue": 1.0
+  },
+  "gaps": [
+    {
+      "id": "G1",
+      "index": 1,
+      "speech_start": 0.0,
+      "speech_end": 12.8,
+      "usable": 12.8,
+      "max_words": 89,
+      "splittable": true,
+      "prev_text": "",
+      "next_text": ""
+    }
+  ],
+  "cues": [
+    {
+      "id": "G1.1",
+      "gap": "G1",
+      "start": 0.5,
+      "end": 2.0,
+      "max_words": 10,
+      "word_count": 8,
+      "text": "Red rock arches rise from a turquoise sea."
+    },
+    {
+      "id": "G1.2",
+      "gap": "G1",
+      "start": 2.0,
+      "end": 4.5,
+      "max_words": 17,
+      "word_count": 17,
+      "text": "High in the bright blue sky, the colony ship's landing craft descends on a trail of light."
+    },
+    {
+      "id": "G1.3",
+      "gap": "G1",
+      "start": 4.5,
+      "end": 8.0,
+      "max_words": 24,
+      "word_count": 13,
+      "text": "It slips behind the distant cliffs. Green bushes cling to the rocky islands."
+    },
+    {
+      "id": "G1.4",
+      "gap": "G1",
+      "start": 8.0,
+      "end": 12.8,
+      "max_words": 33,
+      "word_count": 12,
+      "text": "A flock of birds circles the arches above the gently rippling water."
+    }
+  ],
+  "beats": [
+    {
+      "time": "0:00",
+      "note": "Turquoise water, red rock formations with natural arches, green vegetation. Blue sky with fluffy white clouds."
+    },
+    {
+      "time": "0:01",
+      "note": "A bright streak of light from a landing craft descends in the sky on the right."
+    },
+    {
+      "time": "0:03",
+      "note": "The landing craft disappears behind the tall rocks."
+    },
+    {
+      "time": "0:06",
+      "note": "Birds fly near the arches in the distance. The water ripples gently."
+    }
+  ]
+}

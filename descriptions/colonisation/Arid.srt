@@ -1,0 +1,15 @@
+1
+00:00:01,000 --> 00:00:04,500
+A bright streak of light trails through a starry twilight sky of bruised purple and fiery orange as the colony ship descends.
+
+2
+00:00:04,500 --> 00:00:07,500
+It falls toward a vast, silent desert of rust-red dust and jagged, wind-swept rocks.
+
+3
+00:00:07,500 --> 00:00:10,500
+In the foreground, a giant, dark insectoid creature stands atop a rocky outcropping.
+
+4
+00:00:10,500 --> 00:00:12,522
+In the background, a sprawling city of pale stone rises from the plains.

@@ -1,0 +1,17 @@
+Audio description review (re-placed from the other variant)
+Video: Mezari Outro.mp4
+Variant: Lost Returned
+Written against: Lost Not Returned
+Runtime: 0:25.12   Screen reader rate: 600.0 wpm
+Fit: 2 of 2 on time, worst drift 0.2s
+Verdict: clean
+
+DESCRIPTIONS
+
+G1 at 0:00.00 to 0:02.16, 2.2 seconds.
+  speaks at 0:00.00, 13 of 19 words, on time.
+    Five white swords radiate across a deep red background. A white monument rises.
+
+G2 at 0:23.36 to 0:25.12, 1.8 seconds.
+  speaks at 0:23.36, 13 of 16 words, on time.
+    Scientists observe the bare-chested emperor, wired to machinery and glowing with energy. Darkness.

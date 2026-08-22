@@ -1,0 +1,81 @@
+{
+  "meta": {
+    "video": "Gas Cold.mp4",
+    "model": "google/gemini-3.1-pro-preview",
+    "duration": 13.205,
+    "wpm": 600.0,
+    "cost": 0.044156,
+    "provider": "google-vertex",
+    "effort": "high",
+    "safety": 0.7,
+    "pad_start": 0.25,
+    "pad_end": 0.3,
+    "min_gap": 0.6,
+    "split_above": 8.0,
+    "min_cue": 1.0
+  },
+  "gaps": [
+    {
+      "id": "G1",
+      "index": 1,
+      "speech_start": 0.0,
+      "speech_end": 13.205,
+      "usable": 13.21,
+      "max_words": 92,
+      "splittable": true,
+      "prev_text": "",
+      "next_text": ""
+    }
+  ],
+  "cues": [
+    {
+      "id": "G1.1",
+      "gap": "G1",
+      "start": 1.0,
+      "end": 5.5,
+      "max_words": 31,
+      "word_count": 28,
+      "text": "A colossal gas giant fills the starry void, its atmosphere swirling with indigo and azure bands. A brilliant, thin ring of ice slices diagonally across the blue sphere."
+    },
+    {
+      "id": "G1.2",
+      "gap": "G1",
+      "start": 5.5,
+      "end": 9.5,
+      "max_words": 28,
+      "word_count": 22,
+      "text": "Massive, jagged asteroids drift in the foreground. High above, a tiny spark of light descends towards the planet, trailing a faint tail."
+    },
+    {
+      "id": "G1.3",
+      "gap": "G1",
+      "start": 9.5,
+      "end": 13.205,
+      "max_words": 25,
+      "word_count": 11,
+      "text": "The colony ship plunges down, swallowed by the churning blue clouds."
+    }
+  ],
+  "beats": [
+    {
+      "time": "0:00",
+      "note": "A massive blue gas giant planet dominates the view against a starry backdrop, featuring swirling bands of light and dark blue clouds. A thin, bright ring system circles its equator, angled diagonally across the frame."
+    },
+    {
+      "time": "0:02",
+      "note": "Large, jagged chunks of ice and rock drift slowly in the foreground, forming part of the ring system."
+    },
+    {
+      "time": "0:04",
+      "note": "A tiny, bright point of light, the colony ship, appears in the upper left, descending towards the planet and leaving a faint, wispy trail."
+    },
+    {
+      "time": "0:08",
+      "note": "The ship approaches the thick blue atmosphere."
+    },
+    {
+      "time": "0:10",
+      "note": "The ship plunges into the clouds and fades from view, swallowed by the gas giant."
+    }
+  ]
+}

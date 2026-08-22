@@ -12,6 +12,7 @@ $loaderDir = Join-Path $scriptDir "ES2Access.Loader\bin\Release"
 $modDir = Join-Path $scriptDir "ES2Access\bin\Release"
 $vendorDir = Join-Path $scriptDir "vendor"
 $localeDir = Join-Path $scriptDir "ES2Access\locale"
+$descriptionsDir = Join-Path $scriptDir "ES2Access\descriptions"
 $templateDir = Join-Path $scriptDir "release-template"
 $releaseDir = Join-Path $scriptDir "releases"
 
@@ -55,6 +56,7 @@ try {
     }
 
     New-Item -ItemType Directory -Force (Join-Path $pluginDir "locale") | Out-Null
+    New-Item -ItemType Directory -Force (Join-Path $pluginDir "descriptions") | Out-Null
 
     # prism.dll lives beside the game executable, not under BepInEx: it is a native library the
     # mod loads by name, so the game root is the only folder the loader will find it in.
@@ -77,6 +79,15 @@ try {
         throw "No translation tables found in $localeDir"
     }
     Copy-Item -LiteralPath $localeFiles.FullName -Destination (Join-Path $pluginDir "locale")
+
+    # Cutscene audio descriptions, built from descriptions\ by build-descriptions.ps1. A hard
+    # failure rather than a warning: unlike a translation there is nothing to fall back to, so a
+    # release missing these ships a feature that silently says nothing.
+    $descriptionFiles = @(Get-ChildItem -LiteralPath $descriptionsDir -Filter *.json -File)
+    if ($descriptionFiles.Count -eq 0) {
+        throw "No description tables found in $descriptionsDir (run build-descriptions.ps1)"
+    }
+    Copy-Item -LiteralPath $descriptionFiles.FullName -Destination (Join-Path $pluginDir "descriptions")
 
     $stray = @(Get-ChildItem -LiteralPath $templateDir -Recurse -File -Force |
         Where-Object { $_.Extension -in @(".pdb", ".cfg") })

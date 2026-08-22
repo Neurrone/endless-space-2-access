@@ -1,0 +1,90 @@
+{
+  "meta": {
+    "video": "Forest.mp4",
+    "model": "google/gemini-3.1-pro-preview",
+    "duration": 12.693,
+    "wpm": 600.0,
+    "cost": 0.049201999999999996,
+    "provider": "google-vertex",
+    "effort": "high",
+    "safety": 0.7,
+    "pad_start": 0.25,
+    "pad_end": 0.3,
+    "min_gap": 0.6,
+    "split_above": 8.0,
+    "min_cue": 1.0
+  },
+  "gaps": [
+    {
+      "id": "G1",
+      "index": 1,
+      "speech_start": 0.0,
+      "speech_end": 12.693,
+      "usable": 12.69,
+      "max_words": 88,
+      "splittable": true,
+      "prev_text": "",
+      "next_text": ""
+    }
+  ],
+  "cues": [
+    {
+      "id": "G1.1",
+      "gap": "G1",
+      "start": 0.5,
+      "end": 3.5,
+      "max_words": 21,
+      "word_count": 18,
+      "text": "Mist drifts through a lush forest of massive trees. A tall bird with sweeping crest feathers stands motionless."
+    },
+    {
+      "id": "G1.2",
+      "gap": "G1",
+      "start": 3.5,
+      "end": 5.5,
+      "max_words": 14,
+      "word_count": 10,
+      "text": "A brilliant streak of light descends through the hazy canopy."
+    },
+    {
+      "id": "G1.3",
+      "gap": "G1",
+      "start": 5.5,
+      "end": 11.0,
+      "max_words": 38,
+      "word_count": 27,
+      "text": "The bird turns its head to watch the landing craft fall. Glowing motes float gently in the damp air as the ship vanishes behind the distant trees."
+    },
+    {
+      "id": "G1.4",
+      "gap": "G1",
+      "start": 11.0,
+      "end": 12.693,
+      "max_words": 11,
+      "word_count": 1,
+      "text": "Darkness."
+    }
+  ],
+  "beats": [
+    {
+      "time": "0:00",
+      "note": "A lush green forest with massive tree trunks rising into the background mist. A tall bird with a long beak and sweeping crest feathers stands motionless in the foreground."
+    },
+    {
+      "time": "0:03",
+      "note": "A bright streak of light falls from the sky on the right, cutting through the mist."
+    },
+    {
+      "time": "0:05",
+      "note": "The bird turns its head slightly to watch the falling light."
+    },
+    {
+      "time": "0:08",
+      "note": "The light disappears behind the distant trees. Small glowing motes float gently in the damp air."
+    },
+    {
+      "time": "0:11",
+      "note": "The scene fades to black."
+    }
+  ]
+}

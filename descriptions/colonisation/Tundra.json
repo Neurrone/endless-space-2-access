@@ -1,0 +1,77 @@
+{
+  "meta": {
+    "video": "Tundra.mp4",
+    "model": "google/gemini-3.1-pro-preview",
+    "duration": 13.418,
+    "wpm": 600.0,
+    "cost": 0.038274,
+    "provider": "google-vertex",
+    "effort": "high",
+    "safety": 0.7,
+    "pad_start": 0.25,
+    "pad_end": 0.3,
+    "min_gap": 0.6,
+    "split_above": 8.0,
+    "min_cue": 1.0
+  },
+  "gaps": [
+    {
+      "id": "G1",
+      "index": 1,
+      "speech_start": 0.0,
+      "speech_end": 13.418,
+      "usable": 13.42,
+      "max_words": 93,
+      "splittable": true,
+      "prev_text": "",
+      "next_text": ""
+    }
+  ],
+  "cues": [
+    {
+      "id": "G1.1",
+      "gap": "G1",
+      "start": 1.0,
+      "end": 5.5,
+      "max_words": 31,
+      "word_count": 25,
+      "text": "Under a heavy, blue-grey sky, two massive, ox-like beasts stand in a flooded plain. They have thick brown coats and crowns of long, jagged horns."
+    },
+    {
+      "id": "G1.2",
+      "gap": "G1",
+      "start": 5.5,
+      "end": 8.5,
+      "max_words": 21,
+      "word_count": 14,
+      "text": "High above, a bright spark of light trails downwards. The colony ship's landing craft."
+    },
+    {
+      "id": "G1.3",
+      "gap": "G1",
+      "start": 8.5,
+      "end": 13.418,
+      "max_words": 34,
+      "word_count": 19,
+      "text": "The beasts wait in the wet, swaying grass as the distant craft slips behind snow-dusted hills on the horizon."
+    }
+  ],
+  "beats": [
+    {
+      "time": "0:00",
+      "note": "Two large ox-like beasts stand in a marshy plain with tall grass and pools of water. The sky is overcast and blue-grey."
+    },
+    {
+      "time": "0:01",
+      "note": "A bright streak of light appears in the sky, descending."
+    },
+    {
+      "time": "0:05",
+      "note": "The streak of light continues descending towards the distant hills."
+    },
+    {
+      "time": "0:08",
+      "note": "The streak of light disappears behind the hills. The beasts remain standing in the grass."
+    }
+  ]
+}

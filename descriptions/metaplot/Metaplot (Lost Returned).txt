@@ -1,0 +1,45 @@
+Audio description review
+Video: Metaplot (Lost Returned).mp4
+Model: google/gemini-3.1-pro-preview
+Runtime: 0:31.20   Screen reader rate: 600.0 wpm
+Gaps found: 6   Cues written: 6   Gaps left silent: 0
+Cost: 0.0636 USD
+
+DESCRIPTIONS
+
+G1 at 0:00.00 to 0:02.62, 2.6 seconds.
+  speaks at 0:00.00, 13 of 24 words.
+    The massive, eight-spoked Academy ship orbits a shattered blue planet, surrounded by debris.
+
+G2 at 0:06.15 to 0:06.83, 0.7 seconds.
+  speaks at 0:06.15, 5 of 6 words.
+    Golden energy crackles around it.
+
+G3 at 0:12.74 to 0:15.27, 2.5 seconds.
+  speaks at 0:12.74, 19 of 23 words.
+    Inside, a golden beam strikes a platform. The armored Isyander spreads his arms, his face a glowing red crystal.
+
+G4 at 0:21.38 to 0:22.46, 1.1 seconds.
+  speaks at 0:21.38, 8 of 9 words.
+    The golden beam shoots into the starry sky.
+
+G5 at 0:24.74 to 0:26.12, 1.4 seconds.
+  speaks at 0:24.74, 6 of 12 words.
+    Everything fades to a black starfield.
+
+G6 at 0:29.67 to 0:31.20, 1.5 seconds.
+  speaks at 0:29.67, 9 of 14 words.
+    Four brilliant, star-like lights ignite within a colorful nebula.
+
+OBSERVATION LOG FROM THE MODEL
+
+0:00  The massive Academy ship, featuring eight large spokes, orbits above a blue planet surrounded by a debris ring.
+0:03  Golden light begins to gather and swirl around the ship.
+0:05  Golden energy and lightning crackle across the ship's metallic structure.
+0:08  The central pyramid of the Academy glows intensely.
+0:10  A massive golden beam fires straight upward from the peak of the pyramid.
+0:13  Inside the Academy, the golden beam shines down onto a circular platform.
+0:14  Isyander, wearing gold and grey armor, stands in the beam. He spreads his arms. His head is a cracked, glowing red crystalline structure.
+0:20  Outside, the golden beam continues to shoot up from the Academy into the starry void.
+0:24  The view tilts up into deep space, fading to a dark starfield.
+0:28  A green and pink nebula appears in the darkness. Four bright, star-like lights shine brilliantly within it.

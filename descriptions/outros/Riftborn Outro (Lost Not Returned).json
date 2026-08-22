@@ -1,0 +1,155 @@
+{
+  "meta": {
+    "video": "Riftborn Outro.mp4",
+    "model": "google/gemini-3.1-pro-preview",
+    "duration": 30.0,
+    "wpm": 600.0,
+    "cost": 0.10571,
+    "provider": "google-vertex",
+    "effort": "high",
+    "safety": 0.92,
+    "pad_start": 0.25,
+    "pad_end": 0.3,
+    "min_gap": 0.6,
+    "split_above": 8.0,
+    "min_cue": 1.0
+  },
+  "gaps": [
+    {
+      "id": "G1",
+      "index": 1,
+      "speech_start": 0.0,
+      "speech_end": 8.308,
+      "usable": 8.31,
+      "max_words": 76,
+      "splittable": true,
+      "prev_text": "",
+      "next_text": "We have had enough hardship without the interference of gods."
+    },
+    {
+      "id": "G2",
+      "index": 2,
+      "speech_start": 12.616,
+      "speech_end": 13.36,
+      "usable": 0.74,
+      "max_words": 6,
+      "splittable": false,
+      "prev_text": "We have had enough hardship without the interference of gods.",
+      "next_text": "Now we can thrive."
+    },
+    {
+      "id": "G3",
+      "index": 3,
+      "speech_start": 20.606,
+      "speech_end": 30.0,
+      "usable": 9.39,
+      "max_words": 86,
+      "splittable": true,
+      "prev_text": "beautiful.",
+      "next_text": ""
+    }
+  ],
+  "cues": [
+    {
+      "id": "G1.1",
+      "gap": "G1",
+      "start": 0.0,
+      "end": 3.0,
+      "max_words": 27,
+      "word_count": 17,
+      "text": "Sunbeams pierce dark clouds over a misty, green valley. A massive white spaceship rests on the grass."
+    },
+    {
+      "id": "G1.2",
+      "gap": "G1",
+      "start": 3.0,
+      "end": 6.0,
+      "max_words": 27,
+      "word_count": 15,
+      "text": "Tall, robotic beings with dark, angular armor and glowing orange joints survey the untamed jungle."
+    },
+    {
+      "id": "G1.3",
+      "gap": "G1",
+      "start": 6.0,
+      "end": 8.308,
+      "max_words": 21,
+      "word_count": 15,
+      "text": "One steps onto a rock in the foreground. Black shards orbit its floating, diamond-shaped head."
+    },
+    {
+      "id": "G2",
+      "gap": "G2",
+      "start": 12.616,
+      "end": 13.36,
+      "max_words": 6,
+      "word_count": 6,
+      "text": "It holds a glowing pink flower."
+    },
+    {
+      "id": "G3.1",
+      "gap": "G3",
+      "start": 20.606,
+      "end": 24.0,
+      "max_words": 31,
+      "word_count": 19,
+      "text": "The flower has transformed into a pristine, geometric white crystal. It hovers and turns slowly above the being's hand."
+    },
+    {
+      "id": "G3.2",
+      "gap": "G3",
+      "start": 24.0,
+      "end": 26.0,
+      "max_words": 18,
+      "word_count": 8,
+      "text": "The being gazes at the perfect, angular shape."
+    },
+    {
+      "id": "G3.3",
+      "gap": "G3",
+      "start": 26.0,
+      "end": 30.0,
+      "max_words": 36,
+      "word_count": 6,
+      "text": "Everything slowly fades into absolute darkness."
+    }
+  ],
+  "beats": [
+    {
+      "time": "0:00",
+      "note": "Sunbeams break through dark clouds over a misty, green valley where a massive white spaceship has landed."
+    },
+    {
+      "time": "0:02",
+      "note": "Several tall, robotic beings with dark, angular armor and glowing orange joints stand among the trees."
+    },
+    {
+      "time": "0:06",
+      "note": "One of the beings steps onto a mossy rock in the foreground. Its head is a hollow, floating diamond surrounded by orbiting black shards."
+    },
+    {
+      "time": "0:12",
+      "note": "The being in the foreground holds a glowing pink flower in its hand."
+    },
+    {
+      "time": "0:15",
+      "note": "The pink flower glows brighter."
+    },
+    {
+      "time": "0:18",
+      "note": "The flower begins to lose its organic petals, transforming into sharp geometric shapes."
+    },
+    {
+      "time": "0:20",
+      "note": "The flower has completely transformed into a glowing white, geometric crystal hovering above the being's hand."
+    },
+    {
+      "time": "0:25",
+      "note": "The image begins to fade to black."
+    },
+    {
+      "time": "0:28",
+      "note": "Complete darkness."
+    }
+  ]
+}

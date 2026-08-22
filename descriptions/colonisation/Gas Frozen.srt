@@ -1,0 +1,11 @@
+1
+00:00:01,000 --> 00:00:05,000
+A colossal gas giant dominates the void. Sweeping storms of icy cyan light illuminate its right hemisphere.
+
+2
+00:00:05,000 --> 00:00:08,500
+Luminous rings of frost and dust encircle the deep, shadowed blue of the sphere.
+
+3
+00:00:08,500 --> 00:00:12,693
+A tiny, brilliant speck of light, the colony ship, glides along the lower rings, drawn toward the frozen world.

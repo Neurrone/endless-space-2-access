@@ -1,0 +1,23 @@
+Audio description review
+Video: Tundra.mp4
+Model: google/gemini-3.1-pro-preview
+Runtime: 0:13.42   Screen reader rate: 600.0 wpm
+Gaps found: 1   Cues written: 3   Gaps left silent: 0
+Cost: 0.0383 USD
+
+DESCRIPTIONS
+
+G1 at 0:00.00 to 0:13.42, 13.4 seconds, split into 3 cues.
+  speaks at 0:01.00, 25 of 31 words.
+    Under a heavy, blue-grey sky, two massive, ox-like beasts stand in a flooded plain. They have thick brown coats and crowns of long, jagged horns.
+  speaks at 0:05.50, 14 of 21 words.
+    High above, a bright spark of light trails downwards. The colony ship's landing craft.
+  speaks at 0:08.50, 19 of 34 words.
+    The beasts wait in the wet, swaying grass as the distant craft slips behind snow-dusted hills on the horizon.
+
+OBSERVATION LOG FROM THE MODEL
+
+0:00  Two large ox-like beasts stand in a marshy plain with tall grass and pools of water. The sky is overcast and blue-grey.
+0:01  A bright streak of light appears in the sky, descending.
+0:05  The streak of light continues descending towards the distant hills.
+0:08  The streak of light disappears behind the hills. The beasts remain standing in the grass.

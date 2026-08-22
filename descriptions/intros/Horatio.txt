@@ -1,0 +1,63 @@
+Audio description review
+Video: Horatio Intro.mp4
+Model: google/gemini-3.1-pro-preview
+Runtime: 1:14.05   Screen reader rate: 600.0 wpm
+Gaps found: 8   Cues written: 11   Gaps left silent: 0
+Cost: 0.1237 USD
+
+DESCRIPTIONS
+
+G1 at 0:00.00 to 0:05.29, 5.3 seconds.
+  speaks at 0:00.00, 34 of 48 words.
+    A tall, bald figure in a sweeping green cape stands with his back turned, looking out a large window at a mountainous landscape. The opulent room is lined with tall mirrors and potted plants.
+
+G2 at 0:13.33 to 0:14.11, 0.8 seconds.
+  speaks at 0:13.33, 7 of 7 words.
+    A ghostly face appears in the glass.
+
+G3 at 0:17.20 to 0:18.10, 0.9 seconds.
+  speaks at 0:17.20, 6 of 8 words.
+    His own smooth, elongated face returns.
+
+G4 at 0:21.45 to 0:23.20, 1.8 seconds.
+  speaks at 0:21.45, 13 of 16 words.
+    He stands in a mirrored hallway. A screaming face appears in the glass.
+
+G5 at 0:26.45 to 0:27.50, 1.1 seconds.
+  speaks at 0:26.45, 7 of 9 words.
+    The reflection shifts to a floating brain.
+
+G6 at 0:30.75 to 0:34.20, 3.5 seconds.
+  speaks at 0:30.75, 17 of 31 words.
+    He strides past the mirrors. His long green cape flows behind him, trailing over the dark floor.
+
+G7 at 0:42.80 to 0:43.80, 1.0 seconds.
+  speaks at 0:42.80, 6 of 9 words.
+    He stares at his own reflection.
+
+G8 at 0:52.60 to 1:14.05, 21.4 seconds, split into 4 cues.
+  speaks at 0:52.60, 14 of 31 words.
+    Bathed in brilliant white light, Horatio stands at the top of a grand staircase.
+  speaks at 0:56.00, 13 of 36 words.
+    Below him, two rows of identical clones line the base of the stairs.
+  speaks at 1:00.00, 32 of 101 words.
+    The clones stand at attention, looking up at their leader. They are gathered in a massive hall with towering pillars. Huge windows reveal a dark planet in the starry void of space.
+  speaks at 1:11.00, 4 of 28 words.
+    Everything fades to black.
+
+OBSERVATION LOG FROM THE MODEL
+
+0:00  A tall, bald figure in a sweeping green cape stands looking out a large window. The room is lined with mirrors.
+0:08  The figure's reflection shows an extremely elongated, bald head and a gold-trimmed collar.
+0:14  The reflection distorts into a ghostly, deformed face.
+0:18  The reflection returns to his own smooth, elongated face.
+0:21  He stands in the center of a mirrored hallway.
+0:24  The reflection twists into a screaming, ghostly visage.
+0:28  The reflection shifts to a floating, brain-like entity.
+0:34  The camera pans up his flowing green cape.
+0:37  He stands before a glowing doorway, mirrored on both sides.
+0:42  Close up of his face and reflection.
+0:52  He stands at the top of a grand staircase, bathed in brilliant white light.
+0:56  The camera pulls back, revealing rows of identical bald clones lining the base of the stairs.
+1:00  The clones look up at him in a massive, pillar-lined hall with a view of a planet in space.
+1:12  Fade to black.

@@ -1,0 +1,83 @@
+Audio description review
+Video: Vaulters Intro.mp4
+Model: google/gemini-3.1-pro-preview
+Runtime: 1:29.22   Screen reader rate: 600.0 wpm
+Gaps found: 12   Cues written: 15   Gaps left silent: 1
+Cost: 0.1534 USD
+
+DESCRIPTIONS
+
+G1 at 0:00.00 to 0:05.35, 5.3 seconds.
+  speaks at 0:00.00, 30 of 49 words.
+    In a cavernous, dimly lit hold, a blocky, rust-orange mechanical figure slumps against a pillar among scattered crates and trailing cables. A green light flickers to life across its visor.
+
+G2 at 0:08.38 to 0:09.93, 1.6 seconds.
+  speaks at 0:08.38, 7 of 14 words.
+    The ancient machine shifts its heavy head.
+
+G3 at 0:12.83 to 0:13.84, 1.0 seconds.
+  speaks at 0:12.83, 6 of 9 words.
+    A figure frozen behind frosted glass.
+
+G4 at 0:17.87 to 0:22.75, 4.9 seconds.
+  speaks at 0:17.87, 25 of 44 words.
+    In the center of a vast, circular chamber, the solitary robot rests beneath a ring of pale light. A nearby console projects a holographic planet.
+
+G5 at 0:25.64 to 0:26.85, 1.2 seconds.
+  speaks at 0:25.64, 6 of 11 words.
+    A red engine failure warning flashes.
+
+G6 at 0:35.33 to 0:36.54, 1.2 seconds.
+  speaks at 0:35.33, 7 of 11 words.
+    Zolya sleeps peacefully inside a frosted pod.
+
+G7 at 0:40.84 to 0:42.51, 1.7 seconds.
+  speaks at 0:40.84, 9 of 15 words.
+    The pale light inside her pod flickers and dims.
+
+G8 at 0:44.16 to 0:44.93, 0.8 seconds.
+  speaks at 0:44.16, 6 of 7 words.
+    Silent pods line the dark hall.
+
+G9 at 0:48.55 to 0:51.18, 2.6 seconds.
+  speaks at 0:48.55, 15 of 24 words.
+    One by one, the faint lights on the pods extinguish, plunging the corridor into darkness.
+
+G10 at 0:53.38 to 0:54.08, 0.7 seconds.
+  speaks at 0:53.38, 4 of 6 words.
+    The shadows swallow everything.
+
+G11 at 0:55.62 to 0:56.28, 0.7 seconds, left silent.
+
+G12 at 0:58.33 to 1:29.22, 30.9 seconds, split into 5 cues.
+  speaks at 0:58.33, 15 of 33 words.
+    In the pitch black, the green slit of the robot's visor flares back to life.
+  speaks at 1:02.00, 32 of 82 words.
+    Massive doors open at the far end of the corridor, carving a brilliant shaft of white light through the dusty air. It washes over the rows of cryo-pods, illuminating the solitary machine.
+  speaks at 1:11.00, 7 of 46 words.
+    The robot stares into the blinding glare.
+  speaks at 1:16.00, 24 of 46 words.
+    In a green-tinged nebula, a colossal, hollowed-out asteroid glows with internal golden fires. A sleek, ring-shaped vessel, the Argosy, emerges from the rocky remnants.
+  speaks at 1:21.00, 23 of 75 words.
+    The ancient colony ship glides away from the glowing husk, charting a course toward the stars before fading into the vast, cosmic dark.
+
+OBSERVATION LOG FROM THE MODEL
+
+0:00  Dark room, rusty robot slumped against a wall, green light flickers on its blocky head.
+0:08  The ancient machine shifts its heavy arm and head.
+0:15  A frosted glass panel shows a shadowy figure frozen inside.
+0:19  In the center of a vast, circular chamber, the solitary robot rests beneath a ring of pale light.
+0:23  A nearby console projects a holographic planet.
+0:25  A red engine failure warning flashes on the console.
+0:31  A long corridor lined with cryo-pods.
+0:36  Close up of a woman's peaceful face behind frosted glass.
+0:40  The pale light inside her pod flickers and dims.
+0:44  A row of silent pods in the dark hall.
+0:48  One by one, the faint lights on the pods extinguish.
+0:53  The corridor plunges into total darkness.
+0:58  In the pitch black, the green slit of the robot's visor flares back to life.
+1:01  Massive doors open at the far end of the corridor, letting in a brilliant shaft of white light.
+1:06  The light washes over the rows of cryo-pods, illuminating the solitary machine.
+1:11  The robot stares into the blinding glare.
+1:16  In a green-tinged nebula, a colossal, hollowed-out asteroid glows with internal golden fires. A sleek, ring-shaped vessel emerges.
+1:21  The ancient colony ship glides away from the glowing husk, fading into the dark.

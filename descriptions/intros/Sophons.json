@@ -1,0 +1,323 @@
+{
+  "meta": {
+    "video": "Sophons Intro.mp4",
+    "model": "google/gemini-3.1-pro-preview",
+    "duration": 67.008,
+    "wpm": 600.0,
+    "cost": 0.130688,
+    "provider": "google-vertex",
+    "effort": "high",
+    "safety": 0.92,
+    "pad_start": 0.25,
+    "pad_end": 0.3,
+    "min_gap": 0.6,
+    "split_above": 8.0,
+    "min_cue": 1.0
+  },
+  "gaps": [
+    {
+      "id": "G1",
+      "index": 1,
+      "speech_start": 0.0,
+      "speech_end": 1.424,
+      "usable": 1.42,
+      "max_words": 13,
+      "splittable": false,
+      "prev_text": "",
+      "next_text": "They have always been first, the Sophons."
+    },
+    {
+      "id": "G2",
+      "index": 2,
+      "speech_start": 6.458,
+      "speech_end": 7.314,
+      "usable": 0.86,
+      "max_words": 7,
+      "splittable": false,
+      "prev_text": "They have always been first, the Sophons.",
+      "next_text": "First to split atoms,"
+    },
+    {
+      "id": "G3",
+      "index": 3,
+      "speech_start": 10.266,
+      "speech_end": 10.936,
+      "usable": 0.67,
+      "max_words": 6,
+      "splittable": false,
+      "prev_text": "First to split atoms,",
+      "next_text": "mine asteroids,"
+    },
+    {
+      "id": "G4",
+      "index": 4,
+      "speech_start": 13.66,
+      "speech_end": 14.462,
+      "usable": 0.8,
+      "max_words": 7,
+      "splittable": false,
+      "prev_text": "mine asteroids,",
+      "next_text": "and capture the energy of the sun."
+    },
+    {
+      "id": "G5",
+      "index": 5,
+      "speech_start": 17.656,
+      "speech_end": 19.639,
+      "usable": 1.98,
+      "max_words": 18,
+      "splittable": false,
+      "prev_text": "and capture the energy of the sun.",
+      "next_text": "First too to crash their test rockets,"
+    },
+    {
+      "id": "G6",
+      "index": 6,
+      "speech_start": 23.565,
+      "speech_end": 24.498,
+      "usable": 0.93,
+      "max_words": 8,
+      "splittable": false,
+      "prev_text": "First too to crash their test rockets,",
+      "next_text": "trigger artificial earthquakes,"
+    },
+    {
+      "id": "G7",
+      "index": 7,
+      "speech_start": 27.99,
+      "speech_end": 28.888,
+      "usable": 0.9,
+      "max_words": 8,
+      "splittable": false,
+      "prev_text": "trigger artificial earthquakes,",
+      "next_text": "and accidentally blow up their moon."
+    },
+    {
+      "id": "G8",
+      "index": 8,
+      "speech_start": 32.49,
+      "speech_end": 36.578,
+      "usable": 4.09,
+      "max_words": 37,
+      "splittable": false,
+      "prev_text": "and accidentally blow up their moon.",
+      "next_text": "Their great power has given them great..."
+    },
+    {
+      "id": "G9",
+      "index": 9,
+      "speech_start": 40.765,
+      "speech_end": 41.504,
+      "usable": 0.74,
+      "max_words": 6,
+      "splittable": false,
+      "prev_text": "Their great power has given them great...",
+      "next_text": "irresponsibility."
+    },
+    {
+      "id": "G10",
+      "index": 10,
+      "speech_start": 44.508,
+      "speech_end": 52.122,
+      "usable": 7.61,
+      "max_words": 70,
+      "splittable": false,
+      "prev_text": "irresponsibility.",
+      "next_text": "But through it,"
+    },
+    {
+      "id": "G11",
+      "index": 11,
+      "speech_start": 59.754,
+      "speech_end": 60.679,
+      "usable": 0.93,
+      "max_words": 8,
+      "splittable": false,
+      "prev_text": "now, they are the first to create perfection.",
+      "next_text": "Me."
+    },
+    {
+      "id": "G12",
+      "index": 12,
+      "speech_start": 62.18,
+      "speech_end": 67.008,
+      "usable": 4.83,
+      "max_words": 44,
+      "splittable": false,
+      "prev_text": "Me.",
+      "next_text": ""
+    }
+  ],
+  "cues": [
+    {
+      "id": "G1",
+      "gap": "G1",
+      "start": 0.0,
+      "end": 1.424,
+      "max_words": 13,
+      "word_count": 7,
+      "text": "Through dark slats, a blue light glows."
+    },
+    {
+      "id": "G2",
+      "gap": "G2",
+      "start": 6.458,
+      "end": 7.314,
+      "max_words": 7,
+      "word_count": 7,
+      "text": "A slender, large-headed figure of blue particles."
+    },
+    {
+      "id": "G3",
+      "gap": "G3",
+      "start": 10.266,
+      "end": 10.936,
+      "max_words": 6,
+      "word_count": 6,
+      "text": "A tiny machine splits a sphere."
+    },
+    {
+      "id": "G4",
+      "gap": "G4",
+      "start": 13.66,
+      "end": 14.462,
+      "max_words": 7,
+      "word_count": 6,
+      "text": "A ship chips at an asteroid."
+    },
+    {
+      "id": "G5",
+      "gap": "G5",
+      "start": 17.656,
+      "end": 19.639,
+      "max_words": 18,
+      "word_count": 10,
+      "text": "Blinding light channels into a satellite. A Sophon stands proudly."
+    },
+    {
+      "id": "G6",
+      "gap": "G6",
+      "start": 23.565,
+      "end": 24.498,
+      "max_words": 8,
+      "word_count": 6,
+      "text": "The Sophon facepalms in the smoke."
+    },
+    {
+      "id": "G7",
+      "gap": "G7",
+      "start": 27.99,
+      "end": 28.888,
+      "max_words": 8,
+      "word_count": 6,
+      "text": "They touch a glowing fault line."
+    },
+    {
+      "id": "G8",
+      "gap": "G8",
+      "start": 32.49,
+      "end": 36.578,
+      "max_words": 37,
+      "word_count": 14,
+      "text": "A hologram moon shatters. They flinch, then stand shoulder-to-shoulder, gazing at a glowing spire."
+    },
+    {
+      "id": "G9",
+      "gap": "G9",
+      "start": 40.765,
+      "end": 41.504,
+      "max_words": 6,
+      "word_count": 5,
+      "text": "One gives a thumbs up."
+    },
+    {
+      "id": "G10",
+      "gap": "G10",
+      "start": 44.508,
+      "end": 52.122,
+      "max_words": 70,
+      "word_count": 25,
+      "text": "The room falls away. The spire is the core of a colossal station. Massive metallic ribs spiral upward around a blinding blue pillar of energy."
+    },
+    {
+      "id": "G11",
+      "gap": "G11",
+      "start": 59.754,
+      "end": 60.679,
+      "max_words": 8,
+      "word_count": 6,
+      "text": "They stand at the station's base."
+    },
+    {
+      "id": "G12",
+      "gap": "G12",
+      "start": 62.18,
+      "end": 67.008,
+      "max_words": 44,
+      "word_count": 13,
+      "text": "The colossal station turns slowly in the dark void. Everything fades to black."
+    }
+  ],
+  "beats": [
+    {
+      "time": "0:00",
+      "note": "Dark slats over a glowing blue light."
+    },
+    {
+      "time": "0:03",
+      "note": "A slender alien figure with a large head materializes from blue glowing particles."
+    },
+    {
+      "time": "0:08",
+      "note": "A tiny machine splits a dark sphere."
+    },
+    {
+      "time": "0:10",
+      "note": "A ship beams energy into an asteroid."
+    },
+    {
+      "time": "0:14",
+      "note": "A satellite captures blinding light from a star."
+    },
+    {
+      "time": "0:18",
+      "note": "A Sophon stands proudly. A rocket crashes behind it."
+    },
+    {
+      "time": "0:23",
+      "note": "The Sophon facepalms."
+    },
+    {
+      "time": "0:24",
+      "note": "Two Sophons point at a glowing fault line."
+    },
+    {
+      "time": "0:28",
+      "note": "A hologram moon explodes between them. They flinch."
+    },
+    {
+      "time": "0:32",
+      "note": "The two Sophons stand shoulder-to-shoulder, looking at a distant glowing spire."
+    },
+    {
+      "time": "0:40",
+      "note": "One gives a thumbs up."
+    },
+    {
+      "time": "0:44",
+      "note": "The view pulls back rapidly, revealing the spire is the core of a massive space station."
+    },
+    {
+      "time": "0:52",
+      "note": "Massive metallic ribs spiral around a blinding blue pillar of energy."
+    },
+    {
+      "time": "0:59",
+      "note": "The camera pans up from the tiny Sophons at the base of the station."
+    },
+    {
+      "time": "1:02",
+      "note": "The colossal station turns slowly. The screen fades to black."
+    }
+  ]
+}

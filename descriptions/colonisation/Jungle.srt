@@ -1,0 +1,11 @@
+1
+00:00:00,500 --> 00:00:05,000
+In a lush, shadowed jungle, giant ferns and broad, red-tipped leaves frame a misty valley. A wide waterfall cascades down a rocky cliff into a calm, glowing green river.
+
+2
+00:00:05,000 --> 00:00:08,000
+Thick sunbeams pierce the dense canopy, illuminating the heavy mist. High above, a brilliant point of light drops from the sky.
+
+3
+00:00:08,000 --> 00:00:12,245
+The colony ship descends on a bright trail, crossing the sunbeams and sinking into the deep vegetation near the falls.

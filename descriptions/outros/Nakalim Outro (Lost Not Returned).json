@@ -1,0 +1,120 @@
+{
+  "meta": {
+    "video": "Nakalim Outro.mp4",
+    "variant": "Lost Not Returned",
+    "source_variant": "Lost Returned",
+    "duration": 30.0,
+    "wpm": 600.0,
+    "refit_verdict": "clean",
+    "refit_summary": "3 of 3 on time, worst drift 0.2s"
+  },
+  "gaps": [
+    {
+      "id": "G1",
+      "index": 1,
+      "speech_start": 0.0,
+      "speech_end": 0.903,
+      "usable": 0.9,
+      "max_words": 8,
+      "splittable": false,
+      "prev_text": "",
+      "next_text": "I look to a future full of hope and glory"
+    },
+    {
+      "id": "G2",
+      "index": 2,
+      "speech_start": 13.892,
+      "speech_end": 14.71,
+      "usable": 0.82,
+      "max_words": 7,
+      "splittable": false,
+      "prev_text": "but the shrewd plans of a seasoned ruler.",
+      "next_text": "Though we mourn the Lost, and their holy messenger, Isyander,"
+    },
+    {
+      "id": "G3",
+      "index": 3,
+      "speech_start": 25.664,
+      "speech_end": 30.0,
+      "usable": 4.34,
+      "max_words": 39,
+      "splittable": false,
+      "prev_text": "it would seem that their power has not completely vanished...",
+      "next_text": ""
+    }
+  ],
+  "cues": [
+    {
+      "id": "G1",
+      "gap": "G1",
+      "start": 0.0,
+      "end": 0.903,
+      "max_words": 8,
+      "word_count": 7,
+      "text": "A horned silhouette raises a glowing staff.",
+      "source_start": 0.0,
+      "drift": 0.0
+    },
+    {
+      "id": "G2",
+      "gap": "G2",
+      "start": 13.949,
+      "end": 14.71,
+      "max_words": 7,
+      "word_count": 7,
+      "text": "Massive glowing lines form in the mist.",
+      "source_start": 14.122,
+      "drift": 0.173
+    },
+    {
+      "id": "G3",
+      "gap": "G3",
+      "start": 26.283,
+      "end": 30.0,
+      "max_words": 34,
+      "word_count": 26,
+      "text": "The lines coalesce into a towering, spectral entity that dwarfs the figure on the stairs. The massive, glowing crest dominates the cavern, then fades into darkness.",
+      "source_start": 26.283,
+      "drift": 0.0
+    }
+  ],
+  "dropped": [],
+  "beats": [
+    {
+      "time": "0:00",
+      "note": "Black screen, fading in."
+    },
+    {
+      "time": "0:01",
+      "note": "A silhouetted, horned Nakalim figure stands at the top of a dark stone staircase, holding a staff with a glowing green tip. The background is a vast cavern filled with swirling green mist."
+    },
+    {
+      "time": "0:05",
+      "note": "The camera slowly pulls back. The green mist continues to swirl behind the figure."
+    },
+    {
+      "time": "0:10",
+      "note": "Faint glowing lines begin to emerge in the green mist behind the figure."
+    },
+    {
+      "time": "0:14",
+      "note": "The lines become more distinct, tracing the outline of a massive shape."
+    },
+    {
+      "time": "0:19",
+      "note": "The shape reveals itself as a towering, ethereal entity or crest, glowing brightly."
+    },
+    {
+      "time": "0:25",
+      "note": "The massive spectral entity is fully formed, dwarfing the figure on the stairs."
+    },
+    {
+      "time": "0:27",
+      "note": "The scene begins to fade out."
+    },
+    {
+      "time": "0:28",
+      "note": "The screen is completely black."
+    }
+  ]
+}

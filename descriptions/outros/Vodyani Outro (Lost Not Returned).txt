@@ -1,0 +1,40 @@
+Audio description review
+Video: Vodyani Outro.mp4
+Model: google/gemini-3.1-pro-preview
+Runtime: 0:38.76   Screen reader rate: 600.0 wpm
+Gaps found: 4   Cues written: 6   Gaps left silent: 0
+Cost: 0.0778 USD
+
+DESCRIPTIONS
+
+G1 at 0:00.00 to 0:05.24, 5.2 seconds.
+  speaks at 0:00.00, 17 of 48 words.
+    Glowing orange lines trace the sleek, angular profile of a massive spaceship into a dark metallic surface.
+
+G2 at 0:09.71 to 0:10.41, 0.7 seconds.
+  speaks at 0:09.71, 5 of 6 words.
+    A glowing fleet takes shape.
+
+G3 at 0:20.24 to 0:21.33, 1.1 seconds.
+  speaks at 0:20.24, 6 of 9 words.
+    Below, silhouettes raise arms in worship.
+
+G4 at 0:29.89 to 0:38.76, 8.9 seconds, split into 3 cues.
+  speaks at 0:29.89, 28 of 42 words.
+    A towering Vodyani figure glows with bright orange light against a dark metallic wall. It wears sleek armor and bears massive, angular wings made of floating geometric shards.
+  speaks at 0:34.50, 5 of 23 words.
+    The wall fades into darkness.
+  speaks at 0:37.00, 5 of 16 words.
+    The winged figure fades away.
+
+OBSERVATION LOG FROM THE MODEL
+
+0:00  Glowing orange lines begin to trace the shape of a spaceship on a dark metallic surface.
+0:05  The camera slowly pulls back, revealing more glowing lines.
+0:09  The lines form a fleet of spaceships.
+0:11  The camera pulls back further, revealing the metallic surface is a massive angled monolith. Below it, silhouettes of a crowd raise their arms.
+0:21  The scene fades to black.
+0:22  A glowing orange emblem appears on a dark wall.
+0:23  The emblem expands into a towering Vodyani figure with glowing, angular wings made of floating shards.
+0:34  The dark wall fades to black, leaving only the glowing figure.
+0:37  The winged figure fades away into darkness.

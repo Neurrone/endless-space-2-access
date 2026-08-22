@@ -1,0 +1,85 @@
+{
+  "meta": {
+    "video": "Savannah.mp4",
+    "model": "google/gemini-3.1-pro-preview",
+    "duration": 12.693,
+    "wpm": 600.0,
+    "cost": 0.037814,
+    "provider": "google-vertex",
+    "effort": "high",
+    "safety": 0.7,
+    "pad_start": 0.25,
+    "pad_end": 0.3,
+    "min_gap": 0.6,
+    "split_above": 8.0,
+    "min_cue": 1.0
+  },
+  "gaps": [
+    {
+      "id": "G1",
+      "index": 1,
+      "speech_start": 0.0,
+      "speech_end": 12.693,
+      "usable": 12.69,
+      "max_words": 88,
+      "splittable": true,
+      "prev_text": "",
+      "next_text": ""
+    }
+  ],
+  "cues": [
+    {
+      "id": "G1.1",
+      "gap": "G1",
+      "start": 0.5,
+      "end": 3.5,
+      "max_words": 21,
+      "word_count": 12,
+      "text": "On a golden savannah, tall dry grass rustles around dark, rugged boulders."
+    },
+    {
+      "id": "G1.2",
+      "gap": "G1",
+      "start": 3.5,
+      "end": 7.0,
+      "max_words": 24,
+      "word_count": 23,
+      "text": "Resting on a rock, a creature with a sleek feline body, a long thin tail, and a spiked head looks across the plains."
+    },
+    {
+      "id": "G1.3",
+      "gap": "G1",
+      "start": 7.0,
+      "end": 12.693,
+      "max_words": 39,
+      "word_count": 23,
+      "text": "High above strange trees with thick, bulbous trunks and bare branches, a bright white landing craft streaks down through the pale blue sky."
+    }
+  ],
+  "beats": [
+    {
+      "time": "0:00",
+      "note": "A dry, golden savannah landscape with swaying grass and rocky outcrops."
+    },
+    {
+      "time": "0:02",
+      "note": "A creature with a feline body, a long tail, and a spiked head rests on a boulder in the foreground."
+    },
+    {
+      "time": "0:05",
+      "note": "In the background, strange trees with thick, bulbous trunks and bare branches stand under a blue sky."
+    },
+    {
+      "time": "0:06",
+      "note": "A bright white streak, a landing craft, cuts diagonally down through the sky."
+    },
+    {
+      "time": "0:09",
+      "note": "The streak fades as the craft descends out of sight."
+    },
+    {
+      "time": "0:12",
+      "note": "Fade to black."
+    }
+  ]
+}

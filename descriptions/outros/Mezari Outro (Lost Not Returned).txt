@@ -1,0 +1,30 @@
+Audio description review
+Video: Mezari Outro.mp4
+Model: google/gemini-3.1-pro-preview
+Runtime: 0:25.12   Screen reader rate: 600.0 wpm
+Gaps found: 2   Cues written: 2   Gaps left silent: 0
+Cost: 0.0736 USD
+
+DESCRIPTIONS
+
+G1 at 0:00.00 to 0:01.94, 1.9 seconds.
+  speaks at 0:00.00, 13 of 17 words.
+    Five white swords radiate across a deep red background. A white monument rises.
+
+G2 at 0:23.18 to 0:25.12, 1.9 seconds.
+  speaks at 0:23.18, 13 of 17 words.
+    Scientists observe the bare-chested emperor, wired to machinery and glowing with energy. Darkness.
+
+OBSERVATION LOG FROM THE MODEL
+
+0:00  Five stylized white swords point outwards against a deep red background.
+0:01  The swords extend into long beams. A stylized white monument rises from the bottom.
+0:02  The camera pulls back. An emperor in a black coat stands on the monument's balcony.
+0:04  A vast crowd of red silhouettes stands below.
+0:10  The emperor clenches his fist over his heart.
+0:12  White petals drift down around him.
+0:16  The red and white image glitches and tears.
+0:18  A dark laboratory. The bare-chested emperor stands among glowing machinery, observed by scientists.
+0:20  Cables plug into his torso. He clenches his fist over his heart.
+0:22  Glowing yellow energy swirls around him.
+0:24  Fade to black.

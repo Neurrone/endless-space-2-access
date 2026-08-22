@@ -1,0 +1,25 @@
+Audio description review
+Video: Mediterranean.mp4
+Model: google/gemini-3.1-pro-preview
+Runtime: 0:12.80   Screen reader rate: 600.0 wpm
+Gaps found: 1   Cues written: 4   Gaps left silent: 0
+Cost: 0.0535 USD
+
+DESCRIPTIONS
+
+G1 at 0:00.00 to 0:12.80, 12.8 seconds, split into 4 cues.
+  speaks at 0:00.50, 8 of 10 words.
+    Red rock arches rise from a turquoise sea.
+  speaks at 0:02.00, 17 of 17 words.
+    High in the bright blue sky, the colony ship's landing craft descends on a trail of light.
+  speaks at 0:04.50, 13 of 24 words.
+    It slips behind the distant cliffs. Green bushes cling to the rocky islands.
+  speaks at 0:08.00, 12 of 33 words.
+    A flock of birds circles the arches above the gently rippling water.
+
+OBSERVATION LOG FROM THE MODEL
+
+0:00  Turquoise water, red rock formations with natural arches, green vegetation. Blue sky with fluffy white clouds.
+0:01  A bright streak of light from a landing craft descends in the sky on the right.
+0:03  The landing craft disappears behind the tall rocks.
+0:06  Birds fly near the arches in the distance. The water ripples gently.

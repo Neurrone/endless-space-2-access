@@ -1,0 +1,26 @@
+Audio description review
+Video: Toxic.mp4
+Model: google/gemini-3.1-pro-preview
+Runtime: 0:13.42   Screen reader rate: 600.0 wpm
+Gaps found: 1   Cues written: 4   Gaps left silent: 0
+Cost: 0.0358 USD
+
+DESCRIPTIONS
+
+G1 at 0:00.00 to 0:13.42, 13.4 seconds, split into 4 cues.
+  speaks at 0:01.00, 7 of 21 words.
+    Thick, yellow-green mist chokes a stagnant swamp.
+  speaks at 0:04.00, 19 of 28 words.
+    On the left, a bipedal reptile with a spiked crest stands among ferns, looking toward a massive, gnarled tree.
+  speaks at 0:08.00, 11 of 21 words.
+    Pale moss and tangled vines drape from the tree's twisting branches.
+  speaks at 0:11.00, 12 of 16 words.
+    Its sprawling roots sink into a bright layer of glowing green slime.
+
+OBSERVATION LOG FROM THE MODEL
+
+0:00  A swamp bathed in yellow-green mist. A massive tree stands in the center.
+0:01  A blue-green, bipedal reptile is visible on the left, standing among ferns.
+0:04  The camera pans slowly right across the misty swamp.
+0:08  Vines and moss hang from the giant tree's twisted branches.
+0:11  The tree's roots spread into a bright green, glowing slime covering the ground.

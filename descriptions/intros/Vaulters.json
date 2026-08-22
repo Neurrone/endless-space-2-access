@@ -1,0 +1,362 @@
+{
+  "meta": {
+    "video": "Vaulters Intro.mp4",
+    "model": "google/gemini-3.1-pro-preview",
+    "duration": 89.216,
+    "wpm": 600.0,
+    "cost": 0.153402,
+    "provider": "google-vertex",
+    "effort": "high",
+    "safety": 0.92,
+    "pad_start": 0.25,
+    "pad_end": 0.3,
+    "min_gap": 0.6,
+    "split_above": 8.0,
+    "min_cue": 1.0
+  },
+  "gaps": [
+    {
+      "id": "G1",
+      "index": 1,
+      "speech_start": 0.0,
+      "speech_end": 5.348,
+      "usable": 5.35,
+      "max_words": 49,
+      "splittable": false,
+      "prev_text": "",
+      "next_text": "Is this the end of our voyage?"
+    },
+    {
+      "id": "G2",
+      "index": 2,
+      "speech_start": 8.375,
+      "speech_end": 9.934,
+      "usable": 1.56,
+      "max_words": 14,
+      "splittable": false,
+      "prev_text": "Is this the end of our voyage?",
+      "next_text": "We had such hopes at the beginning"
+    },
+    {
+      "id": "G3",
+      "index": 3,
+      "speech_start": 12.828,
+      "speech_end": 13.841,
+      "usable": 1.01,
+      "max_words": 9,
+      "splittable": false,
+      "prev_text": "We had such hopes at the beginning",
+      "next_text": "though we left in sorrow and desperation."
+    },
+    {
+      "id": "G4",
+      "index": 4,
+      "speech_start": 17.867,
+      "speech_end": 22.747,
+      "usable": 4.88,
+      "max_words": 44,
+      "splittable": false,
+      "prev_text": "though we left in sorrow and desperation.",
+      "next_text": "But while they slept through the explosion,"
+    },
+    {
+      "id": "G5",
+      "index": 5,
+      "speech_start": 25.64,
+      "speech_end": 26.848,
+      "usable": 1.21,
+      "max_words": 11,
+      "splittable": false,
+      "prev_text": "But while they slept through the explosion,",
+      "next_text": "I have stayed awake."
+    },
+    {
+      "id": "G6",
+      "index": 6,
+      "speech_start": 35.328,
+      "speech_end": 36.536,
+      "usable": 1.21,
+      "max_words": 11,
+      "splittable": false,
+      "prev_text": "Doing what I could to keep them alive.",
+      "next_text": "To save Zolya, First of the Bloodline."
+    },
+    {
+      "id": "G7",
+      "index": 7,
+      "speech_start": 40.835,
+      "speech_end": 42.512,
+      "usable": 1.68,
+      "max_words": 15,
+      "splittable": false,
+      "prev_text": "To save Zolya, First of the Bloodline.",
+      "next_text": "But our power,"
+    },
+    {
+      "id": "G8",
+      "index": 8,
+      "speech_start": 44.156,
+      "speech_end": 44.934,
+      "usable": 0.78,
+      "max_words": 7,
+      "splittable": false,
+      "prev_text": "But our power,",
+      "next_text": "my power,"
+    },
+    {
+      "id": "G9",
+      "index": 9,
+      "speech_start": 48.555,
+      "speech_end": 51.184,
+      "usable": 2.63,
+      "max_words": 24,
+      "splittable": false,
+      "prev_text": "is fading.",
+      "next_text": "I can do nothing more"
+    },
+    {
+      "id": "G10",
+      "index": 10,
+      "speech_start": 53.375,
+      "speech_end": 54.075,
+      "usable": 0.7,
+      "max_words": 6,
+      "splittable": false,
+      "prev_text": "I can do nothing more",
+      "next_text": "for my people."
+    },
+    {
+      "id": "G11",
+      "index": 11,
+      "speech_start": 55.625,
+      "speech_end": 56.282,
+      "usable": 0.66,
+      "max_words": 6,
+      "splittable": false,
+      "prev_text": "for my people.",
+      "next_text": "The Vaulters."
+    },
+    {
+      "id": "G12",
+      "index": 12,
+      "speech_start": 58.334,
+      "speech_end": 89.216,
+      "usable": 30.88,
+      "max_words": 284,
+      "splittable": true,
+      "prev_text": "The Vaulters.",
+      "next_text": ""
+    }
+  ],
+  "cues": [
+    {
+      "id": "G1",
+      "gap": "G1",
+      "start": 0.0,
+      "end": 5.348,
+      "max_words": 49,
+      "word_count": 30,
+      "text": "In a cavernous, dimly lit hold, a blocky, rust-orange mechanical figure slumps against a pillar among scattered crates and trailing cables. A green light flickers to life across its visor."
+    },
+    {
+      "id": "G2",
+      "gap": "G2",
+      "start": 8.375,
+      "end": 9.934,
+      "max_words": 14,
+      "word_count": 7,
+      "text": "The ancient machine shifts its heavy head."
+    },
+    {
+      "id": "G3",
+      "gap": "G3",
+      "start": 12.828,
+      "end": 13.841,
+      "max_words": 9,
+      "word_count": 6,
+      "text": "A figure frozen behind frosted glass."
+    },
+    {
+      "id": "G4",
+      "gap": "G4",
+      "start": 17.867,
+      "end": 22.747,
+      "max_words": 44,
+      "word_count": 25,
+      "text": "In the center of a vast, circular chamber, the solitary robot rests beneath a ring of pale light. A nearby console projects a holographic planet."
+    },
+    {
+      "id": "G5",
+      "gap": "G5",
+      "start": 25.64,
+      "end": 26.848,
+      "max_words": 11,
+      "word_count": 6,
+      "text": "A red engine failure warning flashes."
+    },
+    {
+      "id": "G6",
+      "gap": "G6",
+      "start": 35.328,
+      "end": 36.536,
+      "max_words": 11,
+      "word_count": 7,
+      "text": "Zolya sleeps peacefully inside a frosted pod."
+    },
+    {
+      "id": "G7",
+      "gap": "G7",
+      "start": 40.835,
+      "end": 42.512,
+      "max_words": 15,
+      "word_count": 9,
+      "text": "The pale light inside her pod flickers and dims."
+    },
+    {
+      "id": "G8",
+      "gap": "G8",
+      "start": 44.156,
+      "end": 44.934,
+      "max_words": 7,
+      "word_count": 6,
+      "text": "Silent pods line the dark hall."
+    },
+    {
+      "id": "G9",
+      "gap": "G9",
+      "start": 48.555,
+      "end": 51.184,
+      "max_words": 24,
+      "word_count": 15,
+      "text": "One by one, the faint lights on the pods extinguish, plunging the corridor into darkness."
+    },
+    {
+      "id": "G10",
+      "gap": "G10",
+      "start": 53.375,
+      "end": 54.075,
+      "max_words": 6,
+      "word_count": 4,
+      "text": "The shadows swallow everything."
+    },
+    {
+      "id": "G12.1",
+      "gap": "G12",
+      "start": 58.334,
+      "end": 62.0,
+      "max_words": 33,
+      "word_count": 15,
+      "text": "In the pitch black, the green slit of the robot's visor flares back to life."
+    },
+    {
+      "id": "G12.2",
+      "gap": "G12",
+      "start": 62.0,
+      "end": 71.0,
+      "max_words": 82,
+      "word_count": 32,
+      "text": "Massive doors open at the far end of the corridor, carving a brilliant shaft of white light through the dusty air. It washes over the rows of cryo-pods, illuminating the solitary machine."
+    },
+    {
+      "id": "G12.3",
+      "gap": "G12",
+      "start": 71.0,
+      "end": 76.0,
+      "max_words": 46,
+      "word_count": 7,
+      "text": "The robot stares into the blinding glare."
+    },
+    {
+      "id": "G12.4",
+      "gap": "G12",
+      "start": 76.0,
+      "end": 81.0,
+      "max_words": 46,
+      "word_count": 24,
+      "text": "In a green-tinged nebula, a colossal, hollowed-out asteroid glows with internal golden fires. A sleek, ring-shaped vessel, the Argosy, emerges from the rocky remnants."
+    },
+    {
+      "id": "G12.5",
+      "gap": "G12",
+      "start": 81.0,
+      "end": 89.216,
+      "max_words": 75,
+      "word_count": 23,
+      "text": "The ancient colony ship glides away from the glowing husk, charting a course toward the stars before fading into the vast, cosmic dark."
+    }
+  ],
+  "beats": [
+    {
+      "time": "0:00",
+      "note": "Dark room, rusty robot slumped against a wall, green light flickers on its blocky head."
+    },
+    {
+      "time": "0:08",
+      "note": "The ancient machine shifts its heavy arm and head."
+    },
+    {
+      "time": "0:15",
+      "note": "A frosted glass panel shows a shadowy figure frozen inside."
+    },
+    {
+      "time": "0:19",
+      "note": "In the center of a vast, circular chamber, the solitary robot rests beneath a ring of pale light."
+    },
+    {
+      "time": "0:23",
+      "note": "A nearby console projects a holographic planet."
+    },
+    {
+      "time": "0:25",
+      "note": "A red engine failure warning flashes on the console."
+    },
+    {
+      "time": "0:31",
+      "note": "A long corridor lined with cryo-pods."
+    },
+    {
+      "time": "0:36",
+      "note": "Close up of a woman's peaceful face behind frosted glass."
+    },
+    {
+      "time": "0:40",
+      "note": "The pale light inside her pod flickers and dims."
+    },
+    {
+      "time": "0:44",
+      "note": "A row of silent pods in the dark hall."
+    },
+    {
+      "time": "0:48",
+      "note": "One by one, the faint lights on the pods extinguish."
+    },
+    {
+      "time": "0:53",
+      "note": "The corridor plunges into total darkness."
+    },
+    {
+      "time": "0:58",
+      "note": "In the pitch black, the green slit of the robot's visor flares back to life."
+    },
+    {
+      "time": "1:01",
+      "note": "Massive doors open at the far end of the corridor, letting in a brilliant shaft of white light."
+    },
+    {
+      "time": "1:06",
+      "note": "The light washes over the rows of cryo-pods, illuminating the solitary machine."
+    },
+    {
+      "time": "1:11",
+      "note": "The robot stares into the blinding glare."
+    },
+    {
+      "time": "1:16",
+      "note": "In a green-tinged nebula, a colossal, hollowed-out asteroid glows with internal golden fires. A sleek, ring-shaped vessel emerges."
+    },
+    {
+      "time": "1:21",
+      "note": "The ancient colony ship glides away from the glowing husk, fading into the dark."
+    }
+  ]
+}

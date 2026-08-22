@@ -1,0 +1,29 @@
+Audio description review
+Video: Vaulters Outro.mp4
+Model: google/gemini-3.1-pro-preview
+Runtime: 0:27.88   Screen reader rate: 600.0 wpm
+Gaps found: 3   Cues written: 3   Gaps left silent: 0
+Cost: 0.1163 USD
+
+DESCRIPTIONS
+
+G1 at 0:08.21 to 0:08.84, 0.6 seconds.
+  speaks at 0:08.21, 5 of 5 words.
+    Vaulters watch a ship launch.
+
+G2 at 0:11.55 to 0:12.19, 0.6 seconds.
+  speaks at 0:11.55, 4 of 5 words.
+    Everything fades to black.
+
+G3 at 0:23.12 to 0:27.88, 4.8 seconds.
+  speaks at 0:23.12, 27 of 43 words.
+    In space, a massive ring floats in orbit above Auriga. A brilliant sun flares from behind the planet's dark horizon, casting bright rays into the starry void.
+
+OBSERVATION LOG FROM THE MODEL
+
+0:00  Three Vaulters stand on a balcony, looking out over a city under a golden sky.
+0:04  A bright streak of light launches from the city toward a massive ring in the sky.
+0:08  The streak passes through the ring.
+0:12  The scene fades to black.
+0:13  In space, a giant ring floats in orbit above the planet Auriga.
+0:23  The sun flares brilliantly from behind the planet's curved horizon.

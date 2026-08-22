@@ -143,6 +143,9 @@ namespace ES2Access
 
             Log.Install(host.LogInfo, host.LogWarning, host.LogError);
             ModLocale.PluginDirectory = host.PluginDirectory;
+            // Read once per load rather than per video: the setting lives in the BepInEx config
+            // file, which a player edits with the game closed.
+            CutsceneDescriptions.Enabled = host.CutsceneDescriptions;
 
             Speech = new PrismSpeech();
             if (Environment.GetEnvironmentVariable(NoSpeechEnv) == "1")
@@ -288,6 +291,9 @@ namespace ES2Access
             // somewhere else this turn. Both feed the same notification pipeline.
             FleetArrivals.Install();
             ForeignFleetWatch.Install();
+            // What the cutscene videos show, which is the one thing in the game with no text
+            // behind it at all: the words are the mod's own, timed against the game's play clock.
+            CutsceneDescriptions.Install();
 
             _routes = new ModRoutes(host);
             _routes.Register();
@@ -717,6 +723,7 @@ namespace ES2Access
             FleetArrivals.Remove();
             ForeignFleetWatch.Remove();
             InfluenceGroundWatch.Remove();
+            CutsceneDescriptions.Remove();
 
             if (Input != null)
             {

@@ -1,0 +1,107 @@
+{
+  "meta": {
+    "video": "Vaulters Outro.mp4",
+    "model": "google/gemini-3.1-pro-preview",
+    "duration": 27.882,
+    "wpm": 600.0,
+    "cost": 0.116254,
+    "provider": "google-vertex",
+    "effort": "high",
+    "safety": 0.92,
+    "pad_start": 0.25,
+    "pad_end": 0.3,
+    "min_gap": 0.6,
+    "split_above": 8.0,
+    "min_cue": 1.0
+  },
+  "gaps": [
+    {
+      "id": "G1",
+      "index": 1,
+      "speech_start": 8.21,
+      "speech_end": 8.84,
+      "usable": 0.63,
+      "max_words": 5,
+      "splittable": false,
+      "prev_text": "I wonder if we are ready to face our future.",
+      "next_text": "The Lost proved themselves worthy"
+    },
+    {
+      "id": "G2",
+      "index": 2,
+      "speech_start": 11.554,
+      "speech_end": 12.189,
+      "usable": 0.63,
+      "max_words": 5,
+      "splittable": false,
+      "prev_text": "The Lost proved themselves worthy",
+      "next_text": "Auriga’s sacrifice was not in vain."
+    },
+    {
+      "id": "G3",
+      "index": 3,
+      "speech_start": 23.124,
+      "speech_end": 27.882,
+      "usable": 4.76,
+      "max_words": 43,
+      "splittable": false,
+      "prev_text": "even to other galaxies…",
+      "next_text": ""
+    }
+  ],
+  "cues": [
+    {
+      "id": "G1",
+      "gap": "G1",
+      "start": 8.21,
+      "end": 8.84,
+      "max_words": 5,
+      "word_count": 5,
+      "text": "Vaulters watch a ship launch."
+    },
+    {
+      "id": "G2",
+      "gap": "G2",
+      "start": 11.554,
+      "end": 12.189,
+      "max_words": 5,
+      "word_count": 4,
+      "text": "Everything fades to black."
+    },
+    {
+      "id": "G3",
+      "gap": "G3",
+      "start": 23.124,
+      "end": 27.882,
+      "max_words": 43,
+      "word_count": 27,
+      "text": "In space, a massive ring floats in orbit above Auriga. A brilliant sun flares from behind the planet's dark horizon, casting bright rays into the starry void."
+    }
+  ],
+  "beats": [
+    {
+      "time": "0:00",
+      "note": "Three Vaulters stand on a balcony, looking out over a city under a golden sky."
+    },
+    {
+      "time": "0:04",
+      "note": "A bright streak of light launches from the city toward a massive ring in the sky."
+    },
+    {
+      "time": "0:08",
+      "note": "The streak passes through the ring."
+    },
+    {
+      "time": "0:12",
+      "note": "The scene fades to black."
+    },
+    {
+      "time": "0:13",
+      "note": "In space, a giant ring floats in orbit above the planet Auriga."
+    },
+    {
+      "time": "0:23",
+      "note": "The sun flares brilliantly from behind the planet's curved horizon."
+    }
+  ]
+}

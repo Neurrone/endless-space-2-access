@@ -1,0 +1,11 @@
+1
+00:00:01,000 --> 00:00:04,000
+Thick ash sweeps through the dark air, falling like snow over a shadowed wasteland.
+
+2
+00:00:04,000 --> 00:00:07,000
+Jagged peaks of black rock pierce the gloom, silhouetted against a harsh, pale light on the horizon.
+
+3
+00:00:07,000 --> 00:00:12,736
+Lightning strikes from the heavy, churning sky.

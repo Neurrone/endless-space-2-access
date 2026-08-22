@@ -1,0 +1,17 @@
+Audio description review (re-placed from the other variant)
+Video: Lumeris Outro.mp4
+Variant: Lost Not Returned
+Written against: Lost Returned
+Runtime: 0:28.00   Screen reader rate: 600.0 wpm
+Fit: 2 of 2 on time, worst drift 0.0s
+Verdict: clean
+
+DESCRIPTIONS
+
+G1 at 0:00.00 to 0:02.32, 2.3 seconds.
+  speaks at 0:00.00, 17 of 21 words, on time.
+    A pale woman in a high-collared gown sits on a smooth orb, holding a glowing golden sphere.
+
+G2 at 0:16.91 to 0:28.00, 11.1 seconds.
+  speaks at 0:21.11, 41 of 63 words, on time.
+    The glowing golden grid beneath her stretches endlessly into space. Behind her, a vast starry nebula swirls in vibrant green. Towering shafts of light rise from the grid into the cosmos, dwarfing her against the infinite expanse. Everything fades to black.

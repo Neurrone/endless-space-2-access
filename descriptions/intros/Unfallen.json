@@ -1,0 +1,187 @@
+{
+  "meta": {
+    "video": "Unfallen Intro.mp4",
+    "model": "google/gemini-3.1-pro-preview",
+    "duration": 75.05,
+    "wpm": 600.0,
+    "cost": 0.067082,
+    "provider": "google-vertex",
+    "effort": "high",
+    "safety": 0.92,
+    "pad_start": 0.25,
+    "pad_end": 0.3,
+    "min_gap": 0.6,
+    "split_above": 8.0,
+    "min_cue": 1.0
+  },
+  "gaps": [
+    {
+      "id": "G1",
+      "index": 1,
+      "speech_start": 0.0,
+      "speech_end": 1.324,
+      "usable": 1.32,
+      "max_words": 12,
+      "splittable": false,
+      "prev_text": "",
+      "next_text": "Ignorant of other worlds,"
+    },
+    {
+      "id": "G2",
+      "index": 2,
+      "speech_start": 21.267,
+      "speech_end": 22.157,
+      "usable": 0.89,
+      "max_words": 8,
+      "splittable": false,
+      "prev_text": "For we knew fire as rebirth",
+      "next_text": "renewal"
+    },
+    {
+      "id": "G3",
+      "index": 3,
+      "speech_start": 31.85,
+      "speech_end": 33.122,
+      "usable": 1.27,
+      "max_words": 11,
+      "splittable": false,
+      "prev_text": "from above as from below.",
+      "next_text": "The carnage of the flames terrified us."
+    },
+    {
+      "id": "G4",
+      "index": 4,
+      "speech_start": 43.884,
+      "speech_end": 46.337,
+      "usable": 2.45,
+      "max_words": 22,
+      "splittable": false,
+      "prev_text": "But the Heart soothed us, and we thought long about what we must do.",
+      "next_text": "For this new fire also awoke things inside us."
+    },
+    {
+      "id": "G5",
+      "index": 5,
+      "speech_start": 63.222,
+      "speech_end": 64.218,
+      "usable": 1.0,
+      "max_words": 9,
+      "splittable": false,
+      "prev_text": "Everything begins with fire,",
+      "next_text": "but we will not let everything end with fire."
+    },
+    {
+      "id": "G6",
+      "index": 6,
+      "speech_start": 69.036,
+      "speech_end": 75.05,
+      "usable": 6.01,
+      "max_words": 55,
+      "splittable": false,
+      "prev_text": "but we will not let everything end with fire.",
+      "next_text": ""
+    }
+  ],
+  "cues": [
+    {
+      "id": "G1",
+      "gap": "G1",
+      "start": 0.0,
+      "end": 1.324,
+      "max_words": 12,
+      "word_count": 9,
+      "text": "The green and blue planet Koyasil rotates in space."
+    },
+    {
+      "id": "G2",
+      "gap": "G2",
+      "start": 21.267,
+      "end": 22.157,
+      "max_words": 8,
+      "word_count": 8,
+      "text": "Two soldiers aim rifles at a fallen alien."
+    },
+    {
+      "id": "G3",
+      "gap": "G3",
+      "start": 31.85,
+      "end": 33.122,
+      "max_words": 11,
+      "word_count": 8,
+      "text": "A towering, masked tree-being looms behind the soldiers."
+    },
+    {
+      "id": "G4",
+      "gap": "G4",
+      "start": 43.884,
+      "end": 46.337,
+      "max_words": 22,
+      "word_count": 14,
+      "text": "A massive ship of interwoven roots and red sails launches from the lush planet."
+    },
+    {
+      "id": "G5",
+      "gap": "G5",
+      "start": 63.222,
+      "end": 64.218,
+      "max_words": 9,
+      "word_count": 6,
+      "text": "Three root ships ascend into space."
+    },
+    {
+      "id": "G6",
+      "gap": "G6",
+      "start": 69.036,
+      "end": 75.05,
+      "max_words": 55,
+      "word_count": 21,
+      "text": "The ships shrink to glowing points of light, joining the stars against a swirl of green nebula. Everything fades to black."
+    }
+  ],
+  "beats": [
+    {
+      "time": "0:00",
+      "note": "A green and blue planet in space."
+    },
+    {
+      "time": "0:05",
+      "note": "Sleek spaceships fly through the atmosphere, firing green beams."
+    },
+    {
+      "time": "0:17",
+      "note": "The ships fly over a lush, mountainous landscape."
+    },
+    {
+      "time": "0:21",
+      "note": "Two soldiers in red coats point rifles at a fallen, armored alien. A crashed ship burns behind them."
+    },
+    {
+      "time": "0:27",
+      "note": "A giant tree-being with a wooden mask and antlers rises from the roots behind the soldiers, holding a sword."
+    },
+    {
+      "time": "0:35",
+      "note": "Close-up of several tree-beings intertwined with roots and autumn leaves."
+    },
+    {
+      "time": "0:43",
+      "note": "A large spaceship made of pale roots and red sails takes off from the planet."
+    },
+    {
+      "time": "0:57",
+      "note": "The ship flies into space."
+    },
+    {
+      "time": "1:01",
+      "note": "Three root ships fly away from the planet."
+    },
+    {
+      "time": "1:07",
+      "note": "The ships turn into bright stars in a nebula."
+    },
+    {
+      "time": "1:12",
+      "note": "Fade to black."
+    }
+  ]
+}

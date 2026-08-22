@@ -1,0 +1,23 @@
+1
+00:00:01,000 --> 00:00:04,500
+A vast plain of tall, golden grass stretches towards jagged, leaning mountains under a bright blue sky.
+
+2
+00:00:04,500 --> 00:00:08,500
+In the foreground, a large, bizarre bird sits on an outcrop. A thin crest loops back over its head, and a massive, dark beak curves downwards.
+
+3
+00:00:08,500 --> 00:00:11,500
+Its breast is white, with green and yellow feathers. In the distance, a herd of dark animals grazes.
+
+4
+00:00:11,500 --> 00:00:14,000
+A bright streak of light tears across the clouds.
+
+5
+00:00:14,000 --> 00:00:17,500
+The colony ship's landing craft descends towards the distant mountains, trailing a long tail of white fire.
+
+6
+00:00:17,500 --> 00:00:20,533
+Everything fades to black.

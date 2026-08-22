@@ -1,0 +1,183 @@
+{
+  "meta": {
+    "video": "Metaplot (Lost Returned).mp4",
+    "model": "google/gemini-3.1-pro-preview",
+    "duration": 31.2,
+    "wpm": 600.0,
+    "cost": 0.063628,
+    "provider": "google-vertex",
+    "effort": "high",
+    "safety": 0.92,
+    "pad_start": 0.25,
+    "pad_end": 0.3,
+    "min_gap": 0.6,
+    "split_above": 8.0,
+    "min_cue": 1.0
+  },
+  "gaps": [
+    {
+      "id": "G1",
+      "index": 1,
+      "speech_start": 0.0,
+      "speech_end": 2.625,
+      "usable": 2.62,
+      "max_words": 24,
+      "splittable": false,
+      "prev_text": "",
+      "next_text": "A great day dawns"
+    },
+    {
+      "id": "G2",
+      "index": 2,
+      "speech_start": 6.15,
+      "speech_end": 6.827,
+      "usable": 0.68,
+      "max_words": 6,
+      "splittable": false,
+      "prev_text": "A great day dawns",
+      "next_text": "A new end,"
+    },
+    {
+      "id": "G3",
+      "index": 3,
+      "speech_start": 12.739,
+      "speech_end": 15.266,
+      "usable": 2.53,
+      "max_words": 23,
+      "splittable": false,
+      "prev_text": "and a new beginning.",
+      "next_text": "I have atoned"
+    },
+    {
+      "id": "G4",
+      "index": 4,
+      "speech_start": 21.378,
+      "speech_end": 22.464,
+      "usable": 1.09,
+      "max_words": 9,
+      "splittable": false,
+      "prev_text": "And they have returned.",
+      "next_text": "This is victory."
+    },
+    {
+      "id": "G5",
+      "index": 5,
+      "speech_start": 24.736,
+      "speech_end": 26.117,
+      "usable": 1.38,
+      "max_words": 12,
+      "splittable": false,
+      "prev_text": "This is victory.",
+      "next_text": "This is justice."
+    },
+    {
+      "id": "G6",
+      "index": 6,
+      "speech_start": 29.67,
+      "speech_end": 31.2,
+      "usable": 1.53,
+      "max_words": 14,
+      "splittable": false,
+      "prev_text": "This is justice.",
+      "next_text": ""
+    }
+  ],
+  "cues": [
+    {
+      "id": "G1",
+      "gap": "G1",
+      "start": 0.0,
+      "end": 2.625,
+      "max_words": 24,
+      "word_count": 13,
+      "text": "The massive, eight-spoked Academy ship orbits a shattered blue planet, surrounded by debris."
+    },
+    {
+      "id": "G2",
+      "gap": "G2",
+      "start": 6.15,
+      "end": 6.827,
+      "max_words": 6,
+      "word_count": 5,
+      "text": "Golden energy crackles around it."
+    },
+    {
+      "id": "G3",
+      "gap": "G3",
+      "start": 12.739,
+      "end": 15.266,
+      "max_words": 23,
+      "word_count": 19,
+      "text": "Inside, a golden beam strikes a platform. The armored Isyander spreads his arms, his face a glowing red crystal."
+    },
+    {
+      "id": "G4",
+      "gap": "G4",
+      "start": 21.378,
+      "end": 22.464,
+      "max_words": 9,
+      "word_count": 8,
+      "text": "The golden beam shoots into the starry sky."
+    },
+    {
+      "id": "G5",
+      "gap": "G5",
+      "start": 24.736,
+      "end": 26.117,
+      "max_words": 12,
+      "word_count": 6,
+      "text": "Everything fades to a black starfield."
+    },
+    {
+      "id": "G6",
+      "gap": "G6",
+      "start": 29.67,
+      "end": 31.2,
+      "max_words": 14,
+      "word_count": 9,
+      "text": "Four brilliant, star-like lights ignite within a colorful nebula."
+    }
+  ],
+  "beats": [
+    {
+      "time": "0:00",
+      "note": "The massive Academy ship, featuring eight large spokes, orbits above a blue planet surrounded by a debris ring."
+    },
+    {
+      "time": "0:03",
+      "note": "Golden light begins to gather and swirl around the ship."
+    },
+    {
+      "time": "0:05",
+      "note": "Golden energy and lightning crackle across the ship's metallic structure."
+    },
+    {
+      "time": "0:08",
+      "note": "The central pyramid of the Academy glows intensely."
+    },
+    {
+      "time": "0:10",
+      "note": "A massive golden beam fires straight upward from the peak of the pyramid."
+    },
+    {
+      "time": "0:13",
+      "note": "Inside the Academy, the golden beam shines down onto a circular platform."
+    },
+    {
+      "time": "0:14",
+      "note": "Isyander, wearing gold and grey armor, stands in the beam. He spreads his arms. His head is a cracked, glowing red crystalline structure."
+    },
+    {
+      "time": "0:20",
+      "note": "Outside, the golden beam continues to shoot up from the Academy into the starry void."
+    },
+    {
+      "time": "0:24",
+      "note": "The view tilts up into deep space, fading to a dark starfield."
+    },
+    {
+      "time": "0:28",
+      "note": "A green and pink nebula appears in the darkness. Four bright, star-like lights shine brilliantly within it."
+    }
+  ]
+}

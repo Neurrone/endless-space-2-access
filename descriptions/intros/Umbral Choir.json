@@ -1,0 +1,281 @@
+{
+  "meta": {
+    "video": "Umbral Choir Intro.mp4",
+    "model": "google/gemini-3.1-pro-preview",
+    "duration": 120.0,
+    "wpm": 600.0,
+    "cost": 0.149466,
+    "provider": "google-vertex",
+    "effort": "high",
+    "safety": 0.92,
+    "pad_start": 0.25,
+    "pad_end": 0.3,
+    "min_gap": 0.6,
+    "split_above": 8.0,
+    "min_cue": 1.0
+  },
+  "gaps": [
+    {
+      "id": "G1",
+      "index": 1,
+      "speech_start": 0.0,
+      "speech_end": 6.43,
+      "usable": 6.43,
+      "max_words": 59,
+      "splittable": false,
+      "prev_text": "",
+      "next_text": "For as long as we could remember, the cosmos was quiet . . . peaceful . . ."
+    },
+    {
+      "id": "G2",
+      "index": 2,
+      "speech_start": 21.871,
+      "speech_end": 22.942,
+      "usable": 1.07,
+      "max_words": 9,
+      "splittable": false,
+      "prev_text": "Until, one shattering day, we heard the death cry of a galaxy.",
+      "next_text": "It was then we understood our purpose: to heal and bring peace. . ."
+    },
+    {
+      "id": "G3",
+      "index": 3,
+      "speech_start": 30.562,
+      "speech_end": 31.953,
+      "usable": 1.39,
+      "max_words": 12,
+      "splittable": false,
+      "prev_text": "It was then we understood our purpose: to heal and bring peace. . .",
+      "next_text": "To whatever life had risen from the aftermath . . ."
+    },
+    {
+      "id": "G4",
+      "index": 4,
+      "speech_start": 37.671,
+      "speech_end": 49.166,
+      "usable": 11.5,
+      "max_words": 105,
+      "splittable": true,
+      "prev_text": "To whatever life had risen from the aftermath . . .",
+      "next_text": ". . . What the . . .? What is that?"
+    },
+    {
+      "id": "G5",
+      "index": 5,
+      "speech_start": 74.218,
+      "speech_end": 76.252,
+      "usable": 2.03,
+      "max_words": 18,
+      "splittable": false,
+      "prev_text": "Command, there’s definitely something out there. It looks … alive. It’s getting closer.",
+      "next_text": "It… It’s... It’s coming in!"
+    },
+    {
+      "id": "G6",
+      "index": 6,
+      "speech_start": 84.093,
+      "speech_end": 91.836,
+      "usable": 7.74,
+      "max_words": 71,
+      "splittable": false,
+      "prev_text": "Say again, Pioneer Nine. Pioneer Nine, say again.",
+      "next_text": "Radio check, Pioneer Nine? Status? Pioneer Nine?! Pioneer Nine!"
+    },
+    {
+      "id": "G7",
+      "index": 7,
+      "speech_start": 97.64,
+      "speech_end": 98.745,
+      "usable": 1.11,
+      "max_words": 10,
+      "splittable": false,
+      "prev_text": "Radio check, Pioneer Nine? Status? Pioneer Nine?! Pioneer Nine!",
+      "next_text": "Command, this is Pioneer Nine. Disregard last update. Over."
+    },
+    {
+      "id": "G8",
+      "index": 8,
+      "speech_start": 116.937,
+      "speech_end": 120.0,
+      "usable": 3.06,
+      "max_words": 28,
+      "splittable": false,
+      "prev_text": "Command, this is Pioneer Nine. Everything is in order. Out.",
+      "next_text": ""
+    }
+  ],
+  "cues": [
+    {
+      "id": "G1",
+      "gap": "G1",
+      "start": 0.0,
+      "end": 6.43,
+      "max_words": 59,
+      "word_count": 18,
+      "text": "In the deep, silent expanse of space, a vast starfield twinkles against swirling dark blue and emerald nebulae."
+    },
+    {
+      "id": "G2",
+      "gap": "G2",
+      "start": 21.871,
+      "end": 22.942,
+      "max_words": 9,
+      "word_count": 7,
+      "text": "A distant galaxy bursts into bright light."
+    },
+    {
+      "id": "G3",
+      "gap": "G3",
+      "start": 30.562,
+      "end": 31.953,
+      "max_words": 12,
+      "word_count": 8,
+      "text": "Rushing into a bright pink and purple nebula."
+    },
+    {
+      "id": "G4.1",
+      "gap": "G4",
+      "start": 37.671,
+      "end": 41.0,
+      "max_words": 30,
+      "word_count": 8,
+      "text": "A sleek, dark spacecraft drifts through the gloom."
+    },
+    {
+      "id": "G4.2",
+      "gap": "G4",
+      "start": 41.0,
+      "end": 45.5,
+      "max_words": 41,
+      "word_count": 20,
+      "text": "Inside the cockpit, a robotic sensor hangs in front of an octagonal window. Red holographic data flickers on the glass."
+    },
+    {
+      "id": "G4.3",
+      "gap": "G4",
+      "start": 45.5,
+      "end": 49.166,
+      "max_words": 33,
+      "word_count": 17,
+      "text": "A pilot in an armored spacesuit sits at the controls, her face visible through a clear visor."
+    },
+    {
+      "id": "G5",
+      "gap": "G5",
+      "start": 74.218,
+      "end": 76.252,
+      "max_words": 18,
+      "word_count": 12,
+      "text": "The shadowy cloud, bearing two glowing red eyes, rushes toward the ship."
+    },
+    {
+      "id": "G6",
+      "gap": "G6",
+      "start": 84.093,
+      "end": 91.836,
+      "max_words": 71,
+      "word_count": 24,
+      "text": "Purple smoke swallows the pilot, plunging everything into darkness. Moments later, her face emerges from the shadows, her right eye glowing a piercing purple."
+    },
+    {
+      "id": "G7",
+      "gap": "G7",
+      "start": 97.64,
+      "end": 98.745,
+      "max_words": 10,
+      "word_count": 7,
+      "text": "She sits calmly. A dark fleet gathers."
+    },
+    {
+      "id": "G8",
+      "gap": "G8",
+      "start": 116.937,
+      "end": 120.0,
+      "max_words": 28,
+      "word_count": 16,
+      "text": "A purple electronic pattern crawls across her cheek. She smiles faintly before everything fades to black."
+    }
+  ],
+  "beats": [
+    {
+      "time": "0:00",
+      "note": "A vast starfield twinkles against dark blue and green nebulae in deep space."
+    },
+    {
+      "time": "0:20",
+      "note": "A distant galaxy bursts into bright light and scatters particles."
+    },
+    {
+      "time": "0:24",
+      "note": "Rushing rapidly past stars and glowing clouds."
+    },
+    {
+      "time": "0:30",
+      "note": "The colors shift to bright pinks and purples while rushing forward into a nebula."
+    },
+    {
+      "time": "0:33",
+      "note": "A sleek, dark spacecraft with swept-back wings drifts through dark space."
+    },
+    {
+      "time": "0:40",
+      "note": "Inside the cockpit, a robotic sensor hangs from the ceiling in front of an octagonal window. Red holographic data flickers."
+    },
+    {
+      "time": "0:48",
+      "note": "A pilot in a bulky, armored spacesuit sits at the controls. Her face is visible through a clear visor."
+    },
+    {
+      "time": "0:53",
+      "note": "Over-the-shoulder view of the pilot looking out at a dark cloud."
+    },
+    {
+      "time": "0:57",
+      "note": "Close-up of the pilot's face with a red radar hologram reflecting on her visor."
+    },
+    {
+      "time": "1:03",
+      "note": "Outside view of the dark spacecraft."
+    },
+    {
+      "time": "1:08",
+      "note": "A dark, purplish cloud with two glowing red eyes appears outside the window."
+    },
+    {
+      "time": "1:14",
+      "note": "The shadowy cloud rushes rapidly toward the ship."
+    },
+    {
+      "time": "1:18",
+      "note": "Purple smoke seeps into the cockpit, engulfing the pilot."
+    },
+    {
+      "time": "1:28",
+      "note": "Complete darkness."
+    },
+    {
+      "time": "1:30",
+      "note": "The pilot's face emerges from the darkness, her right eye glowing bright purple."
+    },
+    {
+      "time": "1:32",
+      "note": "The ship drifts in space."
+    },
+    {
+      "time": "1:37",
+      "note": "The pilot sits calmly at the controls, bathed in red light."
+    },
+    {
+      "time": "1:44",
+      "note": "A fleet of dark spacecraft flies in formation."
+    },
+    {
+      "time": "1:51",
+      "note": "Close-up of the pilot's face. Her eye glows purple, and a purple electronic pattern crawls across her cheek. She smiles faintly."
+    },
+    {
+      "time": "1:57",
+      "note": "Everything fades to black."
+    }
+  ]
+}

@@ -1,0 +1,147 @@
+{
+  "meta": {
+    "video": "Unfallen Outro.mp4",
+    "model": "google/gemini-3.1-pro-preview",
+    "duration": 30.0,
+    "wpm": 600.0,
+    "cost": 0.039798,
+    "provider": "google-vertex",
+    "effort": "high",
+    "safety": 0.92,
+    "pad_start": 0.25,
+    "pad_end": 0.3,
+    "min_gap": 0.6,
+    "split_above": 8.0,
+    "min_cue": 1.0
+  },
+  "gaps": [
+    {
+      "id": "G1",
+      "index": 1,
+      "speech_start": 0.0,
+      "speech_end": 0.981,
+      "usable": 0.98,
+      "max_words": 9,
+      "splittable": false,
+      "prev_text": "",
+      "next_text": "The Heart beats with renewed strength"
+    },
+    {
+      "id": "G2",
+      "index": 2,
+      "speech_start": 5.02,
+      "speech_end": 6.301,
+      "usable": 1.28,
+      "max_words": 11,
+      "splittable": false,
+      "prev_text": "The Heart beats with renewed strength",
+      "next_text": "we reach out with renewed vigor"
+    },
+    {
+      "id": "G3",
+      "index": 3,
+      "speech_start": 10.336,
+      "speech_end": 11.6,
+      "usable": 1.26,
+      "max_words": 11,
+      "splittable": false,
+      "prev_text": "we reach out with renewed vigor",
+      "next_text": "The Lost have returned,"
+    },
+    {
+      "id": "G4",
+      "index": 4,
+      "speech_start": 16.779,
+      "speech_end": 17.567,
+      "usable": 0.79,
+      "max_words": 7,
+      "splittable": false,
+      "prev_text": "and justice has been done.",
+      "next_text": "The Unfallen prosper, and grow,"
+    },
+    {
+      "id": "G5",
+      "index": 5,
+      "speech_start": 27.553,
+      "speech_end": 30.0,
+      "usable": 2.45,
+      "max_words": 22,
+      "splittable": false,
+      "prev_text": "and will bring our harmony to all the peoples of the galaxy.",
+      "next_text": ""
+    }
+  ],
+  "cues": [
+    {
+      "id": "G1",
+      "gap": "G1",
+      "start": 0.0,
+      "end": 0.981,
+      "max_words": 9,
+      "word_count": 9,
+      "text": "A golden beam shoots from a clouded green planet."
+    },
+    {
+      "id": "G2",
+      "gap": "G2",
+      "start": 5.02,
+      "end": 6.301,
+      "max_words": 11,
+      "word_count": 8,
+      "text": "Golden veins spread across the planet's dark side."
+    },
+    {
+      "id": "G3",
+      "gap": "G3",
+      "start": 10.336,
+      "end": 11.6,
+      "max_words": 11,
+      "word_count": 6,
+      "text": "Far away, a vibrant spiral galaxy."
+    },
+    {
+      "id": "G4",
+      "gap": "G4",
+      "start": 16.779,
+      "end": 17.567,
+      "max_words": 7,
+      "word_count": 5,
+      "text": "Golden lines bridge the stars."
+    },
+    {
+      "id": "G5",
+      "gap": "G5",
+      "start": 27.553,
+      "end": 30.0,
+      "max_words": 22,
+      "word_count": 12,
+      "text": "The golden web forms a colossal root system, embracing the entire galaxy."
+    }
+  ],
+  "beats": [
+    {
+      "time": "0:00",
+      "note": "A clouded green and blue planet in space. A bright golden beam of light shoots from its surface out into the cosmos."
+    },
+    {
+      "time": "0:04",
+      "note": "The view pulls back. Golden lines of energy spread outward from the beam's origin, wrapping around the dark side of the planet like glowing veins."
+    },
+    {
+      "time": "0:11",
+      "note": "The view cuts to a distant, vibrant spiral galaxy swirling in space."
+    },
+    {
+      "time": "0:14",
+      "note": "Golden lines begin to appear, connecting the stars within the galaxy like a massive constellation."
+    },
+    {
+      "time": "0:21",
+      "note": "The network of lines continues to grow and branch out."
+    },
+    {
+      "time": "0:27",
+      "note": "The golden lines form a colossal, glowing root system that spans and embraces the entire galaxy."
+    }
+  ]
+}

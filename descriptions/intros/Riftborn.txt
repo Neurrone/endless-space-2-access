@@ -1,0 +1,49 @@
+Audio description review
+Video: Riftborn Intro.mp4
+Model: google/gemini-3.1-pro-preview
+Runtime: 1:00.33   Screen reader rate: 600.0 wpm
+Gaps found: 6   Cues written: 6   Gaps left silent: 0
+Cost: 0.0511 USD
+
+DESCRIPTIONS
+
+G1 at 0:00.00 to 0:03.27, 3.3 seconds.
+  speaks at 0:00.00, 9 of 30 words.
+    Angular white rocks drift through a bright, misty void.
+
+G2 at 0:13.45 to 0:14.10, 0.7 seconds.
+  speaks at 0:13.45, 5 of 5 words.
+    A dark crack splinters open.
+
+G3 at 0:23.25 to 0:24.50, 1.2 seconds.
+  speaks at 0:23.25, 8 of 11 words.
+    A dark mass pulses, its tendrils spreading outward.
+
+G4 at 0:30.45 to 0:32.40, 1.9 seconds.
+  speaks at 0:30.45, 8 of 17 words.
+    White rocks tumble toward the pulsing black core.
+
+G5 at 0:40.53 to 0:47.40, 6.9 seconds.
+  speaks at 0:40.53, 30 of 63 words.
+    A sleek, metallic spacecraft bursts from a swirling portal of white light into the dark void of space. Its hull is formed of segmented, floating geometric shapes, accented in red.
+
+G6 at 0:56.84 to 1:00.33, 3.5 seconds.
+  speaks at 0:56.84, 19 of 32 words.
+    The segmented ship glides over the horizon of a ringed planet, heading toward the blazing light of a sun.
+
+OBSERVATION LOG FROM THE MODEL
+
+0:00  A bright, misty white void filled with floating, angular white rocks.
+0:03  A large white dodecahedron drifts among the smaller rocks.
+0:13  A jagged black crack suddenly appears in the white void.
+0:14  The black rift expands like twisting roots or veins.
+0:18  Black tendrils shoot out and wrap around the white dodecahedron, corrupting it into a dark mass.
+0:23  The corrupted black mass pulses, its tendrils spreading outward.
+0:24  The black mass grows larger, a bright light shining from its center.
+0:28  The screen cuts to black.
+0:30  Looking up at the black mass, white rocks fall towards it.
+0:32  The black mass consumes the white rocks, cracking them. White energy streams out of the center.
+0:40  A sleek, metallic spaceship with red accents bursts out of a glowing portal into dark space. The ship is composed of floating segments.
+0:47  The ship flies through the starry darkness.
+0:51  The ship flies towards a bright star and a planet.
+0:56  The ship flies past the planet, heading towards the blazing star.

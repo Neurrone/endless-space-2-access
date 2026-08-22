@@ -1,0 +1,54 @@
+Audio description review
+Video: Metaplot Victory (Lost Returned).mp4
+Model: google/gemini-3.1-pro-preview
+Runtime: 0:40.00   Screen reader rate: 600.0 wpm
+Gaps found: 7   Cues written: 7   Gaps left silent: 0
+Cost: 0.0533 USD
+
+One cue in this file was rewritten by hand after review: G7, the closing
+image. The model used thirteen of its forty three words. The gap runs 4.7
+seconds but the picture fades to black at 38.0, so the honest room is about
+twenty four words. The replacement is twenty two, written against frames at
+35.4, 36.6 and 37.5 seconds.
+
+DESCRIPTIONS
+
+G1 at 0:00.00 to 0:01.05, 1.1 seconds.
+  speaks at 0:00.00, 6 of 9 words.
+    A scarred planet glows in space.
+
+G2 at 0:04.82 to 0:05.68, 0.9 seconds.
+  speaks at 0:04.82, 7 of 7 words.
+    A crowd gazes up from a city.
+
+G3 at 0:08.59 to 0:09.57, 1.0 seconds.
+  speaks at 0:08.59, 6 of 9 words.
+    A star-shaped ship orbits the world.
+
+G4 at 0:16.42 to 0:18.68, 2.3 seconds.
+  speaks at 0:16.42, 13 of 20 words.
+    The ship's golden beam pours into a massive pyramid in the city below.
+
+G5 at 0:21.41 to 0:22.80, 1.4 seconds.
+  speaks at 0:21.41, 8 of 12 words.
+    In golden armor, Isyander stands with arms outstretched.
+
+G6 at 0:32.66 to 0:33.31, 0.7 seconds.
+  speaks at 0:32.66, 5 of 5 words.
+    The beam pierces a nebula.
+
+G7 at 0:35.29 to 0:40.00, 4.7 seconds.
+  speaks at 0:35.29, 22 of 43 words, rewritten by hand.
+    Two enormous eyes open in the nebula itself, teal cloud around burning golden pupils. They hold there, staring out of the dark.
+
+OBSERVATION LOG FROM THE MODEL
+
+0:00  A planet with glowing golden fissures floats in space.
+0:04  A golden light flares on the planet's surface.
+0:05  In a futuristic city, alien citizens look up at the sky.
+0:08  The Academy, a massive star-shaped ship, orbits the planet. A golden beam fires from its center.
+0:14  The beam strikes a huge pyramid structure in the city.
+0:19  A golden-armored figure, Isyander, stands with arms outstretched in the light.
+0:23  The beam shoots upwards from the pyramid into space.
+0:32  The beam travels into a colorful nebula.
+0:34  The nebula forms two giant, glowing yellow eyes.

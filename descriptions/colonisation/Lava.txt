@@ -1,0 +1,26 @@
+Audio description review
+Video: Lava.mp4
+Model: google/gemini-3.1-pro-preview
+Runtime: 0:12.69   Screen reader rate: 600.0 wpm
+Gaps found: 1   Cues written: 4   Gaps left silent: 0
+Cost: 0.0372 USD
+
+DESCRIPTIONS
+
+G1 at 0:00.00 to 0:12.69, 12.7 seconds, split into 4 cues.
+  speaks at 0:01.00, 12 of 17 words.
+    Dark, jagged rock formations rise from a sea of glowing orange lava.
+  speaks at 0:03.50, 18 of 24 words.
+    A wide river of molten rock pours over a sheer cliff edge, falling as a brilliant yellow curtain.
+  speaks at 0:07.00, 14 of 17 words.
+    The colony ship descends through the smoky sky as a bright streak of light.
+  speaks at 0:09.50, 13 of 22 words.
+    A pale sun burns behind a leaning, monolithic spire in the hazy distance.
+
+OBSERVATION LOG FROM THE MODEL
+
+0:00  A vast landscape of dark, jagged rock formations surrounded by glowing orange lava.
+0:02  A massive lavafall pours down a central cliff into a lower pool, bright yellow and orange.
+0:05  The sky is hazy with smoke, illuminated by a pale sun behind a tall, monolithic, leaning rock structure in the distance.
+0:06  A bright streak of light, the colony ship, descends diagonally through the hazy sky towards the surface.
+0:11  Fade to black.

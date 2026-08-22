@@ -1,0 +1,15 @@
+1
+00:00:01,000 --> 00:00:03,500
+Dark, jagged rock formations rise from a sea of glowing orange lava.
+
+2
+00:00:03,500 --> 00:00:07,000
+A wide river of molten rock pours over a sheer cliff edge, falling as a brilliant yellow curtain.
+
+3
+00:00:07,000 --> 00:00:09,500
+The colony ship descends through the smoky sky as a bright streak of light.
+
+4
+00:00:09,500 --> 00:00:12,693
+A pale sun burns behind a leaning, monolithic spire in the hazy distance.

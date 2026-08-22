@@ -1,0 +1,121 @@
+{
+  "meta": {
+    "video": "Sophons Outro.mp4",
+    "model": "google/gemini-3.1-pro-preview",
+    "duration": 27.8,
+    "wpm": 600.0,
+    "cost": 0.113742,
+    "provider": "google-vertex",
+    "effort": "high",
+    "safety": 0.92,
+    "pad_start": 0.25,
+    "pad_end": 0.3,
+    "min_gap": 0.6,
+    "split_above": 8.0,
+    "min_cue": 1.0
+  },
+  "gaps": [
+    {
+      "id": "G1",
+      "index": 1,
+      "speech_start": 0.0,
+      "speech_end": 11.243,
+      "usable": 11.24,
+      "max_words": 103,
+      "splittable": true,
+      "prev_text": "",
+      "next_text": "There are no pesky gods to interfere or annoy us now."
+    },
+    {
+      "id": "G2",
+      "index": 2,
+      "speech_start": 24.529,
+      "speech_end": 27.8,
+      "usable": 3.27,
+      "max_words": 30,
+      "splittable": false,
+      "prev_text": "it'd be neat to figure out what went wrong with ENFER...",
+      "next_text": ""
+    }
+  ],
+  "cues": [
+    {
+      "id": "G1.1",
+      "gap": "G1",
+      "start": 0.0,
+      "end": 4.5,
+      "max_words": 41,
+      "word_count": 17,
+      "text": "Fireworks burst in a starry night sky above a sleek, futuristic city bathed in glowing cyan light."
+    },
+    {
+      "id": "G1.2",
+      "gap": "G1",
+      "start": 4.5,
+      "end": 10.0,
+      "max_words": 50,
+      "word_count": 11,
+      "text": "Hovering vehicles weave between smooth, curved skyscrapers and giant holographic billboards."
+    },
+    {
+      "id": "G1.3",
+      "gap": "G1",
+      "start": 10.0,
+      "end": 11.243,
+      "max_words": 11,
+      "word_count": 11,
+      "text": "Inside, a small, grey-skinned Sophon sits at a glowing green console."
+    },
+    {
+      "id": "G2",
+      "gap": "G2",
+      "start": 24.529,
+      "end": 27.8,
+      "max_words": 30,
+      "word_count": 24,
+      "text": "The Sophon raises a finger. The console's red warning and a massive spinning coil behind them instantly power down, plunging the room into darkness."
+    }
+  ],
+  "beats": [
+    {
+      "time": "0:00",
+      "note": "Fireworks burst over a sleek, futuristic city bathed in glowing cyan light."
+    },
+    {
+      "time": "0:04",
+      "note": "Hovering vehicles fly past smooth, curved skyscrapers and giant holographic billboards."
+    },
+    {
+      "time": "0:08",
+      "note": "The city structures give way to a large building below."
+    },
+    {
+      "time": "0:10",
+      "note": "Inside a dark room, a small, grey-skinned Sophon sits at a glowing green console."
+    },
+    {
+      "time": "0:13",
+      "note": "A massive, dark metallic coil looms behind the Sophon."
+    },
+    {
+      "time": "0:15",
+      "note": "A red warning reading 'ENFER' flashes on the console."
+    },
+    {
+      "time": "0:17",
+      "note": "The massive coil begins to spin and glow with bright cyan light."
+    },
+    {
+      "time": "0:20",
+      "note": "The light from the coil intensifies, illuminating the room."
+    },
+    {
+      "time": "0:24",
+      "note": "The Sophon raises a finger."
+    },
+    {
+      "time": "0:25",
+      "note": "The console and the spinning coil instantly power down, leaving the room in pitch darkness."
+    }
+  ]
+}
