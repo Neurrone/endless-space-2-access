@@ -1,0 +1,46 @@
+Audio description review
+Video: Unfallen Intro.mp4
+Model: google/gemini-3.1-pro-preview
+Runtime: 1:15.05   Screen reader rate: 600.0 wpm
+Gaps found: 6   Cues written: 6   Gaps left silent: 0
+Cost: 0.0671 USD
+
+DESCRIPTIONS
+
+G1 at 0:00.00 to 0:01.32, 1.3 seconds.
+  speaks at 0:00.00, 9 of 12 words.
+    The green and blue planet Koyasil rotates in space.
+
+G2 at 0:21.27 to 0:22.16, 0.9 seconds.
+  speaks at 0:21.27, 8 of 8 words.
+    Two soldiers aim rifles at a fallen alien.
+
+G3 at 0:31.85 to 0:33.12, 1.3 seconds.
+  speaks at 0:31.85, 8 of 11 words.
+    A towering, masked tree-being looms behind the soldiers.
+
+G4 at 0:43.88 to 0:46.34, 2.5 seconds.
+  speaks at 0:43.88, 14 of 22 words.
+    A massive ship of interwoven roots and red sails launches from the lush planet.
+
+G5 at 1:03.22 to 1:04.22, 1.0 seconds.
+  speaks at 1:03.22, 6 of 9 words.
+    Three root ships ascend into space.
+
+G6 at 1:09.04 to 1:15.05, 6.0 seconds.
+  speaks at 1:09.04, 21 of 55 words.
+    The ships shrink to glowing points of light, joining the stars against a swirl of green nebula. Everything fades to black.
+
+OBSERVATION LOG FROM THE MODEL
+
+0:00  A green and blue planet in space.
+0:05  Sleek spaceships fly through the atmosphere, firing green beams.
+0:17  The ships fly over a lush, mountainous landscape.
+0:21  Two soldiers in red coats point rifles at a fallen, armored alien. A crashed ship burns behind them.
+0:27  A giant tree-being with a wooden mask and antlers rises from the roots behind the soldiers, holding a sword.
+0:35  Close-up of several tree-beings intertwined with roots and autumn leaves.
+0:43  A large spaceship made of pale roots and red sails takes off from the planet.
+0:57  The ship flies into space.
+1:01  Three root ships fly away from the planet.
+1:07  The ships turn into bright stars in a nebula.
+1:12  Fade to black.

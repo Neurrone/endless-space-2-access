@@ -1,0 +1,25 @@
+Audio description review
+Video: Arid.mp4
+Model: google/gemini-3.1-pro-preview
+Runtime: 0:12.52   Screen reader rate: 600.0 wpm
+Gaps found: 1   Cues written: 4   Gaps left silent: 0
+Cost: 0.0743 USD
+
+DESCRIPTIONS
+
+G1 at 0:00.00 to 0:12.52, 12.5 seconds, split into 4 cues.
+  speaks at 0:01.00, 22 of 24 words.
+    A bright streak of light trails through a starry twilight sky of bruised purple and fiery orange as the colony ship descends.
+  speaks at 0:04.50, 14 of 21 words.
+    It falls toward a vast, silent desert of rust-red dust and jagged, wind-swept rocks.
+  speaks at 0:07.50, 13 of 21 words.
+    In the foreground, a giant, dark insectoid creature stands atop a rocky outcropping.
+  speaks at 0:10.50, 13 of 14 words.
+    In the background, a sprawling city of pale stone rises from the plains.
+
+OBSERVATION LOG FROM THE MODEL
+
+0:00  A starry twilight sky of purple and orange over a red desert. A bright streak of light, the colony ship, descends on the right.
+0:04  The desert landscape features rust-red dust and jagged rocks.
+0:07  A giant, dark insectoid creature stands on a rocky outcropping in the foreground.
+0:10  In the background, a sprawling city of pale stone with tall spires rises from the plains.

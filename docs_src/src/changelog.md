@@ -24,6 +24,7 @@ The game should be largely playable now including space and ground combat. This 
 - The system's influence radius is indicated in its buffer and influence is read in inspect mode
 - `Ctrl+C` jumps to your capital system
 - Up to 10 bookmarks can be set by `Shift+1` through `0`. Use `Ctrl+1` through `0` to jump to a bookmark. This works with inspect mode. Jumping to bookmarks does not require focus to be on the map.
+- The game's cutscene videos are described as they play — all 69 of them (faction intros, both variants of every ending, colonization scenes and the Academy storyline's videos), spoken in the gaps between the video's own dialogue. Turn off with `cutsceneDescriptions = false` under `[Speech]` in `BepInEx\config\endless.space2.access.cfg`
 
 ## V0.1.1
 

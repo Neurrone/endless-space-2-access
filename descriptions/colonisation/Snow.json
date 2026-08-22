@@ -1,0 +1,86 @@
+{
+  "meta": {
+    "video": "Snow.mp4",
+    "model": "google/gemini-3.1-pro-preview",
+    "duration": 12.97,
+    "wpm": 600.0,
+    "cost": 0.035956,
+    "provider": "google-vertex",
+    "effort": "high",
+    "safety": 0.7,
+    "pad_start": 0.25,
+    "pad_end": 0.3,
+    "min_gap": 0.6,
+    "split_above": 8.0,
+    "min_cue": 1.0
+  },
+  "gaps": [
+    {
+      "id": "G1",
+      "index": 1,
+      "speech_start": 0.0,
+      "speech_end": 12.97,
+      "usable": 12.97,
+      "max_words": 90,
+      "splittable": true,
+      "prev_text": "",
+      "next_text": ""
+    }
+  ],
+  "cues": [
+    {
+      "id": "G1.1",
+      "gap": "G1",
+      "start": 0.5,
+      "end": 4.0,
+      "max_words": 24,
+      "word_count": 19,
+      "text": "Jagged mountains of ice and rock flank a serene, snow-covered valley. Massive pale rings arch across the distant sky."
+    },
+    {
+      "id": "G1.2",
+      "gap": "G1",
+      "start": 4.0,
+      "end": 7.0,
+      "max_words": 21,
+      "word_count": 12,
+      "text": "High between the rings, a bright white spark descends toward the horizon."
+    },
+    {
+      "id": "G1.3",
+      "gap": "G1",
+      "start": 7.0,
+      "end": 10.0,
+      "max_words": 21,
+      "word_count": 13,
+      "text": "In the foreground, two slender, long-necked creatures with sweeping backward horns graze peacefully."
+    },
+    {
+      "id": "G1.4",
+      "gap": "G1",
+      "start": 10.0,
+      "end": 12.97,
+      "max_words": 20,
+      "word_count": 11,
+      "text": "Clusters of glowing blue, bulbous plants rise from the frozen ground."
+    }
+  ],
+  "beats": [
+    {
+      "time": "0:00",
+      "note": "Wide shot of a snowy valley flanked by jagged mountains of ice and rock. Massive pale rings arch across the distant sky. In the foreground, two slender alien creatures graze, and glowing blue plants dot the snow."
+    },
+    {
+      "time": "0:03",
+      "note": "A bright white spark appears high in the sky between the distant rings, falling straight down."
+    },
+    {
+      "time": "0:05",
+      "note": "The spark disappears behind the distant mountains as it nears the ground."
+    },
+    {
+      "time": "0:07",
+      "note": "The camera continues to pan slowly right across the serene landscape. The creatures continue to graze."
+    }
+  ]
+}

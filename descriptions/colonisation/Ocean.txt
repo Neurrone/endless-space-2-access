@@ -1,0 +1,23 @@
+Audio description review
+Video: Ocean.mp4
+Model: google/gemini-3.1-pro-preview
+Runtime: 0:13.42   Screen reader rate: 600.0 wpm
+Gaps found: 1   Cues written: 3   Gaps left silent: 0
+Cost: 0.0610 USD
+
+DESCRIPTIONS
+
+G1 at 0:00.00 to 0:13.42, 13.4 seconds, split into 3 cues.
+  speaks at 0:01.00, 29 of 31 words.
+    Deep underwater, massive dark roots arch through dim blue water. On the seabed, bioluminescent flora glows in patches of vibrant pink and cool cyan, swaying gently in the current.
+  speaks at 0:05.50, 20 of 21 words.
+    A colossal dark creature glides through the gloom. It resembles a smooth, eyeless whale, trailing thin tendrils from its flanks.
+  speaks at 0:08.50, 22 of 34 words.
+    A sleek creature resembling a manta ray with a long, whip-like tail swims gracefully past the giant, navigating the tranquil, glowing depths.
+
+OBSERVATION LOG FROM THE MODEL
+
+0:00  Deep underwater landscape with massive dark roots and glowing bioluminescent flora.
+0:04  A large whale-like creature glides into view from the right.
+0:07  A ray-like creature swims past the larger one, moving towards the center.
+0:13  Fade out.

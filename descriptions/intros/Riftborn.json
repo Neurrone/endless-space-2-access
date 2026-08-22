@@ -1,0 +1,199 @@
+{
+  "meta": {
+    "video": "Riftborn Intro.mp4",
+    "model": "google/gemini-3.1-pro-preview",
+    "duration": 60.33,
+    "wpm": 600.0,
+    "cost": 0.051112,
+    "provider": "google-vertex",
+    "effort": "high",
+    "safety": 0.92,
+    "pad_start": 0.25,
+    "pad_end": 0.3,
+    "min_gap": 0.6,
+    "split_above": 8.0,
+    "min_cue": 1.0
+  },
+  "gaps": [
+    {
+      "id": "G1",
+      "index": 1,
+      "speech_start": 0.0,
+      "speech_end": 3.27,
+      "usable": 3.27,
+      "max_words": 30,
+      "splittable": false,
+      "prev_text": "",
+      "next_text": "Ours was a pristine universe."
+    },
+    {
+      "id": "G2",
+      "index": 2,
+      "speech_start": 13.451,
+      "speech_end": 14.102,
+      "usable": 0.65,
+      "max_words": 5,
+      "splittable": false,
+      "prev_text": "We knew nothing of your Endless... your Dust... until",
+      "next_text": "the rift ripped a path between our realities"
+    },
+    {
+      "id": "G3",
+      "index": 3,
+      "speech_start": 23.25,
+      "speech_end": 24.5,
+      "usable": 1.25,
+      "max_words": 11,
+      "splittable": false,
+      "prev_text": "injecting a blight that spread like poison.",
+      "next_text": "Our cosmos of order... and balance"
+    },
+    {
+      "id": "G4",
+      "index": 4,
+      "speech_start": 30.45,
+      "speech_end": 32.4,
+      "usable": 1.95,
+      "max_words": 17,
+      "splittable": false,
+      "prev_text": "was shattered forever.",
+      "next_text": "Dying, corrupted and consumed... We had no choice"
+    },
+    {
+      "id": "G5",
+      "index": 5,
+      "speech_start": 40.528,
+      "speech_end": 47.4,
+      "usable": 6.87,
+      "max_words": 63,
+      "splittable": false,
+      "prev_text": "Dying, corrupted and consumed... We had no choice",
+      "next_text": "We are outcasts in the chaos that is your universe,"
+    },
+    {
+      "id": "G6",
+      "index": 6,
+      "speech_start": 56.842,
+      "speech_end": 60.33,
+      "usable": 3.49,
+      "max_words": 32,
+      "splittable": false,
+      "prev_text": "to save our own.",
+      "next_text": ""
+    }
+  ],
+  "cues": [
+    {
+      "id": "G1",
+      "gap": "G1",
+      "start": 0.0,
+      "end": 3.27,
+      "max_words": 30,
+      "word_count": 9,
+      "text": "Angular white rocks drift through a bright, misty void."
+    },
+    {
+      "id": "G2",
+      "gap": "G2",
+      "start": 13.451,
+      "end": 14.102,
+      "max_words": 5,
+      "word_count": 5,
+      "text": "A dark crack splinters open."
+    },
+    {
+      "id": "G3",
+      "gap": "G3",
+      "start": 23.25,
+      "end": 24.5,
+      "max_words": 11,
+      "word_count": 8,
+      "text": "A dark mass pulses, its tendrils spreading outward."
+    },
+    {
+      "id": "G4",
+      "gap": "G4",
+      "start": 30.45,
+      "end": 32.4,
+      "max_words": 17,
+      "word_count": 8,
+      "text": "White rocks tumble toward the pulsing black core."
+    },
+    {
+      "id": "G5",
+      "gap": "G5",
+      "start": 40.528,
+      "end": 47.4,
+      "max_words": 63,
+      "word_count": 30,
+      "text": "A sleek, metallic spacecraft bursts from a swirling portal of white light into the dark void of space. Its hull is formed of segmented, floating geometric shapes, accented in red."
+    },
+    {
+      "id": "G6",
+      "gap": "G6",
+      "start": 56.842,
+      "end": 60.33,
+      "max_words": 32,
+      "word_count": 19,
+      "text": "The segmented ship glides over the horizon of a ringed planet, heading toward the blazing light of a sun."
+    }
+  ],
+  "beats": [
+    {
+      "time": "0:00",
+      "note": "A bright, misty white void filled with floating, angular white rocks."
+    },
+    {
+      "time": "0:03",
+      "note": "A large white dodecahedron drifts among the smaller rocks."
+    },
+    {
+      "time": "0:13",
+      "note": "A jagged black crack suddenly appears in the white void."
+    },
+    {
+      "time": "0:14",
+      "note": "The black rift expands like twisting roots or veins."
+    },
+    {
+      "time": "0:18",
+      "note": "Black tendrils shoot out and wrap around the white dodecahedron, corrupting it into a dark mass."
+    },
+    {
+      "time": "0:23",
+      "note": "The corrupted black mass pulses, its tendrils spreading outward."
+    },
+    {
+      "time": "0:24",
+      "note": "The black mass grows larger, a bright light shining from its center."
+    },
+    {
+      "time": "0:28",
+      "note": "The screen cuts to black."
+    },
+    {
+      "time": "0:30",
+      "note": "Looking up at the black mass, white rocks fall towards it."
+    },
+    {
+      "time": "0:32",
+      "note": "The black mass consumes the white rocks, cracking them. White energy streams out of the center."
+    },
+    {
+      "time": "0:40",
+      "note": "A sleek, metallic spaceship with red accents bursts out of a glowing portal into dark space. The ship is composed of floating segments."
+    },
+    {
+      "time": "0:47",
+      "note": "The ship flies through the starry darkness."
+    },
+    {
+      "time": "0:51",
+      "note": "The ship flies towards a bright star and a planet."
+    },
+    {
+      "time": "0:56",
+      "note": "The ship flies past the planet, heading towards the blazing star."
+    }
+  ]
+}

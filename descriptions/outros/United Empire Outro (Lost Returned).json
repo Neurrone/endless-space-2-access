@@ -1,0 +1,94 @@
+{
+  "meta": {
+    "video": "United Empire Outro.mp4",
+    "variant": "Lost Returned",
+    "source_variant": "Lost Not Returned",
+    "duration": 25.12,
+    "wpm": 600.0,
+    "refit_verdict": "clean",
+    "refit_summary": "2 of 2 on time, worst drift 0.2s"
+  },
+  "gaps": [
+    {
+      "id": "G1",
+      "index": 1,
+      "speech_start": 0.0,
+      "speech_end": 2.158,
+      "usable": 2.16,
+      "max_words": 19,
+      "splittable": false,
+      "prev_text": "",
+      "next_text": "Our influence is supreme."
+    },
+    {
+      "id": "G2",
+      "index": 2,
+      "speech_start": 23.361,
+      "speech_end": 25.12,
+      "usable": 1.76,
+      "max_words": 16,
+      "splittable": false,
+      "prev_text": "a God.",
+      "next_text": ""
+    }
+  ],
+  "cues": [
+    {
+      "id": "G1",
+      "gap": "G1",
+      "start": 0.0,
+      "end": 2.158,
+      "max_words": 19,
+      "word_count": 10,
+      "text": "Five white beams radiate upwards against a deep red background.",
+      "source_start": 0.0,
+      "drift": 0.0
+    },
+    {
+      "id": "G2",
+      "gap": "G2",
+      "start": 23.361,
+      "end": 25.12,
+      "max_words": 16,
+      "word_count": 12,
+      "text": "Wired to glowing pillars, the scarred, shirtless emperor clenches his fist. Darkness.",
+      "source_start": 23.179,
+      "drift": 0.182
+    }
+  ],
+  "dropped": [],
+  "beats": [
+    {
+      "time": "0:00",
+      "note": "Five white beams radiate upwards against a solid red background."
+    },
+    {
+      "time": "0:02",
+      "note": "The beams shine from behind a white, classical building. A man in black stands on a balcony above an army of red silhouettes."
+    },
+    {
+      "time": "0:06",
+      "note": "The man on the balcony, bald with a beard, wears a black coat with a fur collar."
+    },
+    {
+      "time": "0:10",
+      "note": "He raises a fist to his chest as white petals fall around him."
+    },
+    {
+      "time": "0:16",
+      "note": "The image glitches and transitions to a dark laboratory."
+    },
+    {
+      "time": "0:18",
+      "note": "The man, now shirtless, scarred, and muscular, stands between two glowing pillars. Tubes connect his torso and arms to the machinery. Scientists observe him."
+    },
+    {
+      "time": "0:22",
+      "note": "He clenches his fist."
+    },
+    {
+      "time": "0:24",
+      "note": "Fade to black."
+    }
+  ]
+}

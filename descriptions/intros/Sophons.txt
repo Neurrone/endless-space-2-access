@@ -1,0 +1,74 @@
+Audio description review
+Video: Sophons Intro.mp4
+Model: google/gemini-3.1-pro-preview
+Runtime: 1:07.01   Screen reader rate: 600.0 wpm
+Gaps found: 12   Cues written: 12   Gaps left silent: 0
+Cost: 0.1307 USD
+
+DESCRIPTIONS
+
+G1 at 0:00.00 to 0:01.42, 1.4 seconds.
+  speaks at 0:00.00, 7 of 13 words.
+    Through dark slats, a blue light glows.
+
+G2 at 0:06.46 to 0:07.31, 0.9 seconds.
+  speaks at 0:06.46, 7 of 7 words.
+    A slender, large-headed figure of blue particles.
+
+G3 at 0:10.27 to 0:10.94, 0.7 seconds.
+  speaks at 0:10.27, 6 of 6 words.
+    A tiny machine splits a sphere.
+
+G4 at 0:13.66 to 0:14.46, 0.8 seconds.
+  speaks at 0:13.66, 6 of 7 words.
+    A ship chips at an asteroid.
+
+G5 at 0:17.66 to 0:19.64, 2.0 seconds.
+  speaks at 0:17.66, 10 of 18 words.
+    Blinding light channels into a satellite. A Sophon stands proudly.
+
+G6 at 0:23.57 to 0:24.50, 0.9 seconds.
+  speaks at 0:23.57, 6 of 8 words.
+    The Sophon facepalms in the smoke.
+
+G7 at 0:27.99 to 0:28.89, 0.9 seconds.
+  speaks at 0:27.99, 6 of 8 words.
+    They touch a glowing fault line.
+
+G8 at 0:32.49 to 0:36.58, 4.1 seconds.
+  speaks at 0:32.49, 14 of 37 words.
+    A hologram moon shatters. They flinch, then stand shoulder-to-shoulder, gazing at a glowing spire.
+
+G9 at 0:40.77 to 0:41.50, 0.7 seconds.
+  speaks at 0:40.77, 5 of 6 words.
+    One gives a thumbs up.
+
+G10 at 0:44.51 to 0:52.12, 7.6 seconds.
+  speaks at 0:44.51, 25 of 70 words.
+    The room falls away. The spire is the core of a colossal station. Massive metallic ribs spiral upward around a blinding blue pillar of energy.
+
+G11 at 0:59.75 to 1:00.68, 0.9 seconds.
+  speaks at 0:59.75, 6 of 8 words.
+    They stand at the station's base.
+
+G12 at 1:02.18 to 1:07.01, 4.8 seconds.
+  speaks at 1:02.18, 13 of 44 words.
+    The colossal station turns slowly in the dark void. Everything fades to black.
+
+OBSERVATION LOG FROM THE MODEL
+
+0:00  Dark slats over a glowing blue light.
+0:03  A slender alien figure with a large head materializes from blue glowing particles.
+0:08  A tiny machine splits a dark sphere.
+0:10  A ship beams energy into an asteroid.
+0:14  A satellite captures blinding light from a star.
+0:18  A Sophon stands proudly. A rocket crashes behind it.
+0:23  The Sophon facepalms.
+0:24  Two Sophons point at a glowing fault line.
+0:28  A hologram moon explodes between them. They flinch.
+0:32  The two Sophons stand shoulder-to-shoulder, looking at a distant glowing spire.
+0:40  One gives a thumbs up.
+0:44  The view pulls back rapidly, revealing the spire is the core of a massive space station.
+0:52  Massive metallic ribs spiral around a blinding blue pillar of energy.
+0:59  The camera pans up from the tiny Sophons at the base of the station.
+1:02  The colossal station turns slowly. The screen fades to black.

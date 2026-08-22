@@ -1,0 +1,20 @@
+Audio description review
+Video: Umbral Choir Outro.mp4
+Model: google/gemini-3.1-pro-preview
+Runtime: 0:30.08   Screen reader rate: 600.0 wpm
+Gaps found: 1   Cues written: 1   Gaps left silent: 0
+Cost: 0.0329 USD
+
+DESCRIPTIONS
+
+G1 at 0:24.00 to 0:30.08, 6.1 seconds.
+  speaks at 0:24.00, 27 of 55 words.
+    The purple spiral galaxy is now a glowing golden web of interconnected nodes. Scattered red diamonds mark points across the network. The map slowly fades into darkness.
+
+OBSERVATION LOG FROM THE MODEL
+
+0:00  A glowing purple and white spiral galaxy spins slowly in the dark void of space.
+0:13  The galaxy glitches, transforming into a glowing golden network of interconnected nodes and lines.
+0:16  Red diamond markers appear at various points across the network.
+0:24  The network map slowly begins to fade to black.
+0:28  The screen is completely black.

@@ -1,0 +1,25 @@
+Audio description review
+Video: Savannah.mp4
+Model: google/gemini-3.1-pro-preview
+Runtime: 0:12.69   Screen reader rate: 600.0 wpm
+Gaps found: 1   Cues written: 3   Gaps left silent: 0
+Cost: 0.0378 USD
+
+DESCRIPTIONS
+
+G1 at 0:00.00 to 0:12.69, 12.7 seconds, split into 3 cues.
+  speaks at 0:00.50, 12 of 21 words.
+    On a golden savannah, tall dry grass rustles around dark, rugged boulders.
+  speaks at 0:03.50, 23 of 24 words.
+    Resting on a rock, a creature with a sleek feline body, a long thin tail, and a spiked head looks across the plains.
+  speaks at 0:07.00, 23 of 39 words.
+    High above strange trees with thick, bulbous trunks and bare branches, a bright white landing craft streaks down through the pale blue sky.
+
+OBSERVATION LOG FROM THE MODEL
+
+0:00  A dry, golden savannah landscape with swaying grass and rocky outcrops.
+0:02  A creature with a feline body, a long tail, and a spiked head rests on a boulder in the foreground.
+0:05  In the background, strange trees with thick, bulbous trunks and bare branches stand under a blue sky.
+0:06  A bright white streak, a landing craft, cuts diagonally down through the sky.
+0:09  The streak fades as the craft descends out of sight.
+0:12  Fade to black.

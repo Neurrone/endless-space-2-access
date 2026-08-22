@@ -16,3 +16,7 @@ obj/
 # Release zips and the rendered player docs
 releases/
 docs_src/book/
+
+# Game cutscene videos copied locally for writing audio descriptions.
+# Amplitude's assets: never committed, never redistributed.
+videos/

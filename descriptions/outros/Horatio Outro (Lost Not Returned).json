@@ -1,0 +1,67 @@
+{
+  "meta": {
+    "video": "Horatio Outro.mp4",
+    "model": "google/gemini-3.1-pro-preview",
+    "duration": 28.28,
+    "wpm": 600.0,
+    "cost": 0.047806,
+    "provider": "google-vertex",
+    "effort": "high",
+    "safety": 0.92,
+    "pad_start": 0.25,
+    "pad_end": 0.3,
+    "min_gap": 0.6,
+    "split_above": 8.0,
+    "min_cue": 1.0
+  },
+  "gaps": [
+    {
+      "id": "G1",
+      "index": 1,
+      "speech_start": 25.987,
+      "speech_end": 28.28,
+      "usable": 2.29,
+      "max_words": 21,
+      "splittable": false,
+      "prev_text": "Horatio.",
+      "next_text": ""
+    }
+  ],
+  "cues": [
+    {
+      "id": "G1",
+      "gap": "G1",
+      "start": 25.987,
+      "end": 28.28,
+      "max_words": 21,
+      "word_count": 11,
+      "text": "The massive hall of glowing cloning vats fades to blinding white."
+    }
+  ],
+  "beats": [
+    {
+      "time": "0:00",
+      "note": "Horatio, a pale man with a massively elongated bald head, walks past rows of glowing yellow cloning vats."
+    },
+    {
+      "time": "0:04",
+      "note": "Silhouettes inside the vats mutate into Horatio's shape."
+    },
+    {
+      "time": "0:10",
+      "note": "Hundreds of glowing vats line a massive dark hall."
+    },
+    {
+      "time": "0:15",
+      "note": "Horatio walks down a long red carpet toward a glowing pyramid structure."
+    },
+    {
+      "time": "0:24",
+      "note": "The cavernous chamber begins to fade to white."
+    },
+    {
+      "time": "0:26",
+      "note": "The screen is completely white."
+    }
+  ]
+}

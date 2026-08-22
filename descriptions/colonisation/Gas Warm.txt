@@ -1,0 +1,23 @@
+Audio description review
+Video: Gas Warm.mp4
+Model: google/gemini-3.1-pro-preview
+Runtime: 0:13.21   Screen reader rate: 600.0 wpm
+Gaps found: 1   Cues written: 3   Gaps left silent: 0
+Cost: 0.0437 USD
+
+DESCRIPTIONS
+
+G1 at 0:00.00 to 0:13.21, 13.2 seconds, split into 3 cues.
+  speaks at 0:01.00, 17 of 21 words.
+    A bright sun flares from behind the horizon of a massive gas giant, illuminating a hazy nebula.
+  speaks at 0:04.00, 12 of 21 words.
+    The planet's atmosphere is a swirling canvas of caramel, rust, and cream.
+  speaks at 0:07.00, 24 of 43 words.
+    A colony ship streaks across the turbulent bands, a single spark trailing a line of white light as it descends toward the brilliant glare.
+
+OBSERVATION LOG FROM THE MODEL
+
+0:00  A massive gas giant planet fills the right side of the screen, with a sun flaring from behind its left horizon.
+0:01  A colony ship appears as a bright streak of light on the right side of the planet.
+0:05  The ship continues to move left across the swirling bands of brown and orange gas.
+0:10  The ship nears the flaring sun on the horizon.

@@ -1,0 +1,131 @@
+{
+  "meta": {
+    "video": "Cravers Outro.mp4",
+    "model": "google/gemini-3.1-pro-preview",
+    "duration": 30.0,
+    "wpm": 600.0,
+    "cost": 0.067808,
+    "provider": "google-vertex",
+    "effort": "high",
+    "safety": 0.92,
+    "pad_start": 0.25,
+    "pad_end": 0.3,
+    "min_gap": 0.6,
+    "split_above": 8.0,
+    "min_cue": 1.0
+  },
+  "gaps": [
+    {
+      "id": "G1",
+      "index": 1,
+      "speech_start": 0.0,
+      "speech_end": 2.199,
+      "usable": 2.2,
+      "max_words": 20,
+      "splittable": false,
+      "prev_text": "",
+      "next_text": "The Hive survives."
+    },
+    {
+      "id": "G2",
+      "index": 2,
+      "speech_start": 8.858,
+      "speech_end": 10.35,
+      "usable": 1.49,
+      "max_words": 13,
+      "splittable": false,
+      "prev_text": "Evolving",
+      "next_text": "There are no gods or creators to slow or sidetrack us"
+    },
+    {
+      "id": "G3",
+      "index": 3,
+      "speech_start": 17.873,
+      "speech_end": 18.694,
+      "usable": 0.82,
+      "max_words": 7,
+      "splittable": false,
+      "prev_text": "There are no gods or creators to slow or sidetrack us",
+      "next_text": "We are many,"
+    },
+    {
+      "id": "G4",
+      "index": 4,
+      "speech_start": 26.207,
+      "speech_end": 30.0,
+      "usable": 3.79,
+      "max_words": 34,
+      "splittable": false,
+      "prev_text": "and all will be our prey",
+      "next_text": ""
+    }
+  ],
+  "cues": [
+    {
+      "id": "G1",
+      "gap": "G1",
+      "start": 0.0,
+      "end": 2.199,
+      "max_words": 20,
+      "word_count": 9,
+      "text": "A translucent, fleshy egg sac pulses with red veins."
+    },
+    {
+      "id": "G2",
+      "gap": "G2",
+      "start": 8.858,
+      "end": 10.35,
+      "max_words": 13,
+      "word_count": 8,
+      "text": "A metallic Craver rises, dripping viscous, fleshy slime."
+    },
+    {
+      "id": "G3",
+      "gap": "G3",
+      "start": 17.873,
+      "end": 18.694,
+      "max_words": 7,
+      "word_count": 7,
+      "text": "Glowing eggs carpet the vast cavern floor."
+    },
+    {
+      "id": "G4",
+      "gap": "G4",
+      "start": 26.207,
+      "end": 30.0,
+      "max_words": 34,
+      "word_count": 22,
+      "text": "A towering Craver reaches out with a heavy mechanical arm. Others stand among the countless glowing eggs in the massive, web-draped hive."
+    }
+  ],
+  "beats": [
+    {
+      "time": "0:00",
+      "note": "A translucent, fleshy egg sac pulses with red veins."
+    },
+    {
+      "time": "0:05",
+      "note": "The sac is revealed to be one of many."
+    },
+    {
+      "time": "0:08",
+      "note": "A metallic, insectoid Craver rises from a pool of viscous, fleshy slime."
+    },
+    {
+      "time": "0:12",
+      "note": "The Craver stands, covered in the dripping slime."
+    },
+    {
+      "time": "0:17",
+      "note": "A vast cavern floor is carpeted with glowing eggs."
+    },
+    {
+      "time": "0:20",
+      "note": "Other Cravers stand among the eggs in the massive, web-draped hive."
+    },
+    {
+      "time": "0:26",
+      "note": "A towering Craver reaches out with a heavy mechanical arm."
+    }
+  ]
+}

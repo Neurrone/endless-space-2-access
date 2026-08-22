@@ -1,0 +1,183 @@
+{
+  "meta": {
+    "video": "Lumeris Intro.mp4",
+    "model": "google/gemini-3.1-pro-preview",
+    "duration": 66.0,
+    "wpm": 600.0,
+    "cost": 0.069962,
+    "provider": "google-vertex",
+    "effort": "high",
+    "safety": 0.92,
+    "pad_start": 0.25,
+    "pad_end": 0.3,
+    "min_gap": 0.6,
+    "split_above": 8.0,
+    "min_cue": 1.0
+  },
+  "gaps": [
+    {
+      "id": "G1",
+      "index": 1,
+      "speech_start": 11.952,
+      "speech_end": 12.84,
+      "usable": 0.89,
+      "max_words": 8,
+      "splittable": false,
+      "prev_text": "You don't steal the fish from somebody else's plate.",
+      "next_text": "The second he walked in I knew the kid was different."
+    },
+    {
+      "id": "G2",
+      "index": 2,
+      "speech_start": 27.39,
+      "speech_end": 28.386,
+      "usable": 1.0,
+      "max_words": 9,
+      "splittable": false,
+      "prev_text": "But he ignores the codes.",
+      "next_text": "Goes overboard."
+    },
+    {
+      "id": "G3",
+      "index": 3,
+      "speech_start": 40.123,
+      "speech_end": 42.379,
+      "usable": 2.26,
+      "max_words": 20,
+      "splittable": false,
+      "prev_text": "So we collect it, invest it. And he misuses Dust.",
+      "next_text": "Complaints get handled here, not in back alleys. Applies, shall we say, Unnecessary force."
+    },
+    {
+      "id": "G4",
+      "index": 4,
+      "speech_start": 50.473,
+      "speech_end": 51.959,
+      "usable": 1.49,
+      "max_words": 13,
+      "splittable": false,
+      "prev_text": "Complaints get handled here, not in back alleys. Applies, shall we say, Unnecessary force.",
+      "next_text": "Maybe he knows Dust"
+    },
+    {
+      "id": "G5",
+      "index": 5,
+      "speech_start": 62.326,
+      "speech_end": 66.0,
+      "usable": 3.67,
+      "max_words": 33,
+      "splittable": false,
+      "prev_text": "And I need both of those to take the galaxy.",
+      "next_text": ""
+    }
+  ],
+  "cues": [
+    {
+      "id": "G1",
+      "gap": "G1",
+      "start": 11.952,
+      "end": 12.84,
+      "max_words": 8,
+      "word_count": 8,
+      "text": "A woman sits backlit by a blue window."
+    },
+    {
+      "id": "G2",
+      "gap": "G2",
+      "start": 27.39,
+      "end": 28.386,
+      "max_words": 9,
+      "word_count": 7,
+      "text": "He slams a table, scattering glowing chips."
+    },
+    {
+      "id": "G3",
+      "gap": "G3",
+      "start": 40.123,
+      "end": 42.379,
+      "max_words": 20,
+      "word_count": 15,
+      "text": "He throws his arms back as golden energy erupts from him, his eyes glowing brightly."
+    },
+    {
+      "id": "G4",
+      "gap": "G4",
+      "start": 50.473,
+      "end": 51.959,
+      "max_words": 13,
+      "word_count": 11,
+      "text": "In combat armor, he leaps through an explosion, firing a weapon."
+    },
+    {
+      "id": "G5",
+      "gap": "G5",
+      "start": 62.326,
+      "end": 66.0,
+      "max_words": 33,
+      "word_count": 7,
+      "text": "The woman smirks. Everything fades to black."
+    }
+  ],
+  "beats": [
+    {
+      "time": "0:00",
+      "note": "Four amphibious aliens stand around a dark table."
+    },
+    {
+      "time": "0:04",
+      "note": "A flat-faced alien crosses his arms."
+    },
+    {
+      "time": "0:08",
+      "note": "A green alien with chin tentacles speaks."
+    },
+    {
+      "time": "0:13",
+      "note": "A woman with finned hair sits in shadow, backlit by a large blue window showing an underwater city."
+    },
+    {
+      "time": "0:18",
+      "note": "A scarred green alien in a vest approaches the table."
+    },
+    {
+      "time": "0:27",
+      "note": "The scarred alien slams his hands on a casino table, scattering glowing yellow chips. Other armed aliens stand behind him."
+    },
+    {
+      "time": "0:32",
+      "note": "Two of the original aliens watch."
+    },
+    {
+      "time": "0:36",
+      "note": "The scarred alien stands before the woman."
+    },
+    {
+      "time": "0:40",
+      "note": "The scarred alien throws his arms back, engulfed in glowing golden energy, his eyes shining."
+    },
+    {
+      "time": "0:44",
+      "note": "The woman in the chair."
+    },
+    {
+      "time": "0:50",
+      "note": "The scarred alien, now in combat armor, leaps through a fiery explosion, firing a heavy weapon."
+    },
+    {
+      "time": "0:54",
+      "note": "The woman in the chair."
+    },
+    {
+      "time": "0:58",
+      "note": "The scarred alien."
+    },
+    {
+      "time": "1:00",
+      "note": "The woman smirks."
+    },
+    {
+      "time": "1:03",
+      "note": "Fade to black."
+    }
+  ]
+}

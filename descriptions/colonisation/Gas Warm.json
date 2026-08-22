@@ -1,0 +1,77 @@
+{
+  "meta": {
+    "video": "Gas Warm.mp4",
+    "model": "google/gemini-3.1-pro-preview",
+    "duration": 13.205,
+    "wpm": 600.0,
+    "cost": 0.04371,
+    "provider": "google-vertex",
+    "effort": "high",
+    "safety": 0.7,
+    "pad_start": 0.25,
+    "pad_end": 0.3,
+    "min_gap": 0.6,
+    "split_above": 8.0,
+    "min_cue": 1.0
+  },
+  "gaps": [
+    {
+      "id": "G1",
+      "index": 1,
+      "speech_start": 0.0,
+      "speech_end": 13.205,
+      "usable": 13.21,
+      "max_words": 92,
+      "splittable": true,
+      "prev_text": "",
+      "next_text": ""
+    }
+  ],
+  "cues": [
+    {
+      "id": "G1.1",
+      "gap": "G1",
+      "start": 1.0,
+      "end": 4.0,
+      "max_words": 21,
+      "word_count": 17,
+      "text": "A bright sun flares from behind the horizon of a massive gas giant, illuminating a hazy nebula."
+    },
+    {
+      "id": "G1.2",
+      "gap": "G1",
+      "start": 4.0,
+      "end": 7.0,
+      "max_words": 21,
+      "word_count": 12,
+      "text": "The planet's atmosphere is a swirling canvas of caramel, rust, and cream."
+    },
+    {
+      "id": "G1.3",
+      "gap": "G1",
+      "start": 7.0,
+      "end": 13.205,
+      "max_words": 43,
+      "word_count": 24,
+      "text": "A colony ship streaks across the turbulent bands, a single spark trailing a line of white light as it descends toward the brilliant glare."
+    }
+  ],
+  "beats": [
+    {
+      "time": "0:00",
+      "note": "A massive gas giant planet fills the right side of the screen, with a sun flaring from behind its left horizon."
+    },
+    {
+      "time": "0:01",
+      "note": "A colony ship appears as a bright streak of light on the right side of the planet."
+    },
+    {
+      "time": "0:05",
+      "note": "The ship continues to move left across the swirling bands of brown and orange gas."
+    },
+    {
+      "time": "0:10",
+      "note": "The ship nears the flaring sun on the horizon."
+    }
+  ]
+}

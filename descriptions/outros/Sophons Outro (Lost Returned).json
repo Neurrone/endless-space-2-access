@@ -1,0 +1,136 @@
+{
+  "meta": {
+    "video": "Sophons Outro.mp4",
+    "model": "google/gemini-3.1-pro-preview",
+    "duration": 27.8,
+    "wpm": 600.0,
+    "cost": 0.075398,
+    "provider": "google-vertex",
+    "effort": "high",
+    "safety": 0.92,
+    "pad_start": 0.25,
+    "pad_end": 0.3,
+    "min_gap": 0.6,
+    "split_above": 8.0,
+    "min_cue": 1.0
+  },
+  "gaps": [
+    {
+      "id": "G1",
+      "index": 1,
+      "speech_start": 0.0,
+      "speech_end": 8.476,
+      "usable": 8.48,
+      "max_words": 77,
+      "splittable": true,
+      "prev_text": "",
+      "next_text": "What will we do now"
+    },
+    {
+      "id": "G2",
+      "index": 2,
+      "speech_start": 13.272,
+      "speech_end": 14.213,
+      "usable": 0.94,
+      "max_words": 8,
+      "splittable": false,
+      "prev_text": "with these old gods watching?",
+      "next_text": "You know,"
+    },
+    {
+      "id": "G3",
+      "index": 3,
+      "speech_start": 18.789,
+      "speech_end": 19.67,
+      "usable": 0.88,
+      "max_words": 8,
+      "splittable": false,
+      "prev_text": "we've never lab-tested a deity before...",
+      "next_text": "Or maybe we should just ignore them"
+    },
+    {
+      "id": "G4",
+      "index": 4,
+      "speech_start": 24.672,
+      "speech_end": 27.8,
+      "usable": 3.13,
+      "max_words": 28,
+      "splittable": false,
+      "prev_text": "and go blow something up.",
+      "next_text": ""
+    }
+  ],
+  "cues": [
+    {
+      "id": "G1.1",
+      "gap": "G1",
+      "start": 0.0,
+      "end": 4.0,
+      "max_words": 36,
+      "word_count": 22,
+      "text": "Fireworks burst in a starry night sky above a futuristic metropolis. Sleek, curved skyscrapers and large billboards glow with vibrant cyan neon."
+    },
+    {
+      "id": "G1.2",
+      "gap": "G1",
+      "start": 4.0,
+      "end": 8.476,
+      "max_words": 41,
+      "word_count": 19,
+      "text": "A colossal hologram of a large-headed Sophon projects from a central tower. Flying vehicles zip between the gleaming buildings."
+    },
+    {
+      "id": "G2",
+      "gap": "G2",
+      "start": 13.272,
+      "end": 14.213,
+      "max_words": 8,
+      "word_count": 8,
+      "text": "Inside, a Sophon works at green holographic screens."
+    },
+    {
+      "id": "G3",
+      "gap": "G3",
+      "start": 18.789,
+      "end": 19.67,
+      "max_words": 8,
+      "word_count": 8,
+      "text": "A massive coiled core behind them glows cyan."
+    },
+    {
+      "id": "G4",
+      "gap": "G4",
+      "start": 24.672,
+      "end": 27.8,
+      "max_words": 28,
+      "word_count": 27,
+      "text": "The Sophon throws their arms up in a shrug. The core blazes with blinding cyan light, swallowing the room in a brilliant glow. Everything fades to black."
+    }
+  ],
+  "beats": [
+    {
+      "time": "0:00",
+      "note": "Fireworks burst over a futuristic city glowing with cyan neon."
+    },
+    {
+      "time": "0:04",
+      "note": "A massive hologram of a Sophon is projected onto a central tower. Flying vehicles zip between the buildings."
+    },
+    {
+      "time": "0:10",
+      "note": "Cut to an interior. A Sophon sits at a console with glowing green holographic screens. Behind them is a large, dark, coiled metal structure."
+    },
+    {
+      "time": "0:15",
+      "note": "A red warning box flashes on the screen."
+    },
+    {
+      "time": "0:16",
+      "note": "The coiled structure behind the Sophon begins to glow with intense cyan light."
+    },
+    {
+      "time": "0:24",
+      "note": "The Sophon throws their arms up in a casual shrug as the core blazes with blinding light. Fade to black."
+    }
+  ]
+}

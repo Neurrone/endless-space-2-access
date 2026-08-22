@@ -1,0 +1,15 @@
+1
+00:00:00,500 --> 00:00:04,000
+A massive gas giant fills the starry void. Its atmosphere is a swirling mass of deep crimson and glowing red embers.
+
+2
+00:00:04,000 --> 00:00:07,500
+A brilliant pink star flares from behind the planet, casting light across wide, sweeping rings of ice.
+
+3
+00:00:07,500 --> 00:00:11,000
+A pale crescent moon hangs in the dark. Below it, a tiny point of light, the colony ship, streaks over the rings.
+
+4
+00:00:11,000 --> 00:00:13,205
+It descends toward the burning clouds.

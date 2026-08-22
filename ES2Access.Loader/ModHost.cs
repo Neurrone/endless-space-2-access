@@ -52,6 +52,14 @@ namespace ES2Access.Loader
         /// own, so the mod must take this rather than ask itself where it came from.</summary>
         public string PluginDirectory { get; private set; }
 
+        /// <summary>Whether the player wants the game's videos described. A BepInEx setting, and
+        /// only the loader can own one of those, so the mod asks for the answer rather than for
+        /// the config file.</summary>
+        public bool CutsceneDescriptions
+        {
+            get { return _plugin.CutsceneDescriptions; }
+        }
+
         /// <summary>Hands work from HTTP handler threads to the Unity main thread; the loader
         /// drains it once per frame. Route handlers that touch the game must go through it.</summary>
         public MainThreadQueue MainThread

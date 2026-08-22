@@ -1,0 +1,24 @@
+Audio description review
+Video: Gas Hot.mp4
+Model: google/gemini-3.1-pro-preview
+Runtime: 0:12.69   Screen reader rate: 600.0 wpm
+Gaps found: 1   Cues written: 3   Gaps left silent: 0
+Cost: 0.0494 USD
+
+DESCRIPTIONS
+
+G1 at 0:00.00 to 0:12.69, 12.7 seconds, split into 3 cues.
+  speaks at 0:01.50, 24 of 24 words.
+    A massive gas giant looms in the starry void. Its deep red atmosphere churns with fierce, glowing orange bands of heat along one horizon.
+  speaks at 0:05.00, 15 of 17 words.
+    Nearby, a brilliant cyan nebula glows in the dark space beyond a small, barren moon.
+  speaks at 0:07.50, 31 of 36 words.
+    A tiny point of light, the colony ship, streaks across the dark face of the giant. It leaves a faint trail as it glides past the fiery atmosphere to enter orbit.
+
+OBSERVATION LOG FROM THE MODEL
+
+0:00  A massive, dark red gas giant dominates the left side of space. Its right edge glows with fiery orange bands.
+0:04  To the right, a bright cyan nebula glows in the background. A small moon sits between the nebula and the gas giant.
+0:06  A tiny white speck, the colony ship, enters from the left and moves across the dark face of the gas giant.
+0:09  The ship crosses the glowing orange terminator line and continues to the right, passing above the moon.
+0:12  Fade to black.

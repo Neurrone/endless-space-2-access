@@ -1,0 +1,34 @@
+Audio description review
+Video: Riftborn Outro.mp4
+Model: google/gemini-3.1-pro-preview
+Runtime: 0:30.00   Screen reader rate: 600.0 wpm
+Gaps found: 3   Cues written: 5   Gaps left silent: 0
+Cost: 0.0409 USD
+
+DESCRIPTIONS
+
+G1 at 0:00.00 to 0:05.81, 5.8 seconds.
+  speaks at 0:00.00, 45 of 53 words.
+    A lush, misty valley under a cloudy sky. A colossal white spacecraft hovers in the distance. In the foreground, several tall, robotic beings stand among the grass and trees. Their bodies are built from sharp, detached geometric shapes, with dark, ribbon-like tentacles trailing behind them.
+
+G2 at 0:11.94 to 0:12.85, 0.9 seconds.
+  speaks at 0:11.94, 7 of 8 words.
+    One robot holds a glowing pink flower.
+
+G3 at 0:20.64 to 0:30.00, 9.4 seconds, split into 3 cues.
+  speaks at 0:20.64, 16 of 30 words.
+    In the robot's palm, the delicate pink flower suddenly morphs into a glowing, angular white crystal.
+  speaks at 0:24.00, 26 of 36 words.
+    The robot gazes at the floating, geometric gem. Its body is composed of dark, disconnected shards, anchored around the brightly glowing red core in its chest.
+  speaks at 0:28.00, 4 of 18 words.
+    Everything fades into darkness.
+
+OBSERVATION LOG FROM THE MODEL
+
+0:00  A misty, green valley with a large white spaceship hovering in the background. Several tall robots with detached limbs and dark tentacles stand in the foreground.
+0:05  The view pans right across the forest.
+0:11  A close-up of one of the robots, revealing a glowing red core in its chest and a floating, geometric head.
+0:13  It holds a glowing pink flower in its detached, floating hand.
+0:20  The pink flower transforms into a bright, angular white crystal.
+0:25  The robot continues to hold the glowing crystal in the dim forest.
+0:28  The scene fades to black.

@@ -1,0 +1,15 @@
+1
+00:00:01,000 --> 00:00:04,500
+A pale sun shines over a frozen valley between jagged, snow-covered mountains. Giant, glowing cyan crystals jut from the icy slopes.
+
+2
+00:00:04,500 --> 00:00:08,500
+A colony ship streaks across the bright sky. Below, silhouettes of large, long-tailed beasts stand motionless in the freezing fog.
+
+3
+00:00:08,500 --> 00:00:11,000
+Winds whip loose snow across the desolate ice.
+
+4
+00:00:11,000 --> 00:00:12,693
+Everything fades to black.

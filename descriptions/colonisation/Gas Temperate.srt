@@ -1,0 +1,11 @@
+1
+00:00:01,000 --> 00:00:05,500
+A massive gas giant hangs in the starry blackness. Its swirling atmosphere is banded in broad strokes of teal, maroon, and pearlescent white. A small grey moon orbits to the left.
+
+2
+00:00:05,500 --> 00:00:09,500
+A colony ship streaks toward the planet from the lower left, riding a bright trail of light.
+
+3
+00:00:09,500 --> 00:00:13,205
+The tiny craft descends toward the turbulent clouds, plunging into the vast, gaseous expanse.

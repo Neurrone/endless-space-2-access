@@ -1,0 +1,40 @@
+Audio description review
+Video: Riftborn Outro.mp4
+Model: google/gemini-3.1-pro-preview
+Runtime: 0:30.00   Screen reader rate: 600.0 wpm
+Gaps found: 3   Cues written: 7   Gaps left silent: 0
+Cost: 0.1057 USD
+
+DESCRIPTIONS
+
+G1 at 0:00.00 to 0:08.31, 8.3 seconds, split into 3 cues.
+  speaks at 0:00.00, 17 of 27 words.
+    Sunbeams pierce dark clouds over a misty, green valley. A massive white spaceship rests on the grass.
+  speaks at 0:03.00, 15 of 27 words.
+    Tall, robotic beings with dark, angular armor and glowing orange joints survey the untamed jungle.
+  speaks at 0:06.00, 15 of 21 words.
+    One steps onto a rock in the foreground. Black shards orbit its floating, diamond-shaped head.
+
+G2 at 0:12.62 to 0:13.36, 0.7 seconds.
+  speaks at 0:12.62, 6 of 6 words.
+    It holds a glowing pink flower.
+
+G3 at 0:20.61 to 0:30.00, 9.4 seconds, split into 3 cues.
+  speaks at 0:20.61, 19 of 31 words.
+    The flower has transformed into a pristine, geometric white crystal. It hovers and turns slowly above the being's hand.
+  speaks at 0:24.00, 8 of 18 words.
+    The being gazes at the perfect, angular shape.
+  speaks at 0:26.00, 6 of 36 words.
+    Everything slowly fades into absolute darkness.
+
+OBSERVATION LOG FROM THE MODEL
+
+0:00  Sunbeams break through dark clouds over a misty, green valley where a massive white spaceship has landed.
+0:02  Several tall, robotic beings with dark, angular armor and glowing orange joints stand among the trees.
+0:06  One of the beings steps onto a mossy rock in the foreground. Its head is a hollow, floating diamond surrounded by orbiting black shards.
+0:12  The being in the foreground holds a glowing pink flower in its hand.
+0:15  The pink flower glows brighter.
+0:18  The flower begins to lose its organic petals, transforming into sharp geometric shapes.
+0:20  The flower has completely transformed into a glowing white, geometric crystal hovering above the being's hand.
+0:25  The image begins to fade to black.
+0:28  Complete darkness.

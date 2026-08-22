@@ -1,0 +1,278 @@
+{
+  "meta": {
+    "video": "Hissho Intro.mp4",
+    "model": "google/gemini-3.1-pro-preview",
+    "duration": 77.013,
+    "wpm": 600.0,
+    "cost": 0.098846,
+    "provider": "google-vertex",
+    "effort": "high",
+    "safety": 0.92,
+    "pad_start": 0.25,
+    "pad_end": 0.3,
+    "min_gap": 0.6,
+    "split_above": 8.0,
+    "min_cue": 1.0
+  },
+  "gaps": [
+    {
+      "id": "G1",
+      "index": 1,
+      "speech_start": 0.0,
+      "speech_end": 1.465,
+      "usable": 1.46,
+      "max_words": 13,
+      "splittable": false,
+      "prev_text": "",
+      "next_text": "From the beginning"
+    },
+    {
+      "id": "G2",
+      "index": 2,
+      "speech_start": 7.687,
+      "speech_end": 9.098,
+      "usable": 1.41,
+      "max_words": 12,
+      "splittable": false,
+      "prev_text": "a warrior prepares for sacrifice.",
+      "next_text": "Touched by blood,"
+    },
+    {
+      "id": "G3",
+      "index": 3,
+      "speech_start": 15.104,
+      "speech_end": 17.73,
+      "usable": 2.63,
+      "max_words": 24,
+      "splittable": false,
+      "prev_text": "the sword becomes the soul of its wielder",
+      "next_text": "We fight"
+    },
+    {
+      "id": "G4",
+      "index": 4,
+      "speech_start": 31.788,
+      "speech_end": 33.321,
+      "usable": 1.53,
+      "max_words": 14,
+      "splittable": false,
+      "prev_text": "to follow our own gods",
+      "next_text": "For the warrior walks a path"
+    },
+    {
+      "id": "G5",
+      "index": 5,
+      "speech_start": 43.104,
+      "speech_end": 49.522,
+      "usable": 6.42,
+      "max_words": 59,
+      "splittable": false,
+      "prev_text": "and remembers it",
+      "next_text": "The blade however, like the warrior"
+    },
+    {
+      "id": "G6",
+      "index": 6,
+      "speech_start": 53.432,
+      "speech_end": 55.527,
+      "usable": 2.09,
+      "max_words": 19,
+      "splittable": false,
+      "prev_text": "The blade however, like the warrior",
+      "next_text": "has its own secrets"
+    },
+    {
+      "id": "G7",
+      "index": 7,
+      "speech_start": 58.747,
+      "speech_end": 77.013,
+      "usable": 18.27,
+      "max_words": 168,
+      "splittable": true,
+      "prev_text": "has its own secrets",
+      "next_text": ""
+    }
+  ],
+  "cues": [
+    {
+      "id": "G1",
+      "gap": "G1",
+      "start": 0.0,
+      "end": 1.465,
+      "max_words": 13,
+      "word_count": 10,
+      "text": "Glowing orange lines bleed into a black void like ink."
+    },
+    {
+      "id": "G2",
+      "gap": "G2",
+      "start": 7.687,
+      "end": 9.098,
+      "max_words": 12,
+      "word_count": 9,
+      "text": "The painted warrior morphs into a dark, stylized bird."
+    },
+    {
+      "id": "G3",
+      "gap": "G3",
+      "start": 15.104,
+      "end": 17.73,
+      "max_words": 24,
+      "word_count": 16,
+      "text": "A standing warrior runs a glowing sword through a kneeling companion. A massive black spaceship ascends."
+    },
+    {
+      "id": "G4",
+      "gap": "G4",
+      "start": 31.788,
+      "end": 33.321,
+      "max_words": 14,
+      "word_count": 9,
+      "text": "Three towering, multi-armed robotic entities loom over the warrior."
+    },
+    {
+      "id": "G5",
+      "gap": "G5",
+      "start": 43.104,
+      "end": 49.522,
+      "max_words": 59,
+      "word_count": 28,
+      "text": "An armored avian warrior blocks a massive metal hammer with a katana. Glowing orange eyes glare from a red helmet. The warrior slices through the robot's chest armor."
+    },
+    {
+      "id": "G6",
+      "gap": "G6",
+      "start": 53.432,
+      "end": 55.527,
+      "max_words": 19,
+      "word_count": 9,
+      "text": "The warrior plunges the sword into the stone ground."
+    },
+    {
+      "id": "G7.1",
+      "gap": "G7",
+      "start": 58.747,
+      "end": 63.0,
+      "max_words": 39,
+      "word_count": 13,
+      "text": "Golden circuitry climbs a colossal, overgrown metallic structure embedded in a lush mountainside."
+    },
+    {
+      "id": "G7.2",
+      "gap": "G7",
+      "start": 63.0,
+      "end": 69.0,
+      "max_words": 55,
+      "word_count": 22,
+      "text": "The ancient ruins hum to life, glowing with orange energy. The mass tears free from the earth, rising as a gigantic spaceship."
+    },
+    {
+      "id": "G7.3",
+      "gap": "G7",
+      "start": 69.0,
+      "end": 75.0,
+      "max_words": 55,
+      "word_count": 23,
+      "text": "The immense vessel ascends through clouds and mist, dwarfing the forested cliffs on either side. Massive engines burn bright against the overcast sky."
+    },
+    {
+      "id": "G7.4",
+      "gap": "G7",
+      "start": 75.0,
+      "end": 77.013,
+      "max_words": 18,
+      "word_count": 4,
+      "text": "Everything fades to black."
+    }
+  ],
+  "beats": [
+    {
+      "time": "0:00",
+      "note": "Black screen."
+    },
+    {
+      "time": "0:01",
+      "note": "Glowing orange lines bleed into a black void like ink."
+    },
+    {
+      "time": "0:04",
+      "note": "An ink-wash painting of an armored avian warrior with glowing orange eyes."
+    },
+    {
+      "time": "0:08",
+      "note": "The painted warrior morphs into a dark, stylized bird."
+    },
+    {
+      "time": "0:13",
+      "note": "Two bird-like figures in black ink. One holds a glowing orange sword over a kneeling companion."
+    },
+    {
+      "time": "0:15",
+      "note": "The sword pierces the kneeling figure."
+    },
+    {
+      "time": "0:17",
+      "note": "A massive black spaceship ascends."
+    },
+    {
+      "time": "0:23",
+      "note": "A fleet of these ships flies past planets."
+    },
+    {
+      "time": "0:29",
+      "note": "An ink figure faces three towering, multi-armed robotic entities."
+    },
+    {
+      "time": "0:32",
+      "note": "The entities loom over the warrior with whip-like appendages."
+    },
+    {
+      "time": "0:35",
+      "note": "An avian warrior fights a robotic entity in ink."
+    },
+    {
+      "time": "0:38",
+      "note": "The art morphs into an engraving on a metallic blade."
+    },
+    {
+      "time": "0:42",
+      "note": "The scene becomes 3D reality. An armored avian warrior battles a robotic entity in a lush environment."
+    },
+    {
+      "time": "0:44",
+      "note": "The warrior blocks a massive metal hammer with a katana."
+    },
+    {
+      "time": "0:46",
+      "note": "Glowing orange eyes glare from a red helmet."
+    },
+    {
+      "time": "0:49",
+      "note": "The warrior slices through the robot's chest armor."
+    },
+    {
+      "time": "0:53",
+      "note": "The warrior plunges the sword into the stone ground."
+    },
+    {
+      "time": "0:55",
+      "note": "Golden circuitry spreads from the blade deep into the rock."
+    },
+    {
+      "time": "0:59",
+      "note": "The glowing lines climb a colossal, overgrown metallic structure embedded in a lush mountainside."
+    },
+    {
+      "time": "1:04",
+      "note": "The ancient ruins hum to life, glowing with orange energy. The colossal mass tears free from the earth, rising as a gigantic spaceship."
+    },
+    {
+      "time": "1:09",
+      "note": "The immense vessel ascends through clouds and mist, dwarfing the forested cliffs on either side. Massive engines burn bright against the overcast sky."
+    },
+    {
+      "time": "1:15",
+      "note": "Darkness."
+    }
+  ]
+}

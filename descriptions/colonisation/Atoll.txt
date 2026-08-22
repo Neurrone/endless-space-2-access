@@ -1,0 +1,26 @@
+Audio description review
+Video: Atoll.mp4
+Model: google/gemini-3.1-pro-preview
+Runtime: 0:13.01   Screen reader rate: 600.0 wpm
+Gaps found: 1   Cues written: 4   Gaps left silent: 0
+Cost: 0.0493 USD
+
+DESCRIPTIONS
+
+G1 at 0:00.00 to 0:13.01, 13.0 seconds, split into 4 cues.
+  speaks at 0:01.00, 11 of 21 words.
+    A colony ship streaks down through a starry, deep blue sky.
+  speaks at 0:04.00, 15 of 21 words.
+    Below, towering, curved rock formations rise from a turquoise sea, leaning out over the water.
+  speaks at 0:07.00, 13 of 21 words.
+    Vibrant alien birds glide past narrow waterfalls cascading from the lushly forested cliffs.
+  speaks at 0:10.00, 14 of 21 words.
+    Gentle waves lap the white sand of a pristine beach framed by lush ferns.
+
+OBSERVATION LOG FROM THE MODEL
+
+0:00  A bright streak of a colony ship descends through the deep blue, starry sky in the upper right.
+0:03  The ship's trail fades. Towering, curved rock formations covered in lush vegetation rise from a turquoise sea.
+0:05  Vibrant alien birds with long tails fly past narrow waterfalls cascading from the rocks.
+0:08  The birds fly out of view.
+0:10  The view rests on the white sand beach and gentle waves, framed by foreground ferns.

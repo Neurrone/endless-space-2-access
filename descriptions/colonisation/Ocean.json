@@ -1,0 +1,77 @@
+{
+  "meta": {
+    "video": "Ocean.mp4",
+    "model": "google/gemini-3.1-pro-preview",
+    "duration": 13.418,
+    "wpm": 600.0,
+    "cost": 0.06101,
+    "provider": "google-vertex",
+    "effort": "high",
+    "safety": 0.7,
+    "pad_start": 0.25,
+    "pad_end": 0.3,
+    "min_gap": 0.6,
+    "split_above": 8.0,
+    "min_cue": 1.0
+  },
+  "gaps": [
+    {
+      "id": "G1",
+      "index": 1,
+      "speech_start": 0.0,
+      "speech_end": 13.418,
+      "usable": 13.42,
+      "max_words": 93,
+      "splittable": true,
+      "prev_text": "",
+      "next_text": ""
+    }
+  ],
+  "cues": [
+    {
+      "id": "G1.1",
+      "gap": "G1",
+      "start": 1.0,
+      "end": 5.5,
+      "max_words": 31,
+      "word_count": 29,
+      "text": "Deep underwater, massive dark roots arch through dim blue water. On the seabed, bioluminescent flora glows in patches of vibrant pink and cool cyan, swaying gently in the current."
+    },
+    {
+      "id": "G1.2",
+      "gap": "G1",
+      "start": 5.5,
+      "end": 8.5,
+      "max_words": 21,
+      "word_count": 20,
+      "text": "A colossal dark creature glides through the gloom. It resembles a smooth, eyeless whale, trailing thin tendrils from its flanks."
+    },
+    {
+      "id": "G1.3",
+      "gap": "G1",
+      "start": 8.5,
+      "end": 13.418,
+      "max_words": 34,
+      "word_count": 22,
+      "text": "A sleek creature resembling a manta ray with a long, whip-like tail swims gracefully past the giant, navigating the tranquil, glowing depths."
+    }
+  ],
+  "beats": [
+    {
+      "time": "0:00",
+      "note": "Deep underwater landscape with massive dark roots and glowing bioluminescent flora."
+    },
+    {
+      "time": "0:04",
+      "note": "A large whale-like creature glides into view from the right."
+    },
+    {
+      "time": "0:07",
+      "note": "A ray-like creature swims past the larger one, moving towards the center."
+    },
+    {
+      "time": "0:13",
+      "note": "Fade out."
+    }
+  ]
+}

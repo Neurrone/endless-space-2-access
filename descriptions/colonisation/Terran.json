@@ -1,0 +1,86 @@
+{
+  "meta": {
+    "video": "Terran.mp4",
+    "model": "google/gemini-3.1-pro-preview",
+    "duration": 12.928,
+    "wpm": 600.0,
+    "cost": 0.044878,
+    "provider": "google-vertex",
+    "effort": "high",
+    "safety": 0.7,
+    "pad_start": 0.25,
+    "pad_end": 0.3,
+    "min_gap": 0.6,
+    "split_above": 8.0,
+    "min_cue": 1.0
+  },
+  "gaps": [
+    {
+      "id": "G1",
+      "index": 1,
+      "speech_start": 0.0,
+      "speech_end": 12.928,
+      "usable": 12.93,
+      "max_words": 90,
+      "splittable": true,
+      "prev_text": "",
+      "next_text": ""
+    }
+  ],
+  "cues": [
+    {
+      "id": "G1.1",
+      "gap": "G1",
+      "start": 1.0,
+      "end": 4.0,
+      "max_words": 21,
+      "word_count": 13,
+      "text": "Steep, jagged mountains of pale grey rock rise from a lush green valley."
+    },
+    {
+      "id": "G1.2",
+      "gap": "G1",
+      "start": 4.0,
+      "end": 7.0,
+      "max_words": 21,
+      "word_count": 18,
+      "text": "Dark pine trees cling to the sheer cliffs. In the foreground, a waterfall tumbles over a rocky ledge."
+    },
+    {
+      "id": "G1.3",
+      "gap": "G1",
+      "start": 7.0,
+      "end": 10.0,
+      "max_words": 21,
+      "word_count": 19,
+      "text": "Below, a wide river winds through the misty valley. The sky warms to a golden sunrise at the horizon."
+    },
+    {
+      "id": "G1.4",
+      "gap": "G1",
+      "start": 10.0,
+      "end": 12.928,
+      "max_words": 20,
+      "word_count": 18,
+      "text": "High above, the colony ship descends on a long trail of white light, heading for the distant plains."
+    }
+  ],
+  "beats": [
+    {
+      "time": "0:00",
+      "note": "Jagged, pale grey mountains rise from a lush valley under a bright blue sky."
+    },
+    {
+      "time": "0:03",
+      "note": "A waterfall flows over a rocky ledge in the foreground, with dark pine trees clinging to the sheer cliffs."
+    },
+    {
+      "time": "0:06",
+      "note": "A wide river winds through the valley floor, reflecting the sky. Low mist clings to the base of the mountains. The horizon glows with a golden sunrise."
+    },
+    {
+      "time": "0:09",
+      "note": "A bright streak of light, the colony ship, descends across the sky toward the distant horizon."
+    }
+  ]
+}

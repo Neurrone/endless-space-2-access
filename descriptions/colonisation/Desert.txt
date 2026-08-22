@@ -1,0 +1,24 @@
+Audio description review
+Video: Desert.mp4
+Model: google/gemini-3.1-pro-preview
+Runtime: 0:12.69   Screen reader rate: 600.0 wpm
+Gaps found: 1   Cues written: 3   Gaps left silent: 0
+Cost: 0.0488 USD
+
+DESCRIPTIONS
+
+G1 at 0:00.00 to 0:12.69, 12.7 seconds, split into 3 cues.
+  speaks at 0:01.00, 16 of 17 words.
+    Endless sand dunes stretch to the horizon, bathed in the golden light of a low sun.
+  speaks at 0:03.50, 16 of 17 words.
+    A massive reddish moon dominates the hazy sky. Dark winged creatures glide on the desert thermals.
+  speaks at 0:06.00, 21 of 46 words.
+    A bright streak plunges from the upper atmosphere. A landing craft trails white light as it descends toward the silent wastes.
+
+OBSERVATION LOG FROM THE MODEL
+
+0:00  Fade in on a vast desert landscape with rolling sand dunes. The sun is low on the horizon, casting a warm golden glow. A large reddish moon hangs in the sky.
+0:02  Dark, winged creatures fly across the hazy sky.
+0:05  A bright streak enters the frame from the top left, descending rapidly.
+0:07  The landing craft leaves a long white trail as it heads towards the horizon.
+0:10  The scene fades to black.

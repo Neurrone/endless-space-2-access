@@ -1,0 +1,25 @@
+Audio description review
+Video: Monsoon.mp4
+Model: google/gemini-3.1-pro-preview
+Runtime: 0:12.14   Screen reader rate: 600.0 wpm
+Gaps found: 1   Cues written: 4   Gaps left silent: 0
+Cost: 0.0620 USD
+
+DESCRIPTIONS
+
+G1 at 0:00.00 to 0:12.14, 12.1 seconds, split into 4 cues.
+  speaks at 0:00.50, 16 of 17 words.
+    Heavy rain lashes a dark landscape. Wide waterfalls cascade over distant cliffs in pale yellow light.
+  speaks at 0:03.00, 14 of 14 words.
+    High above, the bright streak of a colony ship descends through heavy storm clouds.
+  speaks at 0:05.00, 19 of 21 words.
+    In the foreground, a large bird with a bright red crest sits on a mossy rock, watching the falls.
+  speaks at 0:08.00, 6 of 28 words.
+    Lightning flashes over the endless deluge.
+
+OBSERVATION LOG FROM THE MODEL
+
+0:00  A dark, rocky landscape under a stormy sky. Heavy rain falls. Massive waterfalls cascade over wide cliffs in the distance, illuminated by a pale yellow light breaking through the clouds. A large bird with a red crest sits on a rock in the foreground.
+0:01  A bright streak of light, the colony ship, descends diagonally through the dark clouds above the falls.
+0:04  The colony ship disappears into the clouds. Lightning flashes in the sky.
+0:08  Lightning continues to flash over the roaring waterfalls and the rain-swept landscape.

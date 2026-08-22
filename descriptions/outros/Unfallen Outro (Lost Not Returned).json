@@ -1,0 +1,143 @@
+{
+  "meta": {
+    "video": "Unfallen Outro.mp4",
+    "model": "google/gemini-3.1-pro-preview",
+    "duration": 30.0,
+    "wpm": 600.0,
+    "cost": 0.053446,
+    "provider": "google-vertex",
+    "effort": "high",
+    "safety": 0.92,
+    "pad_start": 0.25,
+    "pad_end": 0.3,
+    "min_gap": 0.6,
+    "split_above": 8.0,
+    "min_cue": 1.0
+  },
+  "gaps": [
+    {
+      "id": "G1",
+      "index": 1,
+      "speech_start": 0.0,
+      "speech_end": 2.358,
+      "usable": 2.36,
+      "max_words": 21,
+      "splittable": false,
+      "prev_text": "",
+      "next_text": "Though the Unfallen prevail, and grow,"
+    },
+    {
+      "id": "G2",
+      "index": 2,
+      "speech_start": 6.252,
+      "speech_end": 7.604,
+      "usable": 1.35,
+      "max_words": 12,
+      "splittable": false,
+      "prev_text": "Though the Unfallen prevail, and grow,",
+      "next_text": "the ancient spirit that is the Heart may fade,"
+    },
+    {
+      "id": "G3",
+      "index": 3,
+      "speech_start": 14.491,
+      "speech_end": 15.86,
+      "usable": 1.37,
+      "max_words": 12,
+      "splittable": false,
+      "prev_text": "into history.",
+      "next_text": "But we remain strong, and resolute,"
+    },
+    {
+      "id": "G4",
+      "index": 4,
+      "speech_start": 19.596,
+      "speech_end": 20.577,
+      "usable": 0.98,
+      "max_words": 9,
+      "splittable": false,
+      "prev_text": "But we remain strong, and resolute,",
+      "next_text": "and the galaxy will feel our harmony."
+    },
+    {
+      "id": "G5",
+      "index": 5,
+      "speech_start": 24.754,
+      "speech_end": 30.0,
+      "usable": 5.25,
+      "max_words": 48,
+      "splittable": false,
+      "prev_text": "and the galaxy will feel our harmony.",
+      "next_text": ""
+    }
+  ],
+  "cues": [
+    {
+      "id": "G1",
+      "gap": "G1",
+      "start": 0.0,
+      "end": 2.358,
+      "max_words": 21,
+      "word_count": 16,
+      "text": "A golden streak of light arcs away from a lush planet and into the starry dark."
+    },
+    {
+      "id": "G2",
+      "gap": "G2",
+      "start": 6.252,
+      "end": 7.604,
+      "max_words": 12,
+      "word_count": 8,
+      "text": "Glowing roots spread across the planet's dark side."
+    },
+    {
+      "id": "G3",
+      "gap": "G3",
+      "start": 14.491,
+      "end": 15.86,
+      "max_words": 12,
+      "word_count": 8,
+      "text": "The streak shoots toward a fiery, swirling galaxy."
+    },
+    {
+      "id": "G4",
+      "gap": "G4",
+      "start": 19.596,
+      "end": 20.577,
+      "max_words": 9,
+      "word_count": 5,
+      "text": "Linking stars like a constellation."
+    },
+    {
+      "id": "G5",
+      "gap": "G5",
+      "start": 24.754,
+      "end": 30.0,
+      "max_words": 48,
+      "word_count": 22,
+      "text": "The glowing lines spread across the fiery galaxy, forming the shape of a colossal, branching tree of light that spans the cosmos."
+    }
+  ],
+  "beats": [
+    {
+      "time": "0:00",
+      "note": "A glowing golden streak arcs from a green and blue planet into space."
+    },
+    {
+      "time": "0:05",
+      "note": "Golden light spreads like roots across the surface of the planet."
+    },
+    {
+      "time": "0:14",
+      "note": "A massive, swirling, fiery galaxy appears. The golden streak shoots toward it."
+    },
+    {
+      "time": "0:18",
+      "note": "The golden streak strikes the galaxy and begins connecting stars with bright lines."
+    },
+    {
+      "time": "0:24",
+      "note": "The connected stars form a massive, branching constellation shaped like a tree."
+    }
+  ]
+}

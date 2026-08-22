@@ -1,0 +1,23 @@
+Audio description review
+Video: Barren.mp4
+Model: google/gemini-3.1-pro-preview
+Runtime: 0:12.69   Screen reader rate: 600.0 wpm
+Gaps found: 1   Cues written: 3   Gaps left silent: 0
+Cost: 0.0296 USD
+
+DESCRIPTIONS
+
+G1 at 0:00.00 to 0:12.69, 12.7 seconds, split into 3 cues.
+  speaks at 0:01.50, 24 of 28 words.
+    A dark, rocky wasteland stretches toward a distant ridge. Above it, a brilliant teal nebula and a small red moon illuminate the starry sky.
+  speaks at 0:05.50, 19 of 24 words.
+    A colony ship streaks down from the upper left, a brilliant point of white light trailing across the heavens.
+  speaks at 0:09.00, 16 of 25 words.
+    It descends toward the lifeless terrain, bringing the first spark of movement to a barren world.
+
+OBSERVATION LOG FROM THE MODEL
+
+0:00  A dark, rocky, cratered landscape under a bright teal nebula and starry sky. A red moon is visible on the right. A bright dot appears in the upper left.
+0:04  The bright dot, a colony ship, descends across the sky towards the horizon.
+0:08  The ship continues its descent, nearing the dark horizon of the lifeless planet.
+0:11  The ship disappears behind the horizon. The scene begins to fade to black.
