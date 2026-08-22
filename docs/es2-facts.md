@@ -1857,6 +1857,58 @@ generic graduates to the generic docs.
   for a probe that wrote either — measured 2026-08-21 (graph dump back to byte-identical bar the
   clock).
 
+- **What is on a PLANET, and who is allowed to know it** (2026-08-22, read from the game; the
+  scanner's five world categories are built on exactly these gates and nothing wider):
+  - The tree declares planet nodes at `node.Exploration[empire] >= 2` **and**
+    `node.PlanetsVisibility[empire.Index]` (`GalaxyHudScreen.PlanetsDeclared`, the condition
+    `AddPlanets` already had). Below that a system has no planet rows at all, so a scanner result
+    standing on a planet there would be a jump with nowhere to land.
+  - The orbital card only shows what a planet IS — its type, its anomalies, its deposits — once
+    the system is **surveyed**, `Exploration >= EntityExploration.State.Revealed`
+    (`GalaxyHudScreen.Surveyed`); below it the circles are grey unknowns and `PlanetName` answers
+    with the game's own `%PlanetStatusUnknownTitle`.
+  - **Curiosities are the exception and it is the game's**: `Curiosity.CanBeSeen(empire)`
+    (`Curiosity.cs:303-315`) asks the definition's own prerequisites (detection technology) and
+    the authorization, and never the survey. `GuiPlanet.GetRemainingCuriosities` is that same test
+    plus a panel ordering, over a list field it reuses between calls — read
+    `planet.Curiosities` + `CanBeSeen` directly rather than holding its answer.
+  - Names: `new GuiAnomaly(definition, planet).Title` (no `Title` override — the title is the
+    DEFINITION's, so it can be memoized per definition), `new GuiCuriosity(c).Title` (the title of
+    `CuriosityDefinition.DisplayedType`), and for a deposit `new GuiResource(definition
+    .RelatedResourceDefinition)` — whose own `IsLuxury`/`IsStrategic` count the SystemLuxury and
+    SystemStrategic types in with theirs. The HUD writes "Titanium", never "Titanium-70".
+  - Size and type: `Gui.Localize("%PlaneSizeAndTypeFormat", Gui.Localize(Gui.GetTitle(Size)),
+    Gui.Localize(Gui.GetTitle(Type)))` — size first, and the key's misspelling is the game's.
+  - The five outputs of a world nobody has settled are `PlanetInitialFood`/`Industry`/`Dust`/
+    `Science`/`Prestige` off the planet's own simulation object (`FidsiEnumerator.LoadPlanet`,
+    uncolonized branch), named by `Gui.GetLocalizedTitle` of the property — the panel draws an icon
+    beside each and writes the word nowhere. The orbital card deliberately draws PIPS instead for
+    an unsettled world; the planet page reads the numbers, and the mod follows the page (owner
+    ruling 2026-08-22).
+- **`Planet.IsColonizable(empire)` is two questions, and only one of them is about the planet**
+  (`Planet.cs:796-921`, 2026-08-22). `IsEmpireAbleToColonize` picks a colonization constructible
+  and checks its prerequisites — and the candidate list is rebuilt from the database by
+  `Planet.Type` and nothing else (`RefreshColonizationConstructibles` :1310-1321), while both
+  prerequisite checks run against the **empire's** simulation object. So the answer depends only on
+  (planet type, empire): it can be memoized per type for a whole sweep exactly, which is what turns
+  a per-planet prerequisite check into one per kind of world. `IsEmpireAllowedToColonize` is the
+  other half and is genuinely per-system (already colonized, being colonized, another empire's
+  colony in the system, own outpost, razed this turn, the neighbour rules) — mod policy: ask ABLE
+  first, then ALLOWED only for a world nobody has settled.
+  **Mod taxonomy (owner, 2026-08-22):** "unoccupied" = `!IsColonized && IsColonizable` (both
+  halves); "occupied" = somebody else's `ColonizedPlanet` (outpost or colony, minor factions
+  included) that this empire is ABLE to settle — the allowed half is deliberately not asked,
+  because it refuses every planet in a system somebody else holds, which is the whole of that
+  scope.
+- **A lane leads somewhere UNEXPLORED when the far end is not perceived, not when the lane is
+  unrevealed** (2026-08-22). The map draws a link at `MapVisibility.Drawn` (intensity ≥
+  PartiallyRevealed), and `GalaxyHudScreen.LanesOf` is the one list every part of the page numbers
+  lanes from (clockwise from north, per system). A wormhole is a `Link` like any other and passes
+  the same test, but is dropped entirely for an empire without `HasWormholeTechnology` — the
+  game's own neighbour search skips them the same way. Walking the perceived systems and taking
+  each one's drawn links whose far end fails `MapVisibility.Perceived` therefore enumerates every
+  unexplored way out EXACTLY ONCE: the other end is by definition a system the walk never reaches.
+
 ## Endings, notifications and the journal
 
 - **The notification pipeline is a closed map the mod has joined** (2026-08-20):

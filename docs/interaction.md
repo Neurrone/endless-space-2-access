@@ -245,7 +245,7 @@ cell its "in" and can never be named by one. **A cell names a starlane only
 where the fog draws it** (2026-08-20): the link gate answers "is this lane lit", never "lit
 HERE" — `Lit` samples the cell's unit squares through `IVisibilityService.IsExplored`, the
 same field the cell's "Unexplored" word uses; the tree's lane rows keep the link-level gate
-(they hang under the system, a thing not a place). The scanner has SEVEN categories —
+(they hang under the system, a thing not a place). The scanner has THIRTEEN categories —
 constellations were removed 2026-08-20 (owner: not a discrete point) and Contested Influence added
 2026-08-21. **A targeting cursor
 arming now re-reads the standing control** (`AnnounceNextLanding`, arming path only; seat
@@ -492,13 +492,34 @@ already claimed from the game outright, so none of the six chords needed a new c
 **The galaxy's SCANNER is on the Page keys with a modifier, and it is NOT a mode** — no arm key,
 nothing to exit, Escape never touches it; the chords are live for as long as the tree cursor stands
 on the MAP stop, alongside tree navigation and alongside the inspect cursor (`GalaxyScanner` —
-`docs/helpers.md`). **Ctrl+PageUp/Down** cycles the category (systems ↔ fleets, skipping one with
-nothing in it), **Shift+PageUp/Down** the subcategory within it (all / friendly / neutral / enemy,
-skipping empties), **Alt+PageUp/Down** steps one thing at a time and wraps at both ends (the only
+`docs/helpers.md`). **Ctrl+PageUp/Down** cycles the category (skipping one with
+nothing in it), **Shift+PageUp/Down** the subcategory within it (skipping empties),
+**Alt+PageUp/Down** steps one thing at a time and wraps at both ends (the only
 repeating chord of the three), and **Alt+Home** goes to what it is pointing at — the inspect cell
 onto the thing's ROUNDED spoken pair while that mode is up, otherwise the tree cursor onto the
 thing's own node. The FIRST scanner press of a game says where the cursor already is instead of
 moving it.
+**THIRTEEN categories, in the owner's order (2026-08-22)**: Systems; Colonizable Planets;
+Unexplored; Anomalies; Curiosities; Luxury Resources; Strategic Resources; Contested Influence;
+Fleets; Probes; Ally pins; Obliterator missiles; Quest markers. Four of them build their
+subcategories from WHAT WAS FOUND — one column per anomaly definition, curiosity, or resource,
+sorted by the localized name, behind an "all" — so both the column a category was left in and the
+row the cursor stood on are remembered by IDENTITY (name, key) rather than by index
+(`ScannerCursor.Reseat`, `ScannerTable`): a kind appearing ahead of the remembered one must not
+move the cursor to it. In an "all" column such a row reads "{kind} on {planet}"; in a kind's own
+column it is the planet alone. Colonizable Planets has NO "all": its two columns are unoccupied
+(the game's own `IsColonizable`) and occupied (settled by somebody else and settleable by this
+empire's technology — the "able" half alone), and its row carries the whole description of the
+world (size and type, resources, anomalies, curiosities, max population, the five outputs as
+NUMBERS). Unexplored is "all"-only and its things are EDGES, not places: every drawn lane or
+wormhole whose far end the player has not perceived, named from the end they can see
+("Star lane 3 from Rigel heading west").
+**Alt+Home now MOVES THE CAMERA on every category** (owner decision 2026-08-22): the landing is
+the page's own locate landing — focus the node, then `GalaxyViewLevels.ZoomTo` it — for anything
+standing at a node, a planet and a lane included (they land on their own node under their system
+and zoom to the system). A thing that stands at a bare point (a fleet under way, a probe, a pin, a
+missile) has no node to zoom into and gets the inspect cursor's own `CenterOn` slide instead.
+Contested Influence keeps arming the inspect cursor and is unchanged.
 **Contested Influence is the one category whose Alt+Home TURNS THE INSPECT CURSOR ON** (owner
 decision 2026-08-21, `GalaxyInspect.ArmAt`): its results are squares of the player's own reach a
 rival's field now wins ("Near Dusay, −7, −1, …"), and a square has no node, no row and nothing to

@@ -7,6 +7,7 @@ using ES2Access.Core.UI.Graph;
 using ES2Access.Core.Util;
 using ES2Access.UI;
 using ES2Access.UI.Input;
+using UnityEngine;
 
 namespace ES2Access.Screens
 {
@@ -40,6 +41,15 @@ namespace ES2Access.Screens
     /// walk of the galaxy's nodes and one walk of the visible-fleet repository, which is what one
     /// keystroke can afford and what no frame could.
     ///
+    /// WHAT IS REMEMBERED ACROSS A REBUILD IS AN IDENTITY, NOT AN INDEX. Half the categories now
+    /// derive their subcategories from what is out there - one per kind of anomaly, of curiosity, of
+    /// resource, in the language's own alphabetical order - so both the column a category was left in
+    /// and the row the cursor was standing on can be at different indexes on the next press. The
+    /// cursor therefore remembers the subcategory's NAME and the thing's KEY
+    /// (<see cref="ScannerCursor.Reseat"/>), which is what lets a player walk the map between two
+    /// presses - re-sorting every list around where they now are - and still step on from the very
+    /// thing they were last told about.
+    ///
     /// WHERE IT MEASURES FROM is the place the player is reading: the inspect cursor's centre while
     /// that mode is up, otherwise whatever place on the map the tree cursor is standing on, and home
     /// when the cursor is on none (the HUD, the turn controls). So "nearest" always means nearest to
@@ -47,54 +57,63 @@ namespace ES2Access.Screens
     /// same list around the new place.
     ///
     /// WHAT IT CAN SEE is what the map draws and nothing else - the same node gate the tree and the
-    /// inspect cursor ask (<see cref="MapVisibility.Perceived"/>) and the same fleet repository the
-    /// map's own lozenges are drawn from (<see cref="FleetPresence.Drawing"/>). A scanner reading off
-    /// the simulation would be the shortest route there is to handing the player the fog's contents.
+    /// inspect cursor ask (<see cref="MapVisibility.Perceived"/>), the same fleet repository the
+    /// map's own lozenges are drawn from (<see cref="FleetPresence.Drawing"/>), and for everything
+    /// found on a PLANET the orbital card's own gates: the system is surveyed, the game is showing
+    /// this empire the system's planets, and the planet is perceived. A scanner reading off the
+    /// simulation would be the shortest route there is to handing the player the fog's contents.
     /// </summary>
     internal sealed class GalaxyScanner
     {
         // The taxonomy, as the two indexes the cursor is held in. Categories first: what KIND of thing
-        // is being looked for. "All" is subcategory zero of every category deliberately - it is the
-        // one scope that can never be empty while the category holds anything, so cycling into a
-        // category always has somewhere to land.
+        // is being looked for. "All" is subcategory zero of every category that has one deliberately -
+        // it is the one scope that can never be empty while the category holds anything, so cycling
+        // into a category always has somewhere to land.
+        //
+        // The ORDER is the owner's (2026-08-22): the places first, then what can be done with them,
+        // then what is out there to find, then what is moving. A player sweeping the map reads down
+        // it, so the ordering is the mod's answer to "what am I most likely to be looking for".
         private const int CategorySystems = 0;
-        private const int CategoryFleets = 1;
-        private const int CategoryProbes = 2;
 
-        // The three that are only ever asked "what is there", after the three that are asked "whose".
-        // Each has the single subcategory "all", so the subcategory key on one of them comes round to
-        // where it started and says so - which is the honest answer to "what else is there".
-        private const int CategoryMarkers = 3;
-        private const int CategoryPins = 4;
-        private const int CategoryProjectiles = 5;
+        /// <summary>Worlds this empire could settle - the ones standing free, and the ones somebody
+        /// else is already sitting on that this empire's technology could take.</summary>
+        private const int CategoryColonizable = 1;
+
+        /// <summary>Every way out of the known map: a drawn lane or wormhole whose far end the player
+        /// has not perceived. The one category whose things are EDGES rather than places.</summary>
+        private const int CategoryUnexplored = 2;
+
+        // The four whose subcategories are derived from what is out there rather than written down
+        // here: one per kind found, in the language's own alphabetical order, behind an "all".
+        private const int CategoryAnomalies = 3;
+        private const int CategoryCuriosities = 4;
+        private const int CategoryLuxury = 5;
+        private const int CategoryStrategic = 6;
 
         /// <summary>Squares of the player's OWN influence that somebody else's field is winning - the
         /// one category whose things are not things at all but places, and the one whose "whose" is
         /// already settled by what the category IS (they are all the player's ground, being taken).
-        /// So it has the single subcategory "all" like the three above it, and its affiliation
-        /// question would have exactly one answer.</summary>
-        private const int CategoryContestedInfluence = 6;
+        /// So it has the single subcategory "all", and its affiliation question would have exactly one
+        /// answer.</summary>
+        private const int CategoryContestedInfluence = 7;
 
-        private const int CategoryCount = 7;
+        // The two that are asked "whose", after everything that is asked "what is there".
+        private const int CategoryFleets = 8;
+        private const int CategoryProbes = 9;
+
+        // The three that are only ever asked "what is there". Each has the single subcategory "all",
+        // so the subcategory key on one of them comes round to where it started and says so - which is
+        // the honest answer to "what else is there".
+        private const int CategoryPins = 10;
+        private const int CategoryProjectiles = 11;
+        private const int CategoryMarkers = 12;
+
+        private const int CategoryCount = 13;
 
         private const int ScopeAll = ScannerScopes.All;
         private const int ScopeFriendly = ScannerScopes.Friendly;
         private const int ScopeNeutral = ScannerScopes.Neutral;
         private const int ScopeEnemy = ScannerScopes.Enemy;
-
-        /// <summary>How wide each category's row of the counts table is
-        /// (<see cref="ScannerScopes"/>) - and so how many subcategories its key cycles through.
-        /// </summary>
-        private static readonly int[] Widths = new int[]
-        {
-            ScannerScopes.SystemWidth,
-            ScannerScopes.AffiliationWidth,
-            ScannerScopes.AffiliationWidth,
-            ScannerScopes.SingleWidth,
-            ScannerScopes.SingleWidth,
-            ScannerScopes.SingleWidth,
-            ScannerScopes.SingleWidth,
-        };
 
         public GalaxyScanner(GalaxyHudScreen screen)
         {
@@ -134,6 +153,8 @@ namespace ES2Access.Screens
         {
             _cursor.Forget();
             _empire = null;
+            _labels = null;
+            ScannerCost.Forget();
         }
 
         /// <summary>One key, offered to the scanner after the inspect cursor has passed on it. True
@@ -200,9 +221,20 @@ namespace ES2Access.Screens
             public string Name;
 
             /// <summary>What else is said about this one straight after its name, already composed -
-            /// a probe's owner and its burn-out countdown. Null for the kinds whose name is all the
-            /// scanner has to add to the pair.</summary>
+            /// a probe's owner and its burn-out countdown, a colonizable world's whole description.
+            /// Null for the kinds whose name is all the scanner has to add to the pair.</summary>
             public string Extra;
+
+            /// <summary>What KIND of thing this is, where the category's subcategories are the kinds
+            /// found rather than a list written down here - the anomaly's name, the curiosity's, the
+            /// resource's. It is both the column this belongs in and, in the category's "all", the
+            /// first half of what the row says. Null everywhere else.</summary>
+            public string Kind;
+
+            /// <summary>What this thing IS, across a rebuild - the identity the cursor is re-seated
+            /// by. Not the name: two planets can share one, and the same planet can be at a different
+            /// index every press.</summary>
+            public string Key;
 
             public GalaxyPosition At;
 
@@ -213,17 +245,24 @@ namespace ES2Access.Screens
 
             /// <summary>Which subcategories of its category this belongs to, as a set: a system can
             /// be the enemy's AND their capital, and both scopes have to find it
-            /// (<see cref="ScannerScopes"/>).</summary>
+            /// (<see cref="ScannerScopes"/>). Unused by the categories whose columns are kinds - those
+            /// belong to exactly one, and say which in <see cref="Kind"/>.</summary>
             public int Scopes;
 
             /// <summary>How far from where the player is reading, filled in when the list is sorted.
             /// </summary>
             public double Away;
 
-            /// <summary>Whichever of the three this is. The jump needs the thing itself, not its name.
+            /// <summary>Whichever of these this is. The jump needs the thing itself, not its name.
             /// </summary>
             public StarSystemNode Node;
             public Fleet Fleet;
+            public Planet Planet;
+            public Link Lane;
+
+            /// <summary>Which orbit the planet is in - the index its node is keyed by, which is a
+            /// fact about the system and not about the planet.</summary>
+            public int Orbit;
 
             /// <summary>A probe's own row in the tree, worked out when the list was built - the page
             /// keys a probe's node on the star it is nearest to, which is a question only the page can
@@ -236,6 +275,15 @@ namespace ES2Access.Screens
             public bool Square;
         }
 
+        /// <summary>Everything one press was decided from: the lists, the names of every column, and
+        /// the counts the cursor's rules are asked about.</summary>
+        private sealed class Snap
+        {
+            public List<Found>[] World;
+            public string[][] Labels;
+            public ScannerTable Table;
+        }
+
         // ---- one press ----
 
         /// <summary>
@@ -245,37 +293,44 @@ namespace ES2Access.Screens
         /// The whole snapshot is taken before the cursor is asked anything, because the cursor's own
         /// rules - skip a scope with nothing in it, come back to the nearest thing - are questions
         /// about the counts, and the counts are what the snapshot is.
+        ///
+        /// The cursor is re-seated on the thing it was standing on BEFORE the press is acted on: the
+        /// list was rebuilt and re-sorted around wherever the player is now reading from, so the index
+        /// the cursor is holding can point at something it was never told about.
         /// </summary>
         private bool Scan(int delta, Tier tier)
         {
             double east;
             double north;
-            List<Found>[] world = Snapshot(out east, out north);
-            int[][] counts = Counts(world);
+            Snap snap = Snapshot(out east, out north);
 
             ScannerAnswer answer;
             bool held = Rearmed() || _cursor.Arm();
+            _cursor.Settle(snap.Table);
+            _cursor.Reseat(snap.Table, Keys(Scoped(snap)));
             if (held)
             {
-                answer = _cursor.Hold(counts);
+                answer = _cursor.Hold(snap.Table);
             }
             else
             {
                 switch (tier)
                 {
                     case Tier.Category:
-                        answer = _cursor.CycleCategory(delta, counts);
+                        answer = _cursor.CycleCategory(delta, snap.Table);
                         break;
                     case Tier.Subcategory:
-                        answer = _cursor.CycleSubcategory(delta, counts);
+                        answer = _cursor.CycleSubcategory(delta, snap.Table);
                         break;
                     default:
-                        answer = _cursor.Step(delta, counts);
+                        answer = _cursor.Step(delta, snap.Table);
                         break;
                 }
             }
 
-            Say(answer, tier, held, Scoped(world), east, north);
+            List<Found> scope = Scoped(snap);
+            _cursor.Landed(Keys(scope));
+            Say(answer, tier, held, scope, east, north);
             return true;
         }
 
@@ -296,19 +351,21 @@ namespace ES2Access.Screens
         }
 
         /// <summary>The list the cursor is currently pointing into.</summary>
-        private List<Found> Scoped(List<Found>[] world)
+        private List<Found> Scoped(Snap snap)
         {
             int at = _cursor.Category;
-            List<Found> all = at >= 0 && at < world.Length ? world[at] : world[CategorySystems];
-            if (_cursor.Subcategory == ScopeAll)
+            if (at < 0 || at >= snap.World.Length)
             {
-                return all;
+                at = CategorySystems;
             }
 
+            List<Found> all = snap.World[at];
+            string[] labels = snap.Labels[at];
+            int sub = _cursor.Subcategory;
             List<Found> some = new List<Found>(all.Count);
             for (int i = 0; i < all.Count; i++)
             {
-                if (ScannerScopes.Holds(all[i].Scopes, _cursor.Subcategory))
+                if (Holds(all[i], at, sub, labels))
                 {
                     some.Add(all[i]);
                 }
@@ -317,31 +374,74 @@ namespace ES2Access.Screens
             return some;
         }
 
+        /// <summary>What the cursor re-seats itself by - the identities of a scope's things in the
+        /// order they now stand in.</summary>
+        private static IList<string> Keys(List<Found> scope)
+        {
+            string[] keys = new string[scope.Count];
+            for (int i = 0; i < scope.Count; i++)
+            {
+                keys[i] = scope[i].Key;
+            }
+
+            return keys;
+        }
+
+        /// <summary>Whether a thing belongs in one of its category's columns. Two rules, because there
+        /// are two kinds of taxonomy here: a set of memberships written down in the source, and a
+        /// column per KIND found out there.</summary>
+        private static bool Holds(Found found, int category, int subcategory, string[] labels)
+        {
+            if (!Kinds(category))
+            {
+                return ScannerScopes.Holds(found.Scopes, subcategory);
+            }
+
+            return ScannerScopes.HoldsKind(
+                found.Kind,
+                subcategory,
+                subcategory >= 0 && subcategory < labels.Length ? labels[subcategory] : null
+            );
+        }
+
+        /// <summary>Whether a category's subcategories are the KINDS of thing it found rather than a
+        /// list of questions written down here.</summary>
+        private static bool Kinds(int category)
+        {
+            return category == CategoryAnomalies
+                || category == CategoryCuriosities
+                || category == CategoryLuxury
+                || category == CategoryStrategic;
+        }
+
         /// <summary>The whole world as the cursor's rules ask about it: one row per category, one
         /// column per subcategory, a thing counted once in every subcategory it belongs to. The rows
         /// are of DIFFERENT widths on purpose - what a category can be asked about is a fact about
-        /// that category, and a uniform table would have to pad the three that are only ever asked
+        /// that category, and a uniform table would have to pad the ones that are only ever asked
         /// "what is there" with scopes that could never hold anything.</summary>
-        private static int[][] Counts(List<Found>[] world)
+        private static ScannerTable Table(List<Found>[] world, string[][] labels)
         {
             int[][] counts = new int[CategoryCount][];
             for (int at = 0; at < CategoryCount; at++)
             {
-                counts[at] = Row(world[at], Widths[at]);
+                int width = labels[at].Length;
+                int[] row = new int[width];
+                List<Found> found = world[at];
+                for (int i = 0; i < found.Count; i++)
+                {
+                    for (int sub = 0; sub < width; sub++)
+                    {
+                        if (Holds(found[i], at, sub, labels[at]))
+                        {
+                            row[sub]++;
+                        }
+                    }
+                }
+
+                counts[at] = row;
             }
 
-            return counts;
-        }
-
-        private static int[] Row(List<Found> found, int width)
-        {
-            int[] scopes = new int[found.Count];
-            for (int i = 0; i < found.Count; i++)
-            {
-                scopes[i] = found[i].Scopes;
-            }
-
-            return ScannerScopes.Tally(scopes, width);
+            return new ScannerTable(counts, labels);
         }
 
         // ---- what it says ----
@@ -399,10 +499,55 @@ namespace ES2Access.Screens
             int at = _cursor.Index;
             if (at >= 0 && at < scope.Count)
             {
-                Instance(message, scope[at], at, scope.Count, east, north);
+                Instance(
+                    message,
+                    Spoken(scope[at]),
+                    Detail(scope[at]),
+                    scope[at],
+                    at,
+                    scope.Count,
+                    east,
+                    north
+                );
             }
 
             Voice.Say(message.Build(), true);
+        }
+
+        /// <summary>
+        /// What a found thing is CALLED here, which depends on which column it is being read out of.
+        ///
+        /// In a category whose columns are kinds, a per-kind column has already said the kind - every
+        /// row in it is one - so the row is the planet and nothing else. The "all" column has not, and
+        /// a list of bare planet names there would leave the player unable to tell an anomaly from a
+        /// curiosity, so the kind goes in front of it through a template of the language's own.
+        /// </summary>
+        private string Spoken(Found found)
+        {
+            return found.Kind != null && Kinds(_cursor.Category) && _cursor.Subcategory == ScopeAll
+                ? ModStrings.Format(ModStrings.GalaxyScannerOnPlanet, found.Kind, found.Name)
+                : found.Name;
+        }
+
+        /// <summary>
+        /// What else is said about a thing straight after its name.
+        ///
+        /// Most kinds have it composed already - a probe's owner, its countdown. A COLONIZABLE world
+        /// does not, and deliberately: its description is the longest line the scanner says and much
+        /// the most expensive to compose, and exactly one row of the list is ever read out. Composing
+        /// them all on the way in would build a sentence for every settleable planet in the galaxy and
+        /// throw all but one away, on a key the player holds down.
+        /// </summary>
+        private string Detail(Found found)
+        {
+            if (found.Extra != null)
+            {
+                return found.Extra;
+            }
+
+            return _cursor.Category == CategoryColonizable && found.Planet != null
+                ? Description(found.Planet, Gui.PlayerEmpire)
+                : null;
         }
 
         /// <summary>One thing found, said the way the map says a place: what it is called, where it is
@@ -410,6 +555,8 @@ namespace ES2Access.Screens
         /// which is what tells the player how much more there is.</summary>
         private static void Instance(
             MessageBuilder message,
+            string name,
+            string extra,
             Found found,
             int index,
             int count,
@@ -422,14 +569,14 @@ namespace ES2Access.Screens
             // the sentence, and a forced comma there would start the line with one.
             if (message.IsEmpty)
             {
-                message.Fragment(found.Name);
+                message.Fragment(name);
             }
             else
             {
-                message.ListItemForcedComma(found.Name);
+                message.ListItemForcedComma(name);
             }
 
-            message.ListItemForcedComma(found.Extra);
+            message.ListItemForcedComma(extra);
             message.ListItemForcedComma(GalaxyCoordinates.Text(found.At));
             message.ListItemForcedComma(Away(found, east, north));
             message.ListItemForcedComma();
@@ -469,24 +616,51 @@ namespace ES2Access.Screens
             );
         }
 
-        /// <summary>The subcategory half alone - what a step of the subcategory key changed. Kept per
-        /// category rather than shared, so a language can inflect it for each.</summary>
+        /// <summary>The subcategory half alone - what a step of the subcategory key changed. Read off
+        /// the snapshot's own column names rather than composed again here, so the name the cursor is
+        /// remembering and the name the player hears are the same string.</summary>
         private string SubcategoryName()
         {
-            return ModStrings.Get(ScopeKeys[_cursor.Category][_cursor.Subcategory]);
+            string label =
+                _labels == null ? null : Label(_labels, _cursor.Category, _cursor.Subcategory);
+            return label ?? string.Empty;
         }
+
+        private static string Label(string[][] labels, int category, int subcategory)
+        {
+            if (category < 0 || category >= labels.Length)
+            {
+                return null;
+            }
+
+            string[] row = labels[category];
+            return subcategory < 0 || subcategory >= row.Length ? null : row[subcategory];
+        }
+
+        /// <summary>The column names of the last snapshot - what the cursor's memory is keyed by and
+        /// what the scope line says.</summary>
+        private string[][] _labels;
 
         private static readonly string[] CategoryKeys = new string[]
         {
             ModStrings.GalaxyScannerSystems,
+            ModStrings.GalaxyScannerColonizable,
+            ModStrings.GalaxyScannerUnexplored,
+            ModStrings.GalaxyScannerAnomalies,
+            ModStrings.GalaxyScannerCuriosities,
+            ModStrings.GalaxyScannerLuxury,
+            ModStrings.GalaxyScannerStrategic,
+            ModStrings.GalaxyScannerContestedInfluence,
             ModStrings.GalaxyScannerFleets,
             ModStrings.GalaxyScannerProbes,
-            ModStrings.GalaxyScannerQuestMarkers,
             ModStrings.GalaxyScannerPins,
             ModStrings.GalaxyScannerProjectiles,
-            ModStrings.GalaxyScannerContestedInfluence,
+            ModStrings.GalaxyScannerQuestMarkers,
         };
 
+        /// <summary>The subcategories a category has whatever is out there - the questions that are a
+        /// fact about the category. The four whose columns are KINDS have only their "all" here; the
+        /// rest of their row is built from what was found.</summary>
         private static readonly string[][] ScopeKeys = new string[][]
         {
             new string[]
@@ -501,6 +675,17 @@ namespace ES2Access.Screens
             },
             new string[]
             {
+                ModStrings.GalaxyScannerColonizableUnoccupied,
+                ModStrings.GalaxyScannerColonizableOccupied,
+            },
+            new string[] { ModStrings.GalaxyScannerUnexploredAll },
+            new string[] { ModStrings.GalaxyScannerAnomaliesAll },
+            new string[] { ModStrings.GalaxyScannerCuriositiesAll },
+            new string[] { ModStrings.GalaxyScannerLuxuryAll },
+            new string[] { ModStrings.GalaxyScannerStrategicAll },
+            new string[] { ModStrings.GalaxyScannerContestedInfluenceAll },
+            new string[]
+            {
                 ModStrings.GalaxyScannerFleetsAll,
                 ModStrings.GalaxyScannerFleetsFriendly,
                 ModStrings.GalaxyScannerFleetsNeutral,
@@ -513,11 +698,61 @@ namespace ES2Access.Screens
                 ModStrings.GalaxyScannerProbesNeutral,
                 ModStrings.GalaxyScannerProbesEnemy,
             },
-            new string[] { ModStrings.GalaxyScannerQuestMarkersAll },
             new string[] { ModStrings.GalaxyScannerPinsAll },
             new string[] { ModStrings.GalaxyScannerProjectilesAll },
-            new string[] { ModStrings.GalaxyScannerContestedInfluenceAll },
+            new string[] { ModStrings.GalaxyScannerQuestMarkersAll },
         };
+
+        /// <summary>
+        /// What every column of every category is CALLED, this press.
+        ///
+        /// The fixed taxonomies are localized straight out of their keys. The four whose columns are
+        /// kinds are built from what was found: "all", and then one column per kind, sorted by the
+        /// name the player will hear - so the list reads in the order the language puts it in rather
+        /// than in whatever order the galaxy was walked.
+        /// </summary>
+        private static string[][] Labels(List<Found>[] world)
+        {
+            string[][] labels = new string[CategoryCount][];
+            for (int at = 0; at < CategoryCount; at++)
+            {
+                string[] keys = ScopeKeys[at];
+                if (!Kinds(at))
+                {
+                    string[] fixedNames = new string[keys.Length];
+                    for (int i = 0; i < keys.Length; i++)
+                    {
+                        fixedNames[i] = ModStrings.Get(keys[i]);
+                    }
+
+                    labels[at] = fixedNames;
+                    continue;
+                }
+
+                List<string> kinds = new List<string>();
+                List<Found> found = world[at];
+                for (int i = 0; i < found.Count; i++)
+                {
+                    string kind = found[i].Kind;
+                    if (kind != null && !kinds.Contains(kind))
+                    {
+                        kinds.Add(kind);
+                    }
+                }
+
+                kinds.Sort(StringComparer.CurrentCulture);
+                string[] names = new string[kinds.Count + 1];
+                names[0] = ModStrings.Get(keys[0]);
+                for (int i = 0; i < kinds.Count; i++)
+                {
+                    names[i + 1] = kinds[i];
+                }
+
+                labels[at] = names;
+            }
+
+            return labels;
+        }
 
         // ---- going there ----
 
@@ -529,21 +764,29 @@ namespace ES2Access.Screens
         /// cursor - and lands exactly as an arrow key lands: camera, outline, and the cell read out.
         /// The scanner then measures from there, because the cursor is where the player is reading.
         ///
-        /// With the tree, the cursor goes to the thing's own node - a system's, or a fleet's under
-        /// whichever system the map draws it at - through the page's own landing, so the branch is
-        /// opened and the node makes its ordinary announcement rather than a second one invented here.
+        /// With the tree, the cursor goes to the thing's own node - a system's, a planet's under its
+        /// system, a lane's under the system it leaves, or a fleet's under whichever system the map
+        /// draws it at - through the page's own landing, so the branch is opened and the node makes
+        /// its ordinary announcement rather than a second one invented here. AND THE CAMERA FOLLOWS
+        /// (owner decision, 2026-08-22): every category lands the way the game's own locate lands
+        /// (<see cref="GalaxyHudScreen"/>'s Arrive - focus, then zoom), because a jump that leaves the
+        /// camera where it was hands a sighted player beside the blind one a screen showing somewhere
+        /// else.
         /// </summary>
         private bool GoTo()
         {
             double east;
             double north;
-            List<Found>[] world = Snapshot(out east, out north);
+            Snap snap = Snapshot(out east, out north);
             if (!Rearmed())
             {
                 _cursor.Arm();
             }
 
-            List<Found> scope = Scoped(world);
+            _cursor.Settle(snap.Table);
+            _cursor.Reseat(snap.Table, Keys(Scoped(snap)));
+            List<Found> scope = Scoped(snap);
+            _cursor.Landed(Keys(scope));
             int at = _cursor.Index;
             if (at < 0 || at >= scope.Count)
             {
@@ -590,15 +833,32 @@ namespace ES2Access.Screens
                     navigator.FocusNode(found.Row);
                 }
 
+                Camera(found);
                 return true;
             }
 
-            ControlId id = _screen.NodeFor(
-                found.Fleet != null ? (IGameEntityWithGalaxyPosition)found.Fleet : found.Node
-            );
+            // A PLANET's own node, and a LANE's - both keyed under the system they hang from, both
+            // reached by opening that branch on the way in (the ancestry is read out of the key).
+            ControlId id = null;
+            if (found.Planet != null && found.Node != null)
+            {
+                id = GalaxyHudScreen.PlanetId(found.Node, found.Orbit);
+            }
+            else if (found.Lane != null && found.Node != null)
+            {
+                id = GalaxyHudScreen.LaneId(found.Node, found.Lane);
+            }
+            else
+            {
+                id = _screen.NodeFor(
+                    found.Fleet != null ? (IGameEntityWithGalaxyPosition)found.Fleet : found.Node
+                );
+            }
+
             if (id != null && navigator != null)
             {
                 navigator.FocusNode(id);
+                Camera(found);
                 return true;
             }
 
@@ -620,11 +880,41 @@ namespace ES2Access.Screens
                 GalaxyHudScreen.SelectFleet(found.Fleet);
             }
 
+            Camera(found);
             MessageBuilder arrival = new MessageBuilder();
-            Instance(arrival, found, at, scope.Count, east, north);
+            Instance(arrival, Spoken(found), Detail(found), found, at, scope.Count, east, north);
             Voice.Say(arrival.Build(), true);
             return true;
         }
+
+        /// <summary>
+        /// Bring the camera to what the cursor just landed on.
+        ///
+        /// A thing that stands at a NODE is zoomed to the way the page's own locate zooms to one
+        /// (<c>GalaxyViewLevels.ZoomTo</c>, through the game's own force-zoom so the map's way back out
+        /// keeps working) - and that covers a planet and a lane too, which are drawn at the system
+        /// they belong to. A thing that stands nowhere in particular - a fleet under way, a probe, a
+        /// pin, a missile - has no node to zoom into, so the camera is slid onto its position the way
+        /// the inspect cursor slides onto a cell, which is the only "put the camera there" this game
+        /// has for a point.
+        /// </summary>
+        private static void Camera(Found found)
+        {
+            if (found.Node != null)
+            {
+                GalaxyViewLevels.ZoomTo(found.Node);
+                return;
+            }
+
+            GalaxyViewLevels.CenterOn(
+                new Vector3(found.At.X, 0f, found.At.Y),
+                CameraDamping
+            );
+        }
+
+        /// <summary>The same slide the inspect cursor moves the camera with, so an arrival from the
+        /// scanner looks like every other arrival on this map.</summary>
+        private const float CameraDamping = 0.3f;
 
         // ---- what is out there ----
 
@@ -636,7 +926,7 @@ namespace ES2Access.Screens
         /// the category next door holds anything before it decides to skip it, and that answer only
         /// exists once the other lists have been built.
         /// </summary>
-        private List<Found>[] Snapshot(out double east, out double north)
+        private Snap Snapshot(out double east, out double north)
         {
             List<Found>[] world = new List<Found>[CategoryCount];
             for (int at = 0; at < CategoryCount; at++)
@@ -645,6 +935,7 @@ namespace ES2Access.Screens
             }
 
             Reference(out east, out north);
+            ScannerCost.Begin();
             try
             {
                 Empire empire = Gui.PlayerEmpire;
@@ -653,6 +944,8 @@ namespace ES2Access.Screens
                     DepartmentOfForeignAffairs foreign =
                         empire.GetAgency<DepartmentOfForeignAffairs>();
                     Systems(world[CategorySystems], empire, foreign);
+                    Worlds(world, empire);
+                    Unexplored(world[CategoryUnexplored], empire);
                     Fleets(world[CategoryFleets], empire, foreign);
                     Probes(world[CategoryProbes], empire, foreign);
                     Markers(world[CategoryMarkers]);
@@ -671,7 +964,14 @@ namespace ES2Access.Screens
                 Sort(world[at], east, north);
             }
 
-            return world;
+            _labels = Labels(world);
+            ScannerCost.End();
+            return new Snap
+            {
+                World = world,
+                Labels = _labels,
+                Table = Table(world, _labels),
+            };
         }
 
         /// <summary>
@@ -693,7 +993,16 @@ namespace ES2Access.Screens
             for (int i = 0; i < markers.Count; i++)
             {
                 GalaxyHudScreen.ScannedMarker it = markers[i];
-                found.Add(Make(it.Quest, it.At, ScannerScopes.Only(), it.Node, null));
+                found.Add(
+                    Make(
+                        "marker/" + it.Quest + "/" + (it.Node == null ? "?" : it.Node.GUID.ToString()),
+                        it.Quest,
+                        it.At,
+                        ScannerScopes.Only(),
+                        it.Node,
+                        null
+                    )
+                );
             }
         }
 
@@ -727,6 +1036,7 @@ namespace ES2Access.Screens
                 }
 
                 Found made = Make(
+                    "square/" + tile.X + "," + tile.Y,
                     ModStrings.Format(ModStrings.GalaxyScannerNear, whose.LocalizedName),
                     new GalaxyPosition(origin.X + tile.X, origin.Y + tile.Y),
                     ScannerScopes.Only(),
@@ -747,14 +1057,16 @@ namespace ES2Access.Screens
             for (int i = 0; i < pins.Count; i++)
             {
                 CoordinationRequest pin = pins[i].Request;
+                ControlId row = GalaxyHudScreen.PinId(pin);
                 Found made = Make(
+                    Row(row),
                     GalaxyHudScreen.PinKind(pin),
                     pin.GalaxyPosition,
                     ScannerScopes.Only(),
                     null,
                     null
                 );
-                made.Row = GalaxyHudScreen.PinId(pin);
+                made.Row = row;
                 found.Add(made);
             }
         }
@@ -770,16 +1082,25 @@ namespace ES2Access.Screens
             for (int i = 0; i < shots.Count; i++)
             {
                 ObliteratorProjectile shot = shots[i].Shot;
+                ControlId row = GalaxyHudScreen.ProjectileId(shot);
                 Found made = Make(
+                    Row(row),
                     ModStrings.Get(ModStrings.GalaxyObliteratorProjectile),
                     shot.GalaxyPosition,
                     ScannerScopes.Only(),
                     null,
                     null
                 );
-                made.Row = GalaxyHudScreen.ProjectileId(shot);
+                made.Row = row;
                 found.Add(made);
             }
+        }
+
+        /// <summary>The identity of a thing whose row the PAGE keys - the key it built, which is
+        /// stable across a rebuild for the same reason the row is.</summary>
+        private static string Row(ControlId id)
+        {
+            return id == null ? null : "row/" + id.StructuralKey;
         }
 
         /// <summary>
@@ -802,6 +1123,7 @@ namespace ES2Access.Screens
             {
                 GalaxyHudScreen.ScannedProbe it = drifting[i];
                 Found made = Make(
+                    "probe/" + it.Probe.GUID,
                     it.Name,
                     it.Probe.GalaxyPosition,
                     ScannerScopes.Owned(Scope(it.Probe.Empire, empire, foreign)),
@@ -850,7 +1172,570 @@ namespace ES2Access.Screens
                     homes.Contains(node.GUID),
                     Minor(colonies, node, empire)
                 );
-                found.Add(Make(node.LocalizedName, node.GalaxyPosition, scopes, node, null));
+                found.Add(
+                    Make(
+                        "system/" + node.GUID,
+                        node.LocalizedName,
+                        node.GalaxyPosition,
+                        scopes,
+                        node,
+                        null
+                    )
+                );
+            }
+        }
+
+        // ---- what is on the worlds ----
+
+        /// <summary>
+        /// One walk of every planet the map is showing, filling the five categories that are questions
+        /// about worlds: what could be settled, and what has been found on them.
+        ///
+        /// ONE walk, not five. The five ask the same two questions of the same planets - is the player
+        /// allowed to know what is on this world, and what is on it - and walking the galaxy five
+        /// times over would be five chances for the five to disagree about which planets exist.
+        ///
+        /// THE GATES ARE THE DRAWN CARD'S OWN. A planet is here at all only where the tree declares a
+        /// node for it (<see cref="GalaxyHudScreen.PlanetsDeclared"/>: the game is showing this empire
+        /// the system's planets) and the map is naming the system
+        /// (<see cref="MapVisibility.Perceived"/>) - anything else would be a scanner offering a
+        /// landing that does not exist. What is ON the planet is gated once more: the anomalies, the
+        /// deposits and the planet's own type appear on the card only once the system is SURVEYED
+        /// (<see cref="GalaxyHudScreen.Surveyed"/>), which is the threshold the circles turn from grey
+        /// unknowns into real planets at. Curiosities are the exception, and it is the game's: a
+        /// curiosity is seen through its own definition's prerequisites
+        /// (<c>Curiosity.CanBeSeen</c> - detection technology), never through the survey.
+        /// </summary>
+        private static void Worlds(List<Found>[] world, Empire empire)
+        {
+            List<Found> colonizable = world[CategoryColonizable];
+            List<Found> anomalies = world[CategoryAnomalies];
+            List<Found> curiosities = world[CategoryCuriosities];
+            List<Found> luxury = world[CategoryLuxury];
+            List<Found> strategic = world[CategoryStrategic];
+            Dictionary<string, bool> able = new Dictionary<string, bool>();
+            Dictionary<string, string> titles = new Dictionary<string, string>();
+            foreach (StarSystemNode node in GameGalaxy.StarSystemNodes())
+            {
+                if (
+                    !MapVisibility.Perceived(node, empire)
+                    || !GalaxyHudScreen.PlanetsDeclared(node, empire)
+                )
+                {
+                    continue;
+                }
+
+                bool surveyed = GalaxyHudScreen.Surveyed(node, empire);
+                for (int i = 0; i < node.Planets.Count; i++)
+                {
+                    Planet planet = node.Planets[i];
+                    string name = GalaxyHudScreen.PlanetName(node, planet, empire);
+                    Curiosities(curiosities, node, planet, i, name, empire, titles);
+                    if (!surveyed)
+                    {
+                        continue;
+                    }
+
+                    Anomalies(anomalies, node, planet, i, name, titles);
+                    Deposits(luxury, strategic, node, planet, i, name, titles);
+                    Colonizable(colonizable, node, planet, i, name, empire, able);
+                }
+            }
+        }
+
+        /// <summary>What has been found on a world, one entry per KIND of anomaly - named by the
+        /// game's own wrapper for it, which is what the orbital card writes wherever it has room for
+        /// the words (<see cref="GalaxyHudScreen"/>'s AddAnomalies).</summary>
+        private static void Anomalies(
+            List<Found> found,
+            StarSystemNode node,
+            Planet planet,
+            int orbit,
+            string name,
+            Dictionary<string, string> titles
+        )
+        {
+            List<string> seen = new List<string>();
+            for (int i = 0; i < planet.Anomalies.Count; i++)
+            {
+                AnomalyDefinition definition = planet.Anomalies[i].AnomalyDefinition;
+                if (definition == null)
+                {
+                    continue;
+                }
+
+                string kind = AnomalyTitle(definition, planet, titles);
+                if (Once(seen, kind))
+                {
+                    found.Add(OnPlanet(node, planet, orbit, name, kind, "anomaly"));
+                }
+            }
+        }
+
+        /// <summary>Whether this is the first of its kind on this world. The row is one per KIND and
+        /// world (owner's wording, 2026-08-22) - two of one kind on one planet are one place to go
+        /// to, and two rows saying the same words would also be two things the cursor could not tell
+        /// apart across a rebuild.</summary>
+        private static bool Once(List<string> seen, string kind)
+        {
+            if (seen.Contains(kind))
+            {
+                return false;
+            }
+
+            seen.Add(kind);
+            return true;
+        }
+
+        /// <summary>The curiosities still standing on a world - the ones the game would let this
+        /// empire see, which is a question about its detection technology and not about the survey
+        /// (<c>GuiPlanet.GetRemainingCuriosities</c> asks exactly this of every curiosity, and the
+        /// ordering it puts them in is the panel's, not ours).</summary>
+        private static void Curiosities(
+            List<Found> found,
+            StarSystemNode node,
+            Planet planet,
+            int orbit,
+            string name,
+            Empire empire,
+            Dictionary<string, string> titles
+        )
+        {
+            List<string> seen = new List<string>();
+            for (int i = 0; i < planet.Curiosities.Count; i++)
+            {
+                Curiosity curiosity = planet.Curiosities[i];
+                if (curiosity == null || !curiosity.CanBeSeen(empire))
+                {
+                    continue;
+                }
+
+                string kind = CuriosityTitle(curiosity, titles);
+                if (Once(seen, kind))
+                {
+                    found.Add(OnPlanet(node, planet, orbit, name, kind, "curiosity"));
+                }
+            }
+        }
+
+        /// <summary>The resources a world is sitting on, split the way the game splits them - by the
+        /// TYPE of the resource each deposit relates to (<c>GuiResource.IsLuxury</c> /
+        /// <c>IsStrategic</c>, which count the system-wide kinds in with their own). A deposit of
+        /// neither kind is not a thing the player goes looking for and is in neither list.</summary>
+        private static void Deposits(
+            List<Found> luxury,
+            List<Found> strategic,
+            StarSystemNode node,
+            Planet planet,
+            int orbit,
+            string name,
+            Dictionary<string, string> titles
+        )
+        {
+            List<string> seen = new List<string>();
+            for (int i = 0; i < planet.ResourceDeposits.Count; i++)
+            {
+                ResourceDeposit deposit = planet.ResourceDeposits[i];
+                ResourceDepositDefinition definition = deposit == null ? null : deposit.Definition;
+                ResourceDefinition resource =
+                    definition == null ? null : definition.RelatedResourceDefinition;
+                if (resource == null)
+                {
+                    continue;
+                }
+
+                GuiResource wrapper = new GuiResource(resource);
+                if (!wrapper.IsLuxury && !wrapper.IsStrategic)
+                {
+                    continue;
+                }
+
+                string kind = ResourceTitle(wrapper, titles);
+                if (Once(seen, kind))
+                {
+                    (wrapper.IsStrategic ? strategic : luxury).Add(
+                        OnPlanet(node, planet, orbit, name, kind, "deposit")
+                    );
+                }
+            }
+        }
+
+        /// <summary>One thing found on a world: the planet is what the row is about and where the jump
+        /// lands, and the KIND is which column it belongs in - and, in the column that holds every
+        /// kind, the first half of what the row says.</summary>
+        private static Found OnPlanet(
+            StarSystemNode node,
+            Planet planet,
+            int orbit,
+            string name,
+            string kind,
+            string sort
+        )
+        {
+            Found made = Make(
+                "planet/" + planet.GUID + "/" + sort + "/" + kind,
+                name,
+                node.GalaxyPosition,
+                ScannerScopes.Only(),
+                node,
+                null
+            );
+            made.Kind = kind;
+            made.Planet = planet;
+            made.Orbit = orbit;
+            return made;
+        }
+
+        /// <summary>
+        /// The worlds this empire could settle, in the two senses the owner asked for (2026-08-22).
+        ///
+        /// UNOCCUPIED is the game's own question, asked the way the game asks it: nobody has settled
+        /// this planet and this empire is both able and allowed to. That is <c>Planet.IsColonizable</c>
+        /// exactly, taken apart into the two halves it is made of - the technology to settle this kind
+        /// of world, and the system's own rules about who is already standing in it - so that the
+        /// first half can be answered once per kind of world instead of once per world.
+        ///
+        /// OCCUPIED is the other half of the same sweep: somebody ELSE is already sitting on the world
+        /// - an outpost or a colony, theirs or a minor faction's - and this empire's technology could
+        /// settle that kind of world. Only the ABLE half is asked, deliberately: the allowed half
+        /// refuses every planet in a system somebody else holds, which is exactly the set this scope
+        /// is for. It is a list of worlds worth taking, by force or by influence, not a list of
+        /// worlds a colony ship could be sent to today.
+        /// </summary>
+        private static void Colonizable(
+            List<Found> found,
+            StarSystemNode node,
+            Planet planet,
+            int orbit,
+            string name,
+            Empire empire,
+            Dictionary<string, bool> able
+        )
+        {
+            // The half both scopes need, and the cheap half once a type has been asked about. Asking
+            // it first is also what keeps the expensive half off every world of a kind this empire
+            // cannot settle at all.
+            if (!Able(planet, empire, able))
+            {
+                return;
+            }
+
+            bool occupied = planet.IsColonized;
+            if (occupied)
+            {
+                ColonizedPlanet colony = planet.ColonizedPlanet;
+                if (colony == null || ReferenceEquals(colony.Empire, empire))
+                {
+                    return;
+                }
+            }
+            else
+            {
+                // The other half of the game's own <c>IsColonizable</c>, whose first half is the line
+                // above: the system's rules about who is already standing in it.
+                ScannerCost.Colonizability();
+                if (!planet.IsEmpireAllowedToColonize(empire))
+                {
+                    return;
+                }
+            }
+
+            Found made = Make(
+                "planet/" + planet.GUID,
+                name,
+                node.GalaxyPosition,
+                ScannerScopes.Colonizable(occupied),
+                node,
+                null
+            );
+            made.Planet = planet;
+            made.Orbit = orbit;
+            found.Add(made);
+        }
+
+        /// <summary>
+        /// Whether this empire's technology could settle a world of this KIND at all
+        /// (<c>Planet.IsEmpireAbleToColonize</c>).
+        ///
+        /// Memoized on the planet's type for the length of one press, which is exact rather than a
+        /// nearly-right saving: the list of colonization constructibles a planet offers is rebuilt
+        /// from the database by the planet's Type and nothing else
+        /// (<c>Planet.RefreshColonizationConstructibles</c>), and both prerequisite checks the answer
+        /// is made of are run against the EMPIRE's simulation object. So two worlds of one type
+        /// cannot answer differently, and a galaxy of five hundred planets asks the question once per
+        /// type instead of once per planet.
+        /// </summary>
+        private static bool Able(Planet planet, Empire empire, Dictionary<string, bool> memo)
+        {
+            string type = planet.Type.ToString();
+            bool answer;
+            if (memo.TryGetValue(type, out answer))
+            {
+                return answer;
+            }
+
+            ScannerCost.Colonizability();
+            answer = planet.IsEmpireAbleToColonize(empire);
+            memo[type] = answer;
+            return answer;
+        }
+
+        /// <summary>
+        /// Everything about a world that decides whether it is worth going to, in the order a player
+        /// weighs it: what kind of world it is, what is on it, how many people it would hold, and what
+        /// it would produce. Absent parts are dropped rather than said as nothing, so a barren rock
+        /// reads short and a garden world reads long.
+        ///
+        /// The words are the GAME's throughout - its own size-and-type sentence (its key's typo
+        /// included), its own names for anomalies, curiosities and resources, and its own titles for
+        /// the five outputs, which are drawn as icons and so exist nowhere else on the screen.
+        /// </summary>
+        private static string Description(Planet planet, Empire empire)
+        {
+            MessageBuilder details = new MessageBuilder();
+            details.ListItem(SizeAndType(planet));
+            Dictionary<string, string> titles = new Dictionary<string, string>();
+            Resources(details, planet, false, titles);
+            Resources(details, planet, true, titles);
+            for (int i = 0; i < planet.Anomalies.Count; i++)
+            {
+                AnomalyDefinition definition = planet.Anomalies[i].AnomalyDefinition;
+                if (definition != null)
+                {
+                    details.ListItem(AnomalyTitle(definition, planet, titles));
+                }
+            }
+
+            for (int i = 0; i < planet.Curiosities.Count; i++)
+            {
+                Curiosity curiosity = planet.Curiosities[i];
+                if (curiosity != null && curiosity.CanBeSeen(empire))
+                {
+                    details.ListItem(CuriosityTitle(curiosity, titles));
+                }
+            }
+
+            details.ListItem(
+                ModStrings.Format(ModStrings.GalaxyScannerMaxPopulation, planet.MaxPopulation)
+            );
+            Outputs(details, planet);
+            return details.Build();
+        }
+
+        /// <summary>The resources of one kind a world is sitting on, in the order the deposits stand
+        /// on it. Two passes rather than one, because the two kinds are two different reasons to go
+        /// there and the row keeps them apart (owner's wording, 2026-08-22: the luxuries, then the
+        /// strategics).</summary>
+        private static void Resources(
+            MessageBuilder details,
+            Planet planet,
+            bool strategic,
+            Dictionary<string, string> titles
+        )
+        {
+            for (int i = 0; i < planet.ResourceDeposits.Count; i++)
+            {
+                ResourceDeposit deposit = planet.ResourceDeposits[i];
+                ResourceDepositDefinition definition = deposit == null ? null : deposit.Definition;
+                ResourceDefinition resource =
+                    definition == null ? null : definition.RelatedResourceDefinition;
+                if (resource == null)
+                {
+                    continue;
+                }
+
+                GuiResource wrapper = new GuiResource(resource);
+                if (strategic ? wrapper.IsStrategic : wrapper.IsLuxury)
+                {
+                    details.ListItem(ResourceTitle(wrapper, titles));
+                }
+            }
+        }
+
+        /// <summary>
+        /// What a world would produce, as the five NUMBERS the planet's own page reads off it (owner
+        /// ruling, 2026-08-22) - not the pips the orbital card draws in their place.
+        ///
+        /// The properties are the ones the game's own enumerator binds for a world nobody has settled
+        /// (<c>FidsiEnumerator.LoadPlanet</c>, the uncolonized branch), read off the planet's own
+        /// simulation object and named by the game's titles for them, which is where those words live:
+        /// the panel draws an icon beside each and writes no caption anywhere.
+        /// </summary>
+        private static void Outputs(MessageBuilder details, Planet planet)
+        {
+            for (int i = 0; i < Potential.Length; i++)
+            {
+                Amplitude.StaticString property = Potential[i];
+                string value = GlobalHud.Amount(planet.GetPropertyValue(property), false, 0);
+                if (value == null)
+                {
+                    continue;
+                }
+
+                details.ListItem(
+                    ModStrings.Format(
+                        ModStrings.GalaxyScannerOutput,
+                        AgeText.Clean(Gui.GetLocalizedTitle(property)),
+                        value
+                    )
+                );
+            }
+        }
+
+        /// <summary>The five outputs of a world nobody has settled, in the game's own order
+        /// (<c>FidsiEnumerator.LoadPlanet</c>).</summary>
+        private static readonly Amplitude.StaticString[] Potential = new Amplitude.StaticString[]
+        {
+            SimulationProperties.Planet.PlanetInitialFood,
+            SimulationProperties.Planet.PlanetInitialIndustry,
+            SimulationProperties.Planet.PlanetInitialDust,
+            SimulationProperties.Planet.PlanetInitialScience,
+            SimulationProperties.Planet.PlanetInitialPrestige,
+        };
+
+        /// <summary>What kind of world this is, in the game's own sentence for the pair - size first,
+        /// as the key's own (misspelled) name has it.</summary>
+        private static string SizeAndType(Planet planet)
+        {
+            try
+            {
+                return AgeText.Clean(
+                    Gui.Localize(
+                        "%PlaneSizeAndTypeFormat",
+                        Gui.Localize(Gui.GetTitle(planet.Size)),
+                        Gui.Localize(Gui.GetTitle(planet.Type))
+                    )
+                );
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        // The three names a kind of thing has, each memoized for the length of one press: the wrapper
+        // that answers is an allocation and a database lookup, and one galaxy holds hundreds of copies
+        // of a handful of kinds.
+        private static string AnomalyTitle(
+            AnomalyDefinition definition,
+            Planet planet,
+            Dictionary<string, string> titles
+        )
+        {
+            return Titled("anomaly/" + definition.Name, titles, definition, planet);
+        }
+
+        private static string CuriosityTitle(Curiosity curiosity, Dictionary<string, string> titles)
+        {
+            return Titled(
+                "curiosity/" + curiosity.CuriosityDefinition.DisplayedType,
+                titles,
+                curiosity,
+                null
+            );
+        }
+
+        private static string ResourceTitle(GuiResource resource, Dictionary<string, string> titles)
+        {
+            return Titled("resource/" + resource.Name, titles, resource, null);
+        }
+
+        /// <summary>The game's own title for a thing, asked once per kind per press.</summary>
+        private static string Titled(
+            string key,
+            Dictionary<string, string> titles,
+            object subject,
+            Planet planet
+        )
+        {
+            string title;
+            if (titles.TryGetValue(key, out title))
+            {
+                return title;
+            }
+
+            try
+            {
+                AnomalyDefinition anomaly = subject as AnomalyDefinition;
+                Curiosity curiosity = subject as Curiosity;
+                GuiResource resource = subject as GuiResource;
+                if (anomaly != null)
+                {
+                    title = AgeText.Clean(new GuiAnomaly(anomaly, planet).Title);
+                }
+                else if (curiosity != null)
+                {
+                    title = AgeText.Clean(new GuiCuriosity(curiosity).Title);
+                }
+                else if (resource != null)
+                {
+                    title = AgeText.Clean(resource.Title);
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: the scanner naming " + key + " threw: " + e);
+            }
+
+            titles[key] = title;
+            return title;
+        }
+
+        // ---- the ways out ----
+
+        /// <summary>
+        /// EVERY WAY OUT OF THE KNOWN MAP: a line the map draws from a system the player has seen, to
+        /// a place they have not.
+        ///
+        /// The lanes are the page's own (<see cref="GalaxyHudScreen.LanesOf"/>) - the same list its
+        /// lane rows, its fleet legs and its count phrases are built from, so a lane is numbered here
+        /// exactly as the tree numbers it, clockwise from north. A wormhole is one of them where the
+        /// empire has the technology to be shown wormholes at all, and says it is one.
+        ///
+        /// EACH ONE ONCE, by construction rather than by de-duplication: a lane is offered by the end
+        /// the player can SEE, and the other end is by definition one they cannot, so the walk never
+        /// reaches it from the far side.
+        ///
+        /// It is named from the system it leaves rather than the place it goes, which has no name yet
+        /// - that is the whole of what makes it unexplored (owner's wording, 2026-08-22).
+        /// </summary>
+        private static void Unexplored(List<Found> found, Empire empire)
+        {
+            foreach (StarSystemNode node in GameGalaxy.StarSystemNodes())
+            {
+                if (!MapVisibility.Perceived(node, empire))
+                {
+                    continue;
+                }
+
+                List<GalaxyHudScreen.Lane> lanes = GalaxyHudScreen.LanesOf(node, empire);
+                for (int i = 0; i < lanes.Count; i++)
+                {
+                    GalaxyHudScreen.Lane lane = lanes[i];
+                    if (MapVisibility.Perceived(lane.Far, empire))
+                    {
+                        continue;
+                    }
+
+                    string name = ModStrings.Format(
+                        lane.Wormhole
+                            ? ModStrings.GalaxyScannerUnexploredWormhole
+                            : ModStrings.GalaxyScannerUnexploredLane,
+                        i + 1,
+                        node.LocalizedName,
+                        ModStrings.Get(CompassDirections.KeyForBearing(lane.Bearing))
+                    );
+                    Found made = Make(
+                        "lane/" + lane.Link.GUID,
+                        name,
+                        node.GalaxyPosition,
+                        ScannerScopes.Only(),
+                        node,
+                        null
+                    );
+                    made.Lane = lane.Link;
+                    found.Add(made);
+                }
             }
         }
 
@@ -1043,6 +1928,7 @@ namespace ES2Access.Screens
                     : fleet.DisplayedEmpire;
                 found.Add(
                     Make(
+                        "fleet/" + fleet.GUID,
                         fleet.LocalizedName,
                         fleet.GalaxyPosition,
                         ScannerScopes.Owned(Scope(owner, empire, foreign)),
@@ -1054,6 +1940,7 @@ namespace ES2Access.Screens
         }
 
         private static Found Make(
+            string key,
             string name,
             GalaxyPosition at,
             int scopes,
@@ -1066,6 +1953,7 @@ namespace ES2Access.Screens
             GalaxyCoordinates.Offsets(at, out east, out north);
             return new Found
             {
+                Key = key,
                 Name = name,
                 At = at,
                 East = east,
@@ -1134,7 +2022,9 @@ namespace ES2Access.Screens
         }
 
         /// <summary>Nearest first, and where two things are the same distance away the one whose name
-        /// comes first - so the same galaxy read twice reads the same way round.</summary>
+        /// comes first - so the same galaxy read twice reads the same way round. Two things of
+        /// different KINDS standing on one planet are the case the name cannot separate, so the kind
+        /// settles it.</summary>
         private static void Sort(List<Found> found, double east, double north)
         {
             for (int i = 0; i < found.Count; i++)
@@ -1152,9 +2042,13 @@ namespace ES2Access.Screens
         private static int Nearer(Found one, Found two)
         {
             int by = one.Away.CompareTo(two.Away);
-            return by != 0
-                ? by
-                : string.Compare(one.Name, two.Name, StringComparison.Ordinal);
+            if (by != 0)
+            {
+                return by;
+            }
+
+            by = string.Compare(one.Name, two.Name, StringComparison.Ordinal);
+            return by != 0 ? by : string.Compare(one.Kind, two.Kind, StringComparison.Ordinal);
         }
 
         // ---- where it measures from ----

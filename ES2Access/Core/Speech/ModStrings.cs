@@ -515,6 +515,53 @@ namespace ES2Access.Core.Speech
         /// <summary>What is said instead of the offset components when the thing the scanner found is
         /// where the player is already reading from.</summary>
         public const string GalaxyScannerHere = "galaxy.scanner.here";
+
+        // --- scanner categories (2026-08-22) ---
+
+        /// <summary>The worlds a player could settle, and the two senses of it: one standing free,
+        /// one somebody else is already on that this empire could take.</summary>
+        public const string GalaxyScannerColonizable = "galaxy.scanner.colonizable";
+        public const string GalaxyScannerColonizableUnoccupied =
+            "galaxy.scanner.colonizable-unoccupied";
+        public const string GalaxyScannerColonizableOccupied = "galaxy.scanner.colonizable-occupied";
+
+        /// <summary>Every way out of the known map - a lane or a wormhole whose far end the player has
+        /// not seen.</summary>
+        public const string GalaxyScannerUnexplored = "galaxy.scanner.unexplored";
+        public const string GalaxyScannerUnexploredAll = "galaxy.scanner.unexplored-all";
+
+        /// <summary>One of those ways out, named from the end the player CAN see - the place it goes
+        /// has no name yet, which is the whole of what makes it unexplored. The number is the system's
+        /// own lane numbering, clockwise from north, the same one the tree says.</summary>
+        public const string GalaxyScannerUnexploredLane = "galaxy.scanner.unexplored-lane";
+        public const string GalaxyScannerUnexploredWormhole = "galaxy.scanner.unexplored-wormhole";
+
+        // What has been found on the worlds. Each of these four categories names its own "all"; every
+        // other subcategory it has is a KIND the game itself names, so there is no key for one.
+        public const string GalaxyScannerAnomalies = "galaxy.scanner.anomalies";
+        public const string GalaxyScannerAnomaliesAll = "galaxy.scanner.anomalies-all";
+        public const string GalaxyScannerCuriosities = "galaxy.scanner.curiosities";
+        public const string GalaxyScannerCuriositiesAll = "galaxy.scanner.curiosities-all";
+        public const string GalaxyScannerLuxury = "galaxy.scanner.luxury";
+        public const string GalaxyScannerLuxuryAll = "galaxy.scanner.luxury-all";
+        public const string GalaxyScannerStrategic = "galaxy.scanner.strategic";
+        public const string GalaxyScannerStrategicAll = "galaxy.scanner.strategic-all";
+
+        /// <summary>How a thing found on a world is named in the column that holds every kind of them
+        /// at once: the kind, and the world it is on. In a column that IS one kind the row is the
+        /// world alone - the column has already said the rest.</summary>
+        public const string GalaxyScannerOnPlanet = "galaxy.scanner.on-planet";
+
+        /// <summary>How many people a world would ever hold. The game draws this beside an icon and
+        /// writes the words nowhere, so they are the mod's.</summary>
+        public const string GalaxyScannerMaxPopulation = "galaxy.scanner.max-population";
+
+        /// <summary>One of a world's five outputs and how much of it - the name is the game's own
+        /// title for the property, the number the game's own formatting, and this is only the order
+        /// they go in.</summary>
+        public const string GalaxyScannerOutput = "galaxy.scanner.output";
+
+        // --- end scanner categories ---
         public const string GalaxyFleetShips = "galaxy.fleet-ships";
         public const string GalaxyFleetMoving = "galaxy.fleet-moving";
         public const string GalaxyFleetMovement = "galaxy.fleet-movement";
@@ -1595,6 +1642,26 @@ namespace ES2Access.Core.Speech
             { GalaxyScannerNear, "Near {0}" },
             { GalaxyScannerEmpty, "{0}, none found" },
             { GalaxyScannerHere, "here" },
+            // --- scanner categories (2026-08-22) ---
+            { GalaxyScannerColonizable, "Colonizable Planets" },
+            { GalaxyScannerColonizableUnoccupied, "unoccupied" },
+            { GalaxyScannerColonizableOccupied, "occupied" },
+            { GalaxyScannerUnexplored, "Unexplored" },
+            { GalaxyScannerUnexploredAll, "all" },
+            { GalaxyScannerUnexploredLane, "Star lane {0} from {1} heading {2}" },
+            { GalaxyScannerUnexploredWormhole, "Wormhole {0} from {1} heading {2}" },
+            { GalaxyScannerAnomalies, "Anomalies" },
+            { GalaxyScannerAnomaliesAll, "all" },
+            { GalaxyScannerCuriosities, "Curiosities" },
+            { GalaxyScannerCuriositiesAll, "all" },
+            { GalaxyScannerLuxury, "Luxury Resources" },
+            { GalaxyScannerLuxuryAll, "all" },
+            { GalaxyScannerStrategic, "Strategic Resources" },
+            { GalaxyScannerStrategicAll, "all" },
+            { GalaxyScannerOnPlanet, "{0} on {1}" },
+            { GalaxyScannerMaxPopulation, "max population {0}" },
+            { GalaxyScannerOutput, "{0} {1}" },
+            // --- end scanner categories ---
             { GalaxyFleetShips, "{0} ships" },
             { GalaxyFleetMoving, "moving" },
             { GalaxyFleetMovement, "{0} movement points" },

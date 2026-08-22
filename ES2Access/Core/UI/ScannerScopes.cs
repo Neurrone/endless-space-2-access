@@ -56,6 +56,39 @@ namespace ES2Access.Core.UI
         /// ally pins, obliterator missiles): one, which is "all".</summary>
         public const int SingleWidth = 1;
 
+        /// <summary>
+        /// A settleable world's two scopes: one standing free, one somebody else is already on.
+        ///
+        /// The one taxonomy with no "all", and deliberately - the two halves answer different
+        /// questions ("where can I send a colony ship" against "whose world is worth taking"), and a
+        /// column holding both would be a list a player never wants. Every world is in exactly one,
+        /// so nothing is lost by the absence.
+        /// </summary>
+        public const int Unoccupied = 0;
+        public const int Occupied = 1;
+        public const int ColonizableWidth = 2;
+
+        /// <summary>A settleable world's membership: the one scope it is in.</summary>
+        public static int Colonizable(bool occupied)
+        {
+            return Bit(occupied ? Occupied : Unoccupied);
+        }
+
+        /// <summary>
+        /// Whether a thing belongs in a column of a category whose columns are the KINDS of thing it
+        /// found - one per anomaly definition, per curiosity, per resource, worked out from what is
+        /// out there rather than written down anywhere.
+        ///
+        /// Column zero is "all" whatever the kinds turn out to be, so a category always has somewhere
+        /// to land; every other column holds the things whose kind it is NAMED after, which is why the
+        /// comparison is against the label the player hears and not against an index: the list is
+        /// sorted by that name, so the index a kind sits at moves as the galaxy changes.
+        /// </summary>
+        public static bool HoldsKind(string kind, int subcategory, string label)
+        {
+            return subcategory == All || (kind != null && kind == label);
+        }
+
         public static int Bit(int scope)
         {
             return 1 << scope;

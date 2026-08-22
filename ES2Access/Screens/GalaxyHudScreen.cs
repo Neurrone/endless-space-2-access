@@ -3707,7 +3707,7 @@ namespace ES2Access.Screens
         {
             try
             {
-                if ((int)node.Exploration[empire] < 2 || !node.PlanetsVisibility[empire.Index])
+                if (!PlanetsDeclared(node, empire))
                 {
                     return;
                 }
@@ -4412,7 +4412,7 @@ namespace ES2Access.Screens
         /// <summary>What the map calls this planet. A system the player has not surveyed shows a circle
         /// with no name on it and a panel that says only that the planet is unknown, so that word - the
         /// game's own - is the whole of what a planet in one is called here.</summary>
-        private static string PlanetName(StarSystemNode system, Planet planet, Empire empire)
+        internal static string PlanetName(StarSystemNode system, Planet planet, Empire empire)
         {
             try
             {
@@ -4451,10 +4451,41 @@ namespace ES2Access.Screens
         }
 
         /// <summary>Whether the game has let this empire see what the planets in a system actually are.
-        /// The circles switch from grey unknowns to real planets at the same threshold.</summary>
-        private static bool Surveyed(StarSystemNode system, Empire empire)
+        /// The circles switch from grey unknowns to real planets at the same threshold. Internal
+        /// because the scanner asks it too: what is found ON a planet is offered exactly where the
+        /// orbital card would draw it (<see cref="GalaxyScanner"/>).</summary>
+        internal static bool Surveyed(StarSystemNode system, Empire empire)
         {
             return (int)system.Exploration[empire] >= (int)EntityExploration.State.Revealed;
+        }
+
+        /// <summary>Whether this page declares nodes for a system's planets at all - the threshold at
+        /// which the map shows this empire that the system HAS planets, below the survey that says
+        /// what they are (<see cref="AddPlanets"/>). Asked by the scanner before it offers anything
+        /// standing on a planet: a find with no node to land on is a jump that can only refuse.
+        /// </summary>
+        internal static bool PlanetsDeclared(StarSystemNode node, Empire empire)
+        {
+            return (int)node.Exploration[empire] >= 2 && node.PlanetsVisibility[empire.Index];
+        }
+
+        /// <summary>A planet's own node in the tree, keyed exactly as <see cref="AddPlanets"/> keys it
+        /// - by the orbit it is in, under its system, carrying the planet itself so the cursor rides
+        /// along with it across a rebuild. The ancestry is in the key, so a landing here opens the
+        /// constellation and the system on the way in.</summary>
+        internal static ControlId PlanetId(StarSystemNode node, int orbit)
+        {
+            return orbit < 0 || orbit >= node.Planets.Count
+                ? null
+                : ControlId.Referenced(node.Planets[orbit], SystemKey(node) + "/planet/" + orbit);
+        }
+
+        /// <summary>A starlane's own node, keyed exactly as <see cref="AddStarlanes"/> keys it - on
+        /// the pair of GUIDs, under the system the lane is being read FROM, because one lane runs
+        /// between two systems and each end is its own node.</summary>
+        internal static ControlId LaneId(StarSystemNode node, Link link)
+        {
+            return ControlId.Structural(SystemKey(node) + "/lane/" + link.GUID);
         }
 
         /// <summary>
@@ -4486,7 +4517,7 @@ namespace ES2Access.Screens
         /// see the lines needs the same "which one is that" the picture gives everyone else, and a
         /// number that moves between sessions would be worse than none.
         /// </summary>
-        private static List<Lane> LanesOf(StarSystemNode node, Empire empire)
+        internal static List<Lane> LanesOf(StarSystemNode node, Empire empire)
         {
             List<Lane> lanes = new List<Lane>();
             try
@@ -4678,7 +4709,7 @@ namespace ES2Access.Screens
         }
 
         /// <summary>One lane leaving a system, with the way it leaves already worked out.</summary>
-        private struct Lane
+        internal struct Lane
         {
             public Link Link;
             public GameNode Far;

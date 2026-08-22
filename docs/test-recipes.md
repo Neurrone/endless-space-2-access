@@ -488,6 +488,64 @@ why the mod checks `Known` as well as the position (es2-facts). Minor factions h
 too (Niris/Osulo, Amoeba/Sabel, Epistis/Dyl, Yuusho/Olvaldi… nine of them) and are deliberately
 NOT in this scope.
 
+### Scanner taxonomy v3 (2026-08-22) — the six new categories, NOT YET VERIFIED LIVE
+
+The order Ctrl+PageDown now walks is **Systems, Colonizable Planets, Unexplored, Anomalies,
+Curiosities, Luxury Resources, Strategic Resources, Contested Influence, Fleets, Probes, Ally pins,
+Obliterator missiles, Quest markers** — so the paragraphs below that call fleets "the second" and
+probes "the third" describe the WORDING, not the position any more. Everything in this section was
+written offline from the game's code and has never been heard: it is the whole of what the live
+stage has to check. Drive it with the same action keys; count the Ctrl presses from Systems.
+
+Per category, what to check:
+
+- **Colonizable Planets** (1 Ctrl press). Two subcategories and NO "all": `unoccupied` first. On
+  `[Beginner] test` the row should read
+  `Colonizable Planets: unoccupied, ⟨planet⟩, ⟨size⟩ ⟨type⟩, ⟨luxuries⟩, ⟨strategics⟩,
+  ⟨anomalies⟩, ⟨curiosities⟩, max population ⟨n⟩, Food ⟨n⟩, Industry ⟨n⟩, Dust ⟨n⟩,
+  Science ⟨n⟩, Influence ⟨n⟩, ⟨pair⟩, ⟨offset⟩, 1 of ⟨m⟩` — check in particular that there is
+  **exactly one comma and no stray one** between the planet name and the size (the description is
+  composed into an empty builder, where a forced comma would lead), that the size comes BEFORE the
+  type, and that the fifth output is called whatever the game calls `PlanetInitialPrestige`
+  (expected "Influence" — unverified). A sparse world drops the absent parts entirely. Oracle for
+  membership: an `/eval` walk of the perceived systems asking `!p.IsColonized &&
+  p.IsColonizable(me)` per planet, which must equal the `unoccupied` count. `occupied` needs a
+  foreign or minor colony this empire can settle — Osulo (Niris) is the fixture's only candidate,
+  so expect at most a handful and possibly zero.
+- **Unexplored** (2 presses). `Unexplored: all, Star lane ⟨n⟩ from ⟨system⟩ heading ⟨direction⟩,
+  ⟨the system's pair⟩, ⟨offset⟩, 1 of ⟨m⟩`. Check the lane NUMBER against the tree: focus the same
+  system, walk its lane rows, and the numbering must be identical (both come from `LanesOf`).
+  Oracle for the count: for every perceived node, its drawn links whose far end is not perceived,
+  summed. **Each lane must appear once** — a duplicate would mean both ends were perceived, which
+  contradicts the gate. A wormhole reads "Wormhole ⟨n⟩ from …"; fixture-blocked unless the empire
+  has wormhole technology.
+- **Anomalies / Curiosities / Luxury Resources / Strategic Resources** (3–6 presses). In `all` the
+  row is `⟨kind⟩ on ⟨planet⟩`; Shift steps into one KIND at a time, alphabetically, and there the
+  row is the planet alone. Check: (a) the kinds are the game's own words (an anomaly's
+  `GuiAnomaly.Title`, a resource's `GuiResource.Title` — "Titanium", never "Titanium-70"); (b) the
+  subcategory list is alphabetical in the localized names; (c) two anomalies on one planet give TWO
+  rows in `all`; (d) a per-kind scope's count matches the number of `⟨that kind⟩ on …` rows in
+  `all`. Curiosities appear on systems that are NOT surveyed (the gate is
+  `Curiosity.CanBeSeen`), and the planet is then named with the game's "unknown" word — worth
+  hearing once.
+- **The memory is by NAME.** Park on a kind, cycle away to another category and back: the same
+  KIND must come back, not the same column index. The offline proof is `ScannerKindsTests`; the
+  live proof is doing it on a fixture where a kind sorts in the middle.
+- **Alt+Home lands AND zooms, on every category.** For a planet result the cursor must land on the
+  PLANET's own row under its system (`galaxy:constellation/…/system/…/planet/⟨orbit⟩`), with the
+  constellation and the system opened on the way in, and the camera brought in on the system
+  (`DevProbe.Camera()` before and after). For a lane result it must land on that system's lane row
+  (`…/lane/⟨GUID⟩`). For a fleet, probe, pin or missile the camera slides to the thing's own point
+  instead (no node to zoom into). With the inspect cursor UP, every category must still jump the
+  cell and nothing else. Contested Influence must still ARM the cursor.
+- **The cost.** `POST /eval` `ES2Access.UI.ScannerCost.Line()` after a press answers
+  `scanner snapshot ⟨ms⟩ ms, ⟨n⟩ colonizability checks, press ⟨n⟩`. Take it (a) on the first press
+  of a session and (b) while holding Alt+PageDown. Anything at or over 30 ms also logs itself, so
+  `GET /log?grep=scanner snapshot` is the second reading. Expected shape: colonizability checks ≈
+  the number of UNSETTLED perceived planets (the ABLE half is memoized per planet TYPE and so
+  contributes only a handful), not the number of planets. A count that tracks the planet count
+  means the memo is not working.
+
 **PROBES are the third category** (2026-08-16), cycled to by Ctrl after fleets. They are the
 TRAVELLING probes only — the same `_drifting` list the tree's probe rows and the inspect cell read,
 so all three agree. Detection probes (no mote of their own; they surface on system labels) and

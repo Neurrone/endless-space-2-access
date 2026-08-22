@@ -40,15 +40,17 @@ files above.
   `AttackSystemPirateDiplomaticAction` — the other five report popups are done);
   DiplomaticInteractionNotificationWindow (MoodMessageLabel, NegotiationContributionPanel).
 - Galaxy-label gaps: constellation ownership bonus; pin-message editing.
-- Scanner (shipped, taxonomy v2 2026-08-16, Contested Influence added 2026-08-21): seven categories
-  — systems, fleets, probes, quest
+- Scanner (shipped, taxonomy v2 2026-08-16, Contested Influence added 2026-08-21, taxonomy v3
+  2026-08-22): THIRTEEN categories in the owner's order — systems, colonizable planets, unexplored,
+  anomalies, curiosities, luxury resources, strategic resources, contested influence, fleets,
+  probes, ally pins, obliterator missiles, quest
   markers (system-anchored ones only, owner's ruling 2026-08-17: a marker with no system is not
-  listed, since the go-to would have nowhere to land), ally pins, obliterator missiles, contested
-  influence — the last
-  four with only "all" and skipped while
-  empty. Systems now include SPECIAL nodes (the tree's 13 rows, not 12) and have six
-  subcategories: all / friendly / neutral / enemy / homeworld / special, with many-to-many
-  membership. Remaining: FOREIGN homeworlds have never been heard (no fixture where
+  listed, since the go-to would have nowhere to land) — the "all"-only ones skipped while
+  empty. Systems include SPECIAL nodes (the tree's 13 rows, not 12) and have seven
+  subcategories: all / friendly / neutral / enemy / homeworld / minor factions / special, with
+  many-to-many membership. The six categories added in v3 are unverified live — nothing about them
+  has been heard, and the whole of stage 5 of the scanner batch is that verification (recipe in
+  `test-recipes.md`). Remaining: FOREIGN homeworlds have never been heard (no fixture where
   `EmpirePosition.Known` is true — es2-facts), and quest markers, pins and missiles have never
   been heard at all (no fixture draws one). Open judgment call for the owner: MINOR-faction home
   systems are deliberately NOT in "homeworld" (the diplomacy lens the gate came from iterates
