@@ -139,5 +139,49 @@ namespace ES2Access.Tests.UI
             Assert.Equal(ScannerScopes.AffiliationWidth, row.Length);
             Assert.Equal(0, row[ScannerScopes.All]);
         }
+
+        [Fact]
+        public void ASettleableWorldIsInOneOfTheTwoScopesAndNotTheOther()
+        {
+            int free = ScannerScopes.Colonizable(false);
+            int taken = ScannerScopes.Colonizable(true);
+            Assert.True(ScannerScopes.Holds(free, ScannerScopes.Unoccupied));
+            Assert.False(ScannerScopes.Holds(free, ScannerScopes.Occupied));
+            Assert.True(ScannerScopes.Holds(taken, ScannerScopes.Occupied));
+            Assert.False(ScannerScopes.Holds(taken, ScannerScopes.Unoccupied));
+        }
+
+        [Fact]
+        public void TheSettleableCategoryHasNoAllColumnAndCountsEachWorldOnce()
+        {
+            int[] row = ScannerScopes.Tally(
+                new int[]
+                {
+                    ScannerScopes.Colonizable(false),
+                    ScannerScopes.Colonizable(false),
+                    ScannerScopes.Colonizable(true),
+                },
+                ScannerScopes.ColonizableWidth
+            );
+            Assert.Equal(2, row.Length);
+            Assert.Equal(2, row[ScannerScopes.Unoccupied]);
+            Assert.Equal(1, row[ScannerScopes.Occupied]);
+        }
+
+        [Fact]
+        public void AColumnNamedAfterAKindHoldsOnlyThingsOfThatKind()
+        {
+            Assert.True(ScannerScopes.HoldsKind("Garden of Eden", 1, "Garden of Eden"));
+            Assert.False(ScannerScopes.HoldsKind("Garden of Eden", 1, "Zero-G Gym"));
+            Assert.False(ScannerScopes.HoldsKind(null, 1, "Zero-G Gym"));
+            Assert.False(ScannerScopes.HoldsKind("Garden of Eden", 1, null));
+        }
+
+        [Fact]
+        public void TheAllColumnOfACategoryOfKindsHoldsEverythingWhateverTheKindsAre()
+        {
+            Assert.True(ScannerScopes.HoldsKind("Garden of Eden", ScannerScopes.All, "all"));
+            Assert.True(ScannerScopes.HoldsKind(null, ScannerScopes.All, null));
+        }
     }
 }
