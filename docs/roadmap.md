@@ -176,6 +176,17 @@ files above.
   duplicate-id pair is fixed by `SidePanels.PathKey`, and the empire open-row crash is
   structurally removed (side panels emit linear, 2026-08-18) — but an unbalanced
   `PushContext` after a swallowed throw remains the lesser surviving form.
+- **The caption-only-row sweep is not finished.** The rule (a drawn caption names its block and is
+  a row only where it carries a tooltip — `Captions`, `docs/interaction.md`) has been applied to
+  minor diplomacy, the population overview, and the economy/senate/recipe/negotiation headings. Left
+  as they are, with reasons: `SidePanels.Effects` (:411-450) declares a `PanelFeatureEffects`
+  caption unconditionally, because that collector fills a flat cell list and has no builder to push
+  a level on — converting it means giving the side-panel walk a region-aware path, and every
+  icon-strip screen rides it; `GovernmentScreen.BuildHeading`, `ImprovementsModalScreen.BuildSummary`
+  and `SystemPoliticsScreen.BuildHeading` declare a WINDOW title rather than a block caption (and
+  the last of those is known to carry a tooltip); `ElectionScreen`'s `PanelTitleLabel` is the step's
+  own question, which is content. `LawsScreen`, `PlanetOverviewScreen` and
+  `HeroInspectionScreen`'s `TitleLabel` reads are the THING's name, not a caption.
 - `ScanNotificationItemsPanel`/`ScanNotificationItem` — the hacking/scan chip row in Scan
   View is uncovered by the mod (found during the notifications session; not part of the
   main notification strip or its stops).

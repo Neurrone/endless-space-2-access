@@ -812,6 +812,7 @@ namespace ES2Access.Screens
 
             items.Sort(DownThePage);
             List<AgeTransform> cards = Cards(items);
+            MinorFactionCard met = FirstContactCard(window);
             object region = null;
 
             // One node per row, whatever the popup laid out side by side. The things a technology
@@ -831,7 +832,7 @@ namespace ES2Access.Screens
 
                 ControlId id = item.IsControl
                     ? Declare(builder, item.Control)
-                    : AddRow(builder, item.Lines, index, item.Group);
+                    : AddRow(builder, item.Lines, index, item.Group, met);
                 if (index == 0)
                 {
                     builder.SetStart(id);
@@ -982,10 +983,12 @@ namespace ES2Access.Screens
             GraphBuilder builder,
             List<Line> row,
             int index,
-            AgeTransform group = null
+            AgeTransform group = null,
+            MinorFactionCard card = null
         )
         {
             List<Line> it = row;
+            string caption = CardCaption(row, card);
             List<AgeTooltip> explaining = group == null
                 ? Single(Explains(it[0].Tooltip, RowText(it)))
                 : Explaining(group, RowText(it));
@@ -1018,6 +1021,17 @@ namespace ES2Access.Screens
                     () => AgeWidgets.Operable(clicked)
                 );
 
+            if (caption != null)
+            {
+                // A figure the card draws with its caption on a bare ICON beside it: the words are
+                // read as the value and the game's own title for them as the name, so the row says
+                // "Ally, None" rather than "None". Declared for the two rows this card has, not by a
+                // rule over every popup - the pairing is a fact about this prefab.
+                string word = caption;
+                vtable.Announcements.Insert(0, GraphNodes.LabelPart(() => word));
+                vtable.Announcements[1] = GraphNodes.ValuePart(() => RowText(it));
+            }
+
             vtable.Sections = GraphNodes.Sections(sections);
             vtable.OnFocusVisual =
                 hover == null ? ReleasePointer : () => PointerFocus.MoveTo(hover, tooltip);
@@ -1031,6 +1045,74 @@ namespace ES2Access.Screens
             );
             builder.AddItem(id, vtable);
             return id;
+        }
+
+        /// <summary>The card the "you have met a minor civilization" popup draws, or null on every
+        /// other popup.</summary>
+        private static MinorFactionCard FirstContactCard(NotificationWindow window)
+        {
+            try
+            {
+                MinorEmpireMetNotificationWindow met = window as MinorEmpireMetNotificationWindow;
+                return met == null ? null : met.MinorFactionCard;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// The game's own caption for one of the two rows of that card whose words are a VALUE with no
+        /// name.
+        ///
+        /// The card draws "None" and "UNKNOWN" beside bare icons and puts the caption on the icons'
+        /// tooltips (<c>MinorFactionCard.Refresh</c> :74-111), so the generic reading - which names a
+        /// row by the words in it - says the value and never what it is of. The two titles are the same
+        /// ones the minor-diplomacy window's own rows are captioned by.
+        /// </summary>
+        private static string CardCaption(List<Line> row, MinorFactionCard card)
+        {
+            try
+            {
+                if (card == null || row == null)
+                {
+                    return null;
+                }
+
+                if (Holds(row, card.AllyLabel))
+                {
+                    return Titled("%MinorFactionCurrentAllyTitle");
+                }
+
+                return Holds(row, card.RelationLabel)
+                    ? Titled("%MinorFactionRelationTitle")
+                    : null;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        private static bool Holds(List<Line> row, AgePrimitiveLabel label)
+        {
+            AgeTransform at = label == null ? null : label.AgeTransform;
+            for (int i = 0; at != null && i < row.Count; i++)
+            {
+                if (ReferenceEquals(row[i].Widget, at))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static string Titled(string key)
+        {
+            string text = AgeText.Clean(Gui.Localize(key));
+            return string.IsNullOrEmpty(text) || text[0] == '%' ? null : text;
         }
 
         private static List<AgeTooltip> Single(AgeTooltip tooltip)

@@ -773,26 +773,19 @@ namespace ES2Access.Screens
         // ---- shared ----
 
         /// <summary>
-        /// The heading the game draws across a box, as the stop's own first node.
-        ///
-        /// It is also the stop's NAME, pushed as the context around everything in the box, so Tab into
-        /// the box says what the box is. Declaring it as well is not a repetition: the heading carries
-        /// a sentence explaining the box that exists nowhere else, and a container name that merely
-        /// repeats the control inside it is dropped by the announcer.
+        /// The heading the game draws across a box, as the stop's NAME - and as its first node where the
+        /// heading carries a sentence explaining the box that exists nowhere else, since a name is a
+        /// spoken phrase with no buffer behind it. A bare word gets no node of its own: that is the
+        /// shared rule (<see cref="Captions"/>), and a container name the control inside it repeats is
+        /// dropped by the announcer, so the box still says what it is either way.
         /// </summary>
         private bool AddHeading(GraphBuilder builder, GuiPanel panel, string key)
         {
-            AgeTransform heading = AgeWidgets.ChildNamed(panel.AgeTransform, "Title", 2);
-            string text = heading == null ? null : AgeWidgets.TextOf(heading);
-            if (string.IsNullOrEmpty(text))
-            {
-                return false;
-            }
-
-            builder.PushContext(text);
-            Cell cell = Cells.Readout(heading, AgeWidgets.Raw(heading), key);
-            builder.AddItem(cell.Id, cell.Vtable);
-            return true;
+            return Captions.Push(
+                builder,
+                AgeWidgets.ChildNamed(panel.AgeTransform, "Title", 2),
+                key
+            );
         }
 
         /// <summary>Close the box's name off again, so the next box is not declared inside it.</summary>

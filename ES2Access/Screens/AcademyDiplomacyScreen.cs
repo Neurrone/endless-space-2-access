@@ -124,8 +124,18 @@ namespace ES2Access.Screens
             _cells.Clear();
             try
             {
+                // The state's own word says what it is ("FRIENDLY") and the game keeps no title for
+                // it anywhere, so it is a readout with the state's description behind it. The number
+                // beside it says nothing at all on its own, and the game DOES title that one
+                // (%AcademyRelationPointsTitle) - so it is captioned, the same ruling the minor
+                // window's figures are read under (owner 2026-08-22).
                 Cells.AddReadout(_cells, Of(window.RelationLabel), Keys + "relation");
-                Cells.AddReadout(_cells, Of(window.RelationTrendLabel), Keys + "trend");
+                Cells.AddStat(
+                    _cells,
+                    window.RelationTrendLabel,
+                    "%AcademyRelationPointsTitle",
+                    Keys + "trend"
+                );
                 Cells.AddReadout(_cells, Of(window.RelationEffectsLabel), Keys + "effects");
                 Cells.AddReadout(_cells, Of(window.RelationEffectNoneLabel), Keys + "no-effects");
                 AgeTransform power = window.AcademyPowerGauge == null

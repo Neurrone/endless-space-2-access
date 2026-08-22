@@ -396,11 +396,21 @@ namespace ES2Access.Screens
         private void BuildPressure(GraphBuilder builder, NegotiationModalWindow window)
         {
             builder.BeginStop(PressureStop);
-            builder.PushContext(ModStrings.Get(ModStrings.NegotiationPressure));
+
+            // The game titles this band itself, and the title is one of two words depending on whether
+            // there is a war on - so the band is named by whichever the game drew and the mod's word is
+            // only the fallback. The title stands in the band as a row only if it explains itself
+            // (Captions), which is the shared rule for every caption over a block.
+            AgeTransform title = Of(window.PressureGroupTitle);
+            bool named = Captions.Push(
+                builder,
+                title,
+                Keys + "pressure-title",
+                Captions.Text(title) ?? ModStrings.Get(ModStrings.NegotiationPressure)
+            );
             _cells.Clear();
             try
             {
-                Cells.AddReadout(_cells, Of(window.PressureGroupTitle), Keys + "pressure-title");
                 AgeTransform gauge = window.PressureGauge == null
                     ? null
                     : window.PressureGauge.AgeTransform;
@@ -420,7 +430,7 @@ namespace ES2Access.Screens
             }
 
             Cells.EmitLinear(builder, _cells);
-            builder.PopContext();
+            Captions.Pop(builder, named);
         }
 
         private void AddThresholds(NegotiationModalWindow window)

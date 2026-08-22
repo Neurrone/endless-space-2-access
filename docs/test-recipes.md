@@ -1322,7 +1322,7 @@ typing (`FocusedControl = null`) closes both — the game's own validate on an e
 panel, leaving nothing behind.
 
 **The rename box.** It walks heading / field / Cancel / Confirm. Its openers are the star-system
-name line (the Colony panel's name node opens it directly), the planet card's rename button
+name line (the System panel's name node opens it directly - the box was called "Colony" until 2026-08-22), the planet card's rename button
 (unreachable on a unique home planet) and the fleet panel; close it with
 `window.HandleInput(InputAction.Exit)`, which is the route the key takes. A `ColonyInfoSidePanel`
 found via `GetComponentInChildren` on `StarSystemScreen` has a NULL `RenameButton` (wrong
@@ -2064,6 +2064,74 @@ empty panel), so its node is legitimately nameless and carries only its dossier 
 tooltip is `SimpleDescription`, so the parity probe reports it unaccounted until the node is
 FOCUSED. Raising it also pops the "Unforgettable Events" tutorial, which retires itself when the
 popup hides.
+
+## The screens batch (2026-08-22) — verifying the captions
+
+**Opening the minor-civilization window from `/eval`.** Its `Bind` takes the minor empire AND the
+game node its home system sits on, so both have to be found before it will show: walk the game's
+empires for a `MinorEmpire`, take its home `StarSystem`'s `GameNode`, then
+`var w = Gui.GuiService.GetWindow<MinorFactionDiplomacyModalWindow>(); w.Bind(minor, node);
+Gui.GuiService.ShowWindow(w);`. Close it the way Escape does —
+`w.HandleInput(InputAction.Exit)`, Assembly-CSharp's `InputAction`. In a normal session the route
+is the galaxy map: a minor's home system label draws a diplomacy button (`StarSystemLabel`'s
+`DiplomacyButton`, class tooltip `MinorFaction`), and its Enter opens this window.
+
+Expected after this batch (Tab order, `/gui/graph`):
+
+- Arrival says **"Minor Civilization diplomacy, Niris"** as the screen name — not "Niris" alone,
+  and not the mod's "Minor faction diplomacy".
+- `minor:identity` — first row is the window title, its buffer holding
+  `%MinorFactionDiplomacyModalWindowDescription`. Everything below sits under the level
+  **"Niris"**, in four regions (Alt+Up/Down): the lore paragraph; **"Traits"** with
+  "Personality, ⟨trait⟩" and "Faction trait, ⟨trait⟩" — each buffer carrying the icon's sentence
+  AND the trait's own class-backed dossier, which must DRAW on focus; **"Effects on planets"** with
+  its lines; **"Political output"** with its party line. The lore paragraph must NOT land between
+  "Political output" and the party (the old geometric interleave).
+- `minor:relation` — named **"Diplomatic Relation"**, first row that caption itself with
+  `…RelationDescription` in its buffer. Then "Relation, CORDIAL"; the points row named by the trend
+  gloss with "40 (+7/turn)" as its value; "Ally, None". Then a **"Tooltips"** region of four nodes,
+  one per gauge band — and with the faction at WAR that region must be absent, because the game
+  hides those transforms.
+- Then **"Relation Rewards"** with ONE ROW PER RESOURCE ("+6.5 Dust", "+4.1 Science", …) instead of
+  one four-line label, or the game's own "no rewards" sentence; then **"Modifiers"** with its
+  caption row, the influence line where the system is under the player's influence, and one row per
+  temporary effect.
+- `minor:actions` — named **"Actions"** by the game's own caption, with that caption's own row
+  (`…ActionsDescription`) ahead of the action cards.
+- Fixture note: the four gauge bands and the influence-modifier line need a minor that is neither at
+  war nor unknown; "Modifiers" is empty on a freshly met one.
+
+**Population overview** (senate → census, or a star system's population row):
+
+- `population:heading` still reads "Population Overview" and keeps its tooltip.
+- `population:detail` — the first region is now named **"Imperials"** (the people's own name) with
+  the lore paragraph as its only row; there is no "Imperials" ROW any more.
+- The collection track: first node **"Collection status, 3"** (the caption plus the count, the
+  caption's `%CollectionUnlockGroupDescription` in its buffer), then one node per threshold reading
+  **"10 population, not reached"** / **"50 population, reached"**, with that bonus's effect lines
+  reviewable but not spoken. Cross-check the state against the drawing: `.\crop-shot.ps1` the track,
+  and a bright circle must be a "reached" node.
+- **"Collection Effects"** must read the game's **"No Effects"** where the block is empty, and must
+  NOT read the ghost row ("Militarist" at alpha 0 — the defect this gate fixes). Prove it with an
+  `/eval` walk printing `Alpha` beside `Visible` for `CollectionEffectsTable.Children`, and a crop
+  of the same rect.
+- `population:politics` — the reactions region is now named **"Reaction to Political Events"** (said
+  once on arrival, again on the Alt+Down into the ring), the six sector rows are unchanged, and a
+  **"Tooltips"** region follows them with one node per party dossier off the legend
+  (`PoliticsLabelsTable`). Each must DRAW its dossier on focus (`DevProbe.Tooltip()`).
+
+**First contact with a minor** (the popup, or `MinorEmpireMetNotificationWindow`'s card driven on
+the unshown window — `MinorFactionCard.Refresh(playerEmpire, minorEmpire, Gui.ImageSize.Mood)`):
+the card's two figure rows must read **"Ally, None"** (or "Ally, Unknown Empire") and
+**"Relation, UNKNOWN (?, +0/turn)"**, with the icons' sentences still in their buffers. Every other
+popup's drawn body must be unchanged — walk a battle report and a construction report and diff.
+
+**The caption sweep.** On the economy, senate, recipe-creation and negotiation windows, a box whose
+heading carries NO tooltip must no longer have a heading ROW (the box is still named on the way
+in); a box whose heading DOES carry one keeps it. The negotiation pressure band is named by the
+game's drawn title ("Pressure", or "War Exhaustion" with a war on) rather than by the mod's word.
+Diff `/gui/graph?buffers=1` for those four screens against a pre-merge capture: only heading rows
+may disappear.
 
 ## Usage hints — reaching each context
 

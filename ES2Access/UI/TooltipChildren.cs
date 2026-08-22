@@ -61,6 +61,13 @@ namespace ES2Access.UI
             /// <summary>The words, where they are read off the game's own wrapper rather than off a
             /// drawing (a nested dossier).</summary>
             public Func<IList<string>> Lines;
+
+            /// <summary>How the tooltip reaches the player, where the caller knows better than
+            /// <see cref="GraphNodes.ModeFor"/> - which is exactly the case a prefab author's own
+            /// SENTENCE is the node's name: announcing it as well would say the first line twice
+            /// (<see cref="TooltipMode.None"/> leaves it in the buffer, where the rest of it is).
+            /// Null asks the shared rule.</summary>
+            public TooltipMode? Mode;
         }
 
         /// <summary>The region the node's own actions and structural children belong to - declared
@@ -143,7 +150,10 @@ namespace ES2Access.UI
                 // the camera is in): the words come from the reader, the mode from the tooltip, so
                 // the section still counts as a drawn dossier to the pointer and the parity audit.
                 vtable.Sections = GraphNodes.Sections(
-                    new NodeSection(it.Lines, GraphNodes.ModeFor(it.Tooltip))
+                    new NodeSection(
+                        it.Lines,
+                        it.Mode.HasValue ? it.Mode.Value : GraphNodes.ModeFor(it.Tooltip)
+                    )
                 );
             }
             else if (it.Lines != null)
@@ -154,7 +164,9 @@ namespace ES2Access.UI
             {
                 vtable.Sections = GraphNodes.SectionsFor(
                     vtable,
-                    new List<AgeTooltip>(1) { it.Tooltip }
+                    new List<AgeTooltip>(1) { it.Tooltip },
+                    null,
+                    it.Mode
                 );
             }
 

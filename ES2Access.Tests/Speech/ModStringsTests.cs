@@ -30,6 +30,22 @@ namespace ES2Access.Tests.Speech
             Assert.Equal("5 of 20", ModStrings.Format(ModStrings.Fraction, 5, 20));
         }
 
+        /// <summary>A collection threshold on the population overview says the whole thing - the number
+        /// it takes and whether the empire is there yet - in one phrase per state, so a translator can
+        /// inflect the sentence rather than being handed a number with a word glued after it.</summary>
+        [Fact]
+        public void CollectionThresholdsAreWholePhrases()
+        {
+            Assert.Equal(
+                "10 population, not reached",
+                ModStrings.Format(ModStrings.PopulationThresholdNotReached, "10")
+            );
+            Assert.Equal(
+                "10 population, reached",
+                ModStrings.Format(ModStrings.PopulationThresholdReached, "10")
+            );
+        }
+
         [Fact]
         public void UnknownKeyReturnsTheKeyAndWarnsOnce()
         {
