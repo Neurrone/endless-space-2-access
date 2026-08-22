@@ -941,6 +941,12 @@ namespace ES2Access.Core.Speech
         public const string SystemHangarEmpty = "system.hangar-empty";
 
         public const string SystemPlanetsPanel = "system.planets-panel";
+
+        /// <summary>The box the star-system page draws its own heading over - the SYSTEM's name, which
+        /// is what the box is about. The game keeps no title key for it at all
+        /// (<c>%StarSystemSideInfoDescription</c> is the sentence on its header icon), so the word is
+        /// the mod's, and it is "System" rather than "Colony" because the box is drawn for an outpost
+        /// and a ghost system too (owner ruling 2026-08-22).</summary>
         public const string SystemColonyPanel = "system.colony-panel";
         public const string SystemPopulationPanel = "system.population-panel";
         public const string SystemRepresentativesPanel = "system.representatives-panel";
@@ -1317,6 +1323,17 @@ namespace ES2Access.Core.Speech
         public const string PopulationAssimilated = "population.assimilated";
         public const string PopulationReadyForAssimilation = "population.ready-for-assimilation";
 
+        // --- screens batch (2026-08-22) ---
+
+        /// <summary>One mark on the population overview's collection track: how many of a people it
+        /// takes, and whether the empire has that many. The game draws the number and shows the answer
+        /// by fading the circle, and writes neither in words anywhere - so both phrases are the mod's,
+        /// each a whole sentence rather than a number with a word stuck on the end.</summary>
+        public const string PopulationThresholdReached = "population.threshold-reached";
+        public const string PopulationThresholdNotReached = "population.threshold-not-reached";
+
+        // --- end screens batch ---
+
         // ---- the diplomacy family ----
         // Every window in this family writes its own heading, so each screen name here is only ever
         // spoken in the frames before the game has filled its title in. What the family really needs mod
@@ -1373,10 +1390,10 @@ namespace ES2Access.Core.Speech
         /// box and nothing else, so the box needs naming.</summary>
         public const string NegotiationQuantity = "negotiation.quantity";
 
+        /// <summary>The fallback name of the minor-civilization window, for a build where the game's own
+        /// title (<c>%MinorFactionDiplomacyModalWindowTitle</c>) reads back empty. Every band of that
+        /// window is named by the game's own caption, so nothing else here belongs to it.</summary>
         public const string ScreenMinorDiplomacy = "screen.minor-diplomacy";
-        public const string MinorIdentity = "minor.identity";
-        public const string MinorRelation = "minor.relation";
-        public const string MinorGains = "minor.gains";
 
         public const string ScreenPirateDiplomacy = "screen.pirate-diplomacy";
         public const string PiratePower = "pirate.power";
@@ -1389,9 +1406,11 @@ namespace ES2Access.Core.Speech
         public const string AcademyNamedShips = "academy.named-ships";
 
         /// <summary>The band of actions, and the pair of stock figures along the bottom edge, that the
-        /// minor-faction, pirate and Academy windows all draw. The pirate window captions its actions
-        /// ("Actions") and the other two do not, so the mod's caption is used for all three rather than
-        /// one band being named differently from its twins.</summary>
+        /// minor-faction, pirate and Academy windows all draw. All THREE windows caption the actions
+        /// band themselves ("Actions", from three separate keys - corrected 2026-08-22, this comment
+        /// used to say only the pirate one did), so the word here is the fallback and the shared name
+        /// for the OTHER bands that borrow it: the hangar's command bar and the senate's button
+        /// strip.</summary>
         public const string DiplomacyActionsBand = "diplomacy.actions-band";
         public const string DiplomacyTreasury = "diplomacy.treasury";
 
@@ -1818,7 +1837,7 @@ namespace ES2Access.Core.Speech
             { PlanetNext, "Next planet" },
             { SystemHangarEmpty, "No ships in the hangar" },
             { SystemPlanetsPanel, "Planets" },
-            { SystemColonyPanel, "Colony" },
+            { SystemColonyPanel, "System" },
             { SystemPopulationPanel, "Population" },
             { SystemRepresentativesPanel, "Representatives" },
             { SystemOutpostPanel, "Outpost" },
@@ -1996,6 +2015,12 @@ namespace ES2Access.Core.Speech
             { ScreenPopulation, "Population overview" },
             { PopulationAssimilated, "Assimilated" },
             { PopulationReadyForAssimilation, "Ready for assimilation" },
+
+            // --- screens batch (2026-08-22) ---
+            { PopulationThresholdReached, "{0} population, reached" },
+            { PopulationThresholdNotReached, "{0} population, not reached" },
+
+            // --- end screens batch ---
             { ScreenDiplomacy, "Diplomatic status" },
             { DiplomacyEmpires, "Empires" },
             { DiplomacyControls, "Screen controls" },
@@ -2019,9 +2044,6 @@ namespace ES2Access.Core.Speech
             { NegotiationActions, "Offer" },
             { NegotiationQuantity, "Quantity" },
             { ScreenMinorDiplomacy, "Minor faction diplomacy" },
-            { MinorIdentity, "The faction" },
-            { MinorRelation, "Relation" },
-            { MinorGains, "What you gain" },
             { ScreenPirateDiplomacy, "Pirate diplomacy" },
             { PiratePower, "Pirate power" },
             { PirateStanding, "Standing" },

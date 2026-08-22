@@ -52,6 +52,8 @@ namespace ES2Access.Screens
 
         // Reused across builds rather than allocated per frame: Build runs every tick.
         private readonly List<Cell> _cells = new List<Cell>();
+        private readonly List<TooltipChildren.Dossier> _dossiers =
+            new List<TooltipChildren.Dossier>();
 
         public override string Key
         {
@@ -141,7 +143,8 @@ namespace ES2Access.Screens
             builder.BeginStop(ListStop);
             bool named = Caption(
                 builder,
-                AgeWidgets.ChildNamed(window.AgeTransform, "EmpirePopulationTitle", 3)
+                AgeWidgets.ChildNamed(window.AgeTransform, "EmpirePopulationTitle", 3),
+                "population:list-title"
             );
 
             _cells.Clear();
@@ -156,27 +159,18 @@ namespace ES2Access.Screens
             Unname(builder, named);
         }
 
-        /// <summary>The caption the window draws over a band, as the band's own name. A caption the
-        /// game left empty pushes nothing, so nothing is announced under a blank level.</summary>
-        private static bool Caption(GraphBuilder builder, AgeTransform widget)
+        /// <summary>The caption the window draws over a band, as the band's own name - and as a row of
+        /// its own only where the game hung a sentence on it, which is the shared rule
+        /// (<see cref="Captions"/>). A caption the game left empty pushes nothing, so nothing is
+        /// announced under a blank level.</summary>
+        private static bool Caption(GraphBuilder builder, AgeTransform widget, object key = null)
         {
-            string text =
-                widget == null || !AgeWidgets.Visible(widget) ? null : AgeWidgets.TextOf(widget);
-            if (string.IsNullOrEmpty(text))
-            {
-                return false;
-            }
-
-            builder.PushContext(text);
-            return true;
+            return Captions.Push(builder, widget, key);
         }
 
         private static void Unname(GraphBuilder builder, bool named)
         {
-            if (named)
-            {
-                builder.PopContext();
-            }
+            Captions.Pop(builder, named);
         }
 
         /// <summary>One people: their name, how many of them there are, whether they are the one the
@@ -275,10 +269,14 @@ namespace ES2Access.Screens
         {
             builder.BeginStop(DetailStop);
             builder.SetRegion(AffinityRegion);
+
+            // The people's own name is the caption over everything the window then writes about them,
+            // so it names the region rather than standing in it as a row that says one word.
+            bool people = Caption(builder, Widget(window.AffinityTitle), "population:affinity");
             _cells.Clear();
-            Cells.AddReadout(_cells, Widget(window.AffinityTitle), "population:affinity");
             AddParagraph(_cells, window.AffinityDescription, "population:affinity-description");
             Cells.EmitLinear(builder, _cells);
+            Unname(builder, people);
 
             AddThresholds(builder, window);
 
@@ -289,7 +287,8 @@ namespace ES2Access.Screens
             Block(
                 builder,
                 AgeWidgets.ChildNamed(window.AgeTransform, "CollectionEffects", 5),
-                "population:collection-effects"
+                "population:collection-effects",
+                true
             );
             Block(builder, Widget(window.PoliticalOpinion), "population:political-output");
             Block(builder, Widget(window.AssimilationEffects), "population:assimilation");
@@ -301,7 +300,26 @@ namespace ES2Access.Screens
             builder.SetRegion(null);
         }
 
-        private void Block(GraphBuilder builder, AgeTransform group, string keyPrefix)
+        /// <summary>
+        /// One captioned block of effect lines.
+        ///
+        /// The lines are the ones the table is DRAWING, not the ones it is holding: these tables are
+        /// pooled, and a line the game has finished with is left in place at alpha 0 with last bind's
+        /// words still on it (measured 2026-08-22: a "Militarist" line under Collection Effects for a
+        /// people with no collection effects at all). Visibility alone says nothing about that - the
+        /// engine's own drawing test does (<see cref="AgeWidgets.Paints"/>).
+        ///
+        /// <paramref name="sayEmpty"/> is for the block whose emptiness is a fact worth hearing rather
+        /// than a block the game did not draw: it then reads the game's own word for having nothing
+        /// (<c>%PanelFeatureNoEffectsTitle</c>), the same phrase the game writes into its own tooltips
+        /// in that case.
+        /// </summary>
+        private void Block(
+            GraphBuilder builder,
+            AgeTransform group,
+            string keyPrefix,
+            bool sayEmpty = false
+        )
         {
             if (group == null || !AgeWidgets.Visible(group))
             {
@@ -309,23 +327,59 @@ namespace ES2Access.Screens
             }
 
             builder.SetRegion(keyPrefix);
-            bool named = Caption(builder, AgeWidgets.ChildNamed(group, "Title", 1));
+            bool named = Caption(
+                builder,
+                AgeWidgets.ChildNamed(group, "Title", 1),
+                keyPrefix + "/title"
+            );
             _cells.Clear();
             AgeTransform table = AgeWidgets.ChildNamed(group, "EffectsTable", 4);
             IList<AgeTransform> lines = table == null ? null : table.Children;
             for (int i = 0; lines != null && i < lines.Count; i++)
             {
-                Cells.AddReadout(_cells, lines[i], keyPrefix + "/" + i);
+                if (AgeWidgets.Paints(table, lines[i]))
+                {
+                    Cells.AddReadout(_cells, lines[i], keyPrefix + "/" + i);
+                }
+            }
+
+            if (_cells.Count == 0 && sayEmpty)
+            {
+                string nothing = AgeText.Clean(Gui.Localize("%PanelFeatureNoEffectsTitle"));
+                if (!string.IsNullOrEmpty(nothing) && nothing[0] != '%')
+                {
+                    builder.AddItem(
+                        ControlId.Structural(keyPrefix + "/none"),
+                        new NodeVtable
+                        {
+                            Announcements = new List<NodeAnnouncement>
+                            {
+                                GraphNodes.LabelPart(() => nothing),
+                            },
+                        }
+                    );
+                }
             }
 
             Cells.EmitLinear(builder, _cells);
             Unname(builder, named);
         }
 
-        /// <summary>How many of a people it takes to unlock each collection bonus, and what each one
-        /// gives - which the window draws as a row of circles with the effect on each circle's own
-        /// tooltip and no words anywhere. They are peers of one kind, so they are walked one per step
-        /// rather than sideways.</summary>
+        /// <summary>
+        /// How many of a people it takes to unlock each collection bonus and which of them are already
+        /// unlocked - which the window draws as a row of circles, the number on each circle, the effect
+        /// on its tooltip, and the reached ones told apart from the rest by nothing but how bright the
+        /// circle is (<c>ThresholdItem.Bind</c> :68 - alpha 1 reached, 0.3 not).
+        ///
+        /// So each circle says the number it marks and whether it has been reached, and the effect lines
+        /// stay in the buffer where a walk of the whole track is not five paragraphs long. The state is
+        /// read off the same arithmetic the alpha is (<c>count &gt;= threshold</c>) rather than off the
+        /// alpha itself: the number is the fact and the fade is the drawing of it.
+        ///
+        /// The caption over the track carries the sentence saying what the track IS, so it keeps a row
+        /// as well as naming the block - and that row is where the count itself goes, because the window
+        /// draws the current figure nowhere in this block at all.
+        /// </summary>
         private void AddThresholds(GraphBuilder builder, PopulationModalWindow window)
         {
             AgeTransform group = AgeWidgets.ChildNamed(window.AgeTransform, "CollectionUnlockGroup", 5);
@@ -335,42 +389,95 @@ namespace ES2Access.Screens
             }
 
             builder.SetRegion("population:thresholds");
-            bool named = Caption(builder, AgeWidgets.ChildNamed(group, "Title", 1));
+            AgeTransform caption = AgeWidgets.ChildNamed(group, "Title", 1);
+            bool named = Caption(builder, caption);
+            AddStatus(builder, caption, window);
 
             _cells.Clear();
             AgeTransform table = window.PopulationThresholdsTable;
             IList<AgeTransform> items = table == null ? null : table.Children;
+            int count = Collected(window);
             for (int i = 0; items != null && i < items.Count; i++)
             {
-                AddThreshold(_cells, items[i], i);
+                AddThreshold(_cells, items[i], i, Threshold(window, i), count);
             }
 
             Cells.EmitLinear(builder, _cells);
             Unname(builder, named);
         }
 
-        /// <summary>One collection threshold. The circle says nothing in words, so its name is the
-        /// first line of the sentence the game hangs on it and the rest stays in the buffer.</summary>
-        private static void AddThreshold(List<Cell> cells, AgeTransform widget, int index)
+        /// <summary>The track's own caption as a row, carrying its explanation and the count the track
+        /// is measuring.</summary>
+        private static void AddStatus(
+            GraphBuilder builder,
+            AgeTransform caption,
+            PopulationModalWindow window
+        )
+        {
+            if (caption == null || !AgeWidgets.Visible(caption))
+            {
+                return;
+            }
+
+            AgeTransform at = caption;
+            PopulationModalWindow it = window;
+            AgeTooltip tooltip = AgeWidgets.Raw(caption);
+            NodeVtable vtable = new NodeVtable
+            {
+                Announcements = new List<NodeAnnouncement>
+                {
+                    GraphNodes.LabelPart(() => AgeWidgets.TextOf(at)),
+                    GraphNodes.ValuePart(() => Counted(it)),
+                },
+                Sections = GraphNodes.Sections(null, tooltip),
+            };
+            AgeWidgets.PointAt(vtable, caption);
+            builder.AddItem(
+                ControlId.Referenced(caption, "population:collection-status"),
+                vtable
+            );
+        }
+
+        /// <summary>One collection threshold: the number of them it takes, and whether the empire has
+        /// that many. The effect lines the circle explains itself with stay reviewable.</summary>
+        private static void AddThreshold(
+            List<Cell> cells,
+            AgeTransform widget,
+            int index,
+            int threshold,
+            int count
+        )
         {
             if (widget == null || !AgeWidgets.Visible(widget))
             {
                 return;
             }
 
+            ThresholdItem item = widget.GetComponent<ThresholdItem>();
             AgeTransform circle = AgeWidgets.ChildNamed(widget, "Circle", 2) ?? widget;
-            AgeTooltip tooltip = AgeWidgets.Raw(circle);
+            AgeTooltip tooltip =
+                item != null && item.CircleTooltip != null
+                    ? item.CircleTooltip
+                    : AgeWidgets.Raw(circle);
             if (tooltip == null)
             {
                 return;
             }
 
-            AgeTransform at = circle;
+            string drawn = item == null ? null : AgeText.Label(item.ThresholdMaxValue);
+            string figure = string.IsNullOrEmpty(drawn) ? threshold.ToString() : drawn;
+            bool reached = threshold > 0 && count >= threshold;
+            string words = ModStrings.Format(
+                reached
+                    ? ModStrings.PopulationThresholdReached
+                    : ModStrings.PopulationThresholdNotReached,
+                figure
+            );
             NodeVtable vtable = new NodeVtable
             {
                 Announcements = new List<NodeAnnouncement>
                 {
-                    GraphNodes.LabelPart(() => CardActions.FirstLine(AgeWidgets.Raw(at))),
+                    GraphNodes.LabelPart(() => words),
                 },
                 Sections = GraphNodes.Sections(null, tooltip, TooltipMode.None),
             };
@@ -381,6 +488,47 @@ namespace ES2Access.Screens
                 ControlId.Referenced(widget, "population:threshold/" + index),
                 vtable
             );
+        }
+
+        /// <summary>How many of the selected people the empire has - the same figure the list draws
+        /// beside their name, read off the window's own selection.</summary>
+        private static int Collected(PopulationModalWindow window)
+        {
+            try
+            {
+                return window == null || window.SelectedGuiPopulation == null
+                    ? 0
+                    : window.SelectedGuiPopulation.GetCount();
+            }
+            catch (Exception)
+            {
+                return 0;
+            }
+        }
+
+        private static string Counted(PopulationModalWindow window)
+        {
+            int count = Collected(window);
+            return count <= 0 ? null : count.ToString();
+        }
+
+        /// <summary>What the collection bonus at this place along the track asks for.</summary>
+        private static int Threshold(PopulationModalWindow window, int index)
+        {
+            try
+            {
+                PopulationCollectionBonusTrait.Item[] bonuses =
+                    window == null || window.SelectedGuiPopulation == null
+                        ? null
+                        : window.SelectedGuiPopulation.CollectionBonuses;
+                return bonuses == null || index >= bonuses.Length || bonuses[index] == null
+                    ? 0
+                    : bonuses[index].Threshold;
+            }
+            catch (Exception)
+            {
+                return 0;
+            }
         }
 
         /// <summary>
@@ -407,7 +555,8 @@ namespace ES2Access.Screens
             builder.BeginStop(PoliticsStop);
             bool titled = Caption(
                 builder,
-                AgeWidgets.ChildNamed(group, "PoliticalAffinityTitle", 2)
+                AgeWidgets.ChildNamed(group, "PoliticalAffinityTitle", 2),
+                "population:politics-title"
             );
 
             builder.SetRegion(PoliticsIntroRegion);
@@ -420,7 +569,11 @@ namespace ES2Access.Screens
             Cells.EmitLinear(builder, _cells);
 
             builder.SetRegion(TraitsRegion);
-            bool named = Caption(builder, AgeWidgets.ChildNamed(group, "PsychoTraitsTitle", 3));
+            bool named = Caption(
+                builder,
+                AgeWidgets.ChildNamed(group, "PsychoTraitsTitle", 3),
+                "population:traits-title"
+            );
             _cells.Clear();
             AgeTransform traits = window.PsychoTraitItemsTable;
             IList<AgeTransform> items = traits == null ? null : traits.Children;
@@ -432,7 +585,15 @@ namespace ES2Access.Screens
             Cells.EmitLinear(builder, _cells);
             Unname(builder, named);
 
+            // The ring is what the panel's own caption is about, so the region carries that caption
+            // too: jumping into it from the traits says what has been arrived at. The announcer drops
+            // the level above it, which says the same words (GraphAnnouncer.DuplicatesNext), so
+            // arriving at the stop still hears the phrase once.
             builder.SetRegion(ReactionsRegion);
+            bool ring = Caption(
+                builder,
+                AgeWidgets.ChildNamed(group, "PoliticalAffinityTitle", 2)
+            );
             AgeTransform sectors = window.PoliticsFiltersContainer;
             IList<AgeTransform> wheel = sectors == null ? null : sectors.Children;
             for (int i = 0; wheel != null && i < wheel.Count; i++)
@@ -440,8 +601,34 @@ namespace ES2Access.Screens
                 AddReaction(builder, wheel[i], i);
             }
 
+            Unname(builder, ring);
+            AddLegend(builder, window);
+
             builder.SetRegion(null);
             Unname(builder, titled);
+        }
+
+        /// <summary>
+        /// The parties' own dossiers, which the window offers on the column of names beside the ring.
+        ///
+        /// That column is a legend: the same six words the sectors already carry, drawn again so a
+        /// mouse can hover either. What it has that the sectors do not is one renderer-assembled
+        /// dossier per party - so it is read the way every other set of dossiers on a node is, as a
+        /// "Tooltips" region after the rows themselves (<see cref="TooltipChildren"/>), which keeps
+        /// the six sectors the primary rows of this stop.
+        /// </summary>
+        private void AddLegend(GraphBuilder builder, PopulationModalWindow window)
+        {
+            _dossiers.Clear();
+            AgeTransform table = window.PoliticsLabelsTable;
+            IList<AgeTransform> items =
+                table == null || !AgeWidgets.Visible(table) ? null : table.Children;
+            for (int i = 0; items != null && i < items.Count; i++)
+            {
+                TooltipChildren.AddInside(_dossiers, items[i]);
+            }
+
+            TooltipChildren.Emit(builder, "population:politics/parties", _dossiers, null);
         }
 
         private static void AddReaction(GraphBuilder builder, AgeTransform widget, int index)

@@ -454,6 +454,55 @@ reports in the session ledger), `hud:view-title/name` everywhere, the faction ch
 `tutorial:page/<i>`), and (2026-08-19) `tactics:available-count` and `tactics:deck-caption` — the
 deck editor's two stops are labelled instead ("Available" mod-worded, the set by its drawn
 "Tactics" caption). New walkable ids: `diplomacy:center` (whose ring is centred).
+
+**A block's caption names the block, never a row of its own — unless the caption carries a
+tooltip** (owner ruling 2026-08-22, generalised from the minor-diplomacy design; `Captions` —
+`docs/helpers.md`). A block's NAME is a spoken level with no review buffer behind it, so a caption
+the game hung a sentence on has nowhere else to put its words and stays a row as well; the
+announcer drops the level whose label the row below repeats (`GraphAnnouncer.DuplicatesNext`), so
+the word is still said once. Which of the two a caption is, is asked of the WIDGET every build,
+never written into a screen: the same prefab caption carries a sentence on one window and nothing
+on the next. Screens converted: the population overview's people name (`population:affinity`, the
+"Imperials" row is now the region's name), and the economy, senate, recipe and negotiation
+headings, whose caption rows are now conditional rather than unconditional (`economy:*`,
+`senate:*`, `recipe:*`, `negotiation:pressure-title`) — the negotiation pressure band is
+additionally named by the game's own drawn title ("Pressure"/"War Exhaustion") with the mod word
+`negotiation.pressure` left only as the fallback. Not converted, and known: `SidePanels.Effects`
+declares a `PanelFeatureEffects` caption as a row unconditionally, because that collector fills a
+flat cell list with no builder to push a level on.
+
+**Minor Civilization diplomacy is named entirely by the game** (2026-08-22). Screen name = the
+window's own title plus whose window it is ("Minor Civilization diplomacy, Niris"), with
+`screen.minor-diplomacy` left as the fallback; the mod strings `minor.identity`, `minor.relation`
+and `minor.gains` are retired and the `minor:gains` stop with them. Four stops:
+`minor:identity` — the window title as its first row (that title carries the only sentence about
+what the window is for), then the drawn empire name as a `PushContext` level over the regions
+`minor:identity/{about,traits,planet-effects,opinion}` ("Traits" and the two panel-feature
+captions are the game's words); `minor:relation` — named "Diplomatic Relation" with that
+caption's own row, regions `minor:relation/{state,rewards,modifiers}` plus the gauge's
+`minor:gauge/tooltips` "Tooltips" region (the four band sentences the prefab hangs along the
+gauge, one node each, hidden while at war exactly as the game hides them); `minor:actions` —
+named by the game's "Actions" caption, which it does draw (the `diplomacy.actions-band` mod word
+is the fallback here now); `minor:treasury` unchanged. The identity panel is declared COLUMN BY
+COLUMN, not by drawn row: the lore paragraph is one tall block beside three short ones and the
+rectangle banding interleaved them.
+
+**The population overview's collection track says the number and the state** (2026-08-22): the
+"Collection status" caption keeps a row (it carries a tooltip) and that row carries the current
+count, and each threshold reads "{n} population, reached"/"not reached"
+(`population.threshold-reached`/`-not-reached`) with the bonus's effect lines reviewable rather
+than announced. "Collection Effects" is gated on the rows the table is DRAWING and says the game's
+own "No Effects" when there are none. The reactions region is named by the wheel's own title
+("Reaction to Political Events"), and the six party dossiers on the legend beside it are a
+`population:politics/parties` "Tooltips" region after the sectors, which keeps the sectors the
+stop's primary rows.
+
+**The first-contact card names its two uncaptioned figures** (2026-08-22): the
+`MinorEmpireMetNotificationWindow` card draws "None"/"Unknown Empire" and the relation state beside
+bare icons and puts the captions on the icons' tooltips, so those two rows are declared with the
+game's own `%MinorFactionCurrentAllyTitle`/`%MinorFactionRelationTitle` as their names and the
+drawn words as their values ("Ally, None"). Declared for that one prefab, not as a rule over every
+popup's drawn body.
 **The galaxy view names its four PANELS** (2026-08-19) with `GraphBuilder.PushContext` levels, said
 once on arrival and never repeated while walking inside: Galactic Map (`galaxy.map-panel` — renamed
 from "Map" 2026-08-22, owner ruling: the panel Ctrl+G goes to says what it is), Quest

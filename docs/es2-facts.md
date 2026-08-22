@@ -1180,6 +1180,22 @@ generic graduates to the generic docs.
   `GuiTableCellSystemPopulation`. So a second host wanting the same drag wires the panel, not the
   screen.
 
+- **A retired pooled line keeps its words and goes to alpha 0** — the population overview's
+  Collection Effects block for a people with no reached threshold still holds a "Militarist" line
+  at `Visible` true, `Alpha` 0, in a table of height 0 (measured 2026-08-22). `Visible` is therefore
+  not the drawn test on any `ReserveChildren` table; `AgeWidgets.Paints(table, line)` — the engine's
+  own `GetVisibleChildrenCount` rule — is. `PopulationModalWindow.RefreshCollectionEffects`
+  (:340-375) reserves the table to the effect count and refreshes it, which is what leaves the
+  surplus behind.
+- **A collection threshold shows its state by BRIGHTNESS and nothing else.** `ThresholdItem.Bind`
+  (:18-77) writes the number into `ThresholdMaxValue`, the bonus's effect lines (or
+  `%PanelFeatureNoEffectsTitle` "No Effects") into `CircleTooltip.Content`, and sets
+  `Circle.Alpha` to 1 when the ratio reached 1 and 0.3 otherwise. The arithmetic behind the fade is
+  `SelectedGuiPopulation.GetCount() >= item.Threshold` — the same test
+  `RefreshCollectionEffects` uses to decide which bonuses are in force — and
+  `IGuiPopulation.CollectionBonuses[i].Threshold` is the number as an int, so the mod reads the
+  fact rather than the drawing of it.
+
 ## The icon-strip screens (senate, empire, economy, research)
 
 - Government: **the Validate button's missing-technology hint is the LAST of three refusals**, so a
@@ -1562,6 +1578,34 @@ generic graduates to the generic docs.
   `Colony`. So an OUTPOST has no owner by that rule — which is why "is this system mine" is asked of
   `DepartmentOfTheInterior.ColonizedStarSystems` instead (the same list the tree's owned region is
   built from), where an outpost counts.
+
+- **The minor-civilization window captions every band itself, and three of the captions carry a
+  sentence.** `%MinorFactionDiplomacyModalWindowTitle` "Minor Civilization diplomacy" (+
+  `…Description`), `…TraitsTitle` "Traits" (no description), `…RelationTitle` "Diplomatic Relation"
+  (+ `…Description`), `…RelationRewardsTitle` "Relation Rewards" (none), `…RelationModifiersTitle`
+  "Modifiers" (+ `…Description`), `…ActionsTitle` "Actions" (+ `…Description` — so the mod's own
+  "Actions" word was never needed on THIS window, and the old `ModStrings.DiplomacyActionsBand`
+  comment saying only the pirate window captions its band was wrong for all three: the Academy has
+  `%AcademyDiplomacyModalWindowActionsTitle` and the pirates `%PirateDiplomacyModalWindowActionsTitle`).
+  Per-figure titles: `%MinorFactionRelationTitle` "Relation", `%MinorFactionCurrentAllyTitle`
+  "Ally", `%MinorFactionMajorTraitTitle` "Personality", `%MinorFactionMinorTraitTitle` "Faction
+  trait". The one figure with NO title anywhere is the relation points and their trend, which
+  `RefreshRelationInfo` composes into ONE label ("40 (+7/turn)"): `%TrendTitle` "Relation Points per
+  Turn" names the trend alone and `%MinorFactionRelationTrendDescription` is a gloss on the line, so
+  that row falls back to the gloss as its name (owner-accepted, 2026-08-22).
+- **The relation gauge's band tooltips are prefab decoration with no caption and no wrapper.**
+  `MinorFactionDiplomacyModalWindow.GaugeTooltipsTransformList` holds four transforms whose
+  `AgeTooltip.Content` says what each band of the relation grants; `RefreshMinorRelationGauge`
+  (:119-142) writes nothing to them at all, and `ToggleGaugeTooltips` (:287-293) hides the lot while
+  at war. Nothing in the game names them, so the mod names each by its own sentence's first line.
+  The Academy window has the identical field and the same gap.
+- **The Academy's trend label carries a COMPUTED tooltip, not the gloss.**
+  `AcademyDiplomacyModalWindow` :343-368 writes the eight per-turn contributions into
+  `RelationTrendLabel`'s own tooltip, so the "outermost first, own last" tooltip walk finds a
+  breakdown where the minor window finds a one-line gloss — which is why that row is captioned by
+  the game's `%AcademyRelationPointsTitle` "Academy Relation points" rather than by the last-resort
+  first-line rule. Its state label is left uncaptioned: the game keeps no title for it and the state
+  word says what it is.
 
 ## Galaxy labels, probes and the scan view
 

@@ -470,10 +470,11 @@ namespace ES2Access.Screens
             }
         }
 
-        /// <summary>The caption the window writes over a box, as the box's name and its first node - the
-        /// same three-part treatment every captioned band in the mod gets. Answers the words it used, so
-        /// a caller that also has to NAME something inside the box - a table's region - names it with the
-        /// one the box was named by rather than reading the caption a second time.</summary>
+        /// <summary>The caption the window writes over a box, as the box's name - and as its first node
+        /// only where the caption carries an explanation, which is the shared rule
+        /// (<see cref="Captions"/>). Answers the words it used, so a caller that also has to NAME
+        /// something inside the box - a table's region - names it with the one the box was named by
+        /// rather than reading the caption a second time.</summary>
         private string AddCaption(
             GraphBuilder builder,
             AgeTransform group,
@@ -484,16 +485,8 @@ namespace ES2Access.Screens
             AgeTransform root =
                 named == null ? group : AgeWidgets.ChildNamed(group, named, 3);
             AgeTransform caption = root == null ? null : Caption(root);
-            string text = caption == null ? null : AgeWidgets.TextOf(caption);
-            if (string.IsNullOrEmpty(text))
-            {
-                return null;
-            }
-
-            builder.PushContext(text);
-            Cell cell = Cells.Readout(caption, AgeWidgets.Raw(caption), key.ToString());
-            builder.AddItem(cell.Id, cell.Vtable);
-            return text;
+            string text = Captions.Text(caption);
+            return Captions.Push(builder, caption, key, text) ? text : null;
         }
 
         /// <summary>The first label a box draws, which is the caption it draws across its top - the three

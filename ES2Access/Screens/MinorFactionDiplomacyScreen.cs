@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using ES2Access.Core.Speech;
+using ES2Access.Core.UI;
 using ES2Access.Core.UI.Graph;
 using ES2Access.Core.Util;
 using ES2Access.UI;
@@ -12,9 +13,19 @@ namespace ES2Access.Screens
     /// empire's home system, and the one the "you have met somebody" popup leads to.
     ///
     /// Four things about them, in the order the window draws them: who they are and what their two traits
-    /// do; how they feel about the player and what is pushing that number up or down; what the player is
-    /// getting out of the relationship; and the things the player can do about it. The pair of stock
-    /// figures along the bottom is the fifth, and is the same pair every window in this family draws.
+    /// do; how they feel about the player, what that is worth and what is pushing the number up or down;
+    /// the things the player can do about it; and the pair of stock figures along the bottom, which is
+    /// the same pair every window in this family draws.
+    ///
+    /// <b>Every word over a block is the game's own.</b> The window captions all of them - "Traits",
+    /// "Diplomatic Relation", "Relation Rewards", "Modifiers", "Actions" - and each names the block
+    /// rather than standing in it (<see cref="Captions"/>); the two the game hung a sentence on
+    /// ("Diplomatic Relation", "Modifiers", "Actions") keep a row as well, because a block's NAME has no
+    /// review buffer for that sentence to live in. Nothing here is named by a phrase this mod invented.
+    ///
+    /// The two columns of the identity panel are declared COLUMN BY COLUMN rather than by where the game
+    /// drew them: the lore paragraph is a tall block beside three short ones, so banding the panel by
+    /// rectangle put the paragraph between "Political output" and the party it lists.
     ///
     /// The band of actions is the shared one (<see cref="DiplomacyActions"/>): this window, the pirate
     /// window and the Academy window draw three separate prefab classes of identical shape, and it is
@@ -24,7 +35,11 @@ namespace ES2Access.Screens
     /// faction's quest is running, whose Enter opens the quest journal and hides this window.
     ///
     /// The gauge's own click is the developers' (<c>OnGaugeButtonCb</c> :553-566 posts relation points),
-    /// so the gauge is a readout and the relation number beside it is where the value is read.
+    /// so the gauge is a readout and the relation number beside it is where the value is read. What the
+    /// gauge DOES say is what each band of it is worth, on four tooltips the prefab hangs along it
+    /// (<c>GaugeTooltipsTransformList</c>, hidden outright while at war - <c>ToggleGaugeTooltips</c>
+    /// :287-293); the game gives them no captions of their own, so they are read as the relation stop's
+    /// "Tooltips" region, one node per band named by the sentence's own first line.
     ///
     /// The window closes ITSELF when the faction dies, becomes unknown or is assimilated (:568-578), and
     /// refuses to open at all for one that is already integrated (:168-201) - so nothing here tests those
@@ -34,7 +49,6 @@ namespace ES2Access.Screens
     {
         private static readonly object IdentityStop = "minor:identity";
         private static readonly object RelationStop = "minor:relation";
-        private static readonly object GainsStop = "minor:gains";
         private static readonly object ActionsStop = "minor:actions";
         private static readonly object TreasuryStop = "minor:treasury";
 
@@ -42,6 +56,8 @@ namespace ES2Access.Screens
 
         private readonly List<Cell> _cells = new List<Cell>();
         private readonly List<DiplomacyActions.Row> _actions = new List<DiplomacyActions.Row>();
+        private readonly List<TooltipChildren.Dossier> _bands =
+            new List<TooltipChildren.Dossier>();
 
         public override string Key
         {
@@ -55,15 +71,25 @@ namespace ES2Access.Screens
             get { return 43; }
         }
 
+        /// <summary>The window's own title and then whose window it is - "Minor Civilization diplomacy,
+        /// Niris". The title is what the game calls the surface and the name is which one of them is
+        /// open, and a player arriving needs both. The mod's own phrase is the fallback for a window
+        /// whose title the game has not drawn.</summary>
         public override string ScreenName
         {
             get
             {
                 MinorFactionDiplomacyModalWindow window = Window();
+                string title = AgeText.Clean(Gui.Localize(WindowTitleKey));
+                if (string.IsNullOrEmpty(title) || title[0] == '%')
+                {
+                    title = ModStrings.Get(ModStrings.ScreenMinorDiplomacy);
+                }
+
                 string drawn = window == null ? null : Words(window.EmpireNameLabel);
                 return string.IsNullOrEmpty(drawn)
-                    ? ModStrings.Get(ModStrings.ScreenMinorDiplomacy)
-                    : drawn;
+                    ? title
+                    : title + ModStrings.Get(ModStrings.ListSeparator) + drawn;
             }
         }
 
@@ -121,126 +147,364 @@ namespace ES2Access.Screens
 
             BuildIdentity(builder, window);
             BuildRelation(builder, window);
-            BuildGains(builder, window);
             BuildActions(builder, window);
             BuildTreasury(builder, window);
         }
 
-        /// <summary>Who the faction is: its name, the paragraph the game wrote about it, its two traits
+        // ---- the game's own captions ----
+
+        private const string WindowTitleKey = "%MinorFactionDiplomacyModalWindowTitle";
+        private const string TraitsTitleKey = "%MinorFactionDiplomacyModalWindowTraitsTitle";
+        private const string RelationTitleKey = "%MinorFactionDiplomacyModalWindowRelationTitle";
+        private const string RewardsTitleKey =
+            "%MinorFactionDiplomacyModalWindowRelationRewardsTitle";
+        private const string ActionsTitleKey = "%MinorFactionDiplomacyModalWindowActionsTitle";
+
+        /// <summary>
+        /// Who the faction is: the window's own title with the sentence explaining the whole panel, then
+        /// everything under the faction's name - the paragraph the game wrote about it, its two traits
         /// with the dossiers hung on them, and the two panel features saying what its population does for
-        /// an empire and how it votes.</summary>
-        private void BuildIdentity(
-            GraphBuilder builder,
-            MinorFactionDiplomacyModalWindow window
-        )
+        /// a planet and how it votes.
+        ///
+        /// Declared column by column. The game draws the paragraph as one tall block beside three short
+        /// ones, so the drawn-row banding every other panel is read by interleaves the two columns.
+        /// </summary>
+        private void BuildIdentity(GraphBuilder builder, MinorFactionDiplomacyModalWindow window)
         {
             builder.BeginStop(IdentityStop);
-            builder.PushContext(ModStrings.Get(ModStrings.MinorIdentity));
-            _cells.Clear();
+            bool named = false;
             try
             {
+                // The title carries the only sentence about what this window is for, and a screen's
+                // name is a spoken phrase with no buffer behind it - so it is a row, and the first
+                // one, where the player lands coming back up the stops.
+                _cells.Clear();
+                Cells.AddReadout(_cells, Named(window, "Title", 3), Keys + "window-title");
+                Cells.EmitLinear(builder, _cells);
+
+                named = Captions.Push(builder, Of(window.EmpireNameLabel));
+
+                builder.SetRegion(Keys + "identity/about");
+                _cells.Clear();
                 Cells.AddReadout(_cells, Of(window.EmpireDescription), Keys + "description");
-                Cells.AddReadout(_cells, Of(window.MajorTraitLabel), Keys + "major-trait");
-                Cells.AddReadout(_cells, Of(window.MinorTraitLabel), Keys + "minor-trait");
-                Feature(window.PopulationEffects, "population-effects");
-                Feature(window.PopulationPoliticalOpinion, "population-opinion");
+                Cells.EmitLinear(builder, _cells);
+
+                Traits(builder, window);
+                Feature(builder, window.PopulationEffects, Keys + "identity/planet-effects");
+                Feature(builder, window.PopulationPoliticalOpinion, Keys + "identity/opinion");
             }
             catch (Exception e)
             {
                 Log.Warn("minor diplomacy: reading the faction threw: " + e);
             }
 
-            Cells.EmitLinear(builder, _cells);
-            builder.PopContext();
+            builder.SetRegion(null);
+            Captions.Pop(builder, named);
         }
 
-        private void Feature(GuiPanelFeature feature, string key)
+        /// <summary>The faction's personality and the trait an ally absorbs - two figures the game draws
+        /// as a word beside a bare icon, captioned by its own titles for them and explained twice over:
+        /// the icon says what the line IS and the word's own class-backed dossier says what THAT trait
+        /// does.</summary>
+        private void Traits(GraphBuilder builder, MinorFactionDiplomacyModalWindow window)
         {
-            AgeTransform at = feature == null ? null : feature.AgeTransform;
-            if (at == null || !AgeWidgets.Visible(at))
+            builder.SetRegion(Keys + "identity/traits");
+            bool named = Captions.Push(builder, null, null, Localized(TraitsTitleKey));
+            _cells.Clear();
+            Cells.AddStat(
+                _cells,
+                window.MajorTraitLabel,
+                "%MinorFactionMajorTraitTitle",
+                Keys + "major-trait"
+            );
+            Cells.AddStat(
+                _cells,
+                window.MinorTraitLabel,
+                "%MinorFactionMinorTraitTitle",
+                Keys + "minor-trait"
+            );
+            Cells.EmitLinear(builder, _cells);
+            Captions.Pop(builder, named);
+        }
+
+        /// <summary>One of the two panel features the identity panel embeds, under the caption the
+        /// feature itself draws. Its lines are read straight rather than through the shared side-panel
+        /// walk, because that walk declares the caption as a line of its own and here the caption is the
+        /// block's name.</summary>
+        private void Feature(GraphBuilder builder, GuiPanelFeature feature, string region)
+        {
+            AgeTransform group = feature == null ? null : feature.AgeTransform;
+            if (group == null || !AgeWidgets.Visible(group))
             {
                 return;
             }
 
-            SidePanels.Content(_cells, at, Keys + key + "/", null, null);
+            AgeTransform caption = FeatureTitle(feature);
+            builder.SetRegion(region);
+            bool named = Captions.Push(builder, caption, region + "/title");
+            _cells.Clear();
+            Lines(group, caption, region + "/");
+            Cells.EmitLinear(builder, _cells);
+            Captions.Pop(builder, named);
         }
 
-        /// <summary>How the faction feels about the player: the state, the number with its per-turn trend,
-        /// who they are allied to, and the modifiers pushing the number - the influence one the game draws
-        /// as its own line and one line per temporary effect, plus the warning it adds while the faction is
-        /// still unknown.</summary>
+        /// <summary>The caption a panel feature draws across its top, off whichever of the two shapes
+        /// this window embeds declared it.</summary>
+        private static AgeTransform FeatureTitle(GuiPanelFeature feature)
+        {
+            try
+            {
+                PanelFeatureEffects effects = feature as PanelFeatureEffects;
+                if (effects != null)
+                {
+                    return effects.TitleLabel == null ? null : effects.TitleLabel.AgeTransform;
+                }
+
+                PanelFeaturePoliticalOpinion opinion = feature as PanelFeaturePoliticalOpinion;
+                return opinion == null ? null : opinion.TitleLabel;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>The lines a captioned block holds: the table's own children where it drew a table,
+        /// the child itself where it drew a single line, and never the caption.</summary>
+        private void Lines(AgeTransform group, AgeTransform caption, string keyPrefix)
+        {
+            IList<AgeTransform> children = group.Children;
+            for (int i = 0; children != null && i < children.Count; i++)
+            {
+                AgeTransform child = children[i];
+                if (
+                    child == null
+                    || ReferenceEquals(child, caption)
+                    || !AgeWidgets.Visible(child)
+                )
+                {
+                    continue;
+                }
+
+                IList<AgeTransform> lines = child.Children;
+                if (lines == null || lines.Count == 0)
+                {
+                    Line(child, keyPrefix + i);
+                    continue;
+                }
+
+                for (int j = 0; j < lines.Count; j++)
+                {
+                    Line(lines[j], keyPrefix + i + "/" + j);
+                }
+            }
+        }
+
+        /// <summary>One line of a captioned block, with EVERY explanation the game drew inside it - a
+        /// political-opinion line's party name is a label and the party's dossier hangs off the icon
+        /// beside it, so a reader taking only the line's own tooltip loses the dossier.</summary>
+        private void Line(AgeTransform widget, string key)
+        {
+            if (
+                widget != null
+                && AgeWidgets.Visible(widget)
+                && !string.IsNullOrEmpty(AgeWidgets.TextOf(widget))
+            )
+            {
+                _cells.Add(Cells.Readout(widget, key));
+            }
+        }
+
+        /// <summary>
+        /// How the faction feels about the player, under the game's own heading for the panel: the state,
+        /// the number with its per-turn trend, who they are allied to, what each band of the gauge would
+        /// be worth, what the relationship is paying out, and the modifiers pushing the number - the
+        /// influence one the game draws as its own line and one line per temporary effect, plus the
+        /// warning it adds while the faction is still unknown.
+        /// </summary>
         private void BuildRelation(GraphBuilder builder, MinorFactionDiplomacyModalWindow window)
         {
             builder.BeginStop(RelationStop);
-            builder.PushContext(ModStrings.Get(ModStrings.MinorRelation));
-            _cells.Clear();
+            AgeTransform title = Named(window, "TitleGroup", 4);
+            bool named = Captions.Push(
+                builder,
+                title,
+                Keys + "relation-title",
+                Captions.Text(title) ?? Localized(RelationTitleKey)
+            );
             try
             {
-                Cells.AddReadout(_cells, Of(window.RelationLabel), Keys + "relation");
-                Cells.AddReadout(_cells, Of(window.RelationTrendLabel), Keys + "trend");
-                Cells.AddReadout(_cells, Of(window.AllyLabel), Keys + "ally");
-                Cells.AddReadout(
-                    _cells,
-                    window.MinorRelationModifiersTitle,
-                    Keys + "modifiers-title"
-                );
-                AgeTransform influence = window.MinorRelationInfluenceModifierLine == null
-                    ? null
-                    : window.MinorRelationInfluenceModifierLine.AgeTransform;
-                if (influence != null && AgeWidgets.Visible(influence))
-                {
-                    Cells.AddReadout(_cells, influence, Keys + "influence-modifier");
-                }
+                builder.SetRegion(Keys + "relation/state");
+                _cells.Clear();
 
-                AgeTransform table = window.MinorRelationModifiersTable;
-                IList<AgeTransform> children = table == null || !AgeWidgets.Visible(table)
-                    ? null
-                    : table.Children;
-                for (int i = 0; children != null && i < children.Count; i++)
-                {
-                    Cells.AddReadout(_cells, children[i], Keys + "modifier/" + i);
-                }
-
-                Cells.AddReadout(
+                // "Relation, CORDIAL": the state's own word, captioned by the game's title for it, with
+                // the icon's sentence about what a relation IS and the state's own effect sentence
+                // behind it.
+                Cells.AddStat(
                     _cells,
-                    window.MinorRelationModifiersUnknownWarning,
-                    Keys + "modifiers-unknown"
+                    window.RelationLabel,
+                    "%MinorFactionRelationTitle",
+                    Keys + "relation"
                 );
+
+                // The points and their trend, which the game writes into ONE label ("40 (+7/turn)") and
+                // gives no title anywhere: the sentence it hangs on the line becomes the name, as the
+                // shared rule says (<see cref="Cells.AddStat"/>), and is then not said twice.
+                Cells.AddStat(_cells, window.RelationTrendLabel, null, Keys + "trend");
+                Cells.AddStat(
+                    _cells,
+                    window.AllyLabel,
+                    "%MinorFactionCurrentAllyTitle",
+                    Keys + "ally"
+                );
+                Cells.EmitLinear(builder, _cells);
+
+                Bands(builder, window);
+                Rewards(builder, window);
+                Modifiers(builder, window);
             }
             catch (Exception e)
             {
                 Log.Warn("minor diplomacy: reading the relation threw: " + e);
             }
 
-            Cells.EmitLinear(builder, _cells);
-            builder.PopContext();
+            builder.SetRegion(null);
+            Captions.Pop(builder, named);
         }
 
-        /// <summary>What the relationship is worth: the list of resources the game composes into one
-        /// label, or its own sentence for gaining nothing yet.</summary>
-        private void BuildGains(GraphBuilder builder, MinorFactionDiplomacyModalWindow window)
+        /// <summary>What each band of the relation gauge is worth. The prefab hangs one sentence per band
+        /// and no caption on any of them, so they are the stop's "Tooltips" region - the uniform answer
+        /// for explanations a surface offers with no words on screen - named by their own first
+        /// lines.</summary>
+        private void Bands(GraphBuilder builder, MinorFactionDiplomacyModalWindow window)
         {
-            builder.BeginStop(GainsStop);
-            builder.PushContext(ModStrings.Get(ModStrings.MinorGains));
-            _cells.Clear();
-            try
+            _bands.Clear();
+            IList<AgeTransform> tips = window.GaugeTooltipsTransformList;
+            for (int i = 0; tips != null && i < tips.Count; i++)
             {
-                Cells.AddReadout(_cells, Of(window.GainedResourcesLabel), Keys + "gains");
-                Cells.AddReadout(_cells, Of(window.RelationEffectNoneLabel), Keys + "no-gains");
-            }
-            catch (Exception e)
-            {
-                Log.Warn("minor diplomacy: reading the gains threw: " + e);
+                AgeTransform at = tips[i];
+                if (at == null || !AgeWidgets.Visible(at))
+                {
+                    continue;
+                }
+
+                AgeTooltip tooltip = AgeWidgets.Raw(at);
+                if (tooltip == null || !AgeWidgets.Draws(tooltip))
+                {
+                    continue;
+                }
+
+                AgeTooltip tip = tooltip;
+                _bands.Add(
+                    new TooltipChildren.Dossier
+                    {
+                        Name = CardActions.NameFromTooltip(tip),
+                        Tooltip = tip,
+                        Anchor = at,
+                        Mode = TooltipMode.None,
+                    }
+                );
             }
 
+            TooltipChildren.Emit(builder, Keys + "gauge", _bands, null);
+        }
+
+        /// <summary>What the relationship is worth: the resources the game composes into ONE label, a row
+        /// per line of it, or its own sentence for gaining nothing yet.</summary>
+        private void Rewards(GraphBuilder builder, MinorFactionDiplomacyModalWindow window)
+        {
+            builder.SetRegion(Keys + "relation/rewards");
+            bool named = Captions.Push(builder, null, null, Localized(RewardsTitleKey));
+            AgePrimitiveLabel label = window.GainedResourcesLabel;
+            AgeTransform at = Of(label);
+            if (at != null && AgeWidgets.Visible(at))
+            {
+                AgePrimitiveLabel it = label;
+                IList<string> lines = AgeText.Lines(AgeText.FullLabel(it));
+                for (int i = 0; lines != null && i < lines.Count; i++)
+                {
+                    int index = i;
+                    builder.AddItem(
+                        ControlId.Structural(Keys + "gain/" + index),
+                        new NodeVtable
+                        {
+                            Announcements = new List<NodeAnnouncement>
+                            {
+                                GraphNodes.LabelPart(() => Gain(it, index)),
+                            },
+                        }
+                    );
+                }
+            }
+
+            _cells.Clear();
+            Cells.AddReadout(_cells, Of(window.RelationEffectNoneLabel), Keys + "no-gains");
             Cells.EmitLinear(builder, _cells);
-            builder.PopContext();
+            Captions.Pop(builder, named);
+        }
+
+        /// <summary>One line of the payout label, resolved when the node is read rather than when it is
+        /// declared - the game rewrites the whole label every time the relation moves.</summary>
+        private static string Gain(AgePrimitiveLabel label, int index)
+        {
+            try
+            {
+                IList<string> lines = AgeText.Lines(AgeText.FullLabel(label));
+                return lines == null || index >= lines.Count ? null : lines[index];
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>What is pushing the relation, under the game's own caption for the block - which
+        /// carries a sentence of its own and so is a row as well as the block's name.</summary>
+        private void Modifiers(GraphBuilder builder, MinorFactionDiplomacyModalWindow window)
+        {
+            builder.SetRegion(Keys + "relation/modifiers");
+            bool named = Captions.Push(
+                builder,
+                window.MinorRelationModifiersTitle,
+                Keys + "modifiers-title"
+            );
+            _cells.Clear();
+            AgeTransform influence = window.MinorRelationInfluenceModifierLine == null
+                ? null
+                : window.MinorRelationInfluenceModifierLine.AgeTransform;
+            if (influence != null && AgeWidgets.Visible(influence))
+            {
+                Cells.AddReadout(_cells, influence, Keys + "influence-modifier");
+            }
+
+            AgeTransform table = window.MinorRelationModifiersTable;
+            IList<AgeTransform> children = table == null || !AgeWidgets.Visible(table)
+                ? null
+                : table.Children;
+            for (int i = 0; children != null && i < children.Count; i++)
+            {
+                Cells.AddReadout(_cells, children[i], Keys + "modifier/" + i);
+            }
+
+            Cells.AddReadout(
+                _cells,
+                window.MinorRelationModifiersUnknownWarning,
+                Keys + "modifiers-unknown"
+            );
+            Cells.EmitLinear(builder, _cells);
+            Captions.Pop(builder, named);
         }
 
         private void BuildActions(GraphBuilder builder, MinorFactionDiplomacyModalWindow window)
         {
             builder.BeginStop(ActionsStop);
-            builder.PushContext(ModStrings.Get(ModStrings.DiplomacyActionsBand));
+            AgeTransform title = Named(window, "ActionsTitle", 4);
+            bool named = Captions.Push(
+                builder,
+                title,
+                Keys + "actions-title",
+                Captions.Text(title) ?? Localized(ActionsTitleKey)
+            );
             _actions.Clear();
             try
             {
@@ -261,7 +525,7 @@ namespace ES2Access.Screens
             }
 
             DiplomacyActions.Emit(builder, Keys.TrimEnd(':'), _actions);
-            builder.PopContext();
+            Captions.Pop(builder, named);
         }
 
         /// <summary>The two stocks along the bottom edge, which every window in this family draws and none
@@ -282,6 +546,42 @@ namespace ES2Access.Screens
 
             Cells.EmitLinear(builder, _cells);
             builder.PopContext();
+        }
+
+        /// <summary>A caption the window draws but does not expose, found by the name the prefab gives
+        /// it.</summary>
+        private static AgeTransform Named(
+            MinorFactionDiplomacyModalWindow window,
+            string name,
+            int depth
+        )
+        {
+            try
+            {
+                return window == null
+                    ? null
+                    : AgeWidgets.ChildNamed(window.AgeTransform, name, depth);
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>A game caption by key, for a block whose caption widget the window does not expose
+        /// and which carries nothing on hover - where the words are the whole of what the widget would
+        /// have given.</summary>
+        private static string Localized(string key)
+        {
+            try
+            {
+                string text = AgeText.Clean(Gui.Localize(key));
+                return string.IsNullOrEmpty(text) || text[0] == '%' ? null : text;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
         }
 
         private static string Words(AgePrimitiveLabel label)
