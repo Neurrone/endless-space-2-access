@@ -2051,3 +2051,41 @@ rebind proof without touching the shipped bindings.
   eleven rows, and flipping the same window to `Save` makes every one of them vanish. The fleet
   panel's own stops carry "Ctrl+Enter to add to the selection" + "Shift+Enter to select up to here"
   on `fleets:line/<guid>` and `fleets:ships/ship/<id>`.
+
+**The hull drop list, from `/eval` in five requests** (the cheapest route to a class-backed drop-list
+entry — the ship-hull list is one of the seven target-table lists). The designer opens in CREATION
+mode with no ship at all: `var w = Gui.GuiService.GetWindow<ShipDesignModalWindow>(false);
+w.Bind(null); Gui.GuiService.ShowWindow(w);` — the graph then reads
+`Ship Design: creating` with a `shipdesign/info/hull` combo on "None". Reach it with `/input ui.next`
+(the heading stop holds only the title), `POST /type` `hull`, `/input ui.back` to clear the search,
+then `/input ui.activate`: `screen.drop-list | Hull` opens with `None / Karga-class / Zolya-class`.
+`/input ui.down` onto Karga-class and `DevProbe.Tooltip()` answers class `ShipHull` with
+`PanelFeatureHeader` (Karga-class, Hull (Ship Design)), `PanelFeatureHullInfo` (Role Colonizer, Size
+Small, Command Points 1) and `PanelFeatureCosts` (Cost: 50 Industry). `/input ui.back` closes the
+list; the designer itself must be closed through the MODAL STACK (below) — hiding it leaves it
+`ModalOnTop` with `Shown` false, and every modal opened afterwards then reads as buried.
+
+**Draining the modal stack from `/eval`** (the reset every multi-screen sweep needs). `GuiManager`'s
+`ModalOnTop` can name a window whose `Shown` is false — hiding a modal does not pop it, and a screen
+gated on "am I the top modal" (the minor-diplomacy screen is) then never activates, showing as
+`screen: none` with the window plainly up. The drain that works: while `ModalOnTop != null`, re-`Show`
+it if `!Shown` and then `HandleInput(InputAction.Exit)`; six passes is more than any real stack needs.
+Follow it with `HideWindow` on the full screens (senate, economy, empire, military, technology) and
+`Gui.GuiGameWindowService.RequestGalaxyOverviewViewLevel(Gui.PlayerEmpire.GetAgency<
+DepartmentOfTheInterior>().ColonizedStarSystems[0].Node)` to land back on the galaxy.
+
+**Re-opening the minor-civilization window** on a save that has met one: find the `MinorEmpire` in
+`(Amplitude.Unity.Framework.Services.GetService<Amplitude.Unity.Game.IGameService>().Game as
+global::Game).Empires` (indexed, never `foreach`ed — the REPL's generic poison), then `w.Bind(minor,
+minor.GetAgency<DepartmentOfTheInterior>().ColonizedStarSystems[0].Node);
+Gui.GuiService.ShowWindow(w)`. In the owner's turn-22 save Niris is `Empires[4]`, at Osulo.
+
+**Opening the EMPIRE screen raises a tutorial page in a tutorial save** ("Snapshot Of An Empire"),
+which takes the mod's focus (`screen: screen.tutorial`) and has to be re-minimized afterwards. The
+HUD button for it reads "This functionality is disabled during this part of the Tutorial" in that
+save, so the empire screen is fixture-blocked there for anything but a forced `ShowWindow`.
+
+**Leaving the planet page.** `ui.back` does NOT leave it under injection (two presses, still
+`screen.planet`); `Gui.GuiGameWindowService.RequestGalaxyOverviewViewLevel(node)` is the way back to
+the galaxy, and `RequestStarSystemManagementViewLevel(node.GUID)` — the NODE's GUID — is the way to a
+system page.

@@ -372,6 +372,26 @@ namespace ES2Access.Core.UI.Graph
         /// Called before the new control's OnFocusVisual, and also when the screen closes or the mod
         /// stops, so nothing is left looking hovered.</summary>
         public Action OnBlurVisual;
+
+        /// <summary>
+        /// Optional. WHAT <see cref="OnFocusVisual"/> aims the pointer at, as the game's own tooltip
+        /// object - the aim written down beside the content instead of hidden inside a closure.
+        ///
+        /// A control carrying two tooltips shows only the one the pointer is sent to, so "which
+        /// tooltip does this node point at" is a question about the node, and anything that has to
+        /// ANSWER it - a parity audit, a probe, a screen inheriting another's declaration - used to
+        /// re-derive it by walking the widget tree. That answer is wrong wherever the deepest tooltip
+        /// in a card is decoration, and it reported defects on screens whose pointing was right.
+        ///
+        /// Set by every pointing helper, from the same argument it aims, so the two cannot drift; the
+        /// LAST pointing call on a vtable wins, exactly as it does for the visual. Resolved when
+        /// asked rather than when declared, because a widget the game fills in later gets its tooltip
+        /// after the node is built. Null = this node aims at nothing.
+        ///
+        /// Typed as <see cref="object"/> because the core knows nothing of the game's toolkit; every
+        /// reader casts it back to the engine's tooltip type.
+        /// </summary>
+        public Func<object> PointsAt;
     }
 
     /// <summary>

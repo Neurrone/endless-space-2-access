@@ -205,6 +205,18 @@ node after mutating its backing state answers the PRE-mutation content — leave
 return before re-probing. `TooltipDelay(-1)` after.
 
 
+**The mechanical tooltip check.** `DevProbe.TooltipParity()` runs the notification audit's tooltip
+half on whichever screen is FOCUSED. Four findings — `promised` (a node claims a dossier nothing
+would draw), `misaimed` (it points at one that draws nothing, judged by the node's own `PointsAt`
+and never by a re-derived aim), `uncovered` and `unread` (a tooltip the game would draw that no node
+covers, or whose words no covering node carries) — plus three weaker buckets kept apart:
+`decoration` (the carrier is not a control), `hidden` (only the pass with the alpha gate off sees
+it) and `undescribed` (a GAME defect — no `GuiTooltipDescription` for that class). The painted half
+needs `Screen.RootTransform`; a screen answering null gets the declaration-side buckets only and
+says so with `"root": null`, so a clean answer there is not a clean screen. Auditing a LIST ENTRY's
+tooltip: open the list, step onto the entry, THEN `DevProbe.Tooltip()` — nothing outside an open
+popup can point at its items.
+
 **A card's tooltip is rarely on the card.** `PointerFocus` shows the tooltip of the widget it is
 pointed AT, so pointing at a row whose tooltip hangs off a child inside it (the planet card's
 anomaly rows) draws nothing while the node still declares the tooltip and its buffer stays empty. Point at

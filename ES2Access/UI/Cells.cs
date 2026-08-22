@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using ES2Access.Core.UI;
 using ES2Access.Core.Speech;
 using ES2Access.Core.UI.Graph;
 using ES2Access.UI.Input;
@@ -408,10 +409,13 @@ namespace ES2Access.UI
         /// what the number means without ever saying what it is. Where the game keeps no title at all,
         /// that sentence becomes the name as a last resort - and is then not announced a second time.
         ///
-        /// The tooltip is the label's own where it has one and the group's around it otherwise, which is
-        /// where these panels put it (<c>ShipDesignBasePanel.Refresh</c> writes it with
-        /// <c>GetComponentInParent</c>), and the pointer is aimed at whichever of the two owns it so the
-        /// drawn tooltip appears.
+        /// The explanations are resolved in all three places these panels put them
+        /// (<see cref="TooltipReach.Own"/> | <see cref="TooltipReach.Parents"/> |
+        /// <see cref="TooltipReach.Siblings"/>): the label's own, the group the game drew it in
+        /// (<c>ShipDesignBasePanel.Refresh</c> writes those with <c>GetComponentInParent</c>), and the
+        /// wordless icon captioning it. They read outermost first and the figure's own last, which is
+        /// the order the row was drawn in, and the pointer is aimed at the owner of the LAST - the one
+        /// about the value itself - so that is the dossier the game draws.
         ///
         /// <paramref name="row"/> is what the figure is laid out and keyed by, and defaults to the group
         /// the game drew it in - which is the rect a reader sees it occupy. A strip of columns drawn as
@@ -432,14 +436,18 @@ namespace ES2Access.UI
                 return;
             }
 
-            AgeTooltip own = AgeWidgets.Raw(widget);
+            Scratch.Clear();
+            AgeWidgets.EffectiveTooltips(
+                widget,
+                Scratch,
+                TooltipReach.Own | TooltipReach.Parents | TooltipReach.Siblings
+            );
+            AgeTooltip tip = Last(Scratch);
             AgeTransform group = widget.Parent;
-            AgeTooltip tooltip = own ?? AgeWidgets.Raw(group);
-            AgeTransform owner = own != null || group == null ? widget : group;
+            AgeTransform owner = AgeWidgets.TooltipOwner(tip) ?? widget;
             AgeTransform laid = row ?? group ?? widget;
             string caption = AgeText.Clean(titleKey);
             bool named = !string.IsNullOrEmpty(caption) && caption[0] != '%';
-            AgeTooltip tip = tooltip;
             AgeTransform at = widget;
             NodeVtable vtable = new NodeVtable
             {
@@ -450,12 +458,13 @@ namespace ES2Access.UI
                     ),
                     GraphNodes.ValuePart(() => AgeWidgets.TextOf(at)),
                 },
-                Sections = GraphNodes.Sections(
-                    null,
-                    tooltip,
-                    named ? (TooltipMode?)null : TooltipMode.None
-                ),
             };
+            vtable.Sections = GraphNodes.SectionsFor(
+                vtable,
+                Scratch,
+                null,
+                named ? (TooltipMode?)null : TooltipMode.None
+            );
             AgeWidgets.PointAt(vtable, owner);
             cells.Add(
                 new Cell { Widget = laid, Id = ControlId.Referenced(laid, key), Vtable = vtable }
@@ -463,7 +472,11 @@ namespace ES2Access.UI
         }
 
         /// <summary>A line the player reads rather than works: whatever words the game drew in it, and
-        /// its own tooltip.</summary>
+        /// the tooltip it was declared with - which is usually its own, and is aimed at wherever it
+        /// actually hangs. A caller that reads a figure's explanation off the BOX around it (the
+        /// military panel's juggernaut count) would otherwise point at the figure, where there is no
+        /// tooltip at all, and the game would draw nothing while the buffer promised a sentence.
+        /// </summary>
         public static Cell Readout(AgeTransform widget, AgeTooltip tooltip, string key)
         {
             AgeTransform at = widget;
@@ -475,7 +488,7 @@ namespace ES2Access.UI
                 },
                 Sections = GraphNodes.Sections(null, tooltip),
             };
-            AgeWidgets.PointAt(vtable, widget);
+            AgeWidgets.PointAt(vtable, widget, tooltip);
             return new Cell
             {
                 Widget = widget,

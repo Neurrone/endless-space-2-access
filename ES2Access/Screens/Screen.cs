@@ -142,6 +142,52 @@ namespace ES2Access.Screens
             get { return null; }
         }
 
+        /// <summary>
+        /// The widget the game DRAWS this screen inside, for the dev-only tooltip audit
+        /// (<c>DevProbe.TooltipParity</c>): the painted half of the comparison is a walk of this
+        /// tree, and everything the screen ought to have declared is somewhere under it.
+        ///
+        /// Null - the default - is honest and costs the painted half: the check then reports only
+        /// what it can answer from the DECLARATION side (a node promising a tooltip nothing draws,
+        /// a node aiming at one that draws nothing) and says nothing about tooltips the game draws
+        /// that no node covers. A screen with no window of its own - the galaxy map, whose content
+        /// is the world - genuinely has no root, and a made-up one would be worse than none.
+        ///
+        /// Nothing else reads this. It exists so the audit asks the SCREEN where it lives rather
+        /// than guessing from whatever window happens to be on top.
+        /// </summary>
+        public virtual AgeTransform RootTransform
+        {
+            get { return null; }
+        }
+
+        /// <summary>The tree a game window is drawn as - what a screen built on one window answers
+        /// <see cref="RootTransform"/> with.</summary>
+        protected static AgeTransform RootOf(Amplitude.Unity.Gui.GuiWindow window)
+        {
+            try
+            {
+                return window == null ? null : window.gameObject.GetComponent<AgeTransform>();
+            }
+            catch (System.Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// What every node id this screen declares begins with, so the audit can tell the screen's
+        /// own content from the shared heads-up display stops that are declared into every screen.
+        ///
+        /// Null - the default - means "everything in my render is mine to answer for", which is the
+        /// right answer for a screen whose keys have no single prefix; it costs the audit some noise
+        /// from the HUD rather than any wrong answer.
+        /// </summary>
+        public virtual string NodePrefix
+        {
+            get { return null; }
+        }
+
         /// <summary>Keep the cursor position after the screen closes, for a page the player leaves
         /// and comes straight back to.</summary>
         public virtual bool KeepStateOnPop

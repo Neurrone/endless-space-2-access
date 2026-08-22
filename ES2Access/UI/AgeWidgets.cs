@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using ES2Access.Core.UI;
 using ES2Access.Core.UI.Graph;
 using ES2Access.Core.Util;
 using UnityEngine;
@@ -234,8 +235,15 @@ namespace ES2Access.UI
             }
         }
 
-        /// <summary>A widget's tooltip whatever kind it is - what a caller needs to SHOW one rather
-        /// than to read it.</summary>
+        /// <summary>
+        /// A widget's tooltip whatever kind it is - what a caller needs to SHOW one, and only that.
+        ///
+        /// For POINTING. A reading asks <see cref="EffectiveTooltips"/> instead, even when it wants
+        /// nothing but this widget's own (<see cref="TooltipReach.Own"/>): the game hangs its
+        /// explanations on the block around a row and on the icon beside a number as readily as on
+        /// the widget itself, and a screen that reaches for this one to build its SECTIONS is a
+        /// screen whose reach can never be widened without finding every such call again.
+        /// </summary>
         public static AgeTooltip Raw(AgeTransform transform)
         {
             try
@@ -384,14 +392,143 @@ namespace ES2Access.UI
         /// </summary>
         public static void Tooltips(AgeTransform widget, List<AgeTooltip> into, int maxDepth = 4)
         {
-            CollectTooltips(widget, into, 0, maxDepth);
+            EffectiveTooltips(widget, into, TooltipReach.Own | TooltipReach.Descendants, maxDepth);
         }
 
-        private static void CollectTooltips(
+        /// <summary>
+        /// THE tooltip resolver: every tooltip that belongs to this widget, in the directions the
+        /// caller asks for and in the order the player reads them - the block it was drawn in, the
+        /// captions beside it, its own, then the pieces inside it.
+        ///
+        /// One resolver rather than one per screen. There were four (this file's own walk, two
+        /// private copies in screens, and a per-widget <see cref="Raw"/>), they disagreed about the
+        /// visibility gate, about empty decoration tooltips and about whether a clone counted twice,
+        /// and every disagreement was invisible in speech: a row simply said less than the game does.
+        ///
+        /// <paramref name="reach"/> is opt-in per call site and defaults to nothing, because each
+        /// direction is a way to pick up a tooltip that belongs to something else. See
+        /// <see cref="TooltipReach"/> for what each one means; <paramref name="maxDepth"/> bounds the
+        /// walking ones.
+        ///
+        /// Two rules the callers depend on:
+        /// - <b>Identity is the (class, content, target) triple, not the component</b>
+        ///   (<see cref="TooltipKey"/>): the game CLONES tooltips onto the widgets inside a card, and
+        ///   a reference dedupe reads one explanation once per clone.
+        /// - <b>A resolution that can return SEVERAL tooltips filters them</b> - each widget it walks
+        ///   must be visible, and a tooltip the game could never draw anything for
+        ///   (<see cref="NeverDraws"/>) is dropped, because callers point at the LAST one found and a
+        ///   prefab's empty decoration sitting after the real one is how a row came to promise a
+        ///   dossier and draw nothing. A resolution of exactly ONE (<see cref="TooltipReach.Own"/> or
+        ///   <see cref="TooltipReach.ListEntry"/> alone) does not filter: there is nothing to choose
+        ///   between, and the caller named the widget whose tooltip it wants.
+        ///
+        /// Appends, so a caller may resolve several widgets into one list; anything already in
+        /// <paramref name="into"/> counts for the dedupe.
+        /// </summary>
+        public static void EffectiveTooltips(
+            AgeTransform widget,
+            List<AgeTooltip> into,
+            TooltipReach reach,
+            int maxDepth = 4
+        )
+        {
+            if (widget == null || into == null || reach == TooltipReach.None)
+            {
+                return;
+            }
+
+            Seen.Clear();
+            for (int i = 0; i < into.Count; i++)
+            {
+                Seen.Add(KeyOf(into[i]));
+            }
+
+            bool walks =
+                (reach & (TooltipReach.Descendants | TooltipReach.Parents | TooltipReach.Siblings))
+                != 0;
+            if ((reach & TooltipReach.Parents) != 0)
+            {
+                CollectNearestAncestor(widget, into, maxDepth);
+            }
+
+            if ((reach & TooltipReach.Siblings) != 0)
+            {
+                CollectCaptionSiblings(widget, into);
+            }
+
+            if ((reach & TooltipReach.Descendants) != 0)
+            {
+                Descend(widget, into, 0, maxDepth, (reach & TooltipReach.Own) != 0);
+                return;
+            }
+
+            if ((reach & (TooltipReach.Own | TooltipReach.ListEntry)) != 0)
+            {
+                Keep(Raw(widget), into, walks);
+            }
+        }
+
+        /// <summary>Whether this widget draws words of its own - the raw field, not the cleaned
+        /// reading, because the question is "is this a caption picture or another cell" and the
+        /// answer must cost one component read.</summary>
+        private static bool Writes(AgeTransform widget)
+        {
+            try
+            {
+                AgePrimitiveLabel label = widget.GetComponent<AgePrimitiveLabel>();
+                return label != null && !string.IsNullOrEmpty(label.Text);
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        /// <summary>Whether two tooltips would draw the same thing - the resolver's own identity
+        /// question, for a caller holding one tooltip that has to find itself in a resolved list.
+        /// </summary>
+        public static bool SameTooltip(AgeTooltip a, AgeTooltip b)
+        {
+            return ReferenceEquals(a, b) || (a != null && b != null && KeyOf(a).Equals(KeyOf(b)));
+        }
+
+        // Reused rather than allocated per call: the resolver runs inside per-frame panel walks, and
+        // nothing it calls can re-enter it.
+        private static readonly TooltipSet Seen = new TooltipSet();
+
+        private static TooltipKey KeyOf(AgeTooltip tooltip)
+        {
+            try
+            {
+                return tooltip == null
+                    ? new TooltipKey(null, null, null)
+                    : new TooltipKey(tooltip.Class, tooltip.Content, tooltip.Target);
+            }
+            catch (Exception)
+            {
+                return new TooltipKey(null, null, null);
+            }
+        }
+
+        private static void Keep(AgeTooltip tooltip, List<AgeTooltip> into, bool filter)
+        {
+            if (tooltip == null || (filter && NeverDraws(tooltip)))
+            {
+                return;
+            }
+
+            if (Seen.Add(KeyOf(tooltip)))
+            {
+                into.Add(tooltip);
+            }
+        }
+
+        private static void Descend(
             AgeTransform widget,
             List<AgeTooltip> into,
             int depth,
-            int maxDepth
+            int maxDepth,
+            bool includeSelf
         )
         {
             if (widget == null || depth > maxDepth || !Visible(widget))
@@ -399,16 +536,80 @@ namespace ES2Access.UI
                 return;
             }
 
-            AgeTooltip tooltip = Raw(widget);
-            if (tooltip != null && !NeverDraws(tooltip) && !into.Contains(tooltip))
+            if (includeSelf)
             {
-                into.Add(tooltip);
+                Keep(Raw(widget), into, true);
             }
 
             IList<AgeTransform> children = widget.Children;
             for (int i = 0; children != null && i < children.Count; i++)
             {
-                CollectTooltips(children[i], into, depth + 1, maxDepth);
+                Descend(children[i], into, depth + 1, maxDepth, true);
+            }
+        }
+
+        /// <summary>The tooltip on the block this widget was drawn in. The game writes these with
+        /// <c>GetComponentInParent</c>, which takes the nearest ancestor carrying one and stops -
+        /// so this stops there too, rather than collecting every container up to the window and
+        /// hanging a panel-wide sentence on each of its figures.</summary>
+        private static void CollectNearestAncestor(
+            AgeTransform widget,
+            List<AgeTooltip> into,
+            int maxDepth
+        )
+        {
+            AgeTransform at = widget == null ? null : widget.Parent;
+            for (int depth = 0; at != null && depth < maxDepth; depth++)
+            {
+                AgeTooltip tooltip = Raw(at);
+                if (tooltip != null && !NeverDraws(tooltip) && Visible(at))
+                {
+                    Keep(tooltip, into, true);
+                    return;
+                }
+
+                at = at.Parent;
+            }
+        }
+
+        /// <summary>
+        /// The explanation the game hung on the wordless icon BESIDE this widget - the caption for a
+        /// value drawn as a bare number.
+        ///
+        /// Only a sibling that draws no words of its own and works nothing counts. A sibling with
+        /// text is another cell of the same row and carries its own explanation, which belongs to
+        /// that cell and not to this one; a sibling with a control is a thing the player can operate
+        /// and gets a node rather than a caption. Without that test a strip of stats drawn as
+        /// several labels in one group reads every stat's sentence on every stat.
+        ///
+        /// Both tests are one component read on the sibling itself - never a walk of what is inside
+        /// it. This runs per stat per frame inside a panel build, and the deep text reading it would
+        /// otherwise do is the kind of cost that only shows up as a frame-rate complaint.
+        /// </summary>
+        private static void CollectCaptionSiblings(AgeTransform widget, List<AgeTooltip> into)
+        {
+            AgeTransform parent = widget == null ? null : widget.Parent;
+            IList<AgeTransform> siblings = parent == null ? null : parent.Children;
+            for (int i = 0; siblings != null && i < siblings.Count; i++)
+            {
+                AgeTransform sibling = siblings[i];
+                if (sibling == null || ReferenceEquals(sibling, widget) || !Visible(sibling))
+                {
+                    continue;
+                }
+
+                AgeTooltip tooltip = Raw(sibling);
+                if (tooltip == null || NeverDraws(tooltip))
+                {
+                    continue;
+                }
+
+                if (Control(sibling) != null || Writes(sibling))
+                {
+                    continue;
+                }
+
+                Keep(tooltip, into, true);
             }
         }
 
@@ -1023,6 +1224,7 @@ namespace ES2Access.UI
             vtable.OnFocusVisual = () =>
                 PointerFocus.MoveTo(it, Raw(Transform(it)), Transform(it));
             vtable.OnBlurVisual = ReleasePointer;
+            vtable.PointsAt = () => Raw(Transform(it));
         }
 
         /// <summary>The same for a control whose tooltip the game hangs somewhere other than on the
@@ -1041,6 +1243,7 @@ namespace ES2Access.UI
             AgeTransform anchor = under;
             vtable.OnFocusVisual = () => PointerFocus.MoveTo(it, tip, anchor);
             vtable.OnBlurVisual = ReleasePointer;
+            vtable.PointsAt = () => tip;
         }
 
         /// <summary>The same for a control the game drew as a toggle - a card in a set the player picks
@@ -1053,6 +1256,7 @@ namespace ES2Access.UI
             vtable.OnFocusVisual = () =>
                 PointerFocus.MoveToToggle(it, Raw(Transform(it)), Transform(it));
             vtable.OnBlurVisual = ReleasePointer;
+            vtable.PointsAt = () => Raw(Transform(it));
         }
 
         /// <summary>The same for a toggle whose tooltip the game hangs somewhere other than on the
@@ -1070,6 +1274,7 @@ namespace ES2Access.UI
             AgeTransform anchor = under;
             vtable.OnFocusVisual = () => PointerFocus.MoveToToggle(it, tip, anchor);
             vtable.OnBlurVisual = ReleasePointer;
+            vtable.PointsAt = () => tip;
         }
 
         /// <summary>The same for a widget with no button under it - a readout, an icon. Nothing lights
@@ -1080,6 +1285,7 @@ namespace ES2Access.UI
             AgeTransform it = widget;
             vtable.OnFocusVisual = () => PointerFocus.MoveTo(Button(it), Raw(it), it);
             vtable.OnBlurVisual = ReleasePointer;
+            vtable.PointsAt = () => Raw(it);
         }
 
         /// <summary>

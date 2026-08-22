@@ -643,9 +643,12 @@ namespace ES2Access.Screens
             List<NodeSection> sections = null;
             for (int i = 0; i < found.Count; i++)
             {
+                // Which of the row's tooltips is the one that SPEAKS, asked the resolver's own way:
+                // it collapses a tooltip the game cloned onto a piece inside the row into one entry,
+                // so the entry that survived may not be the very object the caller passed in.
                 NodeSection section = GraphNodes.TooltipSection(
                     found[i],
-                    found[i] == said ? null : (TooltipMode?)TooltipMode.None
+                    AgeWidgets.SameTooltip(found[i], said) ? null : (TooltipMode?)TooltipMode.None
                 );
                 if (section == null)
                 {
@@ -665,34 +668,12 @@ namespace ES2Access.Screens
 
         private static void CollectTooltips(AgeTransform widget, List<AgeTooltip> found, int depth)
         {
-            if (widget == null || depth < 0)
-            {
-                return;
-            }
-
-            try
-            {
-                if (!widget.Visible)
-                {
-                    return;
-                }
-            }
-            catch (Exception)
-            {
-                return;
-            }
-
-            AgeTooltip tooltip = Meaningful(AgeWidgets.Raw(widget));
-            if (tooltip != null)
-            {
-                found.Add(tooltip);
-            }
-
-            IList<AgeTransform> children = Children(widget);
-            for (int i = 0; children != null && i < children.Count; i++)
-            {
-                CollectTooltips(children[i], found, depth - 1);
-            }
+            AgeWidgets.EffectiveTooltips(
+                widget,
+                found,
+                TooltipReach.Own | TooltipReach.Descendants,
+                depth
+            );
         }
 
         // ---- shared ----
@@ -931,6 +912,20 @@ namespace ES2Access.Screens
             {
                 return null;
             }
+        }
+
+        /// <summary>Where this screen is drawn, for the tooltip audit (see
+        /// <see cref="ES2Access.Screens.Screen.RootTransform"/>).</summary>
+        public override AgeTransform RootTransform
+        {
+            get { return RootOf(Window()); }
+        }
+
+        /// <summary>What every node this screen declares is keyed under, so the audit can
+        /// tell its content from the shared heads-up display stops.</summary>
+        public override string NodePrefix
+        {
+            get { return "planet:"; }
         }
     }
 }

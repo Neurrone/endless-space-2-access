@@ -409,6 +409,32 @@ namespace ES2Access.UI
         /// <paramref name="lastMode"/> overrides the mode of the LAST tooltip - the one the line is
         /// named after where it has no drawn caption, which must then not be announced twice.
         /// </summary>
+        /// <summary>
+        /// The same, declaring the AIM at the same time: the node points at the last tooltip in the
+        /// list, which is the one every caller here already aimed at by hand.
+        ///
+        /// Written down on the vtable (<see cref="NodeVtable.PointsAt"/>) rather than left implicit
+        /// in the pointing closure, so that anything asking "which of this row's tooltips does it
+        /// show" reads the answer instead of guessing it from the widget tree. A pointing helper
+        /// called afterwards overwrites it with whatever IT aims at - last call wins, for the aim and
+        /// the visual alike - which is how a screen that points somewhere else stays honest.
+        /// </summary>
+        public static IList<NodeSection> SectionsFor(
+            NodeVtable vtable,
+            IList<AgeTooltip> tooltips,
+            Func<IList<string>> details = null,
+            TooltipMode? lastMode = null
+        )
+        {
+            if (vtable != null && tooltips != null && tooltips.Count > 0)
+            {
+                AgeTooltip last = tooltips[tooltips.Count - 1];
+                vtable.PointsAt = () => last;
+            }
+
+            return SectionsFor(tooltips, details, lastMode);
+        }
+
         public static IList<NodeSection> SectionsFor(
             IList<AgeTooltip> tooltips,
             Func<IList<string>> details = null,

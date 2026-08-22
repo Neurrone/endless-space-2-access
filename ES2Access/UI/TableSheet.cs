@@ -702,8 +702,15 @@ namespace ES2Access.UI
             NodeVtable vtable = ReadCell == null ? null : ReadCell(row, it, heading, enabled);
             bool saysRefusal = vtable != null && ReferenceEquals(vtable, _saysRowRefusal);
             _saysRowRefusal = null;
+            AgeTooltip aim = null;
             if (vtable == null)
             {
+                AgeTooltip cellTip = Supplied(heading, it) ? null : TooltipOf(it);
+                List<AgeTooltip> inner = Inside(it, cellTip);
+                // Where the cell carries nothing of its own, the pointer goes to the last dossier
+                // drawn inside it - otherwise its section is a promise the player can never collect,
+                // since a renderer-assembled tooltip has no words until the game draws it.
+                aim = cellTip != null || inner == null ? null : inner[inner.Count - 1];
                 vtable = new NodeVtable
                 {
                     ControlType = ControlTypes.Text,
@@ -711,10 +718,13 @@ namespace ES2Access.UI
                     {
                         GraphNodes.ValuePart(() => Text(heading, it)),
                     },
-                    Sections = GraphNodes.Sections(
-                        () => CellFacts(heading, it),
-                        Supplied(heading, it) ? null : TooltipOf(it),
-                        Reading(heading, it)
+                    Sections = WithInner(
+                        GraphNodes.Sections(
+                            () => CellFacts(heading, it),
+                            cellTip,
+                            Reading(heading, it)
+                        ),
+                        inner
                     ),
                 };
                 Action own = ActivateCell == null ? null : ActivateCell(row, it);
@@ -752,7 +762,46 @@ namespace ES2Access.UI
             vtable.BufferHead = () => CellHead(heading, it);
             Adorn(table, line, vtable, !saysRefusal);
             AgeWidgets.PointAt(vtable, it);
+            if (aim != null)
+            {
+                AgeWidgets.PointAt(vtable, it, aim);
+            }
+
             return vtable;
+        }
+
+        /// <summary>The cell's declared sections with the dossiers hanging INSIDE it added after them,
+        /// each read by the mode the shared rule answers for it - which for a renderer-assembled one is
+        /// always "indicate", so nothing new is spoken and the buffer gains what the game draws.
+        /// </summary>
+        private static IList<NodeSection> WithInner(
+            IList<NodeSection> sections,
+            List<AgeTooltip> inner
+        )
+        {
+            if (inner == null || inner.Count == 0)
+            {
+                return sections;
+            }
+
+            List<NodeSection> all = new List<NodeSection>(
+                (sections == null ? 0 : sections.Count) + inner.Count
+            );
+            for (int i = 0; sections != null && i < sections.Count; i++)
+            {
+                all.Add(sections[i]);
+            }
+
+            for (int i = 0; i < inner.Count; i++)
+            {
+                NodeSection section = GraphNodes.TooltipSection(inner[i]);
+                if (section != null)
+                {
+                    all.Add(section);
+                }
+            }
+
+            return all.Count == 0 ? null : all;
         }
 
         /// <summary>What this column says about how loudly its tooltip should read - see
@@ -1087,7 +1136,9 @@ namespace ES2Access.UI
 
         /// <summary>The words hanging off the things drawn INSIDE a cell, for the buffer. The cell's
         /// own tooltip is not among them: it is declared as the control's tooltip and reaches both
-        /// surfaces from there.</summary>
+        /// surfaces from there. Only the tooltips whose words are ON the widget: the class-backed ones
+        /// have no words until they are drawn, and reach the buffer as SECTIONS instead
+        /// (<see cref="Inside"/>).</summary>
         private void CollectTooltips(AgeTransform widget, List<string> into, int depth)
         {
             if (widget == null || depth > MaxCellDepth || !widget.Visible)
@@ -1121,6 +1172,46 @@ namespace ES2Access.UI
                     into.Add(lines[i]);
                 }
             }
+        }
+
+        /// <summary>
+        /// The RENDERER-ASSEMBLED tooltips hanging on the things drawn inside a cell.
+        ///
+        /// A cell's own tooltip has always been declared, and the words hanging on its pieces have
+        /// always been read (<see cref="CollectTooltips"/>) - but only where those words are on the
+        /// widget. A class-backed one inside a cell has no words until it is drawn, so reading it as
+        /// text answered "nothing" and the dossier the game hangs on a status circle or a growth arrow
+        /// was dropped without trace. Declared as its own section instead, which is the surface that
+        /// can wait for the drawing.
+        ///
+        /// The cell's own is excluded here (the caller declares it), and so is anything equal to it -
+        /// a table that names its tooltip through <c>GuiTableCell.Tooltip</c> may be naming one that
+        /// hangs on a piece INSIDE the cell.
+        /// </summary>
+        private List<AgeTooltip> Inside(AgeTransform cell, AgeTooltip own)
+        {
+            List<AgeTooltip> found = new List<AgeTooltip>();
+            AgeWidgets.EffectiveTooltips(cell, found, TooltipReach.Descendants, MaxCellDepth);
+            List<AgeTooltip> kept = null;
+            for (int i = 0; i < found.Count; i++)
+            {
+                if (
+                    AgeWidgets.Readable(found[i]) != null
+                    || AgeWidgets.SameTooltip(found[i], own)
+                )
+                {
+                    continue;
+                }
+
+                if (kept == null)
+                {
+                    kept = new List<AgeTooltip>(found.Count - i);
+                }
+
+                kept.Add(found[i]);
+            }
+
+            return kept;
         }
 
         // ---- reading the table ----

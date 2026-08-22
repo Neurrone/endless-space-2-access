@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using ES2Access.Core.Speech;
+using ES2Access.Core.UI;
 using ES2Access.Core.UI.Graph;
 using ES2Access.Core.Util;
 using ES2Access.UI;
@@ -535,31 +536,12 @@ namespace ES2Access.Screens
 
         private static void CollectTooltips(AgeTransform widget, List<AgeTooltip> into, int depth)
         {
-            if (widget == null || depth < 0)
-            {
-                return;
-            }
-
-            try
-            {
-                if (!widget.Visible)
-                {
-                    return;
-                }
-
-                AgeTooltip tooltip = widget.AgeTooltip;
-                if (tooltip != null)
-                {
-                    into.Add(tooltip);
-                }
-
-                IList<AgeTransform> children = widget.Children;
-                for (int i = 0; children != null && i < children.Count; i++)
-                {
-                    CollectTooltips(children[i], into, depth - 1);
-                }
-            }
-            catch (Exception) { }
+            AgeWidgets.EffectiveTooltips(
+                widget,
+                into,
+                TooltipReach.Own | TooltipReach.Descendants,
+                depth
+            );
         }
 
         // ---- drop lists ----
@@ -587,7 +569,20 @@ namespace ES2Access.Screens
             }
 
             AgeControlDropList it = list;
-            AgeTooltip value = AgeWidgets.Raw(TransformOf(OptionsScreen.LabelIn(widget)));
+
+            // What the list is SET TO explains itself on the label the list is drawing - and, where a
+            // prefab hangs nothing there, on the list itself. The engine means to keep the closed
+            // control's tooltip in step with the selection (AgeControlDropList.SelectedItem :141-158
+            // hands the selected item's table entry to SetTooltip), and in this game it never
+            // arrives: the target overload SENDS "OnSetTooltipTarget" (:547-557) and no component in
+            // either assembly receives that message, while the string overload ignores the receiver
+            // it was given (:559-569). So this second source is dead weight in ES2 today and is asked
+            // anyway - it costs one field read, it is what the engine says the answer is, and a
+            // prefab that carries a written tooltip on the list gets read instead of ignored. The
+            // game's own behaviour is not "fixed" here: nothing writes that tooltip, so nothing is
+            // invented for it.
+            AgeTooltip value =
+                AgeWidgets.Raw(TransformOf(OptionsScreen.LabelIn(widget))) ?? AgeWidgets.Raw(widget);
             AgeTooltip said = value ?? caption;
             NodeVtable vtable = GraphNodes.ComboBox(
                 label ?? Nothing,
@@ -662,7 +657,7 @@ namespace ES2Access.Screens
             return GraphNodes.Sections(
                 text == null ? null : NodeSection.Buffer(() => AgeText.Lines(text())),
                 GraphNodes.TooltipSection(caption),
-                value == caption ? null : GraphNodes.TooltipSection(value)
+                AgeWidgets.SameTooltip(value, caption) ? null : GraphNodes.TooltipSection(value)
             );
         }
 

@@ -1184,6 +1184,28 @@ namespace ES2Access.Dev
             return NotificationAudit.Json();
         }
 
+        /// <summary>
+        /// Whether the FOCUSED screen's tooltips read the way the game draws them - the same
+        /// comparison, asked of any screen rather than only of a popup (see
+        /// <see cref="TooltipAudit"/>).
+        ///
+        /// Seven arrays, four of them findings: a node promising a dossier with nothing that draws
+        /// (<c>promised</c>), a node pointing at a tooltip that draws nothing (<c>misaimed</c>), a
+        /// tooltip the game would draw on a control that no node covers (<c>uncovered</c>) and one
+        /// whose words are in nothing the covering node carries (<c>unread</c>). The other three are
+        /// weaker claims kept apart on purpose: <c>decoration</c> is the same coverage question on a
+        /// widget the player cannot work, <c>hidden</c> is what only the pass with the transparency
+        /// gate off can see, and <c>undescribed</c> is a defect in the GAME's own data.
+        ///
+        /// The painted half needs the screen to say where it is drawn
+        /// (<c>Screen.RootTransform</c>); a screen that does not answers the declaration-side
+        /// questions only, and says so with a null <c>root</c>.
+        /// </summary>
+        public static string TooltipParity()
+        {
+            return TooltipAudit.Json();
+        }
+
         private static readonly Func<AgeTransform, AgeTransform> Itself = widget => widget;
 
         /// <summary>Every widget under the panel that draws something a reader would have to account

@@ -1833,5 +1833,12 @@ namespace ES2Access.Screens
                 return null;
             }
         }
+
+        /// <summary>Where this screen is drawn, for the tooltip audit (see
+        /// <see cref="ES2Access.Screens.Screen.RootTransform"/>).</summary>
+        public override AgeTransform RootTransform
+        {
+            get { return RootOf(Window()); }
+        }
     }
 }

@@ -216,6 +216,22 @@ namespace ES2Access.Screens
             }
         }
 
+        /// <summary>Where this screen is drawn: whichever popup is up right now, which is the same
+        /// window its own four-invariant audit walks.</summary>
+        public override AgeTransform RootTransform
+        {
+            get { return RootOf(Current()); }
+        }
+
+        /// <summary>What every node this screen declares is keyed under, so the tooltip audit can
+        /// tell the popup's content from the shared heads-up display stops - a minimised tutorial bar
+        /// sitting up there was once reported as three things the popup says and nothing draws.
+        /// </summary>
+        public override string NodePrefix
+        {
+            get { return "notification:"; }
+        }
+
         /// <summary>Escape belongs to the game: the popup is an input handler and its own exit route
         /// is what turns the key into Minimize.</summary>
         public override bool Back()
@@ -461,6 +477,7 @@ namespace ES2Access.Screens
                                 ? ReleasePointer
                                 : () => PointerFocus.MoveTo(hover, explains),
                         OnBlurVisual = ReleasePointer,
+                        PointsAt = () => hover == null ? null : explains,
                     }
                 );
             }
@@ -988,6 +1005,7 @@ namespace ES2Access.Screens
             vtable.OnFocusVisual =
                 hover == null ? ReleasePointer : () => PointerFocus.MoveTo(hover, tooltip);
             vtable.OnBlurVisual = ReleasePointer;
+            vtable.PointsAt = () => hover == null ? null : tooltip;
 
             AgeTransform named = group ?? it[0].Widget;
             ControlId id = ControlId.Referenced(
@@ -1813,6 +1831,7 @@ namespace ES2Access.Screens
             vtable.OnFocusVisual =
                 hover == null ? ReleasePointer : () => PointerFocus.MoveTo(hover, tooltip);
             vtable.OnBlurVisual = ReleasePointer;
+            vtable.PointsAt = () => hover == null ? null : tooltip;
             return vtable;
         }
 
@@ -1820,66 +1839,18 @@ namespace ES2Access.Screens
         private static List<AgeTooltip> Tooltips(AgeTransform cell)
         {
             List<AgeTooltip> tooltips = new List<AgeTooltip>();
-            CollectTooltips(cell, tooltips, 0);
+            AgeWidgets.EffectiveTooltips(
+                cell,
+                tooltips,
+                TooltipReach.Own | TooltipReach.Descendants,
+                MaxCellDepth
+            );
             return tooltips;
-        }
-
-        /// <summary>
-        /// The tooltip a reading of this widget points at. Written down once so the parity check asks
-        /// the question the reading answers rather than a second opinion of it.
-        ///
-        /// A CONTROL is aimed at the tooltip the screen RESOLVED for it (<see cref="Tip"/>) - its own
-        /// where the game hung one there, else the one the popup's own code knows about - so a control
-        /// is asked of the control list rather than of its tree. Walking the tree would answer for a
-        /// card what the prefab happened to hang deepest inside it: the suggestion cards carry a
-        /// class-backed tooltip on their turn counter with nothing for the renderer to assemble, and
-        /// that is what a second opinion called the aim while the pointer was on the technology's
-        /// dossier all along. Everything else here - a drawn row, a table cell - does aim at the LAST
-        /// tooltip the game hung inside the widget, and that is what the walk answers for them.
-        ///
-        /// The control list is re-derived rather than remembered: it is the same list
-        /// <see cref="Build"/> declares from, so the two cannot drift apart. It costs a walk of the
-        /// popup and nothing but the dev audit ever asks.
-        /// </summary>
-        internal static AgeTooltip Aimed(NotificationWindow window, AgeTransform widget)
-        {
-            foreach (Control control in Controls(window, BodyOf(window) == null))
-            {
-                if (ReferenceEquals(control.Widget, widget))
-                {
-                    return Tip(control);
-                }
-            }
-
-            return Last(Tooltips(widget));
         }
 
         private static AgeTooltip Last(List<AgeTooltip> tooltips)
         {
             return tooltips.Count == 0 ? null : tooltips[tooltips.Count - 1];
-        }
-
-        private static void CollectTooltips(AgeTransform widget, List<AgeTooltip> into, int depth)
-        {
-            if (widget == null || depth > MaxCellDepth || !widget.Visible)
-            {
-                return;
-            }
-
-            // A tooltip the game could never draw anything for is not one of these: the pointer goes to
-            // the last one found, and a prefab's empty decoration tooltip drawn after the real one is
-            // how a line came to promise a dossier and show nothing (AgeWidgets.NeverDraws).
-            AgeTooltip tooltip = widget.AgeTooltip;
-            if (tooltip != null && !AgeWidgets.NeverDraws(tooltip) && !into.Contains(tooltip))
-            {
-                into.Add(tooltip);
-            }
-
-            List<AgeTransform> children = widget.Children;
-            for (int i = 0; children != null && i < children.Count; i++)
-            {
-                CollectTooltips(children[i], into, depth + 1);
-            }
         }
 
         /// <summary>
@@ -2499,6 +2470,7 @@ namespace ES2Access.Screens
                 vtable.OnFocusVisual = () =>
                     PointerFocus.MoveTo(it.Button, explains, it.Widget);
                 vtable.OnBlurVisual = ReleasePointer;
+                vtable.PointsAt = () => explains;
             }
 
             HandBackOnMinimize(it, vtable);

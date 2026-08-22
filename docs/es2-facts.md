@@ -2151,3 +2151,44 @@ nobody can see.
   — the mod's hull pager steps those callbacks, shortest way round.
 - **`GameMenuModalWindow.Title` holds `%GameMenuModalWindowTitle`, localizing to "Game\nMenu"** —
   the only place the pause menu names itself; the mod joins the two drawn lines with a space.
+
+**A drop list's own tooltip is wired to a message NOTHING receives.** `AgeControlDropList`
+keeps two per-item tables (`TooltipTable` strings, `TooltipTargetTable` targets) and they are
+MUTUALLY EXCLUSIVE: `SetTooltipTargets` clears the string table and vice versa (firstpass
+:255-275). Both are pushed onto the popup's ITEMS the moment the list is filled
+(`UpdateTooltipsInPopup` :532-545 → `AgeControlPopup.SetTooltips` :115-146, one
+`OnSetTooltip`/`OnSetTarget` per item), which is why an item's own `AgeTooltip` is the honest
+place to read an entry's description from whichever table the game used. The CLOSED control is
+a different story and a dead one: `SelectedItem` (:141-158) hands the selected entry's table
+value to `SetTooltip`, whose target overload sends `"OnSetTooltipTarget"` (:547-557) — a message
+no component in either assembly receives — while its string overload IGNORES the receiver it was
+given and sends to the drop list itself (:559-569). So a target-backed list's closed control says
+nothing, in the game as well as in the mod; there is nothing to fix from a mod and nothing to
+invent. Seven game sites use the target table (the ship-hull list and five custom-faction lists).
+
+**`CustomFactionDetailsPanel.cs:174` swaps a tooltip's content and class arguments**, so the
+tooltip ends up naming a CLASS that is really a sentence. `GuiTooltipController` looks the class
+up in the `GuiTooltipDescription` database and gives up when it is not there
+(Amplitude.Unity.Gui/GuiTooltipController.cs:239-249), so that tooltip is parked and draws
+nothing whatever points at it. A parity audit must bucket "the game has no description for this
+class" separately from its own findings — it is a defect in the GAME's data (`TooltipAudit`'s
+`undescribed`), and no mod change can make those words appear.
+
+**There is exactly ONE tooltip window and one controller slot.** `GuiTooltipController` holds a
+single `CurrentTooltipWindow` (:34) and all 146 `GuiTooltipDescription` entries name the same
+`"TooltipWindow"`; moving the hover INSIDE a drawn tooltip REPLACES what is drawn (:191-195).
+So two tooltips can never be shown at once, and a row carrying several can only ever draw the
+one the pointer is sent to — which is why the aim is a declared property of a node
+(`NodeVtable.PointsAt`) rather than something anybody re-derives.
+
+**An alpha-0 widget is not hit-testable for the mouse** (`AgeTransform.cs:3448`), so a subtree
+the game reveals on hover carries tooltips a mouse can reach only after the reveal — but
+`PointerFocus.LateTick` writes `OverrolledTransform` DIRECTLY, so the mod can point at one
+without the reveal. A parity walk that keeps the engine's own transparency gate cannot see them
+at all; the second pass with the gate off is the only way they are enumerable
+(`TooltipAudit`'s `hidden`).
+
+**`GameEntityGUID` is in the GLOBAL namespace** — `/eval` bodies that qualify it under a
+namespace fail to compile, and `RequestStarSystemManagementViewLevel` wants the NODE's GUID
+(`…ColonizedStarSystems[0].Node.GUID`), not the colonized system's, which throws
+`KeyNotFoundException` out of `GalaxyEntityFactory`.

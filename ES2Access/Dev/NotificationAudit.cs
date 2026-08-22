@@ -65,7 +65,7 @@ namespace ES2Access.Dev
 
         /// <summary>One thing that does not line up, in the terms a fix needs: which node or widget,
         /// where it is drawn, and the string that broke the rule.</summary>
-        private sealed class Breach
+        internal sealed class Breach
         {
             public string Where;
             public string What;
@@ -131,7 +131,7 @@ namespace ES2Access.Dev
             public bool Interactive;
         }
 
-        private sealed class Declared
+        internal sealed class Declared
         {
             public GraphNode Node;
             public AgeTransform Widget;
@@ -308,7 +308,7 @@ namespace ES2Access.Dev
             result.PaintedTooltips = painted.Tips.Count;
 
             NotificationScreen screen = TheScreen();
-            List<Declared> declared = DeclaredNodes(screen, result);
+            List<Declared> declared = DeclaredNodes(screen, Prefix, result.Unlocatable);
             result.Nodes = declared.Count;
 
             // Arriving on the popup says its title before any node speaks, so the title is declared
@@ -332,7 +332,7 @@ namespace ES2Access.Dev
             CheckCompleteness(painted, spokenAnywhere, result);
             CheckHonesty(painted, declared, name, result);
             CheckPlacement(root, declared, result);
-            CheckTooltips(window, painted, declared, result);
+            CheckTooltips(painted, declared, result);
             return result;
         }
 
@@ -405,7 +405,7 @@ namespace ES2Access.Dev
             return line < lines.Count ? lines[line] : full;
         }
 
-        private static bool Contains(List<string> reduced, string piece)
+        internal static bool Contains(List<string> reduced, string piece)
         {
             string want = Reduce(piece);
             if (want.Length == 0)
@@ -739,7 +739,6 @@ namespace ES2Access.Dev
         /// holds the key its dossier is looked up by.
         /// </summary>
         private static void CheckTooltips(
-            NotificationWindow window,
             Painted painted,
             List<Declared> declared,
             Result result
@@ -769,9 +768,9 @@ namespace ES2Access.Dev
                 // A tooltip EXISTING near the widget is not the promise: the promise is that the one the
                 // pointer goes to draws, and a line carrying two - the law's dossier and an empty one on
                 // the picture inside it - used to aim at the empty one and draw nothing while saying
-                // this. Asked of the screen's own aim rather than re-derived here, so the check and the
-                // reading cannot disagree about which tooltip a node points at.
-                AgeTooltip aimed = NotificationScreen.Aimed(window, node.Widget);
+                // this. Asked of the node's own declared aim rather than re-derived here, so the check
+                // and the reading cannot disagree about which tooltip a node points at.
+                AgeTooltip aimed = AimOf(node);
                 if (aimed != null && !AgeWidgets.Draws(aimed))
                 {
                     result.Tooltips.Add(
@@ -845,7 +844,25 @@ namespace ES2Access.Dev
         /// nothing about the aim can take them away. <see cref="TooltipMode.None"/> sections are the
         /// control's own drawn text and involve no tooltip at all.
         /// </summary>
-        private static bool Promises(Declared node)
+        /// <summary>Which tooltip this node's pointer goes to, as the node itself declares it
+        /// (<see cref="NodeVtable.PointsAt"/>). Never re-derived from the widget tree: the deepest
+        /// tooltip inside a card is often decoration, and a second opinion that picked it reported a
+        /// defect on screens whose pointing was right all along.</summary>
+        internal static AgeTooltip AimOf(Declared node)
+        {
+            NodeVtable vtable = node == null || node.Node == null ? null : node.Node.Vtable;
+            Func<object> at = vtable == null ? null : vtable.PointsAt;
+            try
+            {
+                return at == null ? null : at() as AgeTooltip;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        internal static bool Promises(Declared node)
         {
             NodeVtable vtable = node.Node != null ? node.Node.Vtable : null;
             IList<NodeSection> sections = vtable != null ? vtable.Sections : null;
@@ -868,7 +885,7 @@ namespace ES2Access.Dev
         /// <summary>Whether anything on this widget, inside it or around it would draw a tooltip -
         /// the game hangs an explanation on the block it drew a label in as readily as on the label.
         /// </summary>
-        private static bool AnyDrawing(AgeTransform widget)
+        internal static bool AnyDrawing(AgeTransform widget)
         {
             List<AgeTooltip> found = new List<AgeTooltip>();
             AgeWidgets.Tooltips(widget, found);
@@ -896,7 +913,7 @@ namespace ES2Access.Dev
 
         /// <summary>The nodes whose own widget is this one, holds it, or hangs inside it - the ones
         /// a player standing anywhere near this tooltip would be on.</summary>
-        private static List<Declared> Covering(List<Declared> declared, AgeTransform owner)
+        internal static List<Declared> Covering(List<Declared> declared, AgeTransform owner)
         {
             List<Declared> covering = new List<Declared>();
             for (int i = 0; i < declared.Count; i++)
@@ -911,7 +928,7 @@ namespace ES2Access.Dev
             return covering;
         }
 
-        private static bool CarriedBy(List<Declared> covering, string content)
+        internal static bool CarriedBy(List<Declared> covering, string content)
         {
             IList<string> lines = AgeText.Lines(content);
             if (lines.Count == 0)
@@ -1029,7 +1046,11 @@ namespace ES2Access.Dev
         /// cross INTO it. Nothing is composed here, so a difference between this and what a player
         /// hears is a difference in the navigator rather than in this file.
         /// </summary>
-        private static List<Declared> DeclaredNodes(NotificationScreen screen, Result result)
+        internal static List<Declared> DeclaredNodes(
+            Screens.Screen screen,
+            string prefix,
+            List<Breach> unlocatable
+        )
         {
             List<Declared> declared = new List<Declared>();
             GraphNavigator navigator = ModEntry.Navigator;
@@ -1052,11 +1073,13 @@ namespace ES2Access.Dev
                 it.Id = node.Id;
                 it.Key = Convert.ToString(node.Id.StructuralKey);
 
-                // The screen's render is not only the popup's: the heads-up display contributes stops
-                // of its own to whatever screen has focus, and a minimised tutorial bar sitting up
-                // there was reported as three things the popup says and nothing draws. Only what the
-                // popup declared is measured against what the popup paints.
-                if (it.Key == null || !it.Key.StartsWith(Prefix))
+                // The screen's render is not only its own: the heads-up display contributes stops to
+                // whatever screen has focus, and a minimised tutorial bar sitting up there was
+                // reported as three things the popup says and nothing draws. Only what the screen
+                // itself declared is measured against what the screen paints - which is what the
+                // screen's own key prefix says (<see cref="Screens.Screen.NodePrefix"/>). A screen
+                // with no prefix of its own asks for everything, HUD included.
+                if (!string.IsNullOrEmpty(prefix) && (it.Key == null || !it.Key.StartsWith(prefix)))
                 {
                     continue;
                 }
@@ -1071,7 +1094,7 @@ namespace ES2Access.Dev
                 catch (Exception e)
                 {
                     it.Announcement = null;
-                    result.Unlocatable.Add(Made(it.Widget, it.Key, "reading it threw", e.Message));
+                    unlocatable.Add(Made(it.Widget, it.Key, "reading it threw", e.Message));
                 }
 
                 try
@@ -1100,14 +1123,14 @@ namespace ES2Access.Dev
                 byId[node.Id] = it;
             }
 
-            AddCrossings(render, byId, result);
+            AddCrossings(render, byId, unlocatable);
             ResolveRowCells(declared);
 
             for (int i = 0; i < declared.Count; i++)
             {
                 if (declared[i].Widget == null)
                 {
-                    result.Unlocatable.Add(
+                    unlocatable.Add(
                         Made(null, declared[i].Key, "no widget behind this node's id", null)
                     );
                 }
@@ -1132,7 +1155,7 @@ namespace ES2Access.Dev
         private static void AddCrossings(
             GraphRender render,
             Dictionary<ControlId, Declared> byId,
-            Result result
+            List<Breach> unlocatable
         )
         {
             foreach (GraphNode from in render.Order)
@@ -1159,7 +1182,7 @@ namespace ES2Access.Dev
                     }
                     catch (Exception e)
                     {
-                        result.Unlocatable.Add(
+                        unlocatable.Add(
                             Made(landing.Widget, landing.Key, "crossing into it threw", e.Message)
                         );
                         continue;
@@ -1387,7 +1410,7 @@ namespace ES2Access.Dev
         /// <summary>A string reduced to the letters and digits in it, lowercased: what two readings of
         /// the same text share when one of them has been through a separator, a colour tag or a line
         /// break the other has not.</summary>
-        private static string Reduce(string text)
+        internal static string Reduce(string text)
         {
             if (string.IsNullOrEmpty(text))
             {
@@ -1423,7 +1446,7 @@ namespace ES2Access.Dev
 
         // ---- odds and ends ----
 
-        private static bool Under(AgeTransform widget, AgeTransform ancestor)
+        internal static bool Under(AgeTransform widget, AgeTransform ancestor)
         {
             AgeTransform at = widget;
             for (int depth = 0; at != null && depth < 64; depth++)
@@ -1452,7 +1475,7 @@ namespace ES2Access.Dev
             return false;
         }
 
-        private static Breach Made(
+        internal static Breach Made(
             AgeTransform widget,
             string where,
             string what,
@@ -1476,12 +1499,12 @@ namespace ES2Access.Dev
             return breach;
         }
 
-        private static string Name(AgeTransform widget)
+        internal static string Name(AgeTransform widget)
         {
             return widget == null ? "(no widget)" : widget.name;
         }
 
-        private static string Excerpt(string text)
+        internal static string Excerpt(string text)
         {
             if (string.IsNullOrEmpty(text))
             {
@@ -1525,7 +1548,7 @@ namespace ES2Access.Dev
             });
         }
 
-        private static void WriteBreaches(JsonTextWriter json, string name, List<Breach> breaches)
+        internal static void WriteBreaches(JsonTextWriter json, string name, List<Breach> breaches)
         {
             json.WritePropertyName(name);
             json.WriteStartArray();
