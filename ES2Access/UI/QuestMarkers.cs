@@ -87,19 +87,29 @@ namespace ES2Access.UI
                         continue;
                     }
 
-                    string title = AgeText.Clean(new GuiQuest(quest).Title);
-                    if (string.IsNullOrEmpty(title))
-                    {
-                        continue;
-                    }
-
+                    // The markers FIRST, the wrapper only once one of them is shown: `new GuiQuest`
+                    // looks the quest's GUI element up and, for a quest that has none (the
+                    // victory-condition quests, "QuestDefeatBySystems"), the game logs a warning with
+                    // a stack trace - and this walk runs on every render, which filled the game's
+                    // diagnostics log at gigabytes an hour (2026-08-23). Most quests have no marker
+                    // on their current step, so most never reach the wrapper at all.
                     List<QuestMarker> pins = quest.GetMarkers(step);
+                    string title = null;
                     for (int m = 0; pins != null && m < pins.Count; m++)
                     {
                         QuestMarker pin = pins[m];
                         if (!Shown(pin, empire))
                         {
                             continue;
+                        }
+
+                        if (title == null)
+                        {
+                            title = AgeText.Clean(new GuiQuest(quest).Title);
+                            if (string.IsNullOrEmpty(title))
+                            {
+                                break;
+                            }
                         }
 
                         found.Add(
