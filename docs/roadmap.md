@@ -14,8 +14,11 @@ files above.
   to decide/do: a system node declares no `NodeVtable.PointsAt`, so the tooltip audit files
   every map node under `unknown` rather than judging its aim; the population side panel's
   party dossiers land as the ROW BELOW their population rather than as children, because a
-  side-panel row is a cell and a cell cannot open a subtree; and the population OVERVIEW
-  screen's rows have not been given the same treatment (batch 4 owns that screen).
+  side-panel row is a cell and a cell cannot open a subtree. The population OVERVIEW screen's
+  legend now has its own "Tooltips" region and was verified live 2026-08-22 (six party
+  dossiers, `DevProbe.Tooltip()` on the first answers `shown:true`, class `Politics`) — but the
+  tooltip parity audit still files all six under `uncovered`, so `TooltipChildren` nodes are
+  invisible to that check's coverage test; worth one look at how it matches a node to a dossier.
 - **One-per-row rollout (landed 2026-08-18) — remaining live checks only**: battle
   popups/screens (all code-only; incl. whether the battle popup speaks its title twice);
   the election wizard incl. the Political Trends label; a hangar with ships; a populated
@@ -178,7 +181,11 @@ files above.
   `PushContext` after a swallowed throw remains the lesser surviving form.
 - **The caption-only-row sweep is not finished.** The rule (a drawn caption names its block and is
   a row only where it carries a tooltip — `Captions`, `docs/interaction.md`) has been applied to
-  minor diplomacy, the population overview, and the economy/senate/recipe/negotiation headings. Left
+  minor diplomacy, the population overview, the economy/senate/recipe/negotiation headings, and
+  (2026-08-22) the Academy and pirate diplomacy ACTION bands — the last two prefab-verified only,
+  since neither window opens in `[Beginner] test`. The Academy's own "Status" caption over its
+  relation panel is NOT converted: its stop still reads the mod's `academy.relation`, and swapping it
+  for the game's word is an owner call bundled with the rest of that screen's wording. Left
   as they are, with reasons: `SidePanels.Effects` (:411-450) declares a `PanelFeatureEffects`
   caption unconditionally, because that collector fills a flat cell list and has no builder to push
   a level on — converting it means giving the side-panel walk a region-aware path, and every
@@ -225,8 +232,10 @@ files above.
   the same fixture and an owner ruling on which node in the panel takes the drop.
 - Riftborn time bubble on the galaxy map: a `GalaxyEntity` with a disk renderer — no
   widget, no label window; making it discoverable is real map-tree modelling.
-- Faction sightings needing a non-UE base-game save (code landed drawn-gated, unsighted):
-  Lumeris — tech buy-out on the HUD research line (+ scrap↔sell swap rows); Cravers —
+- Faction sightings needing another base-game save (code landed drawn-gated, unsighted):
+  United Empire — the Influence tech buy-out on the HUD research line, which the
+  NON-tutorial UE affinity grants and the tutorial one has commented out, so this save
+  cannot draw it (es2-facts); Lumeris — the scrap↔sell swap rows; Cravers —
   planet depletion status + hunting-grounds decay; Vodyani — ark-as-colony walk
   (`ExploitedStarSystem`: does the model need to change at all?), ark docking slots as a
   drag target, ark population (full list: `audit-factions.md` §4 stages C-D).

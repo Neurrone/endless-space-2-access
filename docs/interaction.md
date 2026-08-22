@@ -489,10 +489,22 @@ captions are the game's words); `minor:relation` — named "Diplomatic Relation"
 caption's own row, regions `minor:relation/{state,rewards,modifiers}` plus the gauge's
 `minor:gauge/tooltips` "Tooltips" region (the four band sentences the prefab hangs along the
 gauge, one node each, hidden while at war exactly as the game hides them); `minor:actions` —
-named by the game's "Actions" caption, which it does draw (the `diplomacy.actions-band` mod word
-is the fallback here now); `minor:treasury` unchanged. The identity panel is declared COLUMN BY
+named by the game's "Actions" caption, which it does draw, with that caption's own row
+`minor:actions-title` (the `diplomacy.actions-band` mod word is the fallback here now);
+`minor:treasury` unchanged. The identity panel is declared COLUMN BY
 COLUMN, not by drawn row: the lore paragraph is one tall block beside three short ones and the
 rectangle banding interleaved them.
+Both caption rows are resolved from the LABEL the prefab names uniquely
+(`RelationInfoTitle`/`ActionsTitle`) and read off its PARENT group, because the window draws the
+word on the label and hangs the sentence on the group, and three different groups in it are called
+`TitleGroup` (2026-08-22 live fix: asking for `TitleGroup` answered with the faction banner, which
+named the relation panel "Niris" and left both sentences with no surface — es2-facts). **The same
+propagation reached the Academy and pirate windows**, whose action bands carry the identical shape:
+`academy-diplomacy:actions-title` and `pirate:actions-title` now name those stops by the game's
+drawn "Actions" and carry its sentence, with `diplomacy.actions-band` as the fallback. Both are
+fixture-blocked (neither window can be opened in `[Beginner] test`), so that pair is prefab-verified
+only. The Academy's own `RelationInfo/TitleGroup` ("Status") is NOT converted — its stop is still
+named by `academy.relation`, awaiting the owner's ruling with the rest of that screen's wording.
 
 **The population overview's collection track says the number and the state** (2026-08-22): the
 "Collection status" caption keeps a row (it carries a tooltip) and that row carries the current
@@ -502,7 +514,9 @@ than announced. "Collection Effects" is gated on the rows the table is DRAWING a
 own "No Effects" when there are none. The reactions region is named by the wheel's own title
 ("Reaction to Political Events"), and the six party dossiers on the legend beside it are a
 `population:politics/parties` "Tooltips" region after the sectors, which keeps the sectors the
-stop's primary rows.
+stop's primary rows. The "Collection status" row's sentence is read off `CollectionUnlockGroup`
+rather than off the `Title` label inside it — the same split-caption shape as the minor window
+(2026-08-22 live fix: the row existed and carried no explanation).
 
 **The first-contact card names its two uncaptioned figures** (2026-08-22): the
 `MinorEmpireMetNotificationWindow` card draws "None"/"Unknown Empire" and the relation state beside
@@ -736,6 +750,17 @@ exemption: its Enter sends, through the game. Role words: "editable",
 and "numeric editable" for the stepper boxes whose Left/Right adjust announces the new value
 (owner rulings 2026-08-17; the cancel-restore is wholly mod-authored — the engine has no
 cancel semantics of its own, and the hand-over waits for the activating key's release).
+
+**The research wheel is searched by what a technology GIVES, not only by its name** (2026-08-22).
+`ResearchScreen.TypeAheadScope` still covers every dot the wheel would draw, wherever it is buried,
+but each one now answers with its title and then, after a comma, the same terms the GAME's own
+search box looks through (`TechnologyLookupPanel.BindTechnology` — es2-facts): the technology's
+localized keywords, and for every unlock the empire already passes the `UnlockAvailability`
+prerequisites for, that unlock's title, its keywords and the localized titles of its category and
+sub-category. So "Impervious" finds Survival Suits and "Miners Union" finds Galactic Commodities
+Exchange, while `TypeAheadSearch`'s before-the-comma rule keeps a title match ahead of an unlock
+match. The terms are built once per technology and kept until the turn changes — which is when an
+unlock's prerequisites can move — so a ten-letter search composes 107 strings, not 1070.
 
 **Escape is the game's, except over a surface the mod invented.** A screen answers
 `ConsumesBack` (asked BEFORE the press), and `ModInput` latches EVERY consumed key until the

@@ -182,10 +182,20 @@ namespace ES2Access.Screens
             builder.PopContext();
         }
 
+        /// <summary>The diplomatic actions, under the word the window itself draws over them. The game
+        /// captions this band "Actions" and hangs the sentence saying what it is on the GROUP around the
+        /// label, so the caption is a row as well as the band's name - the same shape the minor-faction
+        /// window's band is read under, with the mod's own word left as the fallback.</summary>
         private void BuildActions(GraphBuilder builder, AcademyDiplomacyModalWindow window)
         {
             builder.BeginStop(ActionsStop);
-            builder.PushContext(ModStrings.Get(ModStrings.DiplomacyActionsBand));
+            AgeTransform title = ActionsCaption(window);
+            bool named = Captions.Push(
+                builder,
+                title,
+                Keys + "actions-title",
+                Captions.Text(title) ?? ModStrings.Get(ModStrings.DiplomacyActionsBand)
+            );
             _actions.Clear();
             try
             {
@@ -207,7 +217,24 @@ namespace ES2Access.Screens
 
             DiplomacyActions.Emit(builder, "academy-diplomacy", _actions);
             AcademyWindows.Switch(builder, window, Keys);
-            builder.PopContext();
+            Captions.Pop(builder, named);
+        }
+
+        /// <summary>The group the window draws the actions caption inside - the widget carrying both the
+        /// word and the sentence, neither of which the window exposes.</summary>
+        private static AgeTransform ActionsCaption(AcademyDiplomacyModalWindow window)
+        {
+            try
+            {
+                AgeTransform label = window == null
+                    ? null
+                    : AgeWidgets.ChildNamed(window.AgeTransform, "ActionsTitle", 4);
+                return label == null ? null : label.Parent;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
         }
 
         private void BuildTreasury(GraphBuilder builder, AcademyDiplomacyModalWindow window)

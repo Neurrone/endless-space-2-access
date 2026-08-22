@@ -325,7 +325,7 @@ namespace ES2Access.Screens
         private void BuildRelation(GraphBuilder builder, MinorFactionDiplomacyModalWindow window)
         {
             builder.BeginStop(RelationStop);
-            AgeTransform title = Named(window, "TitleGroup", 4);
+            AgeTransform title = Group(window, "RelationInfoTitle", 6);
             bool named = Captions.Push(
                 builder,
                 title,
@@ -498,7 +498,7 @@ namespace ES2Access.Screens
         private void BuildActions(GraphBuilder builder, MinorFactionDiplomacyModalWindow window)
         {
             builder.BeginStop(ActionsStop);
-            AgeTransform title = Named(window, "ActionsTitle", 4);
+            AgeTransform title = Group(window, "ActionsTitle", 4);
             bool named = Captions.Push(
                 builder,
                 title,
@@ -546,6 +546,25 @@ namespace ES2Access.Screens
 
             Cells.EmitLinear(builder, _cells);
             builder.PopContext();
+        }
+
+        /// <summary>
+        /// The BLOCK a caption titles, found by the name the prefab gives the caption label inside it.
+        ///
+        /// Two of this window's three captions are drawn as a label inside a group and EXPLAINED on
+        /// the group, so the words and the sentence sit on different widgets: asking for the group by
+        /// its own prefab name ("TitleGroup", worn by three of them) answers with whichever one the
+        /// walk reaches first - the faction banner, which named the relation panel "Niris" and left the
+        /// relation and actions sentences with nowhere to be read (measured live 2026-08-22).
+        /// </summary>
+        private static AgeTransform Group(
+            MinorFactionDiplomacyModalWindow window,
+            string name,
+            int depth
+        )
+        {
+            AgeTransform label = Named(window, name, depth);
+            return label == null ? null : label.Parent;
         }
 
         /// <summary>A caption the window draws but does not expose, found by the name the prefab gives

@@ -391,7 +391,7 @@ namespace ES2Access.Screens
             builder.SetRegion("population:thresholds");
             AgeTransform caption = AgeWidgets.ChildNamed(group, "Title", 1);
             bool named = Caption(builder, caption);
-            AddStatus(builder, caption, window);
+            AddStatus(builder, caption, group, window);
 
             _cells.Clear();
             AgeTransform table = window.PopulationThresholdsTable;
@@ -406,11 +406,19 @@ namespace ES2Access.Screens
             Unname(builder, named);
         }
 
-        /// <summary>The track's own caption as a row, carrying its explanation and the count the track
-        /// is measuring.</summary>
+        /// <summary>
+        /// The track's own caption as a row, carrying its explanation and the count the track is
+        /// measuring.
+        ///
+        /// The game draws the WORDS on the label and hangs the SENTENCE on the group around the whole
+        /// track, so the explanation has to be read - and pointed at - where it lives; asking the label
+        /// alone left <c>%CollectionUnlockGroupDescription</c> with no surface at all (measured live
+        /// 2026-08-22).
+        /// </summary>
         private static void AddStatus(
             GraphBuilder builder,
             AgeTransform caption,
+            AgeTransform group,
             PopulationModalWindow window
         )
         {
@@ -421,7 +429,8 @@ namespace ES2Access.Screens
 
             AgeTransform at = caption;
             PopulationModalWindow it = window;
-            AgeTooltip tooltip = AgeWidgets.Raw(caption);
+            AgeTooltip own = AgeWidgets.Raw(caption);
+            AgeTooltip tooltip = own ?? AgeWidgets.Raw(group);
             NodeVtable vtable = new NodeVtable
             {
                 Announcements = new List<NodeAnnouncement>
@@ -431,7 +440,7 @@ namespace ES2Access.Screens
                 },
                 Sections = GraphNodes.Sections(null, tooltip),
             };
-            AgeWidgets.PointAt(vtable, caption);
+            AgeWidgets.PointAt(vtable, own != null ? caption : group, tooltip);
             builder.AddItem(
                 ControlId.Referenced(caption, "population:collection-status"),
                 vtable

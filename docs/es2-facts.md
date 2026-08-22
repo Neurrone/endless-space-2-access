@@ -270,6 +270,44 @@ generic graduates to the generic docs.
   per frame; the game's word for one is `%SuggestedItemTitle` ("Suggested").
   `TechnologyItem2.UpdateSuggestionBottom` belongs to the notification windows'
   `SuggestedTechnologiesPanel` alone — nothing on the wheel calls it.
+- **The research buy-out is a UNITED EMPIRE affinity ability, and this fixture cannot draw it.**
+  The descriptor is `EmpirePointBuyoutUnlocked`, granted only by `AffinityGameplayTerrans`
+  (`Public/Simulation/FactionTraits[Affinity].xml:238`); the TUTORIAL United Empire affinity
+  `AffinityGameplayTerransTutorial` has it commented out (:296), which is why the save the mod is
+  tested on reads `empirePointBuyoutUnlocked=False` and the game itself draws no button. It buys the
+  HEAD of the research queue (`EmpireBanner.OnExecuteBuyout` :612-632 over `ResearchQueue.Peek()`),
+  pays in Influence (`EmpireEmpirePoint`, cost `GetBuyoutCostWithBonus` :358-399), posts
+  `OrderBuyoutTechnology` and is offered by `DepartmentOfTheTreasury.CanBuyoutTechnology` :2272. The
+  BUTTON is on the empire banner's research line, not on the wheel — the mod declares it once, as
+  `hud:empire/research-buyout` (`GlobalHud.AddResearchBuyout`), and deliberately does not mirror it
+  onto the research screen (owner ruling 2026-08-22). Lumeris' buy-out is the DUST one
+  (`IsBuyoutUnlocked`), which the banner puts no button on at all.
+- **Cancelling research has no progress precondition — the game takes it back at any point.**
+  `DepartmentOfScience.CancelResearchPreprocessor` (:563-577) checks only that the entity exists and
+  that `ResearchQueue.Contains` it; `CancelResearchProcessor` (:579-599) refunds the instant stocks.
+  `TechnologyScreen.OnToggleTechnologyItem` (:203-229) un-toggles `InProgress` as readily as
+  `Queued`, `TechnologyItem2.ComputeTechnologyState` (:535-536) keeps the toggle enabled while a
+  technology is in progress, and `ResearchQueueItem.OnActivateCb` (:107-111) dequeues
+  unconditionally. There is no cancel-confirmation string for research anywhere in the corpus (only
+  constructions have one). **Measured live 2026-08-22** on `[Beginner] test` at turn 22, one turn
+  into "Survival Suits": both of the mod's routes cancelled it and said so — the queue row
+  (*"Cancelled Survival Suits"*, `ResearchQueue.Length` 1 → 0) and the wheel dot (the same line, then
+  the dot's own state word flipping to "Available"). `TechnologyItem2.Dragging` read false
+  throughout. So the reported "cancel with progress does nothing" does not reproduce; what WAS real
+  is that both routes used to return silently when their own gate failed, which is a different
+  defect and is fixed (`ResearchScreen.Dequeue` now says the technology's state instead; the wheel
+  dot already answered through its `StateText` refusal part — verified: Enter on a "Not available"
+  dot says *"Not available"*).
+- **The game's own technology search is a substring filter with no cursor.**
+  `TechnologyLookupPanel` (Ctrl+F parks focus in its field — `TechnologyScreen` :232-243) builds one
+  keyword list per technology in `BindTechnology` (:41-73): the title, `TechnologyDefinition.
+  GetLocalizedKeywords()`, and for every unlock whose `IPrerequisiteProvider` passes
+  `PrerequisiteHelper.CheckPrerequisites(..., ConstructionFlags.UnlockAvailability)` that unlock's
+  title, its keywords, and the localized titles of its `Category` and `SubCategory`. Matching
+  (`DisplayMatches` :148-206) uppercases, splits on `" ,.;:-0123456789"` and AND-s a `Contains` test
+  per term; a hit blinks a frame on the matching dots and writes a count. No ranking, no selection,
+  no camera, no next/previous — which is why the mod does not delegate to it and copies the CORPUS
+  instead (`docs/interaction.md`, research section).
 - **Aiming the wheel's viewport** takes a point measured from the middle of the wheel in the
   normalized (782-wide) space the stages place their dots in: `DoZoomIn(aim, 0.3f)` from the
   overview, `DoTranslate(aim * 4, 0.3f)` once `Viewport.GetComponent<GuiValueController>()
@@ -2193,6 +2231,22 @@ generic graduates to the generic docs.
   non-discreet panel and the mod needs only one of them.
 
 ## Card and tooltip drawing mechanisms
+
+**A block caption's WORD and its EXPLANATION sit on different widgets, and the prefabs repeat the
+group's name.** The recurring AGE shape is `…Group / TitleGroup [tooltip] / SomeTitle [text]` — the
+sentence is on the wrapper, the words on the label inside it. Measured 2026-08-22 on
+`MinorFactionDiplomacyModalWindow` (`RelationInfo/TitleGroup` = "Displays information about your
+relation with the Minor Civilization" over `RelationInfoTitle` "Diplomatic Relation";
+`ActionsGroup/TitleGroup` over `ActionsTitle` "Actions"), on `PopulationModalWindow`
+(`CollectionUnlockGroup` = `%CollectionUnlockGroupDescription` over `Title` "Collection status"),
+and — tier-zero, from the unshown prefabs — identically on `AcademyDiplomacyModalWindow` and
+`PirateDiplomacyModalWindow`. Two consequences for the mod. `AgeWidgets.TextOf` descends, so passing
+the GROUP to `Captions.Push` gets both halves in one widget; passing the LABEL silently loses the
+sentence (the parity audit files it under `decoration`, and nothing in speech says so). And the name
+`TitleGroup` is worn by three different groups in one window, so `AgeWidgets.ChildNamed` by that name
+answers with whichever the walk reaches first — on the minor window that was the faction banner,
+which named the relation panel "Niris". **Mod policy**: resolve such a caption from the UNIQUE label
+name and take its `Parent`, never by the group's own name.
 
 **A failed tooltip request is PARKED for 999 seconds, and only a change of hovered transform
 lifts it.** `GuiTooltipController.Update` (Amplitude.Unity.Gui/GuiTooltipController.cs:214-224):

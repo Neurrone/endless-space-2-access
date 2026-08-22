@@ -283,6 +283,34 @@ progress". "Survival Suits" and "Ubiquitous Surveillance" are the fixture's two 
 dots (195 Science each); "Military II" expands to four "Not available" dots, the ready-made research
 REFUSAL controls. Restore by cancelling what was added — `ResearchQueue.Length` back to 0, measured
 2026-08-19, no `POST /loadsave` needed.
+**Cancelling a technology that has PROGRESS** (measured 2026-08-22, and it works on both routes):
+queue a cheap dot, `ui.endTurn` TWICE (this save has an idle system, so the first press only raises
+the game's own prompt), then reopen the wheel and press Enter either on the wheel dot or on
+`research:queue/<TechnologyDefinition…>` in the `research:status` stop — reached by Tab to that
+stop, `ui.home`, `ui.down` twice, NOT by `ui.end` (which lands in the `research:region/key` band).
+Both answer *"Cancelled ⟨title⟩"* with `ResearchQueue.Length` dropping to 0, and the dot's own
+state word then flips to "Available". `TechnologyItem2.Dragging` reads false throughout. Cancelling
+REFUNDS the science, so the dot reads its full cost again. Ending turns raises notification popups
+that steal focus — hide them with a `FindObjectsOfType<NotificationWindow>()` loop over `Shown`
+before reading the wheel, or the next injection goes to the popup. Restore with `POST /loadsave`
+(the turns cannot be given back).
+**Proving the queue row's REFUSAL branch** (the never-be-silent guarantee — the state is not
+reachable in play): queue a dot, focus its queue row, then race a background
+`ResearchQueue.Remove(PendingConstructions[0])` `/eval` against a `POST /input ui.activate` ~0.3 s
+later. The row is still drawn while the queue no longer holds the technology, so Enter answers with
+the technology's state (*"Available"*) instead of the "Cancelled" it can no longer honestly say.
+**Searching the wheel by what a technology UNLOCKS** (2026-08-22): Tab onto the `research:tree`
+stop first — `POST /type` searches the FOCUSED stop, and from `research:status` the same letters
+find nothing. Then `POST /type "surv"` → 2 results, Survival Suits first (title match);
+`"Impervious"` → 1 result, Survival Suits (its unlock "Impervious Bunkers"); `"Miners Union"` →
+Galactic Commodities Exchange; `"Zelevas Incarnate"` → Emperor's Shadow. `ui.down`/`ui.up` step,
+`ui.back` says "Search cleared". The per-keystroke cost is
+`ES2Access.Screens.ResearchScreen.SearchTextBuilds`: it must reach 107 (one per drawn dot on this
+fixture) and then STOP rising, however many letters follow — it climbs by another 107 only after a
+turn change or a `POST /loadsave`, which is the cache expiring. To read a technology's whole search
+string, invoke the private static `ResearchScreen.BuildSearchText(GuiTechnology2)` by reflection
+over `TechnologyQuadrantsContainer` → `TechnologyQuadrantItem.TechnologyStagesContainer` →
+`BaseTechnologyStageItem.TechnologyItems` (the stage's dots are NOT its `Children`).
 **Driving the game's own "go and look at this technology"** (the Ctrl+click hint jump, which no
 injection can reproduce because the game reads the physically held Control): call what the game
 calls — `var w = Gui.GuiService.GetWindow<TechnologyScreen>(); w.FocusTechnology(
