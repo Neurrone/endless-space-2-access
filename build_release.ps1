@@ -80,12 +80,12 @@ try {
     }
     Copy-Item -LiteralPath $localeFiles.FullName -Destination (Join-Path $pluginDir "locale")
 
-    # Cutscene audio descriptions, built from descriptions\ by build-descriptions.ps1. A hard
-    # failure rather than a warning: unlike a translation there is nothing to fall back to, so a
-    # release missing these ships a feature that silently says nothing.
+    # Cutscene audio descriptions. A hard failure rather than a warning: unlike a translation
+    # there is nothing to fall back to, so a release missing these ships a feature that silently
+    # says nothing.
     $descriptionFiles = @(Get-ChildItem -LiteralPath $descriptionsDir -Filter *.json -File)
     if ($descriptionFiles.Count -eq 0) {
-        throw "No description tables found in $descriptionsDir (run build-descriptions.ps1)"
+        throw "No description tables found in $descriptionsDir"
     }
     Copy-Item -LiteralPath $descriptionFiles.FullName -Destination (Join-Path $pluginDir "descriptions")
 

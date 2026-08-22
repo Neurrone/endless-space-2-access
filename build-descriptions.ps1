@@ -6,6 +6,11 @@
     Turns the per-video description files under descriptions\ into the single table the mod
     loads at runtime, ES2Access\descriptions\<language>.json.
 
+    The authoring folder is NOT in the repository. It is generator output - three files per video,
+    hundreds of them - kept locally the way videos\ is, and the built table is the source of truth
+    that ships and is committed. This script is how a regenerated or hand-edited authoring folder
+    becomes that table again.
+
     The authoring files carry PLAYER-FACING names ("Vodyani Intro", "Toxic"). The game asks for
     its videos by internal affinity and planet-type codenames ("Vampirilis_Intro", "Swamp"), and
     the mod looks a track up by the basename of the movie the game is actually playing.
@@ -20,8 +25,15 @@
     .mp4 is missing from the install, fails the build rather than shipping a track that can never
     be found.
 
+    Each cue carries the moment it must be FINISHED by as well as the moment it is spoken. The
+    runtime never reads the end - a late cue is spoken anyway, since the mod cannot see the rate
+    the player reads at - but it is the only record in the repository of where the video's own
+    dialogue resumes, and without it a later rewrite of a cue has nothing to check its length
+    against.
+
 .PARAMETER Authoring
-    The folder holding the authored descriptions. Defaults to descriptions\ beside this script.
+    The folder holding the authored descriptions. Defaults to descriptions\ beside this script,
+    which a fresh clone does not have.
 
 .PARAMETER Language
     The game's own language name, which names the output file. Defaults to english.
@@ -211,15 +223,19 @@ foreach ($file in Get-ChildItem -Path $Authoring -Filter *.json -Recurse | Sort-
     $previous = -1.0
     foreach ($cue in $authored.cues) {
         $at = [double]$cue.start
+        $end = [double]$cue.end
         if ($at -lt $previous) {
             throw "'$name' has cues out of order at $at seconds"
         }
         if ($at -gt $duration) {
             throw "'$name' has a cue at $at seconds, past its $duration second runtime"
         }
+        if ($end -lt $at) {
+            throw "'$name' has a cue at $at seconds that ends at $end, before it is spoken"
+        }
         $previous = $at
         $text = ($cue.text -replace '\s+', ' ').Trim()
-        $cues += @{ At = $at; Text = $text }
+        $cues += @{ At = $at; End = $end; Text = $text }
         $wordCount += ($text -split ' ').Count
     }
 
@@ -241,9 +257,10 @@ for ($i = 0; $i -lt $keys.Count; $i++) {
     $cues = $tracks[$key]
     for ($j = 0; $j -lt $cues.Count; $j++) {
         $at = [string]::Format([System.Globalization.CultureInfo]::InvariantCulture, '{0:0.###}', $cues[$j].At)
+        $end = [string]::Format([System.Globalization.CultureInfo]::InvariantCulture, '{0:0.###}', $cues[$j].End)
         $text = ConvertTo-JsonString $cues[$j].Text
         $tail = if ($j -lt $cues.Count - 1) { ',' } else { '' }
-        [void]$out.AppendLine("    { ""at"": $at, ""text"": $text }$tail")
+        [void]$out.AppendLine("    { ""at"": $at, ""end"": $end, ""text"": $text }$tail")
     }
     $tail = if ($i -lt $keys.Count - 1) { ',' } else { '' }
     [void]$out.AppendLine("  ]$tail")

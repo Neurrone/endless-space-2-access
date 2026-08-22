@@ -24,6 +24,13 @@ namespace ES2Access.Localization
     ///
     /// The cues are trusted to be in the order they are spoken. The generator refuses to write a
     /// track whose cues run backwards, so nothing sorts them again per playback.
+    ///
+    /// Every cue in the file carries an <c>end</c> beside its <c>at</c>, and this reader skips it.
+    /// It records where the video's own dialogue resumes, which is the constraint a cue was
+    /// written to fit; the authoring files it was measured from are not in the repository, so
+    /// without it a later rewrite would have nothing to check its new length against. The runtime
+    /// has no use for it - a cue that overruns is still spoken in full, since the mod cannot see
+    /// the rate the player reads at.
     /// </summary>
     public static class ModDescriptions
     {
