@@ -2180,7 +2180,7 @@ by construction (es2-facts). Do this before designing any nested-dossier reading
 construction line's festival badge needs a Hissho festival constructible; the honor gauge's own
 dossier needs a Hissho empire. All three are declaration-side only and gated on finding ≥1 (≥2 for
 the hero row) named class-backed dossier, so they are inert everywhere they were not measured.
-||||||| 940f246
+
 ## The input batch (2026-08-22) — verifying the keys
 
 Fixture `[Beginner] test` unless an item says otherwise. The keys inject as ACTIONS (`POST /input`

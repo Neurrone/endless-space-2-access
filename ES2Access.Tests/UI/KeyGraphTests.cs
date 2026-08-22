@@ -460,11 +460,10 @@ namespace ES2Access.Tests.UI
             g.Rerender();
             Assert.Equal("g", Focused(g));
 
-            Assert.Equal(KeyGraph.TreeMove.Expanded, g.TreeRight().Kind);
-            Assert.Contains(Id("g"), state.Expanded);
-
+            // One press opens the group AND lands on its first child (the single-press contract).
             KeyGraph.TreeResult descend = g.TreeRight();
             Assert.Equal(KeyGraph.TreeMove.Descended, descend.Kind);
+            Assert.Contains(Id("g"), state.Expanded);
             Assert.Equal("t1", Focused(g));
         }
 
