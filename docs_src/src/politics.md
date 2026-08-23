@@ -28,9 +28,9 @@ Focus lands on the system's row. The system and its parties are one row; press `
 
 ```text
 Dusay, System 1 of 1, 1 of 4
-Industrialists, 1, has tooltip, 2 of 4
-Scientists, 2, has tooltip, 3 of 4
-Militarists, 1, has tooltip, 4 of 4
+Industrialists, 1, 2 of 4
+Scientists, 2, 3 of 4
+Militarists, 1, 4 of 4
 ```
 
 Each party's description — what it is, what it wants, and what supports it — is in its review buffer. Press `Up` from the row to reach the previous-system and next-system arrows.
