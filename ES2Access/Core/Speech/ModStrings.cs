@@ -153,21 +153,26 @@ namespace ES2Access.Core.Speech
         public const string ModSettingsScanner = "mod-settings.scanner";
         public const string ModSettingsScannerDescription = "mod-settings.scanner-description";
 
+        /// <summary>One slot's own tab, numbered - the number is what the six quick keys address, so
+        /// it is what the tab is called whatever the player has named the category on it.</summary>
+        public const string ModSettingsCustomCategory = "mod-settings.custom-category";
+        public const string ModSettingsCustomCategoryDescription =
+            "mod-settings.custom-category-description";
+
         // --- the editor for the player's own three scanner categories (2026-08-23) ---
 
-        /// <summary>One of the three slots, named by its number and by what is in it - the player's
-        /// own name, or the word for a slot nobody has filled.</summary>
-        public const string ScannerEditSlot = "mod-settings.scanner.slot";
+        /// <summary>The Scanner tab's button for one slot: which slot it is, and what is in it - the
+        /// player's own name, or the word for a slot nobody has filled.</summary>
+        public const string ScannerEditSlotButton = "mod-settings.scanner.slot-button";
         public const string ScannerEditEmpty = "mod-settings.scanner.empty";
 
-        /// <summary>The button that opens the naming box. It says the name it would be changing, so
-        /// the player hears what the slot is called without leaving the button.</summary>
+        /// <summary>The name box at the top of a slot's own tab. Typing a name into an empty slot is
+        /// what fills it.</summary>
         public const string ScannerEditName = "mod-settings.scanner.name";
 
-        /// <summary>What the naming box asks, and what the keyword box asks - the game writes the
-        /// heading of its own rename box from whatever it is handed.</summary>
-        public const string ScannerEditNamePrompt = "mod-settings.scanner.name-prompt";
-        public const string ScannerEditKeywordPrompt = "mod-settings.scanner.keyword-prompt";
+        /// <summary>One keyword's box, numbered by its place in the list - which is the order its
+        /// columns come out in.</summary>
+        public const string ScannerEditKeyword = "mod-settings.scanner.keyword";
 
         /// <summary>A built-in category inside a slot: what the scanner calls it, and how many of its
         /// columns this custom category draws from.</summary>
@@ -178,9 +183,7 @@ namespace ES2Access.Core.Speech
         /// </summary>
         public const string ScannerEditMissing = "mod-settings.scanner.missing";
 
-        public const string ScannerEditKeywords = "mod-settings.scanner.keywords";
         public const string ScannerEditAddKeyword = "mod-settings.scanner.add-keyword";
-        public const string ScannerEditRemoveKeyword = "mod-settings.scanner.remove-keyword";
 
         /// <summary>What the mod says after an edit that takes the control the player is standing on
         /// away with it - a keyword removed, a slot cleared. Queued rather than interrupting, so the
@@ -188,11 +191,13 @@ namespace ES2Access.Core.Speech
         public const string ScannerEditRemoved = "mod-settings.scanner.removed";
         public const string ScannerEditCleared = "mod-settings.scanner.cleared";
 
-        /// <summary>The two refusals. Both keep what was there: a name already in the cycle would be
-        /// two categories the player cannot tell apart, and a word already asked for would be two
-        /// columns holding the same things.</summary>
+        /// <summary>The three refusals. All keep what was there: a name already in the cycle would be
+        /// two categories the player cannot tell apart, a word already asked for would be two columns
+        /// holding the same things, and a category with no name is one the cycle reads as silence.
+        /// </summary>
         public const string ScannerEditNameTaken = "mod-settings.scanner.name-taken";
         public const string ScannerEditKeywordTaken = "mod-settings.scanner.keyword-taken";
+        public const string ScannerEditNameBlank = "mod-settings.scanner.name-blank";
 
         public const string ScannerEditClear = "mod-settings.scanner.clear";
 
@@ -1650,19 +1655,22 @@ namespace ES2Access.Core.Speech
                 ModSettingsScannerDescription,
                 "The three scanner categories you write for yourself."
             },
-            { ScannerEditSlot, "Custom category {0}, {1}" },
+            { ModSettingsCustomCategory, "Custom category {0}" },
+            {
+                ModSettingsCustomCategoryDescription,
+                "What the scanner category in slot {0} looks for."
+            },
+            { ScannerEditSlotButton, "Custom category {0}: {1}" },
             { ScannerEditEmpty, "empty" },
-            { ScannerEditName, "Name, {0}" },
-            { ScannerEditNamePrompt, "Name for custom category {0}" },
-            { ScannerEditKeywordPrompt, "New keyword for {0}" },
+            { ScannerEditName, "Name" },
+            { ScannerEditKeyword, "Keyword {0}" },
             { ScannerEditSelected, "{0}, {1} selected" },
             { ScannerEditMissing, "{0}, not found this game" },
-            { ScannerEditKeywords, "Keywords" },
             { ScannerEditAddKeyword, "Add keyword" },
-            { ScannerEditRemoveKeyword, "Remove keyword, {0}" },
             { ScannerEditRemoved, "{0} removed" },
             { ScannerEditCleared, "Custom category {0} cleared" },
             { ScannerEditNameTaken, "{0} is already the name of a category" },
+            { ScannerEditNameBlank, "A custom category needs a name" },
             {
                 ScannerEditKeywordTaken,
                 "That keyword is already in this custom category"

@@ -13,7 +13,7 @@ namespace ES2Access.UI.ModOptions
     /// <paramref name="Name"/> is the game's own key for the category. It is what the window's
     /// private <c>categoryNames</c> array holds, what its tab dictionaries are keyed by, and what
     /// the radio group's selection is turned back into - so it is an identifier, never a spoken
-    /// word. The words are <see cref="TitleKey"/> and <see cref="DescriptionKey"/>, written over the
+    /// word. The words are <see cref="Title"/> and <see cref="Description"/>, written over the
     /// game's own labels after the tab is built, because a localization key the game has no row for
     /// is DRAWN AND SPOKEN raw.
     /// </summary>
@@ -23,24 +23,26 @@ namespace ES2Access.UI.ModOptions
             string name,
             Type serviceType,
             IService service,
-            string titleKey,
-            string descriptionKey,
+            System.Func<string> title,
+            System.Func<string> description,
             Action<OptionsTabPanel> fill
         )
         {
             Name = name;
             ServiceType = serviceType;
             Service = service;
-            TitleKey = titleKey;
-            DescriptionKey = descriptionKey;
+            Title = title;
+            Description = description;
             Fill = fill;
         }
 
         public readonly string Name;
         public readonly Type ServiceType;
         public readonly IService Service;
-        public readonly string TitleKey;
-        public readonly string DescriptionKey;
+        /// <summary>The words, resolved when the tab is built rather than held as a key: two of the
+        /// tabs are numbered, so their names are composed rather than looked up.</summary>
+        public readonly System.Func<string> Title;
+        public readonly System.Func<string> Description;
 
         /// <summary>Puts the category's rows in, once the game has built the empty panel. Null for a
         /// category whose service declares its own option properties, which the game's own panel

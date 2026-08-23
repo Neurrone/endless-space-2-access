@@ -75,6 +75,30 @@ namespace ES2Access.Tests.UI
             Assert.Empty(category.Keywords);
         }
 
+        /// <summary>A keyword box on the settings page edits the word in PLACE. Its position is its
+        /// column order, so re-typing it must not send it to the end of the list.</summary>
+        [Fact]
+        public void ARetypedKeywordKeepsItsPlaceAndCannotBecomeOneAlreadyThere()
+        {
+            ScannerCustomCategory category = new ScannerCustomCategory("Words");
+            category.AddKeyword("Tundra");
+            category.AddKeyword("Ocean");
+            category.AddKeyword("Arid");
+
+            Assert.True(category.ReplaceKeyword(1, " Jungle "));
+            Assert.Equal(new[] { "Tundra", "Jungle", "Arid" }, category.Keywords);
+
+            Assert.False(category.ReplaceKeyword(1, "arid"));
+            Assert.False(category.ReplaceKeyword(1, "  "));
+            Assert.False(category.ReplaceKeyword(3, "Anything"));
+            Assert.Equal(new[] { "Tundra", "Jungle", "Arid" }, category.Keywords);
+
+            // The same word in another case is the CASE being changed, which is what the column is
+            // read out in - not a duplicate of itself.
+            Assert.True(category.ReplaceKeyword(1, "JUNGLE"));
+            Assert.Equal(new[] { "Tundra", "JUNGLE", "Arid" }, category.Keywords);
+        }
+
         [Fact]
         public void ACopyIsIndependent()
         {

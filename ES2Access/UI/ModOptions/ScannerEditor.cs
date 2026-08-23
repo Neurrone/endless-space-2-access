@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using Amplitude.Unity.Options;
 using ES2Access.Core.Speech;
 using ES2Access.Core.UI;
-using ES2Access.Core.UI.Graph;
 using ES2Access.Core.Util;
 using ES2Access.Screens;
 using ES2Access.UI.Settings;
@@ -11,51 +10,41 @@ using ES2Access.UI.Settings;
 namespace ES2Access.UI.ModOptions
 {
     /// <summary>
-    /// THE EDITOR FOR THE PLAYER'S OWN THREE SCANNER CATEGORIES - the Scanner tab of the mod's
-    /// settings window, and the only part of that window the game draws nothing for.
+    /// THE EDITOR FOR THE PLAYER'S OWN THREE SCANNER CATEGORIES - what the Scanner tab and the three
+    /// "Custom category" tabs of the mod's settings window are working on.
     ///
-    /// WHY A TREE OF MOD NODES rather than the game's own option rows: none of the five row kinds can
-    /// express a list somebody edits. There is no repeatable row, no add and no remove, and the one
-    /// text row the engine ships is broken outright (<c>OptionTextFieldItem</c> commits the LABEL
-    /// object into the option's value and the cast is swallowed as a logged error). So the Scanner
-    /// panel holds one row, invisible, whose only job is to make the window's own Apply/Cancel
-    /// machinery see the edits (<see cref="ModScannerService"/>), and everything the player walks is
-    /// declared here as graph nodes. A sighted player therefore sees an empty tab - accepted for this
-    /// release, and the reason the tab exists at all is that the whole surface is keyboard-only.
+    /// This holds the MODEL and the rules; the rows that draw it are
+    /// <see cref="ScannerRows"/> (the Scanner tab's three buttons) and
+    /// <see cref="ScannerSlotRows"/> (one tab per slot). It was a tree of mod nodes over an empty tab
+    /// until 2026-08-24 and the owner rejected that outright: the window is the game's, so its pages
+    /// are drawn with the game's own widgets and a sighted player sees what a screen reader hears.
     ///
-    /// THE SHAPE IS soc-access's, adapted: one expandable group per SLOT, and inside it a button that
-    /// opens the naming box, one expandable group per built-in scanner category holding a checkbox
-    /// per column, a Keywords group, and a button that empties the slot. Deliberately not one flat
-    /// checklist - the full taxonomy is over a hundred columns on a mature galaxy, and a single run
-    /// of checkboxes is not something anybody walks twice.
-    ///
-    /// AN EMPTY SLOT SHOWS ONLY ITS NAME BUTTON. A category is a NAME plus what it asks for, and
-    /// there is nothing to tick columns onto until the slot holds one; naming it is what fills the
-    /// slot, and the box opens pre-filled with "Custom N" so accepting the offer is one keystroke.
-    ///
-    /// EDITS ARE HELD UNTIL APPLY (owner ruling 2, 2026-08-23). Everything here works on a
+    /// EDITS ARE HELD UNTIL APPLY (owner ruling 2, 2026-08-23). Everything works on a
     /// <see cref="ScannerCustomSlots.Copy"/>; <see cref="Commit"/> hands it to
     /// <see cref="ScannerCustomSettings.Replace"/> when the window hides, and Cancel never gets that
     /// far because the window's own restore has already thrown the copy away
-    /// (<see cref="Discard"/>). The window is told an edit happened through the invisible row's
-    /// option, which is what lights Apply and what makes Escape ask the game's own
+    /// (<see cref="Discard"/>). The window is told an edit happened through the Scanner panel's one
+    /// invisible row, which is what lights Apply and what makes Escape ask the game's own
     /// "%OptionExitWithoutApplyMessage" - none of that is re-implemented.
     ///
-    /// WHAT COMES BACK FROM THE NAMING BOX ARRIVES OUTSIDE THE PUMP - it is the game's own click
-    /// handler calling the mod - so the callback only records what was typed, and the pump does the
-    /// rest: the edit itself lands in the same frame the box was confirmed in, and <see cref="Tick"/>
-    /// says what came of it after the screens, because a refusal follows a window closing and a
+    /// A COMMITTED EDIT THAT CHANGES THE SHAPE OF A PAGE ASKS FOR A REBUILD RATHER THAN DOING ONE.
+    /// A text row commits when the field loses the keyboard, and the mod is inside the engine's own
+    /// focus change when that happens - destroying the field there would be pulling the floor out
+    /// from under the call. So the setter records what wants rebuilding and <see cref="Tick"/>, from
+    /// the pump, does it. The refusals are said there too, for the reason they always were: a
     /// screen's arrival interrupts anything queued ahead of it.
     /// </summary>
     internal static class ScannerEditor
     {
-        /// <summary>The game's key for the tab - an identifier, never a spoken word (the words are
-        /// <see cref="ModStrings.ModSettingsScanner"/>).</summary>
+        /// <summary>The game's key for the Scanner tab - an identifier, never a spoken word (the
+        /// words are <see cref="ModStrings.ModSettingsScanner"/>).</summary>
         public const string CategoryName = "Scanner";
 
-        /// <summary>How long a name or a keyword may be. The box enforces it as the player types, so
-        /// this is the only place the limit has to exist.</summary>
-        private const int MaxChars = 40;
+        /// <summary>The game's key for one slot's own tab.</summary>
+        public static string SlotCategory(int slot)
+        {
+            return "CustomCategory" + (slot + 1);
+        }
 
         // ---- what the player is editing ----
 
@@ -95,6 +84,7 @@ namespace ES2Access.UI.ModOptions
             _working = null;
             _taxonomy = null;
             _say = null;
+            _refill.Clear();
         }
 
         /// <summary>What the player settled on, written through. Called when the window hides, by
@@ -118,194 +108,191 @@ namespace ES2Access.UI.ModOptions
             _taxonomy = null;
             _marker = null;
             _say = null;
+            _refill.Clear();
         }
 
-        /// <summary>The invisible row's option, handed over once the panel has built it. It is the
-        /// only thing the window's Apply/Cancel machinery can be told about an edit through.</summary>
+        /// <summary>The invisible row's option, handed over once the Scanner panel has built it. It
+        /// is the only thing the window's Apply/Cancel machinery can be told about an edit through.
+        /// </summary>
         public static void Marker(Option option)
         {
             _marker = option;
         }
 
-        // ---- the tree ----
+        // ---- what the rows read and write ----
 
-        /// <summary>Whether this tab is the editor's - asked by the mod's options screen, of the
-        /// game's own category NAME rather than of the drawn label, which is localized.</summary>
-        public static bool Owns(string categoryName)
+        /// <summary>What the slot is called - the player's own name, or nothing at all where the slot
+        /// stands empty (which is what the name box shows as an empty box to type into).</summary>
+        public static string NameOf(int slot)
         {
-            return categoryName == CategoryName && ModOptions.IsOurs(OptionsScreen.Window());
+            ScannerCustomCategory category = Working.Slot(slot);
+            return category == null ? string.Empty : category.Name;
         }
 
-        public static void Build(GraphBuilder builder)
-        {
-            for (int i = 0; i < ScannerCustomSlots.Count; i++)
-            {
-                int slot = i;
-                ControlId id = ControlId.Structural(Key(slot));
-                builder.BeginGroup(id, GraphNodes.Group(() => SlotLabel(slot)));
-                if (builder.IsExpanded(id))
-                {
-                    AddName(builder, slot);
-                    if (Working.Slot(slot) != null)
-                    {
-                        AddCategories(builder, slot);
-                        AddKeywords(builder, slot);
-                        AddClear(builder, slot);
-                    }
-                }
-
-                builder.EndGroup();
-            }
-        }
-
-        private static string Key(int slot)
-        {
-            return "scanner:slot/" + slot;
-        }
-
-        private static string SlotLabel(int slot)
-        {
-            return ModStrings.Format(ModStrings.ScannerEditSlot, slot + 1, NameOf(slot));
-        }
-
-        /// <summary>What the slot is called - the player's own name, or the word for a slot nobody has
-        /// filled. Both are spoken in the same place, so an empty slot is heard as a slot rather than
-        /// as a gap in the list.</summary>
-        private static string NameOf(int slot)
+        /// <summary>What the slot is called, said as a slot: the player's own name, or the word for a
+        /// slot nobody has filled - so an empty slot is heard as a slot rather than as a gap.
+        /// </summary>
+        public static string SpokenName(int slot)
         {
             ScannerCustomCategory category = Working.Slot(slot);
             return category == null ? ModStrings.Get(ModStrings.ScannerEditEmpty) : category.Name;
         }
 
-        private static void AddName(GraphBuilder builder, int slot)
-        {
-            int at = slot;
-            builder.AddItem(
-                ControlId.Structural(Key(slot) + "/name"),
-                GraphNodes.Button(
-                    () => ModStrings.Format(ModStrings.ScannerEditName, NameOf(at)),
-                    () => AskName(at)
-                )
-            );
-        }
-
-        /// <summary>One expandable group per built-in scanner category, each saying how many of its
-        /// columns this custom category draws from - the count is what makes a hundred-column taxonomy
-        /// walkable, since a category with nothing ticked can be passed over by ear.</summary>
-        private static void AddCategories(GraphBuilder builder, int slot)
-        {
-            IList<ScannerTaxonomyCategory> categories = Taxonomy.Categories;
-            for (int i = 0; i < categories.Count; i++)
-            {
-                ScannerTaxonomyCategory category = categories[i];
-                int at = slot;
-                string key = category.Key;
-                string label = category.Label;
-                ControlId id = ControlId.Structural(Key(slot) + "/cat/" + key);
-                builder.BeginGroup(
-                    id,
-                    GraphNodes.Group(
-                        () =>
-                            ModStrings.Format(
-                                ModStrings.ScannerEditSelected,
-                                label,
-                                Chosen(at, key)
-                            )
-                    )
-                );
-                if (builder.IsExpanded(id))
-                {
-                    AddColumns(builder, slot, key);
-                }
-
-                builder.EndGroup();
-            }
-        }
-
-        private static void AddColumns(GraphBuilder builder, int slot, string categoryKey)
+        /// <summary>
+        /// Name the slot, which is also how an empty one is FILLED: a category is a name plus what it
+        /// asks for, and there is nothing to tick columns onto until the slot holds one.
+        /// </summary>
+        public static void SetName(int slot, string typed)
         {
             ScannerCustomCategory category = Working.Slot(slot);
-            IList<ScannerTaxonomyColumn> columns = Taxonomy.Offer(
-                categoryKey,
-                category == null ? null : category.Selectors
-            );
-            for (int i = 0; i < columns.Count; i++)
+            string wanted = ScannerCustomCategory.Clean(typed);
+            if (wanted == null)
             {
-                int at = slot;
-                ScannerTaxonomyColumn column = columns[i];
-                ScannerSelector selector = new ScannerSelector(categoryKey, column.Key);
-                // A column this galaxy has nothing of has no words of its own: it is named by the key
-                // it was saved as, said as the stale thing it is, so the player can take it off.
-                string label = column.Missing
-                    ? ModStrings.Format(ModStrings.ScannerEditMissing, column.Key)
-                    : column.Label;
-                builder.AddItem(
-                    ControlId.Structural(Key(slot) + "/cat/" + categoryKey + "/" + column.Key),
-                    GraphNodes.Checkbox(
-                        () => label,
-                        () => Holds(at, selector),
-                        () => Toggle(at, selector)
-                    )
-                );
+                // Blanking the name of a category that exists is not a way to delete it - the Clear
+                // button is - and a nameless category is one the cycle would read out as silence.
+                if (category != null)
+                {
+                    _say = ModStrings.Get(ModStrings.ScannerEditNameBlank);
+                    Rebuild(slot);
+                }
+
+                return;
+            }
+
+            if (Working.NameTaken(wanted, slot, Taxonomy.Labels()))
+            {
+                _say = ModStrings.Format(ModStrings.ScannerEditNameTaken, wanted);
+                Rebuild(slot);
+                return;
+            }
+
+            if (category == null)
+            {
+                Working.Set(slot, new ScannerCustomCategory(wanted));
+                Changed();
+                // The page was a name box and nothing else; it is a whole category now.
+                Rebuild(slot);
+                return;
+            }
+
+            if (category.Rename(wanted))
+            {
+                Changed();
+                ScannerRows.Relabel();
             }
         }
 
-        private static void AddKeywords(GraphBuilder builder, int slot)
+        public static IList<string> Keywords(int slot)
         {
-            ControlId id = ControlId.Structural(Key(slot) + "/keywords");
-            builder.BeginGroup(
-                id,
-                GraphNodes.Group(() => ModStrings.Get(ModStrings.ScannerEditKeywords))
-            );
-            if (builder.IsExpanded(id))
-            {
-                int at = slot;
-                builder.AddItem(
-                    ControlId.Structural(Key(slot) + "/keywords/add"),
-                    GraphNodes.Button(
-                        () => ModStrings.Get(ModStrings.ScannerEditAddKeyword),
-                        () => AskKeyword(at)
-                    )
-                );
+            ScannerCustomCategory category = Working.Slot(slot);
+            return category == null ? NoKeywords : category.Keywords;
+        }
 
-                ScannerCustomCategory category = Working.Slot(slot);
-                IList<string> keywords = category.Keywords;
-                for (int i = 0; i < keywords.Count; i++)
+        public static string Keyword(int slot, int index)
+        {
+            IList<string> keywords = Keywords(slot);
+            return index >= 0 && index < keywords.Count ? keywords[index] : string.Empty;
+        }
+
+        /// <summary>Change one keyword, or - blanked - take it out.</summary>
+        public static void SetKeyword(int slot, int index, string typed)
+        {
+            ScannerCustomCategory category = Working.Slot(slot);
+            IList<string> keywords = Keywords(slot);
+            if (category == null || index < 0 || index >= keywords.Count)
+            {
+                return;
+            }
+
+            string was = keywords[index];
+            string wanted = ScannerCustomCategory.Clean(typed);
+            if (wanted == null)
+            {
+                if (category.RemoveKeyword(was))
                 {
-                    // Keyed by position in the list, the way any repeated node is: a word removed
-                    // moves every word below it up, and the cursor lands on whatever now sits here.
-                    string word = keywords[i];
-                    builder.AddItem(
-                        ControlId.Structural(Key(slot) + "/keywords/" + i),
-                        GraphNodes.Button(
-                            () => ModStrings.Format(ModStrings.ScannerEditRemoveKeyword, word),
-                            () => RemoveKeyword(at, word)
-                        )
-                    );
+                    _say = ModStrings.Format(ModStrings.ScannerEditRemoved, was);
+                    Changed();
+                }
+
+                Rebuild(slot);
+                return;
+            }
+
+            if (wanted == was)
+            {
+                return;
+            }
+
+            if (!category.ReplaceKeyword(index, wanted))
+            {
+                _say = ModStrings.Get(ModStrings.ScannerEditKeywordTaken);
+                Rebuild(slot);
+                return;
+            }
+
+            Changed();
+        }
+
+        /// <summary>Add a keyword from the empty box at the end of the list.</summary>
+        public static void AddKeyword(int slot, string typed)
+        {
+            ScannerCustomCategory category = Working.Slot(slot);
+            string wanted = ScannerCustomCategory.Clean(typed);
+            if (category == null || wanted == null)
+            {
+                return;
+            }
+
+            if (!category.AddKeyword(wanted))
+            {
+                _say = ModStrings.Get(ModStrings.ScannerEditKeywordTaken);
+                Rebuild(slot);
+                return;
+            }
+
+            Changed();
+            Rebuild(slot);
+        }
+
+        public static bool Holds(int slot, ScannerSelector selector)
+        {
+            ScannerCustomCategory category = Working.Slot(slot);
+            for (int i = 0; category != null && i < category.Selectors.Count; i++)
+            {
+                if (category.Selectors[i].Same(selector))
+                {
+                    return true;
                 }
             }
 
-            builder.EndGroup();
+            return false;
         }
 
-        /// <summary>Emptying the slot. No confirmation: Cancel on the window is the undo, and one is
-        /// enough - a question in front of every clear would be a question the player answers a
-        /// hundred times to use the feature once.</summary>
-        private static void AddClear(GraphBuilder builder, int slot)
+        public static void Select(int slot, ScannerSelector selector, bool wanted)
         {
-            int at = slot;
-            builder.AddItem(
-                ControlId.Structural(Key(slot) + "/clear"),
-                GraphNodes.Button(
-                    () => ModStrings.Get(ModStrings.ScannerEditClear),
-                    () => Clear(at)
-                )
-            );
+            ScannerCustomCategory category = Working.Slot(slot);
+            if (category == null || Holds(slot, selector) == wanted)
+            {
+                return;
+            }
+
+            if (wanted)
+            {
+                category.AddSelector(selector);
+            }
+            else
+            {
+                category.RemoveSelector(selector);
+            }
+
+            Changed();
+            ScannerSlotRows.Recount(slot);
         }
 
-        // ---- what the controls do ----
-
-        private static int Chosen(int slot, string categoryKey)
+        /// <summary>How many of a built-in category's columns this slot draws from - the count that
+        /// makes a hundred-column taxonomy walkable, since a section with nothing ticked can be
+        /// passed over by ear.</summary>
+        public static int Chosen(int slot, string categoryKey)
         {
             ScannerCustomCategory category = Working.Slot(slot);
             int count = 0;
@@ -320,64 +307,62 @@ namespace ES2Access.UI.ModOptions
             return count;
         }
 
-        private static bool Holds(int slot, ScannerSelector selector)
-        {
-            ScannerCustomCategory category = Working.Slot(slot);
-            for (int i = 0; category != null && i < category.Selectors.Count; i++)
-            {
-                if (category.Selectors[i].Same(selector))
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        private static void Toggle(int slot, ScannerSelector selector)
-        {
-            ScannerCustomCategory category = Working.Slot(slot);
-            if (category == null)
-            {
-                return;
-            }
-
-            if (Holds(slot, selector))
-            {
-                category.RemoveSelector(selector);
-            }
-            else
-            {
-                category.AddSelector(selector);
-            }
-
-            Changed();
-        }
-
-        /// <summary>Take a word out. The button goes with it, so the sentence interrupts - said from
-        /// the keypress, before the rebuild that drops the node - and the place the cursor lands next
-        /// is announced after it, queued, by the navigator's own arrival.</summary>
-        private static void RemoveKeyword(int slot, string keyword)
-        {
-            ScannerCustomCategory category = Working.Slot(slot);
-            if (category == null || !category.RemoveKeyword(keyword))
-            {
-                return;
-            }
-
-            Voice.Say(ModStrings.Format(ModStrings.ScannerEditRemoved, keyword), true);
-            Changed();
-        }
-
-        private static void Clear(int slot)
+        /// <summary>Emptying the slot. No confirmation: Cancel on the window is the undo, and one is
+        /// enough - a question in front of every clear would be a question the player answers a
+        /// hundred times to use the feature once.</summary>
+        public static void Clear(int slot)
         {
             if (Working.Slot(slot) == null || !Working.Clear(slot))
             {
                 return;
             }
 
-            Voice.Say(ModStrings.Format(ModStrings.ScannerEditCleared, slot + 1), true);
+            _say = ModStrings.Format(ModStrings.ScannerEditCleared, slot + 1);
             Changed();
+            ScannerRows.Relabel();
+            Rebuild(slot);
+        }
+
+        // ---- the pump ----
+
+        /// <summary>
+        /// Rebuild whatever a committed edit changed the shape of, and say what came of it.
+        ///
+        /// The rebuild is here rather than in the setter because a text row commits from inside the
+        /// engine's own focus change: the field the player was typing in is mid-<c>FocusLoss</c>, and
+        /// destroying it there destroys the object the engine is still walking. The speech is here
+        /// for its own reason - a refusal follows a page changing under the player, and a screen's
+        /// arrival interrupts anything queued ahead of it.
+        /// </summary>
+        public static void Tick()
+        {
+            if (_refill.Count > 0)
+            {
+                List<int> slots = new List<int>(_refill);
+                _refill.Clear();
+                for (int i = 0; i < slots.Count; i++)
+                {
+                    ScannerSlotRows.Refill(slots[i]);
+                }
+
+                // A slot filled or emptied changes what the Scanner tab's buttons say about it.
+                ScannerRows.Relabel();
+                Reread();
+            }
+
+            string say = _say;
+            _say = null;
+            Voice.Say(say, false);
+        }
+
+        /// <summary>Ask for a page to be built again on the next tick, because what it holds has
+        /// changed rather than just what it says.</summary>
+        private static void Rebuild(int slot)
+        {
+            if (!_refill.Contains(slot))
+            {
+                _refill.Add(slot);
+            }
         }
 
         /// <summary>Tell the window something changed, through the invisible row's option: that is
@@ -401,247 +386,9 @@ namespace ES2Access.UI.ModOptions
             }
         }
 
-        // ---- the naming box ----
-
-        /// <summary>
-        /// Open the game's own rename box, pre-filled.
-        ///
-        /// It is the box the game opens for a system or a fleet, and it is already a screen of the
-        /// mod's (<see cref="RenameModalScreen"/>) - the heading, the field, Cancel and Confirm all
-        /// read without anything written here. It is IN-GAME ONLY, which is the same condition the
-        /// Scanner tab itself is under.
-        /// </summary>
-        private static void AskName(int slot)
-        {
-            ScannerCustomCategory category = Working.Slot(slot);
-            Ask(
-                ModStrings.Format(ModStrings.ScannerEditNamePrompt, slot + 1),
-                category == null ? ScannerCustomCategory.DefaultName(slot) : category.Name,
-                new RenameModalWindow.RenameInputValidated(
-                    delegate(string typed)
-                    {
-                        Rename(slot, typed);
-                    }
-                )
-            );
-        }
-
-        private static void AskKeyword(int slot)
-        {
-            ScannerCustomCategory category = Working.Slot(slot);
-            if (category == null)
-            {
-                return;
-            }
-
-            Ask(
-                ModStrings.Format(ModStrings.ScannerEditKeywordPrompt, category.Name),
-                string.Empty,
-                new RenameModalWindow.RenameInputValidated(
-                    delegate(string typed)
-                    {
-                        AddKeyword(slot, typed);
-                    }
-                )
-            );
-        }
-
-        private static void Ask(
-            string message,
-            string original,
-            RenameModalWindow.RenameInputValidated validated
-        )
-        {
-            try
-            {
-                if (!Gui.GuiServiceAvailable)
-                {
-                    return;
-                }
-
-                Unfreeze();
-                Gui.GuiService.RequestNewName(
-                    message,
-                    original,
-                    MaxChars,
-                    new RenameModalWindow.RenameInputChanged(Accept),
-                    validated
-                );
-            }
-            catch (Exception e)
-            {
-                Log.Warn("mod options: opening the naming box threw: " + e);
-            }
-        }
-
-        /// <summary>
-        /// LET THE NAMING BOX RUN AT ALL.
-        ///
-        /// The box is the game's, and it lives on the exclusive modal stack (<c>ModalRenderer</c>).
-        /// The options window - the game's own as much as this clone of it - lives on
-        /// <c>OverlayRenderer</c>, which is the LAST age screen, and every <c>GuiModalWindow</c> with
-        /// <c>HideGuiBehind</c> hides and disables every screen BEHIND its own as it finishes showing
-        /// (<c>GuiModalWindow.OnEndShow</c>). So while the settings window is up the whole modal
-        /// screen is switched off: its root is not visible, <c>AgeTransform.UpdateHierarchy</c>
-        /// returns at once, and the box's own fade-in never advances a frame - it sits at alpha 0,
-        /// never becomes <c>IsReady</c>, and the mod's rename screen never arrives (measured
-        /// 2026-08-23).
-        ///
-        /// Putting the screens behind back for as long as the box is up is the whole fix, and it is
-        /// the game's own call in both directions. What it cannot fix is DRAWING: the overlay screen
-        /// sorts above the modal one, so the box comes up behind the settings window's own opaque
-        /// background and a sighted player does not see it. That is the same trade the Scanner tab
-        /// already makes.
-        /// </summary>
-        private static void Unfreeze()
-        {
-            ModOptionsWindow window = ModOptions.Window();
-            if (window == null)
-            {
-                return;
-            }
-
-            try
-            {
-                Gui.GuiService.ShowAllAgeScreensBehind(window.AgeTransform.Screen);
-                Gui.GuiService.EnableAllAgeScreensBehind(window.AgeTransform.Screen);
-                _unfroze = true;
-            }
-            catch (Exception e)
-            {
-                Log.Warn("mod options: waking the modal screen for the naming box threw: " + e);
-            }
-        }
-
-        /// <summary>Put the screens behind back the way the window left them, once the box has
-        /// finished going away. Nothing to do where the window itself has gone: hiding it is where
-        /// the game shows them again anyway.</summary>
-        private static void Refreeze()
-        {
-            if (!_unfroze)
-            {
-                return;
-            }
-
-            try
-            {
-                ModOptionsWindow window = ModOptions.Window();
-                if (window == null || !window.Shown)
-                {
-                    _unfroze = false;
-                    return;
-                }
-
-                RenameModalWindow box = Gui.GuiServiceAvailable
-                    ? Gui.GuiService.GetWindow<RenameModalWindow>(false)
-                    : null;
-                if (box != null && (box.Shown || box.Visible))
-                {
-                    return;
-                }
-
-                Gui.GuiService.HideAllAgeScreensBehind(window.AgeTransform.Screen);
-                Gui.GuiService.DisableAllAgeScreensBehind(window.AgeTransform.Screen);
-                _unfroze = false;
-            }
-            catch (Exception e)
-            {
-                Log.Warn("mod options: putting the screens behind back threw: " + e);
-                _unfroze = false;
-            }
-        }
-
-        /// <summary>What the box asks about the text as it is typed. The window asserts this is
-        /// non-null and this build of the game never calls it - the method that would is only reached
-        /// from a profanity filter the shipped build compiled out - so the refusals live where the
-        /// name is actually accepted, in <see cref="Tick"/>.</summary>
-        private static bool Accept(string previous, string typed, ref string failure)
-        {
-            return true;
-        }
-
-        /// <summary>
-        /// Say what came of the box, and put the screens behind back once it has gone.
-        ///
-        /// AFTER the screens, because a refusal follows a window closing: the settings window
-        /// announces itself again as the box goes and that announcement interrupts, so a sentence
-        /// queued ahead of it would be thrown away. Queued, so it lands behind the window's own
-        /// arrival and behind the control the cursor is on rather than cutting either off.
-        /// </summary>
-        public static void Tick()
-        {
-            string say = _say;
-            _say = null;
-            Voice.Say(say, false);
-            Refreeze();
-        }
-
-        /// <summary>
-        /// The name that came back from the box, applied AT ONCE - not deferred to the pump.
-        ///
-        /// The mod's activation of Confirm runs the game's own click handler synchronously, so this
-        /// runs in the same frame's key handling and the settings window's return - which happens
-        /// later in that frame - reads the new name. Deferring it by a frame was measured: the slot
-        /// announced itself as it WAS and then again as it is, two readouts of one edit, the first of
-        /// them saying "empty" about a slot the player had just named.
-        ///
-        /// Only the SPEECH is deferred (<see cref="_say"/>), and only because a screen arrival
-        /// interrupts. The cursor never moved while the box was up, so the landing has to be asked
-        /// for as well, or a rename that took would be silent.
-        /// </summary>
-        private static void Rename(int slot, string typed)
-        {
-            string wanted = ScannerCustomCategory.Clean(typed);
-            if (wanted == null)
-            {
-                return;
-            }
-
-            if (Working.NameTaken(wanted, slot, Taxonomy.Labels()))
-            {
-                _say = ModStrings.Format(ModStrings.ScannerEditNameTaken, wanted);
-                Reread();
-                return;
-            }
-
-            ScannerCustomCategory category = Working.Slot(slot);
-            if (category == null)
-            {
-                Working.Set(slot, new ScannerCustomCategory(wanted));
-            }
-            else if (!category.Rename(wanted))
-            {
-                Reread();
-                return;
-            }
-
-            Changed();
-            Reread();
-        }
-
-        private static void AddKeyword(int slot, string typed)
-        {
-            ScannerCustomCategory category = Working.Slot(slot);
-            string wanted = ScannerCustomCategory.Clean(typed);
-            if (category == null || wanted == null)
-            {
-                return;
-            }
-
-            if (!category.AddKeyword(wanted))
-            {
-                _say = ModStrings.Get(ModStrings.ScannerEditKeywordTaken);
-                Reread();
-                return;
-            }
-
-            Changed();
-            Reread();
-        }
-
-        /// <summary>Read the control the cursor is on again. Focus never moved while the box was up,
-        /// so the ordinary "say it when the cursor moves" rule would leave a successful rename
-        /// silent.</summary>
+        /// <summary>Read the control the cursor is on again. The rows were rebuilt under it, so the
+        /// ordinary "say it when the cursor moves" rule would leave the player standing on a row
+        /// nobody has read to them.</summary>
         private static void Reread()
         {
             GraphNavigator navigator = ModEntry.Navigator;
@@ -654,12 +401,13 @@ namespace ES2Access.UI.ModOptions
         private static ScannerCustomSlots _working;
         private static ScannerTaxonomy _taxonomy;
         private static Option _marker;
-        /// <summary>What the next tick says, once the window has finished announcing itself again.
-        /// </summary>
+
+        /// <summary>What the next tick says, once the rows have been built again.</summary>
         private static string _say;
 
-        /// <summary>Whether the screens behind the settings window are currently put back for the
-        /// naming box (<see cref="Unfreeze"/>).</summary>
-        private static bool _unfroze;
+        /// <summary>Which slots' pages have to be built again on the next tick.</summary>
+        private static readonly List<int> _refill = new List<int>();
+
+        private static readonly string[] NoKeywords = new string[0];
     }
 }

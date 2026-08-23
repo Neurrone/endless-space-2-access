@@ -31,6 +31,19 @@ namespace ES2Access.UI.ModOptions
         bool Edited { get; set; }
     }
 
+    /// <summary>
+    /// The service the three "Custom category" tabs resolve.
+    ///
+    /// It declares NO options: every row on those tabs is minted per row over its own tiny provider
+    /// (<see cref="ModRows"/>), because what the page holds - a name, however many keywords, a
+    /// checkbox per column this galaxy has - is not something a fixed set of C# properties can say.
+    /// It exists because a panel refuses to load without a registered service, and one type serves
+    /// all three panels: the window keys its panels by category NAME, not by service.
+    /// </summary>
+    public interface IModSlotsService : IService { }
+
+    public sealed class ModSlotsService : IModSlotsService { }
+
     /// <summary>The Scanner tab's service. It holds nothing: the edits live in
     /// <see cref="ScannerEditor"/>, which outlives the window being rebuilt.</summary>
     public sealed class ModScannerService : IModScannerService

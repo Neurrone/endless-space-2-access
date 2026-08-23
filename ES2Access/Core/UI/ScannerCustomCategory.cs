@@ -178,6 +178,31 @@ namespace ES2Access.Core.UI
             return false;
         }
 
+        /// <summary>
+        /// Change the word at one position, keeping its place.
+        ///
+        /// The position IS the column order, so a word the player retyped must not jump to the end of
+        /// the list; taking it out and adding it again would do exactly that. A word already in the
+        /// list somewhere else is refused, and re-typing the same word in another case is allowed,
+        /// because the case is what the column is READ OUT in.
+        /// </summary>
+        public bool ReplaceKeyword(int index, string keyword)
+        {
+            string wanted = Clean(keyword);
+            if (wanted == null || index < 0 || index >= _keywords.Count)
+            {
+                return false;
+            }
+
+            if (!string.Equals(_keywords[index], wanted, StringComparison.OrdinalIgnoreCase) && Has(wanted))
+            {
+                return false;
+            }
+
+            _keywords[index] = wanted;
+            return true;
+        }
+
         /// <summary>Whether this word is already being looked for, however it was spelt.</summary>
         public bool Has(string keyword)
         {

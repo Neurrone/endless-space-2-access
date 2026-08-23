@@ -279,6 +279,7 @@ namespace ES2Access
             // And the setter every way out of a text box passes through, which is the only place a
             // commit can be told from a cancel and the last moment a cancel can put the text back.
             GameTextFocus.Install();
+            ES2Access.UI.ModOptions.OptionTextFieldCommit.Install();
             // Every key-mapping commit, in either options window: a chord the mod and the game both
             // answer to is said out loud, both ways round, and nothing is taken from anybody.
             BindingOverlaps.Install();
@@ -954,6 +955,10 @@ namespace ES2Access
             Step("key stand-down patch", GameKeyStandDown.Remove);
             Step("keyboard handover patch", GameKeyboardHandover.Remove);
             Step("text focus patch", GameTextFocus.Remove);
+            Step(
+                "settings text field patch",
+                ES2Access.UI.ModOptions.OptionTextFieldCommit.Remove
+            );
             Step("binding overlap patch", BindingOverlaps.Remove);
             // And the edit that patch was watching, so the next load's first keystroke has nothing
             // left over to speak about.

@@ -47,7 +47,7 @@ namespace ES2Access.Screens
     public sealed class OptionsScreen : Screen
     {
         private static readonly object TabStop = "options:tabs";
-        private static readonly object RowStop = "options:rows";
+        internal static readonly object RowStop = "options:rows";
         private static readonly object ButtonStop = "options:buttons";
 
         /// <summary>How many fine steps one coarse slider step is worth.</summary>
@@ -124,14 +124,19 @@ namespace ES2Access.Screens
         {
             HandOverWhenReleased();
             WatchForACancelledCapture();
+            _editor.Update();
         }
+
+        /// <summary>The one text editor this page can have running - a category's name, one of its
+        /// keywords. Per screen, because the engine has one focused control at a time.</summary>
+        private readonly TextFieldEditor _editor = new TextFieldEditor();
 
         /// <summary>A binding row is listening, or about to be: every key belongs to the field being
         /// bound, and a letter that started a search instead would be a key the player could never
         /// bind.</summary>
         public override bool CapturesRawInput
         {
-            get { return _pending != null || _capturing != null; }
+            get { return _pending != null || _capturing != null || _editor.Pending; }
         }
 
         /// <summary>Something else has the player's attention - a confirmation, the drop list, or the
@@ -140,6 +145,7 @@ namespace ES2Access.Screens
         public override void OnUnfocus()
         {
             CancelPending();
+            _editor.Cancel();
         }
 
         public override void Build(GraphBuilder builder)
@@ -154,7 +160,7 @@ namespace ES2Access.Screens
             BuildTabs(builder, window);
 
             builder.BeginStop(RowStop);
-            BuildRows(builder, SelectedCategory(window), SelectedCategoryName(window));
+            BuildRows(builder, SelectedCategory(window));
 
             builder.BeginStop(ButtonStop);
             BuildButtons(builder, window);
@@ -220,28 +226,6 @@ namespace ES2Access.Screens
                 if (Selected(tab))
                 {
                     return AgeText.Label(tab.TitleLabel);
-                }
-            }
-
-            return null;
-        }
-
-        /// <summary>The category the window is showing, by the game's own NAME for it - an
-        /// identifier, not words. It is what tells a tab whose rows the mod draws itself from one
-        /// whose rows the game drew; the label above cannot, being localized.</summary>
-        private static string SelectedCategoryName(OptionsModalWindow window)
-        {
-            GuiRadioGroup group = window == null ? null : window.RadioGroup;
-            if (group == null || group.TogglesTable == null)
-            {
-                return null;
-            }
-
-            foreach (OptionsTabToggle tab in Tabs(group))
-            {
-                if (Selected(tab))
-                {
-                    return CategoryOf(tab);
                 }
             }
 
@@ -334,32 +318,11 @@ namespace ES2Access.Screens
         /// Every other kind of setting stays one row, and a page that mixes the two keeps them in
         /// drawn order: the builder stitches the seam where its menu rows meet the sheet's raw ones.
         /// </summary>
-        private static void BuildRows(GraphBuilder builder, string category, string categoryName)
+        private void BuildRows(GraphBuilder builder, string category)
         {
-            bool ours = ScannerEditor.Owns(categoryName);
             OptionsTabPanel panel = ShownPanel();
-            if (!ours && (panel == null || panel.OptionsTable == null))
+            if (panel == null || panel.OptionsTable == null)
             {
-                return;
-            }
-
-            // The mod's own scanner tab: its panel holds nothing the player walks, because no row
-            // kind the game has can express a list somebody edits (ScannerEditor). The region is a
-            // tree of mod nodes instead, under the same category context every other tab gets.
-            if (ours)
-            {
-                bool titled = !string.IsNullOrEmpty(category);
-                if (titled)
-                {
-                    builder.PushContext(category);
-                }
-
-                ScannerEditor.Build(builder);
-                if (titled)
-                {
-                    builder.PopContext();
-                }
-
                 return;
             }
 
@@ -377,6 +340,16 @@ namespace ES2Access.Screens
 
             string key = PanelKey(panel);
             GraphSheet sheet = null;
+            bool sectioned = false;
+            // A page WITH captions gets a region for the rows above the first one, so the block the
+            // player starts in is a place Ctrl+arrow can leave. Without that the leading rows belong
+            // to no region and the jump does nothing at all - measured on the custom-category page,
+            // whose name and keyword boxes sit above thirteen captioned sections.
+            if (Captioned(rows))
+            {
+                builder.SetRegion("options:" + key + "/head");
+            }
+
             for (int i = 0; i < rows.Count; i++)
             {
                 OptionKeyMappingItem binding = rows[i] as OptionKeyMappingItem;
@@ -398,6 +371,24 @@ namespace ES2Access.Screens
                     sheet = null;
                 }
 
+                // A CAPTION the mod drew over the rows under it is the name of a SECTION, not a
+                // control: it is what the block is called, so it names the region the block is in
+                // and is never a stop of its own. That is what makes Ctrl+arrow walk a page of a
+                // hundred checkboxes by the thirteen headings it is written under.
+                string caption = ModRows.CaptionOf(rows[i]);
+                if (caption != null)
+                {
+                    if (sectioned)
+                    {
+                        builder.PopContext();
+                    }
+
+                    builder.PushContext(caption);
+                    builder.SetRegion("options:" + key + "/" + OptionKey(rows[i]));
+                    sectioned = true;
+                    continue;
+                }
+
                 BuildRow(builder, key, rows[i]);
             }
 
@@ -406,10 +397,31 @@ namespace ES2Access.Screens
                 sheet.Finish();
             }
 
+            if (sectioned)
+            {
+                builder.PopContext();
+                builder.SetRegion(null);
+            }
+
             if (named)
             {
                 builder.PopContext();
             }
+        }
+
+        /// <summary>Whether the page is divided into captioned sections - which is what makes the
+        /// rows above the first caption a section of their own.</summary>
+        private static bool Captioned(List<OptionItem> rows)
+        {
+            for (int i = 0; i < rows.Count; i++)
+            {
+                if (ModRows.CaptionOf(rows[i]) != null)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static bool HoldsBindings(List<OptionItem> rows)
@@ -426,10 +438,13 @@ namespace ES2Access.Screens
         }
 
         /// <summary>One ordinary setting - anything that is not a key binding.</summary>
-        private static void BuildRow(GraphBuilder builder, string category, OptionItem item)
+        private void BuildRow(GraphBuilder builder, string category, OptionItem item)
         {
             OptionItem row = item;
-            NodeVtable vtable = RowVtable(row);
+            // Built before the vtable, not after: a text row hands the keyboard over only while the
+            // cursor is still on the row that asked, so the editor has to be told which row that is.
+            ControlId id = ControlId.Referenced(row, "options:" + category + "/" + OptionKey(row));
+            NodeVtable vtable = RowVtable(row, id);
             if (vtable == null)
             {
                 return;
@@ -440,10 +455,7 @@ namespace ES2Access.Screens
                 PointerFocus.MoveTo(null, tooltip, AnchorOf(row.TitleLabel));
             vtable.OnBlurVisual = ReleasePointer;
 
-            builder.AddItem(
-                ControlId.Referenced(row, "options:" + category + "/" + OptionKey(row)),
-                vtable
-            );
+            builder.AddItem(id, vtable);
         }
 
         /// <summary>The three columns of a key-binding table, the name's caption first. The game
@@ -563,11 +575,19 @@ namespace ES2Access.Screens
         /// <summary>How one setting is read and worked, chosen by what kind of setting it is. Every
         /// kind announces its title, its tooltip and whether it is refusing; what differs is the value
         /// it holds and how the player changes it.</summary>
-        private static NodeVtable RowVtable(OptionItem item)
+        private NodeVtable RowVtable(OptionItem item, ControlId id)
         {
             Func<string> label = () => AgeText.Label(item.TitleLabel);
             Func<bool> enabled = () => Enabled(AgeTransformOf(item));
             AgeTooltip tooltip = item.Tooltip;
+
+            // A row the MOD drew and wired: the game has no button row, so one of its own buttons is
+            // cloned into the table and what it does is kept beside it (ModRows).
+            Action pressed = ModRows.ActionOf(item);
+            if (pressed != null)
+            {
+                return GraphNodes.Button(label, pressed, enabled, tooltip);
+            }
 
             OptionCheckboxItem checkbox = item as OptionCheckboxItem;
             if (checkbox != null && checkbox.Toggle != null)
@@ -621,11 +641,27 @@ namespace ES2Access.Screens
             // A key binding is not one of these: it is a row of the category's own table and is built
             // by BuildBindingRow, which never reaches here.
 
-            // No option in the game is a text field, and the row this page used to declare for one was
-            // a Button that handed the keyboard over with no words, no way back and no cancel - a
-            // second, worse copy of an editor that now exists once (<see cref="TextFieldEditor"/>).
-            // Deleted rather than migrated: nothing draws it, so nothing could test it. An option that
-            // ever becomes one falls through to the read-only row below, which is honest.
+            // NO OPTION THE GAME SHIPS IS A TEXT FIELD - its own row for one commits the label OBJECT
+            // into the option's value and the cast is swallowed as a logged error, so nothing in the
+            // game could ever have used it. The mod's rows do (a category's name, its keywords), the
+            // broken commit is patched (OptionTextFieldCommit), and the editing itself is the one
+            // every text box in the game gets: Enter ends the edit and nothing else, Escape puts back
+            // what was there.
+            OptionTextFieldItem field = item as OptionTextFieldItem;
+            if (field != null && field.TextField != null)
+            {
+                AgeControlTextField box = field.TextField;
+                TextFieldEditor editor = _editor;
+                NodeVtable edit = GraphNodes.EditField(
+                    label,
+                    () => TextFieldEditor.Typing(box) ? null : SettingRows.FieldText(box),
+                    () => editor.Request(box, null, null, id),
+                    enabled,
+                    tooltip
+                );
+                return edit;
+            }
+
             return ReadOnly(label, enabled, tooltip);
         }
 
@@ -1336,7 +1372,13 @@ namespace ES2Access.Screens
                     AgeControlButton button in window.GetComponentsInChildren<AgeControlButton>(true)
                 )
                 {
-                    if (button != null && !string.IsNullOrEmpty(button.OnActivateMethod))
+                    // A button the MOD put in a rows table is a ROW, not part of the button bar: it
+                    // is read where it is drawn, among the settings it belongs to.
+                    if (
+                        button != null
+                        && !string.IsNullOrEmpty(button.OnActivateMethod)
+                        && button.GetComponentInParent<OptionsTabPanel>() == null
+                    )
                     {
                         buttons.Add(button);
                     }

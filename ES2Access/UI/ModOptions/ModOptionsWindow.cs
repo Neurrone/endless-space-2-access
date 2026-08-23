@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using ES2Access.Core.Speech;
+using ES2Access.Core.UI;
 using ES2Access.Core.Util;
 
 namespace ES2Access.UI.ModOptions
@@ -109,7 +110,7 @@ namespace ES2Access.UI.ModOptions
 
                 if (toggle.TitleLabel != null)
                 {
-                    toggle.TitleLabel.Text = ModStrings.Get(category.TitleKey);
+                    toggle.TitleLabel.Text = category.Title();
                 }
 
                 AgeTooltip tooltip =
@@ -118,7 +119,7 @@ namespace ES2Access.UI.ModOptions
                         : toggle.Toggle.AgeTransform.AgeTooltip;
                 if (tooltip != null)
                 {
-                    tooltip.Content = ModStrings.Get(category.DescriptionKey);
+                    tooltip.Content = category.Description();
                 }
             }
             catch (System.Exception e)
@@ -138,7 +139,15 @@ namespace ES2Access.UI.ModOptions
         /// </summary>
         protected override void OnBeginShow(bool instant)
         {
+            // Before the base call, which is where the game takes its backup of every option: the
+            // slot pages are rebuilt from what is SAVED, so no row is backed up already-changed.
             ScannerEditor.Begin();
+            for (int slot = 0; slot < ScannerCustomSlots.Count; slot++)
+            {
+                ScannerSlotRows.Refill(slot);
+            }
+
+            ScannerRows.Relabel();
             base.OnBeginShow(instant);
         }
 

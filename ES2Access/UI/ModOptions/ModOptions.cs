@@ -5,6 +5,7 @@ using System.Reflection;
 using Amplitude;
 using Amplitude.Unity.Framework;
 using ES2Access.Core.Speech;
+using ES2Access.Core.UI;
 using ES2Access.Core.Util;
 using ES2Access.UI.Settings;
 using UnityEngine;
@@ -85,11 +86,39 @@ namespace ES2Access.UI.ModOptions
                                 ScannerEditor.CategoryName,
                                 typeof(IModScannerService),
                                 new ModScannerService(),
-                                ModStrings.ModSettingsScanner,
-                                ModStrings.ModSettingsScannerDescription,
+                                () => ModStrings.Get(ModStrings.ModSettingsScanner),
+                                () => ModStrings.Get(ModStrings.ModSettingsScannerDescription),
                                 ScannerRows.Fill
                             )
                         );
+
+                        // One tab per slot, straight after the Scanner tab its buttons open them
+                        // from. A tab rather than a window of its own: two of the game's modal
+                        // windows on one renderer both draw, and the one shown SECOND is the one
+                        // hidden behind the other's background (measured 2026-08-24), so a
+                        // nested editor would be a page nobody can see.
+                        for (int slot = 0; slot < ScannerCustomSlots.Count; slot++)
+                        {
+                            int at = slot;
+                            _categories.Add(
+                                new ModCategory(
+                                    ScannerEditor.SlotCategory(slot),
+                                    typeof(IModSlotsService),
+                                    new ModSlotsService(),
+                                    () =>
+                                        ModStrings.Format(
+                                            ModStrings.ModSettingsCustomCategory,
+                                            at + 1
+                                        ),
+                                    () =>
+                                        ModStrings.Format(
+                                            ModStrings.ModSettingsCustomCategoryDescription,
+                                            at + 1
+                                        ),
+                                    panel => ScannerSlotRows.Fill(panel, at)
+                                )
+                            );
+                        }
                     }
 
                     _categories.Add(
@@ -97,8 +126,8 @@ namespace ES2Access.UI.ModOptions
                             "Keybinds",
                             typeof(IModKeybindsService),
                             new ModKeybindsService(),
-                            ModStrings.ModSettingsKeybinds,
-                            ModStrings.ModSettingsKeybindsDescription,
+                            () => ModStrings.Get(ModStrings.ModSettingsKeybinds),
+                            () => ModStrings.Get(ModStrings.ModSettingsKeybindsDescription),
                             KeybindRows.Fill
                         )
                     );
@@ -191,6 +220,31 @@ namespace ES2Access.UI.ModOptions
             }
         }
 
+        /// <summary>Show the tab a category was built under - what the Scanner tab's buttons do. The
+        /// switch is the radio group's own, which is what makes it the same event a click is.
+        /// </summary>
+        public static void OpenCategory(string name)
+        {
+            ModOptionsWindow window = Window();
+            if (window == null || window.RadioGroup == null)
+            {
+                return;
+            }
+
+            try
+            {
+                OptionsTabToggle toggle = ToggleOf(window, name);
+                if (toggle != null && toggle.Toggle != null)
+                {
+                    window.RadioGroup.OnToggleSwitchCb(toggle.Toggle.gameObject);
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("mod options: switching to " + name + " threw: " + e);
+            }
+        }
+
         /// <summary>Whether the mod's settings entry can do anything right now - what its node's
         /// availability reads.</summary>
         public static bool CanOpen()
@@ -234,6 +288,9 @@ namespace ES2Access.UI.ModOptions
             _window = null;
             _attempts = 0;
             ScannerEditor.Forget();
+            ScannerRows.Forget();
+            ScannerSlotRows.Forget();
+            ModRows.Forget();
             RemoveServices();
             DestroyLeftovers();
             _categories = null;
@@ -350,6 +407,7 @@ namespace ES2Access.UI.ModOptions
                 window
             );
         }
+
 
         private static void Add(IList list, ModOptionsWindow window)
         {
