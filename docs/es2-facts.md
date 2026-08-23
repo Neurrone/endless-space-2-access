@@ -2846,3 +2846,46 @@ implementation is `ES2Access/UI/ModOptions/`.
 - **A runtime change destroys every window in the stack**, the clone included
   (`GuiWindowsStack.DestroyWindows`), so a clone needs no `IRuntimeService.RuntimeChange`
   subscription — a per-frame Unity null check and a rebuild is the whole of it.
+
+## Key bindings: what a capture's ending does (2026-08-23, stage 2b)
+
+Measured live, in game, on both windows (the game's Controls tab and the mod's Keybinds
+category are the same `OptionKeyMappingItem` rows). The mod's side is
+`ES2Access/Screens/OptionsScreen.cs` and `UI/ModOptions/BindingOverlaps.cs`.
+
+- **A field losing focus while it holds nothing only sometimes clears the binding.**
+  `OnLoseFocusCb` (:80-98) commits the blank only when it differs from BOTH of the row's
+  combinations, so a row whose other slot is EMPTY reads "no change" and keeps its key,
+  while a row that has both filled loses the one being captured. Measured both ways:
+  `ui.up` (Up Arrow, no secondary) survived a focus-null round trip untouched; `ui.activate`
+  (Return + KeypadEnter) came back as `ui.activate: , KeypadEnter`. The same equality check
+  makes capturing a chord the row's OTHER slot already holds a silent no-op.
+- **Escape during a capture is that ending.** `InputManager.HandleInput` :1210-1226 runs in
+  `Update` and nulls the focused control the moment an Escape-bound action fires while a
+  key-exclusive control holds the keyboard; the field's own scan is in AgeManager's
+  `LateUpdate`, so the field never sees the key and loses focus holding nothing. Escape can
+  therefore never be BOUND here either. The mod turns that ending into a cancel: a capture it
+  started that ends while `Input.GetKey(KeyCode.Escape)` is true writes the pre-capture
+  `InputBinding` back and says so. **The physical path is unverified** — `POST /key` needs
+  the game foregrounded, and an injected action presses no key.
+- **The clear path is the game's own value path**: `Option.Value = new InputBinding(action,
+  primary-or-None, secondary-or-None)` then `window.OnOptionChanged(option)` and
+  `item.Refresh()`. Verified end to end on the game's Controls tab: Apply lit, the drawn
+  field went blank, the live `InputBindingsValidate` read `Validate: , `, and Cancel put
+  `Validate: Return` back. Restoring the pre-capture `InputBinding` INSTANCE (not a copy)
+  also restores `Option.Changed`, because that comparison is by reference for a type with no
+  `Equals` — measured: `ModBindings.Moved` false again after a Cancel.
+- **`OptionKeyMappingItem.OnChangeOptionValueConfirmation` is the one commit hook.** It fires
+  once per commit, after the value is written, for a game row and a mod row alike, and NOT
+  for Cancel's `RestoreSettings` or for Reset to Defaults — which is what makes it the place
+  to notice a new chord. Its `MessageBoxResultEventArgs` must be checked for `Ok`: it is also
+  the conflict box's callback.
+- **Delete is bound to nothing in the game's 64 input options** (measured by enumerating
+  `Option.GetOptions(Services.GetService<IInputOptionsService>(), typeof(
+  IInputOptionsService), …)`). The only direct reads of the key in the whole tree are
+  `DebugGOMouseMover`, `DirectorController` and `AgeControlTextArea` — the last owns the
+  keyboard while it reads it, which stands the mod's layer down anyway.
+- **A message box's button is hidden by giving it an EMPTY title** (`MessageBoxWindow.cs`
+  :96-98). An informative box with nothing to cancel therefore passes `cancelTitle:
+  string.Empty` and draws one Confirm button; the default title is `%MessageBoxConfirmationTitle`
+  ("Confirmation") whatever the type, which is what the game's own informative boxes show too.

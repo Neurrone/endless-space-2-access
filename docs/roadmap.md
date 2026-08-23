@@ -201,11 +201,12 @@ files above.
   (a view-side repository), which measured EMPTY for the player's own fleets parked at a
   system (notifications session, Stage 2) — investigate whether the scanner drops parked
   fleets.
-- Rebindable mod keys: SHIPPED 2026-08-23 (stage 2a) for the mod's own 50 actions - the
-  Keybinds tab of the mod's settings window. What is left is the ROW REDESIGN (ruling 6: a
-  three-column table, Delete clears a cell, Escape truly cancels a capture, Enter on the name
-  cell inert) and the mod/game informative warning in both directions (ruling 9); both cover the
-  game's own Controls tab as well, since the rows are the same class.
+- Rebindable mod keys: SHIPPED 2026-08-23 - the Keybinds tab of the mod's settings window
+  (stage 2a), and the three-column binding table with Delete-to-clear, the Escape cancel and
+  the two-way mod/game overlap warning (stage 2b, rulings 6/9/10), on the game's own Controls
+  tab alike. What is left is the MANUAL pass over the physical-key half: Enter to capture, the
+  chord building under the player's fingers, and Escape cancelling one - none of it reachable
+  from the dev loop (`custom-scanner-categories-test-report.md`).
 - The contextual prompt's component tables: modelled from the four data-defined shapes, but no
   fixture draws a table with ROWS — re-measure when one can be sighted.
 - `StockAndNet` now exists in three copies (GlobalHud, EconomyScreen, JuggernautSpecializationScreen)

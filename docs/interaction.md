@@ -91,7 +91,9 @@ clicks and reads the physical modifier inside it (on the map: a free-movement-on
 **Space** pick up / swap / put back what is being dragged (`OnPickUp`),
 **Enter** drop it where it will be taken (`DropKind` + `OnDrop`), **Ctrl+Enter** one item into or out
 of the game's own selection (`OnSelectToggle`), **Shift+Enter** extend that selection to here
-(`OnSelectRange`). There is NO reorder chord: moving an item within its list is a drag like any other.
+(`OnSelectRange`), **Delete** empty the control the cursor is on (`ui.clear` → `NodeVtable.OnClear`,
+owner ruling 2026-08-23 — today only a key-binding cell wires one, below). There is NO reorder chord:
+moving an item within its list is a drag like any other.
 **Each of those keys means the game's own gesture and nothing else** — Backslash is the right click,
 Ctrl+Shift+Enter the Alt-click, Ctrl+Enter the Ctrl-click, Ctrl+Alt+Enter the second click.
 **The Alt-click is the one chord whose keys are not its gesture's, and that is deliberate**: Alt+Enter
@@ -140,9 +142,33 @@ unavailable, and Enter on them does nothing, as the mouse's plain click does. (O
 a click and its own binding matcher is exact-modifier (`InputManager.InputsMatch`); a mod screen
 replaying a double click checks that the game's handler does not read the modifiers the player is
 still holding.
+**A KEY-BINDING ROW IS A THREE-COLUMN TABLE** (owner ruling 2026-08-23, replacing the
+Backspace-captures-the-secondary design): column 0 the action's name, column 1 the primary key,
+column 2 the secondary — the game's own `PrimaryKeyBindingField`/`SecondaryKeyBindingField`, so the
+columns are a fact of its data. Up/Down walk the name column and read the whole row ("Confirm, Enter,
+⟨description⟩, 1 of 41"); Left/Right cross to the keys and the crossing names the column ("Primary
+key, Enter, button"), the step back onto the name included ("Action, Confirm, …"). **Enter on the
+name cell is inert** — the rebinding lives in the key cells, where Enter captures INTO THAT FIELD and
+**Delete empties it** (usage hint "Delete to clear this key", shown only on a cell that holds
+something). An empty cell says the mod's word for empty under its own caption, which is what retires
+the old row's silence about a missing secondary. The three captions are the mod's own words
+(`nav.key-binding-action`/`-primary-column`/`-secondary-column`): the game draws no header band over
+these columns. Delete is claimed from the game only while the cursor is on a cell that offers a clear
+(`GraphNavigator.TakesClearKey`), and the game binds it to nothing at all (measured 2026-08-23).
+**Escape during a capture is a CANCEL** — the row goes back to what it was bound to and the mod says
+"Rebinding cancelled." The game itself would either wipe the slot or, where the row's other slot is
+empty, silently keep it (`docs/es2-facts.md`, "Escape during a key capture"); one key, one meaning.
+**A chord the mod and the game both answer to is said, not resolved** (ruling 9): committing either
+side's row onto the other's chord raises the game's own informative box — "While the mod's ⟨X⟩ is
+active, the game's ⟨Y⟩ will not fire" — and the binding still lands, because the mod shadows the
+game's keys by design. Mod↔mod overlaps are not checked at all (ruling 10).
+Both windows are this same table: the game's Controls tab and the mod's Keybinds category are the
+same `OptionKeyMappingItem` rows read by the same screen.
+
 **Backspace (`NodeVtable.OnSecondary`) is NOT a right click** — it is the second command on a node
-that folded two of the GAME's controls into one, and the only one left is the options screen's
-key-rebind row, where Enter captures the binding's first key and Backspace its second. Anything the
+that folded two of the GAME's controls into one. NO NODE wires one today — the options screen's
+key-rebind row was the last, until the binding table replaced it (above) — so what the key still
+reaches is the SCREEN-level offer below. Anything the
 game itself puts on a right click goes on Backslash, never here: the HUD's notification dismiss was
 on Backspace until 2026-08-13 and moved, because the game dismisses on right click
 (`NotificationItemsWindow.HandleInput` :90-101).

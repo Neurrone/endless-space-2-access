@@ -2720,3 +2720,43 @@ release → the row speaks what stuck), Escape on the mod window (`POST /key` ne
 foreground; the registration that makes it work is checkable instead — the clone sits at the FRONT
 of `GuiManager.guiWindowsFromBackToFront`, ahead of `GameMenuModalWindow`, and is an
 `IInputHandler`), and the whole main-menu route.
+
+### Key bindings, the table (stage 2b, 2026-08-23)
+
+**Reading it.** Both windows read the same way. `/input ui.next` into `options:rows` lands on the
+first row's name cell — "Controls, table, Confirm, Enter, ⟨description⟩, 1 of 41" — and then
+`ui.right` / `ui.left` cross the columns ("Primary key, Enter, button" / "Secondary key, empty,
+button" / back onto "Action, Confirm, …"), `ui.down` stays in the column and names the row it landed
+in ("Cancel, empty, button, 2 of 41"). Cell ids are `options:⟨panel⟩/keys/row⟨hash⟩c⟨0|1|2⟩`.
+
+**Driving a clear.** `/input ui.clear` on a key cell — the cell announces its new "empty" as a live
+part, Apply lights, and the game's own value follows
+(`(Amplitude.Unity.Framework.Services.GetService<IInputOptionsService>()).InputBindingsValidate
+.ToString()` → `Validate: , `). Cancel on the window puts it back. The claim is checkable with
+`DevProbe.Claims("Delete")`: `claims:true` on a key cell, false on the name cell and off the screen.
+
+**Driving a COMMIT (which `Option.Value` alone does not do).** Writing the option's value skips the
+game's commit method, so it raises no conflict box and no overlap warning. Drive the real thing:
+set `item.PrimaryKeyBindingField.KeyCombination = KeyCombination.FromString("Ctrl+H", "+")` and then
+invoke the private `OnLoseFocusCb` with `item.PrimaryKeyBindingField.gameObject`. That is the path a
+finished capture takes, conflict check included.
+
+**The overlap warning, both ways.** Game side: on the Controls tab, commit `InputBindingsQuickSave`
+onto `Ctrl+H` (the mod's `ui.focusEmpire`) — the box reads "While the mod's Go to the empire banners
+is active, the game's Quick Save will not fire" and the binding still lands (`QuickSave: Ctrl + H`).
+Mod side: on the mod's Keybinds tab, commit `ui.goToLocation` onto `F1` — "While the mod's Show on
+the map is active, the game's Empire Screen will not fire", and `ui.goToLocation: F1` sticks. One
+Confirm button, no Cancel. Cancel on the window restores both sides.
+
+**Simulating a capture without a keyboard.** `/input ui.activate` on a key cell speaks the prompt and
+DOES hand over: an injected action holds no key, so the two clear frames pass at once and
+`AgeManager.Instance.FocusedControl` becomes that `AgeControlKeyBindingField`. End it with
+`AgeManager.Instance.FocusedControl = null` from `/eval`. What that cannot reach is the Escape half —
+the cancel branch asks `Input.GetKey(KeyCode.Escape)`, and `POST /key` refuses while the game is not
+foregrounded.
+
+**Walking the graph and reaching the windows.** Pause menu → Options is 5 of 9, Mod settings 6 of 9;
+from the tabs stop `ui.next` reaches the rows and `ui.next` again the buttons (`ui.home` is Cancel).
+Cancel with changes raises the game's own confirmation (`ui.end` then `ui.activate` confirms) and
+lands back on the pause menu. `/input ui.back` does NOT close a game-owned window: Escape is left to
+the game and an injected action presses no key — use the window's own Cancel button instead.
