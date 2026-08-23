@@ -1113,6 +1113,12 @@ namespace ES2Access
             // is spoken from here, off state the focus patch and the box itself have already settled.
             TextFieldEditor.Tick();
 
+            // After the screens, and for the same reason the inspect cursor's line is: what the
+            // naming box handed back is applied here, and both of its refusals follow that box
+            // closing - a screen's arrival interrupts, and a sentence queued before it is thrown
+            // away.
+            ES2Access.UI.ModOptions.ScannerEditor.Tick();
+
             // Right after the screens, and only ever with something to say: the map's inspect cursor
             // ends when the map stops being the page the player is on, and the line saying so has to
             // land AFTER whatever took the page over has announced itself - a screen's arrival

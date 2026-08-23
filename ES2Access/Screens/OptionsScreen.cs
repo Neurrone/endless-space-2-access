@@ -154,7 +154,7 @@ namespace ES2Access.Screens
             BuildTabs(builder, window);
 
             builder.BeginStop(RowStop);
-            BuildRows(builder, SelectedCategory(window));
+            BuildRows(builder, SelectedCategory(window), SelectedCategoryName(window));
 
             builder.BeginStop(ButtonStop);
             BuildButtons(builder, window);
@@ -220,6 +220,28 @@ namespace ES2Access.Screens
                 if (Selected(tab))
                 {
                     return AgeText.Label(tab.TitleLabel);
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>The category the window is showing, by the game's own NAME for it - an
+        /// identifier, not words. It is what tells a tab whose rows the mod draws itself from one
+        /// whose rows the game drew; the label above cannot, being localized.</summary>
+        private static string SelectedCategoryName(OptionsModalWindow window)
+        {
+            GuiRadioGroup group = window == null ? null : window.RadioGroup;
+            if (group == null || group.TogglesTable == null)
+            {
+                return null;
+            }
+
+            foreach (OptionsTabToggle tab in Tabs(group))
+            {
+                if (Selected(tab))
+                {
+                    return CategoryOf(tab);
                 }
             }
 
@@ -312,11 +334,32 @@ namespace ES2Access.Screens
         /// Every other kind of setting stays one row, and a page that mixes the two keeps them in
         /// drawn order: the builder stitches the seam where its menu rows meet the sheet's raw ones.
         /// </summary>
-        private static void BuildRows(GraphBuilder builder, string category)
+        private static void BuildRows(GraphBuilder builder, string category, string categoryName)
         {
+            bool ours = ScannerEditor.Owns(categoryName);
             OptionsTabPanel panel = ShownPanel();
-            if (panel == null || panel.OptionsTable == null)
+            if (!ours && (panel == null || panel.OptionsTable == null))
             {
+                return;
+            }
+
+            // The mod's own scanner tab: its panel holds nothing the player walks, because no row
+            // kind the game has can express a list somebody edits (ScannerEditor). The region is a
+            // tree of mod nodes instead, under the same category context every other tab gets.
+            if (ours)
+            {
+                bool titled = !string.IsNullOrEmpty(category);
+                if (titled)
+                {
+                    builder.PushContext(category);
+                }
+
+                ScannerEditor.Build(builder);
+                if (titled)
+                {
+                    builder.PopContext();
+                }
+
                 return;
             }
 

@@ -150,6 +150,51 @@ namespace ES2Access.Core.Speech
         /// about itself.</summary>
         public const string ModSettingsKeybinds = "mod-settings.keybinds";
         public const string ModSettingsKeybindsDescription = "mod-settings.keybinds-description";
+        public const string ModSettingsScanner = "mod-settings.scanner";
+        public const string ModSettingsScannerDescription = "mod-settings.scanner-description";
+
+        // --- the editor for the player's own three scanner categories (2026-08-23) ---
+
+        /// <summary>One of the three slots, named by its number and by what is in it - the player's
+        /// own name, or the word for a slot nobody has filled.</summary>
+        public const string ScannerEditSlot = "mod-settings.scanner.slot";
+        public const string ScannerEditEmpty = "mod-settings.scanner.empty";
+
+        /// <summary>The button that opens the naming box. It says the name it would be changing, so
+        /// the player hears what the slot is called without leaving the button.</summary>
+        public const string ScannerEditName = "mod-settings.scanner.name";
+
+        /// <summary>What the naming box asks, and what the keyword box asks - the game writes the
+        /// heading of its own rename box from whatever it is handed.</summary>
+        public const string ScannerEditNamePrompt = "mod-settings.scanner.name-prompt";
+        public const string ScannerEditKeywordPrompt = "mod-settings.scanner.keyword-prompt";
+
+        /// <summary>A built-in category inside a slot: what the scanner calls it, and how many of its
+        /// columns this custom category draws from.</summary>
+        public const string ScannerEditSelected = "mod-settings.scanner.selected";
+
+        /// <summary>A column the player's category still points at that this galaxy has nothing of -
+        /// offered ticked so it can be taken off, since the scanner silently skips it every press.
+        /// </summary>
+        public const string ScannerEditMissing = "mod-settings.scanner.missing";
+
+        public const string ScannerEditKeywords = "mod-settings.scanner.keywords";
+        public const string ScannerEditAddKeyword = "mod-settings.scanner.add-keyword";
+        public const string ScannerEditRemoveKeyword = "mod-settings.scanner.remove-keyword";
+
+        /// <summary>What the mod says after an edit that takes the control the player is standing on
+        /// away with it - a keyword removed, a slot cleared. Queued rather than interrupting, so the
+        /// place the cursor lands next is heard after it rather than instead of it.</summary>
+        public const string ScannerEditRemoved = "mod-settings.scanner.removed";
+        public const string ScannerEditCleared = "mod-settings.scanner.cleared";
+
+        /// <summary>The two refusals. Both keep what was there: a name already in the cycle would be
+        /// two categories the player cannot tell apart, and a word already asked for would be two
+        /// columns holding the same things.</summary>
+        public const string ScannerEditNameTaken = "mod-settings.scanner.name-taken";
+        public const string ScannerEditKeywordTaken = "mod-settings.scanner.keyword-taken";
+
+        public const string ScannerEditClear = "mod-settings.scanner.clear";
 
         public const string ScreenLoading = "screen.loading";
         public const string ScreenNotification = "screen.notification";
@@ -1600,6 +1645,29 @@ namespace ES2Access.Core.Speech
                 ModSettingsKeybindsDescription,
                 "The keys the accessibility mod's own commands are on."
             },
+            { ModSettingsScanner, "Scanner" },
+            {
+                ModSettingsScannerDescription,
+                "The three scanner categories you write for yourself."
+            },
+            { ScannerEditSlot, "Custom category {0}, {1}" },
+            { ScannerEditEmpty, "empty" },
+            { ScannerEditName, "Name, {0}" },
+            { ScannerEditNamePrompt, "Name for custom category {0}" },
+            { ScannerEditKeywordPrompt, "New keyword for {0}" },
+            { ScannerEditSelected, "{0}, {1} selected" },
+            { ScannerEditMissing, "{0}, not found this game" },
+            { ScannerEditKeywords, "Keywords" },
+            { ScannerEditAddKeyword, "Add keyword" },
+            { ScannerEditRemoveKeyword, "Remove keyword, {0}" },
+            { ScannerEditRemoved, "{0} removed" },
+            { ScannerEditCleared, "Custom category {0} cleared" },
+            { ScannerEditNameTaken, "{0} is already the name of a category" },
+            {
+                ScannerEditKeywordTaken,
+                "That keyword is already in this custom category"
+            },
+            { ScannerEditClear, "Clear this custom category" },
             { ScreenLoading, "Loading" },
             { ScreenNotification, "Notification" },
             { ScreenTutorial, "Tutorial" },

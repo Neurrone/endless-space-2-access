@@ -110,6 +110,68 @@ namespace ES2Access.Core.UI
             return false;
         }
 
+        /// <summary>
+        /// WHETHER TWO SETS OF SLOTS SAY THE SAME THING - what the editor's "has anything changed"
+        /// is, and therefore what lights Apply and what makes Escape ask.
+        ///
+        /// Ordinal and order-sensitive throughout, because everything here is: a selector's order is
+        /// its column order, a keyword's order is its column order, and a name the player retyped in
+        /// a different case is a different name to hear.
+        /// </summary>
+        public bool Same(ScannerCustomSlots other)
+        {
+            if (other == null)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < Count; i++)
+            {
+                if (!Same(_slots[i], other._slots[i]))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private static bool Same(ScannerCustomCategory left, ScannerCustomCategory right)
+        {
+            if (left == null || right == null)
+            {
+                return left == null && right == null;
+            }
+
+            if (left.Name != right.Name || left.Selectors.Count != right.Selectors.Count)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < left.Selectors.Count; i++)
+            {
+                if (!left.Selectors[i].Same(right.Selectors[i]))
+                {
+                    return false;
+                }
+            }
+
+            if (left.Keywords.Count != right.Keywords.Count)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < left.Keywords.Count; i++)
+            {
+                if (left.Keywords[i] != right.Keywords[i])
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
         /// <summary>An independent copy of all three - what an editor holds its edits in until Apply.
         /// </summary>
         public ScannerCustomSlots Copy()

@@ -55,9 +55,21 @@ namespace ES2Access.UI.ModOptions
         private static int _attempts;
         private static bool _stopped;
 
+        /// <summary>Whether a game was being played when the window was built - which decides whether
+        /// it has a Scanner tab, and so decides when it has to be built again.</summary>
+        private static bool _builtInGame;
+
         /// <summary>
-        /// The window's tabs, in the order they are drawn. One line per category: the Scanner
-        /// category a later stage adds goes at the FRONT of this list and nothing else changes.
+        /// The window's tabs, in the order they are drawn - the player's own scanner categories
+        /// first, the mod's key bindings second.
+        ///
+        /// SCANNER IS IN GAME ONLY, and the window built on the main menu therefore has the one tab
+        /// it had before this existed. Two of its pieces exist only in a game: the taxonomy it offers
+        /// columns out of is a fact about the galaxy being played, and the box it names a category in
+        /// is one the game only registers in game (<c>GuiWindowsStackDefinition</c>). A tab that
+        /// could offer neither is a tab with nothing on it. The window is rebuilt when the player
+        /// crosses that line (<see cref="Tick"/>), which is what makes this list a straight read of
+        /// where the player is standing rather than of when the mod started.
         /// </summary>
         public static IList<ModCategory> Categories
         {
@@ -65,8 +77,22 @@ namespace ES2Access.UI.ModOptions
             {
                 if (_categories == null)
                 {
-                    _categories = new List<ModCategory>
+                    _categories = new List<ModCategory>();
+                    if (InGame())
                     {
+                        _categories.Add(
+                            new ModCategory(
+                                ScannerEditor.CategoryName,
+                                typeof(IModScannerService),
+                                new ModScannerService(),
+                                ModStrings.ModSettingsScanner,
+                                ModStrings.ModSettingsScannerDescription,
+                                ScannerRows.Fill
+                            )
+                        );
+                    }
+
+                    _categories.Add(
                         new ModCategory(
                             "Keybinds",
                             typeof(IModKeybindsService),
@@ -74,11 +100,25 @@ namespace ES2Access.UI.ModOptions
                             ModStrings.ModSettingsKeybinds,
                             ModStrings.ModSettingsKeybindsDescription,
                             KeybindRows.Fill
-                        ),
-                    };
+                        )
+                    );
                 }
 
                 return _categories;
+            }
+        }
+
+        /// <summary>Whether a game is being played, as the tab list is decided by. Wrapped because it
+        /// is asked every frame and the gui service is not always there to ask.</summary>
+        private static bool InGame()
+        {
+            try
+            {
+                return Gui.IsInGame;
+            }
+            catch (Exception)
+            {
+                return false;
             }
         }
 
@@ -100,7 +140,21 @@ namespace ES2Access.UI.ModOptions
         /// ever takes it away. Called once a frame from the pump.</summary>
         public static void Tick()
         {
-            if (_stopped || _window != null || _attempts >= BuildAttempts || !Ready())
+            if (_stopped)
+            {
+                return;
+            }
+
+            // The Scanner tab exists in a game and not on the main menu, so crossing that line means
+            // a different window. Rebuilding is what the mod already does when the game destroys the
+            // clone, and it is only ever done with the window down - a rebuild under a player
+            // standing in it would take the page out from under them.
+            if (_window != null && _builtInGame != InGame() && !Shown())
+            {
+                Shutdown();
+            }
+
+            if (_window != null || _attempts >= BuildAttempts || !Ready())
             {
                 return;
             }
@@ -145,11 +199,29 @@ namespace ES2Access.UI.ModOptions
             return window != null && window.Loaded;
         }
 
+        /// <summary>Whether the mod's window is on screen. Asked before a rebuild, which must never
+        /// happen under a player standing in it.</summary>
+        private static bool Shown()
+        {
+            ModOptionsWindow window = Window();
+            try
+            {
+                return window != null && window.Shown;
+            }
+            catch (Exception)
+            {
+                return true;
+            }
+        }
+
         /// <summary>Write the settings file. Called when the window hides, by which point Apply has
         /// committed or Cancel has restored, so this is Apply-to-persist without a hook on either
         /// button.</summary>
         public static void Persist()
         {
+            // The editor's copy first: it writes the settings file itself, and it is a no-op unless
+            // the player applied something (Cancel has already dropped the copy by now).
+            ScannerEditor.Commit();
             ES2Access.UI.Input.ModBindings.Persist();
             ModSettings.Save();
         }
@@ -161,6 +233,7 @@ namespace ES2Access.UI.ModOptions
             _stopped = true;
             _window = null;
             _attempts = 0;
+            ScannerEditor.Forget();
             RemoveServices();
             DestroyLeftovers();
             _categories = null;
@@ -236,6 +309,7 @@ namespace ES2Access.UI.ModOptions
             window.BeginLoad();
             SetPrivateProperty(window, "Loaded", true);
             _window = window;
+            _builtInGame = InGame();
             _attempts = 0;
             Log.Info("mod options: window built with " + Categories.Count + " categories");
         }

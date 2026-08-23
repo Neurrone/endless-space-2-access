@@ -127,6 +127,21 @@ namespace ES2Access.UI.ModOptions
             }
         }
 
+        /// <summary>
+        /// Start the scanner editor from what is saved, BEFORE the window takes its backup of every
+        /// option.
+        ///
+        /// The order is the whole point: the base call is where <c>BackupApplicationSettings</c>
+        /// runs, and the Scanner tab's one option answers "does what the player has edited differ
+        /// from what is saved". A copy left over from the last time the window was open would be
+        /// backed up as already-changed, which would light Apply on a window nobody has touched.
+        /// </summary>
+        protected override void OnBeginShow(bool instant)
+        {
+            ScannerEditor.Begin();
+            base.OnBeginShow(instant);
+        }
+
         /// <summary>Save what the player settled on. Apply has already written the new values into
         /// the mod's stores and Cancel has already put the old ones back, so whatever is in them now
         /// is what the player asked to keep.</summary>

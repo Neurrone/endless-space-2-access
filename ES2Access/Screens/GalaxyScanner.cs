@@ -590,6 +590,92 @@ namespace ES2Access.Screens
             );
         }
 
+        /// <summary>
+        /// EVERY COLUMN THE SETTINGS EDITOR CAN OFFER, this galaxy: the thirteen categories with the
+        /// subcategories each writes down, and - for the four whose columns are kinds - one column
+        /// per kind that has been found, in the same alphabetical order the scanner itself puts them
+        /// in (<see cref="Labels"/>).
+        ///
+        /// A SNAPSHOT, and the editor takes one when the settings window opens rather than per frame:
+        /// the kinds half is a walk of every perceived planet, which is what one keystroke can afford
+        /// and no frame can (<see cref="ScannerCost"/> measures the whole press at 4-7 ms).
+        ///
+        /// It walks the WORLDS alone. The other nine categories' columns are written down here and
+        /// need no galaxy at all, and the walks that would answer for them - fleets, probes, pins,
+        /// the contested ground sweep - want a screen this has no business holding.
+        /// </summary>
+        internal static ScannerTaxonomy Taxonomy()
+        {
+            List<Found>[] world = new List<Found>[CategoryCount];
+            for (int at = 0; at < CategoryCount; at++)
+            {
+                world[at] = new List<Found>();
+            }
+
+            try
+            {
+                Empire empire = Gui.PlayerEmpire;
+                if (empire != null && GameGalaxy.Present())
+                {
+                    Worlds(world, empire);
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: the scanner's taxonomy reading the map threw: " + e);
+            }
+
+            ScannerTaxonomy taxonomy = new ScannerTaxonomy();
+            for (int built = 0; built < ScannerKeys.Categories.Length; built++)
+            {
+                int at = built + SlotCount;
+                ScannerTaxonomyCategory category = taxonomy.Add(
+                    ScannerKeys.Categories[built],
+                    ModStrings.Get(CategoryKeys[built])
+                );
+
+                string[] keys = ScannerKeys.Subcategories[built];
+                string[] labels = ScopeKeys[built];
+                for (int i = 0; i < keys.Length && i < labels.Length; i++)
+                {
+                    category.Add(keys[i], ModStrings.Get(labels[i]));
+                }
+
+                if (Kinds(at))
+                {
+                    AddKinds(category, world[at]);
+                }
+            }
+
+            return taxonomy;
+        }
+
+        /// <summary>One column per kind found, keyed by the definition's own name and named by the
+        /// words the player hears - sorted by those words, which is the order the scanner's own
+        /// columns come out in.</summary>
+        private static void AddKinds(ScannerTaxonomyCategory category, List<Found> found)
+        {
+            List<string> labels = new List<string>();
+            Dictionary<string, string> keys = new Dictionary<string, string>();
+            for (int i = 0; i < found.Count; i++)
+            {
+                string label = found[i].Kind;
+                if (label == null || found[i].KindKey == null || keys.ContainsKey(label))
+                {
+                    continue;
+                }
+
+                keys.Add(label, found[i].KindKey);
+                labels.Add(label);
+            }
+
+            labels.Sort(StringComparer.CurrentCulture);
+            for (int i = 0; i < labels.Count; i++)
+            {
+                category.Add(keys[labels[i]], labels[i]);
+            }
+        }
+
         /// <summary>Whether a category's subcategories are the KINDS of thing it found rather than a
         /// list of questions written down here.</summary>
         private static bool Kinds(int category)

@@ -187,5 +187,45 @@ namespace ES2Access.Tests.UI
             Assert.Equal(-1, ScannerKeys.Category("constellations"));
             Assert.Equal(-1, ScannerKeys.Subcategory(0, "AnomalySwamp"));
         }
+
+        /// <summary>The editor's whole "has anything changed" question - what lights Apply and what
+        /// makes Escape ask. Every field of a category is part of the answer, and so is the ORDER of
+        /// the two lists, because that is the order the columns come out in.</summary>
+        [Fact]
+        public void TwoSetsOfSlotsSayTheSameThingOrTheyDoNot()
+        {
+            ScannerCustomSlots slots = new ScannerCustomSlots();
+            ScannerCustomCategory one = new ScannerCustomCategory("Watch list");
+            one.AddSelector(new ScannerSelector("systems", "neutral"));
+            one.AddSelector(new ScannerSelector("fleets", "enemy"));
+            one.AddKeyword("Dusay");
+            slots.Set(0, one);
+
+            Assert.True(slots.Same(slots.Copy()));
+            Assert.True(slots.Copy().Same(slots));
+            Assert.False(slots.Same(null));
+            Assert.False(slots.Same(new ScannerCustomSlots()));
+            Assert.False(new ScannerCustomSlots().Same(slots));
+
+            ScannerCustomSlots renamed = slots.Copy();
+            renamed.Slot(0).Rename("Watch List");
+            Assert.False(slots.Same(renamed));
+
+            ScannerCustomSlots reordered = new ScannerCustomSlots();
+            ScannerCustomCategory other = new ScannerCustomCategory("Watch list");
+            other.AddSelector(new ScannerSelector("fleets", "enemy"));
+            other.AddSelector(new ScannerSelector("systems", "neutral"));
+            other.AddKeyword("Dusay");
+            reordered.Set(0, other);
+            Assert.False(slots.Same(reordered));
+
+            ScannerCustomSlots fewer = slots.Copy();
+            fewer.Slot(0).RemoveKeyword("Dusay");
+            Assert.False(slots.Same(fewer));
+
+            ScannerCustomSlots elsewhere = slots.Copy();
+            elsewhere.Set(2, new ScannerCustomCategory("Second"));
+            Assert.False(slots.Same(elsewhere));
+        }
     }
 }
