@@ -2673,3 +2673,55 @@ description, effects, **cost**, upkeep, political impact — which is the mouse 
   the whole slider on `[Beginner] test`: `PlanetCirclesTable`'s children keep their `PlanetSimple`
   tooltips even at the constellation band, so the mod's own carrier for a planet dossier is a
   fallback that this fixture never reaches.
+
+## The planet card's own pages, and its pooled tables (2026-08-23, batch 11)
+
+- **A system's deposit dossier and a planet's are DIFFERENT panels.** The system label's strip draws
+  one icon per KIND of deposit in the whole system, bound to a `GuiResourceDepositGroup` ("Common
+  Strategic Deposit … Deposits on this system 1/1 / Resource income +0/+2 Hyperium"); the orbital
+  card draws one icon per deposit ON THAT WORLD, bound to a `GuiResourceDeposit` ("Hyperium / Average
+  Deposit / description / Deposit effects on planet: / +1 Science per Population"). Covering one has
+  never covered the other, and the deposit SIZE exists only on the per-planet one.
+- **Which deposits the card lists is the game's own two-way rule** (`RefreshResourceDeposits`): the
+  COLONIZED deposits when `Planet.ColonizedPlanet` belongs to the player, the planet's raw
+  `ResourceDeposits` otherwise. A membership read that ignores it disagrees with the icons for every
+  colony of your own.
+- **These tables retire pooled items by FADING them, and a retired item keeps its old binding.**
+  Measured on Osulo III, which has no deposits at all and still answered `AgeWidgets.Draws` = true on
+  two items titled Hyperium and Titanium — the previous planet's. `AgeWidgets.ItemText` already
+  answers null for an alpha-0 item, which is why no buffer line ever spoke one, but `Draws` and the
+  `Visible` test inside `TooltipChildren.Add` do not: any collector over one of these tables gates on
+  `AgeWidgets.Painted`, and takes its MEMBERSHIP from the model rather than from the table.
+- **`PlanetAnomalyItem` hangs its dossier on its `Icon` child and wires its CLICK on the row.** The
+  row's own `AgeTooltip` is null, so pointing at the row draws nothing; `OnActivateMethod=OnHintCb`
+  is on the row while `Gui.FormatButtonHint` puts the hint STATE on the separate `HintButton`, and
+  the hint is only ever filled in for a colonized planet of the player's
+  (`PlanetAnomalyItem.Bind` returns early otherwise).
+- **The card's five FIDSI dossiers come from two strips the game swaps** (`RefreshFIDSI`): the
+  enumerator's duplets for a colony, a table of score pips otherwise, with the other one left bound
+  to whatever it last showed. The property NAMES differ per state
+  (`FidsiEnumerator.LoadPlanet`: `PlanetOutpost*` for an outpost, `Planet*` for a colony,
+  `PlanetInitial*` for a world nobody has settled), and all three sets resolve to the same five
+  titles ("Planet Food production" … "Planet Influence production").
+- **Terraformation and RESTORATION are one field of the planet's**, `TerraformationInProgress`, and
+  the game tells them apart by the tags on the terraformation being carried out
+  (`InitiateRestorationEmpireActionFleetActionDefinition.CheckConstructibleTags`): restoration is
+  tagged `PlanetTerraformationFromDestroyed`, and anything tagged `PlanetTerraformationOnlyViaSystem`
+  is neither, which is why the map draws no button for it.
+- **GAME DEFECT: `%PlanetRestoreWithJuggernautInProgressDescription` asks for `{2}` and the game
+  passes two arguments.** Its own drawn sentence therefore carries an unfilled slot. Mod policy: a
+  phrase whose fill leaves a `{`digit standing is treated as absent and never spoken
+  (`GalaxyHudScreen.Localize`), and the mod passes the leader name in the third position so the
+  sentence completes.
+- **`PlanetLabel_SystemOrbital.PirateLairGroup` is a control despite its field type.** The field is
+  declared `AgeTransform` and the widget carries an `AgeControlButtonRadial` wired to
+  `OnClickPirateDiplomacyButtonCb`; the game keeps it DRAWN and merely switches it off for a
+  pirate-hating empire, with the refusal appended to its own plain-text tooltip.
+- **The unique-planet title the game already has** is `%PlanetScreenUniquePlanetTitle` ("Unique
+  Planet"), read off `PlanetLabel_SystemDiscovery.UniqueSubtitle` on the UNSHOWN discovery window —
+  the prefab carries the key and the bind never rewrites it.
+- **God-mode handlers are decoration for a normal player.** The list measured in the coverage sweep
+  is in `research-diplomacy-scanner-hotkeys-coverage-audit.md` (caveat 5): `EmpireBanner`'s three
+  resource areas, `ResourceItem.OnClickCb`, `ColonyInfoSidePanel.OnUpkeepCb`,
+  `ColonyPopulationSidePanel.OnHappinessGroupCb`, `TechnologyStageItem.OnUnlockStageCb` and
+  `DeedItem2`'s `GodButton`, all guarded by `GodGalaxyCursor.IsGuiInGodMode()`.

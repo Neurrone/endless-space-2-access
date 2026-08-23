@@ -139,8 +139,6 @@ files above.
 - Skill-tree type-ahead: batch 8 gave EVERY screen a search over what its collapsed branches
   would declare (`GraphBuilder.ExpandAll`), so this should now be covered by construction - it is
   unverified live because no fixture reaches a hero with a skill tree.
-- The planet page's population-entry click has no opener node yet (the window itself,
-  StarSystemPopulationModalWindow, is covered — SystemPoliticsScreen binds it).
 - Galaxy-map audit remainder (2026-08-20): `StarSystemLabel`'s 32 public widget fields are
   now fully covered (bars wording awaits owner approval; exploration-winner and shared-system
   readings are fixture-blocked to mid-game saves). Still open from the audit: the Riftborn
@@ -420,3 +418,27 @@ the foreground window) for the whole stage, so Backslash, Ctrl+L and the scanner
 only as injected actions. The mod's carrier for a PLANET dossier still never fires on this fixture,
 so the bottom-left placement was proved on a deposit dossier only (one carrier, `TOP_LEFT`, drawn at
 `0,420,240,380` on a 1280x800 screen).
+
+## Batch 11 (2026-08-23) — the planet card's pages and the coverage audit's gaps
+
+**Closed.** Every world on the map now owns its dossiers as nodes (outputs, anomalies, deposits) at
+every zoom, carrier-drawn where the game draws no icon — which is also the first time the mod's
+PLANET carrier has fired on `[Beginner] test`, so the item above it is no longer unproven. The
+orbital card's three in-progress buttons and its pirate lair are actions; its dying-outpost and
+Sanctuary icons are lines; and what the map paints in colour alone (terraformation, restoration,
+anomaly reduction, a Sanctuary, a unique world) is a line on the planet's row. The star-system page
+gained the three planet-card buttons the empire screen already had, its anomaly rows and their
+dossiers, and a population entry that opens the population window on BOTH pages that draw one. The
+senate's census badges and the forced-law badge are nodes; the game menu's two settings boxes carry
+their sentences.
+
+**Still open.**
+- The notifications strip's right-click **close all** (`BaseTriangleBackground.OnCloseAllCb`) is not
+  declared: the game gates it on Alt or Shift being PHYSICALLY held, so it cannot be replayed, and a
+  mod-authored "dismiss all" is a new action on a new gesture. Owner call.
+- The discovery/colonization cutscene card still speaks item NAMES only (`DiscoveryCards.Read`); a
+  passive announcement has no node for a dossier to hang on.
+- `HauntCirclesTable` (`HauntCircleItem`) at systems zoom is unmeasured — the fixture draws none.
+- Fixture-blocked live and proved by structure only: the three in-progress buttons, the pirate lair,
+  `OutpostCancelIcon`, `HauntIcon`, and every signal line in `AddSignals` (no juggernaut, no ghost
+  colony, no unique world, no outpost in trouble on this save).

@@ -2579,3 +2579,47 @@ the panel's bottom edge ON the screen's bottom edge, left edge at x=0. `crop-sho
 0,420,240,380` is the evidence crop. The AGE screen's own size is
 `GetWindow<GuiTooltipWindow>(false).AgeTransform.Screen.Root.Width/Height`, which on this machine
 equals `Screen.width/height` 1:1.
+
+**The galaxy's per-planet dossiers** (`[Beginner] test`, batch 11). Route with player gestures only:
+`ui.focusMap`, then the scanner — `galaxy.scanCategoryNext` to **Colonizable Planets**,
+`galaxy.scanSubcategoryNext` to **occupied** (the fixture's one entry is Osulo I),
+`galaxy.scanGoTo`. That lands on `galaxy:constellation/446/system/491/planet/0` with the branch
+opened and the camera on Osulo. `ui.right` opens the world: **7 dossier nodes** — five outputs then
+Hyperium then Titanium (Osulo II has one deposit, Osulo III none, and neither shows the stale pooled
+items). Expect the SAME seven at every zoom: `ES2Access.UI.GalaxyViewLevels.SetZoom(9, at)` from
+`/eval` keeps the branch open and the nodes are then carrier-drawn (the panel appears at the screen's
+BOTTOM-LEFT instead of over the icon; the words are identical, verified by crop).
+**Landing at zoom 12 does not bind the orbital cards.** `galaxy.scanGoTo` moves the camera while the
+view LEVEL stays `GalaxyViewLevel_GalaxyOverview`, so `PlanetLabelsWindow_SystemOrbital` keeps the
+PREVIOUS system's cards (measured: focused system Osulo, cards Rigel I / Kyros). `ui.activate` on the
+system row (`ZoomIn`) is what rebinds them — check with
+`GetWindow<PlanetLabelsWindow_SystemOrbital>(false).GetComponentsInChildren<PlanetLabel_SystemOrbital>(true)`
+and read each card's `Planet.LocalizedName` before trusting a "the card is drawn" measurement.
+**Expanding several siblings without collapsing any**: `ui.left` on a group collapses it, so walk
+UPWARD — `ui.right` (expands and enters the first child), `ui.up` twice (child → this row → previous
+row), `ui.right` again. Down-then-right walks past the stop and drags the camera with it.
+
+**Forcing the orbital card's fixture-blocked widgets** (structure only, never content). On a card
+whose `Planet` is bound, set `InProgressTerraformationButton.Visible/Enable = true` plus a plain
+`AgeTooltip.Content`, and the same for `InProgressRestorationButton`,
+`InProgressAnomalyReductionButton`, `PirateLairGroup` (plus its `AgeTooltip.Content`),
+`OutpostCancelIcon.Visible` and `HauntIcon.AgeTransform.Visible/AgeTooltip.Content`. The mod then
+declares "Click to cancel the action" and "A Pirate Lair is orbiting this Planet" as action children
+and the two icon sentences as buffer lines. **Restore by hand**: the card's own refresh puts the
+Visible flags back but NOT a Content you overwrote — write `PirateLairGroup.AgeTooltip.Content` back
+to `%PlanetPirateLairDescription` and `HauntIcon`'s to empty, then set `card.Dirty = true`.
+
+**The senate's census badges and the forced-law badge** (batch 11). Each `senate:census/arc/N` is now
+an expandable group whose "Tooltips" region holds four nodes — the party the population leans
+towards, what that gives the empire, the law it unlocks, and what the boost badge means. The three
+dots are 8x8 pictures under `LabelsContainer/SubInfosTable/CollectionTable`; the fourth is
+`PopulationBoostLabel`. `senate:law-slot/0` opens onto its forced badge's sentence. **Coverage reads
+these as `unread` while the branch is COLLAPSED** (the probe's declaration side is the render as it
+stands), so expand before believing a count.
+
+**Closing a full screen when `/key` is refused.** The senate, the population modal and the star
+system page do not claim Escape (`DevProbe.Claims("Escape")` → `claims:false`), so `POST /input
+ui.back` is a no-op and only a real key would close them. With the game not in the foreground
+(`POST /key` answers "the game does not have the foreground"), use the documented
+`Gui.GuiService.HideWindow(...)` route — never `HandleInput(InputAction.Exit)`, which wedged the
+screen stack in the previous stage. The game menu closes through its own **Resume Game** node.
