@@ -5,6 +5,7 @@ using ES2Access.Core.Speech;
 using ES2Access.Core.UI.Graph;
 using ES2Access.Core.Util;
 using ES2Access.UI;
+using ES2Access.UI.ModOptions;
 using UnityEngine;
 
 namespace ES2Access.Screens
@@ -77,9 +78,18 @@ namespace ES2Access.Screens
             get { return 52; }
         }
 
+        /// <summary>The game's options, or the mod's own - the two are the same window class and a
+        /// player arriving at the mod's settings must not be told they are in the game's.</summary>
         public override string ScreenName
         {
-            get { return ModStrings.Get(ModStrings.ScreenOptions); }
+            get
+            {
+                return ModStrings.Get(
+                    ES2Access.UI.ModOptions.ModOptions.IsOurs(Window())
+                        ? ModStrings.ScreenModSettings
+                        : ModStrings.ScreenOptions
+                );
+            }
         }
 
         /// <summary>Ours while the window is up and has finished animating in. Deliberately not
@@ -1130,11 +1140,21 @@ namespace ES2Access.Screens
             }
         }
 
+        /// <summary>
+        /// What identifies a row within its page.
+        ///
+        /// The ROW's own name, not the option's property name: the game names each row
+        /// <c>&lt;index&gt;&lt;property&gt;&lt;kind&gt;</c> when it builds the page, so the name is
+        /// unique wherever the property name is and unique where it is NOT - which the mod's own
+        /// Keybinds page is, since all fifty of its rows are the same property on fifty providers.
+        /// A shared property name used to collide into one duplicate id and take the whole page's
+        /// build down with it.
+        /// </summary>
         private static string OptionKey(OptionItem item)
         {
             try
             {
-                return item.Option != null ? item.Option.PropertyName : item.name;
+                return item.name;
             }
             catch (Exception)
             {
@@ -1142,10 +1162,27 @@ namespace ES2Access.Screens
             }
         }
 
+        /// <summary>
+        /// WHICHEVER options window is showing - the game's, or the mod's own clone of it
+        /// (<see cref="ES2Access.UI.ModOptions.ModOptions"/>).
+        ///
+        /// The two are the same class with different categories in them, and everything else on this
+        /// screen is already instance-relative, so reading the mod's window costs exactly this
+        /// method. The game's window is looked up by TYPE, which can never answer with the clone:
+        /// the gui manager keys that lookup on the exact type and the clone's is a mod type. With
+        /// neither showing the game's is answered, and <see cref="IsActive"/> then reports the
+        /// screen is not up.
+        /// </summary>
         internal static OptionsModalWindow Window()
         {
             try
             {
+                ModOptionsWindow mods = ES2Access.UI.ModOptions.ModOptions.Window();
+                if (mods != null && mods.Shown)
+                {
+                    return mods;
+                }
+
                 return Gui.GuiServiceAvailable
                     ? Gui.GuiService.GetWindow<OptionsModalWindow>(false)
                     : null;

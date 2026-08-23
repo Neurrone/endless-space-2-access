@@ -5,6 +5,7 @@ using ES2Access.Core.Speech;
 using ES2Access.Core.UI.Graph;
 using ES2Access.Core.Util;
 using ES2Access.UI;
+using ES2Access.UI.ModOptions;
 using UnityEngine;
 
 namespace ES2Access.Screens
@@ -169,6 +170,13 @@ namespace ES2Access.Screens
                     ControlId.Referenced(entry, "gamemenu:" + entry.name),
                     vtable
                 );
+
+                // The mod's own settings, right where the game's are. Found by what the entry DOES
+                // rather than by what it is called, so a renamed prefab cannot move it.
+                if (OpensOptions(button))
+                {
+                    ModSettingsNode.Add(builder, "gamemenu:mod-settings");
+                }
             }
 
             AddToggle(
@@ -812,6 +820,20 @@ namespace ES2Access.Screens
             }
 
             return null;
+        }
+
+        /// <summary>Whether this is the entry that opens the game's options window - the handler the
+        /// window wires to its own Options item.</summary>
+        private static bool OpensOptions(AgeControlButton button)
+        {
+            try
+            {
+                return button != null && button.OnActivateMethod == "OnOptionsCb";
+            }
+            catch (Exception)
+            {
+                return false;
+            }
         }
 
         private static AgeControlButton Button(GameMenuItem item)

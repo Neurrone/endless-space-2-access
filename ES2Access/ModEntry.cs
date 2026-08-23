@@ -12,6 +12,8 @@ using ES2Access.Localization;
 using ES2Access.Screens;
 using ES2Access.UI;
 using ES2Access.UI.Input;
+using ES2Access.UI.ModOptions;
+using ES2Access.UI.Settings;
 using UnityEngine;
 
 namespace ES2Access
@@ -143,6 +145,9 @@ namespace ES2Access
 
             Log.Install(host.LogInfo, host.LogWarning, host.LogError);
             ModLocale.PluginDirectory = host.PluginDirectory;
+            // Before anything reads a setting: the keys the player has moved are applied to the
+            // actions as they are registered, further down.
+            ModSettings.Load(host.PluginDirectory);
 
             Speech = new PrismSpeech();
             if (Environment.GetEnvironmentVariable(NoSpeechEnv) == "1")
@@ -261,6 +266,10 @@ namespace ES2Access
             Navigator.TypedCharacters = TypedText.Frame;
             Navigator.KeyboardIsOurs = Input.LayerIsLive;
             BindKeys(Input);
+            // Straight after the compiled-in bindings and before anything can press one: the
+            // defaults are learnt (so the settings file only ever holds what the player moved) and
+            // whatever they moved is put back on.
+            ModBindings.Install(Input);
             // Bindings first: the game's scans ask the layer which keys it has, so there must be
             // something to answer with before they can be told to stand down.
             GameKeyStandDown.Install();
@@ -882,6 +891,10 @@ namespace ES2Access
             // keyboard, not us - so it is ended here, binding nothing.
             Step("drop list", DropListScreen.Reset);
             Step("key capture", OptionsScreen.ReleaseCapture);
+            // The mod's own settings window is a GameObject in one of the game's window stacks and
+            // an entry in two of its registries: it comes out by NAME, because after the swap this
+            // load's types match nothing the old load put there.
+            Step("mod options window", ModOptions.Shutdown);
             Step("pointer focus", PointerFocus.Shutdown);
             // After the pointer has let go: the carriers are scene objects this assembly created, and
             // destroying one the pointer is still aimed at would leave the engine holding a dead
@@ -934,6 +947,11 @@ namespace ES2Access
             Step("announcer wording", GraphAnnouncer.Reset);
             Step("sheet wording", GraphSheet.Reset);
             Step("hint wording", NodeHints.Reset);
+
+            // After the input layer has gone, because the binding store reads it: what the player
+            // chose is already on disk (the window wrote it when it hid), so this only lets go.
+            Step("bindings", ModBindings.Reset);
+            Step("settings", ModSettings.Reset);
 
             Step("locale", ModLocale.Reset);
             Step("mod strings", ModStrings.Reset);
@@ -1005,6 +1023,11 @@ namespace ES2Access
             // Before the keys are polled, and idempotent: the game's chat key has to be off the mod's
             // keys for the layer's suppression to leave a way into chat at all.
             GameChatKey.Tick();
+
+            // One Unity null check in the ordinary case: the mod's settings window is built once the
+            // game has finished loading its own, and built again if a runtime change ever takes it
+            // away with the rest of them.
+            ModOptions.Tick();
 
             // Before the keys are polled: a window the game hid while its text field held the engine's
             // keyboard would otherwise leave the whole layer standing down for a field nobody can see.

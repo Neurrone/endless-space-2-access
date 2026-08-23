@@ -4,6 +4,7 @@ using ES2Access.Core.Speech;
 using ES2Access.Core.UI.Graph;
 using ES2Access.Core.Util;
 using ES2Access.UI;
+using ES2Access.UI.ModOptions;
 using UnityEngine;
 
 // The game has its own MainMenuScreen; this file adapts it, so the two names have to coexist.
@@ -36,6 +37,11 @@ namespace ES2Access.Screens
     /// </summary>
     public sealed class MainMenuScreen : Screen
     {
+        /// <summary>The game's own Options entry, which is what its handler
+        /// (<c>OnClickMainMenuSettings</c>) is named after. The mod's settings entry goes straight
+        /// after it.</summary>
+        private const string SettingsEntry = "MainMenuSettings";
+
         public override string Key
         {
             get { return "screen.main-menu"; }
@@ -111,6 +117,7 @@ namespace ES2Access.Screens
                 if (subItems.Count == 0)
                 {
                     builder.AddItem(id, vtable);
+                    AddModSettingsAfter(builder, name);
                     continue;
                 }
 
@@ -151,6 +158,23 @@ namespace ES2Access.Screens
                 }
 
                 builder.EndGroup();
+                AddModSettingsAfter(builder, name);
+            }
+        }
+
+        /// <summary>
+        /// The mod's own settings, right after the game's Options entry.
+        ///
+        /// Called from BOTH branches above because Options is one of the entries that opens onto
+        /// sub-entries: putting the call in the flat branch alone measured as declaring nothing at
+        /// all here (the entry is a GROUP, and the node has to land after the group closes so that
+        /// it is a sibling of Options rather than one of its flyout entries).
+        /// </summary>
+        private static void AddModSettingsAfter(GraphBuilder builder, string name)
+        {
+            if (name == SettingsEntry)
+            {
+                ModSettingsNode.Add(builder, "mainmenu:mod-settings");
             }
         }
 
