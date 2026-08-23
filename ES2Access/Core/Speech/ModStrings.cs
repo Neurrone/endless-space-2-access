@@ -804,6 +804,16 @@ namespace ES2Access.Core.Speech
         public const string HudTurnLogPanel = "hud.turn-log-panel";
         public const string HudTurnLogTurn = "hud.turn-log-turn";
 
+        /// <summary>The two "throw the whole list away" buttons, last in the notification strip's stop
+        /// and last in the Turn log's (owner ruling 2026-08-23). Both names are the mod's: the game
+        /// hangs the same action on a bare triangle behind its icons with no tooltip and no caption of
+        /// any kind (measured 2026-08-23 - <c>BaseTriangleBackground</c> carries no
+        /// <c>AgeTooltip</c> at all), and the Turn log is not drawn anywhere. They are two phrases and
+        /// not one because they are two acts: the first is the game's own dismiss-everything, which
+        /// takes the Turn log with it, and the second clears only the mod's own lines.</summary>
+        public const string HudDismissAllNotifications = "hud.dismiss-all-notifications";
+        public const string HudDismissAllTurnLog = "hud.dismiss-all-turn-log";
+
 
         // The rows of the empire cluster in the top-left corner, which is the first Tab stop on every
         // page in the game. Four unrelated things are stacked there and the game captions none of
@@ -1824,6 +1834,8 @@ namespace ES2Access.Core.Speech
             { HudNotificationsPanel, "Notifications" },
             { HudTurnLogPanel, "Turn log" },
             { HudTurnLogTurn, "Turn {0}" },
+            { HudDismissAllNotifications, "Dismiss all notifications" },
+            { HudDismissAllTurnLog, "Dismiss all Turn log entries" },
             { HudViewControlsPanel, "View Controls" },
             { HudControlsPanel, "Controls" },
             { HudKeyResourcesPanel, "Key Resources" },

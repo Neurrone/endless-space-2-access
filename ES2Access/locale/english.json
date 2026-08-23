@@ -322,6 +322,8 @@
   "hud.notifications-panel": "Notifications",
   "hud.turn-log-panel": "Turn log",
   "hud.turn-log-turn": "Turn {0}",
+  "hud.dismiss-all-notifications": "Dismiss all notifications",
+  "hud.dismiss-all-turn-log": "Dismiss all Turn log entries",
   "hud.view-controls-panel": "View Controls",
   "hud.controls-panel": "Controls",
   "hud.key-resources-panel": "Key Resources",

@@ -658,7 +658,15 @@ namespace ES2Access.Screens
 
         /// <summary>The strip of icons along the top, each of which opens one of the game's screens.
         /// The game gives them no captions at all - the name of the screen and the key that opens it
-        /// are in the tooltip, which is where both are read from.</summary>
+        /// are in the tooltip, which is where both are read from.
+        ///
+        /// A toggle can also carry a BADGE with a sentence of its own - the senate icon's dot, "The
+        /// leading political party in the Senate" - and that sentence exists nowhere else on the
+        /// screen. Every tooltip inside the toggle is therefore declared, in drawn order, with the
+        /// button's OWN speaking and the badges reviewable: which of a row's tooltips speaks is the
+        /// screen's call where the row is a control plus a badge, and what the button OPENS is the
+        /// thing a player standing on it asked for (measured 2026-08-23: the badge's sentence had no
+        /// surface at all).</summary>
         private static void AddScreenToggles(List<Cell> cells, ControlBanner banner)
         {
             if (banner == null || banner.TogglesTable == null)
@@ -689,6 +697,13 @@ namespace ES2Access.Screens
                         () => AgeWidgets.Enabled(widget),
                         tooltip
                     );
+                    List<AgeTooltip> inside = new List<AgeTooltip>(2);
+                    AgeWidgets.Tooltips(widget, inside);
+                    if (inside.Count > 1)
+                    {
+                        vtable.Sections = ToggleSections(inside);
+                    }
+
                     AgeWidgets.PointAt(vtable, widget);
                     cells.Add(
                         new Cell
@@ -707,6 +722,28 @@ namespace ES2Access.Screens
             {
                 Log.Warn("hud: reading the screen icons threw: " + e);
             }
+        }
+
+        /// <summary>One icon's explanations as sections: the FIRST speaks and every later one is
+        /// reviewable. The order is the drawn one the resolver answers in - the control's own tooltip,
+        /// then the badges inside it - so the button says what it opens and the badge's sentence is a
+        /// buffer line away rather than nowhere at all.</summary>
+        private static IList<NodeSection> ToggleSections(List<AgeTooltip> tooltips)
+        {
+            List<NodeSection> sections = new List<NodeSection>(tooltips.Count);
+            for (int i = 0; i < tooltips.Count; i++)
+            {
+                IList<NodeSection> tip = GraphNodes.HintSections(
+                    tooltips[i],
+                    i == 0 ? null : (TooltipMode?)TooltipMode.None
+                );
+                for (int j = 0; tip != null && j < tip.Count; j++)
+                {
+                    sections.Add(tip[j]);
+                }
+            }
+
+            return sections.Count == 0 ? null : sections;
         }
 
         /// <summary>What the game calls the screen an icon opens - the same title it writes as the
@@ -1631,6 +1668,14 @@ namespace ES2Access.Screens
             vtable.Announcements.Add(
                 GraphNodes.ValuePart(() => AgeText.FullLabel(it.QuestObjectiveLabel))
             );
+            // The panel's OWN sentence - what this corner of the screen is and what clicking it does -
+            // is written on a tooltip the mod deliberately does not point at (below), so it exists
+            // nowhere else; it reads first in the buffer, ahead of the objective's, and speaks nothing
+            // (measured 2026-08-23: it was uncovered).
+            vtable.Sections = GraphNodes.Sections(
+                GraphNodes.TooltipDetails(AgeWidgets.Raw(panel.AgeTransform)),
+                hint
+            );
             // The panel is the thing that lights up, but the tooltip worth reading hangs off the
             // objective's own label inside it - pointing at the panel would leave the review buffer
             // waiting on a tooltip the game never drew.
@@ -1877,6 +1922,11 @@ namespace ES2Access.Screens
         /// (<see cref="NotificationStrip"/>), so they are left out of here and read in
         /// <see cref="TurnLog"/> instead: this stop is what the game is showing, and that one is the
         /// log of what the game never showed.
+        ///
+        /// The LAST entry is "throw them all away" (<see cref="DismissAllNotifications"/>) - the
+        /// game's own close-all, which it offers only as an Alt+right click on the bare triangle
+        /// behind the icons. There is no key for it: it is a button, reached with the arrows and
+        /// pressed with Enter (owner ruling 2026-08-23).
         /// </summary>
         public void Notifications(GraphBuilder builder)
         {
@@ -1917,6 +1967,24 @@ namespace ES2Access.Screens
                     vtable.Sections = GraphNodes.Sections(GraphNodes.TooltipDetails(IconTooltip(it, items)), null);
                     builder.AddItem(ControlId.Referenced(it, "hud:notification/" + count), vtable);
                     count++;
+                }
+
+                if (count > 0)
+                {
+                    // Keyed on the game's OWN control for the gesture - the bare triangle behind the
+                    // icons, which the prefab names and the window never binds - so the cursor rides
+                    // it and the coverage audit finds the node standing on it rather than reporting a
+                    // drawn control nothing declares.
+                    AgeTransform triangle = CloseAllTriangle();
+                    builder.AddItem(
+                        triangle == null
+                            ? ControlId.Structural("hud:notification/dismiss-all")
+                            : ControlId.Referenced(triangle, "hud:notification/dismiss-all"),
+                        GraphNodes.Button(
+                            () => ModStrings.Get(ModStrings.HudDismissAllNotifications),
+                            DismissAllNotifications
+                        )
+                    );
                 }
             }
             catch (Exception e)
@@ -1988,6 +2056,10 @@ namespace ES2Access.Screens
         /// With nothing logged the stop is not there at all, which is the rule every stop on this HUD
         /// follows. It is the one place that rule is arguable - a sighted player cannot glance at this
         /// list, because there is nothing drawn to glance at - so it is on the owner's list to settle.
+        ///
+        /// The LAST entry throws the whole log away (<see cref="DismissAllLogged"/>), in a region of
+        /// its own after the turns; because the stop only exists while the log holds something, that
+        /// button is never offered over an empty list (owner ruling 2026-08-23).
         /// </summary>
         public void TurnLog(GraphBuilder builder)
         {
@@ -2048,10 +2120,82 @@ namespace ES2Access.Screens
                         builder.PopContext();
                     }
                 }
+
+                // Throw the whole log away, in a region of its own so no turn owns it and Alt+Down
+                // from the last turn reaches it. Declared unconditionally here: the stop does not
+                // exist at all while the log is empty (above), so there is never a button offering to
+                // clear nothing.
+                builder.SetRegion("hud:turn-log/dismiss-all");
+                builder.AddItem(
+                    ControlId.Structural("hud:turn-log/dismiss-all"),
+                    GraphNodes.Button(
+                        () => ModStrings.Get(ModStrings.HudDismissAllTurnLog),
+                        DismissAllLogged
+                    )
+                );
             }
             finally
             {
                 builder.PopContext();
+            }
+        }
+
+        /// <summary>The widget the game hangs its close-all on: <c>BaseTriangleBackground</c>, an
+        /// <c>AgeControlButton</c> whose only wiring is <c>OnRightClickMethod=OnCloseAllCb</c>. The
+        /// window exposes no field for it, so it is found by the name the prefab gives it - which is
+        /// unique under that window (measured 2026-08-23). It carries no tooltip of any kind, which is
+        /// why the button's name is the mod's.</summary>
+        private static AgeTransform CloseAllTriangle()
+        {
+            try
+            {
+                NotificationItemsWindow window = Gui.GuiServiceAvailable
+                    ? Gui.GuiService.GetWindow<NotificationItemsWindow>(false)
+                    : null;
+                return window == null
+                    ? null
+                    : AgeWidgets.ChildNamed(window.AgeTransform, "BaseTriangleBackground", 3);
+            }
+            catch (Exception e)
+            {
+                Log.Warn("hud: finding the close-all triangle threw: " + e);
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Throw away everything the game is waiting to tell the player - the game's OWN deterministic
+        /// call, which is what its icon strip does for an Alt+right click on the triangle behind the
+        /// icons (<c>NotificationItemsWindow.OnCloseAllCb</c> :237-245). That handler's other branch,
+        /// Shift, only HIDES the popups that happen to be open and dismisses nothing; the mod offers
+        /// the dismissing one, because that is what a strip with no popup up can be asked for.
+        ///
+        /// The game's list is one list, so this clears the mod's own notifications with it and the
+        /// Turn log stop empties too - exactly as the mouse's Alt+right click does. The Turn log's own
+        /// button (<see cref="DismissAllLogged"/>) is the narrower gesture.
+        /// </summary>
+        private static void DismissAllNotifications()
+        {
+            try
+            {
+                Gui.GuiNotificationService.DismissAllGuiNotifications();
+            }
+            catch (Exception e)
+            {
+                Log.Warn("hud: dismissing every notification threw: " + e);
+            }
+        }
+
+        /// <summary>Throw away every line of the Turn log and nothing else - the same discard Backslash
+        /// makes on one row (<see cref="Dismiss"/>), over the mod's own notifications only, so the
+        /// game's icon strip is left exactly as it was. Walked over a copy, since dismissing removes
+        /// each one from the list this reads.</summary>
+        private static void DismissAllLogged()
+        {
+            List<ModNotification> logged = Logged();
+            for (int i = 0; i < logged.Count; i++)
+            {
+                Dismiss(logged[i]);
             }
         }
 
