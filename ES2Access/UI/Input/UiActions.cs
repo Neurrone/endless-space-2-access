@@ -62,6 +62,11 @@ namespace ES2Access.UI.Input
         /// focused screen or the focused control offers it, and inert everywhere else.</summary>
         public const string GoToLocation = "ui.goToLocation";
 
+        /// <summary>Empty the control the cursor is on - a key-binding cell being the only one that
+        /// offers it today. Live exactly while the focused control wires one, and inert (and left to
+        /// the game) everywhere else.</summary>
+        public const string Clear = "ui.clear";
+
         /// <summary>End the turn from anywhere the game is drawing the end-turn button, without walking
         /// to it. The game's own end-turn shortcut key is not reachable for a mod user - the mod claims
         /// the keypad Enter it sits on for Activate.</summary>

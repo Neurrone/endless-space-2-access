@@ -174,6 +174,11 @@ namespace ES2Access.Core.Speech
                 "action.ui.goToLocation.description",
                 "Go to where the thing under the cursor happened."
             },
+            { "action.ui.clear.title", "Clear" },
+            {
+                "action.ui.clear.description",
+                "Empty the control under the cursor, such as one key of a key binding."
+            },
 
             // The map's inspect cursor.
             { "action.galaxy.inspect.title", "Inspect the map" },

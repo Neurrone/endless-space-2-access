@@ -2,11 +2,15 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using ES2Access.Core.Speech;
+using ES2Access.Core.UI;
 using ES2Access.Core.UI.Graph;
 using ES2Access.Core.Util;
 using ES2Access.UI;
+using ES2Access.UI.Input;
 using ES2Access.UI.ModOptions;
 using UnityEngine;
+using GameBinding = Amplitude.Unity.Input.InputBinding;
+using KeyCombination = Amplitude.Unity.Input.KeyCombination;
 
 namespace ES2Access.Screens
 {
@@ -119,6 +123,7 @@ namespace ES2Access.Screens
         public override void OnUpdate()
         {
             HandOverWhenReleased();
+            WatchForACancelledCapture();
         }
 
         /// <summary>A binding row is listening, or about to be: every key belongs to the field being
@@ -149,18 +154,7 @@ namespace ES2Access.Screens
             BuildTabs(builder, window);
 
             builder.BeginStop(RowStop);
-            string category = SelectedCategory(window);
-            bool named = !string.IsNullOrEmpty(category);
-            if (named)
-            {
-                builder.PushContext(category);
-            }
-
-            BuildRows(builder);
-            if (named)
-            {
-                builder.PopContext();
-            }
+            BuildRows(builder, SelectedCategory(window));
 
             builder.BeginStop(ButtonStop);
             BuildButtons(builder, window);
@@ -303,7 +297,22 @@ namespace ES2Access.Screens
 
         // ---- the settings of the category showing ----
 
-        private static void BuildRows(GraphBuilder builder)
+        /// <summary>
+        /// The settings of the category on screen, in the order the page arranged them.
+        ///
+        /// A run of KEY-BINDING rows is read as a three-column TABLE rather than as a list of
+        /// buttons: the action's name, the primary key and the secondary key are the two fields the
+        /// game itself draws beside the name (<c>OptionKeyMappingItem</c>'s
+        /// <c>PrimaryKeyBindingField</c>/<c>SecondaryKeyBindingField</c>), so the columns are a fact
+        /// of the game's own data. Up and down walk the name column and read the whole row; left and
+        /// right cross to the keys, each crossing naming the column it lands in; an empty key says so
+        /// under its own caption, which is what the old one-node row could not do - it said nothing
+        /// at all about a missing secondary. Owner ruling, 2026-08-23.
+        ///
+        /// Every other kind of setting stays one row, and a page that mixes the two keeps them in
+        /// drawn order: the builder stitches the seam where its menu rows meet the sheet's raw ones.
+        /// </summary>
+        private static void BuildRows(GraphBuilder builder, string category)
         {
             OptionsTabPanel panel = ShownPanel();
             if (panel == null || panel.OptionsTable == null)
@@ -311,26 +320,201 @@ namespace ES2Access.Screens
                 return;
             }
 
-            string category = PanelKey(panel);
-            foreach (OptionItem item in Rows(panel))
+            List<OptionItem> rows = Rows(panel);
+            bool named = !string.IsNullOrEmpty(category);
+            if (named)
             {
-                OptionItem row = item;
-                NodeVtable vtable = RowVtable(row);
-                if (vtable == null)
+                // The page's own name carries the table's role word, so one context level says both.
+                // A labelled region of the sheet's own would name the category a second time.
+                builder.PushContext(
+                    category,
+                    HoldsBindings(rows) ? ModStrings.Get(ModStrings.NavTable) : null
+                );
+            }
+
+            string key = PanelKey(panel);
+            GraphSheet sheet = null;
+            for (int i = 0; i < rows.Count; i++)
+            {
+                OptionKeyMappingItem binding = rows[i] as OptionKeyMappingItem;
+                if (binding != null)
                 {
+                    if (sheet == null)
+                    {
+                        sheet = new GraphSheet(builder, "options:" + key + "/keys/");
+                        sheet.Region(null, BindingColumns());
+                    }
+
+                    BuildBindingRow(sheet, binding);
                     continue;
                 }
 
-                AgeTooltip tooltip = row.Tooltip;
-                vtable.OnFocusVisual = () =>
-                    PointerFocus.MoveTo(null, tooltip, AnchorOf(row.TitleLabel));
-                vtable.OnBlurVisual = ReleasePointer;
+                if (sheet != null)
+                {
+                    sheet.Finish();
+                    sheet = null;
+                }
 
-                builder.AddItem(
-                    ControlId.Referenced(row, "options:" + category + "/" + OptionKey(row)),
-                    vtable
-                );
+                BuildRow(builder, key, rows[i]);
             }
+
+            if (sheet != null)
+            {
+                sheet.Finish();
+            }
+
+            if (named)
+            {
+                builder.PopContext();
+            }
+        }
+
+        private static bool HoldsBindings(List<OptionItem> rows)
+        {
+            for (int i = 0; i < rows.Count; i++)
+            {
+                if (rows[i] is OptionKeyMappingItem)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>One ordinary setting - anything that is not a key binding.</summary>
+        private static void BuildRow(GraphBuilder builder, string category, OptionItem item)
+        {
+            OptionItem row = item;
+            NodeVtable vtable = RowVtable(row);
+            if (vtable == null)
+            {
+                return;
+            }
+
+            AgeTooltip tooltip = row.Tooltip;
+            vtable.OnFocusVisual = () =>
+                PointerFocus.MoveTo(null, tooltip, AnchorOf(row.TitleLabel));
+            vtable.OnBlurVisual = ReleasePointer;
+
+            builder.AddItem(
+                ControlId.Referenced(row, "options:" + category + "/" + OptionKey(row)),
+                vtable
+            );
+        }
+
+        /// <summary>The three columns of a key-binding table, the name's caption first. The game
+        /// draws no captions over these - there is no header band above the first row - so all three
+        /// are the mod's own words.</summary>
+        private static string[] BindingColumns()
+        {
+            return new[]
+            {
+                ModStrings.Get(ModStrings.NavKeyBindingAction),
+                ModStrings.Get(ModStrings.NavKeyBindingPrimaryColumn),
+                ModStrings.Get(ModStrings.NavKeyBindingSecondaryColumn),
+            };
+        }
+
+        /// <summary>
+        /// One key-binding row: the action, then its two keys.
+        ///
+        /// The name cell is role-less and inert - it NAMES the row, and the rebinding lives in the
+        /// two key cells, which is what makes "secondary" a column rather than a second gesture on
+        /// the row (the Backspace secondary-capture design it replaces is gone). It carries the whole
+        /// row's keys as a value part all the same, so walking DOWN the table still reads what each
+        /// action is on without stepping sideways, and the row's description tooltip stays here
+        /// rather than being repeated on each key.
+        /// </summary>
+        private static void BuildBindingRow(GraphSheet sheet, OptionKeyMappingItem row)
+        {
+            OptionKeyMappingItem item = row;
+            Func<bool> enabled = () => Enabled(AgeTransformOf(item));
+            AgeTooltip tooltip = item.Tooltip;
+            NodeVtable name = new NodeVtable
+            {
+                ControlType = ControlTypes.Text,
+                Announcements = new List<NodeAnnouncement>
+                {
+                    GraphNodes.LabelPart(() => AgeText.Label(item.TitleLabel)),
+                    GraphNodes.ValuePart(() => BindingText(item)),
+                    GraphNodes.DisabledPart(enabled),
+                },
+                Sections = GraphNodes.Sections(null, tooltip),
+            };
+            name.OnFocusVisual = () =>
+                PointerFocus.MoveTo(null, tooltip, AnchorOf(item.TitleLabel));
+            name.OnBlurVisual = ReleasePointer;
+
+            sheet.RowAt(
+                name,
+                item,
+                new[]
+                {
+                    new KeyValuePair<int, NodeVtable>(1, KeyCell(item, false, enabled)),
+                    new KeyValuePair<int, NodeVtable>(2, KeyCell(item, true, enabled)),
+                }
+            );
+        }
+
+        /// <summary>
+        /// One of a row's two key cells: what that field holds, Enter to rebind it, Delete to empty
+        /// it.
+        ///
+        /// It keeps the control's role word and its click, the way any table cell the game draws a
+        /// real control into does. Its own words are the field's alone - the caption is the edge the
+        /// player crossed to get here, and the buffer carries the pair itself because that crossing
+        /// is not repeated on demand.
+        /// </summary>
+        private static NodeVtable KeyCell(
+            OptionKeyMappingItem row,
+            bool secondary,
+            Func<bool> enabled
+        )
+        {
+            OptionKeyMappingItem item = row;
+            AgeControlKeyBindingField field = secondary
+                ? item.SecondaryKeyBindingField
+                : item.PrimaryKeyBindingField;
+            string captionKey = secondary
+                ? ModStrings.NavKeyBindingSecondaryColumn
+                : ModStrings.NavKeyBindingPrimaryColumn;
+            Func<string> value = () => CellText(item, field);
+            NodeVtable cell = new NodeVtable
+            {
+                ControlType = ControlTypes.Button,
+                Announcements = new List<NodeAnnouncement>
+                {
+                    // The keys ARE this cell's name - it has no caption of its own, the column's is
+                    // the edge crossed to reach it - so they are declared as the label and read
+                    // before the role word rather than after it. Watched, which is what carries the
+                    // capture: the field rewrites its own text as each key goes down.
+                    new NodeAnnouncement(value, live: true, kind: AnnouncementKinds.Label),
+                    GraphNodes.DisabledPart(enabled),
+                },
+                OnActivate = () => StartCapture(item, secondary),
+                OnClear = () => ClearKey(item, secondary),
+                BufferHead = () =>
+                    new MessageBuilder()
+                        .ListItem(ModStrings.Get(captionKey))
+                        .ListItem(value())
+                        .Build(),
+            };
+            NodeHints.Add(
+                cell,
+                ModStrings.HintClearKey,
+                UiActions.Clear,
+                0,
+                () => enabled() && !string.IsNullOrEmpty(KeyText(field))
+            );
+            cell.OnFocusVisual = () =>
+                PointerFocus.MoveTo(
+                    field == null ? null : field.AgeTransform,
+                    null,
+                    field == null ? null : AnchorOf(field.Label)
+                );
+            cell.OnBlurVisual = ReleasePointer;
+            return cell;
         }
 
         /// <summary>How one setting is read and worked, chosen by what kind of setting it is. Every
@@ -391,21 +575,8 @@ namespace ES2Access.Screens
                 return combo;
             }
 
-            // What the action is called, then the keys it is on: Enter rebinds the first, Backspace
-            // the second.
-            OptionKeyMappingItem binding = item as OptionKeyMappingItem;
-            if (binding != null)
-            {
-                NodeVtable keys = GraphNodes.Button(
-                    label,
-                    () => StartCapture(binding, false),
-                    enabled,
-                    tooltip
-                );
-                keys.Announcements.Add(GraphNodes.ValuePart(() => BindingText(binding)));
-                keys.OnSecondary = () => StartCapture(binding, true);
-                return keys;
-            }
+            // A key binding is not one of these: it is a row of the category's own table and is built
+            // by BuildBindingRow, which never reaches here.
 
             // No option in the game is a text field, and the row this page used to declare for one was
             // a Button that handed the keyboard over with no words, no way back and no cancel - a
@@ -597,18 +768,116 @@ namespace ES2Access.Screens
             return field == null ? null : AgeText.Label(field.Label);
         }
 
+        /// <summary>
+        /// What ONE key cell says: the keys in that field, or the word for an empty cell.
+        ///
+        /// With one exception, and it is the whole reason this is not just <see cref="KeyText"/>: a
+        /// field that has taken the keyboard blanks itself to listen, and calling that "empty" would
+        /// announce a binding the player has not lost. While this field is the one listening it says
+        /// nothing until a key goes down, and then it says the combination building under their
+        /// fingers.
+        /// </summary>
+        private static string CellText(OptionKeyMappingItem item, AgeControlKeyBindingField field)
+        {
+            string text = KeyText(field);
+            if (!string.IsNullOrEmpty(text))
+            {
+                return text;
+            }
+
+            return ReferenceEquals(CapturingField(item), field)
+                ? null
+                : ModStrings.Get(ModStrings.NavCellEmpty);
+        }
+
+        /// <summary>
+        /// EMPTY ONE OF A ROW'S TWO KEYS.
+        ///
+        /// The game has no clear button at all: a mouse user empties a field by focusing it, which
+        /// blanks it, and then clicking somewhere else, which writes the blank back
+        /// (<c>OptionKeyMappingItem.OnGainFocusCb</c> :62-69 and <c>OnLoseFocusCb</c> :83-98). This is
+        /// the same write without the focus round trip, so it lights Apply and is undone by Cancel
+        /// exactly like any other change - for a game row, whose setter is the input manager, and for
+        /// one of the mod's own, whose setter is the binding store.
+        ///
+        /// Refused while a capture is running or waiting to start: the keyboard is about to belong to
+        /// a field, and emptying the row underneath it would be a change nobody asked for.
+        /// </summary>
+        private static void ClearKey(OptionKeyMappingItem item, bool secondary)
+        {
+            try
+            {
+                if (!Enabled(AgeTransformOf(item)) || _pending != null || _capturing != null)
+                {
+                    return;
+                }
+
+                GameBinding current = item.Option.Value as GameBinding;
+                if (current == null)
+                {
+                    return;
+                }
+
+                KeyCombination going = secondary
+                    ? current.SecondaryKeyCombination
+                    : current.PrimaryKeyCombination;
+                if (going == null || going.Equals(KeyCombination.None))
+                {
+                    return;
+                }
+
+                Write(
+                    item,
+                    new GameBinding(
+                        current.InputAction,
+                        secondary ? current.PrimaryKeyCombination : KeyCombination.None,
+                        secondary ? KeyCombination.None : current.SecondaryKeyCombination
+                    )
+                );
+            }
+            catch (Exception e)
+            {
+                Log.Warn("options: clearing a key threw: " + e);
+            }
+        }
+
+        /// <summary>Write a row's binding the way the game's own commit does
+        /// (<c>OptionKeyMappingItem.OnChangeOptionValueConfirmation</c> :147-166): the option's value,
+        /// then the window's own "a setting changed" - which is what lights Apply and what its backup
+        /// is compared against - and then the row redraws both its fields.</summary>
+        private static void Write(OptionKeyMappingItem item, GameBinding binding)
+        {
+            item.Option.Value = binding;
+            OptionsModalWindow window = Window();
+            if (window != null)
+            {
+                window.OnOptionChanged(item.Option);
+            }
+
+            item.Refresh();
+        }
+
         // ---- rebinding a key ----
 
-        /// <summary>The row whose binding is being captured, remembered only so that the mod going
-        /// away mid-capture can hand the keyboard back. Whether a capture is running at all is asked
-        /// of the game, never of this field, so it can never be out of step with what is on screen.
+        /// <summary>The row whose binding is being captured, remembered so that the mod going away
+        /// mid-capture can hand the keyboard back and so that an Escape can be told from a binding
+        /// (<see cref="WatchForACancelledCapture"/>). Whether the field is STILL listening is asked of
+        /// the game, never of this field, so it can never be out of step with what is on screen.
         /// </summary>
         private static OptionKeyMappingItem _capturing;
 
+        /// <summary>What that row was bound to when the keyboard changed hands - what an Escape puts
+        /// back. The instance itself, not a copy of its keys: a mod row's option compares the value it
+        /// stored against the value it reads back, so restoring the same object is what stops the row
+        /// reporting a change nobody made.</summary>
+        private static GameBinding _capturePrevious;
+
         /// <summary>The row that has asked for a capture and is waiting for the player's hand to come
-        /// off the keyboard, and which of its two bindings was asked for.</summary>
+        /// off the keyboard, which of its two bindings was asked for, and the CELL the ask came from -
+        /// the cursor has to still be on that one when the keyboard changes hands.</summary>
         private static OptionKeyMappingItem _pending;
         private static bool _pendingSecondary;
+        private static ControlId _pendingCell;
 
         /// <summary>Consecutive frames with nothing held down since the capture was asked for.
         /// </summary>
@@ -636,9 +905,15 @@ namespace ES2Access.Screens
         /// has to, and write the result back into both fields.
         ///
         /// The mod's input layer stands down on its own for the duration, because the field declares
-        /// itself keyboard-exclusive - and it must, or the arrow keys and Escape could never be bound
-        /// to anything. This is exactly why the drop list's exemption is written as "is this the one
+        /// itself keyboard-exclusive - and it must, or the arrow keys could never be bound to
+        /// anything. This is exactly why the drop list's exemption is written as "is this the one
         /// control we handed focus to" rather than "is the focused control ours".
+        ///
+        /// Escape is the one key that cannot be bound here, whatever the field is told: the game
+        /// takes the keyboard away from a key-exclusive control the moment an Escape-bound action
+        /// fires (<c>InputManager.HandleInput</c> :1210-1226, in Update), and the field's own scan
+        /// runs later in the frame. So Escape ends the capture instead of landing in it, and
+        /// <see cref="WatchForACancelledCapture"/> is what makes that ending a cancel.
         /// </summary>
         private static void StartCapture(OptionKeyMappingItem item, bool secondary)
         {
@@ -661,6 +936,7 @@ namespace ES2Access.Screens
 
                 _pending = item;
                 _pendingSecondary = secondary;
+                _pendingCell = FocusedId();
                 _pendingClearFrames = 0;
 
                 // Said at once, and interrupting: the row has just been read and what matters now is
@@ -701,7 +977,7 @@ namespace ES2Access.Screens
                 return;
             }
 
-            if (!OnRow(item))
+            if (!OnCell(_pendingCell))
             {
                 CancelPending();
                 return;
@@ -732,6 +1008,7 @@ namespace ES2Access.Screens
                 }
 
                 _capturing = item;
+                _capturePrevious = item.Option.Value as GameBinding;
                 age.FocusedControl = field;
             }
             catch (Exception e)
@@ -741,16 +1018,32 @@ namespace ES2Access.Screens
             }
         }
 
-        /// <summary>Whether the cursor is still on the row that asked to capture. Moving off it is the
-        /// player changing their mind, and the request has to go with them or the next thing they
-        /// press would be bound to a row they have left.</summary>
-        private static bool OnRow(OptionKeyMappingItem item)
+        /// <summary>Whether the cursor is still on the very CELL that asked to capture. Moving off it
+        /// is the player changing their mind, and the request has to go with them or the next thing
+        /// they press would be bound to a key they have left - the cell next door included, since the
+        /// two keys of one row are two different bindings.</summary>
+        /// <summary>The node the cursor is on right now, or null.</summary>
+        private static ControlId FocusedId()
         {
             try
             {
                 GraphNavigator navigator = ModEntry.Navigator;
                 GraphNode node = navigator == null ? null : navigator.CurrentNode;
-                return node != null && node.Id.ReferenceMatches(item);
+                return node == null ? null : node.Id;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        private static bool OnCell(ControlId asked)
+        {
+            try
+            {
+                GraphNavigator navigator = ModEntry.Navigator;
+                GraphNode node = navigator == null ? null : navigator.CurrentNode;
+                return node != null && asked != null && asked.Equals(node.Id);
             }
             catch (Exception)
             {
@@ -761,12 +1054,60 @@ namespace ES2Access.Screens
         private static void CancelPending()
         {
             _pending = null;
+            _pendingCell = null;
             _pendingClearFrames = 0;
+        }
+
+        /// <summary>
+        /// ESCAPE ENDS A CAPTURE WITHOUT BINDING ANYTHING.
+        ///
+        /// Escape never reaches the field. <c>InputManager.HandleInput</c> (:1210-1226) runs in Update
+        /// and nulls the focused control as soon as an Escape-bound action fires while a key-exclusive
+        /// control holds the keyboard; the field's own key scan runs in AgeManager's LateUpdate, so it
+        /// never sees the press. The field therefore loses focus holding the nothing it blanked itself
+        /// to, and its lose-focus handler writes that nothing into the slot - unless the row's OTHER
+        /// slot is empty too, which the game's own equality check reads as "no change" and leaves
+        /// alone (<c>OptionKeyMappingItem.OnLoseFocusCb</c> :80-98). One of those loses a binding and
+        /// the other does not, and the player pressed the same key for the same reason.
+        ///
+        /// So an ending with Escape physically down is a CANCEL: what the row was bound to goes back,
+        /// through the same value path a clear uses, and the mod says so. The key is read straight
+        /// from the engine because the mod's own layer is stood down for the capture - it may still
+        /// look at the keyboard, it just does not act on it - and Escape is held for many frames,
+        /// which is what makes this safe whichever order the two Updates ran in.
+        /// </summary>
+        private void WatchForACancelledCapture()
+        {
+            OptionKeyMappingItem item = _capturing;
+            if (item == null || CapturingField(item) != null)
+            {
+                return;
+            }
+
+            GameBinding before = _capturePrevious;
+            _capturing = null;
+            _capturePrevious = null;
+            if (before == null || !UnityEngine.Input.GetKey(KeyCode.Escape))
+            {
+                return;
+            }
+
+            try
+            {
+                Write(item, before);
+                Voice.Say(ModStrings.Get(ModStrings.NavKeyBindingCancelled), true);
+            }
+            catch (Exception e)
+            {
+                Log.Warn("options: putting a cancelled binding back threw: " + e);
+            }
         }
 
         /// <summary>Which of a row's two fields is listening for keys right now, or null. Read from
         /// the game's own focus rather than from anything the mod remembers, so a capture the game
-        /// ended - a key released, Escape, a click elsewhere - is over here the same instant.</summary>
+        /// ended - a key released, an Escape that took the focus away, a click elsewhere - is over
+        /// here the same instant. What the ending MEANT is a separate question
+        /// (<see cref="WatchForACancelledCapture"/>).</summary>
         private static AgeControlKeyBindingField CapturingField(OptionKeyMappingItem item)
         {
             try
@@ -806,6 +1147,7 @@ namespace ES2Access.Screens
             CancelPending();
             OptionKeyMappingItem item = _capturing;
             _capturing = null;
+            _capturePrevious = null;
             if (item == null)
             {
                 return;

@@ -216,6 +216,13 @@ namespace ES2Access.Core.UI.Graph
         /// again). A control without one leaves the key alone.</summary>
         public Action OnGoTo;
 
+        /// <summary>Optional. EMPTY THIS CONTROL - take away what it holds without replacing it, on
+        /// the controls where the game itself has no such affordance at all (a key-binding field: the
+        /// mouse can only clear one by focusing it and clicking away). Like <see cref="OnGoTo"/> its
+        /// presence IS the key's availability, asked before the press and again in the handler, so a
+        /// control without one leaves the key to the game.</summary>
+        public Action OnClear;
+
         /// <summary>Optional. The command the game puts on a DOUBLE click here - the second click
         /// inside its own double-click window, which several of this game's controls answer with a
         /// command of their own (a fleet row shows that fleet on the map, a picked choice is

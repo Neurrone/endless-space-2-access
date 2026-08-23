@@ -352,6 +352,22 @@ namespace ES2Access.UI
             return _screen.OffersGoToLocation || _graph.OffersGoTo;
         }
 
+        /// <summary>EMPTY THE FOCUSED CONTROL - only the controls that wire one answer, and the press
+        /// says nothing anywhere else. The control itself speaks the result: what it holds now is a
+        /// live part of its own readout.</summary>
+        public bool ClearControl()
+        {
+            return _graph != null && _graph.Clear();
+        }
+
+        /// <summary>The same fact asked before the press, for the key's claim. Off the standing render,
+        /// like every other claim - the key is Delete, and everywhere the cursor is not on a control
+        /// that empties it stays the game's.</summary>
+        public bool TakesClearKey()
+        {
+            return _graph != null && _graph.OffersClear;
+        }
+
         /// <summary>Whether the focused screen's LAST render declared this Tab-stop - the availability
         /// half of a jump-to-stop key, and the same question its key CLAIM asks
         /// (<c>docs/interaction.md</c>). Read off the standing render rather than built fresh: the claim
@@ -571,6 +587,8 @@ namespace ES2Access.UI
                     return DoubleClick();
                 case UiActions.GoToLocation:
                     return GoToLocation();
+                case UiActions.Clear:
+                    return ClearControl();
                 case UiActions.Carry:
                     return CarryKey();
                 case UiActions.SelectToggle:

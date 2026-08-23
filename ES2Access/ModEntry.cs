@@ -279,6 +279,9 @@ namespace ES2Access
             // And the setter every way out of a text box passes through, which is the only place a
             // commit can be told from a cancel and the last moment a cancel can put the text back.
             GameTextFocus.Install();
+            // Every key-mapping commit, in either options window: a chord the mod and the game both
+            // answer to is said out loud, both ways round, and nothing is taken from anybody.
+            BindingOverlaps.Install();
             // The one key that still reaches the game while it holds the keyboard for the chat box:
             // Escape, which the panel answers by shutting itself instead of letting go.
             ChatEscape.Install();
@@ -478,6 +481,14 @@ namespace ES2Access
             return navigator != null && navigator.TakesCarryKey();
         }
 
+        /// <summary>The claim half of Delete: only where the focused control is one that empties
+        /// (<see cref="GraphNavigator.TakesClearKey"/>), which today is a key-binding cell.</summary>
+        private static bool ClearOffered()
+        {
+            GraphNavigator navigator = Navigator;
+            return navigator != null && navigator.TakesClearKey();
+        }
+
         /// <summary>Whether the focused screen is taking this key as typed text rather than leaving
         /// it to the game - asked by the game's own key scan, several times a frame.</summary>
         private static bool TypedKeyClaimed(KeyCode key)
@@ -648,6 +659,13 @@ namespace ES2Access
                 .Register(UiActions.GoToLocation)
                 .Bind(KeyCode.L, ctrl: true)
                 .ClaimedWhile(GoToLocationOffered);
+
+            // Empty the control the cursor is on. Delete is bound to nothing at all in the game's own
+            // 64 input options (measured 2026-08-23) and only its debug movers and its text areas read
+            // the key directly - a text area owns the keyboard while it does, which stands the whole
+            // layer down anyway. Claimed all the same only where a control really offers a clear, so
+            // a key the game may one day bind stays the game's everywhere else.
+            input.Register(UiActions.Clear).Bind(KeyCode.Delete).ClaimedWhile(ClearOffered);
 
             // The galaxy map's own mode: a square of galaxy swept with the arrows instead of the tree
             // (<see cref="ES2Access.Screens.GalaxyInspect"/>). Control and I is free in this game - the
@@ -904,6 +922,7 @@ namespace ES2Access
             Step("key stand-down patch", GameKeyStandDown.Remove);
             Step("keyboard handover patch", GameKeyboardHandover.Remove);
             Step("text focus patch", GameTextFocus.Remove);
+            Step("binding overlap patch", BindingOverlaps.Remove);
             // And the edit that patch was watching, so the next load's first keystroke has nothing
             // left over to speak about.
             Step("text field editor", TextFieldEditor.Stop);

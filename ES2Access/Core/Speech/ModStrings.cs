@@ -97,6 +97,15 @@ namespace ES2Access.Core.Speech
         public const string NavPressPrimaryKey = "nav.press-primary-key";
         public const string NavPressSecondaryKey = "nav.press-secondary-key";
 
+        // The three columns a key-binding row is read as, the word for a capture the player called
+        // off, and what the mod says when one of its keys and one of the game's are the same chord.
+        // The game draws no captions over the two key fields, so these three are the mod's own words.
+        public const string NavKeyBindingAction = "nav.key-binding-action";
+        public const string NavKeyBindingPrimaryColumn = "nav.key-binding-primary-column";
+        public const string NavKeyBindingSecondaryColumn = "nav.key-binding-secondary-column";
+        public const string NavKeyBindingCancelled = "nav.key-binding-cancelled";
+        public const string NavKeyBindingShadowed = "nav.key-binding-shadowed";
+
         // The review buffers - the text the player walks line by line.
         public const string BufferUi = "buffer.ui";
         public const string BufferEmpty = "buffer.empty";
@@ -1546,6 +1555,14 @@ namespace ES2Access.Core.Speech
             { NavNotBound, "not bound" },
             { NavPressPrimaryKey, "Press the new key combination." },
             { NavPressSecondaryKey, "Press the new secondary key combination." },
+            { NavKeyBindingAction, "Action" },
+            { NavKeyBindingPrimaryColumn, "Primary key" },
+            { NavKeyBindingSecondaryColumn, "Secondary key" },
+            { NavKeyBindingCancelled, "Rebinding cancelled." },
+            {
+                NavKeyBindingShadowed,
+                "While the mod's {0} is active, the game's {1} will not fire."
+            },
             { BufferUi, "UI" },
             { BufferEmpty, "Buffer empty" },
             { BufferLine, "{0}. {1}" },

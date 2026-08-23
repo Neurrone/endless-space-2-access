@@ -70,6 +70,7 @@ namespace ES2Access.Core.Speech
         public const string HintOpenSystemManagement = "hint.open-system-management";
         public const string HintLoad = "hint.load";
         public const string HintGoToLocation = "hint.go-to-location";
+        public const string HintClearKey = "hint.clear-key";
 
         private static readonly Dictionary<string, string> HintDefaults = new Dictionary<
             string,
@@ -94,6 +95,7 @@ namespace ES2Access.Core.Speech
             { HintOpenSystemManagement, "{0} to open system management screen" },
             { HintLoad, "{0} to load" },
             { HintGoToLocation, "{0} goes to location" },
+            { HintClearKey, "{0} to clear this key" },
             // --- input batch (2026-08-22) ---
             { LabelWithChord, "{0} ({1})" },
             { SystemPrevious, "Previous system" },
