@@ -432,17 +432,33 @@ to "Galactic Map" when the mode ends). Arming while the cursor is inside the sto
 (the announcer diffs on focus change); Tab-away/Tab-back re-speaks the instruction, which is the
 point; child node ids and the cursor survive the rename.
 
-**Expanding a galaxy system node (Right) also brings the camera in** through the game's own zoom
-(`GalaxyViewLevels.ZoomTo`) — and since 2026-08-22 that one press also lands the cursor on the
-system's first child, so the zoom and the descent are one gesture; a system with nothing under it
-keeps the zoom and says "Nothing in here". Enter is unchanged, Backslash remains the way out, and
-**collapse un-zooms** while `GalaxyViewLevels.FocusedSystem` is still that system — a camera the player has
-since moved elsewhere is left alone, so collapsing moves nothing there. **A starlane is a LEAF and
+**THE CAMERA FOLLOWS THE CURSOR, BY ONE RULE** (owner ruling 2026-08-23; `GalaxyHudScreen`'s
+`Screen.OnFocusVisual` override → `Place` → `FollowPlace` — `docs/helpers.md`). Every focus landing on
+the map stop resolves to a PLACE — the system a row hangs under, or a drifting thing itself — and to
+whether the cursor is ON that row or INSIDE it. Same place, same closeness → nothing moves. A
+different place with the cursor ON its row → `PanTo` (the slide, zoom untouched). Further IN on a
+place → `SnapTo` (no flight, and it arms the landing's own settle wait). **The camera is never taken
+back OUT by the rule**: stepping from a world up to its own star moves nothing, and the ways out stay
+the player's (Backslash, closing the branch). Three triggers folded into it in the process — the
+system row's own `PanTo`, `OnExpand`'s `ZoomTo` (system nodes no longer override `OnExpand` at all;
+the engine keeps the expansion set) and the go-to landing's own `SnapTo`, which now asks the rule and
+so leaves nothing for the landed node's focus to add. What that buys, all measured 2026-08-23:
+**expanding a system (Right) brings the camera in because the first child's focus does it** — the
+zoom and the descent are still one press, and a system with nothing under it says "Nothing in here";
+**a manual Backslash zoom-out survives the whole of reading that system's children** (the rule's
+record is what the camera was ASKED for, not where it is, so it says "already there"); crossing into
+another system's children snaps once, on the crossing; and a go-to always moves, record or no record,
+because a landing is a request rather than the cursor wandering. Enter is unchanged, Backslash remains
+the way out, and **collapse un-zooms** while `GalaxyViewLevels.FocusedSystem` is still that system — a
+camera the player has since moved elsewhere is left alone, so collapsing moves nothing there — and it
+also drops the rule's "inside" record, which is what lets re-opening the same system bring the camera
+back in. The gate is NOT `FocusedStarSystemNode`: measured, that is where the camera IS and it lags a
+flight (`docs/es2-facts.md`). **A starlane is a LEAF and
 Right on a named one TRAVELS** (`NodeVtable.OnFollow` → `KeyGraph.TreeMove.Followed`, consumed
 silently): the cursor lands on the destination system's ONE node at the root of the systems stop,
-that branch opens, and the camera goes there through `ZoomTo` — never `ZoomIn`, because travelling is
-not a click and must not confirm an armed targeting mode (measured: the mode survives Right and is
-still ended by Enter on the same lane). The landing's ordinary announcement is the whole
+that branch opens, and the camera goes there through the page's one landing and so through the camera
+rule above — never `ZoomIn`, because travelling is not a click and must not confirm an armed targeting
+mode (measured: the mode survives Right and is still ended by Enter on the same lane). The landing's ordinary announcement is the whole
 announcement. **Backspace pops the trail** while focus is in `galaxy:systems`: back to the exact lane
 node under the origin (the origin re-expanded so that node exists), camera back to the origin, again
 no words; a hop whose origin or destination is no longer perceived is skipped, and an empty trail is
@@ -726,7 +742,7 @@ NUMBERS). Unexplored is "all"-only and its things are EDGES, not places: every d
 wormhole whose far end the player has not perceived, named from the end they can see
 ("Star lane 3 from Rigel heading west").
 **Alt+Home now MOVES THE CAMERA on every category** (owner decision 2026-08-22): the landing is
-the page's own locate landing — focus the node, then `GalaxyViewLevels.ZoomTo` it — for anything
+the page's own locate landing — focus the node, and ask the camera rule for the place — for anything
 standing at a node, a planet and a lane included (they land on their own node under their system
 and zoom to the system). A thing that stands at a bare point (a fleet under way, a probe, a pin, a
 missile) has no node to zoom into and gets the inspect cursor's own `CenterOn` slide instead.

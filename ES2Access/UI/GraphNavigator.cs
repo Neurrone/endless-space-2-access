@@ -760,6 +760,20 @@ namespace ES2Access.UI
             _cursorMovedHere = _visualFrom != null && !_visualFrom.Equals(node.Id);
             _visualFrom = node.Id;
             ScrollIntoView.Reveal(node.Id.Reference);
+            // The screen's own half first, so a rule that moves the WORLD (the galaxy page's camera)
+            // has run before the node aims the pointer at whatever the new distance draws.
+            if (_screen != null)
+            {
+                try
+                {
+                    _screen.OnFocusVisual(node);
+                }
+                catch (Exception e)
+                {
+                    Log.Warn("navigator: a screen's OnFocusVisual threw: " + e);
+                }
+            }
+
             Safe(node.Vtable.OnFocusVisual, "OnFocusVisual");
             _cursorMovedHere = false;
         }

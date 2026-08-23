@@ -388,6 +388,11 @@ namespace ES2Access.Screens
             _inspect.Forget();
             // A constellation name the mod was holding drawn belongs to the map that is going away.
             ConstellationLabelHold.Release();
+            // Where the camera was sent goes with the page too: whatever replaced this one may have
+            // moved it anywhere, so the first place read on the way back is followed afresh
+            // (<see cref="FollowPlace"/>).
+            _cameraPlace = null;
+            _cameraIn = false;
             _armedProbe = null;
             // A seat still being waited for is KEPT. Six of the game's fleet actions answer the press by
             // taking the player somewhere - and the first arrival at a system plays the discovery
@@ -963,6 +968,164 @@ namespace ES2Access.Screens
             return navigator != null && navigator.CursorMovedHere;
         }
 
+
+        // ---- the camera follows the cursor ----
+
+        /// <summary>
+        /// THE camera rule of this page (owner ruling 2026-08-23): the camera goes where the cursor is
+        /// reading, and it is one rule rather than one per kind of node.
+        ///
+        /// What the cursor is standing on resolves to a PLACE and to how close the player is to it -
+        /// the system a row belongs to, or a thing drifting between the stars, and whether the cursor
+        /// is ON that row or INSIDE it (a world, a card, a lane, a fleet, a quest marker). The camera
+        /// is then asked for exactly that (<see cref="FollowPlace"/>), which does nothing at all while
+        /// it is already showing it. So walking a system's children moves nothing, crossing into
+        /// another system's children brings the camera in on that one, and a zoom the player made by
+        /// hand is left where they put it for as long as they go on reading the same place.
+        ///
+        /// Only where the cursor MOVED (<see cref="GraphNavigator.CursorMovedHere"/>): coming back to
+        /// this page re-seats the cursor where it was left, and the visual is re-taken whenever the
+        /// camera changes what it draws for the focused system (<see cref="FollowCamera"/>) - flying
+        /// the camera for either would take it off whatever the GAME has since centred it on.
+        ///
+        /// Only for the map's own stop. The HUD's stops, the view title and the zoom slider are
+        /// controls of the page rather than places on it, and a page whose camera moved when the
+        /// cursor reached the end-turn button would be reading somebody else's business.
+        /// </summary>
+        public override void OnFocusVisual(GraphNode node)
+        {
+            if (!CursorMoved() || node == null || !SystemStop.Equals(node.StopKey))
+            {
+                return;
+            }
+
+            object place;
+            bool inside;
+            if (Place(node, out place, out inside))
+            {
+                FollowPlace(place, inside);
+            }
+        }
+
+        /// <summary>
+        /// Where a node on the map stop stands, and whether the cursor is inside that place or on its
+        /// own row.
+        ///
+        /// The system ANCESTOR wins over anything nearer: a fleet parked at a star, the star's own
+        /// dossier cards and a lane leaving it are all things the map draws AT that system, and the
+        /// place the player is reading is the system. Only where no system is on the chain - a probe,
+        /// an obliterator shot, an ally's pin, a fleet crossing open space with nowhere to file it -
+        /// is the thing itself the place, and such a place has no inside: there is nothing at a bare
+        /// point to come in on (the same distinction <see cref="MapLandings.Decide"/> makes).
+        /// </summary>
+        private static bool Place(GraphNode node, out object place, out bool inside)
+        {
+            place = null;
+            inside = false;
+            for (GraphNode walk = node; walk != null; walk = walk.Parent)
+            {
+                StarSystemNode system = walk.Id == null ? null : walk.Id.Reference as StarSystemNode;
+                if (system != null)
+                {
+                    place = system;
+                    inside = !ReferenceEquals(walk, node);
+                    return true;
+                }
+            }
+
+            for (GraphNode walk = node; walk != null; walk = walk.Parent)
+            {
+                IGameEntityWithGalaxyPosition thing =
+                    walk.Id == null ? null : walk.Id.Reference as IGameEntityWithGalaxyPosition;
+                if (thing != null)
+                {
+                    place = thing;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Show the player a place - the ONE call on this page that moves the camera for the cursor,
+        /// and the one record of where the camera has been sent.
+        ///
+        /// Three answers. A place the camera is already showing moves nothing - which is what makes a
+        /// zoom-out by hand survive the rest of a system being read, and what makes the game's own
+        /// "show me this" compose: by the time the cursor lands the camera is already there and this
+        /// adds no second jump. Coming further IN on a system snaps rather than flies (owner ruling
+        /// 2026-08-22: the flight was nine tenths of a second in which nothing could be said), and the
+        /// landing's wait is armed here because the camera never reports itself flying afterwards
+        /// (<see cref="SnapSettleFrames"/>). Anything else is the slide the map has always made across
+        /// to a thing standing somewhere else.
+        ///
+        /// The camera is never taken back OUT here: stepping from a world up onto its own star is not
+        /// a request to see less, and the ways out are the player's own (Backslash, closing the
+        /// branch). So "already showing it" includes being further in than was asked for.
+        ///
+        /// <paramref name="asked"/> is a LANDING rather than the cursor wandering (<see cref="Camera"/>):
+        /// it moves whatever the record says, because a player who zoomed out by hand and then pressed
+        /// go-to has asked to be taken there, and the record - which deliberately survives that
+        /// zoom-out - would otherwise answer "already there" over a camera that is not.
+        /// </summary>
+        private void FollowPlace(object place, bool inside, bool asked = false)
+        {
+            if (place == null || (!asked && ReferenceEquals(place, _cameraPlace) && (_cameraIn || !inside)))
+            {
+                return;
+            }
+
+            _cameraPlace = place;
+            _cameraIn = inside;
+            StarSystemNode system = place as StarSystemNode;
+            try
+            {
+                // Every camera move the mod makes goes through the same GUI calls the GAME leads the
+                // player with, so it is marked as ours or each arrow key would read as a reveal
+                // (<see cref="GalaxyLocate.Suppressed"/>). PanTo marks its own.
+                if (inside && system != null)
+                {
+                    GalaxyLocate.Suppressed = true;
+                    GalaxyViewLevels.SnapTo(system);
+                    _settling = SnapSettleFrames;
+                    return;
+                }
+
+                IGameEntityWithGalaxyPosition entity = place as IGameEntityWithGalaxyPosition;
+                if (entity != null)
+                {
+                    GalaxyViewLevels.PanTo(entity);
+                }
+            }
+            finally
+            {
+                GalaxyLocate.Suppressed = false;
+            }
+        }
+
+        /// <summary>The player has closed a branch and the camera has come back out of it
+        /// (<see cref="Collapse"/>): the place is still what the camera is looking at, but it is no
+        /// longer INSIDE it, so opening the same system again brings the camera back in. Closing a
+        /// branch the camera was never in on changes nothing.</summary>
+        private void LeftPlace(StarSystemNode node)
+        {
+            if (ReferenceEquals(node, _cameraPlace))
+            {
+                _cameraIn = false;
+            }
+        }
+
+        /// <summary>Where the camera has been sent and how close - the whole of what the rule above
+        /// compares against. Not read off the camera: the game's own answer for "which system is the
+        /// orbital view up over" (<see cref="GalaxyViewLevels.FocusedSystem"/>) is null at every zoom
+        /// step but the last and lags a flight by its whole duration (measured 2026-08-23), so gating
+        /// on it would re-snap after every zoom-out by hand and mis-answer mid-flight. Per page: a
+        /// page that has been left knows nothing about where the next one put the camera.</summary>
+        private object _cameraPlace;
+
+        private bool _cameraIn;
+
         // ---- where the game has just sent the player ----
 
         /// <summary>The request being worked on, so that a page which needs several frames to find its
@@ -1139,10 +1302,11 @@ namespace ES2Access.Screens
             }
         }
 
-        /// <summary>Bring the camera to what was landed on: IN on a place, and a slide onto a bare
-        /// point. Where the cell is driving, the cell has already slid and only a place's zoom is
-        /// added on top - so the picture is the same whichever way the player is reading the
-        /// map.</summary>
+        /// <summary>Bring the camera to what was landed on: IN on a place - through the page's one
+        /// camera rule, so the landed node's own focus adds nothing on top (<see cref="FollowPlace"/>)
+        /// - and a slide onto a bare point. Where the cell is driving, the cell has already slid and
+        /// only a place's zoom is added on top - so the picture is the same whichever way the player is
+        /// reading the map.</summary>
         private void Camera(MapTarget target, MapCamera wanted, MapLanding plan)
         {
             MapCameraMove move = plan.Camera;
@@ -1164,25 +1328,24 @@ namespace ES2Access.Screens
                 return;
             }
 
+            if (move == MapCameraMove.Zoom && target.System != null)
+            {
+                // Through the page's one camera rule (<see cref="FollowPlace"/>) rather than beside
+                // it: a landing is the cursor being sent to a place, so it asks for the same thing
+                // walking there asks for, and the rule then has nothing left to do when the landed
+                // node's focus commits. That is also what makes the game's own show-location compose -
+                // the record says the camera is already there.
+                FollowPlace(target.System, true, true);
+                return;
+            }
+
             try
             {
+                // A slide across open sky is left as a slide: there is no card to wait for at the
+                // other end, so it costs the announcement nothing and the picture stays readable to
+                // a sighted player beside the keyboard.
                 GalaxyLocate.Suppressed = true;
-                if (move == MapCameraMove.Zoom && target.System != null)
-                {
-                    // Instantly (owner ruling 2026-08-22): the flight was nine tenths of a second of
-                    // silence before the landing could say anything (<see cref="GalaxyViewLevels.SnapTo"/>).
-                    GalaxyViewLevels.SnapTo(target.System);
-                    // And the wait is armed by hand, because the camera never reports itself flying
-                    // any more (<see cref="SnapSettleFrames"/>).
-                    _settling = SnapSettleFrames;
-                }
-                else
-                {
-                    // A slide across open sky is left as a slide: there is no card to wait for at the
-                    // other end, so it costs the announcement nothing and the picture stays readable to
-                    // a sighted player beside the keyboard.
-                    GalaxyViewLevels.CenterOn(target.At, LandingDamping);
-                }
+                GalaxyViewLevels.CenterOn(target.At, LandingDamping);
             }
             finally
             {
@@ -2718,12 +2881,13 @@ namespace ES2Access.Screens
         /// the same test closing a system makes (<see cref="Collapse"/>) one level up. The way out is
         /// the system's own, so the camera lands exactly where collapsing that system would have put
         /// it, and a camera already out moves not at all.</summary>
-        private static void ZoomOutOf(Constellation constellation)
+        private void ZoomOutOf(Constellation constellation)
         {
             StarSystemNode inside = GalaxyViewLevels.FocusedSystem;
             if (inside != null && ReferenceEquals(inside.Constellation, constellation))
             {
                 ZoomOut(inside);
+                LeftPlace(inside);
             }
         }
 
@@ -2994,15 +3158,9 @@ namespace ES2Access.Screens
             vtable.OnContextual = () => SystemCommand(it);
             MoveHints(vtable);
 
-            // The camera goes where the cursor MOVES, so that whoever is watching the screen is looking
-            // at the system being read out. On the galaxy this only slides the camera across; it does
-            // not undo the zoom a system that has been opened up asked for.
-            //
-            // Only where the cursor moved (<see cref="GraphNavigator.CursorMovedHere"/>): coming back
-            // to this page seats the cursor on the system it was left on, and panning for that would
-            // fly the camera off whatever the GAME has since centred it on - a fleet the military
-            // screen located, a notification's "show me this". Focus reflects where the game is
-            // looking on the way in; it only moves the camera once the player moves it.
+            // The camera is not moved here: it follows the cursor by the page's one rule, which reads
+            // this row as the system itself and slides the camera across to it
+            // (<see cref="OnFocusVisual"/>).
             //
             // Once the camera is all the way in, the map pushes the system's own label off the top of
             // the screen and draws a tooltip anchor on the star instead - so that is what the pointer
@@ -3011,11 +3169,6 @@ namespace ES2Access.Screens
             AgeTooltip tip = tooltip;
             vtable.OnFocusVisual = () =>
             {
-                if (CursorMoved())
-                {
-                    GalaxyViewLevels.PanTo(it);
-                }
-
                 AgeTooltip star = OrbitalStarTooltip(it);
                 if (star != null)
                 {
@@ -3032,25 +3185,12 @@ namespace ES2Access.Screens
             // drawing there: the circles when the camera is out, the orbital cards when it is in...
             string place = SystemKey(node, empire);
             ControlId id = ControlId.Referenced(it, place);
-            // ...except that opening a system is also the one gesture that says "this is the place I am
-            // reading now", so the camera comes in on it - owner-ruled, and it is what makes the map draw
-            // the very things the branch is about to read out. The bookkeeping is done by hand because
-            // OnExpand is an OVERRIDE: setting it stops the engine flipping the state itself.
+            // ...and opening one no longer moves the camera itself: Right opens the branch AND steps
+            // inside it, and the first child's own focus is what brings the camera in, through the one
+            // rule (<see cref="OnFocusVisual"/>). So expansion is left to the engine and only the
+            // CLOSING is an override, because coming back out is a camera move nothing else makes.
             HashSet<ControlId> expansion = builder.Expansion;
             ControlId group = id;
-            vtable.OnExpand = () =>
-            {
-                if (expansion != null)
-                {
-                    expansion.Add(group);
-                }
-
-                // NOT ZoomIn: that is the map's left CLICK, which while a targeting mode is armed means
-                // "confirm the target here". Opening a branch is not a click and must never post an
-                // order. Nothing is said either - the engine already says the group opened, and the
-                // camera moving is what opening it means.
-                GalaxyViewLevels.ZoomTo(it);
-            };
             vtable.OnCollapse = () => Collapse(expansion, group, it);
             builder.BeginGroup(id, vtable);
             // Only what is open costs anything: a galaxy of closed systems declares one node each.
@@ -3327,11 +3467,7 @@ namespace ES2Access.Screens
         /// what closing it MEANS rather than a second thing that happened. The bookkeeping is by hand
         /// because OnCollapse is an override - declaring it stops the engine flipping the state itself.
         /// </summary>
-        private static void Collapse(
-            HashSet<ControlId> expansion,
-            ControlId group,
-            StarSystemNode node
-        )
+        private void Collapse(HashSet<ControlId> expansion, ControlId group, StarSystemNode node)
         {
             if (expansion != null)
             {
@@ -3342,6 +3478,12 @@ namespace ES2Access.Screens
             {
                 ZoomOut(node);
             }
+
+            // Whether or not there was a zoom to undo, the branch is shut: the camera is no longer
+            // reading the inside of this system, so opening it again brings the camera back in
+            // (<see cref="LeftPlace"/>). Backslash deliberately does NOT do this - a zoom-out by hand
+            // is the player choosing to go on reading the same place from further off.
+            LeftPlace(node);
         }
 
         /// <summary>
@@ -7725,12 +7867,10 @@ namespace ES2Access.Screens
             return Visible(background) ? AgeText.Label(label) : null;
         }
 
-        /// <summary>Focus follows the thing across the map, exactly as it follows a system: the camera is
-        /// asked for it - the game's own "show me this" route, which takes a thing with a position rather
-        /// than a place - and the pointer is put on its label so the game draws its dossier where it can
-        /// be read. The camera only where the cursor MOVED, for the reason <see cref="AddSystem"/>
-        /// records: a page being re-entered re-seats its cursor, and that is not a player going
-        /// anywhere.</summary>
+        /// <summary>Point at the thing the map draws out between the stars, so the game shows its dossier
+        /// where it can be read. The camera is not asked for here: a drifting row IS a place to the
+        /// page's one camera rule, which slides across to it exactly as it does to a star
+        /// (<see cref="OnFocusVisual"/>).</summary>
         private static void Follow(
             NodeVtable vtable,
             IGameEntityWithGalaxyPosition entity,
@@ -7738,16 +7878,10 @@ namespace ES2Access.Screens
             AgeTooltip tooltip
         )
         {
-            IGameEntityWithGalaxyPosition it = entity;
             AgeTransform anchor = widget;
             AgeTooltip tip = tooltip;
             vtable.OnFocusVisual = () =>
             {
-                if (CursorMoved())
-                {
-                    GalaxyViewLevels.PanTo(it);
-                }
-
                 if (anchor != null)
                 {
                     PointerFocus.MoveTo(null, tip, anchor);

@@ -401,3 +401,22 @@ can only be proved by the NEXT cold launch — count them in the newest
 at every zoom `[Beginner] test` reaches, so the fallback never fires (the star and deposit carriers
 were both exercised, the star one by a direct call). A curiosity in neither of the two new columns
 (one already being expedited, or quest-locked) does not exist on this save either.
+
+## Batch 10 (2026-08-23) — one camera rule, and the carrier's place
+
+**Landed and verified live**: the galaxy camera follows the cursor by ONE rule
+(`GalaxyHudScreen.OnFocusVisual` → `Place` → `FollowPlace`, over a new per-screen
+`Screen.OnFocusVisual` hook), replacing the system row's own `PanTo`, `OnExpand`'s `ZoomTo` (system
+nodes no longer override `OnExpand` at all) and the go-to landing's own `SnapTo`. Gate = the place
+the camera was last ASKED for and how close, kept mod-side and cleared on `OnPop`, because
+`FocusedStarSystemNode` was measured to be where the camera IS and to lag a flight (es2-facts). A
+Backslash zoom-out now survives the rest of a system being read; a collapse still zooms out and also
+drops "inside", so re-opening comes back in; a landing moves regardless of the record. The mod's
+tooltip carrier draws at the screen's BOTTOM-LEFT (`TOP_LEFT` anchor at the corner, so a panel of any
+height sits inside the screen) with its words unchanged.
+
+**Unproven**: nothing here was pressed as a PHYSICAL key — `POST /key` answered 409 (the game was not
+the foreground window) for the whole stage, so Backslash, Ctrl+L and the scanner chords were exercised
+only as injected actions. The mod's carrier for a PLANET dossier still never fires on this fixture,
+so the bottom-left placement was proved on a deposit dossier only (one carrier, `TOP_LEFT`, drawn at
+`0,420,240,380` on a 1280x800 screen).

@@ -516,6 +516,18 @@ namespace ES2Access.Screens
             }
         }
 
+        /// <summary>
+        /// The cursor has landed on one of this screen's controls - the screen's own half of the focus
+        /// visual, run beside the node's (<c>NodeVtable.OnFocusVisual</c>) and before it.
+        ///
+        /// For a rule that is the SCREEN's rather than any one control's: the galaxy page moves the
+        /// camera to whatever the cursor is reading, and that rule has to answer for every kind of node
+        /// on the page - a system, a world, a card, a lane, a fleet - which as a per-node hook is the
+        /// same rule written out five times, differing by accident. Ask
+        /// <see cref="GraphNavigator.CursorMovedHere"/> inside it, exactly as a node hook would.
+        /// </summary>
+        public virtual void OnFocusVisual(GraphNode node) { }
+
         public virtual void OnFocus() { }
 
         public virtual void OnUnfocus() { }

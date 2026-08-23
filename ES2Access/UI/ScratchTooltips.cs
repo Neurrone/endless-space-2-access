@@ -29,9 +29,15 @@ namespace ES2Access.UI
     /// but under an intermediate GameObject that carries NO <c>AgeTransform</c>, so
     /// <c>AgeTransform.Init</c> finds no parent to register with and the carrier never joins the
     /// game's own widget tree: nothing lays it out, nothing draws it, and no walk of the window's
-    /// children can trip over it. Its rect is left at the origin of that screen, so the tooltip is
-    /// drawn in the screen's corner - there is no widget for it to sit under, which is the whole
-    /// reason it exists.
+    /// children can trip over it.
+    ///
+    /// WHERE the panel then appears is a decision, because there is no widget for it to sit under:
+    /// the BOTTOM-LEFT of the screen (owner ruling 2026-08-23). The carrier is parked at the screen's
+    /// bottom-left corner with the anchor mode that puts the window ABOVE its anchor
+    /// (<c>TOP_LEFT</c>), so the panel's own bottom edge lands on the bottom of the screen whatever
+    /// height it turns out to have and nothing is ever clipped off - which parking it at the corner
+    /// with the ordinary <c>BOTTOM_LEFT</c> aim would do to every panel. A carrier therefore declares
+    /// its own anchor and <see cref="PointerFocus"/> leaves it alone.
     ///
     /// The aim rule these serve (owner ruling 2026-08-23): aim at the game's own widget wherever the
     /// game is drawing one, and only fall back to a carrier where it is not. Words are identical
@@ -54,6 +60,30 @@ namespace ES2Access.UI
 
         private static readonly Dictionary<string, Slot> Carriers = new Dictionary<string, Slot>();
         private static GameObject _host;
+        private static IAgeScreen _screen;
+
+        /// <summary>Whether this tooltip is one of the mod's carriers - asked by
+        /// <see cref="PointerFocus"/>, which re-anchors every tooltip it aims at to the widget under
+        /// the cursor and must not do that to a carrier: a carrier IS its own placement
+        /// (<see cref="Place"/>), and there is no widget under it to anchor to.</summary>
+        public static bool Owns(AgeTooltip tooltip)
+        {
+            if (tooltip == null)
+            {
+                return false;
+            }
+
+            Dictionary<string, Slot>.Enumerator walk = Carriers.GetEnumerator();
+            while (walk.MoveNext())
+            {
+                if (ReferenceEquals(walk.Current.Value.Tip, tooltip))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
 
         /// <summary>
         /// The carrier for <paramref name="key"/>, and whether the caller must (re)stamp it.
@@ -86,6 +116,7 @@ namespace ES2Access.UI
                 }
 
                 carrier = slot.Tip;
+                Place(slot.Tip);
                 bool rebind = !slot.Bound || slot.Stamp != stamp;
                 if (rebind)
                 {
@@ -123,6 +154,37 @@ namespace ES2Access.UI
             }
 
             _host = null;
+            _screen = null;
+        }
+
+        /// <summary>
+        /// Park a carrier at the bottom-left corner of the screen, pointing its panel UP.
+        ///
+        /// The engine places a tooltip window off its anchor's rect and clamps nothing
+        /// (<c>GuiTooltipController.ComputeWindowPosition</c>): the ordinary aim (<c>BOTTOM_LEFT</c>)
+        /// puts the window's TOP edge on the anchor's bottom, which from the corner would drop every
+        /// panel off the bottom of the screen. <c>TOP_LEFT</c> is the same corner read the other way -
+        /// the window's BOTTOM edge lands on the anchor - so a panel of any height sits above the
+        /// corner and inside the screen.
+        ///
+        /// Re-asked on every rebind rather than set once, because the corner moves with the
+        /// resolution and the carriers outlive a change of it.
+        /// </summary>
+        private static void Place(AgeTooltip carrier)
+        {
+            AgeTransform rect = carrier == null ? null : carrier.AgeTransform;
+            AgeTransform root = _screen == null ? null : _screen.Root;
+            if (rect == null || root == null)
+            {
+                return;
+            }
+
+            rect.X = 0f;
+            rect.Y = root.Height;
+            rect.Width = 0f;
+            rect.Height = 0f;
+            carrier.Anchor = rect;
+            carrier.AnchorMode = AgeTooltipAnchorMode.TOP_LEFT;
         }
 
         private static AgeTooltip Create(string key)
@@ -164,6 +226,7 @@ namespace ES2Access.UI
 
             _host = new GameObject("ES2Access dossier carriers");
             _host.transform.parent = screen.UnityGameObject.transform;
+            _screen = screen;
             return _host;
         }
 

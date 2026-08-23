@@ -439,7 +439,10 @@ namespace ES2Access.UI
         /// text, and every entry then reads the same however big its hit area is.</summary>
         private static void AnchorToFocus(AgeTooltip tooltip, AgeTransform anchor)
         {
-            if (tooltip == null)
+            // A carrier the MOD made is its own placement and there is no widget under it to anchor to
+            // (<see cref="ScratchTooltips"/>): re-anchoring one would drop its panel off the bottom of
+            // the screen, which is the corner it is deliberately parked in.
+            if (tooltip == null || ScratchTooltips.Owns(tooltip))
             {
                 return;
             }

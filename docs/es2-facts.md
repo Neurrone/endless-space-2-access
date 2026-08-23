@@ -2349,6 +2349,25 @@ orbital-card surface (`GalaxyViewLevels.FocusedSystem` plus the orbital labels w
 0 ms** later, at the identical camera (focus and eye equal to the flight's, step 12, `ZoomForced`
 still true, and `RestoreZoom` afterwards still returns the camera to where it started).
 
+**`FocusedStarSystemNode` is where the camera IS, lagging - never where it was sent.** Measured
+2026-08-23 on `[Beginner] test`, four states:
+
+| what was done | `FocusedStarSystemNode` |
+|---|---|
+| camera in on Ita at step 12 | `Ita` |
+| `ZoomToStep(Ita, 9)` (the mod's own Backslash zoom-out), camera still over Ita | `null`, within 3 frames |
+| the frame `SnapTo(Dusay)` is called (step already 12) | `null` — `Dusay` only on a later frame |
+| mid-flight of a game-led `RequestGalaxyOverviewViewLevel(Heka)` from Dusay at step 12 | `Dusay` for the whole 5-frame slide, `Heka` only once it settles |
+
+So it is the orbital view's own "which system am I up over" (the `zoomStep == ZoomStepsCount - 1`
+gate above), recomputed from the camera's position a frame or more behind it. **Mod policy
+(2026-08-23): nothing that has to know where the camera is HEADING may gate on it** - a
+follow-the-cursor rule gated on it re-snaps after every zoom-out by hand (the value is null) and
+mis-answers mid-flight (the value is the system being left). `GalaxyHudScreen`'s camera rule keeps
+its own record of the place the camera was last sent to instead, cleared when the page pops. What
+the value is still exactly right for is the two questions it already answers: "is the orbital-card
+surface up" and `Collapse`'s "is the camera still inside the branch I am closing".
+
 
 ## Card and tooltip drawing mechanisms
 

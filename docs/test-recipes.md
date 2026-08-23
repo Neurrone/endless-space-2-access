@@ -2532,3 +2532,50 @@ expanded, `POST /type "dustcid"` (4 results in 4 systems) then `ui.down` three t
 system is expanded at each step — the one the cursor is in — and `ui.back` ("Search cleared") leaves
 the LAST one open. A branch the player expanded before typing is never closed: expand Dusay by hand
 first and it is still open after the search has walked past it.
+
+## Batch-10 recipes (2026-08-23) — the camera rule
+
+**Watching the camera rule from `/input`.** One `/eval` after each injected action, printing the
+camera's own target and the cursor together, is the whole instrument:
+`((GalaxyViewCameraController)Services.GetService<ICameraService>().CameraController)
+.cameraTargetTransform.position` (fully qualify `Amplitude.Unity.Framework.Services` /
+`Amplitude.Unity.View.ICameraService`) beside `GalaxyViewLevels.ZoomStep`,
+`GalaxyViewLevels.CameraSettling` and `ModEntry.Navigator.CurrentNode.Id`. `settling=True` on the
+line after a step is a PAN in flight; `settling=False` with the step changed to 12 is the SNAP.
+`DevProbe.Camera()` answers the same focus/eye/step without the cursor.
+
+MEASURED 2026-08-23 on `[Beginner] test`, all through `POST /input`:
+
+- **Right on a closed system**: step 9 → 12, focus onto the system, `settling` false on the very
+  next probe (one snap, no flight), cursor on the system's first child.
+- **Down/Up inside one system** (management, planets, lanes, a fleet, a `Tooltips` dossier card):
+  nine consecutive steps, camera bit-identical at `(68.48,-22.85)` step 12 throughout.
+- **Backslash on the system row** (`ui.contextual`): step 12 → 9, focus unmoved — and then walking
+  the same children keeps step 9. That is the "a zoom by hand survives" rule.
+- **Left** (collapse): step 12 → 9, focus unmoved; **Right again** snaps back in. (Re-opening only
+  works because the collapse drops the rule's "inside" record — a build where Right after a collapse
+  leaves the camera out has lost `LeftPlace`.)
+- **Crossing systems with Down**: a step onto another system's ROW pans (`settling=True`, step
+  unchanged at 9 or at 12); the next step INTO its children snaps.
+- **`POST /type "dustcid"` + `ui.down` × 3**: one snap per step, four systems (Leo, Qarius, Primus,
+  Heka), `settling` false at each — and 9.4 still holds, `ui.back` leaving only the last one open.
+- **A go-to** (`ui.goToLocation` on a turn-log row, the scanner's `galaxy.scanGoTo`): camera in at
+  step 12, `settling` false, and the announcement is the SETTLED row
+  ("Libra, -11, 11, group, No owner, expanded, 5 of 13, Libra II, Tiny Boreal, Colonizable,
+  1 curiosity, 2 of 2"). It moves even when the record says the camera is already there, which is
+  the case to test by pressing Backslash first.
+- **A game-led locate** (`Gui.GuiGameWindowService.RequestGalaxyOverviewViewLevel(node)` from
+  `/eval`): the cursor lands, the camera arrives once, and ten probes over five seconds show no
+  second jump.
+- **A HUD stop** (`ui.focusTurnLog`): the camera does not move at all — the rule is scoped to the
+  map stop.
+
+**Where the mod's own tooltip carrier draws.** `POST /type "antim"` from the map stop with the camera
+in on Primus, then `Gui.GuiService.GetWindow<GuiTooltipWindow>(false)` for
+`AgeTransform.GetGlobalPosition()`, `AgeTooltip.AgeTransform.gameObject.name` and
+`AgeTooltip.AnchorMode`. Since 2026-08-23 that reads
+`(0, 420, 240, 380)` / `Dossier deposit/543/StrategicDeposit4` / `TOP_LEFT` on a 1280x800 screen —
+the panel's bottom edge ON the screen's bottom edge, left edge at x=0. `crop-shot.ps1 -Rect
+0,420,240,380` is the evidence crop. The AGE screen's own size is
+`GetWindow<GuiTooltipWindow>(false).AgeTransform.Screen.Root.Width/Height`, which on this machine
+equals `Screen.width/height` 1:1.
