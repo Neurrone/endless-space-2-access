@@ -100,7 +100,9 @@ both.) Three tiers share one key pair, separated by modifier — category, subca
 instance — plus one "go to what it points at" key (wotr-access lineage; the bare pair can
 stay with the game where the game uses it).
 
-- **Rebuild and re-sort on every press; cache nothing.** The sort key is distance from
+- **Rebuild and re-sort on every press; cache nothing** — gather per press, but COMPOSE per
+  row: a description built for every result and read for one is the scanner's per-frame
+  allocation. The sort key is distance from
   where the player is reading, which moves with every arrow press. Snapshot everything the
   keystroke's *rules* can ask about, not just the current scope — the skip-empty rule is a
   question about scopes the player is not in.
@@ -108,8 +110,9 @@ stay with the game where the game uses it).
   one is up, else the focused world stop's own place, else home. The go-to key feeds back
   into it, so a jump becomes the new place to look around from.
 - **Cycles skip empty scopes; instance stepping wraps; a re-scope resets to the nearest
-  instance** — a position in a rebuilt list is an index, not an identity. Each category
-  remembers its own last subcategory; a first visit is "all". The "empty" line is then
+  instance** — a position in a rebuilt list is an index, not an identity, so re-seat on the
+  same thing by a stable key. Each category remembers its own last subcategory — BY NAME where
+  the subcategory list is content-derived; a first visit is "all". The "empty" line is then
   only reachable by standing still while the world empties the parked scope.
 - **The first press announces without stepping — and still reads the instance it is parked
   on**; only an empty scope replaces the landing with its own sentence. An announce-only
@@ -124,7 +127,9 @@ stay with the game where the game uses it).
   mod's categories are the project's own, membership is many-to-many, and any divergence
   from the game's coloring is written down where the next reader will hit it.
 - **The scanner is the second enumeration of the world.** Feed it the same drawn lists and
-  visibility gates the navigation tree uses — and where the two disagree, the disagreement
+  visibility gates the navigation tree uses, and the same LANDING (a world screen has one
+  go-to helper; the game's attention service is one of its callers) — and where the two
+  disagree, the disagreement
   IS a finding (ES2's found fleets no tree branch held, and map nodes the scanner had
   skipped). One trap in that rule: a drawn-label list may be culled by camera LOD; gate on
   the game's information predicate, not its culling, or a whole category vanishes with the

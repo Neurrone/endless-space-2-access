@@ -86,7 +86,10 @@ trip in [ui-navigation.md](ui-navigation.md)).
    store's assemblies" as the completeness check — one clean build proves nothing about
    the store you don't have installed.
 2. **Grep for the dispatch idioms.** High-yield patterns: `SendMessage(` (handler-name
-   dispatch), `GetService<`/`Instance.` (locators), `Notify(`/`EventRaised` (buses),
+   dispatch — with DontRequireReceiver an unimplemented handler is silent, so grep the handler
+   NAME before believing the state it sets; and a handler with an OPTIONAL parameter compiles to
+   two arities, and the engine refuses the no-arg call silently), `GetService<`/`Instance.`
+   (locators), `Notify(`/`EventRaised` (buses),
    `OnClick`/`Cb` naming, `IsReady`/`VisibilityChanged`/`OnEndShow` (readiness),
    `PostOrder`/`Command` (action layer), `Localize`/`LocalizationKey`. And when a base
    class anchors a family of sibling subclasses, survey the WHOLE family in one pass —

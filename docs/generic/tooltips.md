@@ -20,7 +20,8 @@ worked example — method and full findings in the game-specific `es2-gui-framew
    hyperlink machinery at all; bracket markup is icon substitution only.)
 4. **Can elements inside a tooltip have their own tooltips, or be clicked?** (ES2: a few
    widgets inside rich tooltips carry nested tooltips shown by hover *replacement* — extra
-   data, not a navigation model; nothing in a tooltip is clickable.)
+   data, not a navigation model — though a feature may still hold a control: ES2 rents a
+   named ship from inside a tooltip.)
 5. **Does the game append state into tooltip text** — "why disabled" hints? (ES2: yes,
    `FormatButtonHint` appends the reason into `Content`; always read tooltips live.)
 6. **Where do tooltips render** — anchored to the widget, or at the cursor? Cursor-anchored
@@ -107,7 +108,9 @@ Rules that came out of shipping this, all hit in practice:
   draws over several rows reads as those rows; a textless gauge reads as its drawn
   proportion. Two safety nets make a hundred-class surface
   tractable: unknown unit types read through the generic scoped reader, and a dev probe
-  names which reader answered each unit — coverage gaps surface in tooling, not in speech.
+  names which reader answered each unit, with the FALLBACK reader registering every class it
+  answered for (judging a feature from source over-reports — prefab captions are invisible
+  there) — coverage gaps surface in tooling, not in speech.
   Remaining traps, all hit in practice: check *which* tooltip the window is currently bound
   to before reading; the
   window pools its child widgets, so a shrunk tooltip still carries the previous one's
@@ -124,7 +127,9 @@ Rules that came out of shipping this, all hit in practice:
   nothing else, and silently, because the reading itself succeeds.
 - **Point at the widget that owns the tooltip, not its row.** A row's tooltip often hangs
   off a child (the title label), and pointing at the container draws nothing — while the
-  tree dump still looks plausible and the node still declares the tooltip. Verify tooltip
+  tree dump still looks plausible and the node still declares the tooltip. The reverse bites
+  too: a caption whose WORD is on the label and whose SENTENCE is on the group around it
+  needs the group, or the sentence gets no node at all. Verify tooltip
   rendering with the drawn-tooltip probe, never with the tree dump: an expected long
   tooltip is accepted only once the review buffer, with the node focused, actually holds
   its words — the declaration itself stays unconditional (above), which is exactly why a
@@ -156,14 +161,19 @@ Rules that came out of shipping this, all hit in practice:
 - **One thing, two tooltip objects, swapped by view state.** Where the game draws the same
   thing through different widgets per view (a zoom tier, a list-versus-detail switch), each
   widget carries its own tooltip: resolve which one to read at READ time from whichever is
-  drawn now, or the remembered one reads empty the frame the view changes. Its mirror in a
+  drawn now, or the remembered one reads empty the frame the view changes. And when a view
+  tier draws NOTHING for data the game still holds, a render-keyed tooltip engine (pointer +
+  class + target/context fields, no ownership check) can be driven from a carrier widget the
+  mod owns, stamped with the same fields — words byte-identical to the drawn case. Its mirror in a
   camera-driven view is that the anchor can leave the screen while focus stays on the node,
   so a camera-dependent focus pointer must re-commit on every camera change, not once when
   focus arrives.
 - **One implementation of the short/long test, shared with the lines reader.** Two copies
   of "are this tooltip's words on the widget" that disagree produce a tooltip announced
   from one source and reviewed from another — and nothing in the spoken output reveals
-  it. The mode test and the content reader must ask the same helper. The AIM obeys the
+  it. The mode test and the content reader must ask the same helper — and so must the
+  answer to WHICH tooltip a node has (own / parent / sibling / list entry): four collectors
+  feeding one mode test still ship four answers. The AIM obeys the
   same law: a parity check asks the READING which tooltip it points at — it never
   re-derives one from the widget tree, because the deepest prefab tooltip is often
   decoration and the check then reports a defect on a screen whose pointer is correct.
@@ -186,9 +196,13 @@ Rules that came out of shipping this, all hit in practice:
 A dedicated speak-tooltip key is unnecessary under 1+2 (that was the ES2 call: no Space/F1
 tooltip key at all), and only justified under 3.
 
-Nested tooltip-on-tooltip data (question 4) slots into strategy 2 as extra buffer lines — a
-"verbose" enhancement, never a navigation model, when the nesting is hover-replacement
-rather than a link graph.
+Nested tooltip-on-tooltip data (question 4) slots into strategy 2 as extra buffer lines when
+the nesting is hover-replacement rather than a link graph — with two corrections measured
+since: hover-REPLACEMENT nesting releases the inner panel's data the moment the replacement
+draws, so the only readings are the parent's drawn lines or the provider behind the inner
+widget (never the replaced panel); and the inner things become NODES (a "Tooltips" region
+under their owner) when the owner rules them navigable — extra buffer lines are the default,
+not the ceiling.
 
 Icons written inline in tooltip text are their own subject:
 [icons-and-symbols.md](icons-and-symbols.md).

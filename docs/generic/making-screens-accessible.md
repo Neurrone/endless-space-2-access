@@ -194,7 +194,9 @@ reload-safe ([hot-reload.md](hot-reload.md)) and per-frame cheap — `Build` run
 - **When N prefabs share one reader, per-screen evidence pairs do not scale** — ship a
   mechanical parity check that re-derives both sides (the drawn tree, the declared graph)
   and runs itself on whatever the player meets; a shared reader's premises are per-prefab
-  data and only measurement can validate them.
+  data and only measurement can validate them. Validate each of its buckets against one
+  known-good node before trusting a count; and a mis-seated cursor early in a regression
+  route amplifies into N screens of unrelated diff — normalise first.
 - **A fix whose whole effect is an ABSENCE has no pair until you build one.** Silence on a
   clean run is not evidence, and these repro windows are narrow by nature. Revert the one
   guard, rebuild, reload, re-run the same probes: the failing half costs a couple of minutes

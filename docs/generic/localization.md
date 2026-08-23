@@ -41,7 +41,9 @@ infrastructure); starting with the seam costs nearly nothing.
 2. **Mod-authored phrases** (role words like "button", status words, screen names, the
    startup line) — come from the mod's string table, never inline literals.
 3. **Connective structure** (list separators, "N of M", "x N") — also from the string table,
-   because they are language-dependent in both wording and word order.
+   because they are language-dependent in both wording and word order. A separator a MATCHER
+   reads (the type-ahead's name/metadata comma) is engine, not string table — or a locale that
+   re-punctuates breaks the rule.
 
 ## The string table (`ModStrings` pattern)
 

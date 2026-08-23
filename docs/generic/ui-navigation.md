@@ -100,7 +100,9 @@ which no dump reveals. Key such lines on the game's *data* object, never the wid
     instance of the surface and is reached AFTER reading rather than while reading (a
     popup's browse/dismiss rails, a wizard's Back/Next) is a STOP — putting it in the
     reading walk makes the length of the content the price of reaching it. A band that is
-    part of what the surface is SHOWING stays a region. Declare regions unconditionally — a lone
+    part of what the surface is SHOWING stays a region, and a game-drawn caption that titles a
+    block is the REGION's name, never a row of its own, unless the caption itself carries a
+    tooltip. Declare regions unconditionally — a lone
     region's jump is silently consumed, by design — but never region only PART of a
     stop: the jump is asked of the focused node's own region key, so an unregioned node
     answers it with silence.
@@ -111,7 +113,8 @@ which no dump reveals. Key such lines on the game's *data* object, never the wid
     expansion bookkeeping, not add-on callbacks (they exist for adapters driving a
     retained game-side container that owns its expand state); a hook that only wants a
     side effect must flip the builder's expansion set itself, or the tree refuses to stay
-    open.
+    open. A group's first child is found through the parent CHAIN, not by parent identity — a
+    group whose children sit under a context otherwise reads as empty.
 - **Expansion may move the camera only while both tiers stay reachable.** In a game whose
   view distance decides what is drawn, "go in" (tree) and "get closer" (camera) are
   different verbs — the risk of binding them together is that whichever information tier
@@ -119,7 +122,8 @@ which no dump reveals. Key such lines on the game's *data* object, never the wid
   therefore fine exactly when the other tier remains reachable through an explicit
   zoom-out key with the branch still open (ES2: expanding a system zooms in, Backslash
   zooms back out, and collapse un-zooms only while the camera is still on that system —
-  owner-ruled); where no such key exists, keep the camera on its own explicit control.
+  owner-ruled); where no such key exists, keep the camera on its own explicit control. And an
+  expansion that acts (camera, selection) must not be auto-undone when it turns out empty.
 - **`GraphAnnouncer`** — composes speech by **diffing the old and new focus paths**: the
   common ancestor prefix stays silent, newly entered levels read outermost-first, duplicate
   labels dedupe. Injected delegates (`PartFilter`, `PositionText`, `ExpandedStateText`) keep
@@ -160,7 +164,9 @@ which no dump reveals. Key such lines on the game's *data* object, never the wid
   an `IsActive()` predicate re-evaluated every tick against live game state (window
   visibility + readiness gates + "is a sub-window covering me"), and `Build(GraphBuilder)`.
   The manager sorts active screens by layer, diffs against its stack, keeps one `GraphState`
-  per live screen (a covered screen keeps its cursor), and speaks `ScreenName` on focus.
+  per live screen (a covered screen keeps its cursor), and speaks `ScreenName` on focus. A page
+  that turns IN PLACE (same screen, new subject) must announce itself once and re-seat, because
+  focus never changes hands and the manager's contract says nothing.
 - **Input**: the whole subject — the mod's chord/repeat/stand-down layer, the default key
   table, the game's colliding bindings and the suppression doctrine that resolves them —
   lives in [input.md](input.md).
@@ -258,7 +264,9 @@ which no dump reveals. Key such lines on the game's *data* object, never the wid
   provisional answer).
 - **Discover controls, don't trust named references**: a reused window can carry duplicate
   per-skin control sets (ES2's options window has two complete button bars) with the API's
-  named fields pointing at one skin — possibly the hidden one. And **no visibility flag can
+  named fields pointing at one skin — possibly the hidden one; and a by-name widget lookup
+  must use a name the prefab uses ONCE — a shared container name plus a depth budget answers
+  with a same-named widget from another panel, plausibly. And **no visibility flag can
   be trusted on its own**: containers hide whole ancestor chains while the child still
   reports visible, and pooled list containers do the reverse — surplus recycled children
   stay "visible" with zero alpha, so a flag-trusting sweep declares rows the player cannot
@@ -266,7 +274,9 @@ which no dump reveals. Key such lines on the game's *data* object, never the wid
   count came back down). Zero alpha is only one retirement style: pools also park surplus
   children fully visible with stale content arranged outside the parent's extents, and retire
   rows by fading. So take counts and enumeration from the data the game BOUND, never from the
-  widget pool, and gate every per-widget read on effective drawn-ness. Effective drawn-ness is
+  widget pool, and gate every per-widget read — and the AIM of a tooltip pointer — on effective
+  drawn-ness (a strip `Visible` with items at alpha 1 under a line at alpha 0 aims the pointer
+  at an invisible icon). Effective drawn-ness is
   the ancestor walk *plus* whatever render
   test the engine itself honours (alpha, clipping). And in a pannable or zoomable surface
   there is a third answer that is neither: **a cull** — `Visible` recomputed per frame from
@@ -487,8 +497,10 @@ which no dump reveals. Key such lines on the game's *data* object, never the wid
   of ancestry per build, found from the id's own path, and dies two ways — at once when
   nothing in the render leads to it, and on a budget when the branch never produces it. Size
   the budget in frames-of-flight, not rebuilds: an auto-expanded level may run its own camera
-  move. The player's next move cancels a pending landing; one that waits out a camera flight
-  and then fires yanks them somewhere they no longer asked to go.
+  move. And a landing announces once, so it waits not for the node to EXIST but to be
+  FINISHED — in a camera-driven view the same node reads differently at two distances;
+  "present" is not "settled". The player's next move cancels a pending landing; one that waits
+  out a camera flight and then fires yanks them somewhere they no longer asked to go.
 - **A seat computed from a POSITION in a list must resolve to the same id for several
   consecutive frames before it commits**: a container's children can arrive over several
   frames, and a positional id silently changes owner — the announcement is right for the
@@ -566,7 +578,10 @@ once from WotR source and now written down so the next game doesn't have to:
   for "no type-ahead on this screen". Every raw-key reader consults the first flag; see
   [input.md](input.md).
 - **A screen may supply its own search scope and landing action** — `(count, textOf(i),
-  land(i))` — for items not declared in the graph (a collapsed tree's leaves). The landing
+  land(i))` — for items not declared in the graph (a collapsed tree's leaves); one
+  expansion-forced build of the stop answers that generically — index what each collapsed
+  node WOULD declare, once per search, and reveal on landing — so a screen rarely needs a
+  scope of its own. The landing
   callback does the screen's own work (expand the ancestors) and *returns the id to focus*,
   so the navigator still owns the announce-and-track step and the architecture's core
   invariant holds: a focus change is announced exactly once, by one code path. And the scope

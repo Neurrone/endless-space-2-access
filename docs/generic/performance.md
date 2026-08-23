@@ -92,6 +92,10 @@ interval with the gap scaled to crowd size (total sweep time roughly constant); 
 node counts; event narration condenses before speaking rather than queueing one line per raw
 engine event. When a cap drops content, say so — silent truncation reads as completeness.
 
+A host call that MAY log is a per-frame cost of its own and can be an uplink: check what the
+host does with a log line (disk, telemetry) before provoking one per frame — prefer the quiet
+overload or a direct registry read.
+
 **Pick a wait's unit by who is waiting.** A gap the player HEARS — a repeat interval, a
 re-announce throttle, a debounce before speaking — is wall-clock seconds; a settle that waits
 for the game's own next refresh or layout pass is frames. The two are interchangeable only at

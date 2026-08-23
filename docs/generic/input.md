@@ -39,7 +39,7 @@ Proven across wotr-access/SoC/ES2 (make rebindable eventually):
 
 | Keys | Action |
 |---|---|
-| Arrows | Move (repeating); Left/Right adjust sliders, expand/collapse tree groups |
+| Arrows | Move (repeating); Left/Right adjust sliders; Right on a closed group expands AND enters, Left on a child ascends AND collapses |
 | Shift+Left / Shift+Right | Coarse adjust, ~10 increments (repeating) — see [widgets.md](widgets.md) |
 | Tab / Shift+Tab | Cycle tab-stops, landing on the stop's remembered position |
 | Enter | Activate (primary); on a key-binding row, start capturing the primary binding |
@@ -105,7 +105,9 @@ patch site per input path (`src/graph-ui/GameKeyStandDown.cs`, an exemplar to im
   **The order among the MOD's own claimers is a rule of its own**: when two mod-invented
   surfaces are live at once — a mode of a widget and a live type-ahead search — Escape
   ends the INNERMOST one and the next press ends the next; a hook asked before navigation
-  must decline the key while an inner surface holds it, or one press throws both away.
+  must decline the key while an inner surface holds it, or one press throws both away. Two
+  mod actions may share a chord; a fan-out dispatcher fires BOTH — the safety is disjoint
+  answerers, not order.
 - A key the mod deliberately leaves to the game can also be *made* to be consumed by the
   game's own authority: give the game's focus system a key-exclusive widget and its
   dispatcher swallows Escape itself (its mouse flows rely on this). Never depend on
@@ -131,7 +133,9 @@ patch site per input path (`src/graph-ui/GameKeyStandDown.cs`, an exemplar to im
   door to one of the game's own surfaces (a chat bound to Enter/Tab). And the suppression
   predicate must be able to answer about a CHORD, not just a key: a per-key claim on Tab
   hides Ctrl+Tab from the game as surely as Tab itself, so "move the game's binding to a
-  free chord" does nothing until the chord is handed back explicitly.
+  free chord" does nothing until the chord is handed back explicitly. And a probe built on
+  that per-key predicate answers the KEY's claim — a chord-level claim is provable only with
+  real key events.
 - **Remapping a game binding is a decision the mod's developer makes explicitly for their
   game — never an automatic pattern.** When chosen, go through the game's own options API
   rather than shadowing (so the options screen shows it and the player can re-bind), touch

@@ -46,8 +46,8 @@ mutes voicing but `/speech` still captures.
 - `POST /input` — body = one action key (`ui.down`, `buffer.lineDown`…); its key-claim counterpart is
   `/eval ES2Access.Dev.DevProbe.Claims("Escape")` — the latch only lives for the frame an injection
   is consumed (no key was held), so catch it with `POST /wait` on the probe's own text, never a
-  second request. `DevProbe.Chord("<chord>")` is the question about a CHORD — `Claims` is asked per
-  `KeyCode` and so hides chords entirely; `Claims` also reports `leftToGame`
+  second request. `DevProbe.Chord("<chord>")` answers per key code too (`LeavesToGame` is its
+  extra) — a chord-level claim needs `POST /key` with `hold=250&gap=150`; `Claims` also reports `leftToGame`
 - `POST /type` — body = characters to TYPE at the focused screen (the type-ahead search), through the
   same gates a keypress passes; answers `taken`/`searching`/`search`/`results`/`focus` plus the speech
   it caused. `/input` cannot carry it: that queue is actions, and typing is text. Neither reaches a
@@ -150,7 +150,10 @@ execution policy). First act in-game: minimize the tutorial popup (recipe in
 
 **Reload loop.** `dotnet build ES2Access/ES2Access.csproj` → `POST /reload` →
 `GET /loader/status` (`staleBuild:false`, `modAssemblyName` incremented). It can answer
-BEFORE a queued reload has run (`staleBuild:true`, old name) — poll again, don't rebuild.
+BEFORE a queued reload has run (`staleBuild:true`, old name) — poll again, don't rebuild. Reload
+before a regression walk after a save load (`GraphState` survives the load); `POST /loadsave` as
+soon as a walk's state is suspect; time a transition with a boolean `/wait` predicate, never a
+logging probe.
 
 **Evidence crop.** A Class-backed tooltip's review buffer reads EMPTY in `/gui/graph?buffers=1`
 unless the node is focused first (its words only exist once the tooltip window draws them — see
@@ -192,6 +195,7 @@ on whichever screen is FOCUSED: `promised` (a node claims a dossier nothing woul
 tooltip no node covers / whose words none carries), plus `decoration`, `hidden` (alpha gate off) and
 `undescribed` (a GAME defect: no `GuiTooltipDescription`). The painted half needs
 `Screen.RootTransform`; `"root": null` means declaration-side buckets only — not a clean screen.
+Parity COUNTS on a culling surface depend on camera position; compare buckets, not totals.
 
 **A card's tooltip is rarely on the card.** `PointerFocus` shows the tooltip of the widget it is
 pointed AT, so pointing at a row whose tooltip hangs off a child inside it (the planet card's
@@ -256,15 +260,18 @@ key on the same node with no mode up, which must still do the node's own thing.
 with `POST /input`, save `GET /gui/graph?buffers=1` per family to a scratchpad `before/`, make
 the change, walk the IDENTICAL route into `after/`, `diff` (normalise instance-hash ids such as
 `droplist:-138580/…`). It works because the dump is text and stable, and unfocused Class-backed
-tooltips read EMPTY on both sides, so they cancel. A "before" needed afterwards: `git stash push
+tooltips read EMPTY on both sides, so they cancel — and are therefore UNPROVEN by the diff: a
+change touching them needs a FOCUSED second pass over the nodes that carry them. A route is only
+identical from a normalised cursor AND camera — drive to an edge and re-seat the camera/zoom in the
+route's own prologue before the first dump; a screen that remembers its cursor, or a camera-driven
+page, makes the two walks start elsewhere. A "before" needed afterwards: `git stash push
 -u -- ES2Access ES2Access.Tests` → build → `/reload` → capture → `git stash pop` → build →
 `/reload` (~3 min). A **sheet** baseline must come from ONE session — `GraphSheet` row keys
 derive from `GetHashCode()`, which survives a hot reload but not a restart — so the stash loop,
 never two launches; the loop is UNSAFE while another stage edits the same trees. For a purely
 ADDITIVE announcement change, null the injected dependency that produces the new part
-(`GraphAnnouncer.Carry = null`) and dump instead of stashing. A camera-dependent focus visual is
-re-committed via `Navigator.ClearVisual()` from OnUpdate (`OnFocusVisual` fires once per focus
-CHANGE). `GET /gui/graph?screen=KEY&buffers=1` reaches screens whose window exists without a game
+(`GraphAnnouncer.Carry = null`) and dump instead of stashing.
+`GET /gui/graph?screen=KEY&buffers=1` reaches screens whose window exists without a game
 (`screen.game-menu`, `screen.rename`); an INACTIVE screen's by-key dump holds only the shared HUD
 stops plus stale content — open the screen first.
 
