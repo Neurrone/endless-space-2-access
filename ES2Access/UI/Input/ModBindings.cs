@@ -178,6 +178,46 @@ namespace ES2Access.UI.Input
             }
         }
 
+        /// <summary>Whether this is one of the mod's own actions - what tells a key-mapping row of the
+        /// mod's Keybinds tab from one of the game's Controls tab, both of which are the same
+        /// <c>OptionKeyMappingItem</c> and reach the same commit.</summary>
+        public static bool Knows(string actionKey)
+        {
+            return actionKey != null && Current.ContainsKey(actionKey);
+        }
+
+        /// <summary>
+        /// WHICH OF THE MOD'S ACTIONS THIS CHORD FIRES, or null where it fires none.
+        ///
+        /// Asked of the live input layer rather than of the two slots a row draws, because an action
+        /// bound to more than two chords keeps the extras: they still fire, so they still shadow, and
+        /// a warning built off the rows alone would miss exactly the keys nobody can see.
+        /// </summary>
+        public static string ActionOn(KeyCombination chord)
+        {
+            ModInput input = ModEntry.Input;
+            if (chord == null || input == null || chord.Equals(KeyCombination.None))
+            {
+                return null;
+            }
+
+            IList<InputAction> actions = input.Actions;
+            for (int i = 0; i < actions.Count; i++)
+            {
+                IList<InputBinding> bindings = actions[i].Bindings;
+                for (int b = 0; b < bindings.Count; b++)
+                {
+                    KeyboardBinding keyboard = bindings[b] as KeyboardBinding;
+                    if (keyboard != null && chord.Equals(KeyChords.ToCombination(keyboard)))
+                    {
+                        return actions[i].Key;
+                    }
+                }
+            }
+
+            return null;
+        }
+
         /// <summary>Whether an action is on something other than the keys it shipped on - what the
         /// test report and a future "reset this row" ask.</summary>
         public static bool Moved(string actionKey)
