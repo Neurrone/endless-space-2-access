@@ -1053,40 +1053,52 @@ actually MOVED, in the game's own `InputBinding.ToRegistryString` form; moving a
 default takes the line out again, so a later build changing a default reaches everybody who
 never touched that key.
 
-**THE SCANNER CATEGORY IS THE FIRST TAB AND IT EXISTS ONLY IN A GAME** (2026-08-23, stage 4;
-`ES2Access/UI/ModOptions/ScannerEditor.cs`). On the main menu the window keeps Keybinds alone —
-the columns the editor offers are a fact about the galaxy being played, and the naming box the
-game only registers in game — and the window is rebuilt when the player crosses that line
-(`ModOptions.Tick`, only ever with the window down). The panel is DRAWN EMPTY: no game row kind
-can express a list somebody edits, so `OptionsScreen` hands the whole rows region to a tree of mod
-nodes when the selected category's NAME (not its localized label) is "Scanner". A sighted player
-sees an empty tab; the tooltip on the tab says what it is for.
+**THE SCANNER TAB AND THE THREE CUSTOM-CATEGORY TABS EXIST ONLY IN A GAME** (2026-08-23; DRAWN
+with the game's own widgets since 2026-08-24, `ES2Access/UI/ModOptions/`). In a game the window's
+tab bar is **Scanner, Custom category 1, Custom category 2, Custom category 3, Keybinds**; on the
+main menu it is Keybinds alone, because the columns a category is written out of are a fact about
+the galaxy being played. The window is rebuilt when the player crosses that line
+(`ModOptions.Tick`, only ever with the window down).
 
-**The tree, per slot** — a group "Custom category {n}, {name}" ("empty" when unset, and the three
-slots are always listed):
-- "Name, {name}" → Enter opens the game's own rename box, pre-filled with the name or with
-  "Custom {n}". On validate the text is trimmed, blank does nothing, and a name already taken —
-  by a built-in category's live localized label or by another slot, case-insensitively — is
-  refused with "{name} is already the name of a category" and the slot keeps what it had.
-  **An EMPTY slot's group holds only that button**: a category is a name plus what it asks for,
-  so naming it is what fills the slot.
-- One expandable group per built-in category, "{category}, {n} selected", holding one checkbox
-  per column: the columns that category writes down, then — for the four derived ones — the kinds
-  found THIS game (keyed by the definition's own name, labelled by its localized title), then any
-  stored selector this galaxy has no column for, ticked and read as "{key}, not found this game"
-  so it can be taken off. Deliberately not one flat checklist.
-- A "Keywords" group: "Add keyword" (same box; a duplicate is refused with "That keyword is
-  already in this custom category") and one "Remove keyword, {kw}" per keyword, which speaks
-  "{kw} removed" and lets the cursor land where the list now leads.
-- "Clear this custom category", no confirmation — Cancel is the undo — speaking
-  "Custom category {n} cleared".
+**The Scanner tab is three drawn buttons**, one per slot, reading "Custom category {n}: {name}"
+("empty" when the slot is unset). Enter opens that slot's own tab and puts the cursor on its first
+row. (History: this tab held an INVISIBLE tree of mod nodes until 2026-08-24 and drew nothing at
+all, which the owner rejected. A per-slot editor in a second cloned WINDOW was measured and is not
+possible - es2-facts, "two `GuiModalWindow`s on one stack".)
+
+**A slot's tab is flat**, and every row on it is a row the game draws:
+- **"Name"** - a text box holding the category's name. Typing a name into an EMPTY slot is what
+  fills it, and the rest of the page appears; until then the tab holds this box alone. Blank is
+  refused ("A custom category needs a name"), and a name already taken - by a built-in category's
+  live localized label or by another slot, case-insensitively - is refused with "{name} is already
+  the name of a category". Both put back what was there, drawn and spoken.
+- **"Keyword {n}"** - one box per keyword. Editing one changes that keyword IN PLACE (its position
+  is its column order); blanking one takes it out, speaking "{kw} removed".
+- **"Add keyword"** - an empty box after them. What is typed there is added and the box blanks
+  itself; a word already in the category is refused with "That keyword is already in this custom
+  category".
+- **"Clear this custom category"** - a drawn button, no confirmation (Cancel is the undo), speaking
+  "Custom category {n} cleared" and leaving the page as the name box alone.
+- Then **one SECTION per built-in scanner category**, in scanner order. Its caption is drawn as a
+  row and spoken as the section's NAME - "{category}, {n} selected" - never as a control of its
+  own, so **Ctrl+left/right walks the thirteen sections** and the rows above the first caption are
+  a section too. Under each caption is one checkbox per column: the columns that category writes
+  down, then - for the four derived ones - the kinds found THIS game (keyed by the definition's own
+  name, labelled by its localized title), then any stored selector this galaxy has no column for,
+  ticked and read as "{key}, not found this game" so it can be taken off.
+
+Every one of those rows is the game's own prefab over a per-row provider object, so the drawn page
+and the spoken page cannot disagree. The text rows are edited by the mod's ordinary text editor
+(Enter ends the edit and nothing else, Escape puts back what was there); the commit itself needs a
+Harmony prefix, because the game's own text-field row assigns the label OBJECT into the option
+(es2-facts).
 
 **Apply and Cancel are the window's own, with nothing re-implemented.** The edits live in a
 `ScannerCustomSlots.Copy()`; the Scanner panel carries ONE invisible game option whose value is
 "does the copy differ from what is saved", so the window's own machinery lights Apply, raises its
 own "%OptionExitWithoutApplyMessage" on Escape or Cancel, and throws the copy away through that
 option's setter when it restores. The copy is written through on the window's hide, which is the
-same save-on-hide the keybind rows already have. **Speech order round the box**: the edit itself
-lands in the frame Confirm was pressed (so the settings window's return reads the new name), and
-only the two refusals wait for the pump after the screens, because a screen's arrival interrupts
-anything queued ahead of it — so a refusal is heard after the control it left unchanged.
+same save-on-hide the keybind rows already have. **Speech order**: an edit that changes the SHAPE
+of the page (a name that fills a slot, a keyword added or removed, a clear) rebuilds the page from
+the pump rather than from inside the engine's own focus change, and the sentence that goes with it
+is said there - so a refusal is heard after the control it left unchanged.

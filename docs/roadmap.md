@@ -201,15 +201,15 @@ files above.
   (a view-side repository), which measured EMPTY for the player's own fleets parked at a
   system (notifications session, Stage 2) — investigate whether the scanner drops parked
   fleets.
-- Custom scanner categories: SHIPPED whole 2026-08-23 — the model, the synthesis and the six quick
-  keys (stage 3), and the EDITOR (stage 4): the Scanner tab of the mod's settings window, first and
-  in game only, a tree of mod nodes per slot under the window's own Apply/Cancel. What is left is
-  MANUAL: the six physical quick keys, and the typing half of the naming box (the harness can write
-  a game field's text but cannot press a key at it)
-  (`custom-scanner-categories-test-report.md`). Two known limits to weigh rather than fix blind:
-  the Scanner tab is drawn EMPTY, and the naming box comes up BEHIND the settings window
-  (`docs/es2-facts.md`, "The mod's own settings window, stage 4") — both keyboard-complete, neither
-  visible to a sighted helper.
+- Custom scanner categories: SHIPPED whole 2026-08-23, and DRAWN 2026-08-24 - the model, the
+  synthesis and the six quick keys (stage 3); the editor (stage 4); and the rebuild that made it a
+  page a sighted player can see (stage 5): the Scanner tab holds three drawn buttons and each slot
+  has a tab of its own, every row the game's own widget, under the window's own Apply/Cancel. The
+  player's own categories come LAST in the category cycle, not first (stage 5 - first was where an
+  unconfigured slot answered the very first scanner press with "none found"). What is left is
+  MANUAL: the six physical quick keys, and the typing half of a text row (the harness can write a
+  game field's text but cannot press a key at it)
+  (`custom-scanner-categories-test-report.md`).
 - Rebindable mod keys: SHIPPED 2026-08-23 - the Keybinds tab of the mod's settings window
   (stage 2a), and the three-column binding table with Delete-to-clear, the Escape cancel and
   the two-way mod/game overlap warning (stage 2b, rulings 6/9/10), on the game's own Controls

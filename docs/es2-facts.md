@@ -2925,7 +2925,8 @@ category are the same `OptionKeyMappingItem` rows). The mod's side is
   there: `RequestNewName` shows it, and it sits at `Alpha 0`, `Enable false`, `ModifiersRunning
   true` forever — never `IsReady`, so no mod screen arrives. `ShowAllAgeScreensBehind` +
   `EnableAllAgeScreensBehind` for the box's duration is the whole fix, and both calls are the
-  game's own (`ScannerEditor.Unfreeze`). What it cannot fix is DRAWING: `OverlayRenderer` sorts
+  game's own. (The mod SHIPPED that workaround in stage 4 and retired it in stage 5, when the
+  editor stopped using the rename box at all - kept here as a fact about the engine.) What it cannot fix is DRAWING: `OverlayRenderer` sorts
   above `ModalRenderer`, so the box comes up behind the settings window's opaque background —
   operable and readable, invisible.
 - Which stack each window is on (probed, not read off the XML): `OptionsModalWindow`,
@@ -2954,3 +2955,70 @@ category are the same `OptionKeyMappingItem` rows). The mod's side is
   discards the working copy when handed `false` is restored exactly when the window restores.
   The backup is taken in `OnBeginShow` → `BackupApplicationSettings`, so the working copy has to
   be reset BEFORE `base.OnBeginShow` runs.
+
+## The mod's own settings window, stage 5 (2026-08-24)
+
+The stage that made the Scanner tab DRAWN. Everything here is measured live, in game.
+
+- **Every child of `OptionsTable` must be an `OptionItem` carrying a non-null `Option`.** Five
+  passes dereference `GetComponent<OptionItem>().Option` with no null check: the panel's own
+  `AttributeItemsComparer`, `BackupSettings`, `CheckWhetherSomeApplicationSettingHasChanged`,
+  `CommitSettings` and `RestoreSettings`. The comparer is the one that bites FIRST and hardest —
+  it runs from `AgeTransform.Init` inside `InstantiateChild`, so a plain button parented into the
+  table throws on the way in, before anything is drawn (measured: `InvalidOperationException`,
+  "The comparer threw an exception", out of `AgeTransform.AddChild`). Clearing
+  `OptionsTable.ChildrenComparer` BEFORE the first add gets past the comparer; the other four
+  still need the component. So a mod-drawn button row gets `AddComponent<OptionItem>()` — the
+  GAME's type, which is also why it survives a hot reload where a mod subclass would not — plus
+  an `Option` over a throwaway provider that nothing ever reads.
+- **`OptionTextFieldItem` is wired but broken, and the mod's own end-of-edit reaches it.** The
+  prefab ships `UseLoseFocusCallback = true`, `OnLoseFocusMethod = "OnTextFieldFocusLostCb"`
+  (measured on `panel.OptionTextFieldPrefab`), so the callback fires whenever the field loses the
+  engine's keyboard — including the mod's own commit, which is `AgeManager.FocusedControl = null`.
+  What the callback does is `base.Option.Value = TextFieldLabel;` (`OptionTextFieldItem.cs:30`) —
+  the LABEL OBJECT, not its text — and `Option.SetValue` swallows the `InvalidCastException` as a
+  logged error, so the row silently keeps its old value. No option the game ships is a text field,
+  which is why nobody noticed. Mod policy: a Harmony prefix commits `TextFieldLabel.Text` instead,
+  and only for rows the mod minted (`OptionTextFieldCommit`); every other row is handed back to the
+  game unchanged.
+- **`Option.Restore()` with a NULL backup does nothing for a string and logs for a bool.**
+  `Restore()` is `Value = backupValue` and `SetValue` runs `Convert.ChangeType(value, type)`:
+  `null` to `string` answers null and the `obj != null` guard skips the write, while `null` to
+  `bool` throws and is caught and logged. So a row added AFTER `BackupSettings` (a keyword box the
+  player has just created) reads `Changed == true` — which is correct, the player did add it — and
+  Cancel simply does not touch it. Nothing has to be invented for it.
+- **Two `GuiModalWindow`s on ONE `GuiWindowsStack` both draw, and the second one shown does not
+  come to the front.** Both windows report `Shown`, `Visible` and `Alpha 1`; only one is on screen
+  and the other is behind its opaque background, operable but invisible (hiding the front one
+  revealed the back one focused, with its own tab selected). `transform.SetAsLastSibling()` on the
+  back one changed nothing — AGE does not draw a screen's windows in sibling order. Nor does
+  `HideGuiBehind` separate them: it hides screens BEHIND the window's own, and two windows on one
+  stack share a screen. **Consequence:** a mod editor cannot be a second cloned window over the
+  first; it has to be another TAB of the one window.
+- **The tab bar's width is `(TogglesTable.Width − HorizontalSpacing × (n−1)) / n`**
+  (`OptionsModalWindow.AddCategoryToggleAndPanel` :246). Measured on the clone: `Width` 600,
+  `HorizontalSpacing` 0 — so five tabs draw at 120px each (the game's own six at 100px) and
+  fourteen would draw at 42px. That is the second reason a per-slot editor is a tab of the main
+  window rather than a window of its own with a tab per scanner category.
+- **The manager's MODAL registry is a third registration, and it is built once.**
+  `GuiManager.Load_IGuiGamePanelService` walks `guiWindowsFromBackToFront` at boot, adds every
+  `GuiModalWindow` to the private `guiModalWindows` and subscribes `ModalWindow_VisibilityChanged`
+  to each one's public `VisibilityChanged`. A clone built afterwards is in neither, so
+  `IsAnyModalVisible` and `ModalOnTop` stay as if nothing were open — and `IsAnyModalVisible` is
+  what the game weighs the tutorial popup against
+  (`TutorialPopupPanel.UpdateLayerAndVisibilityAccordingToOtherWindows`), what `CanToggleScanView`
+  asks, and what `AddTutorialKeysIFN` stands down for. Symptom before the fix: a MINIMISED
+  tutorial's bar was still drawn — and still declared by the mod — over the settings window, where
+  over the game's own options window the game hides it. Mod policy: the clone joins
+  `guiModalWindows` and takes the manager's own handler by reflection, and teardown removes it
+  (a destroyed component left in that list is read on every modal visibility change).
+- **A button cloned out of the window's bar has three children — `Circle`, `Icon`, `Label`.**
+  Hiding `Icon` leaves the round frame that says "button" without the cross that says "cancel".
+  Re-parented into a rows table it must be given the ROW's anchoring (`AttachLeft` and
+  `AttachRight` true, `AttachTop` and `AttachBottom` false) or the table leaves every row stacked
+  at the same y — the bar pins it to the bar's own corners.
+- **Focusing a tab IS switching to it** (`OptionsScreen`'s tab vtable), so a ROW action that
+  changes which panel is showing must re-seat the cursor itself. Otherwise the row it was standing
+  on is destroyed, the navigator re-seats onto a tab, and the landing switches the page back —
+  measured: the Scanner tab's slot button opened its tab and the cursor's arrival on the Keybinds
+  tab closed it again.

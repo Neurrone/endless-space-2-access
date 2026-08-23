@@ -2794,50 +2794,71 @@ Cancel with changes raises the game's own confirmation (`ui.end` then `ui.activa
 lands back on the pause menu. `/input ui.back` does NOT close a game-owned window: Escape is left to
 the game and an injected action presses no key — use the window's own Cancel button instead.
 
-### The Scanner tab of the mod's settings (stage 4, 2026-08-23)
+### The Scanner tab and the custom-category tabs (stage 5, 2026-08-24)
 
-**Getting to the editor** is the stage 2a route plus two moves: pause menu → `ui.down` ×5 →
-`ui.activate` ("Mod settings", then "Scanner, tab, selected, …, 1 of 2" — Scanner is the tab the
-window opens on), then `ui.next` into `options:rows` and `ui.right` to open a slot. Node ids are
-`scanner:slot/{0..2}`, `…/name`, `…/cat/{categoryKey}`, `…/cat/{categoryKey}/{columnKey}`,
-`…/keywords`, `…/keywords/add`, `…/keywords/{index}`, `…/clear`. `ui.right`/`ui.left` walk the
-tree; a group only enumerates its children while expanded, so a `/gui/graph` dump shows what the
-player can actually reach. **Jumping straight to a node** (much cheaper than counting `ui.down`s):
-`ES2Access.ModEntry.Navigator.FocusNode(ES2Access.Core.UI.Graph.ControlId.Structural(
-"scanner:slot/0/cat/luxury"))` from `/eval`, then `ui.right` to open it.
+**Getting there** is the stage 2a route plus one move: pause menu -> `ui.down` x5 ->
+`ui.activate` ("Mod settings", then "Scanner, tab, selected, ..., 1 of 5" - Scanner is the tab the
+window opens on), then `ui.next` into `options:rows`, which holds the three drawn slot buttons.
+`ui.activate` on one opens that slot's tab and lands on its Name box. From `/eval`,
+`ModOptions.OpenCategory("CustomCategory1")` switches tabs directly - but it does NOT move the
+cursor, and a cursor whose row has gone re-seats onto a TAB, where landing switches the page
+again; follow it with `ModEntry.Navigator.FocusStop("options:rows")`.
 
-**Driving the naming box.** `ui.activate` on the Name or "Add keyword" button opens the game's own
-rename box and the mod's `screen.rename` arrives ("Name for custom category 1" / "editable,
-Custom 1, 2 of 4"). Typing is not reachable — `POST /type` goes to the mod's type-ahead and
-`POST /key` needs the game foregrounded — so write the text and press Confirm through the mod's
-own activate path:
-`Gui.GuiService.GetWindow<RenameModalWindow>(false).TextField.Label.Text = "Watch list"` then
-`/input ui.end` and `/input ui.activate`. MEASURED: the settings window announces itself again and
-the cursor's control re-reads with the new name in one line ("Scanner, Custom category 1, Watch
-list, group, expanded, 1 of 3, Name, Watch list, button, 1 of 16"). A refusal follows that line
-("Watch List is already the name of a category", "That keyword is already in this custom
-category") — it is queued on purpose, so it lands after the arrival rather than being eaten by it.
+Node ids are `options:0TabPanel/slot{0..2}Button` on the Scanner tab and, on a slot's tab,
+`options:{n}TabPanel/nameField`, `keyword{i}Field`, `newKeywordField`, `clearButton`,
+`section{categoryKey}` (a caption - drawn, never a node) and `select{categoryKey}:{columnKey}`.
+Regions are `options:{n}TabPanel/head` and `.../section{categoryKey}`, so `ui.regionNext` walks
+the thirteen sections; the head region is what makes the name and keyword boxes a place Ctrl+arrow
+can leave.
 
-**What the tab is worth checking for.** Apply lights only once something differs
-(`ES2Access.UI.ModOptions.ScannerEditor.Edited` and
-`ModOptions.Window().ApplyButton.AgeTransform.Enable` answer the same question); Cancel with
-changes raises the game's own "Are you sure you want to quit without saving?" (`screen.message-box`
-— `ui.end` then `ui.activate` confirms) and leaves `ScannerCustomSettings.Slot(0)` and the file
-untouched; Apply hides the window and writes `scanner.custom.1 = Watch list|systems:neutral,
-anomalies:PlanetAnomaly27Alt|Rigel`, which survives `POST /reload`. Then the map: `FocusStop(
-"galaxy:systems")` (the `ui.next` walk to the map stop is long) and `galaxy.scanCategoryNext` reads
-"Watch list: all, Rigel, -16, -5, 3 south, 1 of 14", with `galaxy.scanSubcategoryNext` stepping
-"Systems: neutral" → "Anomalies: Multiple Moons" → "Rigel" → "all".
+**Driving a text row.** `POST /type` cannot reach a game-owned field and `POST /key` needs the game
+foregrounded, so: `ui.activate` on the row, wait a frame for the hand-over
+(`TextFieldEditor.Editing` goes true and `AgeManager.Instance.FocusedControl` is the `TextField`),
+then from `/eval`
+
+```
+AgeControlTextField f = AgeManager.Instance.FocusedControl as AgeControlTextField;
+f.Label.Text = "Watch list";
+typeof(ES2Access.Screens.TextFieldEditor)
+  .GetField("CommitTheNextRelease", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic)
+  .SetValue(null, true);
+AgeManager.Instance.FocusedControl = null;
+```
+
+`CommitTheNextRelease` is internal, so it needs reflection; without it the focus drop is a CANCEL
+and the pre-edit text goes back. MEASURED speech for a name: `"Watch list", "edited",
+"Custom category 1, Name, editable, Watch list"` and then the rebuilt page's landing. A refusal
+follows the landing - `"Systems is already the name of a category"`, `"A custom category needs a
+name"`, `"That keyword is already in this custom category"` - and the box goes back to what it
+held. An `ui.activate` on a row while a text edit is still PENDING starts an edit on that row
+instead of pressing it (the screen captures raw input while a hand-over is waiting); recover with
+`TextFieldEditor.Abandon(); AgeManager.Instance.FocusedControl = null;`.
+
+**What to check.** Apply lights only once something differs
+(`ModOptions.Window().ApplyButton.AgeTransform.Enable`); Cancel with changes raises the game's own
+"Are you sure you want to quit without saving?" (`screen.message-box` - `ui.end` then
+`ui.activate` confirms) and leaves `ScannerCustomSettings.Slot(0)` and the file untouched; Apply
+hides the window and writes `scanner.custom.1 = Watch list|systems:neutral|Dusay`, which survives
+`POST /reload`. Clearing then applying takes the key out of `settings.cfg` altogether. The Scanner
+tab's button follows: "Custom category 1: Watch list" once named, "Custom category 2: empty" while
+a slot stands empty.
 
 **The stale-selector row** needs a selector the galaxy cannot answer. Write one behind the editor
-(`ScannerCustomSettings.Slot(0).AddSelector(new ScannerSelector("luxury","NoSuchResource"));
-ScannerCustomSettings.Save();`) and reopen: the Luxury group offers "NoSuchResource, not found this
-game, checkbox, checked", and unticking it takes the selector out and drops the row.
+(`ScannerCustomSettings.Slots.Slot(0).AddSelector(new ScannerSelector("luxury","NoSuchResource"));
+ScannerCustomSettings.Save();`) and reopen: the Luxury section offers "NoSuchResource, not found
+this game, checkbox, checked"; unticking it takes the selector out (the row stays until the page is
+next built, which is what lets the player change their mind before Apply).
 
 **On `[Beginner] test` at turn 21** the tab offers Systems 7 columns, Colonizable 2, Unexplored 1,
 Anomalies 11 (10 kinds), Curiosities 8 (5 kinds), Luxury 3 (2), Strategic 4 (3), Contested 1,
 Fleets 4, Probes 4, and 1 each for pins, missiles and quest markers. Note the anomaly keys are the
 game's own and are not what a guess would produce: Multiple Moons is `PlanetAnomaly27Alt`.
 
+**The minimised tutorial must NOT be declared over the settings window.** With the military
+tutorial minimised, `/gui/graph` on `screen.options` must hold no `hud:tutorial` stop, and
+`(Gui.GuiService as GuiManager).IsAnyModalVisible` must read true with `ModalOnTop` naming
+`ES2AccessModOptionsWindow`. Hide the window and the bar is back on the galaxy - that pair is the
+regression test for the clone's modal registration (es2-facts, stage 5).
+
 **Leave the fixture with all three slots cleared** (the Clear button then Apply, or
-`ScannerCustomSettings.Clear(0..2)`) — `settings.cfg` goes back to 0 bytes.
+`ScannerCustomSettings.Clear(0..2)`) - `settings.cfg` goes back to 0 bytes.
