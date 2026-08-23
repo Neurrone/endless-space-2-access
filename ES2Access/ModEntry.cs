@@ -772,140 +772,205 @@ namespace ES2Access
             GraphSheet.TextCellType = ControlTypes.Text;
         }
 
+        /// <summary>
+        /// Hand everything back that <see cref="Start"/> acquired - and hand ALL of it back even when
+        /// one hand-back throws. Every step below runs inside <see cref="Step"/>, so a step that fails
+        /// is logged by name and the sequence carries on; the steps are independent, and skipping the
+        /// tail of the teardown leaks state that outlives this assembly with nothing left able to free
+        /// it. The speech context is the step that made this the rule: it is deliberately LAST (a
+        /// screen still speaking while it shuts down would be talking through a freed backend), and a
+        /// throw anywhere above it used to skip it, leaking the process-wide Prism context - every
+        /// later load then failed with "prism_init returned null context" for the rest of the session.
+        /// The order below is otherwise unchanged, because it is the reverse of the acquisitions.
+        /// </summary>
         public static void Stop()
         {
-            if (_host != null)
+            Step("host", () =>
             {
-                _host.SetUpdateHandler(null);
-                _host.StopAllCoroutines();
-                _host.UnregisterAllModRoutes();
-                _host = null;
-            }
+                if (_host != null)
+                {
+                    _host.SetUpdateHandler(null);
+                    _host.StopAllCoroutines();
+                    _host.UnregisterAllModRoutes();
+                    _host = null;
+                }
+            });
 
-            if (_routes != null)
+            Step("dev routes", () =>
             {
-                _routes.Unregister();
-                _routes = null;
-            }
+                if (_routes != null)
+                {
+                    _routes.Unregister();
+                    _routes = null;
+                }
+            });
 
             // The screen's own static, so it outlives this assembly unless it is handed back.
-            NotificationAudit.Disarm();
+            Step("notification audit", NotificationAudit.Disarm);
 
-            if (Screens != null)
+            Step("screens", () =>
             {
-                Screens.Shutdown();
-                Screens = null;
-            }
+                if (Screens != null)
+                {
+                    Screens.Shutdown();
+                    Screens = null;
+                }
+            });
 
             // Before the buffers go: the log hands its subscription back to the game's chat service,
             // which outlives the mod and would otherwise keep calling into this assembly.
-            if (_chat != null)
+            Step("chat log", () =>
             {
-                _chat.Stop();
-                _chat = null;
-            }
+                if (_chat != null)
+                {
+                    _chat.Stop();
+                    _chat = null;
+                }
+            });
 
-            if (_chatField != null)
+            Step("chat field", () =>
             {
-                _chatField.Stop();
-                _chatField = null;
-            }
+                if (_chatField != null)
+                {
+                    _chatField.Stop();
+                    _chatField = null;
+                }
+            });
 
             // And the same for the saving watcher: the window service outlives the mod, so the
             // subscription goes back before this assembly does.
-            if (_saving != null)
+            Step("saving watcher", () =>
             {
-                _saving.Stop();
-                _saving = null;
-            }
+                if (_saving != null)
+                {
+                    _saving.Stop();
+                    _saving = null;
+                }
+            });
 
             // Nothing subscribed and nothing held: the rung watcher only reads, so letting go of it is
             // the whole of its teardown. The route watcher and the route memo are the same - both read
             // the game and remember nothing the game owns.
-            _zoom = null;
-            if (_fleetRoutes != null)
+            Step("zoom and fleet routes", () =>
             {
-                _fleetRoutes.Forget();
-                _fleetRoutes = null;
-            }
+                _zoom = null;
+                if (_fleetRoutes != null)
+                {
+                    _fleetRoutes.Forget();
+                    _fleetRoutes = null;
+                }
 
-            FleetRoute.Reset();
+                FleetRoute.Reset();
+            });
+
             // Same shape: the map's coordinate origin is a cached read, and letting go of it only
             // drops the empire it was taken from.
-            GalaxyCoordinates.Forget();
+            Step("galaxy coordinates", GalaxyCoordinates.Forget);
             // And the constellation outlines derived from it, which hold the galaxy's own nodes.
-            ConstellationMap.Forget();
+            Step("constellation map", ConstellationMap.Forget);
             // A constellation NAME the mod was holding drawn is a change to what the game is showing,
             // so it is put back rather than merely let go of - a reload that left one drawn would leave
             // it drawn for the rest of the session with nothing left to take it down.
-            ConstellationLabelHold.Release();
+            Step("constellation label hold", ConstellationLabelHold.Release);
             // And the map's inspect cursor, whose lines the page gave back when it was popped just
             // above: what is left is the flag the input layer's own claim reads.
-            GalaxyInspect.Reset();
+            Step("galaxy inspect", GalaxyInspect.Reset);
 
             // Whatever the mod made the game look like, the game looks like itself again. The screens
             // shut down first, so a drop list left open has already been closed by its own OnPop and
             // this only drops the record of it. A key capture has no such hook - the game holds the
             // keyboard, not us - so it is ended here, binding nothing.
-            DropListScreen.Reset();
-            OptionsScreen.ReleaseCapture();
-            PointerFocus.Shutdown();
+            Step("drop list", DropListScreen.Reset);
+            Step("key capture", OptionsScreen.ReleaseCapture);
+            Step("pointer focus", PointerFocus.Shutdown);
             // After the pointer has let go: the carriers are scene objects this assembly created, and
             // destroying one the pointer is still aimed at would leave the engine holding a dead
             // transform.
-            ScratchTooltips.Shutdown();
-            GameWindows.Shutdown();
-            GameKeyStandDown.Remove();
-            GameKeyboardHandover.Remove();
-            GameTextFocus.Remove();
+            Step("scratch tooltips", ScratchTooltips.Shutdown);
+            Step("game windows", GameWindows.Shutdown);
+            Step("key stand-down patch", GameKeyStandDown.Remove);
+            Step("keyboard handover patch", GameKeyboardHandover.Remove);
+            Step("text focus patch", GameTextFocus.Remove);
             // And the edit that patch was watching, so the next load's first keystroke has nothing
             // left over to speak about.
-            TextFieldEditor.Stop();
-            ChatEscape.Remove();
+            Step("text field editor", TextFieldEditor.Stop);
+            Step("chat escape patch", ChatEscape.Remove);
             // And the chat panel is let go, or the game keeps drawing one nobody is reading.
-            ChatHold.Stop();
-            ResearchLocate.Remove();
-            GalaxyLocate.Remove();
+            Step("chat hold", ChatHold.Stop);
+            Step("research locate patch", ResearchLocate.Remove);
+            Step("galaxy locate patch", GalaxyLocate.Remove);
             // Before the patch comes off: the mappings are removed from the game's own dictionary and
             // every mod notification still standing is dismissed, so nothing from this assembly is
             // left in a list the game will keep asking for titles.
-            ModNotifications.Stop();
-            NotificationStrip.Remove();
+            Step("mod notifications", ModNotifications.Stop);
+            Step("notification strip", NotificationStrip.Remove);
             // And the two detection points that feed it, each giving back its patch, its
             // subscription and what it was remembering about the galaxy.
-            FleetArrivals.Remove();
-            ForeignFleetWatch.Remove();
-            InfluenceGroundWatch.Remove();
+            Step("fleet arrivals", FleetArrivals.Remove);
+            Step("foreign fleet watch", ForeignFleetWatch.Remove);
+            Step("influence ground watch", InfluenceGroundWatch.Remove);
 
-            if (Input != null)
+            Step("input", () =>
             {
-                Input.Dispatch = null;
-                Input.DrivenByMod = null;
-                Input.HasFocusedScreen = null;
-                Input.ClaimsBackKey = null;
-                Input.ClaimsTypedKey = null;
-                // A dev request waiting for an injected action to run is waiting for a frame that
-                // will never come now; it is told so rather than left to time out.
-                Input.CancelInjections();
-                Input = null;
-            }
+                if (Input != null)
+                {
+                    Input.Dispatch = null;
+                    Input.DrivenByMod = null;
+                    Input.HasFocusedScreen = null;
+                    Input.ClaimsBackKey = null;
+                    Input.ClaimsTypedKey = null;
+                    // A dev request waiting for an injected action to run is waiting for a frame that
+                    // will never come now; it is told so rather than left to time out.
+                    Input.CancelInjections();
+                    Input = null;
+                }
 
-            Navigator = null;
-            Buffers = null;
+                Navigator = null;
+                Buffers = null;
+            });
 
             // Process-wide state the announcer and the sheet reader hold on our behalf: left
             // installed, they would keep calling into an assembly nobody can reach any more.
-            GraphAnnouncer.Reset();
-            GraphSheet.Reset();
-            NodeHints.Reset();
+            Step("announcer wording", GraphAnnouncer.Reset);
+            Step("sheet wording", GraphSheet.Reset);
+            Step("hint wording", NodeHints.Reset);
 
-            ModLocale.Reset();
-            ModStrings.Reset();
+            Step("locale", ModLocale.Reset);
+            Step("mod strings", ModStrings.Reset);
 
-            if (Speech != null)
+            Step("speech", () =>
             {
-                Speech.Shutdown();
-                Speech = null;
+                if (Speech != null)
+                {
+                    Speech.Shutdown();
+                    Speech = null;
+                }
+            });
+        }
+
+        /// <summary>
+        /// One teardown step, isolated: a step that throws is logged by name and the rest of
+        /// <see cref="Stop"/> still runs. Nothing in here may throw - even the log call is guarded,
+        /// because a logger that fails while the mod is coming down must not be the thing that strands
+        /// every step after it. Allocating a delegate per step is a reload-time cost, not a per-frame
+        /// one.
+        /// </summary>
+        private static void Step(string what, Action step)
+        {
+            try
+            {
+                step();
+            }
+            catch (Exception e)
+            {
+                try
+                {
+                    Log.Error("teardown step '" + what + "' threw, carrying on: " + e);
+                }
+                catch
+                {
+                    // Nothing left that can report this, and the remaining steps still matter more.
+                }
             }
         }
 
