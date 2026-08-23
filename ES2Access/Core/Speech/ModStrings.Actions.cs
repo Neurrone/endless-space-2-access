@@ -58,53 +58,47 @@ namespace ES2Access.Core.Speech
                 "action.ui.right.description",
                 "Move the cursor right, open the group it is on, or turn a value up."
             },
-            { "action.ui.next.title", "Next panel" },
-            { "action.ui.next.description", "Go to the next panel of this screen." },
-            { "action.ui.prev.title", "Previous panel" },
-            { "action.ui.prev.description", "Go to the previous panel of this screen." },
-            { "action.ui.home.title", "First control" },
-            { "action.ui.home.description", "Go to the first control of this panel." },
-            { "action.ui.end.title", "Last control" },
-            { "action.ui.end.description", "Go to the last control of this panel." },
-            { "action.ui.regionPrev.title", "Previous section" },
-            {
-                "action.ui.regionPrev.description",
-                "Jump to the previous section of this panel."
-            },
-            { "action.ui.regionNext.title", "Next section" },
-            { "action.ui.regionNext.description", "Jump to the next section of this panel." },
+            { "action.ui.next.title", "Move to next panel" },
+            { "action.ui.next.description", "Move to the next panel of this screen." },
+            { "action.ui.prev.title", "Move to previous panel" },
+            { "action.ui.prev.description", "Move to the previous panel of this screen." },
+            { "action.ui.home.title", "Move to first control" },
+            { "action.ui.home.description", "Move to the first control of this panel." },
+            { "action.ui.end.title", "Move to last control" },
+            { "action.ui.end.description", "Move to the last control of this panel." },
+            { "action.ui.regionPrev.title", "Move to previous section" },
+            { "action.ui.regionPrev.description", "Move to the previous section of this panel." },
+            { "action.ui.regionNext.title", "Move to next section" },
+            { "action.ui.regionNext.description", "Move to the next section of this panel." },
 
             // Working a control.
             { "action.ui.activate.title", "Activate" },
             {
                 "action.ui.activate.description",
-                "Do what a click on this control does, and put down whatever is being carried."
+                "Do what a click does here, and put down whatever is being carried."
             },
-            { "action.ui.secondary.title", "Second command" },
+            { "action.ui.secondary.title", "Go back to the previous system" },
             {
                 "action.ui.secondary.description",
-                "The screen's own second command here, where it has one."
+                "On the galaxy map, go back to the system you travelled here from."
             },
             { "action.ui.back.title", "Back" },
             {
                 "action.ui.back.description",
                 "Close what is open, clear a search, or put down what is being carried."
             },
-            { "action.ui.alternate.title", "Alternate command" },
+            { "action.ui.alternate.title", "Activate with modifier" },
             {
                 "action.ui.alternate.description",
-                "The game's own modified click on this control, such as queueing at the head of a queue."
+                "Do the game's modified click here, such as queueing at the head of a queue."
             },
-            { "action.ui.contextual.title", "Right click command" },
+            { "action.ui.contextual.title", "Right click" },
             {
                 "action.ui.contextual.description",
-                "The command the game puts on a right click here."
+                "Do the game's right click here. Control and backslash does the same with Control held, which the game reads itself."
             },
-            { "action.ui.doubleClick.title", "Second click command" },
-            {
-                "action.ui.doubleClick.description",
-                "The command the game puts on a double click here."
-            },
+            { "action.ui.doubleClick.title", "Double click" },
+            { "action.ui.doubleClick.description", "Do the game's double click here." },
             { "action.ui.coarseDecrease.title", "Turn down by a lot" },
             {
                 "action.ui.coarseDecrease.description",
@@ -120,10 +114,10 @@ namespace ES2Access.Core.Speech
                 "action.ui.carry.description",
                 "Pick up what the cursor is on, swap it for another, or put it back where it came from."
             },
-            { "action.ui.selectToggle.title", "Add to or take out of the selection" },
+            { "action.ui.selectToggle.title", "Add to or remove from selection" },
             {
                 "action.ui.selectToggle.description",
-                "Take this one in or out of the selection, leaving the rest of it alone."
+                "Take this one in or out of the selection, leaving the rest alone."
             },
             { "action.ui.selectRange.title", "Select up to here" },
             {
@@ -132,15 +126,15 @@ namespace ES2Access.Core.Speech
             },
 
             // Turning the page, and going straight somewhere.
-            { "action.ui.pagePrev.title", "Previous page" },
+            { "action.ui.pagePrev.title", "Move to previous page" },
             {
                 "action.ui.pagePrev.description",
-                "Turn the whole screen back - the previous system, planet, notification or hero."
+                "Turn the whole screen back to the previous system, planet, notification or hero."
             },
-            { "action.ui.pageNext.title", "Next page" },
+            { "action.ui.pageNext.title", "Move to next page" },
             {
                 "action.ui.pageNext.description",
-                "Turn the whole screen on - the next system, planet, notification or hero."
+                "Turn the whole screen on to the next system, planet, notification or hero."
             },
             { "action.ui.focusEmpire.title", "Go to the empire banners" },
             {
@@ -218,113 +212,110 @@ namespace ES2Access.Core.Speech
             },
 
             // The map's scanner.
-            { "action.galaxy.scanCategoryNext.title", "Scan for the next kind of thing" },
+            { "action.galaxy.scanCategoryNext.title", "Move to next category" },
             {
                 "action.galaxy.scanCategoryNext.description",
-                "Scan for the next kind of thing near where you are reading."
+                "Move the scanner to the next category of thing."
             },
-            { "action.galaxy.scanCategoryPrev.title", "Scan for the previous kind of thing" },
+            { "action.galaxy.scanCategoryPrev.title", "Move to previous category" },
             {
                 "action.galaxy.scanCategoryPrev.description",
-                "Scan for the previous kind of thing near where you are reading."
+                "Move the scanner to the previous category of thing."
             },
-            { "action.galaxy.scanSubcategoryNext.title", "Next way of looking" },
+            { "action.galaxy.scanSubcategoryNext.title", "Move to next subcategory" },
             {
                 "action.galaxy.scanSubcategoryNext.description",
-                "Narrow the scan to the next group within this kind of thing."
+                "Move the scanner to the next subcategory of this category."
             },
-            { "action.galaxy.scanSubcategoryPrev.title", "Previous way of looking" },
+            { "action.galaxy.scanSubcategoryPrev.title", "Move to previous subcategory" },
             {
                 "action.galaxy.scanSubcategoryPrev.description",
-                "Narrow the scan to the previous group within this kind of thing."
+                "Move the scanner to the previous subcategory of this category."
             },
-            { "action.galaxy.scanNext.title", "Next thing found" },
+            { "action.galaxy.scanNext.title", "Move to next scanner result" },
             {
                 "action.galaxy.scanNext.description",
-                "Read out the next thing the scan found, nearest first."
+                "Read the next thing the scanner found, nearest first."
             },
-            { "action.galaxy.scanPrev.title", "Previous thing found" },
+            { "action.galaxy.scanPrev.title", "Move to previous scanner result" },
             {
                 "action.galaxy.scanPrev.description",
-                "Read out the previous thing the scan found, nearest first."
+                "Read the previous thing the scanner found, nearest first."
             },
-            { "action.galaxy.scanGoTo.title", "Go to what the scan found" },
-            {
-                "action.galaxy.scanGoTo.description",
-                "Go to whatever the scan is pointing at."
-            },
+            { "action.galaxy.scanGoTo.title", "Go to the scanner result" },
+            { "action.galaxy.scanGoTo.description", "Go to whatever the scanner is pointing at." },
 
             // The three categories the player makes for themselves, each on one key and its shifted
             // self. The titles are numbered rather than named, because the row has to say which key
             // this is whatever the player has called the category it answers for - and an empty slot
             // has no name at all.
-            { "action.galaxy.scanCustom1Next.title", "Scanner: next custom category 1 result" },
+            { "action.galaxy.scanCustom1Next.title", "Move to next result in custom category 1" },
             {
                 "action.galaxy.scanCustom1Next.description",
-                "Go to the next thing your first custom category found, nearest first."
+                "Go to the next thing custom category 1 found, nearest first."
             },
             {
                 "action.galaxy.scanCustom1Prev.title",
-                "Scanner: previous custom category 1 result"
+                "Move to previous result in custom category 1"
             },
             {
                 "action.galaxy.scanCustom1Prev.description",
-                "Go to the previous thing your first custom category found."
+                "Go to the previous thing custom category 1 found."
             },
-            { "action.galaxy.scanCustom2Next.title", "Scanner: next custom category 2 result" },
+            { "action.galaxy.scanCustom2Next.title", "Move to next result in custom category 2" },
             {
                 "action.galaxy.scanCustom2Next.description",
-                "Go to the next thing your second custom category found, nearest first."
+                "Go to the next thing custom category 2 found, nearest first."
             },
             {
                 "action.galaxy.scanCustom2Prev.title",
-                "Scanner: previous custom category 2 result"
+                "Move to previous result in custom category 2"
             },
             {
                 "action.galaxy.scanCustom2Prev.description",
-                "Go to the previous thing your second custom category found."
+                "Go to the previous thing custom category 2 found."
             },
-            { "action.galaxy.scanCustom3Next.title", "Scanner: next custom category 3 result" },
+            { "action.galaxy.scanCustom3Next.title", "Move to next result in custom category 3" },
             {
                 "action.galaxy.scanCustom3Next.description",
-                "Go to the next thing your third custom category found, nearest first."
+                "Go to the next thing custom category 3 found, nearest first."
             },
             {
                 "action.galaxy.scanCustom3Prev.title",
-                "Scanner: previous custom category 3 result"
+                "Move to previous result in custom category 3"
             },
             {
                 "action.galaxy.scanCustom3Prev.description",
-                "Go to the previous thing your third custom category found."
+                "Go to the previous thing custom category 3 found."
             },
 
             // Reading the description of what the cursor is on.
-            { "action.buffer.lineUp.title", "Previous line of the description" },
+            { "action.buffer.lineUp.title", "Move to previous description line" },
             {
                 "action.buffer.lineUp.description",
                 "Read the line above in the description of what the cursor is on."
             },
-            { "action.buffer.lineDown.title", "Next line of the description" },
+            { "action.buffer.lineDown.title", "Move to next description line" },
             {
                 "action.buffer.lineDown.description",
                 "Read the line below in the description of what the cursor is on."
             },
-            { "action.buffer.prev.title", "Previous description" },
+            { "action.buffer.prev.title", "Move to previous description" },
             {
                 "action.buffer.prev.description",
-                "Switch to the previous body of text - the screen's own, or the chat log."
+                "Switch to the previous body of text, the screen's own or the chat log."
             },
-            { "action.buffer.next.title", "Next description" },
+            { "action.buffer.next.title", "Move to next description" },
             {
                 "action.buffer.next.description",
-                "Switch to the next body of text - the screen's own, or the chat log."
+                "Switch to the next body of text, the screen's own or the chat log."
             },
-            { "action.buffer.first.title", "First line of the description" },
+            { "action.buffer.first.title", "Move to first description line" },
             {
                 "action.buffer.first.description",
                 "Go to the first line of the description."
             },
-            { "action.buffer.last.title", "Last line of the description" },
+            { "action.buffer.last.title", "Move to last description line" },
             { "action.buffer.last.description", "Go to the last line of the description." },
         };
     }
