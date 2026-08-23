@@ -938,3 +938,44 @@ compromise): a population entry ("Imperials, 3") is an expandable group whose "T
 the political parties nested in its dossier (`Cells.Declare` gives a cell a subtree; `PoliticsDossier`
 supplies the parties). They were the row BELOW their population until now, because a side panel emits
 a flat list of cells and a cell could not open a subtree.
+
+**THE MOD'S OWN SETTINGS ARE A MENU ENTRY, NOT A HOTKEY** (owner ruling 2026-08-23;
+`ES2Access/UI/ModOptions/ModSettingsNode.cs`). One synthetic `GraphNodes.Button` labelled
+"Mod settings" (`mod-settings.entry`), declared immediately AFTER the game's own Options entry
+on the main menu (`mainmenu:mod-settings`, after the `MainMenuSettings` group closes — Options
+is an entry with a flyout, so the node has to be a sibling of the group and not one of its
+children) and on the pause menu (`gamemenu:mod-settings`, after the entry whose button is wired
+to `OnOptionsCb`). Nothing is drawn for it, so a sighted player never meets it — the shape the
+graph already uses for things the game does not draw. **No key binding, and no gating**: both
+menus are static and are exactly where the game opens its own Options, and Apply, Cancel and
+Escape all pop back to the menu by the game's own hand. Enter shows the mod's cloned options
+window with the skin matching the menu (`OutGameSkin = !Gui.IsInGame`). Ctrl+M was weighed and
+set aside; it remains verified free should a hotkey ever be wanted.
+
+**The mod's settings window is the game's options window, and reads as one** — same tab bar,
+same rows, same button bar, same Escape/Apply/Cancel, so `OptionsScreen` serves it with one
+change (`Window()` answers whichever instance is shown). Its screen name is "Mod settings"
+(`screen.mod-settings`), not the game's "Options", because the two are the same window class
+and a player arriving must not be told they are in the game's settings. Categories are a
+data-driven list (`ModOptions.Categories`) drawn in list order.
+
+**The Keybinds category holds one row per mod ACTION**, in the order `ModEntry.BindKeys`
+registers them — which groups them by family already: the cursor's keys, then the map's, then
+the review buffer's. Each row is the game's own `OptionKeyMappingItem`, so it reads exactly as a
+Controls-tab row does ("Move down, button, Down Arrow, <description>, 2 of 50"), Enter captures
+the primary and Backspace the secondary until the table redesign lands (ruling 6). Every row's
+title and description are the mod's own strings (`action.<action key>.title` /
+`.description`) — mandatory, not cosmetic: a localization key the game has no row for is drawn
+and spoken RAW (es2-facts). An action bound to more than two chords keeps the extras, which stay
+live and are not offered by any row (today only `galaxy.inspectGrow`, four chords because "+"
+is three of them on a common keyboard). **No mod↔mod conflict check** (ruling 10): the rows
+carry `AcceptsMultipleKeys`, which also stops the game's Controls tab stealing a chord from one
+of them. The mod↔game informative warning (ruling 9) is not in yet.
+
+**A rebind persists on Apply and reverts on Cancel** — the window's own semantics, with no hook
+on either button: the settings file is written when the window HIDES, by which point Apply has
+committed or Cancel has restored (`ES2Access/UI/Settings/ModSettings.cs`). The file
+(`<plugin dir>\settings.cfg`) holds one `keys.<action key>` line per action the player has
+actually MOVED, in the game's own `InputBinding.ToRegistryString` form; moving a key back to its
+default takes the line out again, so a later build changing a default reaches everybody who
+never touched that key.

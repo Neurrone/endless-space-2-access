@@ -2670,3 +2670,53 @@ on each and on the table. Verified 2026-08-23: "Terraform To Arctic" / "Restore 
 several, `Coverage()` reports `NotificationItem001..003` in the `hidden` bucket — retired pool
 children keeping the previous binding's tooltip. Not a gap; take the count from
 `GetPlayerEmpireGuiNotifications()`, never from the table's children.
+
+## The mod's settings window (stage 2a, 2026-08-23)
+
+**Getting there is the player's own route, and only that route counts.** In game: open the pause
+menu (`Gui.GuiService.ShowWindow(Gui.GuiService.GetWindow<GameMenuModalWindow>())` from `/eval`
+is the same thing Escape does), then `/input ui.down` five times from Save Game and
+`/input ui.activate` — "Mod settings, button, 6 of 9", then "Mod settings" + "Keybinds, tab,
+selected, …". On the MAIN MENU the entry sits after Options as 8 of 9; the whole main-menu route
+is untested live from an in-game fixture, but the placement is checkable without leaving the game
+with `GET /gui/graph?screen=screen.main-menu`, which reads the live window (not prefab content)
+even while the screen is inactive — and it is the check that caught the node being declared in
+the wrong branch, since the main menu's Options entry is a GROUP with a flyout while the pause
+menu's is a flat button.
+
+**Reading it.** `GET /gui/graph` on the mod window gives three stops exactly as the game's options
+window does: `options:tabs` (one tab, "Keybinds"), `options:rows` (50 key-mapping rows), and
+`options:buttons` (Cancel, Apply — Apply "unavailable, No modification detected." until something
+changes, which is also the proof that the option getter's instance is stable). Row ids are
+`options:0TabPanel/<index><action key>KeyMapping`.
+
+**Rebinding without a keyboard.** The physical capture is the game's own and cannot be driven from
+`/eval`; write the value instead:
+`item.Option.Value = new Amplitude.Unity.Input.InputBinding("<action>",
+Amplitude.Unity.Input.KeyCombination.FromString("Ctrl+K", "+"), KeyCombination.None);
+w.OnOptionChanged(item.Option);` where `w` is `ES2Access.UI.ModOptions.ModOptions.Window()` and
+`item` is the `OptionKeyMappingItem` on the row whose transform name matches. Then all four
+follow in the same frame: the drawn field (`item.PrimaryKeyBindingField.Label.Text`),
+`ChordNames.Of(ModEntry.Input, "<action>", 0)`, `NodeHints.Chord("<action>", 0)` — the delegate
+every usage hint renders through — and `ApplyButton.AgeTransform.Enable`.
+
+**Apply, Cancel and the file.** Apply and Cancel are pressed through the mod's own activate path
+(`ui.next` twice to the button stop, `ui.home`/`ui.end`, then `ui.activate`). Apply hides the
+window and lands the cursor back on the "Mod settings" entry it was opened from; Cancel with
+changes raises the game's own "Are you sure you want to quit without saving?" box (a mod screen —
+`ui.end` then `ui.activate` for Confirm) and restores every row. The file is
+`<game>\BepInEx\plugins\ES2Access\settings.cfg`: after Apply it holds
+`keys.<action> = <action>:Ctrl+K,` for exactly the actions that moved, and moving one back to its
+default takes its line out again (the file goes to 0 bytes when nothing is moved).
+
+**Reload-restore.** `POST /reload` destroys the clone (teardown by name) and rebuilds it on the
+next frame; a shown window closes with it and the pause menu is focused again cleanly. The rebind
+survives, because it is read from the file at `ModEntry.Start`:
+`ChordNames.Of(ModEntry.Input, "ui.goToLocation", 0)` still answers the new chord and
+`ModBindings.Moved("ui.goToLocation")` is true.
+
+**What the harness cannot reach here.** The physical capture (Enter on a row → prompt → chord →
+release → the row speaks what stuck), Escape on the mod window (`POST /key` needs the game
+foreground; the registration that makes it work is checkable instead — the clone sits at the FRONT
+of `GuiManager.guiWindowsFromBackToFront`, ahead of `GameMenuModalWindow`, and is an
+`IInputHandler`), and the whole main-menu route.

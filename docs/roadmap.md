@@ -201,7 +201,11 @@ files above.
   (a view-side repository), which measured EMPTY for the player's own fleets parked at a
   system (notifications session, Stage 2) — investigate whether the scanner drops parked
   fleets.
-- Rebindable mod keys (long-standing, from input.md).
+- Rebindable mod keys: SHIPPED 2026-08-23 (stage 2a) for the mod's own 50 actions - the
+  Keybinds tab of the mod's settings window. What is left is the ROW REDESIGN (ruling 6: a
+  three-column table, Delete clears a cell, Escape truly cancels a capture, Enter on the name
+  cell inert) and the mod/game informative warning in both directions (ruling 9); both cover the
+  game's own Controls tab as well, since the rows are the same class.
 - The contextual prompt's component tables: modelled from the four data-defined shapes, but no
   fixture draws a table with ROWS — re-measure when one can be sighted.
 - `StockAndNet` now exists in three copies (GlobalHud, EconomyScreen, JuggernautSpecializationScreen)
@@ -317,6 +321,7 @@ files above.
 | Diplomacy / negotiation / minor / pirate | DiplomacyScreen, NegotiationScreen, MinorFactionDiplomacyScreen, PirateDiplomacyScreen |
 | Target pickers / cutscenes / victory trio / journal | TargetSelectionScreen, CutsceneScreen, VictoryScreen, VictoryAchievedScreen, JournalScreen |
 | Dialogs: message box / error / non-blocking / game menu / drop list | MessageBoxScreen, ErrorScreen, NonBlockingMessageScreen, GameMenuScreen, DropListScreen |
+| The mod's own settings window (the game's options modal, cloned; Keybinds tab) | `ES2Access/UI/ModOptions/` + OptionsScreen |
 | Contextual prompt / Behemoth specialization | ContextualPromptScreen, JuggernautSpecializationScreen |
 | Out-game pages: disclaimer / credits / DLC browser / mod manager / join game / asset exporter | DisclaimerScreen, CreditsScreen, DLCScreen, ModdingConfigScreen, MenuDestinationScreens, ResourcesExportModScreen |
 

@@ -196,6 +196,12 @@ widget, exactly as the game's own mouse flows do.
   `OptionDropListItem.OnEntrySelectedCb` (protected). Slider display format: snap to the
   increment grid, then `ToString(Slider.ValueFormat)` (`"#####0%"` for 0–1 percent sliders,
   fallback `"######0"`). No ES2 option uses `OptionTextFieldItem`.
+- **The window can be CLONED to host the mod's own settings** — a second instance whose
+  component is a mod subclass overriding `Load()`. The recipe (prefab path, the component
+  swap and field copy, the five reflected engine members, the two window registries Escape
+  needs, minting rows from many providers, teardown by name) lives in
+  `ES2Access/UI/ModOptions/ModOptions.cs`'s class comment and the facts behind it in
+  `docs/es2-facts.md` ("The options window, cloned").
 
 ## Message boxes (`MessageBoxWindow`, `GuiManager.ShowMessage*`)
 

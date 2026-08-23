@@ -2769,3 +2769,80 @@ description, effects, **cost**, upkeep, political impact — which is the mouse 
   (`ControlBannerToggle`), which is the only place that sentence exists. Mod policy
   (`GlobalHud.AddScreenToggles`): every tooltip inside a toggle is declared in drawn order, the
   button's own speaking and the badges reviewable.
+
+## The options window, cloned (2026-08-23, stage 2a)
+
+Everything here is measured against the live game, in game, over the pause menu. The live
+implementation is `ES2Access/UI/ModOptions/`.
+
+- **A localization miss ECHOES THE KEY, it does not resolve to empty.** `Gui.Localize` →
+  `AgeLocalizer` → `GuiLocalizationProxy.LocalizeString` passes `defaultValue: key`
+  (`Amplitude.Unity.Gui.Proxies/GuiLocalizationProxy.cs:21`), so an unregistered
+  `%OptionXxxTitle` is DRAWN AND SPOKEN raw. Mod policy: anything the game names by key
+  (`OptionItem.Load` :22-23, `OptionsTabToggle.Initialize` :11-14) has its `TitleLabel.Text`
+  and `Tooltip.Content` overwritten from `ModStrings` straight after `Load` — nothing
+  rewrites them on `Refresh`. A plain (non-`%`) string written into a label is drawn as
+  itself, so no registration in the localization database is needed.
+- **Showing needs no registry; ESCAPE does.** `ShowWindow`/`HideWindow` reach a window
+  through its own `GuiWindowsStack` and work unregistered, but `GuiManager.HandleInput`
+  dispatches every `InputAction` by walking the private `guiWindowsFromBackToFront`
+  (`Assembly-CSharp/GuiManager.cs:2058-2063`), so an unregistered clone never sees Escape and
+  the galaxy's Escape opens the pause menu BEHIND it (`:2123`). A clone therefore goes into
+  BOTH `GuiWindowsStack.guiWindows` and `GuiManager.guiWindowsFromBackToFront` (both
+  `protected List<GuiWindow>`), and comes out of both by NAME. Measured: the mod's window
+  lands at the FRONT of the manager's list (index 170 of 171, ahead of
+  `GameMenuModalWindow` at 152) and is an `IInputHandler` through `GuiModalWindow`.
+- **`GetWindow<T>` can never answer with the clone**: `Amplitude.Unity.Gui.GuiManager` keys
+  that lookup on `guiWindowsByType` with the EXACT type (:154-165), and the clone's type is
+  the mod's subclass. So the mod's `OptionsScreen.Window()` resolves "the clone if it is
+  shown, else the game's" with no ambiguity.
+- **Five engine members are load-bearing for a clone**, all internal or protected:
+  `GuiWindow.Initialize(stack, outGame)`, the `Loaded` setter, the `Name` setter, the
+  `GuiWindowsStack` getter, and the two lists above. Nothing starts a clone's `Load()` —
+  `GuiManager.LoadGuiWindows` ran at boot — so the mod starts the coroutine itself and sets
+  `Loaded = true` at once (`ShowWindow` refuses a window that says it is not loaded).
+- **Component swap on a prefab clone works, serialized references do not follow it.**
+  `AddComponent` of a hot-reloaded-assembly subclass on the instantiated prefab is fine, but
+  every declared instance field must be copied from the original component (walking
+  `OptionsModalWindow` up to but not including `MonoBehaviour`) before `DestroyImmediate`.
+  The overridden `Load()` never calls `base.Load()` (that builds the game's six); it
+  re-expresses the two ancestors' bodies — `yield return null;` then
+  `GuiBoundAttribute.BindAllProperties(this)` — and then news the private
+  `tabPanels`/`tabToggles`, sets `categoryNames` and `CurrentApplicationSettingsCategory`,
+  calls the private `AddCategoryToggleAndPanel` per category (outside its coroutine: fine),
+  `RadioGroup.Load()`, selects 0 and shows panel 0.
+- **A panel's rows can come from MANY providers.** `OptionItem.Load(option, window, panel)`
+  is public and `OptionsTabPanel`'s prefab fields are public, so a panel loaded empty (a
+  service with no `[OptionType…]` properties) can be filled row by row from
+  `panel.OptionKeyMappingPrefab`, with one `Option` minted per provider instance through
+  `Option.GetOptions(instance, typeof(IProviderInterface), true, true, true)`. Only the
+  panel's private-set `Options` array needs reflection, and only because the game's own
+  scans read it. `Option.GetOptions(object, bool)` returns 0 for an attribute declared on an
+  INTERFACE — `GetCustomAttributes(inherit:true)` does not walk there; the `(object, Type, …)`
+  overload does.
+- **Rows instantiated into `OptionsTable` come out REVERSED** while the panel's own
+  `AttributeItemsComparer` is installed and every row carries the same `Priority`. Clearing
+  `OptionsTable.ChildrenComparer` and calling `Sort()` puts them in sibling order, which is
+  the order they were added.
+- **An `OptionItem`'s identity within a page is the ROW's name, not the option's property
+  name.** The game names each row `<index><property><kind>`; fifty rows minted from one
+  interface property share a property name, and keying on it collapsed a whole page into one
+  duplicate `ControlId` and took its build down. `OptionsScreen.OptionKey` reads `item.name`.
+- **Apply/Cancel are non-latent for mod rows and need no patch.** The setter fires on every
+  change, Apply lights, Cancel raises `%OptionExitWithoutApplyMessage` (already a mod screen)
+  and on OK calls every option's setter with its backup, then hides. So the settings file is
+  written from the window's `OnBeginHide` override — after Apply committed or Cancel restored,
+  which is Apply-to-persist with nothing hooked to either button. `InputBinding` has no
+  `Equals`, so the option's getter must return a STABLE instance per value or `Option.Changed`
+  (`Option.cs:17-28`) is permanently true; `Convert.ChangeType(InputBinding)` returns the
+  instance unchanged. `GetMethod("OnCancelCb", Instance|NonPublic)` is AMBIGUOUS
+  (`GuiModalWindow.OnCancelCb(GameObject)`) — pass `Type.EmptyTypes` if it is ever needed.
+- **The game's key capture takes at most TWO key codes**
+  (`AgeControlKeyBindingField.MaximumNumberOfKeysByCombination == 2`, `:9`), and
+  `KeyCombination(List<KeyCode>)` splits modifiers out of the list only when there is more
+  than one key. A three-key chord (the mod ships Ctrl+Shift+Enter and Ctrl+Alt+Enter) reads
+  out correctly and cannot be re-captured as itself; a lone modifier key binds as a
+  one-entry list with no modifier mask.
+- **A runtime change destroys every window in the stack**, the clone included
+  (`GuiWindowsStack.DestroyWindows`), so a clone needs no `IRuntimeService.RuntimeChange`
+  subscription — a per-frame Unity null check and a rebuild is the whole of it.
