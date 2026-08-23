@@ -2889,3 +2889,26 @@ category are the same `OptionKeyMappingItem` rows). The mod's side is
   :96-98). An informative box with nothing to cancel therefore passes `cancelTitle:
   string.Empty` and draws one Confirm button; the default title is `%MessageBoxConfirmationTitle`
   ("Confirmation") whatever the type, which is what the game's own informative boxes show too.
+
+## What a scanner result's kind IS, in two vocabularies (2026-08-23, stage 3)
+
+- **The kind a scanner row SAYS is localized; the kind a saved selector NAMES is not — and both
+  are already in hand at snapshot time.** The scanner's four derived categories column themselves
+  by the game's localized title (`new GuiAnomaly(definition, planet).Title`, `GuiCuriosity`,
+  `GuiResource`), and the memo those titles are cached under is built from the game's own INTERNAL
+  name — `AnomalyDefinition.Name`, `CuriosityDefinition.DisplayedType`, `ResourceDefinition.Name`
+  (through `GuiResource.Name`, which is `GuiWrapper.name`, the definition's own `StaticString`).
+  So storing a stable per-kind key costs one field on the result and no extra lookup; the fallback
+  of storing the LOCALIZED label was not needed. MEASURED on `[Beginner] test`: the names are
+  `PlanetAnomaly17`, `PlanetAnomaly27Alt`, `PlanetAnomalyNaturalWonder2`, `Luxury5`, `Luxury8`,
+  `Strategic1`, `Strategic2`, `Strategic4` — content-authored ids, not display text.
+- **Which COLUMN a kind is in is a fact about the galaxy, not about the taxonomy**: the derived
+  columns are sorted by the localized title, so a saved selector naming a definition is resolved
+  by finding a result carrying that internal name and then finding the column carrying that
+  result's title. Two definitions that share one localized title share one column, and the second
+  one's selector resolves to it — which is the right answer for a player who hears one word.
+- **Composing every colonizable world's description up front costs nothing measurable.**
+  `ScannerCost.Line()` on that fixture (12 star systems, 30 colonizability checks) reads
+  **4–7 ms a press** with the descriptions composed eagerly, against the 30 ms the scanner warns
+  at — so the lazy path the scanner had for them was an optimization of something that was never
+  expensive, and it cost keywords the ability to see a world's type at all.

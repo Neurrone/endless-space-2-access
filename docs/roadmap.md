@@ -70,7 +70,7 @@ files above.
   arrows ARE now declared as nodes (owner decision, landed 2026-08-22) — structure verified on a
   forced show, behaviour fixture-blocked (the save has no heroes, so both arrows read unavailable).
 - Scanner (shipped, taxonomy v2 2026-08-16, Contested Influence added 2026-08-21, taxonomy v3
-  2026-08-22): THIRTEEN categories in the owner's order — systems, colonizable planets, unexplored,
+  2026-08-22, three CUSTOM slots in front of them 2026-08-23): THIRTEEN categories in the owner's order — systems, colonizable planets, unexplored,
   anomalies, curiosities, luxury resources, strategic resources, contested influence, fleets,
   probes, ally pins, obliterator missiles, quest
   markers (system-anchored ones only, owner's ruling 2026-08-17: a marker with no system is not
@@ -201,6 +201,13 @@ files above.
   (a view-side repository), which measured EMPTY for the player's own fleets parked at a
   system (notifications session, Stage 2) — investigate whether the scanner drops parked
   fleets.
+- Custom scanner categories: the MODEL, the synthesis and the six quick keys SHIPPED 2026-08-23
+  (stage 3) — three fixed slots prepended to the category cycle, `,` `.` `/` and Shift+each walking
+  a slot flat and landing on what they find. What is left is the EDITOR (stage 4): the Scanner
+  category of the mod's settings window and the mod-drawn sub-screen that fills a slot, so a player
+  can configure one without `/eval`. Until that lands the feature is unreachable by a player, and
+  the manual pass over the six physical keys is blocked with it
+  (`custom-scanner-categories-test-report.md`).
 - Rebindable mod keys: SHIPPED 2026-08-23 - the Keybinds tab of the mod's settings window
   (stage 2a), and the three-column binding table with Delete-to-clear, the Escape cancel and
   the two-way mod/game overlap warning (stage 2b, rulings 6/9/10), on the game's own Controls

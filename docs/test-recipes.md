@@ -2519,6 +2519,37 @@ Signal 2, …). The two named columns are `Curiosity.CanBeSearched(empire, null,
 whole category, so a curiosity in NEITHER (one already being expedited, or quest-locked) is
 fixture-blocked. The kind columns count fewer than "all" because a kind is counted once per PLANET.
 
+**Configuring a custom scanner category from `/eval` (stage 3, 2026-08-23).** There is no editor
+yet, so the three slots are written through the runtime API and read back on the next press —
+nothing needs a reload, and a reload proves the file:
+
+```
+ES2Access.Core.UI.ScannerCustomCategory one = new ES2Access.Core.UI.ScannerCustomCategory("Watch list");
+one.AddSelector(new ES2Access.Core.UI.ScannerSelector("systems", "neutral"));
+one.AddSelector(new ES2Access.Core.UI.ScannerSelector("fleets", "friendly"));
+one.AddKeyword("Dusay");
+ES2Access.UI.Settings.ScannerCustomSettings.Set(0, one);   // slot index 0 = "custom category 1"
+```
+
+Wrap it in the `((System.Func<string>)(() => { … }))()` IIFE and return
+`ModSettings.File.Get("scanner.custom.1")` to see the encoded line
+(`Watch list|systems:neutral,fleets:friendly|Dusay`). The selector vocabulary is `ScannerKeys`;
+a KIND selector takes the game's own definition name, which `[Beginner] test` supplies plenty of —
+`anomalies:PlanetAnomaly27` (Multiple Moons), `strategic:Strategic2` (Hyperium),
+`curiosities:explorable`. Clear with `ScannerCustomSettings.Clear(0..2)`, which removes the keys
+from `settings.cfg` outright — do it at the end of a session, since a slot left configured changes
+the very first thing every later scanner press reaches.
+
+MEASURED on that fixture (turn 21): `galaxy.scanCategoryNext` lands on **"Watch list: all, Rigel,
+−16, −5, 3 south, 1 of 21"** — the custom category leads the cycle — and `galaxy.scanSubcategoryNext`
+steps **Systems: neutral** (10) → **Fleets: friendly** (6) → **Dusay** (5) → **all** (21), the three
+partitioning "all" exactly. A slot configured with a selector this galaxy cannot answer
+(`luxury:NoSuchResource`) is SKIPPED by the category cycle in both directions and answers its own
+quick key with "{name}: all, none found". An unconfigured slot's quick key says
+"No custom category on ," / "on Shift+/" — the key named off the live binding.
+`ES2Access.UI.ScannerCost.Line()` reads **4–7 ms a press** whether or not a slot is configured,
+which is the measurement behind composing every colonizable world's description up front.
+
 **Deposit dossiers across the zoom (batch 9, 2026-08-23).** The evidence pair for a mod-owned
 tooltip carrier: `POST /type "antim"` from the map stop, then
 `Gui.GuiService.GetWindow<GuiTooltipWindow>(false).AgeTooltip.AgeTransform.gameObject.name` says

@@ -795,7 +795,51 @@ exactly what Ctrl+I announces and opens the cell ON the square, so the arrival i
 "Inspect mode, Cursor 1 by 1", the constellation crossing, the influence lines, the pair. With the
 cursor already up it is an ordinary jump. No other category force-arms anything. Its one
 subcategory is "all": every result is the player's own ground being taken, so an affiliation scope
-would have exactly one answer. **Bare PageUp/PageDown remain the GAME's keyboard zoom**, Ctrl+Home stays the review
+would have exactly one answer. 
+
+**THREE CATEGORIES THE PLAYER MAKES, IN FRONT OF THE THIRTEEN** (2026-08-23, `ScannerCustomSlots`
+→ `docs/helpers.md`). Three FIXED slots, each empty or holding `{name, selectors, keywords}`;
+"delete" is clearing a slot, there are no ids and no reorder. A configured slot is a category the
+cycle reaches FIRST, in slot order, with the player's own name as its category name; an
+unconfigured slot, and a configured one that caught nothing this press, are skipped by exactly the
+rule that skips a built-in category with nothing in it. **The slot rows are always in the table**,
+which is what keeps every built-in category's index — and therefore the cursor's per-category
+memory — the same whatever the player does to their slots. Its columns are "all", then one per
+SELECTOR in the order they were added, then one per KEYWORD; each selector column is named with
+BOTH halves ("Systems: enemy", "Anomalies: Multiple Moons") because two selectors that both say
+"all" are two different columns to the player and to the cursor's name memory. A selector is a pair
+of STABLE KEYS (`ScannerKeys`: `systems`/`fleets`/`anomalies`… and `all`/`friendly`/`enemy`/
+`unoccupied`/`explorable`/`low-power`…, or — for one of the four derived categories' kind columns —
+the GAME's own definition name, `PlanetAnomaly27`, `Luxury5`, `CuriosityTypeGuardian`), so it
+survives a language change and a galaxy with no such column; a selector this galaxy cannot answer
+is SKIPPED for that press and stays stored. A KEYWORD matches a result's name, its kind and its
+composed detail through the type-ahead's own tiered, diacritic-insensitive match — which is why a
+colonizable world's description is now composed for every world up front rather than for the row
+being read (measured 2026-08-23: 4–7 ms a press either way). "all" hears each result ONCE however
+many of the player's questions caught it, and says it as the column it came from would in its own
+"all" ("Multiple Moons on Dusay II"); a selector's own column says what that built-in column says.
+Nothing custom reaches the type-ahead search, which searches the graph's nodes and never the
+scanner's results.
+
+**The six quick keys: `,` `.` `/` and Shift+each** (owner-approved 2026-08-23; actions
+`galaxy.scanCustom1Next`…`3Prev`, so all six are rebindable rows of the Keybinds tab). One key per
+SLOT, not per category name — the key means the same thing whatever the player renames. A press
+walks that slot's "all" list FLAT, nearest first from where the player is reading, SAYS the landing
+as a scanner result would ("Rigel, -16, -5, 3 south, 1 of 21") and then performs the category's
+ordinary Alt+Home landing, so the tree cursor and the camera go there and the page announces the
+arrival after it. Each landing becomes the place the next press measures from, which turns the key
+into a nearest-neighbour hop across the map: the walk RE-ANCHORS whenever the player has moved off
+the place it last swept from, and a press while parked on the entry it is standing on steps ON
+rather than re-landing (`ScannerWalk`). Shift is the same list reversed, so from a landing it goes
+to the FARTHEST result rather than back the way it came — the nearest-first ordering read backwards,
+soc-access's own rule. An EMPTY slot says "No custom category on {key}", naming the key off the LIVE
+binding, and is never silent; a configured slot that caught nothing says the ordinary
+"{category}: all, none found". The six are keys of the MAP WIDGET like the rest of the scanner's
+(`GalaxyScanner.QuickKeysClaimed` → `Active`) and need no physical-modifier trick: the game binds
+nothing to those three keys and the mod's type-ahead takes letters and space and never punctuation.
+Not repeating — every press is a jump.
+
+**Bare PageUp/PageDown remain the GAME's keyboard zoom**, Ctrl+Home stays the review
 buffer's first line and plain Home/End the stop's ends.
 **KEYS OF THE MAP WIDGET, like the inspect cursor's (2026-08-17).** Every chord above acts only
 while the focused stop IS the map (`GalaxyHudScreen.CursorOnMap`, over `IsMapStop`); on the zoom
