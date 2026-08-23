@@ -2912,3 +2912,45 @@ category are the same `OptionKeyMappingItem` rows). The mod's side is
   **4–7 ms a press** with the descriptions composed eagerly, against the 30 ms the scanner warns
   at — so the lazy path the scanner had for them was an optimization of something that was never
   expensive, and it cost keywords the ability to see a world's type at all.
+
+## The mod's own settings window, stage 4 (2026-08-23)
+
+- **A `GuiModalWindow` with `HideGuiBehind` SWITCHES OFF every age screen behind its own.**
+  `OnEndShow` calls `HideAllAgeScreensBehind`, which writes `Root.Visible = false` on each screen
+  before its own in `GuiManager.ageScreens` (`GuiModalWindow.cs:52-99`, `GuiManager.cs:2386-2500`),
+  and `AgeTransform.UpdateHierarchy` returns at once on an invisible root — so nothing under those
+  screens advances a modifier, never mind draws. **Consequence, measured 2026-08-23:** the options
+  window (the game's own as much as the mod's clone) is on **`OverlayRenderer`**, which is the LAST
+  screen, so while it is up the whole **`ModalRenderer`** stack is frozen. The rename box lives
+  there: `RequestNewName` shows it, and it sits at `Alpha 0`, `Enable false`, `ModifiersRunning
+  true` forever — never `IsReady`, so no mod screen arrives. `ShowAllAgeScreensBehind` +
+  `EnableAllAgeScreensBehind` for the box's duration is the whole fix, and both calls are the
+  game's own (`ScannerEditor.Unfreeze`). What it cannot fix is DRAWING: `OverlayRenderer` sorts
+  above `ModalRenderer`, so the box comes up behind the settings window's opaque background —
+  operable and readable, invisible.
+- Which stack each window is on (probed, not read off the XML): `OptionsModalWindow`,
+  `MessageBoxWindow` and `GameMenuModalWindow` are all on `OverlayRenderer` (a plain
+  `GuiWindowsStack`); `RenameModalWindow` is on `ModalRenderer` (`GuiWindowsStackModal`, the
+  exclusive one). That is why the game's own confirmation box stacks over the options window and
+  the rename box cannot.
+- **`RenameModalWindow.CheckButtons` is DEAD in the shipped build.** Its only caller is
+  `StartProfanityFiltering`, which compiles to an empty body, so `OnInputChanged` is never invoked,
+  the field never turns red and `ValidateButton.Enable` keeps whatever the prefab shipped (true).
+  A refusal therefore cannot be expressed through the box; it belongs in `OnInputValidated`, which
+  runs on the trimmed text and hides the window itself. `OnInputChanged` must still be non-null
+  (`Gui.AssertNotNull`).
+- **An `OptionsTabPanel` whose service declares no option loads cleanly** — `Load` iterates an
+  empty `Options` array and logs nothing (the Keybinds tab has shipped this way since stage 2a).
+  A panel with no ROWS, though, can never be dirty: `BackupSettings`,
+  `CheckWhetherSomeApplicationSettingHasChanged` and `RestoreSettings` all walk
+  `OptionsTable.Children`, not `Options`. One `[OptionTypeToggle]` on the service interface makes
+  the game build one checkbox row, and setting that row's `AgeTransform.Visible = false` keeps it
+  out of the drawing and out of the mod's reading while every scan still counts it — which is how
+  a mod-drawn tab gets the window's own Apply/Cancel semantics with no override, no button
+  rewiring and no second confirmation box.
+- **`Option.Changed` on a non-latent option is `!backup.Equals(Value)`**, and `Restore()` is
+  `Value = backupValue` through the setter. So an option whose GETTER answers "does the mod's
+  working copy differ from what is saved" is dirty exactly when the editor is, and whose SETTER
+  discards the working copy when handed `false` is restored exactly when the window restores.
+  The backup is taken in `OnBeginShow` → `BackupApplicationSettings`, so the working copy has to
+  be reset BEFORE `base.OnBeginShow` runs.

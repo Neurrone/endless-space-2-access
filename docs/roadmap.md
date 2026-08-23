@@ -201,13 +201,15 @@ files above.
   (a view-side repository), which measured EMPTY for the player's own fleets parked at a
   system (notifications session, Stage 2) — investigate whether the scanner drops parked
   fleets.
-- Custom scanner categories: the MODEL, the synthesis and the six quick keys SHIPPED 2026-08-23
-  (stage 3) — three fixed slots prepended to the category cycle, `,` `.` `/` and Shift+each walking
-  a slot flat and landing on what they find. What is left is the EDITOR (stage 4): the Scanner
-  category of the mod's settings window and the mod-drawn sub-screen that fills a slot, so a player
-  can configure one without `/eval`. Until that lands the feature is unreachable by a player, and
-  the manual pass over the six physical keys is blocked with it
-  (`custom-scanner-categories-test-report.md`).
+- Custom scanner categories: SHIPPED whole 2026-08-23 — the model, the synthesis and the six quick
+  keys (stage 3), and the EDITOR (stage 4): the Scanner tab of the mod's settings window, first and
+  in game only, a tree of mod nodes per slot under the window's own Apply/Cancel. What is left is
+  MANUAL: the six physical quick keys, and the typing half of the naming box (the harness can write
+  a game field's text but cannot press a key at it)
+  (`custom-scanner-categories-test-report.md`). Two known limits to weigh rather than fix blind:
+  the Scanner tab is drawn EMPTY, and the naming box comes up BEHIND the settings window
+  (`docs/es2-facts.md`, "The mod's own settings window, stage 4") — both keyboard-complete, neither
+  visible to a sighted helper.
 - Rebindable mod keys: SHIPPED 2026-08-23 - the Keybinds tab of the mod's settings window
   (stage 2a), and the three-column binding table with Delete-to-clear, the Escape cancel and
   the two-way mod/game overlap warning (stage 2b, rulings 6/9/10), on the game's own Controls
@@ -329,7 +331,7 @@ files above.
 | Diplomacy / negotiation / minor / pirate | DiplomacyScreen, NegotiationScreen, MinorFactionDiplomacyScreen, PirateDiplomacyScreen |
 | Target pickers / cutscenes / victory trio / journal | TargetSelectionScreen, CutsceneScreen, VictoryScreen, VictoryAchievedScreen, JournalScreen |
 | Dialogs: message box / error / non-blocking / game menu / drop list | MessageBoxScreen, ErrorScreen, NonBlockingMessageScreen, GameMenuScreen, DropListScreen |
-| The mod's own settings window (the game's options modal, cloned; Keybinds tab) | `ES2Access/UI/ModOptions/` + OptionsScreen |
+| The mod's own settings window (the game's options modal, cloned; Scanner and Keybinds tabs) | `ES2Access/UI/ModOptions/` + OptionsScreen |
 | Contextual prompt / Behemoth specialization | ContextualPromptScreen, JuggernautSpecializationScreen |
 | Out-game pages: disclaimer / credits / DLC browser / mod manager / join game / asset exporter | DisclaimerScreen, CreditsScreen, DLCScreen, ModdingConfigScreen, MenuDestinationScreens, ResourcesExportModScreen |
 

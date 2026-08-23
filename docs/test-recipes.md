@@ -2791,3 +2791,51 @@ from the tabs stop `ui.next` reaches the rows and `ui.next` again the buttons (`
 Cancel with changes raises the game's own confirmation (`ui.end` then `ui.activate` confirms) and
 lands back on the pause menu. `/input ui.back` does NOT close a game-owned window: Escape is left to
 the game and an injected action presses no key — use the window's own Cancel button instead.
+
+### The Scanner tab of the mod's settings (stage 4, 2026-08-23)
+
+**Getting to the editor** is the stage 2a route plus two moves: pause menu → `ui.down` ×5 →
+`ui.activate` ("Mod settings", then "Scanner, tab, selected, …, 1 of 2" — Scanner is the tab the
+window opens on), then `ui.next` into `options:rows` and `ui.right` to open a slot. Node ids are
+`scanner:slot/{0..2}`, `…/name`, `…/cat/{categoryKey}`, `…/cat/{categoryKey}/{columnKey}`,
+`…/keywords`, `…/keywords/add`, `…/keywords/{index}`, `…/clear`. `ui.right`/`ui.left` walk the
+tree; a group only enumerates its children while expanded, so a `/gui/graph` dump shows what the
+player can actually reach. **Jumping straight to a node** (much cheaper than counting `ui.down`s):
+`ES2Access.ModEntry.Navigator.FocusNode(ES2Access.Core.UI.Graph.ControlId.Structural(
+"scanner:slot/0/cat/luxury"))` from `/eval`, then `ui.right` to open it.
+
+**Driving the naming box.** `ui.activate` on the Name or "Add keyword" button opens the game's own
+rename box and the mod's `screen.rename` arrives ("Name for custom category 1" / "editable,
+Custom 1, 2 of 4"). Typing is not reachable — `POST /type` goes to the mod's type-ahead and
+`POST /key` needs the game foregrounded — so write the text and press Confirm through the mod's
+own activate path:
+`Gui.GuiService.GetWindow<RenameModalWindow>(false).TextField.Label.Text = "Watch list"` then
+`/input ui.end` and `/input ui.activate`. MEASURED: the settings window announces itself again and
+the cursor's control re-reads with the new name in one line ("Scanner, Custom category 1, Watch
+list, group, expanded, 1 of 3, Name, Watch list, button, 1 of 16"). A refusal follows that line
+("Watch List is already the name of a category", "That keyword is already in this custom
+category") — it is queued on purpose, so it lands after the arrival rather than being eaten by it.
+
+**What the tab is worth checking for.** Apply lights only once something differs
+(`ES2Access.UI.ModOptions.ScannerEditor.Edited` and
+`ModOptions.Window().ApplyButton.AgeTransform.Enable` answer the same question); Cancel with
+changes raises the game's own "Are you sure you want to quit without saving?" (`screen.message-box`
+— `ui.end` then `ui.activate` confirms) and leaves `ScannerCustomSettings.Slot(0)` and the file
+untouched; Apply hides the window and writes `scanner.custom.1 = Watch list|systems:neutral,
+anomalies:PlanetAnomaly27Alt|Rigel`, which survives `POST /reload`. Then the map: `FocusStop(
+"galaxy:systems")` (the `ui.next` walk to the map stop is long) and `galaxy.scanCategoryNext` reads
+"Watch list: all, Rigel, -16, -5, 3 south, 1 of 14", with `galaxy.scanSubcategoryNext` stepping
+"Systems: neutral" → "Anomalies: Multiple Moons" → "Rigel" → "all".
+
+**The stale-selector row** needs a selector the galaxy cannot answer. Write one behind the editor
+(`ScannerCustomSettings.Slot(0).AddSelector(new ScannerSelector("luxury","NoSuchResource"));
+ScannerCustomSettings.Save();`) and reopen: the Luxury group offers "NoSuchResource, not found this
+game, checkbox, checked", and unticking it takes the selector out and drops the row.
+
+**On `[Beginner] test` at turn 21** the tab offers Systems 7 columns, Colonizable 2, Unexplored 1,
+Anomalies 11 (10 kinds), Curiosities 8 (5 kinds), Luxury 3 (2), Strategic 4 (3), Contested 1,
+Fleets 4, Probes 4, and 1 each for pins, missiles and quest markers. Note the anomaly keys are the
+game's own and are not what a guess would produce: Multiple Moons is `PlanetAnomaly27Alt`.
+
+**Leave the fixture with all three slots cleared** (the Clear button then Apply, or
+`ScannerCustomSettings.Clear(0..2)`) — `settings.cfg` goes back to 0 bytes.
