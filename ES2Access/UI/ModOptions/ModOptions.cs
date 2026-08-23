@@ -406,8 +406,55 @@ namespace ES2Access.UI.ModOptions
                 WindowList(typeof(GameGui.GuiManager), "guiWindowsFromBackToFront", Manager()),
                 window
             );
+            CountAsAModal(window);
         }
 
+        /// <summary>
+        /// MAKE THE GAME COUNT THIS WINDOW AS A MODAL, which is a third registry and a subscription.
+        ///
+        /// The manager keeps its own list of modal windows and subscribes to each one's
+        /// <c>VisibilityChanged</c> ONCE, when it loads the windows at boot
+        /// (<c>GuiManager.Load_IGuiGamePanelService</c>). A clone built afterwards is in neither, so
+        /// <c>IsAnyModalVisible</c> stayed FALSE the whole time the mod's settings window was up -
+        /// and that flag is what the game weighs the tutorial popup against
+        /// (<c>TutorialPopupPanel.UpdateLayerAndVisibilityAccordingToOtherWindows</c>). The visible
+        /// defect: a minimised tutorial's bar was still drawn, and still declared, over the mod's
+        /// settings window, where over the game's own options window the game hides it.
+        ///
+        /// Every other user of the flag is a place the mod's window ought to count too - the scan
+        /// view refusing to toggle, the tutorial's own keys standing down - so this is the game
+        /// being told the truth rather than a fix aimed at the tutorial.
+        /// </summary>
+        private static void CountAsAModal(ModOptionsWindow window)
+        {
+            try
+            {
+                GuiManager manager = Manager();
+                IList modals = WindowList(typeof(GuiManager), "guiModalWindows", manager);
+                if (manager == null || modals == null || modals.Contains(window))
+                {
+                    return;
+                }
+
+                MethodInfo handler = typeof(GuiManager).GetMethod(
+                    "ModalWindow_VisibilityChanged",
+                    BindingFlags.Instance | BindingFlags.NonPublic
+                );
+                if (handler == null)
+                {
+                    Log.Warn("mod options: GuiManager has no ModalWindow_VisibilityChanged");
+                    return;
+                }
+
+                window.VisibilityChanged += (EventHandler)
+                    Delegate.CreateDelegate(typeof(EventHandler), manager, handler);
+                modals.Add(window);
+            }
+            catch (Exception e)
+            {
+                Log.Warn("mod options: registering the window as a modal threw: " + e);
+            }
+        }
 
         private static void Add(IList list, ModOptionsWindow window)
         {
@@ -430,6 +477,11 @@ namespace ES2Access.UI.ModOptions
                 Unregister(
                     WindowList(typeof(GameGui.GuiManager), "guiWindowsFromBackToFront", Manager())
                 ) ?? standing;
+            // Not optional: a destroyed window left in this list is read every time any modal's
+            // visibility changes, and reading .Shown on a destroyed component throws.
+            standing =
+                Unregister(WindowList(typeof(GuiManager), "guiModalWindows", Manager()))
+                ?? standing;
 
             if (standing == null && stack != null)
             {
