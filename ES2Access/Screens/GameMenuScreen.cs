@@ -198,15 +198,19 @@ namespace ES2Access.Screens
             }
 
             AgeControlToggle control = toggle;
-            builder.AddItem(
-                ControlId.Referenced(control, key),
-                GraphNodes.Checkbox(
-                    caption,
-                    () => State(control),
-                    () => Flip(control),
-                    () => Enabled(control)
-                )
+            // The sentence the game writes for each of these two boxes ("Click to show the main galaxy
+            // and gameplay settings used for this game.") hangs on the toggle itself and was reaching
+            // nobody: the node existed, was pressable, and carried none of its own words.
+            AgeTooltip tooltip = AgeWidgets.Raw(AgeWidgets.Transform(control));
+            NodeVtable vtable = GraphNodes.Checkbox(
+                caption,
+                () => State(control),
+                () => Flip(control),
+                () => Enabled(control),
+                tooltip
             );
+            AgeWidgets.PointAt(vtable, AgeWidgets.Transform(control), tooltip);
+            builder.AddItem(ControlId.Referenced(control, key), vtable);
         }
 
         // ---- a settings panel ----

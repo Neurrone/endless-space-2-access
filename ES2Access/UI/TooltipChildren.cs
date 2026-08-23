@@ -239,6 +239,81 @@ namespace ES2Access.UI
             );
         }
 
+        /// <summary>
+        /// A widget whose explanation the game wrote as PLAIN TEXT, as a node of its own.
+        ///
+        /// <see cref="Add"/> deliberately takes only renderer-assembled dossiers, because a plain
+        /// sentence has somewhere cheaper to go: the owning row's buffer. That stops being true once a
+        /// row carries SEVERAL of them - a census slice draws three wordless dots and a boost badge,
+        /// each with a sentence of its own - because a buffer merges them into a paragraph the player
+        /// cannot tell apart or step through (owner ruling: one row means a row of NODES, never one
+        /// merged node).
+        ///
+        /// The sentence's first line is the name, and the mode is <see cref="TooltipMode.None"/> so
+        /// the same words are not announced twice; the whole sentence is still in the node's buffer.
+        /// PAINTED is the gate, because these badges are prefab decoration the game fades rather than
+        /// hides.
+        /// </summary>
+        public static void AddPlain(List<Dossier> into, AgeTransform widget)
+        {
+            if (into == null || !AgeWidgets.Painted(widget))
+            {
+                return;
+            }
+
+            AgeTooltip tooltip = AgeWidgets.Raw(widget);
+            if (
+                tooltip == null
+                || AgeWidgets.Readable(tooltip) == null
+                || !AgeWidgets.Draws(tooltip)
+            )
+            {
+                return;
+            }
+
+            for (int i = 0; i < into.Count; i++)
+            {
+                if (AgeWidgets.SameTooltip(into[i].Tooltip, tooltip))
+                {
+                    return;
+                }
+            }
+
+            AgeTooltip tip = tooltip;
+            into.Add(
+                new Dossier
+                {
+                    Name = CardActions.NameFromTooltip(tip),
+                    Tooltip = tip,
+                    Anchor = widget,
+                    Mode = TooltipMode.None,
+                }
+            );
+        }
+
+        /// <summary>Every plain-text explanation hanging INSIDE a widget, one node each, in the order
+        /// the prefab lays them out - for a row that draws a strip of wordless badges.</summary>
+        public static void AddPlainInside(List<Dossier> into, AgeTransform widget, int maxDepth = 4)
+        {
+            if (into == null || widget == null || !AgeWidgets.Painted(widget))
+            {
+                return;
+            }
+
+            List<AgeTooltip> found = new List<AgeTooltip>();
+            AgeWidgets.EffectiveTooltips(
+                widget,
+                found,
+                TooltipReach.Own | TooltipReach.Descendants,
+                maxDepth
+            );
+            for (int i = 0; i < found.Count; i++)
+            {
+                AgeTooltip tooltip = found[i];
+                AddPlain(into, tooltip == null ? null : tooltip.AgeTransform);
+            }
+        }
+
         /// <summary>Every dossier drawn INSIDE a widget, in the prefab's own order - for a card whose
         /// figures each carry one.</summary>
         public static void AddInside(List<Dossier> into, AgeTransform widget, int maxDepth = 4)

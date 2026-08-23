@@ -37,6 +37,12 @@ namespace ES2Access.UI
             public Func<bool> Offered;
             public AgeControlToggle Toggle;
             public Func<string> Value;
+
+            /// <summary>The tooltip the node carries and aims at, where the control does not hold it
+            /// itself - a card row whose dossier hangs on the icon inside it, so the row's own
+            /// <c>AgeTooltip</c> is null and the node would carry no dossier and point at nothing.
+            /// Null asks the widget for its own, which is every other case.</summary>
+            public AgeTooltip Tooltip;
         }
 
         /// <summary>A button named by a phrase of this mod's - for a control the game draws as a
@@ -193,7 +199,7 @@ namespace ES2Access.UI
                 CardAction action = actions[i];
                 AgeTransform at = action.Widget;
                 AgeControlToggle toggle = action.Toggle;
-                AgeTooltip tooltip = AgeWidgets.Raw(at);
+                AgeTooltip tooltip = action.Tooltip ?? AgeWidgets.Raw(at);
                 // The default asks the shared availability test rather than the hint alone: a button
                 // collected while the game was drawing it can be switched off between rebuilds, and the
                 // player standing on it should hear that.
@@ -225,7 +231,11 @@ namespace ES2Access.UI
                 }
                 else
                 {
-                    AgeWidgets.PointAt(vtable, at);
+                    // At the widget the tooltip is really ON - for a row whose dossier hangs on an
+                    // icon inside it, pointing at the row draws nothing at all. Identical to pointing
+                    // at the widget wherever the widget is where the tooltip hangs, which is every
+                    // other card button.
+                    AgeWidgets.PointAt(vtable, at, tooltip);
                 }
 
                 if (vtable.OnSelectToggle == null && AgeWidgets.Hinted(at))

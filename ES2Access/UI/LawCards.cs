@@ -131,6 +131,22 @@ namespace ES2Access.UI
                     ControlId.Referenced(widget, keyPrefix + i),
                     Vtable(card)
                 );
+
+                // The badge in the card's corner says its WORD on the row already
+                // (<see cref="ForcedWord"/>); the sentence behind it - that this law comes into force
+                // by itself while its party is in power - lives in the badge's own tooltip and reached
+                // nobody.
+                List<TooltipChildren.Dossier> badge = new List<TooltipChildren.Dossier>(1);
+                TooltipChildren.AddPlain(
+                    badge,
+                    card.ForcedLawIcon == null ? null : card.ForcedLawIcon.AgeTransform
+                );
+                if (badge.Count > 0)
+                {
+                    Cell owner = cells[cells.Count - 1];
+                    owner.Dossiers = badge;
+                    owner.Key = keyPrefix + i;
+                }
             }
         }
     }

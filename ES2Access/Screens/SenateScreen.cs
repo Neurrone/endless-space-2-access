@@ -753,6 +753,27 @@ namespace ES2Access.Screens
                 ControlId.Referenced(widget, "senate:census/arc/" + index),
                 vtable
             );
+
+            // The slice draws a strip of three 8-pixel dots and a boost badge beside its name, each
+            // with a sentence of its own - which party these people lean towards, what that gives the
+            // empire, which law it unlocks, what a boost would do - and until now not one of those
+            // sentences reached a keyboard. Four of them on one row is exactly the case a shared
+            // buffer paragraph cannot serve, so they are nodes (<see cref="TooltipChildren.AddPlain"/>).
+            string key = "senate:census/arc/" + index;
+            List<TooltipChildren.Dossier> badges = new List<TooltipChildren.Dossier>(4);
+            // The badge strip only, never the container: the slice's OWN tooltip hangs on
+            // LabelsContainer and is already this node's section, and reading down from there would
+            // declare it a second time as a child of itself.
+            TooltipChildren.AddPlainInside(
+                badges,
+                AgeWidgets.ChildNamed(labels, "SubInfosTable", 2)
+            );
+            if (badges.Count > 0 && cells.Count > 0)
+            {
+                Cell owner = cells[cells.Count - 1];
+                owner.Dossiers = badges;
+                owner.Key = key;
+            }
         }
 
         private static string BoostText(PopulationCensusArc arc)

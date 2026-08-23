@@ -631,6 +631,16 @@ namespace ES2Access.Screens
             try
             {
                 CardActions.AddNamedByMod(found, label.ColonizeButton, ModStrings.SystemColonize);
+                // The three the card draws along its bottom for a world that is already yours: pick a
+                // specialization improvement, reduce an anomaly, terraform. The sibling EMPIRE screen
+                // declares exactly these off the same prefab family (<c>EmpireScreen.CardButtons</c>)
+                // and this page declared none of them, so choosing a planet's specialization was
+                // unreachable from the system page by keyboard at all. Each names itself in the
+                // sentence its own tooltip explains it with.
+                CardActions.AddNamedByTooltip(found, label.BuildInfrastructureButton);
+                CardActions.AddNamedByTooltip(found, label.ReduceAnomalyButton);
+                CardActions.AddNamedByTooltip(found, label.TerraformButton);
+                AddAnomalyHints(found, label);
                 AddCuriosities(found, label);
             }
             catch (Exception e)
@@ -639,6 +649,57 @@ namespace ES2Access.Screens
             }
 
             return found;
+        }
+
+        /// <summary>
+        /// The anomalies on the card, as the CONTROLS the game made them: each row's own click jumps to
+        /// the technology that would let the anomaly be reduced (<c>PlanetAnomalyItem.OnHintCb</c>),
+        /// which the mouse has and no node stood on. The click is wired on the ROW, not on the little
+        /// hint button beside it - that one only carries the hint's state - so the row is what is
+        /// declared and the button is what decides whether it would do anything.
+        ///
+        /// Kept declared while the row is drawn and OFFERED only while the hint is live, the same
+        /// treatment every other blocked control on these cards gets: the game only fills the hint in
+        /// for a world of yours whose reduction is blocked, and a row that answers "unavailable" is the
+        /// truthful reading of a click that would do nothing. The anomaly's own dossier - the paragraph
+        /// and the reduction prerequisites - rides along as the node's tooltip; the card's buffer keeps
+        /// naming the anomalies as it always did.
+        ///
+        /// Painted is the gate: the table pools its items.
+        /// </summary>
+        private static void AddAnomalyHints(
+            List<CardActions.CardAction> found,
+            PlanetLabel_SystemManagement label
+        )
+        {
+            AgeTransform table = label.PlanetAnomaliesTable;
+            if (table == null || !AgeWidgets.Visible(table))
+            {
+                return;
+            }
+
+            IList<AgeTransform> items = table.Children;
+            for (int i = 0; items != null && i < items.Count; i++)
+            {
+                AgeTransform row = items[i];
+                PlanetAnomalyItem item = row.GetComponent<PlanetAnomalyItem>();
+                if (item == null || item.HintButton == null || !AgeWidgets.Painted(row))
+                {
+                    continue;
+                }
+
+                PlanetAnomalyItem it = item;
+                AgeTransform hint = item.HintButton.AgeTransform;
+                found.Add(
+                    new CardActions.CardAction
+                    {
+                        Widget = row,
+                        Label = () => AgeWidgets.TooltipTitle(it.Tooltip),
+                        Tooltip = it.Tooltip,
+                        Offered = () => AgeWidgets.Hinted(hint),
+                    }
+                );
+            }
         }
 
         /// <summary>
@@ -2507,15 +2568,18 @@ namespace ES2Access.Screens
         {
             AgeTooltip tooltip = unit.Tooltip;
             AgePrimitiveLabel count = unit.Count;
-            NodeVtable vtable = new NodeVtable
-            {
-                Announcements = new List<NodeAnnouncement>
-                {
-                    GraphNodes.LabelPart(() => AgeWidgets.TooltipTitle(tooltip)),
-                    GraphNodes.ValuePart(() => AgeText.Label(count)),
-                },
-                Sections = GraphNodes.Sections(null, tooltip),
-            };
+            // The entry's own click opens the empire's population window
+            // (<c>PopulationCount.OnClickCb</c>) - the same window the senate's census button opens,
+            // which <see cref="PopulationScreen"/> already said these rows opened while no row here
+            // declared any action at all.
+            AgeTransform at = widget;
+            NodeVtable vtable = GraphNodes.Button(
+                () => AgeWidgets.TooltipTitle(tooltip),
+                () => AgeWidgets.Press(at),
+                () => AgeWidgets.Operable(at),
+                tooltip
+            );
+            vtable.Announcements.Insert(1, GraphNodes.ValuePart(() => AgeText.Label(count)));
             AgeWidgets.PointAt(vtable, widget, tooltip);
             return new Cell
             {

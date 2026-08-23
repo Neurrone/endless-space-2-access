@@ -489,15 +489,18 @@ namespace ES2Access.Screens
 
             AgeTooltip tooltip = Meaningful(unit.Tooltip);
             AgePrimitiveLabel count = unit.Count;
-            NodeVtable vtable = new NodeVtable
-            {
-                Announcements = new List<NodeAnnouncement>
-                {
-                    GraphNodes.LabelPart(() => TooltipTitle(tooltip)),
-                    GraphNodes.ValuePart(() => AgeText.Label(count)),
-                },
-                Sections = GraphNodes.Sections(null, tooltip),
-            };
+            // The entry is a BUTTON, not a readout: its own click opens the empire's population window
+            // (<c>PopulationCount.OnClickCb</c>), which is the only route into what these people are
+            // beyond the sentence on their symbol - and it is the same window the senate's census
+            // button opens (<see cref="PopulationScreen"/>). It had no opener node anywhere.
+            AgeTransform at = widget;
+            NodeVtable vtable = GraphNodes.Button(
+                () => TooltipTitle(tooltip),
+                () => AgeWidgets.Press(at),
+                () => AgeWidgets.Operable(at),
+                tooltip
+            );
+            vtable.Announcements.Insert(1, GraphNodes.ValuePart(() => AgeText.Label(count)));
 
             AgeWidgets.PointAt(vtable, widget, tooltip);
             Add(

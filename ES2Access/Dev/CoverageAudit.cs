@@ -241,7 +241,7 @@ namespace ES2Access.Dev
             List<Declared> covering = NotificationAudit.Covering(
                 declared,
                 widget,
-                AgeWidgets.Raw(widget)
+                AgeWidgets.Raw(widget) ?? Inside(widget)
             );
             if (covering.Count == 0)
             {
@@ -277,6 +277,38 @@ namespace ES2Access.Dev
             finding.Handler = Wiring(control);
             finding.Covered = covering[0].Key;
             Add(result.Uncovered, finding);
+        }
+
+        /// <summary>
+        /// The tooltip a control keeps INSIDE itself, for a control that carries none of its own.
+        ///
+        /// A node declared through <c>CardActions.Emit</c> is keyed structurally, so it has no widget
+        /// for the containment walk to find, and its AIM is the only thing that says where it stands.
+        /// Where the control's own tooltip is null that aim cannot be matched either - a planet card's
+        /// anomaly row is the measured case: the click is wired on the row and the tooltip hangs on the
+        /// icon inside it, so a declared, walkable node read as "no node stands here". Asking the
+        /// resolver for what is inside the control answers the same tooltip the node aimed at.
+        ///
+        /// Only for a control with NO tooltip of its own, so a control that has one is still judged by
+        /// that one alone and a node aiming at some other tooltip inside it cannot claim it.
+        /// </summary>
+        private static AgeTooltip Inside(AgeTransform widget)
+        {
+            try
+            {
+                List<AgeTooltip> found = new List<AgeTooltip>(2);
+                AgeWidgets.EffectiveTooltips(
+                    widget,
+                    found,
+                    ES2Access.Core.UI.TooltipReach.Own | ES2Access.Core.UI.TooltipReach.Descendants,
+                    3
+                );
+                return found.Count == 0 ? null : found[found.Count - 1];
+            }
+            catch (Exception)
+            {
+                return null;
+            }
         }
 
         /// <summary>The first declared node whose arrival line or buffer already holds these drawn
