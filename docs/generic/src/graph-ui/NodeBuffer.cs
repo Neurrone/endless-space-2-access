@@ -7,7 +7,7 @@ namespace ES2Access.Core.UI.Graph
     /// The BUFFER half of a control's declared content - the other half of
     /// <see cref="TooltipParts"/>, projected from the same <see cref="NodeVtable.Sections"/>.
     ///
-    /// Two parts, in this order:
+    /// Three parts, in this order:
     ///
     /// - a HEAD, read off the control's own readout unless the control declared one
     ///   (<see cref="NodeVtable.BufferHead"/>, for a readout that leaves out a word the buffer needs -
@@ -22,6 +22,9 @@ namespace ES2Access.Core.UI.Graph
     ///   the kind alone had such a cell open its buffer with the same line twice.
     /// - the sections, in declared order, which is drawn order: a row's heading tooltip before its
     ///   value's dossier, a card's drawn output rows before the panel behind it.
+    /// - the USAGE HINTS (<see cref="NodeVtable.Hints"/>), one sentence per line, last: what the
+    ///   mod's gesture chords do on this control. They are about the keyboard rather than about the
+    ///   thing, so they come after everything the control itself has to say.
     ///
     /// Nothing here asks what MODE a section is in. Every section is reviewable - that is what makes
     /// "indicate and review" and "announce and review" the same promise to the player, and it is why
@@ -88,6 +91,12 @@ namespace ES2Access.Core.UI.Graph
                     }
                 }
             }
+
+            // The USAGE HINTS, last of all: what the mod's gesture chords do on this control
+            // (<see cref="NodeHints"/>). After everything the control has to say, because they are
+            // about the KEYBOARD rather than about the thing - a player reviewing the content should
+            // reach the content first, and a player who wants the gestures knows they are at the end.
+            NodeHints.Lines(lines, node.Vtable);
 
             return lines;
         }

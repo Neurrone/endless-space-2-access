@@ -37,8 +37,12 @@ namespace ES2Access.UI.Input
     ///     CheckInputs. Held-key camera panning never goes through the InputManager at all (the
     ///     controller's own HandleInput is a stub), and it ignores modifiers, so Shift+Left and
     ///     Ctrl+Left pan the map as readily as Left does. The zoom bindings run through the same
-    ///     two helpers on PageUp/PageDown, which the mod does not claim, so keyboard zoom is
-    ///     untouched.
+    ///     two helpers on PageUp/PageDown, and the mod's scanner chords sit on those same two keys -
+    ///     so the scanner's claim is conditional on a modifier being PHYSICALLY held
+    ///     (<c>GalaxyScanner.KeysClaimed</c>), which is what leaves the bare press zooming. Handing
+    ///     the bare chord back with <see cref="ModInput.LeaveToGame"/> would NOT have worked here:
+    ///     the modifiers below are read off the combination the game is asking about, and this
+    ///     camera's bindings declare none whether or not the player is holding one.
     ///
     /// Both take a KeyCombination and answer a bool, so one prefix serves all three: claim any key
     /// in the combination and the answer becomes "not pressed".

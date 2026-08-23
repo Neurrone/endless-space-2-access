@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using ES2Access.Core.Speech;
+using ES2Access.Core.UI;
 using ES2Access.Core.UI.Graph;
 using ES2Access.Core.Util;
 using ES2Access.UI;
@@ -300,6 +301,10 @@ namespace ES2Access.Screens
             ReleaseFocus();
         }
 
+        // Reused rather than allocated per entry: a list is rebuilt every frame it is open, and the
+        // sections built from this capture the tooltips themselves, never the list.
+        private static readonly List<AgeTooltip> Scratch = new List<AgeTooltip>(1);
+
         public override void Build(GraphBuilder builder)
         {
             Request request = _showing ?? _open;
@@ -325,19 +330,36 @@ namespace ES2Access.Screens
                     () => Choose(request, index),
                     () => EntryEnabled(list, index)
                 );
+                AgeTransform entry = EntryTransform(list, index);
+
                 // The entry's description, declared once: it is what the buffer holds and it is what
-                // the readout indicates. There is no AgeTooltip to read a mode off - the words come
-                // out of the list's own tooltip table - so the mode is stated, and it is stated
-                // against the SAME text the buffer will hold, which is what stops a list from
-                // indicating nothing or holding something it never mentioned.
-                vtable.Sections = GraphNodes.Sections(
-                    new NodeSection(
-                        () => AgeText.Lines(EntryDetail(list, index)),
-                        string.IsNullOrEmpty(EntryDetail(list, index))
-                            ? TooltipMode.None
-                            : TooltipMode.Indicate
-                    )
-                );
+                // the readout indicates.
+                //
+                // The words are on the popup ITEM, whichever of the list's two per-item tables the
+                // game filled: the engine writes both onto the item's own tooltip when the list is
+                // built (AgeControlPopup.SetTooltips sends OnSetTooltip / OnSetTarget per item), and
+                // the two tables are mutually exclusive - SetTooltipTargets CLEARS the string one. So
+                // the resolver is asked first, and a hull or a faction trait, whose entry carries a
+                // TARGET and no string at all, stops reading as a bare name; the string table remains
+                // the fallback for a prefab item that never received the message.
+                //
+                // The MODE is stated rather than derived, and this is the ruling it states: on a
+                // thirteen-faction list the description is a paragraph of lore each, which nobody
+                // wants recited while hunting for a name - but a list that never said an entry had
+                // anything to read left the player no reason to press Ctrl+Down. So every entry
+                // indicates, whether its words are on the item or assembled when the game draws it.
+                Scratch.Clear();
+                AgeWidgets.EffectiveTooltips(entry, Scratch, TooltipReach.ListEntry);
+                vtable.Sections = Scratch.Count > 0
+                    ? GraphNodes.SectionsFor(Scratch, null, TooltipMode.Indicate)
+                    : GraphNodes.Sections(
+                        new NodeSection(
+                            () => AgeText.Lines(EntryDetail(list, index)),
+                            string.IsNullOrEmpty(EntryDetail(list, index))
+                                ? TooltipMode.None
+                                : TooltipMode.Indicate
+                        )
+                    );
                 // An entry the game is refusing says WHY, which the entry's own tooltip carries after
                 // the description (Gui.FormatFailureInfo appends it): "unavailable" alone leaves the
                 // player guessing at a content pack they may not have. Only the refusal is spoken -
@@ -350,8 +372,6 @@ namespace ES2Access.Screens
                         kind: AnnouncementKinds.Tooltip
                     )
                 );
-
-                AgeTransform entry = EntryTransform(list, index);
 
                 // The game's own highlight follows the cursor, so someone watching sees the entry
                 // being considered; what the setting is actually on does not move until Enter. The
@@ -366,6 +386,7 @@ namespace ES2Access.Screens
                     PointerFocus.MoveTo(under, AgeWidgets.Raw(under), under);
                 };
                 vtable.OnBlurVisual = AgeWidgets.ReleasePointer;
+                vtable.PointsAt = () => AgeWidgets.Raw(under);
 
                 builder.AddItem(
                     entry != null

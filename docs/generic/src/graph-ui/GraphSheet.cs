@@ -16,7 +16,10 @@ namespace ES2Access.Core.UI
     ///    the argument that the primary's full readout identifies it; the owner's ruling is that a
     ///    table is easier to hold on to when every column announces itself the same way, and a caption
     ///    the game DREW must be sayable — the audit counted the unsaid one as painted-but-unsaid.)
-    ///  - row name when off in a metadata column = vertical edge labels into non-primary cells;
+    ///  - row name when off in a metadata column = vertical edge labels into non-primary cells, unless
+    ///    the rows have no name to give (<see cref="NamedRows"/>) - and a table with no row names says
+    ///    the column's caption on ARRIVING in it instead (<see cref="NodeVtable.ColumnHeader"/>), since
+    ///    a landing there would otherwise name neither the row nor the column;
     ///  - the whole-row readout = the PRIMARY (column 0) cell's announcement list carrying the row's
     ///    metadata as extra parts — vertical navigation rides column 0, so moving down the table reads
     ///    the whole row, per-part filterable like any control;
@@ -48,6 +51,23 @@ namespace ES2Access.Core.UI
             TableRoleText = null;
             TextCellType = null;
         }
+
+        /// <summary>
+        /// Whether column 0 NAMES its row.
+        ///
+        /// True for every table whose rows are THINGS - a fleet, a system, a save - where landing in the
+        /// Power column two rows down wants to hear which fleet it landed on, which is what the vertical
+        /// edge labels say. False for a grid whose rows are only the lines the game wrapped one lattice
+        /// onto (the economy screen's luxury families): there column 0 is a cell like any other, so
+        /// naming the row would announce a NEIGHBOURING cell's words on every vertical crossing - a
+        /// resource name in front of a different resource's figure.
+        ///
+        /// Two things follow from it, and they are the same fact twice: unnamed rows label no vertical
+        /// crossing, and their cells are searched by their own words
+        /// (<see cref="NodeVtable.SearchesAsItself"/>) rather than being filtered out as duplicates of a
+        /// row name that does not exist.
+        /// </summary>
+        public bool NamedRows = true;
 
         private readonly GraphBuilder _b;
         private readonly string _key;
@@ -163,7 +183,9 @@ namespace ES2Access.Core.UI
                     {
                         ControlType = TextCellType,
                         Announcements = new[] { new NodeAnnouncement(() => Blank(v())) },
-                        SearchText = _rowName, // type-ahead matches the row's name from any cell
+                        // Type-ahead matches the row's name from any cell - unless the row has no name,
+                        // where the cell's own words are the only thing there is to type at.
+                        SearchText = NamedRows ? _rowName : null,
                     }, i + 1);
                 }
             WireVertical();
@@ -237,6 +259,18 @@ namespace ES2Access.Core.UI
             // whose every cell searches as the row's name must offer the player one result, not one
             // per column. Stamped here so no caller can forget it.
             vt.Column = col;
+            // Column 0 included: where the rows have no name, the primary is a cell like any other and
+            // its words are its own. Stamping it too is what tells a search that landed there that it
+            // has arrived (type-ahead follows the column the player was reading only off a cell that
+            // matched by its ROW's name) - without it a search from column 3 walks one cell past the
+            // Transvine it found.
+            if (!NamedRows) vt.SearchesAsItself = true;
+
+            // A table whose rows have no name is the one where a landing identifies nothing: the row
+            // cannot say where it is and the cell is another cell like it. So its cells carry the
+            // column's caption for the announcer to say on arrival (NodeVtable.ColumnHeader) - the same
+            // words the sideways edge already crosses with, in the case where no edge was crossed.
+            if (!NamedRows) vt.ColumnHeader = Header(col);
 
             // Which row it is in, for the position the announcer speaks on row CHANGES only.
             vt.Row = _rowPos;
@@ -274,13 +308,13 @@ namespace ES2Access.Core.UI
             {
                 bool matched = HasCol(_prevRowIds, cell.Col);
                 _b.Connect(cell.Id, GraphDir.Up, FindAt(_prevRowIds, cell.Col),
-                    matched && cell.Col > 0 ? Text(_prevRowName) : null);
+                    matched && cell.Col > 0 && NamedRows ? Text(_prevRowName) : null);
             }
             foreach (CellRef cell in _prevRowIds)
             {
                 bool matched = HasCol(_rowIds, cell.Col);
                 _b.Connect(cell.Id, GraphDir.Down, FindAt(_rowIds, cell.Col),
-                    matched && cell.Col > 0 ? Text(_rowName) : null);
+                    matched && cell.Col > 0 && NamedRows ? Text(_rowName) : null);
             }
         }
 

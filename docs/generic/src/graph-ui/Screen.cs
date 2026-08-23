@@ -1,5 +1,6 @@
 using ES2Access.Core.UI;
 using ES2Access.Core.UI.Graph;
+using ES2Access.UI;
 
 namespace ES2Access.Screens
 {
@@ -63,10 +64,11 @@ namespace ES2Access.Screens
 
         /// <summary>
         /// A page that exists to be ANSWERED and holds nothing else: the error box, the two message
-        /// boxes, the drop list, the loading screen. Whatever the game may still be drawing around
-        /// them is not theirs - the player answers, and the page underneath comes back with everything
-        /// that belongs to it. Overridden by those pages so that <see cref="BuildShared"/> adds
-        /// nothing to them; every other page leaves it alone.
+        /// boxes, the drop list, the loading screen - and the chat page, which contains the player in
+        /// the panel on purpose. Whatever the game may still be drawing around them is not theirs - the
+        /// player answers, and the page underneath comes back with everything that belongs to it.
+        /// Overridden by those pages so that <see cref="BuildShared"/> adds nothing to them; every
+        /// other page leaves it alone.
         /// </summary>
         public virtual bool AnswersOnly
         {
@@ -78,8 +80,10 @@ namespace ES2Access.Screens
         ///
         /// Two things, and both for the same reason: the game draws them OVER whatever the player is
         /// looking at, so they belong to whatever page that is rather than to the page they were first met
-        /// on. The second is the chat panel's recipient tabs (<see cref="ChatCluster"/>), which exist only
-        /// in a multiplayer session.
+        /// on. The second is the chat panel's new-message button
+        /// (<see cref="ChatScreen.BuildNewMessages"/>) - the only part of the panel the game draws while
+        /// chat is closed, and the page-level way into a chat page that is otherwise entered with the
+        /// game's own chat key.
         ///
         /// The first is the bar a COLLAPSED tutorial leaves on screen. Collapsing the popup hands the
         /// keyboard back to the page underneath, so the bar belongs to whatever page that is - and it is
@@ -96,10 +100,19 @@ namespace ES2Access.Screens
         /// HUD's right-hand edge, where it is drawn above the notification icons - keeps the place it
         /// chose; every other page gets it last. A page that only takes an ANSWER
         /// (<see cref="AnswersOnly"/>) gets it not at all.
+        ///
+        /// And a page that has declared NOTHING gets it not at all either, which is the whole of why
+        /// these are contributions rather than a screen. "Nothing here yet" is what a page arriving in
+        /// pieces says while it waits for the half the cursor must be seated on, and it works because
+        /// an empty render is skipped and the cursor is left alone. A strip added to that emptiness
+        /// makes the render non-empty and hands the seat to the strip - measured on the star system
+        /// page, which becomes active exactly one frame before its planet cards are drawn: on the way
+        /// back from the technology wheel the cursor landed on "Close tutorial" and stayed there, since
+        /// the bar is declared on every later frame too and reconciliation then has no reason to move.
         /// </summary>
         public void BuildShared(GraphBuilder builder)
         {
-            if (AnswersOnly)
+            if (AnswersOnly || !builder.DeclaredAnything)
             {
                 return;
             }
@@ -110,9 +123,9 @@ namespace ES2Access.Screens
                 TutorialScreen.BuildCollapsedBar(builder);
             }
 
-            if (!builder.DeclaredStop(ChatCluster.Stop))
+            if (!builder.DeclaredStop(ChatScreen.AlertStop))
             {
-                ChatCluster.Build(builder);
+                ChatScreen.BuildNewMessages(builder);
             }
         }
 
@@ -126,6 +139,52 @@ namespace ES2Access.Screens
         /// <summary>Where focus lands on first arrival, as a Tab-stop key; null starts at the graph's
         /// own start node.</summary>
         public virtual object InitialFocusStop
+        {
+            get { return null; }
+        }
+
+        /// <summary>
+        /// The widget the game DRAWS this screen inside, for the dev-only tooltip audit
+        /// (<c>DevProbe.TooltipParity</c>): the painted half of the comparison is a walk of this
+        /// tree, and everything the screen ought to have declared is somewhere under it.
+        ///
+        /// Null - the default - is honest and costs the painted half: the check then reports only
+        /// what it can answer from the DECLARATION side (a node promising a tooltip nothing draws,
+        /// a node aiming at one that draws nothing) and says nothing about tooltips the game draws
+        /// that no node covers. A screen with no window of its own - the galaxy map, whose content
+        /// is the world - genuinely has no root, and a made-up one would be worse than none.
+        ///
+        /// Nothing else reads this. It exists so the audit asks the SCREEN where it lives rather
+        /// than guessing from whatever window happens to be on top.
+        /// </summary>
+        public virtual AgeTransform RootTransform
+        {
+            get { return null; }
+        }
+
+        /// <summary>The tree a game window is drawn as - what a screen built on one window answers
+        /// <see cref="RootTransform"/> with.</summary>
+        protected static AgeTransform RootOf(Amplitude.Unity.Gui.GuiWindow window)
+        {
+            try
+            {
+                return window == null ? null : window.gameObject.GetComponent<AgeTransform>();
+            }
+            catch (System.Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// What every node id this screen declares begins with, so the audit can tell the screen's
+        /// own content from the shared heads-up display stops that are declared into every screen.
+        ///
+        /// Null - the default - means "everything in my render is mine to answer for", which is the
+        /// right answer for a screen whose keys have no single prefix; it costs the audit some noise
+        /// from the HUD rather than any wrong answer.
+        /// </summary>
+        public virtual string NodePrefix
         {
             get { return null; }
         }
@@ -160,6 +219,88 @@ namespace ES2Access.Screens
         }
 
         /// <summary>
+        /// The second-command key (Backspace) offered to the SCREEN before the focused control's own
+        /// <see cref="NodeVtable.OnSecondary"/>. Return true when the screen took it.
+        ///
+        /// For a command that belongs to a PANEL rather than to a control: the galaxy's way back down
+        /// the starlanes it has been travelled is about where the player has been, not about the lane or
+        /// the planet the cursor is standing on, and wiring it per node would mean wiring it onto every
+        /// node the panel will ever declare. The focused node is passed because such a command is
+        /// usually scoped to one stop - a screen answers only where it means something and leaves every
+        /// other panel's Backspace alone.
+        ///
+        /// A screen that never overrides this changes nothing: the control's own second command is
+        /// reached exactly as before.
+        /// </summary>
+        public virtual bool Secondary(GraphNode focused)
+        {
+            return false;
+        }
+
+        /// <summary>
+        /// GO TO WHERE THIS HAPPENED, offered to the SCREEN before the focused control's own
+        /// <c>OnGoTo</c> - for a surface where the affordance belongs to the PAGE rather than to one
+        /// control (an open notification popup: the button is drawn in its bottom bar, and the key
+        /// means it wherever the cursor is standing on the popup).
+        ///
+        /// <see cref="OffersGoToLocation"/> is the same fact asked cheaply, for the key's claim; the
+        /// handler asks it again by simply answering false, because a claim is settled before the
+        /// press and the act is never allowed to run on a stale yes.
+        /// </summary>
+        public virtual bool GoToLocation()
+        {
+            return false;
+        }
+
+        /// <summary>Whether this screen answers the go-to-location key at all - asked from the game's
+        /// own key scans, so it stays cheap.</summary>
+        public virtual bool OffersGoToLocation
+        {
+            get { return false; }
+        }
+
+        /// <summary>
+        /// Turn the page back or on - the previous/next system, planet, notification, hero - offered to
+        /// the SCREEN wherever the cursor is standing on it, because what these turn is the whole
+        /// surface rather than the control under the cursor. Return true when the screen took the key.
+        ///
+        /// A screen overrides them exactly where the GAME draws such a pair, and answers by pressing the
+        /// game's own button through <see cref="Page"/>. A screen that draws none never overrides them
+        /// and the key does nothing at all.
+        /// </summary>
+        public virtual bool PagePrev()
+        {
+            return false;
+        }
+
+        public virtual bool PageNext()
+        {
+            return false;
+        }
+
+        /// <summary>How a screen answers the page keys: press the game's own arrow while the game has it
+        /// switched on, and say nothing at either end of the run.
+        ///
+        /// The key is taken (true) wherever the pair is DRAWN, switched off included - a page that has
+        /// run out of systems to step to has answered the press, and repeating the name of the page the
+        /// player is already on would be the checkbox that re-reads itself at a limit. A pair the game
+        /// is not drawing is not this screen's key at all.</summary>
+        protected static bool Page(AgeTransform button)
+        {
+            if (button == null || !AgeWidgets.Visible(button))
+            {
+                return false;
+            }
+
+            if (AgeWidgets.Operable(button))
+            {
+                AgeWidgets.Press(button);
+            }
+
+            return true;
+        }
+
+        /// <summary>
         /// An action fired on a screen where every key means the SAME one thing - the game's own "press
         /// anything to skip", which a cutscene answers with. Offered before the review chords and before
         /// navigation, because the point is that nothing else gets the press; return true when the screen
@@ -170,8 +311,11 @@ namespace ES2Access.Screens
         /// the game's press-anything handler, every claimed key EATS the skip. A screen with something to
         /// navigate never wants this, which is why it is opt-in per screen rather than a mode.
         ///
-        /// Escape is not offered - it stays the game's like everywhere else (<see cref="ConsumesBack"/>),
-        /// so the screen underneath keeps whatever the engine's own cancel does.
+        /// Escape MAY arrive here - the galaxy's inspect cursor takes it to leave the mode - but a
+        /// screen only sees it where <see cref="ConsumesBack"/> has denied the game the key, and a live
+        /// type-ahead search's Escape outranks every answer given here: the dispatch withholds the key
+        /// from this hook while a search is up, so the innermost surface ends first (owner ruling
+        /// 2026-08-19, <c>ModEntry.Dispatch</c>). The cutscene declines the key outright.
         /// </summary>
         public virtual bool AnyKey(string actionKey)
         {
@@ -249,6 +393,37 @@ namespace ES2Access.Screens
         public virtual void OnPush() { }
 
         public virtual void OnPop() { }
+
+        /// <summary>
+        /// Whether a landing this screen asked for should be held rather than worked on this frame -
+        /// true while the page is in a state where nothing it declares can be judged.
+        ///
+        /// The navigator gives up a landing the render leads nowhere near, and spends a frame of its
+        /// budget on every other frame it waits (<see cref="FocusRequest"/>). Both are the wrong answer
+        /// while the game is mid-flight between views: what the page declares then is a half-built
+        /// render of somewhere the camera has not arrived at, and reading "nothing leads there" off it
+        /// throws away a landing that would have worked a second later. A screen the game never moves
+        /// under says nothing here, which is the default.
+        /// </summary>
+        public virtual bool LandingSuspended
+        {
+            get { return false; }
+        }
+
+        /// <summary>
+        /// The player has just moved the cursor on this screen themselves: give up any landing this
+        /// screen is still waiting to make.
+        ///
+        /// The navigator cancels its own outstanding request on the same three keystrokes, and calls
+        /// this beside it so a screen holding a landing of its OWN - one still waiting for the game to
+        /// draw the control it is aimed at, which the navigator has not been told about yet - dies with
+        /// it. Without it a seat armed by a button press outlives the player walking away from where it
+        /// was going to put them, and lands minutes later on something they have forgotten asking for.
+        ///
+        /// Only ever called for the screen the player is ON, which is what scopes it: another page's
+        /// arrival, and the player reading or dismissing a cutscene, leave this screen's landings alone.
+        /// </summary>
+        public virtual void CancelLandings() { }
 
         // ---- child screens ----
         //
@@ -340,6 +515,18 @@ namespace ES2Access.Screens
                 parent.RemoveChild(this);
             }
         }
+
+        /// <summary>
+        /// The cursor has landed on one of this screen's controls - the screen's own half of the focus
+        /// visual, run beside the node's (<c>NodeVtable.OnFocusVisual</c>) and before it.
+        ///
+        /// For a rule that is the SCREEN's rather than any one control's: the galaxy page moves the
+        /// camera to whatever the cursor is reading, and that rule has to answer for every kind of node
+        /// on the page - a system, a world, a card, a lane, a fleet - which as a per-node hook is the
+        /// same rule written out five times, differing by accident. Ask
+        /// <see cref="GraphNavigator.CursorMovedHere"/> inside it, exactly as a node hook would.
+        /// </summary>
+        public virtual void OnFocusVisual(GraphNode node) { }
 
         public virtual void OnFocus() { }
 

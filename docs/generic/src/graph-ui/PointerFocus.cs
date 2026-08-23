@@ -73,11 +73,35 @@ namespace ES2Access.UI
         private static AgeTooltip _drawn;
         private static float _drawnHeight;
 
+        /// <summary>How long past the game's own hover delay a tooltip is given to appear before the
+        /// mod asks for it again. Long enough that a tooltip the game is simply slow to bind is never
+        /// interrupted.</summary>
+        private const float RetryMargin = 0.5f;
+
+        /// <summary>How many times one stall is re-asked. The first re-ask heals the parked countdown;
+        /// the second covers a bind that was genuinely still in progress when the first landed. Past
+        /// that the tooltip is not coming, and asking forever would restart the countdown forever.
+        /// </summary>
+        private const int MaxRetries = 2;
+
+        private static AgeTooltip _waitingFor;
+        private static float _waitingSince;
+        private static int _retries;
+
         /// <summary>Told when the tooltip the game is DRAWING changes. A tooltip appears a fraction of
         /// a second after the pointer arrives and a class-driven one has no words until it is drawn, so
         /// whoever is holding those words - the review buffer - has to be told to read them again.
         /// </summary>
         public static Action DrawnTooltipChanged;
+
+        /// <summary>The tooltip the focused control asked for, drawable or not. What the engine is
+        /// pointed at says nothing about a control whose tooltip was declined for having no words yet
+        /// (see <see cref="LateTick"/>) - both read as nothing pointed at - so this is what tells a
+        /// control that declared no tooltip from one whose tooltip is still empty.</summary>
+        public static AgeTooltip Wanted
+        {
+            get { return _showing.Tooltip; }
+        }
 
         /// <summary>Ask for <paramref name="button"/> to look hovered, with <paramref name="tooltip"/>
         /// shown for it. <paramref name="anchor"/> is what the tooltip is drawn under - the transform
@@ -177,14 +201,24 @@ namespace ES2Access.UI
             }
 
             _showing = _wanted;
-            WatchDrawnTooltip();
         }
 
-        /// <summary>Whether the tooltip window has changed what it is drawing since the last frame -
-        /// a different tooltip, or the same one rebuilt. The height is what says "rebuilt": the window
-        /// re-assembles a tooltip a few seconds in to add the detail the compact form left out, and
-        /// growing is what that looks like from outside.</summary>
-        private static void WatchDrawnTooltip()
+        /// <summary>
+        /// Whether the tooltip window has changed what it is drawing since the last frame - a different
+        /// tooltip, or the same one rebuilt. The height is what says "rebuilt": the window re-assembles
+        /// a tooltip a few seconds in to add the detail the compact form left out, and growing is what
+        /// that looks like from outside.
+        ///
+        /// Asked at the TOP of the mod's frame, before the screens fill the focused control's buffer,
+        /// and deliberately not from <see cref="Tick"/> at the bottom of it. The hook only INVALIDATES
+        /// the buffer, so an invalidation raised after the fill is one the fill answers a whole frame
+        /// later - which is a frame of the wait between arrowing onto a control and its description
+        /// landing, paid on every single move (measured 2026-08-19: 4 frames from the keypress to the
+        /// filled buffer, 3 after this moved). Watching first is also the more honest reading: what the
+        /// window is drawing NOW is what the engine drew last frame, and nothing this frame has yet
+        /// pointed anywhere else.
+        /// </summary>
+        public static void WatchDrawn()
         {
             AgeTooltip drawn = null;
             float height = 0f;
@@ -247,9 +281,15 @@ namespace ES2Access.UI
         /// LateUpdate, so the tooltip controller sees it on the next Update.</summary>
         public static void LateTick()
         {
-            AgeTransform hover = _showing.Tooltip == null ? null : HoverTarget(_showing);
+            // A tooltip the engine would draw nothing for is never pointed at: failing that test is
+            // what makes the tooltip controller PARK its countdown (see AskAgainIfStalled). The test
+            // itself is AgeWidgets.Draws, shared with NodeSection.Indicates so that aiming and
+            // declaring can never disagree about which tooltips are real.
+            AgeTooltip tooltip = AgeWidgets.Draws(_showing.Tooltip) ? _showing.Tooltip : null;
+            AgeTransform hover = tooltip == null ? null : HoverTarget(_showing);
             if (hover == null)
             {
+                _waitingFor = null;
                 return;
             }
 
@@ -265,6 +305,74 @@ namespace ES2Access.UI
             {
                 Log.Warn("pointer: pointing the tooltip at the focused control threw: " + e);
             }
+
+            AskAgainIfStalled(tooltip);
+        }
+
+        /// <summary>
+        /// Ask the game for a tooltip it owes us and has stopped counting down to.
+        ///
+        /// The tooltip controller is edge-triggered: it starts its countdown when the hovered widget
+        /// CHANGES, and if the tooltip is not ready when the countdown runs out it parks the countdown
+        /// at sixteen minutes and waits for another edge. A hand on the mouse makes edges constantly;
+        /// keyboard focus makes one, so a tooltip that was not ready for that single moment - the frame
+        /// its window is still being bound - never appears at all, for as long as focus stays put.
+        ///
+        /// The tooltip's own dirty-target flag is the edge the engine raises for itself when a tooltip's
+        /// subject is rewritten, so that is what is raised here. It restarts the countdown, which is why
+        /// it can only be done sparingly: raised every frame the countdown would restart every frame and
+        /// the tooltip would never draw at all.
+        /// </summary>
+        private static void AskAgainIfStalled(AgeTooltip tooltip)
+        {
+            try
+            {
+                float now = UnityEngine.Time.time;
+                if (!ReferenceEquals(tooltip, _waitingFor))
+                {
+                    _waitingFor = tooltip;
+                    _waitingSince = now;
+                    _retries = 0;
+                }
+
+                if (Drawing(tooltip))
+                {
+                    _waitingSince = now;
+                    _retries = 0;
+                    return;
+                }
+
+                if (_retries >= MaxRetries || now - _waitingSince < HoverDelay() + RetryMargin)
+                {
+                    return;
+                }
+
+                _waitingSince = now;
+                _retries++;
+                tooltip.DirtyTarget = true;
+                Log.Info("pointer: asking the game again for a tooltip that never appeared");
+            }
+            catch (Exception e)
+            {
+                Log.Warn("pointer: re-asking for a stalled tooltip threw: " + e);
+            }
+        }
+
+        /// <summary>Whether the tooltip window is up for this very tooltip - not merely up, since the
+        /// mouse can have left one of its own somewhere else on screen.</summary>
+        private static bool Drawing(AgeTooltip tooltip)
+        {
+            GuiTooltipWindow window = Gui.GuiServiceAvailable
+                ? Gui.GuiService.GetWindow<GuiTooltipWindow>(false)
+                : null;
+            return window != null && window.Shown && ReferenceEquals(window.AgeTooltip, tooltip);
+        }
+
+        /// <summary>The player's own hover delay, which is what the tooltip is late against.</summary>
+        private static float HoverDelay()
+        {
+            GuiManager gui = Gui.GuiServiceAvailable ? Gui.GuiService as GuiManager : null;
+            return gui == null ? 0f : gui.TooltipDisplayDelay;
         }
 
         /// <summary>What the engine is told the pointer is over. Named by the caller for a widget that
@@ -296,6 +404,9 @@ namespace ES2Access.UI
             _showing = new Spot();
             _drawn = null;
             _drawnHeight = 0f;
+            _waitingFor = null;
+            _waitingSince = 0f;
+            _retries = 0;
             DrawnTooltipChanged = null;
         }
 
@@ -328,7 +439,10 @@ namespace ES2Access.UI
         /// text, and every entry then reads the same however big its hit area is.</summary>
         private static void AnchorToFocus(AgeTooltip tooltip, AgeTransform anchor)
         {
-            if (tooltip == null)
+            // A carrier the MOD made is its own placement and there is no widget under it to anchor to
+            // (<see cref="ScratchTooltips"/>): re-anchoring one would drop its panel off the bottom of
+            // the screen, which is the corner it is deliberately parked in.
+            if (tooltip == null || ScratchTooltips.Owns(tooltip))
             {
                 return;
             }

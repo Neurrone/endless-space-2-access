@@ -42,5 +42,29 @@ namespace ES2Access.UI.Input
         // and everything from the last one to this one.
         public const string SelectToggle = "ui.selectToggle";
         public const string SelectRange = "ui.selectRange";
+
+        /// <summary>Turn the whole page back or on - the previous/next system, planet, notification or
+        /// hero - wherever the cursor is standing on a screen that draws such a pair
+        /// (<see cref="ES2Access.Screens.Screen.PagePrev"/>). Inert everywhere else.</summary>
+        public const string PagePrev = "ui.pagePrev";
+        public const string PageNext = "ui.pageNext";
+
+        // Go straight to a named panel, on the pages that draw it. Each is live exactly while the
+        // focused screen declares its stop, and does nothing at all anywhere else.
+        public const string FocusEmpire = "ui.focusEmpire";
+        public const string FocusNotifications = "ui.focusNotifications";
+        public const string FocusTurn = "ui.focusTurn";
+        public const string FocusTurnLog = "ui.focusTurnLog";
+        public const string FocusMap = "ui.focusMap";
+
+        /// <summary>Go to where the thing under the cursor HAPPENED - the game's own show-location, on
+        /// the rows that offer one (a notification, a log line, an open popup). Live exactly while the
+        /// focused screen or the focused control offers it, and inert everywhere else.</summary>
+        public const string GoToLocation = "ui.goToLocation";
+
+        /// <summary>End the turn from anywhere the game is drawing the end-turn button, without walking
+        /// to it. The game's own end-turn shortcut key is not reachable for a mod user - the mod claims
+        /// the keypad Enter it sits on for Activate.</summary>
+        public const string EndTurn = "ui.endTurn";
     }
 }

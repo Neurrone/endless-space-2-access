@@ -208,6 +208,14 @@ namespace ES2Access.Core.UI.Graph
         /// than with silence.</summary>
         public Action OnContextual;
 
+        /// <summary>Optional. GO TO WHERE THIS HAPPENED - the game's own show-location for this row,
+        /// exactly as clicking the button its popup would draw. Distinct from every click above: it
+        /// moves the VIEW rather than doing anything to the control, and it is only ever wired where
+        /// the game itself offers the affordance for this particular thing, so its presence is also
+        /// the key's availability (the claim asks for it before the press, and the handler asks
+        /// again). A control without one leaves the key alone.</summary>
+        public Action OnGoTo;
+
         /// <summary>Optional. The command the game puts on a DOUBLE click here - the second click
         /// inside its own double-click window, which several of this game's controls answer with a
         /// command of their own (a fleet row shows that fleet on the map, a picked choice is
@@ -278,6 +286,13 @@ namespace ES2Access.Core.UI.Graph
         /// </summary>
         public Func<string> BufferHead;
 
+        /// <summary>Optional. The USAGE HINTS this control ends its review buffer with - what the
+        /// mod's gesture chords do here, one sentence per hint, in declared order
+        /// (<see cref="NodeHint"/>). Declared where the screen wires the gesture, so the two cannot
+        /// drift apart; null - the ordinary case - is a control whose gestures are the uniform ones
+        /// every control has, or whose own game tooltip already states them.</summary>
+        public IList<NodeHint> Hints;
+
         /// <summary>Optional. Horizontal value adjust (a slider): sign is -1 (decrease) / +1 (increase),
         /// large requests a coarse step. When set, left/right do NOT navigate.</summary>
         public Action<int, bool> OnAdjust;
@@ -299,6 +314,34 @@ namespace ES2Access.Core.UI.Graph
         /// <see cref="GraphSheet"/>, and read by type-ahead: a row contributes ONE result, its
         /// primary, because every cell of it searches as the row's name.</summary>
         public int Column;
+
+        /// <summary>Type-ahead matches this cell BY ITS OWN words rather than by its row's - which is
+        /// what a table whose rows have no name is made of (<see cref="GraphSheet.NamedRows"/>). The
+        /// one-result-per-row filter exists because every cell of a named row searches as that row;
+        /// where the row has no name, dropping the non-primary cells would make the columns
+        /// unsearchable instead of un-duplicated. Stamped by <see cref="GraphSheet"/> on EVERY cell of
+        /// an unnamed row, column 0 included.
+        ///
+        /// It is also what stops a landing being walked off: a search made from column 3 steps back into
+        /// that column after landing on the row's primary, because the primary matched by the row's name
+        /// and the player was reading column 3 - but a cell that matched by its OWN words IS the thing
+        /// asked for, and following the column off it reads a neighbour. So anything declared at a
+        /// non-zero column that is not a row cell (a sort-header band) must set this too, or the
+        /// one-result-per-row filter hides all but its first column.</summary>
+        public bool SearchesAsItself;
+
+        /// <summary>
+        /// The caption of the column this cell sits in, said on ARRIVING in the column by any means
+        /// other than the sideways step that already labels its own edge - a Tab into the table, a
+        /// search landing, a re-read, a vertical crossing that fell to another column.
+        ///
+        /// Only a table whose rows have no name stamps it (<see cref="GraphSheet.NamedRows"/>). Where
+        /// the rows ARE named, column 0 says which row it is and that is the orientation a landing
+        /// needs; where they are not, a cell landed on out of the blue says neither its row nor its
+        /// column, and the column heading is the only place left for it to sit. Suppressed whenever the
+        /// player came from a cell under the same heading, so walking a column says it once.
+        /// </summary>
+        public string ColumnHeader;
 
         /// <summary>Which ROW of a table this control sits in - the same <see cref="TableRow"/> object
         /// on every cell of the row, null outside a table. See <see cref="TableRow"/> for what the
@@ -337,6 +380,26 @@ namespace ES2Access.Core.UI.Graph
         /// Called before the new control's OnFocusVisual, and also when the screen closes or the mod
         /// stops, so nothing is left looking hovered.</summary>
         public Action OnBlurVisual;
+
+        /// <summary>
+        /// Optional. WHAT <see cref="OnFocusVisual"/> aims the pointer at, as the game's own tooltip
+        /// object - the aim written down beside the content instead of hidden inside a closure.
+        ///
+        /// A control carrying two tooltips shows only the one the pointer is sent to, so "which
+        /// tooltip does this node point at" is a question about the node, and anything that has to
+        /// ANSWER it - a parity audit, a probe, a screen inheriting another's declaration - used to
+        /// re-derive it by walking the widget tree. That answer is wrong wherever the deepest tooltip
+        /// in a card is decoration, and it reported defects on screens whose pointing was right.
+        ///
+        /// Set by every pointing helper, from the same argument it aims, so the two cannot drift; the
+        /// LAST pointing call on a vtable wins, exactly as it does for the visual. Resolved when
+        /// asked rather than when declared, because a widget the game fills in later gets its tooltip
+        /// after the node is built. Null = this node aims at nothing.
+        ///
+        /// Typed as <see cref="object"/> because the core knows nothing of the game's toolkit; every
+        /// reader casts it back to the engine's tooltip type.
+        /// </summary>
+        public Func<object> PointsAt;
     }
 
     /// <summary>
@@ -411,8 +474,8 @@ namespace ES2Access.Core.UI.Graph
         /// stops in first-appearance order, landing on the stop's remembered position.</summary>
         public object StopKey;
 
-        /// <summary>The region (within a stop) this node belongs to, or null. Ctrl+Up/Down jumps between
-        /// regions in first-appearance order.</summary>
+        /// <summary>The region (within a stop) this node belongs to, or null. The host's region-jump chord
+        /// (ES2 Access: Alt+Up/Down) jumps between regions in first-appearance order.</summary>
         public object RegionKey;
 
         /// <summary>Auto-stamped sibling position (1-based) and count, from the builder: menu-mode nodes

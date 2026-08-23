@@ -110,6 +110,9 @@ namespace ES2Access.Screens
 
             _stack = new List<Screen>();
             _focused = null;
+            // A landing survives a screen losing focus on purpose, so the mod going away is the one
+            // thing that has to say so: nothing may outlive Stop.
+            _navigator.ForgetPendingLanding();
             _navigator.Attach(null);
             _registered.Clear();
         }

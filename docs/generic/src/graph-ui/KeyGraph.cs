@@ -381,6 +381,21 @@ namespace ES2Access.Core.UI.Graph
             return null;
         }
 
+        /// <summary>Whether this render declares <paramref name="stopKey"/> at all — the availability
+        /// question a jump-to-stop key asks, and exactly the question
+        /// <see cref="StopLanding(GraphRender,GraphState,object)"/> answers with null (every branch of it
+        /// returns a node whose StopKey is this one, so "a landing exists" and "the stop is declared" are
+        /// one fact). It is asked separately because the CLAIM half runs inside the game's own key scans
+        /// several times a frame: this stops at the first node of the stop, where the landing walk asks
+        /// every node in it what it is announcing.</summary>
+        public static bool DeclaresStop(GraphRender render, object stopKey)
+        {
+            if (render == null || stopKey == null) return false;
+            foreach (GraphNode n in render.Order)
+                if (Equals(n.StopKey, stopKey)) return true;
+            return false;
+        }
+
         /// <summary>Where the stop said Tab should land (<see cref="GraphBuilder.LandStopOn"/>), or null.
         /// </summary>
         private static GraphNode DeclaredLanding(GraphRender render, object stopKey)
@@ -437,12 +452,17 @@ namespace ES2Access.Core.UI.Graph
         public enum TreeMove
         {
             None,       // not applicable here (not in a tree / nothing to do) — caller decides consume/bubble
-            Expanded,   // the focused group expanded (focus unchanged; speak its new state)
-            Collapsed,  // the focused group collapsed (focus unchanged; speak its new state)
-            EmptyGroup, // expanding found no children — auto-recollapsed (speak "no details")
-            Descended,  // moved to the group's first child (announce as a move)
-            Ascended,   // moved to the nearest focusable ancestor (announce as a move)
+            Collapsed,  // the focused group collapsed (focus unchanged; speak its new state). There is
+                        // no Expanded to match it: opening a group moves into it in the same press, so
+                        // the answer is Descended and the state word is never spoken on the way in.
+            EmptyGroup, // expanding found no children — the group is left OPEN (speak "no details")
+            Descended,  // moved to the group's first child, opening it first where it was shut
+                        // (announce as a move)
+            Ascended,   // moved to the nearest focusable ancestor, shutting it behind us where it was an
+                        // open group (announce as a move)
             Leaf,       // Right on a non-group inside a tree — consumed, nothing to descend into
+            Followed,   // the leaf named a place elsewhere in the graph and sent the cursor there
+                        // (NodeVtable.OnFollow) — consumed SILENTLY: the landing speaks for itself
         }
 
         public struct TreeResult
@@ -460,8 +480,22 @@ namespace ES2Access.Core.UI.Graph
             return false;
         }
 
-        /// <summary>Right on a group: expand (auto-recollapse when it turns out empty), or descend into an
-        /// expanded one. Right elsewhere in a tree: Leaf (consume).</summary>
+        /// <summary>Right on a group: open it AND move to its first child, in ONE press (owner ruling
+        /// 2026-08-22). A shut group and an open one answer Right the same way, so the child is
+        /// announced with its position and the header's "expanded" word is never heard - the player is
+        /// no longer standing on the header for it to be said about. Right on a leaf that names a place
+        /// elsewhere in the graph: follow the reference (<see cref="NodeVtable.OnFollow"/>). Right
+        /// elsewhere in a tree: Leaf (consume).
+        ///
+        /// A group that turns out to hold NOTHING is left OPEN and reports EmptyGroup ("Nothing in
+        /// here"). It used to bounce shut, which undid whatever the expansion itself did for the player:
+        /// a galaxy system's <see cref="NodeVtable.OnExpand"/> brings the camera in, and the
+        /// re-collapse zoomed straight back out. Left is how such a group is shut again.
+        ///
+        /// The order is the contract: a group's own children win, so OnFollow is only ever reached on a
+        /// node that has nothing to descend into. Following is deliberately NOT modelled as an
+        /// OnExpand override - a group whose expansion declares no children reports EmptyGroup, which
+        /// speaks "no details" over the very move the handler just made.</summary>
         public TreeResult TreeRight()
         {
             TreeResult result = new TreeResult { Kind = TreeMove.None };
@@ -475,15 +509,21 @@ namespace ES2Access.Core.UI.Graph
                 if (!Rerender()) return result;
                 GraphNode header = _current.NodeAt(node.Id);
                 if (header == null) return result;
-                if (FirstChildOf(header) == null)
+                GraphNode opened = FirstChildOf(header);
+                if (opened == null)
                 {
-                    // A lazy drill-in that resolved to nothing: don't leave a silent empty-expanded node.
-                    SetExpanded(header, false);
-                    Rerender();
+                    // A lazy drill-in that resolved to nothing. The branch STAYS open: expanding is
+                    // allowed to act, and shutting it again the same frame would undo the act as well
+                    // as the expansion.
                     result.Kind = TreeMove.EmptyGroup;
                     return result;
                 }
-                result.Kind = TreeMove.Expanded;
+
+                result.Move.From = header;
+                SetCurrent(opened);
+                result.Move.To = opened;
+                result.Move.Moved = true;
+                result.Kind = TreeMove.Descended;
                 return result;
             }
 
@@ -499,12 +539,22 @@ namespace ES2Access.Core.UI.Graph
                 return result;
             }
 
+            if (node.Vtable != null && node.Vtable.OnFollow != null)
+            {
+                node.Vtable.OnFollow();
+                result.Kind = TreeMove.Followed;
+                return result;
+            }
+
             result.Kind = InTree(node) ? TreeMove.Leaf : TreeMove.None;
             return result;
         }
 
-        /// <summary>Left on an expanded group: collapse. Left elsewhere in a tree: ascend to the nearest
-        /// focusable ancestor.</summary>
+        /// <summary>Left on an expanded group: collapse, cursor unmoved. Left anywhere else in a tree: go
+        /// up to the nearest focusable ancestor AND shut it behind us, in ONE press (owner ruling
+        /// 2026-08-22) - the parent is announced, and its "collapsed" word rides that announcement.
+        /// Whatever closing acts on (the galaxy's collapse un-zoom) therefore acts once per press,
+        /// exactly as it did over the two presses this replaces.</summary>
         public TreeResult TreeLeft()
         {
             TreeResult result = new TreeResult { Kind = TreeMove.None };
@@ -525,7 +575,23 @@ namespace ES2Access.Core.UI.Graph
                 if (!p.Focusable || !_current.Nodes.ContainsKey(p.Id)) continue;
                 result.Move.From = node;
                 GraphNode target = _current.NodeAt(p.Id);
+                // The cursor moves BEFORE the branch shuts: the node it was standing on is about to stop
+                // being declared, and reconciliation would otherwise have to guess where it went.
                 SetCurrent(target);
+                if (target.Expandable && target.Expanded)
+                {
+                    SetExpanded(target, false);
+                    if (Rerender())
+                    {
+                        GraphNode shut = _current.NodeAt(target.Id);
+                        if (shut != null)
+                        {
+                            SetCurrent(shut);
+                            target = shut;
+                        }
+                    }
+                }
+
                 result.Move.To = target;
                 result.Move.Moved = true;
                 result.Kind = TreeMove.Ascended;
@@ -565,6 +631,105 @@ namespace ES2Access.Core.UI.Graph
             return result;
         }
 
+        // ---- reaching a control that is not declared yet ----
+
+        /// <summary>
+        /// How close the standing render is to being able to focus <paramref name="id"/>, opening one
+        /// level of ancestry towards it where that is what is missing.
+        ///
+        /// A collapsed group declares no children, so a landing aimed inside one is aimed at nothing:
+        /// the id cannot be looked up, and the node it hangs under cannot be read off the render
+        /// either. What CAN be read is the id itself - see <see cref="AncestorKeys"/> - so the deepest
+        /// declared ancestor is found by key and opened, one per call, because its children only exist
+        /// on the build that follows. Opening goes through <see cref="SetExpanded"/> like every other
+        /// expansion, so a group whose <see cref="NodeVtable.OnExpand"/> is an override does its own
+        /// bookkeeping and its own side effects (a camera flying into the thing being opened).
+        ///
+        /// Asked of the render as it stands rather than re-rendering: the caller is the per-frame
+        /// focus pass, which has just built one.
+        /// </summary>
+        public ReachStep Reach(ControlId id)
+        {
+            if (_current == null || id == null)
+            {
+                return ReachStep.Unreachable;
+            }
+
+            if (_current.Nodes.ContainsKey(id))
+            {
+                return ReachStep.Present;
+            }
+
+            GraphNode ancestor = DeepestDeclaredAncestor(_current, id);
+            if (ancestor == null)
+            {
+                return ReachStep.Unreachable;
+            }
+
+            // Already open, or not a group at all (a row that becomes a group only once the game draws
+            // the control its children are: a planet's card). Either way there is nothing to open here
+            // and the only question left is whether the game produces the child - the caller's budget.
+            if (!ancestor.Expandable || ancestor.Expanded)
+            {
+                return ReachStep.Waiting;
+            }
+
+            SetExpanded(ancestor, true);
+            return ReachStep.Opened;
+        }
+
+        /// <summary>The deepest node in <paramref name="render"/> that <paramref name="id"/> hangs
+        /// under, or null where the render holds none of its ancestry.</summary>
+        public static GraphNode DeepestDeclaredAncestor(GraphRender render, ControlId id)
+        {
+            if (render == null || id == null)
+            {
+                return null;
+            }
+
+            IList<object> keys = AncestorKeys(id.StructuralKey);
+            for (int i = 0; i < keys.Count; i++)
+            {
+                GraphNode node = render.NodeAt(ControlId.Structural(keys[i]));
+                if (node != null)
+                {
+                    return node;
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// The keys of the controls a control hangs under, deepest first - read out of the id, because
+        /// an undeclared control has no node to read a parent chain off.
+        ///
+        /// This is the one place the engine assumes anything about what a structural key IS: a PATH,
+        /// whose <c>/</c>-separated head names the thing this control belongs to
+        /// (<c>galaxy:system/548/planet/0/action/0</c> hangs under <c>galaxy:system/548/planet/0</c>,
+        /// which hangs under <c>galaxy:system/548</c>). Splitting on the separator rather than
+        /// comparing raw string prefixes is what keeps <c>system/5</c> from claiming
+        /// <c>system/548</c>'s children. Not every head is a declared control - the ones that are not
+        /// are simply missed - and a key that is not a path (a composite, an object) answers with
+        /// nothing, which leaves such a control reachable only while it is declared.
+        /// </summary>
+        public static IList<object> AncestorKeys(object structuralKey)
+        {
+            List<object> keys = new List<object>();
+            string path = structuralKey as string;
+            if (path == null)
+            {
+                return keys;
+            }
+
+            for (int cut = path.LastIndexOf('/'); cut > 0; cut = path.LastIndexOf('/', cut - 1))
+            {
+                keys.Add(path.Substring(0, cut));
+            }
+
+            return keys;
+        }
+
         // Change a group's expansion: through its vtable override when declared (an adapter driving a
         // retained game-side container), else the persistent set.
         private void SetExpanded(GraphNode group, bool expanded)
@@ -575,11 +740,30 @@ namespace ES2Access.Core.UI.Graph
             else _state.Expanded.Remove(group.Id);
         }
 
+        /// <summary>The first node a Right into this group should land on.
+        ///
+        /// A group's children are not always parented straight onto it: a CONTEXT
+        /// (<c>GraphBuilder.PushContext</c>) is a non-focusable level, so a group that puts its
+        /// children under a named section has the section as their parent and the group as their
+        /// grandparent. Comparing parents alone therefore reported such a group EMPTY and
+        /// auto-recollapsed it - "Nothing in here" over a group full of nodes. The chain is walked
+        /// instead, stopping at the first FOCUSABLE level: a node under a nested group belongs to that
+        /// group, not to this one.</summary>
         private GraphNode FirstChildOf(GraphNode group)
         {
             foreach (GraphNode n in _current.Order)
-                if (ReferenceEquals(n.Parent, group)) return n;
+                if (Under(n, group)) return n;
             return null;
+        }
+
+        private static bool Under(GraphNode node, GraphNode group)
+        {
+            for (GraphNode at = node.Parent; at != null; at = at.Parent)
+            {
+                if (ReferenceEquals(at, group)) return true;
+                if (at.Focusable) return false;
+            }
+            return false;
         }
 
         // ---- behavior invokers (the caller announces fallbacks / state) ----
@@ -623,6 +807,28 @@ namespace ES2Access.Core.UI.Graph
             GraphNode node = CurrentNode;
             if (node == null || node.Vtable.OnContextual == null) return false;
             node.Vtable.OnContextual();
+            return true;
+        }
+
+        /// <summary>Whether the focused control offers a go-to-location - the key's availability, asked
+        /// off the standing render so a key scan can ask it many times a frame.</summary>
+        public bool OffersGoTo
+        {
+            get
+            {
+                GraphNode node = CurrentNode;
+                return node != null && node.Vtable != null && node.Vtable.OnGoTo != null;
+            }
+        }
+
+        /// <summary>Go to where the focused control's thing happened. False = it offers none, and the
+        /// caller leaves the press alone.</summary>
+        public bool GoToLocation()
+        {
+            if (!Rerender()) return false;
+            GraphNode node = CurrentNode;
+            if (node == null || node.Vtable.OnGoTo == null) return false;
+            node.Vtable.OnGoTo();
             return true;
         }
 

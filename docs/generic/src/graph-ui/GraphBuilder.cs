@@ -27,6 +27,14 @@ namespace ES2Access.Core.UI.Graph
     {
         private readonly HashSet<ControlId> _expansion; // persistent expanded-group set (null = all explicit)
 
+        /// <summary>Build every expandable group OPEN, whatever the expansion set or the caller says.
+        ///
+        /// One build with this on answers "what would this page declare if the player had opened
+        /// everything" - which is what a type-ahead search has to look through, because a tree whose
+        /// branches are closed offers a search only what the player has already found. It is never on
+        /// for the build the player is NAVIGATING: that build is the tree as they left it.</summary>
+        public bool ExpandAll;
+
         public GraphBuilder(HashSet<ControlId> expansion = null)
         {
             _expansion = expansion;
@@ -144,12 +152,33 @@ namespace ES2Access.Core.UI.Graph
             return key != null && _stopKeys.Contains(key);
         }
 
+        /// <summary>
+        /// Whether anything has been declared yet. Asked by the same SHARED contributions, which must
+        /// not be the only thing on a page: a screen that has declared nothing is saying "nothing here
+        /// yet" - the safety valve a page arriving in pieces relies on - and a render carrying an
+        /// overlay strip and nothing else is not empty, so the valve never opens and the cursor is
+        /// seated on the strip for good.
+        /// </summary>
+        public bool DeclaredAnything
+        {
+            get { return _declared.Count > 0; }
+        }
+
         /// <summary>Tag nodes added from here with a region (Ctrl+arrow jump target) within the current
         /// stop; null clears. Region keys must be stable across rebuilds.</summary>
         public GraphBuilder SetRegion(object key)
         {
             _regionKey = key;
             return this;
+        }
+
+        /// <summary>The region nodes added right now belong to — for a contribution that opens
+        /// regions of its own inside somebody else's and has to hand the stop back as it found it.
+        /// Reading it beats remembering it at the call site: the caller may not be the one that set
+        /// it.</summary>
+        public object Region
+        {
+            get { return _regionKey; }
         }
 
         // ---- the parent stack: contexts + groups ----
@@ -200,7 +229,8 @@ namespace ES2Access.Core.UI.Graph
         {
             if (id == null) throw new ArgumentNullException("id");
             if (_currentRow != null) throw new InvalidOperationException("Cannot begin a group inside an open row");
-            bool isExpanded = expanded ?? (_expansion != null ? _expansion.Contains(id) : defaultExpanded);
+            bool isExpanded = ExpandAll
+                || (expanded ?? (_expansion != null ? _expansion.Contains(id) : defaultExpanded));
 
             GraphNode header = null;
             if (!Suppressed)
@@ -231,9 +261,13 @@ namespace ES2Access.Core.UI.Graph
         /// even BUILDING a collapsed group's children (a lazy hierarchy whose child view models
         /// materialize on first access). Groups with an explicit expanded: argument manage their own
         /// state instead.</summary>
+        /// <summary>Whether a group's children should be emitted. Screens ask this directly to decide
+        /// whether to ENUMERATE a branch at all (the emit is suppressed either way), so it has to
+        /// answer the same question <see cref="BeginGroup"/> does - <see cref="ExpandAll"/> included,
+        /// or a search build would declare group headers and nothing underneath them.</summary>
         public bool IsExpanded(ControlId id)
         {
-            return _expansion != null && id != null && _expansion.Contains(id);
+            return ExpandAll || (_expansion != null && id != null && _expansion.Contains(id));
         }
 
         /// <summary>
@@ -396,6 +430,13 @@ namespace ES2Access.Core.UI.Graph
         // column happened to be declared last. Only MISSING edges are filled, so raw content that wires
         // its own seam — a paragraph a sheet was told to continue below — is never overridden, and the
         // run stops at it by construction.
+        //
+        // WITH ONE EXCEPTION, and it is the common one: where the menu row is the table's own heading
+        // BAND, the seam is between two sets of COLUMNS, and a player standing in the third column
+        // expects the third column's heading — not the first. So when both sides declare distinct
+        // columns (<see cref="NodeVtable.Column"/>, stamped by the sheet and by the band), the seam is
+        // paired column by column, and only a column the other side does not have falls back to the
+        // single target. A bar of ordinary controls stamps no columns and so keeps the old rule exactly.
         private void StitchModeBoundaries()
         {
             Dictionary<object, List<GraphNode>> byStop = new Dictionary<object, List<GraphNode>>();
@@ -427,15 +468,23 @@ namespace ES2Access.Core.UI.Graph
                     {
                         if (cur.Transitions.ContainsKey(GraphDir.Up)) continue;
                         Row row = _rowOf[prev];
+                        List<GraphNode> run = new List<GraphNode>();
                         for (int j = i; j < nodes.Count && !_rowOf.ContainsKey(nodes[j]); j++)
                         {
                             if (nodes[j].Transitions.ContainsKey(GraphDir.Up)) break;
-                            nodes[j].Transitions[GraphDir.Up] = new Transition(row.Items[0].Id);
+                            run.Add(nodes[j]);
                         }
+
+                        Dictionary<int, ControlId> band = ByColumn(row.Items);
+                        Dictionary<int, ControlId> cells = ByColumn(run);
+                        foreach (GraphNode node in run)
+                            node.Transitions[GraphDir.Up] =
+                                new Transition(Across(band, node, row.Items[0].Id));
 
                         foreach (GraphNode cell in row.Items)
                             if (!cell.Transitions.ContainsKey(GraphDir.Down))
-                                cell.Transitions[GraphDir.Down] = new Transition(cur.Id);
+                                cell.Transitions[GraphDir.Down] =
+                                    new Transition(Across(cells, cell, cur.Id));
                     }
                     else // raw content above a menu row: the trailing run of raw nodes with no Down
                     {
@@ -448,14 +497,48 @@ namespace ES2Access.Core.UI.Graph
                         }
 
                         if (start < 0) continue;
-                        for (int j = start; j < i; j++)
-                            nodes[j].Transitions[GraphDir.Down] = new Transition(row.Items[0].Id);
+                        List<GraphNode> run = nodes.GetRange(start, i - start);
+                        Dictionary<int, ControlId> band = ByColumn(row.Items);
+                        Dictionary<int, ControlId> cells = ByColumn(run);
+                        foreach (GraphNode node in run)
+                            node.Transitions[GraphDir.Down] =
+                                new Transition(Across(band, node, row.Items[0].Id));
                         foreach (GraphNode cell in row.Items)
                             if (!cell.Transitions.ContainsKey(GraphDir.Up))
-                                cell.Transitions[GraphDir.Up] = new Transition(nodes[start].Id);
+                                cell.Transitions[GraphDir.Up] =
+                                    new Transition(Across(cells, cell, nodes[start].Id));
                     }
                 }
             }
+        }
+
+        // One side of a seam indexed by the column each node sits in, or null when the nodes are not a
+        // set of columns at all — a bar of ordinary controls, every one of them column 0, where pairing
+        // by column would be pairing everything with the first thing. Both conditions are needed: the
+        // columns must be distinct (a duplicate means the stamp is not a column number here) and at
+        // least one must be non-zero (a lone control, or a run of plain nodes, is column 0 by default).
+        private static Dictionary<int, ControlId> ByColumn(List<GraphNode> nodes)
+        {
+            Dictionary<int, ControlId> map = new Dictionary<int, ControlId>(nodes.Count);
+            bool columned = false;
+            foreach (GraphNode node in nodes)
+            {
+                int column = node.Vtable != null ? node.Vtable.Column : 0;
+                if (map.ContainsKey(column)) return null;
+                if (column != 0) columned = true;
+                map.Add(column, node.Id);
+            }
+
+            return columned ? map : null;
+        }
+
+        // Where crossing the seam from this node lands: the same column on the other side where both
+        // sides have it, else the single target the seam falls back to.
+        private static ControlId Across(Dictionary<int, ControlId> other, GraphNode from, ControlId fallback)
+        {
+            ControlId landing;
+            int column = from.Vtable != null ? from.Vtable.Column : 0;
+            return other != null && other.TryGetValue(column, out landing) ? landing : fallback;
         }
 
         // The (parent, stop) pair a single-item row's node is positioned within. A dedicated struct

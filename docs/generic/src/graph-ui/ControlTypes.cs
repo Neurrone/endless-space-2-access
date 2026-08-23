@@ -121,6 +121,18 @@ namespace ES2Access.UI
             Common = () => RoleWord(ModStrings.ControlEditField),
         };
 
+        /// <summary>A box that holds a number and carries the game's own stepper beside it: Left and
+        /// Right change the value rather than walk a caret, and Enter still opens the same editor.
+        /// Its own role word, because the arrows meaning two different things on two boxes that
+        /// otherwise sound identical is exactly the thing a player has to be told before they
+        /// press.</summary>
+        public static readonly ControlType NumericEditField = new ControlType
+        {
+            Key = "numeric-edit-field",
+            Order = StandardOrder,
+            Common = () => RoleWord(ModStrings.ControlNumericEditField),
+        };
+
         private static IList<NodeAnnouncement> RoleWord(string stringKey)
         {
             return new[]
