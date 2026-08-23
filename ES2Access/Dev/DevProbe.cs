@@ -1268,6 +1268,28 @@ namespace ES2Access.Dev
             return TooltipAudit.Json();
         }
 
+        /// <summary>
+        /// What the FOCUSED screen has never declared - hover words AND actions - against everything
+        /// the engine is drawing (see <see cref="CoverageAudit"/>).
+        ///
+        /// The widening over <see cref="TooltipParity"/> that makes it worth a second call: the
+        /// painted side comes from the ENGINE's own list of drawn windows and panels whenever the
+        /// screen names no <c>Screen.RootTransform</c>, so the coverage question is finally asked of
+        /// the galaxy map - where a hand audit found six undeclared dossiers and four undeclared
+        /// buttons on one card while the parity check said <c>clean</c>. And a second half nothing
+        /// else asks: every PAINTED control the player could work that no node stands on
+        /// (<c>actionsUncovered</c>, "no node stands here") or that a node stands on and cannot press
+        /// ("the node here declares no action").
+        ///
+        /// <paramref name="wholeTree"/> forces the live-tree walk even on a screen that names its own
+        /// window - what a modal drawn over a live page needs. Counts first, then the lists, each
+        /// capped with a <c>more</c> entry. It walks the whole GUI: run it on demand, never in a loop.
+        /// </summary>
+        public static string Coverage(bool wholeTree = false)
+        {
+            return CoverageAudit.Json(wholeTree);
+        }
+
         private static readonly Func<AgeTransform, AgeTransform> Itself = widget => widget;
 
         /// <summary>Every widget under the panel that draws something a reader would have to account

@@ -57,13 +57,19 @@ namespace ES2Access.Dev
 
         private const int MaxWidgets = 12000;
 
-        private sealed class Result
+        internal sealed class Result
         {
             public string Screen;
             public string ScreenName;
             public string Root;
             public string Prefix;
             public int Nodes;
+
+            /// <summary>The declaration side, kept so a caller checking a SECOND thing about the same
+            /// screen (see <see cref="CoverageAudit"/>) does not rebuild it: composing every node's
+            /// announcement and buffer is the expensive half of this check.</summary>
+            public List<Declared> DeclaredNodes = new List<Declared>();
+
             public int PaintedTooltips;
             public int HiddenTooltips;
 
@@ -127,7 +133,7 @@ namespace ES2Access.Dev
                     return DevJson.Error("no screen of ours is focused");
                 }
 
-                return Write(Check(screen));
+                return Write(Check(screen, null, true));
             }
             catch (Exception e)
             {
@@ -141,7 +147,18 @@ namespace ES2Access.Dev
             return screens == null ? null : screens.Current;
         }
 
-        private static Result Check(Screen screen)
+        /// <summary>
+        /// The check itself, for a caller that wants the buckets rather than the JSON.
+        ///
+        /// <paramref name="roots"/> null means "ask the screen where it is drawn"
+        /// (<see cref="Screen.RootTransform"/>), which is what <see cref="Json"/> does and what leaves
+        /// half the check unrun on a screen that has no window of its own. A caller handing the trees
+        /// in explicitly - the whole live GUI, for a screen whose content is the world - gets the
+        /// painted half on a screen that could never have it, and must then pass
+        /// <paramref name="byPrefix"/> false: the live tree holds the heads-up display too, and the
+        /// screen's own key prefix would throw away exactly the nodes that cover it.
+        /// </summary>
+        internal static Result Check(Screen screen, IList<AgeTransform> roots, bool byPrefix)
         {
             Result result = new Result();
             result.Screen = screen.Key;
@@ -151,16 +168,36 @@ namespace ES2Access.Dev
             List<Breach> unlocatable = new List<Breach>();
             List<Declared> declared = NotificationAudit.DeclaredNodes(
                 screen,
-                result.Prefix,
+                byPrefix ? result.Prefix : null,
                 unlocatable
             );
             result.Nodes = declared.Count;
+            result.DeclaredNodes = declared;
 
             CheckDeclarations(declared, result);
 
-            AgeTransform root = Root(screen);
-            result.Root = root == null ? null : root.name;
-            if (root == null)
+            List<AgeTransform> walked = new List<AgeTransform>();
+            if (roots == null)
+            {
+                AgeTransform own = Root(screen);
+                if (own != null)
+                {
+                    walked.Add(own);
+                }
+            }
+            else
+            {
+                for (int i = 0; i < roots.Count; i++)
+                {
+                    if (roots[i] != null)
+                    {
+                        walked.Add(roots[i]);
+                    }
+                }
+            }
+
+            result.Root = Names(walked);
+            if (walked.Count == 0)
             {
                 // Half a check is worth having and worth SAYING: without a root there is no painted
                 // side, so the coverage answers are absent rather than clean.
@@ -168,16 +205,41 @@ namespace ES2Access.Dev
             }
 
             List<Tip> painted = new List<Tip>();
-            Walk(root, painted, true, 0, new int[1]);
+            List<Tip> all = new List<Tip>();
+            for (int i = 0; i < walked.Count; i++)
+            {
+                Walk(walked[i], painted, true, 0, new int[1]);
+                Walk(walked[i], all, false, 0, new int[1]);
+            }
+
             result.PaintedTooltips = painted.Count;
             CheckCoverage(painted, declared, result, false);
 
-            List<Tip> all = new List<Tip>();
-            Walk(root, all, false, 0, new int[1]);
             List<Tip> hidden = Missing(all, painted);
             result.HiddenTooltips = hidden.Count;
             CheckCoverage(hidden, declared, result, true);
             return result;
+        }
+
+        private static string Names(List<AgeTransform> roots)
+        {
+            if (roots.Count == 0)
+            {
+                return null;
+            }
+
+            System.Text.StringBuilder text = new System.Text.StringBuilder();
+            for (int i = 0; i < roots.Count; i++)
+            {
+                if (i > 0)
+                {
+                    text.Append(", ");
+                }
+
+                text.Append(roots[i].name);
+            }
+
+            return text.ToString();
         }
 
         // ---- the declaration side ----

@@ -485,6 +485,52 @@ namespace ES2Access.Dev
             return roots;
         }
 
+        /// <summary>
+        /// Every tree the engine is drawing right now, for a caller that must account for the WHOLE
+        /// screen rather than for one window: each registered <c>GuiWindow</c> and each shown
+        /// <c>GuiPanel</c> that is visible in its hierarchy, with anything nested inside another root
+        /// dropped so no subtree is walked twice.
+        ///
+        /// Deliberately wider than <see cref="Roots"/>, which answers what <c>window=</c> means and
+        /// therefore stops at the topmost modal or at the visible screen: a coverage audit of a
+        /// screen whose content is the WORLD - the galaxy map declares no root of its own - has no
+        /// window to be handed and must be given everything the player can see, heads-up display
+        /// included. The registry is read directly rather than by name, because the engine's public
+        /// lookup logs an error for a name it does not know.
+        /// </summary>
+        internal static List<AgeTransform> LiveRoots()
+        {
+            List<AgeTransform> roots = new List<AgeTransform>();
+            GuiManager gui = GuiService();
+            if (gui == null)
+            {
+                return roots;
+            }
+
+            List<Amplitude.Unity.Gui.GuiWindow> windows = RegisteredWindows(gui);
+            for (int i = 0; i < windows.Count; i++)
+            {
+                AgeTransform transform = RootTransform(windows[i]);
+                if (OnScreen(transform))
+                {
+                    Add(roots, transform);
+                }
+            }
+
+            List<Amplitude.Unity.Gui.GuiPanel> panels = ShownPanels(gui);
+            for (int i = 0; i < panels.Count; i++)
+            {
+                AgeTransform transform = RootTransform(panels[i]);
+                if (OnScreen(transform))
+                {
+                    Add(roots, transform);
+                }
+            }
+
+            DropNested(roots);
+            return roots;
+        }
+
         private static void Add(List<AgeTransform> roots, AgeTransform transform)
         {
             if (transform != null && !roots.Contains(transform))
