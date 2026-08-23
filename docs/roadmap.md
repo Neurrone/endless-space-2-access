@@ -433,9 +433,14 @@ senate's census badges and the forced-law badge are nodes; the game menu's two s
 their sentences.
 
 **Still open.**
-- The notifications strip's right-click **close all** (`BaseTriangleBackground.OnCloseAllCb`) is not
-  declared: the game gates it on Alt or Shift being PHYSICALLY held, so it cannot be replayed, and a
-  mod-authored "dismiss all" is a new action on a new gesture. Owner call.
+- The map fleet lozenge's two ship-kind badges (`ExplorationShipIcon`/`ColonyShipIcon`, "One of these
+  ships is an exploration/colony ship.") are drawn beside the `GuiFleetGroup` dossier the fleet row
+  already carries in full, and neither sentence is anywhere in the mod. The fix is the shape
+  `GlobalHud.AddScreenToggles` now uses — every tooltip inside the lozenge, first speaking, the rest
+  reviewable. Owner call.
+- The pinned-quest panel's OWN sentence is now in its buffer, but the panel's tooltip still reads
+  `uncovered` in `DevProbe.Coverage()`: the node deliberately AIMS at the objective label's tooltip,
+  which is the only one pointing at the panel draws. Tooling gap, not a player-facing one.
 - The discovery/colonization cutscene card still speaks item NAMES only (`DiscoveryCards.Read`); a
   passive announcement has no node for a dossier to hang on.
 - `HauntCirclesTable` (`HauntCircleItem`) at systems zoom is unmeasured — the fixture draws none.

@@ -117,7 +117,9 @@ The two queues are unaffected because both wire `OnAlternate` and move the item 
 instead) — must be WIRED if they are ever declared, never left to the fall-back. The curiosity one
 is wired as of 2026-08-21 (`CuriosityExpeditions` — `docs/helpers.md`), attached generically in
 `CardActions.Emit` off the widget's own `CuriosityInteraction`, so the colony card has it and the
-galaxy orbital card's fleet-mode twin does not; dismiss-all is still undeclared.
+galaxy orbital card's fleet-mode twin does not. Dismiss-all is declared as of 2026-08-23, and NOT as
+a chord: it is a BUTTON at the end of the notifications stop whose Enter runs the Alt branch's own
+call (below), so nothing has to read a physically held modifier.
 Backslash and Ctrl+Alt+Enter keep absent-means-silent: a right click or a second click that does not
 exist has nothing to replay. On a `GuiTable` row, the second click is wired by `TableSheet` for EVERY
 table and every cell of a row (its `DoubleClickButton`, the row selected first because the game's
@@ -622,6 +624,18 @@ existing stop's behaviors, NO new bindings — and the stop is absent while the 
 notification, not a remembered one — the popup's own Previous/Next walks game↔mod inside one
 popup, so the way out is asked of the notification being put aside
 (`NotificationScreen.HandBackOnMinimize`).
+**Each of those two stops ends with a "throw them all away" BUTTON** (owner ruling 2026-08-23; no new
+key binding — it is reached with the arrows and pressed with Enter, and pressing says nothing of its
+own, exactly as dismissing one row does). `hud:notification/dismiss-all` ("Dismiss all
+notifications", keyed on the game's own `BaseTriangleBackground` control) runs
+`GuiNotificationService.DismissAllGuiNotifications()` — the very call the game's Alt+right click on
+that triangle makes; the handler's other branch, Shift, is `HideAllGuiNotifications()`, which only
+closes popups that happen to be open and is not offered. `hud:turn-log/dismiss-all` ("Dismiss all
+Turn log entries", a region of its own after the turn regions) discards only the mod's own
+notifications, one by one, the way Backslash does on a row. Consequence measured 2026-08-23 and left
+as the shipped behaviour: the game's list is ONE list, so the notification button empties the Turn
+log too — as the mouse's Alt+right click does. Both stops are absent while their list is empty, so
+neither button is ever offered over nothing.
 **The shared HUD's empire stop carries a row region per drawn band**, on every page in the game:
 `hud:empire/{controls,key-resources,research,strategics}` (labelled Controls / Key Resources /
 Research — reusing `galaxy.research` — / Strategic Resources) plus the seven faction bands

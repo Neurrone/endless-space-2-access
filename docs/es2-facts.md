@@ -2725,3 +2725,47 @@ description, effects, **cost**, upkeep, political impact — which is the mouse 
   resource areas, `ResourceItem.OnClickCb`, `ColonyInfoSidePanel.OnUpkeepCb`,
   `ColonyPopulationSidePanel.OnHappinessGroupCb`, `TechnologyStageItem.OnUnlockStageCb` and
   `DeedItem2`'s `GodButton`, all guarded by `GodGalaxyCursor.IsGuiInGodMode()`.
+
+- **The game's close-all notification control carries no words at all.** The strip's
+  `BaseTriangleBackground` (an `AgeControlButton` under `NotificationItemsWindow`, found by that
+  prefab name — the window binds no field for it) has NO `AgeTooltip` component, no caption and no
+  localization key anywhere in the corpus (`%*CloseAll*`/`%*DismissAll*`/`%*ClearAll*` all miss).
+  Its only wiring is `OnRightClickMethod=OnCloseAllCb`, and that handler branches on a PHYSICALLY
+  held modifier (`NotificationItemsWindow` :237-245): Alt =
+  `DismissAllGuiNotifications()` (throws every one of the player empire's notifications away,
+  newest-first, through the same `DismissGuiNotification` a single right click uses), Shift =
+  `HideAllGuiNotifications()` (only closes the popups that are currently VISIBLE; nothing is
+  dismissed). Mod policy: the dismissing branch is a named button of the mod's own
+  (`hud.dismiss-all-notifications` — `docs/interaction.md`); the hiding branch is not offered.
+- **`DismissAllGuiNotifications` does not distinguish the mod's notifications from the game's** —
+  `GetPlayerEmpireGuiNotifications()` is one list, and mod notifications live in it
+  (`ModNotifications`), so the game's own close-all empties the Turn log as well as the icon strip.
+  Measured 2026-08-23 with one game notification and one mod notification pending: both stops
+  disappeared on one press.
+- **The three in-progress juggernaut buttons DO name what they are doing, on the wrapper their own
+  tooltip points at** (`PlanetLabel_SystemOrbital` :806-830, :885-900, :960-975 — the
+  player-empire branch, the only one drawn enabled). Measured 2026-08-23:
+  `InProgressTerraformationButton`'s `Target` is the `IGuiConstructible` of the
+  `PlanetTerraformationDefinition` ("Terraform To Arctic"); `InProgressAnomalyReductionButton`'s is
+  the `AnomalyReductionDefinition`'s ("Reduced Ice-10"); `InProgressRestorationButton`'s is a
+  `GuiEntityAction` over `InitiateRestorePlanetFleetAction` ("Restore planet"). All three are
+  `GuiWrapper`s, so `AgeWidgets.TooltipTitle` reads them headlessly with no hover. Their `Content`
+  is the same on all three ("Remaining turns: N" + `%PlanetCancelJuggernautActionButtonDescription`)
+  which is why the shared sentence names none of them any more.
+- **`PlanetTerraformationDefinition` has no database of its own** — `Databases.GetDatabase<…>()`
+  answers null for it; the definitions live in the `ConstructibleElement` database (1016 entries)
+  and are found by type. `AnomalyReductionDefinition` DOES have one (28 entries). An anomaly
+  reduction's `AltTitle` is an unresolved key (`%AnomalyReduction10Title`) while a terraformation's
+  is a key the game localizes on purpose (`%PlanetTypeArcticTitle` → "Arctic"), so `Title` is the
+  member to read for a name and `AltTitle` only where the game itself localizes it.
+- **The map's fleet lozenge carries its ship-kind badges as separate tooltips.**
+  `GarrisonsLabelButton.ExplorationShipIcon`/`ColonyShipIcon` ("One of these ships is an exploration
+  ship." / "… a colony ship.") are icons INSIDE the lozenge with their own `AgeTooltip`s, beside the
+  lozenge's own `GuiFleetGroup` dossier (which `FleetLabel.CenterTooltip` is a second carrier of, so
+  the resolver's (class, content, target) dedupe collapses the two). Measured 2026-08-23: the mod's
+  fleet row carries the `GuiFleetGroup` dossier in full and neither badge sentence.
+- **The HUD's screen-strip icons can carry a badge tooltip of their own.** The Senate icon's
+  `AdditionalIcon` hangs "The leading political party in the Senate" inside the toggle
+  (`ControlBannerToggle`), which is the only place that sentence exists. Mod policy
+  (`GlobalHud.AddScreenToggles`): every tooltip inside a toggle is declared in drawn order, the
+  button's own speaking and the badges reviewable.

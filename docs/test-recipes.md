@@ -2623,3 +2623,50 @@ ui.back` is a no-op and only a real key would close them. With the game not in t
 (`POST /key` answers "the game does not have the foreground"), use the documented
 `Gui.GuiService.HideWindow(...)` route — never `HandleInput(InputAction.Exit)`, which wedged the
 screen stack in the previous stage. The game menu closes through its own **Resume Game** node.
+
+## Batch-12 recipes (2026-08-23) — the two dismiss-all buttons and the juggernaut buttons
+
+**Testing "Dismiss all notifications" WITHOUT losing the owner's pending news.** The button calls the
+game's own `DismissAllGuiNotifications()`, which unloads and unbinds every notification, so the
+`RecordEventForEmpire` replay above is the only way back and it needs the notification's own event.
+Cheaper and exact: **stash the real ones out of the live list first**, since
+`GetPlayerEmpireGuiNotifications()` IS the manager's list —
+`var STASHED = (GuiNotification)((System.Collections.IList)Gui.GuiNotificationService.GetPlayerEmpireGuiNotifications())[0];`
+then `list.Remove(STASHED)` plus the private
+`OnPlayerEmpireNotificationsCollectionChanged(CollectionChangeAction.Remove, STASHED)` by reflection
+so the strip refreshes (`var NOTIFY = …GetMethod("OnPlayerEmpireNotificationsCollectionChanged", …)`;
+top-level `var`s persist across `/eval` requests, so the handle survives the `/input` presses).
+Raise a DISPOSABLE game notification in its place
+(`Notify(new EventEmpireIntroduction(pe))` — it auto-pops its popup, so
+`Gui.GuiNotificationService.HideAllGuiNotifications()` right after to get back to the HUD), press the
+button, then put the stashed one back with `list.Insert(0, STASHED)` + the same reflected call with
+`CollectionChangeAction.Add`. Verified 2026-08-23: the strip read "Laws Cancelled" again with
+`AlreadyRead` still true. Nothing is ever unloaded, so no rebuild is needed.
+
+**Testing "Dismiss all Turn log entries"** needs no stashing: raise three MOD notifications (the
+`ModNotifications.Raise` recipe above), but with DIFFERENT subjects — `ModNotification.Subject()`
+dedupes repeats, so the same event three times is one row. `EventModFleetArrived(pe, f0, …)`,
+`EventModFleetStopped(pe, f1, …)`, `EventModFleetArrived(pe, f1, …)` gives three. Then
+`ui.focusTurnLog` → `ui.end` lands on the button, `ui.activate` presses it. The press itself says
+nothing; what is heard is the cursor's reconciliation onto the nearest survivor.
+
+**Drawing the three in-progress juggernaut buttons on a save with no juggernaut.** A forced show
+alone is not enough any more, because their names come off the wrapper their tooltip points at.
+Find the card (`GetWindow<PlanetLabelsWindow_SystemOrbital>(false)` →
+`GetComponentsInChildren<PlanetLabel_SystemOrbital>(true)`, matched on `card.Planet.LocalizedName`),
+LEND each button a real wrapper — `InstantiateIGuiConstructible` over a `PlanetTerraformationDefinition`
+found in the `ConstructibleElement` database, over `Databases.GetDatabase<AnomalyReductionDefinition>()
+.GetValues()[0]`, and `new GuiEntityAction(<InitiateRestorationEmpireActionFleetActionDefinition>,
+CategoryFleetAction)` — writing `Class`, `Target` and a `Content` of
+`"%PanelFeatureRemainingTurnsTitle" + " N\n" + "%PlanetCancelJuggernautActionButtonDescription"`, then
+set `button.Visible = true; button.Enable = true`. **Their parent `SecondaryButtonsTable` is hidden
+too** and the walk gate is the ancestor chain, so `button.AgeTransform.Parent.Visible = true` is the
+step that makes them nodes at all (measured: without it only `InProgressRestorationButton`, which
+hangs elsewhere, appeared). Restore with `AgeTooltip.ReleaseData()` on all three, `Visible = false`
+on each and on the table. Verified 2026-08-23: "Terraform To Arctic" / "Restore planet" /
+"Reduced Ice-10", each with the shared cancel sentence and "Remaining turns: N" in its own buffer.
+
+**The notification strip's pooled items outlive the notifications.** After raising and dismissing
+several, `Coverage()` reports `NotificationItem001..003` in the `hidden` bucket — retired pool
+children keeping the previous binding's tooltip. Not a gap; take the count from
+`GetPlayerEmpireGuiNotifications()`, never from the table's children.
