@@ -4561,8 +4561,14 @@ namespace ES2Access.Screens
                         // the card's own click - the planet's page - and nothing else, because
                         // everything else the old menu held is now drawn where the game draws it.
                         List<CardActions.CardAction> actions = OrbitalActions(card);
+                        List<TooltipChildren.Dossier> dossiers = PlanetDossiers(
+                            system,
+                            planet,
+                            card,
+                            looking
+                        );
                         NodeVtable readout = OrbitalReadout(card, system, looking);
-                        if (actions.Count == 0)
+                        if (actions.Count == 0 && dossiers.Count == 0)
                         {
                             builder.AddItem(id, readout);
                             continue;
@@ -4572,7 +4578,9 @@ namespace ES2Access.Screens
                         builder.BeginGroup(id, readout);
                         if (builder.IsExpanded(id))
                         {
+                            object outerRegion = TooltipChildren.Actions(builder, key);
                             CardActions.Emit(builder, key, actions);
+                            TooltipChildren.Emit(builder, key, dossiers, outerRegion);
                         }
 
                         builder.EndGroup();
@@ -4584,7 +4592,9 @@ namespace ES2Access.Screens
                     // how big and what kind, what the game says about settling it, and how many
                     // curiosities are waiting in orbit - taken from the planet rather than from a
                     // widget that is not on the screen (owner ruling 2026-08-23). What could be DONE
-                    // to it stays where the game draws it, so this is a leaf.
+                    // to it stays where the game draws it, so the only children here are the
+                    // dossiers, which are the world's own and not the card's
+                    // (<see cref="PlanetDossiers"/>).
                     //
                     // The circle is what the player would hover to get the planet's panel; without one
                     // the pointer goes to a carrier of the mod's, which is what makes the dossier
@@ -4605,7 +4615,7 @@ namespace ES2Access.Screens
                             GraphNodes.ValuePart(() => MiningProbes.Line(planet), false),
                         },
                         Sections = GraphNodes.Sections(
-                            NodeSection.Buffer(() => AnomalyLines(system, planet, looking)),
+                            NodeSection.Buffer(() => PlanetLines(system, planet, looking)),
                             GraphNodes.TooltipSection(dossier)
                         ),
                     };
@@ -4618,7 +4628,31 @@ namespace ES2Access.Screens
                         AgeWidgets.PointAt(vtable, dossier.AgeTransform);
                     }
 
-                    builder.AddItem(id, vtable);
+                    List<TooltipChildren.Dossier> pages = PlanetDossiers(
+                        system,
+                        planet,
+                        null,
+                        looking
+                    );
+                    if (pages.Count == 0)
+                    {
+                        builder.AddItem(id, vtable);
+                        continue;
+                    }
+
+                    vtable.ControlType = ControlTypes.Group;
+                    builder.BeginGroup(id, vtable);
+                    if (builder.IsExpanded(id))
+                    {
+                        TooltipChildren.Emit(
+                            builder,
+                            key,
+                            pages,
+                            TooltipChildren.Actions(builder, key)
+                        );
+                    }
+
+                    builder.EndGroup();
                 }
             }
             catch (Exception e)
@@ -4678,6 +4712,413 @@ namespace ES2Access.Screens
             catch (Exception) { }
 
             return null;
+        }
+
+        /// <summary>
+        /// The dossiers a world carries beyond its own: one per output figure, one per anomaly found
+        /// on it, one per deposit in its ground. The card writes NAMES for these and keeps everything
+        /// they mean - what a deposit is worth and why it cannot be exploited, what an anomaly does
+        /// and what would reduce it, what an output is made of - in a panel only a hover reaches.
+        ///
+        /// WHICH of them exist is the PLANET's question, not the card's: the map draws a card for one
+        /// system at one camera step, and what is in a world's ground is not a thing it hides at any
+        /// other. Whether the game is DRAWING an icon for one decides only WHERE the panel appears -
+        /// at the game's own icon while it is on the screen, at a carrier of the mod's
+        /// (<see cref="ScratchTooltips"/>) where it is not, bound exactly as the game's own item binds
+        /// so the window assembles the same words either way (owner ruling 2026-08-23).
+        ///
+        /// The drawn-icon test is PAINTED, never Visible. These tables pool their items and retire the
+        /// leftovers by FADING them, so a planet with no deposits at all keeps the previous planet's
+        /// items answering the engine's can-draw test with the previous planet's deposits - measured
+        /// on Osulo III, which has none and still offered Hyperium and Titanium. Membership from the
+        /// model is the other half of that guard: the loop only ever asks about an item the game has
+        /// just bound.
+        ///
+        /// Behind the survey gate, which is the card's own: an unrevealed node hides the deposit
+        /// group, the anomaly table and both output strips wholesale
+        /// (<c>PlanetLabel_SystemOrbital.RefreshAsUnrevealedNode</c>).
+        /// </summary>
+        private static List<TooltipChildren.Dossier> PlanetDossiers(
+            StarSystemNode system,
+            Planet planet,
+            PlanetLabel_SystemOrbital card,
+            Empire empire
+        )
+        {
+            List<TooltipChildren.Dossier> found = new List<TooltipChildren.Dossier>(8);
+            try
+            {
+                if (planet == null || !Surveyed(system, empire))
+                {
+                    return found;
+                }
+
+                // In the order the card draws them, which is the order its own buffer reads
+                // (<see cref="OrbitalDetails"/>): the outputs down the side, then what was found on
+                // the world, then what is in its ground.
+                AddOutputDossiers(found, planet, card, empire);
+                AddAnomalyDossiers(found, planet, card);
+                AddDepositDossiers(found, planet, card, empire);
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: reading a planet's dossiers threw: " + e);
+            }
+
+            return found;
+        }
+
+        /// <summary>
+        /// The five figures the card rates a world by, each with the game's own page behind it.
+        ///
+        /// The card keeps TWO strips and swaps them - the enumerator's duplets for a colony, a table
+        /// of score pips for a world nobody has settled (<c>PlanetLabel_SystemOrbital.RefreshFIDSI</c>)
+        /// - leaving the other one bound to whatever it last showed, so the strip is taken from
+        /// whichever is PAINTED. This is the same set the sibling management card already declares
+        /// (<c>SystemManagementScreen.PlanetDossiers</c>); the map's card was the inconsistent one.
+        ///
+        /// With no card on the screen the five come from carriers bound the way
+        /// <c>FidsiEnumerator.LoadPlanet</c> binds them: the outpost properties for an outpost, the
+        /// colony's for a colony, the "initial" ratings for a world nobody has settled - against the
+        /// same simulation object the strip would have been refreshed with.
+        /// </summary>
+        private static void AddOutputDossiers(
+            List<TooltipChildren.Dossier> found,
+            Planet planet,
+            PlanetLabel_SystemOrbital card,
+            Empire empire
+        )
+        {
+            AgeTransform strip = OutputStrip(card);
+            if (strip != null)
+            {
+                AddStripDossiers(found, strip);
+                return;
+            }
+
+            ColonizedPlanet colony = planet.ColonizedPlanet;
+            int state = OutputState(colony);
+            StaticString[] properties = OutputProperties[state];
+            for (int i = 0; i < properties.Length; i++)
+            {
+                TooltipChildren.Add(found, OutputCarrier(planet, colony, state, i, empire));
+            }
+        }
+
+        /// <summary>Which row of <see cref="OutputProperties"/> a world's figures are read from - the
+        /// same three-way question <c>FidsiEnumerator.LoadPlanet</c> asks: nobody has settled it, it
+        /// is an outpost, or it is a colony.</summary>
+        private static int OutputState(ColonizedPlanet colony)
+        {
+            if (colony == null)
+            {
+                return 0;
+            }
+
+            return colony.ColonizedStarSystem != null
+                && colony.ColonizedStarSystem.State == StarSystemState.Outpost
+                ? 2
+                : 1;
+        }
+
+        /// <summary>Whichever of the card's two output strips the game is drawing, or nothing where no
+        /// card is up. The colony's duplets sit inside the enumerator's own group; the ratings are the
+        /// score table's rows.</summary>
+        private static AgeTransform OutputStrip(PlanetLabel_SystemOrbital card)
+        {
+            if (card == null)
+            {
+                return null;
+            }
+
+            AgeTransform duplets =
+                card.FidsiEnumerator == null ? null : card.FidsiEnumerator.FidsiGroup;
+            if (AgeWidgets.Painted(duplets))
+            {
+                return duplets;
+            }
+
+            return AgeWidgets.Painted(card.FidsiScoreTable) ? card.FidsiScoreTable : null;
+        }
+
+        /// <summary>Every dossier hanging on a PAINTED item of a strip, item by item. The pips hang
+        /// theirs a level down (a duplet's tooltip is on the piece inside it), so each item is asked
+        /// with the resolver rather than for its own tooltip alone - and a retired pip is skipped
+        /// before it can offer the previous planet's figure.</summary>
+        private static void AddStripDossiers(List<TooltipChildren.Dossier> found, AgeTransform strip)
+        {
+            IList<AgeTransform> items = strip.Children;
+            List<AgeTooltip> tips = new List<AgeTooltip>(2);
+            for (int i = 0; items != null && i < items.Count; i++)
+            {
+                AgeTransform item = items[i];
+                if (!AgeWidgets.Painted(item))
+                {
+                    continue;
+                }
+
+                tips.Clear();
+                AgeWidgets.EffectiveTooltips(
+                    item,
+                    tips,
+                    TooltipReach.Own | TooltipReach.Descendants,
+                    3
+                );
+                for (int j = 0; j < tips.Count; j++)
+                {
+                    TooltipChildren.Add(found, tips[j]);
+                }
+            }
+        }
+
+        /// <summary>The five output properties in the order the card lists them, one row per state the
+        /// card can be in - an outpost, a colony, and a world nobody has settled
+        /// (<c>FidsiEnumerator.LoadPlanet</c>). Static because a carrier is bound once a turn and the
+        /// names never change.</summary>
+        private static readonly StaticString[][] OutputProperties = new StaticString[][]
+        {
+            new StaticString[]
+            {
+                SimulationProperties.Planet.PlanetInitialFood,
+                SimulationProperties.Planet.PlanetInitialIndustry,
+                SimulationProperties.Planet.PlanetInitialDust,
+                SimulationProperties.Planet.PlanetInitialScience,
+                SimulationProperties.Planet.PlanetInitialPrestige,
+            },
+            new StaticString[]
+            {
+                SimulationProperties.Planet.PlanetFood,
+                SimulationProperties.Planet.PlanetIndustry,
+                SimulationProperties.Planet.PlanetDust,
+                SimulationProperties.Planet.PlanetScience,
+                SimulationProperties.Planet.PlanetPrestige,
+            },
+            new StaticString[]
+            {
+                SimulationProperties.Planet.PlanetOutpostFood,
+                SimulationProperties.Planet.PlanetOutpostIndustry,
+                SimulationProperties.Planet.PlanetOutpostDust,
+                SimulationProperties.Planet.PlanetOutpostScience,
+                SimulationProperties.Planet.PlanetOutpostPrestige,
+            },
+        };
+
+        /// <summary>A carrier for one output figure, bound as the enumerator binds a duplet: the
+        /// property wrapper as the target, the simulation object the figure is read off as the
+        /// context.</summary>
+        private static AgeTooltip OutputCarrier(
+            Planet planet,
+            ColonizedPlanet colony,
+            int state,
+            int index,
+            Empire empire
+        )
+        {
+            try
+            {
+                AgeTooltip carrier;
+                bool rebind = ScratchTooltips.Rebind(
+                    "planet-output/" + planet.GUID + "/" + index,
+                    (DossierStamp(empire) * 7L) + state,
+                    out carrier
+                );
+                if (rebind && carrier != null)
+                {
+                    Amplitude.Unity.Simulation.SimulationObject simulation =
+                        colony == null ? planet.SimulationObject : colony.SimulationObject;
+                    GuiSimulationProperty property = new GuiSimulationProperty(
+                        (string)OutputProperties[state][index]
+                    );
+                    carrier.Class = property.TooltipClass;
+                    carrier.Content = string.Empty;
+                    carrier.Context = simulation;
+                    carrier.Target = property;
+                }
+
+                return carrier;
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: binding a planet output dossier threw: " + e);
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// One dossier per anomaly on the world - the paragraph, the effects and what reducing it
+        /// would take, none of which the card writes anywhere.
+        ///
+        /// The item hangs its tooltip on its ICON rather than on itself
+        /// (<c>PlanetAnomalyItem.Bind</c>), so the component's own field is what is read and what is
+        /// aimed at: pointing at the row draws nothing at all.
+        /// </summary>
+        private static void AddAnomalyDossiers(
+            List<TooltipChildren.Dossier> found,
+            Planet planet,
+            PlanetLabel_SystemOrbital card
+        )
+        {
+            AgeTransform table = card == null ? null : card.PlanetAnomaliesTable;
+            IList<AgeTransform> items = AgeWidgets.Painted(table) ? table.Children : null;
+            for (int i = 0; i < planet.Anomalies.Count; i++)
+            {
+                Anomaly anomaly = planet.Anomalies[i];
+                AgeTooltip drawn = DrawnAnomaly(items, i);
+                AgeTooltip tooltip = drawn ?? AnomalyCarrier(planet, anomaly, i);
+                TooltipChildren.Add(found, tooltip);
+            }
+        }
+
+        /// <summary>The card's own icon for the Nth anomaly, where it is drawing one. The table is
+        /// filled from the same list in the same order (<c>RefreshPlanetAnomalies</c>), so the Nth item
+        /// is the Nth anomaly - and a retired one is dropped before it can answer for a planet that no
+        /// longer has it.</summary>
+        private static AgeTooltip DrawnAnomaly(IList<AgeTransform> items, int index)
+        {
+            if (items == null || index >= items.Count)
+            {
+                return null;
+            }
+
+            AgeTransform item = items[index];
+            if (!AgeWidgets.Painted(item))
+            {
+                return null;
+            }
+
+            PlanetAnomalyItem component = item.GetComponent<PlanetAnomalyItem>();
+            return component == null ? Raw(item) : component.Tooltip;
+        }
+
+        private static AgeTooltip AnomalyCarrier(Planet planet, Anomaly anomaly, int index)
+        {
+            try
+            {
+                AgeTooltip carrier;
+                bool rebind = ScratchTooltips.Rebind(
+                    "planet-anomaly/" + planet.GUID + "/" + index,
+                    Hash(anomaly.AnomalyDefinition == null
+                        ? null
+                        : (string)anomaly.AnomalyDefinition.Name),
+                    out carrier
+                );
+                if (rebind && carrier != null)
+                {
+                    GuiAnomaly wrapper = new GuiAnomaly(anomaly.AnomalyDefinition, planet);
+                    carrier.Class = wrapper.TooltipClass;
+                    carrier.Content = string.Empty;
+                    carrier.Context = planet;
+                    carrier.Target = wrapper;
+                }
+
+                return carrier;
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: binding an anomaly dossier threw: " + e);
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// One dossier per deposit in the world's ground: what size it is, what it does per
+        /// population, and the game's own reason where the empire may not exploit it yet.
+        ///
+        /// The list is the card's own - the colony's OWN deposits where this empire has settled the
+        /// world, the planet's raw ones otherwise (<c>RefreshResourceDeposits</c>) - so the nodes and
+        /// the icons agree about how many there are, and the Nth icon is the Nth deposit.
+        /// </summary>
+        private static void AddDepositDossiers(
+            List<TooltipChildren.Dossier> found,
+            Planet planet,
+            PlanetLabel_SystemOrbital card,
+            Empire empire
+        )
+        {
+            AgeTransform group = card == null ? null : card.ResourceDepositsGroup;
+            IList<AgeTransform> items = AgeWidgets.Painted(group) ? group.Children : null;
+            ColonizedPlanet colony = planet.ColonizedPlanet;
+            bool ours = colony != null && colony.Empire == empire;
+            int count = ours
+                ? colony.ColonizedResourceDeposits.Count
+                : planet.ResourceDeposits.Count;
+            for (int i = 0; i < count; i++)
+            {
+                AgeTooltip drawn = DrawnDepositItem(items, i);
+                AgeTooltip tooltip = drawn ?? DepositItemCarrier(planet, colony, ours, i, empire);
+                TooltipChildren.Add(found, tooltip);
+            }
+        }
+
+        private static AgeTooltip DrawnDepositItem(IList<AgeTransform> items, int index)
+        {
+            if (items == null || index >= items.Count)
+            {
+                return null;
+            }
+
+            AgeTransform item = items[index];
+            if (!AgeWidgets.Painted(item))
+            {
+                return null;
+            }
+
+            ResourceDepositItem component = item.GetComponent<ResourceDepositItem>();
+            return component == null ? Raw(item) : component.Tooltip;
+        }
+
+        /// <summary>A carrier bound exactly as <c>ResourceDepositItem.Refresh</c> binds the game's own
+        /// icon - the same class, the same wrapper, the same refusal text - so the tooltip window
+        /// assembles the same panel from a widget nobody can see.</summary>
+        private static AgeTooltip DepositItemCarrier(
+            Planet planet,
+            ColonizedPlanet colony,
+            bool ours,
+            int index,
+            Empire empire
+        )
+        {
+            try
+            {
+                AgeTooltip carrier;
+                bool rebind = ScratchTooltips.Rebind(
+                    "planet-deposit/" + planet.GUID + "/" + index,
+                    (DossierStamp(empire) * 3L) + (ours ? 1L : 0L),
+                    out carrier
+                );
+                if (rebind && carrier != null)
+                {
+                    GuiResourceDeposit wrapper = ours
+                        ? new GuiResourceDeposit(colony.ColonizedResourceDeposits[index])
+                        : new GuiResourceDeposit(planet.ResourceDeposits[index]);
+                    List<FailureInfo> refusals = new List<FailureInfo>();
+                    wrapper.CanBeExploited(PlayerEmpire(), refusals);
+                    carrier.Class = wrapper.TooltipClass;
+                    carrier.Content = Gui.FormatFailureInfos(refusals);
+                    carrier.Context = null;
+                    carrier.Target = wrapper;
+                }
+
+                return carrier;
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: binding a planet deposit dossier threw: " + e);
+                return null;
+            }
+        }
+
+        /// <summary>A stable number for a name, for a carrier stamp that has to change when the thing
+        /// behind it does rather than once a turn.</summary>
+        private static long Hash(string text)
+        {
+            long hash = 17L;
+            for (int i = 0; text != null && i < text.Length; i++)
+            {
+                hash = (hash * 31L) + text[i];
+            }
+
+            return hash;
         }
 
         /// <summary>
@@ -4984,7 +5425,15 @@ namespace ES2Access.Screens
             List<string> lines = new List<string>();
             try
             {
-                AddDecay(lines, card);
+                // The three warning icons the card draws in a row beside the status line, each one a
+                // picture with its sentence in its own tooltip and nothing written on the card.
+                AddIconSentence(lines, card.HuntingGroundsIcon, "decay marker");
+                AddIconSentence(lines, card.OutpostCancelIcon, "outpost warning");
+                AddIconSentence(
+                    lines,
+                    card.HauntIcon == null ? null : card.HauntIcon.AgeTransform,
+                    "ghost marker"
+                );
                 AddFidsi(lines, card);
                 AddAnomalies(lines, card, system, empire);
                 // The curiosities are NOT read here: each one is a button of the card's and is a child
@@ -4992,6 +5441,10 @@ namespace ES2Access.Screens
                 // line was silent - the items draw no words - and naming them off their wrappers would
                 // have made the card say every curiosity twice.
                 AddWidgetLines(lines, card.ResourceDepositsGroup);
+                // Last, what the map says about this world that no widget on the card writes at all
+                // (<see cref="AddSignals"/>). The ghost sentence can also arrive from the icon above,
+                // and <see cref="AddLine"/> drops the second copy.
+                AddSignals(lines, system, card.Planet, empire);
                 // The dossier is NOT read here: it is the card's tooltip section, declared beside
                 // this one, and reading it twice is what happens when two places both remember it.
             }
@@ -5004,28 +5457,30 @@ namespace ES2Access.Screens
         }
 
         /// <summary>
-        /// That the planet is decaying - a world that was colonized and lost, which colonizing the
-        /// system again would restore. The card says it with one wordless icon and keeps the sentence in
-        /// that icon's own tooltip, with a different one per cause (a Vodyani leech, a pirate invasion,
-        /// Unfallen tendrils pulled out) - and the game hides the icon outright for the Vodyani player
-        /// whose own ark is the cause (<c>PlanetLabel_SystemOrbital</c> :353-381).
+        /// One of the card's wordless warning pictures, as the sentence the game keeps in its tooltip:
+        /// that the planet is DECAYING (a world colonized and lost, which colonizing the system again
+        /// would restore - a different sentence per cause, and hidden outright for the Vodyani player
+        /// whose own ark is the cause, <c>PlanetLabel_SystemOrbital</c> :353-381); that an OUTPOST here
+        /// is shrinking, starving or already scheduled for decolonization (:498-533); and that the
+        /// planet hosts somebody's GHOST colony (:462-480).
         ///
-        /// Drawn is the gate, and it has to be: the icon's tooltip carries the general sentence from the
-        /// prefab whether or not the card is showing it, so anything reading the tooltip alone would
-        /// tell every player that every healthy planet had been lost.
+        /// PAINTED is the gate, and it has to be: every one of these carries its sentence from the
+        /// PREFAB whether or not the card is showing it (measured: an untouched card answers
+        /// "%OutpostBeingLostDescription" and "%PlanetIsDecayingDescription" while both icons are
+        /// hidden), so anything reading the tooltip alone would tell every player that every healthy
+        /// planet was dying.
         /// </summary>
-        private static void AddDecay(List<string> lines, PlanetLabel_SystemOrbital card)
+        private static void AddIconSentence(List<string> lines, AgeTransform icon, string what)
         {
             try
             {
-                AgeTransform icon = card.HuntingGroundsIcon;
-                if (icon == null || !Visible(icon))
+                if (!AgeWidgets.Painted(icon))
                 {
                     return;
                 }
 
-                Func<IList<string>> decay = AgeWidgets.TooltipLines(AgeWidgets.Raw(icon));
-                IList<string> said = decay == null ? null : decay();
+                Func<IList<string>> sentence = AgeWidgets.TooltipLines(AgeWidgets.Raw(icon));
+                IList<string> said = sentence == null ? null : sentence();
                 for (int i = 0; said != null && i < said.Count; i++)
                 {
                     AddLine(lines, said[i]);
@@ -5033,14 +5488,269 @@ namespace ES2Access.Screens
             }
             catch (Exception e)
             {
-                Log.Warn("galaxy: reading an orbital card's decay marker threw: " + e);
+                Log.Warn("galaxy: reading an orbital card's " + what + " threw: " + e);
             }
+        }
+
+        /// <summary>
+        /// What the map is saying about a world through pure decoration - a coloured ring on the circle
+        /// at systems zoom, with no tooltip on it anywhere (measured: every per-circle feedback image
+        /// carries no <c>AgeTooltip</c> at all). A juggernaut terraforming or restoring it, an anomaly
+        /// being reduced, a Sanctuary standing on it, a world there is only one of. A sighted player
+        /// takes these off the colours; a keyboard player could reach none of them.
+        ///
+        /// One buffer line each, on the planet's own row and never in its announcement (owner ruling
+        /// 2026-08-23), gated on the game's own state and read from the PLANET - so a world says the
+        /// same things at every zoom, exactly as its anomalies and curiosities already do.
+        ///
+        /// The words are the game's wherever the game has any: the two juggernaut sentences it writes
+        /// on the in-progress buttons one zoom step in, its own "Remaining turns:" caption, its own
+        /// Sanctuary sentences, and the title its discovery card gives a unique world
+        /// (<c>%PlanetScreenUniquePlanetTitle</c>, read off the unshown prefab - "Unique Planet").
+        /// Only the anomaly-reduction phrase is the mod's, because the game writes none for the state
+        /// itself.
+        ///
+        /// A mining probe is already a row VALUE (<c>MiningProbes.Line</c>) and the curiosity ring
+        /// already a counted one (<see cref="CuriosityCount"/>), so neither is repeated here.
+        /// </summary>
+        private static void AddSignals(
+            List<string> lines,
+            StarSystemNode system,
+            Planet planet,
+            Empire empire
+        )
+        {
+            try
+            {
+                if (planet == null || !Surveyed(system, empire))
+                {
+                    return;
+                }
+
+                AddTerraformationSignal(lines, planet);
+                AddAnomalyReductionSignal(lines, planet);
+                AddGhostSignal(lines, planet, empire);
+                if (planet.IsUnique)
+                {
+                    AddLine(lines, Localize("%PlanetScreenUniquePlanetTitle"));
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: reading a planet's map signals threw: " + e);
+            }
+        }
+
+        /// <summary>
+        /// A juggernaut turning the world into something else, and how long is left.
+        ///
+        /// Terraformation and RESTORATION are one field of the planet's and two different sentences,
+        /// told apart exactly as the game tells them apart - by the tags on the terraformation being
+        /// carried out (<c>InitiateRestorationEmpireActionFleetActionDefinition.CheckConstructibleTags</c>:
+        /// restoration is the one tagged <c>PlanetTerraformationFromDestroyed</c>, and anything tagged
+        /// <c>PlanetTerraformationOnlyViaSystem</c> is neither, which is why the map draws no button
+        /// for it). State above 2 is one the game has stopped drawing at all.
+        /// </summary>
+        private static void AddTerraformationSignal(List<string> lines, Planet planet)
+        {
+            TerraformPlanetEmpireLocalAction running = planet.TerraformationInProgress;
+            if (running == null || (int)running.State > 2)
+            {
+                return;
+            }
+
+            PlanetTerraformationDefinition definition = running.PlanetTerraformationDefinition;
+            if (
+                definition == null
+                || definition.Tags.Contains(
+                    InitiateTerraformationEmpireActionFleetActionDefinition.InvalidTag
+                )
+            )
+            {
+                return;
+            }
+
+            string leader = LeaderName(running.Empire);
+            bool restoring = definition.Tags.Contains(
+                InitiateTerraformationEmpireActionFleetActionDefinition.DestroyedTag
+            );
+            string sentence = restoring
+                // The game's own call passes two arguments to a template that asks for {0} and {2}, so
+                // its own drawing leaves a slot unfilled; the third argument here is the same leader
+                // name the slot is asking for, and an unfilled result is dropped by Localize.
+                ? Localize(
+                    "%PlanetRestoreWithJuggernautInProgressDescription",
+                    planet.LocalizedName,
+                    leader,
+                    leader
+                )
+                : Localize(
+                    "%PlanetTerraformWithJuggernautInProgressDescription",
+                    planet.LocalizedName,
+                    TerraformationTarget(definition),
+                    leader
+                );
+            AddLine(lines, Remaining(sentence, running.GetRemainingTurns()));
+        }
+
+        /// <summary>What the world is being turned INTO, in the game's own alternative title for the
+        /// terraformation - the one its own card puts in that slot.</summary>
+        private static string TerraformationTarget(PlanetTerraformationDefinition definition)
+        {
+            try
+            {
+                IGuiConstructible wrapper =
+                    Gui.GuiWrapperProviderService.InstantiateIGuiConstructible(definition);
+                return wrapper == null ? null : AgeText.Clean(Gui.Localize(wrapper.AltTitle));
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        private static void AddAnomalyReductionSignal(List<string> lines, Planet planet)
+        {
+            ReduceAnomalyEmpireLocalAction running = planet.AnomalyReductionInProgress;
+            if (running == null || (int)running.State > 2)
+            {
+                return;
+            }
+
+            AddLine(
+                lines,
+                Remaining(
+                    ModStrings.Get(ModStrings.GalaxyPlanetAnomalyReduction),
+                    running.GetRemainingTurns()
+                )
+            );
+        }
+
+        /// <summary>A Sanctuary standing on the world - the Umbral Choir's ghost colony. The gate is the
+        /// card's own: the ghost exists AND this empire can see the system it belongs to
+        /// (<c>PlanetLabel_SystemOrbital.RefreshPlanetInformation</c>), so a hidden one stays
+        /// hidden.</summary>
+        private static void AddGhostSignal(List<string> lines, Planet planet, Empire empire)
+        {
+            ColonizedPlanet ghost = planet.GhostColonizedPlanet;
+            if (
+                ghost == null
+                || ghost.ColonizedStarSystem == null
+                || (int)ghost.ColonizedStarSystem.Visibility[empire] < 1
+            )
+            {
+                return;
+            }
+
+            AddLine(
+                lines,
+                ghost.Empire == empire
+                    ? Localize("%PlanetStatusGhostDescription")
+                    : Localize("%PlanetStatusGhostByDescription", LeaderName(ghost.Empire))
+            );
+        }
+
+        /// <summary>An empire as the game names it to this player - the same leader name its own
+        /// in-progress sentences are built with.</summary>
+        private static string LeaderName(Empire empire)
+        {
+            try
+            {
+                GuiEmpire wrapper =
+                    empire == null
+                        ? null
+                        : Gui.GuiWrapperProviderService.GetGuiEmpire(empire);
+                return wrapper == null ? null : AgeText.Clean(wrapper.GetLeaderName(PlayerEmpire()));
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>A state sentence with the turns left after it, in the game's own caption - the same
+        /// pair its in-progress buttons write into their tooltips.</summary>
+        private static string Remaining(string sentence, int turns)
+        {
+            if (string.IsNullOrEmpty(sentence))
+            {
+                return null;
+            }
+
+            string caption = Localize("%PanelFeatureRemainingTurnsTitle");
+            return string.IsNullOrEmpty(caption)
+                ? sentence
+                : new MessageBuilder()
+                    .ListItem(sentence)
+                    .ListItem(caption + " " + turns)
+                    .Build();
+        }
+
+        /// <summary>
+        /// One of the game's own phrases, filled in and cleaned - and DROPPED where the fill left a
+        /// template slot standing.
+        ///
+        /// A phrase still holding a "{0}" is one the game has not finished writing: the map has one
+        /// (its restoration sentence asks for a third argument its own call never passes), and speaking
+        /// a slot marker is worse than saying nothing.
+        /// </summary>
+        private static string Localize(string key, params object[] arguments)
+        {
+            try
+            {
+                string text = AgeText.Clean(
+                    arguments == null || arguments.Length == 0
+                        ? Gui.Localize(key)
+                        : Gui.Localize(key, arguments)
+                );
+                return Unfilled(text) ? null : text;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>Whether a filled-in phrase still carries a slot the game never filled - "{" and a
+        /// digit, which is what an unpassed argument leaves behind.</summary>
+        private static bool Unfilled(string text)
+        {
+            for (int i = 0; text != null && i + 1 < text.Length; i++)
+            {
+                if (text[i] == '{' && text[i + 1] >= '0' && text[i + 1] <= '9')
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         /// <summary>What has been found on the planet. The card draws each anomaly as a coloured icon
         /// with no words on it at all, so the names come from the game's own wrapper for the same
         /// anomaly - the one whose title it writes wherever it does have room. Only while the card is
         /// drawing the row: the planet knows its anomalies whether or not they are on screen.</summary>
+        /// <summary>What a planet's row says with no card on the screen: what has been found on the
+        /// world, and what the map is signalling about it in colour alone
+        /// (<see cref="AddSignals"/>). ONE list, so the dedupe that keeps a line from being said twice
+        /// works across both halves.</summary>
+        private static IList<string> PlanetLines(
+            StarSystemNode system,
+            Planet planet,
+            Empire empire
+        )
+        {
+            List<string> lines = new List<string>(4);
+            IList<string> anomalies = AnomalyLines(system, planet, empire);
+            for (int i = 0; anomalies != null && i < anomalies.Count; i++)
+            {
+                AddLine(lines, anomalies[i]);
+            }
+
+            AddSignals(lines, system, planet, empire);
+            return lines;
+        }
+
         private static void AddAnomalies(
             List<string> lines,
             PlanetLabel_SystemOrbital card,
@@ -5154,6 +5864,12 @@ namespace ES2Access.Screens
         /// the game is offering nothing on, which is what keeps such a planet a leaf of the tree rather
         /// than a branch that opens onto nothing. The treatment each one gets is
         /// <see cref="CardActions"/>'s, shared with the management page's card.</summary>
+        /// <summary>The game's own sentence for every one of the three in-progress buttons - the only
+        /// words it writes for them, and the same one on all three because the game itself writes the
+        /// same one on all three (<c>PlanetLabel_SystemOrbital</c> :818, :898, :970).</summary>
+        private const string CancelJuggernautAction =
+            "%PlanetCancelJuggernautActionButtonDescription";
+
         private static List<CardActions.CardAction> OrbitalActions(PlanetLabel_SystemOrbital card)
         {
             List<CardActions.CardAction> found = new List<CardActions.CardAction>(4);
@@ -5184,6 +5900,42 @@ namespace ES2Access.Screens
                 CardActions.AddNamedByGame(found, card.AnomalyReductionButton, "%InitiateReduceAnomalyFleetActionTitle");
                 CardActions.AddNamedByGame(found, card.MiningProbeButton, "%LaunchMiningProbeFleetActionTitle");
                 CardActions.AddNamedByGame(found, card.DestroyButton, "%DestroyPlanetFleetActionTitle");
+
+                // And the same row's OTHER half: the button the game swaps in for a start button while
+                // that action is already running. It is the only way to CANCEL a juggernaut's work and
+                // the only place the map says how long is left, and the mod declared none of the three.
+                // Named by the game's own sentence for the button (the start actions' titles would name
+                // the thing being cancelled rather than the cancelling); the turns left ride in the
+                // node's own dossier, and the row's buffer says what is happening
+                // (<see cref="AddSignals"/>). A RIVAL's is drawn switched OFF, which is exactly when
+                // the shared collector drops it - a button that cannot be pressed is not an action, and
+                // the row's line has already said what it would have said.
+                CardActions.AddNamedByGame(
+                    found,
+                    card.InProgressTerraformationButton,
+                    CancelJuggernautAction
+                );
+                CardActions.AddNamedByGame(
+                    found,
+                    card.InProgressRestorationButton,
+                    CancelJuggernautAction
+                );
+                CardActions.AddNamedByGame(
+                    found,
+                    card.InProgressAnomalyReductionButton,
+                    CancelJuggernautAction
+                );
+
+                // The way into pirate diplomacy, drawn on a world whose system holds a pirate lair
+                // (DLC9). The game declares the field as a plain transform and hangs a radial button on
+                // it, which is why a walk of the card's BUTTON fields never found it - and it keeps the
+                // widget drawn while refusing a pirate-hating empire, with the reason written into the
+                // same tooltip its name comes from, which is the refusable treatment.
+                CardActions.AddRefusable(
+                    found,
+                    card.PirateLairGroup,
+                    CardActions.NameFromTooltip(card.PirateLairGroup)
+                );
 
                 // What has been found in orbit and not yet looked into. Each one is a button of the
                 // card's like any other, drawn in a ring around it rather than in the row, so they come

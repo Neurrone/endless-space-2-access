@@ -146,6 +146,7 @@
   "galaxy.system-guarded": "Guarded by {0}",
   "galaxy.planet-curiosity-one": "{0} curiosity",
   "galaxy.planet-curiosities": "{0} curiosities",
+  "galaxy.planet-anomaly-reduction-in-progress": "Anomaly reduction in progress",
   "direction.north": "north",
   "direction.northeast": "northeast",
   "direction.east": "east",

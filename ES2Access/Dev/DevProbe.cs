@@ -1204,8 +1204,6 @@ namespace ES2Access.Dev
 
                 json.WriteEndArray();
 
-                json.WriteEndArray();
-
                 List<AgeTransform> found = new List<AgeTransform>();
                 Gather(window.PanelFeaturesTable, found, 0);
 
