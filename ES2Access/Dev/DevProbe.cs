@@ -242,6 +242,17 @@ namespace ES2Access.Dev
                 return "booting";
             }
 
+            // BEFORE asking anything else. `IsInLoadingWindow` is three by-TYPE lookups with the
+            // engine's error reporting ON, so polling /state during boot - which is exactly what a
+            // launcher does - wrote one "Could not find GuiWindow of type 'BattleLoadingWindow'"
+            // error per poll into the game's diagnostics, and the game forwards every Error to
+            // Amplitude's telemetry (measured 2026-08-23, ~207 per session). Once the registry is
+            // filled all three windows exist and the property is silent.
+            if (!gui.GuiWindowsLoaded)
+            {
+                return "booting";
+            }
+
             if (gui.IsInLoadingWindow)
             {
                 return "loading";

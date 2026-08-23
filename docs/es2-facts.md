@@ -2601,3 +2601,56 @@ description, effects, **cost**, upkeep, political impact — which is the mouse 
   marker "out in the open". `QuestMarker.GUID` is its own identity, which is how two markers of two
   quests at one star stay apart. Registering one by hand (`IQuestManagementService.Register` after
   `Load()`) is the only way to see any of this on either fixture — both have ZERO markers.
+
+## The game's own logging, and what it costs the player (2026-08-23, batch 9)
+
+- **`GuiManager.GetWindow(StaticString)` — the BY-NAME lookup — always logs an Error on a miss.**
+  `Amplitude.Unity.Gui/GuiManager.cs:167-175`: there is no `reportError` overload for it, unlike the
+  by-TYPE `GetWindow<T>(bool)` (:155-165). A mod screen that asks "is my window up?" once a tick
+  therefore writes one Error per tick for as long as the registry is filling — measured 208 each for
+  `LoadSaveModalWindow` and `OutGameLoadModalWindow` per session, from `LoadSaveScreen.IsActive`.
+  `GuiManager.GuiWindowsLoaded` (:40, public) is the gate: with it true, all 170 windows are
+  registered (measured in game and at the menu alike). **Mod policy**: by-name lookups go through
+  `GameWindows.Named`, which reads the private `guiWindowsByName` registry; every by-type lookup
+  passes `false`.
+- **Every Error/Exception the game logs is forwarded to Amplitude's telemetry, with its stack.**
+  `PrismGameManager.cs:582-617` (`MessageLoggedEventHandler` → `PrismErrorEvent` → `SendEvent`). So a
+  mod that logs errors through the GAME's logger is not merely noisy: it is uploading, and the
+  `PrismManager.SendEventsCoroutine waited for too long` warnings that accompany a noisy session are
+  those sends backing up. The same messages also land in
+  `Documents\Endless Space 2\Temporary Files\Diagnostics - *.html`, which a per-frame message fills
+  at gigabytes an hour.
+- **Which wrapper constructors log.** `GuiWrapper.Bind` (`GuiWrapper.cs:118-128`) warns only when
+  `EnforceValidGuiElement` is true, and `GuiUnlock` is the ONLY type that overrides it to true — so
+  `GuiPlanet`, `GuiAnomaly`, `GuiCuriosity`, `GuiResource`, `GuiResourceDepositGroup`, `GuiStarSystem`,
+  `GuiProbe`, `GuiTimeBubble`, `GuiFleetGroup` are all silent to construct. What is NOT silent:
+  `GuiQuest` (`:112`, "Could not find a valid QuestGuiElement named …" — the batch-8 hotfix),
+  the BY-NAME overloads of `GuiAnomaly` (`:79`) and `GuiResource` (`:70`) — always pass the
+  DEFINITION — and `Gui.GetTitle`/`Gui.GetDescription` (`Amplitude.Unity.Gui/Gui.cs:254-282`), which
+  warn for a missing element; read `Gui.GetGuiElement(name).Title` instead where the caller can cope
+  with null. `Gui.AssertNotNull` builds a `StackTrace` on null but logs nothing.
+
+## Galaxy content that does NOT depend on the camera (2026-08-23, batch 9)
+
+- **A system's deposit strip is bound at every zoom and FADED at the orbital level.** Measured on
+  Primus: with the camera in on the system, `DepositsMainTable.Visible` is true, its items carry
+  live `GuiResourceDepositGroup` targets and each item's own `Alpha` is 1 — but the enclosing
+  `DepositsMainLine.Alpha` is 0, so `AgeWidgets.Painted` (which walks ancestors) says false and the
+  icons are not on screen. At the systems view level the whole line paints. So `Visible` is NOT the
+  test for "the game is drawing this deposit"; `Painted` is.
+- **The label's dossiers are bound with `MainColonizedStarSystem`, which counts only a full COLONY.**
+  `StarSystemLabel.RebuildColonizedStarSystemsList` (:1623-1650): visibility ≥ 1, `State == Colony`,
+  the last such unless the player's own was already found. An OUTPOST does not count — which is why
+  Heka's star dossier is titled "Heka" and Osulo's "Osulo - Niris" (`GuiStarSystem.Title`). The mod's
+  `VisibleColony` answers a different question (what claim is DRAWN here, outposts included), so a
+  dossier the mod builds itself must use `GalaxyHudScreen.LabelColony`, or the same card reads
+  differently either side of a zoom.
+- **The orbital window's star tooltip and the label's are bound differently.** The label's is
+  `GuiStarSystem.Instantiate(node, MainColonizedStarSystem)`; the one the orbital window parks over
+  the star answers plain "Osulo" where the label's answers "Osulo - Niris". This is the GAME's own
+  inconsistency, older than the mod, and it is why the star card's NAME still changes when the camera
+  comes all the way in.
+- **A planet's circle is drawn at every zoom the system's planets are declared at.** Measured across
+  the whole slider on `[Beginner] test`: `PlanetCirclesTable`'s children keep their `PlanetSimple`
+  tooltips even at the constellation band, so the mod's own carrier for a planet dossier is a
+  fallback that this fixture never reaches.

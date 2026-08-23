@@ -2920,7 +2920,7 @@ namespace ES2Access.Screens
                 NodeSection.Buffer(() => GuardLines(it, empire)),
                 NodeSection.Buffer(() => TimeBubbleLines(it, empire)),
                 NodeSection.Buffer(() => QuestMarkerLines(it, empire)),
-                StarDossier(it, tooltip)
+                StarDossier(it, empire, drawn)
             );
             // What the place IS, where it is not a star system at all. Said first, because it is the
             // thing a sighted player takes in without asking: the map gives a special node a body of
@@ -3058,7 +3058,12 @@ namespace ES2Access.Screens
             {
                 object outer = TooltipChildren.Actions(builder, place);
                 AddInside(builder, place, node, empire, label);
-                TooltipChildren.Emit(builder, place, SystemDossiers(node, label, tooltip), outer);
+                TooltipChildren.Emit(
+                    builder,
+                    place,
+                    SystemDossiers(node, empire, label, tooltip),
+                    outer
+                );
             }
 
             builder.EndGroup();
@@ -3086,6 +3091,7 @@ namespace ES2Access.Screens
         /// </summary>
         private static List<TooltipChildren.Dossier> SystemDossiers(
             StarSystemNode node,
+            Empire empire,
             StarSystemLabel label,
             AgeTooltip onTheLabel
         )
@@ -3094,19 +3100,16 @@ namespace ES2Access.Screens
             try
             {
                 StarSystemNode it = node;
-                AgeTooltip star = OrbitalStarTooltip(node) ?? onTheLabel;
-                AgeTooltip labelStar = onTheLabel;
+                Empire looking = empire;
+                StarSystemLabel drawn = label;
+                AgeTooltip star = StarAim(node, empire, label);
                 TooltipChildren.Add(
                     found,
                     star,
                     star == null ? null : star.AgeTransform,
-                    () => StarDossierLines(it, labelStar)
+                    () => StarDossierLines(it, looking, drawn)
                 );
-                if (label != null)
-                {
-                    AddDeposits(found, label.DepositsMainTable);
-                    AddDeposits(found, label.DepositsSecondaryTable);
-                }
+                AddDeposits(found, node, empire, label);
             }
             catch (Exception e)
             {
@@ -3116,20 +3119,197 @@ namespace ES2Access.Screens
             return found;
         }
 
-        /// <summary>One dossier per deposit item the label is DRAWING - the game names each kind of
-        /// deposit only in the wrapper behind its picture, which is the same place the system's buffer
-        /// takes the deposit lines from (<see cref="SystemLabelReadout"/>).</summary>
-        private static void AddDeposits(List<TooltipChildren.Dossier> found, AgeTransform table)
+        /// <summary>
+        /// One dossier per KIND of deposit in this system's ground, read off the planets rather than
+        /// off the icons the label happens to be drawing.
+        ///
+        /// The label draws its deposit strip only from a close enough camera, so taking the list from
+        /// the strip made a system's deposits reachable at one zoom and gone at another - for content
+        /// the map is not withholding at all (the fog gates are the planets': everything here is under
+        /// <c>MapVisibility.Perceived</c> and the branch's own expansion). The list is built exactly
+        /// as <c>StarSystemLabel.RefreshDepositsLine</c> builds it - every planet's deposits in orbit
+        /// order, deduped by definition name - so the order the player walks is the order the icons
+        /// are drawn in.
+        ///
+        /// The AIM still prefers the game's own icon wherever the game is drawing one (owner ruling
+        /// 2026-08-23), so a sighted player sees the tooltip appear over the deposit it belongs to;
+        /// a carrier of the mod's own stands in only where there is no icon on the screen, and the
+        /// words are the same either way because the tooltip window assembles them from the wrapper.
+        /// A drawn item is matched to the definition it is BOUND to rather than taken by position,
+        /// which is also what stops a stale binding on a culled-out label being read.
+        /// </summary>
+        private static void AddDeposits(
+            List<TooltipChildren.Dossier> found,
+            StarSystemNode node,
+            Empire empire,
+            StarSystemLabel label
+        )
+        {
+            ColonizedStarSystem colony = LabelColony(node, empire);
+            Empire owner = colony == null ? null : colony.Empire;
+            bool drawing = label != null && AgeWidgets.Painted(label.AgeTransform);
+            List<ResourceDepositDefinition> kinds = DepositKinds(node);
+            for (int i = 0; i < kinds.Count; i++)
+            {
+                ResourceDepositDefinition definition = kinds[i];
+                AgeTooltip icon = drawing ? DrawnDeposit(label, definition) : null;
+                AgeTooltip tooltip = icon ?? DepositCarrier(node, definition, owner);
+                TooltipChildren.Add(
+                    found,
+                    tooltip,
+                    tooltip == null ? null : tooltip.AgeTransform
+                );
+            }
+        }
+
+        /// <summary>Every kind of deposit in a system's ground, in the order the label's strip draws
+        /// them: planet by planet, deposit by deposit, one entry per definition NAME
+        /// (<c>StarSystemLabel.RefreshDepositsLine</c>).</summary>
+        private static List<ResourceDepositDefinition> DepositKinds(StarSystemNode node)
+        {
+            List<ResourceDepositDefinition> kinds = new List<ResourceDepositDefinition>(4);
+            try
+            {
+                for (int i = 0; i < node.Planets.Count; i++)
+                {
+                    Planet planet = node.Planets[i];
+                    for (int j = 0; j < planet.ResourceDeposits.Count; j++)
+                    {
+                        ResourceDepositDefinition definition = planet.ResourceDeposits[j].Definition;
+                        if (definition == null || Holds(kinds, definition))
+                        {
+                            continue;
+                        }
+
+                        kinds.Add(definition);
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: listing a system's deposits threw: " + e);
+            }
+
+            return kinds;
+        }
+
+        private static bool Holds(
+            List<ResourceDepositDefinition> kinds,
+            ResourceDepositDefinition definition
+        )
+        {
+            for (int i = 0; i < kinds.Count; i++)
+            {
+                if (kinds[i].Name == definition.Name)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>The label's own icon for one kind of deposit, where it is drawing one. Found by
+        /// what the icon is BOUND to, never by position: an icon the label bound for another system
+        /// and has not refreshed since answers no.</summary>
+        private static AgeTooltip DrawnDeposit(
+            StarSystemLabel label,
+            ResourceDepositDefinition definition
+        )
+        {
+            AgeTooltip found = DrawnDeposit(label.DepositsMainTable, definition);
+            return found ?? DrawnDeposit(label.DepositsSecondaryTable, definition);
+        }
+
+        private static AgeTooltip DrawnDeposit(
+            AgeTransform table,
+            ResourceDepositDefinition definition
+        )
         {
             if (!Visible(table))
             {
-                return;
+                return null;
             }
 
             IList<AgeTransform> items = table.Children;
             for (int i = 0; items != null && i < items.Count; i++)
             {
-                TooltipChildren.Add(found, items[i]);
+                AgeTransform item = items[i];
+                if (!AgeWidgets.Painted(item))
+                {
+                    continue;
+                }
+
+                AgeTooltip tooltip = Raw(item);
+                GuiResourceDepositGroup group =
+                    tooltip == null ? null : tooltip.Target as GuiResourceDepositGroup;
+                if (group != null && group.Definition != null
+                    && group.Definition.Name == definition.Name)
+                {
+                    return tooltip;
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>A carrier of the mod's own bound exactly as <c>StarSystemLabelDepositItem.Bind</c>
+        /// binds the game's icon - the same class, the same wrapper, the same refusal text - so the
+        /// tooltip window assembles the same panel for it.</summary>
+        private static AgeTooltip DepositCarrier(
+            StarSystemNode node,
+            ResourceDepositDefinition definition,
+            Empire owner
+        )
+        {
+            try
+            {
+                AgeTooltip carrier;
+                bool rebind = ScratchTooltips.Rebind(
+                    "deposit/" + node.GUID + "/" + definition.Name,
+                    DossierStamp(owner),
+                    out carrier
+                );
+                if (rebind && carrier != null)
+                {
+                    GuiResourceDepositGroup group = new GuiResourceDepositGroup(
+                        node,
+                        definition,
+                        owner
+                    );
+                    List<FailureInfo> refusals = new List<FailureInfo>();
+                    group.IsExploited(PlayerEmpire(), refusals);
+                    carrier.Class = group.TooltipClass;
+                    carrier.Content = Gui.FormatFailureInfos(refusals);
+                    carrier.Context = null;
+                    carrier.Target = group;
+                }
+
+                return carrier;
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: binding a deposit dossier threw: " + e);
+                return null;
+            }
+        }
+
+        /// <summary>What a dossier built from the simulation depends on: the turn it was read in and
+        /// whose empire it was read for. Everything a deposit group or a star system counts - what is
+        /// exploited, what the empire may exploit at all, who lives there - settles at the turn's end,
+        /// and rebinding a carrier more often than that would restart the tooltip's own countdown
+        /// every frame and it would never finish appearing.</summary>
+        private static long DossierStamp(Empire owner)
+        {
+            try
+            {
+                Game game = Gui.Game;
+                long stamp = game == null ? 0L : game.Turn * 1000003L;
+                return (stamp * 31L) + (owner == null ? 0L : owner.Index + 1L);
+            }
+            catch (Exception)
+            {
+                return 0L;
             }
         }
 
@@ -3356,6 +3536,41 @@ namespace ES2Access.Screens
                 }
 
                 if (found == null)
+                {
+                    found = colony;
+                }
+            }
+
+            return found;
+        }
+
+        /// <summary>
+        /// The colony a system's map LABEL binds its dossiers with -
+        /// <c>StarSystemLabel.RebuildColonizedStarSystemsList</c>'s <c>MainColonizedStarSystem</c>,
+        /// replicated so that a dossier the mod builds itself is named the way the label's is.
+        ///
+        /// Not <see cref="VisibleColony"/>: that one answers "what claim is drawn here" and counts an
+        /// OUTPOST, while the label counts only a full colony - which is why Heka's dossier is called
+        /// "Heka" and Osulo's "Osulo - Niris". Reading the wrong one made the same card read
+        /// differently either side of a zoom, which is exactly what sourcing from data is for.
+        /// </summary>
+        private static ColonizedStarSystem LabelColony(StarSystemNode node, Empire empire)
+        {
+            IColonizedStarSystemRepositoryService colonies =
+                Amplitude.Unity.Framework.Services.GetService<IColonizedStarSystemRepositoryService>();
+            if (colonies == null)
+            {
+                return null;
+            }
+
+            ColonizedStarSystem found = null;
+            foreach (ColonizedStarSystem colony in colonies.GetValues(node.NodePosition))
+            {
+                if (
+                    (int)colony.Visibility[empire] >= 1
+                    && (found == null || !ReferenceEquals(found.Empire, empire))
+                    && colony.State == StarSystemState.Colony
+                )
                 {
                     found = colony;
                 }
@@ -4204,7 +4419,7 @@ namespace ES2Access.Screens
                         // the card's own click - the planet's page - and nothing else, because
                         // everything else the old menu held is now drawn where the game draws it.
                         List<CardActions.CardAction> actions = OrbitalActions(card);
-                        NodeVtable readout = OrbitalReadout(card, system);
+                        NodeVtable readout = OrbitalReadout(card, system, looking);
                         if (actions.Count == 0)
                         {
                             builder.AddItem(id, readout);
@@ -4222,18 +4437,43 @@ namespace ES2Access.Screens
                         continue;
                     }
 
+                    // No card is drawn: the camera is not in on this system. The world is still the
+                    // same world, so it reads the same things the card would say - what it is called,
+                    // how big and what kind, what the game says about settling it, and how many
+                    // curiosities are waiting in orbit - taken from the planet rather than from a
+                    // widget that is not on the screen (owner ruling 2026-08-23). What could be DONE
+                    // to it stays where the game draws it, so this is a leaf.
+                    //
                     // The circle is what the player would hover to get the planet's panel; without one
-                    // the planet is still on the map, just with nothing to show under the pointer.
+                    // the pointer goes to a carrier of the mod's, which is what makes the dossier
+                    // readable with the camera anywhere (<see cref="PlanetCarrier"/>).
                     AgeTransform circle = Circle(table, i);
-                    NodeVtable vtable = GraphNodes.Readout(
-                        () => PlanetName(system, planet, looking),
-                        () => PlanetStatus(system, planet, looking),
-                        null,
-                        Raw(circle)
-                    );
+                    AgeTooltip onTheCircle = Raw(circle);
+                    AgeTooltip dossier = AgeWidgets.Draws(onTheCircle)
+                        ? onTheCircle
+                        : PlanetCarrier(system, planet, i, looking);
+                    NodeVtable vtable = new NodeVtable
+                    {
+                        Announcements = new List<NodeAnnouncement>
+                        {
+                            GraphNodes.LabelPart(() => PlanetName(system, planet, looking)),
+                            GraphNodes.ValuePart(() => PlanetSizeAndType(system, planet, looking)),
+                            GraphNodes.ValuePart(() => PlanetStatus(system, planet, looking)),
+                            GraphNodes.ValuePart(() => CuriosityCount(planet, looking)),
+                            GraphNodes.ValuePart(() => MiningProbes.Line(planet), false),
+                        },
+                        Sections = GraphNodes.Sections(
+                            NodeSection.Buffer(() => AnomalyLines(system, planet, looking)),
+                            GraphNodes.TooltipSection(dossier)
+                        ),
+                    };
                     if (circle != null)
                     {
                         PointAt(vtable, circle);
+                    }
+                    else if (dossier != null)
+                    {
+                        AgeWidgets.PointAt(vtable, dossier.AgeTransform);
                     }
 
                     builder.AddItem(id, vtable);
@@ -4312,28 +4552,113 @@ namespace ES2Access.Screens
         /// LABEL says - what it is building, what is in the ground - and nothing about the system
         /// itself, while the picture on screen showed the dossier the whole time.
         /// </summary>
-        private static NodeSection StarDossier(StarSystemNode node, AgeTooltip label)
+        private static NodeSection StarDossier(
+            StarSystemNode node,
+            Empire empire,
+            StarSystemLabel label
+        )
         {
-            AgeTooltip either = OrbitalStarTooltip(node) ?? label;
+            AgeTooltip either = StarAim(node, empire, label);
             if (either == null)
             {
                 return null;
             }
 
             StarSystemNode it = node;
-            AgeTooltip onTheLabel = label;
+            Empire looking = empire;
+            StarSystemLabel drawn = label;
             return new NodeSection(
-                () => StarDossierLines(it, onTheLabel),
+                () => StarDossierLines(it, looking, drawn),
                 GraphNodes.ModeFor(either)
             );
         }
 
-        /// <summary>Whichever of a system's two star tooltips the game is drawing. One at most can be up,
-        /// so the first of them with anything to say is the one on the screen.</summary>
-        private static IList<string> StarDossierLines(StarSystemNode node, AgeTooltip label)
+        /// <summary>
+        /// Which of a system's star dossiers the pointer is put on: the one the orbital window parks
+        /// over the star once the camera is in, else the one on the label while the map is drawing the
+        /// label, else a carrier of the mod's own bound the way the label binds its
+        /// (<c>StarSystemLabel.BindLabelTooltip</c>).
+        ///
+        /// The third case is what makes a system OFF the screen still readable - the label is culled
+        /// and its binding is stale, and reading a stale binding is how a system came to describe the
+        /// last place its pooled label was pointed at.
+        /// </summary>
+        private static AgeTooltip StarAim(
+            StarSystemNode node,
+            Empire empire,
+            StarSystemLabel label
+        )
+        {
+            AgeTooltip orbital = OrbitalStarTooltip(node);
+            if (orbital != null)
+            {
+                return orbital;
+            }
+
+            AgeTooltip onTheLabel = label == null ? null : label.StarTooltip;
+            if (
+                onTheLabel != null
+                && AgeWidgets.Painted(label.AgeTransform)
+                && AgeWidgets.Draws(onTheLabel)
+            )
+            {
+                return onTheLabel;
+            }
+
+            return StarCarrier(node, empire);
+        }
+
+        /// <summary>Whichever of a system's star tooltips the game is drawing. One at most can be up,
+        /// so the first of them with anything to say is the one on the screen - and the mod's own
+        /// carrier is asked last, because it is the one nothing else would have drawn.</summary>
+        private static IList<string> StarDossierLines(
+            StarSystemNode node,
+            Empire empire,
+            StarSystemLabel label
+        )
         {
             IList<string> words = TooltipWords(OrbitalStarTooltip(node));
-            return words != null && words.Count > 0 ? words : TooltipWords(label);
+            if (words != null && words.Count > 0)
+            {
+                return words;
+            }
+
+            words = TooltipWords(label == null ? null : label.StarTooltip);
+            return words != null && words.Count > 0
+                ? words
+                : TooltipWords(StarCarrier(node, empire));
+        }
+
+        /// <summary>The system's own stat block on a carrier of the mod's, bound exactly as
+        /// <c>StarSystemLabel.BindLabelTooltip</c> binds the label's: the same class, the same wrapper
+        /// as both target AND context, the same content string.</summary>
+        private static AgeTooltip StarCarrier(StarSystemNode node, Empire empire)
+        {
+            try
+            {
+                ColonizedStarSystem colony = LabelColony(node, empire);
+                AgeTooltip carrier;
+                bool rebind = ScratchTooltips.Rebind(
+                    "star/" + node.GUID,
+                    DossierStamp(colony == null ? null : colony.Empire),
+                    out carrier
+                );
+                if (rebind && carrier != null)
+                {
+                    GuiStarSystem gui = GuiStarSystem.Instantiate(node, colony);
+                    carrier.Class = gui.TooltipClass;
+                    carrier.Content = gui.TooltipContent;
+                    carrier.Context = gui;
+                    carrier.Target = gui;
+                }
+
+                return carrier;
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: binding a system's own dossier threw: " + e);
+                return null;
+            }
         }
 
         private static IList<string> TooltipWords(AgeTooltip tooltip)
@@ -4395,10 +4720,13 @@ namespace ES2Access.Screens
         /// </summary>
         private static NodeVtable OrbitalReadout(
             PlanetLabel_SystemOrbital card,
-            StarSystemNode system
+            StarSystemNode system,
+            Empire empire
         )
         {
             PlanetLabel_SystemOrbital it = card;
+            StarSystemNode place = system;
+            Empire looking = empire;
             AgeTooltip dossier = it.PlanetInfoTooltip;
             NodeVtable vtable = new NodeVtable
             {
@@ -4408,7 +4736,7 @@ namespace ES2Access.Screens
                     GraphNodes.ValuePart(() => AgeText.Label(it.PlanetSizeAndType)),
                     GraphNodes.ValuePart(() => AgeText.Label(it.ColonizeStatus)),
                     GraphNodes.ValuePart(() => OutpostTimer(it)),
-                    GraphNodes.ValuePart(() => CuriosityCount(it)),
+                    GraphNodes.ValuePart(() => CuriosityCount(it.Planet, looking)),
                     // A mining probe is a thing somebody has DONE to this planet, and the game keeps
                     // it in the dossier where only a hover finds it. Said on the row so that a rival
                     // staking a world in your own system is heard while walking past it.
@@ -4420,7 +4748,7 @@ namespace ES2Access.Screens
             // world of this kind, its size, its type. The dossier is the long panel behind the card,
             // so the readout indicates it and the buffer is where it is read.
             vtable.Sections = GraphNodes.Sections(
-                NodeSection.Buffer(() => OrbitalDetails(it)),
+                NodeSection.Buffer(() => OrbitalDetails(it, place, looking)),
                 // The timer says a number and nothing else; the sentence the game explains it with is
                 // reviewable rather than spoken, because the card already speaks the number and
                 // hearing the paragraph again on every pass is what a buffer exists to avoid.
@@ -4505,14 +4833,18 @@ namespace ES2Access.Screens
         /// game is refusing on, which is a child node of this card and carries it in the game's own
         /// words.
         /// </summary>
-        private static IList<string> OrbitalDetails(PlanetLabel_SystemOrbital card)
+        private static IList<string> OrbitalDetails(
+            PlanetLabel_SystemOrbital card,
+            StarSystemNode system,
+            Empire empire
+        )
         {
             List<string> lines = new List<string>();
             try
             {
                 AddDecay(lines, card);
                 AddFidsi(lines, card);
-                AddAnomalies(lines, card);
+                AddAnomalies(lines, card, system, empire);
                 // The curiosities are NOT read here: each one is a button of the card's and is a child
                 // node of its own (<see cref="AddCuriosities"/>). They were a line here only while the
                 // line was silent - the items draw no words - and naming them off their wrappers would
@@ -4567,30 +4899,58 @@ namespace ES2Access.Screens
         /// with no words on it at all, so the names come from the game's own wrapper for the same
         /// anomaly - the one whose title it writes wherever it does have room. Only while the card is
         /// drawing the row: the planet knows its anomalies whether or not they are on screen.</summary>
-        private static void AddAnomalies(List<string> lines, PlanetLabel_SystemOrbital card)
+        private static void AddAnomalies(
+            List<string> lines,
+            PlanetLabel_SystemOrbital card,
+            StarSystemNode system,
+            Empire empire
+        )
+        {
+            IList<string> found = AnomalyLines(system, card.Planet, empire);
+            for (int i = 0; found != null && i < found.Count; i++)
+            {
+                AddLine(lines, found[i]);
+            }
+        }
+
+        /// <summary>
+        /// What has been found on a world, from the planet rather than from the card.
+        ///
+        /// The card draws the row only when the camera is in on the system, so gating on the row left
+        /// a planet's anomalies readable at one zoom and gone at another. The gate that has to stay is
+        /// the FOG's: a system nobody has surveyed shows grey unknowns, and the card hides this row
+        /// for exactly that reason (<c>PlanetLabel_SystemOrbital.RefreshAsUnrevealedNode</c>) - which
+        /// is the same threshold the scanner asks (<see cref="Surveyed"/>).
+        /// </summary>
+        private static IList<string> AnomalyLines(
+            StarSystemNode system,
+            Planet planet,
+            Empire empire
+        )
         {
             try
             {
-                Planet planet = card.Planet;
-                if (planet == null || !Visible(card.PlanetAnomaliesTable))
+                if (planet == null || !Surveyed(system, empire))
                 {
-                    return;
+                    return null;
                 }
 
+                List<string> lines = new List<string>(planet.Anomalies.Count);
                 for (int i = 0; i < planet.Anomalies.Count; i++)
                 {
                     Anomaly anomaly = planet.Anomalies[i];
                     AddLine(
                         lines,
-                        AgeText.Clean(
-                            new GuiAnomaly(anomaly.AnomalyDefinition, planet).Title
-                        )
+                        AgeText.Clean(new GuiAnomaly(anomaly.AnomalyDefinition, planet).Title)
                     );
                 }
+
+                return lines;
             }
             catch (Exception e)
             {
                 Log.Warn("galaxy: reading a planet's anomalies threw: " + e);
+                return null;
             }
         }
 
@@ -4735,30 +5095,25 @@ namespace ES2Access.Screens
         }
 
         /// <summary>
-        /// How many curiosities the card is drawing, said on the card's own line so that finding one
-        /// does not mean opening every planet on the map.
+        /// How many curiosities are still standing in orbit, said on the planet's own line so that
+        /// finding one does not mean opening every planet on the map.
         ///
-        /// PAINTED is the test, and it has to be: the table pools its items and retires a surplus one
-        /// by fading it to nothing rather than hiding it, so a card that had two curiosities and has
-        /// one left still holds two children the engine calls visible - the same test the game's own
-        /// <c>GetVisibleChildrenCount</c> applies, and the same one the buttons themselves are gated
-        /// on, so the count and the children can never disagree.
+        /// Counted from the PLANET, not from the ring of icons: the ring is only drawn once the camera
+        /// is in on the system, so a count taken off it told the player about a world at one zoom and
+        /// nothing at another. The question the count asks is exactly the one the game asks when it
+        /// fills the ring (<c>GuiPlanet.GetRemainingCuriosities</c>: every curiosity this empire's
+        /// detection lets it SEE), so the number and the buttons agree - and where they briefly do
+        /// not, it is because the pooled ring has not caught up with the planet yet.
         /// </summary>
-        private static string CuriosityCount(PlanetLabel_SystemOrbital card)
+        private static string CuriosityCount(Planet planet, Empire empire)
         {
             try
             {
-                AgeTransform table = card.PlanetCuriositiesTable;
-                if (table == null || !Visible(table))
-                {
-                    return null;
-                }
-
-                IList<AgeTransform> items = table.Children;
                 int count = 0;
-                for (int i = 0; items != null && i < items.Count; i++)
+                for (int i = 0; planet != null && i < planet.Curiosities.Count; i++)
                 {
-                    if (AgeWidgets.Painted(items[i]))
+                    Curiosity curiosity = planet.Curiosities[i];
+                    if (curiosity != null && curiosity.CanBeSeen(empire))
                     {
                         count++;
                     }
@@ -4774,6 +5129,96 @@ namespace ES2Access.Screens
             }
             catch (Exception)
             {
+                return null;
+            }
+        }
+
+        /// <summary>How big a world is and what kind it is, in the game's own template - the second
+        /// line the orbital card writes (<c>PlanetLabel_SystemOrbital.RefreshPlanetInformation</c>),
+        /// said here for a planet whose card is not drawn. An unsurveyed system's planets keep the
+        /// game's own "unknown" word for the type, the way the card does.</summary>
+        private static string PlanetSizeAndType(
+            StarSystemNode system,
+            Planet planet,
+            Empire empire
+        )
+        {
+            try
+            {
+                string size = ElementTitle(planet.Size);
+                string type = Surveyed(system, empire)
+                    ? ElementTitle(planet.Type)
+                    : Gui.Localize("%PlanetTypeUnknownTitle");
+                return string.IsNullOrEmpty(size) || string.IsNullOrEmpty(type)
+                    ? null
+                    : AgeText.Clean(Gui.Localize("%PlaneSizeAndTypeFormat", size, type));
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>A gui element's title without the engine's "cannot find" warning: <c>Gui.GetTitle</c>
+        /// logs one for a missing element and the game forwards its logs to telemetry, which is not a
+        /// price a readout should pay for asking.</summary>
+        private static string ElementTitle(StaticString name)
+        {
+            try
+            {
+                Amplitude.Unity.Gui.GuiElement element = Gui.GetGuiElement(name);
+                return element == null || string.IsNullOrEmpty(element.Title)
+                    ? null
+                    : Gui.Localize(element.Title);
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>The planet's own dossier on a carrier of the mod's, bound exactly as the orbital
+        /// card binds <c>PlanetInfoTooltip</c>: the renderer's "Planet" panel over a
+        /// <c>GuiPlanet</c> where the system has been surveyed, and the game's own plain "unknown"
+        /// sentence where it has not.</summary>
+        private static AgeTooltip PlanetCarrier(
+            StarSystemNode system,
+            Planet planet,
+            int orbit,
+            Empire empire
+        )
+        {
+            try
+            {
+                bool surveyed = Surveyed(system, empire);
+                AgeTooltip carrier;
+                bool rebind = ScratchTooltips.Rebind(
+                    "planet/" + system.GUID + "/" + orbit,
+                    (DossierStamp(empire) * 31L) + (surveyed ? 1L : 0L),
+                    out carrier
+                );
+                if (rebind && carrier != null)
+                {
+                    carrier.Context = null;
+                    if (surveyed)
+                    {
+                        carrier.Class = "Planet";
+                        carrier.Content = string.Empty;
+                        carrier.Target = new GuiPlanet(planet);
+                    }
+                    else
+                    {
+                        carrier.Class = string.Empty;
+                        carrier.Content = "%PlanetStatusUnknownDescription";
+                        carrier.Target = null;
+                    }
+                }
+
+                return carrier;
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: binding a planet's dossier threw: " + e);
                 return null;
             }
         }

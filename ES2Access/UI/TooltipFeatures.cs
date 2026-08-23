@@ -554,11 +554,18 @@ namespace ES2Access.UI
                         continue;
                     }
 
-                    NameAs(
+                    // Joined with a COLON, not with the space every other captioned figure takes
+                    // (owner ruling 2026-08-23): both halves are whole phrases the game wrote for
+                    // itself - "Flotilla 1" and "Short Range" - and run together with a space they
+                    // read as one name for one thing rather than as a row and its value. The
+                    // connective is the translator's (<see cref="ModStrings.TooltipCaptionedColon"/>).
+                    NameText(
                         named,
                         label,
-                        Localized(FlotillaNameKey, flotilla + 1),
-                        Localized(FlotillaRangeKey, drawn)
+                        Joined(
+                            Localized(FlotillaNameKey, flotilla + 1),
+                            Localized(FlotillaRangeKey, drawn)
+                        )
                     );
                 }
             }
@@ -780,6 +787,32 @@ namespace ES2Access.UI
             }
 
             named[label.AgeTransform] = new Naming { Text = TooltipText.Captioned(title, value) };
+        }
+
+        /// <summary>Two whole phrases as the one line the reader hands over, joined by the
+        /// translator's colon connective. Null where either half is missing, so a row the game left
+        /// half-drawn goes on reading as whatever it drew.</summary>
+        private static string Joined(string caption, string value)
+        {
+            return string.IsNullOrEmpty(caption) || string.IsNullOrEmpty(value)
+                ? null
+                : ModStrings.Format(ModStrings.TooltipCaptionedColon, caption.Trim(), value.Trim());
+        }
+
+        /// <summary>The same substitution as <see cref="NameAs"/> for a caller that has already
+        /// composed the line.</summary>
+        private static void NameText(
+            Dictionary<AgeTransform, Naming> named,
+            AgePrimitiveLabel label,
+            string text
+        )
+        {
+            if (label == null || string.IsNullOrEmpty(text))
+            {
+                return;
+            }
+
+            named[label.AgeTransform] = new Naming { Text = text };
         }
 
         private static void Name(

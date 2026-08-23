@@ -94,7 +94,9 @@ namespace ES2Access.UI
             {
                 Turn = CurrentTurn();
                 guiElement = Gui.GetExtendedGuiElement(BorrowedElement);
-                NotificationWindow = Gui.GuiService.GetWindow<InformationNotificationWindow>();
+                // The quiet overload: the engine LOGS an error when a window is not registered yet, and
+                // the game forwards every Error to its telemetry (es2-facts).
+                NotificationWindow = Gui.GuiService.GetWindow<InformationNotificationWindow>(false);
             }
             catch (Exception e)
             {

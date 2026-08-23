@@ -44,6 +44,36 @@ namespace ES2Access.Core.UI
         /// <summary>A special node - a nebula, a black hole, an asteroid field.</summary>
         public const int Special = 6;
 
+        /// <summary>
+        /// A curiosity's two questions beyond WHAT it is (owner ruling 2026-08-23), laid over the
+        /// kind columns the way the affiliation trio is laid over a system's.
+        ///
+        /// EXPLORABLE is the game's own <c>CanBeSearched</c> asked of the empire; LOW POWER is the
+        /// one refusal a player can do something about - the empire's expedition power is below the
+        /// curiosity's difficulty, which is what the card draws a padlock for. A curiosity refused
+        /// for any other reason is in neither, and is still in "all".
+        ///
+        /// The bit NUMBERS are shared with the affiliation trio on purpose: a set of scopes only ever
+        /// means anything inside its own category, and giving each taxonomy its own numbering would
+        /// make the sets impossible to compare with the column indexes they stand for.
+        /// </summary>
+        public const int Explorable = 1;
+        public const int LowExpeditionPower = 2;
+        public const int CuriosityWidth = 3;
+
+        /// <summary>A curiosity's memberships: always "all", plus whichever of the two it answers.
+        /// </summary>
+        public static int Curiosity(bool explorable, bool lowPower)
+        {
+            int scopes = Bit(All);
+            if (explorable)
+            {
+                scopes |= Bit(Explorable);
+            }
+
+            return lowPower ? scopes | Bit(LowExpeditionPower) : scopes;
+        }
+
         /// <summary>How many subcategories a category has that splits by affiliation and nothing
         /// else (fleets, probes).</summary>
         public const int AffiliationWidth = 4;

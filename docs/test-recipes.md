@@ -2471,10 +2471,12 @@ one fully-open build is `ES2Access.UI.GraphNavigator.SearchBuildMs` / `SearchBui
 131 nodes on the galaxy at turn 21). To see the whole enumeration a search is looking through,
 build it by hand from `/eval`: `new GraphBuilder(new HashSet<ControlId>())` with `ExpandAll = true`,
 `screen.Build(b)`, `screen.BuildShared(b)`, then walk `render.Order` printing
-`SearchScope.TextFor(node)`. **Fixture limit:** "antimatter" is NOT findable on the galaxy at turn
-21 — a system's map label carries exactly one dossier (`…/tooltip/0`, the star's) at every camera
-this fixture reaches, so the deposit cards the design mentions are not declared for the search to
-find. Nothing to fix in the search; it needs a save where the label draws deposit icons.
+`SearchScope.TextFor(node)`. **Corrected 2026-08-23 (batch 9):** "antimatter" IS findable now — a
+system's deposit dossiers come from `node.Planets[*].ResourceDeposits`, not from the icons the label
+happens to be drawing, so every deposit system carries one card per kind at every camera. Measured
+across the whole slider on `[Beginner] test`: `hyperium` 2, `titanium` 2, `transvine` 2,
+`dustcid` 4, `antimatter` 1 — eleven cards over the six deposit systems (Osulo, Qarius, Ita, Heka,
+Primus, Leo), identical with the camera out over the galaxy and with it in on Dusay's orbital view.
 
 **The star-system page's name and its page turn.** Entering (`to-system.cs`) announces
 "Dusay, System management" once and seats on `system:planet/…`. `POST /input ui.pageNext` then
@@ -2508,3 +2510,25 @@ the landing announced 394 ms after the key release ("Libra, -11, 11, group, No o
 step): "Libra II, Tiny Boreal, Binary Moons, Ruins, max population 6, Food 6, Dust 3, Science 5,
 -11, 11, here, 1 of 7" — short resource names, and a resource the world does not make is simply
 absent (Libra II has no Industry or Influence line).
+
+**The scanner's Curiosities columns (batch 9, 2026-08-23).** `Ctrl+PageDown` five times from the map
+stop reaches **Curiosities**; `Shift+PageDown` then steps "all" (16) → **Explorable** (6) →
+**Insufficient Expedition Power** (10) → one column per kind (Atmospheric 1, Life Form 6, Ruins 4,
+Signal 2, …). The two named columns are `Curiosity.CanBeSearched(empire, null, failures)` and the
+`EmpireExpeditionPowerTooLow` failure it records; on `[Beginner] test` at turn 21 they partition the
+whole category, so a curiosity in NEITHER (one already being expedited, or quest-locked) is
+fixture-blocked. The kind columns count fewer than "all" because a kind is counted once per PLANET.
+
+**Deposit dossiers across the zoom (batch 9, 2026-08-23).** The evidence pair for a mod-owned
+tooltip carrier: `POST /type "antim"` from the map stop, then
+`Gui.GuiService.GetWindow<GuiTooltipWindow>(false).AgeTooltip.AgeTransform.gameObject.name` says
+which widget is drawing it — `LuxuryItem_1` (the label's own icon) at the systems view level,
+`Dossier deposit/543/StrategicDeposit4` (the carrier) once the camera is in on the system and the
+deposit LINE has faded to alpha 0. `/gui/graph?buffers=1` of the focused card is byte-identical in
+both states (8 lines, the refusal "Missing technology Extreme Atmospherics" included).
+
+**Type-ahead stepping closes what it opened (batch 9, 2026-08-23).** On the galaxy with nothing
+expanded, `POST /type "dustcid"` (4 results in 4 systems) then `ui.down` three times: exactly ONE
+system is expanded at each step — the one the cursor is in — and `ui.back` ("Search cleared") leaves
+the LAST one open. A branch the player expanded before typing is never closed: expand Dusay by hand
+first and it is still open after the search has walked past it.

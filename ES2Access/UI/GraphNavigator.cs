@@ -1674,6 +1674,9 @@ namespace ES2Access.UI
             // Dropped first and unconditionally: a screen that offered nothing to search built a scope
             // all the same, and a kept empty one would never be asked for again.
             _searchScope = null;
+            // Forgotten, not closed: where the search LEFT the player is where they are, and shutting
+            // the branch under them on the way out would take the cursor's own surroundings away.
+            _searchOpened.Clear();
 
             // Asked every frame by the tick, so the usual answer - there was no search - costs a
             // pair of flag reads.
@@ -1846,6 +1849,14 @@ namespace ES2Access.UI
                 }
             }
 
+            // Everything the LAST landing opened and this one is not inside goes shut again (owner
+            // ruling 2026-08-23). Walking a search past a near-miss used to leave that branch hanging
+            // open behind the cursor, so a search of half a dozen results left half a dozen systems
+            // opened up that the player never asked for. Only what the SEARCH opened is closed - a
+            // branch the player had open before typing is not the search's to touch - and the branch
+            // the search finishes in stays open, because that is where the player has been left.
+            CloseOpenedExcept(branches);
+
             GraphRender standing = _graph == null ? null : _graph.Current;
             for (int i = branches.Count - 1; i >= 0; i--)
             {
@@ -1864,9 +1875,62 @@ namespace ES2Access.UI
                 {
                     _state.Expanded.Add(branch.Id);
                 }
+
+                _searchOpened.Add(branch);
             }
 
             return node.Id;
+        }
+
+        // The branches THIS search opened, outermost first, in the order they were opened. Emptied
+        // when the search ends without closing anything: the last landing's branch is where the
+        // player is standing.
+        private readonly List<GraphNode> _searchOpened = new List<GraphNode>();
+
+        /// <summary>Shut every branch this search opened that the new landing is not inside, innermost
+        /// first - the way a player closing them by hand would. A branch whose expansion is the
+        /// screen's own business is closed through its handler, exactly as the tree keys close it.
+        /// </summary>
+        private void CloseOpenedExcept(List<GraphNode> keep)
+        {
+            for (int i = _searchOpened.Count - 1; i >= 0; i--)
+            {
+                GraphNode opened = _searchOpened[i];
+                if (Holds(keep, opened.Id))
+                {
+                    continue;
+                }
+
+                _searchOpened.RemoveAt(i);
+                try
+                {
+                    if (opened.Vtable.OnCollapse != null)
+                    {
+                        opened.Vtable.OnCollapse();
+                    }
+                    else
+                    {
+                        _state.Expanded.Remove(opened.Id);
+                    }
+                }
+                catch (Exception e)
+                {
+                    Log.Warn("nav: closing a branch the search opened threw: " + e);
+                }
+            }
+        }
+
+        private static bool Holds(List<GraphNode> branches, ControlId id)
+        {
+            for (int i = 0; i < branches.Count; i++)
+            {
+                if (branches[i].Id != null && branches[i].Id.Equals(id))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         // A result landing: focus it, keep the column the search started in, and read it out at

@@ -78,6 +78,13 @@ namespace ES2Access.Core.Speech
         /// than a block on the screen.</summary>
         public const string NodeTooltipsRegion = "node.tooltips-region";
 
+        /// <summary>A caption and the figure under it read as one phrase, joined by a colon
+        /// ("Flotilla 1: Short Range"). For a tooltip row whose caption is not drawn beside the
+        /// figure but supplied by a typed reader from two of the game's own templates: with a bare
+        /// space the two run together as if the caption were part of the value. A connective, so the
+        /// translator owns the punctuation.</summary>
+        public const string TooltipCaptionedColon = "tooltip.captioned-colon";
+
         // Typing letters on a screen searches what is on it. Both are whole phrases: the text the
         // player typed is quoted inside the sentence, so a language that frames a quotation
         // differently has somewhere to do it.
@@ -548,6 +555,17 @@ namespace ES2Access.Core.Speech
         public const string GalaxyScannerAnomaliesAll = "galaxy.scanner.anomalies-all";
         public const string GalaxyScannerCuriosities = "galaxy.scanner.curiosities";
         public const string GalaxyScannerCuriositiesAll = "galaxy.scanner.curiosities-all";
+
+        /// <summary>The two questions asked of a curiosity beyond what KIND it is (owner ruling
+        /// 2026-08-23): whether an expedition could be sent to it at all, and whether the one thing
+        /// stopping that is the empire's expedition power - the refusal the card draws a padlock for
+        /// (<c>PlanetCuriosityItem.ShowLockIfNeeded</c>). The game keeps no TITLE for either: the
+        /// failure it writes is a whole sentence (<c>%FailureEmpireExpeditionPowerTooLowDescription</c>)
+        /// and there is no matching Title key, so the column names are the mod's own.</summary>
+        public const string GalaxyScannerCuriositiesExplorable =
+            "galaxy.scanner.curiosities-explorable";
+        public const string GalaxyScannerCuriositiesLowPower =
+            "galaxy.scanner.curiosities-low-power";
         public const string GalaxyScannerLuxury = "galaxy.scanner.luxury";
         public const string GalaxyScannerLuxuryAll = "galaxy.scanner.luxury-all";
         public const string GalaxyScannerStrategic = "galaxy.scanner.strategic";
@@ -1495,6 +1513,7 @@ namespace ES2Access.Core.Speech
             { NavNoDetails, "Nothing in here" },
             { NavTable, "table" },
             { NodeTooltipsRegion, "Tooltips" },
+            { TooltipCaptionedColon, "{0}: {1}" },
             { SearchNoMatch, "No match for {0}" },
             { SearchCleared, "Search cleared" },
             { NavKeyBindingSecondary, "secondary {0}" },
@@ -1697,6 +1716,8 @@ namespace ES2Access.Core.Speech
             { GalaxyScannerAnomaliesAll, "all" },
             { GalaxyScannerCuriosities, "Curiosities" },
             { GalaxyScannerCuriositiesAll, "all" },
+            { GalaxyScannerCuriositiesExplorable, "Explorable" },
+            { GalaxyScannerCuriositiesLowPower, "Insufficient Expedition Power" },
             { GalaxyScannerLuxury, "Luxury Resources" },
             { GalaxyScannerLuxuryAll, "all" },
             { GalaxyScannerStrategic, "Strategic Resources" },

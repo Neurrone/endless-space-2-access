@@ -400,7 +400,10 @@ namespace ES2Access.Screens
         /// column per KIND found out there.</summary>
         private static bool Holds(Found found, int category, int subcategory, string[] labels)
         {
-            if (!Kinds(category))
+            // The columns a category writes down for itself come first and are memberships; the ones
+            // built from what was found come after them and are kinds. Most categories write down one
+            // ("all"); the curiosities write down three.
+            if (!Kinds(category) || subcategory < ScopeKeys[category].Length)
             {
                 return ScannerScopes.Holds(found.Scopes, subcategory);
             }
@@ -688,7 +691,17 @@ namespace ES2Access.Screens
             },
             new string[] { ModStrings.GalaxyScannerUnexploredAll },
             new string[] { ModStrings.GalaxyScannerAnomaliesAll },
-            new string[] { ModStrings.GalaxyScannerCuriositiesAll },
+            // Curiosities are the one KINDS category with fixed columns in front of the kinds (owner
+            // ruling 2026-08-23): what an expedition could actually be sent to, and what is only out
+            // of reach because the empire's expedition power is too low - the refusal the card draws
+            // a padlock for. Both are asked of the game (<c>Curiosity.CanBeSearched</c> and the
+            // failure it records), never re-derived here.
+            new string[]
+            {
+                ModStrings.GalaxyScannerCuriositiesAll,
+                ModStrings.GalaxyScannerCuriositiesExplorable,
+                ModStrings.GalaxyScannerCuriositiesLowPower,
+            },
             new string[] { ModStrings.GalaxyScannerLuxuryAll },
             new string[] { ModStrings.GalaxyScannerStrategicAll },
             new string[] { ModStrings.GalaxyScannerContestedInfluenceAll },
@@ -749,11 +762,18 @@ namespace ES2Access.Screens
                 }
 
                 kinds.Sort(StringComparer.CurrentCulture);
-                string[] names = new string[kinds.Count + 1];
-                names[0] = ModStrings.Get(keys[0]);
+                // The category's OWN columns first, in the order they are written down, then one per
+                // kind found. Most of these categories have exactly one written down ("all"); the
+                // curiosities have three.
+                string[] names = new string[kinds.Count + keys.Length];
+                for (int i = 0; i < keys.Length; i++)
+                {
+                    names[i] = ModStrings.Get(keys[i]);
+                }
+
                 for (int i = 0; i < kinds.Count; i++)
                 {
-                    names[i + 1] = kinds[i];
+                    names[keys.Length + i] = kinds[i];
                 }
 
                 labels[at] = names;
@@ -1299,6 +1319,7 @@ namespace ES2Access.Screens
         )
         {
             List<string> seen = new List<string>();
+            List<FailureInfo> refusals = new List<FailureInfo>();
             for (int i = 0; i < planet.Curiosities.Count; i++)
             {
                 Curiosity curiosity = planet.Curiosities[i];
@@ -1308,11 +1329,44 @@ namespace ES2Access.Screens
                 }
 
                 string kind = CuriosityTitle(curiosity, titles);
-                if (Once(seen, kind))
+                if (!Once(seen, kind))
                 {
-                    found.Add(OnPlanet(node, planet, orbit, name, kind, "curiosity"));
+                    continue;
+                }
+
+                // Whether an expedition could be sent, and whether the ONE thing in the way is the
+                // empire's expedition power - both the game's own answers, asked once per curiosity
+                // per press. No fleet is named because the scanner has none: this is the question the
+                // system-side expedition asks (<c>PlanetCuriosityItem</c> asks it the same way for a
+                // colonized system), and it is what the padlock on the card stands for.
+                refusals.Clear();
+                bool explorable = curiosity.CanBeSearched(empire, null, refusals);
+                Found made = OnPlanet(node, planet, orbit, name, kind, "curiosity");
+                made.Scopes = ScannerScopes.Curiosity(
+                    explorable,
+                    !explorable && LowExpeditionPower(refusals)
+                );
+                found.Add(made);
+            }
+        }
+
+        /// <summary>Whether the game refused this curiosity for expedition power - the failure the
+        /// card turns into a padlock (<c>PlanetCuriosityItem.ShowLockIfNeeded</c> looks for exactly
+        /// these two flags).</summary>
+        private static bool LowExpeditionPower(List<FailureInfo> refusals)
+        {
+            for (int i = 0; i < refusals.Count; i++)
+            {
+                if (
+                    refusals[i].Flag == FailureFlags.EmpireExpeditionPowerTooLow
+                    || refusals[i].Flag == FailureFlags.FleetExpeditionPowerTooLow
+                )
+                {
+                    return true;
                 }
             }
+
+            return false;
         }
 
         /// <summary>The resources a world is sitting on, split the way the game splits them - by the

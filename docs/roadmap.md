@@ -368,13 +368,36 @@ systems it declares nothing, so the cursor migrates to a HUD stop for a moment a
 announced — one stray line between the name and the landing. Fixing it wants a screen-level "my
 content is between pages, hold the cursor" gate the navigator does not have yet.
 
-**Fixture-blocked**: the deposit/star dossiers a system's map label is supposed to carry beyond the
-star's own — at every camera `[Beginner] test` reaches, a system label declares exactly one
-Tooltips child, so "antimatter" is not findable on the galaxy and the search's reach into
-map-label dossiers is proved only on the research wheel's unlock children and the population
-panel's parties.
+**Fixture-blocked in batch 8, FIXED in batch 9 (2026-08-23):** the deposit/star dossiers a system's
+map label carries beyond the star's own now come from the planets rather than from the icons the
+camera happens to be drawing, so "antimatter" is findable on the galaxy at every zoom and the
+search's reach into map-label dossiers is proved on the map as well as on the research wheel's
+unlock children and the population panel's parties.
 
 **Unjudged, deliberately**: of the 119 panel-feature component classes, seven have typed readers and
 three more were source-checked and cleared; the rest fall to the default reader, which now names
 itself in the log and in `DevProbe.Tooltip()`. The next play session's `defaultRead` list is the
 work queue, not a desk review.
+
+## Batch 9 (2026-08-23) — galaxy content from data, and the game's own logging
+
+**Landed and verified live**: a system's deposit and star dossiers built from
+`node.Planets[*].ResourceDeposits` and `GuiStarSystem.Instantiate` rather than from what the camera
+draws, aimed at the game's own icon where there is one and at a mod-owned carrier
+(`ScratchTooltips`) where there is not — words byte-identical either side of a zoom; a planet row's
+size-and-type, curiosity count and anomalies from the planet, so they read the same with the card
+drawn and without it; the battle-tactics flotilla rows joined with a colon
+("Flotilla 1: Short Range"); two new scanner columns under Curiosities (Explorable / Insufficient
+Expedition Power); type-ahead stepping closing the branches the previous landing opened; the two
+by-name `GuiWindow` lookups and the `/state` probe no longer writing hundreds of Errors into the
+game's diagnostics and telemetry.
+
+**Boot-proof pending**: the 208+208 "Could not find GuiWindow named 'LoadSaveModalWindow' /
+'OutGameLoadModalWindow'" errors per session are written while the window registry fills, so the fix
+can only be proved by the NEXT cold launch — count them in the newest
+`Documents\Endless Space 2\Temporary Files\Diagnostics - *.html`.
+
+**Untested in this fixture**: the mod's carrier for a PLANET dossier — the planet circles are drawn
+at every zoom `[Beginner] test` reaches, so the fallback never fires (the star and deposit carriers
+were both exercised, the star one by a direct call). A curiosity in neither of the two new columns
+(one already being expedited, or quest-locked) does not exist on this save either.

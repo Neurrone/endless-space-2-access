@@ -353,10 +353,12 @@ replaced: the research wheel's, because it also searches the game's own corpus o
 unlock names, and the galaxy's, because its systems and fleets have reveal paths already proven.
 A screen with such a scope must supply `SearchScope.IdOf` — the pure "which control is result i",
 beside the `Land` that has side effects — or its results are offered twice.
-Two consequences to expect: a search that walks several near-misses leaves those branches OPEN
-behind it (the pre-existing "expansion is not auto-undone" rule, now reachable in more places), and
-a result only the deep build knew about announces one or two frames after the keystroke rather than
-on it.
+**Stepping to another result closes the branches the PREVIOUS landing opened** (owner ruling
+2026-08-23) — only those the SEARCH itself opened, so a branch the player had open before typing is
+never touched, and the branch the LAST landing opened stays open when the search ends, because that
+is where the player has been left (`GraphNavigator.RevealDeep` / `_searchOpened`). One consequence to
+expect: a result only the deep build knew about announces one or two frames after the keystroke
+rather than on it.
 
 **The star-system page is named after the system it is showing** (owner ruling 2026-08-22):
 `ScreenName` is "Heka, System management" — the DRAWN system name (the rename button's own label,
@@ -708,11 +710,15 @@ moving it.
 Unexplored; Anomalies; Curiosities; Luxury Resources; Strategic Resources; Contested Influence;
 Fleets; Probes; Ally pins; Obliterator missiles; Quest markers. Four of them build their
 subcategories from WHAT WAS FOUND — one column per anomaly definition, curiosity, or resource,
-sorted by the localized name, behind an "all" — so both the column a category was left in and the
+sorted by the localized name, behind the columns the category writes down for itself — so both the
+column a category was left in and the
 row the cursor stood on are remembered by IDENTITY (name, key) rather than by index
 (`ScannerCursor.Reseat`, `ScannerTable`): a kind appearing ahead of the remembered one must not
 move the cursor to it. In an "all" column such a row reads "{kind} on {planet}"; in a kind's own
-column it is the planet alone. Colonizable Planets has NO "all": its two columns are unoccupied
+column it is the planet alone. Three of the four write down only "all"; **Curiosities writes down
+three** (owner ruling 2026-08-23) — "all", **Explorable** (the game's own `CanBeSearched` for the
+empire) and **Insufficient Expedition Power** (that call's `EmpireExpeditionPowerTooLow` failure,
+which is what the card draws a padlock for) — and then the kinds. Colonizable Planets has NO "all": its two columns are unoccupied
 (the game's own `IsColonizable`) and occupied (settled by somebody else and settleable by this
 empire's technology — the "able" half alone), and its row carries the whole description of the
 world (size and type, resources, anomalies, curiosities, max population, the five outputs as

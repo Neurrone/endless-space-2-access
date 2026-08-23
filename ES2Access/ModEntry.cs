@@ -850,6 +850,11 @@ namespace ES2Access
             DropListScreen.Reset();
             OptionsScreen.ReleaseCapture();
             PointerFocus.Shutdown();
+            // After the pointer has let go: the carriers are scene objects this assembly created, and
+            // destroying one the pointer is still aimed at would leave the engine holding a dead
+            // transform.
+            ScratchTooltips.Shutdown();
+            GameWindows.Shutdown();
             GameKeyStandDown.Remove();
             GameKeyboardHandover.Remove();
             GameTextFocus.Remove();

@@ -730,13 +730,16 @@ namespace ES2Access.Screens
             }
         }
 
+        /// <summary>Through <see cref="GameWindows"/> rather than the engine's own by-name lookup:
+        /// that one logs an Error for every miss and the game forwards Errors to its telemetry, so
+        /// asking once a tick for a window the registry has not filled in yet wrote a few hundred
+        /// error reports per session into the player's diagnostics file (measured 2026-08-23).
+        /// </summary>
         private static LoadSaveModalWindow Instance(string name)
         {
             try
             {
-                return Gui.GuiServiceAvailable
-                    ? Gui.GuiService.GetWindow(name) as LoadSaveModalWindow
-                    : null;
+                return GameWindows.Named(name) as LoadSaveModalWindow;
             }
             catch (Exception)
             {

@@ -183,5 +183,34 @@ namespace ES2Access.Tests.UI
             Assert.True(ScannerScopes.HoldsKind("Garden of Eden", ScannerScopes.All, "all"));
             Assert.True(ScannerScopes.HoldsKind(null, ScannerScopes.All, null));
         }
+
+        [Fact]
+        public void AnExplorableCuriosityIsInAllAndInExplorable()
+        {
+            int scopes = ScannerScopes.Curiosity(true, false);
+            Assert.True(ScannerScopes.Holds(scopes, ScannerScopes.All));
+            Assert.True(ScannerScopes.Holds(scopes, ScannerScopes.Explorable));
+            Assert.False(ScannerScopes.Holds(scopes, ScannerScopes.LowExpeditionPower));
+        }
+
+        [Fact]
+        public void ACuriosityRefusedForPowerIsInItsOwnColumnAndNotInExplorable()
+        {
+            int scopes = ScannerScopes.Curiosity(false, true);
+            Assert.True(ScannerScopes.Holds(scopes, ScannerScopes.All));
+            Assert.False(ScannerScopes.Holds(scopes, ScannerScopes.Explorable));
+            Assert.True(ScannerScopes.Holds(scopes, ScannerScopes.LowExpeditionPower));
+        }
+
+        [Fact]
+        public void ACuriosityRefusedForSomethingElseIsOnlyInAll()
+        {
+            // A curiosity already being expedited, or one a quest has locked, is in neither column -
+            // and is still findable, because "all" is what a category always has.
+            int scopes = ScannerScopes.Curiosity(false, false);
+            Assert.True(ScannerScopes.Holds(scopes, ScannerScopes.All));
+            Assert.False(ScannerScopes.Holds(scopes, ScannerScopes.Explorable));
+            Assert.False(ScannerScopes.Holds(scopes, ScannerScopes.LowExpeditionPower));
+        }
     }
 }
