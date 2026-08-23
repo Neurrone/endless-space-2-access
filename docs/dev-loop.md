@@ -297,8 +297,9 @@ de-duplicates ACROSS sections. After moving a tooltip out of a details function,
 node's buffer FOCUSED: a drawn tooltip repeating a computed line is invisible in the unfocused
 dump.
 
-**Opening a game modal from `/eval`**: set what its opener sets, then show it; close it the way
-Escape does (`w.HandleInput(InputAction.Exit)` — Assembly-CSharp's `InputAction`). Worked routes
+**Opening a game modal from `/eval`**: set what its opener sets, then show it; close it with
+`Gui.GuiService.HideWindow(w)` or the mod's own keys — NEVER `w.HandleInput(InputAction.Exit)`, which
+wedged the screen stack (test-recipes.md "Closing a full screen when /key is refused"). Worked routes
 per window are in `docs/test-recipes.md` ("Opening game modals from /eval").
 
 **State restoration etiquette.** Leave the fixture as found: tutorial popup MINIMIZED, no
