@@ -287,9 +287,18 @@ namespace ES2Access.UI.Input
         public InputAction Register(string key)
         {
             InputAction action = new InputAction(key);
+            // The claimed-key set is derived from every action's chords, so a REBIND has to drop it
+            // as surely as a new action does - otherwise the game keeps standing down from the old
+            // key and never stands down from the new one.
+            action.BindingsChanged = InvalidateClaimedKeys;
             _actions.Add(action);
             _claimedKeys = null;
             return action;
+        }
+
+        private void InvalidateClaimedKeys()
+        {
+            _claimedKeys = null;
         }
 
         public InputAction Find(string key)

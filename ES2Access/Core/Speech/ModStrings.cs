@@ -127,6 +127,21 @@ namespace ES2Access.Core.Speech
         public const string ScreenMainMenu = "screen.main-menu";
         public const string ScreenMessageBox = "screen.message-box";
         public const string ScreenOptions = "screen.options";
+
+        /// <summary>The MOD's own options window - the same surface the game's Options is, drawn by
+        /// the game and filled by the mod, so it needs a name of its own or arriving at it would
+        /// announce the game's settings.</summary>
+        public const string ScreenModSettings = "screen.mod-settings";
+
+        /// <summary>The entry that opens it, on the main menu and the pause menu. The mod declares
+        /// it; nothing is drawn for it, so these are the only words it has.</summary>
+        public const string ModSettingsEntry = "mod-settings.entry";
+
+        /// <summary>The categories the mod's options window holds, and what each one's tab says
+        /// about itself.</summary>
+        public const string ModSettingsKeybinds = "mod-settings.keybinds";
+        public const string ModSettingsKeybindsDescription = "mod-settings.keybinds-description";
+
         public const string ScreenLoading = "screen.loading";
         public const string ScreenNotification = "screen.notification";
         public const string ScreenTutorial = "screen.tutorial";
@@ -1545,6 +1560,13 @@ namespace ES2Access.Core.Speech
             { ScreenMainMenu, "Main menu" },
             { ScreenMessageBox, "Dialog" },
             { ScreenOptions, "Options" },
+            { ScreenModSettings, "Mod settings" },
+            { ModSettingsEntry, "Mod settings" },
+            { ModSettingsKeybinds, "Keybinds" },
+            {
+                ModSettingsKeybindsDescription,
+                "The keys the accessibility mod's own commands are on."
+            },
             { ScreenLoading, "Loading" },
             { ScreenNotification, "Notification" },
             { ScreenTutorial, "Tutorial" },
@@ -2241,14 +2263,16 @@ namespace ES2Access.Core.Speech
         /// The compiled-in English template for <paramref name="key"/>. Exposed so translation
         /// files can be validated against the shipped keys and placeholders. The icon names
         /// (<see cref="IconDefaults"/>) and the key names and usage hints
-        /// (<see cref="HintDefaults"/>) are as much a shipped string as any other; they are held
+        /// (<see cref="HintDefaults"/>) and the names of the mod's own keyboard actions
+        /// (<see cref="ActionDefaults"/>) are as much a shipped string as any other; they are held
         /// in tables of their own only because each is a family read together.
         /// </summary>
         public static bool TryGetDefault(string key, out string template)
         {
             return Defaults.TryGetValue(key, out template)
                 || IconDefaults.TryGetValue(key, out template)
-                || HintDefaults.TryGetValue(key, out template);
+                || HintDefaults.TryGetValue(key, out template)
+                || ActionDefaults.TryGetValue(key, out template);
         }
 
         /// <summary>Whether the mod ships a phrase for <paramref name="key"/> at all - asked where a

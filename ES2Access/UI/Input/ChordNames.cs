@@ -38,8 +38,16 @@ namespace ES2Access.UI.Input
                 return null;
             }
 
-            KeyboardBinding chord = bindings[bindingIndex] as KeyboardBinding;
-            return chord == null ? bindings[bindingIndex].DisplayName : Of(chord);
+            InputBinding binding = bindings[bindingIndex];
+            KeyboardBinding chord = binding as KeyboardBinding;
+            if (chord != null)
+            {
+                return Of(chord);
+            }
+
+            // An EMPTY slot - a binding the player cleared - names nothing, exactly as an action
+            // that was never bound does.
+            return binding == null ? null : binding.DisplayName;
         }
 
         /// <summary>A control's name with the chord that works on it after it - "Next system
