@@ -797,12 +797,15 @@ cursor already up it is an ordinary jump. No other category force-arms anything.
 subcategory is "all": every result is the player's own ground being taken, so an affiliation scope
 would have exactly one answer. 
 
-**THREE CATEGORIES THE PLAYER MAKES, IN FRONT OF THE THIRTEEN** (2026-08-23, `ScannerCustomSlots`
-→ `docs/helpers.md`). Three FIXED slots, each empty or holding `{name, selectors, keywords}`;
-"delete" is clearing a slot, there are no ids and no reorder. A configured slot is a category the
-cycle reaches FIRST, in slot order, with the player's own name as its category name; an
-unconfigured slot, and a configured one that caught nothing this press, are skipped by exactly the
-rule that skips a built-in category with nothing in it. **The slot rows are always in the table**,
+**THREE CATEGORIES THE PLAYER MAKES, AFTER THE THIRTEEN** (2026-08-23; moved to the BACK of the
+cycle 2026-08-24, `ScannerCustomSlots` → `docs/helpers.md`). Three FIXED slots, each empty or
+holding `{name, selectors, keywords}`; "delete" is clearing a slot, there are no ids and no reorder.
+A configured slot is a category the cycle reaches LAST, in slot order, with the player's own name as
+its category name; an unconfigured slot, and a configured one that caught nothing this press, are
+skipped by exactly the rule that skips a built-in category with nothing in it. **They went in FRONT
+first and that was wrong**: the cursor starts at category zero and the first scanner press of a game
+says where the cursor already stands rather than moving it, so a player who had configured nothing
+heard "none found" as the first thing the scanner ever said to them. **The slot rows are always in the table**,
 which is what keeps every built-in category's index — and therefore the cursor's per-category
 memory — the same whatever the player does to their slots. Its columns are "all", then one per
 SELECTOR in the order they were added, then one per KEYWORD; each selector column is named with

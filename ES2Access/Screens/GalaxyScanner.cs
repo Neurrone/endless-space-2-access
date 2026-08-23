@@ -75,52 +75,59 @@ namespace ES2Access.Screens
         // then what is out there to find, then what is moving. A player sweeping the map reads down
         // it, so the ordering is the mod's answer to "what am I most likely to be looking for".
         //
-        // IN FRONT OF ALL OF THEM ARE THE PLAYER'S OWN (owner ruling 2026-08-23): three fixed slots,
+        // BEHIND ALL OF THEM COME THE PLAYER'S OWN (owner ruling 2026-08-24): three fixed slots,
         // each empty or holding a category the player wrote (<see cref="ScannerCustomSlots"/>), and
-        // the first thing the category cycle reaches - a list somebody assembled for themselves is
-        // the one they most want one press away. The three rows are always THERE, configured or not:
-        // an unconfigured slot holds nothing and is skipped by the same rule that skips a built-in
-        // category with nothing in it, and keeping the row means the index of every category below is
-        // the same whatever the player does to their slots - which is what the cursor's per-category
-        // memory is addressed by.
+        // the LAST thing the category cycle reaches. They went in front first and that was wrong: the
+        // cursor starts at category zero, so the very first scanner press of a game - the one that
+        // says where the scanner already stands rather than moving it - landed on slot one and
+        // answered "none found" to a player who had never configured a slot.
+        //
+        // The three rows are always THERE, configured or not, so the thirteen built-in indexes never
+        // move; a slot with nothing in it - unconfigured, or configured and matching nothing this
+        // press - is a row of the table holding nothing and is skipped by the same rule that skips a
+        // built-in category with nothing in it.
         private const int SlotCount = ScannerCustomSlots.Count;
 
-        private const int CategorySystems = SlotCount + 0;
+        /// <summary>How many categories the scanner writes down for itself - and therefore the index
+        /// the player's own three begin at.</summary>
+        private const int BuiltInCount = 13;
+
+        private const int CategorySystems = 0;
 
         /// <summary>Worlds this empire could settle - the ones standing free, and the ones somebody
         /// else is already sitting on that this empire's technology could take.</summary>
-        private const int CategoryColonizable = SlotCount + 1;
+        private const int CategoryColonizable = 1;
 
         /// <summary>Every way out of the known map: a drawn lane or wormhole whose far end the player
         /// has not perceived. The one category whose things are EDGES rather than places.</summary>
-        private const int CategoryUnexplored = SlotCount + 2;
+        private const int CategoryUnexplored = 2;
 
         // The four whose subcategories are derived from what is out there rather than written down
         // here: one per kind found, in the language's own alphabetical order, behind an "all".
-        private const int CategoryAnomalies = SlotCount + 3;
-        private const int CategoryCuriosities = SlotCount + 4;
-        private const int CategoryLuxury = SlotCount + 5;
-        private const int CategoryStrategic = SlotCount + 6;
+        private const int CategoryAnomalies = 3;
+        private const int CategoryCuriosities = 4;
+        private const int CategoryLuxury = 5;
+        private const int CategoryStrategic = 6;
 
         /// <summary>Squares of the player's OWN influence that somebody else's field is winning - the
         /// one category whose things are not things at all but places, and the one whose "whose" is
         /// already settled by what the category IS (they are all the player's ground, being taken).
         /// So it has the single subcategory "all", and its affiliation question would have exactly one
         /// answer.</summary>
-        private const int CategoryContestedInfluence = SlotCount + 7;
+        private const int CategoryContestedInfluence = 7;
 
         // The two that are asked "whose", after everything that is asked "what is there".
-        private const int CategoryFleets = SlotCount + 8;
-        private const int CategoryProbes = SlotCount + 9;
+        private const int CategoryFleets = 8;
+        private const int CategoryProbes = 9;
 
         // The three that are only ever asked "what is there". Each has the single subcategory "all",
         // so the subcategory key on one of them comes round to where it started and says so - which is
         // the honest answer to "what else is there".
-        private const int CategoryPins = SlotCount + 10;
-        private const int CategoryProjectiles = SlotCount + 11;
-        private const int CategoryMarkers = SlotCount + 12;
+        private const int CategoryPins = 10;
+        private const int CategoryProjectiles = 11;
+        private const int CategoryMarkers = 12;
 
-        private const int CategoryCount = SlotCount + 13;
+        private const int CategoryCount = BuiltInCount + SlotCount;
 
         private const int ScopeAll = ScannerScopes.All;
         private const int ScopeFriendly = ScannerScopes.Friendly;
@@ -359,18 +366,18 @@ namespace ES2Access.Screens
         }
 
         /// <summary>Whether a category is one of the player's own three slots rather than one of the
-        /// scanner's own thirteen.</summary>
+        /// scanner's own thirteen. The slots come after them, so no built-in index depends on how
+        /// many slots there are.</summary>
         private static bool Custom(int category)
         {
-            return category >= 0 && category < SlotCount;
+            return category >= BuiltInCount && category < CategoryCount;
         }
 
-        /// <summary>Which of the scanner's own thirteen a category index is - what the taxonomy
-        /// tables written down in this file are indexed by, the slots in front of them taken off.
-        /// </summary>
-        private static int Built(int category)
+        /// <summary>Which category row one of the three slots is - the question every place that
+        /// addresses a slot by its own number (the quick keys, the plans) has to ask.</summary>
+        private static int Slotted(int slot)
         {
-            return category - SlotCount;
+            return BuiltInCount + slot;
         }
 
         // ---- one press ----
@@ -444,7 +451,8 @@ namespace ES2Access.Screens
             double east;
             double north;
             Snap snap = Snapshot(out east, out north);
-            if (snap.Custom[slot] == null)
+            int category = Slotted(slot);
+            if (snap.Custom[category] == null)
             {
                 Voice.Say(
                     ModStrings.Format(ModStrings.GalaxyScannerNoCustom, Pressed(actionKey)),
@@ -455,11 +463,11 @@ namespace ES2Access.Screens
 
             Rearmed();
             _cursor.Arm();
-            List<Found> all = snap.Custom[slot][0];
+            List<Found> all = snap.Custom[category][0];
             IList<string> keys = Keys(all);
             bool sweeping = _walk.Sweeping(slot, east, north);
             string standing =
-                _cursor.Category == slot && _cursor.Subcategory == ScopeAll
+                _cursor.Category == category && _cursor.Subcategory == ScopeAll
                     ? _cursor.ResultKey
                     : null;
             bool parked =
@@ -468,7 +476,7 @@ namespace ES2Access.Screens
                 && all[0].Key == standing
                 && Here(all[0], east, north);
             int at = ScannerWalk.Land(delta, keys, standing, sweeping, parked);
-            _cursor.Point(slot, ScopeAll, at < 0 ? 0 : at, snap.Table);
+            _cursor.Point(category, ScopeAll, at < 0 ? 0 : at, snap.Table);
             _walk.Anchor(slot, east, north);
             if (at < 0)
             {
@@ -578,7 +586,7 @@ namespace ES2Access.Screens
             // The columns a category writes down for itself come first and are memberships; the ones
             // built from what was found come after them and are kinds. Most categories write down one
             // ("all"); the curiosities write down three.
-            if (!Kinds(category) || subcategory < ScopeKeys[Built(category)].Length)
+            if (!Kinds(category) || subcategory < ScopeKeys[category].Length)
             {
                 return ScannerScopes.Holds(found.Scopes, subcategory);
             }
@@ -628,7 +636,7 @@ namespace ES2Access.Screens
             ScannerTaxonomy taxonomy = new ScannerTaxonomy();
             for (int built = 0; built < ScannerKeys.Categories.Length; built++)
             {
-                int at = built + SlotCount;
+                int at = built;
                 ScannerTaxonomyCategory category = taxonomy.Add(
                     ScannerKeys.Categories[built],
                     ModStrings.Get(CategoryKeys[built])
@@ -1043,7 +1051,7 @@ namespace ES2Access.Screens
                     continue;
                 }
 
-                string[] keys = ScopeKeys[Built(at)];
+                string[] keys = ScopeKeys[at];
                 if (!Kinds(at))
                 {
                     string[] fixedNames = new string[keys.Length];
@@ -1207,7 +1215,7 @@ namespace ES2Access.Screens
         /// results would be the same things twice under two names.</summary>
         private static void Keyword(List<Found> caught, string keyword, List<Found>[] world)
         {
-            for (int at = SlotCount; at < CategoryCount; at++)
+            for (int at = 0; at < BuiltInCount; at++)
             {
                 List<Found> source = world[at];
                 bool kinds = Kinds(at);
@@ -1253,7 +1261,7 @@ namespace ES2Access.Screens
                     return false;
                 }
 
-                category = built + SlotCount;
+                category = built;
                 subcategory = ScannerKeys.Subcategory(built, selector.Subcategory);
                 if (subcategory >= 0)
                 {
@@ -1298,7 +1306,7 @@ namespace ES2Access.Screens
                 // has the cursor, which remembers a column by its name.
                 return ModStrings.Format(
                     ModStrings.GalaxyScannerScope,
-                    ModStrings.Get(CategoryKeys[Built(category)]),
+                    ModStrings.Get(CategoryKeys[category]),
                     _labels[category][subcategory]
                 );
             }
@@ -1538,14 +1546,15 @@ namespace ES2Access.Screens
                     continue;
                 }
 
-                custom[slot] = CustomColumns(plans[slot], world, labels, east, north);
-                labels[slot] = plans[slot].Labels();
-                names[slot] = plans[slot].Name;
+                int at = Slotted(slot);
+                custom[at] = CustomColumns(plans[slot], world, labels, east, north);
+                labels[at] = plans[slot].Labels();
+                names[at] = plans[slot].Name;
             }
 
-            for (int at = SlotCount; at < CategoryCount; at++)
+            for (int at = 0; at < BuiltInCount; at++)
             {
-                names[at] = ModStrings.Get(CategoryKeys[Built(at)]);
+                names[at] = ModStrings.Get(CategoryKeys[at]);
             }
 
             _labels = labels;

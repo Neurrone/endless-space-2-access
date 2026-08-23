@@ -2537,12 +2537,14 @@ Wrap it in the `((System.Func<string>)(() => { … }))()` IIFE and return
 a KIND selector takes the game's own definition name, which `[Beginner] test` supplies plenty of —
 `anomalies:PlanetAnomaly27` (Multiple Moons), `strategic:Strategic2` (Hyperium),
 `curiosities:explorable`. Clear with `ScannerCustomSettings.Clear(0..2)`, which removes the keys
-from `settings.cfg` outright — do it at the end of a session, since a slot left configured changes
-the very first thing every later scanner press reaches.
+from `settings.cfg` outright — do it at the end of a session, since a slot left configured adds a
+category at the END of every later cycle.
 
-MEASURED on that fixture (turn 21): `galaxy.scanCategoryNext` lands on **"Watch list: all, Rigel,
-−16, −5, 3 south, 1 of 21"** — the custom category leads the cycle — and `galaxy.scanSubcategoryNext`
-steps **Systems: neutral** (10) → **Fleets: friendly** (6) → **Dusay** (5) → **all** (21), the three
+MEASURED on that fixture (turn 21): with NO slot configured the first (arming) `galaxy.scanCategoryNext`
+lands on **"Systems: all, Rigel, -16, -5, 3 south, 1 of 13"**; with slot 1 configured the cycle reaches
+**"Watch list: all, …"** LAST, after Probes, and wraps from there to Systems (2026-08-24 — before that
+move the custom category led the cycle and an unconfigured slot 1 answered the arming press with
+"none found"). `galaxy.scanSubcategoryNext` inside it steps **Systems: neutral** (10) → **Fleets: friendly** (6) → **Dusay** (5) → **all** (21), the three
 partitioning "all" exactly. A slot configured with a selector this galaxy cannot answer
 (`luxury:NoSuchResource`) is SKIPPED by the category cycle in both directions and answers its own
 quick key with "{name}: all, none found". An unconfigured slot's quick key says

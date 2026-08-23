@@ -70,7 +70,7 @@ files above.
   arrows ARE now declared as nodes (owner decision, landed 2026-08-22) — structure verified on a
   forced show, behaviour fixture-blocked (the save has no heroes, so both arrows read unavailable).
 - Scanner (shipped, taxonomy v2 2026-08-16, Contested Influence added 2026-08-21, taxonomy v3
-  2026-08-22, three CUSTOM slots in front of them 2026-08-23): THIRTEEN categories in the owner's order — systems, colonizable planets, unexplored,
+  2026-08-22, three CUSTOM slots AFTER them 2026-08-23, moved from in front 2026-08-24): THIRTEEN categories in the owner's order — systems, colonizable planets, unexplored,
   anomalies, curiosities, luxury resources, strategic resources, contested influence, fleets,
   probes, ally pins, obliterator missiles, quest
   markers (system-anchored ones only, owner's ruling 2026-08-17: a marker with no system is not
