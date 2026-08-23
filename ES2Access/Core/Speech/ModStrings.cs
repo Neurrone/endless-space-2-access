@@ -381,13 +381,6 @@ namespace ES2Access.Core.Speech
         public const string GalaxyPlanetCuriosityOne = "galaxy.planet-curiosity-one";
         public const string GalaxyPlanetCuriosities = "galaxy.planet-curiosities";
 
-        /// <summary>That a juggernaut is reducing one of a planet's anomalies. The game draws it as a
-        /// coloured ring on the systems-zoom circle with no tooltip at all, and the only sentence it
-        /// writes for the state is on a BUTTON it draws one zoom step further in, so the phrase on the
-        /// planet's own row is the mod's (owner ruling 2026-08-23). The turns left beside it are the
-        /// game's own caption.</summary>
-        public const string GalaxyPlanetAnomalyReduction = "galaxy.planet-anomaly-reduction-in-progress";
-
         // Which way something on the map lies from somewhere else. The game writes no compass word
         // anywhere - it draws the map and expects it to be looked at - so all eight are the mod's.
         public const string DirectionNorth = "direction.north";
@@ -810,6 +803,7 @@ namespace ES2Access.Core.Speech
         /// mod's: the game draws neither the list nor the grouping.</summary>
         public const string HudTurnLogPanel = "hud.turn-log-panel";
         public const string HudTurnLogTurn = "hud.turn-log-turn";
+
 
         // The rows of the empire cluster in the top-left corner, which is the first Tab stop on every
         // page in the game. Four unrelated things are stacked there and the game captions none of
@@ -1645,7 +1639,6 @@ namespace ES2Access.Core.Speech
             { GalaxySystemGuarded, "Guarded by {0}" },
             { GalaxyPlanetCuriosityOne, "{0} curiosity" },
             { GalaxyPlanetCuriosities, "{0} curiosities" },
-            { GalaxyPlanetAnomalyReduction, "Anomaly reduction in progress" },
             { DirectionNorth, "north" },
             { DirectionNorthEast, "northeast" },
             { DirectionEast, "east" },

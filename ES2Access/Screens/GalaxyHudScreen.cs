@@ -5503,12 +5503,11 @@ namespace ES2Access.Screens
         /// 2026-08-23), gated on the game's own state and read from the PLANET - so a world says the
         /// same things at every zoom, exactly as its anomalies and curiosities already do.
         ///
-        /// The words are the game's wherever the game has any: the two juggernaut sentences it writes
-        /// on the in-progress buttons one zoom step in, its own "Remaining turns:" caption, its own
-        /// Sanctuary sentences, and the title its discovery card gives a unique world
-        /// (<c>%PlanetScreenUniquePlanetTitle</c>, read off the unshown prefab - "Unique Planet").
-        /// Only the anomaly-reduction phrase is the mod's, because the game writes none for the state
-        /// itself.
+        /// Every word is the game's: the three juggernaut sentences it writes on the in-progress
+        /// buttons one zoom step in (terraformation, restoration and anomaly reduction), its own
+        /// "Remaining turns:" caption, its own Sanctuary sentences, and the title its discovery card
+        /// gives a unique world (<c>%PlanetScreenUniquePlanetTitle</c>, read off the unshown prefab -
+        /// "Unique Planet").
         ///
         /// A mining probe is already a row VALUE (<c>MiningProbes.Line</c>) and the curiosity ring
         /// already a counted one (<see cref="CuriosityCount"/>), so neither is repeated here.
@@ -5609,6 +5608,10 @@ namespace ES2Access.Screens
             }
         }
 
+        /// <summary>A juggernaut reducing one of the world's anomalies, in the game's own sentence for
+        /// the state - the one it writes onto the in-progress button a rival is shown
+        /// (<c>PlanetLabel_SystemOrbital.RefreshAnomalyReductionStatus</c> :975), with the arguments in
+        /// that call's own order: the planet, then the empire doing it.</summary>
         private static void AddAnomalyReductionSignal(List<string> lines, Planet planet)
         {
             ReduceAnomalyEmpireLocalAction running = planet.AnomalyReductionInProgress;
@@ -5620,7 +5623,11 @@ namespace ES2Access.Screens
             AddLine(
                 lines,
                 Remaining(
-                    ModStrings.Get(ModStrings.GalaxyPlanetAnomalyReduction),
+                    Localize(
+                        "%PlanetReduceAnomalyWithJuggernautInProgressDescription",
+                        planet.LocalizedName,
+                        LeaderName(running.Empire)
+                    ),
                     running.GetRemainingTurns()
                 )
             );
@@ -5864,11 +5871,40 @@ namespace ES2Access.Screens
         /// the game is offering nothing on, which is what keeps such a planet a leaf of the tree rather
         /// than a branch that opens onto nothing. The treatment each one gets is
         /// <see cref="CardActions"/>'s, shared with the management page's card.</summary>
-        /// <summary>The game's own sentence for every one of the three in-progress buttons - the only
-        /// words it writes for them, and the same one on all three because the game itself writes the
-        /// same one on all three (<c>PlanetLabel_SystemOrbital</c> :818, :898, :970).</summary>
+        /// <summary>The game's own sentence for every one of the three in-progress buttons - the same
+        /// one on all three because the game itself writes the same one on all three
+        /// (<c>PlanetLabel_SystemOrbital</c> :818, :898, :970). It is the LAST resort for their names
+        /// now (<see cref="InProgressName"/>) and stays in every one of their dossiers.</summary>
         private const string CancelJuggernautAction =
             "%PlanetCancelJuggernautActionButtonDescription";
+
+        /// <summary>
+        /// What one of the three in-progress buttons is called: WHAT IS BEING DONE, not the fact that
+        /// pressing cancels it (owner ruling 2026-08-23).
+        ///
+        /// A planet being terraformed while one of its anomalies is reduced draws two of these buttons
+        /// at once, and the game writes the one sentence
+        /// (<see cref="CancelJuggernautAction"/>) onto both - so the card offered two entries the
+        /// player could not tell apart. The game does name each action, on the wrapper its own tooltip
+        /// is pointing at: the terraformation's and the anomaly reduction's constructible, the
+        /// restoration's fleet action (<c>PlanetLabel_SystemOrbital</c> :806-830, :885-900, :960-975 -
+        /// the player-empire branch, which is the only one the collector keeps, since a rival's button
+        /// is drawn switched off).
+        ///
+        /// Asked at SPEAK time off the tooltip the button is carrying now: the game rebinds that
+        /// tooltip every refresh, and a juggernaut that finishes one action and starts another keeps
+        /// the same widget. A wrapper that cannot name itself falls back to the shared sentence, which
+        /// is what the button said before this rule - never to silence.
+        /// </summary>
+        private static Func<string> InProgressName(AgeControlButton button)
+        {
+            AgeTransform widget = AgeWidgets.Transform(button);
+            return () =>
+            {
+                string title = AgeWidgets.TooltipTitle(Raw(widget));
+                return string.IsNullOrEmpty(title) ? Localize(CancelJuggernautAction) : title;
+            };
+        }
 
         private static List<CardActions.CardAction> OrbitalActions(PlanetLabel_SystemOrbital card)
         {
@@ -5904,26 +5940,25 @@ namespace ES2Access.Screens
                 // And the same row's OTHER half: the button the game swaps in for a start button while
                 // that action is already running. It is the only way to CANCEL a juggernaut's work and
                 // the only place the map says how long is left, and the mod declared none of the three.
-                // Named by the game's own sentence for the button (the start actions' titles would name
-                // the thing being cancelled rather than the cancelling); the turns left ride in the
-                // node's own dossier, and the row's buffer says what is happening
-                // (<see cref="AddSignals"/>). A RIVAL's is drawn switched OFF, which is exactly when
-                // the shared collector drops it - a button that cannot be pressed is not an action, and
-                // the row's line has already said what it would have said.
-                CardActions.AddNamedByGame(
+                // Named by WHAT IS BEING DONE (<see cref="InProgressName"/>); the turns left and the
+                // cancel sentence ride in the node's own dossier, and the row's buffer says what is
+                // happening (<see cref="AddSignals"/>). A RIVAL's is drawn switched OFF, which is
+                // exactly when the shared collector drops it - a button that cannot be pressed is not
+                // an action, and the row's line has already said what it would have said.
+                CardActions.AddNamed(
                     found,
                     card.InProgressTerraformationButton,
-                    CancelJuggernautAction
+                    InProgressName(card.InProgressTerraformationButton)
                 );
-                CardActions.AddNamedByGame(
+                CardActions.AddNamed(
                     found,
                     card.InProgressRestorationButton,
-                    CancelJuggernautAction
+                    InProgressName(card.InProgressRestorationButton)
                 );
-                CardActions.AddNamedByGame(
+                CardActions.AddNamed(
                     found,
                     card.InProgressAnomalyReductionButton,
-                    CancelJuggernautAction
+                    InProgressName(card.InProgressAnomalyReductionButton)
                 );
 
                 // The way into pirate diplomacy, drawn on a world whose system holds a pirate lair

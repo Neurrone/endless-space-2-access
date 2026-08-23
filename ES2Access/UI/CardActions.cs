@@ -74,6 +74,18 @@ namespace ES2Access.UI
             }
         }
 
+        /// <summary>A button whose name is resolved when it is spoken, under the same drawn-and-operable
+        /// gate as <see cref="AddNamedByGame"/> - for a control the game names only through something
+        /// its tooltip is pointing AT, which can change while the button stays.</summary>
+        public static void AddNamed(List<CardAction> found, AgeControl control, Func<string> label)
+        {
+            AgeTransform at = Drawn(AgeWidgets.Transform(control));
+            if (at != null)
+            {
+                found.Add(new CardAction { Widget = at, Label = label });
+            }
+        }
+
         /// <summary>
         /// A button the game keeps DRAWN while refusing it - visible but switched off, with the reason
         /// written into its own tooltip (the queue line's buy-outs). Declared whenever it is drawn and
