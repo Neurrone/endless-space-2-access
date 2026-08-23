@@ -760,6 +760,38 @@ namespace ES2Access
                 .Bind(KeyCode.Home, alt: true)
                 .ClaimedWhile(ES2Access.Screens.GalaxyScanner.KeysClaimed);
 
+            // THE THREE CATEGORIES THE PLAYER MADE, one key each and the same key shifted for the
+            // way back (owner-approved 2026-08-23). Comma, period and slash: three keys in a row
+            // under the right hand, bound to nothing at all in the game's own defaults and taken by
+            // nothing in the mod - the type-ahead reads letters and space and never punctuation - so
+            // the claim needs no physical-modifier trick the way the Page keys did. Not repeating:
+            // every press is a jump across the map, and leaning on the key would race past the
+            // landings it is making.
+            input
+                .Register(MapActions.ScanCustom1Next)
+                .Bind(KeyCode.Comma)
+                .ClaimedWhile(ES2Access.Screens.GalaxyScanner.QuickKeysClaimed);
+            input
+                .Register(MapActions.ScanCustom1Prev)
+                .Bind(KeyCode.Comma, shift: true)
+                .ClaimedWhile(ES2Access.Screens.GalaxyScanner.QuickKeysClaimed);
+            input
+                .Register(MapActions.ScanCustom2Next)
+                .Bind(KeyCode.Period)
+                .ClaimedWhile(ES2Access.Screens.GalaxyScanner.QuickKeysClaimed);
+            input
+                .Register(MapActions.ScanCustom2Prev)
+                .Bind(KeyCode.Period, shift: true)
+                .ClaimedWhile(ES2Access.Screens.GalaxyScanner.QuickKeysClaimed);
+            input
+                .Register(MapActions.ScanCustom3Next)
+                .Bind(KeyCode.Slash)
+                .ClaimedWhile(ES2Access.Screens.GalaxyScanner.QuickKeysClaimed);
+            input
+                .Register(MapActions.ScanCustom3Prev)
+                .Bind(KeyCode.Slash, shift: true)
+                .ClaimedWhile(ES2Access.Screens.GalaxyScanner.QuickKeysClaimed);
+
             input.Register(BufferActions.LineUp).Bind(KeyCode.UpArrow, ctrl: true);
             input.Register(BufferActions.LineDown).Bind(KeyCode.DownArrow, ctrl: true);
             input.Register(BufferActions.Prev).Bind(KeyCode.LeftArrow, ctrl: true);
@@ -970,6 +1002,7 @@ namespace ES2Access
             // After the input layer has gone, because the binding store reads it: what the player
             // chose is already on disk (the window wrote it when it hid), so this only lets go.
             Step("bindings", ModBindings.Reset);
+            Step("scanner categories", ScannerCustomSettings.Reset);
             Step("settings", ModSettings.Reset);
 
             Step("locale", ModLocale.Reset);

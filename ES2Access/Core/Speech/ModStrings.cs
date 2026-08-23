@@ -600,6 +600,22 @@ namespace ES2Access.Core.Speech
         /// world alone - the column has already said the rest.</summary>
         public const string GalaxyScannerOnPlanet = "galaxy.scanner.on-planet";
 
+        // --- the player's own scanner categories (2026-08-23) ---
+
+        /// <summary>What an empty slot is called once the player fills it, numbered the way its two
+        /// keys are.</summary>
+        public const string GalaxyScannerCustomName = "galaxy.scanner.custom-name";
+
+        /// <summary>A custom category's first column: everything it caught, however it was caught.
+        /// Its own word rather than a built-in category's, because it is the one column of the one
+        /// taxonomy the player wrote.</summary>
+        public const string GalaxyScannerCustomAll = "galaxy.scanner.custom-all";
+
+        /// <summary>What one of the six quick keys says when the slot it answers for is empty. It
+        /// names the KEY, which the mod reads off the live binding - so a player who moved the key
+        /// hears the key they pressed.</summary>
+        public const string GalaxyScannerNoCustom = "galaxy.scanner.no-custom";
+
         /// <summary>How many people a world would ever hold. The game draws this beside an icon and
         /// writes the words nowhere, so they are the mod's.</summary>
         public const string GalaxyScannerMaxPopulation = "galaxy.scanner.max-population";
@@ -1773,6 +1789,9 @@ namespace ES2Access.Core.Speech
             { GalaxyScannerStrategic, "Strategic Resources" },
             { GalaxyScannerStrategicAll, "all" },
             { GalaxyScannerOnPlanet, "{0} on {1}" },
+            { GalaxyScannerCustomName, "Custom {0}" },
+            { GalaxyScannerCustomAll, "all" },
+            { GalaxyScannerNoCustom, "No custom category on {0}" },
             { GalaxyScannerMaxPopulation, "max population {0}" },
             { GalaxyScannerOutput, "{0} {1}" },
             // --- end scanner categories ---

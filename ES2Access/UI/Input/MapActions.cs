@@ -47,5 +47,32 @@ namespace ES2Access.UI.Input
         /// <summary>Go to whatever the scanner is pointing at - the inspect cursor onto its square
         /// while that mode is up, the tree cursor onto its node otherwise.</summary>
         public const string ScanGoTo = "galaxy.scanGoTo";
+
+        // THE THREE CATEGORIES THE PLAYER MADE, one pair of keys each (owner ruling 2026-08-23). They
+        // are not a fourth tier of the scanner: each key walks its slot's whole list flat, nearest
+        // first, and GOES to what it lands on - one press, one hop across the map. The number is the
+        // SLOT, so the key means the same thing whatever the player has since called the category.
+        public const string ScanCustom1Next = "galaxy.scanCustom1Next";
+        public const string ScanCustom1Prev = "galaxy.scanCustom1Prev";
+        public const string ScanCustom2Next = "galaxy.scanCustom2Next";
+        public const string ScanCustom2Prev = "galaxy.scanCustom2Prev";
+        public const string ScanCustom3Next = "galaxy.scanCustom3Next";
+        public const string ScanCustom3Prev = "galaxy.scanCustom3Prev";
+
+        /// <summary>The action that walks a slot forward, and the one that walks it back - indexed by
+        /// slot, so the scanner can answer a press by number and name the key that made it.</summary>
+        public static readonly string[] ScanCustomNext = new string[]
+        {
+            ScanCustom1Next,
+            ScanCustom2Next,
+            ScanCustom3Next,
+        };
+
+        public static readonly string[] ScanCustomPrev = new string[]
+        {
+            ScanCustom1Prev,
+            ScanCustom2Prev,
+            ScanCustom3Prev,
+        };
     }
 }

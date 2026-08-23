@@ -254,6 +254,50 @@ namespace ES2Access.Core.Speech
                 "Go to whatever the scan is pointing at."
             },
 
+            // The three categories the player makes for themselves, each on one key and its shifted
+            // self. The titles are numbered rather than named, because the row has to say which key
+            // this is whatever the player has called the category it answers for - and an empty slot
+            // has no name at all.
+            { "action.galaxy.scanCustom1Next.title", "Scanner: next custom category 1 result" },
+            {
+                "action.galaxy.scanCustom1Next.description",
+                "Go to the next thing your first custom category found, nearest first."
+            },
+            {
+                "action.galaxy.scanCustom1Prev.title",
+                "Scanner: previous custom category 1 result"
+            },
+            {
+                "action.galaxy.scanCustom1Prev.description",
+                "Go to the previous thing your first custom category found."
+            },
+            { "action.galaxy.scanCustom2Next.title", "Scanner: next custom category 2 result" },
+            {
+                "action.galaxy.scanCustom2Next.description",
+                "Go to the next thing your second custom category found, nearest first."
+            },
+            {
+                "action.galaxy.scanCustom2Prev.title",
+                "Scanner: previous custom category 2 result"
+            },
+            {
+                "action.galaxy.scanCustom2Prev.description",
+                "Go to the previous thing your second custom category found."
+            },
+            { "action.galaxy.scanCustom3Next.title", "Scanner: next custom category 3 result" },
+            {
+                "action.galaxy.scanCustom3Next.description",
+                "Go to the next thing your third custom category found, nearest first."
+            },
+            {
+                "action.galaxy.scanCustom3Prev.title",
+                "Scanner: previous custom category 3 result"
+            },
+            {
+                "action.galaxy.scanCustom3Prev.description",
+                "Go to the previous thing your third custom category found."
+            },
+
             // Reading the description of what the cursor is on.
             { "action.buffer.lineUp.title", "Previous line of the description" },
             {

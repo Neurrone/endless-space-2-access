@@ -7,6 +7,7 @@ using ES2Access.Core.UI.Graph;
 using ES2Access.Core.Util;
 using ES2Access.UI;
 using ES2Access.UI.Input;
+using ES2Access.UI.Settings;
 using UnityEngine;
 
 namespace ES2Access.Screens
@@ -73,42 +74,53 @@ namespace ES2Access.Screens
         // The ORDER is the owner's (2026-08-22): the places first, then what can be done with them,
         // then what is out there to find, then what is moving. A player sweeping the map reads down
         // it, so the ordering is the mod's answer to "what am I most likely to be looking for".
-        private const int CategorySystems = 0;
+        //
+        // IN FRONT OF ALL OF THEM ARE THE PLAYER'S OWN (owner ruling 2026-08-23): three fixed slots,
+        // each empty or holding a category the player wrote (<see cref="ScannerCustomSlots"/>), and
+        // the first thing the category cycle reaches - a list somebody assembled for themselves is
+        // the one they most want one press away. The three rows are always THERE, configured or not:
+        // an unconfigured slot holds nothing and is skipped by the same rule that skips a built-in
+        // category with nothing in it, and keeping the row means the index of every category below is
+        // the same whatever the player does to their slots - which is what the cursor's per-category
+        // memory is addressed by.
+        private const int SlotCount = ScannerCustomSlots.Count;
+
+        private const int CategorySystems = SlotCount + 0;
 
         /// <summary>Worlds this empire could settle - the ones standing free, and the ones somebody
         /// else is already sitting on that this empire's technology could take.</summary>
-        private const int CategoryColonizable = 1;
+        private const int CategoryColonizable = SlotCount + 1;
 
         /// <summary>Every way out of the known map: a drawn lane or wormhole whose far end the player
         /// has not perceived. The one category whose things are EDGES rather than places.</summary>
-        private const int CategoryUnexplored = 2;
+        private const int CategoryUnexplored = SlotCount + 2;
 
         // The four whose subcategories are derived from what is out there rather than written down
         // here: one per kind found, in the language's own alphabetical order, behind an "all".
-        private const int CategoryAnomalies = 3;
-        private const int CategoryCuriosities = 4;
-        private const int CategoryLuxury = 5;
-        private const int CategoryStrategic = 6;
+        private const int CategoryAnomalies = SlotCount + 3;
+        private const int CategoryCuriosities = SlotCount + 4;
+        private const int CategoryLuxury = SlotCount + 5;
+        private const int CategoryStrategic = SlotCount + 6;
 
         /// <summary>Squares of the player's OWN influence that somebody else's field is winning - the
         /// one category whose things are not things at all but places, and the one whose "whose" is
         /// already settled by what the category IS (they are all the player's ground, being taken).
         /// So it has the single subcategory "all", and its affiliation question would have exactly one
         /// answer.</summary>
-        private const int CategoryContestedInfluence = 7;
+        private const int CategoryContestedInfluence = SlotCount + 7;
 
         // The two that are asked "whose", after everything that is asked "what is there".
-        private const int CategoryFleets = 8;
-        private const int CategoryProbes = 9;
+        private const int CategoryFleets = SlotCount + 8;
+        private const int CategoryProbes = SlotCount + 9;
 
         // The three that are only ever asked "what is there". Each has the single subcategory "all",
         // so the subcategory key on one of them comes round to where it started and says so - which is
         // the honest answer to "what else is there".
-        private const int CategoryPins = 10;
-        private const int CategoryProjectiles = 11;
-        private const int CategoryMarkers = 12;
+        private const int CategoryPins = SlotCount + 10;
+        private const int CategoryProjectiles = SlotCount + 11;
+        private const int CategoryMarkers = SlotCount + 12;
 
-        private const int CategoryCount = 13;
+        private const int CategoryCount = SlotCount + 13;
 
         private const int ScopeAll = ScannerScopes.All;
         private const int ScopeFriendly = ScannerScopes.Friendly;
@@ -148,12 +160,23 @@ namespace ES2Access.Screens
             return Active && KeyboardBinding.AnyModifierHeld;
         }
 
+        /// <summary>What the six QUICK keys' claim asks. They are bare keys on their own punctuation
+        /// - the game binds nothing to any of them and the mod's type-ahead only ever takes letters
+        /// - so the modifier half of the claim above has nothing to separate here: standing on the
+        /// map widget is the whole of it.</summary>
+        public static bool QuickKeysClaimed()
+        {
+            return Active;
+        }
+
         /// <summary>Drop the scanner's position - mod teardown. The lists were never held.</summary>
         public void Forget()
         {
             _cursor.Forget();
+            _walk.Forget();
             _empire = null;
             _labels = null;
+            _names = null;
             ScannerCost.Forget();
         }
 
@@ -187,6 +210,18 @@ namespace ES2Access.Screens
                         return Scan(-1, Tier.Instance);
                     case MapActions.ScanGoTo:
                         return GoTo();
+                    case MapActions.ScanCustom1Next:
+                        return Quick(0, 1, actionKey);
+                    case MapActions.ScanCustom1Prev:
+                        return Quick(0, -1, actionKey);
+                    case MapActions.ScanCustom2Next:
+                        return Quick(1, 1, actionKey);
+                    case MapActions.ScanCustom2Prev:
+                        return Quick(1, -1, actionKey);
+                    case MapActions.ScanCustom3Next:
+                        return Quick(2, 1, actionKey);
+                    case MapActions.ScanCustom3Prev:
+                        return Quick(2, -1, actionKey);
                 }
 
                 return false;
@@ -230,6 +265,24 @@ namespace ES2Access.Screens
             /// resource's. It is both the column this belongs in and, in the category's "all", the
             /// first half of what the row says. Null everywhere else.</summary>
             public string Kind;
+
+            /// <summary>The same kind, in the GAME's own internal name for it rather than in the
+            /// player's language - the anomaly definition's name, the curiosity's displayed type, the
+            /// resource's name. It is never spoken and never a column label; it exists so a custom
+            /// category's saved selector can name a kind and still find it after a language change
+            /// (<see cref="ScannerKeys"/>). Null wherever <see cref="Kind"/> is.</summary>
+            public string KindKey;
+
+            /// <summary>Whether this row says its KIND in front of its name in the column it is being
+            /// read out of. Filled in only for the copies a custom category holds, where the column a
+            /// result came from is no longer the column it is being read out of; the built-in
+            /// categories answer the same question from the cursor's own position.</summary>
+            public bool Prefix;
+
+            /// <summary>Which of the scanner's own categories this copy was taken out of. Filled in
+            /// only for the copies a custom category holds, which is the only place a result is read
+            /// somewhere other than where it was found.</summary>
+            public int From;
 
             /// <summary>What this thing IS, across a rebuild - the identity the cursor is re-seated
             /// by. Not the name: two planets can share one, and the same planet can be at a different
@@ -288,8 +341,36 @@ namespace ES2Access.Screens
         private sealed class Snap
         {
             public List<Found>[] World;
+
+            /// <summary>What each of the three slots caught, one list per column of the category the
+            /// player wrote - or null for a slot that is empty, which is what tells a quick key it
+            /// has nothing to answer for. The lists hold COPIES of the built-in results: a copy of a
+            /// struct is the same facts, so a row of a custom category and the row it came from
+            /// cannot say different things about one planet.</summary>
+            public List<Found>[][] Custom;
+
             public string[][] Labels;
+
+            /// <summary>What each category is CALLED this press - the localized label for a built-in
+            /// one, the player's own name for a slot they filled.</summary>
+            public string[] Names;
+
             public ScannerTable Table;
+        }
+
+        /// <summary>Whether a category is one of the player's own three slots rather than one of the
+        /// scanner's own thirteen.</summary>
+        private static bool Custom(int category)
+        {
+            return category >= 0 && category < SlotCount;
+        }
+
+        /// <summary>Which of the scanner's own thirteen a category index is - what the taxonomy
+        /// tables written down in this file are indexed by, the slots in front of them taken off.
+        /// </summary>
+        private static int Built(int category)
+        {
+            return category - SlotCount;
         }
 
         // ---- one press ----
@@ -342,6 +423,86 @@ namespace ES2Access.Screens
             return true;
         }
 
+        /// <summary>
+        /// ONE OF THE SIX QUICK KEYS: walk the slot's whole list flat, nearest first from where the
+        /// player is reading, and GO to what it lands on.
+        ///
+        /// It is one gesture, not three: there is no scope to choose and no separate step, so the key
+        /// both names the list and moves along it, and every press takes the player somewhere. That
+        /// is what makes the sweep a nearest-neighbour hop across the map - each landing becomes the
+        /// place the next press measures from - and it is why the walk's rules (re-anchor when the
+        /// player has moved, step on rather than re-land where they are standing) are their own
+        /// engine-free thing (<see cref="ScannerWalk"/>).
+        ///
+        /// AN EMPTY SLOT SAYS SO AND NAMES THE KEY, never silence: pressed by a player who has not
+        /// configured that slot, or who forgot which of the three they filled, a key that does
+        /// nothing is indistinguishable from a mod that has stopped working. The key is named off the
+        /// LIVE binding, so a player who moved it hears what they actually pressed.
+        /// </summary>
+        private bool Quick(int slot, int delta, string actionKey)
+        {
+            double east;
+            double north;
+            Snap snap = Snapshot(out east, out north);
+            if (snap.Custom[slot] == null)
+            {
+                Voice.Say(
+                    ModStrings.Format(ModStrings.GalaxyScannerNoCustom, Pressed(actionKey)),
+                    true
+                );
+                return true;
+            }
+
+            Rearmed();
+            _cursor.Arm();
+            List<Found> all = snap.Custom[slot][0];
+            IList<string> keys = Keys(all);
+            bool sweeping = _walk.Sweeping(slot, east, north);
+            string standing =
+                _cursor.Category == slot && _cursor.Subcategory == ScopeAll
+                    ? _cursor.ResultKey
+                    : null;
+            bool parked =
+                all.Count > 0
+                && standing != null
+                && all[0].Key == standing
+                && Here(all[0], east, north);
+            int at = ScannerWalk.Land(delta, keys, standing, sweeping, parked);
+            _cursor.Point(slot, ScopeAll, at < 0 ? 0 : at, snap.Table);
+            _walk.Anchor(slot, east, north);
+            if (at < 0)
+            {
+                _cursor.Landed(keys);
+                Voice.Say(ModStrings.Format(ModStrings.GalaxyScannerEmpty, ScopeName()), true);
+                return true;
+            }
+
+            _cursor.Landed(keys);
+            MessageBuilder message = new MessageBuilder();
+            Instance(message, Spoken(all[at]), Detail(all[at]), all[at], at, all.Count, east, north);
+            Voice.Say(message.Build(), true);
+            Travel(all[at], at, all.Count, east, north, false);
+            return true;
+        }
+
+        /// <summary>Whether a thing stands on the very pair the player is reading from - which is
+        /// what a landing leaves behind, and the half of "the player is parked on this" the walk
+        /// cannot answer for itself. Rounded, because the pair the player hears is.</summary>
+        private static bool Here(Found found, double east, double north)
+        {
+            return MapCoordinates.Round(found.East) == MapCoordinates.Round(east)
+                && MapCoordinates.Round(found.North) == MapCoordinates.Round(north);
+        }
+
+        /// <summary>The chord an action is on, as the player would say it - what the empty-slot
+        /// sentence names. An action nothing is bound to (which nobody can have pressed) falls back
+        /// to the name the rebinding row gives it.</summary>
+        private static string Pressed(string actionKey)
+        {
+            string chord = ChordNames.Of(ModEntry.Input, actionKey, 0);
+            return string.IsNullOrEmpty(chord) ? ModBindings.Title(actionKey) : chord;
+        }
+
         /// <summary>Whether the player has gone to another game since the last press, which re-arms
         /// the scanner: the position it was holding indexed a galaxy that is not this one.</summary>
         private bool Rearmed()
@@ -354,6 +515,7 @@ namespace ES2Access.Screens
 
             _empire = empire;
             _cursor.Forget();
+            _walk.Forget();
             _cursor.Arm();
             return true;
         }
@@ -362,9 +524,22 @@ namespace ES2Access.Screens
         private List<Found> Scoped(Snap snap)
         {
             int at = _cursor.Category;
-            if (at < 0 || at >= snap.World.Length)
+            if (at < 0 || at >= CategoryCount)
             {
                 at = CategorySystems;
+            }
+
+            // A CUSTOM CATEGORY'S COLUMNS ARE LISTS, not a filter over one list. Its membership is
+            // not a fact about a thing - it is a fact about which of the player's questions caught
+            // it, and one thing can be caught by several of them - so the columns are built when the
+            // category is and read straight back here.
+            if (Custom(at))
+            {
+                List<Found>[] columns = snap.Custom[at];
+                int column = _cursor.Subcategory;
+                return columns != null && column >= 0 && column < columns.Length
+                    ? columns[column]
+                    : new List<Found>();
             }
 
             List<Found> all = snap.World[at];
@@ -403,7 +578,7 @@ namespace ES2Access.Screens
             // The columns a category writes down for itself come first and are memberships; the ones
             // built from what was found come after them and are kinds. Most categories write down one
             // ("all"); the curiosities write down three.
-            if (!Kinds(category) || subcategory < ScopeKeys[category].Length)
+            if (!Kinds(category) || subcategory < ScopeKeys[Built(category)].Length)
             {
                 return ScannerScopes.Holds(found.Scopes, subcategory);
             }
@@ -430,11 +605,24 @@ namespace ES2Access.Screens
         /// are of DIFFERENT widths on purpose - what a category can be asked about is a fact about
         /// that category, and a uniform table would have to pad the ones that are only ever asked
         /// "what is there" with scopes that could never hold anything.</summary>
-        private static ScannerTable Table(List<Found>[] world, string[][] labels)
+        private static ScannerTable Table(List<Found>[] world, List<Found>[][] custom, string[][] labels)
         {
             int[][] counts = new int[CategoryCount][];
             for (int at = 0; at < CategoryCount; at++)
             {
+                if (Custom(at))
+                {
+                    List<Found>[] columns = custom[at];
+                    int[] slot = new int[columns == null ? 0 : columns.Length];
+                    for (int i = 0; i < slot.Length; i++)
+                    {
+                        slot[i] = columns[i].Count;
+                    }
+
+                    counts[at] = slot;
+                    continue;
+                }
+
                 int width = labels[at].Length;
                 int[] row = new int[width];
                 List<Found> found = world[at];
@@ -535,30 +723,36 @@ namespace ES2Access.Screens
         /// </summary>
         private string Spoken(Found found)
         {
-            return found.Kind != null && Kinds(_cursor.Category) && _cursor.Subcategory == ScopeAll
+            if (found.Kind == null)
+            {
+                return found.Name;
+            }
+
+            // A custom category's row was decided when the copy was made: the column it came OUT of
+            // is not the column it is being read out of, so the question "has the kind already been
+            // said" cannot be asked of where the cursor now stands.
+            bool prefix = Custom(_cursor.Category)
+                ? found.Prefix
+                : Kinds(_cursor.Category) && _cursor.Subcategory == ScopeAll;
+            return prefix
                 ? ModStrings.Format(ModStrings.GalaxyScannerOnPlanet, found.Kind, found.Name)
                 : found.Name;
         }
 
         /// <summary>
-        /// What else is said about a thing straight after its name.
+        /// What else is said about a thing straight after its name - already composed, for every kind
+        /// including the settleable worlds.
         ///
-        /// Most kinds have it composed already - a probe's owner, its countdown. A COLONIZABLE world
-        /// does not, and deliberately: its description is the longest line the scanner says and much
-        /// the most expensive to compose, and exactly one row of the list is ever read out. Composing
-        /// them all on the way in would build a sentence for every settleable planet in the galaxy and
-        /// throw all but one away, on a key the player holds down.
+        /// A colonizable world's description used to be composed LAZILY for the one row being read,
+        /// because it is the longest line the scanner says. It is composed on the way in now (owner
+        /// ruling 2026-08-23): a keyword can only look at what a result SAYS, and a description
+        /// nobody has composed says nothing - a player searching for "Tundra" would have found no
+        /// world at all. The measured cost of composing every one of them is in
+        /// <see cref="ScannerCost"/>, and the owner ruled against making it opt-in.
         /// </summary>
-        private string Detail(Found found)
+        private static string Detail(Found found)
         {
-            if (found.Extra != null)
-            {
-                return found.Extra;
-            }
-
-            return _cursor.Category == CategoryColonizable && found.Planet != null
-                ? Description(found.Planet, Gui.PlayerEmpire)
-                : null;
+            return found.Extra;
         }
 
         /// <summary>One thing found, said the way the map says a place: what it is called, where it is
@@ -622,9 +816,20 @@ namespace ES2Access.Screens
         {
             return ModStrings.Format(
                 ModStrings.GalaxyScannerScope,
-                ModStrings.Get(CategoryKeys[_cursor.Category]),
+                CategoryName(),
                 SubcategoryName()
             );
+        }
+
+        /// <summary>The category half alone. Read off the snapshot rather than out of the table of
+        /// keys, because one of the three at the front is called whatever the player called it.
+        /// </summary>
+        private string CategoryName()
+        {
+            int at = _cursor.Category;
+            return _names != null && at >= 0 && at < _names.Length && _names[at] != null
+                ? _names[at]
+                : string.Empty;
         }
 
         /// <summary>The subcategory half alone - what a step of the subcategory key changed. Read off
@@ -651,6 +856,13 @@ namespace ES2Access.Screens
         /// <summary>The column names of the last snapshot - what the cursor's memory is keyed by and
         /// what the scope line says.</summary>
         private string[][] _labels;
+
+        /// <summary>What each category was called in the last snapshot.</summary>
+        private string[] _names;
+
+        /// <summary>Where each of the six quick keys' walks stands - one walk, because all six
+        /// address the same cursor and only one of them can be in flight.</summary>
+        private readonly ScannerWalk _walk = new ScannerWalk();
 
         private static readonly string[] CategoryKeys = new string[]
         {
@@ -737,7 +949,15 @@ namespace ES2Access.Screens
             string[][] labels = new string[CategoryCount][];
             for (int at = 0; at < CategoryCount; at++)
             {
-                string[] keys = ScopeKeys[at];
+                if (Custom(at))
+                {
+                    // The player's own three name their columns from what they asked for, which is
+                    // not known until the categories are planned - see <see cref="Plans"/>.
+                    labels[at] = NoColumns;
+                    continue;
+                }
+
+                string[] keys = ScopeKeys[Built(at)];
                 if (!Kinds(at))
                 {
                     string[] fixedNames = new string[keys.Length];
@@ -782,6 +1002,225 @@ namespace ES2Access.Screens
             return labels;
         }
 
+        /// <summary>A category with no columns at all - an unconfigured slot, which is a row of the
+        /// table holding nothing and is therefore skipped by every cycle exactly as a built-in
+        /// category with nothing in it is.</summary>
+        private static readonly string[] NoColumns = new string[0];
+
+        // ---- the player's own categories ----
+
+        /// <summary>
+        /// WHAT THE THREE SLOTS ASK FOR, this press: one plan per configured slot, its columns
+        /// resolved against the galaxy as it now stands (<see cref="ScannerCustomPlan"/>). A slot
+        /// standing empty plans nothing, which is what tells its quick keys to say so.
+        /// </summary>
+        private static ScannerCustomPlan[] Plans(List<Found>[] world, string[][] labels)
+        {
+            ScannerCustomPlan[] plans = new ScannerCustomPlan[SlotCount];
+            ScannerCustomSlots slots = ScannerCustomSettings.Slots;
+            if (!slots.Any)
+            {
+                return plans;
+            }
+
+            Columns columns = new Columns(world, labels);
+            for (int slot = 0; slot < SlotCount; slot++)
+            {
+                plans[slot] = ScannerCustomPlan.Of(slots.Slot(slot), columns);
+            }
+
+            return plans;
+        }
+
+        /// <summary>
+        /// EVERYTHING ONE SLOT CAUGHT, one list per column of the category the player wrote.
+        ///
+        /// A selector's column holds whatever its built-in column holds, shared as a struct copy - the
+        /// same facts, so a row of the custom category and the row it came from can never say
+        /// different things about one planet. A keyword's column holds everything in the whole
+        /// scanner whose own words match it. And "all" holds each result ONCE however many of the
+        /// player's questions caught it, which is the only column where the same thing could have
+        /// arrived twice.
+        /// </summary>
+        private static List<Found>[] CustomColumns(
+            ScannerCustomPlan plan,
+            List<Found>[] world,
+            string[][] labels,
+            double east,
+            double north
+        )
+        {
+            IList<ScannerCustomColumn> plans = plan.Columns;
+            List<Found>[] columns = new List<Found>[plans.Count];
+            List<Found> all = new List<Found>();
+            HashSet<string> seen = new HashSet<string>();
+            columns[0] = all;
+            for (int c = 1; c < plans.Count; c++)
+            {
+                ScannerCustomColumn column = plans[c];
+                List<Found> caught = new List<Found>();
+                if (column.Keyword != null)
+                {
+                    Keyword(caught, column.Keyword, world);
+                }
+                else
+                {
+                    Selected(caught, column.Category, column.Subcategory, world, labels);
+                }
+
+                Sort(caught, east, north);
+                columns[c] = caught;
+                for (int i = 0; i < caught.Count; i++)
+                {
+                    Found found = caught[i];
+                    if (!seen.Add(found.Key))
+                    {
+                        continue;
+                    }
+
+                    // In "all" the row says what it would say in the column it came from's own
+                    // "all" - the kind and then the world, where the source category's columns are
+                    // kinds - because "all" has said nothing about it either.
+                    found.Prefix = Kinds(found.From) && found.Kind != null;
+                    all.Add(found);
+                }
+            }
+
+            Sort(all, east, north);
+            return columns;
+        }
+
+        /// <summary>One built-in column, as a custom category holds it.</summary>
+        private static void Selected(
+            List<Found> caught,
+            int category,
+            int subcategory,
+            List<Found>[] world,
+            string[][] labels
+        )
+        {
+            List<Found> source = world[category];
+            bool prefix = Kinds(category) && subcategory == ScopeAll;
+            for (int i = 0; i < source.Count; i++)
+            {
+                if (!Holds(source[i], category, subcategory, labels[category]))
+                {
+                    continue;
+                }
+
+                Found found = source[i];
+                found.From = category;
+                found.Prefix = prefix && found.Kind != null;
+                caught.Add(found);
+            }
+        }
+
+        /// <summary>Everything the scanner can see whose own words match one keyword - its name, the
+        /// kind of thing it is, and the detail already composed for it (owner ruling 2026-08-23).
+        /// Every built-in category is asked, and no custom one: a custom category holding another's
+        /// results would be the same things twice under two names.</summary>
+        private static void Keyword(List<Found> caught, string keyword, List<Found>[] world)
+        {
+            for (int at = SlotCount; at < CategoryCount; at++)
+            {
+                List<Found> source = world[at];
+                bool kinds = Kinds(at);
+                for (int i = 0; i < source.Count; i++)
+                {
+                    if (
+                        !ScannerCustomPlan.Catches(
+                            keyword,
+                            source[i].Name,
+                            source[i].Kind,
+                            source[i].Extra
+                        )
+                    )
+                    {
+                        continue;
+                    }
+
+                    Found found = source[i];
+                    found.From = at;
+                    found.Prefix = kinds && found.Kind != null;
+                    caught.Add(found);
+                }
+            }
+        }
+
+        /// <summary>What a plan asks the live galaxy about its own columns: which one a saved
+        /// selector names, and what it is called.</summary>
+        private sealed class Columns : IScannerColumns
+        {
+            public Columns(List<Found>[] world, string[][] labels)
+            {
+                _world = world;
+                _labels = labels;
+            }
+
+            public bool Find(ScannerSelector selector, out int category, out int subcategory)
+            {
+                category = -1;
+                subcategory = -1;
+                int built = ScannerKeys.Category(selector.Category);
+                if (built < 0)
+                {
+                    return false;
+                }
+
+                category = built + SlotCount;
+                subcategory = ScannerKeys.Subcategory(built, selector.Subcategory);
+                if (subcategory >= 0)
+                {
+                    return true;
+                }
+
+                // Not one of the columns the category writes down, so it is a KIND - and which column
+                // a kind is in is a fact about this galaxy. The definition's own name is looked for
+                // among what was found; the column is then the one carrying that kind's LABEL, which
+                // is what the table is keyed by.
+                if (!Kinds(category))
+                {
+                    return false;
+                }
+
+                List<Found> found = _world[category];
+                for (int i = 0; i < found.Count; i++)
+                {
+                    if (found[i].KindKey != selector.Subcategory)
+                    {
+                        continue;
+                    }
+
+                    string[] row = _labels[category];
+                    for (int c = 0; c < row.Length; c++)
+                    {
+                        if (row[c] == found[i].Kind)
+                        {
+                            subcategory = c;
+                            return true;
+                        }
+                    }
+                }
+
+                return false;
+            }
+
+            public string Label(int category, int subcategory)
+            {
+                // BOTH halves: two selectors that both say "all" are two different columns, and a
+                // player who hears "all" twice in one category has no way to tell them apart - nor
+                // has the cursor, which remembers a column by its name.
+                return ModStrings.Format(
+                    ModStrings.GalaxyScannerScope,
+                    ModStrings.Get(CategoryKeys[Built(category)]),
+                    _labels[category][subcategory]
+                );
+            }
+
+            private readonly List<Found>[] _world;
+            private readonly string[][] _labels;
+        }
+
         // ---- going there ----
 
         /// <summary>
@@ -816,8 +1255,27 @@ namespace ES2Access.Screens
                 return true;
             }
 
-            Found found = scope[at];
+            Travel(scope[at], at, scope.Count, east, north, true);
+            return true;
+        }
 
+        /// <summary>
+        /// The landing itself, which is the same wherever the press came from - the go-to key, or one
+        /// of the six that walk a category the player made. There is ONE landing per category and
+        /// this is it; a quick key inventing a different one would make "go to the next enemy fleet"
+        /// mean something else from the key than from the cycle.
+        /// </summary>
+        /// <param name="announce">Whether the scanner says the line for a fleet the tree has no node
+        /// for. False from the quick keys, which have already said their landing.</param>
+        private void Travel(
+            Found found,
+            int at,
+            int count,
+            double east,
+            double north,
+            bool announce
+        )
+        {
             // A SQUARE OF SKY is the one kind that turns the inspect cursor ON (owner decision,
             // 2026-08-21). Every other kind has a landing in the tree, so leaving the cursor alone
             // costs the player nothing; a square has no node, no row and nothing to select, and going
@@ -837,7 +1295,7 @@ namespace ES2Access.Screens
                     _screen.Inspect.JumpTo(x, y);
                 }
 
-                return true;
+                return;
             }
 
             // Everything else goes through the PAGE's one landing, which owns the whole decision -
@@ -847,7 +1305,7 @@ namespace ES2Access.Screens
             // onto a world, which the cell cannot read.
             if (_screen.GoTo(Target(found), MapCamera.Auto))
             {
-                return true;
+                return;
             }
 
             // A fleet the tree has NO node for. The tree hangs a fleet under the system it is parked
@@ -859,10 +1317,14 @@ namespace ES2Access.Screens
             // does not exist. The landing has already selected it and moved the camera - the map's own
             // "go to that fleet" - and there is no node to announce the arrival, so the line the
             // scanner found it with is said again, which is the whole of what arriving there means.
+            if (!announce)
+            {
+                return;
+            }
+
             MessageBuilder arrival = new MessageBuilder();
-            Instance(arrival, Spoken(found), Detail(found), found, at, scope.Count, east, north);
+            Instance(arrival, Spoken(found), Detail(found), found, at, count, east, north);
             Voice.Say(arrival.Build(), true);
-            return true;
         }
 
         /// <summary>
@@ -975,13 +1437,41 @@ namespace ES2Access.Screens
                 Sort(world[at], east, north);
             }
 
-            _labels = Labels(world);
+            string[][] labels = Labels(world);
+
+            // The player's own categories are built LAST, out of what the built-in ones found: a
+            // selector points at a column that has to exist before it can be read, and a keyword is
+            // asked of the detail those columns have already composed.
+            List<Found>[][] custom = new List<Found>[CategoryCount][];
+            string[] names = new string[CategoryCount];
+            ScannerCustomPlan[] plans = Plans(world, labels);
+            for (int slot = 0; slot < SlotCount; slot++)
+            {
+                if (plans[slot] == null)
+                {
+                    continue;
+                }
+
+                custom[slot] = CustomColumns(plans[slot], world, labels, east, north);
+                labels[slot] = plans[slot].Labels();
+                names[slot] = plans[slot].Name;
+            }
+
+            for (int at = SlotCount; at < CategoryCount; at++)
+            {
+                names[at] = ModStrings.Get(CategoryKeys[Built(at)]);
+            }
+
+            _labels = labels;
+            _names = names;
             ScannerCost.End();
             return new Snap
             {
                 World = world,
-                Labels = _labels,
-                Table = Table(world, _labels),
+                Custom = custom,
+                Labels = labels,
+                Names = names,
+                Table = Table(world, custom, labels),
             };
         }
 
@@ -1255,7 +1745,7 @@ namespace ES2Access.Screens
 
                     Anomalies(anomalies, node, planet, i, name, titles);
                     Deposits(luxury, strategic, node, planet, i, name, titles);
-                    Colonizable(colonizable, node, planet, i, name, empire, able);
+                    Colonizable(colonizable, node, planet, i, name, empire, able, titles);
                 }
             }
         }
@@ -1284,7 +1774,17 @@ namespace ES2Access.Screens
                 string kind = AnomalyTitle(definition, planet, titles);
                 if (Once(seen, kind))
                 {
-                    found.Add(OnPlanet(node, planet, orbit, name, kind, "anomaly"));
+                        found.Add(
+                        OnPlanet(
+                            node,
+                            planet,
+                            orbit,
+                            name,
+                            kind,
+                            definition.Name.ToString(),
+                            "anomaly"
+                        )
+                    );
                 }
             }
         }
@@ -1341,7 +1841,15 @@ namespace ES2Access.Screens
                 // colonized system), and it is what the padlock on the card stands for.
                 refusals.Clear();
                 bool explorable = curiosity.CanBeSearched(empire, null, refusals);
-                Found made = OnPlanet(node, planet, orbit, name, kind, "curiosity");
+                Found made = OnPlanet(
+                    node,
+                    planet,
+                    orbit,
+                    name,
+                    kind,
+                    curiosity.CuriosityDefinition.DisplayedType.ToString(),
+                    "curiosity"
+                );
                 made.Scopes = ScannerScopes.Curiosity(
                     explorable,
                     !explorable && LowExpeditionPower(refusals)
@@ -1405,7 +1913,15 @@ namespace ES2Access.Screens
                 if (Once(seen, kind))
                 {
                     (wrapper.IsStrategic ? strategic : luxury).Add(
-                        OnPlanet(node, planet, orbit, name, kind, "deposit")
+                        OnPlanet(
+                            node,
+                            planet,
+                            orbit,
+                            name,
+                            kind,
+                            wrapper.Name.ToString(),
+                            "deposit"
+                        )
                     );
                 }
             }
@@ -1420,6 +1936,7 @@ namespace ES2Access.Screens
             int orbit,
             string name,
             string kind,
+            string kindKey,
             string sort
         )
         {
@@ -1432,6 +1949,7 @@ namespace ES2Access.Screens
                 null
             );
             made.Kind = kind;
+            made.KindKey = kindKey;
             made.Planet = planet;
             made.Orbit = orbit;
             return made;
@@ -1460,7 +1978,8 @@ namespace ES2Access.Screens
             int orbit,
             string name,
             Empire empire,
-            Dictionary<string, bool> able
+            Dictionary<string, bool> able,
+            Dictionary<string, string> titles
         )
         {
             // The half both scopes need, and the cheap half once a type has been asked about. Asking
@@ -1501,6 +2020,12 @@ namespace ES2Access.Screens
             );
             made.Planet = planet;
             made.Orbit = orbit;
+
+            // COMPOSED HERE rather than for the one row being read (owner ruling 2026-08-23). A
+            // keyword can only look at what a result SAYS, so a description composed lazily is a
+            // world a search for "Tundra" would never find. The cost of every settleable world in the
+            // galaxy is measured in <see cref="ScannerCost"/>.
+            made.Extra = Description(planet, empire, titles);
             found.Add(made);
         }
 
@@ -1541,11 +2066,14 @@ namespace ES2Access.Screens
         /// included), its own names for anomalies, curiosities and resources, and its own titles for
         /// the five outputs, which are drawn as icons and so exist nowhere else on the screen.
         /// </summary>
-        private static string Description(Planet planet, Empire empire)
+        private static string Description(
+            Planet planet,
+            Empire empire,
+            Dictionary<string, string> titles
+        )
         {
             MessageBuilder details = new MessageBuilder();
             details.ListItem(SizeAndType(planet));
-            Dictionary<string, string> titles = new Dictionary<string, string>();
             Resources(details, planet, false, titles);
             Resources(details, planet, true, titles);
             for (int i = 0; i < planet.Anomalies.Count; i++)
