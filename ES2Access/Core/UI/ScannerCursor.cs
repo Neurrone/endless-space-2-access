@@ -211,6 +211,23 @@ namespace ES2Access.Core.UI
             }
         }
 
+        /// <summary>
+        /// Put the cursor somewhere outright - which category, which of its columns, which thing.
+        ///
+        /// The three tier keys never need this: each of them asks for a MOVE from where the cursor
+        /// already is. A quick key does, because it is a whole gesture of its own - it names the
+        /// category it walks and works out the position itself - and the scanner has one cursor, so
+        /// the paging keys must carry on from wherever a quick key left it.
+        /// </summary>
+        public void Point(int category, int subcategory, int index, ScannerTable counts)
+        {
+            Settle(counts);
+            _category = category;
+            _subcategory = subcategory;
+            _index = index;
+            Remember(counts);
+        }
+
         /// <summary>What the press ended up standing on, so the next one can find it again. Called
         /// with the scope the announcement was read out of.</summary>
         public void Landed(IList<string> keys)
