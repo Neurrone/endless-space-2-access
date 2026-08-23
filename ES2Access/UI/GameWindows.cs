@@ -28,7 +28,7 @@ namespace ES2Access.UI
     {
         /// <summary>The registered window with this name, or null - never an error in the game's log.
         /// </summary>
-        public static GuiWindow Named(string name)
+        public static Amplitude.Unity.Gui.GuiWindow Named(string name)
         {
             try
             {
@@ -38,8 +38,8 @@ namespace ES2Access.UI
                 }
 
                 GuiManager gui = Gui.GuiService as GuiManager;
-                Dictionary<StaticString, GuiWindow> registry = Registry(gui);
-                GuiWindow window;
+                Dictionary<StaticString, Amplitude.Unity.Gui.GuiWindow> registry = Registry(gui);
+                Amplitude.Unity.Gui.GuiWindow window;
                 return registry != null && registry.TryGetValue(new StaticString(name), out window)
                     ? window
                     : null;
@@ -74,10 +74,10 @@ namespace ES2Access.UI
         }
 
         private static GuiManager _for;
-        private static Dictionary<StaticString, GuiWindow> _registry;
+        private static Dictionary<StaticString, Amplitude.Unity.Gui.GuiWindow> _registry;
         private static FieldInfo _field;
 
-        private static Dictionary<StaticString, GuiWindow> Registry(GuiManager gui)
+        private static Dictionary<StaticString, Amplitude.Unity.Gui.GuiWindow> Registry(GuiManager gui)
         {
             if (gui == null)
             {
@@ -101,7 +101,7 @@ namespace ES2Access.UI
             _registry =
                 _field == null
                     ? null
-                    : _field.GetValue(gui) as Dictionary<StaticString, GuiWindow>;
+                    : _field.GetValue(gui) as Dictionary<StaticString, Amplitude.Unity.Gui.GuiWindow>;
             return _registry;
         }
     }
