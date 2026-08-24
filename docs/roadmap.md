@@ -18,7 +18,9 @@ files above.
   buttons with rows): one finished scratch game via the `OrderEliminateEmpire` route
   (test-recipes) closes all of it. (3) A cutscene sighting — no faction intro played on the
   2026-08-24 scratch launch; the colonization-cutscene route (a colony ship settling) is the
-  untried alternative.
+  untried alternative. Pending-live checks riding these fixtures: the negotiation window's
+  Close button (needs a diplomatic contact), the merged-fleet-lozenge aim re-commit (two
+  stacked fleets), the `scan:stats` scroll anchor (a populated stats lens panel).
 - **"Tooltips" children (landed 2026-08-22, batch 2) — remaining live checks only**: the
   hero detailed card's four-symbol row (Academy is tutorial-gated on both fixtures), the
   construction line's festival badge and the honor gauge's own dossier (both Hissho). Still

@@ -2391,6 +2391,20 @@ window (instant, so the cards are up on the same frame) whenever a window the ga
 SHOWN is bound to something other than the focused system, and remembers the system it rebound for
 so a bind that will not take cannot become a show every frame.
 
+**A just-shown AGE panel is `Shown && Visible && !Enable` for ~7 frames (~485 ms measured), and a
+switched-off panel makes every control in it read refused.** Measured 2026-08-24 with a background
+`POST /wait` on the specialization chooser: a screen that takes the panel over in that window
+announces "unavailable" on lines nothing is refusing, and the live watch never takes the word back
+— the corrected state is an empty part, which speaks as silence. Mod policy: a screen polled on a
+game panel gates its `IsActive` on `AgeWidgets.Operable(panel.AgeTransform)`, not on Shown/Visible
+alone (`PlanetConstructiblesScreen`, `TableFilterScreen` are the precedents).
+
+**The custom faction editor's trait tables declare column `Filters` in the XML that the game never
+draws**: their `GuiTableHeader` prefab wires no `FilterToggle` widget, and `GuiTableHeader.Refresh`
+guards on `FilterToggle != null` — so the journal's `EndGameSummaryTable` is the one table whose
+funnel toggles actually exist (measured 2026-08-24; the mod's filter reading is a no-op on the
+trait tables by the game's own hand).
+
 
 ## Card and tooltip drawing mechanisms
 

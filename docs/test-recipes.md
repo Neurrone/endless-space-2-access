@@ -1871,7 +1871,10 @@ its `CancelHackButton` carries the words "Cancel Hacking Op", so the shared capt
 no per-window wiring is needed.
 
 **Walking the out-game family from inside a session.** Leave the session first: show
-`BlackCurtainWindow`, then `GameClient.Disconnect(ClientLeft)` — the menu comes up with the pages
+`BlackCurtainWindow`, then get the client as
+`Gui.GetActivePlayerController().GameInterface as GameClient` and call
+`Disconnect(GameDisconnectionReason.ClientLeft)` — `GameClient` is not a `UnityEngine.Object`, so
+a `FindObjectsOfType` route does not compile. The menu comes up with the pages
 reachable. Per page, `Gui.GuiService.ShowWindow<T>()` and `HandleInput(InputAction.Exit)` to close,
 EXCEPT the disclaimer, which swallows every action (es2-facts) — close it through its own Accept
 node. **Never press**: Decline on the disclaimer (quits the game), Confirm on the mod manager
@@ -1879,7 +1882,18 @@ node. **Never press**: Decline on the disclaimer (quits the game), Confirm on th
 selected tab across opens — put the tab back when done. The whole family also walks from the main
 menu with `/input`: Content opens the DLC browser, Mods opens the mod manager (its Back node
 closes it), and the Mods flyout's "Game asset export" child is the exporter's player route — no
-`ShowWindow` needed for any of the three.
+`ShowWindow` needed for any of the three. The exporter can also be forced with
+`Gui.GuiService.ShowWindow<ResourcesExportScreen>()`, but it must be LEFT with
+`ShowWindow<MainMenuScreen>()`, never `HideWindow` — hiding it strands a screenless state where
+`POST /loadsave` answers `[not ready]` forever.
+**The journal's filter menu** (2026-08-24): `ShowWindow<JournalModalWindow>()` works from the main
+menu too; five of its nine drawn headers carry a funnel (`journal:filter/<Property>/<-n>`), Enter
+opens `screen.table-filter` (15 empire checkboxes on the Empire column), Escape closes it via the
+game's own `ToggleFilter` path. The custom faction editor's trait tables never draw a funnel — the
+prefab wires no `FilterToggle` (es2-facts) — so the journal is the only live surface.
+**A merged fleet lozenge has no fixture**: `[Beginner] test` never draws `MergedFleetLabels`
+(count 1, `vis=False alpha=0` at every zoom probed 2026-08-24) — two stacked fleets are needed to
+sight the pooled-lozenge aim re-commit live.
 **The mod manager's library is EMPTY in this install** (no local mod, no Workshop subscription), so
 the page draws only its "No mods" placeholder and no mod row can be walked — everything about a mod
 row is code-verified only. Its top band is one drawn line of 32 px (`FolderFiltersTable`, rect

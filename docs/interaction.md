@@ -47,7 +47,9 @@ diplomacy · `45` hero inspection (under rename 80 and the message box 100) · `
 pair (shared — the two DLC modals, never up together) · `47` cutscenes · `48` advanced battle
 setup · `49` victory-achieved ·
 `50` game-menu · `51` end-game journal · `52` options (one number, above the pause menu that
-can open it) · `55` load-save · `60` loading · `70` drop-list (above options, its owner) ·
+can open it) · `53` table-filter menu (over both tables that can open it: the journal 51 and
+the custom faction editor 7; under drop-list 70) · `55` load-save · `60` loading · `70`
+drop-list (above options, its owner) ·
 `80` rename box · `85` improvements modal (over the star-system page, under its own
 confirmation) · `86` system-politics modal · `90` tutorial-selection modal (over the new game
 screen) · `96` contextual prompt (over the scan view that raises it and the modal stack it draws last
@@ -542,6 +544,10 @@ the region. Live today on: galaxy system nodes (the system's own stat block, the
 in the ground), system-management planet cards (the planet's dossier, then one per FIDSI pip),
 and research-wheel dots (one per DRAWN unlock icon — the strip the wheel reveals under a hovered
 dot, which carries the unlocked thing's full page including its cost).
+
+**Which key crosses a multi-region stop** (measured on the empire HUD band, 2026-08-24): Up/Down
+step between the stop's REGIONS (rows) and clamp at the last one; Right/Left walk within the row.
+Alt+Up/Down jump regions by name where the stop declares them.
 
 **The galaxy system readout says whose place it is** (owner ruling 2026-08-22): name, coordinates,
 `group`, then the OWNER WORD — the controlling empire as the game's own system dossier states it
