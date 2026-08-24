@@ -99,7 +99,7 @@ namespace ES2Access.UI.ModOptions
                             typeof(IModKeybindsService),
                             new ModKeybindsService(),
                             () => Gui.Localize(ControlsTitleKey),
-                            () => ModStrings.Get(ModStrings.ModSettingsKeybindsDescription),
+                            () => Gui.Localize(ControlsDescriptionKey),
                             KeybindRows.Fill
                         )
                     );
@@ -113,8 +113,11 @@ namespace ES2Access.UI.ModOptions
         /// the mod's tab is called this rather than something of its own.</summary>
         public const string KeybindsCategory = "Controls";
 
-        /// <summary>What the game names that page in the player's language.</summary>
+        /// <summary>What the game names that page in the player's language, and what its own options
+        /// window says about it - the mod's key-binding tab is the game's Controls tab and reads as
+        /// one, in every language the game ships.</summary>
         private const string ControlsTitleKey = "%OptionToggleControlsTitle";
+        private const string ControlsDescriptionKey = "%OptionToggleControlsDescription";
 
         /// <summary>Whether a game is being played - which decides which SKIN the window wears, and
         /// nothing else since both tabs exist either way. Wrapped because the gui service is not
@@ -330,10 +333,16 @@ namespace ES2Access.UI.ModOptions
             // Showing and hiding need neither list. ESCAPE needs the manager's: every InputAction is
             // dispatched by walking it, and a window nobody walks past never sees the key - so the
             // galaxy's Escape would open the pause menu BEHIND the mod's window.
-            Add(WindowList(typeof(GameGui.GuiWindowsStack), "guiWindows", stack), window);
-            Add(
+            OptionsModalWindow original = BootWindow();
+            Beside(
+                WindowList(typeof(GameGui.GuiWindowsStack), "guiWindows", stack),
+                window,
+                original
+            );
+            Beside(
                 WindowList(typeof(GameGui.GuiManager), "guiWindowsFromBackToFront", Manager()),
-                window
+                window,
+                original
             );
             CountAsAModal(window);
         }
@@ -385,12 +394,41 @@ namespace ES2Access.UI.ModOptions
             }
         }
 
-        private static void Add(IList list, ModOptionsWindow window)
+        /// <summary>
+        /// THE CLONE STANDS WHERE THE WINDOW IT WAS CLONED FROM STANDS, and that placement is what
+        /// decides who answers Escape.
+        ///
+        /// <c>GuiManager.HandleInput</c> (:2058-2063) walks <c>guiWindowsFromBackToFront</c> from the
+        /// END backwards and gives the action to the first SHOWN window that takes it, so the last
+        /// entry is asked first. Appended, the clone was that entry (170 of 171) - ahead of the
+        /// message box at 165 - and an Escape meant for a box the mod had raised over its own window
+        /// went to the WINDOW instead. The window, holding an unapplied rebind, answered by raising
+        /// "%BindingExitWithoutApplyMessage" through <c>ShowMessage</c>, which on an already-shown box
+        /// overwrites <c>ActiveEventHandler</c> and then calls <c>ShowWindow</c> on a window that is
+        /// already shown - a no-op, so <c>OnBeginShow</c> never runs and the drawn box keeps the OLD
+        /// words. The player then confirmed what they were still being shown, and the answer went to
+        /// "discard your changes and close": booted to the menu behind, the rebind gone (measured
+        /// 2026-08-24).
+        ///
+        /// Inserted next to the game's own options window (153 of 171) the clone is asked exactly
+        /// where that window is asked: above the pause menu it opens over, below the message box it
+        /// raises. Nothing else in the list moves, so no other window's turn changes.
+        /// </summary>
+        private static void Beside(IList list, ModOptionsWindow window, OptionsModalWindow original)
         {
-            if (list != null && !list.Contains(window))
+            if (list == null || list.Contains(window))
+            {
+                return;
+            }
+
+            int at = original == null ? -1 : list.IndexOf(original);
+            if (at < 0)
             {
                 list.Add(window);
+                return;
             }
+
+            list.Insert(at + 1, window);
         }
 
         // ---- teardown ----
