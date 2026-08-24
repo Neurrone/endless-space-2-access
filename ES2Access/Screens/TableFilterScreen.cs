@@ -84,11 +84,19 @@ namespace ES2Access.Screens
             }
         }
 
-        /// <summary>Ours while the game is drawing the menu the funnel opened.</summary>
+        /// <summary>Ours while the game is drawing the menu the funnel opened - and only once it has
+        /// SWITCHED IT ON. A panel is shown and drawn for a few frames before that, and every control
+        /// on a switched-off panel reads as refused, so a page taken over during those frames announces
+        /// its first row "unavailable" when nothing is refusing it (measured on the specialization list
+        /// the same day) - and the correction is silent, because the corrected state is an empty part.
+        /// </summary>
         public override bool IsActive()
         {
             GuiTableFilterMenu menu = Menu();
-            return menu != null && menu.Shown && AgeWidgets.Visible(menu.AgeTransform);
+            return menu != null
+                && menu.Shown
+                && AgeWidgets.Visible(menu.AgeTransform)
+                && AgeWidgets.Operable(menu.AgeTransform);
         }
 
         /// <summary>Escape unticks the funnel, which is the same gesture that opened the menu and the

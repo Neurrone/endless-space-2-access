@@ -349,7 +349,11 @@ namespace ES2Access.UI
                 () => AgeWidgets.Operable(funnel.AgeTransform),
                 tooltip
             );
-            vtable.Column = column;
+            // A number no CELL has, and distinct per column. The band's seam with the rows below it is
+            // paired column by column, and that pairing is dropped wholesale the moment two nodes of
+            // the band claim one column (<c>GraphBuilder.ByColumn</c>) - so a funnel stamped with its
+            // own column's number would have cost every column its heading on the way up out of a row.
+            vtable.Column = -(column + 1);
             vtable.SearchesAsItself = true;
             AgeWidgets.Point(vtable, funnel);
             builder.AddItem(
