@@ -152,6 +152,10 @@ namespace ES2Access.UI
         /// </summary>
         public int MaxCellDepth = 2;
 
+        /// <summary>How far <see cref="DeepText"/> looks - deep enough for a cell holding a whole panel
+        /// of its own, which is as far as any of these tables nest.</summary>
+        private const int DeepCellDepth = 6;
+
         /// <summary>See <see cref="RowLabel"/>. Unset is legal for a table whose name column always
         /// draws the name.</summary>
         public RowLabel RowName;
@@ -1126,7 +1130,7 @@ namespace ES2Access.UI
             List<string> tooltips = new List<string>();
             try
             {
-                CollectDrawn(cell, labels, tooltips, 0);
+                CollectDrawn(cell, labels, tooltips, 0, MaxCellDepth, false);
             }
             catch (Exception e)
             {
@@ -1139,7 +1143,44 @@ namespace ES2Access.UI
                 return drawn;
             }
 
-            return tooltips.Count > 0 ? tooltips[0] : SortKeyText(cell);
+            if (tooltips.Count > 0)
+            {
+                return tooltips[0];
+            }
+
+            return SortKeyText(cell) ?? DeepText(cell);
+        }
+
+        /// <summary>
+        /// What a cell whose figure sits DEEPER than <see cref="MaxCellDepth"/> is showing - asked only
+        /// of a cell the shallow reading found nothing in at all, so a cell that already reads keeps the
+        /// reading it had.
+        ///
+        /// The systems table's Resources column is such a cell: the game draws a whole
+        /// <c>ResourcesPanel</c> inside it and the panel keeps its own pooled item table, so the figure
+        /// the player sees is four levels down (cell / ResourcesBanner / ResourceItemsTable /
+        /// ResourceIncomeItemList / Net) and the column said the empty word beside a drawn "2".
+        ///
+        /// The shallow cap cannot simply be raised: the third level of the automation column is that
+        /// drop list's CLOSED popup, whose entries would then be read as though the cell were showing
+        /// all of them at once. The popup is parked at ALPHA ZERO with <c>Visible</c> still true, so
+        /// this pass is painted-only, which leaves it out however deep it looks - and leaves out a
+        /// pooled item the panel retired the same way.
+        /// </summary>
+        private string DeepText(AgeTransform cell)
+        {
+            MessageBuilder labels = new MessageBuilder();
+            try
+            {
+                CollectDrawn(cell, labels, null, 0, DeepCellDepth, true);
+            }
+            catch (Exception e)
+            {
+                Log.Warn("table: reading a column deeper threw: " + e);
+            }
+
+            string drawn = labels.Build();
+            return string.IsNullOrEmpty(drawn) ? null : drawn;
         }
 
         /// <summary>
@@ -1177,10 +1218,17 @@ namespace ES2Access.UI
             AgeTransform widget,
             MessageBuilder labels,
             List<string> tooltips,
-            int depth
+            int depth,
+            int limit,
+            bool paintedOnly
         )
         {
-            if (widget == null || depth > MaxCellDepth || !widget.Visible)
+            if (widget == null || depth > limit || !widget.Visible)
+            {
+                return;
+            }
+
+            if (paintedOnly && widget.Alpha <= 0f)
             {
                 return;
             }
@@ -1191,7 +1239,7 @@ namespace ES2Access.UI
                 labels.ListItem(AgeText.Label(label));
             }
 
-            if (depth > 0)
+            if (depth > 0 && tooltips != null)
             {
                 AddTooltip(widget.AgeTooltip, tooltips);
             }
@@ -1199,7 +1247,7 @@ namespace ES2Access.UI
             List<AgeTransform> children = widget.Children;
             for (int i = 0; children != null && i < children.Count; i++)
             {
-                CollectDrawn(children[i], labels, tooltips, depth + 1);
+                CollectDrawn(children[i], labels, tooltips, depth + 1, limit, paintedOnly);
             }
         }
 
