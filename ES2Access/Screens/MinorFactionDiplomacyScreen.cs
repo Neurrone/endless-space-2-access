@@ -498,16 +498,17 @@ namespace ES2Access.Screens
                 for (int i = 0; lines != null && i < lines.Count; i++)
                 {
                     int index = i;
-                    builder.AddItem(
-                        ControlId.Structural(Keys + "gain/" + index),
-                        new NodeVtable
+                    NodeVtable vtable = new NodeVtable
+                    {
+                        Announcements = new List<NodeAnnouncement>
                         {
-                            Announcements = new List<NodeAnnouncement>
-                            {
-                                GraphNodes.LabelPart(() => Gain(it, index)),
-                            },
-                        }
-                    );
+                            GraphNodes.LabelPart(() => Gain(it, index)),
+                        },
+                    };
+                    // Every line of this list is cut out of ONE drawn label, so the label is where each
+                    // of them is on screen and what a viewport has to be scrolled to.
+                    ScrollIntoView.Anchor(vtable, at);
+                    builder.AddItem(ControlId.Structural(Keys + "gain/" + index), vtable);
                 }
             }
 

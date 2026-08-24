@@ -506,6 +506,7 @@ namespace ES2Access.Screens
             vtable.OnBlurVisual = AgeWidgets.ReleasePointer;
 
             ControlId id = ControlId.Structural("quests:card/" + quest.Name);
+            ScrollIntoView.Anchor(vtable, it.AgeTransform);
             builder.BeginGroup(id, vtable);
             if (builder.IsExpanded(id))
             {
@@ -541,6 +542,7 @@ namespace ES2Access.Screens
                 tooltip
             );
             AgeWidgets.Point(vtable, it);
+            ScrollIntoView.Anchor(vtable, card.AgeTransform);
             builder.AddItem(
                 ControlId.Structural("quests:card/" + quest.Name + "/pin"),
                 vtable

@@ -88,6 +88,7 @@ namespace ES2Access.UI
                     filter.Tooltip
                 );
                 AgeWidgets.Point(vtable, toggle, filter.Tooltip, widget);
+                ScrollIntoView.Anchor(vtable, widget);
                 builder.AddItem(
                     ControlId.Structural(keyPrefix + "/filter/" + FilterKey(it, i)),
                     vtable

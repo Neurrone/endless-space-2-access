@@ -277,6 +277,7 @@ namespace ES2Access.UI
                     NodeHints.Add(vtable, ModStrings.HintQueueFirst, UiActions.Alternate);
                 }
 
+                ScrollIntoView.Anchor(vtable, at);
                 builder.AddItem(ControlId.Structural(keyPrefix + "/action/" + i), vtable);
             }
         }

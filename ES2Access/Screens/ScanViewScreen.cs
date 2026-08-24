@@ -1220,6 +1220,7 @@ namespace ES2Access.Screens
                 },
             };
             AgeWidgets.PointAt(vtable, it.AgeTransform);
+            ScrollIntoView.Anchor(vtable, it.AgeTransform);
             builder.AddItem(ControlId.Structural("scan:hero"), vtable);
         }
 
@@ -1576,6 +1577,7 @@ namespace ES2Access.Screens
                     },
                 };
                 AgeWidgets.PointAt(vtable, item.AgeTransform);
+                ScrollIntoView.Anchor(vtable, item.AgeTransform);
                 builder.AddItem(ControlId.Structural("scan:remains/" + i), vtable);
             }
         }
@@ -1627,6 +1629,7 @@ namespace ES2Access.Screens
                     },
                 };
                 AgeWidgets.PointAt(vtable, line.AgeTransform);
+                ScrollIntoView.Anchor(vtable, line.AgeTransform);
                 builder.AddItem(ControlId.Structural(key + "/" + i), vtable);
             }
         }
