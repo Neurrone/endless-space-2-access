@@ -146,11 +146,10 @@ namespace ES2Access.Core.Speech
         /// it; nothing is drawn for it, so these are the only words it has.</summary>
         public const string ModSettingsEntry = "mod-settings.entry";
 
-        /// <summary>What each of the window's two tabs says about itself. Only the DESCRIPTIONS are
-        /// the mod's own words: the Scanner tab is named here, and the key-binding tab wears the
-        /// game's own "%OptionToggleControlsTitle" so it matches the game's Controls tab in every
+        /// <summary>What the Scanner tab says about itself. The key-binding tab has no words of the
+        /// mod's own at all: it wears the game's "%OptionToggleControlsTitle" and
+        /// "%OptionToggleControlsDescription", so it matches the game's own Controls tab in every
         /// language (<see cref="ES2Access.UI.ModOptions.ModOptions.Categories"/>).</summary>
-        public const string ModSettingsKeybindsDescription = "mod-settings.keybinds-description";
         public const string ModSettingsScanner = "mod-settings.scanner";
         public const string ModSettingsScannerDescription = "mod-settings.scanner-description";
 
@@ -1640,10 +1639,6 @@ namespace ES2Access.Core.Speech
             { ScreenOptions, "Options" },
             { ScreenModSettings, "Mod settings" },
             { ModSettingsEntry, "Mod settings" },
-            {
-                ModSettingsKeybindsDescription,
-                "The keys the accessibility mod's own commands are on. This is the mod's Controls page, not the game's."
-            },
             { ModSettingsScanner, "Scanner" },
             {
                 ModSettingsScannerDescription,

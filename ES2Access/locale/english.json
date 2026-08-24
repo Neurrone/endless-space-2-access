@@ -57,7 +57,6 @@
   "screen.options": "Options",
   "screen.mod-settings": "Mod settings",
   "mod-settings.entry": "Mod settings",
-  "mod-settings.keybinds-description": "The keys the accessibility mod's own commands are on. This is the mod's Controls page, not the game's.",
   "mod-settings.scanner": "Scanner",
   "mod-settings.scanner-description": "The three scanner categories you write for yourself.",
   "mod-settings.scanner.slot-button": "Custom category {0}: {1}",
