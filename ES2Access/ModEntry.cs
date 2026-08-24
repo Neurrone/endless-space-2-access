@@ -243,6 +243,7 @@ namespace ES2Access
             Screens.Register(new VictoryAchievedScreen());
             Screens.Register(new global::ES2Access.Screens.VictoryScreen());
             Screens.Register(new JournalScreen());
+            Screens.Register(new TableFilterScreen());
             Screens.Register(new AdvancedEncounterPlayScreen());
             Screens.Register(new DisclaimerScreen());
             Screens.Register(new DLCScreen());
@@ -941,6 +942,7 @@ namespace ES2Access
             // this only drops the record of it. A key capture has no such hook - the game holds the
             // keyboard, not us - so it is ended here, binding nothing.
             Step("drop list", DropListScreen.Reset);
+            Step("table filter", TableFilterScreen.Reset);
             Step("key capture", OptionsScreen.ReleaseCapture);
             // The mod's own settings window is a GameObject in one of the game's window stacks and
             // an entry in two of its registries: it comes out by NAME, because after the swap this

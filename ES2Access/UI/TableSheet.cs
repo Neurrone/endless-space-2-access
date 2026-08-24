@@ -305,9 +305,66 @@ namespace ES2Access.UI
                     ControlId.Referenced(header, _key + "header/" + property + "/" + i),
                     vtable
                 );
+                Filter(builder, owner, header, i, columns[i]);
             }
 
             builder.EndRow();
+        }
+
+        /// <summary>
+        /// The funnel a column draws beside its caption, where the game is drawing one.
+        ///
+        /// Its own node, beside the sort node and never merged into it: they are two different things
+        /// to do to one column - sort by it, or hide values of it - and the game draws them as two
+        /// widgets (owner ruling: one row means a row of NODES). The game draws the funnel only for a
+        /// column its table declared values to filter by (<c>GuiTableHeader.Refresh</c> :49-52), so
+        /// most columns have no second node at all.
+        ///
+        /// A checkbox, because that is what the game made it: ticking it opens the column's menu of
+        /// values and unticking it closes it again, both through the toggle's own handler. Named by the
+        /// column's caption, and by nothing else - the prefab hangs no words on the funnel and the game
+        /// has no name for the thing it does, so the alternative would be a word this mod invented.
+        /// </summary>
+        private void Filter(
+            GraphBuilder builder,
+            GuiTable table,
+            GuiTableHeader header,
+            int index,
+            int column
+        )
+        {
+            AgeControlToggle funnel = header.FilterToggle;
+            if (funnel == null || !AgeWidgets.Visible(funnel.AgeTransform))
+            {
+                return;
+            }
+
+            GuiTableHeader it = header;
+            GuiTable owner = table;
+            AgeTooltip tooltip = AgeWidgets.Raw(funnel.AgeTransform);
+            NodeVtable vtable = GraphNodes.Checkbox(
+                () => Caption(it),
+                () => funnel.State,
+                () => Open(owner, it),
+                () => AgeWidgets.Operable(funnel.AgeTransform),
+                tooltip
+            );
+            vtable.Column = column;
+            vtable.SearchesAsItself = true;
+            AgeWidgets.Point(vtable, funnel);
+            builder.AddItem(
+                ControlId.Referenced(funnel, _key + "filter/" + PropertyOf(header) + "/" + index),
+                vtable
+            );
+        }
+
+        /// <summary>Tick or untick the funnel the way a click on it does, and tell the menu screen
+        /// which column it is about to be showing - the game's menu is one panel per table and says
+        /// nothing about which header opened it.</summary>
+        private static void Open(GuiTable table, GuiTableHeader header)
+        {
+            ES2Access.Screens.TableFilterScreen.Opened(table, header);
+            AgeWidgets.Toggle(header.FilterToggle);
         }
 
         /// <summary>
