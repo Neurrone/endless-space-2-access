@@ -1601,7 +1601,8 @@ namespace ES2Access.Screens
                 PlanetStatsCategoryItem it = category;
                 builder.AddLabel(
                     ControlId.Structural(key),
-                    () => AgeText.Label(it.Title)
+                    () => AgeText.Label(it.Title),
+                    it.AgeTransform
                 );
                 AddStatLines(builder, category.StatLinesTable, key);
             }
@@ -1817,7 +1818,11 @@ namespace ES2Access.Screens
                 // silently, and a section that appears with the count changes the panel's shape).
                 builder.SetRegion(key);
                 ScanViewCaptionGroup it = group;
-                builder.AddLabel(ControlId.Structural(key), () => AgeText.Label(it.Title));
+                builder.AddLabel(
+                    ControlId.Structural(key),
+                    () => AgeText.Label(it.Title),
+                    it.AgeTransform
+                );
                 AddCaptionItems(builder, group.ItemsTable, key, items == null ? 0 : items.Length);
                 groups++;
             }
@@ -1880,7 +1885,8 @@ namespace ES2Access.Screens
                 ScanViewCaptionItem it = item;
                 builder.AddLabel(
                     ControlId.Structural(key + "/" + i),
-                    () => AgeText.Label(it.Title)
+                    () => AgeText.Label(it.Title),
+                    it.AgeTransform
                 );
                 items++;
             }
