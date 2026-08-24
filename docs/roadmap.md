@@ -8,6 +8,17 @@ files above.
 
 ## To build
 
+- **Coverage-audit tail (2026-08-24 session; owner-directed):** the last screens with no
+  Coverage() run. (1) The battle family — setup, cinematic (`SpaceBattleScreen`), report,
+  target selection, ground battle — needs a scratch game engaged with a pirate/major fleet
+  (a pirate fleet was one turn away when the 2026-08-24 scratch instance was lost; obey the
+  crash rules in `docs/dev-loop.md`). (2) The victory family — `VictoryAchievedScreen`, the
+  score screen, the outro cutscene — plus the journal's first finished-game row (which also
+  unlocks measuring the journal filter menu's effect on rows and the per-column filter
+  buttons with rows): one finished scratch game via the `OrderEliminateEmpire` route
+  (test-recipes) closes all of it. (3) A cutscene sighting — no faction intro played on the
+  2026-08-24 scratch launch; the colonization-cutscene route (a colony ship settling) is the
+  untried alternative.
 - **"Tooltips" children (landed 2026-08-22, batch 2) — remaining live checks only**: the
   hero detailed card's four-symbol row (Academy is tutorial-gated on both fixtures), the
   construction line's festival badge and the honor gauge's own dossier (both Hissho). Still
