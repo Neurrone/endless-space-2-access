@@ -168,6 +168,7 @@ namespace ES2Access.Screens
             Cells.EmitLinear(builder, _cells);
             AcademyWindows.Switch(builder, window, Keys);
             builder.PopContext();
+            WindowShape.Close(builder, window, Keys);
         }
 
         /// <summary>The panels the window has arranged, in the order it arranged them. Taken off the table

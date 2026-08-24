@@ -395,6 +395,7 @@ namespace ES2Access.Screens
 
             DiplomacyActions.Emit(builder, Keys.TrimEnd(':'), _actions);
             Captions.Pop(builder, named);
+            WindowShape.Close(builder, window, Keys);
         }
 
         /// <summary>The group the window draws the actions caption inside - the widget carrying both the

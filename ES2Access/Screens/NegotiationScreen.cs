@@ -718,6 +718,7 @@ namespace ES2Access.Screens
 
             Cells.EmitLinear(builder, _cells);
             builder.PopContext();
+            WindowShape.Close(builder, window, Keys);
         }
 
         private void AddButton(AgeTransform widget, string key)

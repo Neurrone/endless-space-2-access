@@ -125,6 +125,72 @@ namespace ES2Access.UI
             }
         }
 
+        /// <summary>The handler every one of these prefabs wires its own dismissal to.</summary>
+        private const string CloseHandler = "OnCloseCb";
+
+        /// <summary>
+        /// The button a window draws to close itself, as a node of its own.
+        ///
+        /// A modal that a mod screen closes with Escape still DRAWS a cross, and a player walking the
+        /// page has every reason to expect to reach it - a way out is a thing a page offers, not a
+        /// keystroke to be remembered. None of these windows exposes the button as a field, so it is
+        /// found the way the Academy's switch button is: by the handler the prefab wires it to, which
+        /// is also the only thing that identifies a widget drawn as a bare cross. Enter presses that
+        /// handler, so the way out is the game's own, and Escape is left exactly as it was.
+        ///
+        /// Named by whatever the game wrote on it - the caption where the prefab drew one, else the
+        /// first line of the sentence it hung on the cross ("Closes this panel"), whose remaining lines
+        /// stay in the review buffer rather than being announced twice.
+        /// </summary>
+        public static void Close(GraphBuilder builder, GuiWindow window, string keyPrefix)
+        {
+            try
+            {
+                AgeTransform at = AgeWidgets.Transform(Wired(window, CloseHandler));
+                if (at == null || !AgeWidgets.Visible(at))
+                {
+                    return;
+                }
+
+                AgeTooltip tooltip = AgeWidgets.Raw(at);
+                string caption = AgeWidgets.TextOf(at);
+                AgeTransform it = at;
+                NodeVtable vtable = GraphNodes.Button(
+                    string.IsNullOrEmpty(caption)
+                        ? CardActions.NameFromTooltip(tooltip)
+                        : () => AgeWidgets.TextOf(it),
+                    () => AgeWidgets.Press(it),
+                    () => AgeWidgets.Offered(it),
+                    tooltip,
+                    string.IsNullOrEmpty(caption) ? TooltipMode.None : (TooltipMode?)null
+                );
+                AgeWidgets.PointAt(vtable, at);
+                builder.AddItem(ControlId.Referenced(at, keyPrefix + "close"), vtable);
+            }
+            catch (Exception e)
+            {
+                Log.Warn("window shape: reading the close button threw: " + e);
+            }
+        }
+
+        /// <summary>The button under a window that the prefab wired to <paramref name="method"/>.
+        /// </summary>
+        private static AgeControlButton Wired(GuiWindow window, string method)
+        {
+            AgeTransform root = window == null ? null : window.AgeTransform;
+            AgeControlButton[] buttons =
+                root == null ? null : root.GetComponentsInChildren<AgeControlButton>(true);
+            for (int i = 0; buttons != null && i < buttons.Length; i++)
+            {
+                if (buttons[i] != null && buttons[i].OnActivateMethod == method)
+                {
+                    return buttons[i];
+                }
+            }
+
+            return null;
+        }
+
         /// <summary>
         /// Every line the window has WRITTEN under <paramref name="root"/>, as something to read.
         ///
