@@ -66,6 +66,22 @@ namespace ES2Access.Screens
         /// <summary>The deferred keyboard hand-over for this page's text boxes.</summary>
         private readonly TextFieldEditor _editor = new TextFieldEditor();
 
+        /// <summary>The two traits tables, for their sort bands only: the rows are read as the whole
+        /// line the game drew (<see cref="AddLines"/>) rather than cell by cell, because picking a trait
+        /// is one click on the line and the three cells are what that line SAYS. The headings are a
+        /// different thing - three buttons that re-sort a hundred and thirty traits by name, by level or
+        /// by cost, each with the game's own sentence on it - and they are declared the way every other
+        /// table on this game declares them.</summary>
+        private readonly TableSheet _available = new TableSheet(
+            "custom-faction:available/",
+            TraitOf
+        );
+
+        private readonly TableSheet _selected = new TableSheet(
+            "custom-faction:selected/",
+            TraitOf
+        );
+
         /// <summary>The first control declared this build - where focus starts.</summary>
         private ControlId _start;
 
@@ -490,6 +506,7 @@ namespace ES2Access.Screens
             }
 
             builder.SetRegion(TraitsRegion);
+            _available.Headers(builder, table);
             AddLines(builder, table, "custom-faction:available/");
             builder.SetRegion(null);
         }
@@ -524,6 +541,7 @@ namespace ES2Access.Screens
         )
         {
             builder.SetRegion(LinesRegion);
+            _selected.Headers(builder, table);
             AddLines(builder, table, "custom-faction:selected/");
 
             // The budget, in the game's own words and the game's own arithmetic: three lines it keeps
@@ -585,6 +603,19 @@ namespace ES2Access.Screens
                     ControlId.Referenced(trait ?? (object)toggle, key + TraitKey(trait, line)),
                     vtable
                 );
+            }
+        }
+
+        /// <summary>The same question the sort band's sheet asks of a line.</summary>
+        private static object TraitOf(GuiTableLine line)
+        {
+            try
+            {
+                return line == null ? null : line.Data;
+            }
+            catch (Exception)
+            {
+                return null;
             }
         }
 
