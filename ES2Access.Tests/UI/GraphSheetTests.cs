@@ -40,9 +40,9 @@ namespace ES2Access.Tests.UI
                 GraphBuilder b = new GraphBuilder();
                 GraphSheet s = new GraphSheet(b, "t:");
                 s.Region("Fleets", new[] { "Name", "Ships", "Move" });
-                s.Row(Vt("Alpha"), _rowA, () => "3", () => "5");
-                if (raggedSecondRow) s.Row(Vt("Beta"), _rowB);
-                else s.Row(Vt("Beta"), _rowB, () => "2", () => "4");
+                s.Row(Vt("Alpha"), _rowA, null, () => "3", () => "5");
+                if (raggedSecondRow) s.Row(Vt("Beta"), _rowB, null);
+                else s.Row(Vt("Beta"), _rowB, null, () => "2", () => "4");
                 s.Finish();
                 return b.Build();
             }, state);
@@ -103,7 +103,7 @@ namespace ES2Access.Tests.UI
                 GraphBuilder b = new GraphBuilder();
                 GraphSheet s = new GraphSheet(b, "t:");
                 s.Region("Fleets", new[] { null, "Ships" });
-                s.Row(Vt("Alpha"), _rowA, () => "3");
+                s.Row(Vt("Alpha"), _rowA, null, () => "3");
                 s.Finish();
                 return b.Build();
             }, state);
@@ -127,7 +127,7 @@ namespace ES2Access.Tests.UI
                 GraphBuilder b = new GraphBuilder();
                 GraphSheet s = new GraphSheet(b, "t:");
                 s.Region("Fleets");
-                s.Row(Vt("Alpha"), _rowA, () => "3");
+                s.Row(Vt("Alpha"), _rowA, null, () => "3");
                 s.Finish();
                 return b.Build();
             }, state);
@@ -149,7 +149,7 @@ namespace ES2Access.Tests.UI
                 GraphBuilder b = new GraphBuilder();
                 GraphSheet s = new GraphSheet(b, "t:");
                 s.Region("Fleets", new[] { "Name" });
-                s.Row(Vt("Alpha"), _rowA);
+                s.Row(Vt("Alpha"), _rowA, null);
                 s.Finish();
                 return b.Build();
             }, state);
@@ -188,8 +188,8 @@ namespace ES2Access.Tests.UI
                 GraphSheet s = new GraphSheet(b, "t:");
                 s.NamedRows = false;
                 s.Region("Luxuries", new[] { "Food", "Industry" });
-                s.Row(Vt("Alpha"), null, () => "3");
-                s.Row(Vt("Beta"), null, () => "2");
+                s.Row(Vt("Alpha"), null, null, () => "3");
+                s.Row(Vt("Beta"), null, null, () => "2");
                 s.Finish();
                 return b.Build();
             }, state);
@@ -214,7 +214,7 @@ namespace ES2Access.Tests.UI
             GraphSheet s = new GraphSheet(b, "t:");
             s.NamedRows = false;
             s.Region("Luxuries", new[] { "Food", "Industry" });
-            s.Row(Vt("Alpha"), null, () => "Transvine");
+            s.Row(Vt("Alpha"), null, null, () => "Transvine");
             s.Finish();
             GraphRender render = b.Build();
 
@@ -235,7 +235,7 @@ namespace ES2Access.Tests.UI
             GraphSheet s = new GraphSheet(b, "t:");
             s.NamedRows = false;
             s.Region("Luxuries", new[] { "Food", "Industry" });
-            s.Row(Vt("Transvine"), null, () => "3");
+            s.Row(Vt("Transvine"), null, null, () => "3");
             s.Finish();
             foreach (GraphNode node in b.Build().Order)
                 Assert.True(node.Vtable.SearchesAsItself, "column " + node.Vtable.Column);
@@ -244,7 +244,7 @@ namespace ES2Access.Tests.UI
             named.BeginStop("fleets");
             GraphSheet n = new GraphSheet(named, "t:");
             n.Region("Fleets", new[] { "Name", "Ships" });
-            n.Row(Vt("Alpha"), _rowA, () => "3");
+            n.Row(Vt("Alpha"), _rowA, null, () => "3");
             n.Finish();
             foreach (GraphNode node in named.Build().Order)
                 Assert.False(node.Vtable.SearchesAsItself);
@@ -259,7 +259,7 @@ namespace ES2Access.Tests.UI
             b.BeginStop("fleets");
             GraphSheet s = new GraphSheet(b, "t:");
             s.Region("Fleets", new[] { "Name", "Ships" });
-            s.Row(Vt("Alpha"), _rowA, () => "3");
+            s.Row(Vt("Alpha"), _rowA, null, () => "3");
             s.Finish();
 
             Assert.Equal(1, SearchScope.OverStop(b.Build(), "fleets").Count);
@@ -300,7 +300,7 @@ namespace ES2Access.Tests.UI
                 GraphBuilder b = new GraphBuilder();
                 GraphSheet s = new GraphSheet(b, "t:");
                 s.Region("Fleets", new[] { "Name", "Ships" });
-                s.Row(Vt("Alpha"), _rowA, () => "   ");
+                s.Row(Vt("Alpha"), _rowA, null, () => "   ");
                 s.Finish();
                 return b.Build();
             }, state);
@@ -326,9 +326,9 @@ namespace ES2Access.Tests.UI
                 GraphBuilder b = new GraphBuilder();
                 GraphSheet s = new GraphSheet(b, "t:");
                 s.Region("Fleets");
-                s.Row(Vt("Alpha"), _rowA);
+                s.Row(Vt("Alpha"), _rowA, null);
                 s.Region("Systems");
-                s.Row(Vt("Sol"), _rowB);
+                s.Row(Vt("Sol"), _rowB, null);
                 s.Finish();
                 return b.Build();
             }, state);
@@ -352,8 +352,8 @@ namespace ES2Access.Tests.UI
             GraphSheet s = new GraphSheet(b, "t:");
             s.Region("Report", new[] { "Name", "Ships", "Move" });
             if (prose) s.Follows(Id("words"));
-            s.Row(Vt("Alpha"), _rowA, () => "3", () => "5");
-            s.Row(Vt("Beta"), _rowB, () => "2", () => "4");
+            s.Row(Vt("Alpha"), _rowA, null, () => "3", () => "5");
+            s.Row(Vt("Beta"), _rowB, null, () => "2", () => "4");
             s.Finish();
 
             b.StartRow().AddItem(Id("done"), Vt("Done")).EndRow();
@@ -417,8 +417,8 @@ namespace ES2Access.Tests.UI
             GraphSheet s = new GraphSheet(b, "t:");
             Assert.Null(s.FirstRow);
             s.Region("Report");
-            s.Row(Vt("Alpha"), _rowA);
-            s.Row(Vt("Beta"), _rowB);
+            s.Row(Vt("Alpha"), _rowA, null);
+            s.Row(Vt("Beta"), _rowB, null);
             s.Finish();
             Assert.Equal("t:row" + _rowA.GetHashCode() + "c0", s.FirstRow.StructuralKey);
             Assert.Same(_rowA, s.FirstRow.Reference);
@@ -460,8 +460,8 @@ namespace ES2Access.Tests.UI
             GraphBuilder b = new GraphBuilder();
             GraphSheet s = new GraphSheet(b, "t:");
             s.Region("Fleets", new[] { "Name", "Ships", "Move" });
-            s.Row(Vt("Alpha"), _rowA, () => "3", () => "5");
-            s.Row(Vt("Beta"), _rowB, () => "2", () => "4");
+            s.Row(Vt("Alpha"), _rowA, null, () => "3", () => "5");
+            s.Row(Vt("Beta"), _rowB, null, () => "2", () => "4");
             s.Finish();
             GraphRender render = b.Build();
             foreach (GraphNode node in render.Order)
@@ -478,10 +478,10 @@ namespace ES2Access.Tests.UI
             GraphBuilder b = new GraphBuilder();
             GraphSheet s = new GraphSheet(b, "t:");
             s.Region("Fleets");
-            s.Row(Vt("Alpha"), _rowA);
-            s.Row(Vt("Beta"), _rowB);
+            s.Row(Vt("Alpha"), _rowA, null);
+            s.Row(Vt("Beta"), _rowB, null);
             s.Region("Ships");
-            s.Row(Vt("Gamma"), rowC);
+            s.Row(Vt("Gamma"), rowC, null);
             s.Finish();
             GraphRender render = b.Build();
 
@@ -508,13 +508,13 @@ namespace ES2Access.Tests.UI
                 s.Region("Fleets", new[] { "Name", "Ships" });
                 if (swapped)
                 {
-                    s.Row(Vt("Beta"), _rowB, () => "2");
-                    s.Row(Vt("Alpha"), _rowA, () => "3");
+                    s.Row(Vt("Beta"), _rowB, null, () => "2");
+                    s.Row(Vt("Alpha"), _rowA, null, () => "3");
                 }
                 else
                 {
-                    s.Row(Vt("Alpha"), _rowA, () => "3");
-                    s.Row(Vt("Beta"), _rowB, () => "2");
+                    s.Row(Vt("Alpha"), _rowA, null, () => "3");
+                    s.Row(Vt("Beta"), _rowB, null, () => "2");
                 }
 
                 s.Finish();
@@ -539,8 +539,8 @@ namespace ES2Access.Tests.UI
                 GraphBuilder b = new GraphBuilder();
                 GraphSheet s = new GraphSheet(b, "t:");
                 s.Region("Fleets");
-                if (swapped) { s.Row(Vt("Beta"), _rowB); s.Row(Vt("Alpha"), _rowA); }
-                else { s.Row(Vt("Alpha"), _rowA); s.Row(Vt("Beta"), _rowB); }
+                if (swapped) { s.Row(Vt("Beta"), _rowB, null); s.Row(Vt("Alpha"), _rowA, null); }
+                else { s.Row(Vt("Alpha"), _rowA, null); s.Row(Vt("Beta"), _rowB, null); }
                 s.Finish();
                 return b.Build();
             }, state);

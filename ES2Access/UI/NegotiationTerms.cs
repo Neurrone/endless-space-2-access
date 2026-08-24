@@ -166,6 +166,7 @@ namespace ES2Access.UI
                 sheet.Row(
                     Primary(it, keyPrefix),
                     Key(it, keyPrefix),
+                    widget,
                     () => TypeName(it),
                     () => Words(it.CostLabel)
                 );
@@ -226,7 +227,7 @@ namespace ES2Access.UI
                     cells.Add(new KeyValuePair<int, NodeVtable>(3, quantity));
                 }
 
-                sheet.RowAt(Primary(it, keyPrefix), Key(it, keyPrefix), cells);
+                sheet.RowAt(Primary(it, keyPrefix), Key(it, keyPrefix), cells, widget);
                 count++;
             }
 

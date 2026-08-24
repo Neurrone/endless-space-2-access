@@ -96,8 +96,8 @@ namespace ES2Access.Tests.UI
             {
                 GraphSheet sheet = new GraphSheet(b, "t:");
                 sheet.Region("Fleets", new[] { "Name", "Ships", "Move" });
-                sheet.Row(Vt("Alpha"), new object(), () => "3", () => "5");
-                sheet.Row(Vt("Beta"), new object(), () => "2", () => "4");
+                sheet.Row(Vt("Alpha"), new object(), null, () => "3", () => "5");
+                sheet.Row(Vt("Beta"), new object(), null, () => "2", () => "4");
                 sheet.Finish();
             })();
 

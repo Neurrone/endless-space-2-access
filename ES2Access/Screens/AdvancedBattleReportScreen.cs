@@ -260,7 +260,15 @@ namespace ES2Access.Screens
                     line.Add(new KeyValuePair<int, NodeVtable>(column + 1, Stat(stat)));
                 }
 
-                sheet.RowAt(Flotilla(FirstStat(cells, index), index), rowRef, line);
+                // Keyed by a string, so the row has no rectangle of its own: the first cell the phase
+                // drew stands for where the row IS, which is what a landing here is scrolled to.
+                AdvancedReportPhaseFlotillaStatItem first = FirstStat(cells, index);
+                sheet.RowAt(
+                    Flotilla(first, index),
+                    rowRef,
+                    line,
+                    first == null ? null : first.AgeTransform
+                );
             }
 
             sheet.Finish();

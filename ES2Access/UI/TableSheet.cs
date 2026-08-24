@@ -468,7 +468,15 @@ namespace ES2Access.UI
                     }
                 }
 
-                sheet.RowAt(PrimaryVtable(table, line, _cells[0]), _rowRef(line), cells);
+                // The line widget is what the row is DRAWN as, and a table whose rows are keyed by the
+                // game's model (a save, a trait) has nothing else with a rectangle: without it the
+                // viewport had nothing to follow and End left the focused row clipped off the bottom.
+                sheet.RowAt(
+                    PrimaryVtable(table, line, _cells[0]),
+                    _rowRef(line),
+                    cells,
+                    Widget(line)
+                );
             }
 
             sheet.Finish();
