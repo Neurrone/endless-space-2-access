@@ -374,7 +374,9 @@ namespace ES2Access.Screens
                 Sections = GraphNodes.Sections(null, its),
             };
 
-            AgeWidgets.PointAt(vtable, widget);
+            // The hero dossier hangs on a CHILD of the group (HeroLine), so the pointer aims at the
+            // tooltip's own transform, not at the widget the node is read off.
+            AgeWidgets.PointAt(vtable, widget, its);
             Add(cells, widget, ControlId.Referenced(widget, key), vtable);
         }
 
