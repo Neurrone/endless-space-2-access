@@ -36,9 +36,8 @@ namespace ES2Access.Screens
     ///   inverted test that WIPES the selection on any refresh of the window. Nothing here caches which
     ///   card is picked: the state is asked live off the card the game ticks, so a selection vanishing
     ///   under the player is heard rather than believed.
-    /// - Inspect opens <c>HeroInspectionModalWindow</c>, which has no screen of its own yet. The button is
-    ///   declared anyway (the affordance kept, the dead end temporary): the inspection window is the
-    ///   game's own modal and Escape closes it back onto this one.
+    /// - Inspect opens <c>HeroInspectionModalWindow</c>, modelled by <see cref="HeroInspectionScreen"/>;
+    ///   the game's own Escape closes it back onto this one.
     ///
     /// Escape is the game's: the window is a <c>GuiModalWindow</c> and hiding it assigns nothing.
     /// </summary>

@@ -1403,14 +1403,16 @@ but `Refresh` wipes `SelectedHero` (es2-facts), so a cached selection is meaning
 start node rather than on the button that opened it — pre-existing, and true of improvements and
 rename too.
 
-**The election modal** is a 12-step wizard walked entirely read-only: every step's Next/Previous is
-non-committing, and the outcomes are never drawn (es2-facts).
-`GovernmentAction_ForceElections` is the game's own way to raise a real one and is UNVERIFIED — do
-not spend a fixture on it without the owner's say-so.
+**The election modal** is a THREE-step wizard (Support / Votes Breakdown / Results — measured on a
+real interactive election 2026-08-24, all three steps Coverage-clean): every step's Next/Previous
+is non-committing, and the outcomes are never drawn (es2-facts).
+A real interactive election can be forced on a disposable save:
+`Gui.PlayerEmpire.GetAgency<DepartmentOfDomesticAffairs>().Senate.ForceAnticipatedElectionsAsap =
+true`, then end the turn — the wizard raises itself (verified 2026-08-24; single graphical player
+gets Interactive mode automatically).
 `election:local/support` declares `election:local/{title,trends,empire}` regions and pushes the
-`PoliticsSupportGroup` caption over the party bars; the caption child's name is a guess guarded by
-`string.IsNullOrEmpty` — on the first real election, check whether the bars arrive under a word or
-bare, and walk the wizard's flattened bands (all code-only so far).
+`PoliticsSupportGroup` caption over the party bars; measured on that election: the bars arrive
+under "Political Trends", not bare.
 
 **The vote breakdown (step 1) can only be tested on a real election turn**, i.e. on the owner's own
 save, and it is then the ONLY test surface — so treat it as live and non-disposable: **never press
