@@ -90,7 +90,9 @@ namespace ES2Access.UI
         )
         {
             AgeTooltip tooltip = Explanation(widget) ?? Explanation(group);
-            if (builder == null || key == null || tooltip == null)
+            // The caption's own widget is what the row SAYS, whichever of the two the sentence turned
+            // out to be on: a row with a sentence and no word is a stop the player cannot name.
+            if (builder == null || key == null || tooltip == null || widget == null)
             {
                 return false;
             }
@@ -100,10 +102,11 @@ namespace ES2Access.UI
             return true;
         }
 
-        /// <summary>The sentence a widget carries, where the game would draw one for it.</summary>
+        /// <summary>The sentence a widget carries, where the game would draw one for it - and is
+        /// drawing the widget at all, so a caption the game has put away is no row.</summary>
         private static AgeTooltip Explanation(AgeTransform widget)
         {
-            AgeTooltip tooltip = widget == null ? null : AgeWidgets.Raw(widget);
+            AgeTooltip tooltip = AgeWidgets.Visible(widget) ? AgeWidgets.Raw(widget) : null;
             return tooltip != null && AgeWidgets.Draws(tooltip) ? tooltip : null;
         }
 

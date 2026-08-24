@@ -184,6 +184,17 @@ namespace ES2Access.Screens
         /// </summary>
         private void BuildContents(GraphBuilder builder, LoadSaveModalWindow window)
         {
+            // The title across the top carries the sentence saying what the window is for, and the
+            // game writes a different one in each mode (<c>LoadSaveModalWindow</c> :150-159) - so it
+            // is read off the widget and never branched on here. The title is already the screen's
+            // name and the table's; the row is for the sentence, which a name cannot carry
+            // (<see cref="Captions"/>).
+            Captions.Row(
+                builder,
+                window.WindowTitle == null ? null : window.WindowTitle.AgeTransform,
+                "loadsave:title"
+            );
+
             AgeTransform table = TableTransform(window);
             bool cloudAbove = Above(window.CloudToggleGroup, table);
             bool fieldAbove = Above(FieldTransform(window.SaveNameTextField), table);
