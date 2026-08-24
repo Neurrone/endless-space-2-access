@@ -599,44 +599,26 @@ namespace ES2Access.Screens
         }
 
         /// <summary>
-        /// EVERY COLUMN THE SETTINGS EDITOR CAN OFFER, this galaxy: the thirteen categories with the
-        /// subcategories each writes down, and - for the four whose columns are kinds - one column
-        /// per kind that has been found, in the same alphabetical order the scanner itself puts them
-        /// in (<see cref="Labels"/>).
+        /// EVERY COLUMN THE SETTINGS EDITOR CAN OFFER: the thirteen categories with the subcategories
+        /// each writes down, and - for the four whose columns are KINDS - every kind the GAME DEFINES,
+        /// sorted by the words the player hears.
         ///
-        /// A SNAPSHOT, and the editor takes one when the settings window opens rather than per frame:
-        /// the kinds half is a walk of every perceived planet, which is what one keystroke can afford
-        /// and no frame can (<see cref="ScannerCost"/> measures the whole press at 4-7 ms).
+        /// The kinds come from the game's own databases rather than from the galaxy being played
+        /// (owner ruling 2026-08-24). A category the player is writing has to be able to ask for a
+        /// luxury nobody has surveyed yet or an anomaly this map does not happen to hold - a list
+        /// built from what has been FOUND could only offer the past. It also means the editor needs no
+        /// galaxy at all, which is what puts the Scanner tab on the main menu.
         ///
-        /// It walks the WORLDS alone. The other nine categories' columns are written down here and
-        /// need no galaxy at all, and the walks that would answer for them - fleets, probes, pins,
-        /// the contested ground sweep - want a screen this has no business holding.
+        /// Still a SNAPSHOT taken when the settings window opens: the databases cannot change while it
+        /// is up, and building this per frame would be a localizer lookup per definition sixty times a
+        /// second. What the SCANNER does at scan time is unchanged - its columns are still the kinds
+        /// it found out there.
         /// </summary>
         internal static ScannerTaxonomy Taxonomy()
         {
-            List<Found>[] world = new List<Found>[CategoryCount];
-            for (int at = 0; at < CategoryCount; at++)
-            {
-                world[at] = new List<Found>();
-            }
-
-            try
-            {
-                Empire empire = Gui.PlayerEmpire;
-                if (empire != null && GameGalaxy.Present())
-                {
-                    Worlds(world, empire);
-                }
-            }
-            catch (Exception e)
-            {
-                Log.Warn("galaxy: the scanner's taxonomy reading the map threw: " + e);
-            }
-
             ScannerTaxonomy taxonomy = new ScannerTaxonomy();
             for (int built = 0; built < ScannerKeys.Categories.Length; built++)
             {
-                int at = built;
                 ScannerTaxonomyCategory category = taxonomy.Add(
                     ScannerKeys.Categories[built],
                     ModStrings.Get(CategoryKeys[built])
@@ -649,39 +631,88 @@ namespace ES2Access.Screens
                     category.Add(keys[i], ModStrings.Get(labels[i]));
                 }
 
-                if (Kinds(at))
+                if (Kinds(built))
                 {
-                    AddKinds(category, world[at]);
+                    category.AddKinds(Defined(built), StringComparer.CurrentCulture);
                 }
             }
 
             return taxonomy;
         }
 
-        /// <summary>One column per kind found, keyed by the definition's own name and named by the
-        /// words the player hears - sorted by those words, which is the order the scanner's own
-        /// columns come out in.</summary>
-        private static void AddKinds(ScannerTaxonomyCategory category, List<Found> found)
+        /// <summary>
+        /// Every kind one of the four derived categories can hold, read off the game's datatables.
+        ///
+        /// Keyed exactly as the scanner keys what it finds - <c>AnomalyDefinition.Name</c>,
+        /// <c>CuriosityDefinition.DisplayedType</c>, <c>ResourceDefinition.Name</c> - so a selector
+        /// written here matches a column found out there. Named by the game's own title for that gui
+        /// element, which is what <c>GuiAnomaly</c>, <c>GuiCuriosity</c> and <c>GuiResource</c> each
+        /// resolve their own Title to.
+        ///
+        /// Two filters, both the scanner's own rather than this method's: the resource database holds
+        /// every resource in the game and the scanner only ever surfaces DEPOSITS of luxuries and
+        /// strategics (<c>GuiResource.IsLuxury</c>/<c>IsStrategic</c>, which count the system-wide
+        /// kinds in with their own), so the empire-wide resources - dust, science, industry, food -
+        /// are not offered; and several curiosity definitions share one displayed type, which is the
+        /// column, so the duplicates collapse into it.
+        /// </summary>
+        private static IList<ScannerKind> Defined(int category)
         {
-            List<string> labels = new List<string>();
-            Dictionary<string, string> keys = new Dictionary<string, string>();
-            for (int i = 0; i < found.Count; i++)
+            List<ScannerKind> kinds = new List<ScannerKind>();
+            try
             {
-                string label = found[i].Kind;
-                if (label == null || found[i].KindKey == null || keys.ContainsKey(label))
+                if (category == CategoryAnomalies)
                 {
-                    continue;
+                    AnomalyDefinition[] anomalies = Values<AnomalyDefinition>();
+                    for (int i = 0; anomalies != null && i < anomalies.Length; i++)
+                    {
+                        kinds.Add(Kind(anomalies[i].Name));
+                    }
                 }
-
-                keys.Add(label, found[i].KindKey);
-                labels.Add(label);
+                else if (category == CategoryCuriosities)
+                {
+                    CuriosityDefinition[] curiosities = Values<CuriosityDefinition>();
+                    for (int i = 0; curiosities != null && i < curiosities.Length; i++)
+                    {
+                        kinds.Add(Kind(curiosities[i].DisplayedType));
+                    }
+                }
+                else
+                {
+                    ResourceDefinition[] resources = Values<ResourceDefinition>();
+                    for (int i = 0; resources != null && i < resources.Length; i++)
+                    {
+                        GuiResource wrapper = new GuiResource(resources[i]);
+                        bool wanted = category == CategoryStrategic
+                            ? wrapper.IsStrategic
+                            : wrapper.IsLuxury;
+                        if (wanted)
+                        {
+                            kinds.Add(new ScannerKind(wrapper.Name.ToString(), AgeText.Clean(wrapper.Title)));
+                        }
+                    }
+                }
             }
-
-            labels.Sort(StringComparer.CurrentCulture);
-            for (int i = 0; i < labels.Count; i++)
+            catch (Exception e)
             {
-                category.Add(keys[labels[i]], labels[i]);
+                Log.Warn("galaxy: the scanner's taxonomy reading a database threw: " + e);
             }
+
+            return kinds;
+        }
+
+        private static ScannerKind Kind(Amplitude.StaticString name)
+        {
+            return new ScannerKind(name.ToString(), AgeText.Clean(Gui.GetLocalizedTitle(name)));
+        }
+
+        /// <summary>One datatable's whole contents, or null where the game has not loaded it - which
+        /// is the honest answer on a machine where the datatables failed, and leaves that category
+        /// offering the columns it writes down for itself.</summary>
+        private static T[] Values<T>() where T : DatatableElement
+        {
+            IDatabase<T> database = Databases.GetDatabase<T>();
+            return database == null ? null : database.GetValues();
         }
 
         /// <summary>Whether a category's subcategories are the KINDS of thing it found rather than a

@@ -2,6 +2,21 @@ using System.Collections.Generic;
 
 namespace ES2Access.Core.UI
 {
+    /// <summary>One kind of thing the game's own databases define - the internal name a selector is
+    /// saved as, and the localized words the player hears. Handed to
+    /// <see cref="ScannerTaxonomyCategory.AddKinds"/> by whoever read the database.</summary>
+    public sealed class ScannerKind
+    {
+        public ScannerKind(string key, string label)
+        {
+            Key = key;
+            Label = label;
+        }
+
+        public readonly string Key;
+        public readonly string Label;
+    }
+
     /// <summary>One column a custom category can be pointed at: the stable key it is SAVED as, and
     /// the words the player hears. A column the galaxy cannot answer this game keeps its key and has
     /// no words, which is what <see cref="Missing"/> is for.</summary>
@@ -55,6 +70,70 @@ namespace ES2Access.Core.UI
         public void Add(string key, string label)
         {
             _columns.Add(new ScannerTaxonomyColumn(key, label, false));
+        }
+
+        /// <summary>
+        /// Add every KIND the game defines for this category, sorted by the words the player hears.
+        ///
+        /// The list comes from the game's DATABASES, not from what a galaxy happens to hold (owner
+        /// ruling 2026-08-24): a category the player is writing has to be able to ask for a luxury
+        /// nobody has surveyed yet, and a snapshot of the current map could only offer what has
+        /// already been found. Kinds sharing one key are one column - the databases define several
+        /// curiosities per displayed type - and a kind the localizer has no words for is dropped,
+        /// because a column nobody can read is a column nobody can choose.
+        ///
+        /// The order is the caller's <paramref name="order"/> rather than a fixed comparison: the
+        /// labels are localized, so sorting them is a question about the language being played in.
+        /// </summary>
+        public void AddKinds(IList<ScannerKind> kinds, IComparer<string> order)
+        {
+            List<string> labels = new List<string>();
+            Dictionary<string, string> keys = new Dictionary<string, string>();
+            for (int i = 0; kinds != null && i < kinds.Count; i++)
+            {
+                ScannerKind kind = kinds[i];
+                if (
+                    kind == null
+                    || string.IsNullOrEmpty(kind.Key)
+                    || string.IsNullOrEmpty(kind.Label)
+                    || keys.ContainsKey(kind.Key)
+                )
+                {
+                    continue;
+                }
+
+                keys.Add(kind.Key, kind.Label);
+                labels.Add(kind.Key);
+            }
+
+            labels.Sort(new ByLabel(keys, order));
+            for (int i = 0; i < labels.Count; i++)
+            {
+                Add(labels[i], keys[labels[i]]);
+            }
+        }
+
+        /// <summary>Two kinds compared by the words they are drawn with, ties broken by their keys so
+        /// two columns the game names the same still come out in a stable order.</summary>
+        private sealed class ByLabel : IComparer<string>
+        {
+            public ByLabel(Dictionary<string, string> labels, IComparer<string> order)
+            {
+                _labels = labels;
+                _order = order;
+            }
+
+            public int Compare(string left, string right)
+            {
+                int byLabel =
+                    _order == null
+                        ? string.CompareOrdinal(_labels[left], _labels[right])
+                        : _order.Compare(_labels[left], _labels[right]);
+                return byLabel != 0 ? byLabel : string.CompareOrdinal(left, right);
+            }
+
+            private readonly Dictionary<string, string> _labels;
+            private readonly IComparer<string> _order;
         }
 
         internal bool Holds(string key)

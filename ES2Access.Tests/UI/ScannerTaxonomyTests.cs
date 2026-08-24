@@ -67,5 +67,82 @@ namespace ES2Access.Tests.UI
         {
             Assert.Equal(new[] { "Systems", "Luxury Resources" }, Galaxy().Labels());
         }
+
+        // ---- the kinds the game's databases define (stage 6) ----
+
+        private static ScannerTaxonomyCategory Kinds(params ScannerKind[] kinds)
+        {
+            ScannerTaxonomy taxonomy = new ScannerTaxonomy();
+            ScannerTaxonomyCategory category = taxonomy.Add(ScannerKeys.Luxury, "Luxury Resources");
+            category.Add(ScannerKeys.All, "all");
+            category.AddKinds(kinds, System.StringComparer.Ordinal);
+            return category;
+        }
+
+        [Fact]
+        public void KindsComeOutSortedByTheWordsThePlayerHears()
+        {
+            IList<ScannerTaxonomyColumn> columns = Kinds(
+                new ScannerKind("Luxury9", "Quadnium"),
+                new ScannerKind("Luxury3", "Dustciduous Trees"),
+                new ScannerKind("Luxury1", "Aluminium")
+            ).Columns;
+
+            // The written-down column first, then the kinds in the player's own alphabet.
+            Assert.Equal(
+                new[] { ScannerKeys.All, "Luxury1", "Luxury3", "Luxury9" },
+                new[] { columns[0].Key, columns[1].Key, columns[2].Key, columns[3].Key }
+            );
+        }
+
+        [Fact]
+        public void OneKeyIsOneColumnHoweverManyDefinitionsShareIt()
+        {
+            // The curiosity database holds several definitions per displayed type, and the displayed
+            // type is the column.
+            IList<ScannerTaxonomyColumn> columns = Kinds(
+                new ScannerKind("CuriosityTypeGuardian", "Guardian"),
+                new ScannerKind("CuriosityTypeGuardian", "Guardian")
+            ).Columns;
+
+            Assert.Equal(2, columns.Count);
+            Assert.Equal("CuriosityTypeGuardian", columns[1].Key);
+        }
+
+        [Fact]
+        public void AKindTheLocalizerHasNoWordsForIsNotOffered()
+        {
+            IList<ScannerTaxonomyColumn> columns = Kinds(
+                new ScannerKind("Luxury1", null),
+                new ScannerKind("Luxury2", ""),
+                new ScannerKind(null, "Nameless"),
+                new ScannerKind("Luxury3", "Dustciduous Trees")
+            ).Columns;
+
+            Assert.Equal(2, columns.Count);
+            Assert.Equal("Luxury3", columns[1].Key);
+        }
+
+        [Fact]
+        public void TwoKindsDrawnTheSameKeepAStableOrder()
+        {
+            IList<ScannerTaxonomyColumn> columns = Kinds(
+                new ScannerKind("LuxuryB", "Same"),
+                new ScannerKind("LuxuryA", "Same")
+            ).Columns;
+
+            Assert.Equal("LuxuryA", columns[1].Key);
+            Assert.Equal("LuxuryB", columns[2].Key);
+        }
+
+        [Fact]
+        public void NoKindsAtAllLeavesTheWrittenDownColumns()
+        {
+            Assert.Single(Kinds().Columns);
+            ScannerTaxonomy taxonomy = new ScannerTaxonomy();
+            ScannerTaxonomyCategory category = taxonomy.Add(ScannerKeys.Anomalies, "Anomalies");
+            category.AddKinds(null, null);
+            Assert.Empty(category.Columns);
+        }
     }
 }
