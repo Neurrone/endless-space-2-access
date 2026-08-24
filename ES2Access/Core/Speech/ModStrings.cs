@@ -1311,6 +1311,10 @@ namespace ES2Access.Core.Speech
         public const string BattleShowYourFleets = "battle.show-your-fleets";
         public const string BattleShowEnemyFleets = "battle.show-enemy-fleets";
         public const string BattleBalance = "battle.balance";
+
+        /// <summary>The same question on the ground, where the two arcs are sized from manpower
+        /// rather than from military power - a different quantity, so a different sentence.</summary>
+        public const string BattleGroundBalance = "battle.ground-balance";
         public const string BattleTimeLeft = "battle.time-left";
         public const string BattleProgress = "battle.progress";
         public const string BattleYourShipLost = "battle.your-ship-lost";
@@ -2118,6 +2122,7 @@ namespace ES2Access.Core.Speech
             { BattleShowYourFleets, "Show your fleets" },
             { BattleShowEnemyFleets, "Show enemy fleets" },
             { BattleBalance, "Military power {0} against {1}" },
+            { BattleGroundBalance, "Manpower {0} against {1}" },
             { BattleTimeLeft, "{0} percent of the time left" },
             { BattleProgress, "Battle {0} percent fought" },
             { BattleYourShipLost, "Your {0} is lost" },

@@ -530,6 +530,7 @@
   "battle.show-your-fleets": "Show your fleets",
   "battle.show-enemy-fleets": "Show enemy fleets",
   "battle.balance": "Military power {0} against {1}",
+  "battle.ground-balance": "Manpower {0} against {1}",
   "battle.time-left": "{0} percent of the time left",
   "battle.progress": "Battle {0} percent fought",
   "battle.your-ship-lost": "Your {0} is lost",

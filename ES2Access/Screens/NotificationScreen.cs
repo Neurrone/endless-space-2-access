@@ -2749,7 +2749,8 @@ namespace ES2Access.Screens
                     () => Press(it),
                     () => Enabled(it.Widget),
                     explains,
-                    it.TipMode
+                    it.TipMode,
+                    it.Drawn
                 );
             }
             else if (it.Radio || InRadioGroup(it.Toggle))
@@ -2759,7 +2760,7 @@ namespace ES2Access.Screens
                     () => State(it.Toggle),
                     () => Press(it),
                     () => Enabled(it.Widget),
-                    null,
+                    it.Drawn,
                     explains,
                     it.TipMode
                 );
@@ -2790,7 +2791,8 @@ namespace ES2Access.Screens
                     () => Press(it),
                     () => Enabled(it.Widget),
                     explains,
-                    it.TipMode
+                    it.TipMode,
+                    it.Drawn
                 );
             }
 
@@ -2932,6 +2934,13 @@ namespace ES2Access.Screens
             /// exclusivity by hand instead of with a <c>GuiRadioGroup</c>.</summary>
             public bool Radio;
 
+            /// <summary>The card this control is the switch of, where the popup drew the choice as one:
+            /// a title over what choosing it would do. Set means "name this by its title and review the
+            /// rest" (<see cref="ChoiceName"/>) rather than by everything written on it, and it is the
+            /// card - not the switch inside it - that the words are read off where the switch has none.
+            /// </summary>
+            public AgeTransform Card;
+
             /// <summary>How this control's tooltip reads, where the shared rule would otherwise say it
             /// twice: a control the popup wrote no words on is NAMED by its tooltip's opening sentence
             /// (<see cref="WordlessName"/>), and a tooltip that then announces itself repeats the name
@@ -2959,6 +2968,13 @@ namespace ES2Access.Screens
             /// about the card rather than about any one tooltip. Null leaves the shared reading alone.
             /// </summary>
             public IList<NodeSection> Details;
+
+            /// <summary>The lines this control DRAWS, where the shared naming no longer says them: a
+            /// choice card's title names it and the consequences under the title are these. Handed to
+            /// the node factory as its <c>details</c> rather than replacing the sections
+            /// (<see cref="Details"/>), so the control's tooltip - a card's reason for refusing - still
+            /// reads after them.</summary>
+            public Func<IList<string>> Drawn;
         }
 
         /// <summary>The tooltip a control speaks and carries: its own where it has one, else the one the
@@ -3011,35 +3027,7 @@ namespace ES2Access.Screens
                     );
                 }
 
-                // A choice the popup keeps exclusive itself is declared because the popup SAYS it is one,
-                // not because it wrote a caption on it: the narrative event's cards are pictures on empty
-                // panels with no words anywhere inside them, and dropping them would leave the player
-                // unable to choose at all. What is written on the card, all of it, is its name.
-                for (int i = 0; i < choices.Count; i++)
-                {
-                    AgeTransform choice = choices[i];
-                    AgeControlToggle switched = Switch(choice);
-                    if (switched == null || string.IsNullOrEmpty(switched.OnSwitchMethod))
-                    {
-                        continue;
-                    }
-
-                    if (Has(controls, switched.AgeTransform))
-                    {
-                        continue;
-                    }
-
-                    Add(
-                        controls,
-                        "choice/" + i + "/" + choice.name,
-                        null,
-                        switched,
-                        null,
-                        CaptionOf(choice),
-                        true,
-                        choice.AgeTooltip
-                    );
-                }
+                AddChoices(controls, choices);
 
                 // The cards the popup drew as pictures with their words laid out around them, already
                 // named and explained by the code that knows which word is which.
@@ -3322,7 +3310,10 @@ namespace ES2Access.Screens
         /// health is a bar, and what became of a ship is a sentence the game wrote into the row's
         /// tooltip. None of that is text drawn in a band, so no amount of measuring finds it. A popup
         /// with a body owns every control it added as well (<see cref="NotificationBody"/>), because the
-        /// shared reading would otherwise declare the same buttons a second time.
+        /// shared reading would otherwise declare the same buttons a second time. A body may still
+        /// declare <see cref="Choices"/>: the shared collection skips them with everything else, and the
+        /// body places them among its own rows through <see cref="BuildChoices"/>, so a popup that is
+        /// half model and half choice (the ground battle's outcome) reads each half once.
         ///
         /// <see cref="Gateways"/>: a button that leaves this popup for a page of its own - the negotiation
         /// table, a minor faction's diplomacy, the score screen, the academy. It is the same shape as
@@ -3574,7 +3565,7 @@ namespace ES2Access.Screens
                     Confirm = w => ((HeroRecruitmentNotificationWindow)w).ValidateButton,
                 }
             );
-            // The four battle popups: everything they show is a model, so each writes its own body.
+            // The five battle popups: everything they show is a model, so each writes its own body.
             variants.Add(
                 typeof(BattleSetupNotificationWindow),
                 new Variant { Body = BattleNotifications.Setup }
@@ -3592,10 +3583,17 @@ namespace ES2Access.Screens
                 new Variant { Body = BattleNotifications.GroundReport }
             );
 
+            // What to do with a system the invasion has just taken. A model like the four above it: the
+            // system it is about is a header of pictures and bare numbers (its level in a badge, its
+            // people as one icon per species, its improvements and its wonders as an icon beside a
+            // figure), and the decision itself is a row of cards the popup keeps exclusive. So the body
+            // is the mod's and the CHOICE is still the shared one - declared from inside the body
+            // (<see cref="BuildChoices"/>) so it is read once, in its place among the header rows.
             variants.Add(
                 typeof(GroundBattleOutcomeSelectionNotificationWindow),
                 new Variant
                 {
+                    Body = BattleNotifications.GroundOutcome,
                     Choices = w =>
                         Some(((GroundBattleOutcomeSelectionNotificationWindow)w).OutcomesTable),
                 }
@@ -3934,6 +3932,92 @@ namespace ES2Access.Screens
             return lines;
         }
 
+        /// <summary>
+        /// A choice the popup keeps exclusive itself, as controls. Declared because the popup SAYS it is
+        /// one, not because it wrote a caption on it: the narrative event's cards are pictures on empty
+        /// panels with no words anywhere inside them, and dropping them would leave the player unable to
+        /// choose at all. The card's title is its name and everything else written on it is content the
+        /// player reviews a line at a time (<see cref="ChoiceName"/>, <see cref="ChoiceDetail"/>).
+        /// </summary>
+        private static void AddChoices(List<Control> controls, List<AgeTransform> choices)
+        {
+            for (int i = 0; i < choices.Count; i++)
+            {
+                AgeTransform choice = choices[i];
+                AgeControlToggle switched = Switch(choice);
+                if (switched == null || string.IsNullOrEmpty(switched.OnSwitchMethod))
+                {
+                    continue;
+                }
+
+                if (Has(controls, switched.AgeTransform))
+                {
+                    continue;
+                }
+
+                int before = controls.Count;
+                Add(
+                    controls,
+                    "choice/" + i + "/" + choice.name,
+                    null,
+                    switched,
+                    null,
+                    null,
+                    true,
+                    choice.AgeTooltip
+                );
+
+                if (controls.Count == before)
+                {
+                    continue;
+                }
+
+                AgeTransform card = choice;
+                AgeTransform widget = switched.AgeTransform;
+                Control added = controls[controls.Count - 1];
+                added.Card = card;
+                added.Drawn = () => ChoiceDetail(widget, card);
+                controls[controls.Count - 1] = added;
+            }
+        }
+
+        /// <summary>
+        /// The same choice, declared where the popup's OWN body says it goes.
+        ///
+        /// A popup that writes its own body owns every control it added (<see cref="Variant.Body"/>), so
+        /// the shared collection skips its <see cref="Variant.Choices"/> along with everything else it
+        /// might have found. A body with a one-of-N among its rows therefore asks for it here rather
+        /// than building one of its own: same cards, same names, same refusals, and the same second
+        /// click that validates - one reading of a choice, wherever the choice is declared from.
+        /// </summary>
+        internal static void BuildChoices(GraphBuilder builder, NotificationWindow window)
+        {
+            try
+            {
+                List<Control> controls = new List<Control>();
+                AddChoices(controls, ChoiceWidgets(window));
+
+                AgeTransform root = Root(window);
+                for (int i = controls.Count - 1; i >= 0; i--)
+                {
+                    if (!Painted(controls[i].Widget, root))
+                    {
+                        controls.RemoveAt(i);
+                    }
+                }
+
+                controls.Sort(ReadingOrder);
+                for (int i = 0; i < controls.Count; i++)
+                {
+                    Add(builder, controls[i]);
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("notification: declaring a body's choices threw: " + e);
+            }
+        }
+
         /// <summary>The toggle one line of a choice carries - the line itself where the game made the
         /// whole card the switch, else the one inside it.</summary>
         private static AgeControlToggle Switch(AgeTransform line)
@@ -4175,7 +4259,7 @@ namespace ES2Access.Screens
 
         private static string Named(Control control)
         {
-            string caption = CaptionOf(control.Widget);
+            string caption = control.Card != null ? ChoiceName(control) : CaptionOf(control.Widget);
             if (!string.IsNullOrEmpty(caption))
             {
                 return caption;
@@ -4198,8 +4282,9 @@ namespace ES2Access.Screens
         /// The whole subtree, not the control's direct children: a line the game builds as a block per
         /// column - the cancelled-relics line draws the system's name inside a <c>StarSystemInfo</c>
         /// group and the reason beside it - loses the whole of one column to a one-level reading, and
-        /// nothing in the spoken line says a word is missing. That is the same answer a choice card
-        /// needs, which is why there is one of these rather than two.
+        /// nothing in the spoken line says a word is missing. A choice CARD reads the same subtree but
+        /// keeps the pieces apart (<see cref="CaptionLines"/>): a title over a paragraph is not a
+        /// caption spread over a row.
         ///
         /// This is NOT the question <see cref="Captioned"/> asks. "What does this control say" reads the
         /// subtree; "did the popup write a caption ON this control" must not, or every wired container
@@ -4207,25 +4292,96 @@ namespace ES2Access.Screens
         /// </summary>
         private static string CaptionOf(AgeTransform widget)
         {
+            MessageBuilder caption = new MessageBuilder();
+            List<string> written = CaptionLines(widget);
+            for (int i = 0; i < written.Count; i++)
+            {
+                caption.ListItem(written[i]);
+            }
+
+            return caption.Build();
+        }
+
+        /// <summary>
+        /// The same reading, kept apart: what the control says, one entry per label the game laid out
+        /// in it, in the order they are read across it.
+        ///
+        /// <see cref="CaptionOf"/> joins them into the one phrase a control is NAMED by. A card whose
+        /// substance is written on it - a choice's title over its consequences - is a different
+        /// question: the title names it and the rest is content to walk, and both come off this one
+        /// reading so the name can never be a piece the buffer leaves out.
+        /// </summary>
+        private static List<string> CaptionLines(AgeTransform widget)
+        {
+            List<string> written = new List<string>();
             try
             {
                 List<AgePrimitiveLabel> labels = new List<AgePrimitiveLabel>();
                 Labels(widget, labels, 0);
                 labels.Sort(AcrossTheControl);
 
-                MessageBuilder caption = new MessageBuilder();
                 foreach (AgePrimitiveLabel label in labels)
                 {
-                    caption.ListItem(AgeText.Label(label));
+                    string text = AgeText.Label(label);
+                    if (!string.IsNullOrEmpty(text))
+                    {
+                        written.Add(text);
+                    }
                 }
-
-                return caption.Build();
             }
             catch (Exception e)
             {
                 Log.Warn("notification: reading a control's caption threw: " + e);
-                return null;
             }
+
+            return written;
+        }
+
+        /// <summary>The words a choice card is read from: the ones the game wrote on the SWITCH where it
+        /// put them there, else the ones on the card around it - the same preference the shared naming
+        /// has always had, asked once so the name and the buffer can never come from different
+        /// readings.</summary>
+        private static List<string> ChoiceCaptions(AgeTransform widget, AgeTransform card)
+        {
+            List<string> written = CaptionLines(widget);
+            return written.Count > 0 || card == null || ReferenceEquals(card, widget)
+                ? written
+                : CaptionLines(card);
+        }
+
+        /// <summary>
+        /// What a choice card is CALLED: the first thing written on it.
+        ///
+        /// A card is a title over its consequences - "Pillage", then six lines of what pillaging costs -
+        /// and naming it with all of them makes every walk past it read the whole card, makes the
+        /// "selected" word arrive a paragraph late, and gives the buffer one line to review. The title
+        /// names it, the rest is content (<see cref="ChoiceDetail"/>); the buffer holds all of it either
+        /// way, so nothing the card says is lost. A card with one label is unchanged: its one label is
+        /// its title.
+        /// </summary>
+        private static string ChoiceName(Control control)
+        {
+            List<string> written = ChoiceCaptions(control.Widget, control.Card);
+            return written.Count == 0 ? null : written[0];
+        }
+
+        /// <summary>Everything a choice card says, a line at a time: each label it draws, split where the
+        /// game wrapped it - the consequences are written as one label of six lines, and a buffer holding
+        /// them as one line is the blob again under another name.</summary>
+        private static IList<string> ChoiceDetail(AgeTransform widget, AgeTransform card)
+        {
+            List<string> lines = new List<string>();
+            List<string> written = ChoiceCaptions(widget, card);
+            for (int i = 0; i < written.Count; i++)
+            {
+                IList<string> split = AgeText.Lines(written[i]);
+                for (int j = 0; j < split.Count; j++)
+                {
+                    lines.Add(split[j]);
+                }
+            }
+
+            return lines;
         }
 
         /// <summary>
@@ -4356,7 +4512,8 @@ namespace ES2Access.Screens
             return message.Build() ?? Title(window);
         }
 
-        /// <summary>The notification as the review buffer holds it: its title, then its description a
+        /// <summary>The notification as the review buffer holds it: its title, then - where there is
+        /// more than one of them, the readout having said the single line already - its description a
         /// line at a time - a battle report is written as exactly those lines - and, for the popup that
         /// ends the player's game, what that means (<see cref="OwnElimination"/>): arriving speaks it as
         /// part of the screen's name, so it is here to be re-read and nowhere in the spoken readout,
@@ -4370,9 +4527,14 @@ namespace ES2Access.Screens
                 lines.Add(title);
             }
 
-            foreach (string line in AgeText.Lines(Description(window)))
+            // A description of ONE line is already the row's spoken readout, word for word - the buffer
+            // opens with it - and listing it again puts the paragraph either side of the title. More
+            // than one and they are the report's own lines, which the readout joined into prose and the
+            // buffer is the only place they can be walked.
+            IList<string> described = AgeText.Lines(Description(window));
+            for (int i = 0; described.Count > 1 && i < described.Count; i++)
             {
-                lines.Add(line);
+                lines.Add(described[i]);
             }
 
             string ending = OwnElimination(window);
