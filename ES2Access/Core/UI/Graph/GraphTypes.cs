@@ -355,6 +355,18 @@ namespace ES2Access.Core.UI.Graph
         /// announcer does with it.</summary>
         public TableRow Row;
 
+        /// <summary>
+        /// What to bring into view when focus lands here, for a control whose own identity carries no
+        /// backing object.
+        ///
+        /// Scrolling follows the node's <c>ControlId.Reference</c>, and a table gives that reference
+        /// to the row's PRIMARY cell alone - identity is per cell, and every cell answering to the
+        /// same object would make a moved row resolve to whichever cell was reached first. So a cell
+        /// in another column names the row here instead: same scrolling, untouched identity. Null
+        /// everywhere else, where the reference is the answer.
+        /// </summary>
+        public object ScrollAnchor;
+
         /// <summary>Optional (Expandable groups): override HOW expansion state changes. When null the
         /// engine mutates the persistent expansion set (<see cref="GraphState.Expanded"/>); an adapter
         /// wires these to a retained game-side container's Expand/Collapse instead.</summary>

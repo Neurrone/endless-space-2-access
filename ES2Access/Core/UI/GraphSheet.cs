@@ -275,6 +275,14 @@ namespace ES2Access.Core.UI
             // Which row it is in, for the position the announcer speaks on row CHANGES only.
             vt.Row = _rowPos;
 
+            // A cell in another column carries no backing object of its own (identity is per cell),
+            // so it names the ROW for the one thing that reference is otherwise read for: scrolling
+            // the landing into view.
+            if (col != 0 && vt.ScrollAnchor == null)
+            {
+                vt.ScrollAnchor = _rowRef;
+            }
+
             // Identity keys when the row has a domain object: stable across reorders/removals (the
             // primary also carries the reference for tier-1 follow); positional only for static lines.
             string skey = RowKey() + "c" + col;
