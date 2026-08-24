@@ -4715,10 +4715,19 @@ namespace ES2Access.Screens
         }
 
         /// <summary>
-        /// The dossiers a world carries beyond its own: one per output figure, one per anomaly found
-        /// on it, one per deposit in its ground. The card writes NAMES for these and keeps everything
-        /// they mean - what a deposit is worth and why it cannot be exploited, what an anomaly does
-        /// and what would reduce it, what an output is made of - in a panel only a hover reaches.
+        /// The dossiers a world carries beyond its own: one per anomaly found on it, one per deposit
+        /// in its ground. The card writes NAMES for these and keeps everything they mean - what an
+        /// anomaly does and what would reduce it, what a deposit is worth and why it cannot be
+        /// exploited - in a panel only a hover reaches.
+        ///
+        /// NOT the five output figures the card also draws (Planet Food production and kin), though it
+        /// hangs a dossier off every one of them: those pages explain what FIDSI IS, the same five
+        /// paragraphs repeated on every world in the galaxy, and the star system's own management card
+        /// already declares them where a player who wants them is looking
+        /// (<c>SystemManagementScreen.PlanetDossiers</c>). Owner ruling 2026-08-24 - the strip stays
+        /// undeclared HERE, and the coverage audit is told so rather than reporting it
+        /// (<c>CoverageAudit</c>). The figures themselves are unaffected: they are drawn numbers and
+        /// the row reads them as it always did.
         ///
         /// WHICH of them exist is the PLANET's question, not the card's: the map draws a card for one
         /// system at one camera step, and what is in a world's ground is not a thing it hides at any
@@ -4754,9 +4763,8 @@ namespace ES2Access.Screens
                 }
 
                 // In the order the card draws them, which is the order its own buffer reads
-                // (<see cref="OrbitalDetails"/>): the outputs down the side, then what was found on
-                // the world, then what is in its ground.
-                AddOutputDossiers(found, planet, card, empire);
+                // (<see cref="OrbitalDetails"/>): what was found on the world, then what is in its
+                // ground.
                 AddAnomalyDossiers(found, planet, card);
                 AddDepositDossiers(found, planet, card, empire);
             }
@@ -4766,182 +4774,6 @@ namespace ES2Access.Screens
             }
 
             return found;
-        }
-
-        /// <summary>
-        /// The five figures the card rates a world by, each with the game's own page behind it.
-        ///
-        /// The card keeps TWO strips and swaps them - the enumerator's duplets for a colony, a table
-        /// of score pips for a world nobody has settled (<c>PlanetLabel_SystemOrbital.RefreshFIDSI</c>)
-        /// - leaving the other one bound to whatever it last showed, so the strip is taken from
-        /// whichever is PAINTED. This is the same set the sibling management card already declares
-        /// (<c>SystemManagementScreen.PlanetDossiers</c>); the map's card was the inconsistent one.
-        ///
-        /// With no card on the screen the five come from carriers bound the way
-        /// <c>FidsiEnumerator.LoadPlanet</c> binds them: the outpost properties for an outpost, the
-        /// colony's for a colony, the "initial" ratings for a world nobody has settled - against the
-        /// same simulation object the strip would have been refreshed with.
-        /// </summary>
-        private static void AddOutputDossiers(
-            List<TooltipChildren.Dossier> found,
-            Planet planet,
-            PlanetLabel_SystemOrbital card,
-            Empire empire
-        )
-        {
-            AgeTransform strip = OutputStrip(card);
-            if (strip != null)
-            {
-                AddStripDossiers(found, strip);
-                return;
-            }
-
-            ColonizedPlanet colony = planet.ColonizedPlanet;
-            int state = OutputState(colony);
-            StaticString[] properties = OutputProperties[state];
-            for (int i = 0; i < properties.Length; i++)
-            {
-                TooltipChildren.Add(found, OutputCarrier(planet, colony, state, i, empire));
-            }
-        }
-
-        /// <summary>Which row of <see cref="OutputProperties"/> a world's figures are read from - the
-        /// same three-way question <c>FidsiEnumerator.LoadPlanet</c> asks: nobody has settled it, it
-        /// is an outpost, or it is a colony.</summary>
-        private static int OutputState(ColonizedPlanet colony)
-        {
-            if (colony == null)
-            {
-                return 0;
-            }
-
-            return colony.ColonizedStarSystem != null
-                && colony.ColonizedStarSystem.State == StarSystemState.Outpost
-                ? 2
-                : 1;
-        }
-
-        /// <summary>Whichever of the card's two output strips the game is drawing, or nothing where no
-        /// card is up. The colony's duplets sit inside the enumerator's own group; the ratings are the
-        /// score table's rows.</summary>
-        private static AgeTransform OutputStrip(PlanetLabel_SystemOrbital card)
-        {
-            if (card == null)
-            {
-                return null;
-            }
-
-            AgeTransform duplets =
-                card.FidsiEnumerator == null ? null : card.FidsiEnumerator.FidsiGroup;
-            if (AgeWidgets.Painted(duplets))
-            {
-                return duplets;
-            }
-
-            return AgeWidgets.Painted(card.FidsiScoreTable) ? card.FidsiScoreTable : null;
-        }
-
-        /// <summary>Every dossier hanging on a PAINTED item of a strip, item by item. The pips hang
-        /// theirs a level down (a duplet's tooltip is on the piece inside it), so each item is asked
-        /// with the resolver rather than for its own tooltip alone - and a retired pip is skipped
-        /// before it can offer the previous planet's figure.</summary>
-        private static void AddStripDossiers(List<TooltipChildren.Dossier> found, AgeTransform strip)
-        {
-            IList<AgeTransform> items = strip.Children;
-            List<AgeTooltip> tips = new List<AgeTooltip>(2);
-            for (int i = 0; items != null && i < items.Count; i++)
-            {
-                AgeTransform item = items[i];
-                if (!AgeWidgets.Painted(item))
-                {
-                    continue;
-                }
-
-                tips.Clear();
-                AgeWidgets.EffectiveTooltips(
-                    item,
-                    tips,
-                    TooltipReach.Own | TooltipReach.Descendants,
-                    3
-                );
-                for (int j = 0; j < tips.Count; j++)
-                {
-                    TooltipChildren.Add(found, tips[j]);
-                }
-            }
-        }
-
-        /// <summary>The five output properties in the order the card lists them, one row per state the
-        /// card can be in - an outpost, a colony, and a world nobody has settled
-        /// (<c>FidsiEnumerator.LoadPlanet</c>). Static because a carrier is bound once a turn and the
-        /// names never change.</summary>
-        private static readonly StaticString[][] OutputProperties = new StaticString[][]
-        {
-            new StaticString[]
-            {
-                SimulationProperties.Planet.PlanetInitialFood,
-                SimulationProperties.Planet.PlanetInitialIndustry,
-                SimulationProperties.Planet.PlanetInitialDust,
-                SimulationProperties.Planet.PlanetInitialScience,
-                SimulationProperties.Planet.PlanetInitialPrestige,
-            },
-            new StaticString[]
-            {
-                SimulationProperties.Planet.PlanetFood,
-                SimulationProperties.Planet.PlanetIndustry,
-                SimulationProperties.Planet.PlanetDust,
-                SimulationProperties.Planet.PlanetScience,
-                SimulationProperties.Planet.PlanetPrestige,
-            },
-            new StaticString[]
-            {
-                SimulationProperties.Planet.PlanetOutpostFood,
-                SimulationProperties.Planet.PlanetOutpostIndustry,
-                SimulationProperties.Planet.PlanetOutpostDust,
-                SimulationProperties.Planet.PlanetOutpostScience,
-                SimulationProperties.Planet.PlanetOutpostPrestige,
-            },
-        };
-
-        /// <summary>A carrier for one output figure, bound as the enumerator binds a duplet: the
-        /// property wrapper as the target, the simulation object the figure is read off as the
-        /// context.</summary>
-        private static AgeTooltip OutputCarrier(
-            Planet planet,
-            ColonizedPlanet colony,
-            int state,
-            int index,
-            Empire empire
-        )
-        {
-            try
-            {
-                AgeTooltip carrier;
-                bool rebind = ScratchTooltips.Rebind(
-                    "planet-output/" + planet.GUID + "/" + index,
-                    (DossierStamp(empire) * 7L) + state,
-                    out carrier
-                );
-                if (rebind && carrier != null)
-                {
-                    Amplitude.Unity.Simulation.SimulationObject simulation =
-                        colony == null ? planet.SimulationObject : colony.SimulationObject;
-                    GuiSimulationProperty property = new GuiSimulationProperty(
-                        (string)OutputProperties[state][index]
-                    );
-                    carrier.Class = property.TooltipClass;
-                    carrier.Content = string.Empty;
-                    carrier.Context = simulation;
-                    carrier.Target = property;
-                }
-
-                return carrier;
-            }
-            catch (Exception e)
-            {
-                Log.Warn("galaxy: binding a planet output dossier threw: " + e);
-                return null;
-            }
         }
 
         /// <summary>

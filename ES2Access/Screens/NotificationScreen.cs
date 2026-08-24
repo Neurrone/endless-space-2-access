@@ -2867,7 +2867,7 @@ namespace ES2Access.Screens
                 NotificationWindow window =
                     widget == null ? null : widget.GetComponentInParent<NotificationWindow>();
                 GuiNotification notification = window == null ? null : window.GuiNotification;
-                return notification is ModNotification
+                return GlobalHud.Mine(notification) != null
                     ? GlobalHud.TurnLogStop
                     : GlobalHud.NotificationStop;
             }

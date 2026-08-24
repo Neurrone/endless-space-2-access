@@ -2584,9 +2584,12 @@ equals `Screen.width/height` 1:1.
 `ui.focusMap`, then the scanner — `galaxy.scanCategoryNext` to **Colonizable Planets**,
 `galaxy.scanSubcategoryNext` to **occupied** (the fixture's one entry is Osulo I),
 `galaxy.scanGoTo`. That lands on `galaxy:constellation/446/system/491/planet/0` with the branch
-opened and the camera on Osulo. `ui.right` opens the world: **7 dossier nodes** — five outputs then
-Hyperium then Titanium (Osulo II has one deposit, Osulo III none, and neither shows the stale pooled
-items). Expect the SAME seven at every zoom: `ES2Access.UI.GalaxyViewLevels.SetZoom(9, at)` from
+opened and the camera on Osulo. `ui.right` opens the world: **2 dossier nodes** — Hyperium then
+Titanium. The five FIDSI figures are NOT among them since 2026-08-24 (owner ruling: their pages say
+what FIDSI is, on every world, and the management card declares them) — the walk that measured SEVEN
+here counted those five. Osulo II has one deposit and shows ONE node; Osulo III has neither deposit
+nor anomaly, so it declares no Tooltips region at all and is a leaf again unless the card draws it an
+action; neither shows the stale pooled items. Expect the SAME two at every zoom: `ES2Access.UI.GalaxyViewLevels.SetZoom(9, at)` from
 `/eval` keeps the branch open and the nodes are then carrier-drawn (the panel appears at the screen's
 BOTTOM-LEFT instead of over the icon; the words are identical, verified by crop).
 **Landing at zoom 12 does not bind the orbital cards.** `galaxy.scanGoTo` moves the camera while the
@@ -2626,9 +2629,10 @@ screen stack in the previous stage. The game menu closes through its own **Resum
 
 ## Batch-12 recipes (2026-08-23) — the two dismiss-all buttons and the juggernaut buttons
 
-**Testing "Dismiss all notifications" WITHOUT losing the owner's pending news.** The button calls the
-game's own `DismissAllGuiNotifications()`, which unloads and unbinds every notification, so the
-`RecordEventForEmpire` replay above is the only way back and it needs the notification's own event.
+**Testing "Dismiss all notifications" WITHOUT losing the owner's pending news.** The button dismisses
+each of the GAME's notifications through `DismissGuiNotification` (since 2026-08-24 it skips the
+mod's own), which unloads and unbinds each one it touches, so the `RecordEventForEmpire` replay above
+is the only way back and it needs the notification's own event.
 Cheaper and exact: **stash the real ones out of the live list first**, since
 `GetPlayerEmpireGuiNotifications()` IS the manager's list —
 `var STASHED = (GuiNotification)((System.Collections.IList)Gui.GuiNotificationService.GetPlayerEmpireGuiNotifications())[0];`
@@ -2649,6 +2653,13 @@ dedupes repeats, so the same event three times is one row. `EventModFleetArrived
 `EventModFleetStopped(pe, f1, …)`, `EventModFleetArrived(pe, f1, …)` gives three. Then
 `ui.focusTurnLog` → `ui.end` lands on the button, `ui.activate` presses it. The press itself says
 nothing; what is heard is the cursor's reconciliation onto the nearest survivor.
+
+**Proving the two dismiss-alls do not reach into each other** (owner ruling 2026-08-24). Stand BOTH
+lists up at once — the stashed-and-replaced game notification above plus three mod ones — then press
+one button and read the OTHER stop before pressing the second: `GET /gui/graph` must still show
+`hud:notification/*` after "Dismiss all Turn log entries", and the Turn log's `hud:turn-log/turn/*`
+regions must still be there after "Dismiss all notifications". A stop that vanished is the defect;
+the graph, not the speech, is the oracle, because pressing either button says nothing of its own.
 
 **Drawing the three in-progress juggernaut buttons on a save with no juggernaut.** A forced show
 alone is not enough any more, because their names come off the wrapper their tooltip points at.

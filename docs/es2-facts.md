@@ -2741,7 +2741,10 @@ description, effects, **cost**, upkeep, political impact — which is the mouse 
   `GetPlayerEmpireGuiNotifications()` is one list, and mod notifications live in it
   (`ModNotifications`), so the game's own close-all empties the Turn log as well as the icon strip.
   Measured 2026-08-23 with one game notification and one mod notification pending: both stops
-  disappeared on one press.
+  disappeared on one press. Mod policy (owner ruling 2026-08-24): the mod's "Dismiss all
+  notifications" therefore does NOT make that call — it dismisses the game's own notifications one at
+  a time through `DismissGuiNotification`, skipping every notification the mod raised, so each of the
+  two dismiss-all buttons empties only its own list.
 - **The three in-progress juggernaut buttons DO name what they are doing, on the wrapper their own
   tooltip points at** (`PlanetLabel_SystemOrbital` :806-830, :885-900, :960-975 — the
   player-empire branch, the only one drawn enabled). Measured 2026-08-23:
