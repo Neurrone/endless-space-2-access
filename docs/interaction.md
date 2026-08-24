@@ -664,16 +664,18 @@ popup, so the way out is asked of the notification being put aside
 (`NotificationScreen.HandBackOnMinimize`).
 **Each of those two stops ends with a "throw them all away" BUTTON** (owner ruling 2026-08-23; no new
 key binding — it is reached with the arrows and pressed with Enter, and pressing says nothing of its
-own, exactly as dismissing one row does). `hud:notification/dismiss-all` ("Dismiss all
-notifications", keyed on the game's own `BaseTriangleBackground` control) runs
-`GuiNotificationService.DismissAllGuiNotifications()` — the very call the game's Alt+right click on
-that triangle makes; the handler's other branch, Shift, is `HideAllGuiNotifications()`, which only
-closes popups that happen to be open and is not offered. `hud:turn-log/dismiss-all` ("Dismiss all
-Turn log entries", a region of its own after the turn regions) discards only the mod's own
-notifications, one by one, the way Backslash does on a row. Consequence measured 2026-08-23 and left
-as the shipped behaviour: the game's list is ONE list, so the notification button empties the Turn
-log too — as the mouse's Alt+right click does. Both stops are absent while their list is empty, so
-neither button is ever offered over nothing.
+own, exactly as dismissing one row does). **Each clears ONLY its own list** (owner ruling 2026-08-24). `hud:notification/dismiss-all`
+("Dismiss all notifications", keyed on the game's own `BaseTriangleBackground` control) dismisses the
+notifications the GAME raised one by one, the way Backslash does on a row, skipping every
+notification the mod owns. It does NOT call `GuiNotificationService.DismissAllGuiNotifications()` —
+the call the game's Alt+right click on that triangle makes — because the game's list is ONE list and
+that call takes the Turn log with it (that handler's other branch, Shift, is
+`HideAllGuiNotifications()`, which only closes popups that happen to be open and is not offered).
+`hud:turn-log/dismiss-all` ("Dismiss all Turn log entries", a region of its own after the turn
+regions) discards only the mod's own notifications, the same way. Which list a notification is in is
+one test in one place (`GlobalHud.Mine`, split by `Core/UI/OwnedNotifications`), so the two buttons
+cannot disagree. Both stops are absent while their list is empty, so neither button is ever offered
+over nothing.
 **The shared HUD's empire stop carries a row region per drawn band**, on every page in the game:
 `hud:empire/{controls,key-resources,research,strategics}` (labelled Controls / Key Resources /
 Research — reusing `galaxy.research` — / Strategic Resources) plus the seven faction bands

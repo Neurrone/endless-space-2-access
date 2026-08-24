@@ -40,6 +40,13 @@ namespace ES2Access.Dev
     /// reads a button is reported, because a player who can hear a button and not press it has no way
     /// to find that out.
     ///
+    /// The tooltip buckets this writes out (<c>uncovered</c>, <c>decoration</c> and the rest) are
+    /// <see cref="TooltipAudit"/>'s own, and ONE family of drawn tooltips is deliberately missing from
+    /// them: the FIDSI strips on the galaxy map's orbital planet cards, which the mod has decided not
+    /// to declare (<c>TooltipAudit.DeliberatelyUndeclared</c> carries the ruling and the reason - owner
+    /// ruling 2026-08-24). Nothing else is filtered, and a mis-aimed or promised-and-empty node on
+    /// those same cards is still reported.
+    ///
     /// Bounded and on demand: a whole-GUI walk is far too expensive to run per frame, and nothing
     /// here speaks, focuses, moves the pointer or changes what the game is showing.
     /// </summary>

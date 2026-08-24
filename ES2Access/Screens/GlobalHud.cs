@@ -5,6 +5,7 @@ using Amplitude;
 using Amplitude.Unity.Framework;
 using Amplitude.Unity.View;
 using ES2Access.Core.Speech;
+using ES2Access.Core.UI;
 using ES2Access.Core.UI.Graph;
 using ES2Access.Core.Util;
 using ES2Access.UI;
@@ -1924,9 +1925,11 @@ namespace ES2Access.Screens
         /// log of what the game never showed.
         ///
         /// The LAST entry is "throw them all away" (<see cref="DismissAllNotifications"/>) - the
-        /// game's own close-all, which it offers only as an Alt+right click on the bare triangle
-        /// behind the icons. There is no key for it: it is a button, reached with the arrows and
-        /// pressed with Enter (owner ruling 2026-08-23).
+        /// gesture the game offers only as an Alt+right click on the bare triangle behind the icons,
+        /// over the notifications THIS stop holds and no others: the Turn log has a button of its own
+        /// and neither reaches into the other's list (owner ruling 2026-08-24). There is no key for
+        /// it: it is a button, reached with the arrows and pressed with Enter (owner ruling
+        /// 2026-08-23).
         /// </summary>
         public void Notifications(GraphBuilder builder)
         {
@@ -1947,7 +1950,7 @@ namespace ES2Access.Screens
                 NotificationItem[] items = NotificationItems();
                 foreach (GuiNotification notification in service.GetPlayerEmpireGuiNotifications())
                 {
-                    if (notification is ModNotification)
+                    if (Mine(notification) != null)
                     {
                         continue;
                     }
@@ -2164,21 +2167,43 @@ namespace ES2Access.Screens
         }
 
         /// <summary>
-        /// Throw away everything the game is waiting to tell the player - the game's OWN deterministic
-        /// call, which is what its icon strip does for an Alt+right click on the triangle behind the
-        /// icons (<c>NotificationItemsWindow.OnCloseAllCb</c> :237-245). That handler's other branch,
-        /// Shift, only HIDES the popups that happen to be open and dismisses nothing; the mod offers
-        /// the dismissing one, because that is what a strip with no popup up can be asked for.
+        /// Throw away everything the GAME is waiting to tell the player, and nothing of the mod's:
+        /// every notification on the strip dismissed one by one, which is the same discard Backslash
+        /// makes on the row it is standing on (<see cref="Dismiss"/>).
         ///
-        /// The game's list is one list, so this clears the mod's own notifications with it and the
-        /// Turn log stop empties too - exactly as the mouse's Alt+right click does. The Turn log's own
-        /// button (<see cref="DismissAllLogged"/>) is the narrower gesture.
+        /// NOT the game's own <c>DismissAllGuiNotifications</c> - the call its icon strip makes for an
+        /// Alt+right click on the triangle behind the icons
+        /// (<c>NotificationItemsWindow.OnCloseAllCb</c> :237-245). The game keeps ONE list and the
+        /// mod's own notifications live in it, so that call takes the Turn log with it. Each of these
+        /// two buttons clears its own list and leaves the other standing (owner ruling 2026-08-24),
+        /// and which list a notification is in is the one question <see cref="Mine"/> answers - for
+        /// the strip stop, for the Turn log and for both buttons - so no two of them can disagree and
+        /// nothing falls between them.
+        ///
+        /// That handler's other branch, Shift, only HIDES the popups that happen to be open and
+        /// dismisses nothing; the mod offers the dismissing one, because that is what a strip with no
+        /// popup up can be asked for.
+        ///
+        /// Walked over the split's own copy, since dismissing removes each one from the list it reads.
         /// </summary>
         private static void DismissAllNotifications()
         {
             try
             {
-                Gui.GuiNotificationService.DismissAllGuiNotifications();
+                IGuiNotificationService service = Gui.GuiNotificationService;
+                if (service == null)
+                {
+                    return;
+                }
+
+                List<GuiNotification> theirs = OwnedNotifications.Theirs(
+                    service.GetPlayerEmpireGuiNotifications(),
+                    Split
+                );
+                for (int i = 0; i < theirs.Count; i++)
+                {
+                    Dismiss(theirs[i]);
+                }
             }
             catch (Exception e)
             {
@@ -2199,6 +2224,20 @@ namespace ES2Access.Screens
             }
         }
 
+        /// <summary>The mod's own notification, where this notification is one of the mod's - the ONE
+        /// test behind the split between the two lists the player walks. The strip stop leaves these
+        /// out, the Turn log holds exactly these, each dismiss-all clears exactly one side of it
+        /// (<see cref="OwnedNotifications"/>), and a minimized popup hands back to the stop this
+        /// answers for (<c>NotificationScreen.ListOf</c>). Five readings, one test.</summary>
+        public static ModNotification Mine(GuiNotification notification)
+        {
+            return notification as ModNotification;
+        }
+
+        /// <summary>The same test as a converter, held once so that splitting a list allocates
+        /// nothing beyond the list it answers with.</summary>
+        private static readonly Converter<GuiNotification, ModNotification> Split = Mine;
+
         private static readonly List<ModNotification> NoneLogged = new List<ModNotification>();
 
         /// <summary>Every mod notification standing in the player's list, in the list's own order. The
@@ -2209,24 +2248,9 @@ namespace ES2Access.Screens
             try
             {
                 IGuiNotificationService service = Gui.GuiNotificationService;
-                List<GuiNotification> standing =
-                    service == null ? null : service.GetPlayerEmpireGuiNotifications();
-                if (standing == null)
-                {
-                    return NoneLogged;
-                }
-
-                List<ModNotification> found = new List<ModNotification>();
-                for (int i = 0; i < standing.Count; i++)
-                {
-                    ModNotification mine = standing[i] as ModNotification;
-                    if (mine != null)
-                    {
-                        found.Add(mine);
-                    }
-                }
-
-                return found;
+                return service == null
+                    ? NoneLogged
+                    : OwnedNotifications.Mine(service.GetPlayerEmpireGuiNotifications(), Split);
             }
             catch (Exception e)
             {

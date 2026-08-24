@@ -334,6 +334,11 @@ namespace ES2Access.Dev
                 );
                 if (covering.Count == 0)
                 {
+                    if (DeliberatelyUndeclared(tip.Owner))
+                    {
+                        continue;
+                    }
+
                     Breach breach = NotificationAudit.Made(
                         tip.Owner,
                         NotificationAudit.Name(tip.Owner),
@@ -376,6 +381,46 @@ namespace ES2Access.Dev
                         )
                     );
                 }
+            }
+        }
+
+        /// <summary>
+        /// A tooltip the mod has DECIDED not to declare, which must not be reported as a gap.
+        ///
+        /// One family so far: the five FIDSI figures on the galaxy map's orbital planet cards - both
+        /// strips, the <c>FidsiEnumerator</c>'s duplets for a colony and the <c>FidsiScoreTable</c>'s
+        /// pips for a world nobody has settled. Their dossiers explain what FOOD, INDUSTRY, DUST,
+        /// SCIENCE and INFLUENCE ARE: the same five paragraphs on every world in the galaxy, and the
+        /// star system's management card already declares them (<c>SystemManagementScreen.PlanetDossiers</c>).
+        /// Owner ruling 2026-08-24 - they were declared on the map for one batch and taken off again,
+        /// and this comment is the record of why, because the audit would otherwise report five
+        /// findings per visible planet on the map forever and the next reader would "fix" them back.
+        /// The figures themselves are still drawn and still read: this is about the hover pages
+        /// behind them, nothing else.
+        ///
+        /// Judged only where NO node covers the tooltip, so it can never hide a real defect - a
+        /// mis-aimed or promised-and-empty node on the same card is reported exactly as before.
+        /// </summary>
+        private static bool DeliberatelyUndeclared(AgeTransform widget)
+        {
+            try
+            {
+                PlanetLabel_SystemOrbital card =
+                    widget == null ? null : widget.GetComponentInParent<PlanetLabel_SystemOrbital>();
+                if (card == null)
+                {
+                    return false;
+                }
+
+                AgeTransform duplets =
+                    card.FidsiEnumerator == null ? null : card.FidsiEnumerator.FidsiGroup;
+                return (duplets != null && NotificationAudit.Under(widget, duplets))
+                    || (card.FidsiScoreTable != null
+                        && NotificationAudit.Under(widget, card.FidsiScoreTable));
+            }
+            catch (Exception)
+            {
+                return false;
             }
         }
 
