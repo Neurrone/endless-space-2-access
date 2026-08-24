@@ -2860,10 +2860,11 @@ ScannerCustomSettings.Save();`) and reopen: the Luxury section offers "NoSuchRes
 this game, checkbox, checked"; unticking it takes the selector out (the row stays until the page is
 next built, which is what lets the player change their mind before Apply).
 
-**The column counts are a fact about the BUILD, not about the save** (stage 6): Systems 7,
-Colonizable 2, Unexplored 1, Anomalies 109, Curiosities 15, Luxury 49, Strategic 13, Contested 1,
-Fleets 4, Probes 4, and 1 each for pins, missiles and quest markers - the four derived ones being
-the whole database plus their own "all". Note the anomaly keys are the game's own and are not what
+**The column counts are a fact about the BUILD, not about the save** (stage 6, re-counted stage 7):
+Systems 7, Colonizable 2, Unexplored 1, Anomalies 82, Curiosities 15, Luxury 25, Strategic 7,
+Contested 1, Fleets 4, Probes 4, and 1 each for pins, missiles and quest markers - the four derived
+ones being the whole database plus their own "all", with definitions drawn with the SAME WORD merged
+into one checkbox (27 anomaly, 24 luxury and 6 strategic pairs; stage 7). Note the anomaly keys are the game's own and are not what
 a guess would produce: Multiple Moons is `PlanetAnomaly27Alt`.
 
 **The minimised tutorial must NOT be declared over the settings window.** With the military
@@ -2891,3 +2892,51 @@ Two ways out, and both were measured: Apply hides the window and DROPS every `ke
 puts every rebind back. Restoring a wiped rebind afterwards is one eval:
 `ModBindings.Set("<action>", new Amplitude.Unity.Input.InputBinding("<registry string>"));
 ModBindings.Persist(); ModSettings.Save();`.
+
+### The physical key paths, and what Escape means where (stage 7, 2026-08-24)
+
+All of this needs `POST /key` and therefore the game FOREGROUNDED; `hold=250&gap=150`.
+
+**The owner's vanish, and the fix.** From a mod Controls row's primary key cell: `Return` ("Press
+the new key combination."), `F1` ("F1", then the overlap box - "Confirmation", "While the mod's … the
+game's Empire Screen will not fire."), then `DownArrow DownArrow` to Confirm ("Cancel, button, 2 of
+3", "Confirm, button, 3 of 3") and `Return`. What must happen: "F1", "Mod settings", "Controls,
+table, F1, button, 46 of 57" - the window still SHOWN, the cursor on the cell, Apply lit. The
+regression to watch for is an `Escape` pressed while that box is up: it must be the box's CANCEL
+(the row reads its old chord back, the window stays shown, Apply unlit) and must NOT hide the
+settings window. Before the stage-7 registration fix it silently re-aimed the box at the window's
+own "discard your changes" handler, and the next Confirm dropped the player on the pause menu with
+the rebind reverted (es2-facts). Check the clone's place in the dispatch list with an `/eval` walk of
+`GuiManager.guiWindowsFromBackToFront`: `GameMenuModalWindow` 152, the game's `OptionsModalWindow`
+153, the clone 154, `MessageBoxWindow` 166.
+
+**The rest of the capture, physically.** `Return` then `Escape` on a key cell = "Rebinding
+cancelled." plus the old chord; `Return` then `Comma` = the chord twice (the field as it builds it,
+then the mod confirming what stuck) with Apply lit; Apply (`ui.next` to the buttons, `ui.end`,
+`Return`) hides the window, lands on "Mod settings, button, 6 of 9" and writes
+`keys.galaxy.scanCustom1Next = galaxy.scanCustom1Next:F1,`; rebinding back to the default and
+applying takes the line out again.
+
+**Type-ahead and scrolling on both tabs** (stage 7). `POST /type` reaches the mod's type-ahead on
+either tab: on Controls, "next result in custom category " answers 3 results and lands on
+"Move to next result in custom category 1, …, 46 of 57"; on the Scanner tab with a slot open,
+"amianthoid" answers ONE result (the merged twin column, `slot0Selectluxury:Luxury15`). Every landing
+must SCROLL: read `ModOptions.PanelOf(w, "Controls").OptionsTable.GetGlobalPosition().y` against
+`…OptionsScrollView.Viewport` (y 170, height 468) before and after, and confirm with `crop-shot.ps1`
+on the viewport that the landed row is drawn. `ui.end` down the KEY column is the case that used to
+fail - the table stayed at y 170 - so test the cells, not only the name column. Clear with `ui.back`
+("Search cleared").
+
+**The quick keys' claim scope.** `DevProbe.Claims("Comma,Period,Slash")` on the galaxy page reads
+`claims:true` only while `GalaxyHudScreen.CursorOnMap()` is true - measured false on `hud:quest`, on
+`hud:notification/0` and on the settings window (2026-08-24). Reaching the map stop from the HUD is
+`ui.prev` until `CursorOnMap()` answers true (three stops back from the control banner on this
+fixture).
+
+**A saved selector under the OTHER twin** (stage 7). Set a slot behind the editor to a kind the
+galaxy holds under its planet-side name but SAVE the system-side one -
+`ScannerCustomSettings.Slots.Set(2, cat)` with `new ScannerSelector("luxury", "SystemLuxury6")` where
+the galaxy shows Transvine (`Luxury6`) - press `galaxy.scanCustom3Next` from the map stop and it
+lands on "Transvine on Osulo II, … 1 of 4"; `galaxy.scanSubcategoryNext` reads "Luxury Resources:
+Transvine". Clear the slot afterwards (`Slots.Clear(2)`, `Save()`) and check `settings.cfg` is byte
+for byte what it was.

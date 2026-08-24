@@ -216,10 +216,12 @@ files above.
   three-column binding table with Delete-to-clear, the Escape cancel and the two-way mod/game
   overlap warning (stage 2b, rulings 6/9/10), on the game's own Controls tab alike; and, from stage
   6, a capture that lands on the chord already bound still SPEAKS, the overlap warning has a Cancel
-  that reverts, and Reset to Defaults resets the mod's keys. What is left is the MANUAL pass over
-  the physical-key half: Enter to capture, the chord building under the player's fingers, Escape
-  cancelling one, and whether the settings window ever vanishes after a warning box is confirmed -
-  none of it reachable from the dev loop (`custom-scanner-categories-test-report.md`).
+  that reverts, and Reset to Defaults resets the mod's keys. The physical-key half is VERIFIED as of
+  stage 7 (2026-08-24, `POST /key` with the game foregrounded): Enter to capture, a chord committing
+  and being spoken, Escape cancelling a capture, and the reported vanish - which was the clone being
+  asked for input AHEAD of the message box, fixed by registering it beside the game's own options
+  window (es2-facts, stage 7). What is left is the MANUAL pass over the physical LETTER keys
+  (type-ahead on the settings pages) (`custom-scanner-categories-test-report.md`).
 - The contextual prompt's component tables: modelled from the four data-defined shapes, but no
   fixture draws a table with ROWS — re-measure when one can be sighted.
 - `StockAndNet` now exists in three copies (GlobalHud, EconomyScreen, JuggernautSpecializationScreen)

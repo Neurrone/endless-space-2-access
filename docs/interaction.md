@@ -1049,7 +1049,11 @@ and spoken RAW (es2-facts). An action bound to more than two chords keeps the ex
 live and are not offered by any row (today only `galaxy.inspectGrow`, four chords because "+"
 is three of them on a common keyboard). **No mod↔mod conflict check** (ruling 10): the rows
 carry `AcceptsMultipleKeys`, which also stops the game's Controls tab stealing a chord from one
-of them. The mod-versus-game informative warning (ruling 9) is above.
+of them. The mod-versus-game informative warning (ruling 9) is above. **The TAB itself says
+nothing of the mod's own**: its title and its tooltip are the game's `%OptionToggleControlsTitle`
+and `%OptionToggleControlsDescription` ("Set key bindings"), so the page reads as the game's own
+Controls page in every language (owner ruling 2026-08-24) — which page the player is on is the
+window's own name, "Mod settings".
 
 **A rebind persists on Apply and reverts on Cancel** — the window's own semantics, with no hook
 on either button: the settings file is written when the window HIDES, by which point Apply has
@@ -1106,6 +1110,12 @@ cloned WINDOW was measured and is not possible - es2-facts, "two `GuiModalWindow
   this game" so it can be taken off. The editor offering everything and the SCANNER reporting only
   what it found are two different questions - a category can ask for a luxury nobody has surveyed
   yet.
+- **ONE CHECKBOX PER SPOKEN WORD** (owner ruling 2026-08-24, stage 7). The game defines twins it
+  draws identically - an anomaly and its Reduced form, a deposit and its system-wide twin - and the
+  scanner's own found columns are keyed by that word, so two boxes could never have meant two
+  things: only one of a pair could ever match anything. One box now stands for both, keyed by the
+  first of their internal names and answering for either, so a category written before the merge
+  still ticks and still matches. Counts: Anomalies 82, Curiosities 15, Luxury 25, Strategic 7.
 
 Every one of those rows is the game's own prefab over a per-row provider object, so the drawn page
 and the spoken page cannot disagree. The text rows are edited by the mod's ordinary text editor

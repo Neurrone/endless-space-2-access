@@ -3063,3 +3063,48 @@ What the fix round measured, on the cloned window in game.
   the editor's own lists: 24 of 48 luxuries, 6 of 12 strategics and 27 of 108 anomalies share a
   label with another row. The scanner's own found-columns dedupe by LABEL, so only one of each pair
   can ever match something found — see the stage-6 proposals for the open question.
+
+## The mod's own settings window, stage 7 (2026-08-24)
+
+The round that found why the window vanished. Everything measured live, in game, with the game
+foregrounded and physical keys (`POST /key`).
+
+- **The manager asks the FRONT-MOST window first, and the clone was in front of the message box.**
+  `GuiManager.HandleInput` walks `guiWindowsFromBackToFront` from the END backwards (:2058-2063), so
+  the LAST entry is asked first. Appended, the clone sat at 170 of 171 - ahead of `MessageBoxWindow`
+  at 165 - where the game's own `OptionsModalWindow` sits at 153, below the box and above
+  `GameMenuModalWindow` at 152. Consequence, measured: an ESCAPE meant for a box the mod had raised
+  over its own window went to the WINDOW, which (holding an unapplied rebind) answered by raising
+  `%BindingExitWithoutApplyMessage`.
+- **`ShowMessage` on a box that is ALREADY shown swaps the answer and redraws nothing.**
+  `GuiManager.ShowMessage` (:2303-2315) writes `Title`/`Message`/`ActiveEventHandler` and calls
+  `ShowWindow`, which is a no-op for a shown window - and `MessageBoxWindow.OnBeginShow` (:71-98) is
+  the only thing that copies those properties into the drawn labels. So the box kept the overlap
+  warning's words while its `ActiveEventHandler` had become `OptionsModalWindow.OnCancelConfirmation`
+  (read back live). Confirming what was on screen therefore ran `RestoreSettings()` +
+  `HideWindow(options)`: the player was returned to the menu behind with the rebind reverted - the
+  owner's report, reproduced exactly on 2026-08-24 (Enter, F1, Escape, Confirm).
+- **Mod policy: a clone registers BESIDE the window it was cloned from**, not at the end
+  (`ModOptions.Beside`). At 154 it is asked exactly where the game's own options window is asked -
+  above the pause menu it opens over, below the message box it raises - and every other window's turn
+  is unchanged. After the fix: Escape at the overlap box is the box's CANCEL (the row went back to
+  Comma, the window stayed shown), and Confirm keeps the binding with the window shown and Apply lit.
+- **The physical capture path, verified at last** (previously "unverified" in the stage 2b notes):
+  physical Enter on a key cell starts the capture, a physical chord commits it and is spoken, a
+  physical Escape during a capture cancels it ("Rebinding cancelled." and the old chord back), and
+  Apply writes `keys.<action>` to `settings.cfg` while a rebind back to the default drops the line.
+- **`%OptionToggleControlsDescription` ("Set key bindings") is the fourth thing the name "Controls"
+  buys.** Every tab toggle's tooltip is `%OptionToggle<name>Description`, read live off the game's own
+  window, so the mod's key-binding tab wears the game's own sentence in every language and needs no
+  string of its own.
+- **The four kind databases draw MANY definitions with one word, and the editor now merges them**
+  (owner ruling 2026-08-24). Column counts after the merge, measured: Anomalies 82 (was 109),
+  Curiosities 15 (unchanged), Luxury 25 (was 49), Strategic 7 (was 13) - 27, 24 and 6 pairs. Each
+  merged column keeps every key its twins were defined under, and at SCAN time a saved selector is
+  resolved through the databases to the words it is drawn with and matched against the found column's
+  LABEL (`ScannerKindIndex`), which is what makes a category saved under either twin match.
+- **A table cell in a non-primary column has no backing object, so nothing scrolled it into view.**
+  `GraphSheet` gives the row's reference to column 0 alone (identity is per cell), and scrolling
+  followed that reference - so `ui.end` down the KEY column of the 57-row Controls table left the
+  table unscrolled (`OptionsTable` global y stayed 170 with the landed row far below the 468px
+  viewport). Fixed generally: a non-primary cell carries the row as its `NodeVtable.ScrollAnchor`.
