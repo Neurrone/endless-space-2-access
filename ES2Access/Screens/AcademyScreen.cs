@@ -222,7 +222,12 @@ namespace ES2Access.Screens
                 {
                     SidePanel panel = _panels[i];
                     builder.BeginStop("academy:side/" + panel.GetType().Name);
-                    builder.PushContext(PanelName(panel));
+                    bool named = Captions.Push(
+                        builder,
+                        PanelCaption(panel),
+                        "academy:side/" + i + "/title",
+                        PanelName(panel)
+                    );
                     _cells.Clear();
                     SidePanels.Readouts(
                         _cells,
@@ -232,7 +237,7 @@ namespace ES2Access.Screens
                         DeadOrGodModeClick
                     );
                     Cells.EmitLinear(builder, _cells);
-                    builder.PopContext();
+                    Captions.Pop(builder, named);
                 }
             }
             catch (Exception e)
@@ -262,6 +267,20 @@ namespace ES2Access.Screens
             return panel is HeroUnlockSidePanel
                 ? AgeWidgets.ChildNamed(panel.ContentGroup, UnlockHeading, 4)
                 : null;
+        }
+
+        /// <summary>The widget a box's heading is DRAWN on, which is where the game hung the sentence
+        /// explaining the box - so the heading names the box and keeps a row as well, which is the
+        /// shared rule (<see cref="Captions"/>). Null where the box draws no heading of its own and
+        /// the name is the mod's fallback: a row saying nothing is not a row.</summary>
+        private static AgeTransform PanelCaption(SidePanel panel)
+        {
+            AcademyInfoSidePanel info = panel as AcademyInfoSidePanel;
+            AgeTransform caption =
+                info != null
+                    ? (info.AcademyTitle == null ? null : info.AcademyTitle.AgeTransform)
+                    : UnlockHeadingLabel(panel);
+            return string.IsNullOrEmpty(Captions.Text(caption)) ? null : caption;
         }
 
         /// <summary>
@@ -519,12 +538,7 @@ namespace ES2Access.Screens
         private void BuildHeroes(GraphBuilder builder, global::AcademyScreen window)
         {
             builder.BeginStop(HeroesStop);
-            string title = StripTitle(window);
-            bool named = !string.IsNullOrEmpty(title);
-            if (named)
-            {
-                builder.PushContext(title);
-            }
+            bool named = Captions.Push(builder, StripTitle(window), "academy:heroes/title");
 
             _cells.Clear();
             ControlId start = null;
@@ -553,10 +567,7 @@ namespace ES2Access.Screens
                 builder.SetStart(start);
             }
 
-            if (named)
-            {
-                builder.PopContext();
-            }
+            Captions.Pop(builder, named);
         }
 
         /// <summary>
@@ -837,14 +848,16 @@ namespace ES2Access.Screens
         // ---- reading the window ----
 
         /// <summary>The heading the game writes over the strip ("Heroes List"). Not exposed as a field,
-        /// so it is found where it is drawn - above the container the cards are clipped by.</summary>
-        private static string StripTitle(global::AcademyScreen window)
+        /// so it is found where it is drawn - above the container the cards are clipped by. The widget
+        /// rather than its words, because the game hung the sentence explaining the strip on it and a
+        /// caption that carries one keeps a row as well (<see cref="Captions"/>).</summary>
+        private static AgeTransform StripTitle(global::AcademyScreen window)
         {
             try
             {
                 AgeTransform container = window.HeroCardsTableContainer;
                 AgeTransform group = container == null ? null : container.Parent;
-                return AgeWidgets.TextOf(AgeWidgets.ChildNamed(group, "Title", 0));
+                return AgeWidgets.ChildNamed(group, "Title", 0);
             }
             catch (Exception)
             {

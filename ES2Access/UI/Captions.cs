@@ -26,6 +26,12 @@ namespace ES2Access.UI
     /// so the group answers both questions and the label answers only one, losing the sentence
     /// silently. Find the group from the label's own unique prefab name and take its parent; the
     /// wrappers themselves share names across a window.
+    ///
+    /// Where the wrapper is the whole BLOCK rather than a title box - the population window's
+    /// effects panels hang the caption's sentence on the panel that holds the effect lines too -
+    /// descending would swallow the block into its own name, so the caller passes the label as the
+    /// word and the block as <c>group</c>. The row then says the label and points at the block,
+    /// which is where the game draws that sentence.
     /// </summary>
     public static class Captions
     {
@@ -38,12 +44,17 @@ namespace ES2Access.UI
         ///
         /// <paramref name="key"/> is the row's key, and null is the caller saying it will never want
         /// the row (a caption already declared elsewhere).
+        ///
+        /// <paramref name="group"/> is the block the caption titles, for the prefabs that hang the
+        /// sentence there rather than on the label. Only the sentence comes from it: the row still
+        /// says the caption's own word.
         /// </summary>
         public static bool Push(
             GraphBuilder builder,
             AgeTransform widget,
             object key = null,
-            string text = null
+            string text = null,
+            AgeTransform group = null
         )
         {
             if (builder == null)
@@ -58,14 +69,42 @@ namespace ES2Access.UI
             }
 
             builder.PushContext(word);
-            AgeTooltip tooltip = widget == null ? null : AgeWidgets.Raw(widget);
-            if (key != null && tooltip != null && AgeWidgets.Draws(tooltip))
+            Row(builder, widget, key, group);
+            return true;
+        }
+
+        /// <summary>
+        /// The caption as a row, with no block named after it - for a surface that has already named
+        /// the block some other way: a table whose region its own sheet names, a panel the page gives
+        /// a word of its own, a caption that is a node in its own right.
+        ///
+        /// A caption the game hung no explanation on gets no row, which is the whole rule: its word is
+        /// the block's name and a node whose content is that same word is a step past nothing.
+        /// Answers whether a row was declared.
+        /// </summary>
+        public static bool Row(
+            GraphBuilder builder,
+            AgeTransform widget,
+            object key,
+            AgeTransform group = null
+        )
+        {
+            AgeTooltip tooltip = Explanation(widget) ?? Explanation(group);
+            if (builder == null || key == null || tooltip == null)
             {
-                Cell cell = Cells.Readout(widget, tooltip, key.ToString());
-                builder.AddItem(cell.Id, cell.Vtable);
+                return false;
             }
 
+            Cell cell = Cells.Readout(widget, tooltip, key.ToString());
+            builder.AddItem(cell.Id, cell.Vtable);
             return true;
+        }
+
+        /// <summary>The sentence a widget carries, where the game would draw one for it.</summary>
+        private static AgeTooltip Explanation(AgeTransform widget)
+        {
+            AgeTooltip tooltip = widget == null ? null : AgeWidgets.Raw(widget);
+            return tooltip != null && AgeWidgets.Draws(tooltip) ? tooltip : null;
         }
 
         /// <summary>Close the block's name off again, so what is declared next is not declared inside

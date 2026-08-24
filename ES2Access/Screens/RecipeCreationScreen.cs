@@ -474,7 +474,11 @@ namespace ES2Access.Screens
         /// only where the caption carries an explanation, which is the shared rule
         /// (<see cref="Captions"/>). Answers the words it used, so a caller that also has to NAME
         /// something inside the box - a table's region - names it with the one the box was named by
-        /// rather than reading the caption a second time.</summary>
+        /// rather than reading the caption a second time.
+        ///
+        /// The word is on the caption label and the sentence explaining the box is on the box, so the
+        /// row is read off both: the effects box's own explanation had no surface at all while only
+        /// the label was asked.</summary>
         private string AddCaption(
             GraphBuilder builder,
             AgeTransform group,
@@ -486,7 +490,7 @@ namespace ES2Access.Screens
                 named == null ? group : AgeWidgets.ChildNamed(group, named, 3);
             AgeTransform caption = root == null ? null : Caption(root);
             string text = Captions.Text(caption);
-            return Captions.Push(builder, caption, key, text) ? text : null;
+            return Captions.Push(builder, caption, key, text, root) ? text : null;
         }
 
         /// <summary>The first label a box draws, which is the caption it draws across its top - the three

@@ -163,9 +163,14 @@ namespace ES2Access.Screens
         /// its own only where the game hung a sentence on it, which is the shared rule
         /// (<see cref="Captions"/>). A caption the game left empty pushes nothing, so nothing is
         /// announced under a blank level.</summary>
-        private static bool Caption(GraphBuilder builder, AgeTransform widget, object key = null)
+        private static bool Caption(
+            GraphBuilder builder,
+            AgeTransform widget,
+            object key = null,
+            AgeTransform group = null
+        )
         {
-            return Captions.Push(builder, widget, key);
+            return Captions.Push(builder, widget, key, null, group);
         }
 
         private static void Unname(GraphBuilder builder, bool named)
@@ -262,8 +267,9 @@ namespace ES2Access.Screens
         /// Each captioned block is a region of its own, declared whether or not this people fills it,
         /// so the region jump means the same thing on every people; the people's own name and paragraph
         /// and the assimilation button are the two sections the game captions nothing over, and they
-        /// are keyed rather than given a word the game does not draw. None of the four captions carries
-        /// anything on hover (measured), so each names its block instead of standing in it.
+        /// are keyed rather than given a word the game does not draw. Each caption names its block -
+        /// and keeps a row as well where the game hung a sentence on the block, which is the shared
+        /// rule (<see cref="Captions"/>).
         /// </summary>
         private void BuildDetail(GraphBuilder builder, PopulationModalWindow window)
         {
@@ -273,6 +279,7 @@ namespace ES2Access.Screens
             // The people's own name is the caption over everything the window then writes about them,
             // so it names the region rather than standing in it as a row that says one word.
             bool people = Caption(builder, Widget(window.AffinityTitle), "population:affinity");
+            AddAffinityIcon(builder, window);
             _cells.Clear();
             AddParagraph(_cells, window.AffinityDescription, "population:affinity-description");
             Cells.EmitLinear(builder, _cells);
@@ -298,6 +305,34 @@ namespace ES2Access.Screens
             Cells.AddControl(_cells, AgeWidgets.Transform(window.AssimilateButton), "population:assimilate");
             Cells.EmitLinear(builder, _cells);
             builder.SetRegion(null);
+        }
+
+        /// <summary>The symbol the window draws beside the people's name - a bare picture with a
+        /// dossier on it and no words of its own, so it is named by that dossier's own header line the
+        /// way every other wordless carrier is. The window binds neither the icon nor anything holding
+        /// it, so it is found by the name the prefab gave it.</summary>
+        private static void AddAffinityIcon(GraphBuilder builder, PopulationModalWindow window)
+        {
+            AgeTransform icon = AgeWidgets.ChildNamed(
+                window.AgeTransform,
+                "MajorAffinityIcon",
+                6
+            );
+            if (icon == null)
+            {
+                return;
+            }
+
+            List<TooltipChildren.Dossier> found = new List<TooltipChildren.Dossier>(1);
+            TooltipChildren.Add(found, icon);
+            TooltipChildren.AddPlain(found, icon);
+            if (found.Count > 0)
+            {
+                builder.AddItem(
+                    ControlId.Referenced(icon, "population:affinity-icon"),
+                    TooltipChildren.Node(found[0])
+                );
+            }
         }
 
         /// <summary>
@@ -327,10 +362,14 @@ namespace ES2Access.Screens
             }
 
             builder.SetRegion(keyPrefix);
+            // The word is on the Title label and the sentence explaining the block is on the block
+            // itself, so the caption is read off both: asking the label alone left every one of
+            // these panels' explanations with no surface at all.
             bool named = Caption(
                 builder,
                 AgeWidgets.ChildNamed(group, "Title", 1),
-                keyPrefix + "/title"
+                keyPrefix + "/title",
+                group
             );
             _cells.Clear();
             AgeTransform table = AgeWidgets.ChildNamed(group, "EffectsTable", 4);

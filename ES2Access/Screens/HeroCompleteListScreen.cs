@@ -100,6 +100,7 @@ namespace ES2Access.Screens
             }
 
             builder.BeginStop(LinesStop);
+            AddTitle(builder, window);
             _table.Headers(builder, table);
             _table.Rows(builder, table, Title(window));
 
@@ -114,6 +115,23 @@ namespace ES2Access.Screens
                 builder.BeginStop(ActionsStop);
                 Cells.EmitLinear(builder, _cells);
             }
+        }
+
+        /// <summary>
+        /// The heading, as a row above the table's first line.
+        ///
+        /// It is already the table's NAME - the region the sheet announces on the way in - so it takes
+        /// a row only for what a name cannot carry: the sentence the game hung on the label it writes
+        /// the heading on, which nothing else on this window reaches (<see cref="Captions"/>).
+        /// </summary>
+        private static void AddTitle(GraphBuilder builder, HeroCompleteListModalWindow window)
+        {
+            AgeTransform label = AgeWidgets.ChildNamed(
+                window == null ? null : window.AgeTransform,
+                "TitleLabel",
+                4
+            );
+            Captions.Row(builder, label, "hero-list:title");
         }
 
         // ---- reading the window ----

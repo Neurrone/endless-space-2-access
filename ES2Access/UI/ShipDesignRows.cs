@@ -502,12 +502,40 @@ namespace ES2Access.UI
             AgeTransform caption = FirstLabel(panel.BonusesGroup);
             if (caption != null)
             {
-                SettingRows.AddReadout(builder, caption, prefix + "/info/bonuses");
+                AddCaption(
+                    builder,
+                    caption,
+                    panel.BonusesGroup,
+                    prefix + "/info/bonuses"
+                );
             }
 
             AddBonus(builder, panel.Bonus1Label, prefix + "/info/bonus/1");
             AddBonus(builder, panel.Bonus2Label, prefix + "/info/bonus/2");
             AddBonus(builder, panel.Bonus3Label, prefix + "/info/bonus/3");
+        }
+
+        /// <summary>A caption the game draws over a block, where the sentence explaining the block is
+        /// hung on the BLOCK and not on the label the word is written on - the shared rule
+        /// (<see cref="Captions"/>), applied here where the caption is already a node of its own and
+        /// no level is being pushed. Where the label carries its own explanation that one stands and
+        /// the block's is left to whatever declares the block.</summary>
+        private static void AddCaption(
+            GraphBuilder builder,
+            AgeTransform label,
+            AgeTransform group,
+            string key
+        )
+        {
+            if (
+                SettingRows.LastTooltip(label) == null
+                && Captions.Row(builder, label, key, group)
+            )
+            {
+                return;
+            }
+
+            SettingRows.AddReadout(builder, label, key);
         }
 
         private static void AddBonus(GraphBuilder builder, AgePrimitiveLabel label, string key)

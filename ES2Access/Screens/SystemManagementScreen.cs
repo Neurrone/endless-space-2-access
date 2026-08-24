@@ -374,38 +374,30 @@ namespace ES2Access.Screens
             // The three panels along the bottom are the same prefabs the Empire summary slides out
             // under its systems table, and they are read by the shared reader (SystemPanels); what is
             // this page's own is that all three are drawn at once, each as a stop of its own.
+            StarSystemConstructiblePanel constructibles =
+                window.GetComponentInChildren<StarSystemConstructiblePanel>(true);
+            StarSystemQueuePanel queue = window.GetComponentInChildren<StarSystemQueuePanel>(true);
+            StarSystemHangarPanel hangar = window.GetComponentInChildren<StarSystemHangarPanel>(true);
             BuildBottomPanel(
                 builder,
                 ConstructiblesStop,
                 ModStrings.SystemConstructiblesPanel,
-                () =>
-                    SystemPanels.Constructibles(
-                        builder,
-                        window.GetComponentInChildren<StarSystemConstructiblePanel>(true),
-                        SystemKeys
-                    )
+                constructibles == null ? null : constructibles.AgeTransform,
+                () => SystemPanels.Constructibles(builder, constructibles, SystemKeys)
             );
             BuildBottomPanel(
                 builder,
                 QueueStop,
                 ModStrings.SystemQueuePanel,
-                () =>
-                    SystemPanels.Queue(
-                        builder,
-                        window.GetComponentInChildren<StarSystemQueuePanel>(true),
-                        SystemKeys
-                    )
+                queue == null ? null : queue.AgeTransform,
+                () => SystemPanels.Queue(builder, queue, SystemKeys)
             );
             BuildBottomPanel(
                 builder,
                 HangarStop,
                 ModStrings.SystemHangarPanel,
-                () =>
-                    SystemPanels.Hangar(
-                        builder,
-                        window.GetComponentInChildren<StarSystemHangarPanel>(true),
-                        SystemKeys
-                    )
+                hangar == null ? null : hangar.AgeTransform,
+                () => SystemPanels.Hangar(builder, hangar, SystemKeys)
             );
 
             _hud.Quest(builder);
@@ -443,15 +435,26 @@ namespace ES2Access.Screens
             Cells.EmitLinear(builder, _cells);
         }
 
+        /// <summary>One of the three panels along the bottom, under the mod's own word for it - and
+        /// under the word the panel DRAWS across its top, where the game hung the sentence saying what
+        /// the panel is for on it. That caption is a row and not the panel's name: the name is what
+        /// the stop is already called, and the sentence is what a name cannot carry
+        /// (<see cref="Captions"/>).</summary>
         private static void BuildBottomPanel(
             GraphBuilder builder,
             object stop,
             string nameKey,
+            AgeTransform panel,
             Action build
         )
         {
             builder.BeginStop(stop);
             builder.PushContext(ModStrings.Get(nameKey));
+            Captions.Row(
+                builder,
+                AgeWidgets.ChildNamed(panel, "Header", 2),
+                stop + "/header"
+            );
             build();
             builder.PopContext();
         }

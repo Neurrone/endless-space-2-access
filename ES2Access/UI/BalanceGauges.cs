@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using ES2Access.Core.Speech;
+using ES2Access.Core.UI;
 using ES2Access.Core.UI.Graph;
 using ES2Access.Core.Util;
 
@@ -69,10 +70,14 @@ namespace ES2Access.UI
         }
 
         /// <summary>The bar as a line of its own, for a panel read as the lines it draws. What the two
-        /// halves ARE beyond their names is the sentence on the bar's own tooltip - "the balance
-        /// between projectile and energy weapons" - so that tooltip rides along. A bar with neither
+        /// halves ARE beyond their names is the sentence explaining the bar - "the balance between
+        /// projectile and energy weapons" - so that tooltip rides along. A bar with neither
         /// half drawn is no line at all, the same as it is no substitution in a tooltip: a stop that
-        /// announces nothing is a stop the player cannot tell they have landed on.</summary>
+        /// announces nothing is a stop the player cannot tell they have landed on.
+        ///
+        /// The hosts disagree about WHERE that sentence hangs - on the bar on some prefabs, on the box
+        /// drawn round it on others - so the bar's own is preferred and the box it sits in is the
+        /// fallback, pointed at wherever it turns out to be.</summary>
         public static void Add(List<Cell> cells, RepartitionHorizontalGauge gauge, string key)
         {
             AgeTransform widget = gauge == null ? null : gauge.AgeTransform;
@@ -82,11 +87,22 @@ namespace ES2Access.UI
             }
 
             RepartitionHorizontalGauge it = gauge;
-            AgeTooltip tooltip = AgeWidgets.Raw(widget);
+            Scratch.Clear();
+            AgeWidgets.EffectiveTooltips(
+                widget,
+                Scratch,
+                TooltipReach.Own | TooltipReach.Parents,
+                1
+            );
+            AgeTooltip tooltip = Scratch.Count == 0 ? null : Scratch[Scratch.Count - 1];
             NodeVtable vtable = GraphNodes.Readout(() => null, () => Text(it), null, tooltip);
-            AgeWidgets.PointAt(vtable, widget);
+            AgeWidgets.PointAt(vtable, widget, tooltip);
             Cells.Add(cells, widget, ControlId.Referenced(widget, key), vtable);
         }
+
+        // Reused rather than allocated per call: these bars are declared on every build. Safe as one
+        // buffer because the tooltip is taken out of it before the next call.
+        private static readonly List<AgeTooltip> Scratch = new List<AgeTooltip>(2);
 
         /// <summary>How far one half was pushed out, as the share of the whole bar it stands for.
         /// </summary>
