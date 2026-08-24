@@ -938,13 +938,24 @@ namespace ES2Access.Screens
         {
             StarSystemNode focused = GalaxyViewLevels.FocusedSystem;
             bool orbital = OrbitalWindow() != null;
-            if (ReferenceEquals(focused, _cameraSystem) && orbital == _cameraOrbital)
+            // ...and WHICH system the orbital window's star tooltip is describing. There is one of that
+            // tooltip and the window re-points it at whatever the camera is looking at, which it does a
+            // few frames after the camera's own answer changes - so the pair above can be settled while
+            // the widget the pointer was aimed at still holds the system the player came FROM, and it
+            // stays that way for as long as the cursor stands still.
+            object star = OrbitalStarSubject();
+            if (
+                ReferenceEquals(focused, _cameraSystem)
+                && orbital == _cameraOrbital
+                && ReferenceEquals(star, _cameraStar)
+            )
             {
                 return;
             }
 
             _cameraSystem = focused;
             _cameraOrbital = orbital;
+            _cameraStar = star;
             GraphNavigator navigator = ModEntry.Navigator;
             if (navigator != null)
             {
@@ -952,11 +963,30 @@ namespace ES2Access.Screens
             }
         }
 
-        /// <summary>What the camera was showing last frame - the two things the choice of a focused
+        /// <summary>What the camera was showing last frame - the three things the choice of a focused
         /// system's tooltip is made from.</summary>
         private StarSystemNode _cameraSystem;
 
         private bool _cameraOrbital;
+
+        private object _cameraStar;
+
+        /// <summary>What the orbital window's own star tooltip is currently about - the wrapper it is
+        /// bound to, since the widget itself never changes and so says nothing about which system it
+        /// is describing.</summary>
+        private static object OrbitalStarSubject()
+        {
+            try
+            {
+                PlanetLabelsWindow_SystemOrbital window = OrbitalWindow();
+                AgeTooltip star = window == null ? null : window.StarTooltip;
+                return star == null ? null : star.Target;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
 
         /// <summary>Whether the focus visual being committed right now is the cursor having MOVED, as
         /// opposed to this page being re-entered or the visual being re-taken where it already was.
@@ -3034,7 +3064,6 @@ namespace ES2Access.Screens
         {
             StarSystemNode it = node;
             StarSystemLabel label = LabelFor(node, labels);
-            AgeTooltip tooltip = label == null ? null : label.StarTooltip;
             StarSystemLabel drawn = label;
             NodeVtable vtable = GraphNodes.Group(() => it.LocalizedName);
             // Where on the map it is, straight after its name and before anything it happens to be
@@ -3165,19 +3194,32 @@ namespace ES2Access.Screens
             // Once the camera is all the way in, the map pushes the system's own label off the top of
             // the screen and draws a tooltip anchor on the star instead - so that is what the pointer
             // is put on, or a tooltip meant for the system would be drawn where nobody can see it.
-            AgeTransform anchor = label == null ? null : label.AgeTransform;
-            AgeTooltip tip = tooltip;
+            //
+            // Asked at the moment of aiming, through the same rule that decided what the row DECLARES
+            // (<see cref="StarAim"/>): the answer depends on where the camera is and the camera moves
+            // while the cursor stands still, and the orbital window's star tooltip is ONE widget it
+            // re-points at whatever the camera is looking at. A widget resolved when the row was built
+            // is a widget the game may have given to another system by the time the player arrives -
+            // which is how a system came to be described by its neighbour's dossier.
+            Empire aiming = empire;
             vtable.OnFocusVisual = () =>
             {
-                AgeTooltip star = OrbitalStarTooltip(it);
-                if (star != null)
+                StarSystemLabel drawing = LabelFor(it, SystemLabels());
+                AgeTooltip star = StarAim(it, aiming, drawing);
+                if (star == null)
                 {
-                    PointerFocus.MoveTo(null, star, star.AgeTransform);
+                    return;
                 }
-                else if (anchor != null)
-                {
-                    PointerFocus.MoveTo(null, tip, anchor);
-                }
+
+                // The label's own tooltip is drawn under the WHOLE label rather than under the star
+                // inside it; the orbital window's and the mod's own carrier stand where they are.
+                bool onTheLabel =
+                    drawing != null && ReferenceEquals(star, drawing.StarTooltip);
+                PointerFocus.MoveTo(
+                    null,
+                    star,
+                    onTheLabel ? drawing.AgeTransform : star.AgeTransform
+                );
             };
             vtable.OnBlurVisual = ReleasePointer;
 
@@ -3201,7 +3243,7 @@ namespace ES2Access.Screens
                 TooltipChildren.Emit(
                     builder,
                     place,
-                    SystemDossiers(node, empire, label, tooltip),
+                    SystemDossiers(node, empire, label),
                     outer
                 );
             }
@@ -3232,8 +3274,7 @@ namespace ES2Access.Screens
         private static List<TooltipChildren.Dossier> SystemDossiers(
             StarSystemNode node,
             Empire empire,
-            StarSystemLabel label,
-            AgeTooltip onTheLabel
+            StarSystemLabel label
         )
         {
             List<TooltipChildren.Dossier> found = new List<TooltipChildren.Dossier>(4);
@@ -3247,7 +3288,10 @@ namespace ES2Access.Screens
                     found,
                     star,
                     star == null ? null : star.AgeTransform,
-                    () => StarDossierLines(it, looking, drawn)
+                    () => StarDossierLines(it, looking, drawn),
+                    // The words were always asked for afresh; the AIM and the header line are asked
+                    // the same way now, or the node reads a system the camera has moved on from.
+                    () => StarAim(it, looking, LabelFor(it, SystemLabels()))
                 );
                 AddDeposits(found, node, empire, label);
             }
@@ -3287,19 +3331,54 @@ namespace ES2Access.Screens
         {
             ColonizedStarSystem colony = LabelColony(node, empire);
             Empire owner = colony == null ? null : colony.Empire;
-            bool drawing = label != null && AgeWidgets.Painted(label.AgeTransform);
             List<ResourceDepositDefinition> kinds = DepositKinds(node);
+            StarSystemNode it = node;
+            Empire looking = empire;
             for (int i = 0; i < kinds.Count; i++)
             {
                 ResourceDepositDefinition definition = kinds[i];
-                AgeTooltip icon = drawing ? DrawnDeposit(label, definition) : null;
-                AgeTooltip tooltip = icon ?? DepositCarrier(node, definition, owner);
+                ResourceDepositDefinition kind = definition;
+                AgeTooltip tooltip = DepositAim(node, definition, label, owner);
                 TooltipChildren.Add(
                     found,
                     tooltip,
-                    tooltip == null ? null : tooltip.AgeTransform
+                    tooltip == null ? null : tooltip.AgeTransform,
+                    null,
+                    // The label's deposit strip is drawn only from close enough and its items are
+                    // pooled among the deposits the label is showing, so which widget carries a kind
+                    // is a question about the camera - asked again every time the pointer is aimed
+                    // rather than once when the node was declared.
+                    () =>
+                        DepositAim(
+                            it,
+                            kind,
+                            LabelFor(it, SystemLabels()),
+                            DepositOwner(it, looking)
+                        )
                 );
             }
+        }
+
+        /// <summary>The widget a kind of deposit's dossier is drawn through right now: the label's own
+        /// icon wherever the map is drawing one for it, else a carrier of the mod's.</summary>
+        private static AgeTooltip DepositAim(
+            StarSystemNode node,
+            ResourceDepositDefinition definition,
+            StarSystemLabel label,
+            Empire owner
+        )
+        {
+            bool drawing = label != null && AgeWidgets.Painted(label.AgeTransform);
+            AgeTooltip icon = drawing ? DrawnDeposit(label, definition) : null;
+            return icon ?? DepositCarrier(node, definition, owner);
+        }
+
+        /// <summary>Whose colony the deposits are being read under, which is what a carrier is stamped
+        /// with.</summary>
+        private static Empire DepositOwner(StarSystemNode node, Empire empire)
+        {
+            ColonizedStarSystem colony = LabelColony(node, empire);
+            return colony == null ? null : colony.Empire;
         }
 
         /// <summary>Every kind of deposit in a system's ground, in the order the label's strip draws
@@ -6593,20 +6672,35 @@ namespace ES2Access.Screens
 
         private static readonly StarSystemLabel[] NoLabels = new StarSystemLabel[0];
 
-        /// <summary>Every label the map is currently drawing for a system - fetched fresh each time
-        /// rather than cached across builds, because the window grows this list as the player explores
-        /// more of the galaxy and a cache keyed on nothing that changes would go stale exactly when a
-        /// newly-discovered system needed its tooltip.</summary>
+        /// <summary>Every label the map is currently drawing for a system - never cached ACROSS frames,
+        /// because the window grows this list as the player explores more of the galaxy and a cache
+        /// keyed on nothing that changes would go stale exactly when a newly-discovered system needed
+        /// its tooltip.
+        ///
+        /// Held for the length of ONE frame, though: the walk is a component search over every label in
+        /// the galaxy and it now has several callers in a frame - the build, the focused row's aim, the
+        /// focused dossier's name - which the map would otherwise pay for one at a time. Keyed on the
+        /// frame number rather than invalidated by anything, so nothing has to remember to clear it.
+        /// </summary>
         private static StarSystemLabel[] SystemLabels()
         {
             try
             {
+                int frame = UnityEngine.Time.frameCount;
+                if (_labelsFrame == frame && _labels != null)
+                {
+                    return _labels;
+                }
+
                 StarSystemLabelsWindow window = Gui.GuiServiceAvailable
                     ? Gui.GuiService.GetWindow<StarSystemLabelsWindow>(false)
                     : null;
-                return window == null
-                    ? NoLabels
-                    : window.GetComponentsInChildren<StarSystemLabel>(true);
+                _labels =
+                    window == null
+                        ? NoLabels
+                        : window.GetComponentsInChildren<StarSystemLabel>(true);
+                _labelsFrame = frame;
+                return _labels;
             }
             catch (Exception e)
             {
@@ -6614,6 +6708,10 @@ namespace ES2Access.Screens
                 return NoLabels;
             }
         }
+
+        private static StarSystemLabel[] _labels;
+
+        private static int _labelsFrame = -1;
 
         // ---- fleets ----
 

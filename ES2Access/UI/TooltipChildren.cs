@@ -62,6 +62,22 @@ namespace ES2Access.UI
             /// drawing (a nested dossier).</summary>
             public Func<IList<string>> Lines;
 
+            /// <summary>
+            /// Which widget carries this dossier NOW, asked afresh every time the pointer is aimed
+            /// and the name is read.
+            ///
+            /// For a dossier the game draws through a widget it swaps under the player: a strip item
+            /// the game re-pools as the camera changes what it is drawing, or a tooltip the game keeps
+            /// ONE of on a window and re-points at whatever the camera is looking at. The pointer is
+            /// committed once per focus CHANGE and then re-asserted every frame, so a widget resolved
+            /// when the node was declared goes on being aimed at after the game has given it to
+            /// somebody else - and the player hears one thing described while the screen draws
+            /// another.
+            ///
+            /// Null where the carrier is fixed for the life of the thing, which is most of them.
+            /// </summary>
+            public Func<AgeTooltip> LiveAim;
+
             /// <summary>How the tooltip reaches the player, where the caller knows better than
             /// <see cref="GraphNodes.ModeFor"/> - which is exactly the case a prefab author's own
             /// SENTENCE is the node's name: announcing it as well would say the first line twice
@@ -172,7 +188,27 @@ namespace ES2Access.UI
 
             AgeTooltip aim = it.Aim ?? it.Tooltip;
             AgeTransform anchor = it.Anchor ?? (aim == null ? null : aim.AgeTransform);
-            if (aim != null)
+            if (it.LiveAim != null)
+            {
+                // The carrier is asked for again at every aim, and the one it was declared with is
+                // the fallback: a game that has stopped drawing a widget for this dossier leaves the
+                // node pointing where it always did rather than pointing at nothing.
+                Func<AgeTooltip> live = it.LiveAim;
+                vtable.PointsAt = () => Now(live, aim);
+                vtable.OnFocusVisual = () =>
+                {
+                    AgeTooltip at = Now(live, aim);
+                    AgeTransform under = ReferenceEquals(at, aim)
+                        ? anchor
+                        : (at == null ? null : at.AgeTransform);
+                    if (at != null)
+                    {
+                        PointerFocus.MoveTo(under, at, under);
+                    }
+                };
+                vtable.OnBlurVisual = AgeWidgets.ReleasePointer;
+            }
+            else if (aim != null)
             {
                 vtable.PointsAt = () => aim;
                 vtable.OnFocusVisual = () => PointerFocus.MoveTo(anchor, aim, anchor);
@@ -180,6 +216,21 @@ namespace ES2Access.UI
             }
 
             return vtable;
+        }
+
+        /// <summary>Whichever widget is carrying a dossier at this moment, or the one it was declared
+        /// with where the caller's own answer has run out.</summary>
+        private static AgeTooltip Now(Func<AgeTooltip> live, AgeTooltip declared)
+        {
+            try
+            {
+                AgeTooltip found = live == null ? null : live();
+                return found ?? declared;
+            }
+            catch (Exception)
+            {
+                return declared;
+            }
         }
 
         /// <summary>
@@ -200,13 +251,18 @@ namespace ES2Access.UI
         }
 
         /// <summary>The same for a tooltip the caller has already resolved.
-        /// <paramref name="anchor"/> is what the tooltip is drawn under, and
-        /// <paramref name="lines"/> the caller's own reader where it has one.</summary>
+        /// <paramref name="anchor"/> is what the tooltip is drawn under,
+        /// <paramref name="lines"/> the caller's own reader where it has one, and
+        /// <paramref name="live"/> the caller's answer to "which widget carries this NOW" where the
+        /// game moves the dossier between widgets (<see cref="Dossier.LiveAim"/>). The tooltip passed
+        /// in is still what decides whether the dossier earns a node at all, because that is a
+        /// question about the frame the node is declared in.</summary>
         public static void Add(
             List<Dossier> into,
             AgeTooltip tooltip,
             AgeTransform anchor = null,
-            Func<IList<string>> lines = null
+            Func<IList<string>> lines = null,
+            Func<AgeTooltip> live = null
         )
         {
             if (into == null || !Qualifies(tooltip))
@@ -228,13 +284,18 @@ namespace ES2Access.UI
             }
 
             AgeTooltip tip = tooltip;
+            Func<AgeTooltip> now = live;
             into.Add(
                 new Dossier
                 {
-                    Name = () => AgeWidgets.TooltipTitle(tip),
+                    // Named off whichever widget is carrying it, for the same reason the pointer is
+                    // aimed there: the header line is the dossier's own, and reading it off a widget
+                    // the game has since re-pointed names another thing entirely.
+                    Name = () => AgeWidgets.TooltipTitle(Now(now, tip)),
                     Tooltip = tip,
                     Anchor = anchor ?? tooltip.AgeTransform,
                     Lines = lines,
+                    LiveAim = live,
                 }
             );
         }
