@@ -216,9 +216,38 @@ namespace ES2Access.Screens
                     ControlId.Referenced(widget, "population:people/" + index),
                     vtable
                 );
+                AddBadges(cells, row, "population:people/" + index);
             }
 
             Cells.AddControl(cells, row.PopulationBoostButton, "population:boost/" + index);
+        }
+
+        /// <summary>The badge the window draws beside a people's name where they are the empire's OWN -
+        /// a wordless picture with a sentence of the game's behind it. The row becomes an expandable
+        /// group carrying it, the way every other badged row does; a row without the badge stays the
+        /// leaf it was.
+        ///
+        /// It is read off the ROW rather than off the window: the list is a scroll view of its own with
+        /// no parent chain back to the window's transform, so a search from there finds nothing at all
+        /// (measured 2026-08-24 - the window-side search this replaces declared no node on any save).
+        /// </summary>
+        private static void AddBadges(List<Cell> cells, PopulationAffinityFilter row, string key)
+        {
+            if (cells.Count == 0)
+            {
+                return;
+            }
+
+            List<TooltipChildren.Dossier> badges = new List<TooltipChildren.Dossier>(1);
+            TooltipChildren.AddPlain(badges, row.MajorIcon);
+            if (badges.Count == 0)
+            {
+                return;
+            }
+
+            Cell owner = cells[cells.Count - 1];
+            owner.Dossiers = badges;
+            owner.Key = key;
         }
 
         /// <summary>Whether this people has already been spliced into the empire's own, or whether there
@@ -279,7 +308,6 @@ namespace ES2Access.Screens
             // The people's own name is the caption over everything the window then writes about them,
             // so it names the region rather than standing in it as a row that says one word.
             bool people = Caption(builder, Widget(window.AffinityTitle), "population:affinity");
-            AddAffinityIcon(builder, window);
             _cells.Clear();
             AddParagraph(_cells, window.AffinityDescription, "population:affinity-description");
             Cells.EmitLinear(builder, _cells);
@@ -305,34 +333,6 @@ namespace ES2Access.Screens
             Cells.AddControl(_cells, AgeWidgets.Transform(window.AssimilateButton), "population:assimilate");
             Cells.EmitLinear(builder, _cells);
             builder.SetRegion(null);
-        }
-
-        /// <summary>The symbol the window draws beside the people's name - a bare picture with a
-        /// dossier on it and no words of its own, so it is named by that dossier's own header line the
-        /// way every other wordless carrier is. The window binds neither the icon nor anything holding
-        /// it, so it is found by the name the prefab gave it.</summary>
-        private static void AddAffinityIcon(GraphBuilder builder, PopulationModalWindow window)
-        {
-            AgeTransform icon = AgeWidgets.ChildNamed(
-                window.AgeTransform,
-                "MajorAffinityIcon",
-                6
-            );
-            if (icon == null)
-            {
-                return;
-            }
-
-            List<TooltipChildren.Dossier> found = new List<TooltipChildren.Dossier>(1);
-            TooltipChildren.Add(found, icon);
-            TooltipChildren.AddPlain(found, icon);
-            if (found.Count > 0)
-            {
-                builder.AddItem(
-                    ControlId.Referenced(icon, "population:affinity-icon"),
-                    TooltipChildren.Node(found[0])
-                );
-            }
         }
 
         /// <summary>
