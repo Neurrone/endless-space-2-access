@@ -907,10 +907,11 @@ namespace ES2Access.Screens
         /// the ones picked out. Both halves are the same panel the star system page draws its hangar
         /// with, so both read them through <see cref="ShipRows"/>.
         ///
-        /// One stop with up to three regions - the hero band, the commands, the ships - and the stop is
-        /// called "Ships" whatever is in it (owner ruling 2026-08-20), which is why the ships themselves
-        /// are the region with no word of its own. Regions at all only where two of the three are drawn:
-        /// one region is a jump that goes nowhere.
+        /// One stop with up to three regions - the hero band, the commands, the ships - each named for
+        /// itself, the ships as "Ships" (owner ruling 2026-08-24, superseding the stop-wide "Ships" of
+        /// 2026-08-20: the stop carries no name of its own, so a landing in the hero band no longer
+        /// says "Ships" first). Regions at all only where two of the three are drawn: one region is a
+        /// jump that goes nowhere.
         /// </summary>
         private void BuildHeroAndShips(GraphBuilder builder, global::FleetsScreen window)
         {
@@ -941,8 +942,7 @@ namespace ES2Access.Screens
                 bool regions = halves > 1;
 
                 builder.BeginStop(ShipsStop);
-                builder.PushContext(ModStrings.Get(ModStrings.FleetsShipsPanel));
-                // Both bands read linearly: the hero's ship tile carries a dossier group,
+                // All bands read linearly: the hero's ship tile carries a dossier group,
                 // which a row cannot host.
                 Cells.EmitRegion(
                     builder,
@@ -960,15 +960,15 @@ namespace ES2Access.Screens
                     _bar,
                     Cells.OnePerRow
                 );
-                // The ships take no word of their own - "Ships" is what the stop is already called.
-                if (regions && _cells.Count > 0)
-                {
-                    builder.SetRegion(ShipsListRegion);
-                }
-
-                Cells.EmitLinear(builder, _cells);
+                Cells.EmitRegion(
+                    builder,
+                    ShipsListRegion,
+                    ModStrings.FleetsShipsPanel,
+                    regions,
+                    _cells,
+                    Cells.OnePerRow
+                );
                 builder.LandStopOn(landing);
-                builder.PopContext();
             }
             catch (Exception e)
             {
