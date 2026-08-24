@@ -107,11 +107,23 @@ namespace ES2Access.Screens
             }
         }
 
+        /// <summary>The heading, with the sentence the window explains itself by - which the prefab
+        /// hangs on the label inside the title group rather than on the group, so the reading has to
+        /// descend into it or the sentence reaches nobody.</summary>
         private void BuildHeading(GraphBuilder builder, GovernmentModalWindow window)
         {
             builder.BeginStop(HeadingStop);
             _cells.Clear();
-            Cells.AddReadout(_cells, AgeWidgets.ChildNamed(window.AgeTransform, "TitleGroup", 2), "government:title");
+            AgeTransform title = AgeWidgets.ChildNamed(window.AgeTransform, "TitleGroup", 2);
+            if (
+                title != null
+                && AgeWidgets.Visible(title)
+                && !string.IsNullOrEmpty(AgeWidgets.TextOf(title))
+            )
+            {
+                _cells.Add(Cells.Readout(title, "government:title"));
+            }
+
             Cells.EmitLinear(builder, _cells);
         }
 
@@ -217,6 +229,22 @@ namespace ES2Access.Screens
             );
             AgeWidgets.Point(vtable, it.Toggle);
             Cells.Add(cells, widget, ControlId.Referenced(widget, key), vtable);
+
+            // The card draws its figures under little captions - the approval it asks for, what it
+            // costs, what election actions it would allow - and each of those captions carries a
+            // sentence saying what that figure MEANS. Folding them into the card's own reading turned
+            // every card into a paragraph of hover text (see CardLines), and a row of several
+            // explanations is exactly what one merged node cannot serve, so they are nodes of their
+            // own. Read off the card's content rather than by prefab name: the same three captions and
+            // the "no election actions" line are drawn by the same table on every card.
+            List<TooltipChildren.Dossier> captions = new List<TooltipChildren.Dossier>(4);
+            TooltipChildren.AddPlainInside(captions, item.ContentTable);
+            if (captions.Count > 0)
+            {
+                Cell owner = cells[cells.Count - 1];
+                owner.Dossiers = captions;
+                owner.Key = key;
+            }
         }
 
         /// <summary>
