@@ -2368,6 +2368,29 @@ its own record of the place the camera was last sent to instead, cleared when th
 the value is still exactly right for is the two questions it already answers: "is the orbital-card
 surface up" and `Collapse`'s "is the camera still inside the branch I am closing".
 
+**The orbital labels window binds itself ONCE, as it is SHOWN — a camera that crosses between two
+systems in one frame leaves it drawing the one it left.** `PlanetLabelsWindow.OnBeginShow` is the
+only place `StarSystemNode` is assigned (from `FocusedStarSystemNode`; `OnBeginHide` nulls it), and
+`PlanetLabelsWindow_SystemOrbital.OnBeginShow` binds its `StarTooltip` in the same call.
+`GuiManager`'s visibility pass shows the window exactly while `FocusedStarSystemNode != null`, so a
+MOUSE rebinds it on every crossing without anyone arranging it: the camera FLIES, part-way between
+two stars nothing is inside `DistanceMinToCatchFocusOnNode`
+(`GalaxyViewCameraController.GetGalaxyEntityToFocus`), the focus goes null, the window hides, and it
+shows again bound to wherever the camera stopped. The mod's landing SNAPS (owner ruling 2026-08-22),
+so the focus steps system-to-system with no null between and the window is never hidden. Measured
+2026-08-24 on `[Beginner] test`: walking Up from Dusay's row into expanded Libra's last child, and a
+type-ahead landing on `Libra I` from inside Dusay, both left `FocusedStarSystemNode = Libra` and the
+camera at step 12 over Libra while the window still held **Dusay** — so Libra's planets had no
+orbital cards at all (`CardFor` matches by `Planet` reference and finds none among the other
+system's) and each world's tooltip fell back to the `PlanetCirleItem` on the star label, which at
+orbital zoom sits at the top edge of the screen. The ordinary row → row → child walk only looked
+right because the intervening `PanTo` is a 0.3 s flight that supplies the null frame — a faster walk
+breaks that one too. **Mod policy (2026-08-24): the page asserts the invariant every frame rather
+than trusting how the crossing was made** — `GalaxyHudScreen.ShowFocusedSystem` hides and shows the
+window (instant, so the cards are up on the same frame) whenever a window the game already has
+SHOWN is bound to something other than the focused system, and remembers the system it rebound for
+so a bind that will not take cannot become a show every frame.
+
 
 ## Card and tooltip drawing mechanisms
 

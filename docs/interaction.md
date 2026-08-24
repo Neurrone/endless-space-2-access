@@ -493,7 +493,11 @@ the way out, and **collapse un-zooms** while `GalaxyViewLevels.FocusedSystem` is
 camera the player has since moved elsewhere is left alone, so collapsing moves nothing there — and it
 also drops the rule's "inside" record, which is what lets re-opening the same system bring the camera
 back in. The gate is NOT `FocusedStarSystemNode`: measured, that is where the camera IS and it lags a
-flight (`docs/es2-facts.md`). **A starlane is a LEAF and
+flight (`docs/es2-facts.md`). **An arrival is not finished until the map is DRAWING the new
+system's planets**: the game binds its orbital labels window only as that window is shown, which a
+crossing made in one frame never makes happen, so the page asserts that invariant every frame
+instead (`GalaxyHudScreen.ShowFocusedSystem`, measured 2026-08-24 — `docs/es2-facts.md`).
+**A starlane is a LEAF and
 Right on a named one TRAVELS** (`NodeVtable.OnFollow` → `KeyGraph.TreeMove.Followed`, consumed
 silently): the cursor lands on the destination system's ONE node at the root of the systems stop,
 that branch opens, and the camera goes there through the page's one landing and so through the camera

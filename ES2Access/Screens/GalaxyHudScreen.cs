@@ -491,6 +491,9 @@ namespace ES2Access.Screens
             // After both, and outstanding over several frames rather than answered on one: this
             // landing waits for the camera the game is still flying into the system.
             FollowActionSeat();
+            // Before the visual is followed, so that a window put right is what the pointer is then
+            // aimed at, on the one frame (<see cref="ShowFocusedSystem"/>).
+            ShowFocusedSystem();
             FollowCamera();
             // Re-asserted rather than done once: the labels window re-marks its culling on every
             // camera MOVE, and would take a held label away underneath a standing cursor.
@@ -970,6 +973,76 @@ namespace ES2Access.Screens
         private bool _cameraOrbital;
 
         private object _cameraStar;
+
+        /// <summary>
+        /// Make the map draw the planets of the system the camera has come in on.
+        ///
+        /// The game binds its orbital labels window ONCE, as the window is shown
+        /// (<c>PlanetLabelsWindow.OnBeginShow</c>), and shows it exactly when a system becomes focused
+        /// after none was (<c>GuiManager</c>'s visibility pass reads
+        /// <c>FocusedStarSystemNode != null</c>). With a mouse that is always how a system is reached:
+        /// the camera FLIES, and part-way between two stars nothing is near enough to be focused
+        /// (<c>GalaxyViewCameraController.GetGalaxyEntityToFocus</c>), so the window is hidden and
+        /// shown again around every crossing and binds itself to wherever the camera ended up.
+        ///
+        /// The keyboard crosses in ONE frame - a landing snaps rather than flies (owner ruling
+        /// 2026-08-22) - so the focus steps straight from one system to the next, the window is never
+        /// hidden, and it goes on drawing the system the player came FROM. Measured 2026-08-24 on
+        /// walking up into an expanded system's last child and on a type-ahead landing into another
+        /// system's interior: the camera and <c>FocusedStarSystemNode</c> were both on the new system
+        /// while the window still held the old one's cards, so the new system's planets had no cards at
+        /// all and a world's tooltip fell back to the label circle the map parks at the top of the
+        /// screen.
+        ///
+        /// So the invariant is asserted here every frame instead of being left to how the crossing was
+        /// made: a window up over the wrong system is hidden and shown again - the game's own rebind,
+        /// instant, so the cards are there on the same frame - and the system it was rebound for is
+        /// remembered, so a bind that will not take cannot become a show every frame. Only ever a
+        /// window the game already wants up: where it is not shown there is nothing to correct, and
+        /// showing one the game means to keep hidden would draw a system over a screen.
+        /// </summary>
+        private void ShowFocusedSystem()
+        {
+            try
+            {
+                StarSystemNode focused = GalaxyViewLevels.FocusedSystem;
+                PlanetLabelsWindow_SystemOrbital window = OrbitalWindow();
+                if (focused == null || window == null || !window.Shown)
+                {
+                    _reboundFor = null;
+                    return;
+                }
+
+                if (
+                    ReferenceEquals(OrbitalSystem(), focused)
+                    || ReferenceEquals(focused, _reboundFor)
+                )
+                {
+                    return;
+                }
+
+                _reboundFor = focused;
+                Gui.GuiService.HideWindow(window, true);
+                Gui.GuiService.ShowWindow(window, true);
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: rebinding the orbital labels window threw: " + e);
+            }
+        }
+
+        /// <summary>The system the last rebind was made for, so that a window which will not take the
+        /// binding is left alone rather than hidden and shown on every frame.</summary>
+        private StarSystemNode _reboundFor;
+
+        /// <summary>Which system the orbital window is drawing - read off the star dossier it binds in
+        /// the same call that binds its planets (<c>PlanetLabelsWindow_SystemOrbital.OnBeginShow</c>),
+        /// which is the same answer without reaching for the window's own protected field.</summary>
+        private static StarSystemNode OrbitalSystem()
+        {
+            GuiStarSystem star = OrbitalStarSubject() as GuiStarSystem;
+            return star == null ? null : star.StarSystemNode;
+        }
 
         /// <summary>What the orbital window's own star tooltip is currently about - the wrapper it is
         /// bound to, since the widget itself never changes and so says nothing about which system it
