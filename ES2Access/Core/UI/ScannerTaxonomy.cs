@@ -17,17 +17,115 @@ namespace ES2Access.Core.UI
         public readonly string Label;
     }
 
+
+    /// <summary>
+    /// WHICH COLUMN OF A SCAN A SAVED KIND SELECTOR MEANS, when the definition it names and the one
+    /// the galaxy holds are two names for the same word.
+    ///
+    /// The scanner columns what it found by the LABEL - one "Acid Rain" column holds
+    /// <c>PlanetAnomaly23</c> and <c>PlanetAnomaly23Reduced</c> alike - while a selector saved by the
+    /// editor names ONE definition. Matching the found things by key therefore missed every column
+    /// whose twin was the one out there. Matching by the label the key is DRAWN with cannot: the key
+    /// is resolved against the game's databases, which know both twins whether or not this galaxy
+    /// holds either.
+    ///
+    /// Engine-free so the twin rule is testable without a galaxy - the databases arrive as the same
+    /// <see cref="ScannerKind"/> list the editor's taxonomy is built from.
+    /// </summary>
+    public sealed class ScannerKindIndex
+    {
+        public ScannerKindIndex(IList<ScannerKind> kinds)
+        {
+            for (int i = 0; kinds != null && i < kinds.Count; i++)
+            {
+                ScannerKind kind = kinds[i];
+                if (
+                    kind == null
+                    || string.IsNullOrEmpty(kind.Key)
+                    || string.IsNullOrEmpty(kind.Label)
+                    || _labels.ContainsKey(kind.Key)
+                )
+                {
+                    continue;
+                }
+
+                _labels.Add(kind.Key, kind.Label);
+            }
+        }
+
+        /// <summary>The words a definition is drawn with, or null for a key no database of this build
+        /// defines.</summary>
+        public string Label(string key)
+        {
+            string label;
+            return key != null && _labels.TryGetValue(key, out label) ? label : null;
+        }
+
+        /// <summary>Which of a scanned category's columns a saved selector names, or -1 where nothing
+        /// of that kind was found this game.</summary>
+        public int Column(string key, IList<string> columns)
+        {
+            string label = Label(key);
+            for (int i = 0; label != null && columns != null && i < columns.Count; i++)
+            {
+                if (columns[i] == label)
+                {
+                    return i;
+                }
+            }
+
+            return -1;
+        }
+
+        private readonly Dictionary<string, string> _labels = new Dictionary<string, string>();
+    }
+
     /// <summary>One column a custom category can be pointed at: the stable key it is SAVED as, and
     /// the words the player hears. A column the galaxy cannot answer this game keeps its key and has
     /// no words, which is what <see cref="Missing"/> is for.</summary>
     public sealed class ScannerTaxonomyColumn
     {
         public ScannerTaxonomyColumn(string key, string label, bool missing)
+            : this(key, label, missing, null) { }
+
+        /// <summary>
+        /// A column that answers for SEVERAL of the game's internal names - the twins the game draws
+        /// with one word (a luxury and its System twin, an anomaly and its Reduced form). The scanner
+        /// columns what it finds by the LABEL, so those definitions were always one column out there;
+        /// this is the editor and the saved selector agreeing with it.
+        /// </summary>
+        public ScannerTaxonomyColumn(string key, string label, bool missing, IList<string> keys)
         {
             Key = key ?? string.Empty;
             Label = label;
             Missing = missing;
+            _keys = keys == null || keys.Count == 0 ? new List<string> { Key } : new List<string>(keys);
         }
+
+        /// <summary>Every internal name this one column answers for, the canonical <see cref="Key"/>
+        /// among them. A selector saved under any of them means this column - which is what keeps a
+        /// category written before the twins were merged working.</summary>
+        public IList<string> Keys
+        {
+            get { return _keys; }
+        }
+
+        /// <summary>Whether a saved selector naming <paramref name="key"/> means this column.
+        /// </summary>
+        public bool Answers(string key)
+        {
+            for (int i = 0; i < _keys.Count; i++)
+            {
+                if (_keys[i] == key)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private readonly List<string> _keys;
 
         /// <summary>What a selector writes down (<see cref="ScannerKeys"/>, or a definition's own
         /// name for one of the four derived categories' kinds).</summary>
@@ -73,7 +171,14 @@ namespace ES2Access.Core.UI
         }
 
         /// <summary>
-        /// Add every KIND the game defines for this category, sorted by the words the player hears.
+        /// Add every KIND the game defines for this category, sorted by the words the player hears -
+        /// ONE COLUMN PER WORD.
+        ///
+        /// Definitions the game draws with the same word are one column, not several (owner ruling
+        /// 2026-08-24): the game pairs an anomaly with its Reduced form and a planet deposit with its
+        /// system-wide twin, and the SCANNER has always keyed its found columns by the label, so only
+        /// one of a pair could ever have matched anything. The column keeps every key its twins were
+        /// defined under, so a category saved under either one still means this column.
         ///
         /// The list comes from the game's DATABASES, not from what a galaxy happens to hold (owner
         /// ruling 2026-08-24): a category the player is writing has to be able to ask for a luxury
@@ -87,8 +192,10 @@ namespace ES2Access.Core.UI
         /// </summary>
         public void AddKinds(IList<ScannerKind> kinds, IComparer<string> order)
         {
-            List<string> labels = new List<string>();
+            List<string> canonical = new List<string>();
             Dictionary<string, string> keys = new Dictionary<string, string>();
+            Dictionary<string, List<string>> twins = new Dictionary<string, List<string>>();
+            Dictionary<string, string> byLabel = new Dictionary<string, string>();
             for (int i = 0; kinds != null && i < kinds.Count; i++)
             {
                 ScannerKind kind = kinds[i];
@@ -103,13 +210,27 @@ namespace ES2Access.Core.UI
                 }
 
                 keys.Add(kind.Key, kind.Label);
-                labels.Add(kind.Key);
+                string first;
+                if (byLabel.TryGetValue(kind.Label, out first))
+                {
+                    twins[first].Add(kind.Key);
+                    continue;
+                }
+
+                byLabel.Add(kind.Label, kind.Key);
+                twins.Add(kind.Key, new List<string> { kind.Key });
+                canonical.Add(kind.Key);
             }
 
-            labels.Sort(new ByLabel(keys, order));
-            for (int i = 0; i < labels.Count; i++)
+            canonical.Sort(new ByLabel(keys, order));
+            for (int i = 0; i < canonical.Count; i++)
             {
-                Add(labels[i], keys[labels[i]]);
+                string key = canonical[i];
+                List<string> row = twins[key];
+                // The keys of one column in a stable order, whatever order the database was read in:
+                // the first is the canonical one a new tick is saved under.
+                row.Sort(string.CompareOrdinal);
+                _columns.Add(new ScannerTaxonomyColumn(row[0], keys[key], false, row));
             }
         }
 
@@ -138,15 +259,23 @@ namespace ES2Access.Core.UI
 
         internal bool Holds(string key)
         {
+            return Answering(key) != null;
+        }
+
+        /// <summary>The column a saved selector names, or null where this category offers none -
+        /// which is what makes it a stale selector. A twin's key answers with the column its label
+        /// shares.</summary>
+        public ScannerTaxonomyColumn Answering(string key)
+        {
             for (int i = 0; i < _columns.Count; i++)
             {
-                if (_columns[i].Key == key)
+                if (_columns[i].Answers(key))
                 {
-                    return true;
+                    return _columns[i];
                 }
             }
 
-            return false;
+            return null;
         }
 
         private readonly List<ScannerTaxonomyColumn> _columns =

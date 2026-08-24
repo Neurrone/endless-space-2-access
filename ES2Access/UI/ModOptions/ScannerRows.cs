@@ -320,7 +320,7 @@ namespace ES2Access.UI.ModOptions
                 {
                     int at = slot;
                     ScannerTaxonomyColumn column = columns[c];
-                    ScannerSelector selector = new ScannerSelector(section.Key, column.Key);
+                    string key = section.Key;
                     string label = column.Missing
                         ? ModStrings.Format(ModStrings.ScannerEditMissing, column.Key)
                         : column.Label;
@@ -333,8 +333,8 @@ namespace ES2Access.UI.ModOptions
                             panel,
                             name,
                             label,
-                            () => ScannerEditor.Holds(at, selector),
-                            ticked => ScannerEditor.Select(at, selector, ticked)
+                            () => ScannerEditor.Holds(at, key, column),
+                            ticked => ScannerEditor.Select(at, key, column, ticked)
                         ),
                         name
                     );

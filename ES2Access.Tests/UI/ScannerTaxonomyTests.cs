@@ -124,15 +124,83 @@ namespace ES2Access.Tests.UI
         }
 
         [Fact]
-        public void TwoKindsDrawnTheSameKeepAStableOrder()
+        public void TwoKindsDrawnTheSameAreONEColumn()
         {
+            // The game pairs a deposit with its system-wide twin and an anomaly with its reduced
+            // form, and draws both with one word. The scanner's found columns are keyed by that word,
+            // so two checkboxes could never have meant two things.
             IList<ScannerTaxonomyColumn> columns = Kinds(
-                new ScannerKind("LuxuryB", "Same"),
-                new ScannerKind("LuxuryA", "Same")
+                new ScannerKind("SystemLuxury15", "Amianthoid"),
+                new ScannerKind("Luxury15", "Amianthoid")
             ).Columns;
 
-            Assert.Equal("LuxuryA", columns[1].Key);
-            Assert.Equal("LuxuryB", columns[2].Key);
+            Assert.Equal(2, columns.Count);
+            Assert.Equal("Luxury15", columns[1].Key);
+            Assert.Equal(new[] { "Luxury15", "SystemLuxury15" }, columns[1].Keys);
+        }
+
+        [Fact]
+        public void ACategorySavedUnderEitherTwinMeansTheOneColumn()
+        {
+            ScannerTaxonomyCategory category = Kinds(
+                new ScannerKind("Luxury15", "Amianthoid"),
+                new ScannerKind("SystemLuxury15", "Amianthoid")
+            );
+
+            Assert.Equal("Luxury15", category.Answering("SystemLuxury15").Key);
+            Assert.Equal("Luxury15", category.Answering("Luxury15").Key);
+            Assert.Null(category.Answering("Luxury16"));
+        }
+
+        [Fact]
+        public void ASelectorSavedUnderTheOtherTwinIsNotOfferedAsStale()
+        {
+            ScannerTaxonomy taxonomy = new ScannerTaxonomy();
+            ScannerTaxonomyCategory category = taxonomy.Add(ScannerKeys.Luxury, "Luxury Resources");
+            category.Add(ScannerKeys.All, "all");
+            category.AddKinds(
+                new[]
+                {
+                    new ScannerKind("Luxury15", "Amianthoid"),
+                    new ScannerKind("SystemLuxury15", "Amianthoid"),
+                },
+                System.StringComparer.Ordinal
+            );
+
+            IList<ScannerTaxonomyColumn> offer = taxonomy.Offer(
+                ScannerKeys.Luxury,
+                new List<ScannerSelector>
+                {
+                    new ScannerSelector(ScannerKeys.Luxury, "SystemLuxury15"),
+                }
+            );
+
+            Assert.Equal(2, offer.Count);
+            Assert.DoesNotContain(offer, column => column.Missing);
+        }
+
+        // ---- what a saved selector means at SCAN time (stage 7) ----
+
+        [Fact]
+        public void ASavedTwinFindsTheColumnTheOtherTwinWasFoundIn()
+        {
+            ScannerKindIndex index = new ScannerKindIndex(
+                new[]
+                {
+                    new ScannerKind("PlanetAnomaly23", "Acid Rain"),
+                    new ScannerKind("PlanetAnomaly23Reduced", "Acid Rain"),
+                    new ScannerKind("PlanetAnomaly17", "Ashen Sky"),
+                }
+            );
+
+            // The galaxy found the Reduced form; the category was saved naming the other one.
+            string[] found = { "all", "Acid Rain" };
+            Assert.Equal(1, index.Column("PlanetAnomaly23", found));
+            Assert.Equal(1, index.Column("PlanetAnomaly23Reduced", found));
+            // Nothing of that kind out there, and a key no database defines.
+            Assert.Equal(-1, index.Column("PlanetAnomaly17", found));
+            Assert.Equal(-1, index.Column("SomeOtherModsAnomaly", found));
+            Assert.Null(index.Label("SomeOtherModsAnomaly"));
         }
 
         [Fact]

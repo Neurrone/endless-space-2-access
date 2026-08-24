@@ -248,35 +248,60 @@ namespace ES2Access.UI.ModOptions
             Rebuild();
         }
 
-        public static bool Holds(int slot, ScannerSelector selector)
+        /// <summary>Whether this slot draws from a column - asked of every key the column answers
+        /// for, so a category saved before two twins became one column still reads as ticked.
+        /// </summary>
+        public static bool Holds(int slot, string categoryKey, ScannerTaxonomyColumn column)
         {
             ScannerCustomCategory category = Working.Slot(slot);
+            IList<string> keys = column.Keys;
             for (int i = 0; category != null && i < category.Selectors.Count; i++)
             {
-                if (category.Selectors[i].Same(selector))
+                ScannerSelector selector = category.Selectors[i];
+                if (selector.Category != categoryKey)
                 {
-                    return true;
+                    continue;
+                }
+
+                for (int k = 0; k < keys.Count; k++)
+                {
+                    if (selector.Subcategory == keys[k])
+                    {
+                        return true;
+                    }
                 }
             }
 
             return false;
         }
 
-        public static void Select(int slot, ScannerSelector selector, bool wanted)
+        /// <summary>Tick or untick a column. A tick saves the column's canonical key; an UNTICK takes
+        /// every key it answers for off, which is what lets a player remove a selector an older build
+        /// wrote under the other twin.</summary>
+        public static void Select(
+            int slot,
+            string categoryKey,
+            ScannerTaxonomyColumn column,
+            bool wanted
+        )
         {
             ScannerCustomCategory category = Working.Slot(slot);
-            if (category == null || Holds(slot, selector) == wanted)
+            if (category == null || Holds(slot, categoryKey, column) == wanted)
             {
                 return;
             }
 
             if (wanted)
             {
-                category.AddSelector(selector);
+                category.AddSelector(new ScannerSelector(categoryKey, column.Key));
             }
             else
             {
-                category.RemoveSelector(selector);
+                IList<string> keys = column.Keys;
+                for (int k = 0; k < keys.Count; k++)
+                {
+                    category.RemoveSelector(new ScannerSelector(categoryKey, keys[k]));
+                }
             }
 
             Changed();
@@ -285,20 +310,31 @@ namespace ES2Access.UI.ModOptions
 
         /// <summary>How many of a built-in category's columns this slot draws from - the count that
         /// makes a hundred-column taxonomy walkable, since a section with nothing ticked can be
-        /// passed over by ear.</summary>
+        /// passed over by ear. Counted in COLUMNS, so a category an older build wrote under both of
+        /// two twins says the one checkbox the player can see.</summary>
         public static int Chosen(int slot, string categoryKey)
         {
             ScannerCustomCategory category = Working.Slot(slot);
-            int count = 0;
+            ScannerTaxonomyCategory section = Taxonomy.Category(categoryKey);
+            List<string> counted = new List<string>();
             for (int i = 0; category != null && i < category.Selectors.Count; i++)
             {
-                if (category.Selectors[i].Category == categoryKey)
+                ScannerSelector selector = category.Selectors[i];
+                if (selector.Category != categoryKey)
                 {
-                    count++;
+                    continue;
+                }
+
+                ScannerTaxonomyColumn column =
+                    section == null ? null : section.Answering(selector.Subcategory);
+                string key = column == null ? selector.Subcategory : column.Key;
+                if (!counted.Contains(key))
+                {
+                    counted.Add(key);
                 }
             }
 
-            return count;
+            return counted.Count;
         }
 
         /// <summary>Emptying the slot. No confirmation: Cancel on the window is the undo, and one is

@@ -706,6 +706,28 @@ namespace ES2Access.Screens
             return new ScannerKind(name.ToString(), AgeText.Clean(Gui.GetLocalizedTitle(name)));
         }
 
+        /// <summary>
+        /// The key-to-words index one of the four derived categories is resolved through, built once
+        /// and kept.
+        ///
+        /// It is a read of the game's DATABASES, which cannot change while the game runs, and it is
+        /// what a scan asks per saved selector - so building it per press would be a localizer lookup
+        /// per definition on every key. It dies with the assembly a
+        /// hot reload replaces, which is the whole of its lifetime.
+        /// </summary>
+        private static ScannerKindIndex KindIndex(int category)
+        {
+            if (_kindIndex == null)
+            {
+                _kindIndex = new ScannerKindIndex[CategoryCount];
+            }
+
+            return _kindIndex[category]
+                ?? (_kindIndex[category] = new ScannerKindIndex(Defined(category)));
+        }
+
+        private static ScannerKindIndex[] _kindIndex;
+
         /// <summary>One datatable's whole contents, or null where the game has not loaded it - which
         /// is the honest answer on a machine where the datatables failed, and leaves that category
         /// offering the columns it writes down for itself.</summary>
@@ -1300,14 +1322,25 @@ namespace ES2Access.Screens
                 }
 
                 // Not one of the columns the category writes down, so it is a KIND - and which column
-                // a kind is in is a fact about this galaxy. The definition's own name is looked for
-                // among what was found; the column is then the one carrying that kind's LABEL, which
-                // is what the table is keyed by.
+                // a kind is in is a fact about this galaxy. The definition's own name is resolved to
+                // the WORDS the game draws it with (the databases know them whether or not this
+                // galaxy holds any), and the column is the one carrying those words - which is what
+                // the table is keyed by, and what makes a selector saved under either of two twins
+                // find the one column they share.
                 if (!Kinds(category))
                 {
                     return false;
                 }
 
+                int column = KindIndex(category).Column(selector.Subcategory, _labels[category]);
+                if (column >= 0)
+                {
+                    subcategory = column;
+                    return true;
+                }
+
+                // A key no database of this build defines - another mod's, or a definition the game
+                // dropped. Nothing can resolve its words, so the only thing left is what was found.
                 List<Found> found = _world[category];
                 for (int i = 0; i < found.Count; i++)
                 {
