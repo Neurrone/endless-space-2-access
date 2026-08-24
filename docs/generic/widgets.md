@@ -11,7 +11,11 @@ One node factory per widget kind (see `src/graph-ui/GraphNodes.cs`), all built f
 parts, all text `Func<string>` resolved at speak time.
 
 **A control's kind is decided by its WIRING — what the game runs when it is clicked,
-adjusted or toggled — never by the layout around it.** A layout heuristic (captions
+adjusted or toggled — never by the layout around it.** When a widget kind is not
+recognised, check the engine's class chain before writing a second path: the missing
+surface is usually the BASE class of one you already handle (a toolkit's one-line and
+multi-line boxes, or its button and toggle-button, sit on one inheritance chain, and
+helpers typed to the leaf silently drop every sibling). A layout heuristic (captions
 present, row shape, piece count) may change how a control is grouped or named, but must
 never change whether it is a control: the same wired table line once read as a button
 under one caption style and as inert text under another, and the inert half was a

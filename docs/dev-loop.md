@@ -72,7 +72,10 @@ mutes voicing but `/speech` still captures.
   except from a LOBBY, where not-ready is the answer until the lobby is left, never a retry.
   Issued while the PLANET-OVERVIEW page is up it can wedge the loading window at "Game launched
   and ready" indefinitely (`wait-game.ps1 ingame` then times out silently with exit 0);
-  re-issuing the same `POST /loadsave` recovers in ~8 s
+  re-issuing the same `POST /loadsave` recovers in ~8 s — that recovery is the PLANET-OVERVIEW
+  case only. NEVER issue it while the end-turn button reads "Pending": into a wedged turn it
+  kills the process (2026-08-24 crash dump: the AI threads' whole-domain type scan races the
+  REPL's emitted TypeBuilders in `mono_class_is_subclass_of`)
 - `POST /key?hold=MS&gap=MS&text=1` — body = a key SEQUENCE pressed as real OS key events at
   the game's window (`Return`, `Ctrl+I`, `Shift+Tab`; `+Name` holds, `-Name` releases;
   `text=1` types the body; arrows are `UpArrow`/`DownArrow`/…). The only route where a key is
@@ -125,6 +128,9 @@ During boot/loading, main-thread routes 503 — retry; `/speech` and `/log` keep
 - Descriptor-driven simulation properties may shrug off `SetPropertyBaseValue` + `Refresh`
   (`Fleet.FreeMovementSpeed` stayed 0; `Empire.CanUseStrategicForRecipe` stuck): write with a
   read-back probe first; if it reverts, grant the DESCRIPTOR's source or call it fixture-blocked.
+- An order the game posts only from inside a specific turn phase must never be posted from the
+  REPL — grant the precondition instead, or spend the turns (`OrderSpawnPirateLair` from `/eval`
+  wedged the turn machinery for good, 2026-08-24).
 
 
 ## 2. Verification patterns (screen-agnostic)
@@ -196,6 +202,8 @@ tooltip no node covers / whose words none carries), plus `decoration`, `hidden` 
 `undescribed` (a GAME defect: no `GuiTooltipDescription`). The painted half needs
 `Screen.RootTransform`; `"root": null` means declaration-side buckets only — not a clean screen.
 Parity COUNTS on a culling surface depend on camera position; compare buckets, not totals.
+A run taken while a MODAL is focused inherits the screen BEHIND it — subtract findings by
+root path before judging, or a clean modal reads as a disaster.
 
 **A card's tooltip is rarely on the card.** `PointerFocus` shows the tooltip of the widget it is
 pointed AT, so pointing at a row whose tooltip hangs off a child inside it (the planet card's
@@ -219,7 +227,8 @@ whenever a mod screen is focused. Each keystroke re-announces the landing, so `/
 with three identical lines — that is the design, not a stutter. `POST /type` searches only the
 FOCUSED stop, and `ui.activate` while a search is live ends the search and then performs the
 landing's ordinary action — on a sort header that is a stray sort. Never follow a 0-result
-`/type` with `ui.activate`; clear with `ui.back` first.
+`/type` with `ui.activate`; clear with `ui.back` first — and re-read the cursor before
+activating: a 0-result search never moved it.
 
 **Tracing a transition frame by frame.** A screen change is frames long and polling from outside
 samples between them, so the frame that moved the cursor is invisible. `POST /wait` evaluates its
@@ -238,7 +247,9 @@ DOES fire proves the window was really sampled.
 a no-delay loop does not fail loudly, it reports a plausible WRONG route (rows appearing
 unreachable by Down) — then
 read `/speech?since=N` — `next` from a `since=0` read before the sequence is the baseline. Keep
-the route in a `.sh` script in the scratchpad so the same walk is replayable.
+the route in a `.sh` script in the scratchpad so the same walk is replayable. A turn-advance
+helper must dismiss the game's own end-turn blockers (empty-queue prompts eat the first press);
+"state didn't change" is not "the injection failed".
 
 **A behaviour that branches on a key BEING DOWN cannot be tested with `/input`.** An injected
 action presses nothing, so `Input.anyKeyDown`, `GetKey`, the consumed-key latch and every

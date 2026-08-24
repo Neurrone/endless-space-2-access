@@ -32,6 +32,10 @@ namespace ES2Access.UI
     /// descending would swallow the block into its own name, so the caller passes the label as the
     /// word and the block as <c>group</c>. The row then says the label and points at the block,
     /// which is where the game draws that sentence.
+    ///
+    /// And before guessing at a wrapper at all, ask the panel CLASS for a tooltip field: several
+    /// prefabs expose the caption's sentence as a named serialized field hung nowhere the tree
+    /// search looks (<c>NewGameCategoryPanel.CategoryTooltip</c> is the precedent).
     /// </summary>
     public static class Captions
     {

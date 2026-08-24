@@ -129,7 +129,9 @@ Rules that came out of shipping this, all hit in practice:
   off a child (the title label), and pointing at the container draws nothing — while the
   tree dump still looks plausible and the node still declares the tooltip. The reverse bites
   too: a caption whose WORD is on the label and whose SENTENCE is on the group around it
-  needs the group, or the sentence gets no node at all. Verify tooltip
+  needs the group, or the sentence gets no node at all — and where that group is the block
+  itself, take the word from the label and the sentence from the group, never both from one
+  (descending for the word swallows the block into its own name). Verify tooltip
   rendering with the drawn-tooltip probe, never with the tree dump: an expected long
   tooltip is accepted only once the review buffer, with the node focused, actually holds
   its words — the declaration itself stays unconditional (above), which is exactly why a
@@ -139,7 +141,9 @@ Rules that came out of shipping this, all hit in practice:
   description): announce the value's — the last-drawn — by the short/long rule; a long one
   anywhere in the row goes to the buffer; put every tooltip in the row into
   the row's buffer **in drawn order** (the heading's explanation first, then the value's
-  dossier), so review follows the screen. Before picking which one to POINT AT, drop the
+  dossier), so review follows the screen. That is the rule for a caption-plus-value pair;
+  a row carrying several INDEPENDENT explanations makes them nodes instead — one per
+  tooltip-bearing widget, never merged into one buffer. Before picking which one to POINT AT, drop the
   tooltips the engine could never draw anything for (no class, no content, no target —
   and note "never draws" and "draws" are different tests: a class-ONLY tooltip survives
   this filter yet still renders nothing, so never judge an aim with the collector's test):

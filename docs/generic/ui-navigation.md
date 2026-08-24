@@ -226,7 +226,9 @@ which no dump reveals. Key such lines on the game's *data* object, never the wid
   scrollable view, scroll minimally until it is fully visible. Hook the **single
   focus-commit site** (beside the focus-visual application), resolve the container from the
   node's backing object, and every screen — present and future — inherits it with nothing
-  declared. Scroll through the engine's **own scroll entry point** (ES2: replaying the
+  declared. A node keyed by anything other than a widget must also record the widget it is
+  drawn in, or the viewport stops following the cursor there — and that fix belongs at the
+  shared cell/emit helper, not per screen. Scroll through the engine's **own scroll entry point** (ES2: replaying the
   mouse-wheel handler) rather than writing offsets directly, so clamping, scrollbar state
   and scroll notifications stay identical to a hand on the mouse. Only scroll when the
   control is actually out of view, and never re-run per frame — a self-correcting loop would

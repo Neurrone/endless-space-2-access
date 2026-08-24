@@ -104,7 +104,9 @@ affordance the mouse has is a separate, louder decision than withholding a name.
   what makes it exist at all — and in a 3D-world game half the UI is gated on camera/view
   state. A window measured correctly while its existence-gate goes unread is how a whole
   feature gets missed. There is often one central method listing every window's gate; find
-  it first.
+  it first. And a panel prefab the game instantiates once per HOST window needs the
+  screen's predicate to ask every host that owns a copy, preferring the one being drawn —
+  keyed to one instance, the screen goes silently blind on the others.
 - **When a report reads "X happens after Y", measure X without Y first.** Half of
   "after Y" reports are coincidence, the negative control is one call, and every flag
   hunted before it is run is spent on a cause that may not exist (a selection swap
