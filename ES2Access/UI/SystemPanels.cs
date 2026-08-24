@@ -214,19 +214,26 @@ namespace ES2Access.UI
                 vtable
             );
 
-            // The tile draws a second badge for a festival, with its own dossier behind it
-            // (<c>StarSystemConstructibleItem.Refresh</c> :81-92 hangs a HisshosFestival tooltip on the
-            // icon). A tile can only ever show ONE tooltip, so folding it into the tile's own reading
-            // would promise words the game would never draw: it is a node beside the tile instead.
-            List<TooltipChildren.Dossier> badges = new List<TooltipChildren.Dossier>(1);
+            // The tile draws badges beside its name, each with its own explanation behind it: what the
+            // ship design this tile builds is FOR (<c>StarSystemConstructibleItem.RefreshContent</c>
+            // :135-150 writes the role's description onto the role icon) and, for a festival, the
+            // festival's dossier (:81-92). A tile can only ever show ONE tooltip, so folding either
+            // into the tile's own reading would promise words the game would never draw: each is a
+            // node beside the tile instead.
+            List<TooltipChildren.Dossier> badges = new List<TooltipChildren.Dossier>(2);
+            TooltipChildren.AddPlain(
+                badges,
+                item.RoleIcon == null ? null : item.RoleIcon.AgeTransform
+            );
             TooltipChildren.Add(badges, item.FestivalIcon);
             for (int i = 0; i < badges.Count; i++)
             {
+                AgeTransform badge = badges[i].Anchor;
                 Cells.Add(
                     cells,
-                    item.FestivalIcon,
+                    badge,
                     ControlId.Referenced(
-                        item.FestivalIcon,
+                        badge,
                         keyPrefix + "constructible/" + constructible.Name + "/badge/" + i
                     ),
                     TooltipChildren.Node(badges[i])

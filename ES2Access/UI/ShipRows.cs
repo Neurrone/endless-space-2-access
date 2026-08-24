@@ -189,6 +189,23 @@ namespace ES2Access.UI
                 ControlId.Referenced(ship, keyPrefix + "/ship/" + ship.GetInstanceID()),
                 vtable
             );
+
+            // The badge in the tile's corner says what this ship is FOR - the role's own description,
+            // written onto the icon by <c>ShipItem.Bind</c> :104-115 - and the tile can only ever draw
+            // ONE tooltip, so it cannot ride along with the ship's own dossier. A child node rather
+            // than a node beside the tile: this is a list the player walks ship by ship, and a second
+            // stop per ship would double the walk.
+            List<TooltipChildren.Dossier> role = new List<TooltipChildren.Dossier>(1);
+            TooltipChildren.AddPlain(
+                role,
+                ship.RoleIcon == null ? null : ship.RoleIcon.AgeTransform
+            );
+            if (role.Count > 0)
+            {
+                Cell tile = cells[cells.Count - 1];
+                tile.Dossiers = role;
+                tile.Key = keyPrefix + "/ship/" + ship.GetInstanceID();
+            }
         }
 
         /// <summary>What the tile offers to carry: the ship itself, under the name the tile is saying
