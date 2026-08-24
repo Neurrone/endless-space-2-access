@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using ES2Access.Core.Speech;
+using ES2Access.Core.UI;
 using ES2Access.Core.UI.Graph;
 using ES2Access.UI;
 
@@ -37,6 +38,7 @@ namespace ES2Access.Screens
         {
             _table = new TableSheet("hero-list:", HeroOf);
             _table.RowName = HeroName;
+            _table.Decorate = HeroRow;
         }
 
         public override string Key
@@ -132,6 +134,59 @@ namespace ES2Access.Screens
                 4
             );
             Captions.Row(builder, label, "hero-list:title");
+        }
+
+        /// <summary>
+        /// The dossier about the hero a row stands for, which the game hangs on the row's FIRST column
+        /// - the one drawing the hero - and not on the row.
+        ///
+        /// Every other column's dossier is read where that column is, but the first column is the row
+        /// itself, and the row carries only its own tooltip: this window's whole page about a hero -
+        /// their class, what they are good at - reached no keyboard at all. It rides with the row and
+        /// the row points at it, because a dossier the renderer assembles has no words until the game
+        /// draws it.
+        /// </summary>
+        private static void HeroRow(GuiTableLine line, NodeVtable vtable)
+        {
+            AgeTransform cell = FirstColumn(line);
+            List<AgeTooltip> found = new List<AgeTooltip>(2);
+            AgeWidgets.EffectiveTooltips(
+                cell,
+                found,
+                TooltipReach.Own | TooltipReach.Descendants,
+                3
+            );
+            AgeTooltip dossier = found.Count == 0 ? null : found[found.Count - 1];
+            NodeSection section = GraphNodes.TooltipSection(dossier);
+            if (section == null || AgeWidgets.SameTooltip(line.Tooltip, dossier))
+            {
+                return;
+            }
+
+            List<NodeSection> sections = new List<NodeSection>(3);
+            for (int i = 0; vtable.Sections != null && i < vtable.Sections.Count; i++)
+            {
+                sections.Add(vtable.Sections[i]);
+            }
+
+            sections.Add(section);
+            vtable.Sections = sections;
+            AgeWidgets.PointAt(vtable, cell, dossier);
+        }
+
+        /// <summary>The column the row's name is drawn in, which is the row itself.</summary>
+        private static AgeTransform FirstColumn(GuiTableLine line)
+        {
+            try
+            {
+                IList<AgeTransform> cells =
+                    line == null || line.CellsTable == null ? null : line.CellsTable.Children;
+                return cells == null || cells.Count == 0 ? null : cells[0];
+            }
+            catch (Exception)
+            {
+                return null;
+            }
         }
 
         // ---- reading the window ----
