@@ -304,6 +304,10 @@ namespace ES2Access.Screens
         /// system and fly the camera in, and the real order is a control drawn inside it
         /// (<see cref="GalaxyHudScreen.SeatTarget"/>). Those six say where pressing them puts the
         /// cursor, and the page then puts it there. Every other action is untouched.
+        ///
+        /// The item also draws four badges over the icon, each with a sentence of its own
+        /// (<see cref="Badges"/>), and two of them draw a figure as well
+        /// (<see cref="BadgeText"/>).
         /// </summary>
         private static void AddAction(List<Cell> cells, FleetActionItem item, GalaxyHudScreen page)
         {
@@ -318,6 +322,7 @@ namespace ES2Access.Screens
             AgeTooltip tooltip = AgeWidgets.Raw(item.AgeTransform);
             Func<string> label = () => ActionTitle(it.name);
             Func<bool> enabled = () => it.IsEnabled;
+            Func<string> badge = () => BadgeText(it);
 
             NodeVtable vtable;
             if (item.Toggle != null && item.Toggle.Visible)
@@ -327,7 +332,8 @@ namespace ES2Access.Screens
                     () => it.Toggle.State,
                     () => Act(owner, it, seat, true),
                     enabled,
-                    tooltip
+                    tooltip,
+                    value: badge
                 );
                 AgeWidgets.Point(vtable, item.Toggle, tooltip, item.AgeTransform);
             }
@@ -339,6 +345,7 @@ namespace ES2Access.Screens
                     enabled,
                     tooltip
                 );
+                vtable.Announcements.Add(GraphNodes.ValuePart(badge));
                 AgeWidgets.Point(vtable, item.Button, tooltip, item.AgeTransform);
             }
 
@@ -350,6 +357,51 @@ namespace ES2Access.Screens
                 ControlId.Referenced(item, "fleets:action/" + item.name),
                 vtable
             );
+
+            List<TooltipChildren.Dossier> badges = Badges(item);
+            if (badges.Count > 0)
+            {
+                Cell cell = cells[cells.Count - 1];
+                cell.Dossiers = badges;
+                cell.Key = "fleets:action/" + item.name;
+            }
+        }
+
+        /// <summary>
+        /// The figures the game draws ON the icon: how many charges the action has left ("0/2", the
+        /// probe stock) and how many turns the one already running has to go. Drawn words a sighted
+        /// player reads off the button, so they are read with it.
+        ///
+        /// What either figure MEANS is on the badge's own tooltip, which is a node of its own
+        /// (<see cref="Badges"/>) rather than a caption here - the game writes no caption for them.
+        /// </summary>
+        private static string BadgeText(FleetActionItem item)
+        {
+            MessageBuilder message = new MessageBuilder();
+            message.Fragment(AgeWidgets.TextOf(item.ExecutionStockGroup, 2));
+            message.Fragment(AgeWidgets.TextOf(item.DurationGroup, 2));
+            return message.Build();
+        }
+
+        /// <summary>
+        /// The four badges the prefab hangs over an action's icon, in the order it declares them:
+        /// this action is already running, it spends the fleet's action point, it has a stock of
+        /// charges, it has turns left to go. Each is a plain sentence the game authored
+        /// (<c>FleetActionsPanel.CreateFleetActionButtons</c> :117-120 anchors all four), and a mouse
+        /// hovering a corner of the icon is the only thing that has ever read one.
+        ///
+        /// Nodes rather than buffer lines: four explanations merged into one paragraph is what a
+        /// player cannot step through, and the badge that says whether this action costs the fleet's
+        /// action point is the one the rest of the panel never mentions.
+        /// </summary>
+        private static List<TooltipChildren.Dossier> Badges(FleetActionItem item)
+        {
+            List<TooltipChildren.Dossier> badges = new List<TooltipChildren.Dossier>(4);
+            TooltipChildren.AddPlainInside(badges, item.OnGoingGroup);
+            TooltipChildren.AddPlainInside(badges, item.ActionPointGroup);
+            TooltipChildren.AddPlainInside(badges, item.ExecutionStockGroup);
+            TooltipChildren.AddPlainInside(badges, item.DurationGroup);
+            return badges;
         }
 
         /// <summary>
