@@ -5161,26 +5161,46 @@ namespace ES2Access.Screens
             return lines == null ? null : lines();
         }
 
-        /// <summary>The tooltip the orbital window draws on a system's star, which it keeps parked over
-        /// the star wherever the star is on screen. Null unless the camera is in on that system.
+        /// <summary>
+        /// The tooltip the orbital window draws on a system's star, which it keeps parked over the
+        /// star wherever the star is on screen. Null unless the window is describing THIS system.
+        ///
+        /// Which system that is, is asked of the tooltip's own binding and never of where the camera
+        /// is. The window binds this tooltip once, in <c>PlanetLabelsWindow_SystemOrbital.OnBeginShow</c>,
+        /// to the system that was focused THEN - and the game leaves the window shown and bound to the
+        /// system the player came from while <c>FocusedStarSystemNode</c> has already moved on
+        /// (measured 2026-08-24: window bound to Rigel, focused system Dusay, and it stays that way).
+        /// Trusting the camera's answer therefore aimed a system's dossier at a widget carrying its
+        /// neighbour's, and the game drew the neighbour's card under the player's cursor for good.
+        ///
+        /// Declining here costs nothing: the caller falls through to the system's own map label and
+        /// then to a carrier of the mod's own, both of which describe the system that was asked about.
         /// </summary>
         private static AgeTooltip OrbitalStarTooltip(StarSystemNode node)
         {
             try
             {
                 PlanetLabelsWindow_SystemOrbital window = OrbitalWindow();
-                if (window == null || !ReferenceEquals(GalaxyViewLevels.FocusedSystem, node))
+                AgeTooltip star = window == null ? null : window.StarTooltip;
+                if (star == null || star.AgeTransform == null || !Describes(star, node))
                 {
                     return null;
                 }
 
-                AgeTooltip star = window.StarTooltip;
-                return star != null && star.AgeTransform != null ? star : null;
+                return star;
             }
             catch (Exception)
             {
                 return null;
             }
+        }
+
+        /// <summary>Whether a star tooltip is bound to this system - the wrapper the game put on it
+        /// names the system its words will be assembled about.</summary>
+        private static bool Describes(AgeTooltip star, StarSystemNode node)
+        {
+            GuiStarSystem gui = star.Target as GuiStarSystem;
+            return gui != null && ReferenceEquals(gui.StarSystemNode, node);
         }
 
         private static PlanetLabelsWindow_SystemOrbital OrbitalWindow()
