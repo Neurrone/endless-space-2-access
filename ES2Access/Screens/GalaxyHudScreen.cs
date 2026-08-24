@@ -3202,6 +3202,9 @@ namespace ES2Access.Screens
             // is a widget the game may have given to another system by the time the player arrives -
             // which is how a system came to be described by its neighbour's dossier.
             Empire aiming = empire;
+            // Declared as well as performed: the navigator re-commits a standing cursor's pointer when
+            // this answer changes, which is the same question the visual below asks.
+            vtable.PointsAt = () => StarAim(it, aiming, LabelFor(it, SystemLabels()));
             vtable.OnFocusVisual = () =>
             {
                 StarSystemLabel drawing = LabelFor(it, SystemLabels());
@@ -8979,6 +8982,10 @@ namespace ES2Access.Screens
             vtable.OnFocusVisual = () =>
                 PointerFocus.MoveTo(it, Transform(it).AgeTooltip, it.AgeTransform);
             vtable.OnBlurVisual = ReleasePointer;
+            // The aim is written down beside the visual, from the same argument, because the navigator
+            // re-commits a standing cursor's pointer when this answer changes - which is how a node
+            // reading a widget the map POOLS follows the pool.
+            vtable.PointsAt = () => Raw(Transform(it));
         }
 
         /// <summary>The same for a widget with no button under it: a running total, one of the screen
@@ -8989,6 +8996,7 @@ namespace ES2Access.Screens
             AgeTransform it = widget;
             vtable.OnFocusVisual = () => PointerFocus.MoveTo(it, Raw(it), it);
             vtable.OnBlurVisual = ReleasePointer;
+            vtable.PointsAt = () => Raw(it);
         }
 
         /// <summary>

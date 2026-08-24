@@ -82,6 +82,11 @@ namespace ES2Access.UI
         private ControlId _visualKey;
         private GraphNode _visualNode;
 
+        // What that commit aimed at (NodeVtable.PointsAt's answer at the time). The graph is rebuilt
+        // every frame and a node's aim is resolved when ASKED, so this is what a later frame's answer
+        // is compared against - see SyncVisual.
+        private object _visualAim;
+
         // Where the cursor stood at the last visual commit, and whether the commit being made now is
         // the cursor having MOVED. Unlike _visualKey this survives ClearVisual, which is a re-commit
         // on the control the cursor is already on.
@@ -764,17 +769,31 @@ namespace ES2Access.UI
         /// nothing declared: a control that named the game object it came from can be found on screen,
         /// and whether anything above it scrolls is a question about the game's own hierarchy. So it
         /// costs a screen nothing and is never forgotten.
+        ///
+        /// And re-committed, on the SAME control, whenever what the control aims at has changed
+        /// (<see cref="NodeVtable.PointsAt"/>). A commit happens once per focus change, but the thing
+        /// a node points at is a question the game keeps answering differently under a standing
+        /// cursor: pooled widgets get handed to another row, one tooltip on a window gets re-bound to
+        /// whatever the camera is looking at. The pointer stayed where it was first put, so the game
+        /// went on drawing somebody else's dossier for the control the player was standing on - and
+        /// nothing was ever going to correct it. Comparing the answer against the one that was
+        /// committed is what turns that into a re-commit, per site, with nothing for a screen to
+        /// remember; a node whose answer is stable takes exactly the path it always did.
         /// </summary>
         private void SyncVisual(GraphNode node)
         {
             if (_visualKey != null && _visualKey.Equals(node.Id))
             {
-                return;
+                if (ReferenceEquals(Aim(node), _visualAim))
+                {
+                    return;
+                }
             }
 
             ClearVisual();
             _visualKey = node.Id;
             _visualNode = node;
+            _visualAim = Aim(node);
             _cursorMovedHere = _visualFrom != null && !_visualFrom.Equals(node.Id);
             _visualFrom = node.Id;
             ScrollIntoView.Reveal(node.Vtable.ScrollAnchor, node.Id.Reference);
@@ -824,6 +843,22 @@ namespace ES2Access.UI
 
             _visualKey = null;
             _visualNode = null;
+            _visualAim = null;
+        }
+
+        /// <summary>What a node aims at right now, or null where it aims at nothing and where asking
+        /// threw - an aim that cannot be resolved is not a reason to keep re-committing.</summary>
+        private static object Aim(GraphNode node)
+        {
+            try
+            {
+                Func<object> points = node.Vtable.PointsAt;
+                return points == null ? null : points();
+            }
+            catch (Exception)
+            {
+                return null;
+            }
         }
 
         private static void Safe(Action action, string what)
