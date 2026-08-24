@@ -198,7 +198,10 @@ reload-safe ([hot-reload.md](hot-reload.md)) and per-frame cheap — `Build` run
   and runs itself on whatever the player meets; a shared reader's premises are per-prefab
   data and only measurement can validate them. Validate each of its buckets against one
   known-good node before trusting a count; and a mis-seated cursor early in a regression
-  route amplifies into N screens of unrelated diff — normalise first.
+  route amplifies into N screens of unrelated diff — normalise first. Record what the audit
+  structurally CANNOT see next to the audit itself: a blind spot reads as a confident defect
+  list (or a clean bill) on exactly the surfaces it skips, and an audit whose scope nobody
+  wrote down gets re-warned by hand in every stage brief until someone writes it down.
 - **A fix whose whole effect is an ABSENCE has no pair until you build one.** Silence on a
   clean run is not evidence, and these repro windows are narrow by nature. Revert the one
   guard, rebuild, reload, re-run the same probes: the failing half costs a couple of minutes

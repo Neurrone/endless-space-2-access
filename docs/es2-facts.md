@@ -1579,6 +1579,71 @@ generic graduates to the generic docs.
   choice reader already declares and already gives the double-click chord to, so the gesture is
   covered without a battle to run it on. A prefab's `AgeTransform` is null until it is instantiated —
   probe the fields, not the transform.
+- **The ground setup popup's two aftermath badges are wired to each other's data.**
+  `GroundBattleSetupNotificationWindow.Refresh` (decompiled :165-168) reads
+  `ImprovementsDestructionByStrategies` into the value it assigns to `PopulationDeathLabel` and
+  `PopulationDestructionByStrategies` into the one for `ConstructedDestroyedLabel`. The mod reads the
+  drawn screen and keeps parity with the drawn association (owner call, 2026-08-25). Invisible in
+  practice so far: every shipped tactic moves both by the same percentage.
+- **A collapsed AGE accordion fades, it does not hide.** The DETAILS block on
+  `GroundBattleContenderSetupPanel` keeps its three labels' text current unconditionally
+  (`RefreshDetails`) and collapses through a height/alpha modifier: measured `Visible=true, Alpha=0`,
+  and the game still draws their tooltips when the pointer lands on them. What the game truly
+  withholds it sets `Visible=false` (the enemy side's health/damage multipliers, :177-178). So a
+  `Visible` gate reads collapsed-but-live rows and still drops genuinely-hidden ones — and the mod
+  deliberately reads the collapsed DETAILS rows without modelling the toggle (owner call,
+  2026-08-25).
+- **The ground power gauge's two numbers.** The dial is sized from
+  `GroundBattle.SpawnReport.OpponentInitManPowers[Left/RightEmpireManpowerIndex]` (decompiled
+  `GroundBattleSetupNotificationWindow.cs:152-154`). Both indices are `protected` on
+  `GroundBattleNotificationWindow` — read them back by reflection rather than re-deriving the
+  four-branch attacker/defender/third-party rule — and `NotificationGroundBattleSetup.GroundBattle`
+  is the public route to the battle. The gauge's tooltip-bearing transform is
+  `window.BattlePowerGauge.AgeTransform` (it IS the `PowerBalanceGroup`).
+- **An impact arrow written INSIDE a number is a state marker, not a noun.** The game writes
+  `[negativeImpactWhite]`/`[positiveImpactWhite]` into the assigned-manpower figure to mark a number
+  its own rules moved (`GroundBattleContenderSetupPanel.cs:58,64`) and appends the explanation to the
+  row's tooltip. The global icon rendering ("negative") is right everywhere else and wrong inside a
+  figure — strip the marker contextually in that row's reading (`BattleNotifications.ManpowerReading`),
+  never in the icon table.
+- **Two prefabs sharing one panel class can caption the same field with different words.** The two
+  ground popups share `GroundBattleContenderBasePanel`/`ManpowerLine` and one row prefab, but the
+  REPORT prefab captions the manpower row "Remaining" where the setup prefab says "Assigned" — and
+  neither panel class rewrites the caption (`GroundBattleContenderBasePanel.cs:78-79` sets only the
+  line tooltips; the report panel only the values). The difference exists only in the prefab drawing.
+  Mod policy it forced: name such a row from the DRAWN caption with the key as fallback
+  (`BattleNotifications.RowTitle`). Reserve is the control case — its drawn label holds the very key
+  the mod used, so the drawn read changes nothing there.
+- **The ground report's outcome word and its meaning are two fields of one GuiElement**
+  (`"EndBattleStatus" + GroundBattleResult`). The SPACE report wires the Description onto the title's
+  tooltip (`BattleReportNotificationWindow.cs:262`); the GROUND report does not — the game ships a
+  sentence the player can never see without the mod (`BattleNotifications.OutcomeDescription`
+  resolves it, third-party branch included).
+- **`DamageGauge.EffectiveDamageCells` stacks its blocks bottom-up relative to pool order**
+  (`EffectiveDamageCell000` drawn below `…003`): pool index is not reading order for this container —
+  emit its rows in drawn (top-down) order.
+- **The outcome-selection popup's Confirm button is bound to no field.**
+  `GroundBattleOutcomeSelectionNotificationWindow` draws a `ValidateButton` ("Confirm", in
+  `ButtonsGroup`) wired by prefab name to `OnValidateCb` — the window class exposes it nowhere, so
+  only a by-name lookup (`AgeWidgets.ChildNamed`) finds it. A `Body` variant loses the shared
+  `Extras` sweep that used to catch it; the body declares it explicitly.
+- **The ground-battle outcome countdown is multiplayer-only.** `GroundBattle.OutcomeTimeLimit` is
+  stamped from the lobby setting `BattleOutcomeTimerDuration` (`GameServer.cs:2573`, default 0);
+  single player never sets it, so `IsTimeLimited` is false, no gauge draws, and no default is
+  auto-picked. The mod declares the countdown as a focus-announced node that exists only while the
+  gauge is drawn (owner design 2026-08-25). `HackingOperation` has the same `OutcomeTimeLimit`
+  mechanism.
+- **The outcome popup's header markup resolves through the icon table**: `"[improvement] N"` →
+  "Improvement N", `"N [wonder]"` → "N Wonder", `%None` → "None" — a word plus a number, no
+  brackets, verified through the real `AgeText.Clean` off the unbound prefab.
+- **A choice card is a title over a paragraph, and is named by its FIRST label.**
+  `GroundBattleOutcomeItemNNN` carries its `AgeControlToggle` on the card itself and holds exactly
+  two labels — `OutcomeTitle` and `OutcomeDescription`, the latter ONE label of up to six
+  newline-separated consequence lines — which is why "all the labels joined" is the wrong name for
+  a choice card. Mod policy (owner-approved 2026-08-25, all four choice families): the card
+  announces its first label with the control parts; the rest reviews a line at a time
+  (`NotificationScreen.Control.Drawn` — never `Control.Details`, which replaces the sections and
+  would drop the card's refusal tooltip; the struct's doc comment carries the contract).
 
 ## Diplomacy and the sweep
 

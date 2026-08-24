@@ -184,6 +184,13 @@ which no dump reveals. Key such lines on the game's *data* object, never the wid
   Ask the same question of the GAME's own uniform wiring: where the engine hangs a gesture on
   a control KIND — every table line carrying a double-click button — it belongs to the mod's
   shared reader for that kind, never to whichever screen's handler somebody happened to read.
+  Where a surface has both a generic fallback reading and per-screen declarations, the two
+  are EXCLUSIVE: a new declaration must either suppress the fallback for those widgets or
+  take over the whole surface — side by side they read everything twice, and taking over
+  silently loses the fallback's incidental catches (a drawn button bound to no field), so
+  inventory what the fallback was finding before replacing it. A screen that takes a surface
+  over still CALLS the shared reader for any shared widget kind it contains — extract the
+  collector and call it from the body, never re-derive it.
   And coverage a shared helper provides is coverage of its ADOPTERS: a claim that one call
   reaches everything names the mechanism that enforces it or lists the paths that bypass,
   written where the claim is — an aging "every X goes through here" is read as fact by the

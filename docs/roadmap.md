@@ -58,15 +58,56 @@ files above.
 - Regression walk owed: the research/construction table popups (the other sheet-reading
   family) after the wrapper-descent change to `Columns` — additive-by-construction argument
   only so far; walk one the next time a session has one pending.
+- **The notification audits are blind to every notification BODY** (found 2026-08-25):
+  `NotificationAudit.DeclaredNodes` filters declarations by `NotificationScreen.NodePrefix`
+  (`"notification:"`, `NotificationAudit.cs:1099`, `NotificationScreen.cs:292`), but body keys
+  are `ground-setup/…`, `battle-setup/…`, `battle-report/…`, `ground-report/…` — so on a battle
+  popup both audits see `nodes:5` (chrome only), report long-declared content (`BattleTitle`) as
+  "painted but nothing says it", and the per-popup log warning fires on every one. Fix: prefix
+  the body keys, or let the audit take the body's key prefixes from the variant. Until then the
+  four-invariant and tooltip audits prove NOTHING on notification popups — use direct
+  `DevProbe.Tooltip()` probes.
+- **A foreign system's colony info side panel is keyboard-unreachable** (found 2026-08-25):
+  the game draws `ColonyInfoSidePanel` — including the "Security" garrison row, which has no
+  owner or war gate — for ANY selected colony in the galaxy view's `SidePanelsWindow`, but
+  the mod reads that panel only inside `SystemManagementScreen`, and the management view
+  level opens only for the player's own systems (`GuiManager.RequestStarSystemManagementViewLevel`;
+  foreign systems degrade to centering the map — the mod's `AddManagementView` doc comment).
+  Net effect: a screen-reader player can only learn an enemy garrison from the war-gated
+  attack-action tooltip or the under-siege icon, while a sighted player clicks the system and
+  reads Security. Fix direction: read the galaxy view's selection side panels (needs design +
+  measurement — how selection works by keyboard, what the panel set holds for foreign
+  colonies, restore etiquette). Full self-contained brief with cites and measurement list:
+  `foreign-system-info-handoff.md` at the repo root (uncommitted).
+- Ground-battle setup follow-ups (2026-08-25 stage shipped the screen model): live-check the
+  defender-side role wording (`%…DefenderDescription` on YOUR side; needs a battle where the
+  player defends) and the `[positiveImpactWhite]` half of the manpower marker strip (needs a
+  limit-raising tactic selected — Blitz); regression-walk the two space-battle popups (only
+  shared code touched is `Value`, default path unchanged).
+- Ground-battle REPORT follow-ups (2026-08-25 stage shipped: balance, outcome description,
+  strategy dossiers, damage totals + per-source rows, drawn "Remaining" caption): unsighted
+  variants — defender-side `ConscriptedPopulationGroup` (mod declares nothing for it today),
+  the decisive-outcome Dismiss button (chrome declares it, `NotificationScreen.cs:2995`,
+  outside the `own` gate — needs one live confirmation), `DefenderSurrendered` (mod speaks
+  real final manpowers where the gauge draws symbolic 1/0), third-party spectator
+  (`BattleSubTitle` + the outcome's third-party branch). Owner rulings 2026-08-25: the outcome
+  description IS announced on arrival (space-report parity; SHIPPED r13 same day); the
+  Remaining-before-Reserve order deviation stays (owner: not important).
+- Ground-battle OUTCOME-SELECTION popup: modelled 2026-08-25 (r13; `GroundOutcome` body —
+  system header, shared one-of-N via `NotificationScreen.BuildChoices`, the by-name Confirm,
+  the countdown declared focus-announced and multiplayer-only) — the ENTIRE live sighting is
+  pending (needs a decisive victory; manual test in the session report). The hacking outcome
+  picker keeps its choice-only baseline: its parameters sub-choice and its own outcome
+  countdown still need the same treatment.
 - Notification variants awaiting a live sighting (baseline ships; upgrade per popup on
-  sighting): election survey; ground-battle outcome selection; SimpleDescription-family
+  sighting): election survey; SimpleDescription-family
   members with own fields (alliance update, diplomatic relation change, constellation
   event, deed completed); the 9 header-less line-class tables (bailiff + its totals
   footer, law cancelled, population change, trading blockade, treaty cancelled, relics ×2,
   queue-empty, lost-roots connectivity); one-of-N semantics for hand-written choice popups
-  (hero recruitment, ground-battle/hacking outcome pickers) + the hacking parameters
-  sub-choice and the outcome COUNTDOWN gauge (real-time seconds, auto-picking a default when it
-  runs out — es2-facts; needs a `Variant` hook plus a live sighting);
+  (hero recruitment, the hacking outcome picker) — these walks, plus the narrative-event
+  choice, now ALSO double as regression checks for the 2026-08-25 choice-card split (title
+  announced, card text as buffer lines; all four families share `AddChoices`);
   PirateMissionReportNotificationWindow (fixture-blocked: its `Bind` needs a live
   `AttackSystemPirateDiplomaticAction` — the other five report popups are done);
   DiplomaticInteractionNotificationWindow (MoodMessageLabel, NegotiationContributionPanel).

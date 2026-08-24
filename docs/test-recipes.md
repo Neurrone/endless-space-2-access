@@ -1844,6 +1844,52 @@ created from `/eval` — it needs two hostile fleets meeting. Everything before 
 read-only; from the setup popup onward the run is destructive, so it goes LAST and ends with
 `POST /loadsave`.
 
+**Ground-battle SETUP popup** (verified live 2026-08-25, player attacking). Stop order: title,
+balance ("Manpower L against R"), [yours] role / Assigned / Reserve / troop rows / three details
+rows (health, damage, bombing), [theirs] same minus the two multipliers (the game hides them;
+enemy special line "May inflict pre-battle damage" has no tooltip), [aftermath] tactic cards /
+population badge / improvements badge, [controls] Watch / Fight — 9 positions on the attacker
+fixture. Probe handles: `w.BattlePowerGauge.AgeTransform` IS the `PowerBalanceGroup`;
+`w.Left/RightContenderPanel as GroundBattleContenderSetupPanel` reaches the role and details
+labels. The badge rows are named from their PARENT groups' tooltips (`Cells.AddStat`, null title);
+the details rows read at `Visible=true, Alpha=0` while the DETAILS accordion is collapsed — the
+crop is the oracle for what is DRAWN (evidence rects: badges `965,546,180,48`, collapsed DETAILS
+`423,500,460,140`). Selecting a tactic card changes the pending order — restore card 0 if toggled.
+Each card's class-backed "GroundBattleStrategy" tooltip carries the full per-tactic numbers
+(bombing, multipliers, deployment-limit change) in the focused buffer. The notification audits
+prove nothing here (bodies invisible to them — roadmap); use `DevProbe.Tooltip()` directly.
+
+**Ground-battle REPORT popup** (verified live 2026-08-25, attacker, continuing siege). Stop order:
+title (outcome word; buffer adds the game's description sentence), balance ("Manpower L against R",
+final manpowers), [yours] strategy (buffer holds the tactic dossier) / Remaining / Reserve / troop
+rows / "Damage Dealt" + one row per drawn damage block, [theirs] the same shape, [aftermath]
+population / improvements / will-continue, [controls] Retreat / Continue — 7 numbered positions.
+Probe handles: `w.Left/RightPlayTooltip` (class `GroundBattleStrategy`) hang on
+`PlayCardLeft`/`PlayCardRight`, NOT on `PlayTitle` — aim at the tooltip's own transform;
+`w.Left/RightContenderPanel as GroundBattleContenderReportPanel` reaches `DamageIcon`/`DamageGauge`.
+Evidence rects: damage gauges `858,321,60,270` and `1192,321,60,270`, manpower rows
+`393,340,1324,110`. **Never activate** Retreat/Continue/Replay/Minimize/Dismiss — all five dismiss
+the popup and Retreat also posts `GroundBattle.OrderStandBy()`.
+
+**Ground-battle OUTCOME-SELECTION popup** (modelled 2026-08-25, NEVER sighted live — needs a
+decisive victory). Tier-zero inventory off the unshown window (instantiated, `Shown=False`,
+`GuiNotification=null`; fields all non-null): `SystemNameLabel`/`SystemLevelLabel`/
+`SystemPopulationCountTable`/`SystemPopulationNoneLabel` (`%None`)/`SystemImprovementsLabel`
+(`"[improvement] N"`)/`SystemWondersLabel` (`"N [wonder]"`)/`OutcomesTable`/`TimerGauge`. Prefab
+texts are placeholders the bind rewrites — content claims wait for the live popup.
+`SystemPopulationCountPrefab` (= `CapturedPopulationCount`) carries `PopulationCount` + one button
+(`OnClickCb`); `OutcomeItemPrefab`'s toggle has `UseDoubleClick=True` (`OnDoubleClickCb` = pick AND
+validate). The `ValidateButton` ("Confirm") is bound to no window field — by-name lookup only
+(es2-facts). The countdown is multiplayer-only (es2-facts); expect NO timer row in single player.
+The notification parity probe reads `nodes:5` on any body-owning popup — it cannot referee this
+family; probe directly. LIVE (sighted 2026-08-25): the popup is destructible by a single
+keypress — one Enter on a card posts `OrderSelectGroundBattleOutcome`, the double-click chord
+validates and COMMITS — so the only safe verification is `ui.down`/`ui.up` plus
+`GET /gui/graph?buffers=1`, with "the previously selected card still reads `selected`" as the
+after-dump guard. It arrives alongside the ground-battle REPORT notification (Alt+Left/Right
+move between them), and the window can change under you if a person is at the keyboard —
+re-dump before interpreting.
+
 **Diplomacy, the academy pair and the sweep** are largely forced-show work: bind what the window
 needs, set `Visible=true`, read, then `Unbind` and hide, and re-diff the graph dump to prove nothing
 was left behind. A forced show proves STRUCTURE, not content. **Never press** any diplomacy action,
