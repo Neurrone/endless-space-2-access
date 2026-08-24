@@ -90,10 +90,18 @@ namespace ES2Access.Screens
     /// ONE edit at a time, because the engine has one focused control at a time - so the request is
     /// per screen (a reload takes it with the screen, and two screens never fight over one) and the
     /// live edit is static.
+    ///
+    /// Typed on <c>AgeControlTextArea</c>, which is the engine's own base for every box a player types
+    /// in (<c>AgeControlTextField : AgeControlTextArea</c>): the one-line boxes and the multi-line ones
+    /// - a faction's lore paragraph - are the same control to everything here, and the caret this reads
+    /// by reflection is declared on the base in the first place. The one difference belongs to the
+    /// GAME: a one-line box answers Return by validating, which is what the wait for the key's release
+    /// exists for, and a multi-line box answers it with a line break or by simply letting the keyboard
+    /// go. Neither needs anything different said or done here.
     /// </summary>
     public sealed class TextFieldEditor
     {
-        private AgeControlTextField _field;
+        private AgeControlTextArea _field;
         private ControlId _row;
         private object _owner;
         private MethodInfo _gainFocus;
@@ -102,7 +110,7 @@ namespace ES2Access.Screens
         /// <summary>Ask for the game's editor, and say so - entering an editor is not a thing a player
         /// can be left to infer from silence.</summary>
         public void Request(
-            AgeControlTextField field,
+            AgeControlTextArea field,
             object owner,
             MethodInfo gainFocus,
             ControlId row
@@ -112,7 +120,7 @@ namespace ES2Access.Screens
         }
 
         public void Request(
-            AgeControlTextField field,
+            AgeControlTextArea field,
             object owner,
             MethodInfo gainFocus,
             ControlId row,
@@ -144,7 +152,7 @@ namespace ES2Access.Screens
         /// <summary>Called from the owning screen's per-frame update.</summary>
         public void Update()
         {
-            AgeControlTextField field = _field;
+            AgeControlTextArea field = _field;
             if (field == null)
             {
                 return;
@@ -248,7 +256,7 @@ namespace ES2Access.Screens
 
         /// <summary>Whether the game currently has the keyboard on this field - asked of the engine's
         /// own focus, so an edit the game ended is over here the same instant.</summary>
-        public static bool Typing(AgeControlTextField field)
+        public static bool Typing(AgeControlTextArea field)
         {
             try
             {
@@ -292,7 +300,7 @@ namespace ES2Access.Screens
             Abandoned,
         }
 
-        private static AgeControlTextField _editing;
+        private static AgeControlTextArea _editing;
         private static string _snapshot;
         private static ControlId _editingRow;
         private static TextEditOptions _editingOptions;
@@ -338,7 +346,7 @@ namespace ES2Access.Screens
         internal static bool CommitTheNextRelease;
 
         private static void Begin(
-            AgeControlTextField field,
+            AgeControlTextArea field,
             string snapshot,
             ControlId row,
             TextEditOptions options
@@ -524,7 +532,7 @@ namespace ES2Access.Screens
         /// The press that OPENED the box cannot reach this: a Return the mod itself has just spent is
         /// refused one step earlier, by the consumed-key latch the handover asks about first.
         /// </summary>
-        internal static bool CommitInsteadOfTheGamesValidate(AgeControlTextField field)
+        internal static bool CommitInsteadOfTheGamesValidate(AgeControlTextArea field)
         {
             if (_editing == null || !ReferenceEquals(_editing, field))
             {
@@ -558,16 +566,31 @@ namespace ES2Access.Screens
 
         /// <summary>Put back what was in the box before the player started. The game's own replace is
         /// used rather than a bare write to the label, so the caret, the width and the drawn text are
-        /// all recomputed the way they are for any other programmatic change.</summary>
+        /// all recomputed the way they are for any other programmatic change - and where the engine
+        /// wrote that replace only on its ONE-LINE box (<c>AgeControlTextField</c>), the multi-line box
+        /// gets the same two things done to it by hand: the text back, and the caret at the end of
+        /// it.</summary>
         private static void Restore()
         {
             try
             {
-                AgeControlTextField field = _editing;
-                if (field != null && RawText(field) != (_snapshot ?? string.Empty))
+                AgeControlTextArea field = _editing;
+                string text = _snapshot ?? string.Empty;
+                if (field == null || RawText(field) == text)
                 {
-                    field.AdvancedReplaceInputText(_snapshot ?? string.Empty);
+                    return;
                 }
+
+                AgeControlTextField line = field as AgeControlTextField;
+                if (line != null)
+                {
+                    line.AdvancedReplaceInputText(text);
+                    return;
+                }
+
+                field.Label.Text = text;
+                SetCaret(field, text.Length);
+                field.Label.ComputeText();
             }
             catch (Exception e)
             {
@@ -596,7 +619,7 @@ namespace ES2Access.Screens
 
         /// <summary>The box's text exactly as the engine holds it - not the cleaned reading, because a
         /// cancel puts this string back and a diff compares it against itself.</summary>
-        private static string RawText(AgeControlTextField field)
+        private static string RawText(AgeControlTextArea field)
         {
             try
             {
@@ -614,7 +637,7 @@ namespace ES2Access.Screens
         /// text area and read by reflection: it is the only thing that says where the arrows, Home and
         /// End have just put it, and the engine parks it past the end until it has computed one.
         /// </summary>
-        private static int CaretOf(AgeControlTextField field)
+        private static int CaretOf(AgeControlTextArea field)
         {
             try
             {
@@ -635,6 +658,24 @@ namespace ES2Access.Screens
                 // Past the end, which every reading clamps to end-of-text: an unreadable caret then
                 // looks like a caret that never moves, rather than one pinned to the first character.
                 return int.MaxValue;
+            }
+        }
+
+        /// <summary>Move the caret, through the same protected field it is read from.</summary>
+        private static void SetCaret(AgeControlTextArea field, int position)
+        {
+            try
+            {
+                CaretOf(field);
+                if (_caret != null && field != null)
+                {
+                    _caret.SetValue(field, position);
+                }
+            }
+            catch (Exception)
+            {
+                // A caret that could not be moved is a drawn cursor one frame out of date, which the
+                // next keystroke recomputes; the TEXT is what a cancel had to put back.
             }
         }
 

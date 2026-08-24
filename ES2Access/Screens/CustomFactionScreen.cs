@@ -318,8 +318,8 @@ namespace ES2Access.Screens
                 pending = null;
             }
 
-            // A caption nothing followed is a line the game drew on its own - the "Description"
-            // heading over the lore box when the box is somewhere else entirely.
+            // A caption nothing followed is a line the game drew on its own, and it stays readable as
+            // one rather than disappearing with the control it turned out not to have.
             if (pending != null)
             {
                 SettingRows.AddReadout(builder, Transform(pending), key + "caption");
@@ -358,7 +358,12 @@ namespace ES2Access.Screens
                 return;
             }
 
-            AgeControlTextField field = widget.GetComponent<AgeControlTextField>();
+            // The one-line boxes and the lore paragraph are the same kind of thing to the player and the
+            // same control to the engine (AgeControlTextField : AgeControlTextArea), so both are asked
+            // for at once - the derived one first, because every text field answers to both.
+            AgeControlTextArea field =
+                (AgeControlTextArea)widget.GetComponent<AgeControlTextField>()
+                ?? widget.GetComponent<AgeControlTextArea>();
             if (field != null)
             {
                 SettingRows.AddTextField(
@@ -766,7 +771,11 @@ namespace ES2Access.Screens
                     return found;
                 }
 
-                found = widget.GetComponent<AgeControlTextField>();
+                // The base covers both: the one-line name and author boxes derive from it, and so does
+                // the lore paragraph, which is a bare AgeControlTextArea and was therefore not a
+                // control here at all - the walk read it as a box of text and the "Description" heading
+                // above it was left standing on its own with nothing to name.
+                found = widget.GetComponent<AgeControlTextArea>();
                 if (found != null)
                 {
                     return found;

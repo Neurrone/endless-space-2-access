@@ -344,7 +344,7 @@ namespace ES2Access.Screens
         /// <summary>A text box with no caption of its own - the chat box, an empire's name.</summary>
         public static void AddTextField(
             GraphBuilder builder,
-            AgeControlTextField field,
+            AgeControlTextArea field,
             string key,
             TextFieldEditor editor
         )
@@ -376,7 +376,7 @@ namespace ES2Access.Screens
         /// </summary>
         public static void AddTextField(
             GraphBuilder builder,
-            AgeControlTextField field,
+            AgeControlTextArea field,
             Func<string> label,
             AgeTooltip tooltip,
             object owner,
@@ -396,7 +396,7 @@ namespace ES2Access.Screens
         /// emits them in the rows the game drew them in rather than one at a time. Null for a field the
         /// game is not drawing.</summary>
         public static Cell TextFieldCell(
-            AgeControlTextField field,
+            AgeControlTextArea field,
             Func<string> label,
             AgeTooltip tooltip,
             object owner,
@@ -414,7 +414,7 @@ namespace ES2Access.Screens
 
             TextEditOptions how = options;
 
-            AgeControlTextField it = field;
+            AgeControlTextArea it = field;
             object host = owner;
             MethodInfo handler = gainFocus;
             ControlId row = id;
@@ -435,7 +435,7 @@ namespace ES2Access.Screens
             return new Cell { Widget = widget, Id = row, Vtable = vtable };
         }
 
-        public static string FieldText(AgeControlTextField field)
+        public static string FieldText(AgeControlTextArea field)
         {
             try
             {
