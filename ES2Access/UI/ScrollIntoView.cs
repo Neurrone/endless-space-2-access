@@ -1,4 +1,5 @@
 using System;
+using ES2Access.Core.UI.Graph;
 using ES2Access.Core.Util;
 using UnityEngine;
 
@@ -37,14 +38,22 @@ namespace ES2Access.UI
         /// <summary>How far up a parent chain to look before deciding it is not a chain.</summary>
         private const int MaxAncestors = 64;
 
-        /// <summary>Scroll whatever <paramref name="control"/> lives in until it can be seen. The
-        /// argument is the backing game object a graph node was built from - anything the mod can get
-        /// an <see cref="AgeTransform"/> out of; anything else is quietly not scrollable.</summary>
-        public static void Reveal(object control)
+        /// <summary>
+        /// Scroll whatever <paramref name="control"/> lives in until it can be seen. The argument is
+        /// the backing game object a graph node was built from - anything the mod can get an
+        /// <see cref="AgeTransform"/> out of.
+        ///
+        /// <paramref name="fallback"/> is the second place to ask. A node's identity and the thing it
+        /// is DRAWN as are different questions, and a node keyed by a trait, a quest or a position in
+        /// a list answers the first with something that has no rectangle at all - so a caller hands
+        /// over both and the first one that is on screen wins, rather than the list silently not
+        /// following a cursor whose key happened not to be a widget.
+        /// </summary>
+        public static void Reveal(object control, object fallback = null)
         {
             try
             {
-                AgeTransform transform = TransformOf(control);
+                AgeTransform transform = TransformOf(control) ?? TransformOf(fallback);
                 if (transform == null)
                 {
                     return;
@@ -121,6 +130,27 @@ namespace ES2Access.UI
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// Write down WHERE a node is drawn, for a node whose own identity is not a widget.
+        ///
+        /// Scrolling follows the node's <c>ControlId.Reference</c>, which is a widget on most of the
+        /// mod's controls and is exactly nothing on the ones keyed by a string or by a piece of the
+        /// game's data - a list of add-ons keyed by content name, a table of traits keyed by the trait.
+        /// Those are the long lists, so they are the ones a viewport actually clips, and until the
+        /// widget is written down here the cursor walks off the bottom of them without the list
+        /// following (measured 2026-08-24: the add-ons tab left the focused row ~728px out of view).
+        ///
+        /// Only ever fills an EMPTY slot, so a caller that named its own anchor - a table cell naming
+        /// its row (<c>GraphSheet</c>) - keeps it.
+        /// </summary>
+        public static void Anchor(NodeVtable vtable, AgeTransform widget)
+        {
+            if (vtable != null && vtable.ScrollAnchor == null && widget != null)
+            {
+                vtable.ScrollAnchor = widget;
+            }
         }
 
         /// <summary>The transform a node's backing object stands on. Controls name themselves

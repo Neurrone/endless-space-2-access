@@ -566,6 +566,10 @@ namespace ES2Access.Screens
                 );
                 vtable.Sections = SettingRows.RowSections(line, AgeWidgets.Raw(line));
                 AgeWidgets.Point(vtable, it);
+                // The trait keys the line but has no rectangle, so the slot it is currently drawn in is
+                // what the viewport has to be scrolled to - a hundred and thirty traits through an
+                // eighty-pixel window otherwise leave the cursor far below anything on screen.
+                ScrollIntoView.Anchor(vtable, line);
 
                 // Keyed by the TRAIT, never by the line. The table pools its lines and re-sorts them
                 // on every change, so "Line082" is a slot, not a thing: after picking a trait the

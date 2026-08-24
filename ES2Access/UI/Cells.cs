@@ -101,6 +101,7 @@ namespace ES2Access.UI
                 );
             }
 
+            ScrollIntoView.Anchor(vtable, widget);
             cells.Add(new Cell { Widget = widget, Id = id, Vtable = vtable });
         }
 
@@ -154,6 +155,11 @@ namespace ES2Access.UI
         /// </summary>
         private static void Declare(GraphBuilder builder, Cell cell)
         {
+            // A cell already knows the rectangle it was read off, and that is the answer to "where do I
+            // scroll to reach this" - so it is written down here, at the one place every cell passes
+            // through, rather than being remembered by the screens that key their rows by a name or a
+            // position instead of by the widget (ScrollIntoView.Anchor).
+            ScrollIntoView.Anchor(cell.Vtable, cell.Widget);
             if (cell.Dossiers == null || cell.Dossiers.Count == 0 || string.IsNullOrEmpty(cell.Key))
             {
                 builder.AddItem(cell.Id, cell.Vtable);
@@ -222,6 +228,7 @@ namespace ES2Access.UI
             builder.StartRow(rowKey, positions);
             foreach (Cell cell in cells)
             {
+                ScrollIntoView.Anchor(cell.Vtable, cell.Widget);
                 builder.AddItem(cell.Id, cell.Vtable);
             }
 

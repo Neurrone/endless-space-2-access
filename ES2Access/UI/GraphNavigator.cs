@@ -777,7 +777,7 @@ namespace ES2Access.UI
             _visualNode = node;
             _cursorMovedHere = _visualFrom != null && !_visualFrom.Equals(node.Id);
             _visualFrom = node.Id;
-            ScrollIntoView.Reveal(node.Vtable.ScrollAnchor ?? node.Id.Reference);
+            ScrollIntoView.Reveal(node.Vtable.ScrollAnchor, node.Id.Reference);
             // The screen's own half first, so a rule that moves the WORLD (the galaxy page's camera)
             // has run before the node aims the pointer at whatever the new distance draws.
             if (_screen != null)
