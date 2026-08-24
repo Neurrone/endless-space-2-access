@@ -219,25 +219,23 @@ namespace ES2Access.UI
             // :135-150 writes the role's description onto the role icon) and, for a festival, the
             // festival's dossier (:81-92). A tile can only ever show ONE tooltip, so folding either
             // into the tile's own reading would promise words the game would never draw: each is a
-            // node beside the tile instead.
+            // node of its own.
+            //
+            // CHILDREN of the tile, not stops beside it (owner ruling 2026-08-24) - the same shape the
+            // ship tile's role badge already takes (<see cref="ShipRows.Ship"/>): this is a grid the
+            // player walks tile by tile, and a badge parked beside each tile would double the walk for
+            // a sentence about the tile they are already on.
             List<TooltipChildren.Dossier> badges = new List<TooltipChildren.Dossier>(2);
             TooltipChildren.AddPlain(
                 badges,
                 item.RoleIcon == null ? null : item.RoleIcon.AgeTransform
             );
             TooltipChildren.Add(badges, item.FestivalIcon);
-            for (int i = 0; i < badges.Count; i++)
+            if (badges.Count > 0)
             {
-                AgeTransform badge = badges[i].Anchor;
-                Cells.Add(
-                    cells,
-                    badge,
-                    ControlId.Referenced(
-                        badge,
-                        keyPrefix + "constructible/" + constructible.Name + "/badge/" + i
-                    ),
-                    TooltipChildren.Node(badges[i])
-                );
+                Cell tile = cells[cells.Count - 1];
+                tile.Dossiers = badges;
+                tile.Key = keyPrefix + "constructible/" + constructible.Name;
             }
         }
 
