@@ -2757,8 +2757,8 @@ description, effects, **cost**, upkeep, political impact — which is the mouse 
 - **The unique-planet title the game already has** is `%PlanetScreenUniquePlanetTitle` ("Unique
   Planet"), read off `PlanetLabel_SystemDiscovery.UniqueSubtitle` on the UNSHOWN discovery window —
   the prefab carries the key and the bind never rewrites it.
-- **God-mode handlers are decoration for a normal player.** The list measured in the coverage sweep
-  is in `research-diplomacy-scanner-hotkeys-coverage-audit.md` (caveat 5): `EmpireBanner`'s three
+- **God-mode handlers are decoration for a normal player.** The list measured in the 2026-08-23/24
+  coverage sweep: `EmpireBanner`'s three
   resource areas, `ResourceItem.OnClickCb`, `ColonyInfoSidePanel.OnUpkeepCb`,
   `ColonyPopulationSidePanel.OnHappinessGroupCb`, `TechnologyStageItem.OnUnlockStageCb` and
   `DeedItem2`'s `GodButton`, all guarded by `GodGalaxyCursor.IsGuiInGodMode()`.

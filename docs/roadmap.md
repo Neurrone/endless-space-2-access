@@ -20,7 +20,14 @@ files above.
   2026-08-24 scratch launch; the colonization-cutscene route (a colony ship settling) is the
   untried alternative. Pending-live checks riding these fixtures: the negotiation window's
   Close button (needs a diplomatic contact), the merged-fleet-lozenge aim re-commit (two
-  stacked fleets), the `scan:stats` scroll anchor (a populated stats lens panel).
+  stacked fleets), the `scan:stats` scroll anchor (a populated stats lens panel), and the
+  journal filter menu's effect on rows + its per-column filter buttons with rows present
+  (the finished game). MANUAL (physical keys; `POST /key` was refused all session): the
+  custom-faction lore box's Escape restoring the pre-edit paragraph and caret, and the
+  text-area half of the `AgeControlTextField.KeyDown` hand-over seam.
+- **Gene Hunters' population badges**: `AssimilationReadyIcon` and `AssimilatedIcon` DO carry
+  game sentences (measured 2026-08-24), contradicting the mod comment that says they carry
+  none — fix and verify together on a Gene Hunters game (DLC flip makes one startable).
 - **"Tooltips" children (landed 2026-08-22, batch 2) — remaining live checks only**: the
   hero detailed card's four-symbol row (Academy is tutorial-gated on both fixtures), the
   construction line's festival badge and the honor gauge's own dossier (both Hissho). Still
