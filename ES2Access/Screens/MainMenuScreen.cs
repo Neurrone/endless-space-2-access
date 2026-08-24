@@ -160,6 +160,65 @@ namespace ES2Access.Screens
                 builder.EndGroup();
                 AddModSettingsAfter(builder, name);
             }
+
+            AddNews(builder, window);
+        }
+
+        /// <summary>
+        /// The studio's news, which the menu draws as a headline sliding across the bottom of the page
+        /// and which opens the story in a browser when it is clicked
+        /// (<c>G2GFeedBannerPanel.OnClickCb</c> :156-168 - the game's own <c>Process.Start</c> on the
+        /// item's link, replayed here rather than reimplemented).
+        ///
+        /// It is a button reading whatever headline is up. The words themselves do NOT slide - the
+        /// panel moves a <c>Travelator</c> transform across a fixed label and swaps the text only when
+        /// it starts the next story (<c>PresentNextNews</c> :108-130) - so this is a label that changes
+        /// every ten seconds or so, not every frame. It is deliberately not watched: a headline
+        /// arriving under the cursor is not something that happened to the player, and a banner that
+        /// interrupted them every time the feed turned over would be unusable. Focus it again and it
+        /// reads whatever is up now.
+        ///
+        /// Nothing is declared where the game has nothing to say: an offline or empty feed leaves the
+        /// label blank and the link button switched off, and a blank banner is not a stop.
+        /// </summary>
+        private static void AddNews(GraphBuilder builder, GameMainMenu window)
+        {
+            G2GFeedBannerPanel banner = Banner(window);
+            AgePrimitiveLabel headline = banner == null ? null : banner.NewsLabel;
+            AgeControlButton link = banner == null ? null : banner.UrlButton;
+            AgeTransform widget = AgeWidgets.Transform(link);
+            if (
+                widget == null
+                || !Visible(banner.AgeTransform)
+                || string.IsNullOrEmpty(AgeText.Label(headline))
+            )
+            {
+                return;
+            }
+
+            AgePrimitiveLabel story = headline;
+            AgeControlButton it = link;
+            AgeTransform at = widget;
+            NodeVtable vtable = GraphNodes.Button(
+                () => AgeText.Label(story),
+                () => AgeWidgets.Press(it),
+                () => AgeWidgets.Offered(at),
+                AgeWidgets.Raw(at)
+            );
+            AgeWidgets.Point(vtable, it);
+            builder.AddItem(ControlId.Referenced(banner, "mainmenu:news"), vtable);
+        }
+
+        private static G2GFeedBannerPanel Banner(GameMainMenu window)
+        {
+            try
+            {
+                return window.FeedsBanner;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
         }
 
         /// <summary>
