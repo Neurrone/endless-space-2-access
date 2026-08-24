@@ -993,16 +993,22 @@ namespace ES2Access.Screens
                 && AgeWidgets.Visible(panel.HeroPortraitIcon.AgeTransform)
             )
             {
+                NodeVtable portrait = GraphNodes.Readout(
+                    () => AgeText.Clean(it.GuiHero.Title),
+                    null,
+                    null,
+                    panel.HeroTooltip
+                );
+                AgeWidgets.PointAt(
+                    portrait,
+                    panel.HeroPortraitIcon.AgeTransform,
+                    panel.HeroTooltip
+                );
                 Cells.Add(
                     cells,
                     panel.HeroPortraitIcon.AgeTransform,
                     ControlId.Structural("fleets:hero/portrait"),
-                    GraphNodes.Readout(
-                        () => AgeText.Clean(it.GuiHero.Name),
-                        null,
-                        null,
-                        panel.HeroTooltip
-                    )
+                    portrait
                 );
             }
 
