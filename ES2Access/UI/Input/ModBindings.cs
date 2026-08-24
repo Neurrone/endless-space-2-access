@@ -218,6 +218,34 @@ namespace ES2Access.UI.Input
             return null;
         }
 
+        /// <summary>
+        /// The keys an action SHIPPED on, as a fresh binding - what "Reset to Defaults" writes back
+        /// through each row's own option.
+        ///
+        /// A new instance every call, unlike <see cref="Of"/>: this one is handed to the option as a
+        /// NEW value, and handing back the instance the store already holds would be a write the
+        /// change detection cannot see. Null for an action nobody has learned a default for, which
+        /// leaves that row alone rather than blanking it.
+        /// </summary>
+        public static GameBinding Default(string actionKey)
+        {
+            string shipped;
+            if (actionKey == null || !Defaults.TryGetValue(actionKey, out shipped))
+            {
+                return null;
+            }
+
+            try
+            {
+                return new GameBinding(shipped);
+            }
+            catch (Exception e)
+            {
+                Log.Warn("bindings: the default '" + shipped + "' could not be read: " + e);
+                return null;
+            }
+        }
+
         /// <summary>Whether an action is on something other than the keys it shipped on - what the
         /// test report and a future "reset this row" ask.</summary>
         public static bool Moved(string actionKey)

@@ -146,18 +146,13 @@ namespace ES2Access.Core.Speech
         /// it; nothing is drawn for it, so these are the only words it has.</summary>
         public const string ModSettingsEntry = "mod-settings.entry";
 
-        /// <summary>The categories the mod's options window holds, and what each one's tab says
-        /// about itself.</summary>
-        public const string ModSettingsKeybinds = "mod-settings.keybinds";
+        /// <summary>What each of the window's two tabs says about itself. Only the DESCRIPTIONS are
+        /// the mod's own words: the Scanner tab is named here, and the key-binding tab wears the
+        /// game's own "%OptionToggleControlsTitle" so it matches the game's Controls tab in every
+        /// language (<see cref="ES2Access.UI.ModOptions.ModOptions.Categories"/>).</summary>
         public const string ModSettingsKeybindsDescription = "mod-settings.keybinds-description";
         public const string ModSettingsScanner = "mod-settings.scanner";
         public const string ModSettingsScannerDescription = "mod-settings.scanner-description";
-
-        /// <summary>One slot's own tab, numbered - the number is what the six quick keys address, so
-        /// it is what the tab is called whatever the player has named the category on it.</summary>
-        public const string ModSettingsCustomCategory = "mod-settings.custom-category";
-        public const string ModSettingsCustomCategoryDescription =
-            "mod-settings.custom-category-description";
 
         // --- the editor for the player's own three scanner categories (2026-08-23) ---
 
@@ -1645,20 +1640,14 @@ namespace ES2Access.Core.Speech
             { ScreenOptions, "Options" },
             { ScreenModSettings, "Mod settings" },
             { ModSettingsEntry, "Mod settings" },
-            { ModSettingsKeybinds, "Keybinds" },
             {
                 ModSettingsKeybindsDescription,
-                "The keys the accessibility mod's own commands are on."
+                "The keys the accessibility mod's own commands are on. This is the mod's Controls page, not the game's."
             },
             { ModSettingsScanner, "Scanner" },
             {
                 ModSettingsScannerDescription,
                 "The three scanner categories you write for yourself."
-            },
-            { ModSettingsCustomCategory, "Custom category {0}" },
-            {
-                ModSettingsCustomCategoryDescription,
-                "What the scanner category in slot {0} looks for."
             },
             { ScannerEditSlotButton, "Custom category {0}: {1}" },
             { ScannerEditEmpty, "empty" },

@@ -56,21 +56,24 @@ namespace ES2Access.UI.ModOptions
         private static int _attempts;
         private static bool _stopped;
 
-        /// <summary>Whether a game was being played when the window was built - which decides whether
-        /// it has a Scanner tab, and so decides when it has to be built again.</summary>
-        private static bool _builtInGame;
-
         /// <summary>
-        /// The window's tabs, in the order they are drawn - the player's own scanner categories
+        /// The window's two tabs, in the order they are drawn - the player's own scanner categories
         /// first, the mod's key bindings second.
         ///
-        /// SCANNER IS IN GAME ONLY, and the window built on the main menu therefore has the one tab
-        /// it had before this existed. Two of its pieces exist only in a game: the taxonomy it offers
-        /// columns out of is a fact about the galaxy being played, and the box it names a category in
-        /// is one the game only registers in game (<c>GuiWindowsStackDefinition</c>). A tab that
-        /// could offer neither is a tab with nothing on it. The window is rebuilt when the player
-        /// crosses that line (<see cref="Tick"/>), which is what makes this list a straight read of
-        /// where the player is standing rather than of when the mod started.
+        /// BOTH EXIST EVERYWHERE, main menu included (owner ruling 2026-08-24). The Scanner tab was
+        /// in-game only for as long as its columns were a snapshot of the galaxy being played; they
+        /// come from the game's DATABASES now (<c>GalaxyScanner.Taxonomy</c>), so there is nothing on
+        /// either page that needs a game, and the window no longer has to be rebuilt when the player
+        /// crosses that line.
+        ///
+        /// The keybinds category is named "Controls" - the game's own key for its own key-binding
+        /// page - because three of the window's behaviours are wired to that word and all three are
+        /// wanted here: the Reset to Defaults buttons are shown for it and nothing else
+        /// (<c>OptionsModalWindow.OpenCategory</c> :119-120), leaving with unapplied changes asks the
+        /// binding question rather than the generic one (:66-68), and the tab draws itself with
+        /// "%OptionToggleControlsTitle", the same words the game's own Controls tab wears in every
+        /// language. What the buttons DO is repointed at the mod's own handler
+        /// (<see cref="ModOptionsWindow"/>), so the game's own bindings are never touched.
         /// </summary>
         public static IList<ModCategory> Categories
         {
@@ -79,54 +82,23 @@ namespace ES2Access.UI.ModOptions
                 if (_categories == null)
                 {
                     _categories = new List<ModCategory>();
-                    if (InGame())
-                    {
-                        _categories.Add(
-                            new ModCategory(
-                                ScannerEditor.CategoryName,
-                                typeof(IModScannerService),
-                                new ModScannerService(),
-                                () => ModStrings.Get(ModStrings.ModSettingsScanner),
-                                () => ModStrings.Get(ModStrings.ModSettingsScannerDescription),
-                                ScannerRows.Fill
-                            )
-                        );
-
-                        // One tab per slot, straight after the Scanner tab its buttons open them
-                        // from. A tab rather than a window of its own: two of the game's modal
-                        // windows on one renderer both draw, and the one shown SECOND is the one
-                        // hidden behind the other's background (measured 2026-08-24), so a
-                        // nested editor would be a page nobody can see.
-                        for (int slot = 0; slot < ScannerCustomSlots.Count; slot++)
-                        {
-                            int at = slot;
-                            _categories.Add(
-                                new ModCategory(
-                                    ScannerEditor.SlotCategory(slot),
-                                    typeof(IModSlotsService),
-                                    new ModSlotsService(),
-                                    () =>
-                                        ModStrings.Format(
-                                            ModStrings.ModSettingsCustomCategory,
-                                            at + 1
-                                        ),
-                                    () =>
-                                        ModStrings.Format(
-                                            ModStrings.ModSettingsCustomCategoryDescription,
-                                            at + 1
-                                        ),
-                                    panel => ScannerSlotRows.Fill(panel, at)
-                                )
-                            );
-                        }
-                    }
+                    _categories.Add(
+                        new ModCategory(
+                            ScannerEditor.CategoryName,
+                            typeof(IModScannerService),
+                            new ModScannerService(),
+                            () => ModStrings.Get(ModStrings.ModSettingsScanner),
+                            () => ModStrings.Get(ModStrings.ModSettingsScannerDescription),
+                            ScannerRows.Fill
+                        )
+                    );
 
                     _categories.Add(
                         new ModCategory(
-                            "Keybinds",
+                            KeybindsCategory,
                             typeof(IModKeybindsService),
                             new ModKeybindsService(),
-                            () => ModStrings.Get(ModStrings.ModSettingsKeybinds),
+                            () => Gui.Localize(ControlsTitleKey),
                             () => ModStrings.Get(ModStrings.ModSettingsKeybindsDescription),
                             KeybindRows.Fill
                         )
@@ -137,8 +109,16 @@ namespace ES2Access.UI.ModOptions
             }
         }
 
-        /// <summary>Whether a game is being played, as the tab list is decided by. Wrapped because it
-        /// is asked every frame and the gui service is not always there to ask.</summary>
+        /// <summary>The game's own key for a key-binding page. See <see cref="Categories"/> for why
+        /// the mod's tab is called this rather than something of its own.</summary>
+        public const string KeybindsCategory = "Controls";
+
+        /// <summary>What the game names that page in the player's language.</summary>
+        private const string ControlsTitleKey = "%OptionToggleControlsTitle";
+
+        /// <summary>Whether a game is being played - which decides which SKIN the window wears, and
+        /// nothing else since both tabs exist either way. Wrapped because the gui service is not
+        /// always there to ask.</summary>
         private static bool InGame()
         {
             try
@@ -172,15 +152,6 @@ namespace ES2Access.UI.ModOptions
             if (_stopped)
             {
                 return;
-            }
-
-            // The Scanner tab exists in a game and not on the main menu, so crossing that line means
-            // a different window. Rebuilding is what the mod already does when the game destroys the
-            // clone, and it is only ever done with the window down - a rebuild under a player
-            // standing in it would take the page out from under them.
-            if (_window != null && _builtInGame != InGame() && !Shown())
-            {
-                Shutdown();
             }
 
             if (_window != null || _attempts >= BuildAttempts || !Ready())
@@ -220,52 +191,12 @@ namespace ES2Access.UI.ModOptions
             }
         }
 
-        /// <summary>Show the tab a category was built under - what the Scanner tab's buttons do. The
-        /// switch is the radio group's own, which is what makes it the same event a click is.
-        /// </summary>
-        public static void OpenCategory(string name)
-        {
-            ModOptionsWindow window = Window();
-            if (window == null || window.RadioGroup == null)
-            {
-                return;
-            }
-
-            try
-            {
-                OptionsTabToggle toggle = ToggleOf(window, name);
-                if (toggle != null && toggle.Toggle != null)
-                {
-                    window.RadioGroup.OnToggleSwitchCb(toggle.Toggle.gameObject);
-                }
-            }
-            catch (Exception e)
-            {
-                Log.Warn("mod options: switching to " + name + " threw: " + e);
-            }
-        }
-
         /// <summary>Whether the mod's settings entry can do anything right now - what its node's
         /// availability reads.</summary>
         public static bool CanOpen()
         {
             ModOptionsWindow window = Window();
             return window != null && window.Loaded;
-        }
-
-        /// <summary>Whether the mod's window is on screen. Asked before a rebuild, which must never
-        /// happen under a player standing in it.</summary>
-        private static bool Shown()
-        {
-            ModOptionsWindow window = Window();
-            try
-            {
-                return window != null && window.Shown;
-            }
-            catch (Exception)
-            {
-                return true;
-            }
         }
 
         /// <summary>Write the settings file. Called when the window hides, by which point Apply has
@@ -289,7 +220,6 @@ namespace ES2Access.UI.ModOptions
             _attempts = 0;
             ScannerEditor.Forget();
             ScannerRows.Forget();
-            ScannerSlotRows.Forget();
             ModRows.Forget();
             RemoveServices();
             DestroyLeftovers();
@@ -366,7 +296,6 @@ namespace ES2Access.UI.ModOptions
             window.BeginLoad();
             SetPrivateProperty(window, "Loaded", true);
             _window = window;
-            _builtInGame = InGame();
             _attempts = 0;
             Log.Info("mod options: window built with " + Categories.Count + " categories");
         }

@@ -341,6 +341,7 @@ namespace ES2Access.Screens
             string key = PanelKey(panel);
             GraphSheet sheet = null;
             bool sectioned = false;
+            bool grouped = false;
             // A page WITH captions gets a region for the rows above the first one, so the block the
             // player starts in is a place Ctrl+arrow can leave. Without that the leading rows belong
             // to no region and the jump does nothing at all - measured on the custom-category page,
@@ -369,6 +370,34 @@ namespace ES2Access.Screens
                 {
                     sheet.Finish();
                     sheet = null;
+                }
+
+                // A HEADER the mod drew over a whole block is an expandable GROUP: the rows under it
+                // are its children, and Left/Right and Enter open and shut it. What opening means -
+                // which rows the page draws - is the mod's own (ModRows.Group), and it happens in the
+                // same call, so the tree's open-and-step-in finds the children this very frame.
+                ModGroupRow group = ModRows.GroupOf(rows[i]);
+                if (group != null)
+                {
+                    if (sectioned)
+                    {
+                        builder.PopContext();
+                        builder.SetRegion(null);
+                        sectioned = false;
+                    }
+
+                    if (grouped)
+                    {
+                        builder.EndGroup();
+                    }
+
+                    builder.BeginGroup(
+                        GroupId(key, rows[i]),
+                        GroupVtable(rows[i], group),
+                        group.Expanded
+                    );
+                    grouped = true;
+                    continue;
                 }
 
                 // A CAPTION the mod drew over the rows under it is the name of a SECTION, not a
@@ -403,10 +432,54 @@ namespace ES2Access.Screens
                 builder.SetRegion(null);
             }
 
+            if (grouped)
+            {
+                builder.EndGroup();
+            }
+
             if (named)
             {
                 builder.PopContext();
             }
+        }
+
+        /// <summary>A block header's identity. STRUCTURAL, not referenced: the row is destroyed and
+        /// built again whenever the page's shape changes, and the cursor has to stay on the block the
+        /// player was standing on.</summary>
+        private static ControlId GroupId(string category, OptionItem item)
+        {
+            return ControlId.Structural("options:" + category + "/" + OptionKey(item));
+        }
+
+        /// <summary>
+        /// One expandable block: the header's own words, and what opening and shutting it does.
+        ///
+        /// Three ways in, all the same act. Right opens it and steps into it; Left shuts it; Enter
+        /// flips it where the player stands, which is what the drawn button does under the mouse -
+        /// and its new state is spoken through <see cref="NodeVtable.StateText"/>, because the cursor
+        /// has not moved and nothing else would say it.
+        /// </summary>
+        private static NodeVtable GroupVtable(OptionItem item, ModGroupRow block)
+        {
+            OptionItem row = item;
+            ModGroupRow group = block;
+            AgeTooltip tooltip = row.Tooltip;
+            NodeVtable vtable = GraphNodes.Group(
+                () => AgeText.Label(row.TitleLabel),
+                () => Enabled(AgeTransformOf(row)),
+                tooltip
+            );
+            vtable.OnExpand = () => group.Expand(true);
+            vtable.OnCollapse = () => group.Expand(false);
+            vtable.OnActivate = () => group.Expand(!group.Expanded);
+            vtable.StateText = () =>
+                GraphAnnouncer.ExpandedStateText == null
+                    ? null
+                    : GraphAnnouncer.ExpandedStateText(group.Expanded);
+            vtable.OnFocusVisual = () =>
+                PointerFocus.MoveTo(null, tooltip, AnchorOf(row.TitleLabel));
+            vtable.OnBlurVisual = ReleasePointer;
+            return vtable;
         }
 
         /// <summary>Whether the page is divided into captioned sections - which is what makes the
@@ -924,7 +997,7 @@ namespace ES2Access.Screens
         /// (<c>OptionKeyMappingItem.OnChangeOptionValueConfirmation</c> :147-166): the option's value,
         /// then the window's own "a setting changed" - which is what lights Apply and what its backup
         /// is compared against - and then the row redraws both its fields.</summary>
-        private static void Write(OptionKeyMappingItem item, GameBinding binding)
+        internal static void Write(OptionKeyMappingItem item, GameBinding binding)
         {
             item.Option.Value = binding;
             OptionsModalWindow window = Window();
@@ -1087,6 +1160,7 @@ namespace ES2Access.Screens
                 }
 
                 _capturing = item;
+                _capturingSecondary = _pendingSecondary;
                 _capturePrevious = item.Option.Value as GameBinding;
                 age.FocusedControl = field;
             }
@@ -1137,6 +1211,10 @@ namespace ES2Access.Screens
             _pendingClearFrames = 0;
         }
 
+        /// <summary>Which of the capturing row's two fields took the keyboard - what
+        /// <see cref="WatchForACancelledCapture"/> re-reads when the capture ends.</summary>
+        private static bool _capturingSecondary;
+
         /// <summary>
         /// ESCAPE ENDS A CAPTURE WITHOUT BINDING ANYTHING.
         ///
@@ -1164,10 +1242,12 @@ namespace ES2Access.Screens
             }
 
             GameBinding before = _capturePrevious;
+            bool secondary = _capturingSecondary;
             _capturing = null;
             _capturePrevious = null;
             if (before == null || !UnityEngine.Input.GetKey(KeyCode.Escape))
             {
+                SayWhatStuck(item, secondary);
                 return;
             }
 
@@ -1179,6 +1259,67 @@ namespace ES2Access.Screens
             catch (Exception e)
             {
                 Log.Warn("options: putting a cancelled binding back threw: " + e);
+            }
+        }
+
+        /// <summary>
+        /// SAY WHAT THE CELL HOLDS NOW - every capture that was not cancelled ends with this line.
+        ///
+        /// A capture that lands on the chord the row is ALREADY on commits nothing: the game's own
+        /// lose-focus handler compares the captured combination against both of the row's slots and
+        /// skips the whole commit when it matches either (<c>OptionKeyMappingItem.OnLoseFocusCb</c>
+        /// :80-98). Nothing then changes, so nothing the mod watches changes either, and the capture
+        /// ended in silence - which the owner read as the capture being broken (reported 2026-08-24).
+        /// Re-reading the cell unconditionally means a player cannot tell "I captured the same chord"
+        /// from "I captured a new one" by listening for silence: both say the chord.
+        ///
+        /// Except while a question is up. A commit that collided raises a message box - the game's
+        /// own "that key is already used for X", or the mod's overlap warning - and that box is a
+        /// screen of ours arriving in the same breath. The chord is read out when the box is answered
+        /// instead (<see cref="ES2Access.UI.ModOptions.BindingOverlaps"/>), by which point it is
+        /// settled.
+        /// </summary>
+        private static void SayWhatStuck(OptionKeyMappingItem item, bool secondary)
+        {
+            if (!Asking())
+            {
+                ReadCell(item, secondary);
+            }
+        }
+
+        /// <summary>Whether the game is asking the player something in its message box - which is the
+        /// one thing that has the floor when a capture ends.</summary>
+        internal static bool Asking()
+        {
+            try
+            {
+                MessageBoxWindow box = Gui.GuiServiceAvailable
+                    ? Gui.GuiService.GetWindow<MessageBoxWindow>(false)
+                    : null;
+                return box != null && box.Shown;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        /// <summary>Read one of a row's two cells out loud - what a settled capture ends with, and
+        /// what answering a collision question ends with. QUEUED, never interrupting: the field has
+        /// been saying the combination as it was pressed, and cutting that off mid-word to say the
+        /// same thing again would be heard as a stutter rather than as a confirmation.</summary>
+        internal static void ReadCell(OptionKeyMappingItem item, bool secondary)
+        {
+            try
+            {
+                AgeControlKeyBindingField field = secondary
+                    ? item.SecondaryKeyBindingField
+                    : item.PrimaryKeyBindingField;
+                Voice.Say(CellText(item, field), false);
+            }
+            catch (Exception e)
+            {
+                Log.Warn("options: reading a settled binding threw: " + e);
             }
         }
 

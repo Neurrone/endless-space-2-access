@@ -4,6 +4,7 @@ using Amplitude.Unity.Framework;
 using Amplitude.Unity.Options;
 using ES2Access.Core.Speech;
 using ES2Access.Core.Util;
+using ES2Access.Screens;
 using ES2Access.UI.Input;
 using HarmonyLib;
 using GameBinding = Amplitude.Unity.Input.InputBinding;
@@ -157,9 +158,34 @@ namespace ES2Access.UI.ModOptions
                 GameBinding before = __state as GameBinding;
                 string action = now.InputAction.ToString();
                 bool ours = ModBindings.Knows(action);
-                if (!Announce(option, action, ours, now.PrimaryKeyCombination, before))
+                bool warned = Announce(
+                    __instance,
+                    option,
+                    action,
+                    ours,
+                    now.PrimaryKeyCombination,
+                    before,
+                    false
+                );
+                if (!warned)
                 {
-                    Announce(option, action, ours, now.SecondaryKeyCombination, before);
+                    warned = Announce(
+                        __instance,
+                        option,
+                        action,
+                        ours,
+                        now.SecondaryKeyCombination,
+                        before,
+                        true
+                    );
+                }
+
+                // Nothing to warn about, and a question of the GAME's own is on screen - which means
+                // this commit IS that question being answered, and the capture-end read-back stood
+                // down for it (OptionsScreen.SayWhatStuck). Somebody has to say what stuck.
+                if (!warned && OptionsScreen.Asking())
+                {
+                    OptionsScreen.ReadCell(__instance, Changed(before, now));
                 }
             }
             catch (Exception thrown)
@@ -168,15 +194,26 @@ namespace ES2Access.UI.ModOptions
             }
         }
 
+        /// <summary>Which of the two slots this commit moved - the secondary where the primary is
+        /// what it was, the primary otherwise (which is also the answer when nothing moved).
+        /// </summary>
+        private static bool Changed(GameBinding before, GameBinding now)
+        {
+            return before != null
+                && now.PrimaryKeyCombination.Equals(before.PrimaryKeyCombination);
+        }
+
         /// <summary>One newly bound chord, checked against the other side. One sentence per commit:
         /// the player pressed one combination, and a second box behind the first would be read as a
         /// second problem.</summary>
         private static bool Announce(
+            OptionKeyMappingItem item,
             Option option,
             string action,
             bool ours,
             KeyCombination chord,
-            GameBinding before
+            GameBinding before,
+            bool secondary
         )
         {
             if (chord == null || chord.Equals(KeyCombination.None))
@@ -214,18 +251,62 @@ namespace ES2Access.UI.ModOptions
                 gameAction = GameTitle(option);
             }
 
-            // One button, not two. The game hides a message box's button by giving it an empty title
-            // (MessageBoxWindow.cs :96-98), and this box has nothing to cancel: the binding has
-            // already landed and neither answer would take it back.
+            // TWO BUTTONS: keep the binding, or put back what the row was on (owner ruling
+            // 2026-08-24). The binding has already landed by the time this box goes up - the commit
+            // is what raised it - so Cancel is a REVERT rather than a refusal, written through the
+            // same value path the rows themselves use, which is what keeps Apply, Cancel and the
+            // window's backup all agreeing about what changed. Where there is nothing to put back the
+            // Cancel button is hidden instead, by the game's own rule that an empty title hides a
+            // button (MessageBoxWindow.cs :96-98).
+            Answer answer = new Answer(item, before, secondary);
             Gui.GuiService.ShowMessage(
                 ModStrings.Format(ModStrings.NavKeyBindingShadowed, modAction, gameAction),
                 MessageBoxType.INFORMATIVE,
-                null,
+                answer.Chosen,
                 "%MessageBoxConfirmationTitle",
                 "%MessageBoxValidateTitle",
-                string.Empty
+                before == null ? string.Empty : "%MessageBoxCancelTitle"
             );
             return true;
+        }
+
+        /// <summary>
+        /// What the player says to the overlap box, and what the mod does about it.
+        ///
+        /// One instance per box, holding the row and the binding it was on before the commit that
+        /// raised the box. Confirm keeps the new keys; Cancel writes the old ones back. Either way the
+        /// cell is read out afterwards, because the capture that started all this ended in silence on
+        /// purpose while the question was up (<c>OptionsScreen.SayWhatStuck</c>).
+        /// </summary>
+        private sealed class Answer
+        {
+            public Answer(OptionKeyMappingItem item, GameBinding before, bool secondary)
+            {
+                _item = item;
+                _before = before;
+                _secondary = secondary;
+            }
+
+            public void Chosen(object sender, MessageBoxResultEventArgs e)
+            {
+                try
+                {
+                    if (e != null && e.Result != MessageBoxResult.Ok && _before != null)
+                    {
+                        OptionsScreen.Write(_item, _before);
+                    }
+
+                    OptionsScreen.ReadCell(_item, _secondary);
+                }
+                catch (Exception thrown)
+                {
+                    Log.Warn("bindings: answering the overlap question threw: " + thrown);
+                }
+            }
+
+            private readonly OptionKeyMappingItem _item;
+            private readonly GameBinding _before;
+            private readonly bool _secondary;
         }
 
         private static bool Holds(GameBinding binding, KeyCombination chord)

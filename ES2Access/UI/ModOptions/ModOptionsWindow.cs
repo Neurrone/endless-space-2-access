@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using ES2Access.Core.Speech;
+using Amplitude.Unity.Options;
 using ES2Access.Core.UI;
 using ES2Access.Core.Util;
 
@@ -89,6 +90,144 @@ namespace ES2Access.UI.ModOptions
             {
                 first.Show();
             }
+
+            TakeOverTheResetButtons();
+        }
+
+        /// <summary>
+        /// POINT THE WINDOW'S "RESET TO DEFAULTS" AT THE MOD'S OWN KEYS.
+        ///
+        /// The clone came with the button - twice, once per skin - and with the game's wiring on it,
+        /// which resets the GAME's bindings (<c>OptionsModalWindow.OnResetConfirmation</c> :353-361
+        /// calls <c>IInputOptionsService.ResetToDefaultBindings</c>). On this window that would be a
+        /// button that silently rewrote a page it is not even showing. Every AGE button dispatches by
+        /// SendMessage to a named method on a GameObject, so re-aiming it is two fields, and the
+        /// game's own window is untouched.
+        ///
+        /// The button's VISIBILITY is the game's own rule and is left alone: it shows for the
+        /// category called "Controls" and no other (:119-120, :223-224), which is exactly what the
+        /// mod's key-binding tab is called.
+        /// </summary>
+        private void TakeOverTheResetButtons()
+        {
+            Aim(ResetButton);
+            Aim(ResetInGameButton);
+        }
+
+        private void Aim(AgeControlButton button)
+        {
+            if (button == null)
+            {
+                return;
+            }
+
+            try
+            {
+                button.OnActivateObject = gameObject;
+                button.OnActivateMethod = "OnModResetCb";
+            }
+            catch (System.Exception e)
+            {
+                Log.Warn("mod options: aiming the reset button threw: " + e);
+            }
+        }
+
+        /// <summary>Ask the question the game asks before its own reset, in the game's own words.
+        /// Public because the button reaches it by SendMessage; the argument is the GameObject every
+        /// AGE button sends and nothing here needs it.</summary>
+        public void OnModResetCb(UnityEngine.GameObject sender)
+        {
+            if (ModOptions.KeybindsCategory != Category())
+            {
+                return;
+            }
+
+            try
+            {
+                Gui.GuiService.ShowMessage(
+                    ResetConfirmation,
+                    MessageBoxType.IMPORTANT,
+                    OnModResetConfirmation
+                );
+            }
+            catch (System.Exception e)
+            {
+                Log.Warn("mod options: asking about a reset threw: " + e);
+            }
+        }
+
+        /// <summary>
+        /// PUT EVERY MOD KEY BACK ON THE KEYS IT SHIPPED ON.
+        ///
+        /// Through each row's own option, which is the same path a rebind takes: the value lands in
+        /// the binding store and on the live input layer at once, the window is told a setting
+        /// changed - so Apply lights and Cancel puts the old keys back - and the row redraws both its
+        /// fields. Applying then writes the file, where every action now matching its default drops
+        /// its line (<c>ModBindings.Persist</c>). That mirrors the game's own reset, which also acts
+        /// at once and marks the window dirty.
+        /// </summary>
+        private void OnModResetConfirmation(object sender, MessageBoxResultEventArgs e)
+        {
+            if (e == null || e.Result != MessageBoxResult.Ok)
+            {
+                return;
+            }
+
+            try
+            {
+                OptionsTabPanel panel = Panel(ModOptions.KeybindsCategory);
+                if (panel == null || panel.OptionsTable == null)
+                {
+                    return;
+                }
+
+                Option last = null;
+                for (int i = 0; i < panel.OptionsTable.Children.Count; i++)
+                {
+                    OptionKeyMappingItem row =
+                        panel.OptionsTable.Children[i].GetComponent<OptionKeyMappingItem>();
+                    Amplitude.Unity.Input.InputBinding now =
+                        row == null || row.Option == null
+                            ? null
+                            : row.Option.Value as Amplitude.Unity.Input.InputBinding;
+                    Amplitude.Unity.Input.InputBinding shipped =
+                        now == null
+                            ? null
+                            : ES2Access.UI.Input.ModBindings.Default(now.InputAction.ToString());
+                    if (shipped == null)
+                    {
+                        continue;
+                    }
+
+                    row.Option.Value = shipped;
+                    row.Refresh();
+                    last = row.Option;
+                }
+
+                if (last != null)
+                {
+                    OnOptionChanged(last);
+                }
+
+                Dirty = true;
+            }
+            catch (System.Exception thrown)
+            {
+                Log.Warn("mod options: resetting the mod's keys threw: " + thrown);
+            }
+        }
+
+        /// <summary>The game's own question before a key-binding reset.</summary>
+        private const string ResetConfirmation = "%OptionBindingResetConfirmation";
+
+        /// <summary>Which of the two tabs is showing, read from the private the game keeps it in.
+        /// </summary>
+        private string Category()
+        {
+            OptionsTabToggle toggle = Toggle(ModOptions.KeybindsCategory);
+            return toggle != null && toggle.Toggle != null && toggle.Toggle.State
+                ? ModOptions.KeybindsCategory
+                : null;
         }
 
         /// <summary>
@@ -142,12 +281,7 @@ namespace ES2Access.UI.ModOptions
             // Before the base call, which is where the game takes its backup of every option: the
             // slot pages are rebuilt from what is SAVED, so no row is backed up already-changed.
             ScannerEditor.Begin();
-            for (int slot = 0; slot < ScannerCustomSlots.Count; slot++)
-            {
-                ScannerSlotRows.Refill(slot);
-            }
-
-            ScannerRows.Relabel();
+            ScannerRows.Refill();
             base.OnBeginShow(instant);
         }
 

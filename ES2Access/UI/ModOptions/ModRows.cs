@@ -187,6 +187,54 @@ namespace ES2Access.UI.ModOptions
             Action activate
         )
         {
+            OptionItem item;
+            Option option = Cloned(panel, window, name, title, out item);
+            if (option != null)
+            {
+                Actions[item] = activate;
+            }
+
+            return option;
+        }
+
+        /// <summary>
+        /// A GROUP HEADER in the rows table - the same drawn button, standing for the block of rows
+        /// under it rather than for an action.
+        ///
+        /// The mod's options screen turns it into an expandable group node
+        /// (<see cref="ES2Access.Screens.OptionsScreen"/>), so the tree keys open and shut it and its
+        /// readout carries "expanded"/"collapsed". What opening MEANS - which rows are shown and the
+        /// table laid out again - is the caller's, because only the caller knows which rows belong to
+        /// it.
+        /// </summary>
+        public static Option Group(
+            OptionsTabPanel panel,
+            OptionsModalWindow window,
+            string name,
+            string title,
+            Func<bool> expanded,
+            Action<bool> expand
+        )
+        {
+            OptionItem item;
+            Option option = Cloned(panel, window, name, title, out item);
+            if (option != null)
+            {
+                Groups[item] = new ModGroupRow(expanded, expand);
+            }
+
+            return option;
+        }
+
+        private static Option Cloned(
+            OptionsTabPanel panel,
+            OptionsModalWindow window,
+            string name,
+            string title,
+            out OptionItem made
+        )
+        {
+            made = null;
             if (panel == null || window == null || window.CancelButton == null)
             {
                 return null;
@@ -247,7 +295,7 @@ namespace ES2Access.UI.ModOptions
                     item.TitleLabel.Text = title;
                 }
 
-                Actions[item] = activate;
+                made = item;
                 return option;
             }
             catch (Exception e)
@@ -320,6 +368,14 @@ namespace ES2Access.UI.ModOptions
             return item != null && Captions.TryGetValue(item, out title) ? title : null;
         }
 
+        /// <summary>The block this row is the header of, or null where the row heads nothing.
+        /// </summary>
+        public static ModGroupRow GroupOf(OptionItem item)
+        {
+            ModGroupRow group;
+            return item != null && Groups.TryGetValue(item, out group) ? group : null;
+        }
+
         /// <summary>Whether a text option is one of ours - what the patch on the game's broken
         /// text-field commit asks before it steps in.</summary>
         public static bool IsOurText(Option option)
@@ -332,6 +388,7 @@ namespace ES2Access.UI.ModOptions
         {
             Actions.Clear();
             Captions.Clear();
+            Groups.Clear();
             Ours.Clear();
         }
 
@@ -456,6 +513,9 @@ namespace ES2Access.UI.ModOptions
         private static readonly Dictionary<OptionItem, string> Captions =
             new Dictionary<OptionItem, string>();
 
+        private static readonly Dictionary<OptionItem, ModGroupRow> Groups =
+            new Dictionary<OptionItem, ModGroupRow>();
+
         private static readonly List<Option> Ours = new List<Option>();
     }
 
@@ -493,6 +553,34 @@ namespace ES2Access.UI.ModOptions
 
         private readonly Func<string> _read;
         private readonly Action<string> _write;
+    }
+
+    /// <summary>What a header row stands for: whether its block is open, and how to open or shut it.
+    /// Kept beside the row rather than on it, because the row's component is the game's type.
+    /// </summary>
+    public sealed class ModGroupRow
+    {
+        public ModGroupRow(Func<bool> expanded, Action<bool> expand)
+        {
+            _expanded = expanded;
+            _expand = expand;
+        }
+
+        public bool Expanded
+        {
+            get { return _expanded != null && _expanded(); }
+        }
+
+        public void Expand(bool open)
+        {
+            if (_expand != null)
+            {
+                _expand(open);
+            }
+        }
+
+        private readonly Func<bool> _expanded;
+        private readonly Action<bool> _expand;
     }
 
     /// <summary>One row's tick, the same way round.</summary>

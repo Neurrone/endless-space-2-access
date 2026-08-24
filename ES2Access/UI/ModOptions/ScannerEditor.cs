@@ -10,14 +10,13 @@ using ES2Access.UI.Settings;
 namespace ES2Access.UI.ModOptions
 {
     /// <summary>
-    /// THE EDITOR FOR THE PLAYER'S OWN THREE SCANNER CATEGORIES - what the Scanner tab and the three
-    /// "Custom category" tabs of the mod's settings window are working on.
+    /// THE EDITOR FOR THE PLAYER'S OWN THREE SCANNER CATEGORIES - what the Scanner tab of the mod's
+    /// settings window is working on.
     ///
-    /// This holds the MODEL and the rules; the rows that draw it are
-    /// <see cref="ScannerRows"/> (the Scanner tab's three buttons) and
-    /// <see cref="ScannerSlotRows"/> (one tab per slot). It was a tree of mod nodes over an empty tab
-    /// until 2026-08-24 and the owner rejected that outright: the window is the game's, so its pages
-    /// are drawn with the game's own widgets and a sighted player sees what a screen reader hears.
+    /// This holds the MODEL and the rules; the rows that draw it are <see cref="ScannerRows"/>, one
+    /// page with a collapsible block per slot. It was a tree of mod nodes over an empty tab until
+    /// 2026-08-24 and the owner rejected that outright: the window is the game's, so its pages are
+    /// drawn with the game's own widgets and a sighted player sees what a screen reader hears.
     ///
     /// EDITS ARE HELD UNTIL APPLY (owner ruling 2, 2026-08-23). Everything works on a
     /// <see cref="ScannerCustomSlots.Copy"/>; <see cref="Commit"/> hands it to
@@ -39,12 +38,6 @@ namespace ES2Access.UI.ModOptions
         /// <summary>The game's key for the Scanner tab - an identifier, never a spoken word (the
         /// words are <see cref="ModStrings.ModSettingsScanner"/>).</summary>
         public const string CategoryName = "Scanner";
-
-        /// <summary>The game's key for one slot's own tab.</summary>
-        public static string SlotCategory(int slot)
-        {
-            return "CustomCategory" + (slot + 1);
-        }
 
         // ---- what the player is editing ----
 
@@ -84,7 +77,8 @@ namespace ES2Access.UI.ModOptions
             _working = null;
             _taxonomy = null;
             _say = null;
-            _refill.Clear();
+            _refill = false;
+            ScannerRows.CollapseAll();
         }
 
         /// <summary>What the player settled on, written through. Called when the window hides, by
@@ -108,7 +102,7 @@ namespace ES2Access.UI.ModOptions
             _taxonomy = null;
             _marker = null;
             _say = null;
-            _refill.Clear();
+            _refill = false;
         }
 
         /// <summary>The invisible row's option, handed over once the Scanner panel has built it. It
@@ -153,7 +147,7 @@ namespace ES2Access.UI.ModOptions
                 if (category != null)
                 {
                     _say = ModStrings.Get(ModStrings.ScannerEditNameBlank);
-                    Rebuild(slot);
+                    Rebuild();
                 }
 
                 return;
@@ -162,7 +156,7 @@ namespace ES2Access.UI.ModOptions
             if (Working.NameTaken(wanted, slot, Taxonomy.Labels()))
             {
                 _say = ModStrings.Format(ModStrings.ScannerEditNameTaken, wanted);
-                Rebuild(slot);
+                Rebuild();
                 return;
             }
 
@@ -171,7 +165,7 @@ namespace ES2Access.UI.ModOptions
                 Working.Set(slot, new ScannerCustomCategory(wanted));
                 Changed();
                 // The page was a name box and nothing else; it is a whole category now.
-                Rebuild(slot);
+                Rebuild();
                 return;
             }
 
@@ -214,7 +208,7 @@ namespace ES2Access.UI.ModOptions
                     Changed();
                 }
 
-                Rebuild(slot);
+                Rebuild();
                 return;
             }
 
@@ -226,7 +220,7 @@ namespace ES2Access.UI.ModOptions
             if (!category.ReplaceKeyword(index, wanted))
             {
                 _say = ModStrings.Get(ModStrings.ScannerEditKeywordTaken);
-                Rebuild(slot);
+                Rebuild();
                 return;
             }
 
@@ -246,12 +240,12 @@ namespace ES2Access.UI.ModOptions
             if (!category.AddKeyword(wanted))
             {
                 _say = ModStrings.Get(ModStrings.ScannerEditKeywordTaken);
-                Rebuild(slot);
+                Rebuild();
                 return;
             }
 
             Changed();
-            Rebuild(slot);
+            Rebuild();
         }
 
         public static bool Holds(int slot, ScannerSelector selector)
@@ -286,7 +280,7 @@ namespace ES2Access.UI.ModOptions
             }
 
             Changed();
-            ScannerSlotRows.Recount(slot);
+            ScannerRows.Recount(slot);
         }
 
         /// <summary>How many of a built-in category's columns this slot draws from - the count that
@@ -320,7 +314,7 @@ namespace ES2Access.UI.ModOptions
             _say = ModStrings.Format(ModStrings.ScannerEditCleared, slot + 1);
             Changed();
             ScannerRows.Relabel();
-            Rebuild(slot);
+            Rebuild();
         }
 
         // ---- the pump ----
@@ -336,17 +330,10 @@ namespace ES2Access.UI.ModOptions
         /// </summary>
         public static void Tick()
         {
-            if (_refill.Count > 0)
+            if (_refill)
             {
-                List<int> slots = new List<int>(_refill);
-                _refill.Clear();
-                for (int i = 0; i < slots.Count; i++)
-                {
-                    ScannerSlotRows.Refill(slots[i]);
-                }
-
-                // A slot filled or emptied changes what the Scanner tab's buttons say about it.
-                ScannerRows.Relabel();
+                _refill = false;
+                ScannerRows.Refill();
                 Reread();
             }
 
@@ -355,14 +342,11 @@ namespace ES2Access.UI.ModOptions
             Voice.Say(say, false);
         }
 
-        /// <summary>Ask for a page to be built again on the next tick, because what it holds has
+        /// <summary>Ask for the page to be built again on the next tick, because what it holds has
         /// changed rather than just what it says.</summary>
-        private static void Rebuild(int slot)
+        private static void Rebuild()
         {
-            if (!_refill.Contains(slot))
-            {
-                _refill.Add(slot);
-            }
+            _refill = true;
         }
 
         /// <summary>Tell the window something changed, through the invisible row's option: that is
@@ -405,8 +389,8 @@ namespace ES2Access.UI.ModOptions
         /// <summary>What the next tick says, once the rows have been built again.</summary>
         private static string _say;
 
-        /// <summary>Which slots' pages have to be built again on the next tick.</summary>
-        private static readonly List<int> _refill = new List<int>();
+        /// <summary>Whether the page has to be built again on the next tick.</summary>
+        private static bool _refill;
 
         private static readonly string[] NoKeywords = new string[0];
     }
