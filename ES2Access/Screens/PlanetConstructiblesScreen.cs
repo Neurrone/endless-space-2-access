@@ -78,7 +78,14 @@ namespace ES2Access.Screens
         /// <summary>Ours while the game is drawing the panel and it still has the planet it was opened
         /// for. The planet is what the panel drops last when it is dismissed
         /// (<c>PlanetConstructiblePanel.OnEndHide</c> → <c>UnbindPlanet</c>), so it outlives the
-        /// shown flag through the fade and keeps the screen from blinking out mid-transition.</summary>
+        /// shown flag through the fade and keeps the screen from blinking out mid-transition.
+        ///
+        /// And only once the game has SWITCHED THE PANEL ON. It is shown and drawn for about seven
+        /// frames before that (measured 2026-08-24), and every line on it reads as refused for as long
+        /// as its panel does - so a page taken over during those frames announced its first line
+        /// "unavailable" when nothing was refusing it, and the correction is silent because the
+        /// corrected state is an EMPTY part. Waiting is half a second of the game's own animation.
+        /// </summary>
         public override bool IsActive()
         {
             try
@@ -87,7 +94,8 @@ namespace ES2Access.Screens
                 return panel != null
                     && panel.Planet != null
                     && panel.Shown
-                    && AgeWidgets.Visible(panel.AgeTransform);
+                    && AgeWidgets.Visible(panel.AgeTransform)
+                    && AgeWidgets.Operable(panel.AgeTransform);
             }
             catch (Exception)
             {
