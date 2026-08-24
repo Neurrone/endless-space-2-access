@@ -278,8 +278,12 @@ namespace ES2Access.UI
         /// <paramref name="drawn"/> is that tooltip's own lines, and a reason already among them is
         /// dropped: once the panel is up it says the same sentence, and the tile's two sections would
         /// otherwise put it into the buffer twice.
+        ///
+        /// Public because the same prefab is the line of the planet card's own constructible list
+        /// (<see cref="ES2Access.Screens.PlanetConstructiblesScreen"/>), and two readings of one
+        /// game refusal that could disagree are exactly what the shared-helper rule is for.
         /// </summary>
-        private static IList<string> ConstructibleFailures(
+        public static IList<string> ConstructibleFailures(
             StarSystemConstructibleItem item,
             Func<IList<string>> drawn
         )
