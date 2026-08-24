@@ -6661,10 +6661,9 @@ namespace ES2Access.Screens
                 for (int i = 0; i < fleets.Count; i++)
                 {
                     Fleet it = fleets[i];
-                    builder.AddItem(
-                        ControlId.Structural(place + "/fleet/" + it.GUID),
-                        FleetNode(it, docks, flying)
-                    );
+                    List<TooltipChildren.Dossier> badges;
+                    NodeVtable vtable = FleetNode(it, docks, flying, out badges);
+                    AddFleet(builder, place + "/fleet/" + it.GUID, vtable, badges);
                 }
             }
             catch (Exception e)
@@ -6704,7 +6703,8 @@ namespace ES2Access.Screens
                 {
                     EnRoute leg = flying[i];
                     Fleet it = leg.Fleet;
-                    NodeVtable vtable = FleetNode(it, docks, labels);
+                    List<TooltipChildren.Dossier> badges;
+                    NodeVtable vtable = FleetNode(it, docks, labels, out badges);
                     // Straight after the name, because it answers the question the player is holding
                     // while they hear it: why is this fleet under THIS system? One whole phrase rather
                     // than a lane number glued to a compass word, and the number is the one the lane
@@ -6722,10 +6722,7 @@ namespace ES2Access.Screens
                             false
                         )
                     );
-                    builder.AddItem(
-                        ControlId.Structural(place + "/fleet/" + it.GUID),
-                        vtable
-                    );
+                    AddFleet(builder, place + "/fleet/" + it.GUID, vtable, badges);
                 }
             }
             catch (Exception e)
@@ -6773,7 +6770,8 @@ namespace ES2Access.Screens
                 for (int i = 0; i < arriving.Count; i++)
                 {
                     Fleet it = arriving[i];
-                    NodeVtable vtable = FleetNode(it, docks, labels);
+                    List<TooltipChildren.Dossier> badges;
+                    NodeVtable vtable = FleetNode(it, docks, labels, out badges);
                     // Straight after the name, in the slot the lane phrase takes on a fleet under way,
                     // and for the same reason: it answers the question the player is holding while they
                     // hear it - why is this fleet under THIS system?
@@ -6788,10 +6786,7 @@ namespace ES2Access.Screens
                             false
                         )
                     );
-                    builder.AddItem(
-                        ControlId.Structural(place + "/fleet/" + it.GUID),
-                        vtable
-                    );
+                    AddFleet(builder, place + "/fleet/" + it.GUID, vtable, badges);
                 }
             }
             catch (Exception e)
@@ -6814,7 +6809,8 @@ namespace ES2Access.Screens
         {
             try
             {
-                NodeVtable vtable = FleetNode(it, DockLabels(), FleetLabels());
+                List<TooltipChildren.Dossier> badges;
+                NodeVtable vtable = FleetNode(it, DockLabels(), FleetLabels(), out badges);
                 // Which kind of journey it is, since the unnamed destination is all either can say
                 // about where it is going: a lane running into the dark is not the same picture as a
                 // fleet striking out across open space, and the map draws the one and not the other.
@@ -6825,7 +6821,7 @@ namespace ES2Access.Screens
                     1,
                     GraphNodes.ValuePart(() => ModStrings.Get(phrase), false)
                 );
-                builder.AddItem(AdriftId(it), vtable);
+                AddFleet(builder, AdriftKey(it), vtable, badges);
             }
             catch (Exception e)
             {
@@ -6835,7 +6831,14 @@ namespace ES2Access.Screens
 
         private static ControlId AdriftId(Fleet fleet)
         {
-            return ControlId.Structural("galaxy:fleet/" + fleet.GUID);
+            return ControlId.Structural(AdriftKey(fleet));
+        }
+
+        /// <summary>The key that id is built from, which the declaration needs as well: a fleet with
+        /// badges on its lozenge is a group, and its children are keyed under it.</summary>
+        private static string AdriftKey(Fleet fleet)
+        {
+            return "galaxy:fleet/" + fleet.GUID;
         }
 
         /// <summary>Whether this fleet's current leg is a crossing of OPEN SPACE rather than a flight
@@ -6994,10 +6997,19 @@ namespace ES2Access.Screens
         /// automated delivery fleet) is declared as TEXT rather than as a button: no role word, no
         /// action. Not an unavailable button, which would be the mod saying the game has switched
         /// something off; there is no control here at all, exactly as there is none under the pointer.
-        /// Owner ruling 2026-08-16.</summary>
-        private static NodeVtable FleetNode(Fleet it, DockLabel[] docks, FleetLabel[] flying)
+        /// Owner ruling 2026-08-16.
+        ///
+        /// <paramref name="badges"/> answers what the map drew ON the lozenge beside the fleet - see
+        /// <see cref="FleetBadges"/> - for the caller to declare with <see cref="AddFleet"/>.</summary>
+        private static NodeVtable FleetNode(
+            Fleet it,
+            DockLabel[] docks,
+            FleetLabel[] flying,
+            out List<TooltipChildren.Dossier> badges
+        )
         {
             AgeTransform lozenge = FleetLozenge(it, docks, flying);
+            badges = FleetBadges(lozenge);
             NodeVtable vtable = GraphNodes.Button(
                 () => it.LocalizedName,
                 () => Select(it),
@@ -7050,6 +7062,73 @@ namespace ES2Access.Screens
             // rebinds - and a GUID key is stable without one. It is also what lets a fleet under way be
             // hosted under both ends of its lane at once.
             return vtable;
+        }
+
+        /// <summary>
+        /// The badges the map draws on a fleet's lozenge: one of these ships can explore, one can found
+        /// a colony, one carries a destruction module (<c>GarrisonsLabelButton.RefreshRoleIcons</c>
+        /// :156-191 shows each where the garrison holds such a ship). Each is a wordless picture with a
+        /// sentence of the game's own saying what it means, and the lozenge itself carries the fleet's
+        /// dossier - so the fleet's node could point at only one of the four and carried none of the
+        /// three.
+        ///
+        /// Nodes rather than lines in the fleet's buffer: three sentences merged into one paragraph is
+        /// what a player cannot tell apart or step through (owner ruling: one row means a row of NODES).
+        /// </summary>
+        private static List<TooltipChildren.Dossier> FleetBadges(AgeTransform lozenge)
+        {
+            try
+            {
+                GarrisonsLabelButton label =
+                    lozenge == null ? null : lozenge.GetComponent<GarrisonsLabelButton>();
+                if (label == null)
+                {
+                    return null;
+                }
+
+                FleetBadgeList.Clear();
+                TooltipChildren.AddPlain(FleetBadgeList, label.ExplorationShipIcon);
+                TooltipChildren.AddPlain(FleetBadgeList, label.ColonyShipIcon);
+                TooltipChildren.AddPlain(FleetBadgeList, label.DestructionModuleIcon);
+                return FleetBadgeList;
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: reading a fleet lozenge's badges threw: " + e);
+                return null;
+            }
+        }
+
+        // Reused rather than allocated per fleet: this map rebuilds every frame and a galaxy holds
+        // many fleets. Safe as one buffer because the caller declares it before the next fleet is
+        // read, and the emit captures each dossier by value.
+        private static readonly List<TooltipChildren.Dossier> FleetBadgeList =
+            new List<TooltipChildren.Dossier>(3);
+
+        /// <summary>A fleet's node as the tree declares it - a GROUP where the map drew badges on its
+        /// lozenge, so each badge's sentence is a stop of its own under the fleet, and the plain leaf
+        /// it has always been otherwise.</summary>
+        private static void AddFleet(
+            GraphBuilder builder,
+            string key,
+            NodeVtable vtable,
+            List<TooltipChildren.Dossier> badges
+        )
+        {
+            ControlId id = ControlId.Structural(key);
+            if (badges == null || badges.Count == 0)
+            {
+                builder.AddItem(id, vtable);
+                return;
+            }
+
+            builder.BeginGroup(id, vtable);
+            if (builder.IsExpanded(id))
+            {
+                TooltipChildren.Emit(builder, key, badges, builder.Region);
+            }
+
+            builder.EndGroup();
         }
 
         /// <summary>One fleet under way on one of a system's lanes, with the lane already named the way
