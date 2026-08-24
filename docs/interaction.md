@@ -155,9 +155,15 @@ the old row's silence about a missing secondary. The three captions are the mod'
 (`nav.key-binding-action`/`-primary-column`/`-secondary-column`): the game draws no header band over
 these columns. Delete is claimed from the game only while the cursor is on a cell that offers a clear
 (`GraphNavigator.TakesClearKey`), and the game binds it to nothing at all (measured 2026-08-23).
-**Escape during a capture is a CANCEL** — the row goes back to what it was bound to and the mod says
-"Rebinding cancelled." The game itself would either wipe the slot or, where the row's other slot is
-empty, silently keep it (`docs/es2-facts.md`, "Escape during a key capture"); one key, one meaning.
+**Escape during a capture CLEARS the key, exactly as the game's own Controls tab does** (owner
+ruling 2026-08-24, retiring the stage-2b cancel): the engine takes the focus away before the field's
+scan sees the press, so the field commits the nothing it blanked itself to — Escape is simply not
+bindable, in the game or the mod. The mod adds NOTHING to that ending; the clear goes through the
+game's own value path, so Apply lights and Cancel puts it back like any other change, and the
+capture-end read-back says what the cell holds now instead of falling silent. A row whose OTHER slot
+is empty keeps its key, because the game's own equality check reads the empty commit as no change
+(`docs/es2-facts.md`, "Escape during a key capture") — the game's asymmetry, matched rather than
+papered over.
 **A chord the mod and the game both answer to is said, not resolved** (ruling 9): committing either
 side's row onto the other's chord raises the game's own informative box — "While the mod's ⟨X⟩ is
 active, the game's ⟨Y⟩ will not fire" — with TWO buttons since 2026-08-24: Confirm keeps the new
@@ -836,11 +842,16 @@ SLOT, not per category name — the key means the same thing whatever the player
 walks that slot's "all" list FLAT, nearest first from where the player is reading, SAYS the landing
 as a scanner result would ("Rigel, -16, -5, 3 south, 1 of 21") and then performs the category's
 ordinary Alt+Home landing, so the tree cursor and the camera go there and the page announces the
-arrival after it. Each landing becomes the place the next press measures from, which turns the key
-into a nearest-neighbour hop across the map: the walk RE-ANCHORS whenever the player has moved off
-the place it last swept from, and a press while parked on the entry it is standing on steps ON
-rather than re-landing (`ScannerWalk`). Shift is the same list reversed, so from a landing it goes
-to the FARTHEST result rather than back the way it came — the nearest-first ordering read backwards,
+arrival after it. **THE SWEEP KEEPS THE LIST IT STARTED WITH** (2026-08-24): the order is taken
+nearest-first when the sweep begins and then FROZEN, so press after press walks 1, 2, 3 … n and wraps
+at both ends. The sweep ends only when the PLAYER moves, which is why the walk is anchored on the
+rounded pair its own landing is TAKING them to and not on where the press was made from — measuring
+against the place it moved them from made every press read as a player move, restarted the sweep, and
+circled the same handful of near entries (a 46-entry category that never got past 6). Two things the
+map reads out at the same coordinates are one place here, so stepping between the planets of one
+system does not end a sweep. A press while parked on the entry it is standing on steps ON rather than
+re-landing (`ScannerWalk`). Shift walks the same frozen list backwards — from a landing, back the way
+it came; from a fresh press, to the FARTHEST result, the nearest-first ordering read backwards,
 soc-access's own rule. An EMPTY slot says "No custom category on {key}", naming the key off the LIVE
 binding, and is never silent; a configured slot that caught nothing says the ordinary
 "{category}: all, none found". The six are keys of the MAP WIDGET like the rest of the scanner's

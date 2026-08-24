@@ -2796,9 +2796,15 @@ kc.KeyCodes.Add(UnityEngine.KeyCode.KeypadEnter); f.KeyCombination = kc;` — th
 caused. (Build the combination that way: a `List<KeyCode>` local poisons the REPL session.)
 Capturing the chord the row is ALREADY on is the equal-guard case: nothing commits, Apply stays
 unavailable, and the cell is still read out ("Up Arrow" twice — once as the field builds it, once as
-the mod confirms what stuck). What that cannot reach is the Escape half —
-the cancel branch asks `Input.GetKey(KeyCode.Escape)`, and `POST /key` refuses while the game is not
-foregrounded.
+the mod confirms what stuck). **An ESCAPE ending is that same simulation with `KeyCombination.None`**
+— the blank the field is holding when the engine takes its focus away — and it needs a row with BOTH
+slots filled to show anything: on a row whose secondary is empty the game's own equality check reads
+the blank as no change and the cell re-reads its old chord. Measured 2026-08-24 on both windows (mod
+row `ui.up` given a secondary first, game row "Navigate Forward (Battle)", Up Arrow + W): the cell
+re-reads "empty", Apply lights, and the window's Cancel — `ui.next` to the buttons, `ui.home`,
+`ui.activate`, then `ui.end` + `ui.activate` at the "quit without saving your control bindings" box —
+puts the chord back. The PHYSICAL Escape stays a manual item: `POST /key` refuses while the game is
+not foregrounded.
 
 **Walking the graph and reaching the windows.** Pause menu → Options is 5 of 9, Mod settings 6 of 9;
 from the tabs stop `ui.next` reaches the rows and `ui.next` again the buttons (`ui.home` is Cancel).
@@ -2910,8 +2916,9 @@ the rebind reverted (es2-facts). Check the clone's place in the dispatch list wi
 `GuiManager.guiWindowsFromBackToFront`: `GameMenuModalWindow` 152, the game's `OptionsModalWindow`
 153, the clone 154, `MessageBoxWindow` 166.
 
-**The rest of the capture, physically.** `Return` then `Escape` on a key cell = "Rebinding
-cancelled." plus the old chord; `Return` then `Comma` = the chord twice (the field as it builds it,
+**The rest of the capture, physically.** `Return` then `Escape` on a key cell = the cell read back
+with whatever the game left in it (empty on a row with both slots filled, the old chord on a row whose
+other slot is empty — 2026-08-24: no cancel, no restore); `Return` then `Comma` = the chord twice (the field as it builds it,
 then the mod confirming what stuck) with Apply lit; Apply (`ui.next` to the buttons, `ui.end`,
 `Return`) hides the window, lands on "Mod settings, button, 6 of 9" and writes
 `keys.galaxy.scanCustom1Next = galaxy.scanCustom1Next:F1,`; rebinding back to the default and
@@ -2926,6 +2933,15 @@ must SCROLL: read `ModOptions.PanelOf(w, "Controls").OptionsTable.GetGlobalPosit
 on the viewport that the landed row is drawn. `ui.end` down the KEY column is the case that used to
 fail - the table stayed at y 170 - so test the cells, not only the name column. Clear with `ui.back`
 ("Search cleared").
+
+**Walking a whole custom category (2026-08-24).** The sweep is only provable by walking it to the
+END: `/input galaxy.scanCustom1Next` n times, ~0.45 s apart, from the MAP stop, then read the
+`"N of M"` tail out of `/speech?since=` — a correct sweep counts 1, 2, 3 … M and wraps to 1, and the
+defect it replaced counted 1…6 and dropped back to 2 forever. Three more presses finish it: Shift
+(`…Prev`) steps back down the same list; a step INSIDE the system just landed on does NOT end the
+sweep (same rounded pair); and a move to another system does, the next press answering "1 of M". A
+reload leaves the cursor on `hud:empire`, where the quick keys read `unconsumed` — `ui.next` until
+the node id starts `galaxy:` first.
 
 **The quick keys' claim scope.** `DevProbe.Claims("Comma,Period,Slash")` on the galaxy page reads
 `claims:true` only while `GalaxyHudScreen.CursorOnMap()` is true - measured false on `hud:quest`, on

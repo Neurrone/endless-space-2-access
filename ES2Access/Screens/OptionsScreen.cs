@@ -123,7 +123,7 @@ namespace ES2Access.Screens
         public override void OnUpdate()
         {
             HandOverWhenReleased();
-            WatchForACancelledCapture();
+            WatchForTheEndOfACapture();
             _editor.Update();
         }
 
@@ -1012,17 +1012,11 @@ namespace ES2Access.Screens
         // ---- rebinding a key ----
 
         /// <summary>The row whose binding is being captured, remembered so that the mod going away
-        /// mid-capture can hand the keyboard back and so that an Escape can be told from a binding
-        /// (<see cref="WatchForACancelledCapture"/>). Whether the field is STILL listening is asked of
+        /// mid-capture can hand the keyboard back and so that the ending can be read out
+        /// (<see cref="WatchForTheEndOfACapture"/>). Whether the field is STILL listening is asked of
         /// the game, never of this field, so it can never be out of step with what is on screen.
         /// </summary>
         private static OptionKeyMappingItem _capturing;
-
-        /// <summary>What that row was bound to when the keyboard changed hands - what an Escape puts
-        /// back. The instance itself, not a copy of its keys: a mod row's option compares the value it
-        /// stored against the value it reads back, so restoring the same object is what stops the row
-        /// reporting a change nobody made.</summary>
-        private static GameBinding _capturePrevious;
 
         /// <summary>The row that has asked for a capture and is waiting for the player's hand to come
         /// off the keyboard, which of its two bindings was asked for, and the CELL the ask came from -
@@ -1064,8 +1058,9 @@ namespace ES2Access.Screens
         /// Escape is the one key that cannot be bound here, whatever the field is told: the game
         /// takes the keyboard away from a key-exclusive control the moment an Escape-bound action
         /// fires (<c>InputManager.HandleInput</c> :1210-1226, in Update), and the field's own scan
-        /// runs later in the frame. So Escape ends the capture instead of landing in it, and
-        /// <see cref="WatchForACancelledCapture"/> is what makes that ending a cancel.
+        /// runs later in the frame. So Escape ends the capture instead of landing in it, and the
+        /// field commits the nothing it was holding - a CLEAR, which is what the game's own Controls
+        /// tab does too (<see cref="WatchForTheEndOfACapture"/>).
         /// </summary>
         private static void StartCapture(OptionKeyMappingItem item, bool secondary)
         {
@@ -1161,7 +1156,6 @@ namespace ES2Access.Screens
 
                 _capturing = item;
                 _capturingSecondary = _pendingSecondary;
-                _capturePrevious = item.Option.Value as GameBinding;
                 age.FocusedControl = field;
             }
             catch (Exception e)
@@ -1212,28 +1206,27 @@ namespace ES2Access.Screens
         }
 
         /// <summary>Which of the capturing row's two fields took the keyboard - what
-        /// <see cref="WatchForACancelledCapture"/> re-reads when the capture ends.</summary>
+        /// <see cref="WatchForTheEndOfACapture"/> re-reads when the capture ends.</summary>
         private static bool _capturingSecondary;
 
         /// <summary>
-        /// ESCAPE ENDS A CAPTURE WITHOUT BINDING ANYTHING.
+        /// A CAPTURE HAS ENDED - SAY WHAT THE CELL HOLDS NOW, WHATEVER ENDED IT.
         ///
-        /// Escape never reaches the field. <c>InputManager.HandleInput</c> (:1210-1226) runs in Update
-        /// and nulls the focused control as soon as an Escape-bound action fires while a key-exclusive
-        /// control holds the keyboard; the field's own key scan runs in AgeManager's LateUpdate, so it
-        /// never sees the press. The field therefore loses focus holding the nothing it blanked itself
-        /// to, and its lose-focus handler writes that nothing into the slot - unless the row's OTHER
-        /// slot is empty too, which the game's own equality check reads as "no change" and leaves
-        /// alone (<c>OptionKeyMappingItem.OnLoseFocusCb</c> :80-98). One of those loses a binding and
-        /// the other does not, and the player pressed the same key for the same reason.
+        /// Every ending is the game's: a key released, a click elsewhere, or an Escape. Escape never
+        /// reaches the field - <c>InputManager.HandleInput</c> (:1210-1226) runs in Update and nulls
+        /// the focused control as soon as an Escape-bound action fires while a key-exclusive control
+        /// holds the keyboard, while the field's own key scan runs in AgeManager's LateUpdate - so the
+        /// field loses focus holding the nothing it blanked itself to and commits that empty
+        /// combination (<c>OptionKeyMappingItem.OnLoseFocusCb</c> :80-98). Escape therefore CLEARS the
+        /// cell, exactly as it does on the game's own Controls tab; Escape is simply not a bindable
+        /// key, here or there (owner ruling 2026-08-24). The mod adds nothing to that - a clear
+        /// through the game's own value path lights Apply and is undone by Cancel like any other
+        /// change.
         ///
-        /// So an ending with Escape physically down is a CANCEL: what the row was bound to goes back,
-        /// through the same value path a clear uses, and the mod says so. The key is read straight
-        /// from the engine because the mod's own layer is stood down for the capture - it may still
-        /// look at the keyboard, it just does not act on it - and Escape is held for many frames,
-        /// which is what makes this safe whichever order the two Updates ran in.
+        /// So this watcher has one job: the ending is the moment the cell is worth reading, and it
+        /// reads the same whichever key ended it.
         /// </summary>
-        private void WatchForACancelledCapture()
+        private void WatchForTheEndOfACapture()
         {
             OptionKeyMappingItem item = _capturing;
             if (item == null || CapturingField(item) != null)
@@ -1241,37 +1234,22 @@ namespace ES2Access.Screens
                 return;
             }
 
-            GameBinding before = _capturePrevious;
             bool secondary = _capturingSecondary;
             _capturing = null;
-            _capturePrevious = null;
-            if (before == null || !UnityEngine.Input.GetKey(KeyCode.Escape))
-            {
-                SayWhatStuck(item, secondary);
-                return;
-            }
-
-            try
-            {
-                Write(item, before);
-                Voice.Say(ModStrings.Get(ModStrings.NavKeyBindingCancelled), true);
-            }
-            catch (Exception e)
-            {
-                Log.Warn("options: putting a cancelled binding back threw: " + e);
-            }
+            SayWhatStuck(item, secondary);
         }
 
         /// <summary>
-        /// SAY WHAT THE CELL HOLDS NOW - every capture that was not cancelled ends with this line.
+        /// SAY WHAT THE CELL HOLDS NOW - every capture ends with this line.
         ///
         /// A capture that lands on the chord the row is ALREADY on commits nothing: the game's own
         /// lose-focus handler compares the captured combination against both of the row's slots and
         /// skips the whole commit when it matches either (<c>OptionKeyMappingItem.OnLoseFocusCb</c>
         /// :80-98). Nothing then changes, so nothing the mod watches changes either, and the capture
-        /// ended in silence - which the owner read as the capture being broken (reported 2026-08-24).
-        /// Re-reading the cell unconditionally means a player cannot tell "I captured the same chord"
-        /// from "I captured a new one" by listening for silence: both say the chord.
+        /// ended in silence - which the owner read as the capture being broken (reported 2026-08-24). An
+        /// Escape ending is the same story from the other side: it CLEARS the cell, and the player
+        /// hears "not bound" rather than nothing. Re-reading the cell unconditionally means a player
+        /// cannot tell one ending from another by listening for silence: every one says the cell.
         ///
         /// Except while a question is up. A commit that collided raises a message box - the game's
         /// own "that key is already used for X", or the mod's overlap warning - and that box is a
@@ -1326,8 +1304,8 @@ namespace ES2Access.Screens
         /// <summary>Which of a row's two fields is listening for keys right now, or null. Read from
         /// the game's own focus rather than from anything the mod remembers, so a capture the game
         /// ended - a key released, an Escape that took the focus away, a click elsewhere - is over
-        /// here the same instant. What the ending MEANT is a separate question
-        /// (<see cref="WatchForACancelledCapture"/>).</summary>
+        /// here the same instant. Reading out what the cell ended up holding is the separate question
+        /// (<see cref="WatchForTheEndOfACapture"/>).</summary>
         private static AgeControlKeyBindingField CapturingField(OptionKeyMappingItem item)
         {
             try
@@ -1367,7 +1345,6 @@ namespace ES2Access.Screens
             CancelPending();
             OptionKeyMappingItem item = _capturing;
             _capturing = null;
-            _capturePrevious = null;
             if (item == null)
             {
                 return;

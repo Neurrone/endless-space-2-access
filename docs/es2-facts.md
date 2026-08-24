@@ -2864,10 +2864,10 @@ category are the same `OptionKeyMappingItem` rows). The mod's side is
   `Update` and nulls the focused control the moment an Escape-bound action fires while a
   key-exclusive control holds the keyboard; the field's own scan is in AgeManager's
   `LateUpdate`, so the field never sees the key and loses focus holding nothing. Escape can
-  therefore never be BOUND here either. The mod turns that ending into a cancel: a capture it
-  started that ends while `Input.GetKey(KeyCode.Escape)` is true writes the pre-capture
-  `InputBinding` back and says so. **The physical path is unverified** — `POST /key` needs
-  the game foregrounded, and an injected action presses no key.
+  therefore never be BOUND here either — in the game or the mod — and what the ending does is
+  whatever the entry above does with a blank: a CLEAR on a row with both slots filled, nothing at
+  all on a row whose other slot is empty. The mod leaves that alone (mod policy below, owner ruling
+  2026-08-24) and only reads the cell out afterwards.
 - **The clear path is the game's own value path**: `Option.Value = new InputBinding(action,
   primary-or-None, secondary-or-None)` then `window.OnOptionChanged(option)` and
   `item.Refresh()`. Verified end to end on the game's Controls tab: Apply lit, the drawn
@@ -3090,9 +3090,16 @@ foregrounded and physical keys (`POST /key`).
   is unchanged. After the fix: Escape at the overlap box is the box's CANCEL (the row went back to
   Comma, the window stayed shown), and Confirm keeps the binding with the window shown and Apply lit.
 - **The physical capture path, verified at last** (previously "unverified" in the stage 2b notes):
-  physical Enter on a key cell starts the capture, a physical chord commits it and is spoken, a
-  physical Escape during a capture cancels it ("Rebinding cancelled." and the old chord back), and
+  physical Enter on a key cell starts the capture, a physical chord commits it and is spoken, and
   Apply writes `keys.<action>` to `settings.cfg` while a rebind back to the default drops the line.
+- **Mod policy: Escape during a capture is the GAME's clear, not a cancel** (owner ruling
+  2026-08-24, retiring the stage-2b restore). The race above is why Escape can never land in a
+  binding; what the field does with the nothing it is holding is the game's own business, and the mod
+  now does nothing but read the cell out afterwards (`OptionsScreen.WatchForTheEndOfACapture`), so a
+  mod row and a game row behave identically. Measured on both windows by simulating the ending
+  (blank the field, null `AgeManager.FocusedControl`): the cell re-reads "empty", Apply lights, the
+  window's Cancel puts the chord back. The row whose other slot is empty keeps its key — the game's
+  own equality check, unchanged.
 - **`%OptionToggleControlsDescription` ("Set key bindings") is the fourth thing the name "Controls"
   buys.** Every tab toggle's tooltip is `%OptionToggle<name>Description`, read live off the game's own
   window, so the mod's key-binding tab wears the game's own sentence in every language and needs no

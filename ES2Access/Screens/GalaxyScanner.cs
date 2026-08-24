@@ -435,11 +435,11 @@ namespace ES2Access.Screens
         /// player is reading, and GO to what it lands on.
         ///
         /// It is one gesture, not three: there is no scope to choose and no separate step, so the key
-        /// both names the list and moves along it, and every press takes the player somewhere. That
-        /// is what makes the sweep a nearest-neighbour hop across the map - each landing becomes the
-        /// place the next press measures from - and it is why the walk's rules (re-anchor when the
-        /// player has moved, step on rather than re-land where they are standing) are their own
-        /// engine-free thing (<see cref="ScannerWalk"/>).
+        /// both names the list and moves along it, and every press takes the player somewhere. The
+        /// order is taken nearest-first when the sweep begins and then FROZEN, so press after press
+        /// walks 1, 2, 3 … n and wraps; the sweep ends when the PLAYER moves, which is why the walk
+        /// is re-anchored on where the landing left them rather than on where they were before it.
+        /// Those rules are their own engine-free thing (<see cref="ScannerWalk"/>).
         ///
         /// AN EMPTY SLOT SAYS SO AND NAMES THE KEY, never silence: pressed by a player who has not
         /// configured that slot, or who forgot which of the three they filled, a key that does
@@ -463,24 +463,37 @@ namespace ES2Access.Screens
 
             Rearmed();
             _cursor.Arm();
-            List<Found> all = snap.Custom[category][0];
+            List<Found> nearest = snap.Custom[category][0];
+            bool sweeping = _walk.Sweeping(
+                slot,
+                MapCoordinates.Round(east),
+                MapCoordinates.Round(north)
+            );
+            List<Found> all = Reordered(
+                nearest,
+                ScannerWalk.Ordering(Keys(nearest), sweeping ? _walk.Sweep : null)
+            );
             IList<string> keys = Keys(all);
-            bool sweeping = _walk.Sweeping(slot, east, north);
             string standing =
                 _cursor.Category == category && _cursor.Subcategory == ScopeAll
                     ? _cursor.ResultKey
                     : null;
             bool parked =
-                all.Count > 0
+                nearest.Count > 0
                 && standing != null
-                && all[0].Key == standing
-                && Here(all[0], east, north);
+                && nearest[0].Key == standing
+                && Here(nearest[0], east, north);
             int at = ScannerWalk.Land(delta, keys, standing, sweeping, parked);
             _cursor.Point(category, ScopeAll, at < 0 ? 0 : at, snap.Table);
-            _walk.Anchor(slot, east, north);
             if (at < 0)
             {
                 _cursor.Landed(keys);
+                _walk.Anchor(
+                    slot,
+                    MapCoordinates.Round(east),
+                    MapCoordinates.Round(north),
+                    keys
+                );
                 Voice.Say(ModStrings.Format(ModStrings.GalaxyScannerEmpty, ScopeName()), true);
                 return true;
             }
@@ -490,6 +503,20 @@ namespace ES2Access.Screens
             Instance(message, Spoken(all[at]), Detail(all[at]), all[at], at, all.Count, east, north);
             Voice.Say(message.Build(), true);
             Travel(all[at], at, all.Count, east, north, false);
+
+            // Anchored on where the landing is TAKING the player, not on where they were before it.
+            // The landing is the walk moving them; measuring against the place it moved them FROM
+            // made every press look like a player move, which restarted the sweep and circled the
+            // same handful of nearby entries (reported 2026-08-24). Read from the entry rather than
+            // from Reference() a line later, because a landing is in flight for several frames and
+            // the reference still answers with the old place. The same rounded pair the player is
+            // told, which is what Here() compares too.
+            _walk.Anchor(
+                slot,
+                MapCoordinates.Round(all[at].East),
+                MapCoordinates.Round(all[at].North),
+                keys
+            );
             return true;
         }
 
@@ -563,6 +590,21 @@ namespace ES2Access.Screens
             }
 
             return some;
+        }
+
+        /// <summary>A scope taken in another order - what a sweep in progress walks, since it keeps
+        /// the order it started in rather than re-sorting from wherever the last landing put the
+        /// player (<see cref="ScannerWalk.Ordering"/>). The order is a permutation, so the count the
+        /// player is told is the same either way.</summary>
+        private static List<Found> Reordered(List<Found> scope, int[] order)
+        {
+            List<Found> taken = new List<Found>(order.Length);
+            for (int i = 0; i < order.Length; i++)
+            {
+                taken.Add(scope[order[i]]);
+            }
+
+            return taken;
         }
 
         /// <summary>What the cursor re-seats itself by - the identities of a scope's things in the
