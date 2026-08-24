@@ -939,19 +939,18 @@ namespace ES2Access.Screens
                     + (_bar.Count > 0 ? 1 : 0)
                     + (_cells.Count > 0 ? 1 : 0);
                 bool regions = halves > 1;
-                Action<GraphBuilder, List<Cell>> band = regions
-                    ? Cells.AsDrawnRows
-                    : Cells.OnePerRow;
 
                 builder.BeginStop(ShipsStop);
                 builder.PushContext(ModStrings.Get(ModStrings.FleetsShipsPanel));
+                // Both bands read linearly: the hero's ship tile carries a dossier group,
+                // which a row cannot host.
                 Cells.EmitRegion(
                     builder,
                     HeroRegion,
                     ModStrings.FleetsHeroPanel,
                     regions,
                     _hero,
-                    band
+                    Cells.OnePerRow
                 );
                 Cells.EmitRegion(
                     builder,
@@ -959,7 +958,7 @@ namespace ES2Access.Screens
                     ModStrings.DiplomacyActionsBand,
                     regions,
                     _bar,
-                    band
+                    Cells.OnePerRow
                 );
                 // The ships take no word of their own - "Ships" is what the stop is already called.
                 if (regions && _cells.Count > 0)
