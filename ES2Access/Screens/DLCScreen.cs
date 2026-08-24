@@ -83,6 +83,7 @@ namespace ES2Access.Screens
             }
 
             builder.BeginStop(TabsStop);
+            AddTitle(builder);
             Tabs(builder, window);
 
             builder.BeginStop(ItemsStop);

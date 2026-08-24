@@ -94,6 +94,7 @@ namespace ES2Access.Screens
             }
 
             builder.BeginStop(TopStop);
+            AddTitle(builder);
             _cells.Clear();
             Cells.AddControl(_cells, window.ModdingManualButton, "modding:manual");
             Cells.AddControl(
@@ -138,7 +139,7 @@ namespace ES2Access.Screens
                 return;
             }
 
-            builder.PushContext(PanelName(panel.AgeTransform));
+            bool named = PushPanel(builder, panel.AgeTransform, "modding:library/title");
             _filters.Clear();
             _cells.Clear();
             try
@@ -180,7 +181,7 @@ namespace ES2Access.Screens
                 _cells,
                 Cells.OnePerRow
             );
-            builder.PopContext();
+            Captions.Pop(builder, named);
         }
 
         /// <summary>One mod: what it is, whether it is in the configuration, and - for one of your own
@@ -301,7 +302,7 @@ namespace ES2Access.Screens
                 return;
             }
 
-            builder.PushContext(PanelName(panel.AgeTransform));
+            bool named = PushPanel(builder, panel.AgeTransform, "modding:selected/title");
             _cells.Clear();
             try
             {
@@ -328,7 +329,7 @@ namespace ES2Access.Screens
             }
 
             Cells.EmitLinear(builder, _cells);
-            builder.PopContext();
+            Captions.Pop(builder, named);
         }
 
         /// <summary>What the page has said about what the player did - one line per message, newest first,
@@ -343,7 +344,7 @@ namespace ES2Access.Screens
                 return;
             }
 
-            builder.PushContext(PanelName(panel.AgeTransform));
+            bool named = PushPanel(builder, panel.AgeTransform, "modding:log/title");
             _cells.Clear();
             try
             {
@@ -364,7 +365,7 @@ namespace ES2Access.Screens
             }
 
             Cells.EmitLinear(builder, _cells);
-            builder.PopContext();
+            Captions.Pop(builder, named);
         }
 
         private void AddLine(AgePrimitiveLabel label, string key)
@@ -444,9 +445,19 @@ namespace ES2Access.Screens
             }
         }
 
-        private static string PanelName(AgeTransform panel)
+        /// <summary>A panel's heading, as the level everything in it sits under - and as a row of its own
+        /// where the game hung a sentence on it, which is the only place those words could go
+        /// (<see cref="Captions"/>). The panel itself is handed over as the block, because these prefabs
+        /// put the sentence on the panel as often as on the label.</summary>
+        private static bool PushPanel(GraphBuilder builder, AgeTransform panel, string key)
         {
-            return AgeWidgets.PanelTitle(panel);
+            return Captions.Push(
+                builder,
+                AgeWidgets.ChildNamed(panel, "PanelTitle", 1),
+                key,
+                null,
+                panel
+            );
         }
 
         /// <summary>What keys a row: the mod's own name, which survives the table pooling its rows and

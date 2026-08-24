@@ -283,12 +283,19 @@ namespace ES2Access.Screens
             string key = CategoryKey(panel);
             builder.BeginStop("newgame:cat/" + key);
 
-            string title = AgeText.Label(panel.CategoryNameLabel);
-            bool named = !string.IsNullOrEmpty(title);
-            if (named)
-            {
-                builder.PushContext(title);
-            }
+            // The heading is the level its settings sit under - and a row of its own as well, because
+            // the game wrote a description for each category and hung it on the panel's own tooltip
+            // (NewGameCategoryPanel.Bind :47 fills CategoryTooltip from the category's description).
+            // A level is a spoken phrase with no review buffer behind it, so that paragraph would
+            // otherwise have nowhere to live; the widget it actually hangs on is named here rather than
+            // guessed at, since it is a field of the panel and not the label.
+            bool named = Captions.Push(
+                builder,
+                Transform(panel.CategoryNameLabel),
+                "newgame:cat/" + key + "/title",
+                null,
+                Transform(panel.CategoryTooltip)
+            );
 
             try
             {
@@ -301,10 +308,7 @@ namespace ES2Access.Screens
             }
             finally
             {
-                if (named)
-                {
-                    builder.PopContext();
-                }
+                Captions.Pop(builder, named);
             }
         }
 

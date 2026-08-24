@@ -102,6 +102,34 @@ namespace ES2Access.Screens
             Cells.EmitLinear(builder, _cells);
         }
 
+        /// <summary>
+        /// The heading, as the page's first row - but only where the game hung an EXPLANATION on it.
+        ///
+        /// The words themselves are already the screen's spoken name, so a plain heading is a step past
+        /// nothing and stays a name only. A heading with a sentence behind it is the other case the
+        /// caption rule names: the spoken name has no review buffer, so those words have nowhere else
+        /// to live and the heading is a row as well (<see cref="Captions.Row"/>). Three of these pages
+        /// draw one - the DLC browser, the mod manager and the lobby list - and the row does not exist
+        /// on the pages that do not.
+        /// </summary>
+        protected void AddTitle(GraphBuilder builder)
+        {
+            AgeTransform title = WindowShape.TitleWidget(Window(), OutGameTitleNames);
+            Captions.Row(builder, title, Prefix + ":title", Parent(title));
+        }
+
+        private static AgeTransform Parent(AgeTransform widget)
+        {
+            try
+            {
+                return widget == null ? null : widget.Parent;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
         protected static T Get<T>()
             where T : GuiWindow
         {
@@ -254,6 +282,10 @@ namespace ES2Access.Screens
             }
 
             builder.BeginStop(LinesStop);
+            // GAME DEFECT, read as drawn: this page's prefab title carries the ADVANCED SETTINGS
+            // sentence, which belongs to another window entirely. Nothing here suppresses or rewords
+            // it - what a sighted player reads on hover is what this row says (owner ruling: parity).
+            AddTitle(builder);
             _table.Headers(builder, table);
             if (_table.Lines(table).Count == 0)
             {

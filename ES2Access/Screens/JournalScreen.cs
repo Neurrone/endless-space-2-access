@@ -108,22 +108,36 @@ namespace ES2Access.Screens
             }
 
             GuiTable table = Table(window);
-            if (table != null && AgeWidgets.Visible(Lines(table)))
-            {
-                builder.BeginStop(LinesStop);
-                _table.Headers(builder, table);
-                _table.Rows(builder, table, WindowShape.Title(window));
-            }
-            else
+            bool rows = table != null && AgeWidgets.Visible(Lines(table));
+            // The column headings are drawn over an EMPTY journal exactly as they are over a full one -
+            // they still sort, and each still explains what its column holds - so the band follows what
+            // the game draws rather than whether there is anything under it.
+            bool headings = table != null && AgeWidgets.Visible(Headers(table));
+
+            _cells.Clear();
+            if (!rows)
             {
                 // Nothing has been finished yet, or the list is still loading: the game's own line saying
                 // so, where the table would have been.
-                _cells.Clear();
                 Cells.AddReadout(_cells, Transform(window.NoDataAvailableLabel), "journal:empty");
                 Cells.AddReadout(_cells, window.LoadingFeedback, "journal:loading");
-                if (_cells.Count > 0)
+            }
+
+            if (rows || headings || _cells.Count > 0)
+            {
+                builder.BeginStop(LinesStop);
+                AddTitle(builder, window);
+                if (headings)
                 {
-                    builder.BeginStop(LinesStop);
+                    _table.Headers(builder, table);
+                }
+
+                if (rows)
+                {
+                    _table.Rows(builder, table, WindowShape.Title(window));
+                }
+                else
+                {
                     Cells.EmitLinear(builder, _cells);
                 }
             }
@@ -134,6 +148,27 @@ namespace ES2Access.Screens
             {
                 builder.BeginStop(ActionsStop);
                 Cells.EmitLinear(builder, _cells);
+            }
+        }
+
+        /// <summary>The window's heading as a row, and only where the game hung a sentence on it: the
+        /// words are already this screen's spoken name, but a spoken name has no review buffer behind
+        /// it, so an explanation has nowhere else to live (<see cref="Captions.Row"/>).</summary>
+        private static void AddTitle(GraphBuilder builder, JournalModalWindow window)
+        {
+            AgeTransform title = WindowShape.TitleWidget(window);
+            Captions.Row(builder, title, "journal:title", Parent(title));
+        }
+
+        private static AgeTransform Parent(AgeTransform widget)
+        {
+            try
+            {
+                return widget == null ? null : widget.Parent;
+            }
+            catch (Exception)
+            {
+                return null;
             }
         }
 

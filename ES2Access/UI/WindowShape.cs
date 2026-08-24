@@ -45,6 +45,16 @@ namespace ES2Access.UI
         /// names so that adding one can never rename a window that already answers.</summary>
         public static string Title(GuiWindow window, string[] alsoNamed = null)
         {
+            return AgeWidgets.TextOf(TitleWidget(window, alsoNamed));
+        }
+
+        /// <summary>The widget that heading is written in - the same search, answered as the thing
+        /// rather than as its words, for a page that has to declare the heading as a node: a window
+        /// title the game hung an explanation on has nowhere else to put those words, since a screen's
+        /// spoken name is a phrase with no review buffer behind it (owner ruling, see
+        /// <see cref="Captions"/>).</summary>
+        public static AgeTransform TitleWidget(GuiWindow window, string[] alsoNamed = null)
+        {
             try
             {
                 AgeTransform root = window == null ? null : window.AgeTransform;
@@ -55,23 +65,19 @@ namespace ES2Access.UI
 
                 for (int i = 0; i < TitleNames.Length; i++)
                 {
-                    string text = AgeWidgets.TextOf(
-                        AgeWidgets.ChildNamed(root, TitleNames[i], TitleDepth)
-                    );
-                    if (!string.IsNullOrEmpty(text))
+                    AgeTransform found = AgeWidgets.ChildNamed(root, TitleNames[i], TitleDepth);
+                    if (!string.IsNullOrEmpty(AgeWidgets.TextOf(found)))
                     {
-                        return text;
+                        return found;
                     }
                 }
 
                 for (int i = 0; alsoNamed != null && i < alsoNamed.Length; i++)
                 {
-                    string text = AgeWidgets.TextOf(
-                        AgeWidgets.ChildNamed(root, alsoNamed[i], TitleDepth)
-                    );
-                    if (!string.IsNullOrEmpty(text))
+                    AgeTransform found = AgeWidgets.ChildNamed(root, alsoNamed[i], TitleDepth);
+                    if (!string.IsNullOrEmpty(AgeWidgets.TextOf(found)))
                     {
-                        return text;
+                        return found;
                     }
                 }
             }
