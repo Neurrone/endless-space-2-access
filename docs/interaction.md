@@ -160,9 +160,15 @@ these columns. Delete is claimed from the game only while the cursor is on a cel
 empty, silently keep it (`docs/es2-facts.md`, "Escape during a key capture"); one key, one meaning.
 **A chord the mod and the game both answer to is said, not resolved** (ruling 9): committing either
 side's row onto the other's chord raises the game's own informative box — "While the mod's ⟨X⟩ is
-active, the game's ⟨Y⟩ will not fire" — and the binding still lands, because the mod shadows the
-game's keys by design. Mod↔mod overlaps are not checked at all (ruling 10).
-Both windows are this same table: the game's Controls tab and the mod's Keybinds category are the
+active, the game's ⟨Y⟩ will not fire" — with TWO buttons since 2026-08-24: Confirm keeps the new
+chord, Cancel puts the row back on what it held before the commit, written through the row's own
+option so Apply and Cancel stay in step. Either answer ends by reading the cell out. Mod↔mod
+overlaps are not checked at all (ruling 10) and stay silently shadowed.
+**A capture that lands on the chord the row is already on still SPEAKS** — the game's own commit
+skips silently when the captured combination equals either of the row's slots, so the mod re-reads
+the cell at every capture end (`OptionsScreen.SayWhatStuck`); a player cannot tell "same chord"
+from "new chord" by silence.
+Both windows are this same table: the game's Controls tab and the mod's Controls category are the
 same `OptionKeyMappingItem` rows read by the same screen.
 
 **Backspace (`NodeVtable.OnSecondary`) is NOT a right click** — it is the second command on a node
@@ -825,7 +831,7 @@ Nothing custom reaches the type-ahead search, which searches the graph's nodes a
 scanner's results.
 
 **The six quick keys: `,` `.` `/` and Shift+each** (owner-approved 2026-08-23; actions
-`galaxy.scanCustom1Next`…`3Prev`, so all six are rebindable rows of the Keybinds tab). One key per
+`galaxy.scanCustom1Next`…`3Prev`, so all six are rebindable rows of the Controls tab). One key per
 SLOT, not per category name — the key means the same thing whatever the player renames. A press
 walks that slot's "all" list FLAT, nearest first from where the player is reading, SAYS the landing
 as a scanner result would ("Rigel, -16, -5, 3 south, 1 of 21") and then performs the category's
@@ -1032,18 +1038,18 @@ change (`Window()` answers whichever instance is shown). Its screen name is "Mod
 and a player arriving must not be told they are in the game's settings. Categories are a
 data-driven list (`ModOptions.Categories`) drawn in list order.
 
-**The Keybinds category holds one row per mod ACTION**, in the order `ModEntry.BindKeys`
+**The Controls category holds one row per mod ACTION**, in the order `ModEntry.BindKeys`
 registers them — which groups them by family already: the cursor's keys, then the map's, then
 the review buffer's. Each row is the game's own `OptionKeyMappingItem`, so it reads exactly as a
-Controls-tab row does ("Move down, button, Down Arrow, <description>, 2 of 50"), Enter captures
-the primary and Backspace the secondary until the table redesign lands (ruling 6). Every row's
+Controls-tab row does, read as a three-column TABLE (the action, its primary key, its secondary
+key) with Enter on a key cell capturing that cell and Delete emptying it. Every row's
 title and description are the mod's own strings (`action.<action key>.title` /
 `.description`) — mandatory, not cosmetic: a localization key the game has no row for is drawn
 and spoken RAW (es2-facts). An action bound to more than two chords keeps the extras, which stay
 live and are not offered by any row (today only `galaxy.inspectGrow`, four chords because "+"
 is three of them on a common keyboard). **No mod↔mod conflict check** (ruling 10): the rows
 carry `AcceptsMultipleKeys`, which also stops the game's Controls tab stealing a chord from one
-of them. The mod↔game informative warning (ruling 9) is not in yet.
+of them. The mod-versus-game informative warning (ruling 9) is above.
 
 **A rebind persists on Apply and reverts on Cancel** — the window's own semantics, with no hook
 on either button: the settings file is written when the window HIDES, by which point Apply has
@@ -1053,20 +1059,31 @@ actually MOVED, in the game's own `InputBinding.ToRegistryString` form; moving a
 default takes the line out again, so a later build changing a default reaches everybody who
 never touched that key.
 
-**THE SCANNER TAB AND THE THREE CUSTOM-CATEGORY TABS EXIST ONLY IN A GAME** (2026-08-23; DRAWN
-with the game's own widgets since 2026-08-24, `ES2Access/UI/ModOptions/`). In a game the window's
-tab bar is **Scanner, Custom category 1, Custom category 2, Custom category 3, Keybinds**; on the
-main menu it is Keybinds alone, because the columns a category is written out of are a fact about
-the galaxy being played. The window is rebuilt when the player crosses that line
-(`ModOptions.Tick`, only ever with the window down).
+**THE WINDOW HAS EXACTLY TWO TABS - "Scanner" and "Controls" - EVERYWHERE**, main menu included
+(owner ruling 2026-08-24; `ES2Access/UI/ModOptions/`). The Scanner tab was in-game only for as
+long as its columns were a snapshot of the galaxy being played; they come from the game's
+DATABASES now, so neither page needs a game and the window is never rebuilt for crossing that
+line. The key-binding category is CALLED "Controls" - the game's own key for its own key-binding
+page - which is what makes the game's own window logic do three right things for it: the tab draws
+itself with "%OptionToggleControlsTitle" (the game's words, every language), leaving with unapplied
+changes asks the binding question rather than the generic one, and the **Reset to Defaults** button
+appears on the button bar for that tab and no other. What that button DOES is repointed at the
+mod's own handler (`ModOptionsWindow.OnModResetCb`), so it asks the game's own
+"%OptionBindingResetConfirmation" and, on OK, puts every MOD action back on the keys it shipped on
+through each row's own option - Apply then drops those `keys.*` lines from the settings file and
+Cancel puts the old keys back. The game's own Controls tab is untouched.
 
-**The Scanner tab is three drawn buttons**, one per slot, reading "Custom category {n}: {name}"
-("empty" when the slot is unset). Enter opens that slot's own tab and puts the cursor on its first
-row. (History: this tab held an INVISIBLE tree of mod nodes until 2026-08-24 and drew nothing at
-all, which the owner rejected. A per-slot editor in a second cloned WINDOW was measured and is not
-possible - es2-facts, "two `GuiModalWindow`s on one stack".)
+**Each of the three custom-category slots is one drawn control that OPENS AND SHUTS IN PLACE.**
+The Scanner tab is one page: three headers reading "Custom category {n}: {name}" ("empty" when the
+slot is unset), each an expandable GROUP whose rows are drawn under it. Right opens it and steps
+into it, Left shuts it, Enter flips it where you stand and says "expanded"/"collapsed"; all three
+slots start collapsed every time the window opens. Opening is show-and-arrange, never a rebuild -
+the rows exist from the moment the page is built - which is what lets the tree's open-and-step-in
+find the children the same frame. (History: this tab held an INVISIBLE tree of mod nodes until
+2026-08-24, then three top-level TABS, both rejected by the owner. A per-slot editor in a second
+cloned WINDOW was measured and is not possible - es2-facts, "two `GuiModalWindow`s on one stack".)
 
-**A slot's tab is flat**, and every row on it is a row the game draws:
+**A slot's block is flat**, and every row in it is a row the game draws:
 - **"Name"** - a text box holding the category's name. Typing a name into an EMPTY slot is what
   fills it, and the rest of the page appears; until then the tab holds this box alone. Blank is
   refused ("A custom category needs a name"), and a name already taken - by a built-in category's
@@ -1083,9 +1100,12 @@ possible - es2-facts, "two `GuiModalWindow`s on one stack".)
   row and spoken as the section's NAME - "{category}, {n} selected" - never as a control of its
   own, so **Ctrl+left/right walks the thirteen sections** and the rows above the first caption are
   a section too. Under each caption is one checkbox per column: the columns that category writes
-  down, then - for the four derived ones - the kinds found THIS game (keyed by the definition's own
-  name, labelled by its localized title), then any stored selector this galaxy has no column for,
-  ticked and read as "{key}, not found this game" so it can be taken off.
+  down, then - for the four derived ones - EVERY kind the game's own DATABASES define (owner ruling
+  2026-08-24), keyed by the definition's own name, labelled by its localized title and sorted by
+  that label; then any stored selector no column answers for, ticked and read as "{key}, not found
+  this game" so it can be taken off. The editor offering everything and the SCANNER reporting only
+  what it found are two different questions - a category can ask for a luxury nobody has surveyed
+  yet.
 
 Every one of those rows is the game's own prefab over a per-row provider object, so the drawn page
 and the spoken page cannot disagree. The text rows are edited by the mod's ordinary text editor

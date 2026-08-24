@@ -2709,8 +2709,8 @@ children keeping the previous binding's tooltip. Not a gap; take the count from
 **Getting there is the player's own route, and only that route counts.** In game: open the pause
 menu (`Gui.GuiService.ShowWindow(Gui.GuiService.GetWindow<GameMenuModalWindow>())` from `/eval`
 is the same thing Escape does), then `/input ui.down` five times from Save Game and
-`/input ui.activate` — "Mod settings, button, 6 of 9", then "Mod settings" + "Keybinds, tab,
-selected, …". On the MAIN MENU the entry sits after Options as 8 of 9; the whole main-menu route
+`/input ui.activate` — "Mod settings, button, 6 of 9", then "Mod settings" + "Scanner, tab,
+selected, …, 1 of 2". On the MAIN MENU the entry sits after Options as 8 of 9; the whole main-menu route
 is untested live from an in-game fixture, but the placement is checkable without leaving the game
 with `GET /gui/graph?screen=screen.main-menu`, which reads the live window (not prefab content)
 even while the screen is inactive — and it is the check that caught the node being declared in
@@ -2718,10 +2718,12 @@ the wrong branch, since the main menu's Options entry is a GROUP with a flyout w
 menu's is a flat button.
 
 **Reading it.** `GET /gui/graph` on the mod window gives three stops exactly as the game's options
-window does: `options:tabs` (one tab, "Keybinds"), `options:rows` (50 key-mapping rows), and
+window does: `options:tabs` (two tabs, "Scanner" and "Controls"), `options:rows`, and
 `options:buttons` (Cancel, Apply — Apply "unavailable, No modification detected." until something
-changes, which is also the proof that the option getter's instance is stable). Row ids are
-`options:0TabPanel/<index><action key>KeyMapping`.
+changes, which is also the proof that the option getter's instance is stable; on the Controls tab a
+third button, "Reset to Defaults", sits between them). The Controls tab's row ids are
+`options:1TabPanel/keys/row<hash>c{0,1,2}` (a three-column sheet), the panel's own children
+`<index><action key>KeyMapping`.
 
 **Rebinding without a keyboard.** The physical capture is the game's own and cannot be driven from
 `/eval`; write the value instead:
@@ -2777,14 +2779,24 @@ finished capture takes, conflict check included.
 **The overlap warning, both ways.** Game side: on the Controls tab, commit `InputBindingsQuickSave`
 onto `Ctrl+H` (the mod's `ui.focusEmpire`) — the box reads "While the mod's Go to the empire banners
 is active, the game's Quick Save will not fire" and the binding still lands (`QuickSave: Ctrl + H`).
-Mod side: on the mod's Keybinds tab, commit `ui.goToLocation` onto `F1` — "While the mod's Show on
-the map is active, the game's Empire Screen will not fire", and `ui.goToLocation: F1` sticks. One
-Confirm button, no Cancel. Cancel on the window restores both sides.
+Mod side: on the mod's own Controls tab, commit `ui.goToLocation` onto `F1` — "While the mod's Show
+on the map is active, the game's Empire Screen will not fire", and `ui.goToLocation: F1` sticks. TWO
+buttons since stage 6: Confirm keeps it, Cancel puts the row back on what it held (measured: binding
+`ui.up` onto `KeypadEnter` warned about End Turn, and Cancel restored `ui.up: UpArrow` with Apply
+going back to unavailable). Either answer reads the cell out and leaves the settings window SHOWN
+with the cursor on the key cell — the reported "window vanishes after Confirm" did not reproduce
+through `/input`.
 
 **Simulating a capture without a keyboard.** `/input ui.activate` on a key cell speaks the prompt and
 DOES hand over: an injected action holds no key, so the two clear frames pass at once and
-`AgeManager.Instance.FocusedControl` becomes that `AgeControlKeyBindingField`. End it with
-`AgeManager.Instance.FocusedControl = null` from `/eval`. What that cannot reach is the Escape half —
+`AgeManager.Instance.FocusedControl` becomes that `AgeControlKeyBindingField`. To capture a CHORD,
+write it into the field first — `var kc = new Amplitude.Unity.Input.KeyCombination();
+kc.KeyCodes.Add(UnityEngine.KeyCode.KeypadEnter); f.KeyCombination = kc;` — then
+`AgeManager.Instance.FocusedControl = null`, which is the FocusLoss the released key would have
+caused. (Build the combination that way: a `List<KeyCode>` local poisons the REPL session.)
+Capturing the chord the row is ALREADY on is the equal-guard case: nothing commits, Apply stays
+unavailable, and the cell is still read out ("Up Arrow" twice — once as the field builds it, once as
+the mod confirms what stuck). What that cannot reach is the Escape half —
 the cancel branch asks `Input.GetKey(KeyCode.Escape)`, and `POST /key` refuses while the game is not
 foregrounded.
 
@@ -2794,22 +2806,21 @@ Cancel with changes raises the game's own confirmation (`ui.end` then `ui.activa
 lands back on the pause menu. `/input ui.back` does NOT close a game-owned window: Escape is left to
 the game and an injected action presses no key — use the window's own Cancel button instead.
 
-### The Scanner tab and the custom-category tabs (stage 5, 2026-08-24)
+### The Scanner tab (stage 5, rebuilt stage 6 2026-08-24)
 
 **Getting there** is the stage 2a route plus one move: pause menu -> `ui.down` x5 ->
-`ui.activate` ("Mod settings", then "Scanner, tab, selected, ..., 1 of 5" - Scanner is the tab the
-window opens on), then `ui.next` into `options:rows`, which holds the three drawn slot buttons.
-`ui.activate` on one opens that slot's tab and lands on its Name box. From `/eval`,
-`ModOptions.OpenCategory("CustomCategory1")` switches tabs directly - but it does NOT move the
-cursor, and a cursor whose row has gone re-seats onto a TAB, where landing switches the page
-again; follow it with `ModEntry.Navigator.FocusStop("options:rows")`.
+`ui.activate` ("Mod settings", then "Scanner, tab, selected, ..., 1 of 2" - Scanner is the tab the
+window opens on), then `ui.next` into `options:rows`, which holds the three collapsed slot headers.
+`ui.right` opens one and steps into its Name box in one press; `ui.left` shuts it; `ui.activate`
+flips it where you stand and answers "expanded"/"collapsed". All three start collapsed every time
+the window is shown.
 
-Node ids are `options:0TabPanel/slot{0..2}Button` on the Scanner tab and, on a slot's tab,
-`options:{n}TabPanel/nameField`, `keyword{i}Field`, `newKeywordField`, `clearButton`,
-`section{categoryKey}` (a caption - drawn, never a node) and `select{categoryKey}:{columnKey}`.
-Regions are `options:{n}TabPanel/head` and `.../section{categoryKey}`, so `ui.regionNext` walks
-the thirteen sections; the head region is what makes the name and keyword boxes a place Ctrl+arrow
-can leave.
+Node ids are all on the one panel: `options:0TabPanel/slot{0..2}Header`, and under a header
+`slot{n}Name`, `slot{n}Keyword{i}`, `slot{n}NewKeyword`, `slot{n}Clear`,
+`slot{n}Section{categoryKey}` (a caption - drawn, never a node) and
+`slot{n}Select{categoryKey}:{columnKey}`. Regions are `options:0TabPanel/head` and
+`.../slot{n}Section{categoryKey}`, so `ui.regionNext` walks the thirteen sections; the head region
+is what makes the header and the name/keyword boxes a place Ctrl+arrow can leave.
 
 **Driving a text row.** `POST /type` cannot reach a game-owned field and `POST /key` needs the game
 foregrounded, so: `ui.activate` on the row, wait a frame for the hand-over
@@ -2839,9 +2850,9 @@ instead of pressing it (the screen captures raw input while a hand-over is waiti
 "Are you sure you want to quit without saving?" (`screen.message-box` - `ui.end` then
 `ui.activate` confirms) and leaves `ScannerCustomSettings.Slot(0)` and the file untouched; Apply
 hides the window and writes `scanner.custom.1 = Watch list|systems:neutral|Dusay`, which survives
-`POST /reload`. Clearing then applying takes the key out of `settings.cfg` altogether. The Scanner
-tab's button follows: "Custom category 1: Watch list" once named, "Custom category 2: empty" while
-a slot stands empty.
+`POST /reload`. Clearing then applying takes the key out of `settings.cfg` altogether. The slot's
+HEADER follows: "Custom category 1: Watch list" once named, "Custom category 2: empty" while a slot
+stands empty.
 
 **The stale-selector row** needs a selector the galaxy cannot answer. Write one behind the editor
 (`ScannerCustomSettings.Slots.Slot(0).AddSelector(new ScannerSelector("luxury","NoSuchResource"));
@@ -2849,10 +2860,11 @@ ScannerCustomSettings.Save();`) and reopen: the Luxury section offers "NoSuchRes
 this game, checkbox, checked"; unticking it takes the selector out (the row stays until the page is
 next built, which is what lets the player change their mind before Apply).
 
-**On `[Beginner] test` at turn 21** the tab offers Systems 7 columns, Colonizable 2, Unexplored 1,
-Anomalies 11 (10 kinds), Curiosities 8 (5 kinds), Luxury 3 (2), Strategic 4 (3), Contested 1,
-Fleets 4, Probes 4, and 1 each for pins, missiles and quest markers. Note the anomaly keys are the
-game's own and are not what a guess would produce: Multiple Moons is `PlanetAnomaly27Alt`.
+**The column counts are a fact about the BUILD, not about the save** (stage 6): Systems 7,
+Colonizable 2, Unexplored 1, Anomalies 109, Curiosities 15, Luxury 49, Strategic 13, Contested 1,
+Fleets 4, Probes 4, and 1 each for pins, missiles and quest markers - the four derived ones being
+the whole database plus their own "all". Note the anomaly keys are the game's own and are not what
+a guess would produce: Multiple Moons is `PlanetAnomaly27Alt`.
 
 **The minimised tutorial must NOT be declared over the settings window.** With the military
 tutorial minimised, `/gui/graph` on `screen.options` must hold no `hud:tutorial` stop, and
@@ -2862,3 +2874,20 @@ regression test for the clone's modal registration (es2-facts, stage 5).
 
 **Leave the fixture with all three slots cleared** (the Clear button then Apply, or
 `ScannerCustomSettings.Clear(0..2)`) - `settings.cfg` goes back to 0 bytes.
+
+### Reset to Defaults on the mod's Controls tab (stage 6, 2026-08-24)
+
+Only the mod's window has it, and only while the Controls tab is showing: the game's own
+`OpenCategory` shows `ResetButton` for the category literally named "Controls", which is what the
+mod's key-binding category is called. Route: pause menu -> Mod settings -> `ui.down` (Controls tab)
+-> `ui.next` x2 to `options:buttons` -> the bar reads Cancel / Reset to Defaults / Apply, the middle
+one `options:button/ResetButton/OnModResetCb`. `ui.activate` raises the game's own box
+("Are you sure you want to reset your control bindings to their default values?"); Confirm puts
+every mod action back on its compiled default at once (`ModBindings.Moved(key)` goes false), lights
+Apply, and leaves the window SHOWN with the cursor on the Reset button.
+
+Two ways out, and both were measured: Apply hides the window and DROPS every `keys.*` line from
+`settings.cfg`; Cancel (answering the game's "quit without saving your control bindings?" question)
+puts every rebind back. Restoring a wiped rebind afterwards is one eval:
+`ModBindings.Set("<action>", new Amplitude.Unity.Input.InputBinding("<registry string>"));
+ModBindings.Persist(); ModSettings.Save();`.

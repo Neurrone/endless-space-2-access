@@ -203,19 +203,23 @@ files above.
   fleets.
 - Custom scanner categories: SHIPPED whole 2026-08-23, and DRAWN 2026-08-24 - the model, the
   synthesis and the six quick keys (stage 3); the editor (stage 4); and the rebuild that made it a
-  page a sighted player can see (stage 5): the Scanner tab holds three drawn buttons and each slot
-  has a tab of its own, every row the game's own widget, under the window's own Apply/Cancel. The
+  page a sighted player can see (stage 5), then folded onto ONE page (stage 6): the window has two tabs
+  — Scanner and Controls — and the Scanner tab holds three drawn headers that open and shut in
+  place, every row the game's own widget, under the window's own Apply/Cancel. The columns come from
+  the game's DATABASES, so the tab exists on the main menu too (stage 6). The
   player's own categories come LAST in the category cycle, not first (stage 5 - first was where an
   unconfigured slot answered the very first scanner press with "none found"). What is left is
-  MANUAL: the six physical quick keys, and the typing half of a text row (the harness can write a
-  game field's text but cannot press a key at it)
+  MANUAL: the six physical quick keys, the typing half of a text row (the harness can write a game
+  field's text but cannot press a key at it), and the Scanner tab REACHED FROM THE MAIN MENU
   (`custom-scanner-categories-test-report.md`).
-- Rebindable mod keys: SHIPPED 2026-08-23 - the Keybinds tab of the mod's settings window
-  (stage 2a), and the three-column binding table with Delete-to-clear, the Escape cancel and
-  the two-way mod/game overlap warning (stage 2b, rulings 6/9/10), on the game's own Controls
-  tab alike. What is left is the MANUAL pass over the physical-key half: Enter to capture, the
-  chord building under the player's fingers, and Escape cancelling one - none of it reachable
-  from the dev loop (`custom-scanner-categories-test-report.md`).
+- Rebindable mod keys: SHIPPED 2026-08-23 - the mod's own Controls tab (stage 2a), the
+  three-column binding table with Delete-to-clear, the Escape cancel and the two-way mod/game
+  overlap warning (stage 2b, rulings 6/9/10), on the game's own Controls tab alike; and, from stage
+  6, a capture that lands on the chord already bound still SPEAKS, the overlap warning has a Cancel
+  that reverts, and Reset to Defaults resets the mod's keys. What is left is the MANUAL pass over
+  the physical-key half: Enter to capture, the chord building under the player's fingers, Escape
+  cancelling one, and whether the settings window ever vanishes after a warning box is confirmed -
+  none of it reachable from the dev loop (`custom-scanner-categories-test-report.md`).
 - The contextual prompt's component tables: modelled from the four data-defined shapes, but no
   fixture draws a table with ROWS — re-measure when one can be sighted.
 - `StockAndNet` now exists in three copies (GlobalHud, EconomyScreen, JuggernautSpecializationScreen)
@@ -331,7 +335,7 @@ files above.
 | Diplomacy / negotiation / minor / pirate | DiplomacyScreen, NegotiationScreen, MinorFactionDiplomacyScreen, PirateDiplomacyScreen |
 | Target pickers / cutscenes / victory trio / journal | TargetSelectionScreen, CutsceneScreen, VictoryScreen, VictoryAchievedScreen, JournalScreen |
 | Dialogs: message box / error / non-blocking / game menu / drop list | MessageBoxScreen, ErrorScreen, NonBlockingMessageScreen, GameMenuScreen, DropListScreen |
-| The mod's own settings window (the game's options modal, cloned; Scanner and Keybinds tabs) | `ES2Access/UI/ModOptions/` + OptionsScreen |
+| The mod's own settings window (the game's options modal, cloned; Scanner and Controls tabs) | `ES2Access/UI/ModOptions/` + OptionsScreen |
 | Contextual prompt / Behemoth specialization | ContextualPromptScreen, JuggernautSpecializationScreen |
 | Out-game pages: disclaimer / credits / DLC browser / mod manager / join game / asset exporter | DisclaimerScreen, CreditsScreen, DLCScreen, ModdingConfigScreen, MenuDestinationScreens, ResourcesExportModScreen |
 

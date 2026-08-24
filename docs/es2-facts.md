@@ -2849,7 +2849,7 @@ implementation is `ES2Access/UI/ModOptions/`.
 
 ## Key bindings: what a capture's ending does (2026-08-23, stage 2b)
 
-Measured live, in game, on both windows (the game's Controls tab and the mod's Keybinds
+Measured live, in game, on both windows (the game's Controls tab and the mod's own Controls
 category are the same `OptionKeyMappingItem` rows). The mod's side is
 `ES2Access/Screens/OptionsScreen.cs` and `UI/ModOptions/BindingOverlaps.cs`.
 
@@ -2941,7 +2941,7 @@ category are the same `OptionKeyMappingItem` rows). The mod's side is
   runs on the trimmed text and hides the window itself. `OnInputChanged` must still be non-null
   (`Gui.AssertNotNull`).
 - **An `OptionsTabPanel` whose service declares no option loads cleanly** — `Load` iterates an
-  empty `Options` array and logs nothing (the Keybinds tab has shipped this way since stage 2a).
+  empty `Options` array and logs nothing (the mod's Controls tab has shipped this way since stage 2a).
   A panel with no ROWS, though, can never be dirty: `BackupSettings`,
   `CheckWhetherSomeApplicationSettingHasChanged` and `RestoreSettings` all walk
   `OptionsTable.Children`, not `Options`. One `[OptionTypeToggle]` on the service interface makes
@@ -3020,5 +3020,46 @@ The stage that made the Scanner tab DRAWN. Everything here is measured live, in 
 - **Focusing a tab IS switching to it** (`OptionsScreen`'s tab vtable), so a ROW action that
   changes which panel is showing must re-seat the cursor itself. Otherwise the row it was standing
   on is destroyed, the navigator re-seats onto a tab, and the landing switches the page back —
-  measured: the Scanner tab's slot button opened its tab and the cursor's arrival on the Keybinds
-  tab closed it again.
+  measured 2026-08-24 on the slot-per-tab design that stage 6 replaced. The design that replaced it
+  has no cross-tab action at all: a slot opens IN PLACE, so nothing the cursor stands on is ever
+  taken off screen by opening one.
+
+## The mod's own settings window, stage 6 (2026-08-24)
+
+What the fix round measured, on the cloned window in game.
+
+- **`OptionsModalWindow` ties three behaviours to the literal category name `"Controls"`**, and
+  nothing else configures them: `OpenCategory` :119-120 and `OnBeginShow` :223-224 show
+  `ResetButton`/`ResetInGameButton` only for that name, `HandleInput` :66-68 picks
+  `%BindingExitWithoutApplyMessage` over `%OptionExitWithoutApplyMessage` for it, and
+  `OptionsTabToggle.Initialize` draws the tab with `%OptionToggle<name>Title`. Mod policy: the
+  mod's key-binding category IS called "Controls", so all three come for free and the tab wears the
+  game's own word in every language. Its own visible tab text is still written over the raw key
+  afterwards, because the mod READS `TitleLabel` (`ModOptionsWindow.Relabel`).
+- **The window's reset buttons reset the GAME's bindings** (`OnResetCb` → the
+  `%OptionBindingResetConfirmation` box → `OnResetConfirmation` :353-361 →
+  `IInputOptionsService.ResetToDefaultBindings`), which on a clone would silently rewrite a page it
+  is not showing. Every AGE button dispatches by `SendMessage(OnActivateMethod)` to
+  `OnActivateObject`, so re-aiming one is two field writes — mod policy: the clone repoints both
+  reset buttons at `ModOptionsWindow.OnModResetCb`, and the game's own window is untouched.
+  Verified live: reset → confirm → Apply dropped the `keys.*` line from `settings.cfg`; Cancel on
+  the window put the old keys back instead.
+- **The message box does NOT take the window under it away.** `MessageBoxWindow` and the options
+  window sit on the SAME plain `GuiWindowsStack` (the `OverlayRenderer` screen, 19 windows) — not a
+  `GuiWindowsStackModal`, so there is no push/pop of the window behind and no deferred
+  `Visible = false`; and `HideGuiBehind` only ever touches AgeScreens BEFORE the box's own, which
+  the options window is not. Measured after a reported vanish: answering the overlap box with
+  Confirm, with Cancel, and answering the reset box, each left `window.Shown == true` with the
+  cursor back on the control that raised it. UNREPRODUCED by injection; the one thing injection
+  cannot supply is a physically-down key.
+- **The four kind databases, counted 2026-08-24**: `AnomalyDefinition` 108, `CuriosityDefinition`
+  162 (12 distinct `DisplayedType`s), `ResourceDefinition` 123 — 24 `Luxury` + 24 `SystemLuxury`,
+  6 `Strategic` + 6 `SystemStrategic`, and 63 the scanner never surfaces (46 `Common`, 11
+  `LateCollect`, 3 `Gameplay`, 3 `Academy`). Every one of them resolves a localized title, so
+  nothing is dropped for want of words.
+- **Definitions the game DRAWS with the same words are common**, and they are different keys: a
+  luxury and its `System` twin (`Luxury15`/`SystemLuxury15`, both "Amianthoid") and an anomaly and
+  its quality variants (`PlanetAnomaly23`/`PlanetAnomaly23Reduced`, both "Acid Rain"). Counted over
+  the editor's own lists: 24 of 48 luxuries, 6 of 12 strategics and 27 of 108 anomalies share a
+  label with another row. The scanner's own found-columns dedupe by LABEL, so only one of each pair
+  can ever match something found — see the stage-6 proposals for the open question.
