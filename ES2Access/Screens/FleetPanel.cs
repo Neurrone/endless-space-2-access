@@ -717,7 +717,35 @@ namespace ES2Access.Screens
                     ControlId.Referenced(garrison, "fleets:line/" + garrison.GUID),
                     vtable
                 );
+                AddLineBadge(cells, line, "fleets:line/" + garrison.GUID);
             }
+        }
+
+        /// <summary>The badge the list draws on a fleet's own line: whether the fleet still has an
+        /// action point to spend this turn. The game writes a different sentence for each state onto
+        /// the same icon (<c>FleetLine.cs</c> :270-279) and dims it rather than hiding it when there
+        /// is none, so both states are drawn and both read - and nothing else on the line says the
+        /// fleet has spent its turn. A line the game draws no badge on stays the leaf it was.</summary>
+        private static void AddLineBadge(List<Cell> cells, FleetLine line, string key)
+        {
+            if (cells.Count == 0)
+            {
+                return;
+            }
+
+            List<TooltipChildren.Dossier> badge = new List<TooltipChildren.Dossier>(1);
+            TooltipChildren.AddPlain(
+                badge,
+                line.ActionPointIcon == null ? null : line.ActionPointIcon.AgeTransform
+            );
+            if (badge.Count == 0)
+            {
+                return;
+            }
+
+            Cell owner = cells[cells.Count - 1];
+            owner.Dossiers = badge;
+            owner.Key = key;
         }
 
         /// <summary>Whether this garrison is in the game's own selection. The window's list rather than
