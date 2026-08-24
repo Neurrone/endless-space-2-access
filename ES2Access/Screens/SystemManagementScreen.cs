@@ -603,6 +603,13 @@ namespace ES2Access.Screens
         /// settled, the <c>FidsiEnumerator</c>'s duplets once it is a colony) with the other one left
         /// bound to whatever it last showed, so the strip is taken from whichever is DRAWN and the
         /// resolver drops the pips of the hidden one.
+        ///
+        /// The improvement box is the third: the card draws which improvement this world has - or that
+        /// one is being built, or that there is none - and the game keeps what that MEANS on a tooltip
+        /// field of its own rather than on the box (<c>RefreshPlanetImprovement</c> :1335-1394), so
+        /// nothing hanging off the card could ever have found it. It is either a sentence the game
+        /// wrote or the improvement's own dossier, depending on which of the three states the world is
+        /// in, and both read here.
         /// </summary>
         private static List<TooltipChildren.Dossier> PlanetDossiers(
             PlanetLabel_SystemManagement label
@@ -617,6 +624,19 @@ namespace ES2Access.Screens
                     found,
                     label.FidsiEnumerator == null ? null : label.FidsiEnumerator.AgeTransform
                 );
+                if (AgeWidgets.Visible(label.ImprovementStatus))
+                {
+                    TooltipChildren.Add(
+                        found,
+                        label.ImprovementTooltip,
+                        label.ImprovementStatus
+                    );
+                    TooltipChildren.AddPlain(
+                        found,
+                        label.ImprovementTooltip,
+                        label.ImprovementStatus
+                    );
+                }
             }
             catch (Exception e)
             {

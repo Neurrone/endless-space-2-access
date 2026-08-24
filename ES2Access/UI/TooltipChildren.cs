@@ -256,14 +256,21 @@ namespace ES2Access.UI
         /// </summary>
         public static void AddPlain(List<Dossier> into, AgeTransform widget)
         {
-            if (into == null || !AgeWidgets.Painted(widget))
+            if (into != null && AgeWidgets.Painted(widget))
             {
-                return;
+                AddPlain(into, AgeWidgets.Raw(widget), widget);
             }
+        }
 
-            AgeTooltip tooltip = AgeWidgets.Raw(widget);
+        /// <summary>The same for a sentence the caller has already resolved: the game keeps some of
+        /// these on a tooltip FIELD of its own rather than on the widget the sentence is about (the
+        /// planet card's improvement box), so there is nothing to read it off.
+        /// <paramref name="anchor"/> is what it is drawn under.</summary>
+        public static void AddPlain(List<Dossier> into, AgeTooltip tooltip, AgeTransform anchor)
+        {
             if (
-                tooltip == null
+                into == null
+                || tooltip == null
                 || AgeWidgets.Readable(tooltip) == null
                 || !AgeWidgets.Draws(tooltip)
             )
@@ -285,7 +292,7 @@ namespace ES2Access.UI
                 {
                     Name = CardActions.NameFromTooltip(tip),
                     Tooltip = tip,
-                    Anchor = widget,
+                    Anchor = anchor,
                     Mode = TooltipMode.None,
                 }
             );
