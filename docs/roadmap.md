@@ -77,10 +77,9 @@ files above.
   full panel set (a minor's trips a vanilla NRE — `StarSystemScreen.set_ColonizedStarSystem`
   subscribes `DepartmentOfEducation` unguarded, so the page arrives with the previous
   system's panel, same for sighted players); a real ghost system's panel CONTENT (structure
-  measured by lend, already declared by the generic walk); and an owner naming decision for
-  the two ghost stops (currently their header sentences — see
-  `SystemManagementScreen.PanelName`). Session detail: `system-info-proposals.md`
-  (uncommitted).
+  measured by lend, already declared by the generic walk; its two stops are named
+  "Sanctuary population" / "Sanctuary", owner-approved 2026-08-25, heard only in code).
+  Session detail: `system-info-proposals.md` (uncommitted).
 - Ground-battle setup follow-ups (2026-08-25 stage shipped the screen model): live-check the
   defender-side role wording (`%…DefenderDescription` on YOUR side; needs a battle where the
   player defends) and the `[positiveImpactWhite]` half of the manpower marker strip (needs a

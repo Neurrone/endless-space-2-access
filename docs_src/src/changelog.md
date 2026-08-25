@@ -127,6 +127,7 @@
 - The journal's sort band reads even before any game has finished, and a column that offers filters carries a filter button beside its heading — `Enter` opens the game's filter menu as a list of tick boxes, each named by the game, and Escape puts it away
 - The negotiation, academy and pirate diplomacy windows offer their drawn Close buttons as entries, each explaining itself with the game's sentence
 - Galaxy map: a system somebody else owns but your traitors live in now offers "Open system" like your own systems do. The game has always opened its management page for a traitor-holder — the label's button is merely drawn greyed there — and the mod's entry now follows the game's own rule instead of stopping at ownership, so that page is one keypress away too. Traitors come with the Penumbra expansion
+- System management: a Sanctuary's two information panels (Penumbra) are stops called "Sanctuary population" and "Sanctuary" — the game's own word for a ghost colony — instead of announcing themselves with the sentence their headers draw
 
 ## V0.1.1
 
