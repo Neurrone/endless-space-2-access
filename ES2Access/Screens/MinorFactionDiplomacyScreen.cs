@@ -271,7 +271,12 @@ namespace ES2Access.Screens
         }
 
         /// <summary>The lines a captioned block holds: the table's own children where it drew a table,
-        /// the child itself where it drew a single line, and never the caption.</summary>
+        /// the child itself where it drew a single line, and never the caption.
+        ///
+        /// An effects block's table is POOLED, and a shorter binding retires its surplus lines by
+        /// FADING them (<c>GuiEffectMapper.UnloadEffects</c>) rather than hiding them, so the walk asks
+        /// the engine's own drawing test (<see cref="AgeWidgets.Paints"/>): a line still flagged Visible
+        /// at alpha 0 is the last binding's words, not this faction's.</summary>
         private void Lines(AgeTransform group, AgeTransform caption, string keyPrefix)
         {
             IList<AgeTransform> children = group.Children;
@@ -281,7 +286,7 @@ namespace ES2Access.Screens
                 if (
                     child == null
                     || ReferenceEquals(child, caption)
-                    || !AgeWidgets.Visible(child)
+                    || !AgeWidgets.Paints(group, child)
                 )
                 {
                     continue;
@@ -296,7 +301,10 @@ namespace ES2Access.Screens
 
                 for (int j = 0; j < lines.Count; j++)
                 {
-                    Line(lines[j], keyPrefix + i + "/" + j);
+                    if (AgeWidgets.Paints(child, lines[j]))
+                    {
+                        Line(lines[j], keyPrefix + i + "/" + j);
+                    }
                 }
             }
         }
@@ -558,7 +566,13 @@ namespace ES2Access.Screens
                 : table.Children;
             for (int i = 0; children != null && i < children.Count; i++)
             {
-                Cells.AddReadout(_cells, children[i], Keys + "modifier/" + i);
+                // Pooled (MinorFactionDiplomacyModalWindow.cs:430 ReserveChildren): a faction with
+                // fewer modifiers than the one looked at before leaves the surplus lines faded to
+                // nothing and still Visible, holding the other faction's words.
+                if (AgeWidgets.Paints(table, children[i]))
+                {
+                    Cells.AddReadout(_cells, children[i], Keys + "modifier/" + i);
+                }
             }
 
             Cells.AddReadout(

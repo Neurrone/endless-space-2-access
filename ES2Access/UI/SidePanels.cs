@@ -395,6 +395,11 @@ namespace ES2Access.UI
         /// those lines is a separate sentence the game wrote about a separate effect, and the caption is
         /// what says they belong together. So the caption is one line and each effect is a line of its
         /// own.
+        ///
+        /// The table is POOLED: a panel re-bound to something with fewer effects retires the surplus
+        /// lines by FADING them (<c>GuiEffectMapper.UnloadEffects</c>), which leaves them Visible and
+        /// still holding the previous binding's words, so both walks ask the engine's own drawing test
+        /// (<see cref="AgeWidgets.Paints"/>) instead of the visibility flag.
         /// </summary>
         private static bool Effects(
             List<Cell> cells,
@@ -422,7 +427,11 @@ namespace ES2Access.UI
             for (int i = 0; children != null && i < children.Count; i++)
             {
                 AgeTransform table = children[i];
-                if (table == null || ReferenceEquals(table, caption) || !AgeWidgets.Visible(table))
+                if (
+                    table == null
+                    || ReferenceEquals(table, caption)
+                    || !AgeWidgets.Paints(widget, table)
+                )
                 {
                     continue;
                 }
@@ -433,7 +442,7 @@ namespace ES2Access.UI
                     AgeTransform line = lines[j];
                     if (
                         line == null
-                        || !AgeWidgets.Visible(line)
+                        || !AgeWidgets.Paints(table, line)
                         || string.IsNullOrEmpty(AgeWidgets.TextOf(line))
                     )
                     {

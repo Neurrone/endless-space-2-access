@@ -306,7 +306,13 @@ namespace ES2Access.Screens
 
         /// <summary>The block of effect lines under its caption - one line each, because each is a
         /// separate sentence the game wrote about a separate effect. The caption is the block's name: a
-        /// caption the game leaves empty pushes nothing rather than a blank level.</summary>
+        /// caption the game leaves empty pushes nothing rather than a blank level.
+        ///
+        /// The table is POOLED: a law with fewer effects than the one selected before it leaves the
+        /// surplus lines parked at alpha 0 still holding the previous law's words
+        /// (<c>GuiEffectMapper.UnloadEffects</c>), and they are still <c>Visible</c>. Measured on
+        /// "Mine's Bigger Decree", whose one effect was read as three. So both walks ask the engine's
+        /// own drawing test (<see cref="AgeWidgets.Paints"/>) rather than the visibility flag.</summary>
         private void AddEffects(GraphBuilder builder, PanelFeatureEffects effects)
         {
             AgeTransform group = effects == null ? null : effects.AgeTransform;
@@ -329,7 +335,11 @@ namespace ES2Access.Screens
             for (int i = 0; bands != null && i < bands.Count; i++)
             {
                 AgeTransform band = bands[i];
-                if (band == null || ReferenceEquals(band, caption) || !AgeWidgets.Visible(band))
+                if (
+                    band == null
+                    || ReferenceEquals(band, caption)
+                    || !AgeWidgets.Paints(group, band)
+                )
                 {
                     continue;
                 }
@@ -337,7 +347,10 @@ namespace ES2Access.Screens
                 IList<AgeTransform> lines = band.Children;
                 for (int j = 0; lines != null && j < lines.Count; j++)
                 {
-                    Cells.AddReadout(_cells, lines[j], "laws:effect/" + i + "/" + j);
+                    if (AgeWidgets.Paints(band, lines[j]))
+                    {
+                        Cells.AddReadout(_cells, lines[j], "laws:effect/" + i + "/" + j);
+                    }
                 }
             }
 

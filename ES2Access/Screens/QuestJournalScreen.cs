@@ -967,7 +967,7 @@ namespace ES2Access.Screens
             for (int i = 0; items != null && i < items.Count; i++)
             {
                 if (
-                    items[i] != null
+                    AgeWidgets.Paints(table, items[i])
                     && AgeWidgets.Visible(items[i])
                     && !string.IsNullOrEmpty(AgeWidgets.TextOf(items[i]))
                 )
@@ -979,12 +979,19 @@ namespace ES2Access.Screens
             return false;
         }
 
+        /// <summary>The lines of a rewards table, minus the ones it is no longer drawing: the table is
+        /// pooled (<c>QuestRewardsTable.BuildRewards</c> :77 reserves its children), so a quest with
+        /// fewer rewards than the one read before it leaves the surplus items faded to nothing while
+        /// they stay Visible and keep the other quest's words.</summary>
         private static void AddItems(GraphBuilder builder, AgeTransform table, string keyPrefix)
         {
             IList<AgeTransform> items = table == null ? null : table.Children;
             for (int i = 0; items != null && i < items.Count; i++)
             {
-                AddReadout(builder, items[i], keyPrefix + i);
+                if (AgeWidgets.Paints(table, items[i]))
+                {
+                    AddReadout(builder, items[i], keyPrefix + i);
+                }
             }
         }
 

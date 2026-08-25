@@ -1835,7 +1835,10 @@ namespace ES2Access.Screens
                 AgeTransform item = items[i];
                 TemporaryEffectLine line =
                     item == null ? null : item.GetComponent<TemporaryEffectLine>();
-                if (line == null || !AgeWidgets.Visible(item))
+                // Pooled (ColonyInfoSidePanel.cs:723 ReserveChildren): a colony with fewer temporary
+                // effects than the one read before it keeps the surplus lines Visible at alpha 0,
+                // still holding the other colony's words.
+                if (line == null || !AgeWidgets.Paints(table, item))
                 {
                     continue;
                 }

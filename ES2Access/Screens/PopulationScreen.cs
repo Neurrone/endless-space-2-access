@@ -627,7 +627,13 @@ namespace ES2Access.Screens
             IList<AgeTransform> items = traits == null ? null : traits.Children;
             for (int i = 0; items != null && i < items.Count; i++)
             {
-                Cells.AddReadout(_cells, items[i], "population:trait/" + i);
+                // Pooled (PopulationModalWindow.cs:420 ReserveChildren): a population with fewer
+                // traits than the one shown before it leaves the surplus items faded to nothing and
+                // still Visible, holding the other population's words.
+                if (AgeWidgets.Paints(traits, items[i]))
+                {
+                    Cells.AddReadout(_cells, items[i], "population:trait/" + i);
+                }
             }
 
             Cells.EmitLinear(builder, _cells);
