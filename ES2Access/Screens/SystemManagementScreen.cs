@@ -1489,6 +1489,17 @@ namespace ES2Access.Screens
         /// is the game's answer to what the system is: a colony gets its colony, population and
         /// representative panels, an outpost and a ghost get their own sets. Declaring what is drawn
         /// rather than what a colony has is what makes the other two work without being modelled.
+        ///
+        /// The ghost pair is the one set no save here can reach - the state needs the Umbral Choir, and
+        /// the Penumbra content is not installed - so it was measured by lending the two panels a real
+        /// colony and showing them (2026-08-25). Every widget the game drew was declared: the growth
+        /// gauge, the affinity of the next population, each population count with its parties, the
+        /// panel's own explanation, the link status, and both destination buttons with their refusal
+        /// reasons in the buffer. The two boxes the game hides while the link is unset
+        /// (<c>GhostInfoSidePanel.Refresh</c> :89-101, :114-126) stayed hidden and undeclared, which is
+        /// the same rule every other panel here is read by. What the lend cannot prove is the CONTENT a
+        /// real ghost would carry, and what it leaves open is what the two stops are called
+        /// (<see cref="PanelName"/>).
         /// </summary>
         private void BuildSidePanels(GraphBuilder builder)
         {
@@ -1563,6 +1574,12 @@ namespace ES2Access.Screens
                 return ModStrings.Get(ModStrings.SystemGovernorPanel);
             }
 
+            // The two boxes a ghost system gets are the same kind of unlabelled box and fall through to
+            // that same sentence - "This panel lists information about the Population inhabiting this
+            // System" and "This panel displays information relative to this System's special features"
+            // (measured by lending them a colony, 2026-08-25). They are left on the fallback rather than
+            // given a word here, because the word would be one this mod wrote and nobody has approved
+            // one; the fallback at least says what the box is.
             return SidePanels.Name(panel);
         }
 
