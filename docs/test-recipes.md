@@ -2721,6 +2721,9 @@ ui.back` is a no-op and only a real key would close them. With the game not in t
 (`POST /key` answers "the game does not have the foreground"), use the documented
 `Gui.GuiService.HideWindow(...)` route — never `HandleInput(InputAction.Exit)`, which wedged the
 screen stack in the previous stage. The game menu closes through its own **Resume Game** node.
+EXCEPTION (measured 2026-08-25): `HideWindow` does NOT close `StarSystemScreen` (it stays
+`Shown=True`) — leave the management page with
+`Gui.GuiGameWindowService.RequestGalaxyOverviewViewLevel(pos)` instead.
 
 ## Batch-12 recipes (2026-08-23) — the two dismiss-all buttons and the juggernaut buttons
 

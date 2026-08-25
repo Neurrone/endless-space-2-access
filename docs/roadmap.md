@@ -93,6 +93,16 @@ files above.
   measured by lend, already declared by the generic walk; its two stops are named
   "Sanctuary population" / "Sanctuary", owner-approved 2026-08-25, heard only in code).
   Session detail: `system-info-proposals.md` (uncommitted).
+- **Output ratings and the zoom-blind star card (2026-08-25 session, landed) — remaining
+  live checks only.** Fixture-blocked branches: a card with a colonization already
+  ORDERED must keep reading numbers (the empire card's bind-time gate, code-verified
+  only); an unrevealed planet's card must stay silent (the game's `IsNodeRevealed` gate,
+  code-verified); the empire screen's own player route (F1 is tutorial-disabled in the
+  beginner save — every check went through a forced window build); the discovery
+  cutscene's card; a MAJOR's foreign colony and a citadel system's extra manpower row in
+  the star tooltip (same fixture debt as the entry above); the organic route to the
+  "orbital window survives zooming out" wedge (staged and covered, never re-triggered
+  live). Session detail: `missing-manpower-info-proposals.md` (uncommitted).
 - Ground-battle setup follow-ups (2026-08-25 stage shipped the screen model): live-check the
   defender-side role wording (`%…DefenderDescription` on YOUR side; needs a battle where the
   player defends) and the `[positiveImpactWhite]` half of the manpower marker strip (needs a
