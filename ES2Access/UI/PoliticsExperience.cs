@@ -84,7 +84,7 @@ namespace ES2Access.UI
                     }
 
                     string line = ModStrings.Format(
-                        ModStrings.TooltipCaptionedColon,
+                        ModStrings.CaptionedColon,
                         tier,
                         Percent(tick.PercentRight)
                     );

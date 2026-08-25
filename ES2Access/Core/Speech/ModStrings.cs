@@ -79,11 +79,12 @@ namespace ES2Access.Core.Speech
         public const string NodeTooltipsRegion = "node.tooltips-region";
 
         /// <summary>A caption and the figure under it read as one phrase, joined by a colon
-        /// ("Flotilla 1: Short Range"). For a tooltip row whose caption is not drawn beside the
-        /// figure but supplied by a typed reader from two of the game's own templates: with a bare
-        /// space the two run together as if the caption were part of the value. A connective, so the
-        /// translator owns the punctuation.</summary>
-        public const string TooltipCaptionedColon = "tooltip.captioned-colon";
+        /// ("Flotilla 1: Short Range", "Planet Food production: 2 of 5"). For a row whose caption is
+        /// not drawn beside the figure but supplied from elsewhere - a typed tooltip reader working
+        /// from two of the game's own templates, a planet card's rating pips the prefab never
+        /// captions: with a bare space the two run together as if the caption were part of the
+        /// value. A connective, so the translator owns the punctuation.</summary>
+        public const string CaptionedColon = "speech.captioned-colon";
 
         // Typing letters on a screen searches what is on it. Both are whole phrases: the text the
         // player typed is quoted inside the sentence, so a language that frames a quotation
@@ -1620,7 +1621,7 @@ namespace ES2Access.Core.Speech
             { NavNoDetails, "Nothing in here" },
             { NavTable, "table" },
             { NodeTooltipsRegion, "Tooltips" },
-            { TooltipCaptionedColon, "{0}: {1}" },
+            { CaptionedColon, "{0}: {1}" },
             { SearchNoMatch, "No match for {0}" },
             { SearchCleared, "Search cleared" },
             { NavKeyBindingSecondary, "secondary {0}" },

@@ -5875,25 +5875,35 @@ namespace ES2Access.Screens
         }
 
         /// <summary>
-        /// The colony's five outputs, named by the game's own property titles and read off the same
-        /// simulation object the card reads them from.
+        /// The five outputs the card draws for a world, named by the game's own property titles and
+        /// read off the same simulation object the card reads them from.
         ///
-        /// Only where the card WRITES them, which is only for a colony: on a world nobody has settled
-        /// the card hides this row and draws a table of pips instead - a rating, not a number - and
-        /// the numbers behind those pips are a thing the game is deliberately not showing.
+        /// The card draws them in two shapes and both are read, each in its own: a colony's are
+        /// WRITTEN as numbers, and on a world nobody has settled the game hides that row and draws a
+        /// table of rating pips instead (<c>PlanetLabel_SystemOrbital.RefreshFIDSI</c>), which is
+        /// what <see cref="AddFidsiRatings"/> reads. Both shapes are composed in
+        /// <see cref="PlanetOutputs"/>, shared with the two other cards that draw them; what is this
+        /// screen's is the gate and the simulation object - the numbers come off the COLONY, and the
+        /// planet's own values behind them are all zero.
         /// </summary>
         private static void AddFidsi(List<string> lines, PlanetLabel_SystemOrbital card)
         {
             try
             {
                 FidsiEnumerator fidsi = card.FidsiEnumerator;
+                if (fidsi == null || fidsi.FidsiProperties == null)
+                {
+                    return;
+                }
+
                 ColonizedPlanet colony = card.ColonizedPlanet;
-                if (
-                    fidsi == null
-                    || fidsi.FidsiProperties == null
-                    || colony == null
-                    || !Visible(fidsi.AgeTransform)
-                )
+                if (colony == null)
+                {
+                    AddFidsiRatings(lines, card, fidsi);
+                    return;
+                }
+
+                if (!Visible(fidsi.AgeTransform))
                 {
                     return;
                 }
@@ -5904,27 +5914,49 @@ namespace ES2Access.Screens
                     return;
                 }
 
-                int count = Math.Min(fidsi.DisplayedProperties, fidsi.FidsiProperties.Count);
-                for (int i = 0; i < count; i++)
+                IList<string> numbers = PlanetOutputs.Numbers(simulation, fidsi);
+                for (int i = 0; i < numbers.Count; i++)
                 {
-                    GuiSimulationProperty property = fidsi.FidsiProperties[i];
-                    if (property == null)
-                    {
-                        continue;
-                    }
-
-                    AddLine(
-                        lines,
-                        new MessageBuilder()
-                            .ListItem(AgeText.Clean(Gui.GetLocalizedTitle(property.Name)))
-                            .ListItem(Amount(simulation.GetPropertyValue(property.Name), false, 0))
-                            .Build()
-                    );
+                    AddLine(lines, numbers[i]);
                 }
             }
             catch (Exception e)
             {
                 Log.Warn("galaxy: reading an orbital card's outputs threw: " + e);
+            }
+        }
+
+        /// <summary>
+        /// The same five outputs on a world nobody has settled, where the card rates them instead of
+        /// writing them: a row of five cells per output, as many lit as the value earns
+        /// (<c>PlanetLabel_SystemOrbital.RefreshScoreLine</c>). The management page's card rates them
+        /// the same way, so the lines themselves are composed in <see cref="PlanetOutputs.Ratings"/>
+        /// and only the gate is this screen's.
+        ///
+        /// A world the empire has not surveyed gets nothing: the game hides the whole table for one
+        /// (<c>RefreshAsUnrevealedNode</c>), and its own test - <c>IsNodeRevealed</c> - is the gate,
+        /// alongside the card's own "am I drawing this" flag that answers for the colony case too.
+        /// </summary>
+        private static void AddFidsiRatings(
+            List<string> lines,
+            PlanetLabel_SystemOrbital card,
+            FidsiEnumerator fidsi
+        )
+        {
+            Planet planet = card.Planet;
+            if (planet == null || !card.IsNodeRevealed || !Visible(card.FidsiScoreTable))
+            {
+                return;
+            }
+
+            IList<string> ratings = PlanetOutputs.Ratings(
+                planet,
+                fidsi,
+                card.FidsiParametersGuiElement
+            );
+            for (int i = 0; i < ratings.Count; i++)
+            {
+                AddLine(lines, ratings[i]);
             }
         }
 

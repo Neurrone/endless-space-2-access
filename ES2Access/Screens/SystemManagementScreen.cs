@@ -937,10 +937,14 @@ namespace ES2Access.Screens
             }
         }
 
-        /// <summary>The planet's five outputs, named by the game's own property titles. Read off the
-        /// same simulation object the card reads: the colony's when there is one, the planet's own
-        /// potential when there is not - which is exactly the two things the card draws, as values in
-        /// one case and as rows of pips in the other.</summary>
+        /// <summary>The planet's five outputs, named by the game's own property titles, in the two
+        /// shapes the card draws them in. A COLONY's are written as numbers and read as numbers, off
+        /// the colony's own simulation object. A world nobody has settled gets no numbers at all: the
+        /// card hides that row and draws a table of rating pips instead
+        /// (<c>PlanetLabel_SystemManagement.BindPlanet</c> :358-368), which the map's card does too,
+        /// so the lines of both shapes are composed for both cards in <see cref="PlanetOutputs"/>.
+        /// Which shape is drawn is the game's own test - whether the planet is a colony - so it is
+        /// the test here.</summary>
         private static void AddFidsi(List<string> lines, PlanetLabel_SystemManagement label)
         {
             FidsiEnumerator fidsi = label.FidsiEnumerator;
@@ -950,28 +954,31 @@ namespace ES2Access.Screens
             }
 
             ColonizedPlanet colony = label.ColonizedPlanet;
-            Amplitude.Unity.Simulation.SimulationObject simulation =
-                colony != null ? colony.SimulationObject : label.Planet.SimulationObject;
+            if (colony == null)
+            {
+                IList<string> ratings = PlanetOutputs.Ratings(
+                    label.Planet,
+                    fidsi,
+                    label.FidsiParametersGuiElement
+                );
+                for (int i = 0; i < ratings.Count; i++)
+                {
+                    AddLine(lines, ratings[i]);
+                }
+
+                return;
+            }
+
+            Amplitude.Unity.Simulation.SimulationObject simulation = colony.SimulationObject;
             if (simulation == null)
             {
                 return;
             }
 
-            int count = Math.Min(fidsi.DisplayedProperties, fidsi.FidsiProperties.Count);
-            for (int i = 0; i < count; i++)
+            IList<string> numbers = PlanetOutputs.Numbers(simulation, fidsi);
+            for (int i = 0; i < numbers.Count; i++)
             {
-                GuiSimulationProperty property = fidsi.FidsiProperties[i];
-                if (property == null)
-                {
-                    continue;
-                }
-
-                lines.Add(
-                    new MessageBuilder()
-                        .ListItem(AgeText.Clean(Gui.GetLocalizedTitle(property.Name)))
-                        .ListItem(Amount(simulation.GetPropertyValue(property.Name)))
-                        .Build()
-                );
+                lines.Add(numbers[i]);
             }
         }
 
@@ -3223,18 +3230,6 @@ namespace ES2Access.Screens
             {
                 IList<AgeTransform> children = table.Children;
                 return children != null && index < children.Count ? children[index] : null;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        private static string Amount(float value)
-        {
-            try
-            {
-                return Gui.FormatAmount(value, true, Gui.Rounding.Floor, false, 0);
             }
             catch (Exception)
             {

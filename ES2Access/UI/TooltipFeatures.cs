@@ -604,7 +604,7 @@ namespace ES2Access.UI
                     // (owner ruling 2026-08-23): both halves are whole phrases the game wrote for
                     // itself - "Flotilla 1" and "Short Range" - and run together with a space they
                     // read as one name for one thing rather than as a row and its value. The
-                    // connective is the translator's (<see cref="ModStrings.TooltipCaptionedColon"/>).
+                    // connective is the translator's (<see cref="ModStrings.CaptionedColon"/>).
                     NameText(
                         named,
                         label,
@@ -1124,7 +1124,7 @@ namespace ES2Access.UI
         {
             return string.IsNullOrEmpty(caption) || string.IsNullOrEmpty(value)
                 ? null
-                : ModStrings.Format(ModStrings.TooltipCaptionedColon, caption.Trim(), value.Trim());
+                : ModStrings.Format(ModStrings.CaptionedColon, caption.Trim(), value.Trim());
         }
 
         /// <summary>The same substitution as <see cref="NameAs"/> for a caller that has already

@@ -30,7 +30,7 @@
   "nav.no-details": "Nothing in here",
   "nav.table": "table",
   "node.tooltips-region": "Tooltips",
-  "tooltip.captioned-colon": "{0}: {1}",
+  "speech.captioned-colon": "{0}: {1}",
   "search.no-match": "No match for {0}",
   "search.cleared": "Search cleared",
   "nav.key-binding-secondary": "secondary {0}",

@@ -918,14 +918,37 @@ namespace ES2Access.Screens
             return lines;
         }
 
-        /// <summary>The planet's five outputs, named by the game's own property titles and read off the
-        /// same simulation object the card reads - the colony's where there is one, the planet's own
-        /// potential where there is not.</summary>
+        /// <summary>The planet's five outputs, named by the game's own property titles, in the two
+        /// shapes the card draws them in. A COLONY's are written as numbers and read as numbers, off
+        /// the same simulation object the card reads them from. A world nobody has settled gets no
+        /// numbers at all: the card hides that row and draws a table of rating pips instead
+        /// (<c>PlanetCard.Bind</c> :231-242, <c>RefreshScoreLine</c> :395-402), which the map's card
+        /// and the management page's do too, so the lines of both shapes are composed for all three
+        /// in <see cref="PlanetOutputs"/>. Which shape is drawn is the game's own bind-time test -
+        /// settled, or a colonization the player has already ordered - so it is the test here rather
+        /// than the card's own <c>ColonizedPlanet</c>: a world with a colonization pending is drawn
+        /// with the numbers of the colony it is about to be, and that field is still null for it.
+        /// </summary>
         private static void AddFidsi(List<string> lines, PlanetCard card)
         {
             FidsiEnumerator fidsi = card.FidsiEnumerator;
             if (fidsi == null || fidsi.FidsiProperties == null || card.Planet == null)
             {
+                return;
+            }
+
+            if (card.Planet.ColonizedPlanet == null && card.PlayerGhostColonizedPlanet == null)
+            {
+                IList<string> ratings = PlanetOutputs.Ratings(
+                    card.Planet,
+                    fidsi,
+                    card.FidsiParametersGuiElement
+                );
+                for (int i = 0; i < ratings.Count; i++)
+                {
+                    lines.Add(ratings[i]);
+                }
+
                 return;
             }
 
@@ -937,21 +960,10 @@ namespace ES2Access.Screens
                 return;
             }
 
-            int count = Math.Min(fidsi.DisplayedProperties, fidsi.FidsiProperties.Count);
-            for (int i = 0; i < count; i++)
+            IList<string> numbers = PlanetOutputs.Numbers(simulation, fidsi);
+            for (int i = 0; i < numbers.Count; i++)
             {
-                GuiSimulationProperty property = fidsi.FidsiProperties[i];
-                if (property == null)
-                {
-                    continue;
-                }
-
-                lines.Add(
-                    new MessageBuilder()
-                        .ListItem(AgeText.Clean(Gui.GetLocalizedTitle(property.Name)))
-                        .ListItem(Amount(simulation.GetPropertyValue(property.Name)))
-                        .Build()
-                );
+                lines.Add(numbers[i]);
             }
         }
 
@@ -1753,18 +1765,6 @@ namespace ES2Access.Screens
             try
             {
                 return label == null ? null : label.AgeTransform;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        private static string Amount(float value)
-        {
-            try
-            {
-                return Gui.FormatAmount(value, true, Gui.Rounding.Floor, false, 0);
             }
             catch (Exception)
             {

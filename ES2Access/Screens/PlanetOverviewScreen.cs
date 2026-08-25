@@ -397,6 +397,12 @@ namespace ES2Access.Screens
         /// The value is read off the same simulation object the panel reads - the colony's when the
         /// planet has one, the planet's own potential when it does not - rather than off the label,
         /// which is a number on its way to the real one.
+        ///
+        /// Title and figure are ONE part, composed in <see cref="PlanetOutputs.Number"/>, because the
+        /// player hears the same sentence for the same output on the three cards, where it is a line
+        /// rather than a node - and a part boundary would put a comma where those say a colon. The
+        /// figure is therefore re-read whenever the node is (every readout, every buffer fill) rather
+        /// than watched: nothing on this page moves a planet's outputs while the cursor sits on them.
         /// </summary>
         private static void AddFidsi(List<Cell> cells, PlanetInfoSidePanel panel, Planet planet)
         {
@@ -432,8 +438,7 @@ namespace ES2Access.Screens
                 {
                     Announcements = new List<NodeAnnouncement>
                     {
-                        GraphNodes.LabelPart(() => AgeText.Clean(Gui.GetLocalizedTitle(name))),
-                        GraphNodes.ValuePart(() => Amount(it.GetPropertyValue(name))),
+                        GraphNodes.LabelPart(() => PlanetOutputs.Number(name, it)),
                     },
                     Sections = GraphNodes.Sections(null, tooltip),
                 };
@@ -819,18 +824,6 @@ namespace ES2Access.Screens
                     && (!string.IsNullOrEmpty(tooltip.Class) || !string.IsNullOrEmpty(tooltip.Content))
                     ? tooltip
                     : null;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        private static string Amount(float value)
-        {
-            try
-            {
-                return Gui.FormatAmount(value, true, Gui.Rounding.Floor, false, 0);
             }
             catch (Exception)
             {
