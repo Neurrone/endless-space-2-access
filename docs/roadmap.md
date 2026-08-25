@@ -206,11 +206,12 @@ files above.
   readings are fixture-blocked to mid-game saves). Still open from the audit: the Riftborn
   time bubble (needs a Riftborn fixture) and the latent hacking beacon (deferred with
   Penumbra).
-- Hero skill page (2026-08-20): the base-class `PanelFeatureEffectsSets` tooltip variants
-  (hero, planet colonization, honor actions, hacking programs) read through the new
-  `effect-sets` typed reader but are UNSIGHTED — one `DevProbe.Tooltip()` on any of them
-  should answer `"effect-sets"` with no "Level" line. The relics box/region and a
-  two-mastery starting skill also await a fixture (Nakalim/Templar hero).
+- Hero skill page: of the base-class `PanelFeatureEffectsSets` tooltip variants, the
+  honor-action and hacking-program ones are still UNSIGHTED — one `DevProbe.Tooltip()` on
+  each should answer `"effect-sets"` with no "Level" line (the planet and skill variants
+  were sighted 2026-08-25, tooltip sweep; a "hero" variant does not exist — the `Hero`
+  class carries no effect-sets feature). The relics box/region and a two-mastery starting
+  skill also await a fixture (Nakalim/Templar hero).
 - Hero skill page: the heading now speaks twice on arrival (screen name or FollowPage line,
   then the tree stop's "Skill Tree" context) — user ruling pending on which line yields.
 - Constellations, remaining edges (feature shipped 2026-08-20): (a) Alt+Home onto a
