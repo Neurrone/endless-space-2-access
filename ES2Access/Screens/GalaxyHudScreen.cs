@@ -477,7 +477,7 @@ namespace ES2Access.Screens
                 ? MapSettleFrames
                 : Math.Max(0, _settling - 1);
             _hud.Update();
-            _fleetPanel.Update();
+            FollowSelectionEnd(_fleetPanel.Update());
             _zoom.Update();
             _inspect.Update();
             CheckTrailSession();
@@ -564,6 +564,67 @@ namespace ES2Access.Screens
         {
             ProbeLaunchingCursor cursor = CursorTargeting.ArmedProbe;
             return cursor == null ? null : cursor.ProbeOriginFleet;
+        }
+
+        /// <summary>
+        /// Where the player is put when letting go of the selection closes the panel they were
+        /// standing in: the fleet's own row in the tree, the place the selection was ABOUT.
+        ///
+        /// Escape with a fleet selected deselects it, and the panel's three stops vanish with the
+        /// selection - so a cursor on a fleet line, a ship or an action is on a node the next build no
+        /// longer declares, and reconciliation's nearest-survivor fallback walks the old order backward
+        /// onto whatever row happened to precede the panel (measured 2026-08-25: the map stop's last
+        /// drifting probe, a place the player never was). The fleet still has a row, so the cursor goes
+        /// there - or to its system's when the fleet itself is gone (a disband).
+        ///
+        /// Only when the panel closed into the PLAIN map cursor, because that is what tells "the
+        /// selection was let go" from the other ways the panel leaves: a targeting mode closing it
+        /// seats its own cursor (<see cref="FollowProbeArming"/>), a zoom-in action flies into the
+        /// system (<see cref="SeatAfterFleetAction"/>), and this must overwrite neither landing. And
+        /// only while the cursor was IN the panel: a player reading the HUD when they let go has lost
+        /// nothing and is left where they are.
+        /// </summary>
+        private void FollowSelectionEnd(Fleet released)
+        {
+            if (released == null || !(Gui.GetCursor() is GalaxyCursor))
+            {
+                return;
+            }
+
+            GraphNavigator navigator = ModEntry.Navigator;
+            GraphNode standing = navigator == null ? null : navigator.CurrentNode;
+            object stop = standing == null ? null : standing.StopKey;
+            if (
+                !FleetPanel.ManagementStop.Equals(stop)
+                && !FleetPanel.ShipsStop.Equals(stop)
+                && !FleetPanel.ActionsStop.Equals(stop)
+            )
+            {
+                return;
+            }
+
+            try
+            {
+                List<FleetSite> sites = FleetIndex(new HashSet<ControlId>());
+                for (int i = 0; i < sites.Count; i++)
+                {
+                    if (ReferenceEquals(sites[i].Fleet, released))
+                    {
+                        navigator.FocusNode(Reveal(sites[i]));
+                        return;
+                    }
+                }
+
+                ControlId home = SystemId(FleetOrders.Orbit(released) as StarSystemNode);
+                if (home != null)
+                {
+                    navigator.FocusNode(home);
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: seating the cursor after a deselection threw: " + e);
+            }
         }
 
         /// <summary>The fleet the probe mode was armed for when it was last looked at - instance state,

@@ -74,6 +74,41 @@ namespace ES2Access.UI
         }
 
         /// <summary>
+        /// The first fleet the map's cursor is holding, whoever it belongs to - for a per-frame watch
+        /// of WHERE the player's attention is, which a foreign fleet answers as well as their own.
+        /// Reads one entry and allocates nothing, unlike <see cref="Selected"/>, so it may be asked
+        /// every frame.
+        /// </summary>
+        public static Fleet FirstSelected()
+        {
+            try
+            {
+                IGuiSelectedGarrisonsRepositoryService repository =
+                    Services.GetService<IGuiSelectedGarrisonsRepositoryService>();
+                if (repository == null)
+                {
+                    return null;
+                }
+
+                ReadOnlyCollection<Garrison> garrisons = repository.Garrisons;
+                for (int i = 0; i < garrisons.Count; i++)
+                {
+                    Fleet fleet = garrisons[i] as Fleet;
+                    if (fleet != null && !fleet.IsDestroyed)
+                    {
+                        return fleet;
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("fleets: reading the held fleet threw: " + e);
+            }
+
+            return null;
+        }
+
+        /// <summary>
         /// The player's own fleets that an order given now would move.
         ///
         /// Selecting a fleet does not put the game into a mode: it changes what the map's cursor is

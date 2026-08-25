@@ -108,6 +108,11 @@ namespace ES2Access.Screens
         /// keeps its own.</summary>
         private bool _up;
 
+        /// <summary>The fleet the panel was last up FOR, so that closing can say which fleet was let
+        /// go of. Tracked while the panel is up because the moment it closes the game's selection is
+        /// already empty - the cursor swap that closes it is the same thing that clears it.</summary>
+        private Fleet _held;
+
         // ---- the passive watch ----
 
         /// <summary>Start the watch from what is on the screen now, so arriving on a page with a fleet
@@ -123,21 +128,35 @@ namespace ES2Access.Screens
         {
             _up = false;
             _arrived = false;
+            _held = null;
         }
 
         /// <summary>
         /// A fleet being selected, or let go of, is a thing that happens to the tab order - so it is
         /// said, and said queued: the player usually caused it, and interrupting the readout of the
         /// control they caused it from would take away the answer they asked for.
+        ///
+        /// Answers with the fleet that was LET GO when the panel has just closed, and null every other
+        /// frame - for the page to put the cursor somewhere sane when the close took the stops out
+        /// from under it (<see cref="GalaxyHudScreen.FollowSelectionEnd"/>).
         /// </summary>
-        public void Update()
+        public Fleet Update()
         {
             try
             {
                 bool up = Available();
+                if (up)
+                {
+                    Fleet first = FleetOrders.FirstSelected();
+                    if (first != null)
+                    {
+                        _held = first;
+                    }
+                }
+
                 if (up == _up)
                 {
-                    return;
+                    return null;
                 }
 
                 _up = up;
@@ -147,10 +166,19 @@ namespace ES2Access.Screens
                         : ModStrings.Get(ModStrings.FleetsPanelClosed),
                     false
                 );
+                if (up)
+                {
+                    return null;
+                }
+
+                Fleet released = _held;
+                _held = null;
+                return released;
             }
             catch (Exception e)
             {
                 Log.Warn("fleets: watching the selection threw: " + e);
+                return null;
             }
         }
 
