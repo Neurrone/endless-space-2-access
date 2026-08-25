@@ -4031,10 +4031,12 @@ namespace ES2Access.Screens
         /// press. Those are two different questions here: the label greys the button out on anything but
         /// a COLONY of ours (<c>StarSystemLabel</c> :1626-1648 assigns the system it enables from at
         /// :1750 only while the state is <c>Colony</c>), while the view level behind it opens for any
-        /// system of ours that is not lost (<c>GuiManager.RequestStarSystemManagementViewLevel</c>
-        /// :1224-1247). So an OUTPOST is drawn a dead button over a page that would open perfectly well,
-        /// and dropping the node left every colony a one-key route into its page while an outpost's had
-        /// to be flown to on the zoom ladder.
+        /// system of ours that is not lost AND for anybody else's system we hold a traitor in
+        /// (<c>GuiManager.RequestStarSystemManagementViewLevel</c> :1224-1251). So an OUTPOST is drawn a
+        /// dead button over a page that would open perfectly well, and dropping the node left every
+        /// colony a one-key route into its page while an outpost's had to be flown to on the zoom
+        /// ladder. A system somebody else holds and we have turned somebody inside is the same story
+        /// wearing a foreign flag: the button is drawn greyed there too, and the page behind it opens.
         ///
         /// The greyed-out button is therefore still declared wherever that route would really open a
         /// page (<see cref="Manageable"/>), and takes the route itself rather than pressing a button
@@ -4087,10 +4089,12 @@ namespace ES2Access.Screens
         }
 
         /// <summary>Whether asking for a system's management page would really open one - the game's own
-        /// three conditions for it, asked of the same repository it asks
-        /// (<c>GuiManager.RequestStarSystemManagementViewLevel</c> :1224-1247): the node is not blacked
-        /// out, we hold a system here, and what we hold is not lost. Everything else falls through to
-        /// centring the map on the node.</summary>
+        /// conditions for it, asked of the same repository it asks
+        /// (<c>GuiManager.RequestStarSystemManagementViewLevel</c> :1224-1251). The node must not be
+        /// blacked out; then either we hold a system here that is not lost (:1236-1239), or we hold a
+        /// traitor in this system and somebody is colonized here at all (:1240-1243) - the page opens
+        /// on whichever of the two answered (:1251). Neither, and the game falls through to centring
+        /// the map on the node (:1246).</summary>
         private static bool Manageable(StarSystemNode node)
         {
             try
@@ -4104,8 +4108,20 @@ namespace ES2Access.Screens
                 }
 
                 ColonizedStarSystem mine;
-                return colonies.TryGetValue(empire, node.NodePosition, out mine)
-                    && mine.State != StarSystemState.Lost;
+                if (colonies.TryGetValue(empire, node.NodePosition, out mine)
+                    && mine.State != StarSystemState.Lost)
+                {
+                    return true;
+                }
+
+                if (!node.EmpiresWithTraitors.Contains(empire))
+                {
+                    return false;
+                }
+
+                ColonizedStarSystem theirs;
+                colonies.TryGetColony(node.NodePosition, out theirs);
+                return theirs != null;
             }
             catch (Exception e)
             {
