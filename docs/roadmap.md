@@ -25,6 +25,15 @@ files above.
   (the finished game). MANUAL (physical keys; `POST /key` was refused all session): the
   custom-faction lore box's Escape restoring the pre-edit paragraph and caret, and the
   text-area half of the `AgeControlTextField.KeyDown` hand-over seam.
+- **Tooltip features the 2026-08-25 sweep could not prove on real data** (owner ruling:
+  BLOCKED until the state exists; their captions and sentence templates are proven, the
+  live values are not): `MinigameTeam` (a running minigame — the roster drew empty);
+  `HackingOperation` / `HackingOperationStep` / `BeaconDisplacement` (a live hacking
+  network — the numbers were hand-fed); `RemainingTurnsNodeRooting` (a really rooted node —
+  the toggled variant and a live count); `TimeBubbleHeader` + `Location` (a real time
+  bubble); `ShipDesignInfoList` (the pirate diplomacy modal's own provider);
+  `AffectedByPlay` (a real play name in a battle — rides the battle fixture above). The
+  honor-action and hacking-program effect-sets sightings are the adjacent item below.
 - **Gene Hunters' population badges**: `AssimilationReadyIcon` and `AssimilatedIcon` DO carry
   game sentences (measured 2026-08-24), contradicting the mod comment that says they carry
   none — fix and verify together on a Gene Hunters game (DLC flip makes one startable).

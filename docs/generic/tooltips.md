@@ -111,8 +111,11 @@ Rules that came out of shipping this, all hit in practice:
   names which reader answered each unit, with the FALLBACK reader registering every class it
   answered for (judging a feature from source over-reports — prefab captions are invisible
   there) — coverage gaps surface in tooling, not in speech.
-  Remaining traps, all hit in practice: check *which* tooltip the window is currently bound
-  to before reading; the
+  Remaining traps, all hit in practice: substitute icon names on the string the game
+  AUTHORED, never the one the widget rendered — an engine's localizer/markup pass can
+  consume inline icon tokens (turning them into glyphs or nothing) before any reader sees
+  them, and the loss is silent because every remaining word still reads; check *which*
+  tooltip the window is currently bound to before reading; the
   window pools its child widgets, so a shrunk tooltip still carries the previous one's
   labels (use the engine's own effective-visibility test); join labels drawn on one visual
   line into one spoken line, in x-order, with the label's own alignment as the tiebreak when
