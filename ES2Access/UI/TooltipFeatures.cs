@@ -114,6 +114,15 @@ namespace ES2Access.UI
                 PanelFeatureMilitaryPowerBalance power =
                     feature as PanelFeatureMilitaryPowerBalance;
                 PanelFeatureHeroInfo hero = feature as PanelFeatureHeroInfo;
+                PanelFeatureShipDesignInfoEmbedded design =
+                    feature as PanelFeatureShipDesignInfoEmbedded;
+                PanelFeatureGarrisonCompactInfoEmbedded compact =
+                    feature as PanelFeatureGarrisonCompactInfoEmbedded;
+                PanelFeatureGarrisonInfoAutomatedFleet automated =
+                    feature as PanelFeatureGarrisonInfoAutomatedFleet;
+                PanelFeatureAdditionalGarrisons more = feature as PanelFeatureAdditionalGarrisons;
+                PanelFeatureGroundBattleInfo invasion = feature as PanelFeatureGroundBattleInfo;
+                PanelFeatureMinorFaction minor = feature as PanelFeatureMinorFaction;
 
                 Dictionary<AgeTransform, Naming> named = null;
                 if (ship != null)
@@ -125,6 +134,36 @@ namespace ES2Access.UI
                 {
                     reading.Reader = "garrison-stats";
                     named = GarrisonStatNames(garrison);
+                }
+                else if (compact != null)
+                {
+                    reading.Reader = "garrison-compact";
+                    named = CompactGarrisonNames(compact);
+                }
+                else if (automated != null)
+                {
+                    reading.Reader = "garrison-automated";
+                    named = AutomatedFleetNames(automated);
+                }
+                else if (more != null)
+                {
+                    reading.Reader = "more-fleets";
+                    named = MoreFleetsNames(more);
+                }
+                else if (design != null)
+                {
+                    reading.Reader = "ship-design-stats";
+                    named = ShipDesignStatNames(design);
+                }
+                else if (invasion != null)
+                {
+                    reading.Reader = "ground-battle";
+                    named = GroundBattleNames(invasion);
+                }
+                else if (minor != null)
+                {
+                    reading.Reader = "minor-faction";
+                    named = MinorFactionNames(minor);
                 }
                 else if (power != null)
                 {
@@ -669,7 +708,7 @@ namespace ES2Access.UI
         )
         {
             Dictionary<AgeTransform, Naming> named = new Dictionary<AgeTransform, Naming>();
-            Name(named, garrison.CommandValue, Word(CommandPointsTitle));
+            CommandPoints(named, garrison.CommandValue);
             Name(named, garrison.HealthLabel, GuiShipDesign.ShipStatHealth);
             Name(named, garrison.MovementLabel, GuiShipDesign.ShipStatMovement);
             Name(named, garrison.ActionPointLabel, DepartmentOfTheTreasury.Resources.ActionPoint);
@@ -693,6 +732,251 @@ namespace ES2Access.UI
 
             return named;
         }
+
+        /// <summary>
+        /// The four fleet prefabs the game draws WITHOUT the caption column, each figure given the
+        /// same word its full-sized cousin already reads with.
+        ///
+        /// A fleet list that outgrows its box swaps the panel it draws each fleet with: over three
+        /// garrisons the compact embedded panel, over five a footer counting the rest, and an
+        /// automated delivery fleet gets a third panel again. None of them is a
+        /// <c>PanelFeatureGarrisonInfo</c>, so none of them was reached by the reader that already
+        /// knows these words - and every one of them draws its command points as a bare number
+        /// hard against the fleet's NAME, which reads as if the figure were part of what the fleet
+        /// is called ("1st Patriots Navy 1").
+        ///
+        /// The compact panel loses the most: its health, offense and defense are bare as well, and
+        /// its four counts by hull size are named by nothing at all, because the size TEXTURES the
+        /// duplets draw are not in the picture vocabulary. All of it is the vocabulary
+        /// <see cref="GarrisonStatNames"/> already reads, applied to this prefab's own fields.
+        /// </summary>
+        private static Dictionary<AgeTransform, Naming> CompactGarrisonNames(
+            PanelFeatureGarrisonCompactInfoEmbedded garrison
+        )
+        {
+            Dictionary<AgeTransform, Naming> named = new Dictionary<AgeTransform, Naming>();
+            CommandPoints(named, garrison.CommandValue);
+            Name(named, garrison.HealthLabel, GuiShipDesign.ShipStatHealth);
+            Name(named, garrison.OffenseLabel, GuiShipDesign.ShipStatOffensiveMilitaryPower);
+            Name(named, garrison.DefenseLabel, GuiShipDesign.ShipStatDefensiveMilitaryPower);
+            CountsBySize(named, garrison.CountBySizeTable);
+            return named;
+        }
+
+        /// <summary>An automated delivery fleet's card - see <see cref="CompactGarrisonNames"/>. Its
+        /// role, size, cargo and destination rows are captioned by the prefab and read correctly on
+        /// their own; the command points and the movement pair are the two figures it draws
+        /// bare.</summary>
+        private static Dictionary<AgeTransform, Naming> AutomatedFleetNames(
+            PanelFeatureGarrisonInfoAutomatedFleet garrison
+        )
+        {
+            Dictionary<AgeTransform, Naming> named = new Dictionary<AgeTransform, Naming>();
+            CommandPoints(named, garrison.CommandValue);
+            Name(named, garrison.MovementLabel, GuiShipDesign.ShipStatMovement);
+            return named;
+        }
+
+        /// <summary>The "+ N more fleets" footer - see <see cref="CompactGarrisonNames"/>. The one
+        /// figure it draws is the command points of the fleets it did NOT list, and drawn against the
+        /// count in the title it reads as a repetition of that count ("+ 2 more fleets 2").</summary>
+        private static Dictionary<AgeTransform, Naming> MoreFleetsNames(
+            PanelFeatureAdditionalGarrisons more
+        )
+        {
+            Dictionary<AgeTransform, Naming> named = new Dictionary<AgeTransform, Naming>();
+            CommandPoints(named, more.CommandValue);
+            return named;
+        }
+
+        /// <summary>What the fleet list calls a fleet's command points, put in front of the figure
+        /// four separate prefabs draw with only an icon beside it.</summary>
+        private static void CommandPoints(
+            Dictionary<AgeTransform, Naming> named,
+            AgePrimitiveLabel label
+        )
+        {
+            Name(named, label, Word(CommandPointsTitle));
+        }
+
+        /// <summary>
+        /// The little ship-design card a reinforcement list draws, up to six at a time.
+        ///
+        /// It is the ship stat block with the caption column taken out: five figures drawn as bare
+        /// numbers behind icons, and the ship's SIZE drawn as nothing but a picture - and that
+        /// picture, unlike the stat icons, is not in the vocabulary, so the size was lost entirely
+        /// while the strip's generic size symbol contributed the word "Ship". The stat names are the
+        /// game's own (<see cref="ShipStatNames"/> reads the same six on the full-sized panel); the
+        /// role and size WORDS come from the provider the card was bound to, which is where the
+        /// full-sized panel writes them from too (<c>PanelFeatureShipInfo.RefreshShipInformation</c>).
+        /// </summary>
+        private static Dictionary<AgeTransform, Naming> ShipDesignStatNames(
+            PanelFeatureShipDesignInfoEmbedded design
+        )
+        {
+            Dictionary<AgeTransform, Naming> named = new Dictionary<AgeTransform, Naming>();
+            Name(named, design.ShipMovementPointsLabel, GuiShipDesign.ShipStatMovement);
+            Name(named, design.ShipCommandPointsLabel, GuiShipDesign.ShipStatCommandPoints);
+            Name(named, design.ShipManpowerLabel, GuiShipDesign.ShipStatManpower);
+            Name(named, design.ShipOffensivePowerLabel, GuiShipDesign.ShipStatOffensiveMilitaryPower);
+            Name(named, design.ShipDefensivePowerLabel, GuiShipDesign.ShipStatDefensiveMilitaryPower);
+
+            IShipInfoProvider provider = Target(design) as IShipInfoProvider;
+            if (provider != null)
+            {
+                Picture(
+                    named,
+                    design.ShipRoleIcon,
+                    StatTitle(GuiShipDesign.ShipStatRole),
+                    Title(provider.Role)
+                );
+                Picture(
+                    named,
+                    design.ShipSizeIcon,
+                    StatTitle(GuiShipDesign.ShipStatSize),
+                    Title(provider.Size)
+                );
+            }
+
+            return named;
+        }
+
+        /// <summary>A picture that is standing in for a fact, said as the caption and the word the
+        /// game has for what it is showing.</summary>
+        private static void Picture(
+            Dictionary<AgeTransform, Naming> named,
+            AgePrimitiveImage image,
+            string title,
+            string value
+        )
+        {
+            string text = TooltipText.Captioned(title, value);
+            if (image != null && image.AgeTransform != null && !string.IsNullOrEmpty(text))
+            {
+                named[image.AgeTransform] = new Naming { Text = text };
+            }
+        }
+
+        /// <summary>The game's word for one of its own named things - a hull size, a ship role.
+        /// </summary>
+        private static string Title(Amplitude.StaticString name)
+        {
+            try
+            {
+                return Amplitude.StaticString.IsNullOrEmpty(name)
+                    ? null
+                    : AgeText.Clean(Gui.GetTitle(name));
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>The thing a panel feature was bound to. The engine keeps it as a protected field
+        /// and the prefabs that need it here do not hold on to the provider themselves, so it is read
+        /// back off the base class rather than re-derived from what the feature drew.</summary>
+        private static object Target(GuiPanelFeature feature)
+        {
+            try
+            {
+                if (_target == null)
+                {
+                    _target = typeof(Amplitude.Unity.Gui.GuiPanelFeature).GetField(
+                        "target",
+                        System.Reflection.BindingFlags.Instance
+                            | System.Reflection.BindingFlags.NonPublic
+                    );
+                }
+
+                return _target == null ? null : _target.GetValue(feature);
+            }
+            catch (Exception e)
+            {
+                Log.Warn("tooltip: reading a feature's target threw: " + e);
+                return null;
+            }
+        }
+
+        private static System.Reflection.FieldInfo _target;
+
+        /// <summary>
+        /// An invasion's two sides, each side's manpower given the game's word for manpower.
+        ///
+        /// The panel draws one row per opponent: the empire, then the manpower it is bringing, then
+        /// one icon and count per troop type. The troop types name themselves - their textures ARE in
+        /// the picture vocabulary - but the manpower total behind its own icon is bare, and it is
+        /// drawn at the HEAD of the troop row, so the reading opened "120 Infantry 4", which states
+        /// something false rather than merely losing a caption.
+        /// </summary>
+        private static Dictionary<AgeTransform, Naming> GroundBattleNames(
+            PanelFeatureGroundBattleInfo battle
+        )
+        {
+            Dictionary<AgeTransform, Naming> named = new Dictionary<AgeTransform, Naming>();
+            Manpower(named, battle.AttackerItem);
+
+            AgeTransform table = battle.DefenderItemsTable;
+            List<AgeTransform> rows = table == null ? null : table.Children;
+            for (int i = 0; rows != null && i < rows.Count; i++)
+            {
+                Manpower(
+                    named,
+                    rows[i] == null ? null : rows[i].GetComponent<GroundBattleOpponentItem>()
+                );
+            }
+
+            return named;
+        }
+
+        private static void Manpower(
+            Dictionary<AgeTransform, Naming> named,
+            GroundBattleOpponentItem opponent
+        )
+        {
+            if (opponent != null)
+            {
+                Name(
+                    named,
+                    opponent.ManpowerAmount,
+                    DepartmentOfTheTreasury.Resources.EmpireManpower
+                );
+            }
+        }
+
+        /// <summary>
+        /// A minor civilization's card, whose four middle rows are captioned by a picture each.
+        ///
+        /// Personality, faction trait, relation and ally are drawn as an icon and one word, one under
+        /// the other, and two of those words say nothing at all on their own ("UNKNOWN", "None").
+        /// The captions are the game's own titles for the four facts - the same four the minor
+        /// diplomacy screen reads its rows with, so a player meets one wording in both places.
+        /// </summary>
+        private static Dictionary<AgeTransform, Naming> MinorFactionNames(
+            PanelFeatureMinorFaction faction
+        )
+        {
+            Dictionary<AgeTransform, Naming> named = new Dictionary<AgeTransform, Naming>();
+            MinorFactionCard card = faction.MinorFactionCard;
+            if (card == null)
+            {
+                return named;
+            }
+
+            Name(named, card.MajorTraitLabel, Word(MinorPersonalityTitle));
+            Name(named, card.MinorTraitLabel, Word(MinorFactionTraitTitle));
+            Name(named, card.RelationLabel, Word(MinorRelationTitle));
+            Name(named, card.AllyLabel, Word(MinorAllyTitle));
+            return named;
+        }
+
+        private const string MinorPersonalityTitle = "%MinorFactionMajorTraitTitle";
+
+        private const string MinorFactionTraitTitle = "%MinorFactionMinorTraitTitle";
+
+        private const string MinorRelationTitle = "%MinorFactionRelationTitle";
+
+        private const string MinorAllyTitle = "%MinorFactionCurrentAllyTitle";
 
         /// <summary>
         /// How many ships of each hull size, each count named by its size.
