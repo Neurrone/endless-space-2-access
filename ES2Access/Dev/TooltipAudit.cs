@@ -465,7 +465,7 @@ namespace ES2Access.Dev
                     continue;
                 }
 
-                if (drawnOnly && !AgeWidgets.Paints(widget, child))
+                if (drawnOnly && !AgeWidgets.Paints(child))
                 {
                     continue;
                 }

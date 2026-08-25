@@ -441,7 +441,7 @@ namespace ES2Access.Screens
                 // The table is pooled (PoliticalAssemblyPanel.cs:300 ReserveChildren) and retires a
                 // surplus row by FADING it, which leaves both its visibility flag and its last
                 // binding's party in place.
-                || !AgeWidgets.Paints(widget.Parent, widget)
+                || !AgeWidgets.Paints(widget)
                 || line.GuiPolitics == null
             )
             {

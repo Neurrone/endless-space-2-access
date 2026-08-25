@@ -1368,7 +1368,7 @@ namespace ES2Access.UI
             List<AgeTransform> blocks = table == null ? null : table.Children;
             for (int i = 0; blocks != null && i < blocks.Count; i++)
             {
-                if (!AgeWidgets.Paints(table, blocks[i]))
+                if (!AgeWidgets.Paints(blocks[i]))
                 {
                     continue;
                 }
@@ -1390,7 +1390,7 @@ namespace ES2Access.UI
                     // The table retires a line it no longer needs by fading it out rather than hiding
                     // it (GuiEffectMapper.UnloadEffects), so a block that shrank still holds the
                     // previous binding's words in a child that is still Visible.
-                    if (AgeWidgets.Paints(effects, drawn[line]))
+                    if (AgeWidgets.Paints(drawn[line]))
                     {
                         TooltipText.AddLines(
                             lines,
@@ -1441,7 +1441,7 @@ namespace ES2Access.UI
             List<AgeTransform> drawn = table == null ? null : table.Children;
             for (int i = 0; drawn != null && i < drawn.Count; i++)
             {
-                if (AgeWidgets.Paints(table, drawn[i]))
+                if (AgeWidgets.Paints(drawn[i]))
                 {
                     TooltipText.AddLines(
                         lines,

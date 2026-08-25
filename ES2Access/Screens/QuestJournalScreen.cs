@@ -967,7 +967,7 @@ namespace ES2Access.Screens
             for (int i = 0; items != null && i < items.Count; i++)
             {
                 if (
-                    AgeWidgets.Paints(table, items[i])
+                    AgeWidgets.Paints(items[i])
                     && AgeWidgets.Visible(items[i])
                     && !string.IsNullOrEmpty(AgeWidgets.TextOf(items[i]))
                 )
@@ -988,7 +988,7 @@ namespace ES2Access.Screens
             IList<AgeTransform> items = table == null ? null : table.Children;
             for (int i = 0; items != null && i < items.Count; i++)
             {
-                if (AgeWidgets.Paints(table, items[i]))
+                if (AgeWidgets.Paints(items[i]))
                 {
                     AddReadout(builder, items[i], keyPrefix + i);
                 }

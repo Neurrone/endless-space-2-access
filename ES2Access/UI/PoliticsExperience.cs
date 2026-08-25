@@ -62,7 +62,7 @@ namespace ES2Access.UI
                 if (
                     group == null
                     || group.Parent == null
-                    || !AgeWidgets.Paints(group.Parent, group)
+                    || !AgeWidgets.Paints(group)
                 )
                 {
                     return lines;
@@ -72,7 +72,7 @@ namespace ES2Access.UI
                 for (int i = 0; ticks != null && i < ticks.Count; i++)
                 {
                     AgeTransform tick = ticks[i];
-                    if (tick == null || !AgeWidgets.Paints(group, tick))
+                    if (!AgeWidgets.Paints(tick))
                     {
                         continue;
                     }
@@ -189,7 +189,7 @@ namespace ES2Access.UI
             {
                 AgeTransform marker =
                     feature == null ? null : feature.PoliticsCurrentExperienceMarker;
-                return marker != null && AgeWidgets.Paints(marker.Parent, marker) ? marker : null;
+                return AgeWidgets.Paints(marker) ? marker : null;
             }
             catch (Exception)
             {

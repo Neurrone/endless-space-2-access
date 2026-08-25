@@ -430,7 +430,7 @@ namespace ES2Access.UI
                 if (
                     table == null
                     || ReferenceEquals(table, caption)
-                    || !AgeWidgets.Paints(widget, table)
+                    || !AgeWidgets.Paints(table)
                 )
                 {
                     continue;
@@ -442,7 +442,7 @@ namespace ES2Access.UI
                     AgeTransform line = lines[j];
                     if (
                         line == null
-                        || !AgeWidgets.Paints(table, line)
+                        || !AgeWidgets.Paints(line)
                         || string.IsNullOrEmpty(AgeWidgets.TextOf(line))
                     )
                     {

@@ -417,7 +417,7 @@ namespace ES2Access.Screens
                 if (
                     band == null
                     || ReferenceEquals(band, caption)
-                    || !AgeWidgets.Paints(group, band)
+                    || !AgeWidgets.Paints(band)
                 )
                 {
                     continue;
@@ -426,7 +426,7 @@ namespace ES2Access.Screens
                 IList<AgeTransform> lines = band.Children;
                 for (int j = 0; lines != null && j < lines.Count; j++)
                 {
-                    if (AgeWidgets.Paints(band, lines[j]))
+                    if (AgeWidgets.Paints(lines[j]))
                     {
                         Cells.AddReadout(_cells, lines[j], "laws:effect/" + i + "/" + j);
                     }

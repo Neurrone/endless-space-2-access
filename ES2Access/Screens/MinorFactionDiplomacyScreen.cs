@@ -286,7 +286,7 @@ namespace ES2Access.Screens
                 if (
                     child == null
                     || ReferenceEquals(child, caption)
-                    || !AgeWidgets.Paints(group, child)
+                    || !AgeWidgets.Paints(child)
                 )
                 {
                     continue;
@@ -301,7 +301,7 @@ namespace ES2Access.Screens
 
                 for (int j = 0; j < lines.Count; j++)
                 {
-                    if (AgeWidgets.Paints(child, lines[j]))
+                    if (AgeWidgets.Paints(lines[j]))
                     {
                         Line(lines[j], keyPrefix + i + "/" + j);
                     }
@@ -569,7 +569,7 @@ namespace ES2Access.Screens
                 // Pooled (MinorFactionDiplomacyModalWindow.cs:430 ReserveChildren): a faction with
                 // fewer modifiers than the one looked at before leaves the surplus lines faded to
                 // nothing and still Visible, holding the other faction's words.
-                if (AgeWidgets.Paints(table, children[i]))
+                if (AgeWidgets.Paints(children[i]))
                 {
                     Cells.AddReadout(_cells, children[i], Keys + "modifier/" + i);
                 }

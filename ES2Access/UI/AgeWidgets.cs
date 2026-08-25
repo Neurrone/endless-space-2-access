@@ -103,24 +103,25 @@ namespace ES2Access.UI
         }
 
         /// <summary>
-        /// Whether the parent is DRAWING this child - the engine's own answer, which is what
-        /// <c>AgeTransform.GetVisibleChildrenCount</c> counts with
-        /// (<c>firstpass/AgeTransform.cs:2549-2561</c>): visible, and not faded away unless the parent
-        /// forces its children visible.
+        /// Whether the RENDERER is drawing this widget - the engine's own answer, which is the
+        /// early-out its render pass prunes a whole subtree with
+        /// (<c>firstpass/AgeTransform.cs:1955</c>, <c>PrimitiveUpdateGUI</c>): visible, and not faded
+        /// to nothing. <c>StrictVisibility</c> is no exemption - that flag only tells the ARRANGER to
+        /// keep counting a faded child's slot (<c>GetVisibleChildrenCount</c>); the renderer skips it
+        /// all the same. Exempting strict tables here declared the narrative event's retired choice
+        /// cards - faded away under a strict table once the choice was made - as live radio buttons.
         ///
         /// This is the ONE-STEP form of <see cref="Painted"/>, for a walk that descends from a root it
-        /// already trusts. It never asks the root's own alpha, which matters wherever the root is
-        /// itself animating - a popup fades ITSELF in on arrival while every child stays at alpha 1,
-        /// and a walk that asked the root would read the whole window as blank for the length of that
-        /// animation.
+        /// already trusts. Such a walk never asks the root's own alpha, which matters wherever the
+        /// root is itself animating - a popup fades ITSELF in on arrival while every child stays at
+        /// alpha 1, and a walk that asked the root would read the whole window as blank for the
+        /// length of that animation.
         /// </summary>
-        public static bool Paints(AgeTransform parent, AgeTransform child)
+        public static bool Paints(AgeTransform child)
         {
             try
             {
-                return child != null
-                    && child.Visible
-                    && (parent == null || parent.StrictVisibility || child.Alpha > 0f);
+                return child != null && child.Visible && child.Alpha > 0f;
             }
             catch (Exception)
             {

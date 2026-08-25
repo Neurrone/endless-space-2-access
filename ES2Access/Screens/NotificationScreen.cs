@@ -1876,7 +1876,7 @@ namespace ES2Access.Screens
             List<AgeTransform> children = widget.Children;
             for (int i = 0; children != null && i < children.Count; i++)
             {
-                if (AgeWidgets.Paints(widget, children[i]))
+                if (AgeWidgets.Paints(children[i]))
                 {
                     Collect(children[i], lines, depth + 1);
                 }
@@ -1905,7 +1905,7 @@ namespace ES2Access.Screens
             List<AgeTransform> children = widget.Children;
             for (int i = 0; children != null && i < children.Count; i++)
             {
-                if (AgeWidgets.Paints(widget, children[i]) && Draws(children[i], depth + 1))
+                if (AgeWidgets.Paints(children[i]) && Draws(children[i], depth + 1))
                 {
                     return true;
                 }
@@ -2488,7 +2488,7 @@ namespace ES2Access.Screens
             for (int i = 0; children != null && i < children.Count; i++)
             {
                 AgeTransform child = children[i];
-                if (AgeWidgets.Paints(table, child) && Visible(child) && Draws(child, 0))
+                if (AgeWidgets.Paints(child) && Visible(child) && Draws(child, 0))
                 {
                     rows.Add(child);
                 }
@@ -4437,7 +4437,7 @@ namespace ES2Access.Screens
             List<AgeTransform> children = widget.Children;
             for (int i = 0; children != null && i < children.Count; i++)
             {
-                if (AgeWidgets.Paints(widget, children[i]))
+                if (AgeWidgets.Paints(children[i]))
                 {
                     Labels(children[i], into, depth + 1);
                 }
@@ -4946,13 +4946,12 @@ namespace ES2Access.Screens
                     depth++
                 )
                 {
-                    AgeTransform parent = at.Parent;
-                    if (!AgeWidgets.Paints(parent, at))
+                    if (!AgeWidgets.Paints(at))
                     {
                         return false;
                     }
 
-                    at = parent;
+                    at = at.Parent;
                 }
 
                 return ReferenceEquals(at, root);

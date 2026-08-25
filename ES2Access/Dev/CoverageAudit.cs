@@ -209,7 +209,7 @@ namespace ES2Access.Dev
             for (int i = 0; children != null && i < children.Count; i++)
             {
                 AgeTransform child = children[i];
-                if (child != null && child.Visible && AgeWidgets.Paints(widget, child))
+                if (AgeWidgets.Paints(child))
                 {
                     Walk(child, declared, result, depth + 1, budget);
                 }

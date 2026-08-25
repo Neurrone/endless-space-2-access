@@ -1509,7 +1509,7 @@ namespace ES2Access.Screens
             if (
                 widget == null
                 || !AgeWidgets.Visible(widget)
-                || !AgeWidgets.Paints(table, widget)
+                || !AgeWidgets.Paints(widget)
             )
             {
                 return;
