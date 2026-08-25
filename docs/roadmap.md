@@ -32,8 +32,12 @@ files above.
   network — the numbers were hand-fed); `RemainingTurnsNodeRooting` (a really rooted node —
   the toggled variant and a live count); `TimeBubbleHeader` + `Location` (a real time
   bubble); `ShipDesignInfoList` (the pirate diplomacy modal's own provider);
-  `AffectedByPlay` (a real play name in a battle — rides the battle fixture above). The
-  honor-action and hacking-program effect-sets sightings are the adjacent item below.
+  `AffectedByPlay` (a real play name in a battle — rides the battle fixture above);
+  `EffectsInQueue` with real content (measured 2026-08-25: the game's own data gives
+  visible in-progress effects ONLY to the Propaganda improvements — outpost panel, and the
+  per-party ones need a Dictatorship — every other in-progress descriptor is a bare marker
+  or `TooltipHidden`; caption proven, the effect list unproven). The honor-action and
+  hacking-program effect-sets sightings are the adjacent item below.
 - **Gene Hunters' population badges**: `AssimilationReadyIcon` and `AssimilatedIcon` DO carry
   game sentences (measured 2026-08-24), contradicting the mod comment that says they carry
   none — fix and verify together on a Gene Hunters game (DLC flip makes one startable).
