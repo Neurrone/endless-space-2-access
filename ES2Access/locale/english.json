@@ -490,6 +490,7 @@
   "senate.locked-law-slot": "Locked law slot",
   "senate.empty-senator-slot": "Empty senator slot",
   "senate.locked-senator-slot": "Locked senator slot",
+  "politics.current-experience": "Current Political experience: {0} ({1})",
   "election.representatives-counted": "{0} of {1} representatives counted",
   "screen.economy": "Economy",
   "economy.quantity": "Quantity {0}",

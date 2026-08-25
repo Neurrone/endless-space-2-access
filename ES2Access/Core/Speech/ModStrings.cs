@@ -1193,6 +1193,13 @@ namespace ES2Access.Core.Speech
         public const string SenateEmptySenatorSlot = "senate.empty-senator-slot";
         public const string SenateLockedSenatorSlot = "senate.locked-senator-slot";
 
+        // A law out of the backing party's reach draws where that party stands as a notch on a bar
+        // with no numbers on it, under the game's own caption for what the law REQUIRES ("Required
+        // Political experience:"). The caption for the drawn notch is the mod's, phrased on that one;
+        // its two slots are the tier the notch sits in, in the game's own word for it, and how far
+        // along the bar it is drawn, already written as a share ("20%").
+        public const string PoliticsCurrentExperience = "politics.current-experience";
+
         // The election's vote breakdown draws how far the count has got as a bare horizontal bar -
         // three coloured segments, no words anywhere on or around it. The mod's sentence is the only
         // way the two numbers behind it are said.
@@ -2078,6 +2085,7 @@ namespace ES2Access.Core.Speech
             { SenateLockedLawSlot, "Locked law slot" },
             { SenateEmptySenatorSlot, "Empty senator slot" },
             { SenateLockedSenatorSlot, "Locked senator slot" },
+            { PoliticsCurrentExperience, "Current Political experience: {0} ({1})" },
             { ElectionRepresentativesCounted, "{0} of {1} representatives counted" },
             { ScreenEconomy, "Economy" },
             { EconomyQuantity, "Quantity {0}" },

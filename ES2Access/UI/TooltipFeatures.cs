@@ -986,40 +986,39 @@ namespace ES2Access.UI
         private const string MinorAllyTitle = "%MinorFactionCurrentAllyTitle";
 
         /// <summary>
-        /// What a law asks of the party backing it, and - on a law the party is not yet good enough
-        /// for - where it actually stands.
+        /// What a law asks of the party backing it, the ladder that requirement is a rung of, and - on
+        /// a law the party is not yet good enough for - where it actually stands.
         ///
-        /// The panel writes the REQUIREMENT in words and draws the party's own standing as a marker on
-        /// the bar beneath them, with no word anywhere for it, so the two laws a player most needs to
-        /// tell apart - the one that can be passed and the one that cannot - read identically. The
-        /// marker is drawn only while the requirement is unmet, so its Naming both says where the party
-        /// stands and, by existing at all, says that this law is out of reach; the sentence the game
-        /// hangs on the marker is the second line, because it is the game's own words for what the
-        /// marker means and what has to happen before the law can be voted
+        /// The panel writes the REQUIREMENT in words and says everything else on a bar with no numbers
+        /// on it: ticks for the party's own scale, and a notch, drawn only while the requirement is
+        /// unmet, for where the party stands. So the two laws a player most needs to tell apart - the
+        /// one that can be passed and the one that cannot - read identically, and the adjective the
+        /// panel does write names a rung of a ladder nothing says the length of
         /// (<see cref="PoliticsExperience"/>).
         ///
-        /// A fact of its own (<see cref="TooltipPart.OwnLine"/>): the marker is drawn across the row
-        /// the requirement's caption and value are in, and "Required Political experience: Potent
-        /// Scientists Established" is a standing nobody has.
+        /// The naming is on the BOX the three are drawn in rather than on each of them, because the
+        /// order they are read in is not the order they are laid out: the notch is a sibling drawn
+        /// before the ticks and parked between two of them, so a reader that named each widget would
+        /// read the party's standing in the middle of the ladder. One naming for the whole bar keeps
+        /// the ladder whole and puts where-we-stand after it.
+        ///
+        /// A fact of its own (<see cref="TooltipPart.OwnLine"/>): the bar is drawn under the
+        /// requirement's caption and value, and running them together would read the law's requirement
+        /// and the party's standing as one sentence about neither.
         /// </summary>
         private static Dictionary<AgeTransform, Naming> PoliticsExperienceNames(
             PanelFeaturePoliticsExperiencePrerequisite feature
         )
         {
             Dictionary<AgeTransform, Naming> named = new Dictionary<AgeTransform, Naming>();
-            string standing = PoliticsExperience.Standing(feature);
-            AgeTransform marker = feature.PoliticsCurrentExperienceMarker;
-            if (marker == null || string.IsNullOrEmpty(standing))
+            AgeTransform bar = PoliticsExperience.Bar(feature);
+            string text = PoliticsExperience.BarText(feature);
+            if (bar == null || string.IsNullOrEmpty(text))
             {
                 return named;
             }
 
-            string note = AgeText.Tooltip(PoliticsExperience.Note(feature));
-            named[marker] = new Naming
-            {
-                Text = string.IsNullOrEmpty(note) ? standing : standing + "\n" + note,
-                OwnLine = true,
-            };
+            named[bar] = new Naming { Text = text, OwnLine = true };
             return named;
         }
 
