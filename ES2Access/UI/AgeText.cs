@@ -78,6 +78,16 @@ namespace ES2Access.UI
         /// first whenever it still holds a bracket, precisely so <see cref="Clean"/> gets a chance to
         /// substitute the icon's name before anything destroys it - the same reasoning
         /// <see cref="Tooltip(AgeTooltip)"/> already reads <c>Content</c> untouched for.
+        ///
+        /// A <c>%key</c> hides that same loss one level down. The bracket is not in <c>Text</c> at
+        /// all - it is in what the key TRANSLATES to - so the test above passes the label through to
+        /// <c>TranslatedText</c>, which the localizer has already run its icon pass over: the game's
+        /// own description of a system's approval says the words "can influence the [food] and
+        /// [influence] outputs" and the label renders "can influence the and outputs". Resolving the
+        /// key here, exactly as <see cref="LabelWithoutLeadingIcon"/> and <see cref="FullLabel"/>
+        /// already do, keeps the brackets long enough to name them. Only for a translation that
+        /// really does carry one: everywhere else <c>TranslatedText</c> stays the reading, because it
+        /// is the string the label actually drew, ellipsis and all.
         /// </summary>
         public static string Label(AgePrimitiveLabel label)
         {
@@ -93,9 +103,18 @@ namespace ES2Access.UI
             }
             catch (Exception) { }
 
-            if (!string.IsNullOrEmpty(raw) && raw.IndexOf('[') >= 0)
+            if (!string.IsNullOrEmpty(raw))
             {
-                return Clean(raw);
+                if (raw.IndexOf('[') >= 0)
+                {
+                    return Clean(raw);
+                }
+
+                string localized = LocalizedWithIcons(raw);
+                if (localized != null)
+                {
+                    return Clean(localized);
+                }
             }
 
             string text = null;
@@ -110,6 +129,32 @@ namespace ES2Access.UI
             catch (Exception) { }
 
             return Clean(text);
+        }
+
+        /// <summary>What a <c>%key</c> translates to, but only when the translation carries an icon
+        /// token - the one case where the key is worth resolving again rather than reading the string
+        /// the label drew. Null for everything else, including a key the localizer does not know
+        /// (which comes back as itself), so the caller falls through to the drawn text.</summary>
+        private static string LocalizedWithIcons(string raw)
+        {
+            try
+            {
+                if (!Gui.IsLocalizationKey(raw))
+                {
+                    return null;
+                }
+
+                string localized = Gui.Localize(raw);
+                return string.IsNullOrEmpty(localized)
+                    || localized == raw
+                    || localized.IndexOf('[') < 0
+                    ? null
+                    : localized;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
         }
 
         /// <summary>
