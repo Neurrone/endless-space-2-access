@@ -826,21 +826,24 @@ namespace ES2Access.UI
 
         /// <summary>
         /// Where a widget is DRAWN, for a question about layout: itself, unless the game shows it
-        /// through a scrolling window too small for it, in which case the window is.
+        /// through a scrolling window that cuts part of it off, in which case the window is.
         ///
-        /// A widget laid out bigger than the box it is shown in keeps its whole rectangle, and the part
-        /// that does not fit hangs invisibly across whatever is drawn below and beside it. The quest
-        /// popup writes its lore as one 429-pixel label inside a 182-pixel viewport, so its rectangle
-        /// runs off the bottom of the popup and every layout rule answers about a shape nobody can see:
-        /// the paragraph measures level with the heading underneath it and level with the buttons along
-        /// the bottom - which is how it went missing from a content area that is worked out from the
-        /// strips it lies between.
+        /// A widget the window cuts off keeps its whole rectangle, and the part that does not fit
+        /// hangs invisibly across whatever is drawn above, below and beside it. The quest popup writes
+        /// its lore as one 429-pixel label inside a 182-pixel viewport, so its rectangle runs off the
+        /// bottom of the popup; sharing the scroll content with the objective under it, the same label
+        /// can instead be scrolled so its top pokes out over the popup's title bar. Either way every
+        /// layout rule answers about a shape nobody can see - the paragraph measures level with a
+        /// strip and went missing from a content area that is worked out from the strips it lies
+        /// between.
         ///
-        /// The answer is the scrolling window rather than the viewport inside it: that is the box the
-        /// player sees the text in, and the one the game named. A widget merely SCROLLED out of sight is
-        /// not clipped in this sense and keeps its own rectangle - it is one row of a list the player
-        /// scrolls through, and putting every such row on the viewport's edge would stack a whole sheet
-        /// at one point.
+        /// So the test is whether the rectangle is partly SHOWING and partly CUT OFF - not whether the
+        /// widget alone outsizes the viewport, which misses one that only overruns it because a
+        /// sibling shares its scroll content. The answer is the scrolling window rather than the
+        /// viewport inside it: that is the box the player sees the text in, and the one the game
+        /// named. A widget merely SCROLLED out of sight is not clipped in this sense and keeps its own
+        /// rectangle - it is one row of a list the player scrolls through, and putting every such row
+        /// on the viewport's edge would stack a whole sheet at one point.
         /// </summary>
         public static AgeTransform Clipped(AgeTransform widget)
         {
@@ -859,9 +862,17 @@ namespace ES2Access.UI
                     if (view != null && view.Viewport != null)
                     {
                         Rect box = view.Viewport.GetGlobalPosition();
-                        return it.height > box.height + Rounding || it.width > box.width + Rounding
-                            ? at
-                            : widget;
+                        bool showing =
+                            it.yMin < box.yMax - Rounding
+                            && it.yMax > box.yMin + Rounding
+                            && it.xMin < box.xMax - Rounding
+                            && it.xMax > box.xMin + Rounding;
+                        bool cutOff =
+                            it.yMin < box.yMin - Rounding
+                            || it.yMax > box.yMax + Rounding
+                            || it.xMin < box.xMin - Rounding
+                            || it.xMax > box.xMax + Rounding;
+                        return showing && cutOff ? at : widget;
                     }
 
                     at = at.Parent;
