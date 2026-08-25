@@ -12,11 +12,11 @@ namespace ES2Access.UI
     ///
     /// A sighted player learns this from the map itself: a lozenge sitting on a system, a lozenge
     /// sliding along a lane, each with a number in it. So a place on this map has to say the same
-    /// thing, and it says it in the game's own words rather than in a phrase of ours. The number
-    /// comes from <c>GuiFleetGroup.Title</c>, which is what the game's own label tooltips are headed
-    /// with - and which already knows the difference between two fleets of your own, two of an
-    /// enemy's and two of an ally's ("2 Fleets", "2 Enemy Fleets", "2 Allied Fleets"), because the
-    /// count phrase it picks depends on the diplomatic relation.
+    /// thing, and it says it in the game's own words rather than in a phrase of ours. The words are
+    /// the four count phrases the game's own label tooltips are headed with, which tell two fleets of
+    /// your own from two of an enemy's and two of an ally's ("2 Fleets", "2 Enemy Fleets", "2 Allied
+    /// Fleets"). WHICH of the four is picked here rather than by <c>GuiFleetGroup.Title</c>, because
+    /// the game's own choice mistakes every minor civilization for an enemy - see <c>Standing</c>.
     ///
     /// WHICH fleets are drawn is never re-derived here. Both answers come from the repositories the
     /// two label windows themselves iterate - <c>DockLabelsWindow.ShowAllLabels</c> walks
@@ -94,30 +94,71 @@ namespace ES2Access.UI
         /// REGION of the map rather than about a place in it (the inspect cursor's square of galaxy),
         /// which has no node and no link to ask through.
         ///
-        /// The fleet label window's own repository and its own gate, so the answer is the set of
-        /// lozenges on the screen and no vision rule is re-derived. A parked fleet's
-        /// <c>GalaxyPosition</c> is its star's, which is what puts it in the same square as the star -
-        /// the small offset the map draws its berth at is a picture detail, not a place.
+        /// It takes BOTH repositories because the game splits the map's fleets between them: a fleet
+        /// stops being registered in the fleet label window's repository the moment it finishes docking
+        /// (<c>GalaxyFleet.RefreshVisibility</c> keeps it only while it is not visually docked), and
+        /// from then on the only place it appears is its system's docking slot - which is where the
+        /// dock label finds the fleets it draws in a lozenge. So the under-way half comes from the one
+        /// repository and the parked half from the other, and each half is the label window's own
+        /// visible set: the slot repository is already vision-filtered, so only the fleet repository
+        /// needs the extra label gate applied. A fleet still playing its docking transition is in both,
+        /// which is what the GUIDs are for.
+        ///
+        /// A parked fleet's <c>GalaxyPosition</c> is its star's, which is what puts it in the same
+        /// square as the star - the small offset the map draws its berth at is a picture detail, not a
+        /// place. A system's own hangar is not here for the same reason it is not in
+        /// <c>FleetsAt</c>: it is drawn in the lozenge but it is not a fleet.
         /// </summary>
         public static IList<Fleet> Drawing()
         {
             try
             {
-                IVisibleGalaxyFleetRepositoryService repository =
+                List<Fleet> fleets = new List<Fleet>();
+                List<GameEntityGUID> seen = new List<GameEntityGUID>();
+
+                IVisibleGalaxyFleetRepositoryService flying =
                     Services.GetService<IVisibleGalaxyFleetRepositoryService>();
-                if (repository == null)
+                if (flying != null)
                 {
-                    return None;
+                    ReadOnlyCollection<GalaxyFleet> drawn = flying.GalaxyFleets;
+                    for (int i = 0; i < drawn.Count; i++)
+                    {
+                        Fleet fleet = drawn[i] == null ? null : drawn[i].Fleet;
+                        if (fleet != null && !fleet.IsDestroyed && Drawn(fleet))
+                        {
+                            fleets.Add(fleet);
+                            seen.Add(fleet.GUID);
+                        }
+                    }
                 }
 
-                ReadOnlyCollection<GalaxyFleet> drawn = repository.GalaxyFleets;
-                List<Fleet> fleets = new List<Fleet>(drawn.Count);
-                for (int i = 0; i < drawn.Count; i++)
+                IVisibleDockingSlotRepositoryService parked =
+                    Services.GetService<IVisibleDockingSlotRepositoryService>();
+                if (parked != null)
                 {
-                    Fleet fleet = drawn[i] == null ? null : drawn[i].Fleet;
-                    if (fleet != null && !fleet.IsDestroyed && Drawn(fleet))
+                    ReadOnlyCollection<DockingSlotCursorTarget> slots = parked.DockingSlots;
+                    for (int i = 0; i < slots.Count; i++)
                     {
-                        fleets.Add(fleet);
+                        DockingSlotCursorTarget slot = slots[i];
+                        if (slot == null)
+                        {
+                            continue;
+                        }
+
+                        ReadOnlyCollection<GalaxyFleet> docked = slot.GalaxyFleets;
+                        for (int j = 0; j < docked.Count; j++)
+                        {
+                            Fleet fleet = docked[j] == null ? null : docked[j].Fleet;
+                            if (
+                                fleet != null
+                                && !fleet.IsDestroyed
+                                && !seen.Contains(fleet.GUID)
+                            )
+                            {
+                                fleets.Add(fleet);
+                                seen.Add(fleet.GUID);
+                            }
+                        }
                     }
                 }
 
@@ -368,11 +409,124 @@ namespace ES2Access.UI
             return (start == one && goal == two) || (start == two && goal == one);
         }
 
+        private const string CountPlayer = "%PanelFeatureFleetCountPlayer";
+        private const string CountEnemy = "%PanelFeatureFleetCountEnemy";
+        private const string CountNeutral = "%PanelFeatureFleetCountNeutral";
+        private const string CountAllied = "%PanelFeatureFleetCountAllied";
+
         /// <summary>The game's own heading for a lozenge holding these garrisons - the count phrase its
-        /// tooltip is titled with, which knows whose fleets they are.</summary>
+        /// tooltip is titled with, in the game's own words and its own singular/plural pair, with only
+        /// the CHOICE between the four phrases made here (<c>Standing</c>).</summary>
         private static string Title(List<Garrison> garrisons)
         {
-            return new GuiFleetGroup(garrisons).Title;
+            return Gui.Localize(
+                Standing(garrisons) + (garrisons.Count > 1 ? "Plural" : "Single"),
+                garrisons.Count.ToString()
+            );
+        }
+
+        /// <summary>
+        /// Which of the game's four count phrases a lozenge's owner earns.
+        ///
+        /// Whose the group is stays the game's answer (<c>GuiFleetGroup.Empire</c>): the first
+        /// garrison's empire when it is the player's, otherwise the empire it is FLYING THE COLOURS of,
+        /// so a disguised fleet reads as whoever it is pretending to be.
+        ///
+        /// For a major empire this walks the game's own ladder exactly, cold war included - the map
+        /// calls a cold-war neighbour's fleets enemy fleets and so does this, so the tooltip heading and
+        /// the spoken heading agree. Below that ladder is where the game's version goes wrong:
+        /// <c>GetDiplomaticRelationStateValue</c> knows only the eight MAJOR state names and answers -1
+        /// for everything else, which drops every minor faction, the Academy and the pirates into the
+        /// "at most cold war" branch and calls a friendly minor civilization's fleets enemy fleets. On
+        /// the screen they are drawn in their owner's own colour, so a sighted player is never told
+        /// that; only the heading is wrong, and it is wrong for exactly the states the value function
+        /// does not name. So those states are bucketed here: at war (which includes the Academy's own
+        /// war state) or an unbought pirate is an enemy, the three states that put a minor civilization
+        /// under the player's wing plus an Academy alliance are allied, and everything else - cordial,
+        /// amicable, friendly, not yet met - is neutral.
+        /// </summary>
+        private static string Standing(List<Garrison> garrisons)
+        {
+            try
+            {
+                Empire owner = new GuiFleetGroup(garrisons).Empire;
+                if (owner == null)
+                {
+                    return CountNeutral;
+                }
+
+                if (owner == Gui.PlayerEmpire)
+                {
+                    return CountPlayer;
+                }
+
+                DepartmentOfForeignAffairs foreign =
+                    Gui.PlayerEmpire == null
+                        ? null
+                        : Gui.PlayerEmpire.GetAgency<DepartmentOfForeignAffairs>();
+                DiplomaticRelation relation =
+                    foreign == null ? null : foreign.GetDiplomaticRelation(owner);
+                DiplomaticRelationState state = relation == null ? null : relation.State;
+                if (state == null)
+                {
+                    return CountNeutral;
+                }
+
+                int value = DiplomaticRelationState.GetDiplomaticRelationStateValue(state.Name);
+                if (value >= 0)
+                {
+                    if (
+                        value
+                        <= DiplomaticRelationState.GetDiplomaticRelationStateValue(
+                            DiplomaticRelationState.Names.Major.ColdWar
+                        )
+                    )
+                    {
+                        return CountEnemy;
+                    }
+
+                    if (
+                        value
+                        <= DiplomaticRelationState.GetDiplomaticRelationStateValue(
+                            DiplomaticRelationState.Names.Major.Peace
+                        )
+                    )
+                    {
+                        return CountNeutral;
+                    }
+
+                    return CountAllied;
+                }
+
+                if (owner is PirateEmpire)
+                {
+                    return state.Name == DiplomaticRelationState.Names.Pirate.Peace
+                        ? CountNeutral
+                        : CountEnemy;
+                }
+
+                if (state.IsWarState)
+                {
+                    return CountEnemy;
+                }
+
+                if (
+                    state.Name == DiplomaticRelationState.Names.Minor.Brainwashed
+                    || state.Name == DiplomaticRelationState.Names.Minor.Aligned
+                    || state.Name == DiplomaticRelationState.Names.Minor.Integrated
+                    || state.Name == DiplomaticRelationState.Names.Academy.Ally
+                )
+                {
+                    return CountAllied;
+                }
+
+                return CountNeutral;
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: reading which way the player stands to a fleet group threw: " + e);
+                return CountNeutral;
+            }
         }
 
         private static string Compose(List<List<Garrison>> groups)
