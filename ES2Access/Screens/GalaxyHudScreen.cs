@@ -3267,6 +3267,9 @@ namespace ES2Access.Screens
             // Once the camera is all the way in, the map pushes the system's own label off the top of
             // the screen and draws a tooltip anchor on the star instead - so that is what the pointer
             // is put on, or a tooltip meant for the system would be drawn where nobody can see it.
+            // Unless that anchor's card is the THIN one the game binds for a system it does not own
+            // (<see cref="OrbitalStarDossier"/>), in which case the fuller card wins and is drawn
+            // wherever it hangs: what the row says about a system must not change with the zoom.
             //
             // Asked at the moment of aiming, through the same rule that decided what the row DECLARES
             // (<see cref="StarAim"/>): the answer depends on where the camera is and the camera moves
@@ -5161,7 +5164,8 @@ namespace ES2Access.Screens
 
         /// <summary>
         /// Which of a system's star dossiers the pointer is put on: the one the orbital window parks
-        /// over the star once the camera is in, else the one on the label while the map is drawing the
+        /// over the star once the camera is in and it says the whole card
+        /// (<see cref="OrbitalStarDossier"/>), else the one on the label while the map is drawing the
         /// label, else a carrier of the mod's own bound the way the label binds its
         /// (<c>StarSystemLabel.BindLabelTooltip</c>).
         ///
@@ -5175,7 +5179,7 @@ namespace ES2Access.Screens
             StarSystemLabel label
         )
         {
-            AgeTooltip orbital = OrbitalStarTooltip(node);
+            AgeTooltip orbital = OrbitalStarDossier(node, empire);
             if (orbital != null)
             {
                 return orbital;
@@ -5196,14 +5200,17 @@ namespace ES2Access.Screens
 
         /// <summary>Whichever of a system's star tooltips the game is drawing. One at most can be up,
         /// so the first of them with anything to say is the one on the screen - and the mod's own
-        /// carrier is asked last, because it is the one nothing else would have drawn.</summary>
+        /// carrier is asked last, because it is the one nothing else would have drawn. The orbital
+        /// window's is skipped where it would say LESS than the label's
+        /// (<see cref="OrbitalStarDossier"/>), which is the same rule <see cref="StarAim"/> aims by,
+        /// so what is pointed at and what is read can never be two different cards.</summary>
         private static IList<string> StarDossierLines(
             StarSystemNode node,
             Empire empire,
             StarSystemLabel label
         )
         {
-            IList<string> words = TooltipWords(OrbitalStarTooltip(node));
+            IList<string> words = TooltipWords(OrbitalStarDossier(node, empire));
             if (words != null && words.Count > 0)
             {
                 return words;
@@ -5251,6 +5258,37 @@ namespace ES2Access.Screens
         {
             Func<IList<string>> lines = AgeWidgets.TooltipLines(tooltip);
             return lines == null ? null : lines();
+        }
+
+        /// <summary>
+        /// The orbital window's star tooltip where it says the whole card, and nothing where it says
+        /// a reduced one - so that a system's dossier is chosen by what it CONTAINS rather than by
+        /// which widget the game happens to be drawing.
+        ///
+        /// The window binds that tooltip with the PLAYER'S OWN colony
+        /// (<c>PlanetLabelsWindow_SystemOrbital.OnBeginShow</c> asks the colony repository for
+        /// <c>Gui.PlayerEmpire</c> alone), so on a system somebody ELSE has colonised it carries no
+        /// colony at all - and the card the tooltip window then assembles from it drops the owner out
+        /// of its header ("Osulo" rather than "Osulo - Niris") and leaves the system's defence off
+        /// altogether. The map's LABEL binds the same card ownership-blind (<see cref="LabelColony"/>),
+        /// so the fuller card exists the whole time; zooming in on a foreign system was simply
+        /// swapping it for the thinner one.
+        ///
+        /// Nothing here keys on the camera. The window is left shown and bound for several steps of
+        /// zooming back out (measured 2026-08-25), so a rule that trusted the zoom would still be
+        /// reading the thin card at label distance.
+        /// </summary>
+        private static AgeTooltip OrbitalStarDossier(StarSystemNode node, Empire empire)
+        {
+            AgeTooltip orbital = OrbitalStarTooltip(node);
+            if (orbital == null)
+            {
+                return null;
+            }
+
+            GuiStarSystem gui = orbital.Target as GuiStarSystem;
+            bool colonyless = gui == null || gui.ColonizedStarSystem == null;
+            return colonyless && LabelColony(node, empire) != null ? null : orbital;
         }
 
         /// <summary>
@@ -8814,6 +8852,12 @@ namespace ES2Access.Screens
         /// otherwise (<see cref="AddSystem"/>), a fleet's lozenge rather than its label
         /// (<see cref="FleetLozenge"/>), and the mote the map draws for anything out between the
         /// stars.
+        ///
+        /// One place it deliberately parts from the node's own aim: a system's row prefers the
+        /// FULLER card where the orbital window's is the thin one (<see cref="OrbitalStarDossier"/>),
+        /// and nothing here is read as words - this aim exists so that a watcher sees the tooltip
+        /// appear where the player is looking, and at that zoom the orbital anchor is the only one
+        /// of the two still on the screen.
         /// </summary>
         internal bool MapMark(
             IGameEntityWithGalaxyPosition thing,
