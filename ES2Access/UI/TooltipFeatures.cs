@@ -123,6 +123,8 @@ namespace ES2Access.UI
                 PanelFeatureAdditionalGarrisons more = feature as PanelFeatureAdditionalGarrisons;
                 PanelFeatureGroundBattleInfo invasion = feature as PanelFeatureGroundBattleInfo;
                 PanelFeatureMinorFaction minor = feature as PanelFeatureMinorFaction;
+                PanelFeaturePoliticsExperiencePrerequisite standing =
+                    feature as PanelFeaturePoliticsExperiencePrerequisite;
 
                 Dictionary<AgeTransform, Naming> named = null;
                 if (ship != null)
@@ -164,6 +166,11 @@ namespace ES2Access.UI
                 {
                     reading.Reader = "minor-faction";
                     named = MinorFactionNames(minor);
+                }
+                else if (standing != null)
+                {
+                    reading.Reader = "politics-experience";
+                    named = PoliticsExperienceNames(standing);
                 }
                 else if (power != null)
                 {
@@ -977,6 +984,44 @@ namespace ES2Access.UI
         private const string MinorRelationTitle = "%MinorFactionRelationTitle";
 
         private const string MinorAllyTitle = "%MinorFactionCurrentAllyTitle";
+
+        /// <summary>
+        /// What a law asks of the party backing it, and - on a law the party is not yet good enough
+        /// for - where it actually stands.
+        ///
+        /// The panel writes the REQUIREMENT in words and draws the party's own standing as a marker on
+        /// the bar beneath them, with no word anywhere for it, so the two laws a player most needs to
+        /// tell apart - the one that can be passed and the one that cannot - read identically. The
+        /// marker is drawn only while the requirement is unmet, so its Naming both says where the party
+        /// stands and, by existing at all, says that this law is out of reach; the sentence the game
+        /// hangs on the marker is the second line, because it is the game's own words for what the
+        /// marker means and what has to happen before the law can be voted
+        /// (<see cref="PoliticsExperience"/>).
+        ///
+        /// A fact of its own (<see cref="TooltipPart.OwnLine"/>): the marker is drawn across the row
+        /// the requirement's caption and value are in, and "Required Political experience: Potent
+        /// Scientists Established" is a standing nobody has.
+        /// </summary>
+        private static Dictionary<AgeTransform, Naming> PoliticsExperienceNames(
+            PanelFeaturePoliticsExperiencePrerequisite feature
+        )
+        {
+            Dictionary<AgeTransform, Naming> named = new Dictionary<AgeTransform, Naming>();
+            string standing = PoliticsExperience.Standing(feature);
+            AgeTransform marker = feature.PoliticsCurrentExperienceMarker;
+            if (marker == null || string.IsNullOrEmpty(standing))
+            {
+                return named;
+            }
+
+            string note = AgeText.Tooltip(PoliticsExperience.Note(feature));
+            named[marker] = new Naming
+            {
+                Text = string.IsNullOrEmpty(note) ? standing : standing + "\n" + note,
+                OwnLine = true,
+            };
+            return named;
+        }
 
         /// <summary>
         /// How many ships of each hull size, each count named by its size.

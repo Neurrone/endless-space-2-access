@@ -234,7 +234,7 @@ namespace ES2Access.Screens
             // those and never declared a second time.
             builder.SetRegion(ActionRegion);
             _cells.Clear();
-            Cells.AddReadout(_cells, Widget(window.PanelFeatureExperience), "laws:experience");
+            AddExperience(_cells, window.PanelFeatureExperience);
             Cells.AddReadout(_cells, Widget(window.PanelFeatureLawUpkeep), "laws:upkeep");
             AddAction(_cells, window.VoteButton, "laws:vote");
             AddAction(_cells, window.AbrogateButton, "laws:abolish");
@@ -276,6 +276,45 @@ namespace ES2Access.Screens
 
             AgeWidgets.Point(vtable, button);
             Cells.Add(cells, widget, ControlId.Referenced(widget, key), vtable);
+        }
+
+        /// <summary>
+        /// What the law asks of the party backing it, and where that party actually stands.
+        ///
+        /// The pane writes the requirement in words ("Required Political experience: Potent
+        /// Scientists") and draws the party's own standing as a marker on the bar under them, which is
+        /// the whole difference between a law that can be passed and one that cannot - and it is drawn
+        /// only while the law is out of reach. So the standing is the row's value
+        /// (<see cref="PoliticsExperience"/>), and the sentence the game hangs on the marker is the
+        /// row's explanation, which is where the game says what has to happen before the law can be
+        /// voted. Both go with the marker: a law the party already qualifies for reads as the
+        /// requirement alone, exactly as the pane draws it.
+        /// </summary>
+        private static void AddExperience(
+            List<Cell> cells,
+            PanelFeaturePoliticsExperiencePrerequisite feature
+        )
+        {
+            AgeTransform widget = Widget(feature);
+            if (
+                widget == null
+                || !AgeWidgets.Visible(widget)
+                || string.IsNullOrEmpty(AgeWidgets.TextOf(widget))
+            )
+            {
+                return;
+            }
+
+            PanelFeaturePoliticsExperiencePrerequisite it = feature;
+            AgeTooltip note = PoliticsExperience.Note(feature);
+            NodeVtable vtable = GraphNodes.Readout(
+                () => AgeWidgets.TextOf(widget),
+                () => PoliticsExperience.Standing(it),
+                null,
+                note
+            );
+            AgeWidgets.PointAt(vtable, widget, note);
+            Cells.Add(cells, widget, ControlId.Referenced(widget, "laws:experience"), vtable);
         }
 
         /// <summary>The law's own paragraph. It is permanently drawn, so it is spoken in full, and its
