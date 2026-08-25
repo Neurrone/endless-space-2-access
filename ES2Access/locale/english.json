@@ -430,6 +430,8 @@
   "system.representatives-panel": "Representatives",
   "system.outpost-panel": "Outpost",
   "system.governor-panel": "Governor",
+  "system.sanctuary-population-panel": "Sanctuary population",
+  "system.sanctuary-panel": "Sanctuary",
   "system.constructibles-panel": "Constructibles",
   "system.queue-panel": "Construction queue",
   "system.hangar-panel": "Hangar",

@@ -1070,6 +1070,8 @@ namespace ES2Access.Core.Speech
         public const string SystemRepresentativesPanel = "system.representatives-panel";
         public const string SystemOutpostPanel = "system.outpost-panel";
         public const string SystemGovernorPanel = "system.governor-panel";
+        public const string SystemSanctuaryPopulationPanel = "system.sanctuary-population-panel";
+        public const string SystemSanctuaryPanel = "system.sanctuary-panel";
         public const string SystemConstructiblesPanel = "system.constructibles-panel";
         public const string SystemQueuePanel = "system.queue-panel";
         public const string SystemHangarPanel = "system.hangar-panel";
@@ -2014,6 +2016,8 @@ namespace ES2Access.Core.Speech
             { SystemRepresentativesPanel, "Representatives" },
             { SystemOutpostPanel, "Outpost" },
             { SystemGovernorPanel, "Governor" },
+            { SystemSanctuaryPopulationPanel, "Sanctuary population" },
+            { SystemSanctuaryPanel, "Sanctuary" },
             { SystemConstructiblesPanel, "Constructibles" },
             { SystemQueuePanel, "Construction queue" },
             { SystemHangarPanel, "Hangar" },

@@ -1574,12 +1574,20 @@ namespace ES2Access.Screens
                 return ModStrings.Get(ModStrings.SystemGovernorPanel);
             }
 
-            // The two boxes a ghost system gets are the same kind of unlabelled box and fall through to
-            // that same sentence - "This panel lists information about the Population inhabiting this
-            // System" and "This panel displays information relative to this System's special features"
-            // (measured by lending them a colony, 2026-08-25). They are left on the fallback rather than
-            // given a word here, because the word would be one this mod wrote and nobody has approved
-            // one; the fallback at least says what the box is.
+            // The two boxes a ghost system gets are the same kind of unlabelled box, and without a name
+            // they fell through to their header sentences (measured by lending them a colony,
+            // 2026-08-25). "Sanctuary" is the game's own word for a ghost colony, so both names stay in
+            // its vocabulary even though the labels are the mod's (owner-approved 2026-08-25).
+            if (panel is GhostPopulationSidePanel)
+            {
+                return ModStrings.Get(ModStrings.SystemSanctuaryPopulationPanel);
+            }
+
+            if (panel is GhostInfoSidePanel)
+            {
+                return ModStrings.Get(ModStrings.SystemSanctuaryPanel);
+            }
+
             return SidePanels.Name(panel);
         }
 
