@@ -67,18 +67,20 @@ files above.
   the body keys, or let the audit take the body's key prefixes from the variant. Until then the
   four-invariant and tooltip audits prove NOTHING on notification popups — use direct
   `DevProbe.Tooltip()` probes.
-- **A foreign system's colony info side panel is keyboard-unreachable** (found 2026-08-25):
-  the game draws `ColonyInfoSidePanel` — including the "Security" garrison row, which has no
-  owner or war gate — for ANY selected colony in the galaxy view's `SidePanelsWindow`, but
-  the mod reads that panel only inside `SystemManagementScreen`, and the management view
-  level opens only for the player's own systems (`GuiManager.RequestStarSystemManagementViewLevel`;
-  foreign systems degrade to centering the map — the mod's `AddManagementView` doc comment).
-  Net effect: a screen-reader player can only learn an enemy garrison from the war-gated
-  attack-action tooltip or the under-siege icon, while a sighted player clicks the system and
-  reads Security. Fix direction: read the galaxy view's selection side panels (needs design +
-  measurement — how selection works by keyboard, what the panel set holds for foreign
-  colonies, restore etiquette). Full self-contained brief with cites and measurement list:
-  `foreign-system-info-handoff.md` at the repo root (uncommitted).
+- **Foreign-system info (2026-08-25 session, landed at parity) — remaining live checks
+  only.** The old premise here was wrong: the game shows the side panels for NOBODY on a
+  peaceful foreign system (sighted included; the peaceful surface is the label's hover
+  tooltip incl. its Defense line, already in the system row's buffer), so what shipped is
+  the traitor branch of `Manageable` (the game's own gate; the management child now opens a
+  traitor-held foreign system's page). Remaining: the REAL traitor order path (verified only
+  by injecting `EmpiresWithTraitors`; needs Penumbra); a MAJOR's foreign colony binding the
+  full panel set (a minor's trips a vanilla NRE — `StarSystemScreen.set_ColonizedStarSystem`
+  subscribes `DepartmentOfEducation` unguarded, so the page arrives with the previous
+  system's panel, same for sighted players); a real ghost system's panel CONTENT (structure
+  measured by lend, already declared by the generic walk); and an owner naming decision for
+  the two ghost stops (currently their header sentences — see
+  `SystemManagementScreen.PanelName`). Session detail: `system-info-proposals.md`
+  (uncommitted).
 - Ground-battle setup follow-ups (2026-08-25 stage shipped the screen model): live-check the
   defender-side role wording (`%…DefenderDescription` on YOUR side; needs a battle where the
   player defends) and the `[positiveImpactWhite]` half of the manpower marker strip (needs a
