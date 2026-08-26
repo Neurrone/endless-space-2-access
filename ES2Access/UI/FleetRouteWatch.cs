@@ -225,10 +225,13 @@ namespace ES2Access.UI
         /// named is not named here either, exactly as a starlane running into the dark is not.</summary>
         private void Say(Fleet fleet, string withPlace, string without, string place)
         {
+            // The fleet named the way every surface names one - what it is and what it is made of,
+            // not its name alone (<see cref="FleetPhrase.Full"/>).
+            string named = FleetPhrase.Full(fleet);
             _said.Add(
                 place == null
-                    ? ModStrings.Format(without, fleet.LocalizedName)
-                    : ModStrings.Format(withPlace, fleet.LocalizedName, place)
+                    ? ModStrings.Format(without, named)
+                    : ModStrings.Format(withPlace, named, place)
             );
         }
 

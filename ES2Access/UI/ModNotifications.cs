@@ -559,9 +559,19 @@ namespace ES2Access.UI
             }
 
             string where = PlaceName(_fleet.GetGameNode());
+            string owner = Owner();
             return where == null
-                ? ModStrings.Format(ModStrings.NotificationFleetSightedNowhere, EmpireName(_seen))
-                : ModStrings.Format(ModStrings.NotificationFleetSighted, EmpireName(_seen), where);
+                ? ModStrings.Format(ModStrings.NotificationFleetSightedNowhere, owner)
+                : ModStrings.Format(ModStrings.NotificationFleetSighted, owner, where);
+        }
+
+        /// <summary>Whose fleet has been sighted, said the way every other surface says it - which way
+        /// the player stands to them in front of their name (<see cref="FleetPhrase.Owned(Fleet)"/>),
+        /// so "enemy Leaper (AI) fleet sighted at Heka". The bare name is the fallback for the empire
+        /// the phrase cannot place, which is also the only form the colony sighting has.</summary>
+        private string Owner()
+        {
+            return FleetPhrase.Owned(_fleet) ?? EmpireName(_seen);
         }
 
         protected override string Body()
@@ -576,35 +586,43 @@ namespace ES2Access.UI
             }
 
             string where = PlaceName(_fleet.GetGameNode());
+            string owner = Owner();
             string body =
                 where == null
                     ? ModStrings.Format(
                         ModStrings.NotificationFleetSightedBodyNowhere,
-                        EmpireName(_seen),
+                        owner,
                         _fleet.LocalizedName
                     )
                     : ModStrings.Format(
                         ModStrings.NotificationFleetSightedBody,
-                        EmpireName(_seen),
+                        owner,
                         _fleet.LocalizedName,
                         where
                     );
 
-            // How big it is, only where the map itself would show the number - the same permission
-            // the fleet lozenge asks for (FleetPresence.ShowsShipCount). Its own sentence, so no
-            // language has to inflect a count glued into somebody else's.
-            if (!FleetPresence.ShowsShipCount(_fleet))
+            // What it is made of, only where the map itself would show a number on the lozenge - the
+            // same permission the fleet row asks for, asked inside the phrase
+            // (FleetPhrase.Composition answers null below it). Its own sentence, so no language has
+            // to inflect a list glued into somebody else's.
+            string composition = FleetPhrase.Composition(_fleet);
+            if (composition != null)
             {
-                return body;
+                body =
+                    body
+                    + " "
+                    + ModStrings.Format(ModStrings.NotificationFleetComposition, composition);
             }
 
-            return body
-                + " "
-                + ModStrings.Plural(
-                    ModStrings.NotificationFleetShipsOne,
-                    ModStrings.NotificationFleetShipsMany,
-                    _fleet.ShipsCount
-                );
+            // Who is commanding it. The game's own dossier draws a foreign hero's name with no
+            // ownership gate on it, so this is news about anybody's fleet.
+            string hero = FleetPhrase.HeroName(_fleet);
+            if (hero != null)
+            {
+                body = body + " " + ModStrings.Format(ModStrings.NotificationFleetHero, hero);
+            }
+
+            return body;
         }
 
         protected override IGameEntityWithGalaxyPosition Location()
@@ -654,26 +672,15 @@ namespace ES2Access.UI
         {
             string from = PlaceName(_from);
             string to = PlaceName(_to);
+            string fleet = FleetPhrase.Full(_fleet);
             if (to == null)
             {
-                return ModStrings.Format(
-                    ModStrings.NotificationFleetDispatchedPlain,
-                    _fleet.LocalizedName
-                );
+                return ModStrings.Format(ModStrings.NotificationFleetDispatchedPlain, fleet);
             }
 
             return from == null
-                ? ModStrings.Format(
-                    ModStrings.NotificationFleetDispatchedTo,
-                    _fleet.LocalizedName,
-                    to
-                )
-                : ModStrings.Format(
-                    ModStrings.NotificationFleetDispatched,
-                    _fleet.LocalizedName,
-                    from,
-                    to
-                );
+                ? ModStrings.Format(ModStrings.NotificationFleetDispatchedTo, fleet, to)
+                : ModStrings.Format(ModStrings.NotificationFleetDispatched, fleet, from, to);
         }
 
         protected override IGameEntityWithGalaxyPosition Location()
@@ -1096,13 +1103,10 @@ namespace ES2Access.UI
         protected override string Title()
         {
             string where = PlaceName(_at);
+            string fleet = FleetPhrase.Full(_fleet);
             return where == null
-                ? ModStrings.Format(ModStrings.NotificationFleetArrivedPlain, _fleet.LocalizedName)
-                : ModStrings.Format(
-                    ModStrings.NotificationFleetArrived,
-                    _fleet.LocalizedName,
-                    where
-                );
+                ? ModStrings.Format(ModStrings.NotificationFleetArrivedPlain, fleet)
+                : ModStrings.Format(ModStrings.NotificationFleetArrived, fleet, where);
         }
 
         protected override IGameEntityWithGalaxyPosition Location()
@@ -1138,9 +1142,10 @@ namespace ES2Access.UI
         protected override string Title()
         {
             string where = PlaceName(_at);
+            string fleet = FleetPhrase.Full(_fleet);
             return where == null
-                ? ModStrings.Format(ModStrings.FleetIntercepted, _fleet.LocalizedName)
-                : ModStrings.Format(ModStrings.FleetInterceptedAt, _fleet.LocalizedName, where);
+                ? ModStrings.Format(ModStrings.FleetIntercepted, fleet)
+                : ModStrings.Format(ModStrings.FleetInterceptedAt, fleet, where);
         }
 
         protected override IGameEntityWithGalaxyPosition Location()
@@ -1188,7 +1193,10 @@ namespace ES2Access.UI
 
         protected override string Title()
         {
-            string owner = EmpireName(_owner);
+            // Which way the player stands to the OWNER, which is the player's own diplomacy and not
+            // something read off a fleet nobody can see any more: the fleet's own object is stale by
+            // now, and its name and place come off the event for exactly that reason.
+            string owner = FleetPhrase.Owned(_owner) ?? EmpireName(_owner);
             string where = PlaceName(_lastSeen);
             if (string.IsNullOrEmpty(_name))
             {
@@ -1252,7 +1260,9 @@ namespace ES2Access.UI
 
         protected override string Title()
         {
-            string owner = EmpireName(_owner);
+            // The owner's standing, not the fleet's phrase: the fleet is only being said to have
+            // MOVED, and nothing new about what it is made of has been shown.
+            string owner = FleetPhrase.Owned(_owner) ?? EmpireName(_owner);
             string from = PlaceName(_from);
             string to = PlaceName(_to);
             if (to == null)
