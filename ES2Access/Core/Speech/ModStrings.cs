@@ -771,6 +771,17 @@ namespace ES2Access.Core.Speech
         public const string GalaxyProbeContextEdge = "galaxy.probe-context-edge";
         public const string GalaxyProbeContextExplored = "galaxy.probe-context-explored";
 
+        /// <summary>What is unexplored BESIDE the flight line rather than on it - the map a probe
+        /// would uncover in passing without ever flying into it. It follows the heading's own clause
+        /// and names the side it is on, because "unexplored 2-40" and "unexplored alongside to the
+        /// southwest 2-40" send a probe to two different places. Both sides are said as one clause
+        /// when they hold the same stretches. The ranges take
+        /// <see cref="GalaxyProbeContextRange"/> like every other range and never fold into the map's
+        /// edge: the clause before this one has already said where the edge is.</summary>
+        public const string GalaxyProbeContextAlongside = "galaxy.probe-context-alongside";
+        public const string GalaxyProbeContextAlongsideBoth =
+            "galaxy.probe-context-alongside-both";
+
         /// <summary>Where a probe drifting through the map is, said from the system it is nearest to -
         /// which is how a sighted player reads the mote: against the nearest star. The distance is in
         /// turns of the probe's OWN flight, the unit the map's own countdown beside it is already in;
@@ -1962,6 +1973,8 @@ namespace ES2Access.Core.Speech
             { GalaxyProbeContextToEdge, "{0} to the map edge at {1}" },
             { GalaxyProbeContextEdge, "map edge at {0}" },
             { GalaxyProbeContextExplored, "fully explored to the map edge at {0}" },
+            { GalaxyProbeContextAlongside, "; unexplored alongside to the {0}: {1}" },
+            { GalaxyProbeContextAlongsideBoth, "; unexplored alongside to both sides: {0}" },
             { GalaxyProbeAt, "at {0}" },
             { GalaxyProbeNear, "{0} of {1}" },
             { GalaxyProbeOutOne, "{0} of {1}, {2} turn out" },

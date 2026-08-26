@@ -147,14 +147,31 @@ namespace ES2Access.UI
             ConvexHull outline = Outline();
             MapPoint origin = new MapPoint(node.GalaxyPosition.X, node.GalaxyPosition.Y);
             MapExplored explored = new Fog(empire, visibility).Explored;
+            MapPoint anchor = Anchor();
             for (int i = 0; i < Bearings; i++)
             {
                 double bearing = Bearing(i);
                 _lines[i] = ProbeContextText.Line(
                     bearing,
-                    ProbeCorridor.Read(outline, origin, bearing, halfWidth, explored)
+                    ProbeCorridor.Read(outline, origin, anchor, bearing, halfWidth, explored)
                 );
             }
+        }
+
+        /// <summary>
+        /// The one-unit lattice every fog sample is snapped to: the empire's home, which is where the
+        /// spoken map coordinates count from and therefore where the inspect cursor's own tiles sit
+        /// (<see cref="GalaxyCoordinates.Origin"/> answers a GalaxyPosition - X east, Y north).
+        ///
+        /// Sharing the lattice is the whole point: a bearing that says "unexplored 12-15" is then a
+        /// claim about tiles the player can steer the inspect cursor onto and count fog in, rather
+        /// than about points between them. It is a constant for the length of a game, so re-asking it
+        /// per measurement costs nothing.
+        /// </summary>
+        private static MapPoint Anchor()
+        {
+            GalaxyPosition home = GalaxyCoordinates.Origin();
+            return new MapPoint(home.X, home.Y);
         }
 
         /// <summary>What the bearings say when the galaxy could not be read at all: the direction and

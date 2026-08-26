@@ -291,6 +291,8 @@
   "galaxy.probe-context-to-edge": "{0} to the map edge at {1}",
   "galaxy.probe-context-edge": "map edge at {0}",
   "galaxy.probe-context-explored": "fully explored to the map edge at {0}",
+  "galaxy.probe-context-alongside": "; unexplored alongside to the {0}: {1}",
+  "galaxy.probe-context-alongside-both": "; unexplored alongside to both sides: {0}",
   "galaxy.probe-at": "at {0}",
   "galaxy.probe-near": "{0} of {1}",
   "galaxy.probe-out-one": "{0} of {1}, {2} turn out",

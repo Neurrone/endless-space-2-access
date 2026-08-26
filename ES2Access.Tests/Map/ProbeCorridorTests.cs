@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Text;
 using ES2Access.Core.Map;
 using Xunit;
@@ -11,11 +12,16 @@ namespace ES2Access.Tests.Map
     /// runs merged because the explored unit between them was skipped, a range that stops a unit short
     /// of the rim, or a rim rounded twice into two different numbers.
     ///
+    /// And the way it WAS wrong: fog beside the flight line reported as fog on it, which turned a
+    /// heading a probe would find nothing down into the most promising one on the compass.
+    ///
     /// The span lists in the named cases were measured in the live galaxy; they are the strings the
     /// player actually heard, held here so the geometry can never quietly stop producing them.
     /// </summary>
     public class ProbeCorridorTests
     {
+        private static readonly MapPoint Home = new MapPoint(0, 0);
+
         /// <summary>A galaxy that is a wide square, so a heading out of the middle has room to run.
         /// </summary>
         private static ConvexHull Galaxy()
@@ -50,25 +56,39 @@ namespace ES2Access.Tests.Map
             };
         }
 
-        private static string Spans(ProbeCorridorReading reading)
+        private static string Text(IList<UnexploredSpan> spans)
         {
             StringBuilder text = new StringBuilder();
-            for (int i = 0; i < reading.Spans.Count; i++)
+            for (int i = 0; i < spans.Count; i++)
             {
                 if (i > 0)
                 {
                     text.Append(", ");
                 }
 
-                text.Append(reading.Spans[i]);
+                text.Append(spans[i]);
             }
 
             return text.ToString();
         }
 
+        private static string Spans(ProbeCorridorReading reading)
+        {
+            return Text(reading.Spans);
+        }
+
         private static ProbeCorridorReading North(double edge, MapExplored explored)
         {
-            return ProbeCorridor.Read(new MapPoint(0, 0), 0.0, edge, 2.0, explored);
+            return North(edge, 2.0, explored);
+        }
+
+        private static ProbeCorridorReading North(
+            double edge,
+            double halfWidth,
+            MapExplored explored
+        )
+        {
+            return ProbeCorridor.Read(Home, Home, 0.0, edge, halfWidth, explored);
         }
 
         [Fact]
@@ -82,6 +102,8 @@ namespace ES2Access.Tests.Map
             Assert.Equal("12-15, 17-18, 19-26, 31-35, 38-44, 46-58", Spans(reading));
             Assert.Equal(58, reading.Edge);
             Assert.True(reading.ReachesEdge);
+            Assert.Empty(reading.Clockwise);
+            Assert.Empty(reading.CounterClockwise);
         }
 
         [Fact]
@@ -122,6 +144,8 @@ namespace ES2Access.Tests.Map
             ProbeCorridorReading reading = North(40, Fog());
 
             Assert.Empty(reading.Spans);
+            Assert.Empty(reading.Clockwise);
+            Assert.Empty(reading.CounterClockwise);
             Assert.False(reading.ReachesEdge);
             Assert.Equal(40, reading.Edge);
         }
@@ -133,43 +157,169 @@ namespace ES2Access.Tests.Map
         }
 
         [Fact]
-        public void FogOnAFlankCountsEvenWhereTheLineItselfIsExplored()
+        public void AFogEdgeRunningParallelToTheHeadingLeavesTheFlightLineClear()
         {
-            // The live north heading: a pocket of explored map at 28-30 sits on the line and the fog
-            // to one side of it runs straight past. A probe launched into that pocket reveals nothing
-            // new, so the pocket does not break the stretch.
+            // The case that provoked the redesign: the live southeast bearing had a fog edge running
+            // alongside it, just inside the corridor. Read as one corridor it said the whole heading
+            // was unexplored from the system outwards; the line itself was known the entire way.
             MapExplored explored = delegate(double east, double north)
             {
-                int step = (int)Math.Round(north);
-                if (step < 7 || step >= 51)
-                {
-                    return true;
-                }
-
-                return step >= 28 && step <= 30 && east > -1;
+                return east > -3.5 || north < 2;
             };
 
-            ProbeCorridorReading reading = North(51, explored);
+            ProbeCorridorReading reading = North(40, 3.5, explored);
 
-            Assert.Equal("7-51", Spans(reading));
+            Assert.Empty(reading.Spans);
+            Assert.Empty(reading.Clockwise);
+            Assert.Equal("2-40", Text(reading.CounterClockwise));
         }
 
         [Fact]
-        public void AWiderCorridorIsSampledFurtherOut()
+        public void FogOnBothFlanksOfAKnownLineIsReadOnBothSides()
+        {
+            // A sliver of explored map the width of the line with fog either side of it.
+            MapExplored explored = delegate(double east, double north)
+            {
+                return !(north >= 5 && north < 9 && Math.Abs(east) > 1);
+            };
+
+            ProbeCorridorReading reading = North(40, explored);
+
+            Assert.Empty(reading.Spans);
+            Assert.Equal("5-9", Text(reading.Clockwise));
+            Assert.Equal("5-9", Text(reading.CounterClockwise));
+        }
+
+        [Fact]
+        public void NothingIsSaidAlongsideAStretchWhereTheLineItselfIsDark()
+        {
+            // Fog on one flank the whole way and fog across everything from 5 to 10. Over 5-10 the
+            // player is being sent into the dark anyway, so the flank there is not a separate fact -
+            // and the alongside stretches break around it rather than running through it.
+            MapExplored explored = delegate(double east, double north)
+            {
+                if (north >= 5 && north < 10)
+                {
+                    return false;
+                }
+
+                return east < 1;
+            };
+
+            ProbeCorridorReading reading = North(20, explored);
+
+            Assert.Equal("5-10", Spans(reading));
+            Assert.Equal("0-5, 10-20", Text(reading.Clockwise));
+            Assert.Empty(reading.CounterClockwise);
+        }
+
+        [Fact]
+        public void TheClockwiseSideOfDueNorthIsTheEastOne()
+        {
+            // Which side a stretch is on is half of what the sentence says, and the two sides are one
+            // sign apart in the geometry - so the sign is pinned against a heading whose sides have
+            // names everybody agrees on.
+            MapExplored explored = delegate(double east, double north)
+            {
+                return east < 1;
+            };
+
+            ProbeCorridorReading reading = North(20, explored);
+
+            Assert.Equal("0-20", Text(reading.Clockwise));
+            Assert.Empty(reading.CounterClockwise);
+        }
+
+        [Fact]
+        public void AWiderCorridorReachesFurtherAlongside()
         {
             // Fog confined to a narrow band beside the line: a corridor that does not reach it says
-            // the heading is clear, and one that does says it is not.
+            // the heading is clear either way, and one that does reports it as alongside - never as
+            // fog on the line, which is clear in both.
             MapExplored explored = delegate(double east, double north)
             {
                 int step = (int)Math.Round(north);
-                return !(step >= 10 && step < 14 && east > 2.5 && east < 3.5);
+                return !(step >= 10 && step < 14 && east > 1.5 && east < 3.5);
             };
 
-            Assert.Empty(ProbeCorridor.Read(new MapPoint(0, 0), 0, 40, 2.0, explored).Spans);
-            Assert.Equal(
-                "10-14",
-                Spans(ProbeCorridor.Read(new MapPoint(0, 0), 0, 40, 3.0, explored))
+            ProbeCorridorReading narrow = North(40, 1.0, explored);
+            Assert.Empty(narrow.Spans);
+            Assert.Empty(narrow.Clockwise);
+
+            ProbeCorridorReading wide = North(40, 3.0, explored);
+            Assert.Empty(wide.Spans);
+            Assert.Equal("10-14", Text(wide.Clockwise));
+        }
+
+        [Fact]
+        public void EveryFogSampleLandsOnTheAnchorsOwnLattice()
+        {
+            // The promise that makes the numbers checkable: a bearing's stretches are claims about the
+            // same tiles the inspect cursor counts fog in, so no sample may fall between them.
+            MapPoint anchor = new MapPoint(0.25, -0.5);
+            MapExplored explored = delegate(double east, double north)
+            {
+                Lattice(east - anchor.X, "east");
+                Lattice(north - anchor.Y, "north");
+                return true;
+            };
+
+            ProbeCorridorReading reading = ProbeCorridor.Read(
+                new MapPoint(0.25, -0.5),
+                anchor,
+                22.5,
+                40,
+                3.5,
+                explored
             );
+
+            Assert.Empty(reading.Spans);
+        }
+
+        private static void Lattice(double offset, string axis)
+        {
+            if (Math.Abs(offset - Math.Round(offset)) > 1e-9)
+            {
+                throw new InvalidOperationException(
+                    "the fog was asked at " + offset + " " + axis + " of the anchor"
+                );
+            }
+        }
+
+        [Fact]
+        public void AnAnchorConsistentGalaxyReadsTheSameFromAnyAnchor()
+        {
+            // Only the fractional part of the anchor matters, and only because it decides which tiles
+            // exist - so a galaxy whose fog is laid out on the anchor's own tiles reads identically
+            // wherever the anchor is put.
+            MapPoint[] anchors = new[]
+            {
+                new MapPoint(0, 0),
+                new MapPoint(0.37, -0.62),
+                new MapPoint(-2, 5),
+            };
+
+            for (int i = 0; i < anchors.Length; i++)
+            {
+                MapPoint anchor = anchors[i];
+                MapPoint at = anchor;
+                MapExplored explored = delegate(double east, double north)
+                {
+                    double step = Math.Round(north - at.Y);
+                    return !(step >= 12 && step < 15);
+                };
+
+                ProbeCorridorReading reading = ProbeCorridor.Read(
+                    anchor,
+                    anchor,
+                    0.0,
+                    40,
+                    2.0,
+                    explored
+                );
+
+                Assert.Equal("12-15", Spans(reading));
+            }
         }
 
         [Fact]
@@ -208,7 +358,8 @@ namespace ES2Access.Tests.Map
 
             ProbeCorridorReading reading = ProbeCorridor.Read(
                 Galaxy(),
-                new MapPoint(0, 0),
+                Home,
+                Home,
                 45.0,
                 0.0,
                 explored
@@ -219,11 +370,21 @@ namespace ES2Access.Tests.Map
         }
 
         [Fact]
+        public void TheHeadingIsKeptSoThatItsSidesCanBeNamed()
+        {
+            Assert.Equal(
+                225.0,
+                ProbeCorridor.Read(Galaxy(), Home, Home, 225.0, 2.0, Fog()).Bearing
+            );
+        }
+
+        [Fact]
         public void TheGalaxysOwnOutlineSuppliesTheRim()
         {
             ProbeCorridorReading reading = ProbeCorridor.Read(
                 Galaxy(),
                 new MapPoint(0, 60),
+                Home,
                 0.0,
                 2.0,
                 Fog()

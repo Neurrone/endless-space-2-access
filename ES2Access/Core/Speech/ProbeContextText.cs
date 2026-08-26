@@ -18,6 +18,12 @@ namespace ES2Access.Core.Speech
     /// stretch that runs off the map is said as running to the map's edge rather than as a range,
     /// because its far end is not a place the fog ends - it is where the galaxy does.
     ///
+    /// Then, and only then, what is unexplored ALONGSIDE the line: a clause of its own, named by the
+    /// compass word of the side it is on, so that a flight line the probe would find nothing on is
+    /// never announced as fog. Its ranges never fold into the map's edge - the main clause has already
+    /// said where the edge is, and saying it twice in one sentence is what makes the second one sound
+    /// like a different number. Two sides carrying the identical stretches are said once, as both.
+    ///
     /// Engine-free: it says a <see cref="ProbeCorridorReading"/> and knows nothing about how one was
     /// measured.
     /// </summary>
@@ -59,6 +65,13 @@ namespace ES2Access.Core.Speech
         /// already said which way it is talking about.</summary>
         public static string Context(ProbeCorridorReading reading)
         {
+            return Line(reading) + Alongside(reading);
+        }
+
+        /// <summary>What the probe would fly THROUGH - the flight line's own fog and the rim.
+        /// </summary>
+        private static string Line(ProbeCorridorReading reading)
+        {
             if (reading.Spans.Count == 0)
             {
                 return ModStrings.Format(ModStrings.GalaxyProbeContextExplored, reading.Edge);
@@ -99,6 +112,69 @@ namespace ES2Access.Core.Speech
             }
 
             return message.Build();
+        }
+
+        /// <summary>What the probe would uncover in PASSING, as its own clause per side - or nothing
+        /// at all, which is most bearings. The two sides are the heading turned a quarter circle each
+        /// way; when they hold the same stretches they are one clause naming both, since hearing the
+        /// same six numbers twice tells the player nothing the word "both" does not.</summary>
+        private static string Alongside(ProbeCorridorReading reading)
+        {
+            string clockwise = Ranges(reading.Clockwise);
+            string counter = Ranges(reading.CounterClockwise);
+            if (clockwise == null && counter == null)
+            {
+                return string.Empty;
+            }
+
+            if (clockwise == counter)
+            {
+                return ModStrings.Format(
+                    ModStrings.GalaxyProbeContextAlongsideBoth,
+                    clockwise
+                );
+            }
+
+            return Side(reading.Bearing + 90.0, clockwise)
+                + Side(reading.Bearing - 90.0, counter);
+        }
+
+        /// <summary>One side's clause, empty when that side has nothing unexplored beside the line.
+        /// </summary>
+        private static string Side(double bearing, string ranges)
+        {
+            return ranges == null
+                ? string.Empty
+                : ModStrings.Format(
+                    ModStrings.GalaxyProbeContextAlongside,
+                    ModStrings.Get(CompassDirections.KeyForBearing16(bearing)),
+                    ranges
+                );
+        }
+
+        /// <summary>Plain ranges, in the same "{a}-{b}" the line's own stretches are said in and joined
+        /// the same way - null where there are none, so that a side with nothing to report is silent
+        /// rather than said as an empty list.</summary>
+        private static string Ranges(IList<UnexploredSpan> spans)
+        {
+            if (spans.Count == 0)
+            {
+                return null;
+            }
+
+            List<string> ranges = new List<string>(spans.Count);
+            for (int i = 0; i < spans.Count; i++)
+            {
+                ranges.Add(
+                    ModStrings.Format(
+                        ModStrings.GalaxyProbeContextRange,
+                        spans[i].From,
+                        spans[i].To
+                    )
+                );
+            }
+
+            return SpokenList.Join(ranges);
         }
     }
 }
