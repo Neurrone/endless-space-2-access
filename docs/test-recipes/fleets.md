@@ -22,7 +22,9 @@ Victors Dusay→Primus, Protectors Dusay→Rigel, each with exactly ONE row —
 so `POST /type defe|victo|protec|patrio` each answer `results:1`. The two free movers both fly Dusay
 → Heka and each gets one row under Heka: "1st Conquerors Navy, -1, -6, free moving to Heka, 1 ships,
 Moving to Heka, 0 movement points, Arrives in 2 turns, 8 of 9", the Vanquishers the same at `9 of 9`;
-`vanq`/`conq` each answer `results:1`, landing on the Heka row.
+`vanq`/`conq` each answer `results:1`, landing on the Heka row. (Transcript predates 2026-08-26:
+the "1 ships" part is now the design composition — for an automated delivery fleet, the game's
+size+role words, "Small Logistics" — re-measure on the next pass over this fixture.)
 **The counts have DRIFTED between measurements** — one pass recorded Dusay "1 fleet under way
 nearby" with Primus 1, Rigel 1, Osulo 1, Heracles none, Heka 2; a later one recorded Dusay "3 fleets
 under way nearby" (its three lane fleets) and Heka "2". Both are kept because neither has been
@@ -61,6 +63,8 @@ Two probes stand in for the missing fixture, and both are real evidence rather t
   `1st Protectors Navy` under Dusay: "… on starlane 2, west, **1 ships**, Moving to an unexplored
   system, 6 movement points, …" became "… on starlane 2, west, Moving to an unexplored system,
   6 movement points, …" — the part omitted, no placeholder, its two Visible neighbours unchanged.
+  (Predates 2026-08-26: the gated part is now the design composition — "Patrol" and the like —
+  through `FleetPhrase.Composition`; the omission behaviour is the same.)
   The write survives a graph rebuild; the game's own visibility pass puts it back at the next turn.
 - **A foreign fleet's route.** `FleetRoute.Committed(f)` and `.CommittedLines(f)` answer null for
   any of Leaper's fleets (they need no visibility to be reachable from `/eval`), while

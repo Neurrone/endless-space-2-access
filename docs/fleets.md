@@ -41,10 +41,14 @@ and ship transfer. Index and charter: `README.md`.
   Fleets" or "2 Allied Fleets" depending on whose they are. But the comparison behind that choice is
   `DiplomaticRelationState.GetDiplomaticRelationStateValue(state)` against ColdWar and Peace — and that
   function answers **-1 for every non-Major state name**, so a cold war, every minor faction, every
-  lesser empire and every pirate all read as ENEMY in the count phrase. Mod policy (owner's taxonomy,
-  2026-08-16): the mod picks the phrase itself rather than handing the group to `GuiFleetGroup.Title` —
-  enemy is at war (pirates included), friendly is the player's own plus alliance/team, everything else
-  is neutral. **And the group a DOCK label counts is not the docking slot's fleet list**:
+  lesser empire and every pirate all read as ENEMY in the count phrase. Mod policy (owner ruling
+  2026-08-26, superseding the 2026-08-16 war-only taxonomy): the mod has ONE standing ladder,
+  `FleetPresence.SideOf` — the game's own value ladder for majors (at most cold war = enemy, at most
+  peace = neutral, above = friendly), pirates enemy unless the bought peace, any war state enemy,
+  Brainwashed/Aligned/Integrated/Academy-ally friendly, everything else neutral — deliberately NOT
+  reproducing the `-1` fallthrough. The count phrases (`FleetPresence.Standing`), the spoken fleet
+  phrase (`FleetPhrase.Owned`) and the scanner's affiliation buckets (`GalaxyScanner.Scope`, which
+  files the player's own things with friendly because the filters offer three buckets) all read it. **And the group a DOCK label counts is not the docking slot's fleet list**:
   `DockLabel.FillDockedGarrisons` (:186-212) prepends the system's own hangar garrison while it holds
   ships of the player's and no mothership is attached, so the drawn number can exceed
   `DockingSlot.GalaxyFleets.Count` (measured at Dusay: hangar present, `ShipsCount == 0`, drawn title
@@ -105,8 +109,9 @@ and ship transfer. Index and charter: `README.md`.
   `(int)fleet.Visibility[Gui.PlayerEmpire] >= 3`; below that the lozenge is drawn with the fleet
   missing from its own total, and no placeholder is shown. Same test in
   `RefreshMultiGarrisonsChevrons` :219-232. **Mod policy**: `FleetPresence.ShowsShipCount` is that
-  predicate verbatim and `GalaxyHudScreen.FleetText` omits the "N ships" part outright when it is
-  false. An empire's own fleets are always at full visibility, so nothing changes for them.
+  predicate verbatim, and it now gates `FleetPhrase.Composition` (the design-name ship groups that
+  replaced the "N ships" total, 2026-08-26), which answers null below it — the whole part omitted,
+  no placeholder. An empire's own fleets are always at full visibility, so nothing changes for them.
 - **Drawing a foreign fleet's PATH is a separate and much narrower permission than selecting it.**
   `GalaxyFleetCursorTarget.ValidateSelection` :17-24 refuses only AUTOMATED fleets — there is no
   owner test, so the mouse selects anybody's fleet — but `GalaxyGarrisonCursor.RenderPath` :525

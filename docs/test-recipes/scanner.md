@@ -50,6 +50,13 @@ Shift cycle skips. Fleets are six, all the player's, so neutral and enemy fleets
 Nothing here can produce the "⟨scope⟩, none found" line: it needs a scope to empty UNDER a parked
 cursor, and cycling skips empties by design — fixture-blocked, covered by `ScannerCursorTests`.
 
+> **Taxonomy dating (2026-08-26):** the affiliation buckets now follow the game's own ladder
+> through `FleetPresence.SideOf` — a cold-war MAJOR's systems, fleets and probes file under
+> ENEMY, not neutral (measured: Kais joined the enemy systems the moment the ruling landed).
+> The transcripts and counts below were measured under the older war-only taxonomy on
+> `[Beginner] test`, where no major was met, so its figures happen to be unaffected — but
+> re-measure before using them as a baseline on any save with a met major.
+
 ## The subcategories of systems
 
 **The seven SUBCATEGORIES of systems** cycle all → friendly → neutral → enemy →
