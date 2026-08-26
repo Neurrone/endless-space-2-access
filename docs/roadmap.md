@@ -417,10 +417,6 @@ belong in the files above.
   through the same helper, so what is unsighted is the PREFAB question: whether those prefabs
   draw a caption beside each bar, which would make the added one a double-name.
 
-- Type-ahead does not index PROBES: a probe under a collapsed system's branch is not
-  findable by typing (fleets are — `TypeAheadScope` indexes fleets only). Surfaced when
-  probes moved from the top-level open-space region to their nearest star (2026-08-14).
-
 ## To decide (owner)
 
 - The drawn-heading lookup renames two out-game pages: "Multiplayer room" and "Asset export".
