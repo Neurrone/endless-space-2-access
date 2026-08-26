@@ -47,6 +47,9 @@ namespace ES2Access.UI
     /// <see cref="Emit"/> - a graph row per drawn band, walked sideways - is reserved for a real table,
     /// whose columns are a fact of the game's own data. <see cref="EmitRow"/> is the third case: a set
     /// the screen KNOWS is one line that the layout box wrapped anyway.
+    ///
+    /// Hoisted out of <c>SystemManagementScreen</c>, which still reaches it through its own two-line
+    /// <c>Add</c>/<c>Emit</c> wrappers.
     /// </summary>
     public static class Cells
     {
@@ -249,6 +252,9 @@ namespace ES2Access.UI
         ///
         /// A half the stop's own name already covers takes no word of its own - that half is a bare
         /// <see cref="GraphBuilder.SetRegion"/> at the caller, not a call here.
+        ///
+        /// Was <c>SystemPanels.Half</c>, private; promoted unchanged when the mod library needed a
+        /// third copy of it.
         /// </summary>
         public static void EmitRegion(
             GraphBuilder builder,

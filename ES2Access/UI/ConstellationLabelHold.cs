@@ -10,7 +10,7 @@ namespace ES2Access.UI
     /// The name a constellation's tooltip hangs on is a label the map CULLS: the labels window asks
     /// the culling service which constellations are on screen and hides every label the answer does
     /// not name (<c>ConstellationLabelsWindow.MarkLabelsCulling</c>), and at the camera positions the
-    /// game is actually played at the answer names none of them (es2-facts). A hidden label draws no
+    /// game is actually played at the answer names none of them (ES2 facts). A hidden label draws no
     /// tooltip however carefully the pointer is aimed at it, so the group node for a constellation
     /// declared a dossier the player could never hear.
     ///

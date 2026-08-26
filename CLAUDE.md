@@ -41,8 +41,10 @@ While the game runs (dev server enabled), `http://127.0.0.1:8771` serves routes 
 speech, GUI inspection, a C# REPL, input injection, hot reload, and loading saves. **Read
 `docs/dev-loop.md` before testing** — the loop itself: route reference, REPL gotchas, and
 the screen-agnostic verification patterns. Its index points at the per-need files: the
-helper inventory (`docs/helpers.md`), the ES2 interaction language — layers, keys, claims —
-(`docs/interaction.md`), and the per-screen test recipes (`docs/test-recipes.md`).
+ES2 interaction language — layers, keys, claims — (`docs/interaction.md`), the per-screen
+test recipes (`docs/test-recipes/`), and the game-facts topic files indexed by
+`docs/README.md`. Helper contracts live in their source doc comments; the dev/verification
+helpers are tabled in `docs/dev-loop.md` §1.
 
 Architecture: `ES2Access.Loader` is the actual BepInEx plugin and never reloads — it owns the dev server, `/eval` (vendored `mcs.dll`, a net35 Mono.CSharp), and the mod lifecycle. `ES2Access.dll` is loaded from bytes (never file-locked, so `dotnet build` works while the game runs) and must tear down fully in `ModEntry.Stop` — every feature must be reload-safe. Only `ES2Access.dll` hot-reloads; changes to the loader require a game restart. Harmony instances are created with a unique-per-load id (fixed ids let a stale `UnpatchSelf` strip a newer load's patches).
 
@@ -66,44 +68,21 @@ with the tools in `docs/dev-loop.md`. Repo-specific enforcement on top of that p
   measurement-settled for pipelining.
 - Evidence pairs use `crop-shot.ps1`; never read full-frame screenshots into context.
 - A stage is not done until each of its outputs has landed in the file whose charter fits
-  it: a new helper in `docs/helpers.md` (one row; the contract lives in its doc comment); a
-  new layer number or key binding in `docs/interaction.md`; a per-screen recipe or fixture
-  note in `docs/test-recipes.md`; a new route, REPL gotcha, or screen-agnostic verification
-  pattern in `docs/dev-loop.md` (ONLY the loop lives there, and it stays under ~300 lines);
-  a game-mechanism finding or the mod-policy decision it forces in `docs/es2-facts.md` (or
-  another ES2-specific file under `docs/`); a screen-status change or future-feature prep
-  in `docs/roadmap.md`; a game-agnostic lesson in the stage report for the proposals
-  ledger, never written into `docs/generic/` directly. When in doubt, a pointer line may
+  it: a new helper's contract in its own doc comment (dev/verification helpers also get a
+  one-line row in `docs/dev-loop.md` §1); a new layer number or key binding in
+  `docs/interaction.md`; a per-screen recipe or fixture note in the matching
+  `docs/test-recipes/<family>.md` (`docs/test-recipes/README.md` is the index); a new
+  route, REPL gotcha, or screen-agnostic verification pattern in `docs/dev-loop.md` (ONLY
+  the loop lives there, and it stays under ~350 lines); a game-mechanism finding or the
+  mod-policy decision it forces in the docs topic file that fits (`docs/README.md` is the
+  index); a screen-status change or future-feature prep
+  in `docs/roadmap.md`. When in doubt, a pointer line may
   sit in the convenient file — the content goes where its charter says.
-- Each implementation round ends with the consolidated manual test handed to me in a
-  per-session `.md` file at the repo root, named after the session (e.g.
-  `galaxy-review-test-report.md`) and updated as that session's stages land — never left
-  buried in subagent reports. It carries the test steps with expected speech, the
-  fixture-blocked items, and any open judgment calls.
-  - Similarly, per-session documentation and suggested process improvements should be saved to a per-session file like `galaxy-review-proposals.md` and kept current during that session
-- Both of those session specific files are never committed
 - Quit the game (`POST /quit`, poll the process) once live testing is done — it is
   CPU-taxing; leave it running only while the next stage or my own manual testing still
   needs it.
 
-**Generic-docs bar.** The generic docs are optimized for total future reading cost, not
-completeness. A proposed change to `docs/generic/` must clear ALL of: (1) game-agnostic —
-provoked by a mechanism a second game plausibly shares; ES2-specific lessons go to
-`docs/es2-facts.md` or another ES2 doc; (2) paid for — a stage in this repo shipped a
-defect or re-derived something the line would have prevented; (3) not already covered —
-quote the nearest existing lines and check the reference mods before claiming a gap; a
-stage failing to APPLY an existing rule is evidence the rule works, not a gap; (4) cheapest
-form — tighten an existing line over adding one, and a rule about mod-framework code goes
-in that source file's doc comment. Subagents report every candidate; the main agent applies
-this filter and should expect to reject most.
-
-After implementing a feature or major change:
-
-1. Offer to check if the game accessibility modding documentation should be updated
-2. If I approve it, consult the generic game accessibility mod documentation and check if the documentation should be improved to assist in future tasks
-3. If so, propose what changes you would make
-4. If I approve, make the changes
-5. Reflect on what I could have done better to facilitate your work for future sessions
+Update `docs/generic/` only when I ask.
 
 ## Delegation
 
@@ -118,17 +97,16 @@ model ("if the game's model is select-then-act, keep it"), never prescribed ahea
 measurement. Research subagents get one required doc (`reverse-engineering.md`);
 implementation subagents get `docs/dev-loop.md` plus the chapters its index maps to the
 task. The main agent globs and pastes verified file lists into research briefs, and
-treats a subagent's negative existence claims as unverified. Every subagent report keeps
-two closing sections: what the generic docs lacked, and a token audit. Any known-stale
+treats a subagent's negative existence claims as unverified. Brief every subagent to be
+token efficient. Any known-stale
 doc line a stage might follow gets an explicit override in the brief until the doc is
 fixed.
 
 **If you are a subagent working on this repo:** before touching source, read
 `docs/dev-loop.md` and the `docs/generic` chapters its index maps to your task — even if
-your brief forgot to say so. The generic docs are the primary deliverable and each stage is
-a test of them: your report must include a "what the generic docs lacked or got wrong"
-section, or it is incomplete and comes back. Ad-hoc briefing files may supplement the
-generic docs, never replace them. Updating the generic docs themselves is main-agent work.
+your brief forgot to say so. Ad-hoc briefing files may supplement the generic docs, never
+replace them. Be token efficient. Never update `docs/generic/` — it changes only when I
+ask, and that is main-agent work.
 
 Multi-stage implementation work runs as sequential subagent stages by default, because
 stages share the one live game instance and the design of a screen usually depends on live

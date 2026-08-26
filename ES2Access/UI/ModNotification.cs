@@ -95,7 +95,7 @@ namespace ES2Access.UI
                 Turn = CurrentTurn();
                 guiElement = Gui.GetExtendedGuiElement(BorrowedElement);
                 // The quiet overload: the engine LOGS an error when a window is not registered yet, and
-                // the game forwards every Error to its telemetry (es2-facts).
+                // the game forwards every Error to its telemetry (ES2 facts).
                 NotificationWindow = Gui.GuiService.GetWindow<InformationNotificationWindow>(false);
             }
             catch (Exception e)

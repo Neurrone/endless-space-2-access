@@ -339,10 +339,22 @@ namespace ES2Access.Core.UI.Graph
             return this;
         }
 
-        /// <summary>Add a read-only line (label only; no actions).</summary>
-        public GraphBuilder AddLabel(ControlId id, Func<string> label)
+        /// <summary>Add a read-only line (label only; no actions).
+        /// <paramref name="scrollAnchor"/> is what the line is DRAWN as, where the id does not name it:
+        /// a line keyed by a string has no rectangle, so the panel it sits in had nothing to follow and
+        /// a jump to the end of a long one left the cursor below the viewport
+        /// (<see cref="NodeVtable.ScrollAnchor"/>). Object-typed because this assembly knows nothing of
+        /// the game's toolkit.</summary>
+        public GraphBuilder AddLabel(ControlId id, Func<string> label, object scrollAnchor = null)
         {
-            return AddItem(id, new NodeVtable { Announcements = new[] { new NodeAnnouncement(label) } });
+            return AddItem(
+                id,
+                new NodeVtable
+                {
+                    Announcements = new[] { new NodeAnnouncement(label) },
+                    ScrollAnchor = scrollAnchor,
+                }
+            );
         }
 
         // ---- raw mode ----

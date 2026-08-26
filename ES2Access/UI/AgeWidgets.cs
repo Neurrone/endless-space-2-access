@@ -1327,6 +1327,9 @@ namespace ES2Access.UI
         ///
         /// The widget is the fallback, so a control with no tooltip anywhere is still pointed at and
         /// anything hoverable under it still lights up.
+        ///
+        /// It replaced three private per-screen copies of the same aim, which is why every screen
+        /// with a tooltip resolved from elsewhere hands it in here rather than re-deriving one.
         /// </summary>
         public static void PointAt(NodeVtable vtable, AgeTransform widget, AgeTooltip tooltip)
         {
@@ -1429,7 +1432,9 @@ namespace ES2Access.UI
         }
 
         /// <summary>Every text a widget draws, in one phrase - the caption of a group whose words the
-        /// game spreads over an icon, a number and a label. Icon tokens come back as their names.
+        /// game spreads over an icon, a number and a label. It is read off the LABELS and nothing
+        /// else: an icon token inside label text is named, a standalone icon widget beside them is
+        /// not read at all.
         /// </summary>
         public static string TextOf(AgeTransform widget, int maxDepth = 6)
         {

@@ -143,7 +143,7 @@ against DLC18).
 | `FireIonWaveFleetAction` (toggle) | fleet actions | DLC16 | **full** — generic `FleetActionItem` toggle reading | — | Behemoth |
 | `FleetActionKamikaze`, `LaunchMiningProbeFleetAction`, `InitiateTerraformPlanetFleetAction`, `InitiateRestorePlanetFleetAction`, `InitiateReduceAnomalyFleetAction` (all `FleetActions_DLC2`) | fleet actions + orbital card secondary buttons | DLC16 | **full** — `GalaxyHudScreen.cs:1391-1396` names all five off the game's own action titles; `FleetPanel` covers the fleet-panel copies | — | Behemoth in system |
 | `DestroyPlanetFleetAction` button on an orbital card | Galaxy orbital cards | DLC16 | **full** — `GalaxyHudScreen.cs:1396` (`%DestroyPlanetFleetActionTitle`) | — | — |
-| Behemoth "work on this planet" opener list | Planet card → `PlanetConstructiblesScreen` | DLC16 + Behemoth in system | **full** — `Screens/PlanetConstructiblesScreen.cs:9,31` explicitly documents it and its fixture limit | — | Behemoth in system (`docs/test-recipes.md:342,353` already records this) |
+| Behemoth "work on this planet" opener list | Planet card → `PlanetConstructiblesScreen` | DLC16 + Behemoth in system | **full** — `Screens/PlanetConstructiblesScreen.cs:9,31` explicitly documents it and its fixture limit | — | Behemoth in system (`docs/test-recipes/systems-and-planets.md` already records this) |
 | **Destroyed-planet status** — `GuiPlanet.PlanetStatuses.Destroyed` on the planet label, orbital card and system label | Galaxy labels / planet page | DLC16 (`GuiPlanet.cs:387`, `PlanetLabel.cs:288`, `PlanetLabel_SystemOrbital.cs:1241`, `StarSystemLabel.cs:2290`, `PanelFeaturePlanetStatus.cs:50`) | **UNVERIFIED** — five separate call sites; the mod's readouts read drawn text so it *may* fall out for free, but the status is drawn partly as icon state | medium — "this planet no longer exists" | a destroyed planet |
 | `ContextualIconJuggernautEffects` on a system label | Galaxy map labels | Behemoth effects on the system | **full** — `UI/SystemLabelReadout.cs:103` | — | Behemoth parked |
 | `SimulationDescriptors[Citadel_DLC2]` / `DamageAppliedByCitadel` battle play | Battle tactics / advanced report | DLC16 + citadel Behemoth | **UNVERIFIED, likely full** — battle plays and encounter-play elements are read generically by `BattleTacticsScreen` / `AdvancedEncounterPlayScreen` | low | citadel battle |
@@ -185,7 +185,7 @@ Gate sites: `ScanOverlayWindow.cs:242-253` (dashboard + both banners hard-hidden
 | `InvisibilityFleetAction` toggle | fleet actions | DLC18 | **full** — generic toggle reading | — | — |
 | `HackingOperationOutcomeSelectionNotificationWindow` — outcomes table + parameters sub-table + Validate + countdown gauge | Notifications | DLC18 | **partial** — `Variant` with both `Choices` tables and `Confirm` (`NotificationScreen.cs:2620-2636`); `docs/roadmap.md:17` still tracks one-of-N semantics, the parameters sub-choice and the countdown gauge | medium (tracked) | hacking outcome |
 | `DisplacementReportNotificationWindow` (2 tables behind a toggle) | Notifications | DLC18 | **full** — `NotificationScreen.cs:2533-2543` | — | — |
-| **`DefenseHackingProgramEncounteredNotificationWindow`** — carries a `CancelHackButton` and nothing else | Notifications | DLC18 | **partial** — no `Variant`; a bare-icon action button is exactly what the shared caption rule drops (`NotificationScreen.cs:2416-2422` describes the `Gateways` hatch for this) | medium — "cancel the hack" may be undeclared | hitting a defense program |
+| `DefenseHackingProgramEncounteredNotificationWindow` — carries a `CancelHackButton` and nothing else | Notifications | DLC18 | **full** — `CancelHackButton` carries the caption "Cancel Hacking Op", so the shared caption rule names and declares it already; no `Variant` and no per-window wiring needed. (Its `OnShowLocationCb` also toggles the scan view — already recorded in `notifications.md`.) | — | hitting a defense program |
 | The other 30 `Notifications_DLC3` popups (backdoor lifecycle ×6, operation cancel reasons ×4, ghost system/planet lost, hidden-home-system detected ×3, resources stolen from pirates, traitor discovered/removed ×4, …) | Notifications | DLC18 | **full (baseline)** — `SimpleDescription`-shaped | — | — |
 | Bailiff auctions `AuctionActionCancelHackingProgram` / `AuctionActionDestroyHackingBeacon` (`Gui/GuiElements[Bailiff_DLC3].xml`) | `BailiffReportNotificationWindow` lines | DLC18 | **full** — the report's cloned-line table has a `Variant` (`NotificationScreen.cs:2453-2459`); its totals footer is already on `docs/roadmap.md:14-15` | — | bailiff turn |
 | `Setting HackingOutcomeTimer` + `HackingOutcomeTimerDuration` (4 values) | New game / advanced settings | DLC18 `Setting` restriction | **full** — generic settings reading | — | — |
@@ -289,11 +289,9 @@ Reviewed for absence-safety:
    `ScanOverlayWindow.cs:249-254` sets `Visible = false` on when absent. Safe.
 3. `AcademyModalScreen.IsActive` (`:66-77`) requires `window.Shown && window.IsReady &&
    Panels(window) != null`. Without DLC22 the window is never shown (no `AcademyEmpire` to bind —
-   `AcademyModalWindow.cs:111`). Safe as written. **The brief's premise that this incident is
-   recorded in `docs/test-recipes.md` is stale: grep for "academy" over `docs/*.md` returns only
-   `es2-architecture.md:95`, `es2-facts.md:539` and two `roadmap.md` pointers — no incident note
-   exists anywhere in the docs.** Either it was never written down or it was lost; worth a line in
-   `docs/test-recipes.md` either way.
+   `AcademyModalWindow.cs:111`). Safe as written. The `AcademyModalWindow` half-bind hazard is
+   recorded in `docs/test-recipes/empire-screens.md` ("Diplomacy, the academy pair and the
+   forced-show sweep").
 4. `MilitaryScreen.BuildSidePanels` iterates `SidePanels.Drawn`, and `MilitaryScreen.cs:319` only
    *shows* the Behemoth panel when owned. Safe — the panel is simply absent.
 5. `SystemLabelReadout` reads `label.PirateGroup`, `TraitorCountGroup`,
@@ -328,13 +326,14 @@ Resolve the open question in `GlobalHud.cs:150-153`. Serves `ObliteratorFireCurs
 `docs/roadmap.md` §To decide first. Multi-node routes (hacking operations) probably need their own
 gesture and can be deferred to Stage D.
 
-**Stage C — the six unregistered notification `Variant`s (small, mechanical)**
+**Stage C — the unregistered notification `Variant`s (small, mechanical)**
 One dictionary entry each in `NotificationScreen.Register()`:
 `PirateMissionReportNotificationWindow` (2 tables, DLC9),
 `ObliteratorAttackReportNotificationWindow` (4 bare labels, DLC16),
-`AcademyRoleNotificationWindow` (reuse the existing `Roles(...)` helper, DLC22),
-`DefenseHackingProgramEncounteredNotificationWindow` (`CancelHackButton` as a `Gateway`/`Confirm`,
-DLC18). Also worth folding in: the `docs/roadmap.md:14-19` items that happen to be DLC ones
+`AcademyRoleNotificationWindow` (reuse the existing `Roles(...)` helper, DLC22).
+(`DefenseHackingProgramEncounteredNotificationWindow` needs none — its `CancelHackButton` is
+captioned "Cancel Hacking Op" and the shared caption rule already declares it.)
+Also worth folding in: the `docs/roadmap.md:14-19` items that happen to be DLC ones
 (bailiff totals footer, relics ×2 line classes, hacking parameters sub-choice + countdown gauge).
 All fixture-blocked for sighting; all cheap and low-risk to write.
 
@@ -358,12 +357,12 @@ orbital card — three small label/panel reads that share a fixture requirement.
 **Stage F — documentation debt, no code (tiny, do it now)**
 - `docs/roadmap.md`: add "cursor target modes have no keyboard confirm" to **To decide**; add the
   Behemoth specialization modal and the hacking subsystem to **To build**.
-- `docs/es2-facts.md`: record the DLC gate mechanism (three kinds of gate, §1), the
+- `docs/install.md`: record the DLC gate mechanism (three kinds of gate, §1), the
   `AcademyExpansion == "None"` second gate on the Academy home (`GameManager.cs:1106-1112`), and
   that "Behemoth" is `Juggernaut` in code.
-- `docs/test-recipes.md`: record that **no expansion is installed in this environment** (§2), so
-  every DLC surface is fixture-blocked by ownership rather than by turn count — and record the
-  Academy-bind hazard that the brief believed was already there.
+- `docs/test-recipes/modals-and-outgame.md`: record that **no expansion is installed in this
+  environment** (§2), so every DLC surface is fixture-blocked by ownership rather than by turn
+  count. (The Academy-bind hazard is already in `docs/test-recipes/empire-screens.md`.)
 
 **Not worth a stage:** Untold Tales, Lost Symphony, Harmonic Memories, Muck and Makers, Dark
 Matter, Renegade Fleets, Celestial Worlds, Community Challenge, Cravers Prime, Pathfinders and the

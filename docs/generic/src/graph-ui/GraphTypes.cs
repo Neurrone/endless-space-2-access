@@ -216,6 +216,13 @@ namespace ES2Access.Core.UI.Graph
         /// again). A control without one leaves the key alone.</summary>
         public Action OnGoTo;
 
+        /// <summary>Optional. EMPTY THIS CONTROL - take away what it holds without replacing it, on
+        /// the controls where the game itself has no such affordance at all (a key-binding field: the
+        /// mouse can only clear one by focusing it and clicking away). Like <see cref="OnGoTo"/> its
+        /// presence IS the key's availability, asked before the press and again in the handler, so a
+        /// control without one leaves the key to the game.</summary>
+        public Action OnClear;
+
         /// <summary>Optional. The command the game puts on a DOUBLE click here - the second click
         /// inside its own double-click window, which several of this game's controls answer with a
         /// command of their own (a fleet row shows that fleet on the map, a picked choice is
@@ -347,6 +354,18 @@ namespace ES2Access.Core.UI.Graph
         /// on every cell of the row, null outside a table. See <see cref="TableRow"/> for what the
         /// announcer does with it.</summary>
         public TableRow Row;
+
+        /// <summary>
+        /// What to bring into view when focus lands here, for a control whose own identity carries no
+        /// backing object.
+        ///
+        /// Scrolling follows the node's <c>ControlId.Reference</c>, and a table gives that reference
+        /// to the row's PRIMARY cell alone - identity is per cell, and every cell answering to the
+        /// same object would make a moved row resolve to whichever cell was reached first. So a cell
+        /// in another column names the row here instead: same scrolling, untouched identity. Null
+        /// everywhere else, where the reference is the answer.
+        /// </summary>
+        public object ScrollAnchor;
 
         /// <summary>Optional (Expandable groups): override HOW expansion state changes. When null the
         /// engine mutates the persistent expansion set (<see cref="GraphState.Expanded"/>); an adapter

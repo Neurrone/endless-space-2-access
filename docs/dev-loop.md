@@ -1,33 +1,23 @@
 # ES2 dev loop — build, reload, verify
 
-Fixtures: **`[Beginner] test`** (turn 21 — Dusay a colony, Heka an outpost, two free-movement
-fleets on Dusay→Heka legs; `DevProbe.Saves()` reports titles) and **`[Midgame] quests fleets`**
-(turn 3 — the one with a quest pinned).
-Screen-by-screen status: `docs/roadmap.md`; working a specific screen and its fixture
-limits: `docs/test-recipes.md`. This file is
+Fixtures and what each save shows: `docs/test-recipes/fixtures.md` (`DevProbe.Saves()` reports
+titles). Screen-by-screen status: `docs/roadmap.md`; working a specific screen and its fixture
+limits: `docs/test-recipes/README.md`. This file is
 ONLY the loop: the dev server, the REPL, and the screen-agnostic verification patterns.
 
 | Task | Read first |
 |---|---|
 | Any screen work, start to finish (the process) | `docs/generic/making-screens-accessible.md` |
 | Modeling/navigating mechanics (graph, stops, rows, regions, focus) | `docs/generic/ui-navigation.md` |
+| A camera-rendered world: map, zoom tiers, fog, places | `docs/generic/world-navigation.md` |
 | Anything keys: bindings, repeat, stand-down, game collisions | `docs/generic/input.md`, then `docs/interaction.md` |
 | ES2 layers, key map, claim rules (building a screen) | `docs/interaction.md` |
-| Which helper already exists for X | `docs/helpers.md` |
-| Working a specific screen against the live game | `docs/test-recipes.md` (grep the screen) |
+| Which helper already exists for X | grep `ES2Access/` — a helper's contract is its own doc comment; the dev/verification ones are in §1 below |
+| Working a specific screen against the live game | `docs/test-recipes/README.md` (grep the screen) |
 | Widget kinds, roles, announcements, activation idioms | `docs/generic/widgets.md` |
-| Review buffers / re-readable content | `docs/generic/buffers.md` |
-| Tooltips (short/long rule, drawn readback, visual parity) | `docs/generic/tooltips.md` |
-| Inline icons / symbols in text | `docs/generic/icons-and-symbols.md` |
-| Dev server, REPL, test loops | `docs/generic/dev-server.md`, then §1–2 here |
-| Speech pipeline / interruption | `docs/generic/speech.md` |
-| Localization / ModStrings / exact game text | `docs/generic/localization.md` |
-| Decompiled-code research | `docs/generic/reverse-engineering.md` |
-| Hot reload / loader boundaries | `docs/generic/hot-reload.md` |
-| Per-frame cost, GC hitches, scan/allocation discipline | `docs/generic/performance.md` |
-| New-game bring-up on another title | `docs/generic/new-game-playbook.md`, `project-bootstrap.md` |
-| Game-mechanism findings | `docs/es2-facts.md` |
-| ES2 architecture / AGE GUI framework orientation | `docs/es2-architecture.md`, `docs/es2-gui-framework.md` |
+| Game-mechanism findings | the topic file that fits (`docs/README.md` indexes them) |
+| Any other generic concern (speech, buffers, tooltips, icons, localization, hot reload, performance, dev server, decompiled research, bootstrap) | `docs/generic/README.md` indexes the chapters |
+| ES2 architecture / AGE GUI framework orientation | `docs/architecture.md`, `docs/gui.md` |
 
 ## 1. Dev server — quick reference
 
@@ -74,8 +64,7 @@ mutes voicing but `/speech` still captures.
   and ready" indefinitely (`wait-game.ps1 ingame` then times out silently with exit 0);
   re-issuing the same `POST /loadsave` recovers in ~8 s — that recovery is the PLANET-OVERVIEW
   case only. NEVER issue it while the end-turn button reads "Pending": into a wedged turn it
-  kills the process (2026-08-24 crash dump: the AI threads' whole-domain type scan races the
-  REPL's emitted TypeBuilders in `mono_class_is_subclass_of`)
+  kills the process (why: `install.md`, "The Mono runtime under the REPL")
 - `POST /key?hold=MS&gap=MS&text=1` — body = a key SEQUENCE pressed as real OS key events at
   the game's window (`Return`, `Ctrl+I`, `Shift+Tab`; `+Name` holds, `-Name` releases;
   `text=1` types the body; arrows are `UpArrow`/`DownArrow`/…). The only route where a key is
@@ -95,6 +84,27 @@ mutes voicing but `/speech` still captures.
   assuming a 503 meant failure
 
 During boot/loading, main-thread routes 503 — retry; `/speech` and `/log` keep answering.
+
+### Verification helpers (`/eval` one-liners)
+
+The full contract of each is its own doc comment; this is the inventory.
+
+| Helper | One line | File |
+|---|---|---|
+| `DevProbe` | `Screen() Stack() State() Saves() Camera() Windows() Patches() Claims(keys?) TooltipDelay(s) Tooltip() UnknownIcons()` | `ES2Access/Dev/DevProbe.cs` |
+| `DevProbe.Trace(tag)` | One LOG line per frame (stack, focused screen, cursor, declared node count, tutorial/window state) and always false, so `POST /wait` on it records a whole transition | `ES2Access/Dev/DevProbe.cs` |
+| `DevProbe.RowTrace(tag)` | Per-frame recording of what the FOCUSED control would say — off the LAST BUILT render, so a rebuild-less change shows late | `ES2Access/Dev/DevProbe.cs` |
+| `DevProbe.TooltipTrace(tag)` / `TooltipPipe()` | The hover-to-tooltip pipeline in one line (`999` timer = the parked request); `TooltipTrace` logs per frame and is always false, `TooltipPipe` answers one poll | `ES2Access/Dev/DevProbe.cs` |
+| `DevProbe.Claims("Escape,Return")` | What the input layer claims FROM the game, side-effect-free, per named key (the latch, `claimsBack`, `layerLive`, `leftToGame`) | `ES2Access/Dev/DevProbe.cs` |
+| `DevProbe.EndEdit(commit)` / `ArmCommit()` | Fallback levers for a text edit's endings when `POST /key` cannot run (locked desktop, unfocused game); real key events stay the primary route | `ES2Access/Dev/DevProbe.cs` |
+| `DevProbe.Notifications()` | The notification engine's live state in one answer — mapping count + owning assembly, patch owners per hooked method, the turn subscription, last-seen table size, and the influence sweep's `ground*` counters | `ES2Access/Dev/DevProbe.cs` |
+| `DevProbe.TooltipParity()` | The promised/misaimed/uncovered tooltip self-check on the FOCUSED screen, eight buckets (four findings, four context), aim read off `NodeVtable.PointsAt` rather than re-derived | `ES2Access/Dev/TooltipAudit.cs` |
+| `DevProbe.NotificationParity()` | The notification family's self-check on whichever popup is up — painted-but-unsaid, spoken-but-undrawn, mis-banded, promised/lost tooltips; also runs by itself on every popup (`/log?grep=parity`) | `ES2Access/Dev/NotificationAudit.cs` |
+| `DevProbe.Coverage(wholeTree?)` | What the FOCUSED screen never declared (tooltips AND actions) against everything the engine draws; a COLLAPSED branch reads as uncovered, and `live` roots walk the windows BEHIND the screen too | `ES2Access/Dev/CoverageAudit.cs` |
+
+`POST /input` is `ModInput.Inject` — actions at the production dispatch point; it touches no
+physical key state, so game-also-sees-the-key bugs need link-by-link probes (`DevProbe.Claims`
+is the layer's end of one).
 
 ### REPL gotchas (`POST /eval`)
 
@@ -122,15 +132,12 @@ During boot/loading, main-thread routes 503 — retry; `/speech` and `/log` keep
 - The IIFE-lambda crutch does NOT work as a `POST /wait` predicate — it silently evaluates
   false every frame. A wait body must be a plain expression; side effects are fine
   (`DevProbe.TooltipTrace(...)` is one), lambdas are not.
-- `DevProbe.Notifications()` is the one answer for the notification engine's state
-  (mappings + owning assembly, patch owners, subscriptions, table sizes) — ask it before
-  hand-probing that machinery.
 - Descriptor-driven simulation properties may shrug off `SetPropertyBaseValue` + `Refresh`
   (`Fleet.FreeMovementSpeed` stayed 0; `Empire.CanUseStrategicForRecipe` stuck): write with a
   read-back probe first; if it reverts, grant the DESCRIPTOR's source or call it fixture-blocked.
 - An order the game posts only from inside a specific turn phase must never be posted from the
-  REPL — grant the precondition instead, or spend the turns (`OrderSpawnPirateLair` from `/eval`
-  wedged the turn machinery for good, 2026-08-24).
+  REPL — grant the precondition instead, or spend the turns (what it costs:
+  `install.md`, "The Mono runtime under the REPL").
 
 
 ## 2. Verification patterns (screen-agnostic)
@@ -152,7 +159,10 @@ an image.
 cold launch to in-game in one command; `.\wait-game.ps1 <menu|ingame|loading|dialog>` blocks
 on a state. Boot ≤ 1 min. Both scripts via the PowerShell tool (Bash-invoked PowerShell hits
 execution policy). First act in-game: minimize the tutorial popup (recipe in
-`test-recipes.md`) — expanded, it eats every injection as `unconsumed`.
+`test-recipes/fixtures.md`) — expanded, it eats every injection as `unconsumed`.
+A `launcher-x64` orphaned into the *Services* session (session 0) never exits and cannot be killed;
+the launch guard skips other sessions, but if a launch still fails,
+`tasklist /FI "PID eq <pid>"` tells you which session you are fighting.
 
 **Reload loop.** `dotnet build ES2Access/ES2Access.csproj` → `POST /reload` →
 `GET /loader/status` (`staleBuild:false`, `modAssemblyName` incremented). It can answer
@@ -172,10 +182,9 @@ no text, so `/gui/age` prunes it and the dump agrees with whatever the mod decla
 is really a blind spot. Print `Alpha` beside `Visible` in an `/eval` walk and check it against a
 `crop-shot.ps1` of the same rect.
 
-**An un-watched announcement part is still ASKED every frame** (`GraphNavigator.FillBuffer`
-recomposes the focused node's `LeafText` each tick; `watch: false` means "not compared"). An
-expensive part needs a memo keyed on its inputs; prove it with a call counter read across ~100
-frames — no transcript or dump shows the waste (`FleetRoute.Searches`: 121 frames → 0 searches).
+**An un-watched announcement part is still ASKED every frame** (`watch: false` means "not
+compared") — an expensive part needs an input-keyed memo, and only a call counter read across
+~100 frames proves it; no transcript or dump shows the waste.
 
 **The renderer-field oracle.** When the mod recomputes something the game only DRAWS, drive the
 game's renderer from `/eval`, read its private display list by reflection
@@ -195,23 +204,17 @@ no pointer, so a renderer-drawn tooltip reads empty on a control that is fine li
 still-focused node after mutating its state answers the PRE-mutation content — leave and return.
 A LIST ENTRY's tooltip: open the list, step onto the entry, THEN probe. `TooltipDelay(-1)` after.
 
-**The mechanical tooltip check.** `DevProbe.TooltipParity()` — the notification audit's tooltip half
-on whichever screen is FOCUSED: `promised` (a node claims a dossier nothing would draw), `misaimed`
-(judged by the node's own `PointsAt`, never a re-derived aim), `uncovered`/`unread` (a drawable
-tooltip no node covers / whose words none carries), plus `decoration`, `hidden` (alpha gate off) and
-`undescribed` (a GAME defect: no `GuiTooltipDescription`). The painted half needs
-`Screen.RootTransform`; `"root": null` means declaration-side buckets only — not a clean screen.
-Parity COUNTS on a culling surface depend on camera position; compare buckets, not totals.
-A run taken while a MODAL is focused inherits the screen BEHIND it — subtract findings by
-root path before judging, or a clean modal reads as a disaster.
+**The mechanical tooltip check.** `DevProbe.TooltipParity()` on whichever screen is FOCUSED; the
+buckets and what each means are in `ES2Access/Dev/TooltipAudit.cs`. Reading a run: the painted half needs
+`Screen.RootTransform`, so `"root": null` means declaration-side buckets only, not a clean screen;
+COUNTS on a culling surface depend on camera position, so compare buckets, not totals; and a run
+taken while a MODAL is focused inherits the screen BEHIND it — subtract findings by root path
+before judging, or a clean modal reads as a disaster.
 
-**A card's tooltip is rarely on the card.** `PointerFocus` shows the tooltip of the widget it is
-pointed AT, so pointing at a row whose tooltip hangs off a child inside it (the planet card's
-anomaly rows) draws nothing while the node still declares the tooltip and its buffer stays empty. Point at
-`tooltip.AgeTransform`, not at the row — and prove it with `DevProbe.Tooltip()`, which is the
-only thing that catches it. The same trap bites reading, not just aiming: a component's tooltip
-may hang off a descendant, so a group walk reading `widget.AgeTooltip` gets silence — read the
-component's own Tooltip field.
+**A card's tooltip is rarely on the card.** Aim at `tooltip.AgeTransform`, never at the row that
+contains it, and READ the component's own Tooltip field, never `widget.AgeTooltip` — both fail
+silently, and `DevProbe.Tooltip()` is the only probe that catches either (worked example:
+`test-recipes/systems-and-planets.md`).
 
 **A tooltip family's evidence pair.** Focus the control, `DevProbe.Tooltip()` for the typed
 reading, then `Gui.GuiService.GetWindow<GuiTooltipWindow>(false).AgeTransform.GetGlobalPosition()`
@@ -251,6 +254,22 @@ the route in a `.sh` script in the scratchpad so the same walk is replayable. A 
 helper must dismiss the game's own end-turn blockers (empty-queue prompts eat the first press);
 "state didn't change" is not "the injection failed".
 
+**Holding a PHYSICAL modifier while a key is pressed** — the only way to reach a modified click's
+game branch (Ctrl+click to locate, Alt+click to queue at the head). From a PowerShell script:
+bring the game up with `SwitchToThisWindow` plus `AttachThreadInput` + `SetFocus`, then drive the
+keys with `keybd_event`. `SetForegroundWindow` ALONE fails silently — the window comes up but Unity
+still reads the key as released, so the chord runs unmodified and looks like a wiring bug. Re-focus
+before EVERY run, not once per session. And where the surface under test is a game screen shown
+UNDER a modal, it never reaches the mod's own stack: probe `Gui.GuiService.GetWindow<T>().Shown`,
+not `DevProbe.Stack()`, or a screen that is working reads as absent.
+
+**World position → screen pixel** (checking a spoken direction against the picture; world axes are
+in `galaxy-map.md`):
+`((GalaxyViewCameraController)Amplitude.Unity.Framework.Services.GetService<Amplitude.Unity.View.ICameraService>().CameraController).Camera.WorldToScreenPoint((Vector3)node.GalaxyPosition)`.
+The galaxy camera hangs off the controller's `Camera` property — `Camera.main` is null in this game
+and the controller's own GameObject carries no `Camera` component, so both of those routes answer
+nothing. Screen y is Unity's (bottom-origin); `crop-shot.ps1` takes TOP-origin pixels.
+
 **A behaviour that branches on a key BEING DOWN cannot be tested with `/input`.** An injected
 action presses nothing, so `Input.anyKeyDown`, `GetKey`, the consumed-key latch and every
 engine dispatch gated on them read as if the keyboard were idle — a green injected run is
@@ -286,32 +305,21 @@ ADDITIVE announcement change, null the injected dependency that produces the new
 (`screen.game-menu`, `screen.rename`); an INACTIVE screen's by-key dump holds only the shared HUD
 stops plus stale content — open the screen first.
 
-**Sighting a surface the fixture never draws.** Tier zero: read the prefab's fields off the
-UNSHOWN window (`GetWindow<T>(false)`, nothing to restore) — beware prefab `%key` content the game
-rewrites at bind (read the bind code first). Then, cheapest first: `Show()` the game's pooled
-widget, read, `Hide()` (its next visibility pass restores truth); or set the game's OWN `Visible`
-flags/private fields from `/eval`, dump, restore, and re-diff against the untouched dump; or
-`Bind` + `Show` a window with data, read, `Unbind` + hide — a forced show proves STRUCTURE, never
-content, a half-bind can outlive the probe (restore monotonic setters through their backing
-field; `POST /loadsave` if a window wedges; never force-show a DLC modal without its data). Where
-the widget is generic over an INTERFACE, LEND it another implementor's data (`Bind(otherOwner,
-client)` + `RefreshNow()`) and the game draws real content into the unreachable panel — only lent
-data proves content; never commit an action while the binding is lent. When a forced show fights
-a per-frame gate, read the authored data (the curve table), not the animated runtime value.
+**Sighting a surface the fixture never draws** — the tiered forced-show ladder — is
+`docs/test-recipes/fixtures.md`.
 
 **Proving a watcher stays silent** is a long poll on the watched flag, not a scan of `/speech`:
 `POST /wait` on the game's own condition, then read `/speech?since=N` for the window that
 elapsed. Because the wait caps at ~60 s, a claim of "silent for minutes" is several polls.
 
 **Splitting one buffer section into two loses `AddLine`'s cross-list dedupe** — nothing
-de-duplicates ACROSS sections. After moving a tooltip out of a details function, re-read the
-node's buffer FOCUSED: a drawn tooltip repeating a computed line is invisible in the unfocused
-dump.
+de-duplicates ACROSS sections; after moving a tooltip between sections, re-read the node's
+buffer FOCUSED (the repeat is invisible in the unfocused dump).
 
 **Opening a game modal from `/eval`**: set what its opener sets, then show it; close it with
 `Gui.GuiService.HideWindow(w)` or the mod's own keys — NEVER `w.HandleInput(InputAction.Exit)`, which
-wedged the screen stack (test-recipes.md "Closing a full screen when /key is refused"). Worked routes
-per window are in `docs/test-recipes.md` ("Opening game modals from /eval").
+wedged the screen stack (`test-recipes/fixtures.md`, "Resetting game state"). Worked routes
+per window are in `docs/test-recipes/modals-and-outgame.md` ("Opening game modals from /eval").
 
 **State restoration etiquette.** Leave the fixture as found: tutorial popup MINIMIZED, no
 notifications pending, camera at home (`DevProbe.Camera()` before and after), no text field
@@ -322,13 +330,8 @@ reload, which makes one `-1` put back whatever was set at the time of the last r
 
 ## 3. Keeping this file honest
 
-This file is ONLY the loop, and it stays under ~300 lines — over that, a stage moves
-something out before adding. Everything else has a chartered home: a new HELPER lands in
-`docs/helpers.md` (one row) and its own doc comment; a new LAYER NUMBER or KEY in
-`docs/interaction.md`; a PER-SCREEN recipe or fixture note in `docs/test-recipes.md`;
-a game-mechanism fact in `docs/es2-facts.md`; screen status in `docs/roadmap.md`;
-game-agnostic lessons go to the proposals ledger for the main agent, never into
-`docs/generic/` directly. Only a change to the loop itself — a route, a REPL gotcha, a
-screen-agnostic verification pattern — lands here. When a design is reversed or content
-moves between docs, grep the whole docs tree for the old mechanism's name and for inbound
-references before calling the change done — stale rows state reverted designs as current.
+Only a change to the LOOP itself — a route, a REPL gotcha, a screen-agnostic verification
+pattern — lands here, and the file stays under ~350 lines: over that, a stage moves something
+out before adding. Every other output has a chartered home; the charters are in `CLAUDE.md`.
+When content moves or a design is reversed, grep the whole docs tree for the old name and for
+inbound references before calling the change done.

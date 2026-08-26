@@ -12,7 +12,9 @@ new game's mod nearly verbatim (rename the `ES2Access` namespaces on copy). When
 implementation that a snapshot came from improves, refresh the snapshot as part of the
 doc-update workflow: [`src/`](src/) is a **mirror** of the engine-side originals and must be
 re-synced when they change — five files once drifted by a whole API shape before anyone
-checked. The one deliberate exception is the localization pair
+checked, so the mapping now lives in [`src/sync-manifest.txt`](src/sync-manifest.txt) and is
+enforced by `sync-generic-src.ps1 -Check` and the test suite (`sync-generic-src.ps1` with no
+switch does the refresh). The one deliberate exception is the localization pair
 ([`ModStrings.cs`](src/localization/ModStrings.cs) and
 [`english.json`](src/localization/english.json)), which is an **example**, not a mirror: its
 mechanism is verbatim, its keys are the floor the other snapshots compile against plus one
@@ -46,18 +48,13 @@ per-frame cost invisible (no scene scans, snapshot+reconcile, allocation discipl
 World/map screens (a cursor over the game's own world graph, zoom tiers as information
 surfaces, fog discipline): [world-navigation.md](world-navigation.md).
 
+Later milestones, once screens exist: [event-narration.md](event-narration.md) — the game's
+event firehose as coherent, reviewable narration; [settings.md](settings.md) — the mod's own
+options and key rebinding; [distribution.md](distribution.md) — shipping the zip, the player
+book, and store divergence.
+
 ## Planned (written once a game proves them)
 
 - `world-navigation.md`'s remaining tile-world pieces — tile-signature skip navigation and
   spatial audio cues (the graph-world half, the categorized scanner, and the free
   inspection cursor are written, proven by ES2's galaxy map).
-- `event-narration.md` — turning engine event firehoses into coherent narration: condensation
-  passes, buff-churn reconciliation, event-log review buffers (the second sink pattern in
-  [buffers.md](buffers.md)).
-- `settings.md` — user-facing settings and key rebinding. Adopt wotr-access's declarative
-  settings tree: one declaration serves as persistence, the settings screen's data source,
-  and the rebinding UI.
-- `distribution.md` — release templates, a tester channel via committed build artifacts kept
-  fresh by a pre-commit hook (wotr-access), and accessible installers — both SoC and
-  wotr-access independently landed on Rust installers after antivirus false-positives killed
-  other packagers.

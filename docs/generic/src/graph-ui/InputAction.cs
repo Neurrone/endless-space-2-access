@@ -55,6 +55,53 @@ namespace ES2Access.UI.Input
             return Bind(new KeyboardBinding(key, ctrl, shift, alt));
         }
 
+        /// <summary>Told whenever this action's bindings change, so whoever owns the action can drop
+        /// what it derived from them - the input manager's set of claimed key codes. Set by
+        /// <see cref="ModInput.Register"/>; null for an action nobody registered.</summary>
+        internal Action BindingsChanged;
+
+        /// <summary>
+        /// Put a different chord on one of the action's SLOTS - what a rebind does.
+        ///
+        /// Slots are positions, not entries: slot 0 is the primary and slot 1 the secondary, the two
+        /// the options window's key-mapping row draws, and a null <paramref name="binding"/> empties
+        /// that slot rather than shifting the other one up. An action bound to more chords than that
+        /// keeps them: they sit past slot 1, still fire, and no row offers them
+        /// (<c>docs/interaction.md</c>).
+        /// </summary>
+        internal void SetSlot(int slot, InputBinding binding)
+        {
+            if (slot < 0)
+            {
+                return;
+            }
+
+            while (_bindings.Count <= slot)
+            {
+                _bindings.Add(null);
+            }
+
+            _bindings[slot] = binding;
+            // A null in the middle of the list is a slot nobody filled; the tail is trimmed so that
+            // Bindings never ends in one and every reader can stop asking about nulls.
+            while (_bindings.Count > 0 && _bindings[_bindings.Count - 1] == null)
+            {
+                _bindings.RemoveAt(_bindings.Count - 1);
+            }
+
+            Action changed = BindingsChanged;
+            if (changed != null)
+            {
+                changed();
+            }
+        }
+
+        /// <summary>The chord in one slot, or null where that slot is empty.</summary>
+        internal InputBinding Slot(int slot)
+        {
+            return slot >= 0 && slot < _bindings.Count ? _bindings[slot] : null;
+        }
+
         /// <summary>Mark the action as auto-repeating while held.</summary>
         public InputAction Repeating()
         {
@@ -124,7 +171,7 @@ namespace ES2Access.UI.Input
             {
                 for (int i = 0; i < _bindings.Count; i++)
                 {
-                    if (_bindings[i].JustPressed())
+                    if (_bindings[i] != null && _bindings[i].JustPressed())
                     {
                         return true;
                     }
@@ -140,7 +187,7 @@ namespace ES2Access.UI.Input
             {
                 for (int i = 0; i < _bindings.Count; i++)
                 {
-                    if (_bindings[i].Held())
+                    if (_bindings[i] != null && _bindings[i].Held())
                     {
                         return true;
                     }
@@ -158,6 +205,13 @@ namespace ES2Access.UI.Input
                 StringBuilder display = new StringBuilder();
                 for (int i = 0; i < _bindings.Count; i++)
                 {
+                    // An empty SLOT is skipped rather than named: a row with no primary key still
+                    // reads out whatever its secondary is on.
+                    if (_bindings[i] == null)
+                    {
+                        continue;
+                    }
+
                     if (display.Length > 0)
                     {
                         display.Append(", ");

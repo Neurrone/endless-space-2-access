@@ -59,7 +59,8 @@ namespace ES2Access.Screens
     /// An election needs a real election turn, which no save in the project's fixtures reaches, so this
     /// screen was written code-verified. Step 1, the vote breakdown, has since been measured live on a
     /// player's own election (one-system empire); steps 0 and 2 are still code-verified only. What that
-    /// one system could not show is in <c>docs/test-recipes.md</c>.
+    /// one system could not show is in <c>docs/test-recipes/modals-and-outgame.md</c>, under "The
+    /// election wizard".
     /// </summary>
     public sealed class ElectionScreen : Screen
     {

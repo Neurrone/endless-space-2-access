@@ -369,16 +369,27 @@ namespace ES2Access.UI
             return transform == null ? null : TooltipSection(transform.AgeTooltip, mode);
         }
 
-        /// <summary>The declared sections of a control, in the order they read: what the control DRAWS
+        /// <summary>
+        /// The declared sections of a control, in the order they read: what the control DRAWS
         /// beyond its readout first, then its tooltip. Null when there is neither, which is a complete
-        /// declaration - the buffer still has the control's own name and state.</summary>
+        /// declaration - the buffer still has the control's own name and state.
+        ///
+        /// <paramref name="detailsMode"/> is the one thing a caller sometimes has to say about the
+        /// first section, and it is buffer-only by default because the ordinary case is content the
+        /// player can SEE - repeating it into the readout would read the screen back at them. Set it
+        /// to <see cref="TooltipMode.Announce"/> only for words the game HAS and draws NOWHERE (the
+        /// ground report's outcome sentence, which the game keeps in the same GuiElement it took the
+        /// outcome word from): handing those over is the whole reason the row went and got them.
+        /// </summary>
         public static IList<NodeSection> Sections(
             Func<IList<string>> details,
             AgeTooltip tooltip,
-            TooltipMode? mode = null
+            TooltipMode? mode = null,
+            TooltipMode detailsMode = TooltipMode.None
         )
         {
-            NodeSection drawn = NodeSection.Buffer(details);
+            NodeSection drawn =
+                details == null ? null : new NodeSection(details, detailsMode);
             IList<NodeSection> tip = HintSections(tooltip, mode);
             if (drawn == null && tip == null)
             {

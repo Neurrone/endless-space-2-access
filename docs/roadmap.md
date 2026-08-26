@@ -1,10 +1,12 @@
 # Roadmap — work remaining
 
-Only work still to be done lives here (owner rule). What a fixture cannot show and how to
-test a shipped screen: `docs/test-recipes.md`. Mechanisms: `docs/es2-facts.md`. Layers and
-keys: `docs/interaction.md`. The shipped index at the bottom is pointers only — a row may
-name a screen and its mod file, nothing else; notes about a shipped screen belong in the
-files above.
+Only work still to be done lives here (owner rule), in three sections: what is left to
+build, what waits on an owner ruling, and a pointer index of what has shipped. What a
+fixture cannot show and how to test a shipped screen: `docs/test-recipes/README.md`. Mechanisms:
+the game-facts topic files indexed in `docs/README.md`. Layers and keys:
+`docs/interaction.md`. The shipped index is pointers
+only — a row may name a screen and its mod file, nothing else; notes about a shipped screen
+belong in the files above.
 
 ## To build
 
@@ -41,17 +43,9 @@ files above.
 - **Gene Hunters' population badges**: `AssimilationReadyIcon` and `AssimilatedIcon` DO carry
   game sentences (measured 2026-08-24), contradicting the mod comment that says they carry
   none — fix and verify together on a Gene Hunters game (DLC flip makes one startable).
-- **"Tooltips" children (landed 2026-08-22, batch 2) — remaining live checks only**: the
-  hero detailed card's four-symbol row (Academy is tutorial-gated on both fixtures), the
-  construction line's festival badge and the honor gauge's own dossier (both Hissho). Still
-  to decide/do: a system node declares no `NodeVtable.PointsAt`, so the tooltip audit files
-  every map node under `unknown` rather than judging its aim. BOTH the other open items are
-  CLOSED by batch 7 (2026-08-22): the population side panel's party dossiers are now children of
-  their population row, not the row below it (`Cells.Declare` lets a cell open a subtree), verified
-  live on Dusay - "Imperials, 3, collapsed" opens onto "Tooltips, Industrialists" with
-  `DevProbe.Tooltip()` `shown:true`; and the parity audit now counts a node that declares its AIM at
-  a dossier as covering it (`NotificationAudit.Covering`), so the population overview's six party
-  dossiers moved out of `uncovered` (0 there now, nothing else rose).
+- **"Tooltips" children (landed 2026-08-22) — remaining live checks only**: the hero detailed
+  card's four-symbol row (Academy is tutorial-gated on both fixtures), the construction line's
+  festival badge and the honor gauge's own dossier (both Hissho).
 - **One-per-row rollout (landed 2026-08-18) — remaining live checks only**: battle
   popups/screens (all code-only; incl. whether the battle popup speaks its title twice);
   the election wizard incl. the Political Trends label; a hangar with ships; a populated
@@ -92,7 +86,6 @@ files above.
   system's panel, same for sighted players); a real ghost system's panel CONTENT (structure
   measured by lend, already declared by the generic walk; its two stops are named
   "Sanctuary population" / "Sanctuary", owner-approved 2026-08-25, heard only in code).
-  Session detail: `system-info-proposals.md` (uncommitted).
 - **Output ratings and the zoom-blind star card (2026-08-25 session, landed) — remaining
   live checks only.** Fixture-blocked branches: a card with a colonization already
   ORDERED must keep reading numbers (the empire card's bind-time gate, code-verified
@@ -102,7 +95,7 @@ files above.
   cutscene's card; a MAJOR's foreign colony and a citadel system's extra manpower row in
   the star tooltip (same fixture debt as the entry above); the organic route to the
   "orbital window survives zooming out" wedge (staged and covered, never re-triggered
-  live). Session detail: `missing-manpower-info-proposals.md` (uncommitted).
+  live).
 - Ground-battle setup follow-ups (2026-08-25 stage shipped the screen model): live-check the
   defender-side role wording (`%…DefenderDescription` on YOUR side; needs a battle where the
   player defends) and the `[positiveImpactWhite]` half of the manpower marker strip (needs a
@@ -120,9 +113,9 @@ files above.
 - Ground-battle OUTCOME-SELECTION popup: modelled 2026-08-25 (r13; `GroundOutcome` body —
   system header, shared one-of-N via `NotificationScreen.BuildChoices`, the by-name Confirm,
   the countdown declared focus-announced and multiplayer-only) — the ENTIRE live sighting is
-  pending (needs a decisive victory; manual test in the session report). The hacking outcome
-  picker keeps its choice-only baseline: its parameters sub-choice and its own outcome
-  countdown still need the same treatment.
+  pending (needs a decisive victory). The hacking outcome picker keeps its choice-only
+  baseline: its parameters sub-choice and its own outcome countdown still need the same
+  treatment.
 - Notification variants awaiting a live sighting (baseline ships; upgrade per popup on
   sighting): election survey; SimpleDescription-family
   members with own fields (alliance update, diplomatic relation change, constellation
@@ -135,9 +128,13 @@ files above.
   PirateMissionReportNotificationWindow (fixture-blocked: its `Bind` needs a live
   `AttackSystemPirateDiplomaticAction` — the other five report popups are done);
   DiplomaticInteractionNotificationWindow (MoodMessageLabel, NegotiationContributionPanel).
+- Ctrl+L's type dispatch (`NotificationScreen.GoToLocation`) is unproven on the two
+  space-battle popups, the two ground-battle popups and the hacking popup — their own
+  show-location handlers are code-verified against the decompiled overrides only, and no
+  fixture raises the windows.
 - Galaxy-label gaps: constellation ownership bonus; pin-message editing.
 - Input batch (code landed 2026-08-22, LIVE-VERIFIED 2026-08-22 on `[Beginner] test` — recipes in
-  `test-recipes.md` "The input batch"): single-press tree arrows, the six place keys incl.
+  `test-recipes/galaxy-map.md`): single-press tree arrows, the six place keys incl.
   Ctrl+Alt+E, Alt+Left/Right paging on four screens, the star-system pair as nodes, chord labels,
   the election winner rows. Verified by injection: the arrows one press each way on the galaxy
   tree and the research wheel (`OnFollow` lane travel unchanged), all six place keys (landing
@@ -154,6 +151,9 @@ files above.
   ELECTION winner rows (`screen.election` is inactive in the fixture). The Academy's own strip
   arrows ARE now declared as nodes (owner decision, landed 2026-08-22) — structure verified on a
   forced show, behaviour fixture-blocked (the save has no heroes, so both arrows read unavailable).
+- The camera-rule keys are unproven as PHYSICAL keys (2026-08-23 stage: `POST /key` answered
+  409 throughout) — Backslash, Ctrl+L and the scanner chords were exercised only as injected
+  actions.
 - Scanner (shipped, taxonomy v2 2026-08-16, Contested Influence added 2026-08-21, taxonomy v3
   2026-08-22, three CUSTOM slots AFTER them 2026-08-23, moved from in front 2026-08-24): THIRTEEN categories in the owner's order — systems, colonizable planets, unexplored,
   anomalies, curiosities, luxury resources, strategic resources, contested influence, fleets,
@@ -173,15 +173,16 @@ files above.
   CONTESTED INFLUENCE has no rows on this fixture either (169 ground tiles swept, 0 contested), so
   what its live pass proved is the empty-skip, not the row wording.
   Remaining: FOREIGN homeworlds have never been heard (no fixture where
-  `EmpirePosition.Known` is true — es2-facts), and quest markers, pins and missiles have never
+  `EmpirePosition.Known` is true — ES2 facts), and quest markers, pins and missiles have never
   been heard at all (no fixture draws one). Open judgment call for the owner: MINOR-faction home
   systems are deliberately NOT in "homeworld" (the diplomacy lens the gate came from iterates
   major empires only) — including them would add ~9 fixture systems to that scope.
-- Star-system page re-arrival (found 2026-08-22, PRE-EXISTING - the same on the game's own arrow
-  button as on Alt+Left/Right): turning the page announces the screen TWICE ("Star system", the
-  landing, again) and seats the cursor on the HUD's `hud:view-title/scan` rather than on the new
-  system's own content. The planet page and the notification popup do neither. Worth one look at
-  the arrival gate the recipe already warns about ("the page arrives in pieces").
+- Quest markers are proved by SYNTHETIC markers only: the marker nodes, the open-space rows,
+  the scanner category, the inspect-cell reading and the quest locate were all exercised by
+  registering markers by hand (recipe in `docs/test-recipes/galaxy-map.md`), because both
+  saves carry zero markers on every in-progress quest. Neither save has a mid-lane fleet
+  either, so a real free-floating marker on a fleet crossing a lane has never been seen — the
+  open-space case was forced with a marker bound to a Ship.
 - Ally pins and obliterator missiles are label-free too (2026-08-16, owner-ruled): enumerated from
   the simulation under the game's own knowledge gates, every word recomposed from the entity, and
   the pin's dismiss routed through the game's own two orders instead of its button. Nothing about
@@ -193,11 +194,14 @@ files above.
   live: no save has a mining probe.
 - Inspect mode (shipped): the drawn cursor is a MOD-DRAWN screen-space square (2026-08-17,
   `InspectMarker` — the borrowed line/circle/quad renderers are all retired and the saga is closed
-  in es2-facts). Colour, alpha and thickness are now the mod's to choose, and a ~26 px floor keeps a
+  in ES2 facts). Colour, alpha and thickness are now the mod's to choose, and a ~26 px floor keeps a
   1×1 cell visible at full overview. Remaining: the mode's camera does not zoom out with the cursor,
   so a size-11 cell close in is still wider than the viewport (the square's off-screen edges simply
   clip). Its cell reading carries obliterator missiles and ally pins, which remain
   fixture-unreachable and have never been heard.
+- Enter on a fleet-only inspect cell once failed to take the selection while an EMPTY
+  `GalaxyGarrisonCursor` was already up (seen once; resetting the cursor cleared it) — never
+  reproduced, cause unknown.
 - Scan management-lens remainder (unverifiable at turn 1): the trade-quality dial
   (geometry-only rating, no tooltip), the empire-rank bar graph + global-rank histogram,
   the ghost/traitor lines. The governor panel is MODELLED (batch D) but has only ever been
@@ -213,7 +217,7 @@ files above.
 - Targeting-cancel fleet swap (measured 2026-08-20, owner-ruled leave-at-parity): a
   cancel at a multi-fleet system hands the panel to the slot's first fleet, not the
   actor. Fix only if it becomes a problem — the issue, mechanism and preferred fix
-  (Harmony postfix) are in `docs/fleet-selection-cancel-swap.md`.
+  (Harmony postfix) are in `docs/fleets.md`.
 - Chat: the child screen ships whole (tabs, message log, box, the page-level new-message
   button) and is verified in a single-player fixture; what no fixture here has shown is the
   MULTIPLAYER half — the alliance tab, the new-message button actually being raised (in
@@ -221,9 +225,9 @@ files above.
   unverified live), whispers and alliance sending.
 - Assigned-governor side panel: `Special` case for its three bare readouts (needs a save
   with a governor).
-- Skill-tree type-ahead: batch 8 gave EVERY screen a search over what its collapsed branches
-  would declare (`GraphBuilder.ExpandAll`), so this should now be covered by construction - it is
-  unverified live because no fixture reaches a hero with a skill tree.
+- Skill-tree type-ahead: EVERY screen now searches what its collapsed branches would declare
+  (`GraphBuilder.ExpandAll`), so this should be covered by construction - it is unverified
+  live because no fixture reaches a hero with a skill tree.
 - Galaxy-map audit remainder (2026-08-20): `StarSystemLabel`'s 32 public widget fields are
   now fully covered (bars wording awaits owner approval; exploration-winner and shared-system
   readings are fixture-blocked to mid-game saves). Still open from the audit: the Riftborn
@@ -237,6 +241,13 @@ files above.
   skill also await a fixture (Nakalim/Templar hero).
 - Hero skill page: the heading now speaks twice on arrival (screen name or FollowPage line,
   then the tree stop's "Skill Tree" context) — user ruling pending on which line yields.
+- `DevProbe.Tooltip()` answered `{"error":"No token to close. Path ''."}` on the research
+  wheel's play-deck child (2026-08-22); the cause was never chased, and the workaround is
+  the one retained in `docs/test-recipes/galaxy-map.md`.
+- Panel-feature components are largely unjudged: of the 119 classes, seven have typed readers
+  and three more were source-checked and cleared; the rest fall to the default reader, which
+  names itself in the log and in `DevProbe.Tooltip().defaultRead`. The next play session's
+  `defaultRead` list is the work queue, not a desk review.
 - Constellations, remaining edges (feature shipped 2026-08-20): (a) Alt+Home onto a
   constellation with inspect live lands the cell on the ROUNDED representative point,
   which can fall just outside the hull and speak "Out of X constellation" on arrival
@@ -260,13 +271,18 @@ files above.
   the elimination sentence had to ride the screen name).
 - Departing-fade stand-down: the spurious "unavailable" frame when a game confirmation
   opens over a mod screen (general fix).
+- The star-system page declares nothing while it is BETWEEN systems, so the cursor migrates
+  to a HUD stop for a moment and that migration is announced — one stray line between the
+  name and the landing. Fixing it wants a screen-level "my content is between pages, hold
+  the cursor" gate the navigator does not have yet.
 - General open-row hardening: a screen's own catch should close what it opened (or the
   builder tolerate it). The two known instances are gone — the `system:side/2/Key/2`
   duplicate-id pair is fixed by `SidePanels.PathKey`, and the empire open-row crash is
   structurally removed (side panels emit linear, 2026-08-18) — but an unbalanced
   `PushContext` after a swallowed throw remains the lesser surviving form.
 - **The caption-only-row sweep is not finished.** The rule (a drawn caption names its block and is
-  a row only where it carries a tooltip — `Captions`, `docs/interaction.md`) has been applied to
+  a row only where it carries a tooltip — the `Captions` doc comment,
+  `ES2Access/UI/Captions.cs`) has been applied to
   minor diplomacy, the population overview, the economy/senate/recipe/negotiation headings, and
   (2026-08-22) the Academy and pirate diplomacy ACTION bands — the last two prefab-verified only,
   since neither window opens in `[Beginner] test`. The Academy's own "Status" caption over its
@@ -283,10 +299,29 @@ files above.
 - `ScanNotificationItemsPanel`/`ScanNotificationItem` — the hacking/scan chip row in Scan
   View is uncovered by the mod (found during the notifications session; not part of the
   main notification strip or its stops).
-- Possible `GalaxyScanner` Fleets-category defect: it reads `FleetPresence.Drawing()`
-  (a view-side repository), which measured EMPTY for the player's own fleets parked at a
-  system (notifications session, Stage 2) — investigate whether the scanner drops parked
-  fleets.
+- The map fleet lozenge's two ship-kind badges (`ExplorationShipIcon`/`ColonyShipIcon`, "One of
+  these ships is an exploration/colony ship.") are drawn beside the `GuiFleetGroup` dossier the
+  fleet row already carries in full, and neither sentence is anywhere in the mod. The fix is the
+  shape `GlobalHud.AddScreenToggles` uses — every tooltip inside the lozenge, first speaking, the
+  rest reviewable. Owner call on the shape.
+- The pinned-quest panel's OWN sentence is in its buffer, but the panel's tooltip still reads
+  `uncovered` in `DevProbe.Coverage()`: the node deliberately AIMS at the objective label's
+  tooltip, which is the only one pointing at what the panel draws. Tooling gap, not a
+  player-facing one.
+- The discovery/colonization cutscene card still speaks item NAMES only (`DiscoveryCards.Read`);
+  a passive announcement has no node for a dossier to hang on.
+- `HauntCirclesTable` (`HauntCircleItem`) at systems zoom is unmeasured — no fixture draws one.
+- Fixture-blocked live and proved by structure only: the planet card's three in-progress
+  buttons, the pirate lair, `OutpostCancelIcon`, `HauntIcon`, and every signal line in
+  `AddSignals` (no juggernaut, no ghost colony, no unique world, no outpost in trouble on
+  `[Beginner] test`).
+- A curiosity in neither of the two Curiosities columns (one already being expedited, or
+  quest-locked) does not exist on `[Beginner] test` — both columns are unproven against a
+  real one.
+- Boot-proof owed: the 208+208 "Could not find GuiWindow named 'LoadSaveModalWindow' /
+  'OutGameLoadModalWindow'" errors per session are written while the window registry fills, so
+  the fix can only be proved by the next COLD launch — count them in the newest
+  `Documents\Endless Space 2\Temporary Files\Diagnostics - *.html`.
 - Custom scanner categories: SHIPPED whole 2026-08-23, and DRAWN 2026-08-24 - the model, the
   synthesis and the six quick keys (stage 3); the editor (stage 4); and the rebuild that made it a
   page a sighted player can see (stage 5), then folded onto ONE page (stage 6): the window has two tabs
@@ -296,8 +331,7 @@ files above.
   player's own categories come LAST in the category cycle, not first (stage 5 - first was where an
   unconfigured slot answered the very first scanner press with "none found"). What is left is
   MANUAL: the six physical quick keys, the typing half of a text row (the harness can write a game
-  field's text but cannot press a key at it), and the Scanner tab REACHED FROM THE MAIN MENU
-  (`custom-scanner-categories-test-report.md`).
+  field's text but cannot press a key at it), and the Scanner tab REACHED FROM THE MAIN MENU.
 - Rebindable mod keys: SHIPPED 2026-08-23 - the mod's own Controls tab (stage 2a), the
   three-column binding table with Delete-to-clear, the Escape cancel and the two-way mod/game
   overlap warning (stage 2b, rulings 6/9/10), on the game's own Controls tab alike; and, from stage
@@ -306,14 +340,14 @@ files above.
   stage 7 (2026-08-24, `POST /key` with the game foregrounded): Enter to capture, a chord committing
   and being spoken, Escape cancelling a capture, and the reported vanish - which was the clone being
   asked for input AHEAD of the message box, fixed by registering it beside the game's own options
-  window (es2-facts, stage 7). What is left is the MANUAL pass over the physical LETTER keys
-  (type-ahead on the settings pages) (`custom-scanner-categories-test-report.md`).
+  window (ES2 facts). What is left is the MANUAL pass over the physical LETTER keys
+  (type-ahead on the settings pages).
 - The contextual prompt's component tables: modelled from the four data-defined shapes, but no
   fixture draws a table with ROWS — re-measure when one can be sighted.
 - `StockAndNet` now exists in three copies (GlobalHud, EconomyScreen, JuggernautSpecializationScreen)
   — hoist the visibility-correct one and drop the others.
 - **Expansion surfaces — UNSIGHTABLE here until the DLCs are installed** (2026-08-12 audit,
-  `audit-dlc-mechanics.md` at the repo root; none of the four expansions has a depot in
+  `docs/audit-dlc-mechanics.md`; none of the four expansions has a depot in
   this install, so every item below is code-verified at best — except where the `*_DLC*`
   datatables alone are enough to bind a window, which is how the Behemoth modal got measured):
   - Behemoth family (Supremacy): the specialization modal is a MODEL now, not a floor (layer 29 —
@@ -330,7 +364,7 @@ files above.
     a growth gauge.
 - Spaceport population (batch G): the panel's rows, the pick-up and the drop through
   `SpaceportSidePanel.ApplyDrop` are MODELLED, and no save can draw the panel at all
-  (es2-facts: `IsAvailable()` wants a system improvement). The rows and the pick-up were proved
+  (ES2 facts: `IsAvailable()` wants a system improvement). The rows and the pick-up were proved
   against a lent binding; the round trip — Space in the spaceport, Enter on a planet card, the
   `OrderTransferSpaceportPopulation` it posts — waits for a save with a spaceport. The OTHER
   direction is not built: the game also drops a PLANET's population INTO the panel
@@ -341,10 +375,10 @@ files above.
 - Faction sightings needing another base-game save (code landed drawn-gated, unsighted):
   United Empire — the Influence tech buy-out on the HUD research line, which the
   NON-tutorial UE affinity grants and the tutorial one has commented out, so this save
-  cannot draw it (es2-facts); Lumeris — the scrap↔sell swap rows; Cravers —
+  cannot draw it (ES2 facts); Lumeris — the scrap↔sell swap rows; Cravers —
   planet depletion status + hunting-grounds decay; Vodyani — ark-as-colony walk
   (`ExploitedStarSystem`: does the model need to change at all?), ark docking slots as a
-  drag target, ark population (full list: `audit-factions.md` §4 stages C-D).
+  drag target, ark population (full list: `docs/audit-factions.md` §4 stages C-D).
 
 - The go-and-look audit's remaining bucket, DECLINED in the batch-F stage because every one
   of these effects already has a key: map labels' `OnRequestManagementView` (the label's own
@@ -372,7 +406,6 @@ files above.
   probes moved from the top-level open-space region to their nearest star (2026-08-14).
 
 ## To decide (owner)
-
 
 - The drawn-heading lookup renames two out-game pages: "Multiplayer room" and "Asset export".
   Keep the game's drawn headings or the mod's older names?
@@ -426,131 +459,13 @@ files above.
 | The mod's own settings window (the game's options modal, cloned; Scanner and Controls tabs) | `ES2Access/UI/ModOptions/` + OptionsScreen |
 | Contextual prompt / Behemoth specialization | ContextualPromptScreen, JuggernautSpecializationScreen |
 | Out-game pages: disclaimer / credits / DLC browser / mod manager / join game / asset exporter | DisclaimerScreen, CreditsScreen, DLCScreen, ModdingConfigScreen, MenuDestinationScreens, ResourcesExportModScreen |
-
-## Batch 7 (2026-08-22) — go to location
-
-**Landed and verified live**: one landing on the galaxy page (`GalaxyHudScreen.GoTo` over
-`MapLandings.Decide`) used by the game's locate, the scanner's Alt+Home, starlane travel and the new
-Ctrl+L; quest markers as NODES (system children and open-space rows) off one enumeration; Ctrl+L as
-the game's own show-location; the population side panel's party dossiers as Tooltips children; the
-parity audit counting an aim as coverage.
-
-**A landing's first utterance no longer precedes the camera** — one of the two pre-existing defects
-recorded in the previous session. `Screen.LandingSuspended` covers the camera flight and a
-twenty-frame tail, and a suspended frame holds even a control already declared. Fixed and proved on
-Osulo I (test-recipes).
-
-**Still OPEN, untouched by batch 7**: turning the STAR-SYSTEM page announces the screen twice and
-seats the cursor on the scan button (the other pre-existing defect from the previous session).
-FIXED in batch 8, below.
-
-**Fixture-blocked, verified only through synthetic markers**: everything about quest markers. Both
-saves have ZERO markers on every in-progress quest, so the marker nodes, the open-space rows, the
-scanner category, the inspect-cell reading and the quest locate were all proved by registering
-markers by hand (recipe in `docs/test-recipes.md`). The one thing no synthetic marker could produce
-is a real free-floating marker on a fleet crossing a lane — neither save has a mid-lane fleet either,
-so the open-space case was forced with a marker bound to a Ship.
-
-**Unproven**: the two space-battle popups, the two ground-battle popups and the hacking popup's own
-show-location handlers (no fixture raises them) — code-verified against their decompiled overrides
-only. Ctrl+L on those windows would exercise `NotificationScreen.GoToLocation`'s type dispatch.
-
-## Batch 8 (2026-08-22) — follow-ups and the feature audit
-
-**Landed and verified live**: the colonizable-planet scanner row's short resource names with zero
-outputs dropped; the galaxy landing's camera made INSTANT (`GalaxyViewLevels.SnapTo`, with the
-map's forced-zoom bookkeeping and `RestoreZoom` intact); type-ahead searching everything a
-collapsed branch WOULD declare on every screen (`GraphBuilder.ExpandAll` + `SearchScope.Extend`);
-the star-system page named "⟨system⟩, System management"; a typed reader for the battle-tactics
-deck ("Flotilla 1 Short Range"); the fallback tooltip reader naming itself
-(`TooltipFeatures.DefaultRead`, `DevProbe.Tooltip().defaultRead`); the minor gauge's four bands
-named "CORDIAL (25)" and its points row captioned "Relationship".
-
-**The star-system page turn is fixed** — the second of the two pre-existing defects carried since
-the previous session. One screen announcement per turn and the cursor lands in the new system's
-content instead of on the view-title scan button. Remaining rough edge: while the page is between
-systems it declares nothing, so the cursor migrates to a HUD stop for a moment and that migration is
-announced — one stray line between the name and the landing. Fixing it wants a screen-level "my
-content is between pages, hold the cursor" gate the navigator does not have yet.
-
-**Fixture-blocked in batch 8, FIXED in batch 9 (2026-08-23):** the deposit/star dossiers a system's
-map label carries beyond the star's own now come from the planets rather than from the icons the
-camera happens to be drawing, so "antimatter" is findable on the galaxy at every zoom and the
-search's reach into map-label dossiers is proved on the map as well as on the research wheel's
-unlock children and the population panel's parties.
-
-**Unjudged, deliberately**: of the 119 panel-feature component classes, seven have typed readers and
-three more were source-checked and cleared; the rest fall to the default reader, which now names
-itself in the log and in `DevProbe.Tooltip()`. The next play session's `defaultRead` list is the
-work queue, not a desk review.
-
-## Batch 9 (2026-08-23) — galaxy content from data, and the game's own logging
-
-**Landed and verified live**: a system's deposit and star dossiers built from
-`node.Planets[*].ResourceDeposits` and `GuiStarSystem.Instantiate` rather than from what the camera
-draws, aimed at the game's own icon where there is one and at a mod-owned carrier
-(`ScratchTooltips`) where there is not — words byte-identical either side of a zoom; a planet row's
-size-and-type, curiosity count and anomalies from the planet, so they read the same with the card
-drawn and without it; the battle-tactics flotilla rows joined with a colon
-("Flotilla 1: Short Range"); two new scanner columns under Curiosities (Explorable / Insufficient
-Expedition Power); type-ahead stepping closing the branches the previous landing opened; the two
-by-name `GuiWindow` lookups and the `/state` probe no longer writing hundreds of Errors into the
-game's diagnostics and telemetry.
-
-**Boot-proof pending**: the 208+208 "Could not find GuiWindow named 'LoadSaveModalWindow' /
-'OutGameLoadModalWindow'" errors per session are written while the window registry fills, so the fix
-can only be proved by the NEXT cold launch — count them in the newest
-`Documents\Endless Space 2\Temporary Files\Diagnostics - *.html`.
-
-**Untested in this fixture**: the mod's carrier for a PLANET dossier — the planet circles are drawn
-at every zoom `[Beginner] test` reaches, so the fallback never fires (the star and deposit carriers
-were both exercised, the star one by a direct call). A curiosity in neither of the two new columns
-(one already being expedited, or quest-locked) does not exist on this save either.
-
-## Batch 10 (2026-08-23) — one camera rule, and the carrier's place
-
-**Landed and verified live**: the galaxy camera follows the cursor by ONE rule
-(`GalaxyHudScreen.OnFocusVisual` → `Place` → `FollowPlace`, over a new per-screen
-`Screen.OnFocusVisual` hook), replacing the system row's own `PanTo`, `OnExpand`'s `ZoomTo` (system
-nodes no longer override `OnExpand` at all) and the go-to landing's own `SnapTo`. Gate = the place
-the camera was last ASKED for and how close, kept mod-side and cleared on `OnPop`, because
-`FocusedStarSystemNode` was measured to be where the camera IS and to lag a flight (es2-facts). A
-Backslash zoom-out now survives the rest of a system being read; a collapse still zooms out and also
-drops "inside", so re-opening comes back in; a landing moves regardless of the record. The mod's
-tooltip carrier draws at the screen's BOTTOM-LEFT (`TOP_LEFT` anchor at the corner, so a panel of any
-height sits inside the screen) with its words unchanged.
-
-**Unproven**: nothing here was pressed as a PHYSICAL key — `POST /key` answered 409 (the game was not
-the foreground window) for the whole stage, so Backslash, Ctrl+L and the scanner chords were exercised
-only as injected actions. The mod's carrier for a PLANET dossier still never fires on this fixture,
-so the bottom-left placement was proved on a deposit dossier only (one carrier, `TOP_LEFT`, drawn at
-`0,420,240,380` on a 1280x800 screen).
-
-## Batch 11 (2026-08-23) — the planet card's pages and the coverage audit's gaps
-
-**Closed.** Every world on the map now owns its dossiers as nodes (outputs, anomalies, deposits) at
-every zoom, carrier-drawn where the game draws no icon — which is also the first time the mod's
-PLANET carrier has fired on `[Beginner] test`, so the item above it is no longer unproven. The
-orbital card's three in-progress buttons and its pirate lair are actions; its dying-outpost and
-Sanctuary icons are lines; and what the map paints in colour alone (terraformation, restoration,
-anomaly reduction, a Sanctuary, a unique world) is a line on the planet's row. The star-system page
-gained the three planet-card buttons the empire screen already had, its anomaly rows and their
-dossiers, and a population entry that opens the population window on BOTH pages that draw one. The
-senate's census badges and the forced-law badge are nodes; the game menu's two settings boxes carry
-their sentences.
-
-**Still open.**
-- The map fleet lozenge's two ship-kind badges (`ExplorationShipIcon`/`ColonyShipIcon`, "One of these
-  ships is an exploration/colony ship.") are drawn beside the `GuiFleetGroup` dossier the fleet row
-  already carries in full, and neither sentence is anywhere in the mod. The fix is the shape
-  `GlobalHud.AddScreenToggles` now uses — every tooltip inside the lozenge, first speaking, the rest
-  reviewable. Owner call.
-- The pinned-quest panel's OWN sentence is now in its buffer, but the panel's tooltip still reads
-  `uncovered` in `DevProbe.Coverage()`: the node deliberately AIMS at the objective label's tooltip,
-  which is the only one pointing at the panel draws. Tooling gap, not a player-facing one.
-- The discovery/colonization cutscene card still speaks item NAMES only (`DiscoveryCards.Read`); a
-  passive announcement has no node for a dossier to hang on.
-- `HauntCirclesTable` (`HauntCircleItem`) at systems zoom is unmeasured — the fixture draws none.
-- Fixture-blocked live and proved by structure only: the three in-progress buttons, the pirate lair,
-  `OutpostCancelIcon`, `HauntIcon`, and every signal line in `AddSignals` (no juggernaut, no ghost
-  colony, no unique world, no outpost in trouble on this save).
+| Go to location: one galaxy landing, quest markers as nodes, Ctrl+L | GalaxyHudScreen.GoTo, MapLandings, NotificationScreen |
+| Galaxy content from data: deposit/star/planet dossiers at every zoom, the mod's own tooltip carrier | GalaxyHudScreen, ScratchTooltips |
+| One camera rule for the galaxy map (cursor-led, no flight) | GalaxyHudScreen.OnFocusVisual, Screen.OnFocusVisual |
+| Type-ahead over collapsed branches, trail-free | GraphBuilder.ExpandAll, SearchScope.Extend |
+| The star-system page turn: one announcement, cursor in the new system | SystemManagementScreen |
+| Planet card pages on the map and the system page (buttons, anomalies, signals) | GalaxyHudScreen, SystemManagementScreen |
+| Choice cards: title announced, card text as buffer lines; faded cards no longer declared | NotificationScreen.AddChoices, `UI/AgeWidgets.Paints` |
+| Deselecting a fleet seats the cursor on the fleet's own row | FleetPanel, GalaxyHudScreen |
+| A line clipped by its scrolling window is measured at the window | `UI/AgeWidgets.Clipped` |
+| Docked fleets in the scanner and the inspect cursor; minor/Academy fleets read by standing | GalaxyScanner, `UI/FleetPresence` |

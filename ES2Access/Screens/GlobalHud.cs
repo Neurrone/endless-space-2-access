@@ -883,7 +883,7 @@ namespace ES2Access.Screens
         /// Buying the technology being researched outright, from the button the banner draws at the end
         /// of the research line.
         ///
-        /// Same rule the construction queue's buy-outs follow (es2-facts): the game HIDES this button
+        /// Same rule the construction queue's buy-outs follow (ES2 facts): the game HIDES this button
         /// for an empire that cannot buy technology at all and otherwise leaves it drawn and switched
         /// off with the reason written into its own tooltip (<c>EmpireBanner.RefreshBuyout</c>
         /// :470-515), so DRAWN is what declares it and <c>Enable</c> is what offers it. Which currency
@@ -2007,7 +2007,7 @@ namespace ES2Access.Screens
         /// Offered exactly where the popup would DRAW a show-location button
         /// (<see cref="NotificationScreen.DrawsShowLocation"/>): the game marks that button visible
         /// from the notification's own <c>HasLocation</c> without asking whether the prefab laid one
-        /// out, and forty-one of the sixty-nine did not (es2-facts). Offering the key where the mouse
+        /// out, and forty-one of the sixty-nine did not (ES2 facts). Offering the key where the mouse
         /// has no button would be an affordance the sighted player cannot see - and, worse, one whose
         /// handler moves nothing.
         ///

@@ -832,6 +832,28 @@ namespace ES2Access.Core.UI.Graph
             return true;
         }
 
+        /// <summary>Whether the focused control offers a clear - the key's availability, asked off the
+        /// standing render so a key scan can ask it many times a frame.</summary>
+        public bool OffersClear
+        {
+            get
+            {
+                GraphNode node = CurrentNode;
+                return node != null && node.Vtable != null && node.Vtable.OnClear != null;
+            }
+        }
+
+        /// <summary>Empty the focused control. False = it offers no such thing, and the caller leaves
+        /// the press alone.</summary>
+        public bool Clear()
+        {
+            if (!Rerender()) return false;
+            GraphNode node = CurrentNode;
+            if (node == null || node.Vtable.OnClear == null) return false;
+            node.Vtable.OnClear();
+            return true;
+        }
+
         /// <summary>Run the focused control's double-click command - the game's own second click.
         /// False = it has none, and the caller says nothing rather than falling back to the single
         /// click.</summary>

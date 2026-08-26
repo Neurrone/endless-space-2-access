@@ -954,7 +954,7 @@ namespace ES2Access.UI
 
         /// <summary>Open a system's management page - the game's own route into it, the one its label's
         /// button takes. Where the game will not open one - a system blacked out or nobody's - the call
-        /// silently degrades to centring the map on it (es2-facts), which is why this too is marked as
+        /// silently degrades to centring the map on it (ES2 facts), which is why this too is marked as
         /// the mod's own: the cursor is already on the system, and being sent to it again would say
         /// nothing about the page that did not open.</summary>
         public static void OpenSystem(StarSystemNode node)

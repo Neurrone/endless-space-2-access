@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
-using ES2Access.Core.Util;
 
 namespace ES2Access.UI
 {
@@ -78,6 +77,16 @@ namespace ES2Access.UI
         /// first whenever it still holds a bracket, precisely so <see cref="Clean"/> gets a chance to
         /// substitute the icon's name before anything destroys it - the same reasoning
         /// <see cref="Tooltip(AgeTooltip)"/> already reads <c>Content</c> untouched for.
+        ///
+        /// A <c>%key</c> hides that same loss one level down. The bracket is not in <c>Text</c> at
+        /// all - it is in what the key TRANSLATES to - so the test above passes the label through to
+        /// <c>TranslatedText</c>, which the localizer has already run its icon pass over: the game's
+        /// own description of a system's approval says the words "can influence the [food] and
+        /// [influence] outputs" and the label renders "can influence the and outputs". Resolving the
+        /// key here, exactly as <see cref="LabelWithoutLeadingIcon"/> and <see cref="FullLabel"/>
+        /// already do, keeps the brackets long enough to name them. Only for a translation that
+        /// really does carry one: everywhere else <c>TranslatedText</c> stays the reading, because it
+        /// is the string the label actually drew, ellipsis and all.
         /// </summary>
         public static string Label(AgePrimitiveLabel label)
         {
@@ -93,9 +102,18 @@ namespace ES2Access.UI
             }
             catch (Exception) { }
 
-            if (!string.IsNullOrEmpty(raw) && raw.IndexOf('[') >= 0)
+            if (!string.IsNullOrEmpty(raw))
             {
-                return Clean(raw);
+                if (raw.IndexOf('[') >= 0)
+                {
+                    return Clean(raw);
+                }
+
+                string localized = LocalizedWithIcons(raw);
+                if (localized != null)
+                {
+                    return Clean(localized);
+                }
             }
 
             string text = null;
@@ -110,6 +128,32 @@ namespace ES2Access.UI
             catch (Exception) { }
 
             return Clean(text);
+        }
+
+        /// <summary>What a <c>%key</c> translates to, but only when the translation carries an icon
+        /// token - the one case where the key is worth resolving again rather than reading the string
+        /// the label drew. Null for everything else, including a key the localizer does not know
+        /// (which comes back as itself), so the caller falls through to the drawn text.</summary>
+        private static string LocalizedWithIcons(string raw)
+        {
+            try
+            {
+                if (!Gui.IsLocalizationKey(raw))
+                {
+                    return null;
+                }
+
+                string localized = Gui.Localize(raw);
+                return string.IsNullOrEmpty(localized)
+                    || localized == raw
+                    || localized.IndexOf('[') < 0
+                    ? null
+                    : localized;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
         }
 
         /// <summary>
@@ -398,54 +442,134 @@ namespace ES2Access.UI
         }
 
         /// <summary>
-        /// Whether the words either side of the icon already say what the icon is called.
+        /// Whether the word right beside the icon already says what the icon is called.
         ///
-        /// The game writes an icon next to the noun it stands for far more often than it writes one
-        /// instead of that noun, and a name substituted next to its own word stutters: the
-        /// over-colonization penalty is drawn as its icon followed by "Over-colonization penalty on
-        /// Empire" and was read as "Over Colonization Over-colonization penalty on Empire". Skipping
-        /// the substitution there loses nothing at all, because the word is still in the line - it is
-        /// the reason the substitution was redundant.
+        /// The game writes an icon immediately in front of the noun it stands for far more often than
+        /// it writes one instead of that noun, and a name substituted against its own word stutters:
+        /// the over-colonization penalty is drawn as its icon followed by "Over-colonization penalty
+        /// on Empire" and was read as "Over Colonization Over-colonization penalty on Empire".
+        /// Skipping the substitution there loses nothing, because the word the icon would have
+        /// contributed is the very next word in the line.
         ///
-        /// Word by word, and folded to letters and digits, because the two spellings are rarely the
-        /// same string: the game writes "+38 [dust] from System Dust production", where the icon's
-        /// name - "Planet Dust production" - is not repeated whole but is mostly already there. A name
-        /// counts as said when MOST of its words are, which is what tells that apart from a name that
-        /// merely shares a word with its sentence ("Empire Dust" beside "Empire Influence" keeps its
-        /// substitution, because only the half that is not the point is shared).
+        /// ADJACENT is the whole rule (owner ruling 2026-08-25). An earlier revision dropped the name
+        /// whenever most of its words appeared ANYWHERE in the icon's line, and that quietly deleted
+        /// words the sentence needed: the game's description of a system's approval - "can influence
+        /// the [food] and [influence] outputs" - lost "Influence" to the verb "influence" eight words
+        /// upstream, which is a different word doing a different job. A repeat is only a stutter when
+        /// the reader would hear the two together.
         ///
-        /// Only the icon's own line is considered. A word further down a stat block is a different
-        /// sentence rather than a stutter.
+        /// So the name's words are compared, in order, against the words that BUTT UP against the
+        /// icon - the run beginning immediately after it, and the run ending immediately before it -
+        /// with the whole name having to match. Folded to letters and digits (the two spellings are
+        /// rarely the same string: "Over Colonization" against "Over-colonization"), and looking
+        /// through the colour markup the game writes between an icon and its word, which is not a
+        /// word.
+        ///
+        /// Only the icon's own line is considered. A word on the next line of a stat block is a
+        /// different sentence rather than a stutter.
         /// </summary>
         private static bool Duplicates(string name, StringBuilder before, string text, int after)
         {
-            string[] words = name.Split(WordBreaks, StringSplitOptions.RemoveEmptyEntries);
-            string beside =
-                TextUtil.LettersAndDigits(LineBefore(before))
-                + " "
-                + TextUtil.LettersAndDigits(LineAfter(text, after));
+            List<string> words = Words(name);
+            return words.Count > 0
+                && (
+                    Repeats(words, Words(LineAfter(text, after)), true)
+                    || Repeats(words, Words(LineBefore(before)), false)
+                );
+        }
 
-            int said = 0;
-            int counted = 0;
-            foreach (string word in words)
+        /// <summary>Whether the run of words at the near END of <paramref name="beside"/> - its head
+        /// for the text that follows the icon, its tail for the text in front of it - is the name
+        /// again.</summary>
+        private static bool Repeats(List<string> name, List<string> beside, bool leading)
+        {
+            if (beside.Count < name.Count)
             {
-                string key = TextUtil.LettersAndDigits(word);
-                if (key.Length == 0)
-                {
-                    continue;
-                }
+                return false;
+            }
 
-                counted++;
-                if (beside.IndexOf(key, StringComparison.Ordinal) >= 0)
+            int offset = leading ? 0 : beside.Count - name.Count;
+            for (int i = 0; i < name.Count; i++)
+            {
+                if (!SameWord(beside[offset + i], name[i]))
                 {
-                    said++;
+                    return false;
                 }
             }
 
-            return counted > 0 && said * 2 > counted;
+            return true;
         }
 
-        private static readonly char[] WordBreaks = { ' ', '-', '\t' };
+        /// <summary>Whether two folded words are the same word. A plural counts: the game writes
+        /// "[fighter] Stance Ratio" and "[ship]Ships", and a name read out against its own plural
+        /// stutters exactly as it does against itself. Only a trailing "s" or "es", so a word that
+        /// merely BEGINS with another stays a different word - the Dust coin drawn in front of
+        /// "Dustciduous Trees" is still worth saying.</summary>
+        private static bool SameWord(string one, string other)
+        {
+            if (one == other)
+            {
+                return true;
+            }
+
+            string longer = one.Length > other.Length ? one : other;
+            string shorter = one.Length > other.Length ? other : one;
+            return longer.Length - shorter.Length <= 2
+                && longer[longer.Length - 1] == 's'
+                && longer.StartsWith(shorter, StringComparison.Ordinal);
+        }
+
+        /// <summary>A line's words, folded for comparison: letters and digits only, lower-cased, with
+        /// a hyphen breaking a word the way a space does and a <c>#RRGGBBAA#</c> colour run treated as
+        /// the nothing it is rather than as a word made of its hex digits.</summary>
+        private static List<string> Words(string text)
+        {
+            List<string> words = new List<string>();
+            if (string.IsNullOrEmpty(text))
+            {
+                return words;
+            }
+
+            StringBuilder word = new StringBuilder();
+            int i = 0;
+            while (i < text.Length)
+            {
+                char c = text[i];
+                if (c == '#')
+                {
+                    int close = text.IndexOf('#', i + 1);
+                    if (close >= 0)
+                    {
+                        Flush(words, word);
+                        i = close + 1;
+                        continue;
+                    }
+                }
+
+                if (char.IsLetterOrDigit(c))
+                {
+                    word.Append(char.ToLowerInvariant(c));
+                }
+                else
+                {
+                    Flush(words, word);
+                }
+
+                i++;
+            }
+
+            Flush(words, word);
+            return words;
+        }
+
+        private static void Flush(List<string> words, StringBuilder word)
+        {
+            if (word.Length > 0)
+            {
+                words.Add(word.ToString());
+                word.Length = 0;
+            }
+        }
 
         private static string LineAfter(string text, int index)
         {

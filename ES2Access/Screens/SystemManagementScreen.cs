@@ -40,6 +40,17 @@ namespace ES2Access.Screens
     /// anomalies, its five outputs, and the game's own sentence about why it cannot be colonized yet -
     /// so the readout is its name and what state it is in, and all the rest is in the review buffer,
     /// which is what the review buffer is for.
+    ///
+    /// The side panels are the part a widget tree cannot name for itself, and the four rules the
+    /// hooks below follow are all consequences of that. A panel of wordless readouts is matched by
+    /// GAME COMPONENT or by the owning SidePanel's own field, never by widget shape, and Special
+    /// answers a hand-built cell for it. A COUNT is spoken through ModStrings.Plural off the model,
+    /// never re-read from the digits drawn on the control. Transparent is for the other half: a group
+    /// the game made clickable that is really a band of readouts. NAMES come from the game -
+    /// AgeWidgets.TooltipTitle, Gui.GetLocalizedTitle, or a tooltip's FIRST LINE only where that line
+    /// names the thing, since a data-bearing explaining sentence is a description and not a title.
+    /// And every key here includes widget.name: repeated rows otherwise collide on Duplicate control
+    /// id, which empties the whole screen silently.
     /// </summary>
     public sealed class SystemManagementScreen : Screen
     {

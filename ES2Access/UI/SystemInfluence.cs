@@ -77,7 +77,8 @@ namespace ES2Access.UI
     /// colonies standing THERE (<c>ColonizedStarSystemRepository</c> :132-161), not the galaxy-wide
     /// walk its <c>TryGetInfluence</c> sibling is, and the influencer is a plain property the influence
     /// pass has already resolved (<c>GameNode.SystemWhichInfluences</c> :212). Both are cheap enough
-    /// for the focused node's per-frame readout; neither is asked for a system nobody is standing on.
+    /// for the focused node's per-frame readout - measured 3.8 us per focused frame for both spoken
+    /// parts together; neither is asked for a system nobody is standing on.
     /// </summary>
     public static class SystemInfluence
     {
@@ -283,7 +284,9 @@ namespace ES2Access.UI
         /// cell nobody has explored is told nothing about (<see cref="Screens.GalaxyInspect"/>).
         ///
         /// Cost: nothing at all where no circle reaches the cell, which is most of the map - the grid is
-        /// only asked for once something is there to classify.
+        /// only asked for once something is there to classify. Measured over 86 nodes: 0.01 ms for
+        /// empty space, 1.18 ms inside a bubble (1 by 1) and 1.37 ms (11 by 11). Only ever on a
+        /// KEYPRESS.
         /// </summary>
         public static CellInfluence OverCell(
             double lowX,

@@ -12,7 +12,7 @@ namespace ES2Access.UI
     /// SCREEN space, over everything the game has already drawn.
     ///
     /// WHY THE MOD DRAWS IT ITSELF. Every attempt to borrow one of the game's own renderers failed on
-    /// the same wall, and the failures are recorded in `docs/es2-facts.md` so nobody spends another
+    /// the same wall, and the failures are recorded in `docs/galaxy-map.md` so nobody spends another
     /// stage on them: this build's line material eats several units off each end of a line and ignores
     /// the width argument (a hairline that vanishes at any distance, and an overshooting frame if the
     /// ends are extended past the corners to compensate), the circle renderer accepts a circle,

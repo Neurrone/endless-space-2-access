@@ -46,6 +46,23 @@ namespace ES2Access.Dev
     /// class the game has no <c>GuiTooltipDescription</c> for is reported separately as what it is -
     /// a defect in the GAME, which will draw nothing there whatever the mod does.
     ///
+    /// THE BUCKETS, which is what a reader of <c>/eval DevProbe.TooltipParity()</c> is looking at.
+    /// Four of them are the findings that count (<see cref="Result.Findings"/>): <c>promised</c> - a
+    /// node claims a dossier nothing near it would draw; <c>misaimed</c> - it points at one that
+    /// draws nothing, judged by <see cref="NodeVtable.PointsAt"/>; <c>uncovered</c> - the game would
+    /// draw a tooltip on a CONTROL that no node stands on; <c>unread</c> - a node covers it but
+    /// carries none of its words. The other four are context rather than defects:
+    /// <c>decoration</c> - the same gap on a widget the player cannot work, a weaker claim because
+    /// some of it is decoration nobody needs; <c>hidden</c> - seen only by the alpha-gate-off pass;
+    /// <c>undescribed</c> - the GAME has no description for that tooltip class; and <c>unknown</c> -
+    /// the node is read off something that is not an AGE widget at all (a place on the map), so
+    /// there is no tree to ask. An unknown-aim node is JUDGED ON ITS DECLARED AIM where it has one
+    /// and is NEVER counted a defect: every galaxy node used to land in <c>promised</c> for this
+    /// reason alone, over dossiers that demonstrably draw.
+    ///
+    /// The painted half needs <see cref="Screen.RootTransform"/>; with none, the check is
+    /// declaration-side only.
+    ///
     /// Main-thread only, dev-only, and never on the player's path: nothing here speaks, focuses,
     /// moves the pointer or changes what the game is showing.
     /// </summary>

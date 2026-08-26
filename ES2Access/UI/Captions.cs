@@ -21,7 +21,7 @@ namespace ES2Access.UI
     /// a screen that hard-codes the answer is wrong on half of them.
     ///
     /// Hand this the caption's GROUP, not the label inside it. ES2's prefabs routinely draw the word
-    /// on a label and hang the sentence on the wrapper around it (es2-facts, "A block caption's WORD
+    /// on a label and hang the sentence on the wrapper around it (ES2 facts, "A block caption's WORD
     /// and its EXPLANATION sit on different widgets"), and <see cref="AgeWidgets.TextOf"/> descends -
     /// so the group answers both questions and the label answers only one, losing the sentence
     /// silently. Find the group from the label's own unique prefab name and take its parent; the

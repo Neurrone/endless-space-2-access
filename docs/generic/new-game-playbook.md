@@ -71,9 +71,10 @@ repo maintains alongside the code:
 
 - A **game-specific research doc per subsystem** as it gets reverse-engineered ("documents
   the game, not the mod"), citing decompiled files and members.
-- A **living dev map** (ES2 Access: `docs/dev-loop.md`) — a short digest of the helper
-  inventory, layer budget, dev routes, and test recipes, with a chapter index into these
-  generic docs. It is the first read of every work session, and a change is not done until
-  the map reflects it — a map maintained as part of "done" is what keeps each session from
-  re-discovering the last one's tools. Game-agnostic lessons flow onward from there into
-  these docs, in the same session, while the evidence is fresh.
+- A **living dev map** (ES2 Access: `docs/dev-loop.md`) — the work loop itself (dev routes,
+  their gotchas, the screen-agnostic verification patterns) plus an INDEX pointing at the
+  per-need files that hold the detail: the helper inventory, the layer and key-binding
+  reference, the per-screen test recipes, and a chapter index into these generic docs. It
+  does not duplicate those files; it says which one to open. It is the first read of every
+  work session, and a change is not done until the map and the file its charter names both
+  reflect it — that is what keeps each session from re-discovering the last one's tools.

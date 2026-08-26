@@ -109,6 +109,10 @@ namespace ES2Access.UI
         /// icon in the corner explaining them on hover, and that sentence is a fallback and not a name:
         /// a stop is announced by its name on every Tab into it, so a panel that ends up on a whole
         /// sentence is a panel for its screen to add a word for.
+        ///
+        /// KNOWN GAP (roadmap): where a panel DOES draw a heading, the explanatory tooltip on its
+        /// corner icon is dropped entirely - the drawn word wins as the name and the sentence is
+        /// declared nowhere, so the player cannot reach it.
         /// </summary>
         public static string Name(SidePanel panel)
         {

@@ -168,7 +168,8 @@ namespace ES2Access.UI
         /// corner and inside the screen.
         ///
         /// Re-asked on every rebind rather than set once, because the corner moves with the
-        /// resolution and the carriers outlive a change of it.
+        /// resolution and the carriers outlive a change of it. Measured on 1280x800: a deposit
+        /// dossier draws at <c>0,420,240,380</c>.
         /// </summary>
         private static void Place(AgeTooltip carrier)
         {

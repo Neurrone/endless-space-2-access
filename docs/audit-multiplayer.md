@@ -269,8 +269,8 @@ the SessionMode setting changes (`NewGameScreen.ModifySetting` :262-280). For te
 
 **R7 — pressing Start in an MP lobby launches the game after 10 seconds** and the lobby locks
 at T-5s, so there is a ~5 second window in which Stop (the same `OnClickStartCb`) cancels.
-`docs/test-recipes.md`'s "never press Start" rule needs an MP-specific amendment, not a
-relaxation.
+`docs/test-recipes/modals-and-outgame.md`'s "never press Start" rule needs an MP-specific
+amendment, not a relaxation.
 
 **R8 — loading a multiplayer save lands in the LOBBY, not in the game.**
 `RuntimeState_Lobby` :283-296 shows `NewGameScreen` whenever `SessionMode != Single`, even
@@ -406,19 +406,19 @@ three files.
 
 ## 7. Doc placements these findings imply (for the main agent)
 
-- `docs/es2-facts.md`: multiplayer is Steam-lobby-only, three session modes with Private
+- `docs/install.md`: multiplayer is Steam-lobby-only, three session modes with Private
   disabled, no passwords; `EnableMultiplayer` is the inverse of the modding-tools flag;
   session events are system chat messages (§3 table); `LobbySlot.IsFree == IsAI`;
   `PlayersListPanel` is pointer-gated; the 10s countdown with a 5s lock; loading an MP save
   lands in the lobby (R8); `AgeControlTextFieldChat` overrides `StandardCancel` to false.
 - `docs/roadmap.md`: replace the one-line "multiplayer join (deferred)" with the M1–M6 stages
   (remaining work only).
-- `docs/test-recipes.md`: the hosting recipe (SessionMode → **Protected**, never Public), the
+- `docs/test-recipes/modals-and-outgame.md`: the hosting recipe (SessionMode → **Protected**, never Public), the
   Start/Stop countdown window, and a correction to the existing line "the multiplayer-only
   states (chat, Join/Kick/Ready, the DLC strip) have no fixture at all" — with Steam running,
   everything except Kick and the joiner's side DOES have a fixture.
 - `docs/interaction.md`: the chat binding (M4) once approved, and the chat surface's layer.
-- `docs/helpers.md`: a row for whatever M3's chat watcher/buffer becomes.
+- The chat watcher/buffer M3 builds documents itself in its own doc comment.
 
 ## 8. Generic-docs candidates (main agent applies the bar)
 

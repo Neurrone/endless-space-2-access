@@ -546,8 +546,9 @@ namespace ES2Access.Dev
             });
         }
 
-        // Shared with /status, which must stay cheap: the target lookup is reflection over the four
-        // signatures - three key scans and the focused-control dispatch - and is done once.
+        // Shared with /status, which must stay cheap: the target lookup is reflection over the six
+        // signatures - three key scans, AgeControlTextField.KeyDown, InGameChatPanel.HandleInput and
+        // AgeManager.set_FocusedControl - and is done once.
         internal static void WritePatches(JsonTextWriter json)
         {
             json.WriteStartArray();

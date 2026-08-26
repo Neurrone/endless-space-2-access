@@ -82,6 +82,11 @@ namespace ES2Access.UI
         private ControlId _visualKey;
         private GraphNode _visualNode;
 
+        // What that commit aimed at (NodeVtable.PointsAt's answer at the time). The graph is rebuilt
+        // every frame and a node's aim is resolved when ASKED, so this is what a later frame's answer
+        // is compared against - see SyncVisual.
+        private object _visualAim;
+
         // Where the cursor stood at the last visual commit, and whether the commit being made now is
         // the cursor having MOVED. Unlike _visualKey this survives ClearVisual, which is a re-commit
         // on the control the cursor is already on.
@@ -352,6 +357,22 @@ namespace ES2Access.UI
             return _screen.OffersGoToLocation || _graph.OffersGoTo;
         }
 
+        /// <summary>EMPTY THE FOCUSED CONTROL - only the controls that wire one answer, and the press
+        /// says nothing anywhere else. The control itself speaks the result: what it holds now is a
+        /// live part of its own readout.</summary>
+        public bool ClearControl()
+        {
+            return _graph != null && _graph.Clear();
+        }
+
+        /// <summary>The same fact asked before the press, for the key's claim. Off the standing render,
+        /// like every other claim - the key is Delete, and everywhere the cursor is not on a control
+        /// that empties it stays the game's.</summary>
+        public bool TakesClearKey()
+        {
+            return _graph != null && _graph.OffersClear;
+        }
+
         /// <summary>Whether the focused screen's LAST render declared this Tab-stop - the availability
         /// half of a jump-to-stop key, and the same question its key CLAIM asks
         /// (<c>docs/interaction.md</c>). Read off the standing render rather than built fresh: the claim
@@ -571,6 +592,8 @@ namespace ES2Access.UI
                     return DoubleClick();
                 case UiActions.GoToLocation:
                     return GoToLocation();
+                case UiActions.Clear:
+                    return ClearControl();
                 case UiActions.Carry:
                     return CarryKey();
                 case UiActions.SelectToggle:
@@ -746,20 +769,34 @@ namespace ES2Access.UI
         /// nothing declared: a control that named the game object it came from can be found on screen,
         /// and whether anything above it scrolls is a question about the game's own hierarchy. So it
         /// costs a screen nothing and is never forgotten.
+        ///
+        /// And re-committed, on the SAME control, whenever what the control aims at has changed
+        /// (<see cref="NodeVtable.PointsAt"/>). A commit happens once per focus change, but the thing
+        /// a node points at is a question the game keeps answering differently under a standing
+        /// cursor: pooled widgets get handed to another row, one tooltip on a window gets re-bound to
+        /// whatever the camera is looking at. The pointer stayed where it was first put, so the game
+        /// went on drawing somebody else's dossier for the control the player was standing on - and
+        /// nothing was ever going to correct it. Comparing the answer against the one that was
+        /// committed is what turns that into a re-commit, per site, with nothing for a screen to
+        /// remember; a node whose answer is stable takes exactly the path it always did.
         /// </summary>
         private void SyncVisual(GraphNode node)
         {
             if (_visualKey != null && _visualKey.Equals(node.Id))
             {
-                return;
+                if (ReferenceEquals(Aim(node), _visualAim))
+                {
+                    return;
+                }
             }
 
             ClearVisual();
             _visualKey = node.Id;
             _visualNode = node;
+            _visualAim = Aim(node);
             _cursorMovedHere = _visualFrom != null && !_visualFrom.Equals(node.Id);
             _visualFrom = node.Id;
-            ScrollIntoView.Reveal(node.Id.Reference);
+            ScrollIntoView.Reveal(node.Vtable.ScrollAnchor, node.Id.Reference);
             // The screen's own half first, so a rule that moves the WORLD (the galaxy page's camera)
             // has run before the node aims the pointer at whatever the new distance draws.
             if (_screen != null)
@@ -806,6 +843,22 @@ namespace ES2Access.UI
 
             _visualKey = null;
             _visualNode = null;
+            _visualAim = null;
+        }
+
+        /// <summary>What a node aims at right now, or null where it aims at nothing and where asking
+        /// threw - an aim that cannot be resolved is not a reason to keep re-committing.</summary>
+        private static object Aim(GraphNode node)
+        {
+            try
+            {
+                Func<object> points = node.Vtable.PointsAt;
+                return points == null ? null : points();
+            }
+            catch (Exception)
+            {
+                return null;
+            }
         }
 
         private static void Safe(Action action, string what)

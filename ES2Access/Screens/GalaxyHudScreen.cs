@@ -1729,7 +1729,7 @@ namespace ES2Access.Screens
         /// A fleet is where the map draws it - a point of its own, so the free cursor may stay up.
         /// Everything that stands at a system - the system, a colony of it, a planet in it - is that
         /// system, and the camera goes IN: the game's own locate for a planet aims at the star (the
-        /// entity overload throws the entity away and keeps the position, es2-facts), so a system is
+        /// entity overload throws the entity away and keeps the position, ES2 facts), so a system is
         /// the whole of what the request said.
         /// </summary>
         private bool FromEntity(IGameEntityWithGalaxyPosition entity, out MapTarget target)
@@ -2050,7 +2050,7 @@ namespace ES2Access.Screens
 
         /// <summary>The fleet the map's own cursor is holding, or null while it is holding nothing. The
         /// cursor is half the answer: the garrison cursor is what "a fleet is selected" means to this
-        /// game, and the panel's own visibility is gated on the same thing (es2-facts).</summary>
+        /// game, and the panel's own visibility is gated on the same thing (ES2 facts).</summary>
         private static Fleet SelectedFleet()
         {
             try

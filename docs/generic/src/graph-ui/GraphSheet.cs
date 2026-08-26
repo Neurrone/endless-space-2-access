@@ -89,6 +89,7 @@ namespace ES2Access.Core.UI
         private Func<string> _rowName; // the current row's primary label (for vertical edge labels)
         private Func<string> _prevRowName;
         private object _rowRef;        // the current row's domain object (identity keys), or null
+        private object _rowWidget;     // what the game draws the row as (scrolling), or null
         private ControlId _first;      // the first PRIMARY this sheet emitted
 
         // Where each row of the CURRENT region sits in it. Stamped on every cell of the row as it is
@@ -170,10 +171,20 @@ namespace ES2Access.Core.UI
         /// passed whenever rows can appear/vanish/reorder: keys derive from it, so a removed row's focus
         /// slides to a genuinely different identity and the differ announces the landing — index keys
         /// would silently rebadge the next row as "the same control". The primary additionally carries it
-        /// as its reference (tier-1 follow when the row moves).</summary>
-        public GraphSheet Row(NodeVtable primary, object rowRef, params Func<string>[] cells)
+        /// as its reference (tier-1 follow when the row moves).
+        /// <paramref name="rowWidget"/> is the thing the game DRAWS the row as, and is what every cell
+        /// of it is scrolled into view by (<see cref="NodeVtable.ScrollAnchor"/>). Pass it wherever the
+        /// row is keyed by a MODEL: the row object is then a save, a term, a trait - something with no
+        /// rectangle at all - so the viewport had nothing to follow and the cursor walked off the
+        /// bottom of the list with the list standing still.</summary>
+        public GraphSheet Row(
+            NodeVtable primary,
+            object rowRef,
+            object rowWidget,
+            params Func<string>[] cells
+        )
         {
-            BeginRow(primary, rowRef);
+            BeginRow(primary, rowRef, rowWidget);
             if (cells != null)
                 for (int i = 0; i < cells.Length; i++)
                 {
@@ -195,9 +206,9 @@ namespace ES2Access.Core.UI
         /// <summary>A row whose cells are pre-built vtables at explicit LOGICAL columns (sparse grids).
         /// Column numbers are 1-based (0 is the primary).</summary>
         public GraphSheet RowAt(NodeVtable primary, object rowRef,
-            IEnumerable<KeyValuePair<int, NodeVtable>> cells)
+            IEnumerable<KeyValuePair<int, NodeVtable>> cells, object rowWidget = null)
         {
-            BeginRow(primary, rowRef);
+            BeginRow(primary, rowRef, rowWidget);
             if (cells != null)
                 foreach (KeyValuePair<int, NodeVtable> kv in cells)
                     if (kv.Value != null) EmitCell(kv.Value, kv.Key);
@@ -205,9 +216,10 @@ namespace ES2Access.Core.UI
             return this;
         }
 
-        private void BeginRow(NodeVtable primary, object rowRef)
+        private void BeginRow(NodeVtable primary, object rowRef, object rowWidget)
         {
             _rowRef = rowRef;
+            _rowWidget = rowWidget;
             _row++;
             _prevRowIds = _rowIds;
             _prevRowName = _rowName;
@@ -223,9 +235,9 @@ namespace ES2Access.Core.UI
         }
 
         /// <summary>A single full-width line (a lead row like "Your dust", a section note).</summary>
-        public GraphSheet Line(NodeVtable vt)
+        public GraphSheet Line(NodeVtable vt, object rowWidget = null)
         {
-            BeginRow(vt, null);
+            BeginRow(vt, null, rowWidget);
             WireVertical();
             return this;
         }
@@ -274,6 +286,15 @@ namespace ES2Access.Core.UI
 
             // Which row it is in, for the position the announcer speaks on row CHANGES only.
             vt.Row = _rowPos;
+
+            // What a landing here is scrolled into view by: the widget the game drew the row as where
+            // the caller named one - the only answer a MODEL-keyed row has, since its key has no
+            // rectangle - and otherwise the row's own object, which a cell in another column carries
+            // nothing of its own to be found by (identity is per cell).
+            if (vt.ScrollAnchor == null)
+            {
+                vt.ScrollAnchor = _rowWidget ?? (col != 0 ? _rowRef : null);
+            }
 
             // Identity keys when the row has a domain object: stable across reorders/removals (the
             // primary also carries the reference for tier-1 follow); positional only for static lines.

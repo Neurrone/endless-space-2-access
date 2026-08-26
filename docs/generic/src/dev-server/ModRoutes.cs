@@ -29,6 +29,11 @@ namespace ES2Access.Dev
     ///                           the focused screen's whole accessible tree, or with screen=, what
     ///                           another registered screen would offer (see GraphDump)
     ///   POST /input             body = an action key; run it as a keypress would (see ModInput)
+    ///   POST /type              body = characters; type them at the focused screen (the type-ahead
+    ///                           search), and report what it made of them
+    ///   POST /key?hold=MS&amp;gap=MS&amp;text=1
+    ///                           body = a key sequence (or, with text=1, characters); pressed as REAL
+    ///                           OS key events at the game's window (see RawKeyboard)
     ///   POST /loadsave          body = a save title, or empty for the most recent save
     ///
     /// /speech reads the thread-safe buffer straight from the HTTP thread; /status, /gui/age,
@@ -68,6 +73,8 @@ namespace ES2Access.Dev
             _host.RegisterRoute("GET", "/gui/age", Age, "window", "depth", "visibleOnly", "fields");
             _host.RegisterRoute("GET", "/gui/graph", Graph, "edges", "buffers", "screen");
             _host.RegisterRoute("POST", "/input", Input);
+            _host.RegisterRoute("POST", "/type", Type);
+            _host.RegisterRoute("POST", "/key", Key, "hold", "gap", "text");
             _host.RegisterRoute("POST", "/loadsave", LoadSave);
         }
 
@@ -116,9 +123,11 @@ namespace ES2Access.Dev
                             json.WriteValue(speech.LastSpoken);
                             json.WritePropertyName("gameObjectCount");
                             json.WriteValue(gameObjectCount);
-                            // The tripwire: three prefixes, one per key scan. A zero here means the
-                            // game is seeing the mod's keys as well as the mod is, which looks like a
-                            // test result rather than like a failure.
+                            // The tripwire: six prefixes - one per key scan (three), the focused
+                            // control's own key dispatch, the chat panel's input handler, and the
+                            // focus setter. A zero here means the game is seeing the mod's keys as
+                            // well as the mod is, which looks like a test result rather than like a
+                            // failure.
                             json.WritePropertyName("keyStandDown");
                             DevProbe.WritePatches(json);
                             json.WriteEndObject();
@@ -338,6 +347,168 @@ namespace ES2Access.Dev
                     json.WriteEndObject();
                 })
             );
+        }
+
+        /// <summary>
+        /// Type characters at the focused screen - the type-ahead search - and report what the
+        /// search made of them, together with what it said.
+        ///
+        /// It cannot go through /input: that queue carries ACTIONS, and typing is text. So this
+        /// hands the characters to the navigator's own typed-character source and runs the same tick
+        /// the frame would have run, gates included - a screen that opted out, or a game text field
+        /// holding the keyboard, answers here exactly as it would to a real keyboard.
+        /// </summary>
+        private DevResponse Type(DevRequest request)
+        {
+            string text = request.Body ?? string.Empty;
+            if (text.Length == 0)
+            {
+                return DevResponse.Json(400, DevJson.Error("the body is the characters to type"));
+            }
+
+            long spokenBefore = _speech.Cursor;
+            TypedReport report = (TypedReport)_host.MainThread.Run(() => Typed(text));
+            if (report == null)
+            {
+                return DevResponse.Json(503, DevJson.Error("the navigator is not up"));
+            }
+
+            List<SpeechLog.Entry> spoken = Settled(spokenBefore);
+            return DevResponse.Json(
+                DevJson.Write(json =>
+                {
+                    json.WriteStartObject();
+                    json.WritePropertyName("typed");
+                    json.WriteValue(text);
+                    // False with a screen up means the search took none of it: the screen opted
+                    // out, a game text field has the keyboard, or nothing there was searchable.
+                    json.WritePropertyName("taken");
+                    json.WriteValue(report.Taken);
+                    json.WritePropertyName("searching");
+                    json.WriteValue(report.Searching);
+                    json.WritePropertyName("search");
+                    json.WriteValue(report.Search);
+                    json.WritePropertyName("results");
+                    json.WriteValue(report.Results);
+                    json.WritePropertyName("focus");
+                    json.WriteValue(report.Focus);
+                    json.WritePropertyName("speech");
+                    json.WriteStartArray();
+                    foreach (SpeechLog.Entry entry in spoken)
+                    {
+                        json.WriteValue(entry.Text);
+                    }
+
+                    json.WriteEndArray();
+                    json.WriteEndObject();
+                })
+            );
+        }
+
+        /// <summary>
+        /// Press keys the way a hand presses them - real OS key events at the game's window
+        /// (<see cref="RawKeyboard"/>) - and report what the mod said about them.
+        ///
+        /// The one route that is NOT a shortcut into the mod: /input runs an action with no key
+        /// physically down, and everything that branches on a key being down (the consumed-key latch,
+        /// <c>anyKeyDown</c>, the engine's own KeyDown delivery, the Return a commit is decided by) is
+        /// invisible to it. This is how those are tested.
+        ///
+        /// Never on the main thread: a sequence holds keys down across frames, so the game has to keep
+        /// running while it is sent.
+        /// </summary>
+        private DevResponse Key(DevRequest request)
+        {
+            int hold = request.QueryInt("hold", RawKeyboard.DefaultHoldMilliseconds);
+            int gap = request.QueryInt("gap", RawKeyboard.DefaultGapMilliseconds);
+            if (hold < 0 || gap < 0)
+            {
+                return DevResponse.Json(
+                    400,
+                    DevJson.Error("hold= and gap= are milliseconds, and cannot be negative")
+                );
+            }
+
+            bool asText;
+            string textFlag = request.QueryValue("text");
+            if (!ParseFlag(textFlag, false, out asText))
+            {
+                return DevResponse.Json(
+                    400,
+                    DevJson.Error("text= expects 1/0 or true/false, not '" + textFlag + "'")
+                );
+            }
+
+            string body = request.Body ?? string.Empty;
+            long spokenBefore = _speech.Cursor;
+            RawKeyboard.Result result = asText
+                ? RawKeyboard.Type(body, gap)
+                : RawKeyboard.Send(body, hold, gap);
+            if (!result.Ok)
+            {
+                // 409 for "the game does not have the foreground" - the caller can fix that one and
+                // ask again; 400 for a key name or a body the route cannot make sense of.
+                return DevResponse.Json(result.Refused ? 409 : 400, DevJson.Error(result.Error));
+            }
+
+            List<SpeechLog.Entry> spoken = Settled(spokenBefore);
+            return DevResponse.Json(
+                DevJson.Write(json =>
+                {
+                    json.WriteStartObject();
+                    json.WritePropertyName("ok");
+                    json.WriteValue(true);
+                    json.WritePropertyName("sent");
+                    json.WriteStartArray();
+                    foreach (string step in result.Sent)
+                    {
+                        json.WriteValue(step);
+                    }
+
+                    json.WriteEndArray();
+                    json.WritePropertyName("speech");
+                    json.WriteStartArray();
+                    foreach (SpeechLog.Entry entry in spoken)
+                    {
+                        json.WriteValue(entry.Text);
+                    }
+
+                    json.WriteEndArray();
+                    json.WriteEndObject();
+                })
+            );
+        }
+
+        /// <summary>What a frame of typing did, read off the navigator on the main thread and
+        /// written out on the HTTP one.</summary>
+        private sealed class TypedReport
+        {
+            public bool Taken;
+            public bool Searching;
+            public string Search;
+            public int Results;
+            public string Focus;
+        }
+
+        // Main thread: typing is navigation, and navigation is the game's own state.
+        private static TypedReport Typed(string text)
+        {
+            ES2Access.UI.GraphNavigator navigator = ModEntry.Navigator;
+            if (navigator == null)
+            {
+                return null;
+            }
+
+            navigator.TypeText(text);
+            bool taken = navigator.TypeAheadTick();
+            return new TypedReport
+            {
+                Taken = taken,
+                Searching = navigator.SearchIsActive,
+                Search = navigator.SearchText,
+                Results = navigator.SearchResultCount,
+                Focus = navigator.FocusedKey == null ? null : navigator.FocusedKey.ToString(),
+            };
         }
 
         private static string Outcome(ModInput.Injection injection)

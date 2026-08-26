@@ -1,8 +1,8 @@
 # ES2 application architecture — reverse-engineering notes
 
-Documents how the game works, not how the mod works. Sources cited as
-`decompiled/<Assembly>/<File>.cs`; regenerate with `.\decompile.ps1`. GUI specifics are in
-`es2-gui-framework.md`.
+Documents how the game works, not how the mod works — the game's own layering, and the
+store-divergence seams the mod must respect. Sources cited as `decompiled/<Assembly>/<File>.cs`;
+regenerate with `.\decompile.ps1`. GUI specifics are in `gui.md`.
 
 ## Application and services
 
@@ -112,6 +112,26 @@ All entities (`Fleet`, `Ship`, `ColonizedStarSystem`, `Empire`, …) implement
 - `Gui.Localize(key)` / `Gui.GetLocalizedTitle(guiElementName)` for anything keyed (`%`-prefixed).
 - Procedural names (star systems, planets) and empire names are plain strings, already final
   (`Empire.LocalizedName => Name`).
+
+## GOG vs Steam — where the two builds diverge
+
+- **The GOG build renames the galaxy class.** Top-level `Galaxy` (Steam) is `GalaxyIngame` on
+  GOG, because GOG ships `GalaxyCSharp.dll` (the GOG Galaxy SDK, namespace `Galaxy.Api`) and the
+  names would collide. The `Game.Galaxy` PROPERTY keeps its name, and `GameNodes` /
+  `StarSystemNodes` are member-identical. **Policy: the mod never names the type** — a member
+  reference compiled against one store's assembly fails at RUNTIME on the other, not at build
+  time. `ES2Access/UI/GameGalaxy.cs` is the single reflected seam, and the offline
+  `ES2Access.Tests/StoreDivergenceTests.cs` fails the suite if any other file names a divergent
+  member.
+- **The GOG build strips the Steam Workshop fields.** `ModdingScreen` lacks
+  `SteamWorkshopButton` and `WorkshopLegalAgreementButton` (+ `Label`); `ModdingAvailableModsPanel`
+  lacks `WorkshopFilterToggle`. `ES2Access/UI/SteamWorkshop.cs` reflects them and answers null on
+  GOG.
+- **`decompiled/` is a Steam-era snapshot** (generated 29 Jul 2026, before the GOG switch) and
+  disagrees with the live assemblies on both points above. Regenerating via `decompile.ps1` would
+  produce the GOG view, and the Steam DLLs now live only on the other machine. When the snapshot
+  and the live game disagree, verify against the live assembly:
+  `ilspycmd -t <Type> "<game>\EndlessSpace2_Data\Managed\Assembly-CSharp.dll"`.
 
 ## Modding support and per-frame work
 

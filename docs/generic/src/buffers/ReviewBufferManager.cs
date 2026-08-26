@@ -12,8 +12,9 @@ namespace ES2Access.Core.UI.Buffers
     /// context (<see cref="SetVisible"/>): the combat feed is worth cycling to during a battle and is
     /// noise everywhere else.
     ///
-    /// Cycling only ever visits visible buffers and wraps, so a screen with one buffer answers the
-    /// switch key by naming the buffer the player is already in rather than by doing nothing.
+    /// Cycling only ever visits buffers that are visible AND have lines in them, and wraps, so a
+    /// screen with one buffer worth reading answers the switch key by naming the buffer the player is
+    /// already in rather than by doing nothing (<see cref="MoveBuffer"/>).
     ///
     /// Deliberately BCL-only; the adapter turns the results into speech.
     /// </summary>
@@ -163,8 +164,19 @@ namespace ES2Access.Core.UI.Buffers
             return buffer;
         }
 
-        /// <summary>Step to the next (+1) or previous (-1) VISIBLE buffer, wrapping. With one visible
-        /// buffer this lands back on it, which is the honest answer: that is where the player is.</summary>
+        /// <summary>
+        /// Step to the next (+1) or previous (-1) buffer the player can read, wrapping.
+        ///
+        /// A buffer has to be visible AND have something in it. Visibility is about whether the buffer
+        /// makes sense here; emptiness is about whether stopping on it would tell the player anything,
+        /// and "Chat. Buffer empty" on the way round a single-player game is a stop that costs a
+        /// keypress and says nothing (owner ruling 2026-08-19). Skipping it lands the cycle back on the
+        /// buffer the player is in, which is the same answer a lone buffer has always given.
+        ///
+        /// The last resort is the buffer they are already in, so a player whose buffers are ALL empty
+        /// is never left with nowhere to stand: they hear where they are and that it is empty, which is
+        /// the truth.
+        /// </summary>
         public ReviewBuffer MoveBuffer(int step)
         {
             if (_order.Count == 0)
@@ -192,7 +204,7 @@ namespace ES2Access.Core.UI.Buffers
                 }
 
                 ReviewBuffer buffer = _order[index];
-                if (buffer.Visible)
+                if (buffer.Visible && buffer.Count > 0)
                 {
                     return SetCurrent(buffer.Key);
                 }

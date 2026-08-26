@@ -59,9 +59,14 @@ namespace ES2Access.UI
     ///   up-and-down's column with them - and an empty one reads the word for empty under the caption its
     ///   edge already said.
     ///
-    /// Five hooks are left to the screen, because only the screen knows the answers:
+    /// Eight hooks are left to the screen, because only the screen knows the answers:
     /// <see cref="ReadCell"/> replaces a whole cell where the game drew a CONTROL in it rather than a
-    /// figure (the systems table's automation drop list); <see cref="ReadValue"/> replaces only what a
+    /// figure (the systems table's automation drop list); <see cref="SplitCell"/> reads ONE of the
+    /// game's cells as several columns, each with its own Enter (the journal's Details buttons);
+    /// <see cref="CellTooltipReading"/> overrides how loudly a column's tooltip reads where the shared
+    /// <see cref="GraphNodes.ModeFor"/> rule gets it wrong (the save list's Mods dossier - key it on
+    /// <see cref="PropertyOf"/>, the game's own column name, never the translated caption);
+    /// <see cref="ReadValue"/> replaces only what a
     /// cell SAYS, for a column that draws no words at all (the politics table's support icons, whose value
     /// is on their own tooltip); <see cref="ActivateCell"/> replaces
     /// just what Enter does on a cell, which is how an interactive-cells table
@@ -72,11 +77,11 @@ namespace ES2Access.UI
     /// quantity steppers) - the table's double click is not one of those, it belongs to every table and
     /// is wired here (<see cref="ShowOnMap"/>); <see cref="NameColumn"/> names a column whose
     /// heading draws no caption; and <see cref="RowDetails"/> adds what a row draws inside its name cell
-    /// beyond the name. Six, then - all six OPTIONAL, and nothing here presses anything on a screen's
+    /// beyond the name. All eight OPTIONAL, and nothing here presses anything on a screen's
     /// behalf.
     ///
     /// One instance per table per screen, kept across builds: its two scratch lists are reused, and
-    /// <c>Build</c> runs every frame.
+    /// <c>Build</c> runs every frame. <c>SystemSelectionScreen</c> was the first adopter.
     /// </summary>
     public sealed class TableSheet
     {

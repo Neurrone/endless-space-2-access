@@ -1411,7 +1411,7 @@ namespace ES2Access.UI
         /// (<c>PanelFeatureConstellationControl.Bind</c>) - so the feature already knows where the
         /// lines are and there is nothing for a geometric reading to work out. Which is what makes
         /// this one worth typing: the label the game hangs a constellation's name on is CULLED at
-        /// every camera position the player ever plays at (es2-facts), so the panel is only ever drawn
+        /// every camera position the player ever plays at (ES2 facts), so the panel is only ever drawn
         /// with its rows unmeasured - every rect reads (0,0,0,0) - and row banding, having nothing to
         /// band by, fuses all four facts into one line. Read off the feature's own fields the answer
         /// does not depend on the panel having been laid out at all.

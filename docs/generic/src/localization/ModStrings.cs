@@ -38,6 +38,11 @@ namespace ES2Access.Core.Speech
         public const string ControlSlider = "control.slider";
         public const string ControlComboBox = "control.combo-box";
         public const string ControlEditField = "control.edit-field";
+
+        /// <summary>A box that only takes a number and carries its own stepper: the arrows change the
+        /// value where an ordinary edit field's arrows would move a caret, so the role word has to say
+        /// so before the player tries.</summary>
+        public const string ControlNumericEditField = "control.numeric-edit-field";
         public const string ControlMenuItem = "control.menu-item";
 
         // One of a set where exactly one is in force. Not a checkbox: activating it can only ever
@@ -57,6 +62,12 @@ namespace ES2Access.Core.Speech
 
         public const string NavDisabled = "nav.disabled";
         public const string NavNoDetails = "nav.no-details";
+
+        // A grid of cells the player walks with the arrow keys: the role word for the grid itself,
+        // and what a cell with nothing drawn in it says. An empty cell needs a word of its own -
+        // silence there is indistinguishable from a cell the readout simply failed to reach.
+        public const string NavTable = "nav.table";
+        public const string NavCellEmpty = "nav.cell-empty";
 
         // Typing letters on a screen searches what is on it. Both are whole phrases: the text the
         // player typed is quoted inside the sentence, so a language that frames a quotation
@@ -146,6 +157,7 @@ namespace ES2Access.Core.Speech
             { ControlSlider, "slider" },
             { ControlComboBox, "combo box" },
             { ControlEditField, "edit field" },
+            { ControlNumericEditField, "numeric editable" },
             { ControlMenuItem, "menu item" },
             { ControlRadioButton, "radio button" },
             { NavExpanded, "expanded" },
@@ -155,6 +167,8 @@ namespace ES2Access.Core.Speech
             { NavSelected, "selected" },
             { NavDisabled, "unavailable" },
             { NavNoDetails, "Nothing in here" },
+            { NavTable, "table" },
+            { NavCellEmpty, "empty" },
             { SearchNoMatch, "No match for {0}" },
             { SearchCleared, "Search cleared" },
             { BufferUi, "UI" },

@@ -67,8 +67,7 @@ keyboard-unreachable click.
   never feed a type-ahead search, including on the deferral frames.
 - **Step indicators** (page dots, carousel marks) — the game draws position as a row of
   marks, not text: declare each mark as a read-only page indicator carrying the Selected
-  part (never invent a spoken "N of M" the game doesn't show), and if the game's marks are
-  clickable, activating one jumps to that page.
+  part, and if the game's marks are clickable, activating one jumps to that page.
 - **A camera whose zoom changes the SUBJECT is a widget.** Where the zoom steps swap which
   data layer or which tier of entity the view draws (a strategic lens, an overlay mode), the
   camera holds a value and belongs in the graph as an adjustable — `OnAdjust` stepping the

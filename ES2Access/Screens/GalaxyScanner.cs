@@ -1072,7 +1072,9 @@ namespace ES2Access.Screens
 
         /// <summary>The subcategories a category has whatever is out there - the questions that are a
         /// fact about the category. The four whose columns are KINDS have only their "all" here; the
-        /// rest of their row is built from what was found.</summary>
+        /// rest of their row is built from what was found. Colonizable worlds are the one category
+        /// with no "all" column at all - unoccupied and occupied are the whole of it - and the last
+        /// three (pins, projectiles, quest markers) are "all"-only.</summary>
         private static readonly string[][] ScopeKeys = new string[][]
         {
             new string[]
@@ -1513,7 +1515,7 @@ namespace ES2Access.Screens
             // open-space crossing it is making, or - where that destination is a place the map has
             // never named - at the top level of the systems stop. So a free mover always has a row
             // now, and what is left here is a fleet parked at a system the map does not name and a
-            // fleet flying a lane the map does not draw (es2-facts): the branch that would hold it
+            // fleet flying a lane the map does not draw (ES2 facts): the branch that would hold it
             // does not exist. The landing has already selected it and moved the camera - the map's own
             // "go to that fleet" - and there is no node to announce the arrival, so the line the
             // scanner found it with is said again, which is the whole of what arriving there means.

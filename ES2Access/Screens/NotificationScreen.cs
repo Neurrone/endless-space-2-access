@@ -228,7 +228,7 @@ namespace ES2Access.Screens
         /// the popup aside as the mouse would.
         ///
         /// Gated on the button being DRAWN, not merely bound: forty-one of the sixty-nine prefabs bind
-        /// one their layout never holds (es2-facts), and the same paint test that keeps those out of
+        /// one their layout never holds (ES2 facts), and the same paint test that keeps those out of
         /// the walk keeps them out of the key.
         /// </summary>
         public override bool GoToLocation()
@@ -1495,7 +1495,7 @@ namespace ES2Access.Screens
         /// (<c>NotificationWindow.OnBeginShow</c> :139-140) without asking whether the prefab laid one
         /// out, and forty-one of the sixty-nine prefabs did not - they answer with an orphan, parked
         /// at the screen's origin with no parent, which the engine never draws because rendering walks
-        /// the tree (es2-facts). So the test is the paint test, ending AT the window's own root.
+        /// the tree (ES2 facts). So the test is the paint test, ending AT the window's own root.
         ///
         /// Asked of the notification's OWN window instance rather than of a table of type names: each
         /// notification names its window in its constructor
@@ -1529,7 +1529,7 @@ namespace ES2Access.Screens
         /// <see cref="Painted"/> is the question for a popup that is UP: is the player seeing this.
         /// This is the question for one that is not, and the two are different for exactly the reason
         /// <see cref="Painted"/> exists: forty-one of the sixty-nine prefabs bind a show-location
-        /// button their layout never holds, an orphan with no parent at all (es2-facts). The orphan is
+        /// button their layout never holds, an orphan with no parent at all (ES2 facts). The orphan is
         /// what has to be caught, and a closed popup draws nothing at all - so asking
         /// <see cref="Painted"/> of one answers false for every notification on the strip, which is
         /// where the go-to-location key is most of the time (measured 2026-08-22: the hint and the
@@ -4927,7 +4927,7 @@ namespace ES2Access.Screens
         /// binds the base window's rails by NAME, and forty-one of the sixty-nine bind a Show Location
         /// button their own layout never holds - an orphan with no parent at all, parked at the screen's
         /// origin, which the game then marks visible because the notification does have a location
-        /// (es2-facts). Visible, alpha 1, drawn nowhere: a chain test that stops at the first null parent
+        /// (ES2 facts). Visible, alpha 1, drawn nowhere: a chain test that stops at the first null parent
         /// calls that painted, and the player gets a stop that does nothing.
         /// </summary>
         private static bool Painted(AgeTransform widget, AgeTransform root)

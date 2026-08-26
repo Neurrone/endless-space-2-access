@@ -123,7 +123,7 @@ namespace ES2Access.UI.Input
             }
         }
 
-        /// <summary>The game's two key-matching routines, resolved by signature so a missing one
+        /// <summary>The game's three key-matching routines, resolved by signature so a missing one
         /// fails here with a name rather than silently not being patched. Internal rather than private
         /// so the dev server can report whether they are still patched.</summary>
         internal static MethodInfo[] KeyScans()

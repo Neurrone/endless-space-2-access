@@ -73,8 +73,12 @@ namespace ES2Access.UI
     /// COST is why the sample count is not fixed. A tile that one of the player's own circles covers
     /// entirely and no other circle reaches at all can only answer one way, and the certificate says
     /// so from the geometry alone - so it costs ONE point query, and the eleven-by-eleven grid is only
-    /// paid for on the border band where the answer is actually in doubt. That is what makes the sweep
-    /// affordable both once per turn and once per scanner keypress.
+    /// paid for on the border band where the answer is actually in doubt. A tile nothing else reaches
+    /// with a sample point outside every one of the player's own circles costs NO query at all: the
+    /// game can only answer "nobody" there, which is neither a taker nor a certificate. That is what
+    /// makes the sweep affordable both once per turn and once per scanner keypress. Measured on
+    /// <c>[Beginner] test</c> turn 21: 169 squares, 114 queries, 8 ms - and 169 squares, 6735
+    /// queries, 76 ms with a rival circle inflated over the whole of Dusay's reach.
     /// </summary>
     public static class InfluenceGround
     {

@@ -6,7 +6,7 @@ game's tooltip system can actually express — research that first; the strategy
 ## First: research what the game's tooltips can do
 
 Answer these from the decompile before designing anything (ES2 answers in parentheses as the
-worked example — method and full findings in the game-specific `es2-gui-framework.md`):
+worked example — method and full findings in the game-specific `gui.md`):
 
 1. **When does tooltip content exist?** At widget-bind time in a readable field, or only
    composed at render time? (ES2: a `Content` string at bind time — readable without ever
