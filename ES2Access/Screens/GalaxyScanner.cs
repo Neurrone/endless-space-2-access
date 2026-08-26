@@ -2722,16 +2722,24 @@ namespace ES2Access.Screens
                 Empire owner = ReferenceEquals(fleet.Empire, empire)
                     ? fleet.Empire
                     : fleet.DisplayedEmpire;
-                found.Add(
-                    Make(
-                        "fleet/" + fleet.GUID,
-                        fleet.LocalizedName,
-                        fleet.GalaxyPosition,
-                        ScannerScopes.Owned(Scope(owner, empire, foreign)),
-                        null,
-                        fleet
-                    )
+                Found made = Make(
+                    "fleet/" + fleet.GUID,
+                    fleet.LocalizedName,
+                    fleet.GalaxyPosition,
+                    ScannerScopes.Owned(Scope(owner, empire, foreign)),
+                    null,
+                    fleet
                 );
+                // Everything the map's own fleet row says about this fleet except its name, plus
+                // what it is DOING - docked somewhere or under way to somewhere, in the same words
+                // the tree speaks (<c>GalaxyHudScreen.FleetState</c>). Composed here rather than on
+                // the press, like every other result's extra, which is also what makes it something
+                // the type-ahead search can match on (owner ruling 2026-08-23).
+                MessageBuilder extra = new MessageBuilder();
+                extra.ListItem(FleetPhrase.Describe(fleet));
+                extra.ListItem(GalaxyHudScreen.FleetState(fleet));
+                made.Extra = extra.Build();
+                found.Add(made);
             }
         }
 

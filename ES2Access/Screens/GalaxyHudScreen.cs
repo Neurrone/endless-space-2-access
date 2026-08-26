@@ -8072,8 +8072,12 @@ namespace ES2Access.Screens
         ///
         /// A node the map has not named is not named here either, exactly as a starlane running into
         /// the dark is not.
+        ///
+        /// Shared with the scanner, whose fleet results carry the same two words
+        /// (<c>GalaxyScanner.Fleets</c>) so a fleet found by the scanner and the same fleet met on the
+        /// map say the same thing about where it is.
         /// </summary>
-        private static string FleetState(Fleet fleet)
+        internal static string FleetState(Fleet fleet)
         {
             Empire empire = PlayerEmpire();
             GameNode orbit = FleetOrders.Orbit(fleet);
