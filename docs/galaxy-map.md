@@ -629,6 +629,39 @@ outposts and the influence/colonizability facts live in `planets.md`; fleets and
   SHOWN is bound to something other than the focused system, and remembers the system it rebound for
   so a bind that will not take cannot become a show every frame.
 
+- **The map's star-system LABELS only re-ask what to draw on frames where the camera MOVED — so a
+  camera that is PUT somewhere starves them.** `StarSystemLabelsWindow.SpecificUpdate` (:340-352)
+  gates `MarkLabelsCulling()` + `RefreshLabelsVisibilityAndPosition()` on
+  `previousCameraPosition != position`, and each pass reads the galaxy entities' own culling flags,
+  which the view updates on its own schedule. A FLOWN arrival asks on every frame of the flight and is
+  bound to catch the answer; a SNAPPED arrival (`SnapTo` / `CenterOn` + `Settle`) asks exactly ONCE —
+  on the frame the camera jumps, a frame before the culling has caught up — and then never again,
+  because the camera is already still. The arrived system's label stays marked culled-out and hidden
+  for the rest of the session, and with it everything the label carries:
+  `RequestManagementViewButton`, `DiplomacyButton`, the conversion buy-outs, the pirate mark. Measured
+  2026-08-27: the label read `Shown=False`, `CulledIn=False`, own `Visible=False` while the galaxy
+  entity read `((IGalaxyEntityWithCulling)galaxyNode).Visible == True` — the WINDOW's cache was stale,
+  not the game's culling. **Mod policy (2026-08-27): make the game ask the question a flight would
+  have made it ask.** `GalaxyViewLevels.CatchUpLabels()` writes a far sentinel into the private
+  `previousCameraPosition` while the window is shown (missing field ⇒ warn once and no-op), poked on
+  the twelve frames after a snap and armed from BOTH `FollowPlace` branches — the open-sky PAN has the
+  same bug (a landing on a system's own row at step 9 left the camera centred on Sabel with Sabel's
+  label undrawn while three others were drawn). Three frames from snap to drawn, measured. Nothing is
+  styled by hand: `ShowOrHideIfVisibleByEmpire` calls `Show()` only while the label is
+  `Hiding || !Visible`, so the twelve pokes are no-ops by construction.
+- **Two suspects in that chain that are NOT the cause** (probed 2026-08-27, recorded so the next
+  reader does not re-derive them): the zoom-layer swap FIRES on a snap —
+  `ILayerService.LayerDescriptorCurrent` went `SystemsLayer` (step 9) → `SystemOverviewLayer` (step
+  12) with `StarSystemLabelsWindow.CurrentLayerDescriptor` matching, so the `SetZoomStep` →
+  `SwapLayerDescriptor` equality guard never swallowed it (the two steps really are different layers —
+  the per-step table above). And the window's `LayerService_LayerDescriptorChanged` forwarding the
+  descriptor only to labels that are already `Shown` is SELF-HEALING:
+  `StarSystemLabel.ShowOrHideIfVisibleByEmpire` (:1514-1539) calls `Show()` and then
+  `OnLayerDescriptorChanged(Parent.CurrentLayerDescriptor)` itself (:1526-1527), so a label shown late
+  fetches the current descriptor without anyone delivering it.
+- **`StarSystemLabel` sits on a GameObject named "Child".** A visibility walk up the parent chain from
+  one of the label's buttons that reports "hidden at `Child`" has reached the LABEL itself — not a
+  style group inside it, and there is nothing between the two that would need un-staling.
 - **The galaxy camera says when it has stopped flying, in two private fields.**
   `GalaxyViewCameraController.isZooming` / `isRecentering` (:134, :146) are set synchronously by
   `StartZoomingOnPosition` / `StartRecentering` and cleared by `StopZooming` (:831-833) and by the

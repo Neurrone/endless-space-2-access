@@ -322,7 +322,10 @@ belong in the files above.
 - Fixture-blocked live and proved by structure only: the planet card's three in-progress
   buttons, the pirate lair, `OutpostCancelIcon`, `HauntIcon`, and every signal line in
   `AddSignals` (no juggernaut, no ghost colony, no unique world, no outpost in trouble on
-  `[Beginner] test`).
+  `[Beginner] test`). Two more of the same shape from 2026-08-27: an ELIMINATED empire's
+  diplomacy card (every empire in both saves is alive, so only the unmet half of the
+  `IsKnown && !HasBeenEliminated` gate has been heard), and a technology stage whose new
+  unlock `actions` region also holds a DEED node (Military II draws no readable deed).
 - A curiosity in neither of the two Curiosities columns (one already being expedited, or
   quest-locked) does not exist on `[Beginner] test` — both columns are unproven against a
   real one.

@@ -55,7 +55,7 @@ crossover at 4:
 re-running the classification sweep and the radius dump and getting the pre-mutation output back.
 The same inflation is how the FOG GATE is proved: with it up, `-40,-44` is unexplored and inside
 Niris's circle, `SystemInfluence.OverCell` (ungated) answers "In Niris's influence", and the mode
-walking onto it says the coordinates and "Unexplored" and nothing about influence at all.
+walking onto it says "Unexplored" and then the coordinates, and nothing about influence at all.
 
 ## The influence ground sweep and its two readers
 
@@ -139,29 +139,32 @@ branches outlive their frame (owner rulings 2026-08-20).
 it used to land on the parent system's, because a fleet/probe/missile/pin row is keyed structurally
 and the walk only read `ControlId.Reference`, which only a system's node carries —
 `GalaxyHudScreen.cs:1657`). Measured: focus `galaxy:system/491/fleet/1304` (the Patriots, `-37, -31`,
-under Osulo at `-31, -32`) and `galaxy.inspect` answers `-37, -31, 1st Patriots Navy, Star lane from
-Heracles to Osulo` with `DevProbe.Camera().focus` at `(31.884, 0, -53.45)` = origin + (-37, -31). A
+under Osulo at `-31, -32`) and `galaxy.inspect` answers `1st Patriots Navy, Star lane from
+Heracles to Osulo, -37, -31` with `DevProbe.Camera().focus` at `(31.884, 0, -53.45)` = origin + (-37, -31). A
 row with no thing of its own (a planet, a lane) still answers with its system, and entering from
 the empire stop (no place under the cursor) gives home. So entering from the empire stop and from
 `galaxy:system/535` (Dusay) both give "0, 0" on
 `[Beginner] test` — pick a non-home system to tell the two apart. The measured expectations there:
 entry says `Inspect mode, Cursor 1 by 1` (default since 2026-08-19; the size persists per
-session, so a re-entry repeats whatever was last set) then `0, 0, Dusay, Star lane from Rigel to Dusay, Star lane
-from Qarius to Dusay, Star lane from Dusay to Primus`; the cell lists systems, special nodes,
-fleets, probes, obliterator missiles, ally pins, then the lanes crossing it and the fog — the three
+session, so a re-entry repeats whatever was last set) then `Dusay, Star lane from Rigel to Dusay, Star lane
+from Qarius to Dusay, Star lane from Dusay to Primus, 0, 0`. **The cell says its CONTENTS first and
+its coordinate LAST** (owner ruling 2026-08-26): systems, special nodes,
+fleets, probes, obliterator missiles, ally pins, then the lanes crossing it, then the fog, then the
+pair — an EMPTY cell is the bare pair and nothing else, and no reading ever opens with a comma. The
+three
 open-space kinds in the tree's own declaration order (`AddProbes`/`AddProjectiles`/`AddPins`), off
 the page's own `DrawnProbes`/`DrawnProjectiles`/`DrawnPins` lists, so the cell and the tree cannot
 disagree about what the map is drawing. `ui.right` twice then `ui.up` twice reads
-`3, 0` / `6, 0` / `6, 3` / `6, 6 Star lane from Dusay to Primus` — that last cell is the
+`3, 0` / `6, 0` / `6, 3` / `Star lane from Dusay to Primus, 6, 6` — that last cell is the
 lane-crossing check against known geometry (Dusay 0,0 to Primus 16.5,20.9 enters the cell centred
-6,6 and misses the one at 6,3). Empty cells say the pair and nothing else. The camera is the exact
+6,6 and misses the one at 6,3). The camera is the exact
 oracle for the pan: `DevProbe.Camera().focus` must equal `GalaxyCoordinates.Origin() + (x, 0, y)` —
 `(74.884, 0, -16.45)` at cell (6,6) with home at `(68.884, -22.45)`. Edge refusal: the galaxy's node
 bounds are x `[-164.0, 22.8]`, y `[-41.5, 88.3]`, so at 11x11 from (6,50) one `ui.right` reaches
 (17,50) and the next answers `Map edge` (measured again eastward from (0,9) at 11x11 — (11,9),
 (22,9), then `Map edge`).
-Fog: (6,50) at 11x11 is `Unexplored` whole, (6,6)
-is `34 squares unexplored` — grow/shrink and the count tracks. **The mode's state probe is
+Fog: (6,50) at 11x11 reads `Unexplored, 6, 50` (whole), (6,6)
+`34 squares unexplored` ahead of its pair — grow/shrink and the count tracks. **The mode's state probe is
 `DevProbe.Claims("Escape,Minus")`**: both claim true only while it is live AND the tree cursor is on
 the map stop, which is how "Enter on an
 empty cell did nothing" is proved to be a refusal rather than an exit (focus unchanged in
@@ -183,18 +186,29 @@ still reads `hud:view-title/zoom` afterwards, `DevProbe.Claims("Escape,Minus")` 
 check that `galaxy.inspect` re-injected while the mode is live does nothing: claims still true plus
 an unchanged cell reading on the next `ui.*` is the evidence. `galaxy.inspect` does not toggle out; the exits are `ui.back`, a landing
 Enter made, and leaving the map.
-**Escape with a type-ahead search live takes TWO presses (2026-08-19).** From the map stop:
-`galaxy.inspect`, `POST /type "qa"` (→ `Qarius, -5, 23, group, collapsed, 3 of 14`, focus
-`galaxy:system/508`, still a map node so the mode stays Active), then `ui.back` → **"Search
-cleared"** with the mode intact, and a second `ui.back` → **"Exited inspect mode"** plus the map
-node's own line. The mode's survival needs a state probe, since "Search cleared" alone cannot
-tell a live mode from a dead one: reflect `ES2Access.Screens.GalaxyInspect`'s static `Live`/`Active`
+**TYPING IS INERT WHILE THE MODE IS LIVE, so the map's inspect mode can no longer stack a search on
+top of itself (2026-08-26).** The old two-press Escape (search first, mode second) is UNREACHABLE
+here: `GalaxyHudScreen.SuspendsTypeahead` is true while `GalaxyInspect.Active`, so the letters are
+still claimed from the game and simply start nothing. What to measure: with the mode live,
+`POST /type "res"` answers
+`{"typed":"res","taken":false,"searching":false,"search":"","results":0,"speech":[]}` and `/speech`
+gains nothing; `DevProbe.Claims("R,Escape,Space")` reads `R claims:true`, `Escape claims:true`,
+`Space claims:false` (Space is still only claimed with a live search buffer); `ui.down`/`ui.up` still
+move the cell. The PHYSICAL half is proven here — `POST /key "R E S"` (hold 120, gap 120) answered
+`sent:["R","E","S"]` with `speech:[]` and `SearchIsActive` false, and `ui.right` afterwards still read
+the next cell, so the mode was live throughout. **Search THEN inspect**: `POST /type "dus"` from the
+map stop (`taken:true`, 18 results, focus `galaxy:system/535`) followed by `galaxy.inspect` announces
+the ordinary entry — `Inspect mode, Cursor 1 by 1` / `Serpens constellation` / `In your influence` /
+`Dusay, …, 0, 0` — with **no "Search cleared" line**, and `SearchIsActive=false`, `SearchText=""`,
+`SearchResultCount=0`: the entry drops the search SILENTLY. After `ui.back` ("Exited inspect mode"
+plus the map node's line) `POST /type` starts a fresh search from where the cursor was. The mode's own
+survival still needs a state probe rather than a speech line: reflect
+`ES2Access.Screens.GalaxyInspect`'s static `Live`/`Active`
 (both internal — go through `typeof(ES2Access.Dev.DevProbe).Assembly.GetType(…)`) and
 `ES2Access.UI.InspectMarker`'s private static `_drawer`, which reads non-null while armed and
 **null** the moment the mode ends; the cheap live half is one `ui.right`, which must answer with
-the next cell pair (`5, 34` → `6, 34`). `DevProbe.Claims("Escape")` is `claims:true` with the
-search live, with only the mode live, and with both — and `false` once both are down, so nothing
-leaks to the game and no claim sticks. The same two-press order is the TARGETING cursor's
+the next cell pair (`5, 34` → `6, 34`). The two-press Escape ORDER is still live on the two surfaces
+that never suspended typing — the TARGETING cursor's
 (`ChangeCursor(typeof(TakeSystemCursor), new AcademyDiplomacyGiveSystemAction())` → search →
 `ui.back` "Search cleared", cursor still `TakeSystemCursor` → `ui.back` "Target selection ended")
 and the CARRY's (`ModEntry.Carry.PickUp(...)` → search → "Search cleared", `IsCarrying` still true
@@ -237,9 +251,10 @@ releases the aim and re-commits the standing control's focus visual (focus never
 else would ask).
 **The mode's review buffer is the CELL's, and its oracle is `/input buffer.first` +
 `buffer.lineDown`, never `/gui/graph?buffers=1`** — the graph dump renders the NODE's declared
-buffer lines and cannot see an override. Measured: at (0,0) `0, 0` / `Dusay` / the three lanes;
-at (0,-3) `0, -3` / `1st Vanquishers Navy`; off the map `Galaxy View`; after Enter, the landed
-row's own lines. **Enter on a fleet cell lands on the fleet's own tree row** through
+buffer lines and cannot see an override. The buffer's ORDER is the sentence's, coordinate last.
+Measured: at (0,0) `Dusay` / the three lanes / `0, 0`; at (0,-3) `1st Vanquishers Navy` / `0, -3`;
+a fleet on a lane at (3,31) `2nd Saviors Navy, Small Logistics` / `Star lane from Qarius to Ita` /
+`3, 31`; off the map `Galaxy View`; after Enter, the landed row's own lines. **Enter on a fleet cell lands on the fleet's own tree row** through
 `GalaxyHudScreen.NodeFor`, opening the branch: from Dusay, `ui.down` to (0,-3) then Enter gives
 focus `galaxy:system/522/fleet/1642` and Heka `expanded` — restore the fixture by focusing
 `galaxy:system/522` and `ui.left` (collapsed at rest). **Enter on the cell the mode was ARMED on
@@ -251,7 +266,7 @@ at (-5,-26) is a `SpecialNode` (Solar Nebula) — the only special in `[Beginner
 the fixture for "Enter on a special". Perceived systems: Heracles (-43,-30), Osulo (-31,-32),
 Electra (-17,-21), Rigel (-16,-5), Qarius (-5,23), Ita (5,34), Heka (-1,-9), Dusay (0,0),
 Primus (17,21), Leo (23,33), Byrtus (-25,-42), Libra (-11,11). Byrtus is the south-edge fixture:
-1×1 at (-25,-41), Down must land "-25, -42, Byrtus" and a second Down "Map edge". Camera zoom for the size/zoom matrix is set directly:
+1×1 at (-25,-41), Down must land "Byrtus, -25, -42" and a second Down "Map edge". Camera zoom for the size/zoom matrix is set directly:
 `cam.ForceZoomingOnPosition(step, cam.TargetPositionCurrent)`, step 0 = full overview, 12 = closest
 (`ZoomStepsCount` 13).
 Fixture-blocked in the cell reading, for the same reasons the tree's own nodes are: an obliterator
@@ -260,10 +275,10 @@ visibility and wording with the tree, so the tree's route is the only place eith
 **Skip and travel (2026-08-19)**: `ui.coarseDecrease`/`ui.coarseIncrease` are the WEST/EAST skip
 while the mode drives the map, `galaxy.inspectSkipNorth`/`…South` the other two, and
 `galaxy.inspectFollowWest`/`…FollowEast` the travel keys. Measured on `[Beginner] test` at 1×1 from
-Ita (5,34): north gives `5, 35`, then `Skipped 2 squares` + `5, 38, Unexplored` (the fog bucket
-changing is a stop), then `Skipped 49 squares` + `5, 88, Unexplored` (the run to the north edge — the
+Ita (5,34): north gives `5, 35`, then `Skipped 2 squares` + `Unexplored, 5, 38` (the fog bucket
+changing is a stop), then `Skipped 49 squares` + `Unexplored, 5, 88` (the run to the north edge — the
 landing is not counted, hence 49 and not 50), then `Map edge`; southward is the mirror
-(`Skipped 50 squares` + `5, 37`). At 5×5 from (5,34) north gives `5, 39, 21 squares unexplored`, the
+(`Skipped 50 squares` + `5, 37`). At 5×5 from (5,34) north gives `21 squares unexplored, 5, 39`, the
 crop pair for "the square landed where the speech says". The travel keys' fixture is the SIX fleets,
 all the player's own and all in transit — `1st Patriots Navy` Heracles→Osulo, `1st Defenders Navy`
 Primus→Dusay, `1st Victors Navy` Dusay→Primus (those two share the cell `12, 15`, heading OPPOSITE

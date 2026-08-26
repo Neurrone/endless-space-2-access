@@ -250,6 +250,34 @@ game re-evaluates only on a change; restore the layer afterwards. Entering a sys
 "A MATTER OF INFLUENCE", leaving unbinds it. The unlocked save's four Xiu lanes are all
 unexplored — no lane TRAVEL is testable there; `[Beginner] test` is the fixture for that.
 
+**Proving a label is DRAWN where the mod SNAPPED (2026-08-27).** A camera the mod puts somewhere used
+to leave the arrived system's label culled out for the rest of the session (mechanism:
+`docs/galaxy-map.md`), and with it every button the label carries — the management button, the
+diplomacy button, the conversion buy-outs, the pirate mark — since `CardActions.AddRefusable`
+(`ES2Access/UI/CardActions.cs`:96-104) drops an action whose widget is not chain-visible. The oracle is
+the LABEL's own chain, never the button's own flag: from `/eval`, walk the labels window's private
+`starSystemLabels`, match `GameNode.ToString()`, then walk `AgeTransform.Visible` up the parent chain
+from `RequestManagementViewButton` / `DiplomacyButton`. The failing reading is
+`vis=True chain=False hidBy=Child` — `Child` is the GameObject the label itself sits on, so "hidden at
+Child" means the whole label is undrawn (`Shown=False`, `CulledIn=False`) while the galaxy entity's own
+`((IGalaxyEntityWithCulling)galaxyNode).Visible` still reads True. The catch-up is
+`GalaxyViewLevels.CatchUpLabels()`, poked for twelve frames after either snap; `POST /wait` on the
+label's own `AgeTransform.Visible` is the timing instrument (three frames, above). The BEFORE picture
+is reproducible IN PLACE for an honest crop pair, with no stash-and-rebuild: `label.Hide(true)`,
+`CulledIn = false`, and freeze the window's `previousCameraPosition = camera.transform.position`. The
+pair at zoom step 9 centred on Sabel (`crop-shot.ps1 -Rect 545,320,200,110`) is star-and-orbit-rings
+with NO label against the label's star-pole line and its row of planet pips.
+
+**The management child no longer depends on the route (2026-08-27).** All three routes read the drawn
+button: Right-in on Sabel from step 9 → "Open system, button, 1 of 10"; a search-snap in
+(`POST /type "sabel i"`, `ui.back`) → the same node at
+`galaxy:constellation/446/system/476/management`, where that route used to read "1 of 9" with no "Open
+system" permanently; Olvaldi, the foreign home system, grows "Diplomacy, button, 1 of 7". The greyed
+case is declared by `Manageable` rather than by the button: our outpost Ita reads "Open system, button,
+1 of 8" with the button probing `Visible=True, alpha=0.5, Operable=False`, and Enter takes the
+view-level route instead of pressing a dead button. Leo (`No owner`) still declares no management child
+at all — that negative half is the other side of the same check.
+
 **Probes and faction panels (the other galaxy labels).** The unlocked save draws NONE of this
 surface. A probe row is exercisable with `probeLabel.Show()` then `Hide(true)` — self-healing. The
 faction panels need `Bind` + `Show`, then `Hide` + `Unbind` **and** `InspectedEmpire` restored
@@ -296,6 +324,29 @@ exactly the state `ShowQuestLocation` leaves when it does have one, and must say
 "⟨quest title⟩, objective shown on the map" before the landing. The same call ALONE on a marker-less
 quest must be silent.
 
+**The mod's own next-idle-fleet node makes ONE camera move (2026-08-27).** On the galaxy page the turn
+stop's idle-fleet node no longer presses the game's button (`GlobalHud.NextIdleFleet` →
+`GalaxyHudScreen.GoToNextIdleFleet`): the game's own cycle still picks the fleet
+(`EndTurnWindow.GetNextIdleFleet`, reflected), the page's one landing seats the cursor and the row's
+own focus moves the camera, and the two calls the game's coroutine makes AFTER its flight
+(`cursors.Select(berth)` + `FleetsScreen.SelectIdleFleet`) are made with no camera request of their
+own. Route: `ui.focusTurn`, `ui.down` twice ("Next idle fleet, button, 3 idle fleets, …, 3 of 6"),
+`ui.activate`, with the camera polled ~0.25 s apart across the press. BEFORE, a DOCKED fleet cost two
+moves — a damped slide from home to the docking SLOT (`[32.016, -26.003] step 9`, ~2.5 s) and then a
+second jump to the star's framing (`[33.76, -27.64] step 12`). AFTER, one snap
+(`[3.624, -35.654] step 12` → `[33.76, -27.64] step 12`), flat for the next four seconds, and the
+berth position never appears at all. A fleet UNDER WAY slides once to its own point with the zoom step
+UNCHANGED (`[68.884, -22.45] step 9` → `[33.093, -29.463] step 9`) — `SelectOnMap`'s
+`RequestGalaxyOverviewViewLevel` was kept and costs no visible second move, it and the row's own
+`PanTo`/`CenterOn` aiming at the same point. Each press says `Fleet panel open for …` plus ONE
+landing with the cursor on the fleet's own row, `Gui.GetCursor()` = `DockingGalaxyGarrisonCursor` for
+a docked one and `FleetOrders.Selected().Count` = 1; deselect between presses the way the mod's own
+key does (`ChangeCursor(typeof(GalaxyCursor), …)`), and the node must keep reading "3 idle fleets"
+with no "unavailable". The fleet ROW's own Enter is untouched and still frames the BERTH
+(`[32.016, -26.003] step 12`), which is the documented `Select` behaviour. Off the galaxy page the
+node falls back to pressing the game's button — eleven pages draw the turn stop, and that fallback has
+never been exercised live.
+
 **A landing's announcement waits for the camera.** Out of the inspect cell the landing's own
 announcement is the whole utterance, once, and it is composed after the map has caught up:
 `Screen.LandingSuspended` covers `GalaxyViewLevels.CameraSettling` plus a twenty-frame tail, and a
@@ -304,6 +355,35 @@ scanner jump to Osulo I used to say "Osulo I, Colonized, 1 of 7" mid-flight and 
 group, Medium Mediterrane., Colonized, collapsed, 2 of 8". The landing rules themselves (which
 cursor moves, zoom or slide) are `MapLandings.Decide`'s doc comment in
 `ES2Access/Core/UI/MapLanding.cs`.
+
+**A row a camera move RE-NUMBERS waits for the bind too (2026-08-27).** `LandingSuspended` covers the
+FLIGHT; the narrower `Screen.BetweenViews` covers the frames after a SNAP, while the map is still
+binding the orbital surface. `GalaxyHudScreen`'s override is `GalaxyViewLevels.ChangingLevel ||
+_binding > 0`, and `_binding` is armed only by `FollowPlace`'s inside-snap branch
+(`ES2Access/Screens/GalaxyHudScreen.cs`), `ViewBindFrames = 12` against 8-9 frames measured at
+~15 fps — `ChangingLevel` read false on every route exercised, so what holds in practice is
+`_binding`. What it buys: `ui.right` on a collapsed owned system from overview zoom (Sabel at step 9)
+announces the SETTLED first child ONCE — "Open system, button, 1 of 10" — where the half-built list
+used to be announced instead ("Sabel I, group, Medium Mediterranean, Inhospitable, collapsed, 1 of 9",
+one `ui.up` later revealing the tenth child that was already there). The row now comes AFTER
+"Zoom level 13 of 15, System Overview" (owner accepted that order 2026-08-27): the row waits and the
+zoom watcher does not. A Right that OPENS a group descends PROVISIONALLY so the camera follows on the
+press, says nothing, then re-makes the descend off the settled build; any cursor move cancels it
+(`CancelPendingFocus`), and a group that has lost every child by then is the "Nothing in here" the
+provisional descend was too early to judge. Type-ahead splits the same way: a landing that only PANS
+still announces on the keystroke, a landing that takes the camera INSIDE a system is held to the
+settled row (`POST /type "sabel i"` → "Sabel I, group, Medium Mediterrane., Inhospitable, collapsed,
+2 of 10"; `"olvaldi ii"` → "Olvaldi II, group, Large Arid, Inhospitable, collapsed, 3 of 7").
+
+**Watching the hold.** The frame trace of one expand: descend at f=35844 ("Sabel I … 1 of 9"), the
+list settles at f=35845 ("2 of 10"), cursor re-seated and spoken at f=35856 ("Open system, button,
+1 of 10") — so a row that arrives with the OLD count, or two row announcements for one press, is the
+regression to watch for. The map's own half is measured with two `POST /wait` predicates started in
+ONE shell command and their `frames` subtracted: `ES2Access.UI.GalaxyViewLevels.ZoomStep == 12`
+answered 20 frames / 1634 ms after a search-snap into Olvaldi while that system's label going
+chain-visible answered 23 frames / 1856 ms — three frames from snap to drawn, well inside the twelve,
+which is why the hold was not widened. `BetweenViews` is `GalaxyHudScreen`'s alone; every other
+screen takes the false default and announces on the press.
 
 ## Moving the camera, and the camera rule
 
@@ -318,7 +398,8 @@ rule**: stepping from a world up to its own star moves nothing, and the ways out
 `OnExpand`'s `ZoomTo` (system nodes no longer override `OnExpand` at all; the engine keeps the
 expansion set) and the go-to landing's own `SnapTo`, which now asks the rule and so leaves nothing
 for the landed node's focus to add. Expanding a system with Right brings the camera in because the
-FIRST CHILD's focus does it, so the zoom and the descent are still one press. The rule's record is
+FIRST CHILD's focus does it, so the zoom and the descent are still one press — and the child that is
+ANNOUNCED is the one the settled build holds, ~12 frames later (**"Go and look at this"**). The rule's record is
 what the camera was ASKED for, not where it is — which is why a zoom-out by hand answers "already
 there" for the rest of that system's children, and why a go-to moves anyway, a landing being a
 request rather than the cursor wandering. **Collapse un-zooms** while `GalaxyViewLevels.FocusedSystem`
@@ -501,6 +582,11 @@ across the whole slider on `[Beginner] test`: `hyperium` 2, `titanium` 2, `trans
 `dustcid` 4, `antimatter` 1 — eleven cards over the six deposit systems (Osulo, Qarius, Ita, Heka,
 Primus, Leo), identical with the camera out over the galaxy and with it in on Dusay's orbital view.
 
+**Per-keystroke immediacy SPLITS on the galaxy (2026-08-27).** A landing that only pans still
+announces on the keystroke; one that takes the camera INSIDE a system is held until the map has bound
+the orbital surface (≤ 12 frames) and then announces the settled row — the expectations, the worked
+examples and the two-`POST /wait` instrument are in **"Go and look at this"**.
+
 **Type-ahead stepping closes what it opened.** On the galaxy with nothing
 expanded, `POST /type "dustcid"` (4 results in 4 systems) then `ui.down` three times: exactly ONE
 system is expanded at each step — the one the cursor is in — and `ui.back` ("Search cleared") leaves
@@ -623,7 +709,8 @@ page. "The chord reaches the mod and not the game" is a MANUAL-TEST line, not an
 - **Tree arrows, one press each way.** MEASURED: on the galaxy stop, `ui.right` on collapsed **Dusay**
   answers "Open system, button, 1 of 8" — the system's first child, with its position, no
   "expanded" word — and the camera goes in (zoomStep 9 → 12, "Zoom level 13 of 15, System
-  Overview"). `ui.left` from that child answers "Dusay, 0, 0, group, Home System, colonized, 1 fleet
+  Overview"). Since the settled descend landed (2026-08-27) the ZOOM line comes first and the child
+  line after it, off the settled build — the order and the hold are in **"Go and look at this"**. `ui.left` from that child answers "Dusay, 0, 0, group, Home System, colonized, 1 fleet
   under way nearby, collapsed, 6 of 13" and one zoom-out (12 → 9). Left on a HEADER is still the
   plain collapse: from Dusay it answered "Serpens, group, collapsed, 1 of 2". The research wheel is
   the same one press each way ("Military I, group, collapsed, 1 of 6" in, "Military, group,

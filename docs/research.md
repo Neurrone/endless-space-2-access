@@ -105,6 +105,21 @@ Index and charter: `README.md`.
   picture is not showing is not said" line for free. Pointing at an icon draws the FULL dossier —
   description, effects, **cost**, upkeep, political impact — which is the mouse parity the dot's own
   `TechnologyUnlockEmbedded` tooltip cannot give (that class has no cost panel by data design).
+- **A technology STAGE grants its unlocks through the identical mechanism** —
+  `GuiTechnologyStage.TechnologyUnlocks` is bound into `TechnologyStageItem.TechnologyUnlocksContainer`
+  as one `TechnologyUnlock<i>` per unlock, each with the unlocked thing's own class-backed tooltip
+  (`EmpireImprovement`, `ShipModule`…), and pointing at one draws the FULL dossier the same way
+  (measured 2026-08-27 on Military II's eight icons: "Basic Pinch Beam" answers Damages / Ranges /
+  `Cost: 39 Industry`, which the stage's own `TechnologyStage` tooltip does not carry). What differs is
+  WHEN the strip is drawn: `TechnologyStageItem.Blend` (decompiled :64-71) ties
+  `TechnologyUnlocksContainer.Visible` to `StageNameGroup.Visible`, so the container is hidden at every
+  wheel zoom but the outermost while each icon child stays `Visible = true`, bound and drawable.
+  **Mod policy**: read such a strip through the ICON's own `Visible` flag — never a chain walk, which
+  the hidden container fails at every zoom — and aim RESOLVED tooltips at the icons
+  (`TooltipChildren.Add(found, AgeWidgets.Raw(icon), icon)`, `ES2Access/UI/TooltipChildren.cs`:260, not
+  the chain-gated overload at :243), because the tooltip window draws an undrawn icon's dossier
+  perfectly well. The wheel's hub is a `VictoryTechnologyStageItem`, not a `TechnologyStageItem`, and
+  has no strip at all.
 
 ## The construction and research queues
 

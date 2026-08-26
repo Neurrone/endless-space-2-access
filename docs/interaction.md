@@ -318,6 +318,15 @@ unmoved. **A group that turns out to be EMPTY is left OPEN** and says "Nothing i
 galaxy system brings the camera in, and the auto-recollapse this replaces zoomed straight back out.
 Right again on it is a consumed leaf; Left shuts it. `OnFollow` leaves (starlanes) are untouched —
 they were already one press.
+**Expanding a group that MOVES THE CAMERA announces the zoom line first and then the SETTLED first
+child** (owner accepted 2026-08-27; `Screen.BetweenViews`, ≤ 12 frames on the galaxy). The descend
+still happens on the press, so the camera follows at once, but nothing is said until the page has
+bound its new view and the child is then announced from the build that settled — once, with the
+count that build has. So a Right into a galaxy system says "Zoom level 13 of 15, System Overview"
+and then its first child, in that order, because the row waits and the zoom watcher does not. On a
+page that never moves, the settle is the same frame and the key behaves exactly as above; a group
+that has lost every child by then is the "Nothing in here" the press was too early to judge, and any
+cursor move in between cancels the pending descend.
 
 **Structural keys are PATHS, and that is load-bearing** (2026-08-20): `KeyGraph.AncestorKeys`
 reads a landing's ancestry out of the id's own `/`-separated key, so programmatic landings
@@ -516,7 +525,15 @@ shrink it through 1/3/5/7/9/11 units, **Shift+arrows** go to the next INTERESTIN
 at either END of that ladder the size key is consumed and SILENT rather than repeating the size it
 could not change — the checkbox/slider refusal convention, applied to a mode's own adjust key. The
 size is remembered for the rest of the session, so a re-entry opens at whatever it was last set to.
-Every other key falls through untouched. **Ctrl+I only ARMS
+Every other key falls through untouched, the LETTERS excepted (below). **The cell says its CONTENTS
+first and its coordinate LAST** (owner ruling 2026-08-26): the things standing in it, then the lanes
+crossing it, then the fog, then the pair — and an empty cell is the bare pair alone. **Typing is INERT
+for as long as the mode is live**: A–Z stay claimed from the game, so no letter hotkey of its own
+fires, but they start no search — Up/Down belong to the cell, and a search whose results could never
+be stepped is worse than none. Arming the mode clears an open search SILENTLY (no "Search cleared"),
+and the first letter after the exit starts a fresh one. The knob is `Screen.SuspendsTypeahead`
+(**Tab, type-ahead and text editing**), overridden by `GalaxyHudScreen` while `GalaxyInspect.Active`.
+**Ctrl+I only ARMS
 the mode — it is not a toggle**: pressed again while the cursor is up it is taken and does nothing,
 silently, on the same ruling as Enter on an empty cell (the key is pressed speculatively mid-sweep,
 and dropping the cursor there would cost the player the cell they were standing on). The three ways
@@ -526,7 +543,9 @@ the player IN the mode — the square still drawn, the arrows still the cell's �
 exits. The rule is not the mode's own: `ModEntry.Dispatch` routes Escape past `Screen.AnyKey`
 whenever `GraphNavigator.SearchIsActive`, so every mode of that shape obeys it and the innermost
 mod-invented surface is always the one Escape ends. The claim never changes hands (`claimsBack`
-reads true with either alive, or both). **A MODE OF A WIDGET, NOT OF THE
+reads true with either alive, or both). Since the inspect mode suspends typing (above) that pairing
+is no longer REACHABLE here — the rule stands for the surfaces that still let a search open over
+them, the targeting cursor and the carry. **A MODE OF A WIDGET, NOT OF THE
 SCREEN (2026-08-17).** Every sentence above holds while the tree cursor is on the MAP stop
 (`GalaxyHudScreen.IsMapStop`); off it the mode is SUSPENDED, not ended — Tab and Shift+Tab walk the
 screen's other stops as usual and the stop landed on gets every key exactly as if no cursor were
@@ -708,7 +727,12 @@ space typed into a LIVE search is text — the carry key takes it for the search
 is one of the three conditions of Space's claim, above). Screens opt out with `AllowsTypeahead`
 (the key-rebind capture rows, and the cutscene where letters belong to the game's skip) or
 `CapturesRawInput` (the frames between asking for a key capture / text editor and the
-game taking the keyboard). Edit fields are entered explicitly and share ONE editor
+game taking the keyboard). The narrower knob beside them is `Screen.SuspendsTypeahead`, which keeps
+the letters CLAIMED and makes them do nothing — as against `AllowsTypeahead`, which hands them back
+to the game. It is for a mode that has taken Up/Down for itself, where a search could be started but
+its results could never be stepped: the typed keys are drained, an open search is cleared silently on
+the way in, and the game still never sees a letter. Today only `GalaxyHudScreen`, while
+`GalaxyInspect.Active` (**Inspect-mode keys**). Edit fields are entered explicitly and share ONE editor
 (`TextFieldEditor`): Enter on the field hands the keyboard over ("editing"); typing echoes
 each character and Backspace speaks the deleted one; caret moves (arrows/Home/End) speak the
 character under the caret; Enter commits ("edited") and the SURFACE STAYS — the mod takes

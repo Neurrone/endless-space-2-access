@@ -76,11 +76,35 @@ Research, which is the one dot that reads an arc from BOTH ends) and four exclus
 Algorithms ↔ Advanced Game Theory, Mineral Manipulation ↔ Optimized Logistics, Advanced Fusion Power
 ↔ Hyperium Magnetics, Orichalcix Alignment ↔ Programmable Quadrinix). **Dependency arcs
 ("Unlocks"/"Unlocked by") are drawn in neither fixture** — offline-tested only.
+**An expanded STAGE declares two regions of its own (2026-08-27).**
+`research:stage-unlock/<StageDefinition>/actions` holds the ring's deed and its technology dots;
+`…/tooltips` holds one node per improvement or module the stage unlocks. Route from the tree stop's
+landing: `ui.right`, `ui.down`, `ui.right` (which lands inside **Military II** on
+`[Beginner] access test` turn 32), then **Alt+Down** (`ui.regionNext`) from any technology jumps
+straight to the second region — spoken *"Tooltips, Upgraded Coupled C5AI, 1 of 8"*. Military II's
+eight are Upgraded Coupled C5AI, G-War Camps, Basic Reactive Plating, Basic Uniform Shielding, Basic
+Pinch Beam, Basic Ultradense Slugs, Basic Sync Laser, Basic Fusion Torpedoes (Military I draws seven);
+the ids are `research:stage-unlock/TechnologyStageDefinitionMilitary2/tooltip/<i>`, keyed off the
+stage DEFINITION so they survive a rebuild. Each node's `DevProbe.Tooltip()` must read `shown:true`
+with the unlocked thing's own class (`EmpireImprovement`, `ShipModule`) and its buffer the full
+dossier — the MODULE case is the one that proves the point, carrying a `Cost: 39 Industry` line the
+stage's own `TechnologyStage` tooltip has not got. **The caveat that catches a tester out**: those
+icons are never chain-visible at any wheel zoom but the outermost (the container's `Visible` follows
+the stage name group — `docs/research.md`), so the mod filters on the ICON's own `Visible` and aims
+resolved tooltips at undrawn icons, and `DevProbe.TooltipParity()` reports every COLLAPSED stage's
+icons as `uncovered` BY CONSTRUCTION. Read a parity run here as a shape check, not a delta: no
+`promised`, no `misaimed`, no `undescribed`, and the 141 `uncovered` are the locked-stage
+`UnlockProgress0xx` markers (52), `DeedItem2` (12) and the 23 collapsed stages' icons. Regression to
+keep in the same walk: a technology DOT's own unlock children are untouched
+(`ui.regionPrev`, `ui.right` → *"Tooltips, Electromagnetic Shield, 1 of 2"*,
+`research:technology/TechnologyDefinitionMilitary3/tooltip/0…1`).
 **Blocked in the beginner fixture (last checked turn 2)**: dependency links (only the Juggernaut
 chain has them and the fixture draws none), Disabled technologies and their failure reasons,
 buyout, a queue long enough to scroll, and a deed that has been WON or LOST — all 12 drawn deeds
 are in progress, so "Locked" and "Available" read live (the latter with its whole `DeedDescription`
-in the buffer) while Completed, Failed and "won by ⟨empire⟩" are unit-tested offline only.
+in the buffer) while Completed, Failed and "won by ⟨empire⟩" are unit-tested offline only. Add to
+that list a stage whose new `actions` region also holds a DEED node: Military II draws no readable
+deed, so that region has only ever been walked with technology dots in it.
 
 ## The pinned quest
 

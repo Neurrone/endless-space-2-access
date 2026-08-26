@@ -53,6 +53,22 @@ Index and charter: `README.md`.
 
 - The diplomacy ring draws UNMET majors; `LeaderCard` wires no control at all; the sector has no
   tooltip and a god-mode branch.
+- **Every card is BOUND with real data whether the empire is met or not — what hides the unmet one is
+  the `ContextMenu`'s ALPHA.** The screen fills each sector's detail widgets (`EmpireNameLabel`, the
+  pressure group's `Title`/`Label`/`Description`, `DiplomaticStatusPressureLabel`, `AttitudeGroup`,
+  the `ClickLabel` footer) from live simulation figures for every empire, and then raises that block
+  on hover ONLY for a known, living one: `ShowContextMenu` / `HideContextMenu` gate on
+  `IsKnown && !HasBeenEliminated` (decompiled `Assembly-CSharp/DiplomacyScreen.cs`:842-849), and every
+  one of those widgets is a descendant of `ContextMenu`. So a reader that takes the labels as they are
+  becomes the fog answering with facts the picture never shows. Measured 2026-08-27 on
+  `[Beginner] access test`: the two unmet cards read `menuAlpha=0` with the mod's own cursor hovering
+  one, and a crop of that card is the silhouette hologram alone — no name text, no diplomatic status,
+  no pressure figure, no footer. **Mod policy**: an unmet or eliminated card says its label, its
+  refusal sentence and its alert marker and nothing else — `DiplomacyScreen.Drawn(EmpireSector)`
+  mirrors the game's own predicate and is asked per frame inside the part functions, so a first
+  contact (or an elimination) changes what the card says without waiting for a rebuild.
+  `AgeWidgets.Visible` still ignores alpha deliberately: the gate here is the game's own predicate,
+  not a transparency test.
 - **Closing an unsigned negotiation still posts an order**, and `EvaluationAnnotation` is
   discarded on the way.
 - `AcademyModalWindow`'s Bind can WEDGE the window (recovery in test-recipes), and
