@@ -1440,11 +1440,13 @@ namespace ES2Access.Screens
         /// own berth, so the star is the place the player is reading and the row keeps its
         /// system-ancestor resolution.
         ///
-        /// A quest marker planted out in the open is the one row of this shape left out. The mod's
-        /// marker is not a game entity at all - a quest, a step, a title and a point - and the camera
-        /// call every place here ends in wants one, so it would need wiring of its own rather than
-        /// falling out of this walk. Measured and reported rather than guessed at (owner ruling
-        /// 2026-08-26).
+        /// A quest marker planted out in the open - one whose <c>Node</c> is invalid, because the
+        /// thing it was planted on has no node, a fleet in mid-lane - is one of these too. The mod's
+        /// <c>Marker</c> is a struct and could never be a place (a boxed struct is a fresh reference
+        /// every time, and the camera record compares places by reference), but the PIN inside it is
+        /// a game entity of the game's own with a position that follows whatever it is stuck to, so
+        /// the pin is what answers here. A marker standing at a system is not: it hangs under that
+        /// system and lands as a place, exactly as a planet does.
         ///
         /// Null for every other row, which is what leaves the ordinary resolution untouched.
         /// </summary>
@@ -1483,6 +1485,15 @@ namespace ES2Access.Screens
                     }
                 }
 
+                List<QuestMarkers.Marker> markers = QuestMarkers.Of(PlayerEmpire());
+                for (int i = 0; i < markers.Count; i++)
+                {
+                    if (!markers[i].Node.IsValid && id.Equals(MarkerRowId(markers[i])))
+                    {
+                        return markers[i].Pin;
+                    }
+                }
+
                 List<FleetSite> sites = FleetIndex(new HashSet<ControlId>());
                 for (int i = 0; i < sites.Count; i++)
                 {
@@ -1495,6 +1506,73 @@ namespace ES2Access.Screens
             catch (Exception e)
             {
                 Log.Warn("galaxy: asking what a row out on the map stands for threw: " + e);
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// The other way round: the ROW a thing the map draws out on the map has, for a landing that
+        /// was handed the thing itself and needs to know where the cursor goes.
+        ///
+        /// This is what makes every way IN arrive the same way (owner ruling 2026-08-26). A go-to
+        /// through the game's own reveal call - a mod notification's Show Location, the game's own
+        /// Show Location button, a panel's locate, a table's double click - arrives naming the ENTITY
+        /// (<see cref="GalaxyLocate.Request"/>), and without this the landing had to fall back on
+        /// finding whatever the map draws NEAREST the point it was sent to
+        /// (<see cref="Nearest"/>): right nearly always, a guess in principle, and no answer at all
+        /// where two things stand within <see cref="Coincides"/> of each other.
+        ///
+        /// A FLEET is not here: its own branch in <see cref="FromEntity"/> answers first, because a
+        /// fleet's row hangs under a system whose branch has to be opened before the cursor can be
+        /// sent to it, and because a docked one is aimed at its BERTH. Everything else of this shape
+        /// sits at the top of the stop with no branch to open.
+        /// </summary>
+        private ControlId OpenSpaceRow(IGameEntityWithGalaxyPosition thing)
+        {
+            if (thing == null)
+            {
+                return null;
+            }
+
+            try
+            {
+                for (int i = 0; i < _drifting.Count; i++)
+                {
+                    if (ReferenceEquals(_drifting[i].Probe, thing))
+                    {
+                        return ProbeId(_drifting[i]);
+                    }
+                }
+
+                for (int i = 0; i < _shots.Count; i++)
+                {
+                    if (ReferenceEquals(_shots[i].Shot, thing))
+                    {
+                        return ProjectileId(_shots[i].Shot);
+                    }
+                }
+
+                for (int i = 0; i < _sighted.Count; i++)
+                {
+                    if (ReferenceEquals(_sighted[i].Request, thing))
+                    {
+                        return PinId(_sighted[i].Request);
+                    }
+                }
+
+                List<QuestMarkers.Marker> markers = QuestMarkers.Of(PlayerEmpire());
+                for (int i = 0; i < markers.Count; i++)
+                {
+                    if (!markers[i].Node.IsValid && ReferenceEquals(markers[i].Pin, thing))
+                    {
+                        return MarkerRowId(markers[i]);
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: asking which row a thing out on the map has threw: " + e);
             }
 
             return null;
@@ -2136,6 +2214,14 @@ namespace ES2Access.Screens
         /// system, and the camera goes IN: the game's own locate for a planet aims at the star (the
         /// entity overload throws the entity away and keeps the position, ES2 facts), so a system is
         /// the whole of what the request said.
+        ///
+        /// Everything ELSE the map draws out on the map - a probe under way, a missile in flight, an
+        /// ally's pin, a quest pin planted on something with no node - answers here too, by IDENTITY
+        /// (<see cref="OpenSpaceRow"/>). It used to fall past this method to <see cref="Nearest"/>,
+        /// which found the same row by POSITION and so was right nearly always and a guess in
+        /// principle. Answering by identity is what makes the game's Show Location, a mod
+        /// notification's, a panel's locate and the scanner's Alt+Home all arrive at the same place
+        /// the same way (owner ruling 2026-08-26).
         /// </summary>
         private bool FromEntity(IGameEntityWithGalaxyPosition entity, out MapTarget target)
         {
@@ -2159,6 +2245,13 @@ namespace ES2Access.Screens
                 }
 
                 return false;
+            }
+
+            ControlId row = OpenSpaceRow(entity);
+            if (row != null)
+            {
+                target = MapTarget.Point(row, (Vector3)entity.GalaxyPosition, entity);
+                return true;
             }
 
             ColonizedStarSystem colony = entity as ColonizedStarSystem;
