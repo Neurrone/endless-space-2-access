@@ -1370,17 +1370,35 @@ namespace ES2Access.Screens
         /// Where a node on the map stop stands, and whether the cursor is inside that place or on its
         /// own row.
         ///
-        /// The system ANCESTOR wins over anything nearer: a fleet parked at a star, the star's own
-        /// dossier cards and a lane leaving it are all things the map draws AT that system, and the
-        /// place the player is reading is the system. Only where no system is on the chain - a probe,
-        /// an obliterator shot, an ally's pin, a fleet crossing open space with nowhere to file it -
-        /// is the thing itself the place, and such a place has no inside: there is nothing at a bare
-        /// point to come in on (the same distinction <see cref="MapLandings.Decide"/> makes).
+        /// Anything the map draws OUT ON THE MAP rather than at a star comes first, wherever the tree
+        /// happens to file its row (owner ruling 2026-08-26) - a probe under way, a missile in flight,
+        /// an ally's pin, and a fleet away from any berth. Every one of those is its own place, with no
+        /// inside: there is nothing at a bare point to come in on (the same distinction
+        /// <see cref="MapLandings.Decide"/> makes).
+        ///
+        /// The fleet is the case that needed saying, because the tree files it under a STAR: a fleet
+        /// crossing a lane has a row under each end of that lane, and one crossing open space a row
+        /// under the system it is bound for - a filing that says where to LOOK for the row, not where
+        /// the thing is. Resolving such a row to its system ancestor sent the camera into a star's
+        /// orbital view to show a fleet that is not drawn in that picture at all. A fleet PARKED at a
+        /// star really is at that star, and keeps the system-ancestor resolution and its zoom in on
+        /// the berth.
+        ///
+        /// Otherwise the system ANCESTOR wins over anything nearer: the star's own dossier cards and a
+        /// lane leaving it are things the map draws AT that system, and the place the player is reading
+        /// is the system.
         /// </summary>
-        private static bool Place(GraphNode node, out object place, out bool inside)
+        private bool Place(GraphNode node, out object place, out bool inside)
         {
             place = null;
             inside = false;
+            IGameEntityWithGalaxyPosition drawn = OpenSpaceThing(node == null ? null : node.Id);
+            if (drawn != null)
+            {
+                place = drawn;
+                return true;
+            }
+
             for (GraphNode walk = node; walk != null; walk = walk.Parent)
             {
                 StarSystemNode system = walk.Id == null ? null : walk.Id.Reference as StarSystemNode;
@@ -1404,6 +1422,98 @@ namespace ES2Access.Screens
             }
 
             return false;
+        }
+
+        /// <summary>
+        /// The thing a row on this stop stands for, where the map draws that thing out on the map
+        /// rather than at a star: a probe under way, an obliterator missile in flight, an ally's pin,
+        /// and a fleet away from any berth - the four kinds whose rows this page keys STRUCTURALLY,
+        /// so that <c>ControlId.Reference</c> is null for exactly the rows the camera most needs to
+        /// name (<see cref="PositionOf"/> walks these same lists for the same reason).
+        ///
+        /// Resolved through the page's own indexes - the very lists the rows are declared from - and
+        /// never by reading a row's KEY, which is a string this page builds and not a fact about the
+        /// map. A fleet flying a lane has a row under each end of it and the index holds both, so
+        /// either row answers.
+        ///
+        /// A fleet PARKED at a star is deliberately not one of these: the map draws it in the star's
+        /// own berth, so the star is the place the player is reading and the row keeps its
+        /// system-ancestor resolution.
+        ///
+        /// A quest marker planted out in the open is the one row of this shape left out. The mod's
+        /// marker is not a game entity at all - a quest, a step, a title and a point - and the camera
+        /// call every place here ends in wants one, so it would need wiring of its own rather than
+        /// falling out of this walk. Measured and reported rather than guessed at (owner ruling
+        /// 2026-08-26).
+        ///
+        /// Null for every other row, which is what leaves the ordinary resolution untouched.
+        /// </summary>
+        private IGameEntityWithGalaxyPosition OpenSpaceThing(ControlId id)
+        {
+            if (id == null)
+            {
+                return null;
+            }
+
+            try
+            {
+                for (int i = 0; i < _drifting.Count; i++)
+                {
+                    if (id.Equals(ProbeId(_drifting[i])))
+                    {
+                        return _drifting[i].Probe;
+                    }
+                }
+
+                for (int i = 0; i < _shots.Count; i++)
+                {
+                    ObliteratorProjectile shot = _shots[i].Shot;
+                    if (shot != null && id.Equals(ProjectileId(shot)))
+                    {
+                        return shot;
+                    }
+                }
+
+                for (int i = 0; i < _sighted.Count; i++)
+                {
+                    CoordinationRequest pin = _sighted[i].Request;
+                    if (pin != null && id.Equals(PinId(pin)))
+                    {
+                        return pin;
+                    }
+                }
+
+                List<FleetSite> sites = FleetIndex(new HashSet<ControlId>());
+                for (int i = 0; i < sites.Count; i++)
+                {
+                    if (id.Equals(sites[i].Node) && Flying(sites[i].Fleet))
+                    {
+                        return sites[i].Fleet;
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: asking what a row out on the map stands for threw: " + e);
+            }
+
+            return null;
+        }
+
+        /// <summary>Whether the map draws this fleet away from any star - out on a lane, crossing open
+        /// space, or stranded where a cancelled order left it. The game's own question
+        /// (<c>FleetPosition.IsInOrbit</c>), and the one that decides whether the fleet is a place of
+        /// its own or something the star it is parked at is showing.</summary>
+        private static bool Flying(Fleet fleet)
+        {
+            try
+            {
+                return fleet != null && !fleet.IsDestroyed && !fleet.Position.IsInOrbit;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
         }
 
         /// <summary>
@@ -1457,6 +1567,21 @@ namespace ES2Access.Screens
                 if (entity != null)
                 {
                     GalaxyViewLevels.PanTo(entity);
+                    // It arrives AT ONCE, for the reason coming further in on a system does (owner
+                    // ruling 2026-08-26, the 2026-08-22 snap ruling widened): the flight was a second
+                    // of drifting in which nothing could be said, and it ended somewhere the player
+                    // had already been told about. Every thing the map draws out on the map is
+                    // reached this way - a probe, a missile, an ally's pin, a fleet away from its
+                    // berth. The recentre is started the ordinary way and then finished the same
+                    // frame; where the camera cannot be reached to finish it, the flight simply plays
+                    // out and nothing breaks (<see cref="GalaxyViewLevels.Settle"/>).
+                    //
+                    // A slide onto a BARE POINT with nothing at it is not this: that is the inspect
+                    // cell sweeping its own cursor, and it keeps its own handling
+                    // (<see cref="Camera"/>).
+                    GalaxyViewLevels.CenterOn(entity.GalaxyPosition, LandingDamping);
+                    GalaxyViewLevels.Settle();
+                    _settling = SnapSettleFrames;
                     Remember(place, inside);
                 }
             }
@@ -1746,6 +1871,34 @@ namespace ES2Access.Screens
                 return;
             }
 
+            // Everything the map draws out on the map goes through that same rule, for the same
+            // reason: the thing IS the place (<see cref="Place"/>), so the landing asks for exactly
+            // what walking onto the row asks for, the record then says the camera is already there,
+            // and the landed row's own focus has nothing left to do. It is also the route that works
+            // from inside a star's orbital view, which a bare recentre does not leave.
+            //
+            // The target carries the thing where the landing already had it in hand; otherwise the
+            // row's own id is looked up in the same indexes the rows were declared from. A DOCKED
+            // fleet is not one of these - it is its star's, and falls through to the zoom above by
+            // way of its row's focus.
+            IGameEntityWithGalaxyPosition drawn = target.Standing;
+            Fleet carried = drawn as Fleet;
+            if (carried != null && !Flying(carried))
+            {
+                drawn = null;
+            }
+
+            if (drawn == null)
+            {
+                drawn = OpenSpaceThing(target.Id);
+            }
+
+            if (drawn != null)
+            {
+                FollowPlace(drawn, false, true);
+                return;
+            }
+
             try
             {
                 // A slide across open sky is left as a slide: there is no card to wait for at the
@@ -2000,7 +2153,7 @@ namespace ES2Access.Screens
                 {
                     if (ReferenceEquals(sites[i].Fleet, fleet))
                     {
-                        target = MapTarget.Point(Reveal(sites[i]), Berth(fleet));
+                        target = MapTarget.Point(Reveal(sites[i]), Berth(fleet), fleet);
                         return true;
                     }
                 }
@@ -2209,7 +2362,7 @@ namespace ES2Access.Screens
             bool holding;
             FleetSite site = sites[Holding(sites, won, out holding)];
             settled &= holding;
-            return MapTarget.Point(Reveal(site), Berth(site.Fleet));
+            return MapTarget.Point(Reveal(site), Berth(site.Fleet), site.Fleet);
         }
 
         /// <summary>

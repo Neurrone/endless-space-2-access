@@ -47,6 +47,18 @@ namespace ES2Access.Screens
         /// this fleet" this game has (<see cref="GalaxyHudScreen.SelectFleet"/>).</summary>
         public Fleet Select;
 
+        /// <summary>
+        /// The thing standing at <see cref="At"/>, where the landed row's own id does not carry it.
+        ///
+        /// A fleet's row is keyed STRUCTURALLY on purpose - the fleet panel's own line is keyed on the
+        /// same garrison, and two nodes sharing a backing object would be one control to the cursor
+        /// (<c>GalaxyHudScreen.FleetNode</c>) - so <see cref="Id"/><c>.Reference</c> is null for
+        /// exactly the rows the camera most needs to name. Without this the landing could neither tell
+        /// the camera which fleet it was arriving at nor write down that it had arrived, and the
+        /// focus that followed made a second move (owner-reported 2026-08-26).
+        /// </summary>
+        public IGameEntityWithGalaxyPosition Standing;
+
         /// <summary>A place the map draws as one point: a star system, a special node.</summary>
         public static MapTarget Place(StarSystemNode system, ControlId id, Vector3 at)
         {
@@ -72,10 +84,21 @@ namespace ES2Access.Screens
             };
         }
 
-        /// <summary>Something standing at a bare point with a row of its own.</summary>
-        public static MapTarget Point(ControlId id, Vector3 at)
+        /// <summary>Something standing at a bare point with a row of its own. <paramref name="standing"/>
+        /// is the thing itself where its row's key does not carry it (<see cref="Standing"/>).</summary>
+        public static MapTarget Point(
+            ControlId id,
+            Vector3 at,
+            IGameEntityWithGalaxyPosition standing = null
+        )
         {
-            return new MapTarget { Thing = MapThing.Point, Id = id, At = at };
+            return new MapTarget
+            {
+                Thing = MapThing.Point,
+                Id = id,
+                At = at,
+                Standing = standing,
+            };
         }
 
         /// <summary>A fleet the map draws that the tree has no row for.</summary>
