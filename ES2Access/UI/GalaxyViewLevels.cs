@@ -872,6 +872,82 @@ namespace ES2Access.UI
             }
         }
 
+        /// <summary>
+        /// Ask the map to have another look at which of its star labels it should be drawing - the
+        /// question the game only asks itself while the camera is MOVING.
+        ///
+        /// <c>StarSystemLabelsWindow.SpecificUpdate</c> (:340-352) refreshes the labels on exactly the
+        /// frames the camera's position differs from the frame before, and every refresh reads the
+        /// galaxy entities' own culling flags, which the view updates on a schedule of its own. A FLOWN
+        /// arrival therefore asks the question on every frame of the flight and is bound to catch the
+        /// answer; a SNAPPED arrival asks it once, on the frame the camera jumps - a frame before the
+        /// culling has caught up with where the camera now is - and then never again, because the camera
+        /// is already still. The label of the system the player has just been brought into is left
+        /// marked culled out and hidden for the rest of the session, and with it everything the label
+        /// carries: the way into the system's page, the diplomacy button, the buy-outs. Measured
+        /// 2026-08-26 on <c>[Beginner] test</c>: after a search landing inside Sabel the map's own entity
+        /// for Sabel read visible while the label's cached <c>CulledIn</c> read false, permanently.
+        ///
+        /// So the snap forgets where the window last saw the camera and the window's own next update
+        /// does the whole of the work - the culling pass, the per-label show or hide, and, with the
+        /// show, the game's own delivery of the current layer descriptor
+        /// (<c>StarSystemLabel.ShowOrHideIfVisibleByEmpire</c> :1514-1539 calls
+        /// <c>OnLayerDescriptorChanged</c> itself the moment it shows a label). Nothing here draws,
+        /// shows or styles anything of its own: it only makes the game ask a question it would have
+        /// asked had it flown.
+        ///
+        /// Asked over the frames after a snap rather than on the one, because the culling answer being
+        /// waited for is itself a frame or more behind the camera. A build whose window has no such
+        /// field simply keeps the pre-2026-08-26 behaviour.
+        /// </summary>
+        public static void CatchUpLabels()
+        {
+            try
+            {
+                if (!_labelCameraRead)
+                {
+                    _labelCameraRead = true;
+                    _labelCamera = typeof(StarSystemLabelsWindow).GetField(
+                        "previousCameraPosition",
+                        BindingFlags.Instance | BindingFlags.NonPublic
+                    );
+                    if (_labelCamera == null)
+                    {
+                        Log.Warn(
+                            "galaxy: the labels window has no previousCameraPosition to catch up"
+                        );
+                    }
+                }
+
+                if (_labelCamera == null || Gui.GuiService == null)
+                {
+                    return;
+                }
+
+                StarSystemLabelsWindow labels =
+                    Gui.GuiService.GetWindow<StarSystemLabelsWindow>(false);
+                if (labels == null || !labels.Shown)
+                {
+                    return;
+                }
+
+                _labelCamera.SetValue(labels, Nowhere);
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: asking the labels to catch up threw: " + e);
+                _labelCamera = null;
+            }
+        }
+
+        /// <summary>Somewhere no camera is, which is all "the camera has moved since you last looked"
+        /// has to mean. Far enough out that the window's own comparison cannot call it the same place,
+        /// and finite so that the comparison stays a number.</summary>
+        private static readonly Vector3 Nowhere = new Vector3(1e9f, 1e9f, 1e9f);
+
+        private static bool _labelCameraRead;
+        private static FieldInfo _labelCamera;
+
         private static bool _snapRead;
         private static MethodInfo _resetZoom;
         private static FieldInfo _targetTransform;

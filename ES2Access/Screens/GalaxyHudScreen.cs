@@ -547,6 +547,26 @@ namespace ES2Access.Screens
         /// </summary>
         private const int SnapSettleFrames = 3;
 
+        /// <summary>
+        /// Frames still to spend asking the map to have another look at which of its star labels it
+        /// should be drawing, after the camera has been PUT somewhere rather than flown there
+        /// (<see cref="GalaxyViewLevels.CatchUpLabels"/>).
+        ///
+        /// Its own counter and not one of the two above, because it holds nothing back: the question is
+        /// asked of the game while the announcement waits on <see cref="_binding"/> or does not wait at
+        /// all, and the answer it is waiting for arrives three frames after the camera lands (measured
+        /// 2026-08-26: the snap into Olvaldi on frame 20 of the run, its label drawn on frame 23). Both
+        /// of the page's snaps arm it - coming inside a system and sliding across to something standing
+        /// in open sky - because both leave the same map behind: measured the same day, a landing on
+        /// Sabel's row at overview zoom centred the camera on a system the map was drawing no label for
+        /// at all.
+        ///
+        /// The same twelve frames the binding hold uses (<see cref="ViewBindFrames"/>), for the same
+        /// reason: it is the game's own refresh passes being waited for, and the count is generous
+        /// against a measurement of three.
+        /// </summary>
+        private int _labelCatchUp;
+
         public override void OnUpdate()
         {
             // First, so that everything below decides against the same answer: the map is still
@@ -556,6 +576,12 @@ namespace ES2Access.Screens
                 ? MapSettleFrames
                 : Math.Max(0, _settling - 1);
             _binding = Math.Max(0, _binding - 1);
+            if (_labelCatchUp > 0)
+            {
+                _labelCatchUp--;
+                GalaxyViewLevels.CatchUpLabels();
+            }
+
             _hud.Update();
             FollowSelectionEnd(_fleetPanel.Update());
             // Beside it and not before it: the two answer the same handover by different routes, and a
@@ -1692,6 +1718,9 @@ namespace ES2Access.Screens
                     // The one move that changes what the rows already declared SAY, so it is also the
                     // one that holds a descend and an announcement (<see cref="BetweenViews"/>).
                     _binding = ViewBindFrames;
+                    // A camera that is PUT somewhere leaves the map's own labels believing it never
+                    // moved (<see cref="_labelCatchUp"/>).
+                    _labelCatchUp = ViewBindFrames;
                     Remember(place, inside);
                     return;
                 }
@@ -1715,6 +1744,7 @@ namespace ES2Access.Screens
                     GalaxyViewLevels.CenterOn(entity.GalaxyPosition, LandingDamping);
                     GalaxyViewLevels.Settle();
                     _settling = SnapSettleFrames;
+                    _labelCatchUp = ViewBindFrames;
                     Remember(place, inside);
                 }
             }
@@ -4770,25 +4800,20 @@ namespace ES2Access.Screens
         /// ladder. A system somebody else holds and we have turned somebody inside is the same story
         /// wearing a foreign flag: the button is drawn greyed there too, and the page behind it opens.
         ///
-        /// The node is therefore declared wherever that route would really open a page
-        /// (<see cref="Manageable"/>), and takes the route itself rather than pressing a button that
-        /// would do nothing. Nowhere else: on somebody else's system or an empty one the same call
+        /// The greyed-out button is therefore still declared wherever that route would really open a
+        /// page (<see cref="Manageable"/>), and takes the route itself rather than pressing a button
+        /// that would do nothing. Nowhere else: on somebody else's system or an empty one the same call
         /// silently degrades to centring the map (<see cref="GalaxyViewLevels.OpenSystem"/>), which is
         /// not a page and would be a node that says it opens something and does not.
         ///
-        /// Being DRAWN is not part of that question, and used to be - the node existed only while the
-        /// button was chain-visible, which contradicted the principle above and made the route come and
-        /// go with the camera. The button's own <c>Visible</c> is always true; what hides it is an
-        /// ancestor group named "Child" on the label, and that group is flipped visible by the GAME's
-        /// zoom request and not by the mod's inside-snap. Measured 2026-08-26 on <c>[Beginner] test</c>:
-        /// a search landing inside Sabel left the system with nine children and no way into its page,
-        /// permanently, against ten after walking in with Right. A route into a page is not a thing to
-        /// lose because of how the player got here.
-        ///
-        /// What being drawn still decides is the POINTER: an undrawn button is nothing to light up and
-        /// nothing to hover, so the aim and the tooltip promise are made only while it is drawn. That
-        /// costs the reading nothing - the button carries no tooltip on any label in the galaxy
-        /// (measured 2026-08-26, all 86).
+        /// Being DRAWN is the other half, and it is a question about the MAP rather than about the
+        /// system: a label the map is not drawing carries no button to light up, to hover or to press.
+        /// It briefly stopped being asked here (2026-08-26), because a search landing inside Sabel left
+        /// that system with nine children and no way into its page, permanently - the map had been
+        /// snapped in on a system whose label it had never been told to draw. That was the snap's
+        /// omission and not this gate's: the snap now leaves the map's labels the way a flight would
+        /// have (<see cref="GalaxyViewLevels.CatchUpLabels"/>), the button is drawn on every route in,
+        /// and the reading can go back to describing what is on the screen.
         /// </summary>
         private static void AddManagementView(
             GraphBuilder builder,
@@ -4798,8 +4823,12 @@ namespace ES2Access.Screens
         )
         {
             AgeTransform button = label == null ? null : label.RequestManagementViewButton;
-            bool drawn = button != null && Visible(button);
-            if (!Manageable(node) && !(drawn && AgeWidgets.Operable(button)))
+            if (button == null || !Visible(button))
+            {
+                return;
+            }
+
+            if (!AgeWidgets.Operable(button) && !Manageable(node))
             {
                 return;
             }
@@ -4810,16 +4839,9 @@ namespace ES2Access.Screens
                 () => ModStrings.Get(ModStrings.GalaxyOpenSystem),
                 () => OpenManagementView(it, at),
                 null,
-                // The label's button carries no tooltip of its own on any of the 86 labels in the
-                // galaxy (measured 2026-08-26), so there is nothing to promise and nothing lost by not
-                // promising it while the button is undrawn.
-                drawn ? Raw(it) : null
+                Raw(it)
             );
-            if (drawn)
-            {
-                PointAt(vtable, it);
-            }
-
+            PointAt(vtable, it);
             builder.AddItem(ControlId.Structural(key + "/management"), vtable);
         }
 
