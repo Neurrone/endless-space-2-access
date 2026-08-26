@@ -110,6 +110,46 @@ card and the dossier tooltip covers the ring. The painted gate is proved by park
 the engine does - set the item's `Alpha = 0f` from `/eval` (it sticks; the card does not refresh
 every frame), re-crop, re-read, then set it back to `1f`.
 
+**Walking a card's population slots.** The card's ring is a row per SLOT in up to three regions
+("Population", "Overpopulation", "Locked" — the game's own words, so grep the transcript for the
+localized ones, not for mod keys). Expand the card with `/input ui.right` and walk down: the region
+name is heard on band entry only, and each row reads "Slot N of M" plus the affinity, or "Empty slot
+N of M". A FILLED slot in the overpopulation band is a GROUP whose "Tooltips" region holds one child,
+the arc's sentence; every other slot is a leaf. **The slot dossiers are the mod's own carriers**
+(nothing on the drawn ring carries a tooltip — ES2 facts), so their evidence pair is
+`DevProbe.TooltipDelay(0)` → focus the row → `DevProbe.Tooltip()` for the words and
+`Gui.GuiService.GetWindow<GuiTooltipWindow>(false).AgeTransform.GetGlobalPosition()` +
+`crop-shot.ps1` for where the window drew: it must land on the ring's own rect, ABOVE it, not at the
+screen's bottom-left corner. The crop is also the only oracle for the ARC — the same crop shows the
+orange sector, and it must cover exactly the ranks the "Overpopulation" region holds.
+The **Locked** band needs a colony holding MORE units than its current maximum, which no save here
+produces; it is covered by `ES2Access.Tests/UI/PopulationSlotsTests.cs` instead.
+The **pick-up** on a filled slot needs a system with a SECOND colony of the player's (below,
+**Moving population between planets**) — with one colony every slot row is read-only, and since
+2026-08-26 the page's own Space claim is what a probe there reads: `Claims("Space")` is true on every
+node of this page and `ui.carry` answers `consumed` in SILENCE, so a read-only slot row is told from
+a pick-up row by the silence and by the row's own readout, never by the claim.
+An UNCOLONIZED card's ring is the same walk with a shorter answer: every row reads a plain "Empty
+slot" and takes its number from the region ("Empty slot, 3 of 6"), because there is only the one
+"Population" band and the rank and the position are the same figure — no dossiers and no pick-up
+either. Any star-system page with a
+world nobody has settled shows it, and a page holding both kinds walks the two shapes in one pass.
+The count oracle is one `/eval` walk of
+`PlanetPopulationEnumeratorSimple.PopMarkersContainer.Children` counting `Visible && Alpha > 0`
+(the pool holds a couple of extra retired children on each card), and it must equal both the row
+count and `Planet.MaxPopulation`; the picture oracle is a `crop-shot.ps1` of that container's rect,
+where the grey arc segments must number the rows.
+
+**A planet card's deposit lines and their dossiers.** A drawn deposit reads
+"&lt;resource&gt;: &lt;amount&gt;" in the card's buffer and gains a child in the card's "Tooltips"
+region named for the same resource — the name is on the tooltip's wrapper and NOT on the item (ES2
+facts), so a bare number in the buffer is the regression to grep for. The painted gate is checked in
+both directions on one page: a world WITH deposits draws its items at alpha 1, and a world with none
+keeps the previous planet's items parked at alpha 0 still holding that resource, which must
+contribute neither a line nor a dossier. The dossier is Class-backed (`ResourceDeposit`), so its
+words exist only once the node is FOCUSED: walk to it, then `DevProbe.Tooltip()` plus
+`/gui/graph?buffers=1` for the pair.
+
 **Stepping between planets on the planet overview** re-enters the SAME view level with a new
 planet: `Gui.GuiGameWindowService.CurrentGalaxyViewLevel` (what `GalaxyViewLevels.Level` and
 `At<T>()` read) goes NULL for a few frames while it happens, and the window unbinds its planet.
@@ -220,9 +260,10 @@ a flat list of cells and a cell could not open a subtree.
 
 **Moving population between planets** (management page). The drag is offered only where the system
 has a SECOND colony of the player's (`ColonizedStarSystem.PlanetsColonized.Count > 1`) — with one, the
-population rows are declared read-only and there is no pick-up (measured live: with one colony
-`Claims("Space")` reads false on the population rows and `ui.carry` answers `unconsumed`),
-which is what both fixtures show
+card's slot rows are declared read-only and there is no pick-up (measured live: with one colony a
+filled slot row picks nothing up — `ui.carry` on it is silent, and since 2026-08-26 it is `consumed`
+rather than `unconsumed` and `Claims("Space")` reads true, because the PAGE claims Space on every
+node of itself, `docs/interaction.md`), which is what both fixtures show
 (Dusay: `planetsColonized=1`, `GetSpaceportSidePanel()` not shown). What IS testable with one colony:
 push a drag by hand — `ES2Access.ModEntry.Carry.PickUp(new ES2Access.Core.UI.CarryItem(pop, "Imperials",
 "population"), ES2Access.ModEntry.Navigator.Screen)` — and watch the card's readout grow "drop target",

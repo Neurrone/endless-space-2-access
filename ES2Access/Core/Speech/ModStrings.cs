@@ -1165,6 +1165,20 @@ namespace ES2Access.Core.Speech
         public const string SystemRenameSystem = "system.rename-system";
         public const string SystemPopulationMoved = "system.population-moved";
 
+        /// <summary>One slot of a colony's population ring: where it is round the ring, and whether
+        /// the game is drawing anybody in it. The ring itself is a picture with no words at all, and
+        /// which BAND a slot is in - ordinary, overpopulated, locked - is said by the region it is
+        /// read in, in the game's own words, so these two carry the position alone. Complete phrases
+        /// rather than a position with an adjective glued on: "empty" agrees with its noun in half the
+        /// languages this mod ships.</summary>
+        public const string SystemPopulationSlot = "system.population-slot";
+        public const string SystemPopulationSlotEmpty = "system.population-slot-empty";
+
+        /// <summary>The same slot on a world NOBODY has settled, where every slot of the ring is empty
+        /// and they are all one band - so the row's position in that band IS its rank, and the reading
+        /// says the position once instead of twice.</summary>
+        public const string SystemPopulationSlotVacant = "system.population-slot-vacant";
+
         public const string SystemImprovements = "system.improvements";
         public const string SystemLevel = "system.level";
 
@@ -2140,6 +2154,9 @@ namespace ES2Access.Core.Speech
             { SystemRenamePlanet, "Rename planet" },
             { SystemRenameSystem, "Rename system" },
             { SystemPopulationMoved, "Moved {0} to {1}" },
+            { SystemPopulationSlot, "Slot {0} of {1}" },
+            { SystemPopulationSlotEmpty, "Empty slot {0} of {1}" },
+            { SystemPopulationSlotVacant, "Empty slot" },
             { SystemImprovements, "System improvements" },
             { SystemLevel, "System level {0}" },
             { SystemSupplyingOutpost, "Supplying {0} outpost" },
