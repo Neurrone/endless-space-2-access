@@ -1134,8 +1134,24 @@ namespace ES2Access.Screens
         /// fleet and a ship cannot be dropped onto a planet.</summary>
         public const string PopulationKind = "population";
 
-        /// <summary>The colony this card is for, or null - the card of an unsettled world, or of
-        /// somebody else's colony, is neither a source nor a target.</summary>
+        /// <summary>The colony this card is for WHOEVER owns it - the same object the card binds its
+        /// population ring to (<c>PlanetLabel.BindPlanet</c> takes it straight off
+        /// <c>Planet.ColonizedPlanet</c>, so an enemy outpost's card holds the enemy's colony), and so
+        /// the one to read the ring's contents from. Null on a world nobody has settled.</summary>
+        private static ColonizedPlanet Colony(PlanetLabel_SystemManagement label)
+        {
+            try
+            {
+                return label == null ? null : label.ColonizedPlanet;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>The colony this card is for when it is the PLAYER's, or null - the card of an
+        /// unsettled world, or of somebody else's colony, is neither a source nor a target.</summary>
         private static ColonizedPlanet Settled(PlanetLabel_SystemManagement label)
         {
             try
@@ -1193,8 +1209,20 @@ namespace ES2Access.Screens
         /// ENABLE flag is gated on <c>IsAvailable</c>. Those markers are all empty, none is locked and
         /// no arc is drawn over them (<see cref="PopulationSlots.BuildUnsettled"/>), so how much room
         /// a world has - the thing a colonization is decided on - is read the same way on both kinds
-        /// of card. Somebody ELSE's colony is left alone: its ring draws THEIR units, which nothing
-        /// here can name, so that card offers no slots exactly as before.
+        /// of card.
+        ///
+        /// Somebody ELSE's colony - an enemy outpost sitting on a free world of a system the player
+        /// owns - reads the SAME way (owner ruling 2026-08-27, replacing the deliberate skip this
+        /// carried until then). The game draws that card's ring from the foreign colony and draws
+        /// THEIR units in it: the label binds whatever colony the planet holds
+        /// (<c>PlanetLabel.BindPlanet</c>: <c>ColonizedPlanet = Planet.ColonizedPlanet</c>), hands it
+        /// to the ring unfiltered (<c>PlanetLabel_SystemManagement.Bind</c> :373) and shows that ring
+        /// with no ownership test at all (<c>OnBeginShow</c> :496), so
+        /// <c>PopulationEnumerator.BuildListOfGuiPopulations</c> lays out the other empire's
+        /// affinities through the other empire's own <c>DepartmentOfTheInterior</c>. Mirroring what is
+        /// drawn means reading it; only the two things the game refuses there are refused here - the
+        /// unit cannot be picked up and the card cannot be dropped on, both of which stay gated on
+        /// <see cref="Settled"/>.
         /// </summary>
         private static List<PopulationSlots.Slot> PlanetSlots(
             PlanetLabel_SystemManagement label,
@@ -1209,10 +1237,10 @@ namespace ES2Access.Screens
                     return slots;
                 }
 
-                ColonizedPlanet colony = Settled(label);
+                ColonizedPlanet colony = Colony(label);
                 if (colony == null)
                 {
-                    Planet unsettled = label.ColonizedPlanet == null ? label.Planet : null;
+                    Planet unsettled = label.Planet;
                     if (unsettled != null)
                     {
                         PopulationSlots.BuildUnsettled(
@@ -1349,7 +1377,8 @@ namespace ES2Access.Screens
         /// context are closed on the way out of it.
         ///
         /// <paramref name="canCarry"/> is where a unit can be picked up, which is only where there is
-        /// somewhere to put it down. One press carries ONE unit - the smallest move the game's own
+        /// somewhere to put it down - and only on the player's OWN colony, because the game moves
+        /// nobody else's population. One press carries ONE unit - the smallest move the game's own
         /// drag makes - and the affinity is captured then, because the row is rebuilt every frame and
         /// those people may have left the planet by the time it is dropped.
         /// </summary>
@@ -1367,7 +1396,8 @@ namespace ES2Access.Screens
                 return;
             }
 
-            ColonizedPlanet colony = Settled(label);
+            ColonizedPlanet colony = Colony(label);
+            bool carry = canCarry && Settled(label) != null;
             object outer = builder.Region;
             int total = slots.Count;
             bool inBand = false;
@@ -1390,7 +1420,7 @@ namespace ES2Access.Screens
                         builder.PushContext(BandName(band));
                     }
 
-                    AddPopulationSlot(builder, keyPrefix, label, units, slot, total, colony, canCarry);
+                    AddPopulationSlot(builder, keyPrefix, label, units, slot, total, colony, carry);
                 }
             }
             finally

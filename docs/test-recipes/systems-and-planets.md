@@ -75,7 +75,8 @@ only. The home planet is
 `IsUnique` so planet rename is unreachable; `StarSystemPopulationModalWindow`'s opener is
 tutorial-locked; and at turn 3 no buy-out button is drawn at all
 (`BuyoutTechnologyNotUnlocked` — ES2 facts), so the queue line's buy-out children have no fixture.
-**The rest of the management page's blocked list**: a FOREIGN empire's outpost card; an outpost
+**The rest of the management page's blocked list**: a FOREIGN empire's outpost card (no save has
+one; its population rows are sighted by lending — **Sighting ANOTHER empire's colony card**); an outpost
 action running PAST its start turn (the disabled cancel); the regress/stagnant/complete captions and
 the Hisshos wording; the `Discard`-hidden faction actions (Hisshos/TimeLords/Vodyani); buy-outpost;
 and, last checked turn 1, hangar ships, colonize, the ghost panels, and the rebellion and migration
@@ -270,6 +271,28 @@ push a drag by hand — `ES2Access.ModEntry.Carry.PickUp(new ES2Access.Core.UI.C
 `/input ui.activate` on the card refuse in the mod's fallback words with the drag kept, `ui.carry`
 anywhere that is not a source answer silently with the drag kept, and `ui.back` answer
 "Cancelled drag".
+**Sighting ANOTHER empire's colony card**, which no save puts in a player system (an enemy outpost
+on a free world of one). Lend a card the foreign colony, all inside ONE `/eval` so no frame draws it
+and the card never `Refresh`es with somebody else's colony bound: take the card from
+`GetWindow<PlanetLabelsWindow_SystemManagement>(false)` →
+`GetComponentsInChildren<PlanetLabel_SystemManagement>(true)` matched on `Planet.GUID`, save
+`card.ColonizedPlanet`, set it to an AI empire's real `ColonizedPlanet`
+(`empire.GetAgency<DepartmentOfTheInterior>().ColonizedStarSystems[i].PlanetsColonized[j]`),
+`card.PlanetPopulationEnumeratorSimple.Bind(card.Planet, foreign, card.Client)` + `RefreshNow()`,
+read, and restore all three in a `finally` plus `card.Dirty = true`. Read it with
+`ES2Access.Dev.GraphDump.Dump(false, true)` — the public static behind `/gui/graph`, so the whole
+lend-read-restore is one statement. The card must be EXPANDED first (`/input ui.right` on it; a
+`POST /reload` clears expansion state). Measured 2026-08-27 on Dusay I lent Leaper's Husk (4/9,
+safe 6): nine rows, "Cravers" in slots 1-4, a Population band of six and an Overpopulation band of
+three, `drawnMarkers=9`, `OverPopulationSector.Visible=True`. Class-backed dossiers still read
+EMPTY in the dump (they need a drawn tooltip window), so prove them off the CARRIERS instead —
+sweep `FindObjectsOfType<AgeTooltip>()` for `ES2Access.UI.ScratchTooltips.Owns(t) && t.Class ==
+"Population"` and print `Content`, `Target`, `((GuiPopulation)Target).PopulationEmpire`. The
+pick-up half stays fixture-blocked here for the same reason the drop is (one colony per system, so
+`canCarry` is false on every card); what IS distinguishing live is `DropKind` on the card node —
+`population` on the player's, null on the foreign one, read off
+`ES2Access.ModEntry.Navigator.InspectRender().Order[i].Vtable`.
+
 **Sighting the spaceport side panel**, which no save draws (ES2 facts: `IsAvailable()` needs
 `MaxPopulation > 0`). Show it with `Gui.GuiService.GetWindow<SidePanelsWindow>(false).ShowSidePanel(p)`
 — `SidePanel.Show` itself throws with a message telling you so — and the side-panel sweep declares it
@@ -385,7 +408,8 @@ own `OnBeginShow` re-`Refresh`es from scratch anyway. Pick the planet by walking
 anomalies — whatever the loaded galaxy happens to have; the card is read off the PLANET, so no
 save's own layout is part of the route.
 
-- A FOREIGN empire's outpost card, an outpost action past its start turn, the
+- A FOREIGN empire's outpost card (population rows sighted by lending — **Moving population
+  between planets**; the rest of the card unsighted), an outpost action past its start turn, the
   regress/stagnant/complete captions, the Hisshos wording, the `Discard`-hidden faction
   actions, buy-outpost, hangar ships, colonize, the ghost panels, the rebellion and migration
   rows, and `EmigrationGroup`/`ImmigrationGroup` (**The management page's permitted round

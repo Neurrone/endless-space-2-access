@@ -178,6 +178,25 @@ colonizability and the four kind databases. The map itself is in `galaxy-map.md`
   and Ita I (inhospitable, max 3) each paint exactly that many markers, alongside Ita III's colonized
   5. Inferring "no colony, no ring" from `IsAvailable` is wrong about the picture, and it is how much
   room a world has that a colonization is decided on.
+- **A card the game draws for ANOTHER empire's colony draws that empire's ring, in full.**
+  `PlanetLabel.BindPlanet` (:334-340) takes the label's `ColonizedPlanet` straight off
+  `Planet.ColonizedPlanet` with no ownership test, so an enemy outpost sitting on a free world of a
+  system the player owns gives that world's card the ENEMY's colony object;
+  `PlanetLabel_SystemManagement.Bind` (:373) hands it to
+  `PlanetPopulationEnumeratorSimple.Bind(Planet, ColonizedPlanet, dragClient)` unfiltered and
+  `OnBeginShow` (:496) shows that ring unconditionally. `BuildListOfGuiPopulations` then resolves
+  `populationOwner.Empire.GetAgency<DepartmentOfTheInterior>()` — the OTHER empire's — and lays out
+  their affinities, and `RefreshOverpopulation` asks its four conditions of the OWNER's empire and
+  system. The only ownership tests anywhere near it are on the two things the game refuses:
+  `PlanetPopulationEnumerator.CanAcceptPopulationDrop` (:28-34) wants
+  `ColonizedPlanet.Empire.Index == Gui.PlayerEmpire.Index`, and `IDragDropTarget.OnDragDropStarted`
+  (:308-315) HIDES the ring of a card that is not the player's for the duration of a drag. Mod
+  policy (owner ruling 2026-08-27): mirror the drawing — the foreign card gets the same slot rows,
+  bands and per-slot dossiers, and neither a pick-up nor a drop. Measured 2026-08-27 by lending a
+  Dusay card an AI empire's real colony (recipe in `test-recipes/systems-and-planets.md`): nine
+  rows, "Cravers" in the four filled ones, a Population band of six and an Overpopulation band of
+  three, each filled slot's carrier bound to a `GuiPopulation` whose `PopulationEmpire` resolved
+  from the AI empire's own interior department.
 - **Moving population is a drag with a STATIC in the middle, and the static is read every frame.**
   `PopulationEnumerator.DragInfo` (a single static `PopulationDragInfo`) is filled by
   `OnPopulationMarkerDragStarted` (:240-253) — whose own two gates are `owner.CanMovePopulation` and
