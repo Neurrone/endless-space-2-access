@@ -214,14 +214,9 @@ belong in the files above.
   cursor-targets; `HackingOperationCursor` route building rides the Penumbra wait; the
   instruction banner can speak the previous mode's caption for a frame (cheap fix: skip
   an instruction that is not the current cursor's).
-- Fleet-panel focus handover SHIPPED 2026-08-26 (the targeting-cancel swap, the seat when
-  the probe mode ends, and the panel taken away by a screen drawn over the map — all in
-  `docs/fleets.md`, including the swap undone at a two-fleet slot built in-session and
-  A/B'd against the unpatched game; a FOREIGN fleet deselected from inside its
-  read-only panel seats on its map row too — owner-verified in play, 2026-08-26).
-  Still unverified anywhere: a fleet destroyed in combat while its panel is up, and
-  the obliterator paths (no Behemoth in any save).
-  All three fixture saves are missing from disk (`test-recipes/fixtures.md`).
+- Fleet-panel focus handover (shipped — `docs/fleets.md`), still unverified: a fleet
+  destroyed in combat while its panel is up, and the obliterator paths (no Behemoth in
+  any save). All three fixture saves are missing from disk (`test-recipes/fixtures.md`).
 - Chat: the child screen ships whole (tabs, message log, box, the page-level new-message
   button) and is verified in a single-player fixture; what no fixture here has shown is the
   MULTIPLAYER half — the alliance tab, the new-message button actually being raised (in
