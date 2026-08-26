@@ -411,6 +411,30 @@ namespace ES2Access.Screens
         }
 
         /// <summary>
+        /// Whether the page is BETWEEN VIEWS - the game is on its way to showing somewhere else, and
+        /// what this page's nodes say is about to change under them.
+        ///
+        /// Narrower than <see cref="LandingSuspended"/> on purpose, and asked about a different thing.
+        /// A landing waits for the camera to stop MOVING; this waits for the page to stop CHANGING ITS
+        /// MIND about what it is describing, which is only ever true where the game rebinds a surface
+        /// the rows read from. A slide across a map at one distance moves the camera and changes
+        /// nothing any row says, so it must answer false here or every keystroke of a search would be
+        /// held for it (measured 2026-08-26; the frame-by-frame basis is in the galaxy page's
+        /// override).
+        ///
+        /// Two things wait on it, both so the player hears the settled answer rather than the frame the
+        /// key landed on: the first-child descend a Right into a group makes
+        /// (<see cref="KeyGraph.TreeDescend"/>), and the announcement of a focus change that has not
+        /// been spoken yet. Nothing else pauses - the camera still follows the cursor at once, and the
+        /// review buffer refills every frame - so a page whose surface never rebinds says nothing here,
+        /// which is the default.
+        /// </summary>
+        public virtual bool BetweenViews
+        {
+            get { return false; }
+        }
+
+        /// <summary>
         /// The player has just moved the cursor on this screen themselves: give up any landing this
         /// screen is still waiting to make.
         ///

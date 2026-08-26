@@ -326,6 +326,127 @@ namespace ES2Access.Tests.UI
             Assert.Equal("c1", Focused(g));
         }
 
+        // A group whose children only appear once the GAME has caught up: the first render of the open
+        // branch holds "c1, c2", and every render after the flip is flipped holds an "open" button in
+        // FRONT of them - which is what a system's row of buttons does when the camera comes in.
+        private static KeyGraph SettlingTree(GraphState state, bool[] settled, bool keepChildren = true)
+        {
+            return new KeyGraph(Renderer(b =>
+            {
+                b.AddItem(Id("top"), Vt("Top"));
+                b.BeginGroup(Id("g"), Vt("Group"));
+                if (settled[0])
+                {
+                    if (keepChildren)
+                    {
+                        b.AddItem(Id("open"), Vt("Open system"));
+                    }
+                }
+
+                if (!settled[0] || keepChildren)
+                {
+                    b.AddItem(Id("c1"), Vt("Child 1"));
+                    b.AddItem(Id("c2"), Vt("Child 2"));
+                }
+
+                b.EndGroup();
+            }, state), state);
+        }
+
+        // The press says which group it opened, so the caller can come back to it once the page it
+        // acted on has settled. A descend into a branch that was ALREADY open opened nothing and says
+        // so - there is nothing provisional about it.
+        [Fact]
+        public void TreeRightNamesTheGroupItOpened()
+        {
+            GraphState state = new GraphState();
+            KeyGraph g = Tree(state);
+            g.Rerender();
+            g.Move(GraphDir.Down);
+
+            KeyGraph.TreeResult open = g.TreeRight();
+            Assert.Equal("g", Key(open.Opened));
+
+            g.Move(GraphDir.Up);
+            Assert.Equal("g", Focused(g));
+            Assert.Null(g.TreeRight().Opened);
+        }
+
+        // The descend re-made against the settled build lands on the first child the settled build has,
+        // not the one the half-built list started with.
+        [Fact]
+        public void TreeDescendRemakesTheDescendAgainstTheSettledBuild()
+        {
+            GraphState state = new GraphState();
+            bool[] settled = { false };
+            KeyGraph g = SettlingTree(state, settled);
+            g.Rerender();
+            g.Move(GraphDir.Down);
+
+            KeyGraph.TreeResult open = g.TreeRight();
+            Assert.Equal(KeyGraph.TreeMove.Descended, open.Kind);
+            Assert.Equal("c1", Focused(g));
+
+            settled[0] = true;
+            KeyGraph.TreeResult again = g.TreeDescend(open.Opened.Id);
+            Assert.Equal(KeyGraph.TreeMove.Descended, again.Kind);
+            Assert.Equal("g", Key(again.Move.From));
+            Assert.Equal("open", Key(again.Move.To));
+            Assert.Equal("open", Focused(g));
+        }
+
+        // On a page that never changed, the re-made descend is the descend that was already made: the
+        // same node, announced once.
+        [Fact]
+        public void TreeDescendOnASettledPageLandsWhereItAlreadyIs()
+        {
+            GraphState state = new GraphState();
+            KeyGraph g = Tree(state);
+            g.Rerender();
+            g.Move(GraphDir.Down);
+
+            KeyGraph.TreeResult open = g.TreeRight();
+            KeyGraph.TreeResult again = g.TreeDescend(open.Opened.Id);
+            Assert.Equal(KeyGraph.TreeMove.Descended, again.Kind);
+            Assert.Equal("c1", Key(again.Move.To));
+            Assert.Equal("c1", Focused(g));
+        }
+
+        // A branch that has lost every child by the time the page settles is the "no details" the
+        // provisional descend was too early to judge.
+        [Fact]
+        public void TreeDescendReportsAnEmptyGroupWhenTheChildrenHaveGone()
+        {
+            GraphState state = new GraphState();
+            bool[] settled = { false };
+            KeyGraph g = SettlingTree(state, settled, false);
+            g.Rerender();
+            g.Move(GraphDir.Down);
+
+            KeyGraph.TreeResult open = g.TreeRight();
+            Assert.Equal(KeyGraph.TreeMove.Descended, open.Kind);
+
+            settled[0] = true;
+            Assert.Equal(KeyGraph.TreeMove.EmptyGroup, g.TreeDescend(open.Opened.Id).Kind);
+            Assert.Contains(Id("g"), state.Expanded);
+        }
+
+        // And a group that is no longer declared at all answers nothing: something else has changed the
+        // page, and wherever the cursor has been reconciled to is the answer.
+        [Fact]
+        public void TreeDescendOnAGroupThatHasGoneAnswersNone()
+        {
+            GraphState state = new GraphState();
+            KeyGraph g = Tree(state);
+            g.Rerender();
+            g.Move(GraphDir.Down);
+            g.TreeRight();
+
+            Assert.Equal(KeyGraph.TreeMove.None, g.TreeDescend(Id("nowhere")).Kind);
+            Assert.Equal(KeyGraph.TreeMove.None, g.TreeDescend(null).Kind);
+            Assert.Equal("c1", Focused(g));
+        }
+
         // And an already-open group answers Right exactly the same way, which is what makes the two
         // states of a group indistinguishable to the key.
         [Fact]

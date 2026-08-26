@@ -55,6 +55,11 @@ namespace ES2Access.UI
         private FocusRequest _pendingFocus;
         private object _pendingStop;
 
+        // A group Right has just opened whose first child is not yet knowable - the page it acted on is
+        // between views. The descend was made provisionally and is re-made from the settled build the
+        // moment the page stops changing (see EnsureFocus, Screen.BetweenViews).
+        private ControlId _pendingDescend;
+
         // A stop the NEXT screen attached should land on - see LandOnStopAfterClose.
         private object _landingStop;
 
@@ -216,6 +221,7 @@ namespace ES2Access.UI
             ClearSearch();
             _lastSpokenKey = null;
             _lastSpokenNode = null;
+            _pendingDescend = null;
             _liveKey = null;
             _liveValues.Clear();
             _bufferKey = null;
@@ -311,6 +317,7 @@ namespace ES2Access.UI
             _bufferReadout = null;
             _bufferLines = null;
             _bufferOverride = null;
+            _pendingDescend = null;
             // Giving up the cursor is not moving it: whatever it is seated on next is a landing.
             _visualFrom = null;
             _placed = false;
@@ -702,7 +709,23 @@ namespace ES2Access.UI
                 return;
             }
 
-            if (_lastSpokenKey == null || !_lastSpokenKey.Equals(node.Id))
+            // The visual is committed BEFORE anything is said, and that order is load-bearing rather
+            // than cosmetic: committing it is what asks the game to show where the cursor now is, and
+            // on this page that can be the move that puts the page between views
+            // (<see cref="Screen.BetweenViews"/>). Said first, the announcement would be the last
+            // reading of the place the player has just left.
+            SyncVisual(node);
+
+            if (_pendingDescend != null && !_screen.BetweenViews)
+            {
+                node = SettleDescend(node);
+                if (node == null)
+                {
+                    return;
+                }
+            }
+
+            if ((_lastSpokenKey == null || !_lastSpokenKey.Equals(node.Id)) && !_screen.BetweenViews)
             {
                 // Queued: an arrival follows the screen name rather than cutting it off.
                 Voice.Say(GraphAnnouncer.Compose(_lastSpokenNode, node), false);
@@ -710,9 +733,48 @@ namespace ES2Access.UI
                 _lastSpokenNode = node;
             }
 
-            SyncVisual(node);
             FillBuffer(node);
             WatchLive(node);
+        }
+
+        /// <summary>
+        /// Re-make the descend a Right into a group made provisionally, now that the page has stopped
+        /// changing what it is describing (<see cref="_pendingDescend"/>).
+        ///
+        /// The same first-child rule, against the settled build: on a page that never moved this lands
+        /// back on the very node the press already seated and says it once, which is the ordinary
+        /// behaviour spelled out the long way. On a page the press sent the camera into, the list has
+        /// grown the buttons the game only draws from close up, and the first child is one of THOSE -
+        /// which is the whole point: the player hears "Open system", once, instead of the first world
+        /// of a list that no longer starts there.
+        ///
+        /// Answers the node the cursor ended on, or null where the page has nothing left to stand on.
+        /// </summary>
+        private GraphNode SettleDescend(GraphNode node)
+        {
+            ControlId group = _pendingDescend;
+            _pendingDescend = null;
+            KeyGraph.TreeResult tree = _graph.TreeDescend(group);
+            if (tree.Kind == KeyGraph.TreeMove.EmptyGroup)
+            {
+                Voice.Say(ModStrings.Get(ModStrings.NavNoDetails), true);
+                return node;
+            }
+
+            if (tree.Kind != KeyGraph.TreeMove.Descended)
+            {
+                return node;
+            }
+
+            AnnounceMove(tree.Move);
+            GraphNode landed = _graph.CurrentNode;
+            if (landed == null)
+            {
+                return null;
+            }
+
+            SyncVisual(landed);
+            return landed;
         }
 
         /// <summary>
@@ -760,6 +822,11 @@ namespace ES2Access.UI
             {
                 _pendingFocus = null;
             }
+
+            // A provisional descend is a landing of the same kind and dies on the same keystroke: the
+            // player who has moved on from the branch Right opened must not be pulled back into it when
+            // the page settles.
+            _pendingDescend = null;
 
             if (_screen != null)
             {
@@ -1087,6 +1154,23 @@ namespace ES2Access.UI
                         Voice.Say(ModStrings.Get(ModStrings.NavNoDetails), true);
                         return true;
                     case KeyGraph.TreeMove.Descended:
+                        if (tree.Opened != null)
+                        {
+                            // The press OPENED this group, so its first child is only provisional: on a
+                            // page whose expansion sends the game somewhere else, the list the descend
+                            // was made against is a half-built one and the settled list starts
+                            // elsewhere. The cursor goes where it went; the announcement, and the seat
+                            // itself, are re-made from the settled build by EnsureFocus
+                            // (<see cref="SettleDescend"/>). CancelPendingFocus first, then the record:
+                            // moving the cursor gives up every landing, this one included, and it is
+                            // this press that is making the new one.
+                            CancelPendingFocus();
+                            _pendingDescend = tree.Opened.Id;
+                            return true;
+                        }
+
+                        AnnounceMove(tree.Move);
+                        return true;
                     case KeyGraph.TreeMove.Ascended:
                         AnnounceMove(tree.Move);
                         return true;
@@ -2055,8 +2139,22 @@ namespace ES2Access.UI
                 return null;
             }
 
-            Voice.Say(GraphAnnouncer.Compose(_lastSpokenNode, node), true);
             CancelPendingFocus();
+
+            // The visual is committed before the result is read out, and for the reason EnsureFocus
+            // commits it first: committing it is what asks the game to SHOW where the cursor now is,
+            // and a result inside a system the camera has not reached yet reads as the far view's
+            // version of its row - a world with a curiosity reads as a leaf, because the child the
+            // curiosity becomes is declared off a card the map has not drawn. Where that leaves the
+            // page between views the reading is left to EnsureFocus, which makes it once, from the
+            // settled build (<see cref="Screen.BetweenViews"/>).
+            SyncVisual(node);
+            if (_screen != null && _screen.BetweenViews)
+            {
+                return node.Id;
+            }
+
+            Voice.Say(GraphAnnouncer.Compose(_lastSpokenNode, node), true);
             _lastSpokenKey = node.Id;
             _lastSpokenNode = node;
             return node.Id;

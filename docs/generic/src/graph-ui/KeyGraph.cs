@@ -469,6 +469,11 @@ namespace ES2Access.Core.UI.Graph
         {
             public TreeMove Kind;
             public MoveResult Move; // valid for Descended/Ascended
+
+            /// <summary>The group this press OPENED, where it opened one - so a caller can come back to
+            /// it (<see cref="TreeDescend"/>) once the page it acted on has settled. Null on a descend
+            /// into a branch that was already open, and on every other answer.</summary>
+            public GraphNode Opened;
         }
 
         /// <summary>Is this node part of an expandable structure (itself a group, or under one)? The
@@ -524,6 +529,7 @@ namespace ES2Access.Core.UI.Graph
                 result.Move.To = opened;
                 result.Move.Moved = true;
                 result.Kind = TreeMove.Descended;
+                result.Opened = header;
                 return result;
             }
 
@@ -547,6 +553,42 @@ namespace ES2Access.Core.UI.Graph
             }
 
             result.Kind = InTree(node) ? TreeMove.Leaf : TreeMove.None;
+            return result;
+        }
+
+        /// <summary>Come back to a group this press already opened and seat the cursor on its first
+        /// child, off the build as it stands NOW (<see cref="TreeResult.Opened"/>).
+        ///
+        /// What a branch holds is not always known on the frame it is opened: a page whose expansion
+        /// makes the GAME show somewhere else only learns its real children once the game has drawn
+        /// them, and the first child of the half-built list is not the first child of the finished one.
+        /// So the descend <see cref="TreeRight"/> makes on such a page is provisional, and this is how
+        /// it is re-made when the page has settled: the same first-child rule against a fresh render.
+        ///
+        /// Answers Descended whether or not the cursor actually changed nodes - the settled first child
+        /// is what the player is told about either way - and EmptyGroup where the group has since lost
+        /// every child, which is the "no details" the provisional descend was too early to judge. None
+        /// where the group itself is gone: something else has changed the page, and the cursor it left
+        /// behind is the answer.</summary>
+        public TreeResult TreeDescend(ControlId groupId)
+        {
+            TreeResult result = new TreeResult { Kind = TreeMove.None };
+            if (groupId == null || !Rerender()) return result;
+            GraphNode header = _current.NodeAt(groupId);
+            if (header == null) return result;
+
+            GraphNode child = FirstChildOf(header);
+            if (child == null)
+            {
+                result.Kind = TreeMove.EmptyGroup;
+                return result;
+            }
+
+            result.Move.From = header;
+            SetCurrent(child);
+            result.Move.To = child;
+            result.Move.Moved = true;
+            result.Kind = TreeMove.Descended;
             return result;
         }
 

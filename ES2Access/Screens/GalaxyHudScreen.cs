@@ -451,6 +451,54 @@ namespace ES2Access.Screens
             }
         }
 
+        /// <summary>Whether the map is still binding the INSIDE of a system it has just been brought
+        /// into - the one camera move on this page that changes what the rows already declared SAY
+        /// (<see cref="Screen.BetweenViews"/>).
+        ///
+        /// Deliberately not <see cref="LandingSuspended"/>. That is true for any camera move at all,
+        /// and a slide across the map at one distance changes nothing a row says: measured frame by
+        /// frame on 2026-08-26, a type-ahead landing on the far system Sabel at overview zoom read
+        /// "Sabel, -35, -5, group, Home System, colonized, 1 Fleet, ..., collapsed, 8 of 18" on the
+        /// landing frame and on every frame after it, while <see cref="_settling"/> was armed to 3 by
+        /// the slide. Holding a search keystroke for that would be latency bought for nothing.
+        ///
+        /// Coming INSIDE is the case that is real, and it is real twice over. Right into a collapsed
+        /// system at overview zoom seated the cursor on "Sabel I, group, Medium Mediterranean,
+        /// Inhospitable, collapsed, 1 of 9" and the very next frame the same row read "2 of 10" - the
+        /// system had grown an "Open system" button in front of it - with the card's own words still
+        /// arriving eight frames later. A type-ahead landing on the world Sabel IV inside the same shut
+        /// system announced "Sabel IV, Large Gas Temperate, Inhospitable, 1 curiosity, 5 of 10", a
+        /// LEAF, and nine frames later the same row was "Sabel IV, group, ..., collapsed, 5 of 10" -
+        /// the curiosity had become a child and the row a branch. Both readings are said once and lost.
+        ///
+        /// <see cref="GalaxyViewLevels.ChangingLevel"/> would have been the natural flag for it and is
+        /// not: it measured FALSE across both, because the map comes inside a system by snapping the
+        /// camera rather than by changing view level. So the wait is the counter below, armed where the
+        /// snap is made.
+        /// </summary>
+        public override bool BetweenViews
+        {
+            get { return GalaxyViewLevels.ChangingLevel || _binding > 0; }
+        }
+
+        /// <summary>Frames still to wait for the orbital surface of a system the camera has just been
+        /// snapped into (<see cref="ViewBindFrames"/>).</summary>
+        private int _binding;
+
+        /// <summary>
+        /// How long the map takes to finish binding the inside of a system after the camera snaps into
+        /// it - measured 2026-08-26 as eight frames from the snap for a Right-in (the last change was
+        /// the orbital card's own text) and eight for a type-ahead landing on a world (the last change
+        /// was the world's curiosity becoming a child). Twelve is that plus a half again, and it is a
+        /// FRAME count rather than a duration for the same reason its neighbours are: what is being
+        /// waited for is the game's own refresh passes over the cards, not a wall-clock animation.
+        ///
+        /// It is a ceiling on how long a landing inside a system can be held before it speaks, so it
+        /// buys accuracy with latency and nothing else: everything visual - the camera coming in, the
+        /// review buffer, the pointer - already happened on the frame the key landed.
+        /// </summary>
+        private const int ViewBindFrames = 12;
+
         /// <summary>Frames still to wait after the camera has stopped, before a landing is allowed to
         /// announce itself (<see cref="MapSettleFrames"/>).</summary>
         private int _settling;
@@ -496,6 +544,7 @@ namespace ES2Access.Screens
             _settling = GalaxyViewLevels.CameraSettling
                 ? MapSettleFrames
                 : Math.Max(0, _settling - 1);
+            _binding = Math.Max(0, _binding - 1);
             _hud.Update();
             FollowSelectionEnd(_fleetPanel.Update());
             // Beside it and not before it: the two answer the same handover by different routes, and a
@@ -1629,6 +1678,9 @@ namespace ES2Access.Screens
                     GalaxyLocate.Suppressed = true;
                     GalaxyViewLevels.SnapTo(system);
                     _settling = SnapSettleFrames;
+                    // The one move that changes what the rows already declared SAY, so it is also the
+                    // one that holds a descend and an announcement (<see cref="BetweenViews"/>).
+                    _binding = ViewBindFrames;
                     Remember(place, inside);
                     return;
                 }
