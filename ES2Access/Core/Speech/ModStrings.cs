@@ -740,14 +740,12 @@ namespace ES2Access.Core.Speech
         public const string GalaxyProbeHeadingOne = "galaxy.probe-heading-one";
         public const string GalaxyProbeHeadingMany = "galaxy.probe-heading-many";
 
-        /// <summary>The group the probe mode adds to the system a probe is being launched from: the
-        /// eight compass bearings, offered beside that system's starlanes because the order takes any
-        /// direction at all and the lanes are only the ones that lead somewhere.</summary>
-        public const string GalaxyProbeDirections = "galaxy.probe-directions";
-
-        /// <summary>The same group named by what the order can REACH: a probe flies its own speed for
-        /// its own lifetime and then stops, so the number of units it will cover is the one fact that
-        /// decides whether any of the bearings under it is worth taking.</summary>
+        /// <summary>The group the probe mode adds to the system a probe is being launched from - the
+        /// sixteen compass bearings, offered beside that system's starlanes because the order takes any
+        /// direction at all and the lanes are only the ones that lead somewhere - named by what the
+        /// order can REACH: a probe flies its own speed for its own lifetime and then stops, so the
+        /// number of units it will cover is the one fact that decides whether any of the bearings under
+        /// it is worth taking.</summary>
         public const string GalaxyProbeLaunchReach = "galaxy.probe-launch-reach";
 
         /// <summary>What lies down one bearing, said as the stretches of it nobody has explored yet
@@ -1950,7 +1948,6 @@ namespace ES2Access.Core.Speech
             { GalaxyProbeHeading, "Probe launched heading {0}" },
             { GalaxyProbeHeadingOne, "Probe launched heading {0}, {1} probe remaining" },
             { GalaxyProbeHeadingMany, "Probe launched heading {0}, {1} probes remaining" },
-            { GalaxyProbeDirections, "Launch towards" },
             { GalaxyProbeLaunchReach, "Launch probe, reach {0}" },
             { GalaxyProbeContext, "{0}: {1}." },
             { GalaxyProbeContextUnexplored, "unexplored {0}" },

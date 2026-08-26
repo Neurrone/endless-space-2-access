@@ -501,7 +501,7 @@ namespace ES2Access.Screens
         }
 
         /// <summary>
-        /// Where the player is put when the launch-probe mode is armed: on the first of the eight
+        /// Where the player is put when the launch-probe mode is armed: on the first of the sixteen
         /// bearings that mode offers (<see cref="AddProbeDirections"/>), with the acting fleet's system
         /// and that group both opened to get there.
         ///
@@ -6722,7 +6722,7 @@ namespace ES2Access.Screens
         };
 
         /// <summary>
-        /// The eight bearings a probe can be launched on, offered at the system the fleet holding it is
+        /// The sixteen bearings a probe can be launched on, offered at the system the fleet holding it is
         /// standing at, and only while the map is waiting for that launch.
         ///
         /// The lanes above are where a probe is usually aimed, and they are not all of it: the order
@@ -6730,13 +6730,21 @@ namespace ES2Access.Screens
         /// :92-95 refuses the zero vector alone), and the game's own tutorial for this action tells the
         /// player to send the probe away from the known lanes to find a new constellation. A mouse aims
         /// at empty sky by clicking it; the keyboard had only the map's own nodes, so every direction
-        /// with nothing along it was unreachable. Eight of them is the compass this mod already
-        /// describes lanes with, so the north offered here and the lane called north above are the same
-        /// north - deliberately overlapping, because a lane running north does not stop north from being
-        /// a direction.
+        /// with nothing along it was unreachable. SIXTEEN of them rather than the eight the mod
+        /// describes lanes with: a lane's compass word only has to name where a line that already exists
+        /// runs, while these are the whole of the map a probe can be sent into, and the arcs eight words
+        /// leave between them are directions no player can ask for
+        /// (<see cref="CompassDirections.KeyForBearing16"/>).
+        ///
+        /// Each one says what is DOWN it - the stretches of fog a probe flown that way would cross and
+        /// how far the map goes before it ends (<see cref="ProbeContext"/>) - because the order cannot be
+        /// recalled, cannot be aimed at anything but a direction, and is therefore chosen entirely on
+        /// what each direction is worth. A sighted player reads that off the fog in a second; a bare
+        /// compass word said sixteen times gives a listener nothing to choose between. The group itself
+        /// is named by how far the probe will get, which is the fact all sixteen are measured against.
         ///
         /// They sit here, LAST in the system's branch, after everything the map really draws at this
-        /// place: they are eight ways OUT of it rather than anything in it, and they are gone again the
+        /// place: they are sixteen ways OUT of it rather than anything in it, and they are gone again the
         /// moment the mode ends. The player does not have to walk to them: arming
         /// the mode seats the cursor on the first bearing itself, opening this group and the system's
         /// branch to do it (<see cref="FollowProbeArming"/>), because the fleet panel the mode is armed
@@ -6767,18 +6775,18 @@ namespace ES2Access.Screens
                 ControlId id = ControlId.Structural(place + "/launch");
                 builder.BeginGroup(
                     id,
-                    GraphNodes.Group(() => ModStrings.Get(ModStrings.GalaxyProbeDirections))
+                    GraphNodes.Group(() => ProbeContext.GroupLabel(fleet, node))
                 );
                 if (builder.IsExpanded(id))
                 {
-                    for (int i = 0; i < 8; i++)
+                    for (int i = 0; i < ProbeContext.Bearings; i++)
                     {
-                        double bearing = i * 45.0;
-                        string word = CompassDirections.KeyForBearing(bearing);
+                        int index = i;
+                        double bearing = ProbeContext.Bearing(i);
                         builder.AddItem(
                             ControlId.Structural(place + "/launch/" + i),
                             GraphNodes.Button(
-                                () => ModStrings.Get(word),
+                                () => ProbeContext.Line(fleet, node, index),
                                 () => CursorTargeting.ConfirmTowards(bearing)
                             )
                         );

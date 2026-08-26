@@ -40,6 +40,14 @@ namespace ES2Access.Localization
         /// <summary>True once the game's language has been read and its table installed.</summary>
         public static bool LanguageResolved { get; private set; }
 
+        /// <summary>The language whose table is installed, null before one has been read - the memo key
+        /// for anything that caches a composed phrase across frames, since a language change swaps every
+        /// word underneath it.</summary>
+        public static string Language
+        {
+            get { return _language; }
+        }
+
         /// <summary>Poll the game for its language. Cheap; call every frame.</summary>
         public static void Tick()
         {

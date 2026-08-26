@@ -283,7 +283,6 @@
   "galaxy.probe-heading": "Probe launched heading {0}",
   "galaxy.probe-heading-one": "Probe launched heading {0}, {1} probe remaining",
   "galaxy.probe-heading-many": "Probe launched heading {0}, {1} probes remaining",
-  "galaxy.probe-directions": "Launch towards",
   "galaxy.probe-launch-reach": "Launch probe, reach {0}",
   "galaxy.probe-context": "{0}: {1}.",
   "galaxy.probe-context-unexplored": "unexplored {0}",

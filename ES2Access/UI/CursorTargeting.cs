@@ -164,12 +164,17 @@ namespace ES2Access.UI
         ///
         /// Only the probe mode: it is the one order that carries a DIRECTION instead of a target (the
         /// ally pin aims at a point, and a point in the middle of nowhere is not a thing anyone wants
-        /// to name), and the game takes any direction that is not zero, so eight of them lose nothing
-        /// the mouse had. The heading is the unit vector of the bearing on the galaxy's own plane -
-        /// east is +X and north is +Y, measured against the camera itself (a point ten units up the Y
-        /// axis draws higher on the screen), which is the plane and the sense the mod's starlane
-        /// bearings are already read in (<see cref="CompassDirections"/>). So a lane the player was
-        /// told runs north and the north offered here are the same north.
+        /// to name), and the game takes any direction that is not zero. The heading is the unit vector
+        /// of the bearing on the galaxy's own plane - east is +X and north is +Y, measured against the
+        /// camera itself (a point ten units up the Y axis draws higher on the screen), which is the
+        /// plane and the sense the mod's starlane bearings are already read in
+        /// (<see cref="CompassDirections"/>). So a lane the player was told runs north and the north
+        /// aimed at here are the same north.
+        ///
+        /// The launch is confirmed back in the SIXTEEN-word compass, not the eight the lanes are
+        /// described in: what is being read back is the direction the player just aimed at, and half of
+        /// the sixteen would come back as a word they did not choose
+        /// (<see cref="CompassDirections.KeyForBearing16"/>).
         /// </summary>
         public static bool ConfirmTowards(double bearing)
         {
@@ -187,7 +192,7 @@ namespace ES2Access.UI
                     return false;
                 }
 
-                string direction = CompassDirections.KeyForBearing(bearing);
+                string direction = CompassDirections.KeyForBearing16(bearing);
                 Launch(cursor, fleet, Heading(bearing), ModStrings.Get(direction), true);
             }
             catch (Exception e)
