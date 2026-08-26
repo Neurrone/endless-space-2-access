@@ -857,19 +857,11 @@ namespace ES2Access.Dev
         /// <summary>Which tooltip this node's pointer goes to, as the node itself declares it
         /// (<see cref="NodeVtable.PointsAt"/>). Never re-derived from the widget tree: the deepest
         /// tooltip inside a card is often decoration, and a second opinion that picked it reported a
-        /// defect on screens whose pointing was right all along.</summary>
+        /// defect on screens whose pointing was right all along. The reading itself is
+        /// <see cref="NodeCarrier.AimOf"/> - shared with the gate that acts on it.</summary>
         internal static AgeTooltip AimOf(Declared node)
         {
-            NodeVtable vtable = node == null || node.Node == null ? null : node.Node.Vtable;
-            Func<object> at = vtable == null ? null : vtable.PointsAt;
-            try
-            {
-                return at == null ? null : at() as AgeTooltip;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
+            return NodeCarrier.AimOf(node == null || node.Node == null ? null : node.Node.Vtable);
         }
 
         /// <summary>
@@ -885,6 +877,12 @@ namespace ES2Access.Dev
         /// Only for the tooltip answer. Placement stays blind to these on purpose: a dossier node hangs
         /// UNDER its card and takes no place in the popup's own down-the-page order, so measuring one
         /// against the card drawn beside it would report a walk that jumps around as a defect.
+        ///
+        /// The RULE is <see cref="NodeCarrier"/>'s, so that this and the gate acting on the same answer
+        /// can never disagree. <see cref="Declared.Widget"/> is preferred because it may have been
+        /// enriched since (<see cref="ResolveRowCells"/> lends a table cell its row's widget), which can
+        /// only find a carrier the shared rule does not - the safe direction: the gate lets a
+        /// carrier-less node through, and this still holds it to the paint test.
         /// </summary>
         internal static AgeTransform Carrier(Declared node)
         {
@@ -898,8 +896,7 @@ namespace ES2Access.Dev
                 return node.Widget;
             }
 
-            AgeTooltip aimed = AimOf(node);
-            return aimed == null ? null : aimed.AgeTransform;
+            return NodeCarrier.Of(node.Id, node.Node == null ? null : node.Node.Vtable);
         }
 
         internal static bool Promises(Declared node)
@@ -1205,7 +1202,11 @@ namespace ES2Access.Dev
                 }
 
                 it.Region = node.RegionKey == null ? null : node.RegionKey.ToString();
-                it.Widget = WidgetOf(node.Id.Reference);
+                // The widget a node was derived from. Most nodes this screen declares carry one - the
+                // control, the row's group, the label the words were read off - so this is a lookup
+                // rather than a search; a table cell is the exception and is resolved by
+                // ResolveRowCells.
+                it.Widget = NodeCarrier.WidgetOf(node.Id.Reference);
 
                 try
                 {
@@ -1372,22 +1373,6 @@ namespace ES2Access.Dev
         private static TableRow RowOf(Declared it)
         {
             return it.Node == null || it.Node.Vtable == null ? null : it.Node.Vtable.Row;
-        }
-
-        /// <summary>The widget a node was derived from. Most nodes this screen declares carry one -
-        /// the control, the row's group, the label the words were read off - so this is a lookup
-        /// rather than a search; a table cell is the exception and is resolved by
-        /// <see cref="ResolveRowCells"/>.</summary>
-        private static AgeTransform WidgetOf(object reference)
-        {
-            AgeTransform widget = reference as AgeTransform;
-            if (widget != null)
-            {
-                return widget;
-            }
-
-            Component component = reference as Component;
-            return component == null ? null : component.GetComponent<AgeTransform>();
         }
 
         private static NotificationScreen TheScreen()

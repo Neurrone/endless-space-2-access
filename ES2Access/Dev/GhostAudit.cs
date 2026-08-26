@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Text;
 using ES2Access.Loader.Dev;
 using ES2Access.Screens;
 using ES2Access.UI;
@@ -37,8 +36,6 @@ namespace ES2Access.Dev
     {
         /// <summary>How many findings are written out; the rest are counted as <c>more</c>.</summary>
         private const int MaxListed = 40;
-
-        private const int MaxPathSegments = 8;
 
         /// <summary>One node standing on something the game is not drawing.</summary>
         private sealed class Finding
@@ -131,7 +128,7 @@ namespace ES2Access.Dev
             Finding finding = new Finding();
             finding.Key = node.Key;
             finding.Region = node.Region;
-            finding.Path = Path(widget);
+            finding.Path = NodeCarrier.Path(widget);
             finding.Why = Why(widget);
             finding.Says = NotificationAudit.Excerpt(node.Announcement);
             finding.Own =
@@ -195,33 +192,6 @@ namespace ES2Access.Dev
             {
                 return "reading it threw: " + e.GetType().Name;
             }
-        }
-
-        private static string Path(AgeTransform widget)
-        {
-            List<string> names = new List<string>();
-            try
-            {
-                AgeTransform at = widget;
-                for (int i = 0; at != null && i < MaxPathSegments; i++)
-                {
-                    names.Add(at.name);
-                    at = at.Parent;
-                }
-            }
-            catch (Exception) { }
-
-            StringBuilder path = new StringBuilder();
-            for (int i = names.Count - 1; i >= 0; i--)
-            {
-                path.Append(names[i]);
-                if (i > 0)
-                {
-                    path.Append('/');
-                }
-            }
-
-            return path.ToString();
         }
 
         private static string Named(Screen screen)
