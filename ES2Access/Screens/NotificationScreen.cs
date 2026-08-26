@@ -2816,7 +2816,24 @@ namespace ES2Access.Screens
             }
 
             HandBackOnMinimize(it, vtable);
-            builder.AddItem(IdOf(it), vtable);
+            ControlId id = IdOf(it);
+            if (it.Dossiers == null || it.Dossiers.Count == 0)
+            {
+                builder.AddItem(id, vtable);
+                return;
+            }
+
+            // A control the popup drew as a card the mouse can hover INSIDE keeps everything it already
+            // was - its name, its role, its state, its click and the chord that confirms it - and the
+            // pages it draws no words for become nodes under it. The popup declares no actions of its
+            // own on a card, so the region handed back is simply the one in force.
+            builder.BeginGroup(id, vtable);
+            if (builder.IsExpanded(id))
+            {
+                TooltipChildren.Emit(builder, "notification:" + it.Key, it.Dossiers, builder.Region);
+            }
+
+            builder.EndGroup();
         }
 
         /// <summary>
@@ -2975,6 +2992,14 @@ namespace ES2Access.Screens
             /// (<see cref="Details"/>), so the control's tooltip - a card's reason for refusing - still
             /// reads after them.</summary>
             public Func<IList<string>> Drawn;
+
+            /// <summary>The dossiers this control owns BEYOND the one it speaks, which turn it into an
+            /// expandable group with a "Tooltips" region under it
+            /// (<see cref="TooltipChildren"/>). A choice drawn as a hero card is the case: the card
+            /// explains the hero's affinity, class, politics, every mastery and the ship they come with
+            /// on hovering each of them, and one node can point at only one. Null everywhere else, and
+            /// the control is a leaf.</summary>
+            public List<TooltipChildren.Dossier> Dossiers;
         }
 
         /// <summary>The tooltip a control speaks and carries: its own where it has one, else the one the
@@ -3976,8 +4001,45 @@ namespace ES2Access.Screens
                 AgeTransform widget = switched.AgeTransform;
                 Control added = controls[controls.Count - 1];
                 added.Card = card;
-                added.Drawn = () => ChoiceDetail(widget, card);
+
+                // A choice drawn as a prefab this mod already has a typed reader for is read by that
+                // reader instead of by the label harvest. The harvest reads the labels a card happens
+                // to lay out, in the order they are laid out, so a composed card loses the pairing
+                // between a caption and its figure ("Level", then "2"), the words the card draws
+                // nowhere at all (a mastery's name is on its tooltip wrapper), and which band a
+                // heading belongs to. Which reading a card gets is knowledge about the prefab, so it
+                // is decided here rather than guessed from the labels.
+                HeroDetailedCard hero = HeroCard(choice);
+                if (hero != null)
+                {
+                    added.Details = HeroCards.Sections(hero);
+                    // And the pages the card keeps behind its own icons, which the typed reading puts
+                    // in the buffer as captions with nothing behind them: each becomes a node.
+                    added.Dossiers = HeroCards.Dossiers(hero);
+                }
+                else
+                {
+                    added.Drawn = () => ChoiceDetail(widget, card);
+                }
+
                 controls[controls.Count - 1] = added;
+            }
+        }
+
+        /// <summary>The hero card a choice is drawn as, where it is drawn as one - on the choice
+        /// itself where the recruitment popup puts the toggle on the card, else the one inside it.
+        /// </summary>
+        private static HeroDetailedCard HeroCard(AgeTransform choice)
+        {
+            try
+            {
+                HeroDetailedCard own = choice.GetComponent<HeroDetailedCard>();
+                return own != null ? own : choice.GetComponentInChildren<HeroDetailedCard>();
+            }
+            catch (Exception e)
+            {
+                Log.Warn("notification: looking for a choice's hero card threw: " + e);
+                return null;
             }
         }
 

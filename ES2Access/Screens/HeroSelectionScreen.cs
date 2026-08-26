@@ -221,8 +221,13 @@ namespace ES2Access.Screens
                 GraphNodes.TooltipSection(refusal)
             );
             AgeWidgets.Point(vtable, it.Toggle, refusal, host);
-            ControlId id = ControlId.Referenced(hero, "hero-select:card/" + index);
-            Cells.Add(cells, widget, id, vtable);
+            string key = "hero-select:card/" + index;
+            ControlId id = ControlId.Referenced(hero, key);
+            // And the pages the card draws no words for - affinity, class, politics, the masteries -
+            // as nodes under it, since one node can point at only one of them.
+            Cell cell = Cells.Add(cells, widget, id, vtable);
+            cell.Dossiers = HeroCards.Dossiers(card);
+            cell.Key = key;
             return id;
         }
 

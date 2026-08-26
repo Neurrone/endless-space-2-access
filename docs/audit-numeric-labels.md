@@ -124,6 +124,16 @@ gauge's own tooltip). The caption does exist in the game's strings, prefab-autho
 above the gauges the walk already reads it as its own line and nothing is needed; if it is
 not, **M1** with that key is the fix. Measure.
 
+**Settled 2026-08-26 — nothing to do.** Measured on the designer bound to Corvette: the two
+gauge stops read *"Energy 100%, The balance between the offensive power of projectile weapons
+(kinetic and missiles) and energy weapons (laser and beam)."* and *"Projectile 35%, Energy 65%,
+The balance between the hull plating absorption and the shield absorption."* Each gauge carries
+its own class-free tooltip, so the nameless node is already unambiguous and a shared
+`%ShipStatMilitaryPowerBalanceTitle` caption would name both bars the same thing. The ambiguity
+that DID exist was in the tooltip-feature reading of the same pair, where there is no stop to
+announce the sentence — fixed in `UI\TooltipFeatures.cs` `Balance` by captioning each bar with
+the military power it breaks down (`docs/military.md`, the balance-block entry).
+
 ### C1 — the economy screen's resource strip speaks two unnamed numbers
 
 `Screens\EconomyScreen.cs:670-690` names the row correctly (**M4**, wrapper title) and then

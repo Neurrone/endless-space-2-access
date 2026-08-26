@@ -691,8 +691,16 @@ namespace ES2Access.UI
             Name(named, ship.CommandPointsLabel, GuiShipDesign.ShipStatCommandPoints);
             Name(named, ship.OffensivePowerLabel, GuiShipDesign.ShipStatOffensiveMilitaryPower);
             Name(named, ship.DefensivePowerLabel, GuiShipDesign.ShipStatDefensiveMilitaryPower);
-            Balance(named, ship.OffensiveBalanceGauge);
-            Balance(named, ship.DefensiveBalanceGauge);
+            Balance(
+                named,
+                ship.OffensiveBalanceGauge,
+                GuiShipDesign.ShipStatOffensiveMilitaryPower
+            );
+            Balance(
+                named,
+                ship.DefensiveBalanceGauge,
+                GuiShipDesign.ShipStatDefensiveMilitaryPower
+            );
             return named;
         }
 
@@ -1085,8 +1093,16 @@ namespace ES2Access.UI
             Dictionary<AgeTransform, Naming> named = new Dictionary<AgeTransform, Naming>();
             Name(named, power.OffenseLabel, GuiShipDesign.ShipStatOffensiveMilitaryPower);
             Name(named, power.DefenseLabel, GuiShipDesign.ShipStatDefensiveMilitaryPower);
-            Balance(named, power.OffensiveBalanceGauge);
-            Balance(named, power.DefensiveBalanceGauge);
+            Balance(
+                named,
+                power.OffensiveBalanceGauge,
+                GuiShipDesign.ShipStatOffensiveMilitaryPower
+            );
+            Balance(
+                named,
+                power.DefensiveBalanceGauge,
+                GuiShipDesign.ShipStatDefensiveMilitaryPower
+            );
             return named;
         }
 
@@ -1472,13 +1488,27 @@ namespace ES2Access.UI
         /// <see cref="BalanceGauges"/>, which is also what the ship designer's own copy of this bar
         /// reads through. This prefab draws no captions over the two columns, only the block heading,
         /// so without the substitution the split a sighted player reads off the bar is never said.
-        /// </summary>
+        ///
+        /// The block draws TWO of these bars, one for each military power, and both take the same pair
+        /// of side words - so the split alone said the same sentence twice over ("Projectile 100%,
+        /// Projectile 100%") with nothing to tell the weapons balance from the defences balance. Each
+        /// bar is therefore given the name of the power it breaks down, which is the figure the game
+        /// draws immediately beside it and the thing its own hover sentence says it is the balance of.
+        /// The sentence itself stays a sentence: it hangs on the bar as a nested tooltip the drawn
+        /// panel never writes out, and it is how the ship designer's own copy of the bar - a stop of
+        /// its own, where the tooltip is announced - already tells its two bars apart.</summary>
         private static void Balance(
             Dictionary<AgeTransform, Naming> named,
-            RepartitionHorizontalGauge gauge
+            RepartitionHorizontalGauge gauge,
+            Amplitude.StaticString power
         )
         {
-            string text = BalanceGauges.Text(gauge);
+            if (gauge == null)
+            {
+                return;
+            }
+
+            string text = TooltipText.Captioned(StatTitle(power), BalanceGauges.Text(gauge));
             if (!string.IsNullOrEmpty(text))
             {
                 named[gauge.AgeTransform] = new Naming { Text = text };

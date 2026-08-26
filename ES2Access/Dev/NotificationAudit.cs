@@ -24,7 +24,7 @@ namespace ES2Access.Dev
     /// comparison is mechanical - so it lives here rather than in a stage's notes, and a popup nobody
     /// has ever sighted checks itself the moment it opens.
     ///
-    /// Four invariants, each answering with the widgets and strings that broke it:
+    /// Five invariants, each answering with the widgets and strings that broke it:
     ///
     /// <list type="number">
     /// <item><b>Completeness</b> - every painted string is somewhere in what the popup says or
@@ -36,6 +36,8 @@ namespace ES2Access.Dev
     /// </item>
     /// <item><b>Tooltip parity</b> - a node that declares tooltip content has a tooltip that would
     /// draw, and a tooltip that would draw is reachable from the node that covers its widget.</item>
+    /// <item><b>Pairing</b> - no spoken line is a bare figure. Completeness counts words, so a card
+    /// read label by label passes it while saying "Level" and "2" as two lines.</item>
     /// </list>
     ///
     /// The painted side is measured from the window's own tree and knows nothing of the screen's
@@ -86,6 +88,7 @@ namespace ES2Access.Dev
             public readonly List<Breach> Honesty = new List<Breach>();
             public readonly List<Breach> Placement = new List<Breach>();
             public readonly List<Breach> Tooltips = new List<Breach>();
+            public readonly List<Breach> Pairing = new List<Breach>();
 
             /// <summary>Nodes whose widget could not be found - not a breach, but the placement and
             /// tooltip answers are blind to them, so they are reported rather than dropped.</summary>
@@ -95,7 +98,11 @@ namespace ES2Access.Dev
             {
                 get
                 {
-                    return Completeness.Count + Honesty.Count + Placement.Count + Tooltips.Count;
+                    return Completeness.Count
+                        + Honesty.Count
+                        + Placement.Count
+                        + Tooltips.Count
+                        + Pairing.Count;
                 }
             }
         }
@@ -252,6 +259,7 @@ namespace ES2Access.Dev
                 Report(result, "honesty", result.Honesty);
                 Report(result, "placement", result.Placement);
                 Report(result, "tooltip parity", result.Tooltips);
+                Report(result, "pairing", result.Pairing);
             }
             catch (Exception e)
             {
@@ -333,6 +341,7 @@ namespace ES2Access.Dev
             CheckHonesty(painted, declared, name, result);
             CheckPlacement(root, declared, result);
             CheckTooltips(painted, declared, result);
+            CheckPairing(declared, result);
             return result;
         }
 
@@ -752,11 +761,12 @@ namespace ES2Access.Dev
                     continue;
                 }
 
-                if (node.Widget == null || !AnyDrawing(node.Widget))
+                AgeTransform carrier = Carrier(node);
+                if (carrier == null || !AnyDrawing(carrier))
                 {
                     result.Tooltips.Add(
                         Made(
-                            node.Widget,
+                            carrier,
                             node.Key,
                             "declares a tooltip to review with nothing that draws",
                             null
@@ -775,7 +785,7 @@ namespace ES2Access.Dev
                 {
                     result.Tooltips.Add(
                         Made(
-                            node.Widget,
+                            carrier,
                             node.Key,
                             "declares a tooltip to review and points at one that draws nothing",
                             null
@@ -860,6 +870,36 @@ namespace ES2Access.Dev
             {
                 return null;
             }
+        }
+
+        /// <summary>
+        /// The widget a node's tooltip claim is about: its own where it has one, else the widget its
+        /// pointer is aimed at.
+        ///
+        /// A DOSSIER node (<see cref="ES2Access.UI.TooltipChildren"/>) is keyed structurally and reads
+        /// off no widget at all - it exists because one card carries several dossiers and only the one
+        /// the pointer is on can ever be drawn - so a check that asked its widget filed every one of
+        /// them as a promise with nothing behind it while the player could read it perfectly well. The
+        /// aim is the same authority <see cref="Covering"/> and the misaimed check already use.
+        ///
+        /// Only for the tooltip answer. Placement stays blind to these on purpose: a dossier node hangs
+        /// UNDER its card and takes no place in the popup's own down-the-page order, so measuring one
+        /// against the card drawn beside it would report a walk that jumps around as a defect.
+        /// </summary>
+        internal static AgeTransform Carrier(Declared node)
+        {
+            if (node == null)
+            {
+                return null;
+            }
+
+            if (node.Widget != null)
+            {
+                return node.Widget;
+            }
+
+            AgeTooltip aimed = AimOf(node);
+            return aimed == null ? null : aimed.AgeTransform;
         }
 
         internal static bool Promises(Declared node)
@@ -963,6 +1003,69 @@ namespace ES2Access.Dev
             }
 
             return Contains(reduced, lines[0]);
+        }
+
+        // ---- 5. pairing ----
+
+        /// <summary>
+        /// Nothing the popup says is a bare figure.
+        ///
+        /// The other four invariants are set questions - is this word somewhere, does this word come
+        /// from somewhere - and a reading that keeps every word but throws the pairing away passes all
+        /// of them: a hero card read label by label says "Level" and "2" as two lines and four bare
+        /// "0/6" figures, and completeness finds every one of those words present. What went missing is
+        /// not a word, it is which caption a number belongs to, so it needs its own question.
+        ///
+        /// The test is the honesty rule's own reason turned around. Numbers are not phrases there,
+        /// because a value comes from the game under a dozen formats and nothing can account for
+        /// digits; here that is exactly what makes a digits-only line a finding, since a figure with
+        /// nothing but separators around it names nothing at all. A caption sitting beside its value
+        /// - "Wit, 0/6" - has letters and is clean, whichever way the reader composed it.
+        /// </summary>
+        private static void CheckPairing(List<Declared> declared, Result result)
+        {
+            for (int i = 0; i < declared.Count; i++)
+            {
+                Declared node = declared[i];
+                for (int j = 0; j < node.Spoken.Count; j++)
+                {
+                    if (!FigureOnly(node.Spoken[j]))
+                    {
+                        continue;
+                    }
+
+                    result.Pairing.Add(
+                        Made(
+                            node.Widget,
+                            node.Key,
+                            "says a figure with no caption",
+                            Excerpt(node.Spoken[j])
+                        )
+                    );
+                }
+            }
+        }
+
+        /// <summary>Whether a line is a figure and nothing else: digits, and whatever separators a
+        /// fraction or a sign is written with, but not one letter. Empty of letters AND digits is not
+        /// a figure - it is nothing, and nothing is the buffer's own business.</summary>
+        internal static bool FigureOnly(string line)
+        {
+            string reduced = Reduce(line);
+            if (reduced.Length == 0)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < reduced.Length; i++)
+            {
+                if (char.IsLetter(reduced[i]))
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         // ---- the painted side ----
@@ -1145,7 +1248,10 @@ namespace ES2Access.Dev
 
             for (int i = 0; i < declared.Count; i++)
             {
-                if (declared[i].Widget == null)
+                // A dossier node is located by what it POINTS at rather than by a widget of its own
+                // (<see cref="Carrier"/>), so it is not one of these: reporting ten of them per opened
+                // card buried the one node that really had nothing behind it.
+                if (Carrier(declared[i]) == null)
                 {
                     unlocatable.Add(
                         Made(null, declared[i].Key, "no widget behind this node's id", null)
@@ -1352,6 +1458,9 @@ namespace ES2Access.Dev
         /// The class holds a few PREFIX constants beside the keys ("color."), which are not keys and
         /// would each cost a warning; they are told apart by shape, since a key always has a dotted
         /// tail and a prefix always ends in the dot.
+        ///
+        /// The GAME's own captions are read the same way (<see cref="GameCaptions"/>): a word the game
+        /// wrote for a figure it draws as a bare icon was not invented by the mod either.
         /// </summary>
         private static List<string> Vocabulary()
         {
@@ -1385,8 +1494,126 @@ namespace ES2Access.Dev
                 }
             }
 
+            GameCaptions(phrases);
+            GameKeyNames(phrases);
             _vocabulary = phrases;
             return phrases;
+        }
+
+        /// <summary>
+        /// The game's own captions the mod borrows, resolved through the live string table.
+        ///
+        /// Where the game draws a figure with an icon and no words - a hero card's experience, a minor
+        /// faction's relation - the mod captions it with the game's OWN word for that figure rather
+        /// than a paraphrase, and that word is drawn nowhere on the popup, so the painted side cannot
+        /// account for it. It is still not invented: the reader names the string-table key in its own
+        /// source, which is what makes the borrowing checkable at all. So every key the mod compiles
+        /// in - a const string starting with the game's own '%' - accounts for the words it resolves
+        /// to, and a caption the mod made up still has nothing behind it.
+        /// </summary>
+        private static void GameCaptions(List<string> phrases)
+        {
+            try
+            {
+                Type[] types = typeof(NotificationAudit).Assembly.GetTypes();
+                for (int i = 0; i < types.Length; i++)
+                {
+                    FieldInfo[] fields = types[i].GetFields(
+                        BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static
+                    );
+                    for (int f = 0; f < fields.Length; f++)
+                    {
+                        FieldInfo field = fields[f];
+                        if (!field.IsLiteral || field.FieldType != typeof(string))
+                        {
+                            continue;
+                        }
+
+                        string key = field.GetRawConstantValue() as string;
+                        if (string.IsNullOrEmpty(key) || key[0] != '%')
+                        {
+                            continue;
+                        }
+
+                        // Per key: one that the live string table cannot answer must not cost the
+                        // accounts every other key would have contributed, or the honesty check
+                        // spends the session reporting words the game does draw.
+                        try
+                        {
+                            string text = AgeText.Clean(Gui.Localize(key));
+                            if (!string.IsNullOrEmpty(text) && text[0] != '%')
+                            {
+                                AddPhrase(phrases, text);
+                            }
+                        }
+                        catch (Exception) { }
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Core.Util.Log.Warn("notification parity: reading the game's captions threw: " + e);
+            }
+        }
+
+        /// <summary>
+        /// The game's own names for the keys, for the chord hints.
+        ///
+        /// A chord hint names its key with the game's key-name table
+        /// (<c>ChordNames.KeyName</c>, "%KeyCode&lt;name&gt;") - the same borrowing as
+        /// <see cref="GameCaptions"/>, but the key is built at runtime from the KeyCode, so the
+        /// const scan cannot see it. Without these accounts every icon-only control with a chord in
+        /// its name reads as "says what nothing draws: rightarrow".
+        ///
+        /// Only the names long enough to be phrases: the table also answers "A" and "F3", and a
+        /// two-character account strikes across word boundaries - "f3" out of "1 of 3" leaves "1o"
+        /// as an invented word - the same reason a single reduced letter is never an account
+        /// (<see cref="AddPhrase"/>). A short-named key turning up in a popup's chord hint will
+        /// report itself here, which is when it earns a targeted account.
+        ///
+        /// And no name with a DIGIT in it, whatever its length, for the same reason one letter longer:
+        /// "F10" is three characters and strikes clean through "1 of 10", which is what every position
+        /// phrase on a card with ten dossiers under it says. A digit-bearing name is the one shape that
+        /// can bridge a figure and the word beside it, and the figures are exactly what the honesty
+        /// rule already refuses to account for.
+        /// </summary>
+        private static void GameKeyNames(List<string> phrases)
+        {
+            try
+            {
+                Array keys = Enum.GetValues(typeof(UnityEngine.KeyCode));
+                for (int i = 0; i < keys.Length; i++)
+                {
+                    string key = "%KeyCode" + keys.GetValue(i);
+                    try
+                    {
+                        string text = AgeText.Clean(Gui.Localize(key));
+                        string reduced = Reduce(text);
+                        if (text != key && reduced.Length >= 3 && !HasDigit(reduced))
+                        {
+                            AddPhrase(phrases, text);
+                        }
+                    }
+                    catch (Exception) { }
+                }
+            }
+            catch (Exception e)
+            {
+                Core.Util.Log.Warn("notification parity: reading the game's key names threw: " + e);
+            }
+        }
+
+        private static bool HasDigit(string reduced)
+        {
+            for (int i = 0; i < reduced.Length; i++)
+            {
+                if (char.IsDigit(reduced[i]))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static List<string> _vocabulary;
@@ -1560,6 +1787,7 @@ namespace ES2Access.Dev
                 WriteBreaches(json, "honesty", result.Honesty);
                 WriteBreaches(json, "placement", result.Placement);
                 WriteBreaches(json, "tooltips", result.Tooltips);
+                WriteBreaches(json, "pairing", result.Pairing);
                 WriteBreaches(json, "unlocatable", result.Unlocatable);
                 json.WriteEndObject();
             });
