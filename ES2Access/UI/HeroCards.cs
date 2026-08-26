@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using ES2Access.Core.Speech;
+using ES2Access.Core.UI;
 using ES2Access.Core.UI.Graph;
 using ES2Access.Core.Util;
 
@@ -11,8 +12,10 @@ namespace ES2Access.UI
     ///
     /// <c>HeroDetailedCard</c> is one prefab family drawn by five surfaces - the Academy's card strip
     /// (<c>AcademyScreen.RefreshHeroCard</c> :380-401), the hero-selection modal (:86-107), the
-    /// recruitment popup (:102-114), the hero inspection window's overview card and the fleet and colony
-    /// hero panels - and each of them shows a DIFFERENT subset of the same bands. Which subset is not a
+    /// recruitment popup (:102-114), the hero inspection window's overview card and the "Hero" dossier
+    /// tooltip itself (<c>PanelFeatureHeroInfo</c> draws one inside the tooltip window; the fleet and
+    /// colony hero panels do NOT - the fleet's hero is a portrait with the one dossier tooltip, measured
+    /// 2026-08-26) - and each of them shows a DIFFERENT subset of the same bands. Which subset is not a
     /// guess: the card carries a public flag per band (<c>DisplayNameAndImage</c>,
     /// <c>DisplayDefinition</c>, <c>DisplayExperience</c>, <c>DisplayHealth</c>, <c>DisplaySkills</c>,
     /// <c>DisplayAssignment</c>, <c>DisplayDescription</c>, <c>DisplayShip</c>,
@@ -23,7 +26,8 @@ namespace ES2Access.UI
     /// A card is the worked "card" case: its readout is the hero's NAME plus whatever role and selected
     /// state the consumer's own surface gives it, and the substance - politics, level, masteries,
     /// upkeep, assignment - lives in the review buffer. So what is offered here is
-    /// <see cref="Lines"/>/<see cref="Sections"/> (the face), <see cref="Name"/>, and
+    /// <see cref="Lines"/>/<see cref="Sections"/> (the face), <see cref="Name"/>,
+    /// <see cref="Dossiers"/> for the pages the card draws no words for at all, and
     /// <see cref="Buttons"/> for the buttons the card itself draws. What kind of control a card IS - a
     /// radio in the Academy strip, a plain readout in an inspection window - is the consumer's, because
     /// only the consumer knows what a click on it does.
@@ -128,6 +132,82 @@ namespace ES2Access.UI
         }
 
         /// <summary>
+        /// Every dossier a mouse could reach by hovering something INSIDE the card, as the card's child
+        /// nodes (<see cref="TooltipChildren"/>): the affinity, class and politics lines, one per
+        /// mastery, the sentence over the experience gauge, the sentence over the mastery heading, and
+        /// the hero's ship on the cards that draw one.
+        ///
+        /// One sweep of the card's whole subtree in the order the prefab lays it out - which is the
+        /// order the card draws it, measured on the recruitment card (the gauge, then the three
+        /// definition lines, the mastery heading, the four masteries, the ship) - with each tooltip
+        /// offered to both collectors: a renderer-assembled dossier earns a node through
+        /// <see cref="TooltipChildren.Add"/>, a sentence the game wrote in words through
+        /// <see cref="TooltipChildren.AddPlain"/>, and everything else - the empty tooltip a prefab
+        /// hangs on decoration, the dummy line the card keeps hidden - earns nothing. Dispatching per
+        /// tooltip rather than sweeping twice is what keeps the two kinds interleaved in DRAWN order:
+        /// the gauge's sentence comes first on this card and the mastery heading's sits in the middle
+        /// of the definition lines, and two passes would push both to one end.
+        ///
+        /// The card's OWN dossier is not among them. It is the one tooltip that belongs to the card as a
+        /// whole rather than to a band inside it, so the card node itself carries it
+        /// (<see cref="Sections"/>) and points at it; a child node for it would be the card explaining
+        /// itself a second time.
+        ///
+        /// Empty where the card is not keeping its tooltips bound at all (<c>HasTooltips</c>), for the
+        /// same reason <see cref="Tooltip"/> answers null there: what is left in the fields is the
+        /// previous hero's.
+        /// </summary>
+        public static List<TooltipChildren.Dossier> Dossiers(HeroDetailedCard card)
+        {
+            List<TooltipChildren.Dossier> found = new List<TooltipChildren.Dossier>(8);
+            try
+            {
+                if (card == null || !card.HasTooltips || !AgeWidgets.Visible(card.AgeTransform))
+                {
+                    return found;
+                }
+
+                Scratch.Clear();
+                AgeWidgets.EffectiveTooltips(
+                    card.AgeTransform,
+                    Scratch,
+                    TooltipReach.Own | TooltipReach.Descendants,
+                    CardDepth
+                );
+                AgeTooltip whole = Tooltip(card, card.HeroTooltip);
+                for (int i = 0; i < Scratch.Count; i++)
+                {
+                    AgeTooltip tooltip = Scratch[i];
+                    if (AgeWidgets.SameTooltip(tooltip, whole))
+                    {
+                        continue;
+                    }
+
+                    TooltipChildren.Add(found, tooltip);
+                    TooltipChildren.AddPlain(
+                        found,
+                        tooltip == null ? null : tooltip.AgeTransform
+                    );
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("hero card: reading the card's dossiers threw: " + e);
+            }
+
+            return found;
+        }
+
+        /// <summary>How far inside a card its explanations are hung. Measured on the recruitment card:
+        /// the ship group sits four levels down and a mastery line six, so the resolver's own default of
+        /// four would find the ship and nothing else.</summary>
+        private const int CardDepth = 8;
+
+        // Reused rather than allocated per card: the sweep runs inside a per-frame screen build and a
+        // caller consumes it before the next card is read.
+        private static readonly List<AgeTooltip> Scratch = new List<AgeTooltip>(12);
+
+        /// <summary>
         /// Everything the card is showing, band by band in the order the card DRAWS them - which is the
         /// order <c>Refresh</c> writes them in everywhere but the definition band (see
         /// <see cref="Definition"/>) - for the review buffer.
@@ -135,9 +215,9 @@ namespace ES2Access.UI
         /// A band whose tooltip the game wrote as plain words contributes those words too - the health
         /// band's explanation, the assignment's - because they are one sentence the game authored about a
         /// figure the player is reading. A band whose tooltip names a CLASS contributes nothing here: its
-        /// words do not exist until the tooltip window draws them, and the card is one node, so the only
-        /// way to draw an affinity dossier is to point at the affinity icon. That is the known gap in
-        /// this reading, not an omission.
+        /// words do not exist until the tooltip window draws them, and one node can only ever point at
+        /// one of them. Those are <see cref="Dossiers"/>, which the consumers hang under the card as
+        /// nodes of their own.
         /// </summary>
         public static IList<string> Lines(HeroDetailedCard card)
         {
@@ -241,6 +321,9 @@ namespace ES2Access.UI
         /// <c>ClassTitle</c> only where the prefab has one, and otherwise the line is an icon and a
         /// figure whose only name is on the wrapper hung on its tooltip - which is what
         /// <see cref="AgeWidgets.TooltipTitle"/> answers.
+        ///
+        /// The heading over them is the game's own word for what the group IS, and reading the lines
+        /// without it leaves four levels belonging to nothing (<see cref="Heading"/>).
         /// </summary>
         private static void Masteries(HeroDetailedCard card, List<string> lines)
         {
@@ -251,6 +334,7 @@ namespace ES2Access.UI
                 return;
             }
 
+            Add(lines, null, Heading(panel, container));
             HeroMasteryLine[] found = container.GetComponentsInChildren<HeroMasteryLine>(true);
             for (int i = 0; i < found.Length; i++)
             {
@@ -268,6 +352,47 @@ namespace ES2Access.UI
 
                 Add(lines, name, AgeText.Label(line.LevelLabel));
             }
+        }
+
+        /// <summary>The word the panel writes over its masteries. <c>HeroMasteryPanel</c> declares the
+        /// line prefab and the container and nothing else, so the heading is found by where it is drawn
+        /// - the label the panel draws OUTSIDE the container the lines are in - rather than by a field
+        /// it does not have or a prefab name it could be renamed under.</summary>
+        private static string Heading(HeroMasteryPanel panel, AgeTransform container)
+        {
+            AgePrimitiveLabel[] found = panel.GetComponentsInChildren<AgePrimitiveLabel>(true);
+            for (int i = 0; i < found.Length; i++)
+            {
+                AgeTransform at = found[i] == null ? null : found[i].AgeTransform;
+                if (at == null || !Drawn(at) || Under(at, container))
+                {
+                    continue;
+                }
+
+                string text = AgeText.Label(found[i]);
+                if (!string.IsNullOrEmpty(text))
+                {
+                    return text;
+                }
+            }
+
+            return null;
+        }
+
+        private static bool Under(AgeTransform widget, AgeTransform container)
+        {
+            AgeTransform at = widget;
+            for (int depth = 0; at != null && depth < 8; depth++)
+            {
+                if (ReferenceEquals(at, container))
+                {
+                    return true;
+                }
+
+                at = at.Parent;
+            }
+
+            return false;
         }
 
         /// <summary>What the hero costs and what they are doing: upkeep, the assignment's own name and

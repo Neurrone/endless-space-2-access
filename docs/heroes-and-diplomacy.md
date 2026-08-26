@@ -27,6 +27,21 @@ Index and charter: `README.md`.
 - Hero-card figure captions are `%HeroCardExperienceTitle` and friends; unspent points, cooldown
   and relics borrow `%HeroInspectionRemainingSkillPointsTitle`,
   `%AssignmentCooldownBaseDurationTitle` and `%HeroRelicTitle`.
+- **A hero card keeps most of what it knows on tooltips INSIDE it, not on the card.** Measured on
+  the recruitment prefab: eleven `AgeTooltip`s under one card, up to six levels down (the resolver's
+  default reach of four finds only the ship). Nine earn a node — three class-backed definition lines
+  (`HeroProperty` ×2, `Politics`), four `HeroSkillMastery` lines, two plain sentences
+  (`%HeroCardExperienceDescription` over the gauge, `%HeroSkillsMasteryDescription` over the mastery
+  heading) — plus `ShipGroup`, whose `ShipDesignHeroRecruitement` dossier is the hero ship's whole
+  stat page (role, size, health, movement, offence/defence) and is the only place the game states it.
+  The eleventh hangs on a `DummyHeroExperienceLine` the card keeps hidden. Prefab child order matches
+  drawn order here (rects ascend down the card).
+- **`HeroDetailedCard.HeroTooltip` is null on the recruitment AND inspection prefabs** — the
+  card-whole "Hero" dossier is a band some prefabs simply do not draw, so a reader must treat it as
+  optional rather than as the card's one tooltip.
+- **`AcademyScreen.HeroCardsTable` has no children until the empire owns a hero** (measured on a
+  turn-29 save whose first hero was still being offered): the strip is not merely tutorial-gated,
+  it is empty, and so is every reading hung on its cards.
 - `HeroSelectionModalWindow.Refresh` (:74-77) wipes `SelectedHero` through an inverted
   `Contains` — never cache it.
 - **`%SkillTreeStageLevelTitle` + `RequiredLevel` is a per-RING unlock threshold**, drawn as a

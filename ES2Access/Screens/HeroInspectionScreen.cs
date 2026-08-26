@@ -540,6 +540,11 @@ namespace ES2Access.Screens
         /// is posted - and it is a child node, the only one this card draws that goes anywhere. It is
         /// switched off while the hero has no posting, which is the game's own answer and needs no test
         /// here.
+        ///
+        /// So the card is a GROUP: its buttons in the first region and, in the second, the pages it
+        /// draws no words for at all - affinity, class, politics, one per mastery
+        /// (<see cref="HeroCards.Dossiers"/>). A mouse reaches those by hovering inside the card and a
+        /// single node could only ever point at one of them.
         /// </summary>
         private void BuildCard(GraphBuilder builder, HeroOverviewPanel panel)
         {
@@ -563,14 +568,26 @@ namespace ES2Access.Screens
             );
             vtable.Sections = GraphNodes.Sections(() => HeroCards.Lines(it), tooltip);
             AgeWidgets.Point(vtable, rename, tooltip, card.AgeTransform);
-            Cells.Add(
-                _cells,
-                card.AgeTransform,
-                ControlId.Referenced(card.AgeTransform, Keys + "card"),
-                vtable
-            );
-            HeroCards.Buttons(_cells, card, Keys + "card");
-            Cells.EmitLinear(builder, _cells);
+            string key = Keys + "card";
+            ControlId id = ControlId.Referenced(card.AgeTransform, key);
+            ScrollIntoView.Anchor(vtable, card.AgeTransform);
+            HeroCards.Buttons(_cells, card, key);
+            List<TooltipChildren.Dossier> dossiers = HeroCards.Dossiers(card);
+            if (_cells.Count == 0 && dossiers.Count == 0)
+            {
+                builder.AddItem(id, vtable);
+                return;
+            }
+
+            builder.BeginGroup(id, vtable);
+            if (builder.IsExpanded(id))
+            {
+                object outer = TooltipChildren.Actions(builder, key);
+                Cells.EmitLinear(builder, _cells);
+                TooltipChildren.Emit(builder, key, dossiers, outer);
+            }
+
+            builder.EndGroup();
         }
 
         /// <summary>

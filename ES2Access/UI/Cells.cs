@@ -80,8 +80,12 @@ namespace ES2Access.UI
         ///
         /// Asked per cell per rebuild because a hint comes and goes with the player's research: it is one
         /// <c>GetComponent</c> on a widget the screen has already read several times over.
+        ///
+        /// Answers the cell it appended, for the caller that has more to say about it than the four
+        /// arguments carry - a card handing over the <see cref="Cell.Dossiers"/> that turn it into a
+        /// group. Ignoring the answer is the normal case.
         /// </summary>
-        public static void Add(
+        public static Cell Add(
             List<Cell> cells,
             AgeTransform widget,
             ControlId id,
@@ -105,7 +109,9 @@ namespace ES2Access.UI
             }
 
             ScrollIntoView.Anchor(vtable, widget);
-            cells.Add(new Cell { Widget = widget, Id = id, Vtable = vtable });
+            Cell cell = new Cell { Widget = widget, Id = id, Vtable = vtable };
+            cells.Add(cell);
+            return cell;
         }
 
         public static void Emit(GraphBuilder builder, List<Cell> cells)

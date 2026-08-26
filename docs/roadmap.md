@@ -43,9 +43,18 @@ belong in the files above.
 - **Gene Hunters' population badges**: `AssimilationReadyIcon` and `AssimilatedIcon` DO carry
   game sentences (measured 2026-08-24), contradicting the mod comment that says they carry
   none — fix and verify together on a Gene Hunters game (DLC flip makes one startable).
-- **"Tooltips" children (landed 2026-08-22) — remaining live checks only**: the hero detailed
-  card's four-symbol row (Academy is tutorial-gated on both fixtures), the construction line's
-  festival badge and the honor gauge's own dossier (both Hissho).
+- **"Tooltips" children (landed 2026-08-22) — remaining live checks only**: the construction
+  line's festival badge and the honor gauge's own dossier (both Hissho).
+- **A hero card's dossiers (`HeroCards.Dossiers`) — sighted on the RECRUITMENT popup only.**
+  The other three consumers await a live walk: the Academy's card strip
+  (`AcademyScreen.AddCard`), the hero-selection modal (`HeroSelectionScreen.AddCard`) and the
+  hero-inspection overview card (`HeroInspectionScreen.BuildCard`). The Academy is blocked on
+  every fixture AND on a turn-29 personal save, for a second reason beyond the tutorial gate:
+  `AcademyScreen.HeroCardsTable` has no children until the empire OWNS a hero, so the strip
+  draws no card to hang dossiers under. Two of the three also need a card the recruitment
+  prefab never draws - the health and assignment bands, whose plain-worded explanations become
+  nodes there - and the inspection card is the one whose two buttons moved INTO the group's
+  actions region, so its walk has to confirm Locate and Inspect still reach the player.
 - **One-per-row rollout (landed 2026-08-18) — remaining live checks only**: battle
   popups/screens (all code-only; incl. whether the battle popup speaks its title twice);
   the election wizard incl. the Political Trends label; a hangar with ships; a populated
@@ -121,8 +130,8 @@ belong in the files above.
   members with own fields (alliance update, diplomatic relation change, constellation
   event, deed completed); the 9 header-less line-class tables (bailiff + its totals
   footer, law cancelled, population change, trading blockade, treaty cancelled, relics ×2,
-  queue-empty, lost-roots connectivity); one-of-N semantics for hand-written choice popups
-  (hero recruitment, the hacking outcome picker) — these walks, plus the narrative-event
+  queue-empty, lost-roots connectivity); one-of-N semantics for the hacking outcome
+  picker — these walks, plus the narrative-event
   choice, now ALSO double as regression checks for the 2026-08-25 choice-card split (title
   announced, card text as buffer lines; all four families share `AddChoices`);
   PirateMissionReportNotificationWindow (fixture-blocked: its `Bind` needs a live
@@ -399,6 +408,14 @@ belong in the files above.
   Nebula" — shipped 2026-08-14, no fixture reveals one); the obliterator's armed-mode buffer
   readout with a real Behemoth (mechanism shipped and verified via take-system; the message
   branch — ETA, star odds, protection warning — is unsighted, no Behemoth fixture).
+
+- The balance-bar captions in a tooltip's ship/fleet stat block (`TooltipFeatures.Balance`) are
+  sighted on the `ShipDesignHeroRecruitement`, `ShipDesign` and `Ship` classes only. Still to
+  sight: the `Garrison` class (`PanelFeatureMilitaryPowerBalance`, reached from `FleetLine` /
+  `GarrisonsLabelButton` — neither the map's fleet group nor the military screen's fleet rows
+  draws it), and the `WreckedMothership` / `WreckedMothershipVampirilis` classes. All three go
+  through the same helper, so what is unsighted is the PREFAB question: whether those prefabs
+  draw a caption beside each bar, which would make the added one a double-name.
 
 - Type-ahead does not index PROBES: a probe under a collapsed system's branch is not
   findable by typing (fleets are — `TypeAheadScope` indexes fleets only). Surfaced when

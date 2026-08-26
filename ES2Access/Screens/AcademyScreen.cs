@@ -632,7 +632,9 @@ namespace ES2Access.Screens
 
         /// <summary>One hero's card. Enter is the card's own toggle, which is what the mouse clicks: the
         /// game records the choice, re-reads the action band and slides the strip so the picked card
-        /// centres (<c>OnHeroCardCb</c> :497-508).</summary>
+        /// centres (<c>OnHeroCardCb</c> :497-508). The pages the card draws no words for - affinity,
+        /// class, politics, the masteries - hang under it as its own nodes
+        /// (<see cref="HeroCards.Dossiers"/>).</summary>
         private ControlId AddCard(AgeTransform widget, int index)
         {
             HeroDetailedCard card = Card(widget);
@@ -665,8 +667,11 @@ namespace ES2Access.Screens
 
                 Show(who);
             };
-            ControlId id = ControlId.Referenced(hero, Keys + "card/" + index);
-            Cells.Add(_cells, widget, id, vtable);
+            string key = Keys + "card/" + index;
+            ControlId id = ControlId.Referenced(hero, key);
+            Cell cell = Cells.Add(_cells, widget, id, vtable);
+            cell.Dossiers = HeroCards.Dossiers(card);
+            cell.Key = key;
             return id;
         }
 

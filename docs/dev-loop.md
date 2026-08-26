@@ -99,7 +99,7 @@ The full contract of each is its own doc comment; this is the inventory.
 | `DevProbe.EndEdit(commit)` / `ArmCommit()` | Fallback levers for a text edit's endings when `POST /key` cannot run (locked desktop, unfocused game); real key events stay the primary route | `ES2Access/Dev/DevProbe.cs` |
 | `DevProbe.Notifications()` | The notification engine's live state in one answer — mapping count + owning assembly, patch owners per hooked method, the turn subscription, last-seen table size, and the influence sweep's `ground*` counters | `ES2Access/Dev/DevProbe.cs` |
 | `DevProbe.TooltipParity()` | The promised/misaimed/uncovered tooltip self-check on the FOCUSED screen, eight buckets (four findings, four context), aim read off `NodeVtable.PointsAt` rather than re-derived | `ES2Access/Dev/TooltipAudit.cs` |
-| `DevProbe.NotificationParity()` | The notification family's self-check on whichever popup is up — painted-but-unsaid, spoken-but-undrawn, mis-banded, promised/lost tooltips; also runs by itself on every popup (`/log?grep=parity`) | `ES2Access/Dev/NotificationAudit.cs` |
+| `DevProbe.NotificationParity()` | The notification family's self-check on whichever popup is up — painted-but-unsaid, spoken-but-undrawn, mis-banded, promised/lost tooltips, figures spoken with no caption; also runs by itself on every popup (`/log?grep=parity`) | `ES2Access/Dev/NotificationAudit.cs` |
 | `DevProbe.Coverage(wholeTree?)` | What the FOCUSED screen never declared (tooltips AND actions) against everything the engine draws; a COLLAPSED branch reads as uncovered, and `live` roots walk the windows BEHIND the screen too | `ES2Access/Dev/CoverageAudit.cs` |
 
 `POST /input` is `ModInput.Inject` — actions at the production dispatch point; it touches no
