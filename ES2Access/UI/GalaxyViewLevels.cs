@@ -700,6 +700,7 @@ namespace ES2Access.UI
                 }
 
                 camera.CenterOnPoint(point, damping);
+                Moved();
                 return true;
             }
             catch (Exception e)
@@ -708,6 +709,37 @@ namespace ES2Access.UI
                 return false;
             }
         }
+
+        /// <summary>
+        /// How many times the camera has been PUT somewhere by something other than the galaxy page's
+        /// own camera rule - the game leading the player to a place, the inspect cell sweeping, a
+        /// landing sliding across open sky.
+        ///
+        /// The page remembers where it last sent the camera and does nothing at all when asked for that
+        /// place again (<c>GalaxyHudScreen.FollowPlace</c>); a move by anybody else leaves that record
+        /// describing a picture the player is no longer looking at, and the record then swallows every
+        /// later attempt to come back in. So each such move is COUNTED here and the page's record
+        /// carries the count it was written at: a record from before the last move is simply not
+        /// believed. One number rather than a null at each site, because the sites are in three files
+        /// and half of them are static.
+        ///
+        /// Deliberately not counted: the ZOOM keys, the mouse wheel and the drag. A zoom the player made
+        /// by hand is theirs to keep for as long as they go on reading the same place (owner ruling
+        /// 2026-08-23), and counting it here would re-snap the camera on their next arrow key.
+        /// </summary>
+        public static int Moves
+        {
+            get { return _moves; }
+        }
+
+        /// <summary>Something that is not the page's camera rule has moved the camera
+        /// (<see cref="Moves"/>). Called at the site of the move, after it has been made.</summary>
+        public static void Moved()
+        {
+            _moves++;
+        }
+
+        private static int _moves;
 
         /// <summary>
         /// Bring the camera all the way in on a node, to <see cref="OrbitalZoomStep"/> - the step at

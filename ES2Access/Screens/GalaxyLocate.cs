@@ -185,6 +185,12 @@ namespace ES2Access.Screens
 
         private static void RememberEntity(IGameEntityWithGalaxyPosition entityToFocus)
         {
+            // Counted before the suppression gate and on both overloads: SUPPRESSED says this reveal is
+            // not a place to send the CURSOR to, never that the camera stayed still, and the galaxy
+            // page's record of where it last sent the camera has to stop believing itself either way
+            // (<see cref="UI.GalaxyViewLevels.Moves"/>). The nested pair of calls counts twice, which
+            // costs nothing: only equality with the count is ever asked.
+            UI.GalaxyViewLevels.Moved();
             if (Suppressed || entityToFocus == null)
             {
                 return;
@@ -195,6 +201,7 @@ namespace ES2Access.Screens
 
         private static void RememberPosition(Vector3 positionToFocusOn)
         {
+            UI.GalaxyViewLevels.Moved();
             // An entity captured this frame is the same request seen from further out: the entity
             // overload calls this one. Keep the richer half.
             if (Suppressed || (_wanted != null && _wanted.Entity != null && ThisFrame(_wanted)))

@@ -357,15 +357,38 @@ and ship transfer. Index and charter: `README.md`.
   `GalaxyViewLevel_SystemManagement`, `FleetsScreen.Shown` = false), and the cursor is the other
   half of the gate. So the panel belongs to the galaxy page alone, and the selection is dropped by
   the visit rather than kept under the system page.
+- **A full screen drawn over the map takes the panel with it, silently.** Opening any of them
+  force-swaps to the plain `GalaxyCursor` and clears the fleet selection
+  (`GuiManager.cs:1783-1795`), so the panel closes while the mod's galaxy page is off the stack —
+  the close frame its watch would have answered on never happens under that page. Measured
+  2026-08-26: cursor on the panel's fleet line, show then hide
+  `MilitaryScreen`, and the cursor came back on an unrelated mid-lane fleet's top-level row three
+  stops away. The mod answers it by catching the release at the pop and seating on the way back
+  (`GalaxyHudScreen._releasedAcross`), which is the same landing letting the fleet go gives.
 
 
-## The targeting-cancel fleet swap — known issue, deliberately unfixed
+## The targeting-cancel fleet swap — FIXED 2026-08-26
 
-**Status (owner ruling 2026-08-26): to be fixed — see `fleet-panel-focus-handoff.md` at
-the repo root**, which supersedes the 2026-08-20 leave-at-parity ruling and carries the
-target focus model and the remaining measurement work. The mod still does nothing about
-this today. Everything here was
-measured live on 2026-08-20 (fixture `[Midgame] quests fleets`, turn 3).
+**Status: fixed** (owner ruling 2026-08-26 superseded the 2026-08-20 leave-at-parity
+ruling). Two pieces, both shipped:
+
+- `ES2Access/Screens/ProbeCancelSelection.cs` — a Harmony prefix+postfix pair on
+  `ProbeLaunchingCursor.SwitchToGalaxyCursor`. The prefix catches `ProbeOriginFleet`
+  (selecting the slot swaps the cursor, and the swap's deactivate nulls that property
+  synchronously — measured 2026-08-26: a postfix alone reads null), the postfix re-selects
+  the fleet through `FleetsScreen.SelectIdleFleet`. It repairs the MOUSE's cancel as well
+  as the keyboard's, and because every ending of the mode funnels through that one method
+  it also covers the fleet being teleported (`ProbeLaunchingCursor.cs:194-197`) and the
+  last charge being spent on a successful launch (`:165-174`). It stands down where the
+  game does: no visible docking slot holding the fleet means no panel is coming, and a
+  fleet remembered there would be selected at some later unrelated showing.
+- `GalaxyHudScreen.SeatAfterProbeMode` — the cursor's half. When the mode ends while the
+  cursor stands among the bearings (the nodes that vanish with it), it is seated on the
+  acting fleet's own map row through the same `SeatOnFleet` every fleet-panel handover
+  uses; a cursor on any surviving node is left alone.
+
+Everything below was measured live on 2026-08-20 (fixture `[Midgame] quests fleets`,
+turn 3) and is kept because it is the mechanism, not the symptom.
 
 ### Symptom
 
@@ -416,29 +439,31 @@ they were commanding.
   click advances the garrison cycle four times — a no-op at a two-fleet system. The
   keyboard's Enter is the only reliable per-fleet selection at a dock.
 
-### Fix options, when the day comes
+### Why the patch is the probe cursor's alone
 
-1. **Mod-side re-select on the mod's own cancel path**: after "Target selection
-   ended", re-select the actor via `FleetsScreen.SelectIdleFleet(fleet)` or
-   `SelectGarrisonRadioMode(fleet)` (both public, `FleetsScreen.cs:672,:742`), using
-   `ProbeLaunchingCursor.ProbeOriginFleet` (public getter). Keyboard-only divergence
-   from the mouse.
-2. **PREFERRED (owner-indicated): Harmony postfix on
-   `ProbeLaunchingCursor.SwitchToGalaxyCursor`** re-selecting the origin fleet —
-   fixes keyboard AND mouse in one place, i.e. repairs the game rather than diverging
-   from it. Cautions for the implementing stage: it changes behavior sighted players
-   currently see; check the OTHER targeting cursors' cancel paths for the same shape
-   (only the probe cursor was measured — each cursor's `SwitchToGalaxyCursor` /
-   cancel needs its own look before generalizing); Harmony ids are unique-per-load as
-   always; verify with the GUID probe of `FleetsScreen.SelectedGarrisons`, never the
-   spoken panel name alone.
-3. **Announce the mismatch** instead of fixing it ("panel opened for a different
-   fleet"). Weakest option: the owner ruled the current announcement sufficient.
+`SwitchToGalaxyCursor` exists on `ProbeLaunchingCursor` and on `CoordinationRequestCursor`
+(an unrelated implementation) — there is no shared base method to patch, and no other
+targeting cursor re-selects anything on cancel: `ObliteratorFireCursor`'s cancel and
+confirm both just `ChangeCursor(typeof(GalaxyCursor))` (`:69-90`), as does the shared Exit
+branch (`GuiManager.cs:2115-2120`). None of the others reopens the panel, so there is
+nothing to generalize.
 
-### Repro
+### Repro, and what was proven
 
 `[Midgame] quests fleets`: `1st Patriots Navy` (GUID 1298, 2 probes) and
 `1st Heroes Navy` (GUID 1296) both orbit Dusay (node 535). Select Patriots, arm
-Launch Probes, press Escape (or Backslash through the mod) — the panel reopens for
+Launch Probes, press Escape (or Backslash through the mod) — the panel reopened for
 Heroes. GUID oracle: `FleetsScreen.SelectedGarrisons` (measured live 2026-08-20;
-transcripts not preserved in the repo).
+transcripts not preserved in the repo; that save is now gone —
+`test-recipes/fixtures.md`). The fix WAS watched undoing the swap itself (verified
+2026-08-26, at a two-fleet slot built in-session by splitting a two-ship fleet with the
+panel's own Create): armed for the fleet the positional default would NOT pick, the
+cancel re-selected the actor — `FleetsScreen.SelectedGarrisons` held the actor's GUID,
+and the private `FleetsScreen.garrisonToSelectAtNextShowing` read null straight after the
+game's own slot select and the actor straight after the postfix, in one `/eval`
+statement. With the patch removed (`ProbeCancelSelection.Remove()` from `/eval`) the same
+run reproduced the swap — the positional default's fleet came back — and `Install()`
+restored the fix; real-key Escape passes matched the `/eval` cancels. The cursor half
+held its pair: cancelled from inside the launch group the cursor seated on the actor's
+map row, cancelled from a surviving node it did not move while the selection still
+swapped to the actor.

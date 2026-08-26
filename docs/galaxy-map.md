@@ -576,6 +576,36 @@ outposts and the influence/colonizability facts live in `planets.md`; fleets and
   the value is still exactly right for is the two questions it already answers: "is the orbital-card
   surface up" and `Collapse`'s "is the camera still inside the branch I am closing".
 
+- **Selecting a docked fleet frames the FLEET, not its star — close enough to look like nothing
+  happened and far enough to take the orbital cards away.** `EndTurnWindow.SelectIdleFleet` (the
+  route the mod's own fleet nodes take for a parked fleet) reveals the fleet, and the reveal centres
+  the camera on the fleet's docking slot. Measured 2026-08-26 on a docked fleet at an outpost:
+  the camera moved from the star's own snap target (67.356, -31.546) to (65.613, -29.908) — 2.4
+  units — at the SAME zoom step 12. That is outside `DistanceMinToCatchFocusOnNode`, so
+  `FocusedStarSystemNode` went null, `PlanetLabelsWindow_SystemOrbital` hid, and with the cards went
+  every planet row's action child: the row still said "1 curiosity" (the label knows) while the
+  curiosity BUTTON had no node at all. The same picture — right zoom step, right neighbourhood, no
+  focused system — is what any reveal aimed at a thing standing NEAR a star leaves behind.
+- **Mod policy (2026-08-26): a camera move by anybody else makes the page's record unbelievable.**
+  The record above is what makes the camera rule cheap ("already showing it, move nothing"), and it
+  is a record of what the RULE did, so anything else that moves the camera leaves it describing a
+  picture nobody is looking at — and it then swallows every later attempt to come back in on that
+  place. Reality-polling is not the fix (a per-frame "is the camera really there" assert re-snaps
+  after a zoom-out by hand, which the ruling of 2026-08-23 protects). So every such move is COUNTED
+  (`GalaxyViewLevels.Moved`, called from the three reveal patches — suppressed or not, since
+  suppression only means "not a place to send the cursor" — and from `CenterOn`), and the page's
+  record carries the count it was written at: a record from before the last move is not believed.
+  Deliberately uncounted: the zoom keys, the wheel and the drag, which is exactly the hand-zoom the
+  ruling keeps. The bug this fixes was owner-reported: select a docked fleet, Escape, arrow onto a
+  planet, and its curiosity was unreachable for the rest of the visit.
+- **Mod policy (2026-08-26): the cursor being PLACED is what asks the camera, wherever the placement
+  comes from.** A screen seating the cursor — a fleet-panel handover, a landing, the answer to a
+  reveal — leaves the player reading that place exactly as their own arrow key would, so it goes
+  through the one camera rule and the record decides (stale after the game framed the fleet: the
+  camera comes back in; fresh: the hand zoom survives). That makes it the Escape itself, not the
+  arrow after it, that brings the camera back — including where the player selected the fleet from
+  its own row and the seat lands where the cursor already is.
+
 - **The orbital labels window binds itself ONCE, as it is SHOWN — a camera that crosses between two
   systems in one frame leaves it drawing the one it left.** `PlanetLabelsWindow.OnBeginShow` is the
   only place `StarSystemNode` is assigned (from `FocusedStarSystemNode`; `OnBeginHide` nulls it), and

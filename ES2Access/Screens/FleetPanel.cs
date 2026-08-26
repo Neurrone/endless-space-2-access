@@ -113,6 +113,15 @@ namespace ES2Access.Screens
         /// already empty - the cursor swap that closes it is the same thing that clears it.</summary>
         private Fleet _held;
 
+        /// <summary>The fleet the panel is up FOR right now, or null when it is not up - for a page
+        /// about to be POPPED with the panel still open, which is the one case where the close frame
+        /// never arrives and <see cref="Update"/> can never hand the fleet over
+        /// (<see cref="GalaxyHudScreen.OnPop"/>).</summary>
+        public Fleet Held
+        {
+            get { return _held; }
+        }
+
         // ---- the passive watch ----
 
         /// <summary>Start the watch from what is on the screen now, so arriving on a page with a fleet
