@@ -191,14 +191,22 @@ namespace ES2Access.Screens
             }
         }
 
-        /// <summary>The fleets the panel has just been opened for, in the game's own names.</summary>
+        /// <summary>
+        /// What the panel has just been opened for, in the game's own names.
+        ///
+        /// Everything the cursor is holding, not just what an order would move: the panel opens for a
+        /// foreign empire's fleet and for a system's hangar exactly as it does for the player's own
+        /// ships, and naming only the movable ones left those two openings announced with no name at
+        /// all. A hangar names itself after the system it belongs to (<c>Hangar.LocalizedName</c>,
+        /// "Hangar (Sabel)"), which is the same system name the panel's own line draws.
+        /// </summary>
         private static string SelectionText()
         {
-            List<Fleet> fleets = FleetOrders.Selected();
+            List<Garrison> garrisons = FleetOrders.SelectedGarrisons();
             MessageBuilder message = new MessageBuilder();
-            for (int i = 0; i < fleets.Count; i++)
+            for (int i = 0; i < garrisons.Count; i++)
             {
-                message.ListItem(fleets[i].LocalizedName);
+                message.ListItem(garrisons[i].LocalizedName);
             }
 
             return message.Build();

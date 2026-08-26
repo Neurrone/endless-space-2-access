@@ -109,6 +109,44 @@ namespace ES2Access.UI
         }
 
         /// <summary>
+        /// Everything the map's cursor is holding, whoever owns it: the player's own fleets, another
+        /// empire's or a minor civilization's, and a system's HANGAR, which is a garrison the game lets
+        /// the cursor hold but never a fleet. <see cref="Selected"/> answers the narrower question of
+        /// what an order given now would move; this one answers what the player has just clicked on,
+        /// which is what the fleet panel has been opened for.
+        /// </summary>
+        public static List<Garrison> SelectedGarrisons()
+        {
+            List<Garrison> found = new List<Garrison>();
+            try
+            {
+                IGuiSelectedGarrisonsRepositoryService repository =
+                    Services.GetService<IGuiSelectedGarrisonsRepositoryService>();
+                if (repository == null)
+                {
+                    return found;
+                }
+
+                ReadOnlyCollection<Garrison> garrisons = repository.Garrisons;
+                for (int i = 0; i < garrisons.Count; i++)
+                {
+                    Garrison garrison = garrisons[i];
+                    Fleet fleet = garrison as Fleet;
+                    if (garrison != null && (fleet == null || !fleet.IsDestroyed))
+                    {
+                        found.Add(garrison);
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("fleets: reading the held garrisons threw: " + e);
+            }
+
+            return found;
+        }
+
+        /// <summary>
         /// The player's own fleets that an order given now would move.
         ///
         /// Selecting a fleet does not put the game into a mode: it changes what the map's cursor is
