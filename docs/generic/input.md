@@ -203,9 +203,8 @@ caused a shipped bug on ES2 before the rule was recognized:
 
 ## Suppression patches under hot reload
 
-Harmony patches on the input path must survive the mod's reload cycle: create the Harmony
-instance with a **unique-per-load id** (a fixed id lets a stale unpatch strip a newer load's
-patches) and unpatch-self on teardown (see [hot-reload.md](hot-reload.md)). Expose the patch
+Harmony patches on the input path must survive the mod's reload cycle: unique-per-load id,
+unpatch-self on teardown — [hot-reload.md](hot-reload.md)'s Harmony rule. Expose the patch
 state — per-target prefix count and owner id — on the dev server's status route: after a
 reload, the count must still be exactly one and the owner id must be the *new* load's. A
 count of zero looks like a test result, not a failure: navigation still works while every key

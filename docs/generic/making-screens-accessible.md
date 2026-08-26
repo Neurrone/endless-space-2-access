@@ -53,8 +53,8 @@ carry its text from the prefab, so a tooltip-fed readout gated on anything but t
 drawn flag ships a false statement about every healthy object. Ask drawn-ness of the CHAIN
 with the engine's own child test — a container retires without touching what it holds — and
 start the walk below the screen's root, because the root itself may animate. Preserve it
-exactly: no mod separators or punctuation inserted (multi-line game text joins with a space,
-not a list comma — worked examples in [localization.md](localization.md)). Conversely, invent nothing the game does
+exactly: no mod separators or punctuation inserted ([localization.md](localization.md) has
+the joining rule and its worked examples). Conversely, invent nothing the game does
 not show: no placeholder nodes for empty states, no spoken position text where the game shows
 dots — a stop with nothing in it does not exist that frame. "Invent nothing" has a companion:
 **say everything the game always draws.** The discriminator is *always drawn* vs *revealed on

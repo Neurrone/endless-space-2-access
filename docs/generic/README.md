@@ -56,5 +56,4 @@ book, and store divergence.
 ## Planned (written once a game proves them)
 
 - `world-navigation.md`'s remaining tile-world pieces — tile-signature skip navigation and
-  spatial audio cues (the graph-world half, the categorized scanner, and the free
-  inspection cursor are written, proven by ES2's galaxy map).
+  spatial audio cues.

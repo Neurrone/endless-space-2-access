@@ -69,8 +69,8 @@ For code that runs every frame (pumps, watchers, claim checks):
   text-property lookup per component type). This is hot-reload-safe as long as the cache
   lives on the same side of the reload boundary as the types it describes: mod-side caches of
   game types are the normal case (game assemblies never reload, and the cache dies with the
-  mod assembly and rebuilds once per load). What must never exist is a *host*-side cache of
-  mod types or delegates — after a reload it would serve stale types from the dead assembly.
+  mod assembly and rebuilds once per load). The converse — a *host*-side cache of mod types
+  or delegates — is banned by [hot-reload.md](hot-reload.md)'s teardown checklist.
 - Watch hidden allocators: `foreach` over some non-generic collections, boxing value types
   into `object`, `params` arrays, `Enum.ToString`.
 - **Anything behind a live announcement part runs at 60 Hz on the focused control.** A live

@@ -7,7 +7,8 @@ Index and charter: `README.md`.
 
 - **On the technology wheel, `Visible` is a CAMERA answer.** `TechnologyItem2.UpdateVisibility`
   clears it for anything off screen, so enumerate by `VisibleByDefinition` (107 of 385 in the
-  fixture) and move the camera before expecting a tooltip; the drawn LINK arcs are the opposite —
+  fixture — of which only about **11** read `Visible` at any one pan position) and move the
+  camera before expecting a tooltip; the drawn LINK arcs are the opposite —
   `TechnologyScreen.Refresh` sets `Visible` on exactly the arcs that apply to this empire, so that
   flag IS the game's own link filter (22 of 162 at turn 2).
 - **The markers on the wheel's rings are DEEDS, and their state is a colour.**

@@ -54,7 +54,7 @@ Architecture: `ES2Access.Loader` is the actual BepInEx plugin and never reloads 
 - Avoid redundant null checks and comments that do not add information.
 - Prefer deterministic game actions over simulated input where the game exposes a reliable API.
 - Name behavior after what the player can do or perceive, not after incidental implementation details.
-- All speech goes through `PrismSpeech.Speak(MessageBuilder)` from the per-frame pump in `Plugin.Update`. Harmony hooks and watchers only set state or enqueue — they never speak.
+- All speech goes through the `PrismSpeech` instance's `Speak(MessageBuilder, interrupt)` from the per-frame pump in `Plugin.Update`. Harmony hooks and watchers only set state or enqueue — they never speak.
 - `ES2Access/Core/` compiles against the BCL only (no Unity, BepInEx, or Harmony) so it stays unit-testable off-engine; `ES2Access.Tests` build-enforces this by compiling `Core/` sources directly.
 - Mod-authored spoken phrases come from `ModStrings` keys (translations in `ES2Access/locale/<language>.json`, named after the game's own language names; `english.json` is the template). Never inline English literals in speech, and keep each translatable template a complete phrase — don't glue fragments that grammar would need to inflect. Game-authored text arrives already localized via `Gui.Localize`. `MessageBuilder` pulls its separators and fraction/quantity templates from `ModStrings`.
 

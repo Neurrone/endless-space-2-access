@@ -244,7 +244,7 @@ belong in the files above.
 - `DevProbe.Tooltip()` answered `{"error":"No token to close. Path ''."}` on the research
   wheel's play-deck child (2026-08-22); the cause was never chased, and the workaround is
   the one retained in `docs/test-recipes/galaxy-map.md`.
-- Panel-feature components are largely unjudged: of the 119 classes, seven have typed readers
+- Panel-feature components are largely unjudged: of the 149 classes (`gui.md`), seven have typed readers
   and three more were source-checked and cleared; the rest fall to the default reader, which
   names itself in the log and in `DevProbe.Tooltip().defaultRead`. The next play session's
   `defaultRead` list is the work queue, not a desk review.

@@ -84,10 +84,9 @@ Cards (unit portraits, planet cards, item tiles) are the cleanest instance of "t
 is where the rest of the control lives". A grid of such cards linearises to one row per
 card in drawn order — the roster-grid pattern in [ui-navigation.md](ui-navigation.md).
 This shape sits in deliberate tension with "say everything the game always draws"
-([making-screens-accessible.md](making-screens-accessible.md) §0): a card's face IS
-always-drawn content routed to silence. How much of it earns a spoken mention is the
-OWNER'S ruling, made once for the whole mod and recorded here, never re-litigated per
-control. This mod's owner ruled for silence plus convention — the readout advertises
+([making-screens-accessible.md](making-screens-accessible.md) §0). How much of a card's face
+earns a spoken mention is the OWNER'S ruling, made once for the whole mod and recorded here,
+never re-litigated per control. This mod's owner ruled for silence plus convention — the readout advertises
 nothing, not even that the buffer has substance, because on content-dense screens a
 near-constant cue carries no information, and the player learns to check the buffer on
 every control.

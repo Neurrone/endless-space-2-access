@@ -1,8 +1,8 @@
 # UI navigation — the graph engine
 
 The keyboard-navigable accessible UI layer: how a screen becomes something a blind player
-walks with arrows and hears. Design lineage: Factorio Access's key-graph → Tanglebeep →
-wotr-access's graph engine, ported here (BCL-pure, unit-tested — 100+ offline tests came with
+walks with arrows and hears. Design lineage: Factorio Access's key-graph → Tanglebeep
+(`tangledeep_access`'s plugin) → wotr-access's graph engine, ported here (BCL-pure, unit-tested — 100+ offline tests came with
 the port) and proven on ES2's main menu. The engine is game-agnostic and copied as-is; a thin
 per-game adapter binds it to the game's widgets, input, and speech.
 
@@ -77,7 +77,7 @@ which no dump reveals. Key such lines on the game's *data* object, never the wid
     not the fix.
   - **`PushContext`** adds non-focusable labeled levels (spoken once on entry via the path
     diff). Its id derives from its label, so sibling contexts sharing a drawn caption
-    (ES2's lobby: seven competitor slots all captioned "AI") silently collapse in the path
+    (a lobby's competitor slots, all captioned with one word) silently collapse in the path
     diff — disambiguate the label or key when the game repeats captions. A context is
     announced and never focused, so it is also nowhere to PUT words: a drawn heading the game
     attached an explanation or a tooltip to must land on a node — its own, or the single
@@ -120,9 +120,9 @@ which no dump reveals. Key such lines on the game's *data* object, never the wid
   different verbs — the risk of binding them together is that whichever information tier
   the other zoom level shows becomes unreachable. Binding a camera move to expand is
   therefore fine exactly when the other tier remains reachable through an explicit
-  zoom-out key with the branch still open (ES2: expanding a system zooms in, Backslash
-  zooms back out, and collapse un-zooms only while the camera is still on that system —
-  owner-ruled); where no such key exists, keep the camera on its own explicit control. And an
+  zoom-out key with the branch still open — and collapse un-zooms only while the camera is
+  still on the thing it went in for; where no such key exists, keep the camera on its own
+  explicit control. And an
   expansion that acts (camera, selection) must not be auto-undone when it turns out empty.
 - **`GraphAnnouncer`** — composes speech by **diffing the old and new focus paths**: the
   common ancestor prefix stays silent, newly entered levels read outermost-first, duplicate
@@ -279,8 +279,8 @@ which no dump reveals. Key such lines on the game's *data* object, never the wid
   be trusted on its own**: containers hide whole ancestor chains while the child still
   reports visible, and pooled list containers do the reverse — surplus recycled children
   stay "visible" with zero alpha, so a flag-trusting sweep declares rows the player cannot
-  see (example: ES2's competitor-slot pool kept an eighth slot alive this way after the
-  count came back down). Zero alpha is only one retirement style: pools also park surplus
+  see — a slot pool keeps a surplus row alive this way after the count comes back down.
+  Zero alpha is only one retirement style: pools also park surplus
   children fully visible with stale content arranged outside the parent's extents, and retire
   rows by fading. So take counts and enumeration from the data the game BOUND, never from the
   widget pool, and gate every per-widget read — and the AIM of a tooltip pointer — on effective
@@ -289,8 +289,8 @@ which no dump reveals. Key such lines on the game's *data* object, never the wid
   the ancestor walk *plus* whatever render
   test the engine itself honours (alpha, clipping). And in a pannable or zoomable surface
   there is a third answer that is neither: **a cull** — `Visible` recomputed per frame from
-  the screen rect, meaning "where the camera looks", not "what exists" (ES2's tech wheel
-  culls every off-screen node; 11 of 107 read visible at any pan position). Enumerate such a
+  the screen rect, meaning "where the camera looks", not "what exists" — a wheel or lattice
+  culled to the viewport reads a handful of its nodes visible at any pan position. Enumerate such a
   surface by the model's own would-be-drawn flag, never the drawn one — and remember a
   renderer-composed tooltip cannot exist until the camera has brought its widget on screen,
   so reading one is a camera move plus a hover, in that order. Declare what is actually drawn — walk
@@ -317,6 +317,8 @@ which no dump reveals. Key such lines on the game's *data* object, never the wid
   — gate such a control on the game's own can-exist predicate instead.
 
 ## Patterns proven since the port
+
+### Announcing change nobody focused
 
 - **Passive announcements** (things that change while no control is focused — loading
   progress, a page the game advances, the turn number): a per-frame watcher — the screen's own
@@ -345,6 +347,8 @@ which no dump reveals. Key such lines on the game's *data* object, never the wid
   the first value it ever sees, because a value that outlives every screen has no arrival to
   baseline against; and silent while the value is still settling, so a camera flying between
   rungs does not read out the ones it passes through.
+### Screen lifetime and layer placement
+
 - **Arriving and standing down are different questions.** Arrive only when the widget has
   finished animating in (its labels may still hold the previous item's words) — and
   arrival also gates on **enablement**, not just visibility: an engine that disables the
@@ -354,8 +358,8 @@ which no dump reveals. Key such lines on the game's *data* object, never the wid
   player's own *delegated* key — an exit key the mod let through that commits and hides in
   one frame; polling shown-state covers that for free, watching only the mod's own key
   handling does not. **And name the handover gap**: between the opener standing down and
-  the new screen's arrival gate passing there is an interval — frames, not instants (~4
-  frames measured on ES2's improvements modal) — where NO screen is focused and the mod is
+  the new screen's arrival gate passing there is an interval — frames, not instants — where
+  NO screen is focused and the mod is
   deaf. Keys the mod consumed are protected across it by the input layer's release latch
   ([input.md](input.md)); keys it did not consume reach the game, so design modal opens
   knowing the interval exists rather than discovering it as a bug. But never
@@ -425,6 +429,8 @@ which no dump reveals. Key such lines on the game's *data* object, never the wid
   collapsed-help bar, a persistent HUD fixture) is declared by the pages whose LAYOUT owns
   it — measured by where the game places the control, not by where its pixels remain
   visible: an overlay drawn over a modal is not thereby part of the modal's tab order.
+### Rows, columns and tables
+
 - **Columns only where the column is a fact of the game's data; everything else is one
   node per row.** The default for any band the game draws side by side — a window's bottom
   row of buttons, a strip of filter toggles, a grid of stat figures, a grid of cards
@@ -474,6 +480,8 @@ which no dump reveals. Key such lines on the game's *data* object, never the wid
   the column filter silently hides it (a sort-header band is findable only by its first
   column otherwise). The
   drawn-header pairing is the adapter's job, by the game's own column names, never by index.
+### Surfaces that move under the cursor
+
 - **Minimized is not gone**: when the game collapses a panel to a title bar rather than
   hiding it, hand the keyboard to the surface beneath (the collapsed screen stands down) and
   declare the leftover bar's controls where they are drawn — as a stop on the screen below
@@ -501,6 +509,8 @@ which no dump reveals. Key such lines on the game's *data* object, never the wid
 - **When one screen swaps whole PAGES in place**, announce the new page and blur the cursor so
   seating re-runs: reconciliation's nearest-survivor tier would otherwise keep a node of the
   old page alive and read its business over the new one.
+### Seating the cursor deliberately
+
 - **A programmatic landing — a locate, a scanner jump, a deferred seat — must survive more
   than one frame**: a collapsed branch declares no children, so the request opens one level
   of ancestry per build, found from the id's own path, and dies two ways — at once when
@@ -514,6 +524,8 @@ which no dump reveals. Key such lines on the game's *data* object, never the wid
   consecutive frames before it commits**: a container's children can arrive over several
   frames, and a positional id silently changes owner — the announcement is right for the
   frame it was made and wrong one frame later, with nothing in any transcript to show it.
+### Reaching past what is modelled
+
 - **A control the game wires to a screen you haven't modelled yet** is a named tradeoff,
   decided explicitly and reported: declare it read-only (the player loses an affordance but
   hears no dead end), or declare the action and accept that it opens a silent screen until
@@ -523,43 +535,6 @@ which no dump reveals. Key such lines on the game's *data* object, never the wid
   player cannot diagnose. And the "silent screen" arm has a cheap floor — a **minimum pass**
   where the page names itself on arrival, reads its drawn controls, and Escape is verified —
   so even a deferred screen is never an entry into silence.
-
-## The spatial cursor — when the tree cannot answer "what is over there"
-
-A tree of a map answers "what things exist and what is next to which"; it cannot answer
-the question a sighted player settles at a glance — what lies in *that* direction, *that*
-far away, whether or not anything is there. Two games (Songs of Conquest's adventure map,
-ES2's galaxy — `soc-access` `TileSkipNavigator.cs`, ES2 `Core/UI/InspectGrid.cs` +
-`CellSkip.cs`, both unit-tested off-engine) independently converged on the same answer: a
-**cell cursor** — a square of map the arrows move, speaking position first and contents
-second. The rules both arrived at:
-
-- **The cell is a mode OF the map widget, not of the screen.** Off the map stop it
-  suspends (keeping place, size and its drawn square) rather than ends — a mode that
-  claims arrows screen-wide takes the screen's sliders with them. Anything that removes
-  the map ends the mode, and says so.
-- **Odd sizes only, step = the cursor's own size.** The centre stays a whole coordinate
-  pair and the cells tile: no strip of map is skipped or heard twice. An empty cell
-  speaks its coordinates and stops — the pair alone IS "nothing here", and a word for
-  empty would be most of what a sweep says.
-- **Absence the sighted player reads from a wash of color must be spoken explicitly.**
-  Fog-of-war is the type case: "nothing there" and "nobody has ever seen there" are
-  opposite answers that sound identical as silence.
-- **Refusals split by intent**: a key pressed speculatively mid-sweep (grow past the
-  ladder's end, act on an empty cell) refuses silently-but-consumed; a deliberate move
-  that cannot happen (off the map's edge) refuses with a word.
-- **Skip-to-the-next-difference** (Shift+arrow in both games): compute a **signature** of
-  the origin cell — the identity set of everything the cell's reading names, plus
-  bucketed states for continuous properties (three-state fog, never the raw count: a raw
-  count stops at every step along a gradient), coordinates excluded — then step cell by
-  cell and land on the first whose signature differs **from the origin**, not from the
-  predecessor. Nothing different all the way out lands on the last in-bounds cell; not
-  one step possible is the edge refusal. Say how many alike cells were passed, then read
-  the landing.
-- **Travel by contents** (jump to a lane's end, a crossing unit's destination): act only
-  when the answer is unambiguous, refuse silently otherwise, never exit the mode on a
-  refusal — and derive the answer only from what the map DRAWS for the player, never
-  from sim data, or the key leaks other players' information.
 
 ## Type-ahead search
 
@@ -598,92 +573,6 @@ once from WotR source and now written down so the next game doesn't have to:
   always-declared becomes hideable, and a scope that does not grow a range for it loses that
   tier from search with nothing in any dump to show it.
 
-## Gesture parity and child screens
-
-The activation model is **mouse parity**: every gesture is one the game defines, and the
-mod invents none. (ES2 Access shipped an action-menu system first and then deleted every
-menu; the doctrine below is what replaced it, and it costs less than it looks — the game
-already has an answer for each case.)
-
-- **The activation key is the game's left click** on the focused thing. Where the click is
-  destructive, the guard is the game's OWN confirmation flow (funnelled through the
-  message-box screen) — never a mod menu in front of the click. A click the game answers
-  with silence stays silent on the keyboard too — but find where the answer LANDS before
-  calling it silence: a refusal often surfaces away from the control, in a shared failure
-  banner, a toast or a status line, and that text is the click's answer.
-- **A two-step targeting mode has a HOVER half, and the keyboard has no hover**: the mouse
-  is shown the consequences of an irreversible order before committing. Replay the mode's
-  own enter handler at the focused target and read back what it wrote — driving only the
-  click is functionally complete and informationally blind.
-- **A control's several actions are its DRAWN buttons, modeled as child nodes** — declared
-  while visible, refusing (reason in the tooltip part) while disabled, absent while the
-  game hides them. Two rules follow: a container with no drawn actions is a LEAF, never an
-  expandable dead end — and so is one whose only child repeats the parent's own words or is
-  switched off in the game's own settings, since an expansion that tells the player nothing
-  new is the empty group wearing a child; and a refused action is a declared-refusing node,
-  not a missing one.
-- **The alternate-activation chord is the game's modifier-click variant** where one exists
-  — replay the click and let the game's handler read the physically held modifier — and
-  nothing where the game has none. Wire it ONCE, at the single call every node's activation
-  passes through: a per-node chord is defeated wherever the mod gates that node's click on
-  its own availability test, and a control the game leaves enabled precisely so a modified
-  click can explain itself then reads "unavailable" and swallows the very click the chord
-  was meant to deliver.
-- **A right-click command key** mirrors the game's right-click at the focused thing, given
-  the current selection (move orders, zoom restore); its availability is computed on the
-  press, not per frame.
-- **Moving things — reorder, transfer — is the game's DRAG, modeled as a keyboard drag**
-  (`src/graph-ui/Carry.cs`): one key holds (pick up / swap on a new source / put back on
-  its own source), the activation key drops on a compatible target (overriding that
-  target's click only while dragging; drop on the held item's own row is a cancel, matching
-  the game's drag), Escape cancels — a mod-owned MODE takes the back key like a mod-owned
-  surface does ([input.md](input.md)). Validate and commit through the game's drag path
-  including its confirmations, and **read the game's drag handler for the landing rule** —
-  which index `OnDragCompleted` posts and what the collection's `Move` does with it is the
-  one thing an implementer guesses wrong. Where the mouse's gesture is "release over
-  NOTHING" (drag out of the container to remove), there is no widget to drop on: declare an
-  always-visible mod-authored drop-target node at the end of the container, labelled as a
-  complete instruction, reading as a plain line while nothing is carried — discoverable
-  before it is ever needed. **Say what the drag can do here, from the vtable, in the
-  announcer**: a source appends "draggable" while nothing is held, a target appends "drop
-  target" while something it takes is held, and a node that is both says only the drop word
-  mid-drag. Derive both where the tooltip indication is derived, never per screen. The source
-  word asks the pick-up command itself (which is why that command must be a pure QUERY), so
-  it is never said on an empty slot; and a target family where some members refuse needs an
-  acceptance predicate consulted by the INDICATION only — the drop still goes through the
-  game's own check, whose refusal carries the game's reason for a player who presses anyway.
-- **Child screens remain** (`PushChild`/`RemoveChild`, a single linear chain): the
-  native-popup wrapper (game-focus handoff, deferred close to dodge the engine's Escape
-  race) and the confirmation screen still need them. Per-screen state isolation returns
-  focus to the opener for free. What no longer exists is the action-menu use of them.
-
-## The confirmation-dialog screen
-
-Games funnel confirmations through one shared message-box window (quit?, discard changes?,
-countdown boxes). Make it a single high-layer screen registered once — every flow that dead-ends
-in a confirmation then speaks for free, and a silent confirmation is a soft-lock for a blind
-player. The shape (`src/graph-ui/MessageBoxScreen.cs`):
-
-- **Top layer**, above every ordinary screen; ordinary screens must yield while a modal is
-  visible so the hand-off is clean and their cursor survives underneath.
-- The dialog follows the three-part heading contract
-  ([making-screens-accessible.md](making-screens-accessible.md) §0): the drawn heading is a
-  focusable node first in reading order, `ScreenName` carries the same words, and the start
-  node is set **explicitly** on the question — the question is a **focusable text node**
-  where focus lands on arrival, re-readable in place by refocusing, walkable in the review
-  buffer — with the answers as a row below it, in **drawn order** (which button is left on
-  screen is which button reads first). Declare the buttons from **live visibility** each
-  rebuild, never from the API's nominal shape — dialog windows get reused with leftover
-  state from the previous dialog.
-- **Text the game rewrites every frame** (countdown timers) must never feed node identity,
-  live announcement parts, or per-frame speech: the text node's label resolves live (a
-  refocus or buffer read gives the current second) but nothing re-announces on its own.
-- Let Escape fall through to the game's own cancel path — this is a *game-owned* surface;
-  a mod-owned child screen does the opposite ([input.md](input.md)'s back-key rules). Poll
-  the window's "shown and fully ready" state for **arrival** rather than subscribing to
-  visibility events, which fire before the captions are written — and remember that gate is
-  arrival-only; departure gates on the unbind (see "Arriving and standing down").
-
 ## Adapting to a new game
 
 1. Verify the game has no usable focus-navigation system of its own first (ES2's AGE: none —
@@ -710,8 +599,10 @@ Engine (game-agnostic): [`src/graph-ui/`](src/graph-ui/) — `ControlId.cs`, `Gr
 `ScrollIntoView.cs`, `AgeLayout.cs` (reading drawn layout: row banding by mutual-centre
 containment — adjacent panels overlap by pixels, so span overlap misgroups — reading order,
 and the alignment tiebreak for co-located caption/value rects), `Screen.cs`,
-`ScreenManager.cs`, `MainMenuScreen.cs`, `DropListScreen.cs`, `MessageBoxScreen.cs`,
-`Carry.cs` (the keyboard drag), `LoadingScreen.cs`. The input layer: [input.md](input.md). Value-widget patterns
-(checkboxes, sliders, combo boxes, tabs, popups, key capture): [widgets.md](widgets.md).
+`ScreenManager.cs`, `MainMenuScreen.cs`, `LoadingScreen.cs`. The input layer:
+[input.md](input.md). Gesture parity, value widgets and the surfaces built on them
+(activation replay, the keyboard drag, checkboxes, sliders, combo boxes, tabs, popups and
+child screens, the confirmation dialog, key capture): [widgets.md](widgets.md). Map and
+world views: [world-navigation.md](world-navigation.md).
 The per-screen process (measure → model → approve → implement → verify → hand over):
 [making-screens-accessible.md](making-screens-accessible.md).

@@ -14,7 +14,7 @@ ONLY the loop: the dev server, the REPL, and the screen-agnostic verification pa
 | ES2 layers, key map, claim rules (building a screen) | `docs/interaction.md` |
 | Which helper already exists for X | grep `ES2Access/` — a helper's contract is its own doc comment; the dev/verification ones are in §1 below |
 | Working a specific screen against the live game | `docs/test-recipes/README.md` (grep the screen) |
-| Widget kinds, roles, announcements, activation idioms | `docs/generic/widgets.md` |
+| Widget kinds, roles, announcements, gesture parity and activation idioms, popups, the confirmation dialog | `docs/generic/widgets.md` |
 | Game-mechanism findings | the topic file that fits (`docs/README.md` indexes them) |
 | Any other generic concern (speech, buffers, tooltips, icons, localization, hot reload, performance, dev server, decompiled research, bootstrap) | `docs/generic/README.md` indexes the chapters |
 | ES2 architecture / AGE GUI framework orientation | `docs/architecture.md`, `docs/gui.md` |

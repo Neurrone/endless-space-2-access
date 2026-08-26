@@ -37,8 +37,9 @@ failed to start, because a blind player cannot distinguish "mod silent" from "mo
 
 ## The two architectural laws
 
-**1. One chokepoint.** All speech flows through a single `Speak(MessageBuilder, interrupt)`
-— deliberately no string overload. The builder (see [localization.md](localization.md)) owns
+**1. One chokepoint.** All speech flows through a single instance method on the speech object
+— `void Speak(MessageBuilder message, bool interrupt = true)`, deliberately with no string
+overload. The builder (see [localization.md](localization.md)) owns
 separators and formatting; `Speak` alone calls `Build()`. Null/empty builds no-op, so
 producers can compose optional content without guards. This gives one place for
 post-processing, the dev-server tap, and localization. Corollary for composers over

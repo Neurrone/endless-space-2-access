@@ -14,14 +14,14 @@ worked example — method and full findings in the game-specific `gui.md`):
    are also populated at bind time and readable headlessly.)
 2. **Is the content string the whole tooltip?** (ES2: two tiers. "Simple" tooltips — one
    string, complete. "Rich" tooltips — the string is empty or a bare title, and the real
-   substance is generated at display time by ~117 panel-feature classes reading provider
+   substance is generated at display time by ~150 panel-feature classes reading provider
    interfaces; a content-string reader would miss essentially everything.)
 3. **Can tooltips link to other tooltips** — a glossary/encyclopedia graph? (ES2: no. No
    hyperlink machinery at all; bracket markup is icon substitution only.)
 4. **Can elements inside a tooltip have their own tooltips, or be clicked?** (ES2: a few
    widgets inside rich tooltips carry nested tooltips shown by hover *replacement* — extra
-   data, not a navigation model — though a feature may still hold a control: ES2 rents a
-   named ship from inside a tooltip.)
+   data, not a navigation model — though a tooltip can still host a live control: one of
+   ES2's tooltips carries the button that rents the ship it describes.)
 5. **Does the game append state into tooltip text** — "why disabled" hints? (ES2: yes,
    `FormatButtonHint` appends the reason into `Content`; always read tooltips live.)
 6. **Where do tooltips render** — anchored to the widget, or at the cursor? Cursor-anchored
@@ -161,9 +161,9 @@ Rules that came out of shipping this, all hit in practice:
 - **The mode is a per-frame answer — never store it — and neither is the CONTENT: a
   tooltip the game rewrites per value is part of what a change to that value has to
   re-speak.** A widget can swap its tooltip class
-  with its state (ES2's stage-deed marker: a plain-text placeholder while locked, a
-  class-composed dossier once its stage is researched), so one control's short/long mode
-  flips over its lifetime. Asking the marker at every declaration is what makes the shared
+  with its state — a plain-text placeholder while the thing is locked, a class-composed
+  dossier once it unlocks — so one control's short/long mode
+  flips over its lifetime. Asking the widget at every declaration is what makes the shared
   helper correct; a cached `TooltipMode` ships a bug that only appears after a state change.
 - **One thing, two tooltip objects, swapped by view state.** Where the game draws the same
   thing through different widgets per view (a zoom tier, a list-versus-detail switch), each

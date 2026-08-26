@@ -634,7 +634,7 @@ map reads out at the same coordinates are one place here, so stepping between th
 system does not end a sweep. A press while parked on the entry it is standing on steps ON rather than
 re-landing (`ScannerWalk`). Shift walks the same frozen list backwards — from a landing, back the way
 it came; from a fresh press, to the FARTHEST result, the nearest-first ordering read backwards,
-soc-access's own rule. An EMPTY slot says "No custom category on {key}", naming the key off the LIVE
+songs-of-conquest-access's own rule. An EMPTY slot says "No custom category on {key}", naming the key off the LIVE
 binding, and is never silent; a configured slot that caught nothing says the ordinary
 "{category}: all, none found". The six are keys of the MAP WIDGET like the rest of the scanner's
 (`GalaxyScanner.QuickKeysClaimed` → `Active`) and need no physical-modifier trick: the game binds

@@ -18,11 +18,10 @@ infrastructure); starting with the seam costs nearly nothing.
    **And preserve it exactly.** Never insert the mod's separators or punctuation into game
    text: multi-line game text joins with a space, not the list separator — "disabled., Once"
    is a defect, and it appears the moment game *lines* are fed through a list-item builder
-   meant for mod-composed enumerations. Where the game shows something for a state (failure
-   tooltips, captions, placeholders), surface those words, never a mod paraphrase; where the
-   game shows nothing, invent nothing (no placeholder nodes for empty states, no spoken
-   position text where the game draws dots). Inline icon tokens in game text are named, not
-   stripped: [icons-and-symbols.md](icons-and-symbols.md).
+   meant for mod-composed enumerations. Surface the game's own words for a state and invent
+   nothing where it shows nothing —
+   [making-screens-accessible.md](making-screens-accessible.md) §0. Inline icon tokens in game
+   text are named, not stripped: [icons-and-symbols.md](icons-and-symbols.md).
    **"The game's words" means the words, not the line-fitting.** When a drawn string is an
    ellipsized/truncated fit of a source string the game shows in full elsewhere (hover, a
    tooltip), speak the source string, never the fitted one — tile grids and narrow columns

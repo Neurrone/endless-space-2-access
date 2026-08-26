@@ -263,6 +263,10 @@ markers, so two runs land on different ones.
 
 ## The reference point moves with the cursor
 
+**The reference point is a LADDER, most specific first**: the free inspection cursor's cell if
+that mode is up, else the focused world stop's own place, else home. `galaxy.scanGoTo` feeds
+back into it — a jump becomes the new place to look around from.
+
 **Proving the reference point moves.** With the tree cursor on the HUD the scanner measures from
 home; focus a system (`galaxy:system/505`) and the same list re-sorts round it. Since 2026-08-16 a
 row with a thing of its OWN measures from that thing rather than from its parent system: standing on

@@ -5,7 +5,7 @@ places, inspects what is there, and moves between them. Distinct from ordinary p
 ([ui-navigation.md](ui-navigation.md)) because the world is rendered by a camera whose
 distance decides what is drawn, and because the world model knows things the player must
 not hear ([fog](#fog-discipline)). Proven on ES2 Access's galaxy map (a node-graph world),
-including the categorized scanner and free inspection cursor; only tile-signature skips and
+including the categorized scanner and the spatial cursor; only tile-signature skips and
 audio cues remain unproven — see the last sections.
 
 ## World-as-graph: the cursor is the game's own graph
@@ -42,11 +42,8 @@ often prefab-authored and invisible to code:
 
 Two rules keep every tier reachable:
 
-- **Expansion moves the camera only while both tiers stay reachable.** "Go in" (tree) and
-  "get closer" (camera) are different verbs — ui-navigation.md's expansion rule — so binding
-  a camera move to the expand key is allowed exactly while an explicit zoom-out key still
-  reaches the other tier with the branch open; otherwise whichever information tier the other
-  distance shows becomes unreachable.
+- **Expansion moves the camera only while both tiers stay reachable** —
+  [ui-navigation.md](ui-navigation.md)'s expansion rule, at its sharpest here.
 - **The camera gets an explicit control**, placed wherever fits the screen's design (ES2: an
   explicit zoom-out key, restoring the previous zoom step *at the focused node*, not at the
   camera's old position); and where a zoom step swaps the SUBJECT rather than the distance,
@@ -62,18 +59,15 @@ event" button has one), with the game's own framing offsets — never by writing
 Footgun class to expect: zoom-step setters that swap LOD/layer state *without moving the
 camera* — always use the game's full request/force route. Verify camera behavior with
 zoom-out/zoom-in **crop pairs**, never state readback: the step variable can say one thing
-while the pixels say another. And read numeric limits (the last step, the detail
-threshold) from the game code that compares against them, not from one observation — a
-measured plateau is not a boundary
-([making-screens-accessible.md](making-screens-accessible.md)).
+while the pixels say another. And read numeric limits (the last step, the detail threshold)
+from the game code that compares against them — the plateau-is-not-a-boundary rule in
+[making-screens-accessible.md](making-screens-accessible.md) §1.
 
 ## Fog discipline
 
-The world model answers questions the renderer refuses to: adjacency APIs return
-never-discovered nodes with full data, and name lookups resolve for anything. Route every
-name and fact through the renderer's own visibility predicate — the same doctrine as
-[making-screens-accessible.md](making-screens-accessible.md) §0, load-bearing here because
-the map is where the model's omniscience leaks first. The filter is what needs the test.
+Route every name and fact through the renderer's own visibility predicate — the fog doctrine
+of [making-screens-accessible.md](making-screens-accessible.md) §0, load-bearing here because
+the map is where the model's omniscience leaks first.
 
 ## Overlay / scan modes (proven on ES2's scan view)
 
@@ -85,70 +79,80 @@ deterministically. Overlay legends ("caption" panels) become a reviewable stop. 
 serves every lens, and the lens's own **drawn header** is the reliable mode signal — the
 captions and legend data can go stale while every lens's window reports itself shown.
 
-## The categorized scanner (proven on ES2's galaxy map)
+## The categorized scanner
 
 A scanner answers "what is near me, of kind X" without leaving the thing the player is
-standing on. It is a **question, not a mode**: no activation key, nothing to exit, Escape
-never involved — but its chorded keys belong to the **world-view widget**, not the screen:
-live while the focused stop IS that widget, inert on the screen's other stops (a zoom
-slider, a button strip) and on every other screen. Gate BOTH the claim and the handler on
-that stop — an unclaimed key still reaches a screen-level any-key hook. Leaving the widget
-**suspends** the keys and resets nothing: the parked scope, per-category memory and armed
-flag survive, so the next press resumes instead of re-announcing. (ES2 shipped the
-screen-level gate twice — scanner and inspection cursor alike — and the player reported
-both.) Three tiers share one key pair, separated by modifier — category, subcategory,
-instance — plus one "go to what it points at" key (wotr-access lineage; the bare pair can
-stay with the game where the game uses it).
+standing on.
 
-- **Rebuild and re-sort on every press; cache nothing** — gather per press, but COMPOSE per
-  row: a description built for every result and read for one is the scanner's per-frame
-  allocation. The sort key is distance from
-  where the player is reading, which moves with every arrow press. Snapshot everything the
-  keystroke's *rules* can ask about, not just the current scope — the skip-empty rule is a
-  question about scopes the player is not in.
-- **The reference point is a ladder**, most specific first: the free inspection cursor if
-  one is up, else the focused world stop's own place, else home. The go-to key feeds back
-  into it, so a jump becomes the new place to look around from.
-- **Cycles skip empty scopes; instance stepping wraps; a re-scope resets to the nearest
-  instance** — a position in a rebuilt list is an index, not an identity, so re-seat on the
-  same thing by a stable key. Each category remembers its own last subcategory — BY NAME where
-  the subcategory list is content-derived; a first visit is "all". The "empty" line is then
-  only reachable by standing still while the world empties the parked scope.
-- **The first press announces without stepping — and still reads the instance it is parked
-  on**; only an empty scope replaces the landing with its own sentence. An announce-only
-  press that stops at the scope name reads as broken silence (this repo shipped that shape
-  twice). Scope lines stay terse ("Category: subcategory" — no counts); instance
-  lines carry name, absolute position pair, the offset from the reference as **rounded
-  components** ("9 south, 1 west" — the differences of the spoken pairs, so the numbers
-  always reconcile with what the rows say), and "n of m"; a zero offset collapses to
-  "here".
+- **A question, not a mode**: no activation key, nothing to exit, Escape never involved.
+- **Its keys belong to the world-view WIDGET, not the screen** — live only while the focused
+  stop IS that widget, and gated on that stop in BOTH the claim and the handler, since an
+  unclaimed key still reaches a screen-level any-key hook. Leaving the widget **suspends**
+  the keys and resets nothing, so the next press resumes rather than re-announcing.
+- **Rebuild and re-sort on every press; cache nothing** — gather per press, compose per row:
+  a description built for every result and read for one is the scanner's per-frame
+  allocation. The sort key is distance from where the player is reading, which moves with
+  every arrow press, and the snapshot must cover everything the keystroke's *rules* can ask
+  about, not just the current scope — the skip-empty rule asks about scopes the player is
+  not in.
+- **Cycles skip empty scopes**; a position in a rebuilt list is an index, not an identity, so
+  re-seat on the same thing by a stable key.
+- **Every press that lands says where it took the player**, the first press included — it
+  announces without stepping and still reads the thing it is parked on. A press that stops at
+  the scope name reads as broken silence.
 - **Affiliation is a taxonomy decision, not a lookup.** The game's own map coloring often
-  answers a different question (ES2's lozenge calls every minor faction an enemy); the
-  mod's categories are the project's own, membership is many-to-many, and any divergence
-  from the game's coloring is written down where the next reader will hit it.
-- **The scanner is the second enumeration of the world.** Feed it the same drawn lists and
-  visibility gates the navigation tree uses, and the same LANDING (a world screen has one
-  go-to helper; the game's attention service is one of its callers) — and where the two
-  disagree, the disagreement
-  IS a finding (ES2's found fleets no tree branch held, and map nodes the scanner had
-  skipped). One trap in that rule: a drawn-label list may be culled by camera LOD; gate on
-  the game's information predicate, not its culling, or a whole category vanishes with the
-  zoom.
-- **Extract the stepping rules into an engine-free, unit-tested module.** Every failure
-  here is inaudible — an empty landing, a step that stops dead, an index past a shrunk
-  list all sound like "found nothing".
+  answers a different question; the mod's categories are the project's own, membership is
+  many-to-many, and any divergence from the coloring is written down where the next reader
+  will hit it.
+- **The scanner is the second enumeration of the world.** Feed it the same drawn lists,
+  visibility gates and landing helper the navigation tree uses; where the two disagree, the
+  disagreement IS a finding. Gate on the game's information predicate, not its camera
+  culling, or a whole category vanishes with the zoom.
+- **Extract the stepping rules into an engine-free, unit-tested module.** Every failure here
+  is inaudible — an empty landing, a step that stops dead, an index past a shrunk list all
+  sound like "found nothing".
 
-Its partner, the **free inspection cursor** (a togglable mode, unlike the scanner — but a
-mode of the same widget: its keys, arming key included, act only while the focused stop is
-the world-view widget; Tab still walks the screen's other stops with the mode merely
-suspended, cell and size retained): a
-square cell on the world plane in odd sizes, stepping by exactly its size so cells tile
-with half-open bounds; the center stays on the integer coordinates the mod speaks. Entry
-lands at the focused stop's *own* position; the camera follows every move and a drawn
-frame marks the cell; each cell speaks its coordinates, contents, crossing edges, and how
-much of it is hidden (as a count of hidden unit tiles, so the player can shrink to
-localize); exits restore both focus and camera. Enter acts only when the cell holds one
-unambiguous target, silently otherwise — the key is pressed speculatively mid-sweep.
+## The spatial cursor — when the tree cannot answer "what is over there"
+
+A tree of a map answers "what things exist and what is next to which"; it cannot answer
+the question a sighted player settles at a glance — what lies in *that* direction, *that*
+far away, whether or not anything is there. Two games (Songs of Conquest's adventure map,
+ES2's galaxy — `songs-of-conquest-access` `TileSkipNavigator.cs`, ES2 `Core/UI/InspectGrid.cs` +
+`CellSkip.cs`, both unit-tested off-engine) independently converged on the same answer: a
+**cell cursor** — a square of map the arrows move, speaking position first and contents
+second. The rules both arrived at:
+
+- **The cell is a mode OF the map widget, not of the screen.** Off the map stop it
+  suspends (keeping place, size and its drawn square) rather than ends — a mode that
+  claims arrows screen-wide takes the screen's sliders with them. Its arming key is a key of
+  that widget too. Anything that removes the map ends the mode, and says so.
+- **Odd sizes only, step = the cursor's own size.** The centre stays a whole coordinate
+  pair and the cells tile with half-open bounds: no strip of map is skipped or heard twice.
+  An empty cell speaks its coordinates and stops — the pair alone IS "nothing here", and a
+  word for empty would be most of what a sweep says.
+- **Entry, feedback, exit.** Entry lands at the focused stop's *own* position; the camera
+  follows every move and a drawn frame marks the cell; each cell speaks its coordinates,
+  contents and crossing edges; exits restore both focus and camera.
+- **Absence the sighted player reads from a wash of color must be spoken explicitly.**
+  Fog-of-war is the type case: "nothing there" and "nobody has ever seen there" are
+  opposite answers that sound identical as silence. Say how much of the cell is hidden as a
+  count of hidden unit tiles, so the player can shrink the cursor to localize it.
+- **Refusals split by intent**: a key pressed speculatively mid-sweep (grow past the
+  ladder's end, act on an empty cell) refuses silently-but-consumed; a deliberate move
+  that cannot happen (off the map's edge) refuses with a word.
+- **Skip-to-the-next-difference** (Shift+arrow in both games): compute a **signature** of
+  the origin cell — the identity set of everything the cell's reading names, plus
+  bucketed states for continuous properties (three-state fog, never the raw count: a raw
+  count stops at every step along a gradient), coordinates excluded — then step cell by
+  cell and land on the first whose signature differs **from the origin**, not from the
+  predecessor. Nothing different all the way out lands on the last in-bounds cell; not
+  one step possible is the edge refusal. Say how many alike cells were passed, then read
+  the landing.
+- **Travel by contents** (jump to a lane's end, a crossing unit's destination): act only
+  when the cell's answer is unambiguous, refuse silently otherwise — the key is pressed
+  speculatively mid-sweep — never exit the mode on a refusal, and derive the answer only
+  from what the map DRAWS for the player, never from sim data, or the key leaks other
+  players' information.
 
 ## Tile worlds (partly proven)
 

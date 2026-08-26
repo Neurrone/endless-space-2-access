@@ -1,9 +1,11 @@
-# Value widgets — checkboxes, sliders, combo boxes, tabs, key capture
+# Controls — gestures, value widgets, popups, dialogs
 
-How controls that _hold a value_ become operable, on top of the graph engine in
-[ui-navigation.md](ui-navigation.md). A control that carries several _actions_ instead of a
-value exposes them as its drawn buttons — the gesture-parity pattern in
-[ui-navigation.md](ui-navigation.md).
+How a control becomes operable, on top of the graph engine in
+[ui-navigation.md](ui-navigation.md): which gestures the mod may offer at all (gesture
+parity), how each kind of value-holding widget reads and adjusts, and the two surfaces
+controls open — a widget's own popup and the game's shared confirmation dialog. A control
+that carries several _actions_ instead of a value exposes them as its drawn buttons —
+the gesture-parity section below.
 
 ## The vocabulary
 
@@ -59,10 +61,8 @@ keyboard-unreachable click.
   its own — losing focus typically just keeps whatever was typed — so a cancel that restores
   the pre-edit text is mod-authored state: snapshot on entry, write back on the way out
   (before the engine's lose-focus handlers run — input.md).
-  **The handoff waits for the activating key's RELEASE, not merely a later frame** — a press
-  lasts many frames, and a field holding the keyboard while that key is down is one engine
-  dispatch from acting on it — see
-  the late-frame rule in [input.md](input.md). The pending handover is also a flag every
+  **The handoff waits for the activating key's RELEASE, not merely a later frame** —
+  [input.md](input.md)'s late-frame rule. The pending handover is also a flag every
   raw-key reader consults (input.md's typed-text rule) — typing meant for the field must
   never feed a type-ahead search, including on the deferral frames.
 - **Step indicators** (page dots, carousel marks) — the game draws position as a row of
@@ -105,6 +105,60 @@ Two announcement parts do the heavy lifting:
   node**: focus entering the stop lands there instead of on the first node. A tab bar lands
   on the active tab; a popup lands on the current value. Produce it on any "one of these is
   current" group.
+
+## Gesture parity — the mod invents no gestures
+
+The activation model is **mouse parity**: every gesture is one the game defines. (ES2 Access
+shipped an action-menu system first and then deleted every menu; the doctrine below is what
+replaced it, and it costs less than it looks — the game already has an answer for each case.)
+
+- **The activation key is the game's left click** on the focused thing. Where the click is
+  destructive, the guard is the game's OWN confirmation flow (funnelled through the
+  message-box screen below) — never a mod menu in front of the click. A click the game answers
+  with silence stays silent on the keyboard too — but find where the answer LANDS before
+  calling it silence: a refusal often surfaces away from the control, in a shared failure
+  banner, a toast or a status line, and that text is the click's answer.
+- **A two-step targeting mode has a HOVER half, and the keyboard has no hover**: the mouse
+  is shown the consequences of an irreversible order before committing. Replay the mode's
+  own enter handler at the focused target and read back what it wrote — driving only the
+  click is functionally complete and informationally blind.
+- **A control's several actions are its DRAWN buttons, modeled as child nodes** — declared
+  while visible, refusing (reason in the tooltip part) while disabled, absent while the
+  game hides them. Two rules follow: a container with no drawn actions is a LEAF, never an
+  expandable dead end — and so is one whose only child repeats the parent's own words or is
+  switched off in the game's own settings, since an expansion that tells the player nothing
+  new is the empty group wearing a child; and a refused action is a declared-refusing node,
+  not a missing one.
+- **The alternate-activation chord is the game's modifier-click variant** where one exists
+  — replay the click and let the game's handler read the physically held modifier — and
+  nothing where the game has none. Wire it ONCE, at the single call every node's activation
+  passes through: a per-node chord is defeated wherever the mod gates that node's click on
+  its own availability test, and a control the game leaves enabled precisely so a modified
+  click can explain itself then reads "unavailable" and swallows the very click the chord
+  was meant to deliver.
+- **A right-click command key** mirrors the game's right-click at the focused thing, given
+  the current selection (move orders, zoom restore); its availability is computed on the
+  press, not per frame.
+- **Moving things — reorder, transfer — is the game's DRAG, modeled as a keyboard drag**
+  (`src/graph-ui/Carry.cs`): one key holds (pick up / swap on a new source / put back on
+  its own source), the activation key drops on a compatible target (overriding that
+  target's click only while dragging; drop on the held item's own row is a cancel, matching
+  the game's drag), Escape cancels — a mod-owned MODE takes the back key like a mod-owned
+  surface does ([input.md](input.md)). Validate and commit through the game's drag path
+  including its confirmations, and **read the game's drag handler for the landing rule** —
+  which index `OnDragCompleted` posts and what the collection's `Move` does with it is the
+  one thing an implementer guesses wrong. Where the mouse's gesture is "release over
+  NOTHING" (drag out of the container to remove), there is no widget to drop on: declare an
+  always-visible mod-authored drop-target node at the end of the container, labelled as a
+  complete instruction, reading as a plain line while nothing is carried — discoverable
+  before it is ever needed. **Say what the drag can do here, from the vtable, in the
+  announcer**: a source appends "draggable" while nothing is held, a target appends "drop
+  target" while something it takes is held, and a node that is both says only the drop word
+  mid-drag. Derive both where the tooltip indication is derived, never per screen. The source
+  word asks the pick-up command itself (which is why that command must be a pure QUERY), so
+  it is never said on an empty slot; and a target family where some members refuse needs an
+  acceptance predicate consulted by the INDICATION only — the drop still goes through the
+  game's own check, whose refusal carries the game's reason for a player who presses anyway.
 
 ## Replaying activations
 
@@ -187,13 +241,18 @@ repeating, both clamped. Exact-modifier chord matching is what makes the chord s
 must not also fire Left — the same mechanism that keeps Ctrl+Up off the plain-arrow path).
 The coarse step falls back to a fraction of the range when the widget declares no increment.
 
-## Popups as sub-screens
+## Popups and child screens
+
+**Child screens** (`PushChild`/`RemoveChild`, a single linear chain) exist for exactly two
+things: the native-popup wrapper (game-focus handoff, deferred close to dodge the engine's
+Escape race) and the confirmation screen below. Per-screen state isolation returns focus to
+the opener for free — the parent stays in the stack, covered, keeping its cursor for the
+return.
 
 A widget's transient popup (a combo box's entry list) is its own **screen**, driven by
 mod-side state: the parent screen records "this widget is open", the popup screen's
 `IsActive` reads that state _and_ the live widget (window still up, popup still open — the
-game closing it underneath must pop the screen cleanly). The parent screen stays in the
-stack, covered, keeping its cursor for the return.
+game closing it underneath must pop the screen cleanly).
 
 - Entries are Choice nodes; the current one carries Selected, so the popup opens on it.
 - Open the game's **real popup** for visuals when it has one, via the widget's own open path;
@@ -204,6 +263,34 @@ stack, covered, keeping its cursor for the return.
   carve-out and the game-consumes-via-focus mechanism).
 - Entries can be individually disabled: keep them focusable, announce unavailable, swallow
   activation — same rule as everywhere else.
+
+## The confirmation-dialog screen
+
+Games funnel confirmations through one shared message-box window (quit?, discard changes?,
+countdown boxes). Make it a single high-layer screen registered once — every flow that dead-ends
+in a confirmation then speaks for free, and a silent confirmation is a soft-lock for a blind
+player. The shape (`src/graph-ui/MessageBoxScreen.cs`):
+
+- **Top layer**, above every ordinary screen; ordinary screens must yield while a modal is
+  visible so the hand-off is clean and their cursor survives underneath.
+- The dialog follows the three-part heading contract
+  ([making-screens-accessible.md](making-screens-accessible.md) §0): the drawn heading is a
+  focusable node first in reading order, `ScreenName` carries the same words, and the start
+  node is set **explicitly** on the question — the question is a **focusable text node**
+  where focus lands on arrival, re-readable in place by refocusing, walkable in the review
+  buffer — with the answers as a row below it, in **drawn order** (which button is left on
+  screen is which button reads first). Declare the buttons from **live visibility** each
+  rebuild, never from the API's nominal shape — dialog windows get reused with leftover
+  state from the previous dialog.
+- **Text the game rewrites every frame** (countdown timers) must never feed node identity,
+  live announcement parts, or per-frame speech: the text node's label resolves live (a
+  refocus or buffer read gives the current second) but nothing re-announces on its own.
+- Let Escape fall through to the game's own cancel path — this is a *game-owned* surface;
+  a mod-owned child screen does the opposite ([input.md](input.md)'s back-key rules). Poll
+  the window's "shown and fully ready" state for **arrival** rather than subscribing to
+  visibility events, which fire before the captions are written — and remember that gate is
+  arrival-only; departure gates on the unbind (the arriving-and-standing-down rules in
+  [ui-navigation.md](ui-navigation.md)).
 
 ## Key-rebind capture
 
@@ -216,7 +303,8 @@ through the row's live value part. Focus never moves, so nothing else speaks.
 **The handover trap** (this WILL bite, in any engine): the keypress that _activated_ capture
 is still held when the game's scanner starts, so the scanner sees your Enter — and if the
 game commits on key-release, the activation key's own release ends the capture before the
-player touches anything. Defer the handover: speak the prompt immediately, then poll until
+player touches anything ([input.md](input.md)'s release rule, in its key-up form). Capture
+needs the stronger wait: speak the prompt immediately, then poll until
 **no key at all is held** before giving the game's widget focus. Unity footnote: the
 "nothing held" frame is the _release_ frame, on which key-up events still fire — wait one
 frame more (ES2 uses two consecutive clear frames).
@@ -232,6 +320,7 @@ confirmation window — if the dialog screen exists, the flow needs nothing extr
 
 ## Source exemplars
 
-`src/graph-ui/GraphNodes.cs` (the factories), `DropListScreen.cs` (popup-as-sub-screen,
-focus handover, cancel-restore), `MessageBoxScreen.cs` (the confirmation-dialog screen —
-see ui-navigation.md). Models to imitate, not copy: they name ES2 types.
+`src/graph-ui/GraphNodes.cs` (the factories), `Carry.cs` (the keyboard drag),
+`DropListScreen.cs` (popup-as-sub-screen, focus handover, cancel-restore),
+`MessageBoxScreen.cs` (the confirmation-dialog screen). Models to imitate, not copy: they
+name ES2 types.

@@ -172,15 +172,6 @@ Two traps, both verified the hard way:
 
 ## The test loop
 
-```
-run-game.ps1 -NoSpeech -NoWait        # build, deploy, launch
-poll /status until it answers          # boot can take a minute
-exercise the feature (/eval, endpoints, or in-mod keys later)
-read /speech — did it announce correctly?
-iterate: dotnet build (mod only) → POST /reload → re-test   # no restart
-POST /quit                             # exits within ~10s; poll at 1s
-```
-
 Numbers worth knowing per game: boot-to-server time, quit-to-exit time, and that the speech
 ring resets on reload.
 
