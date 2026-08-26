@@ -365,7 +365,8 @@ namespace ES2Access
 
             return HudKey(action.Key)
                 || Buffers.Dispatch(action.Key)
-                || Navigator.Dispatch(action.Key);
+                || Navigator.Dispatch(action.Key)
+                || SwallowedCarry(action.Key);
         }
 
         /// <summary>
@@ -502,11 +503,27 @@ namespace ES2Access
         /// ToggleScanView (`InputManager.cs:233`, shared with Mouse2) - the strategic lens, now a
         /// screen of the mod's own (<see cref="ES2Access.Screens.ScanViewScreen"/>) that announces
         /// itself on arrival, so handing the key back no longer drops the player into an unannounced
-        /// mode (owner decision 2026-08-12, reversing the blanket claim of 2026-08-11).</summary>
+        /// mode (owner decision 2026-08-12, reversing the blanket claim of 2026-08-11).
+        ///
+        /// The star-system page is the exception, and a PAGE-level one: there the game's Space is a
+        /// screen-level shortcut rather than a mode of its own, and a player pressing it on a row
+        /// expects to pick something up or to get nothing
+        /// (<see cref="ES2Access.Screens.SystemManagementScreen.SwallowsCarryKey"/>).</summary>
         private static bool CarryKeyClaimed()
         {
             GraphNavigator navigator = Navigator;
-            return navigator != null && navigator.TakesCarryKey();
+            return navigator != null
+                && (navigator.TakesCarryKey() || SystemManagementScreen.SwallowsCarryKey());
+        }
+
+        /// <summary>The other half of that page-level claim: the carry key on a row with nothing to pick
+        /// up is CONSUMED there rather than handed back, and silently - see
+        /// <see cref="ES2Access.Screens.SystemManagementScreen.SwallowsCarryKey"/>. Returning true is
+        /// also what latches the key until it is released, which is what stops the game acting on a
+        /// press the mod has already answered.</summary>
+        private static bool SwallowedCarry(string actionKey)
+        {
+            return actionKey == UiActions.Carry && SystemManagementScreen.SwallowsCarryKey();
         }
 
         /// <summary>The claim half of Delete: only where the focused control is one that empties
