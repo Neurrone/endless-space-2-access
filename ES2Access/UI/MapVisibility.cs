@@ -45,23 +45,36 @@ namespace ES2Access.UI
         }
 
         /// <summary>
-        /// Whether this empire can see this place well enough for the map to name it - which is the
-        /// label window's own gate, not an approximation of it: <c>StarSystemLabel</c> shows a label at
-        /// exploration 2 with the node either remembered or in sight (<c>ShowOrHideIfVisibleByEmpire</c>
-        /// :1514-1522) and writes <c>GameNode.LocalizedName</c> into it at the same threshold, or the
-        /// literal "???" below it (<c>RefreshEmpireNameLabel</c> :1894-1921).
+        /// Whether the map is drawing a star at this place at all - which is a lower bar than naming
+        /// it, and the only bar a place has to clear to be somewhere the player can see.
         ///
-        /// One threshold, for a special node - a black hole, a solar nebula, an asteroid field - as
-        /// much as for an ordinary star system, because NAMING and TARGETING are different questions and
-        /// this is the naming one. (The Academy and quest sites are NOT special nodes: each is an
-        /// ordinary <c>StarSystemNode</c> carrying the <c>WorldAcademy</c> or <c>QuestNodeTag</c> tag.)
-        /// Neither of those two label methods has a special-node branch at all: the label draws a
-        /// special node's name at exploration 2 like anything else's. The higher threshold that exists in the
-        /// game - 3 in <c>GalaxySpecialNodeCursorTarget.VisibleByCurrentEmpire</c> :22-27, overriding
-        /// <c>GalaxyStarSystemCursorTarget</c>'s :89-94 - governs whether the MOUSE can target the node,
-        /// which is a separate rule this one must not borrow: taking it made the cursor refuse a name the
-        /// map was drawing on screen.
+        /// The game's own drawing gate, asked the way the galaxy's nodes ask it:
+        /// <c>GalaxyNode.UpdateVisualAccordingToExploration</c> :491 turns the node's body and its
+        /// collider on at exploration 1 and leaves them off below it. One above nothing is Localized -
+        /// granted when a node's visibility layer is raised without anybody having seen the place (a
+        /// curiosity's reveal-neighbours reward, a map traded away, a hack, a foreign fleet spotted
+        /// parked at a node nobody has been to: <c>GameNode</c> :1285-1295) - and what the map draws
+        /// there is a GENERIC star with an orbit ring: no name, no real star type, no tooltip and no
+        /// selection (<c>GalaxyStarSystemCursorTarget</c> :89-94 refuses to highlight it).
+        ///
+        /// So a place that is Located and not <see cref="Perceived"/> is one the player can SEE and
+        /// cannot read: it has a position on the map and nothing else the picture will give up. The
+        /// exploration state is a ratchet, so this never goes back down.
         /// </summary>
+        public static bool Located(GameNode node, Empire empire)
+        {
+            try
+            {
+                return node != null
+                    && empire != null
+                    && (int)node.Exploration[empire] >= (int)EntityExploration.State.Localized;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
         /// <summary>
         /// Whether this empire is being SHOWN a moving thing out in space - a probe, a missile.
         ///
@@ -84,6 +97,27 @@ namespace ES2Access.UI
             }
         }
 
+        /// <summary>
+        /// Whether this empire can see this place well enough for the map to name it - which is the
+        /// label window's own gate, not an approximation of it: <c>StarSystemLabel</c> shows a label at
+        /// exploration 2 with the node either remembered or in sight (<c>ShowOrHideIfVisibleByEmpire</c>
+        /// :1514-1522) and writes <c>GameNode.LocalizedName</c> into it at the same threshold, or the
+        /// literal "???" below it (<c>RefreshEmpireNameLabel</c> :1894-1921).
+        ///
+        /// One threshold, for a special node - a black hole, a solar nebula, an asteroid field - as
+        /// much as for an ordinary star system, because NAMING and TARGETING are different questions and
+        /// this is the naming one. (The Academy and quest sites are NOT special nodes: each is an
+        /// ordinary <c>StarSystemNode</c> carrying the <c>WorldAcademy</c> or <c>QuestNodeTag</c> tag.)
+        /// Neither of those two label methods has a special-node branch at all: the label draws a
+        /// special node's name at exploration 2 like anything else's. The higher threshold that exists in the
+        /// game - 3 in <c>GalaxySpecialNodeCursorTarget.VisibleByCurrentEmpire</c> :22-27, overriding
+        /// <c>GalaxyStarSystemCursorTarget</c>'s :89-94 - governs whether the MOUSE can target the node,
+        /// which is a separate rule this one must not borrow: taking it made the cursor refuse a name the
+        /// map was drawing on screen.
+        ///
+        /// A place below this bar but at or above <see cref="Located"/> is one the map is DRAWING and
+        /// not naming, which is a row of its own in the tree rather than nothing at all.
+        /// </summary>
         public static bool Perceived(GameNode node, Empire empire)
         {
             try

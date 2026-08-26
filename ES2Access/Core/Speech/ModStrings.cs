@@ -382,6 +382,12 @@ namespace ES2Access.Core.Speech
         // the mod's, because the game says nothing there at all.
         public const string GalaxyConstellationUnexplored = "galaxy.constellation-unexplored";
 
+        // A place the map is drawing a star at and refusing to name: no label, no dossier, no star
+        // type, nothing but a generic body and the ring around it. The game writes no text there at
+        // all, so what the row calls itself is the mod's - and it is deliberately the same words for
+        // every one of them, because telling two of them apart is what their coordinates are for.
+        public const string GalaxySystemUnexplored = "galaxy.system-unexplored";
+
         // The one thing the map draws in open space that the game names nowhere: the missile an
         // obliterator fires at a star system. Everything else about it - where it is going and when it
         // arrives - is the game's own sentence, which arrives with the node as its tooltip.
@@ -1799,7 +1805,8 @@ namespace ES2Access.Core.Speech
             { GalaxySystemHostileShip, "{0} hostile ship" },
             { GalaxySystemHostileShips, "{0} hostile ships" },
             { GalaxySystemAcademyLevel, "Academy level {0}, {1} percent to the next level" },
-            { GalaxyConstellationUnexplored, "Unexplored constellation" },
+            { GalaxyConstellationUnexplored, "Unexplored space" },
+            { GalaxySystemUnexplored, "Unexplored system" },
             { GalaxyObliteratorProjectile, "Obliterator missile" },
             { GalaxySystemDiplomacy, "Diplomacy" },
             { GalaxySystemPirateMarkBuyout, "Buy out pirate mark" },

@@ -204,6 +204,14 @@ namespace ES2Access.Screens
         /// everything else together (<see cref="SystemsRegion"/>).</summary>
         private readonly List<StarSystemNode> _systems = new List<StarSystemNode>();
 
+        /// <summary>Every star the map is DRAWING and refusing to name, in the same reading order -
+        /// the places the player has been told the position of and nothing else
+        /// (<see cref="AddLocated"/>). Kept out of <see cref="_systems"/> rather than marked inside
+        /// it: everything that list feeds says a system's real name - the type-ahead index over the
+        /// closed constellations reads <c>LocalizedName</c> straight off the node - and a place the
+        /// picture is not naming must not be findable by a name the picture has never shown.</summary>
+        private readonly List<StarSystemNode> _located = new List<StarSystemNode>();
+
         /// <summary>Which of them are the empire's own, for the one word the row says about it. Kept
         /// apart from the order rather than sorted into it: whose a star is changes what its row says,
         /// never where the row sits.</summary>
@@ -2709,6 +2717,7 @@ namespace ES2Access.Screens
                 }
 
                 _systems.Clear();
+                _located.Clear();
                 _colonies.Clear();
                 DepartmentOfTheInterior interior = empire.GetAgency<DepartmentOfTheInterior>();
                 if (interior != null)
@@ -2727,13 +2736,24 @@ namespace ES2Access.Screens
 
                 foreach (StarSystemNode node in GameGalaxy.StarSystemNodes())
                 {
-                    if (!_colonies.Contains(node) && Perceived(node, empire))
+                    if (_colonies.Contains(node))
+                    {
+                        continue;
+                    }
+
+                    if (Perceived(node, empire))
                     {
                         _systems.Add(node);
+                    }
+                    else if (MapVisibility.Located(node, empire))
+                    {
+                        // The map is drawing a star here and naming nothing (<see cref="AddLocated"/>).
+                        _located.Add(node);
                     }
                 }
 
                 _systems.Sort(ReadingOrder);
+                _located.Sort(ReadingOrder);
                 FreeMovingAdrift(_systems, _adrift);
                 _adrift.Sort(FleetReadingOrder);
 
@@ -2832,8 +2852,9 @@ namespace ES2Access.Screens
         /// <summary>
         /// Sort this build's systems into the stretches of sky they stand in.
         ///
-        /// <see cref="_systems"/> is already in reading order, so appending each system to its own
-        /// group leaves every group in reading order too, and only the groups themselves need sorting.
+        /// <see cref="_systems"/> and <see cref="_located"/> are each already in reading order, so
+        /// walking the two of them merged and appending each place to its own group leaves every group
+        /// in reading order too, and only the groups themselves need sorting.
         ///
         /// Rebuilt every frame like the rest of the stop, and allocation-free after the first galaxy:
         /// the member lists are pooled and the group list keeps its capacity across
@@ -2845,9 +2866,24 @@ namespace ES2Access.Screens
             _groups.Clear();
             _unexplored.Clear();
             int claimed = 0;
-            for (int i = 0; i < _systems.Count; i++)
+            int named = 0;
+            int drawn = 0;
+            // Two lists already in the same order, merged as they are filed - the same walk the stop
+            // makes over the constellations and the homeless fleets. A place the map draws without
+            // naming stands in the reading order where its POSITION puts it, among the named ones,
+            // because that is where a player steering by coordinates would come to it.
+            while (named < _systems.Count || drawn < _located.Count)
             {
-                StarSystemNode node = _systems[i];
+                bool takeNamed =
+                    drawn >= _located.Count
+                    || (
+                        named < _systems.Count
+                        && ComparePositions(
+                            _systems[named].GalaxyPosition,
+                            _located[drawn].GalaxyPosition
+                        ) <= 0
+                    );
+                StarSystemNode node = takeNamed ? _systems[named++] : _located[drawn++];
                 Constellation constellation = node.Constellation;
                 if (!Explored(constellation, empire))
                 {
@@ -2956,7 +2992,7 @@ namespace ES2Access.Screens
                 List<StarSystemNode> members = _members[group.Members];
                 for (int i = 0; i < members.Count; i++)
                 {
-                    AddSystem(builder, members[i], empire, _colonies.Contains(members[i]), labels);
+                    AddPlace(builder, members[i], empire, labels);
                 }
             }
 
@@ -2996,13 +3032,7 @@ namespace ES2Access.Screens
             {
                 for (int i = 0; i < _unexplored.Count; i++)
                 {
-                    AddSystem(
-                        builder,
-                        _unexplored[i],
-                        empire,
-                        _colonies.Contains(_unexplored[i]),
-                        labels
-                    );
+                    AddPlace(builder, _unexplored[i], empire, labels);
                 }
             }
 
@@ -3173,6 +3203,103 @@ namespace ES2Access.Screens
         private static bool Perceived(GameNode node, Empire empire)
         {
             return MapVisibility.Perceived(node, empire);
+        }
+
+        /// <summary>One place in a stretch of sky, as whichever row the map's own drawing of it allows:
+        /// the full system row for a star the map is naming, and the bare one for a star it is only
+        /// drawing (<see cref="AddLocated"/>).</summary>
+        private void AddPlace(
+            GraphBuilder builder,
+            StarSystemNode node,
+            Empire empire,
+            StarSystemLabel[] labels
+        )
+        {
+            if (_located.Contains(node))
+            {
+                AddLocated(builder, node, empire);
+                return;
+            }
+
+            AddSystem(builder, node, empire, _colonies.Contains(node), labels);
+        }
+
+        /// <summary>
+        /// A place the map is drawing a star at and refusing to name.
+        ///
+        /// What the picture gives a player here is a generic body with an orbit ring round it and
+        /// nothing else: no name, no real star type, no label, no dossier, and the mouse cannot even
+        /// highlight it (<see cref="MapVisibility.Located"/>). So the row is the mod's own words for
+        /// what it is, and then the one thing the picture really does say - WHERE it is. The system's
+        /// real name is never spoken here and never indexed: the simulation knows it, the map is
+        /// withholding it, and a row that leaked it would be handing the player something no sighted
+        /// player can see. Two of these are told apart the way two of anything on this map are: by
+        /// their coordinates.
+        ///
+        /// Nothing hangs under it except FLEETS, and those under exactly the gate every other fleet on
+        /// the map passes (<see cref="AddFleets"/>) - because the one thing the game routinely shows at
+        /// a place like this is somebody else's fleet parked there, which is often how the place came
+        /// to be known at all. There is no branch at all where the map draws no fleet: an empty branch
+        /// would be a row saying "there is more in here" over nothing.
+        ///
+        /// No planets, no lanes, no owner, no dossier and no management page: none of them is drawn,
+        /// and the game refuses the click that would open them. Enter still brings the camera in, as it
+        /// does on any place - the camera is the player's to point wherever they like, and what it
+        /// finds there is the same generic star a mouse-driven player would fly to.
+        ///
+        /// Backslash is that zoom's other half and NOTHING else. On a system the map is naming it is
+        /// two things - send the selection here, or come back out (<see cref="SystemCommand"/>) - and
+        /// the first of them does not exist at a place like this: the mouse cannot so much as highlight
+        /// the node, so there is no click a sighted player could give the order with, and offering one
+        /// would be handing the keyboard a move the picture refuses. What is left is the way back out,
+        /// which the row must keep: Enter zooms in, and nothing else on this page ever zooms out by
+        /// itself.
+        /// </summary>
+        private void AddLocated(GraphBuilder builder, StarSystemNode node, Empire empire)
+        {
+            StarSystemNode it = node;
+            NodeVtable vtable = new NodeVtable
+            {
+                Announcements = new List<NodeAnnouncement>
+                {
+                    GraphNodes.LabelPart(() => ModStrings.Get(ModStrings.GalaxySystemUnexplored)),
+                    GalaxyCoordinates.Part(node.GalaxyPosition),
+                },
+            };
+
+            // What is parked here, in the same count phrase every other place on the map uses - so the
+            // number the row says and the children it opens onto stay the same answer read two ways.
+            IList<Fleet> fleets = FleetPresence.FleetsAt(node);
+            if (fleets.Count > 0)
+            {
+                vtable.Announcements.Add(GraphNodes.ValuePart(() => FleetPresence.At(it), false));
+            }
+
+            // The game's own left click: the camera comes in, and nothing is selected or opened.
+            vtable.OnActivate = () => ZoomIn(it);
+            vtable.OnContextual = () => ZoomOut(it);
+
+            string place = SystemKey(node, empire);
+            ControlId id = ControlId.Referenced(it, place);
+            if (fleets.Count == 0)
+            {
+                builder.AddItem(id, vtable);
+                return;
+            }
+
+            // A container from here down, and said to be one exactly as every other place on the map
+            // that opens onto what is standing in it.
+            vtable.ControlType = ControlTypes.Group;
+            HashSet<ControlId> expansion = builder.Expansion;
+            ControlId group = id;
+            vtable.OnCollapse = () => Collapse(expansion, group, it);
+            builder.BeginGroup(id, vtable);
+            if (builder.IsExpanded(id))
+            {
+                AddFleets(builder, place, fleets);
+            }
+
+            builder.EndGroup();
         }
 
         /// <summary>
