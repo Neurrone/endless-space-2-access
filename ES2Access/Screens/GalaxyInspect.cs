@@ -1567,6 +1567,7 @@ namespace ES2Access.Screens
             {
                 Fleet fleet = contents.Fleets[i];
                 message.ListItemForcedComma(fleet.LocalizedName);
+                message.ListItemForcedComma(FleetPhrase.Describe(fleet));
                 message.ListItemForcedComma(PairOf(fleet.GalaxyPosition));
             }
 
@@ -1645,6 +1646,7 @@ namespace ES2Access.Screens
                 Fleet fleet = contents.Fleets[i];
                 MessageBuilder line = new MessageBuilder();
                 line.Fragment(fleet.LocalizedName);
+                line.ListItemForcedComma(FleetPhrase.Describe(fleet));
                 line.ListItemForcedComma(PairOf(fleet.GalaxyPosition));
                 Line(lines, line);
             }
