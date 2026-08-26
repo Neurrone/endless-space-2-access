@@ -361,6 +361,24 @@ namespace ES2Access.Screens
         }
 
         /// <summary>
+        /// Whether typing is SUSPENDED here for the moment: the letters are still taken from the game,
+        /// and they start no search.
+        ///
+        /// A different answer from <see cref="AllowsTypeahead"/>, which hands the letters BACK - a
+        /// screen that opts out this way wants the game's own letter hotkeys to fire. A screen answers
+        /// true here when it has put a mode of its own over itself whose keys a search would fight:
+        /// the keys that step a search's results are the mode's, so a search started under one is a
+        /// search the player could never walk. Swallowing rather than forwarding is the point of the
+        /// distinction - a letter typed at such a mode must do nothing at all, not the game's hotkey.
+        ///
+        /// Asked every frame while the screen is focused, so the answer is a state read, not work.
+        /// </summary>
+        public virtual bool SuspendsTypeahead
+        {
+            get { return false; }
+        }
+
+        /// <summary>
         /// Whether the screen is in the middle of handing the keyboard to the game - a key capture
         /// or a text editor asked for and not yet given.
         ///

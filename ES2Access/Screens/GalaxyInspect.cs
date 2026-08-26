@@ -643,6 +643,16 @@ namespace ES2Access.Screens
         {
             GraphNavigator navigator = ModEntry.Navigator;
             _entry = navigator == null ? null : navigator.FocusedKey;
+            if (navigator != null)
+            {
+                // Whatever was being searched for, the mode is not where it applies: from here typing
+                // is inert (GalaxyHudScreen.SuspendsTypeahead) and the results could not be stepped
+                // anyway, so a search left standing would only outlive the mode and step the player
+                // about a page they had stopped looking at. Silently, like every other search that
+                // stopped applying to where the player is - the entry line is the mode's news.
+                navigator.ClearSearch();
+            }
+
             GalaxyPosition at;
             if (FocusedPlace(navigator, out at))
             {
@@ -1542,18 +1552,19 @@ namespace ES2Access.Screens
         }
 
         /// <summary>
-        /// The whole cell as one line: where it is, then what is in it.
+        /// The whole cell as one line: what is in it, then where it is.
         ///
-        /// The coordinates come FIRST because they are the answer to the question the mode exists for -
-        /// the player is moving about a map, and every reading has to say where they now are, whether
-        /// or not anything is there. An empty cell says the pair and stops; there is no word for
-        /// "empty", because hearing the pair alone IS the answer and a word on every empty cell of a
-        /// sweep would be most of what the sweep said.
+        /// The contents come FIRST because they are what the player is sweeping the map FOR - the
+        /// pair of numbers is the same shape on every cell and, said in front, it is a preamble to
+        /// listen past on every reading of a sweep. Said last it is still on every reading, which is
+        /// what the mode needs: wherever the cursor stops, the player is told where they now are,
+        /// whether or not anything is there (owner's ruling 2026-08-26). An empty cell says the pair
+        /// and stops; there is no word for "empty", because hearing the pair alone IS the answer and
+        /// a word on every empty cell of a sweep would be most of what the sweep said.
         /// </summary>
         private string CellText(Contents contents, string fog)
         {
             MessageBuilder message = new MessageBuilder();
-            message.Fragment(MapCoordinates.Text(_x, _y, 0.0, 0.0));
             for (int i = 0; i < contents.Places.Count; i++)
             {
                 Place(message, contents.Places[i]);
@@ -1567,9 +1578,9 @@ namespace ES2Access.Screens
             for (int i = 0; i < contents.Fleets.Count; i++)
             {
                 Fleet fleet = contents.Fleets[i];
-                message.ListItemForcedComma(fleet.LocalizedName);
-                message.ListItemForcedComma(FleetPhrase.Describe(fleet));
-                message.ListItemForcedComma(PairOf(fleet.GalaxyPosition));
+                Item(message, fleet.LocalizedName);
+                Item(message, FleetPhrase.Describe(fleet));
+                Item(message, PairOf(fleet.GalaxyPosition));
             }
 
             for (int i = 0; i < contents.Probes.Count; i++)
@@ -1579,10 +1590,10 @@ namespace ES2Access.Screens
                 // composition all three share (<c>GalaxyHudScreen.ProbeName</c>), since the game
                 // gives a probe no name of its own and a name read off a drawn mote would be gone
                 // whenever the map was not drawing one.
-                message.ListItemForcedComma(found.Name);
+                Item(message, found.Name);
                 if (found.Probe != null)
                 {
-                    message.ListItemForcedComma(PairOf(found.Probe.GalaxyPosition));
+                    Item(message, PairOf(found.Probe.GalaxyPosition));
                 }
             }
 
@@ -1592,32 +1603,51 @@ namespace ES2Access.Screens
             for (int i = 0; i < contents.Projectiles.Count; i++)
             {
                 ObliteratorProjectile shot = contents.Projectiles[i];
-                message.ListItemForcedComma(
-                    ModStrings.Get(ModStrings.GalaxyObliteratorProjectile)
-                );
-                message.ListItemForcedComma(PairOf(shot.GalaxyPosition));
+                Item(message, ModStrings.Get(ModStrings.GalaxyObliteratorProjectile));
+                Item(message, PairOf(shot.GalaxyPosition));
             }
 
             for (int i = 0; i < contents.Pins.Count; i++)
             {
                 CoordinationRequest pin = contents.Pins[i];
-                message.ListItemForcedComma(GalaxyHudScreen.PinKind(pin));
-                message.ListItemForcedComma(PairOf(pin.GalaxyPosition));
+                Item(message, GalaxyHudScreen.PinKind(pin));
+                Item(message, PairOf(pin.GalaxyPosition));
             }
 
             for (int i = 0; i < contents.Markers.Count; i++)
             {
-                message.ListItemForcedComma(QuestMarkers.Name(contents.Markers[i]));
-                message.ListItemForcedComma(PairOf(contents.Markers[i].At));
+                Item(message, QuestMarkers.Name(contents.Markers[i]));
+                Item(message, PairOf(contents.Markers[i].At));
             }
 
             for (int i = 0; i < contents.Lanes.Count; i++)
             {
-                message.ListItemForcedComma(contents.Lanes[i]);
+                Item(message, contents.Lanes[i]);
             }
 
-            message.ListItemForcedComma(fog);
+            Item(message, fog);
+            Item(message, MapCoordinates.Text(_x, _y, 0.0, 0.0));
             return message.Build();
+        }
+
+        /// <summary>One item of the cell's sentence: comma-separated from whatever was said before it,
+        /// and plain where it is the first thing said.
+        ///
+        /// <see cref="MessageBuilder.ListItemForcedComma"/> writes its separator unconditionally - which
+        /// is what the cell wants BETWEEN items, and a stray leading comma at the head of one. Nothing
+        /// in a cell is guaranteed to be there, so which item is the first is not known until it is
+        /// reached: an empty cell reaches only the coordinates, which must read as the bare pair.
+        /// </summary>
+        private static void Item(MessageBuilder message, string text)
+        {
+            if (message.IsEmpty)
+            {
+                message.Fragment(text);
+            }
+            else
+            {
+                message.ListItemForcedComma(text);
+            }
         }
 
         /// <summary>
@@ -1632,7 +1662,6 @@ namespace ES2Access.Screens
         private List<string> CellLines(Contents contents, string fog)
         {
             List<string> lines = new List<string>();
-            lines.Add(MapCoordinates.Text(_x, _y, 0.0, 0.0));
             for (int i = 0; i < contents.Places.Count; i++)
             {
                 Line(lines, PlaceLine(contents.Places[i]));
@@ -1702,6 +1731,9 @@ namespace ES2Access.Screens
                 lines.Add(fog);
             }
 
+            // Last, the way the sentence says it: the buffer's lines are the sentence's items in the
+            // sentence's order, and where the cell is is the last thing either of them says.
+            lines.Add(MapCoordinates.Text(_x, _y, 0.0, 0.0));
             return lines;
         }
 
@@ -1734,9 +1766,9 @@ namespace ES2Access.Screens
         /// system node says, in the same order and separated the same way.</summary>
         private void Place(MessageBuilder message, StarSystemNode node)
         {
-            message.ListItemForcedComma(node.LocalizedName);
-            message.ListItemForcedComma(PairOf(node.GalaxyPosition));
-            message.ListItemForcedComma(GalaxyHudScreen.SpecialKind(node));
+            Item(message, node.LocalizedName);
+            Item(message, PairOf(node.GalaxyPosition));
+            Item(message, GalaxyHudScreen.SpecialKind(node));
         }
 
         /// <summary>Where a thing in the cell stands, said only where it is not simply the cell's own

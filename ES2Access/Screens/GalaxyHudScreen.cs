@@ -315,6 +315,17 @@ namespace ES2Access.Screens
             get { return GalaxyInspect.Active || CursorTargeting.EscapeIsOurs; }
         }
 
+        /// <summary>Typing does nothing while the inspect cursor is up. Up and Down are the cell's own
+        /// moves for as long as the mode holds them (<see cref="AnyKey"/>), so the keys that step a
+        /// search's results never reach the search - a search opened here would be one the player
+        /// could hear and not walk. The letters are still taken from the game: a stray letter must be
+        /// silence, not one of the map's own hotkeys (owner's decision 2026-08-26,
+        /// <see cref="GalaxyInspect"/>).</summary>
+        public override bool SuspendsTypeahead
+        {
+            get { return GalaxyInspect.Active; }
+        }
+
         /// <summary>Whether a stop key is the map itself - the widget the inspect cursor and the
         /// scanner are both modes OF. Every other stop on this screen keeps its own keys while either
         /// is armed (<see cref="GalaxyInspect"/>, <see cref="GalaxyScanner"/>).</summary>

@@ -1801,6 +1801,18 @@ namespace ES2Access.UI
                 return false;
             }
 
+            if (_screen.SuspendsTypeahead)
+            {
+                // Heard and dropped. The letters stay CLAIMED - TakesTypedKey is deliberately not
+                // asking this, so the game's own letter hotkeys still never see them - and they turn
+                // into nothing here. Drained rather than left queued: characters typed at the mode
+                // are not a search the player deferred, and firing them the moment the mode ended
+                // would search with letters nobody meant for the page underneath.
+                NextTyped();
+                ClearSearch();
+                return false;
+            }
+
             string typed = NextTyped();
             if (string.IsNullOrEmpty(typed))
             {
