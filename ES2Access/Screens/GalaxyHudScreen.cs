@@ -7750,6 +7750,12 @@ namespace ES2Access.Screens
             // fleet in orbit reads the exact pair its system reads, which is the map saying the same
             // thing twice on purpose (<see cref="GalaxyCoordinates"/>).
             vtable.Announcements.Add(GalaxyCoordinates.Part(() => it.GalaxyPosition));
+            // Whose it is, who is commanding it and what it is made of - the one phrase every
+            // surface that names a single fleet says (<see cref="FleetPhrase"/>), so this row and a
+            // scanner result and a line in the turn log describe the same fleet the same way. Its
+            // ship walk is memoised on the fleet's own membership, because an announcement part is
+            // asked on every frame whether anything is watching it or not.
+            vtable.Announcements.Add(GraphNodes.ValuePart(() => FleetPhrase.Describe(it)));
             vtable.Announcements.Add(GraphNodes.ValuePart(() => FleetText(it)));
             // How much of the journey is left. A part of its OWN and not part of the line
             // above, because that line is WATCHED - a movement figure the game changes under
@@ -8024,25 +8030,17 @@ namespace ES2Access.Screens
             }
         }
 
-        /// <summary>What a fleet is made of, what it is doing, and how far it can still go this turn.
+        /// <summary>What a fleet is doing and how far it can still go this turn.
         ///
-        /// How big it is only where the map says so (<see cref="FleetPresence.ShowsShipCount"/>): a
-        /// fleet the player can see but has not got a proper look at is drawn with no number on it at
-        /// all, and the part is left out rather than filled with a word about not knowing, because
-        /// there is no such word on the picture either.
+        /// What it is MADE of is said before this, by the fleet phrase every surface names a fleet
+        /// with (<see cref="FleetPhrase.Composition"/>) - a list of what the ships are, which is what
+        /// the bare total used to stand in for.
         /// </summary>
         private static string FleetText(Fleet fleet)
         {
             try
             {
                 MessageBuilder message = new MessageBuilder();
-                if (FleetPresence.ShowsShipCount(fleet))
-                {
-                    message.ListItem(
-                        ModStrings.Format(ModStrings.GalaxyFleetShips, fleet.ShipsCount)
-                    );
-                }
-
                 message.ListItem(FleetState(fleet));
                 if (fleet.IsGuarding)
                 {
