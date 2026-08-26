@@ -88,10 +88,23 @@ namespace ES2Access.UI
         /// worlds' worth of findings routinely repeat a word - two lines both rated "Poor" - and a single
         /// readout of the whole table would drop the second as a duplicate.
         ///
-        /// What each item SAYS (<see cref="AgeWidgets.ItemText"/>), not the text drawn on it: the
-        /// anomalies, the curiosities and the deposits are rows of bare pictures, so reading them as text
-        /// left the survey's whole findings unspoken - the one thing the cutscene exists to
-        /// report.</summary>
+        /// Each item is asked what it SAYS (<see cref="AgeWidgets.ItemText"/>) rather than only for its
+        /// drawn text, because that is the reader every table of findings shares. On THIS panel the
+        /// drawn text is always the answer: its anomaly, curiosity and deposit items are all instances of
+        /// a plain typewriter label (<c>ResourceDepositDiscovery</c> and its siblings carry
+        /// <c>AgePrimitiveLabel</c> + <c>AgeModifierTypewriter</c> and nothing else - no icon, no amount,
+        /// no <c>ResourceDepositItem</c>), and the panel writes a whole sentence into each from a
+        /// template of its own (<c>PlanetLabel_SystemDiscovery.RefreshResourceDepositItem</c> :218-224
+        /// writes "%StarSystemDiscoveryResourceDepositTitle" = "{0}: {1}", the resource's name against
+        /// its deposit category - measured 2026-08-27: "Adamantian: Average Deposit"). The wrapper-title
+        /// fallback inside <c>ItemText</c> never fires here, so nothing on this card needs the caption
+        /// the SYSTEM MANAGEMENT card's deposits need - that card's rows are the icon-and-amount
+        /// <c>ResourceDepositItem</c> prefab, a different shape entirely.
+        ///
+        /// Visibility is the whole gate: all four tables are loaded with <c>StrictVisibility</c> on
+        /// (<c>PlanetLabel_SystemDiscovery.Load</c> :78-84), so <c>ReserveChildren</c> retires a surplus
+        /// row by switching it OFF rather than by parking it at alpha 0, and a hidden row is a row the
+        /// previous world's findings are still written on.</summary>
         private static void AddItems(List<string> fields, AgeTransform table)
         {
             if (!AgeWidgets.Visible(table))

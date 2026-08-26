@@ -370,6 +370,21 @@ management and planet view levels (walk the three and call `IsActive()` on the r
 instance). `Application.Preferences.ForceSystemDiscoverySequence` is the game's own re-run
 switch, for a human running the manual script on a throwaway save.
 
+**Reading a discovery card's CONTENT without the cutscene** (worked 2026-08-27; the same card
+the colonization scene draws): the panel hangs off a window that exists unshown, so one `/eval`
+does the whole round trip — `Gui.GuiService.GetWindow<PlanetLabelsWindow_SystemDiscovery>(false)`,
+take `.PlanetLabel`, save `.Planet` and the `Visible` flag of every `AgeTransform` from the
+panel's own up through its parents, then set `.Planet` to any planet, call `RefreshNow()`
+(public, ungated — it fills every label and pools every table), force that ancestor chain
+`Visible = true`, call the reader, and restore both in a `finally`. Forcing the chain is what
+makes the read faithful: `AgeWidgets.Visible` walks ancestors, so against the unshown window
+every table reads hidden and the card answers with its name alone. Nothing survives the probe —
+the restore happens inside the one statement, so no frame ever draws the panel, and the game's
+own `OnBeginShow` re-`Refresh`es from scratch anyway. Pick the planet by walking
+`ES2Access.UI.GameGalaxy.GameNodes()` for a `StarSystemNode` whose `Planets` hold deposits and
+anomalies — whatever the loaded galaxy happens to have; the card is read off the PLANET, so no
+save's own layout is part of the route.
+
 - A FOREIGN empire's outpost card, an outpost action past its start turn, the
   regress/stagnant/complete captions, the Hisshos wording, the `Discard`-hidden faction
   actions, buy-outpost, hangar ships, colonize, the ghost panels, the rebellion and migration
