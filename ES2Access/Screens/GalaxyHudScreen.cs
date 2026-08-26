@@ -154,14 +154,6 @@ namespace ES2Access.Screens
             get { return _inspect; }
         }
 
-        /// <summary>The probe labels the map is drawing this build - what the inspect cursor asks for
-        /// the probes inside its cell, so the two answers come off one walk of the label window.
-        /// </summary>
-        internal IList<ProbeLabel> DrawnProbes
-        {
-            get { return _probes; }
-        }
-
         /// <summary>The obliterator missiles this empire has been SHOWN - the same list
         /// <see cref="AddProjectiles"/> declares its nodes from, so the cell, the tree and the
         /// scanner cannot disagree about which shots are in flight.</summary>

@@ -917,7 +917,7 @@ namespace ES2Access.Screens
                 Identify(things, "fleet", contents.Fleets);
                 for (int i = 0; i < contents.Probes.Count; i++)
                 {
-                    Probe probe = contents.Probes[i].Entity as Probe;
+                    Probe probe = contents.Probes[i].Probe;
                     if (probe != null)
                     {
                         things.Add("probe:" + probe.GUID);
@@ -1380,7 +1380,7 @@ namespace ES2Access.Screens
 
             for (int i = 0; i < contents.Probes.Count; i++)
             {
-                Probe probe = contents.Probes[i].Entity as Probe;
+                Probe probe = contents.Probes[i].Probe;
                 if (probe != null)
                 {
                     _aim.Add(probe);
@@ -1522,7 +1522,8 @@ namespace ES2Access.Screens
             public readonly List<StarSystemNode> Places = new List<StarSystemNode>();
             public readonly List<StarSystemNode> Special = new List<StarSystemNode>();
             public readonly List<Fleet> Fleets = new List<Fleet>();
-            public readonly List<ProbeLabel> Probes = new List<ProbeLabel>();
+            public readonly List<GalaxyHudScreen.ScannedProbe> Probes =
+                new List<GalaxyHudScreen.ScannedProbe>();
             public readonly List<ObliteratorProjectile> Projectiles =
                 new List<ObliteratorProjectile>();
             public readonly List<CoordinationRequest> Pins = new List<CoordinationRequest>();
@@ -1573,14 +1574,15 @@ namespace ES2Access.Screens
 
             for (int i = 0; i < contents.Probes.Count; i++)
             {
-                ProbeLabel label = contents.Probes[i];
-                Probe probe = label.Entity as Probe;
-                // Named the way the tree's own probe node names it - off the dossier the map hangs on
-                // the mote, since the game gives a probe no name of its own.
-                message.ListItemForcedComma(AgeWidgets.TooltipTitle(label.Tooltip));
-                if (probe != null)
+                GalaxyHudScreen.ScannedProbe found = contents.Probes[i];
+                // Named the way the tree's own probe node and the scanner name it - the one
+                // composition all three share (<c>GalaxyHudScreen.ProbeName</c>), since the game
+                // gives a probe no name of its own and a name read off a drawn mote would be gone
+                // whenever the map was not drawing one.
+                message.ListItemForcedComma(found.Name);
+                if (found.Probe != null)
                 {
-                    message.ListItemForcedComma(PairOf(probe.GalaxyPosition));
+                    message.ListItemForcedComma(PairOf(found.Probe.GalaxyPosition));
                 }
             }
 
@@ -1653,13 +1655,12 @@ namespace ES2Access.Screens
 
             for (int i = 0; i < contents.Probes.Count; i++)
             {
-                ProbeLabel label = contents.Probes[i];
-                Probe probe = label.Entity as Probe;
+                GalaxyHudScreen.ScannedProbe found = contents.Probes[i];
                 MessageBuilder line = new MessageBuilder();
-                line.Fragment(AgeWidgets.TooltipTitle(label.Tooltip));
-                if (probe != null)
+                line.Fragment(found.Name);
+                if (found.Probe != null)
                 {
-                    line.ListItemForcedComma(PairOf(probe.GalaxyPosition));
+                    line.ListItemForcedComma(PairOf(found.Probe.GalaxyPosition));
                 }
 
                 Line(lines, line);
@@ -1806,10 +1807,15 @@ namespace ES2Access.Screens
                     }
                 }
 
-                IList<ProbeLabel> probes = _screen.DrawnProbes;
+                // The SIGHTED probes, and named by the very call the scanner names them with
+                // (owner ruling 2026-08-26): the cell used to read the DRAWN LABELS and take the
+                // words off the dossier hanging on one, so a probe whose mote the map was not
+                // drawing was missing from its own square, and its name was a second composition
+                // that could drift from the one the tree and the scanner say. One list, one name.
+                IList<GalaxyHudScreen.ScannedProbe> probes = _screen.ScannedProbes();
                 for (int i = 0; i < probes.Count; i++)
                 {
-                    Probe probe = probes[i] == null ? null : probes[i].Entity as Probe;
+                    Probe probe = probes[i].Probe;
                     if (probe != null && Holds(probe.GalaxyPosition))
                     {
                         contents.Probes.Add(probes[i]);
