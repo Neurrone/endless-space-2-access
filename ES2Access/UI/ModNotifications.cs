@@ -587,42 +587,41 @@ namespace ES2Access.UI
 
             string where = PlaceName(_fleet.GetGameNode());
             string owner = Owner();
-            string body =
-                where == null
-                    ? ModStrings.Format(
-                        ModStrings.NotificationFleetSightedBodyNowhere,
-                        owner,
-                        _fleet.LocalizedName
-                    )
-                    : ModStrings.Format(
-                        ModStrings.NotificationFleetSightedBody,
-                        owner,
-                        _fleet.LocalizedName,
-                        where
-                    );
+            string named = Named();
+            return where == null
+                ? ModStrings.Format(ModStrings.NotificationFleetSightedBodyNowhere, owner, named)
+                : ModStrings.Format(
+                    ModStrings.NotificationFleetSightedBody,
+                    owner,
+                    named,
+                    where
+                );
+        }
 
-            // What it is made of, only where the map itself would show a number on the lozenge - the
-            // same permission the fleet row asks for, asked inside the phrase
-            // (FleetPhrase.Composition answers null below it). Its own sentence, so no language has
-            // to inflect a list glued into somebody else's.
-            string composition = FleetPhrase.Composition(_fleet);
-            if (composition != null)
+        /// <summary>
+        /// The sighted fleet as the sentence's own subject - its name, then who is commanding it and
+        /// what it is made of, read INSIDE the sentence rather than as sentences trailing after it
+        /// (owner ruling 2026-08-26): "The enemy Leaper (AI) fleet 1st Ravaging Horde, Scavenger, was
+        /// sighted at Heka."
+        ///
+        /// Whose it is is left out here - the sentence has already said it in its own slot, and
+        /// saying it twice would be the mod stammering.
+        ///
+        /// The trailing comma is the far side of that appositive, and it is the mod's own list
+        /// separator rather than a punctuation mark written into the code, so a language that
+        /// separates a list some other way separates this too. It is only added where there IS an
+        /// appositive: a fleet the player may not count and that carries no hero is nothing but its
+        /// name, and a name needs no comma after it.
+        /// </summary>
+        private string Named()
+        {
+            string named = FleetPhrase.Full(_fleet, false);
+            if (string.IsNullOrEmpty(named) || named == _fleet.LocalizedName)
             {
-                body =
-                    body
-                    + " "
-                    + ModStrings.Format(ModStrings.NotificationFleetComposition, composition);
+                return named;
             }
 
-            // Who is commanding it. The game's own dossier draws a foreign hero's name with no
-            // ownership gate on it, so this is news about anybody's fleet.
-            string hero = FleetPhrase.HeroName(_fleet);
-            if (hero != null)
-            {
-                body = body + " " + ModStrings.Format(ModStrings.NotificationFleetHero, hero);
-            }
-
-            return body;
+            return named + ModStrings.Get(ModStrings.ListSeparator).TrimEnd();
         }
 
         protected override IGameEntityWithGalaxyPosition Location()

@@ -50,14 +50,19 @@ namespace ES2Access.UI
     {
         /// <summary>The whole phrase with the fleet's own name in front of it - what a surface says
         /// when it is naming the fleet from scratch (a turn-log sentence). Never null for a live
-        /// fleet: the name alone is still a phrase.</summary>
-        public static string Full(Fleet fleet)
+        /// fleet: the name alone is still a phrase.
+        ///
+        /// <paramref name="withOwner"/> false leaves the standing and owner out and keeps the rest -
+        /// for the one sentence that has already named the owner in a slot of its own (the sighting
+        /// notification's "The enemy Leaper (AI) fleet ..."), where saying it twice would be the mod
+        /// stammering.</summary>
+        public static string Full(Fleet fleet, bool withOwner = true)
         {
             try
             {
                 MessageBuilder message = new MessageBuilder();
                 message.Fragment(fleet.LocalizedName);
-                message.ListItemForcedComma(Describe(fleet));
+                message.ListItemForcedComma(withOwner ? Describe(fleet) : Aboard(fleet));
                 return message.Build();
             }
             catch (Exception)
@@ -75,14 +80,23 @@ namespace ES2Access.UI
             {
                 MessageBuilder message = new MessageBuilder();
                 message.ListItem(Owned(fleet));
-                message.ListItem(Commander(fleet));
-                message.ListItem(Composition(fleet));
+                message.ListItem(Aboard(fleet));
                 return message.Build();
             }
             catch (Exception)
             {
                 return null;
             }
+        }
+
+        /// <summary>Who is riding with the fleet and what it is made of - everything
+        /// <see cref="Describe"/> says once whose it is has been settled.</summary>
+        private static string Aboard(Fleet fleet)
+        {
+            MessageBuilder message = new MessageBuilder();
+            message.ListItem(Commander(fleet));
+            message.ListItem(Composition(fleet));
+            return message.Build();
         }
 
         /// <summary>Whose fleet this is and which way the player stands to them - "enemy Leaper (AI)".

@@ -884,14 +884,6 @@ namespace ES2Access.Core.Speech
         public const string NotificationFleetSightedBodyNowhere =
             "notification.fleet-sighted-body-nowhere";
 
-        /// <summary>What a sighted fleet is made of and who is commanding it, each as its own whole
-        /// sentence beside the sighting one - a list or a name glued into another language's sentence
-        /// is exactly what a whole-phrase template exists to avoid. The composition is the same list
-        /// the map's fleet row speaks and comes under the same permission
-        /// (<c>FleetPresence.ShowsShipCount</c>).</summary>
-        public const string NotificationFleetComposition = "notification.fleet-composition";
-        public const string NotificationFleetHero = "notification.fleet-hero";
-
         public const string NotificationColonySighted = "notification.colony-sighted";
         public const string NotificationColonySightedBody = "notification.colony-sighted-body";
 
@@ -2043,8 +2035,6 @@ namespace ES2Access.Core.Speech
             { NotificationFleetSightedNowhere, "{0} fleet sighted" },
             { NotificationFleetSightedBody, "The {0} fleet {1} was sighted at {2}." },
             { NotificationFleetSightedBodyNowhere, "The {0} fleet {1} was sighted." },
-            { NotificationFleetComposition, "It has {0}." },
-            { NotificationFleetHero, "Hero {0} is aboard." },
             { NotificationColonySighted, "{0} colony sighted at {1}" },
             { NotificationColonySightedBody, "A {0} colony was sighted at {1}." },
             { NotificationFleetDispatched, "{0} dispatched from {1} to {2}" },
