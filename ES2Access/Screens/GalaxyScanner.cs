@@ -2771,58 +2771,35 @@ namespace ES2Access.Screens
         /// <summary>
         /// Which way the player stands to whoever owns a thing.
         ///
-        /// Friendly is the player's own and the empires allied to them; enemy is the ones the game
-        /// says they are at WAR with, plus the pirates, who never appear in a war state at all and are
-        /// hostile by default all the same (their own ladder runs Aggressive to Best friend, and only
-        /// a bought peace takes them off the player's back). Everything else - the minor factions, the
-        /// empires not yet met, a cold war, a peace, a truce, and anything with no owner - is neutral.
+        /// The mod has ONE standing ladder and this is a reading of it
+        /// (<see cref="FleetPresence.SideOf(Empire, Empire, DepartmentOfForeignAffairs)"/>, shared
+        /// with the map's lozenge count phrases and the spoken fleet phrase): the game's own ladder
+        /// for a major empire, cold war and all, so a cold-war neighbour's fleets file under enemy
+        /// here exactly as the map calls them enemy fleets. The scanner used to keep a taxonomy of
+        /// its own in which only a declared WAR made an enemy; the owner ruled that out on
+        /// 2026-08-26, because a filter that disagrees with what the same thing says when it speaks
+        /// makes the player learn two galaxies.
         ///
-        /// This is deliberately NOT the map's own three-way split, which calls a cold war and every
-        /// minor faction an enemy (<c>GuiFleetGroup.Title</c> compares against a state value that is
-        /// -1 for every non-major state). Owner's taxonomy: at war is the line that matters when the
-        /// question being asked is "what is nearby".
+        /// What the shared ladder does NOT reproduce is the game's own -1 fallthrough, which calls
+        /// every minor civilization and every peaceful pirate an enemy; those states are bucketed by
+        /// their own names instead.
+        ///
+        /// The player's own things file with the friendly ones, which is the one place this reading
+        /// differs from the four-way ladder - the affiliation filters offer three, and the owner's
+        /// own fleets belong with their friends' (as at <see cref="Systems"/> too).
         /// </summary>
         private static int Scope(Empire owner, Empire empire, DepartmentOfForeignAffairs foreign)
         {
-            if (owner == null)
+            switch (FleetPresence.SideOf(owner, empire, foreign))
             {
-                return ScopeNeutral;
+                case FleetPresence.Side.Player:
+                case FleetPresence.Side.Friendly:
+                    return ScopeFriendly;
+                case FleetPresence.Side.Enemy:
+                    return ScopeEnemy;
+                default:
+                    return ScopeNeutral;
             }
-
-            if (ReferenceEquals(owner, empire))
-            {
-                return ScopeFriendly;
-            }
-
-            DiplomaticRelation relation =
-                foreign == null ? null : foreign.GetDiplomaticRelation(owner);
-            DiplomaticRelationState state = relation == null ? null : relation.State;
-            if (owner is PirateEmpire)
-            {
-                return state != null && state.Name == DiplomaticRelationState.Names.Pirate.Peace
-                    ? ScopeNeutral
-                    : ScopeEnemy;
-            }
-
-            if (state == null)
-            {
-                return ScopeNeutral;
-            }
-
-            if (state.IsWarState)
-            {
-                return ScopeEnemy;
-            }
-
-            if (
-                state.Name == DiplomaticRelationState.Names.Major.Team
-                || relation.HasAbility(DiplomaticAbilityDefinition.Names.Alliance)
-            )
-            {
-                return ScopeFriendly;
-            }
-
-            return ScopeNeutral;
         }
 
         /// <summary>Nearest first, and where two things are the same distance away the one whose name
