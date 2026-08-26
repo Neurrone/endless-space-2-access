@@ -2369,7 +2369,14 @@ namespace ES2Access.Screens
             }
 
             AddTurnButton(found, window.ApplyMovementsButton, "apply-movements", ModStrings.GalaxyApplyMovements, null);
-            AddTurnButton(found, window.NextIdleFleetButton, "next-idle-fleet", ModStrings.GalaxyNextIdleFleet, IdleFleetsText);
+            AddTurnButton(
+                found,
+                window.NextIdleFleetButton,
+                "next-idle-fleet",
+                ModStrings.GalaxyNextIdleFleet,
+                IdleFleetsText,
+                NextIdleFleet
+            );
             AddTurnButton(found, window.GameMenuButton, "game-menu", ModStrings.GalaxyGameMenu, null);
             AddPendingNotifications(found, window.PendingNotificationButton);
             AddRequestToggle(found, window.RequestToggle);
@@ -2388,12 +2395,17 @@ namespace ES2Access.Screens
             }
         }
 
+        /// <summary><paramref name="activate"/> is for the one button whose click the mod does better
+        /// than a press of it would (<see cref="NextIdleFleet"/>); everything else on the turn cluster
+        /// presses the game's own control, which is what keeps a button the mod knows nothing about
+        /// working.</summary>
         private void AddTurnButton(
             List<Cell> found,
             AgeControlButton button,
             string key,
             string nameKey,
-            Func<string> value
+            Func<string> value,
+            Action<AgeControlButton> activate = null
         )
         {
             if (!AgeWidgets.Visible(AgeWidgets.Transform(button)))
@@ -2402,9 +2414,19 @@ namespace ES2Access.Screens
             }
 
             AgeControlButton it = button;
+            Action<AgeControlButton> act = activate;
             NodeVtable vtable = GraphNodes.Button(
                 () => ModStrings.Get(nameKey),
-                () => AgeWidgets.Press(it),
+                () =>
+                {
+                    if (act == null)
+                    {
+                        AgeWidgets.Press(it);
+                        return;
+                    }
+
+                    act(it);
+                },
                 () => AgeWidgets.Enabled(AgeWidgets.Transform(it)),
                 AgeWidgets.Readable(AgeWidgets.Raw(AgeWidgets.Transform(it)))
             );
@@ -3050,6 +3072,26 @@ namespace ES2Access.Screens
             }
 
             return lines;
+        }
+
+        /// <summary>
+        /// Go to the next fleet with nothing to do - the galaxy page's own route where the player is on
+        /// the galaxy page, and the game's button everywhere else.
+        ///
+        /// The turn cluster is drawn on every page in the game, and only the galaxy page has a map to
+        /// land a cursor on; on any other page the button's own behaviour (fly the camera to the fleet,
+        /// select it, and let the galaxy page pick the arrival up) is still the right one and is left
+        /// alone. On the galaxy page it costs a second camera move, which is what the page's own route
+        /// takes out (<see cref="GalaxyHudScreen.GoToNextIdleFleet"/>).
+        /// </summary>
+        private void NextIdleFleet(AgeControlButton button)
+        {
+            GraphNavigator navigator = ModEntry.Navigator;
+            GalaxyHudScreen galaxy = navigator == null ? null : navigator.Screen as GalaxyHudScreen;
+            if (galaxy == null || !galaxy.GoToNextIdleFleet())
+            {
+                AgeWidgets.Press(button);
+            }
         }
 
         /// <summary>How many fleets are waiting to be given something to do, counted the way the

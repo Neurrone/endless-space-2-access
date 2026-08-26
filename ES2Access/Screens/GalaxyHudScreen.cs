@@ -4745,8 +4745,8 @@ namespace ES2Access.Screens
         }
 
         /// <summary>
-        /// The button the map draws on a system of ours, beside its name - the one route into that
-        /// system's page, and the one the mouse takes.
+        /// The way into a system's page from the map - the button the mouse takes where the map is
+        /// drawing one, and the route behind it wherever that route would really open a page.
         ///
         /// Declared while the game is drawing the button, and pressed only while the game will act on a
         /// press. Those are two different questions here: the label greys the button out on anything but
@@ -4759,11 +4759,25 @@ namespace ES2Access.Screens
         /// ladder. A system somebody else holds and we have turned somebody inside is the same story
         /// wearing a foreign flag: the button is drawn greyed there too, and the page behind it opens.
         ///
-        /// The greyed-out button is therefore still declared wherever that route would really open a
-        /// page (<see cref="Manageable"/>), and takes the route itself rather than pressing a button
-        /// that would do nothing. Nowhere else: on somebody else's system or an empty one the same call
+        /// The node is therefore declared wherever that route would really open a page
+        /// (<see cref="Manageable"/>), and takes the route itself rather than pressing a button that
+        /// would do nothing. Nowhere else: on somebody else's system or an empty one the same call
         /// silently degrades to centring the map (<see cref="GalaxyViewLevels.OpenSystem"/>), which is
         /// not a page and would be a node that says it opens something and does not.
+        ///
+        /// Being DRAWN is not part of that question, and used to be - the node existed only while the
+        /// button was chain-visible, which contradicted the principle above and made the route come and
+        /// go with the camera. The button's own <c>Visible</c> is always true; what hides it is an
+        /// ancestor group named "Child" on the label, and that group is flipped visible by the GAME's
+        /// zoom request and not by the mod's inside-snap. Measured 2026-08-26 on <c>[Beginner] test</c>:
+        /// a search landing inside Sabel left the system with nine children and no way into its page,
+        /// permanently, against ten after walking in with Right. A route into a page is not a thing to
+        /// lose because of how the player got here.
+        ///
+        /// What being drawn still decides is the POINTER: an undrawn button is nothing to light up and
+        /// nothing to hover, so the aim and the tooltip promise are made only while it is drawn. That
+        /// costs the reading nothing - the button carries no tooltip on any label in the galaxy
+        /// (measured 2026-08-26, all 86).
         /// </summary>
         private static void AddManagementView(
             GraphBuilder builder,
@@ -4773,12 +4787,8 @@ namespace ES2Access.Screens
         )
         {
             AgeTransform button = label == null ? null : label.RequestManagementViewButton;
-            if (button == null || !Visible(button))
-            {
-                return;
-            }
-
-            if (!AgeWidgets.Operable(button) && !Manageable(node))
+            bool drawn = button != null && Visible(button);
+            if (!Manageable(node) && !(drawn && AgeWidgets.Operable(button)))
             {
                 return;
             }
@@ -4789,9 +4799,16 @@ namespace ES2Access.Screens
                 () => ModStrings.Get(ModStrings.GalaxyOpenSystem),
                 () => OpenManagementView(it, at),
                 null,
-                Raw(it)
+                // The label's button carries no tooltip of its own on any of the 86 labels in the
+                // galaxy (measured 2026-08-26), so there is nothing to promise and nothing lost by not
+                // promising it while the button is undrawn.
+                drawn ? Raw(it) : null
             );
-            PointAt(vtable, it);
+            if (drawn)
+            {
+                PointAt(vtable, it);
+            }
+
             builder.AddItem(ControlId.Structural(key + "/management"), vtable);
         }
 
@@ -9719,6 +9736,132 @@ namespace ES2Access.Screens
             Select(fleet);
         }
 
+        /// <summary>
+        /// NEXT IDLE FLEET, without the detour through the fleet's berth.
+        ///
+        /// The game's own button flies the camera to the fleet FIRST and selects afterwards
+        /// (<c>EndTurnWindow.SelectIdleFleet</c> :1387-1411: a docked fleet gets
+        /// <c>RequestGalaxyOverviewViewLevel(slot.position)</c> and then a coroutine that waits for the
+        /// overview level before handing the fleet to the cursor). On this page that is one camera move
+        /// too many: the flight lands on the docking slot, and then the cursor arriving on the fleet's
+        /// row asks for the star's own framing and the picture moves a second time. Owner-reported
+        /// 2026-08-26 as "the camera centres on the fleet, before the mod's reconciliation moves it to
+        /// the star system's orbital view".
+        ///
+        /// So the node takes the route itself, in the order the page uses for everything else: the
+        /// cursor is sent to the fleet's row through the page's ONE landing
+        /// (<see cref="GoTo"/>) with the camera left to the row's own focus
+        /// (<see cref="FollowPlace"/>) - a docked fleet's star framed, a fleet under way slid to its own
+        /// point - and only then is the fleet selected, with no camera request of its own
+        /// (<see cref="SelectSeated"/>). One move, and it is the move the row would have made anyway.
+        ///
+        /// The game's own cycle is still what picks the fleet (<c>GetNextIdleFleet</c>, which advances
+        /// the window's counter), so a keyboard press and a mouse click walk the same fleets in the same
+        /// order. Answers false only where that cycle cannot be reached at all, which is the caller's
+        /// signal to press the button the old way.
+        /// </summary>
+        internal bool GoToNextIdleFleet()
+        {
+            EndTurnWindow window = TurnWindow();
+            if (window == null || NextIdleFleetOf == null)
+            {
+                return false;
+            }
+
+            try
+            {
+                Fleet fleet = NextIdleFleetOf.Invoke(window, null) as Fleet;
+                // Nothing to go to, a mode waiting for a target (a click selects nothing while one is
+                // up), or a fleet the map refuses to select: consumed and silent, exactly as the fleet's
+                // own row is (<see cref="Select"/>).
+                if (fleet == null || CursorTargeting.Aiming || !FleetPresence.Selectable(fleet))
+                {
+                    return true;
+                }
+
+                MapTarget target;
+                if (TargetFor(fleet, out target))
+                {
+                    GoTo(target, MapCamera.None);
+                }
+
+                SelectSeated(fleet);
+                return true;
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: going to the next idle fleet threw: " + e);
+                return true;
+            }
+        }
+
+        /// <summary>
+        /// Select a fleet where the camera is already showing it - the selection half of
+        /// <see cref="GoToNextIdleFleet"/>, with every camera request taken out.
+        ///
+        /// A DOCKED fleet is the pair of calls the game's own coroutine makes once its flight has
+        /// arrived (<c>EndTurnWindow.SelectFleetWhenViewReady</c>): hand the berth to the cursor, which
+        /// is what opens the fleet panel, then tell the panel which of the berth's fleets was meant.
+        /// Measured 2026-08-26 with the camera already framing the fleet's star: the panel opened, the
+        /// docking cursor swapped in, and the camera stayed bit-identical for 1.2 s - the overview wait
+        /// the game's coroutine exists for is a wait for the flight this route never starts.
+        ///
+        /// A fleet with no berth - one under way - has no docking slot to hand over, and the game's own
+        /// routine falls through to a call that only STASHES the fleet for a window that is never
+        /// shown. That case keeps the map's own selection (<see cref="SelectOnMap"/>), whose camera
+        /// request is aimed at the fleet the landing is already going to.
+        /// </summary>
+        private static void SelectSeated(Fleet fleet)
+        {
+            try
+            {
+                // The map's own selection asks the camera for the fleet through the very call the mod
+                // watches for the GAME sending the player somewhere - and the player is already being
+                // sent there, by the landing above (<see cref="GalaxyLocate.Suppressed"/>).
+                GalaxyLocate.Suppressed = true;
+                if (FleetOrders.Orbit(fleet) != null)
+                {
+                    Amplitude.Unity.View.ICursorService cursors =
+                        Amplitude.Unity.Framework.Services.GetService<Amplitude.Unity.View.ICursorService>();
+                    IVisibleDockingSlotRepositoryService slots =
+                        Amplitude.Unity.Framework.Services.GetService<IVisibleDockingSlotRepositoryService>();
+                    DockingSlotCursorTarget berth =
+                        slots == null ? null : slots.GetDockingSlotWithFleet(fleet);
+                    global::FleetsScreen panel = Gui.GuiServiceAvailable
+                        ? Gui.GuiService.GetWindow<global::FleetsScreen>(false)
+                        : null;
+                    if (berth != null && cursors != null && panel != null)
+                    {
+                        cursors.Select(berth);
+                        panel.SelectIdleFleet(fleet);
+                        return;
+                    }
+
+                    if (panel != null)
+                    {
+                        // The game's own fall-back for a fleet it cannot find a berth for, kept so that
+                        // an orbiting fleet the map is drawing no slot for behaves as the button does.
+                        Log.Warn(
+                            "galaxy: the next idle fleet is in orbit and the map draws no berth for it"
+                                + " - falling back to the game's own hand-over"
+                        );
+                        panel.SelectIdleFleet(fleet);
+                        return;
+                    }
+                }
+
+                SelectOnMap(fleet);
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: selecting the fleet the camera is already showing threw: " + e);
+            }
+            finally
+            {
+                GalaxyLocate.Suppressed = false;
+            }
+        }
+
         private static void Select(Fleet fleet)
         {
             try
@@ -9813,7 +9956,17 @@ namespace ES2Access.Screens
         // whole recipe - dock slot, camera, view level, cursor, fleet panel - is written down.
         private static readonly MethodInfo SelectIdleFleet = Member("SelectIdleFleet");
 
+        // The cycle itself - which fleet the button would have gone to, and the counter it advances, so
+        // that the key and the click walk the same fleets in the same order
+        // (<see cref="GoToNextIdleFleet"/>).
+        private static readonly MethodInfo NextIdleFleetOf = Member("GetNextIdleFleet", Type.EmptyTypes);
+
         private static MethodInfo Member(string name)
+        {
+            return Member(name, new Type[] { typeof(Fleet) });
+        }
+
+        private static MethodInfo Member(string name, Type[] arguments)
         {
             try
             {
@@ -9821,7 +9974,7 @@ namespace ES2Access.Screens
                     name,
                     BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public,
                     null,
-                    new Type[] { typeof(Fleet) },
+                    arguments,
                     null
                 );
             }
