@@ -835,6 +835,25 @@ namespace ES2Access.Core.Speech
         // outright - both silently, and the only sign of either is a fleet that has stopped.
         public const string FleetInterceptedAt = "fleet.intercepted-at";
         public const string FleetIntercepted = "fleet.intercepted";
+
+        /// <summary>Whose a fleet is and which way the player stands to them, as one phrase per
+        /// standing rather than a standing word glued in front of a name - a language that inflects
+        /// "enemy" for the owner's gender or case has to see the whole thing (<c>FleetPhrase</c>).
+        /// A fleet of the player's own says none of these.
+        /// </summary>
+        public const string FleetOwnedEnemy = "fleet.owned-enemy";
+        public const string FleetOwnedNeutral = "fleet.owned-neutral";
+        public const string FleetOwnedFriendly = "fleet.owned-friendly";
+
+        /// <summary>The hero riding with a fleet, named. Any fleet's, own or foreign: the game's own
+        /// dossier draws a foreign hero's name with no ownership gate on it.</summary>
+        public const string FleetHero = "fleet.hero";
+
+        /// <summary>TWO OR MORE ships of one kind in a fleet - a count and the design's own name. A
+        /// group of ONE has no template and no number: it is the design's name on its own (owner
+        /// ruling 2026-08-26). The hero's own ship is one of these like any other and is not marked
+        /// out; that a hero is aboard is <see cref="FleetHero"/>'s to say.</summary>
+        public const string FleetShipGroup = "fleet.ship-group";
         public const string FleetRouteCancelledTo = "fleet.route-cancelled-to";
         public const string FleetRouteCancelled = "fleet.route-cancelled";
 
@@ -865,11 +884,13 @@ namespace ES2Access.Core.Speech
         public const string NotificationFleetSightedBodyNowhere =
             "notification.fleet-sighted-body-nowhere";
 
-        /// <summary>How big a sighted fleet is, as its own whole sentence beside the sighting one -
-        /// a count glued into another language's sentence is exactly what
-        /// <see cref="Plural"/> exists to avoid.</summary>
-        public const string NotificationFleetShipsOne = "notification.fleet-ships-one";
-        public const string NotificationFleetShipsMany = "notification.fleet-ships-many";
+        /// <summary>What a sighted fleet is made of and who is commanding it, each as its own whole
+        /// sentence beside the sighting one - a list or a name glued into another language's sentence
+        /// is exactly what a whole-phrase template exists to avoid. The composition is the same list
+        /// the map's fleet row speaks and comes under the same permission
+        /// (<c>FleetPresence.ShowsShipCount</c>).</summary>
+        public const string NotificationFleetComposition = "notification.fleet-composition";
+        public const string NotificationFleetHero = "notification.fleet-hero";
 
         public const string NotificationColonySighted = "notification.colony-sighted";
         public const string NotificationColonySightedBody = "notification.colony-sighted-body";
@@ -2002,6 +2023,11 @@ namespace ES2Access.Core.Speech
             { FleetRouteArrivesTurns, "Arrives in {0} turns" },
             { FleetInterceptedAt, "{0} was intercepted at {1}" },
             { FleetIntercepted, "{0} was intercepted" },
+            { FleetOwnedEnemy, "enemy {0}" },
+            { FleetOwnedNeutral, "neutral {0}" },
+            { FleetOwnedFriendly, "friendly {0}" },
+            { FleetHero, "hero {0}" },
+            { FleetShipGroup, "{0} {1}" },
             { FleetRouteCancelledTo, "The route of {0} to {1} was cancelled" },
             { FleetRouteCancelled, "The route of {0} was cancelled" },
             { NotificationTurnPrefix, "Turn {0}: {1}" },
@@ -2017,8 +2043,8 @@ namespace ES2Access.Core.Speech
             { NotificationFleetSightedNowhere, "{0} fleet sighted" },
             { NotificationFleetSightedBody, "The {0} fleet {1} was sighted at {2}." },
             { NotificationFleetSightedBodyNowhere, "The {0} fleet {1} was sighted." },
-            { NotificationFleetShipsOne, "It has 1 ship." },
-            { NotificationFleetShipsMany, "It has {0} ships." },
+            { NotificationFleetComposition, "It has {0}." },
+            { NotificationFleetHero, "Hero {0} is aboard." },
             { NotificationColonySighted, "{0} colony sighted at {1}" },
             { NotificationColonySightedBody, "A {0} colony was sighted at {1}." },
             { NotificationFleetDispatched, "{0} dispatched from {1} to {2}" },

@@ -425,12 +425,75 @@ namespace ES2Access.UI
             );
         }
 
-        /// <summary>
-        /// Which of the game's four count phrases a lozenge's owner earns.
+        /// <summary>Which of the game's four count phrases a lozenge's owner earns.
         ///
         /// Whose the group is stays the game's answer (<c>GuiFleetGroup.Empire</c>): the first
         /// garrison's empire when it is the player's, otherwise the empire it is FLYING THE COLOURS of,
-        /// so a disguised fleet reads as whoever it is pretending to be.
+        /// so a disguised fleet reads as whoever it is pretending to be. Which way the player stands to
+        /// that empire is <see cref="SideOf(Empire)"/>.</summary>
+        private static string Standing(List<Garrison> garrisons)
+        {
+            try
+            {
+                switch (SideOf(new GuiFleetGroup(garrisons).Empire))
+                {
+                    case Side.Player:
+                        return CountPlayer;
+                    case Side.Enemy:
+                        return CountEnemy;
+                    case Side.Friendly:
+                        return CountAllied;
+                    default:
+                        return CountNeutral;
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: reading which way the player stands to a fleet group threw: " + e);
+                return CountNeutral;
+            }
+        }
+
+        /// <summary>Which way the player stands to somebody - the one answer the whole mod classifies
+        /// standing by. Its four buckets are the four the game's own count phrases come in, and the
+        /// surfaces that need fewer read them together: the scanner files Player with Friendly, and the
+        /// spoken fleet phrase leaves Player out altogether.</summary>
+        public enum Side
+        {
+            /// <summary>The reading empire's own.</summary>
+            Player,
+
+            /// <summary>Somebody the game's own ladder puts at or below cold war, at war, or an
+            /// unbought pirate.</summary>
+            Enemy,
+
+            /// <summary>Everybody in between - a peace, a truce, a minor civilization on cordial
+            /// terms, an empire not yet met, and anything with no owner at all.</summary>
+            Neutral,
+
+            /// <summary>Above peace on the game's ladder, or a minor civilization under the player's
+            /// wing, or the Academy allied.</summary>
+            Friendly,
+        }
+
+        /// <summary>
+        /// Which way the player stands to whoever owns something, resolving the reading empire and its
+        /// foreign office from the GUI.
+        /// </summary>
+        public static Side SideOf(Empire owner)
+        {
+            Empire player = Gui.PlayerEmpire;
+            return SideOf(
+                owner,
+                player,
+                player == null ? null : player.GetAgency<DepartmentOfForeignAffairs>()
+            );
+        }
+
+        /// <summary>
+        /// The one standing ladder in the mod - what the lozenge count phrases, the spoken fleet
+        /// phrase and the scanner's affiliation filters all classify by (owner ruling 2026-08-26:
+        /// every surface uses the game's own word).
         ///
         /// For a major empire this walks the game's own ladder exactly, cold war included - the map
         /// calls a cold-war neighbour's fleets enemy fleets and so does this, so the tooltip heading and
@@ -442,34 +505,32 @@ namespace ES2Access.UI
         /// that; only the heading is wrong, and it is wrong for exactly the states the value function
         /// does not name. So those states are bucketed here: at war (which includes the Academy's own
         /// war state) or an unbought pirate is an enemy, the three states that put a minor civilization
-        /// under the player's wing plus an Academy alliance are allied, and everything else - cordial,
+        /// under the player's wing plus an Academy alliance are friendly, and everything else - cordial,
         /// amicable, friendly, not yet met - is neutral.
+        ///
+        /// <paramref name="player"/> and <paramref name="foreign"/> are passed in for a caller that
+        /// already holds them - a scanner sweep classifies hundreds of things against the one empire.
         /// </summary>
-        private static string Standing(List<Garrison> garrisons)
+        public static Side SideOf(Empire owner, Empire player, DepartmentOfForeignAffairs foreign)
         {
             try
             {
-                Empire owner = new GuiFleetGroup(garrisons).Empire;
                 if (owner == null)
                 {
-                    return CountNeutral;
+                    return Side.Neutral;
                 }
 
-                if (owner == Gui.PlayerEmpire)
+                if (ReferenceEquals(owner, player))
                 {
-                    return CountPlayer;
+                    return Side.Player;
                 }
 
-                DepartmentOfForeignAffairs foreign =
-                    Gui.PlayerEmpire == null
-                        ? null
-                        : Gui.PlayerEmpire.GetAgency<DepartmentOfForeignAffairs>();
                 DiplomaticRelation relation =
                     foreign == null ? null : foreign.GetDiplomaticRelation(owner);
                 DiplomaticRelationState state = relation == null ? null : relation.State;
                 if (state == null)
                 {
-                    return CountNeutral;
+                    return Side.Neutral;
                 }
 
                 int value = DiplomaticRelationState.GetDiplomaticRelationStateValue(state.Name);
@@ -482,7 +543,7 @@ namespace ES2Access.UI
                         )
                     )
                     {
-                        return CountEnemy;
+                        return Side.Enemy;
                     }
 
                     if (
@@ -492,22 +553,22 @@ namespace ES2Access.UI
                         )
                     )
                     {
-                        return CountNeutral;
+                        return Side.Neutral;
                     }
 
-                    return CountAllied;
+                    return Side.Friendly;
                 }
 
                 if (owner is PirateEmpire)
                 {
                     return state.Name == DiplomaticRelationState.Names.Pirate.Peace
-                        ? CountNeutral
-                        : CountEnemy;
+                        ? Side.Neutral
+                        : Side.Enemy;
                 }
 
                 if (state.IsWarState)
                 {
-                    return CountEnemy;
+                    return Side.Enemy;
                 }
 
                 if (
@@ -517,15 +578,15 @@ namespace ES2Access.UI
                     || state.Name == DiplomaticRelationState.Names.Academy.Ally
                 )
                 {
-                    return CountAllied;
+                    return Side.Friendly;
                 }
 
-                return CountNeutral;
+                return Side.Neutral;
             }
             catch (Exception e)
             {
-                Log.Warn("galaxy: reading which way the player stands to a fleet group threw: " + e);
-                return CountNeutral;
+                Log.Warn("galaxy: reading which way the player stands to an empire threw: " + e);
+                return Side.Neutral;
             }
         }
 
