@@ -424,6 +424,10 @@ belong in the files above.
 
 - The drawn-heading lookup renames two out-game pages: "Multiplayer room" and "Asset export".
   Keep the game's drawn headings or the mod's older names?
+- An OUTPOST planet card now reads "Overpopulation, Empty slot 1 of 1". That is exactly what the
+  game draws (one empty marker with the orange arc beside it — `docs/planets.md`), and it is what
+  mirroring the ring produces, but the slot-rows brief expected outposts to gain no rows at all.
+  Keep the drawn shape, or suppress slot rows while `ColonizedStarSystem.State == Outpost`?
 - Mod-authored wordings awaiting sign-off: "Ring {0} of {1}" for the skill wheel's rings
   (the game names them nowhere); "Sent {0} to {1} by spaceport" (the empire page's
   population shipment); and the scan labels' 2px RelationBar (own/allied/enemy/pirate/

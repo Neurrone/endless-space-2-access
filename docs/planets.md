@@ -79,7 +79,29 @@ colonizability and the four kind databases. The map itself is in `galaxy-map.md`
   Titanium — the previous planet's. `AgeWidgets.ItemText` already answers null for an alpha-0 item,
   which is why no buffer line ever spoke one, but `Draws` and the `Visible` test inside
   `TooltipChildren.Add` do not: any collector over one of these tables gates on `AgeWidgets.Painted`,
-  and takes its MEMBERSHIP from the model rather than from the table.
+  and takes its MEMBERSHIP from the model rather than from the table. That includes the tables whose
+  items are BUTTONS — `PlanetCuriositiesTable` (`RefreshPlanetCuriosities` :1297) and
+  `OutpostActionsTable` (:988) — where a retired item is offered as a stop the player cannot see.
+  A retired CURIOSITY item is also NAMELESS — the wrapper that carries the thing's name is the item's
+  `Tooltip.Target`, and a retired one measured null — so it announced as a bare "button, unavailable"
+  (Heka II 2026-08-26: one drawn curiosity, one leftover from another planet).
+- **A drawn deposit item says a NUMBER and nothing else; the resource's name is on the wrapper.**
+  `ResourceDepositItem.Refresh` (:28-42) fills `AmountLabel` with the figure and leaves `TitleLabel`
+  to the prefabs that have one — the system-management card's does not, so the item's only children
+  are an icon and a "Value" label. The name lives on the item's `Tooltip.Target`, a
+  `GuiResourceDeposit` whose `Title` is what `AgeWidgets.TooltipTitle` answers. A reader that takes
+  the drawn TEXT of these items (`AgeWidgets.ItemText`, which prefers drawn text over the wrapper)
+  therefore reads "3" and "2" with nothing saying of what — measured on Ita III 2026-08-26, and the
+  reason the card's deposit lines are composed per item rather than by the generic table reader.
+  The same wrapper is what the item's DOSSIER is assembled from, so one drawn item is worth both a
+  captioned line and a "Tooltips" child.
+- **On a COLLAPSED card the info tables draw their icons and fade their captions.** Measured on Ita
+  III 2026-08-26: `PlanetGameplayType000` paints at alpha 1 while its own `Title` child ("Cold")
+  sits at alpha 0, and the same holds for the anomaly and curiosity items. So the ITEM is the level
+  the drawn-ness question is asked at - `AgeWidgets.ItemText`'s alpha gate is on the item, and
+  `AgeTransform.GetChildren`-style text scrapes ignore the caption's own alpha, which is what makes
+  an icon-only row still answer with its word. Reading the caption's alpha instead would silence
+  every trait on every collapsed card.
 - **`PlanetAnomalyItem` hangs its dossier on its `Icon` child and wires its CLICK on the row.** The
   row's own `AgeTooltip` is null, so pointing at the row draws nothing; `OnActivateMethod=OnHintCb`
   is on the row while `Gui.FormatButtonHint` puts the hint STATE on the separate `HintButton`, and
@@ -118,6 +140,63 @@ colonizability and the four kind databases. The map itself is in `galaxy-map.md`
 - **The unique-planet title the game already has** is `%PlanetScreenUniquePlanetTitle` ("Unique
   Planet"), read off `PlanetLabel_SystemDiscovery.UniqueSubtitle` on the UNSHOWN discovery window —
   the prefab carries the key and the bind never rewrites it.
+- **A population ring is a list of SLOTS, and everything a slot means is its colour.**
+  `PopulationEnumerator.BuildListOfGuiPopulations` (:132-167) lays one entry per unit out first,
+  grouped by affinity in `ColonizedPlanet.PopulationsByAffinity` order, then null entries up to
+  `MaxPopulation`; `RetrievePopulationMarker` (:207-220) binds every index at or past `MaxPopulation`
+  as `locked: true` **with a null population**, so a colony holding more units than its current
+  maximum draws the surplus as locked slots rather than as people. The comfortable maximum is
+  `ColonizedPlanet.MaxPopulationUnderOverPopulation` = `floor(MaxPopulation ×
+  PopulationPercentForOverPopulation)` (0.7 live), and the arc over the ranks past it is drawn only
+  where `PlanetPopulationEnumeratorRadial.RefreshOverpopulation` says so: a colony, a system that is
+  NOT an `ExploitedStarSystem`, `State != StarSystemState.Lost`, and `!Empire.CanUseHonor`. Its
+  sentence is `%PlanetLabelOverPopulationDescription` when the arc covers exactly one slot and
+  `…DescriptionPlural` otherwise — the game's own singular rule, off `MaxPopulation - safeMax` and
+  never off how many people are in it.
+- **Nothing on the ring the player navigates carries a tooltip.** Every tooltip binding in
+  `PopulationMarker.Bind` sits under `IsDetailed`, and the detailed ring
+  (`PlanetLabel_SystemManagement.PlanetPopulationEnumeratorFocused`) is swapped in only while a mouse
+  is over the card — the SIMPLE ring is what is drawn for a keyboard player, and its markers are bound
+  with no class, no content and no target. A marker's own rect is no help either: the radial markers
+  all report the CONTAINER's rect (measured: five visible markers, all `543,446,261,261`) and differ
+  only by angle. So a slot's dossier is the mod's own carrier, aimed at the ring's rect.
+- **An OUTPOST planet still draws a ring — one slot, under the overpopulation arc.** Measured
+  2026-08-26 on a personal save: an outpost's planet answers `PopulationCount 0`, `MaxPopulation 1`,
+  `MaxPopulationUnderOverPopulation 0`, one visible marker, and `RefreshOverpopulation`'s four
+  conditions all hold (the state is `Outpost`, which is not `Lost`), so the card draws the orange arc
+  beside that single empty marker. A model-only reading that expects an outpost to have no ring is
+  wrong about the picture.
+- **A world NOBODY has settled draws a ring too, and `IsAvailable` is not the gate.**
+  `PlanetPopulationEnumerator.IsAvailable` (:76-88) does want a `ColonizedPlanet`, but the base class
+  spends that answer on `AgeTransform.Enable` alone (`PopulationEnumerator.Refresh` :117-129) — the
+  markers are built and shown unconditionally. With no colony, `GetPopulationOwnerData` (:63-74)
+  falls back to the PLANET (`Planet.PopulationCount`, `MaxPopulation`, `BaseMaxPopulation`) and hands
+  the ring an EMPTY population map, so `BuildListOfGuiPopulations` adds nothing per unit and counts
+  `populationCount → populationMaxCount` null entries: one EMPTY marker per point of room, none of
+  them locked (no index ever reaches `populationMaxCount`) and no arc over them (
+  `RefreshOverpopulation` wants a colony). Measured 2026-08-26 in Ita: Ita II (colonizable, max 6)
+  and Ita I (inhospitable, max 3) each paint exactly that many markers, alongside Ita III's colonized
+  5. Inferring "no colony, no ring" from `IsAvailable` is wrong about the picture, and it is how much
+  room a world has that a colonization is decided on.
+- **A card the game draws for ANOTHER empire's colony draws that empire's ring, in full.**
+  `PlanetLabel.BindPlanet` (:334-340) takes the label's `ColonizedPlanet` straight off
+  `Planet.ColonizedPlanet` with no ownership test, so an enemy outpost sitting on a free world of a
+  system the player owns gives that world's card the ENEMY's colony object;
+  `PlanetLabel_SystemManagement.Bind` (:373) hands it to
+  `PlanetPopulationEnumeratorSimple.Bind(Planet, ColonizedPlanet, dragClient)` unfiltered and
+  `OnBeginShow` (:496) shows that ring unconditionally. `BuildListOfGuiPopulations` then resolves
+  `populationOwner.Empire.GetAgency<DepartmentOfTheInterior>()` — the OTHER empire's — and lays out
+  their affinities, and `RefreshOverpopulation` asks its four conditions of the OWNER's empire and
+  system. The only ownership tests anywhere near it are on the two things the game refuses:
+  `PlanetPopulationEnumerator.CanAcceptPopulationDrop` (:28-34) wants
+  `ColonizedPlanet.Empire.Index == Gui.PlayerEmpire.Index`, and `IDragDropTarget.OnDragDropStarted`
+  (:308-315) HIDES the ring of a card that is not the player's for the duration of a drag. Mod
+  policy (owner ruling 2026-08-27): mirror the drawing — the foreign card gets the same slot rows,
+  bands and per-slot dossiers, and neither a pick-up nor a drop. Measured 2026-08-27 by lending a
+  Dusay card an AI empire's real colony (recipe in `test-recipes/systems-and-planets.md`): nine
+  rows, "Cravers" in the four filled ones, a Population band of six and an Overpopulation band of
+  three, each filled slot's carrier bound to a `GuiPopulation` whose `PopulationEmpire` resolved
+  from the AI empire's own interior department.
 - **Moving population is a drag with a STATIC in the middle, and the static is read every frame.**
   `PopulationEnumerator.DragInfo` (a single static `PopulationDragInfo`) is filled by
   `OnPopulationMarkerDragStarted` (:240-253) — whose own two gates are `owner.CanMovePopulation` and

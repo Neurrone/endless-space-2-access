@@ -214,7 +214,10 @@ provable live: flip the panel's model from `/eval` and watch the row's live memb
 standing cursor), then press the chord and read the state the row speaks back. The drag needs no
 modifier and so is fully injectable: `DevProbe.Claims("Space")` reads true exactly where a
 pick-up, a carry or a live search is, so it IS the claim-side proof of a drag source (measured:
-false on a one-item construction queue line, true once the line reads "draggable");
+false on a one-item construction queue line, true once the line reads "draggable") — EXCEPT on the
+star-system management page, which since 2026-08-26 claims Space on every node of itself
+(`docs/interaction.md`), so a drag source there is told by `ui.carry` speaking rather than by the
+claim;
 `ModEntry.Carry.IsCarrying`/`.Held.Name`/`.Held.Kind` is the
 state probe, a compatible row's readout grows "drop target" while something is held, `ui.carry`
 answers "Dragging …" on a source and SILENCE everywhere else — including on a drop target that is not

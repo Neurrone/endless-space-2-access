@@ -709,7 +709,23 @@ through to the game, whose Space is the strategic lens (`ToggleScanView`) — mo
 `ScanViewScreen`, which announces the lens on arrival, again at every layer-descriptor change while
 the mode is up (same-name band boundaries included — `docs/galaxy-map.md`), and the view again on the way out,
 so handing the key back cannot drop the player into an unannounced mode. Every other binding is
-claimed outright. While something is carried, **Escape puts it
+claimed outright.
+**THE STAR-SYSTEM PAGE IS THE ONE PLACE SPACE NEVER FALLS THROUGH** (owner ruling 2026-08-26;
+`SystemManagementScreen.SwallowsCarryKey`, asked by `ModEntry.CarryKeyClaimed` beside the ordinary
+carry claim and again by `ModEntry.SwallowedCarry` before the dispatch swallows the press). There the
+game's Space is a SCREEN-LEVEL shortcut rather than a mode of its own — the scan button in
+`hud:view-title` names it, "Shortcut: Space or Mouse 3" — and a player pressing Space on a planet
+card or a queue line means pick-this-up, so a whole different view arriving instead is not an
+outcome that row offered. The key is therefore the mod's on every node of that page: a row with
+something to pick up carries exactly as before, every other press is consumed and SILENT (the same
+no-cue rule as a carry landing on a control that will not take it), and scan mode stays one Enter
+away on the button the game draws for it. Scoped to that page alone — the scan view over it
+(layer 11), the galaxy and every modal the page opens keep Space as the game's, measured before and
+after. The PLANET-OVERVIEW page deliberately keeps the fall-through (owner ruling 2026-08-27): it
+draws the same scan button with the same shortcut, but no node there offers a pickup, so the mod has
+no meaning for Space on that page and the game's is left standing — do not extend the swallow there.
+The silence of a consumed press on a slot with nowhere to send its unit is also a ruling
+(2026-08-27, silent refusal chosen over a spoken phrase), not an oversight. While something is carried, **Escape puts it
 down and goes no further** (`claimsBack` reads true only then), and the carry dies silently when the
 player leaves the page it started on — a menu opened over that page is still that page.
 

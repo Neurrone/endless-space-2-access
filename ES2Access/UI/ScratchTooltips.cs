@@ -135,6 +135,37 @@ namespace ES2Access.UI
             }
         }
 
+        /// <summary>
+        /// Park a carrier over a widget the game IS drawing, so its panel appears where the picture it
+        /// explains is instead of at the screen's corner.
+        ///
+        /// The corner (<see cref="Place"/>) is the answer for a dossier whose picture the game is not
+        /// drawing at all. A carrier standing in for one marker of a ring the game is drawing in front
+        /// of the player has a place of its own, and putting the panel anywhere else asks a sighted
+        /// player to look away from the thing being described.
+        ///
+        /// <c>TOP_LEFT</c> is the anchor the game's own population marker uses
+        /// (<c>PopulationMarker.Bind</c>): the panel's bottom edge lands on the marker's top, so it
+        /// grows upwards off a card that sits low on the screen rather than off the bottom of it.
+        /// Call it AFTER <see cref="Rebind"/>, which re-parks every carrier at the corner.
+        /// </summary>
+        public static void PlaceOver(AgeTooltip carrier, AgeTransform widget)
+        {
+            AgeTransform rect = carrier == null ? null : carrier.AgeTransform;
+            if (rect == null || widget == null)
+            {
+                return;
+            }
+
+            Rect at = widget.GetGlobalPosition();
+            rect.X = at.x;
+            rect.Y = at.y;
+            rect.Width = at.width;
+            rect.Height = at.height;
+            carrier.Anchor = rect;
+            carrier.AnchorMode = AgeTooltipAnchorMode.TOP_LEFT;
+        }
+
         /// <summary>Every carrier goes with the mod: they are scene objects this assembly created,
         /// and one left behind after a reload would be pointed at by nothing and pointed at nothing.
         /// </summary>

@@ -435,7 +435,10 @@ outposts and the influence/colonizability facts live in `planets.md`; fleets and
   or a search collecting the space as text (`ModEntry.CarryKeyClaimed` →
   `GraphNavigator.TakesCarryKey`, owner decision 2026-08-12, after the blanket claim of
   2026-08-11). Everywhere else the key reaches the game and `ScanViewScreen` announces the lens,
-  which is what made the hand-back safe; the lens keeps its Mouse2 route.
+  which is what made the hand-back safe; the lens keeps its Mouse2 route. The ONE page that hands
+  nothing back is the star-system management page, whose Space the mod claims on every node
+  (owner ruling 2026-08-26, `docs/interaction.md`): the scan button drawn there is what still
+  reaches the lens.
 - **The scan view is a MODE, not a view level**: `IsInNormalView` goes false and only
   `EndTurnWindow` survives, while `TopTitlePanel` keeps the lens-naming label even hidden.
   `ScanViewWindowCaptionsPanel` is a pool that does not clean up (surplus children stay fully

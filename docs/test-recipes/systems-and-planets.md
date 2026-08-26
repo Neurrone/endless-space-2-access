@@ -75,7 +75,8 @@ only. The home planet is
 `IsUnique` so planet rename is unreachable; `StarSystemPopulationModalWindow`'s opener is
 tutorial-locked; and at turn 3 no buy-out button is drawn at all
 (`BuyoutTechnologyNotUnlocked` — ES2 facts), so the queue line's buy-out children have no fixture.
-**The rest of the management page's blocked list**: a FOREIGN empire's outpost card; an outpost
+**The rest of the management page's blocked list**: a FOREIGN empire's outpost card (no save has
+one; its population rows are sighted by lending — **Sighting ANOTHER empire's colony card**); an outpost
 action running PAST its start turn (the disabled cancel); the regress/stagnant/complete captions and
 the Hisshos wording; the `Discard`-hidden faction actions (Hisshos/TimeLords/Vodyani); buy-outpost;
 and, last checked turn 1, hangar ships, colonize, the ghost panels, and the rebellion and migration
@@ -109,6 +110,46 @@ say so. Crop the card with the cursor on a DIFFERENT planet: focusing it points 
 card and the dossier tooltip covers the ring. The painted gate is proved by parking the item the way
 the engine does - set the item's `Alpha = 0f` from `/eval` (it sticks; the card does not refresh
 every frame), re-crop, re-read, then set it back to `1f`.
+
+**Walking a card's population slots.** The card's ring is a row per SLOT in up to three regions
+("Population", "Overpopulation", "Locked" — the game's own words, so grep the transcript for the
+localized ones, not for mod keys). Expand the card with `/input ui.right` and walk down: the region
+name is heard on band entry only, and each row reads "Slot N of M" plus the affinity, or "Empty slot
+N of M". A FILLED slot in the overpopulation band is a GROUP whose "Tooltips" region holds one child,
+the arc's sentence; every other slot is a leaf. **The slot dossiers are the mod's own carriers**
+(nothing on the drawn ring carries a tooltip — ES2 facts), so their evidence pair is
+`DevProbe.TooltipDelay(0)` → focus the row → `DevProbe.Tooltip()` for the words and
+`Gui.GuiService.GetWindow<GuiTooltipWindow>(false).AgeTransform.GetGlobalPosition()` +
+`crop-shot.ps1` for where the window drew: it must land on the ring's own rect, ABOVE it, not at the
+screen's bottom-left corner. The crop is also the only oracle for the ARC — the same crop shows the
+orange sector, and it must cover exactly the ranks the "Overpopulation" region holds.
+The **Locked** band needs a colony holding MORE units than its current maximum, which no save here
+produces; it is covered by `ES2Access.Tests/UI/PopulationSlotsTests.cs` instead.
+The **pick-up** on a filled slot needs a system with a SECOND colony of the player's (below,
+**Moving population between planets**) — with one colony every slot row is read-only, and since
+2026-08-26 the page's own Space claim is what a probe there reads: `Claims("Space")` is true on every
+node of this page and `ui.carry` answers `consumed` in SILENCE, so a read-only slot row is told from
+a pick-up row by the silence and by the row's own readout, never by the claim.
+An UNCOLONIZED card's ring is the same walk with a shorter answer: every row reads a plain "Empty
+slot" and takes its number from the region ("Empty slot, 3 of 6"), because there is only the one
+"Population" band and the rank and the position are the same figure — no dossiers and no pick-up
+either. Any star-system page with a
+world nobody has settled shows it, and a page holding both kinds walks the two shapes in one pass.
+The count oracle is one `/eval` walk of
+`PlanetPopulationEnumeratorSimple.PopMarkersContainer.Children` counting `Visible && Alpha > 0`
+(the pool holds a couple of extra retired children on each card), and it must equal both the row
+count and `Planet.MaxPopulation`; the picture oracle is a `crop-shot.ps1` of that container's rect,
+where the grey arc segments must number the rows.
+
+**A planet card's deposit lines and their dossiers.** A drawn deposit reads
+"&lt;resource&gt;: &lt;amount&gt;" in the card's buffer and gains a child in the card's "Tooltips"
+region named for the same resource — the name is on the tooltip's wrapper and NOT on the item (ES2
+facts), so a bare number in the buffer is the regression to grep for. The painted gate is checked in
+both directions on one page: a world WITH deposits draws its items at alpha 1, and a world with none
+keeps the previous planet's items parked at alpha 0 still holding that resource, which must
+contribute neither a line nor a dossier. The dossier is Class-backed (`ResourceDeposit`), so its
+words exist only once the node is FOCUSED: walk to it, then `DevProbe.Tooltip()` plus
+`/gui/graph?buffers=1` for the pair.
 
 **Stepping between planets on the planet overview** re-enters the SAME view level with a new
 planet: `Gui.GuiGameWindowService.CurrentGalaxyViewLevel` (what `GalaxyViewLevels.Level` and
@@ -220,15 +261,38 @@ a flat list of cells and a cell could not open a subtree.
 
 **Moving population between planets** (management page). The drag is offered only where the system
 has a SECOND colony of the player's (`ColonizedStarSystem.PlanetsColonized.Count > 1`) — with one, the
-population rows are declared read-only and there is no pick-up (measured live: with one colony
-`Claims("Space")` reads false on the population rows and `ui.carry` answers `unconsumed`),
-which is what both fixtures show
+card's slot rows are declared read-only and there is no pick-up (measured live: with one colony a
+filled slot row picks nothing up — `ui.carry` on it is silent, and since 2026-08-26 it is `consumed`
+rather than `unconsumed` and `Claims("Space")` reads true, because the PAGE claims Space on every
+node of itself, `docs/interaction.md`), which is what both fixtures show
 (Dusay: `planetsColonized=1`, `GetSpaceportSidePanel()` not shown). What IS testable with one colony:
 push a drag by hand — `ES2Access.ModEntry.Carry.PickUp(new ES2Access.Core.UI.CarryItem(pop, "Imperials",
 "population"), ES2Access.ModEntry.Navigator.Screen)` — and watch the card's readout grow "drop target",
 `/input ui.activate` on the card refuse in the mod's fallback words with the drag kept, `ui.carry`
 anywhere that is not a source answer silently with the drag kept, and `ui.back` answer
 "Cancelled drag".
+**Sighting ANOTHER empire's colony card**, which no save puts in a player system (an enemy outpost
+on a free world of one). Lend a card the foreign colony, all inside ONE `/eval` so no frame draws it
+and the card never `Refresh`es with somebody else's colony bound: take the card from
+`GetWindow<PlanetLabelsWindow_SystemManagement>(false)` →
+`GetComponentsInChildren<PlanetLabel_SystemManagement>(true)` matched on `Planet.GUID`, save
+`card.ColonizedPlanet`, set it to an AI empire's real `ColonizedPlanet`
+(`empire.GetAgency<DepartmentOfTheInterior>().ColonizedStarSystems[i].PlanetsColonized[j]`),
+`card.PlanetPopulationEnumeratorSimple.Bind(card.Planet, foreign, card.Client)` + `RefreshNow()`,
+read, and restore all three in a `finally` plus `card.Dirty = true`. Read it with
+`ES2Access.Dev.GraphDump.Dump(false, true)` — the public static behind `/gui/graph`, so the whole
+lend-read-restore is one statement. The card must be EXPANDED first (`/input ui.right` on it; a
+`POST /reload` clears expansion state). Measured 2026-08-27 on Dusay I lent Leaper's Husk (4/9,
+safe 6): nine rows, "Cravers" in slots 1-4, a Population band of six and an Overpopulation band of
+three, `drawnMarkers=9`, `OverPopulationSector.Visible=True`. Class-backed dossiers still read
+EMPTY in the dump (they need a drawn tooltip window), so prove them off the CARRIERS instead —
+sweep `FindObjectsOfType<AgeTooltip>()` for `ES2Access.UI.ScratchTooltips.Owns(t) && t.Class ==
+"Population"` and print `Content`, `Target`, `((GuiPopulation)Target).PopulationEmpire`. The
+pick-up half stays fixture-blocked here for the same reason the drop is (one colony per system, so
+`canCarry` is false on every card); what IS distinguishing live is `DropKind` on the card node —
+`population` on the player's, null on the foreign one, read off
+`ES2Access.ModEntry.Navigator.InspectRender().Order[i].Vtable`.
+
 **Sighting the spaceport side panel**, which no save draws (ES2 facts: `IsAvailable()` needs
 `MaxPopulation > 0`). Show it with `Gui.GuiService.GetWindow<SidePanelsWindow>(false).ShowSidePanel(p)`
 — `SidePanel.Show` itself throws with a message telling you so — and the side-panel sweep declares it
@@ -329,7 +393,23 @@ management and planet view levels (walk the three and call `IsActive()` on the r
 instance). `Application.Preferences.ForceSystemDiscoverySequence` is the game's own re-run
 switch, for a human running the manual script on a throwaway save.
 
-- A FOREIGN empire's outpost card, an outpost action past its start turn, the
+**Reading a discovery card's CONTENT without the cutscene** (worked 2026-08-27; the same card
+the colonization scene draws): the panel hangs off a window that exists unshown, so one `/eval`
+does the whole round trip — `Gui.GuiService.GetWindow<PlanetLabelsWindow_SystemDiscovery>(false)`,
+take `.PlanetLabel`, save `.Planet` and the `Visible` flag of every `AgeTransform` from the
+panel's own up through its parents, then set `.Planet` to any planet, call `RefreshNow()`
+(public, ungated — it fills every label and pools every table), force that ancestor chain
+`Visible = true`, call the reader, and restore both in a `finally`. Forcing the chain is what
+makes the read faithful: `AgeWidgets.Visible` walks ancestors, so against the unshown window
+every table reads hidden and the card answers with its name alone. Nothing survives the probe —
+the restore happens inside the one statement, so no frame ever draws the panel, and the game's
+own `OnBeginShow` re-`Refresh`es from scratch anyway. Pick the planet by walking
+`ES2Access.UI.GameGalaxy.GameNodes()` for a `StarSystemNode` whose `Planets` hold deposits and
+anomalies — whatever the loaded galaxy happens to have; the card is read off the PLANET, so no
+save's own layout is part of the route.
+
+- A FOREIGN empire's outpost card (population rows sighted by lending — **Moving population
+  between planets**; the rest of the card unsighted), an outpost action past its start turn, the
   regress/stagnant/complete captions, the Hisshos wording, the `Discard`-hidden faction
   actions, buy-outpost, hangar ships, colonize, the ghost panels, the rebellion and migration
   rows, and `EmigrationGroup`/`ImmigrationGroup` (**The management page's permitted round
