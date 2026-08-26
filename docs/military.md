@@ -47,6 +47,32 @@ Index and charter: `README.md`.
   hidden half is unfalsifiable until a fixture gives that half a value — which is how a right-hand
   share measured against the bar's far end instead of its middle (163% with energy at 37%) survived a
   whole audit unseen.
+- **The "Projectile-Energy Balance" block draws TWO bars under ONE heading, and both bars take the
+  same pair of side words.** `PanelFeatureShipInfo` (:59-61, :168-176) and
+  `PanelFeatureMilitaryPowerBalance` (:5-11, :38-40) each own an `OffensiveBalanceGauge` (kinetic +
+  missile against laser + beam) and a `DefensiveBalanceGauge` (plating absorption against shield
+  absorption); `RepartitionHorizontalGauge.Refresh` writes no text, so the only words in the block
+  are `%ShipStatMilitaryPowerBalanceTitle` over the pair. Both bars read out of
+  `%ShipDesignProjectileTitle` / `%ShipDesignEnergyTitle`, so a reading that says only the split
+  says the SAME LINE TWICE whenever the two bars sit at the same ratio ("Projectile 100%,
+  Projectile 100%" on the hero-recruitment ship dossier, measured 2026-08-26).
+  The distinguishing words the game does have are two sentences,
+  `%OffensiveBalanceGaugeDescription` and `%DefensiveBalanceGaugeDescription` (Locales :7430,
+  :7413) — no C# writes them; the PREFAB hangs each on its own gauge as a class-free
+  `AgeTooltip.Content` (verified live on the drawn `PanelFeatureShipInfo`, reach 0, target null).
+  That is why the ship designer's own copy of the pair needs no caption: each gauge is a stop
+  whose short tooltip is announced, so it already reads "Energy 100%, The balance between the
+  offensive power of…". Inside a tooltip's line list there is no such stop, so the line takes the
+  name of the power it breaks down — which is also how the block is DRAWN: the offensive figure
+  sits directly above the top bar and the defensive figure directly below the bottom one.
+- **The ship tooltip's OTHER hover sentences stay unread (owner ruling 2026-08-26).**
+  `PanelFeatureShipInfo` hangs a class-free sentence on nearly every stat group (health, movement,
+  manpower, command points, the two powers, the two gauges, and the shared Projectile/Energy column
+  icons — ten in all, measured live) — all static boilerplate, identical on every ship, so folding
+  them into the tooltip's line list was measured, proposed and declined. Fighter/Bomber's keys
+  (`%ShipStatFighterDescription`/`…Bomber…`) have NO string — the localizer echoes the key, a
+  vanilla bug. The ship XP gauge reuses tooltip class `StarSystemHappiness` with no readable words
+  and no wrapper: the one hover target on the page that stays mouse-only.
 - **"Behemoth" in the game's fiction is `Juggernaut` in the code** — grep both spellings or half
   the family is invisible.
 - **Every `GuiTableLine` in the game carries a `DoubleClickButton`** (`GuiTableLine.Bind` :96-99
