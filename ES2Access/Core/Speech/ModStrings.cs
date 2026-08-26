@@ -490,7 +490,7 @@ namespace ES2Access.Core.Speech
         public const string DirectionNorthNorthWest = "direction.north-northwest";
 
         /// <summary>The same question answered as the two COMPONENTS of the offset instead of as one
-        /// compass word - "23 south", "23 south, 1 west" (<see cref="CompassDirections.Offsets"/>).
+        /// compass word - "23 south", "1 west, 23 south" (<see cref="CompassDirections.Offsets"/>).
         /// One whole phrase per axis rather than a number glued to a direction word, because the
         /// number and the word agree in most languages; the value is always positive, the sign having
         /// already chosen which of the four templates is used.</summary>

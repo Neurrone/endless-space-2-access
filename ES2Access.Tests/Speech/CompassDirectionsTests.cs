@@ -146,10 +146,13 @@ namespace ES2Access.Tests.Speech
         }
 
         [Fact]
-        public void SomethingOffAxisSaysNorthSouthFirstThenEastWest()
+        public void SomethingOffAxisSaysEastWestFirstThenNorthSouth()
         {
-            Assert.Equal("23 south, 1 west", CompassDirections.Offsets(-1, -23));
-            Assert.Equal("16 north, 5 east", CompassDirections.Offsets(5, 16));
+            // The order the spoken PAIR itself is in (MapCoordinates.Text), so a listener holds one
+            // order for where things are and for how far apart they are (owner ruling 2026-08-26).
+            Assert.Equal("1 west, 23 south", CompassDirections.Offsets(-1, -23));
+            Assert.Equal("5 east, 16 north", CompassDirections.Offsets(5, 16));
+            Assert.Equal("71 west, 23 north", CompassDirections.Offsets(-71, 23));
         }
 
         [Fact]

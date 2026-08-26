@@ -979,7 +979,7 @@ namespace ES2Access.Screens
 
         /// <summary>
         /// Which way the thing lies from where the player is reading, as the two components of the
-        /// offset - "23 south", "23 south, 1 west" (<see cref="CompassDirections.Offsets"/>).
+        /// offset - "23 south", "1 west, 23 south" (<see cref="CompassDirections.Offsets"/>).
         ///
         /// The components are the difference of the two ROUNDED pairs rather than the rounded
         /// difference, because the player hears both pairs: a thing at "0, -9" heard from a place at

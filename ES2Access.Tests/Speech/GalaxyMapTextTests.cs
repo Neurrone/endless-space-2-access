@@ -26,9 +26,9 @@ namespace ES2Access.Tests.Speech
         }
 
         [Fact]
-        public void MeasuredOffTheGalaxysOwnOutlineTheOffsetIsSaidNorthSouthFirst()
+        public void MeasuredOffTheGalaxysOwnOutlineTheOffsetIsSaidEastWestFirst()
         {
-            // Every offset the mod speaks leads with the north/south component (CompassDirections
+            // Every offset the mod speaks leads with the east/west component (CompassDirections
             // .Offsets), and this one is composed from it rather than being punctuated here.
             ConvexHull galaxy = ConvexHull.Build(
                 new[]
@@ -42,7 +42,7 @@ namespace ES2Access.Tests.Speech
 
             Assert.Equal(
                 "Spiral 2 galaxy, normal size, 187 by 130 units; "
-                    + "galactic center 23 north, 71 west of Dusay.",
+                    + "galactic center 71 west, 23 north of Dusay.",
                 GalaxyMapText.Summary(
                     "Spiral 2",
                     "normal",
@@ -75,11 +75,11 @@ namespace ES2Access.Tests.Speech
         }
 
         [Fact]
-        public void AHomeSystemStandingOnTheGalacticCentreHasNoOffsetToSay()
+        public void AHomeSystemStandingOnTheGalacticCentreIsNotSaidAtAll()
         {
-            // Both components round to zero, so CompassDirections.Offsets answers nothing and the
-            // sentence's last slot is empty. No wording has been chosen for that case, so nothing
-            // here invents one: this pins only that the rest of the sentence survives it.
+            // Both components round to zero, so there is no offset left to say and the sentence would
+            // end on a blank. No wording has been chosen for a galaxy centred on home, so the whole
+            // sentence is withheld rather than half of one being spoken.
             ConvexHull galaxy = ConvexHull.Build(
                 new[]
                 {
@@ -90,16 +90,9 @@ namespace ES2Access.Tests.Speech
                 }
             );
 
-            string summary = GalaxyMapText.Summary(
-                "Spiral 2",
-                "small",
-                galaxy,
-                new MapPoint(0, 0),
-                "Dusay"
+            Assert.Null(
+                GalaxyMapText.Summary("Spiral 2", "small", galaxy, new MapPoint(0, 0), "Dusay")
             );
-
-            Assert.StartsWith("Spiral 2 galaxy, small size, 20 by 20 units;", summary);
-            Assert.EndsWith("Dusay.", summary);
         }
     }
 }

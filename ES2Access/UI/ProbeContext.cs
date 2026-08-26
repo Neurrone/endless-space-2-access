@@ -175,8 +175,12 @@ namespace ES2Access.UI
         /// The rim a probe stops at is the map's, not the fog's: how big the galaxy is was chosen at
         /// setup and is no secret, and an edge that crept outwards as the fog lifted would make the
         /// same bearing answer one distance this turn and another the next.
+        ///
+        /// Public because it is the ONE outline of the galaxy: anything else that has to measure the
+        /// map as a whole (<see cref="GalaxyOverview"/>) asks here rather than building a second hull
+        /// over the same eighty-odd systems and risking a different answer.
         /// </summary>
-        private static ConvexHull Outline()
+        public static ConvexHull Outline()
         {
             object game = Gui.Game;
             if (_outline != null && ReferenceEquals(game, _outlineOf))

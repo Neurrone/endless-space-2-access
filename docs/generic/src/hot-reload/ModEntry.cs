@@ -366,8 +366,9 @@ namespace ES2Access
         }
 
         /// <summary>
-        /// The keys that mean a PLACE rather than a move: go to the empire banners, the notifications,
-        /// the turn log, the turn controls, the galaxy map - and end the turn.
+        /// The keys that answer for the PAGE rather than for the control the cursor is on: go to the
+        /// empire banners, the notifications, the turn log, the turn controls, the galaxy map; end the
+        /// turn; and hear what the galaxy as a whole is.
         ///
         /// Each one re-asks the question its claim asked (is that panel on this page at all), because a
         /// claim is answered before the press and the mod is never allowed to act on a stale yes
@@ -388,6 +389,8 @@ namespace ES2Access
                     return FocusStop(GlobalHud.TurnLogStop);
                 case UiActions.FocusMap:
                     return FocusStop(GalaxyHudScreen.SystemStop);
+                case UiActions.SummarizeMap:
+                    return SummarizeMap();
                 case UiActions.EndTurn:
                     return GlobalHud.EndTurnByKey();
                 default:
@@ -433,6 +436,26 @@ namespace ES2Access
         private static bool MapStopDeclared()
         {
             return StopDeclared(GalaxyHudScreen.SystemStop);
+        }
+
+        /// <summary>
+        /// Say what the galaxy IS (<see cref="ES2Access.UI.GalaxyOverview"/>) - the one thing a
+        /// sighted player reads off the map in a second and a listener is never told at all.
+        ///
+        /// Only from the galaxy map, which is the same question the claim asked and is asked again
+        /// here: a claim is answered before the press and the act never runs on a stale yes. Off the
+        /// map the key is inert and left to the game. With nothing honest to say - a game with no home
+        /// system yet - the press is still the map's, and silent.
+        /// </summary>
+        private static bool SummarizeMap()
+        {
+            if (!MapStopDeclared())
+            {
+                return false;
+            }
+
+            Voice.Say(GalaxyOverview.Sentence(), true);
+            return true;
         }
 
         /// <summary>Whether anything on the focused page answers the go-to-location key - the claim
@@ -633,6 +656,15 @@ namespace ES2Access
             input
                 .Register(UiActions.FocusMap)
                 .Bind(KeyCode.G, ctrl: true)
+                .ClaimedWhile(MapStopDeclared);
+            // Hear what the galaxy IS - the shape and size it was generated at, how far across it
+            // really is, and where its middle lies from home. Beside the go-to-the-map key because it
+            // is the same family: one chord, answered by the map, from anywhere on the map's page.
+            // Control+M is free in this game (`docs/interaction.md`), and the LETTER costs nothing
+            // either - A-Z are already the mod's type-ahead wherever one of its screens is focused.
+            input
+                .Register(UiActions.SummarizeMap)
+                .Bind(KeyCode.M, ctrl: true)
                 .ClaimedWhile(MapStopDeclared);
             // End the turn without walking to the button. The game's own end-turn key is the keypad
             // Enter, which the mod claims for Activate, so a mod user has no shortcut for the one thing

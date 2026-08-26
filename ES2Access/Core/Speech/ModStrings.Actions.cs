@@ -158,6 +158,11 @@ namespace ES2Access.Core.Speech
             },
             { "action.ui.focusMap.title", "Go to the map" },
             { "action.ui.focusMap.description", "Go straight to the galaxy map." },
+            { "action.ui.summarizeMap.title", "Summarize the map" },
+            {
+                "action.ui.summarizeMap.description",
+                "Say what the galaxy is: its shape and size, how far across it is, and where its middle lies from home."
+            },
             { "action.ui.endTurn.title", "End the turn" },
             {
                 "action.ui.endTurn.description",

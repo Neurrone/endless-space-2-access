@@ -57,6 +57,11 @@ namespace ES2Access.UI.Input
         public const string FocusTurnLog = "ui.focusTurnLog";
         public const string FocusMap = "ui.focusMap";
 
+        /// <summary>Say what the galaxy IS - its shape, how big it was made, how far across it
+        /// really is, and where its middle lies from home - from anywhere on the galaxy map. Live
+        /// exactly while the map is the focused screen, and inert everywhere else.</summary>
+        public const string SummarizeMap = "ui.summarizeMap";
+
         /// <summary>Go to where the thing under the cursor HAPPENED - the game's own show-location, on
         /// the rows that offer one (a notification, a log line, an open popup). Live exactly while the
         /// focused screen or the focused control offers it, and inert everywhere else.</summary>

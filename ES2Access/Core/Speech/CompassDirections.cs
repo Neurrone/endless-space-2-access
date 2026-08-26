@@ -40,50 +40,54 @@ namespace ES2Access.Core.Speech
         }
 
         /// <summary>
-        /// Which way one place lies from another said as its two COMPONENTS - "23 south", "23 south,
-        /// 1 west" - rather than as a distance and a compass word.
+        /// Which way one place lies from another said as its two COMPONENTS - "23 south", "1 west, 23
+        /// south" - rather than as a distance and a compass word.
         ///
         /// A single word and a length ("23 units southwest") tells a player how far to walk but not
         /// where the thing is: to put it on the map they still have to resolve the diagonal into the
         /// two numbers the map's own pairs are said in. The components ARE those two numbers, so a
-        /// thing heard at "23 south, 1 west" of a place whose pair the player already knows can be
+        /// thing heard at "1 west, 23 south" of a place whose pair the player already knows can be
         /// placed by adding, and the arithmetic always comes out - the caller hands in the difference
         /// of the two ROUNDED pairs, the very pairs both places were spoken with.
         ///
-        /// North/south first because it is the axis the map is read in rows of, and a zero component is
-        /// left out rather than said: "0 east" is a word about nothing. Both zero is not this
-        /// function's answer - the caller says whatever "here" means to it.
+        /// EAST/WEST first, because that is the order the pair itself is spoken in
+        /// (<see cref="MapCoordinates.Text"/>) and the two are heard in the same breath: an offset
+        /// whose halves came the other way round would have the listener holding one order for
+        /// positions and another for the distances between them. A zero component is left out rather
+        /// than said - "0 east" is a word about nothing. Both zero is not this function's answer - the
+        /// caller says whatever "here" means to it.
         /// </summary>
         public static string Offsets(int east, int north)
         {
             MessageBuilder message = new MessageBuilder();
-            if (north != 0)
-            {
-                message.Fragment(
-                    ModStrings.Format(
-                        north > 0 ? ModStrings.OffsetNorth : ModStrings.OffsetSouth,
-                        System.Math.Abs(north)
-                    )
-                );
-            }
-
-            if (east != 0)
-            {
-                string sideways = ModStrings.Format(
-                    east > 0 ? ModStrings.OffsetEast : ModStrings.OffsetWest,
-                    System.Math.Abs(east)
-                );
-                if (message.IsEmpty)
-                {
-                    message.Fragment(sideways);
-                }
-                else
-                {
-                    message.ListItemForcedComma(sideways);
-                }
-            }
-
+            Component(message, east, true);
+            Component(message, north, false);
             return message.Build();
+        }
+
+        /// <summary>One component, left out entirely when it is zero - "0 east" is a word about
+        /// nothing - and joined to whatever is already there with the list's own comma.</summary>
+        private static void Component(MessageBuilder message, int units, bool sideways)
+        {
+            if (units == 0)
+            {
+                return;
+            }
+
+            string text = ModStrings.Format(
+                sideways
+                    ? (units > 0 ? ModStrings.OffsetEast : ModStrings.OffsetWest)
+                    : (units > 0 ? ModStrings.OffsetNorth : ModStrings.OffsetSouth),
+                System.Math.Abs(units)
+            );
+            if (message.IsEmpty)
+            {
+                message.Fragment(text);
+            }
+            else
+            {
+                message.ListItemForcedComma(text);
+            }
         }
 
         /// <summary>The compass word a bearing falls in - the arc test on its own, so the boundaries
