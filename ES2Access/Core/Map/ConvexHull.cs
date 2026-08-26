@@ -29,10 +29,44 @@ namespace ES2Access.Core.Map
         private static readonly Comparison<MapPoint> WestThenSouth = CompareWestThenSouth;
 
         private readonly MapPoint[] _vertices;
+        private readonly MapPoint _centroid;
+        private readonly double _width;
+        private readonly double _height;
 
         private ConvexHull(MapPoint[] vertices)
         {
             _vertices = vertices;
+            _centroid = MeasureCentroid(vertices, out _width, out _height);
+        }
+
+        /// <summary>How far the outline reaches east to west - the width of the box that just holds
+        /// it, in the caller's own units. An empty outline is zero across.</summary>
+        public double Width
+        {
+            get { return _width; }
+        }
+
+        /// <summary>How far the outline reaches south to north.</summary>
+        public double Height
+        {
+            get { return _height; }
+        }
+
+        /// <summary>
+        /// The middle of the outline - the balance point of the enclosed AREA, not the middle of the
+        /// box around it and not the average of the corners.
+        ///
+        /// Which of the three is "the middle" only matters for a lopsided galaxy, and there the area
+        /// centroid is the one that answers the question a player asks: where is the bulk of this
+        /// thing. The box's middle ignores the shape entirely, and averaging corners drags the answer
+        /// towards whichever side the outline happens to have most corners on.
+        ///
+        /// An outline with no area - a single place, a run along one line - has its corners averaged
+        /// instead, because a balance point of nothing has no meaning; an empty one is the origin.
+        /// </summary>
+        public MapPoint Centroid
+        {
+            get { return _centroid; }
         }
 
         /// <summary>Corners of the outline, counter-clockwise, with no corner repeated and no place
@@ -189,6 +223,129 @@ namespace ES2Access.Core.Map
             }
 
             return true;
+        }
+
+        /// <summary>
+        /// How far a straight line leaving <paramref name="origin"/> travels before it leaves the
+        /// outline - the length of the corridor an order aimed that way has to work with.
+        ///
+        /// The direction is given as its two components, east and north, and need not be a unit
+        /// length: the answer is a distance in the same units the corners are in. A line that leaves
+        /// the outline immediately answers zero, which is what a place ON the rim aimed outwards is,
+        /// and an outline with no interior - a single place, a run along one line - has no corridor
+        /// at all and answers zero everywhere.
+        ///
+        /// Clipped against every edge at once rather than intersected edge by edge, so a line through
+        /// a CORNER is answered by the same arithmetic as any other and cannot pick up two crossings
+        /// or none. An origin the outline does not hold is answered with the FAR side, where the line
+        /// finally leaves; callers put the origin inside.
+        /// </summary>
+        public double ExitDistance(MapPoint origin, double east, double north)
+        {
+            if (_vertices.Length < 3)
+            {
+                return 0;
+            }
+
+            double length = Math.Sqrt(east * east + north * north);
+            if (length <= 0)
+            {
+                return 0;
+            }
+
+            double stepX = east / length;
+            double stepY = north / length;
+            double enters = 0;
+            double leaves = double.PositiveInfinity;
+
+            for (int i = 0; i < _vertices.Length; i++)
+            {
+                int next = i + 1 == _vertices.Length ? 0 : i + 1;
+                double edgeX = _vertices[next].X - _vertices[i].X;
+                double edgeY = _vertices[next].Y - _vertices[i].Y;
+
+                // The corners run counter-clockwise, so inside is left of the edge: this is how far
+                // left of it the origin is, and how fast the line is closing on it.
+                double leftOf = edgeX * (origin.Y - _vertices[i].Y) - edgeY * (origin.X - _vertices[i].X);
+                double rate = edgeX * stepY - edgeY * stepX;
+                if (rate == 0)
+                {
+                    if (leftOf < 0)
+                    {
+                        return 0;
+                    }
+
+                    continue;
+                }
+
+                double crossing = -leftOf / rate;
+                if (rate > 0)
+                {
+                    if (crossing > enters)
+                    {
+                        enters = crossing;
+                    }
+                }
+                else if (crossing < leaves)
+                {
+                    leaves = crossing;
+                }
+            }
+
+            return leaves < enters || leaves < 0 || double.IsInfinity(leaves) ? 0 : leaves;
+        }
+
+        private static MapPoint MeasureCentroid(MapPoint[] vertices, out double width, out double height)
+        {
+            width = 0;
+            height = 0;
+            if (vertices.Length == 0)
+            {
+                return new MapPoint(0, 0);
+            }
+
+            double minX = vertices[0].X;
+            double maxX = minX;
+            double minY = vertices[0].Y;
+            double maxY = minY;
+            double sumX = 0;
+            double sumY = 0;
+            for (int i = 0; i < vertices.Length; i++)
+            {
+                MapPoint corner = vertices[i];
+                if (corner.X < minX) minX = corner.X;
+                if (corner.X > maxX) maxX = corner.X;
+                if (corner.Y < minY) minY = corner.Y;
+                if (corner.Y > maxY) maxY = corner.Y;
+                sumX += corner.X;
+                sumY += corner.Y;
+            }
+
+            width = maxX - minX;
+            height = maxY - minY;
+
+            if (vertices.Length >= 3)
+            {
+                double twiceArea = 0;
+                double weightedX = 0;
+                double weightedY = 0;
+                for (int i = 0; i < vertices.Length; i++)
+                {
+                    MapPoint here = vertices[i];
+                    MapPoint next = vertices[i + 1 == vertices.Length ? 0 : i + 1];
+                    double cross = here.X * next.Y - next.X * here.Y;
+                    twiceArea += cross;
+                    weightedX += (here.X + next.X) * cross;
+                    weightedY += (here.Y + next.Y) * cross;
+                }
+
+                if (twiceArea != 0)
+                {
+                    return new MapPoint(weightedX / (3 * twiceArea), weightedY / (3 * twiceArea));
+                }
+            }
+
+            return new MapPoint(sumX / vertices.Length, sumY / vertices.Length);
         }
 
         private static double SquaredDistanceToSegment(MapPoint place, MapPoint from, MapPoint to)

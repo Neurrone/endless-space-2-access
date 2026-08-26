@@ -75,6 +75,58 @@ namespace ES2Access.Tests.Speech
             Assert.Equal("north", ModStrings.Get(CompassDirections.KeyForBearing(347.8)));
         }
 
+        // The sixteen-word compass, for a surface that AIMS. Same rule, half the arc: the failure to
+        // catch is a word claiming an arc that belongs to its neighbour, which points a probe eleven
+        // degrees off and sounds exactly right.
+
+        [Theory]
+        [InlineData(0.0, "north")]
+        [InlineData(22.5, "north-northeast")]
+        [InlineData(45.0, "northeast")]
+        [InlineData(67.5, "east-northeast")]
+        [InlineData(90.0, "east")]
+        [InlineData(112.5, "east-southeast")]
+        [InlineData(135.0, "southeast")]
+        [InlineData(157.5, "south-southeast")]
+        [InlineData(180.0, "south")]
+        [InlineData(202.5, "south-southwest")]
+        [InlineData(225.0, "southwest")]
+        [InlineData(247.5, "west-southwest")]
+        [InlineData(270.0, "west")]
+        [InlineData(292.5, "west-northwest")]
+        [InlineData(315.0, "northwest")]
+        [InlineData(337.5, "north-northwest")]
+        public void EachOfTheSixteenPointsIsTheMiddleOfItsOwnArc(double bearing, string word)
+        {
+            Assert.Equal(word, ModStrings.Get(CompassDirections.KeyForBearing16(bearing)));
+        }
+
+        [Theory]
+        [InlineData(11.24, "north")]
+        [InlineData(11.25, "north-northeast")]
+        [InlineData(33.74, "north-northeast")]
+        [InlineData(33.75, "northeast")]
+        [InlineData(258.74, "west-southwest")]
+        [InlineData(258.75, "west")]
+        [InlineData(348.74, "north-northwest")]
+        [InlineData(348.75, "north")]
+        [InlineData(359.9, "north")]
+        public void ASixteenthArcEndsHalfWayToTheNextPoint(double bearing, string word)
+        {
+            Assert.Equal(word, ModStrings.Get(CompassDirections.KeyForBearing16(bearing)));
+        }
+
+        [Fact]
+        public void TheSixteenWordCompassLeavesTheEightWordOneAlone()
+        {
+            // Lanes and the scanner keep the eight words on purpose; the half-winds exist only where
+            // something is being aimed. A bearing that has a half-wind of its own still reads as the
+            // whole wind it is nearest to when it is being DESCRIBED.
+            Assert.Equal("northeast", ModStrings.Get(CompassDirections.KeyForBearing(22.5)));
+            Assert.Equal("north-northeast", ModStrings.Get(CompassDirections.KeyForBearing16(22.5)));
+            Assert.Equal("north-northeast", CompassDirections.Direction16(1.0, 2.4142135));
+        }
+
         // The OTHER way of saying which way something lies: the two components, which is what the
         // scanner says. The failure that matters here is silent - a component said in the wrong order,
         // or a zero component said as "0 east", still sounds like an answer.

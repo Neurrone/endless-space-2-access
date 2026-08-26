@@ -95,6 +95,31 @@ namespace ES2Access.Core.Speech
             return Words[((arc % 8) + 8) % 8];
         }
 
+        /// <summary>
+        /// The same bearing said with SIXTEEN words instead of eight - the arcs half as wide, each
+        /// still centred on its own word, so "north" now runs 348.75 through 11.25 and everything
+        /// between it and northeast is "north-northeast".
+        ///
+        /// It is a second answer rather than a better one. A direction that DESCRIBES where something
+        /// already is - a lane, a system found by the scanner - is easier to hear in eight words, and
+        /// the extra precision buys the player nothing they can act on. A direction that AIMS is the
+        /// opposite case: an order given down a bearing of the player's choosing covers only as much
+        /// of the map as there are words to say, and eight words leave the gaps between them
+        /// unreachable. So the eight-word arcs stay exactly as they were and this exists beside them.
+        /// </summary>
+        public static string KeyForBearing16(double bearing)
+        {
+            int arc = (int)System.Math.Floor((bearing + 11.25) / 22.5);
+            return Words16[((arc % 16) + 16) % 16];
+        }
+
+        /// <summary>The sixteen-word compass word an offset points in, in the player's language.
+        /// </summary>
+        public static string Direction16(double east, double north)
+        {
+            return ModStrings.Get(KeyForBearing16(Bearing(east, north)));
+        }
+
         private static readonly string[] Words = new string[]
         {
             ModStrings.DirectionNorth,
@@ -105,6 +130,26 @@ namespace ES2Access.Core.Speech
             ModStrings.DirectionSouthWest,
             ModStrings.DirectionWest,
             ModStrings.DirectionNorthWest,
+        };
+
+        private static readonly string[] Words16 = new string[]
+        {
+            ModStrings.DirectionNorth,
+            ModStrings.DirectionNorthNorthEast,
+            ModStrings.DirectionNorthEast,
+            ModStrings.DirectionEastNorthEast,
+            ModStrings.DirectionEast,
+            ModStrings.DirectionEastSouthEast,
+            ModStrings.DirectionSouthEast,
+            ModStrings.DirectionSouthSouthEast,
+            ModStrings.DirectionSouth,
+            ModStrings.DirectionSouthSouthWest,
+            ModStrings.DirectionSouthWest,
+            ModStrings.DirectionWestSouthWest,
+            ModStrings.DirectionWest,
+            ModStrings.DirectionWestNorthWest,
+            ModStrings.DirectionNorthWest,
+            ModStrings.DirectionNorthNorthWest,
         };
     }
 }

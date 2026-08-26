@@ -217,5 +217,100 @@ namespace ES2Access.Tests.Map
             Assert.Equal(3.0, hull.DistanceTo(new MapPoint(5, 3)), 9);
             Assert.Equal(4.0, hull.DistanceTo(new MapPoint(-4, 0)), 9);
         }
+
+        // How far a heading out of a place inside the outline runs before it leaves - the length of
+        // the corridor an order aimed that way has. What can go wrong is silent: a corridor measured
+        // to the nearest EDGE rather than to where the line actually leaves, or a line through a
+        // corner picking up two crossings and answering the near one.
+
+        [Fact]
+        public void AHeadingOutOfTheMiddleRunsToTheSideItPointsAt()
+        {
+            ConvexHull hull = Hull(0, 0, 10, 0, 10, 10, 0, 10);
+
+            Assert.Equal(5.0, hull.ExitDistance(new MapPoint(5, 5), 1, 0), 9);
+            Assert.Equal(5.0, hull.ExitDistance(new MapPoint(5, 5), 0, 1), 9);
+            Assert.Equal(5.0, hull.ExitDistance(new MapPoint(5, 5), -1, 0), 9);
+            Assert.Equal(2.0, hull.ExitDistance(new MapPoint(5, 8), 0, 1), 9);
+        }
+
+        [Fact]
+        public void ADiagonalRunsToTheCornerItPointsAt()
+        {
+            ConvexHull hull = Hull(0, 0, 10, 0, 10, 10, 0, 10);
+
+            Assert.Equal(System.Math.Sqrt(50), hull.ExitDistance(new MapPoint(5, 5), 1, 1), 9);
+            Assert.Equal(System.Math.Sqrt(200), hull.ExitDistance(new MapPoint(0, 0), 1, 1), 9);
+        }
+
+        [Fact]
+        public void TheDirectionNeedNotBeAUnitLong()
+        {
+            ConvexHull hull = Hull(0, 0, 10, 0, 10, 10, 0, 10);
+
+            Assert.Equal(5.0, hull.ExitDistance(new MapPoint(5, 5), 37, 0), 9);
+            Assert.Equal(0.0, hull.ExitDistance(new MapPoint(5, 5), 0, 0), 9);
+        }
+
+        [Fact]
+        public void APlaceOnTheRimHasTheWholeWidthOneWayAndNothingTheOther()
+        {
+            ConvexHull hull = Hull(0, 0, 10, 0, 10, 10, 0, 10);
+
+            Assert.Equal(10.0, hull.ExitDistance(new MapPoint(0, 5), 1, 0), 9);
+            Assert.Equal(0.0, hull.ExitDistance(new MapPoint(0, 5), -1, 0), 9);
+            Assert.Equal(5.0, hull.ExitDistance(new MapPoint(0, 5), 0, 1), 9);
+        }
+
+        [Fact]
+        public void APlaceAHairOutsideStillMeasuresToWhereTheLineLeaves()
+        {
+            // Coordinates arrive through a camera and a float, so a star on its own galaxy's rim can
+            // land just outside it; the corridor must not collapse to nothing there.
+            ConvexHull hull = Hull(0, 0, 10, 0, 10, 10, 0, 10);
+
+            Assert.Equal(10.0000001, hull.ExitDistance(new MapPoint(-1e-7, 5), 1, 0), 6);
+        }
+
+        [Fact]
+        public void AnOutlineWithNoInsideHasNoCorridor()
+        {
+            Assert.Equal(0.0, Hull(0, 0, 10, 0).ExitDistance(new MapPoint(5, 0), 1, 0), 9);
+            Assert.Equal(0.0, Hull(2, 2).ExitDistance(new MapPoint(2, 2), 1, 0), 9);
+        }
+
+        // How far across the outline is, and where its middle is.
+
+        [Fact]
+        public void TheOutlineIsAsWideAndAsTallAsTheBoxAroundIt()
+        {
+            ConvexHull hull = Hull(0, 0, 10, 0, 10, 4, 0, 4);
+
+            Assert.Equal(10.0, hull.Width, 9);
+            Assert.Equal(4.0, hull.Height, 9);
+        }
+
+        [Fact]
+        public void TheMiddleIsTheBalancePointOfTheAreaAndNotOfTheBox()
+        {
+            // A lopsided outline is where the three candidate middles part company: this one's box is
+            // centred at y 5.5 and its corners average to y 6.2, while the area balances at 5.254 -
+            // the corners' average being dragged upwards by the one extra corner along the top.
+            ConvexHull hull = Hull(0, 0, 10, 0, 10, 10, 5, 11, 0, 10);
+
+            Assert.Equal(5.0, hull.Centroid.X, 9);
+            Assert.Equal(5.253968, hull.Centroid.Y, 6);
+
+            ConvexHull square = Hull(0, 0, 10, 0, 10, 10, 0, 10);
+            Assert.Equal(5.0, square.Centroid.X, 9);
+            Assert.Equal(5.0, square.Centroid.Y, 9);
+        }
+
+        [Fact]
+        public void AnOutlineWithNoAreaAveragesItsPlacesInstead()
+        {
+            Assert.Equal(5.0, Hull(0, 0, 10, 0).Centroid.X, 9);
+            Assert.Equal(7.0, Hull(2, 7).Centroid.Y, 9);
+        }
     }
 }

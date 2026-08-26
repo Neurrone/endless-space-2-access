@@ -21,6 +21,15 @@ namespace ES2Access.Core.Speech
         public const string StartupReady = "startup.ready";
         public const string FragmentSeparator = "speech.fragment-separator";
         public const string ListSeparator = "speech.list-separator";
+
+        /// <summary>The last join of a spoken enumeration - the one place a list stops being commas
+        /// and takes a conjunction ("a, b, and c"), which every language does its own way and some do
+        /// not do at all. Two forms because English joins a PAIR without the comma, and a translator
+        /// whose language makes no such distinction writes the same shape twice. Both take the
+        /// already-joined head and the last item, so the comma itself lives in the template rather
+        /// than being glued on outside it (<see cref="SpokenList"/>).</summary>
+        public const string ListPair = "speech.list-pair";
+        public const string ListFinal = "speech.list-final";
         public const string Fraction = "speech.fraction";
         public const string FractionUnit = "speech.fraction-unit";
         public const string Quantity = "speech.quantity";
@@ -460,6 +469,20 @@ namespace ES2Access.Core.Speech
         public const string DirectionWest = "direction.west";
         public const string DirectionNorthWest = "direction.northwest";
 
+        /// <summary>The eight headings BETWEEN the eight above, for a surface that aims rather than
+        /// describes: a probe is launched down a bearing the player chooses, and eight choices leave
+        /// a quarter of the map unreachable while sixteen cover it. Nothing that merely NAMES a
+        /// direction uses them - a lane said as "north-northeast" is harder to hear and no more
+        /// useful than one said as "north" (<see cref="CompassDirections.KeyForBearing16"/>).</summary>
+        public const string DirectionNorthNorthEast = "direction.north-northeast";
+        public const string DirectionEastNorthEast = "direction.east-northeast";
+        public const string DirectionEastSouthEast = "direction.east-southeast";
+        public const string DirectionSouthSouthEast = "direction.south-southeast";
+        public const string DirectionSouthSouthWest = "direction.south-southwest";
+        public const string DirectionWestSouthWest = "direction.west-southwest";
+        public const string DirectionWestNorthWest = "direction.west-northwest";
+        public const string DirectionNorthNorthWest = "direction.north-northwest";
+
         /// <summary>The same question answered as the two COMPONENTS of the offset instead of as one
         /// compass word - "23 south", "23 south, 1 west" (<see cref="CompassDirections.Offsets"/>).
         /// One whole phrase per axis rather than a number glued to a direction word, because the
@@ -476,6 +499,14 @@ namespace ES2Access.Core.Speech
         /// said twice, because which axis comes first, and what separates them, is a language's
         /// business.</summary>
         public const string GalaxyCoordinatePair = "galaxy.coordinates";
+
+        /// <summary>The galaxy in one sentence: the shape and size it was generated with, how far
+        /// across it is, and where its middle lies from the empire's home system - the picture a
+        /// sighted player takes in at a glance when the map first opens and can never be told
+        /// otherwise (<see cref="GalaxyMapText"/>). One template rather than a chain of them because
+        /// every join in it is punctuation a language chooses for itself, and the shape and size words
+        /// are the GAME's own, dropped in whole.</summary>
+        public const string GalaxyMapSummary = "galaxy.map-summary";
 
         // The map's inspect cursor - a mode of the mod's own, so every word in it is the mod's. The
         // cursor's size is said as a whole phrase rather than a number glued to a symbol, because "3
@@ -713,6 +744,28 @@ namespace ES2Access.Core.Speech
         /// eight compass bearings, offered beside that system's starlanes because the order takes any
         /// direction at all and the lanes are only the ones that lead somewhere.</summary>
         public const string GalaxyProbeDirections = "galaxy.probe-directions";
+
+        /// <summary>The same group named by what the order can REACH: a probe flies its own speed for
+        /// its own lifetime and then stops, so the number of units it will cover is the one fact that
+        /// decides whether any of the bearings under it is worth taking.</summary>
+        public const string GalaxyProbeLaunchReach = "galaxy.probe-launch-reach";
+
+        /// <summary>What lies down one bearing, said as the stretches of it nobody has explored yet
+        /// and how far the map itself goes that way (<see cref="ProbeContextText"/>). The game draws
+        /// the fog and the map's rim and says neither in words, so all of it is the mod's.
+        ///
+        /// The distances are whole units along the bearing, measured from the system the probe leaves.
+        /// A range is two of them; the last stretch is the one that runs off the map, and it takes a
+        /// template of its own because "46 to the map edge at 58" is one clause where the others are
+        /// pairs. The word for "unexplored" is said ONCE and the ranges follow it, which is what keeps
+        /// a six-range answer hearable - so it lives in the template that INTRODUCES the list rather
+        /// than in each range.</summary>
+        public const string GalaxyProbeContext = "galaxy.probe-context";
+        public const string GalaxyProbeContextUnexplored = "galaxy.probe-context-unexplored";
+        public const string GalaxyProbeContextRange = "galaxy.probe-context-range";
+        public const string GalaxyProbeContextToEdge = "galaxy.probe-context-to-edge";
+        public const string GalaxyProbeContextEdge = "galaxy.probe-context-edge";
+        public const string GalaxyProbeContextExplored = "galaxy.probe-context-explored";
 
         /// <summary>Where a probe drifting through the map is, said from the system it is nearest to -
         /// which is how a sighted player reads the mote: against the nearest star. The distance is in
@@ -1593,6 +1646,8 @@ namespace ES2Access.Core.Speech
             { StartupReady, "Endless Space 2 Access {0} ready" },
             { FragmentSeparator, " " },
             { ListSeparator, ", " },
+            { ListPair, "{0} and {1}" },
+            { ListFinal, "{0}, and {1}" },
             { Fraction, "{0} of {1}" },
             { FractionUnit, "{0} of {1} {2}" },
             { Quantity, "x {0}" },
@@ -1784,11 +1839,23 @@ namespace ES2Access.Core.Speech
             { DirectionSouthWest, "southwest" },
             { DirectionWest, "west" },
             { DirectionNorthWest, "northwest" },
+            { DirectionNorthNorthEast, "north-northeast" },
+            { DirectionEastNorthEast, "east-northeast" },
+            { DirectionEastSouthEast, "east-southeast" },
+            { DirectionSouthSouthEast, "south-southeast" },
+            { DirectionSouthSouthWest, "south-southwest" },
+            { DirectionWestSouthWest, "west-southwest" },
+            { DirectionWestNorthWest, "west-northwest" },
+            { DirectionNorthNorthWest, "north-northwest" },
             { OffsetNorth, "{0} north" },
             { OffsetSouth, "{0} south" },
             { OffsetEast, "{0} east" },
             { OffsetWest, "{0} west" },
             { GalaxyCoordinatePair, "{0}, {1}" },
+            {
+                GalaxyMapSummary,
+                "{0} galaxy, {1} size, {2} by {3} units; galactic center {4} of {5}."
+            },
             { GalaxyInspectEntered, "Inspect mode" },
             { GalaxyInspectExited, "Exited inspect mode" },
             { GalaxyInspectCursorSize, "Cursor {0} by {1}" },
@@ -1884,6 +1951,13 @@ namespace ES2Access.Core.Speech
             { GalaxyProbeHeadingOne, "Probe launched heading {0}, {1} probe remaining" },
             { GalaxyProbeHeadingMany, "Probe launched heading {0}, {1} probes remaining" },
             { GalaxyProbeDirections, "Launch towards" },
+            { GalaxyProbeLaunchReach, "Launch probe, reach {0}" },
+            { GalaxyProbeContext, "{0}: {1}." },
+            { GalaxyProbeContextUnexplored, "unexplored {0}" },
+            { GalaxyProbeContextRange, "{0}-{1}" },
+            { GalaxyProbeContextToEdge, "{0} to the map edge at {1}" },
+            { GalaxyProbeContextEdge, "map edge at {0}" },
+            { GalaxyProbeContextExplored, "fully explored to the map edge at {0}" },
             { GalaxyProbeAt, "at {0}" },
             { GalaxyProbeNear, "{0} of {1}" },
             { GalaxyProbeOutOne, "{0} of {1}, {2} turn out" },
