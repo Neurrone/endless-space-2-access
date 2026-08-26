@@ -218,7 +218,10 @@ belong in the files above.
   the probe mode ends, and the panel taken away by a screen drawn over the map — all in
   `docs/fleets.md`, including the swap undone at a two-fleet slot built in-session and
   A/B'd against the unpatched game). Still unverified anywhere: a fleet destroyed in
-  combat while its panel is up, and the obliterator paths (no Behemoth in any save).
+  combat while its panel is up; the obliterator paths (no Behemoth in any save); and a
+  FOREIGN fleet deselected from inside its read-only panel — the held-fleet watch
+  deliberately takes any fleet, so the seat should land on its map row, but no fixture
+  has offered a selectable foreign fleet.
   All three fixture saves are missing from disk (`test-recipes/fixtures.md`).
 - Chat: the child screen ships whole (tabs, message log, box, the page-level new-message
   button) and is verified in a single-player fixture; what no fixture here has shown is the
