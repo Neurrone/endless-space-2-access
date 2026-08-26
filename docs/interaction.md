@@ -702,7 +702,11 @@ something to pick up carries exactly as before, every other press is consumed an
 no-cue rule as a carry landing on a control that will not take it), and scan mode stays one Enter
 away on the button the game draws for it. Scoped to that page alone — the scan view over it
 (layer 11), the galaxy and every modal the page opens keep Space as the game's, measured before and
-after. While something is carried, **Escape puts it
+after. The PLANET-OVERVIEW page deliberately keeps the fall-through (owner ruling 2026-08-27): it
+draws the same scan button with the same shortcut, but no node there offers a pickup, so the mod has
+no meaning for Space on that page and the game's is left standing — do not extend the swallow there.
+The silence of a consumed press on a slot with nowhere to send its unit is also a ruling
+(2026-08-27, silent refusal chosen over a spoken phrase), not an oversight. While something is carried, **Escape puts it
 down and goes no further** (`claimsBack` reads true only then), and the carry dies silently when the
 player leaves the page it started on — a menu opened over that page is still that page.
 
