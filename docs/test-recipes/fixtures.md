@@ -7,6 +7,13 @@ is true of the saves and of getting back to a known state.
 
 ## The three saves
 
+**All three fixture saves are missing from disk** (measured 2026-08-26: `DevProbe.Saves()`
+reported only the owner's personal saves and autosaves — no `[Beginner] test`, no
+`[Midgame] quests fleets`, no `unlocked`). Every recipe naming one of them is
+fixture-blocked until the owner rebuilds it. Recipes are written against these fixture
+saves only, never against a personal save — a personal save is specific to one machine
+and one playthrough, so nothing durable may depend on its contents.
+
 The owner keeps three, and `DevProbe.Saves()` reports their titles: **`[Beginner] test`** (the
 working fixture, turn 21 — Dusay a colony, Heka an outpost, two free-movement fleets on
 Dusay→Heka legs), **`[Midgame] quests fleets`** (turn 3 — the one with a quest pinned: fleets in

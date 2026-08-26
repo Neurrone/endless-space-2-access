@@ -302,6 +302,9 @@ namespace ES2Access
             // somewhere else this turn. Both feed the same notification pipeline.
             FleetArrivals.Install();
             ForeignFleetWatch.Install();
+            // And the game's own probe cancel, which hands the panel back to whichever fleet is
+            // parked first at the slot rather than to the one that armed the mode.
+            ProbeCancelSelection.Install();
 
             _routes = new ModRoutes(host);
             _routes.Register();
@@ -1011,6 +1014,7 @@ namespace ES2Access
             // subscription and what it was remembering about the galaxy.
             Step("fleet arrivals", FleetArrivals.Remove);
             Step("foreign fleet watch", ForeignFleetWatch.Remove);
+            Step("probe cancel selection", ProbeCancelSelection.Remove);
             Step("influence ground watch", InfluenceGroundWatch.Remove);
 
             Step("input", () =>

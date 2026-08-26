@@ -88,10 +88,16 @@ namespace ES2Access.UI
         private object _visualAim;
 
         // Where the cursor stood at the last visual commit, and whether the commit being made now is
-        // the cursor having MOVED. Unlike _visualKey this survives ClearVisual, which is a re-commit
-        // on the control the cursor is already on.
+        // the cursor having been PLACED. Unlike _visualKey this survives ClearVisual, which is a
+        // re-commit on the control the cursor is already on.
         private ControlId _visualFrom;
         private bool _cursorMovedHere;
+
+        // A screen has PUT the cursor somewhere and the landing has just been taken (EnsureFocus,
+        // FocusStop). Consumed by the next visual commit, which it makes a placement even where the
+        // cursor was already standing on that control - the one case an id comparison cannot see, and
+        // the case a handover makes when it hands the player back to the row they never left.
+        private bool _placed;
 
         // What the player is holding, if anything. Owned here because the carry key is dispatched
         // here and because a carry is scoped to the screen it started on, which is what this class
@@ -225,6 +231,7 @@ namespace ES2Access.UI
             // Nowhere to have moved FROM: the first commit on a page is a cursor being seated, not a
             // player going somewhere (see CursorMovedHere).
             _visualFrom = null;
+            _placed = false;
             ClearVisual();
 
             if (screen == null)
@@ -306,6 +313,7 @@ namespace ES2Access.UI
             _bufferOverride = null;
             // Giving up the cursor is not moving it: whatever it is seated on next is a landing.
             _visualFrom = null;
+            _placed = false;
             ClearVisual();
         }
 
@@ -404,6 +412,8 @@ namespace ES2Access.UI
             {
                 return false;
             }
+
+            _placed = true;
 
             AnnounceMove(
                 new MoveResult { From = from, To = _graph.CurrentNode, Moved = true }
@@ -656,6 +666,7 @@ namespace ES2Access.UI
                     if (outcome == FocusOutcome.Land)
                     {
                         _graph.Focus(pending.Id);
+                        _placed = true;
                         if (!pending.Announce)
                         {
                             _lastSpokenKey = pending.Id;
@@ -779,10 +790,19 @@ namespace ES2Access.UI
         /// nothing was ever going to correct it. Comparing the answer against the one that was
         /// committed is what turns that into a re-commit, per site, with nothing for a screen to
         /// remember; a node whose answer is stable takes exactly the path it always did.
+        ///
+        /// A PLACEMENT re-commits too, even onto the control the cursor already occupied
+        /// (<see cref="_placed"/>): a screen that hands the player back to where they are standing is
+        /// saying "the cursor is placed here", and everything hung on a placement -
+        /// <see cref="CursorMovedHere"/>, and through it the galaxy page's camera - has to hear it. It
+        /// stays silent: the announcement compares the SPOKEN key, which the standing cursor already
+        /// matches.
         /// </summary>
         private void SyncVisual(GraphNode node)
         {
-            if (_visualKey != null && _visualKey.Equals(node.Id))
+            bool placed = _placed;
+            _placed = false;
+            if (!placed && _visualKey != null && _visualKey.Equals(node.Id))
             {
                 if (ReferenceEquals(Aim(node), _visualAim))
                 {
@@ -794,7 +814,7 @@ namespace ES2Access.UI
             _visualKey = node.Id;
             _visualNode = node;
             _visualAim = Aim(node);
-            _cursorMovedHere = _visualFrom != null && !_visualFrom.Equals(node.Id);
+            _cursorMovedHere = _visualFrom != null && (placed || !_visualFrom.Equals(node.Id));
             _visualFrom = node.Id;
             ScrollIntoView.Reveal(node.Vtable.ScrollAnchor, node.Id.Reference);
             // The screen's own half first, so a rule that moves the WORLD (the galaxy page's camera)
@@ -816,16 +836,24 @@ namespace ES2Access.UI
         }
 
         /// <summary>
-        /// Whether the commit now running is the cursor having MOVED here - asked from inside an
+        /// Whether the commit now running is the cursor having been PLACED here - asked from inside an
         /// <c>OnFocusVisual</c> hook, and false anywhere else.
         ///
-        /// A focus visual is committed for three different reasons and only one of them is the player
-        /// going somewhere: the cursor moved, the screen was re-attached and the cursor it remembered
-        /// re-seated, or the visual was dropped and re-taken on the SAME control because what the game
-        /// draws for it changed (<c>GalaxyHudScreen.FollowCamera</c>). A hook that only points the
-        /// game's pointer wants all three. A hook that MOVES THE WORLD - a camera pan to whatever the
-        /// cursor is on - wants only the first, or re-entering a page flies the camera back to the
-        /// system the player was reading before, over wherever the game has since taken it.
+        /// A focus visual is committed for three different reasons and only one of them is the cursor
+        /// being put somewhere: the cursor was placed - the player moved it, or a screen seated it
+        /// (<see cref="FocusNode"/>, <see cref="FocusStop"/>) - or the screen was re-attached and the
+        /// cursor it remembered re-seated, or the visual was dropped and re-taken on the SAME control
+        /// because what the game draws for it changed (<c>GalaxyHudScreen.FollowCamera</c>). A hook
+        /// that only points the game's pointer wants all three. A hook that MOVES THE WORLD - a camera
+        /// pan to whatever the cursor is on - wants only the first, or re-entering a page flies the
+        /// camera back to the system the player was reading before, over wherever the game has since
+        /// taken it.
+        ///
+        /// A screen's seat counts because it IS the cursor being put somewhere: the player is left
+        /// reading whatever it landed on, and a page whose camera followed the player's own arrow but
+        /// not the handover that seated them would be two rules (owner ruling 2026-08-26 - the fleet
+        /// panel's Escape). That includes a seat onto the control the cursor already occupied, which is
+        /// why a placement re-commits (<see cref="SyncVisual"/>) rather than being compared away.
         /// </summary>
         public bool CursorMovedHere
         {

@@ -376,14 +376,32 @@ namespace ES2Access.Screens
             _hud.Baseline();
             _fleetPanel.Baseline();
             // A mode already armed when the page is arrived at is not one the player has just armed,
-            // and seating them on it would move the cursor for something that happened elsewhere.
+            // and seating them on it would move the cursor for something that happened elsewhere. Its
+            // bearings are still remembered, because the mode ENDING under the cursor is the page's to
+            // answer whoever armed it (<see cref="SeatAfterProbeMode"/>).
             _armedProbe = ArmedProbeFleet();
+            _armedProbeAt = _armedProbe == null
+                ? null
+                : FleetOrders.Orbit(_armedProbe) as StarSystemNode;
+            _armedProbeGroup = _armedProbeAt == null ? null : SystemKey(_armedProbeAt) + "/launch";
         }
 
         public override void OnPop()
         {
             _zoom.Forget();
             _hud.Forget();
+            // The panel's release, caught here because on this path it is never handed over: the page
+            // goes away with the panel still up, so the close frame the watch would have answered on
+            // never happens under this screen (<see cref="_releasedAcross"/>).
+            // Never over a seat the page is already owed. One of the six zoom-in actions is pressed
+            // FROM the panel and can take the page away with it (the discovery cutscene), so the
+            // cursor is in the panel on exactly the pop whose landing is already spoken for - and the
+            // action's own target is where the player was told they were going.
+            _releasedAcross = _fleetPanel.Held != null
+                && CursorInFleetPanel()
+                && _seatTarget == SeatTarget.None
+                ? _fleetPanel.Held
+                : null;
             _fleetPanel.Forget();
             // A place the game asked to be looked at goes with the page: whatever replaced this one is
             // where the player now is, and a request answered on some later visit would move the cursor
@@ -402,6 +420,8 @@ namespace ES2Access.Screens
             _cameraPlace = null;
             _cameraIn = false;
             _armedProbe = null;
+            _armedProbeAt = null;
+            _armedProbeGroup = null;
             // A seat still being waited for is KEPT. Six of the game's fleet actions answer the press by
             // taking the player somewhere - and the first arrival at a system plays the discovery
             // cutscene over the map, which stands this page down for as long as it runs. Forgetting the
@@ -486,6 +506,9 @@ namespace ES2Access.Screens
                 : Math.Max(0, _settling - 1);
             _hud.Update();
             FollowSelectionEnd(_fleetPanel.Update());
+            // Beside it and not before it: the two answer the same handover by different routes, and a
+            // release the page itself saw is the fresher of the two.
+            FollowSelectionEndAcross();
             _zoom.Update();
             _inspect.Update();
             CheckTrailSession();
@@ -539,10 +562,19 @@ namespace ES2Access.Screens
                     return;
                 }
 
+                Fleet was = _armedProbe;
+                StarSystemNode wasAt = _armedProbeAt;
+                string wasGroup = _armedProbeGroup;
                 _armedProbe = fleet;
-                StarSystemNode node = fleet == null
-                    ? null
-                    : FleetOrders.Orbit(fleet) as StarSystemNode;
+                _armedProbeAt = null;
+                _armedProbeGroup = null;
+                if (fleet == null)
+                {
+                    SeatAfterProbeMode(was, wasAt, wasGroup);
+                    return;
+                }
+
+                StarSystemNode node = FleetOrders.Orbit(fleet) as StarSystemNode;
                 if (node == null)
                 {
                     return;
@@ -552,6 +584,8 @@ namespace ES2Access.Screens
                 // applies them in (<see cref="Arrive"/>): both expansions belong to the build that
                 // declares the bearing the cursor is being sent to.
                 string place = SystemKey(node);
+                _armedProbeAt = node;
+                _armedProbeGroup = place + "/launch";
                 OpenPlace(node);
                 _pendingExpand.Add(ControlId.Structural(place + "/launch"));
                 GraphNavigator navigator = ModEntry.Navigator;
@@ -588,27 +622,41 @@ namespace ES2Access.Screens
         /// Only when the panel closed into the PLAIN map cursor, because that is what tells "the
         /// selection was let go" from the other ways the panel leaves: a targeting mode closing it
         /// seats its own cursor (<see cref="FollowProbeArming"/>), a zoom-in action flies into the
-        /// system (<see cref="SeatAfterFleetAction"/>), and this must overwrite neither landing. And
-        /// only while the cursor was IN the panel: a player reading the HUD when they let go has lost
-        /// nothing and is left where they are.
+        /// system (<see cref="SeatAfterFleetAction"/>), and this must overwrite neither landing.
+        ///
+        /// Made from the panel OR from the fleet's own row, and from nowhere else. Selecting from the
+        /// row never moved the cursor, so there is nothing to hand back - but the handover is still
+        /// made, onto the row the player is already standing on, because it is how this page says "the
+        /// cursor is placed here" and the camera follows a placement wherever it is made
+        /// (<see cref="OnFocusVisual"/>). Without it the Escape that closed the panel left the camera
+        /// on the docking slot the game had framed for the selection, with the system unfocused and
+        /// its orbital cards gone, until the player pressed an arrow (owner-reported 2026-08-26). A
+        /// player reading the HUD when they let go has lost nothing, is reading nothing on the map,
+        /// and is left exactly where they are.
         /// </summary>
         private void FollowSelectionEnd(Fleet released)
         {
-            if (released == null || !(Gui.GetCursor() is GalaxyCursor))
+            if (released == null
+                || !(Gui.GetCursor() is GalaxyCursor)
+                || !(CursorInFleetPanel() || CursorAtFleetRow(released)))
             {
                 return;
             }
 
+            SeatOnFleet(released, null);
+        }
+
+        /// <summary>Whether the cursor is already standing exactly where a seat would put it - the
+        /// "never left it" half of the question above, asked of the same index the seat aims with
+        /// (<see cref="SeatOnFleet"/>) so the two cannot disagree about which row is the fleet's.
+        /// </summary>
+        private bool CursorAtFleetRow(Fleet fleet)
+        {
             GraphNavigator navigator = ModEntry.Navigator;
             GraphNode standing = navigator == null ? null : navigator.CurrentNode;
-            object stop = standing == null ? null : standing.StopKey;
-            if (
-                !FleetPanel.ManagementStop.Equals(stop)
-                && !FleetPanel.ShipsStop.Equals(stop)
-                && !FleetPanel.ActionsStop.Equals(stop)
-            )
+            if (standing == null || standing.Id == null)
             {
-                return;
+                return false;
             }
 
             try
@@ -616,28 +664,163 @@ namespace ES2Access.Screens
                 List<FleetSite> sites = FleetIndex(new HashSet<ControlId>());
                 for (int i = 0; i < sites.Count; i++)
                 {
-                    if (ReferenceEquals(sites[i].Fleet, released))
+                    if (ReferenceEquals(sites[i].Fleet, fleet))
                     {
-                        navigator.FocusNode(Reveal(sites[i]));
-                        return;
+                        return standing.Id.Equals(sites[i].Node);
                     }
-                }
-
-                ControlId home = SystemId(FleetOrders.Orbit(released) as StarSystemNode);
-                if (home != null)
-                {
-                    navigator.FocusNode(home);
                 }
             }
             catch (Exception e)
             {
-                Log.Warn("galaxy: seating the cursor after a deselection threw: " + e);
+                Log.Warn("galaxy: asking whether the cursor is on a fleet's own row threw: " + e);
             }
+
+            return false;
+        }
+
+        /// <summary>Whether the cursor is standing in one of the panel's three stops - the question
+        /// every one of these handovers asks, because a player who was reading the map or the HUD when
+        /// the panel went has lost nothing and must be left where they are.</summary>
+        private static bool CursorInFleetPanel()
+        {
+            GraphNavigator navigator = ModEntry.Navigator;
+            GraphNode standing = navigator == null ? null : navigator.CurrentNode;
+            object stop = standing == null ? null : standing.StopKey;
+            return FleetPanel.ManagementStop.Equals(stop)
+                || FleetPanel.ShipsStop.Equals(stop)
+                || FleetPanel.ActionsStop.Equals(stop);
+        }
+
+        /// <summary>
+        /// Put the cursor on a fleet's own row on the map - the place the panel that has just gone was
+        /// ABOUT - or on its system's row when the fleet itself is no longer drawn (a disband, a fleet
+        /// lost). Answers whether it aimed at anything.
+        ///
+        /// The one seat every fleet-panel handover shares: the selection being let go
+        /// (<see cref="FollowSelectionEnd"/>), a targeting mode ending under the cursor
+        /// (<see cref="FollowProbeArming"/>), and the panel being taken away by a screen drawn over
+        /// the map (<see cref="_releasedAcross"/>).
+        ///
+        /// It says nothing about the camera, and none of the handovers do: seating the cursor IS a
+        /// placement, and the page's one camera rule answers every placement alike
+        /// (<see cref="OnFocusVisual"/>). So the camera comes back in on the place the player is left
+        /// reading - or stays where the player put it by hand, which is the record's decision to make
+        /// (<see cref="Showing"/>) and not a handover's.
+        ///
+        /// <paramref name="home"/> is the system to fall back to where the caller knows it from
+        /// before the fleet went - the fleet's own orbit answers it in every other case.
+        /// </summary>
+        private bool SeatOnFleet(Fleet fleet, StarSystemNode home)
+        {
+            GraphNavigator navigator = ModEntry.Navigator;
+            if (navigator == null || fleet == null)
+            {
+                return false;
+            }
+
+            try
+            {
+                List<FleetSite> sites = FleetIndex(new HashSet<ControlId>());
+                for (int i = 0; i < sites.Count; i++)
+                {
+                    if (ReferenceEquals(sites[i].Fleet, fleet))
+                    {
+                        navigator.FocusNode(Reveal(sites[i]));
+                        return true;
+                    }
+                }
+
+                StarSystemNode at = home != null ? home : FleetOrders.Orbit(fleet) as StarSystemNode;
+                ControlId id = SystemId(at);
+                if (id == null)
+                {
+                    return false;
+                }
+
+                navigator.FocusNode(id);
+                return true;
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: seating the cursor on a fleet's own row threw: " + e);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// The fleet the panel was up for when this page was taken away with the panel still open, or
+        /// null the rest of the time.
+        ///
+        /// A full screen drawn over the map - the military screen, the academy, anything the player
+        /// opens from the HUD - pops this page, and opening one also force-swaps the map to the plain
+        /// cursor and clears the fleet selection (<c>GuiManager.cs:1783-1795</c>). So the panel closes
+        /// while nobody is watching: the close frame the watch would have handed the fleet over on
+        /// happens with this screen off the stack, and coming back left the cursor wherever
+        /// reconciliation put it - measured 2026-08-26 on an unrelated fleet's row three stops away.
+        /// The release is therefore CAUGHT at the pop and answered on the first frame this page is the
+        /// focused one again, which makes the trip through the screen invisible: the player comes back
+        /// where letting the fleet go would have put them anyway. It is dropped unanswered when the
+        /// panel came back up with the page - then nothing was taken from under the cursor.
+        /// </summary>
+        private Fleet _releasedAcross;
+
+        /// <summary>Answer a release caught at the pop, on the first frame back on the page - not at
+        /// the push itself, where the navigator has not yet been handed this screen and a landing
+        /// asked for there would belong to the screen the player was leaving.</summary>
+        private void FollowSelectionEndAcross()
+        {
+            Fleet released = _releasedAcross;
+            _releasedAcross = null;
+            if (released != null && !_fleetPanel.Available())
+            {
+                SeatOnFleet(released, null);
+            }
+        }
+
+        /// <summary>
+        /// Where the player is put when the launch-probe mode ENDS - cancelled, or spent on the last
+        /// charge: back on the acting fleet's own row, the same place letting go of the selection puts
+        /// them (<see cref="SeatOnFleet"/>).
+        ///
+        /// Only while the cursor is standing among the bearings themselves, because those are the
+        /// nodes the mode's end takes away: the group is declared for as long as the mode is up and
+        /// for no longer (<see cref="AddProbeDirections"/>), so a cursor inside it is about to be left
+        /// on nothing and reconciliation would walk it backwards onto whatever row happened to be
+        /// drawn last at that system. A cursor anywhere else is on a node that SURVIVES the mode
+        /// ending, and nothing may move it - the same limit the selection-end seat keeps.
+        ///
+        /// Both the fleet and the group are read from what was remembered at ARMING time: by the frame
+        /// the mode ends the cursor object is gone, and with it the only live route to either.
+        /// </summary>
+        private void SeatAfterProbeMode(Fleet was, StarSystemNode at, string group)
+        {
+            if (was == null || group == null)
+            {
+                return;
+            }
+
+            GraphNavigator navigator = ModEntry.Navigator;
+            GraphNode standing = navigator == null ? null : navigator.CurrentNode;
+            ControlId id = standing == null ? null : standing.Id;
+            string key = id == null ? null : id.StructuralKey as string;
+            if (key == null || (key != group && !key.StartsWith(group + "/")))
+            {
+                return;
+            }
+
+            SeatOnFleet(was, at);
         }
 
         /// <summary>The fleet the probe mode was armed for when it was last looked at - instance state,
         /// so it is reload-safe and each page keeps its own.</summary>
         private Fleet _armedProbe;
+
+        /// <summary>The system that fleet was launching from, and the key of the group of bearings
+        /// offered there - both remembered from the frame the mode was armed, for the frame it ends
+        /// (<see cref="SeatAfterProbeMode"/>).</summary>
+        private StarSystemNode _armedProbeAt;
+
+        private string _armedProbeGroup;
 
         // ---- the fleet actions that only bring the camera in ----
 
@@ -1130,9 +1313,10 @@ namespace ES2Access.Screens
             }
         }
 
-        /// <summary>Whether the focus visual being committed right now is the cursor having MOVED, as
-        /// opposed to this page being re-entered or the visual being re-taken where it already was.
-        /// Everything on this page that moves the CAMERA asks it first
+        /// <summary>Whether the focus visual being committed right now is the cursor having been
+        /// PLACED - moved by the player or seated by this page - as opposed to this page being
+        /// re-entered or the visual being re-taken where it already was. Everything on this page that
+        /// moves the CAMERA for what is being read asks it first
         /// (<see cref="GraphNavigator.CursorMovedHere"/>).</summary>
         private static bool CursorMoved()
         {
@@ -1155,10 +1339,13 @@ namespace ES2Access.Screens
         /// another system's children brings the camera in on that one, and a zoom the player made by
         /// hand is left where they put it for as long as they go on reading the same place.
         ///
-        /// Only where the cursor MOVED (<see cref="GraphNavigator.CursorMovedHere"/>): coming back to
-        /// this page re-seats the cursor where it was left, and the visual is re-taken whenever the
-        /// camera changes what it draws for the focused system (<see cref="FollowCamera"/>) - flying
-        /// the camera for either would take it off whatever the GAME has since centred it on.
+        /// Only where the cursor was PLACED (<see cref="GraphNavigator.CursorMovedHere"/>): the player
+        /// moved it, or a screen seated it - a handover out of the fleet panel, a landing, the answer
+        /// to a reveal - all of which leave the player reading whatever they landed on and so all ask
+        /// the same question. Coming back to this page re-seats the cursor where it was left, and the
+        /// visual is re-taken whenever the camera changes what it draws for the focused system
+        /// (<see cref="FollowCamera"/>) - flying the camera for either would take it off whatever the
+        /// GAME has since centred it on, so neither is a placement.
         ///
         /// Only for the map's own stop. The HUD's stops, the view title and the zoom slider are
         /// controls of the page rather than places on it, and a page whose camera moved when the
@@ -1236,20 +1423,21 @@ namespace ES2Access.Screens
         /// a request to see less, and the ways out are the player's own (Backslash, closing the
         /// branch). So "already showing it" includes being further in than was asked for.
         ///
-        /// <paramref name="asked"/> is a LANDING rather than the cursor wandering (<see cref="Camera"/>):
-        /// it moves whatever the record says, because a player who zoomed out by hand and then pressed
-        /// go-to has asked to be taken there, and the record - which deliberately survives that
-        /// zoom-out - would otherwise answer "already there" over a camera that is not.
+        /// <paramref name="asked"/> is an INTENT rather than a path: "take me there" said out loud - a
+        /// go-to, the answer to a reveal (<see cref="Camera"/>) - as against the camera following what
+        /// is being read. It moves whatever the record says, because a player who zoomed out by hand
+        /// and then pressed go-to has asked to be taken there, and the record - which deliberately
+        /// survives that zoom-out - would otherwise answer "already there" over a camera that is not.
+        /// Everything else, the cursor being placed anywhere by anybody, comes through the rule above
+        /// with the record left to decide.
         /// </summary>
         private void FollowPlace(object place, bool inside, bool asked = false)
         {
-            if (place == null || (!asked && ReferenceEquals(place, _cameraPlace) && (_cameraIn || !inside)))
+            if (place == null || (!asked && Showing(place, inside)))
             {
                 return;
             }
 
-            _cameraPlace = place;
-            _cameraIn = inside;
             StarSystemNode system = place as StarSystemNode;
             try
             {
@@ -1261,6 +1449,7 @@ namespace ES2Access.Screens
                     GalaxyLocate.Suppressed = true;
                     GalaxyViewLevels.SnapTo(system);
                     _settling = SnapSettleFrames;
+                    Remember(place, inside);
                     return;
                 }
 
@@ -1268,12 +1457,45 @@ namespace ES2Access.Screens
                 if (entity != null)
                 {
                     GalaxyViewLevels.PanTo(entity);
+                    Remember(place, inside);
                 }
             }
             finally
             {
                 GalaxyLocate.Suppressed = false;
             }
+        }
+
+        /// <summary>
+        /// Whether the camera is already showing this place, closely enough for what is being asked -
+        /// the whole of what makes an arrow key inside a system move nothing.
+        ///
+        /// Believed only while nothing has moved the camera since the record was written
+        /// (<see cref="GalaxyViewLevels.Moves"/>). That is the invariant this page keeps: the camera
+        /// goes where the record says, or the record stops being believed. Everything else that moves
+        /// the camera - the game flying to a fleet the player selected, a landing sliding across open
+        /// sky, the inspect cell sweeping - counts its move there, and the count is what tells a record
+        /// that still describes the picture from one that describes a picture nobody is looking at.
+        /// Without it a fleet selected in its own system left the record saying "in on that system"
+        /// over a camera the game had meanwhile framed on the fleet, and every later step among that
+        /// system's planets was swallowed: no orbital cards, so no curiosity to act on
+        /// (owner-reported 2026-08-26, measured the same day).
+        /// </summary>
+        private bool Showing(object place, bool inside)
+        {
+            return _cameraStamp == GalaxyViewLevels.Moves
+                && ReferenceEquals(place, _cameraPlace)
+                && (_cameraIn || !inside);
+        }
+
+        /// <summary>Write down where the camera has just been sent and how close - always AFTER the move
+        /// itself, because the record is stamped with the count of moves made by anybody else
+        /// (<see cref="Showing"/>) and the mod's own pan is one of the things that counts.</summary>
+        private void Remember(object place, bool inside)
+        {
+            _cameraPlace = place;
+            _cameraIn = inside;
+            _cameraStamp = GalaxyViewLevels.Moves;
         }
 
         /// <summary>The player has closed a branch and the camera has come back out of it
@@ -1293,10 +1515,23 @@ namespace ES2Access.Screens
         /// orbital view up over" (<see cref="GalaxyViewLevels.FocusedSystem"/>) is null at every zoom
         /// step but the last and lags a flight by its whole duration (measured 2026-08-23), so gating
         /// on it would re-snap after every zoom-out by hand and mis-answer mid-flight. Per page: a
-        /// page that has been left knows nothing about where the next one put the camera.</summary>
+        /// page that has been left knows nothing about where the next one put the camera.
+        ///
+        /// Written by <see cref="Remember"/> alone, and only ever by a caller that has just moved the
+        /// camera itself: <see cref="FollowPlace"/> for the cursor, and the open-sky slide a landing
+        /// makes (<see cref="Camera"/>). Every OTHER way the camera moves is COUNTED rather than
+        /// recorded (<see cref="GalaxyViewLevels.Moves"/>), which is what keeps a record from
+        /// outliving the picture it describes - including the flight the game makes for one of the six
+        /// zoom-in fleet actions (<see cref="SeatAfterFleetAction"/>), where a snap onto the system the
+        /// game is already flying into costs nothing and rescues a flight that never happened.
+        /// </summary>
         private object _cameraPlace;
 
         private bool _cameraIn;
+
+        /// <summary>The count of camera moves made by anybody else at the moment the record above was
+        /// written (<see cref="Showing"/>).</summary>
+        private int _cameraStamp;
 
         // ---- where the game has just sent the player ----
 
@@ -1518,6 +1753,15 @@ namespace ES2Access.Screens
                 // a sighted player beside the keyboard.
                 GalaxyLocate.Suppressed = true;
                 GalaxyViewLevels.CenterOn(target.At, LandingDamping);
+                // The camera is now on the thing that was landed on, standing at its own point, and
+                // the record says so - or the slide went to a bare point, and the record is left not
+                // believed (the slide counted itself: <see cref="GalaxyViewLevels.Moves"/>). Saying so
+                // is what keeps the landed node's own focus from sliding the camera a second time.
+                object landed = target.Id == null ? null : target.Id.Reference;
+                if (landed is IGameEntityWithGalaxyPosition)
+                {
+                    Remember(landed, false);
+                }
             }
             finally
             {

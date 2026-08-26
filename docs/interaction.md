@@ -435,7 +435,11 @@ point; child node ids and the cursor survive the rename.
 every focus landing on the map stop resolves to a PLACE and to how close the cursor is to it, and the
 camera follows that alone. **Enter is unchanged and Backslash remains the way OUT** — the camera is
 never taken back out by the rule, so a zoom-out by hand survives the whole of reading that system's
-children. The rule, what it folded in and its measured behaviours are
+children. **And a camera moved by anybody else — the game leading the player to a fleet they
+selected, a landing sliding across open sky, the inspect cell sweeping — makes the rule's record of
+where it sent the camera unbelievable, so the next step inside that place brings the camera back in**
+(owner-reported 2026-08-26; the counting, and why the zoom keys are deliberately left out of it, are
+in `docs/galaxy-map.md`). The rule, what it folded in and its measured behaviours are
 `docs/test-recipes/galaxy-map.md`, **Moving the camera, and the camera rule**.
 
 **A starlane is a LEAF and Right on a named one TRAVELS** (`NodeVtable.OnFollow` →

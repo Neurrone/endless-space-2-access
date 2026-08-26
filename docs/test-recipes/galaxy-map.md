@@ -379,6 +379,26 @@ MEASURED 2026-08-23 on `[Beginner] test`, all through `POST /input`:
 - **A HUD stop** (`ui.focusTurnLog`): the camera does not move at all — the rule is scoped to the
   map stop.
 
+**Reading the rule's own record.** What a camera-rule test really asserts is the record beside
+the picture: reflect `_cameraPlace`, `_cameraIn` and `_cameraStamp` off
+`ES2Access.ModEntry.Navigator.Screen as ES2Access.Screens.GalaxyHudScreen` and print them with
+`ES2Access.UI.GalaxyViewLevels.Moves`, `DevProbe.Camera()`, `GalaxyViewLevels.FocusedSystem` and
+`Gui.GuiService.GetWindow<PlanetLabelsWindow_SystemOrbital>(false).Shown` in one `/eval`.
+`stamp == Moves` is "the record is believed"; `stamp < Moves` is "somebody else has moved the
+camera since, so the next cursor move inside that place will snap". The stale-record class to walk
+(each verified 2026-08-26; mechanism and policy in `docs/galaxy-map.md`): selecting a DOCKED fleet
+from its own row (the game frames the fleet, unfocusing the system — after it, one arrow inside
+the system must snap the camera back in and re-declare the planets' action children, with or
+without an Escape in between); a reveal onto open sky ("Shown on the map", then the first arrow
+back inside a system must bring the camera in); the inspect cell's sweep and exit; and the same
+selection LET GO — the handover seats the cursor, and a seat is a placement, so the camera must be
+back in on the star ON THE ESCAPE ITSELF, with no arrow after it, whether the cursor was standing in
+the panel or never left the fleet's own row (that second case re-seats where it already is and must
+stay silent). The ruling that
+must NOT change: zoom OUT by hand (the zoom slider or wheel), walk the same system's children —
+the camera must stay out, and `stamp` must still equal `Moves` (a build that counts the zoom keys
+shows up as an unwanted snap on the first arrow).
+
 **Measuring a landing's camera cost.** The sharp instrument is a plain boolean `POST /wait`
 predicate on the game's own gate, which reports `frames` and `elapsedMs`:
 `ES2Access.UI.GalaxyViewLevels.FocusedSystem != null && Gui.GuiService.GetWindow<PlanetLabelsWindow_SystemOrbital>(false).Shown`

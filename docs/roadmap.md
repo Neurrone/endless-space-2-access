@@ -214,10 +214,9 @@ belong in the files above.
   cursor-targets; `HackingOperationCursor` route building rides the Penumbra wait; the
   instruction banner can speak the previous mode's caption for a frame (cheap fix: skip
   an instruction that is not the current cursor's).
-- Targeting-cancel fleet swap (measured 2026-08-20, owner-ruled leave-at-parity): a
-  cancel at a multi-fleet system hands the panel to the slot's first fleet, not the
-  actor. Fix only if it becomes a problem — the issue, mechanism and preferred fix
-  (Harmony postfix) are in `docs/fleets.md`.
+- Fleet-panel focus handover (shipped — `docs/fleets.md`), still unverified: a fleet
+  destroyed in combat while its panel is up, and the obliterator paths (no Behemoth in
+  any save). All three fixture saves are missing from disk (`test-recipes/fixtures.md`).
 - Chat: the child screen ships whole (tabs, message log, box, the page-level new-message
   button) and is verified in a single-player fixture; what no fixture here has shown is the
   MULTIPLAYER half — the alliance tab, the new-message button actually being raised (in
@@ -461,7 +460,7 @@ belong in the files above.
 | Out-game pages: disclaimer / credits / DLC browser / mod manager / join game / asset exporter | DisclaimerScreen, CreditsScreen, DLCScreen, ModdingConfigScreen, MenuDestinationScreens, ResourcesExportModScreen |
 | Go to location: one galaxy landing, quest markers as nodes, Ctrl+L | GalaxyHudScreen.GoTo, MapLandings, NotificationScreen |
 | Galaxy content from data: deposit/star/planet dossiers at every zoom, the mod's own tooltip carrier | GalaxyHudScreen, ScratchTooltips |
-| One camera rule for the galaxy map (cursor-led, no flight) | GalaxyHudScreen.OnFocusVisual, Screen.OnFocusVisual |
+| One camera rule for the galaxy map (cursor-led, no flight; a move by anybody else voids its record — 2026-08-26) | GalaxyHudScreen.OnFocusVisual, Screen.OnFocusVisual, GalaxyViewLevels.Moves |
 | Type-ahead over collapsed branches, trail-free | GraphBuilder.ExpandAll, SearchScope.Extend |
 | The star-system page turn: one announcement, cursor in the new system | SystemManagementScreen |
 | Planet card pages on the map and the system page (buttons, anomalies, signals) | GalaxyHudScreen, SystemManagementScreen |

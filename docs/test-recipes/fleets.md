@@ -143,9 +143,12 @@ mid-lane at turn 21 (`Position.IsInOrbit` false on every one, measured 2026-08-1
 direction group is declared only at the node the acting fleet orbits. The fixture is
 `[Midgame] quests fleets`: `1st Patriots Navy` orbits Dusay (node 535) carrying 2 probes, and its
 "Launch Probes" action is enabled. Selecting a fleet there raises the 6-page `Tutorial_Fleets`
-popup — minimize it before injecting anything else. **Cancelling any targeting mode at a
-multi-fleet system re-selects the FIRST fleet at the slot, not the actor**: the mechanism, the
-measurements and the owner's leave-at-parity ruling are in `docs/fleets.md`.
+popup — minimize it before injecting anything else. **Cancelling a probe launch gives the panel
+back to the fleet that armed it** (fixed 2026-08-26 — mechanism, oracles and what was proven in
+`docs/fleets.md` § "The targeting-cancel fleet swap"). Proving the swap fix needs TWO of the
+player's fleets at one docking slot; the GUID oracle is `FleetsScreen.SelectedGarrisons`, never
+the spoken panel name alone, and the patch can be A/B'd from `/eval` via
+`ES2Access.Screens.ProbeCancelSelection.Remove()`/`.Install()`.
 Re-read the actions stop AFTER an Enter on a fleet's map row, never before.
 
 **Confirming a targeting mode on a LANE** (the probe-down-the-dark-lane repro): arm the
