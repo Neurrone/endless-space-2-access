@@ -1289,6 +1289,31 @@ namespace ES2Access.Dev
             return CoverageAudit.Json(wholeTree);
         }
 
+        /// <summary>
+        /// The other direction: nodes the FOCUSED screen is OFFERING that the game is not drawing
+        /// (see <see cref="GhostAudit"/>) - a stop the player can walk onto with blank pixels under
+        /// it.
+        ///
+        /// Every other check in the family starts from what is painted, so a node standing on
+        /// nothing is invisible to all of them - and to a tree dump, which prunes a faded row for
+        /// drawing no text and then AGREES with whatever the mod declared. This is the mechanical
+        /// form of the crop-versus-dump comparison that used to be the only way to find one.
+        ///
+        /// The <c>unpainted</c> array is the findings, each with the node key, the widget path, WHY
+        /// it fails (hidden branch or faded to nothing, and which ancestor), and what the node would
+        /// have said - a stale value with no name is the pooled table's signature. Nodes with no
+        /// widget and no aim are counted as <c>synthetic</c> and are not findings: a place on the
+        /// map or a notification the game owns has no widget to ask about.
+        ///
+        /// One benign false positive, not solved on purpose: a screen mid-TRANSITION fades its own
+        /// window in, and for those frames every node on it is unpainted. Run it on a settled screen,
+        /// or re-run it and keep what both runs report.
+        /// </summary>
+        public static string Ghosts()
+        {
+            return GhostAudit.Json();
+        }
+
         private static readonly Func<AgeTransform, AgeTransform> Itself = widget => widget;
 
         /// <summary>Every widget under the panel that draws something a reader would have to account

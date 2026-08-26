@@ -101,6 +101,7 @@ The full contract of each is its own doc comment; this is the inventory.
 | `DevProbe.TooltipParity()` | The promised/misaimed/uncovered tooltip self-check on the FOCUSED screen, eight buckets (four findings, four context), aim read off `NodeVtable.PointsAt` rather than re-derived | `ES2Access/Dev/TooltipAudit.cs` |
 | `DevProbe.NotificationParity()` | The notification family's self-check on whichever popup is up — painted-but-unsaid, spoken-but-undrawn, mis-banded, promised/lost tooltips, figures spoken with no caption; also runs by itself on every popup (`/log?grep=parity`) | `ES2Access/Dev/NotificationAudit.cs` |
 | `DevProbe.Coverage(wholeTree?)` | What the FOCUSED screen never declared (tooltips AND actions) against everything the engine draws; a COLLAPSED branch reads as uncovered, and `live` roots walk the windows BEHIND the screen too | `ES2Access/Dev/CoverageAudit.cs` |
+| `DevProbe.Ghosts()` | The other direction — nodes the FOCUSED screen OFFERS that the game is not painting (a pooled table's retired rows); a screen mid-transition reports all of them | `ES2Access/Dev/GhostAudit.cs` |
 
 `POST /input` is `ModInput.Inject` — actions at the production dispatch point; it touches no
 physical key state, so game-also-sees-the-key bugs need link-by-link probes (`DevProbe.Claims`
@@ -179,8 +180,9 @@ screenshot into context. Invoke via the PowerShell tool or
 `-Rect` array argument, and the Bash tool's quoting breaks it too.
 **On a pooled table the crop is the oracle, not the dump.** A retired row parked at alpha 0 draws
 no text, so `/gui/age` prunes it and the dump agrees with whatever the mod declared — parity that
-is really a blind spot. Print `Alpha` beside `Visible` in an `/eval` walk and check it against a
-`crop-shot.ps1` of the same rect.
+is really a blind spot. For a node the mod DECLARED, `DevProbe.Ghosts()` names it off the declared
+side and no crop is needed; for anything else, print `Alpha` beside `Visible` in an `/eval` walk and
+check it against a `crop-shot.ps1` of the same rect.
 
 **An un-watched announcement part is still ASKED every frame** (`watch: false` means "not
 compared") — an expensive part needs an input-keyed memo, and only a call counter read across

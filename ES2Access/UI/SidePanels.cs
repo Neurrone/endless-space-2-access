@@ -305,6 +305,19 @@ namespace ES2Access.UI
                     IList<AgeTransform> children = widget.Children;
                     for (int i = 0; children != null && i < children.Count; i++)
                     {
+                        // The engine's own drawing test rather than the visibility flag, and asked of
+                        // the CHILD rather than of the widget the walk already trusts - the same rule
+                        // and the same reason as <see cref="Effects"/>. Every strip in these panels is
+                        // POOLED: a colony's population strip keeps a row per population the panel has
+                        // EVER shown and retires the surplus by fading it, so a walk gated on
+                        // visibility declared two rows of a system the player had left as buttons
+                        // saying nothing but their stale counts. Asking the child leaves a panel that
+                        // is itself fading IN readable while it arrives.
+                        if (!AgeWidgets.Paints(children[i]))
+                        {
+                            continue;
+                        }
+
                         Collect(
                             cells,
                             children[i],
@@ -366,14 +379,17 @@ namespace ES2Access.UI
         }
 
         /// <summary>Whether anything inside this widget is itself a container - which is what makes the
-        /// widget a band of separate lines rather than one line drawn out of pieces.</summary>
+        /// widget a band of separate lines rather than one line drawn out of pieces. Counted off the
+        /// engine's own drawing test (<see cref="AgeWidgets.Paints"/>) so that it agrees with the walk
+        /// it gates: a strip whose only remaining children are POOLED rows the game retired by fading
+        /// them is not a band, it is a strip that draws nothing.</summary>
         private static bool HasGroupChild(AgeTransform widget)
         {
             IList<AgeTransform> children = widget.Children;
             for (int i = 0; children != null && i < children.Count; i++)
             {
                 AgeTransform child = children[i];
-                if (child == null || !AgeWidgets.Visible(child))
+                if (!AgeWidgets.Paints(child))
                 {
                     continue;
                 }
@@ -381,7 +397,7 @@ namespace ES2Access.UI
                 IList<AgeTransform> grandchildren = child.Children;
                 for (int j = 0; grandchildren != null && j < grandchildren.Count; j++)
                 {
-                    if (grandchildren[j] != null && AgeWidgets.Visible(grandchildren[j]))
+                    if (AgeWidgets.Paints(grandchildren[j]))
                     {
                         return true;
                     }
