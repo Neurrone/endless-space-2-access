@@ -898,10 +898,17 @@ namespace ES2Access.Screens
                 builder.BeginGroup(id, StageVtable(builder, quadrant, stage, id));
                 if (builder.IsExpanded(id))
                 {
+                    // A stage unlocks things of its own, the same way a dot does, so the ring's
+                    // contents are the stage's actions and its unlocks are the tooltip region after
+                    // them - the split every other unlock strip is read with.
+                    string key = StageUnlockKey(stage);
+                    object outer = TooltipChildren.Actions(builder, key);
+
                     // The deed first: it is drawn on the ring like the dots are, and it is the one
                     // thing on the ring that is not a technology.
                     BuildDeed(builder, stage, index, i);
                     BuildTechnologies(builder, stage);
+                    TooltipChildren.Emit(builder, key, StageUnlocks(stage), outer);
                 }
 
                 builder.EndGroup();
@@ -987,6 +994,61 @@ namespace ES2Access.Screens
         {
             GuiTechnology2 technology = item == null ? null : item.GuiTechnology;
             return "research:technology/" + (technology == null ? "?" : technology.Name.ToString());
+        }
+
+        /// <summary>
+        /// The things a whole STAGE unlocks, as the wheel draws them.
+        ///
+        /// The game hangs the same strip of icons on a stage that it hangs on a dot, one level up
+        /// (<c>TechnologyStageItem.BindUnlocks</c> fills the stage's own
+        /// <c>TechnologyUnlocksContainer</c> from <c>GuiTechnologyStage.TechnologyUnlocks</c>), and the
+        /// reading is the same split <see cref="Unlocks"/> gets: the stage's own tooltip names them and
+        /// their effects in a line each, and these nodes carry each one's FULL dossier - description,
+        /// effects, cost, upkeep, political impact.
+        ///
+        /// The gate is the ICON's own <c>Visible</c> flag rather than the chain-walking one, because
+        /// the wheel hides the strip's CONTAINER at every zoom but the outermost
+        /// (<c>TechnologyStageItem.Blend</c> ties it to the stage-name group, which only appears when
+        /// the wheel is zoomed out) while leaving every icon bound, visible and drawable - measured:
+        /// aiming at an icon of a hidden container still draws its whole dossier. Asking the chain
+        /// would drop every stage's unlocks at the zoom this screen actually parks the camera at, so
+        /// the tooltip is resolved here and handed to the overload of <see cref="TooltipChildren.Add"/>
+        /// that takes it, which asks the caller instead of the chain.
+        ///
+        /// The hub in the middle of the wheel is a <c>VictoryTechnologyStageItem</c>, which has no
+        /// strip at all: the cast answers null and the stage declares no unlocks.
+        /// </summary>
+        private static List<TooltipChildren.Dossier> StageUnlocks(BaseTechnologyStageItem stage)
+        {
+            List<TooltipChildren.Dossier> found = new List<TooltipChildren.Dossier>(8);
+            try
+            {
+                TechnologyStageItem ring = stage as TechnologyStageItem;
+                AgeTransform container = ring == null ? null : ring.TechnologyUnlocksContainer;
+                IList<AgeTransform> icons = container == null ? null : container.Children;
+                for (int i = 0; icons != null && i < icons.Count; i++)
+                {
+                    AgeTransform icon = icons[i];
+                    if (icon != null && icon.Visible)
+                    {
+                        TooltipChildren.Add(found, AgeWidgets.Raw(icon), icon);
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("research: reading a stage's unlocks threw: " + e);
+            }
+
+            return found;
+        }
+
+        /// <summary>Named off the stage DEFINITION rather than off its place on the wheel, so the
+        /// region and its nodes keep their identity when the wheel is rebuilt.</summary>
+        private static string StageUnlockKey(BaseTechnologyStageItem stage)
+        {
+            GuiTechnologyStage guiStage = stage == null ? null : stage.GuiTechnologyStage;
+            return "research:stage-unlock/" + (guiStage == null ? "?" : guiStage.Name.ToString());
         }
 
         /// <summary>One quarter of the wheel. Its own words about itself are in the tooltip the game
