@@ -33,7 +33,14 @@ namespace ES2Access.Screens
     /// :224-256: the detail block sits at <c>Alpha 0</c> until the mouse hovers the wedge). Everything in
     /// it is bound and up to date regardless (<c>Bind</c> :176-211 writes it all), so the readout takes
     /// the labels as they are and does not test alpha - and focus points at the wedge's own radial button
-    /// so the game fades the block in for anyone watching.
+    /// so the game fades the block in for anyone watching. With one exception: the screen raises that
+    /// block ONLY for an empire the player has met that is still alive (:842-849 hovers a wedge into
+    /// <c>ShowContextMenu</c> behind exactly that test, and <c>HideContextMenu</c> otherwise), so on an
+    /// unmet or eliminated card those bound-but-never-drawn labels are the fog answering with facts the
+    /// picture never shows - a name, a diplomatic status, a pressure figure and its trend. The gate is
+    /// the game's own (<see cref="Drawn"/>) and what survives it is what a hovering mouse would see: the
+    /// silhouette wedge, the game's "Unknown Empire", and its own sentence about why there is nothing to
+    /// negotiate.
     ///
     /// <b>Enter negotiates</b>, which is the click the mouse makes on the card. The card's own
     /// <c>OnClickCardCb</c> (:704-710) is the safe half of that click - it sends the screen
@@ -400,11 +407,11 @@ namespace ES2Access.Screens
                 {
                     GraphNodes.LabelPart(() => Label(shown)),
                     GraphNodes.DisabledPart(offered),
-                    GraphNodes.ValuePart(() => Status(shown)),
+                    GraphNodes.ValuePart(() => Drawn(it) ? Status(shown) : null),
                     GraphNodes.ValuePart(() => Alert(it)),
-                    GraphNodes.ValuePart(() => Footer(shown)),
+                    GraphNodes.ValuePart(() => Drawn(it) ? Footer(shown) : null),
                 },
-                Sections = GraphNodes.Sections(() => Detail(shown), null),
+                Sections = GraphNodes.Sections(() => Drawn(it) ? Detail(shown) : null, null),
                 OnActivate = () => Negotiate(host, it),
             };
             GraphNodes.AddRefusal(vtable, () => Refusal(host, it), offered);
@@ -438,6 +445,22 @@ namespace ES2Access.Screens
             builder.AddItem(ControlId.Referenced(sector, Keys + "empire/" + index), vtable);
         }
 
+        /// <summary>Whether the game raises this card's detail block for a mouse on the wedge - its own
+        /// test, met and not eliminated (<c>OnHoverEmpireSector</c> :842-849). Asked per frame rather
+        /// than at build time, so meeting an empire or watching one die changes what the card says
+        /// without waiting for the page to be rebuilt.</summary>
+        private static bool Drawn(EmpireSector sector)
+        {
+            try
+            {
+                return sector.IsKnown && !sector.InspectedGuiEmpire.Empire.HasBeenEliminated;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
         /// <summary>Whether the game would open a negotiation with this empire. In swap mode the same
         /// click re-centres the ring instead, and that is an action rather than a refusal - so the node
         /// is offered there too.</summary>
@@ -447,7 +470,7 @@ namespace ES2Access.Screens
             {
                 if (window.InSwapMode)
                 {
-                    return sector.IsKnown && !sector.InspectedGuiEmpire.Empire.HasBeenEliminated;
+                    return Drawn(sector);
                 }
 
                 return window.CanNegotiateWith(sector);
