@@ -2155,23 +2155,24 @@ namespace ES2Access.Screens
                     }
                 }
 
-                for (int i = 0; i < _projectiles.Count; i++)
+                // The SIGHTED set, not the drawn labels: <see cref="AddProjectiles"/> declares the
+                // rows from this list, so reading any other one lets a missile's position disagree
+                // with the row that asked for it - a label the camera has culled is missing from
+                // <c>_projectiles</c> while its row is still declared (owner ruling 2026-08-26).
+                for (int i = 0; i < _shots.Count; i++)
                 {
-                    ObliteratorProjectile shot = _projectiles[i].Entity as ObliteratorProjectile;
-                    if (
-                        shot != null
-                        && id.Equals(ControlId.Structural("galaxy:projectile/" + shot.GUID))
-                    )
+                    ObliteratorProjectile shot = _shots[i].Shot;
+                    if (shot != null && id.Equals(ProjectileId(shot)))
                     {
                         at = shot.GalaxyPosition;
                         return true;
                     }
                 }
 
-                for (int i = 0; i < _pins.Count; i++)
+                for (int i = 0; i < _sighted.Count; i++)
                 {
-                    CoordinationRequest pin = _pins[i].CoordinationRequest;
-                    if (pin != null && id.Equals(ControlId.Structural("galaxy:pin/" + pin.GUID)))
+                    CoordinationRequest pin = _sighted[i].Request;
+                    if (pin != null && id.Equals(PinId(pin)))
                     {
                         at = pin.GalaxyPosition;
                         return true;
@@ -2385,33 +2386,23 @@ namespace ES2Access.Screens
                 Add(spots, _drifting[i].Probe.GalaxyPosition, ProbeId(_drifting[i]), null, -1);
             }
 
-            for (int i = 0; i < _projectiles.Count; i++)
+            // The SIGHTED set, for the reason <see cref="PositionOf"/> reads it: a spot offered here
+            // is answered with a ROW, and the rows come from this list.
+            for (int i = 0; i < _shots.Count; i++)
             {
-                ObliteratorProjectile shot = _projectiles[i].Entity as ObliteratorProjectile;
+                ObliteratorProjectile shot = _shots[i].Shot;
                 if (shot != null)
                 {
-                    Add(
-                        spots,
-                        shot.GalaxyPosition,
-                        ControlId.Structural("galaxy:projectile/" + shot.GUID),
-                        null,
-                        -1
-                    );
+                    Add(spots, shot.GalaxyPosition, ProjectileId(shot), null, -1);
                 }
             }
 
-            for (int i = 0; i < _pins.Count; i++)
+            for (int i = 0; i < _sighted.Count; i++)
             {
-                CoordinationRequest pin = _pins[i].CoordinationRequest;
+                CoordinationRequest pin = _sighted[i].Request;
                 if (pin != null)
                 {
-                    Add(
-                        spots,
-                        pin.GalaxyPosition,
-                        ControlId.Structural("galaxy:pin/" + pin.GUID),
-                        null,
-                        -1
-                    );
+                    Add(spots, pin.GalaxyPosition, PinId(pin), null, -1);
                 }
             }
 
@@ -3250,11 +3241,16 @@ namespace ES2Access.Screens
                 Drifting();
                 // Every probe the map is drawing: they all sit at the top of the open-space region
                 // now (<see cref="AddProbes"/>), so every one of them is a reason to declare it.
+                //
+                // Counted off the SIGHTED sets, which are the lists the rows themselves are declared
+                // from (<see cref="AddProbes"/>, <see cref="AddProjectiles"/>, <see cref="AddPins"/>)
+                // - so the region exists exactly when it will hold rows, and never over an empty
+                // one. The drawn-label lists are a different question: a missile the camera has
+                // culled has no label and still has a row, which would have opened a region with
+                // nothing in it or left rows with no region to sit in (owner ruling 2026-08-26,
+                // the same unification the two lookups above got).
                 int drifting =
-                    _drifting.Count
-                    + _projectiles.Count
-                    + _pins.Count
-                    + OpenSpaceMarkers(empire);
+                    _drifting.Count + _shots.Count + _sighted.Count + OpenSpaceMarkers(empire);
                 // Declared whichever halves the map has: a lone region's jump is swallowed silently,
                 // which is what the key doing nothing here should sound like, and a section that
                 // appears and disappears with the fleet count is a stop that changes shape under the
