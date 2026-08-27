@@ -76,19 +76,12 @@ namespace ES2Access.Screens
         /// </summary>
         public override bool ConsumesBack
         {
-            get { return CloseButton(Window()) != null; }
+            get { return WindowShape.CloseControl(Window()) != null; }
         }
 
         public override bool Back()
         {
-            AgeTransform close = CloseButton(Window());
-            if (close == null)
-            {
-                return false;
-            }
-
-            AgeWidgets.Press(close);
-            return true;
+            return WindowShape.PressClose(Window());
         }
 
         /// <summary>
@@ -100,11 +93,6 @@ namespace ES2Access.Screens
         /// declared - a modal with no way out in its own graph (owner-reported 2026-08-27). Measured
         /// 2026-08-28 rather than guessed, with headroom for a prefab that nests one level further.
         /// </summary>
-        private static AgeTransform CloseButton(LawsManagementModalWindow window)
-        {
-            return Named(window, "CloseButton", 8);
-        }
-
         private static AgeTransform Title(LawsManagementModalWindow window)
         {
             return Named(window, "Title", 3);
@@ -507,7 +495,7 @@ namespace ES2Access.Screens
         private void BuildActions(GraphBuilder builder, LawsManagementModalWindow window)
         {
             _cells.Clear();
-            Cells.AddControl(_cells, CloseButton(window), "laws:close");
+            Cells.AddControl(_cells, WindowShape.CloseControl(window), "laws:close");
             if (_cells.Count > 0)
             {
                 builder.BeginStop(ActionsStop);

@@ -152,7 +152,7 @@ namespace ES2Access.Screens
         /// </summary>
         public override bool ConsumesBack
         {
-            get { return CloseButton(Window()) != null; }
+            get { return WindowShape.CloseControl(Window()) != null; }
         }
 
         /// <summary>
@@ -172,35 +172,8 @@ namespace ES2Access.Screens
         /// </summary>
         public override bool Back()
         {
-            AgeTransform close = CloseButton(Window());
-            if (close == null)
-            {
-                return false;
-            }
-
-            AgeWidgets.Press(close);
-            return true;
+            return WindowShape.PressClose(Window());
         }
-
-        /// <summary>The button the game draws in the corner and wires its own cancel to. Found by name
-        /// because the window class exposes no field for it.</summary>
-        private static AgeTransform CloseButton(HeroInspectionModalWindow window)
-        {
-            try
-            {
-                return window == null
-                    ? null
-                    : AgeWidgets.ChildNamed(window.AgeTransform, "CloseButton", CloseButtonDepth);
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        /// <summary>How far down the close button sits - measured 2026-08-28, it is inside the window's
-        /// own frame rather than at its root.</summary>
-        private const int CloseButtonDepth = 10;
 
         /// <summary>False while the ship page's name box has been asked for and the keyboard has not
         /// changed hands yet: what the player types next belongs in the box, not in a search.</summary>

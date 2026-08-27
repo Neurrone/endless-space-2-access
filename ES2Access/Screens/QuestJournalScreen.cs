@@ -105,12 +105,26 @@ namespace ES2Access.Screens
             get { return true; }
         }
 
-        /// <summary>Escape is the game's: it closes the screen, which is what the page's own exit does
-        /// too. The type-ahead layer takes the key away only while a search is up, and puts it back
-        /// itself.</summary>
+        /// <summary>
+        /// Escape stays the GAME'S here, and the shared test is what says so rather than a flat no.
+        ///
+        /// This page is the one surface of its family that draws NO exit of its own (measured
+        /// 2026-08-28: <see cref="WindowShape.CloseControl"/> finds nothing under it, where every modal
+        /// in the sweep answered with a CloseButton). So there is no control for Back to press, the test
+        /// answers false every frame, and the key reaches the game exactly as it did - which is how the
+        /// page is closed, by Escape or by the F7 that opened it. Written as the shared test anyway, so
+        /// that a build which does draw an exit is answered the moment it does.
+        ///
+        /// The type-ahead layer takes the key away only while a search is up, and puts it back itself.
+        /// </summary>
         public override bool ConsumesBack
         {
-            get { return false; }
+            get { return WindowShape.CloseControl(Window()) != null; }
+        }
+
+        public override bool Back()
+        {
+            return WindowShape.PressClose(Window());
         }
 
         public override bool IsActive()

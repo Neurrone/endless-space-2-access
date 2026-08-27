@@ -99,9 +99,23 @@ namespace ES2Access.Screens
             get { return ActionsStop; }
         }
 
+        /// <summary>
+        /// Escape's own job, done by the mod's Back so that one key leaves every window the same way.
+        ///
+        /// The key is not taken FROM the game - it is handed straight back to it:
+        /// <see cref="WindowShape.PressClose"/> presses the control the window itself wires its
+        /// dismissal to, so whatever that costs - a confirmation, a page switch, an order the game was
+        /// always going to post - is the game's own answer and not a copy of it. Claimed only while
+        /// such a control is drawn; a window offering none keeps its Escape untouched.
+        /// </summary>
         public override bool ConsumesBack
         {
-            get { return false; }
+            get { return WindowShape.CloseControl(Window()) != null; }
+        }
+
+        public override bool Back()
+        {
+            return WindowShape.PressClose(Window());
         }
 
         /// <summary>Arrival waits for the faction to be bound, because that is what the window bails

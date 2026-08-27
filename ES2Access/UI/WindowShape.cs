@@ -125,8 +125,69 @@ namespace ES2Access.UI
             }
         }
 
-        /// <summary>The handler every one of these prefabs wires its own dismissal to.</summary>
-        private const string CloseHandler = "OnCloseCb";
+        /// <summary>
+        /// The handlers these prefabs wire their own dismissal to. There are TWO, and which one a
+        /// window uses is not something its class says - measured 2026-08-28, the diplomacy and academy
+        /// modals wire <c>OnCloseCb</c> while the hero inspection and law windows wire
+        /// <c>OnCancelCb</c>. Looking for only the first is what left two windows with no way out in
+        /// their own graph (owner-reported), so both are asked for, in the order they are drawn most
+        /// often.
+        ///
+        /// Both end in the same place: <c>GuiModalWindow.OnCancelCb</c> (:102-105) is
+        /// <c>HandleInput(InputAction.Exit)</c>, and a window that wires <c>OnCloseCb</c> hides itself.
+        /// So the control found here is the window's OWN dismissal, whatever it costs - a confirmation,
+        /// an order, a page switch - and pressing it is exactly what the mouse does.
+        /// </summary>
+        private static readonly string[] CloseHandlers = { "OnCloseCb", "OnCancelCb" };
+
+        /// <summary>
+        /// The control a window draws to dismiss itself, or null where it draws none.
+        ///
+        /// The one place that question is answered, so the node a screen DECLARES for the way out and
+        /// the control its Back key PRESSES can never disagree - they were two lookups with two
+        /// different answers before, which is how a window came to have a Back that did nothing and a
+        /// close button nobody could reach.
+        /// </summary>
+        public static AgeTransform CloseControl(GuiWindow window)
+        {
+            try
+            {
+                for (int i = 0; i < CloseHandlers.Length; i++)
+                {
+                    AgeTransform at = AgeWidgets.Transform(Wired(window, CloseHandlers[i]));
+                    if (at != null)
+                    {
+                        return at;
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("window shape: looking for the close button threw: " + e);
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Dismiss the window the way its own drawn control does - the shared body of every screen's
+        /// Back key, answering true when there was a control to press.
+        ///
+        /// Pressing the control rather than calling <c>HandleInput</c> is deliberate: the direct call is
+        /// what wedged the screen stack once before (test-recipes, "Resetting game state"), and the
+        /// press is the gesture the game already answers.
+        /// </summary>
+        public static bool PressClose(GuiWindow window)
+        {
+            AgeTransform at = CloseControl(window);
+            if (at == null)
+            {
+                return false;
+            }
+
+            AgeWidgets.Press(at);
+            return true;
+        }
 
         /// <summary>
         /// The button a window draws to close itself, as a node of its own.
@@ -146,7 +207,7 @@ namespace ES2Access.UI
         {
             try
             {
-                AgeTransform at = AgeWidgets.Transform(Wired(window, CloseHandler));
+                AgeTransform at = CloseControl(window);
                 if (at == null)
                 {
                     return;

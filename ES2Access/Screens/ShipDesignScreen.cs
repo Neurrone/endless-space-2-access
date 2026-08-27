@@ -63,11 +63,22 @@ namespace ES2Access.Screens
             get { return HeadingStop; }
         }
 
-        /// <summary>Escape is the game's: the window closes itself, behind its own confirmation when
-        /// the design has been changed.</summary>
+        /// <summary>
+        /// Escape's own job, done by the mod's Back so that one key leaves every window the same way.
+        ///
+        /// The window closes itself behind its own confirmation once the design has been changed, and
+        /// that stays true here: <see cref="WindowShape.PressClose"/> presses the control the window
+        /// wires its dismissal to, so the confirmation is raised by the game exactly as a click on the
+        /// cross raises it. Claimed only while such a control is drawn.
+        /// </summary>
         public override bool ConsumesBack
         {
-            get { return false; }
+            get { return WindowShape.CloseControl(Window()) != null; }
+        }
+
+        public override bool Back()
+        {
+            return WindowShape.PressClose(Window());
         }
 
         /// <summary>False while the name box has been asked for and the keyboard has not changed hands
