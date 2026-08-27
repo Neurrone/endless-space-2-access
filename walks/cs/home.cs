@@ -1,0 +1,1 @@
+((System.Func<string>)(() => { System.Collections.IList css = (System.Collections.IList)Gui.PlayerEmpire.GetAgency<DepartmentOfTheInterior>().ColonizedStarSystems; if (css.Count == 0) return "NO COLONIZED SYSTEM"; var n = ((ColonizedStarSystem)css[0]).Node; Gui.GuiGameWindowService.RequestGalaxyOverviewViewLevel(n); return "galaxy overview on " + n.LocalizedName; }))()

@@ -288,10 +288,12 @@ never by absence of speech. Checkbox/slider/combo refusals are provable by silen
 end — the cursor swapped back, the banner gone — not the order's effect, and pair it with the same
 key on the same node with no mode up, which must still do the node's own thing.
 
-**Proving a refactor changed no spoken or buffer line.** Walk every reachable screen family
-with `POST /input`, save `GET /gui/graph?buffers=1` per family to a scratchpad `before/`, make
-the change, walk the IDENTICAL route into `after/`, `diff` (normalise instance-hash ids such as
-`droplist:-138580/…`). It works because the dump is text and stable, and unfocused Class-backed
+**Proving a refactor changed no spoken or buffer line.** The scripted walk lives in `walks/`
+(`walk-all.sh <dir>` twice — before and after — then `diffwalks.sh`; `walks/README.md` is the
+manual, fixture-agnostic by runtime discovery). Hand-rolling the same idea: walk every reachable
+screen family with `POST /input`, save `GET /gui/graph?buffers=1` per family to a scratchpad
+`before/`, make the change, walk the IDENTICAL route into `after/`, `diff` (normalise
+instance-hash ids such as `droplist:-138580/…`). It works because the dump is text and stable, and unfocused Class-backed
 tooltips read EMPTY on both sides, so they cancel — and are therefore UNPROVEN by the diff: a
 change touching them needs a FOCUSED second pass over the nodes that carry them. A route is only
 identical from a normalised cursor AND camera — drive to an edge and re-seat the camera/zoom in the
