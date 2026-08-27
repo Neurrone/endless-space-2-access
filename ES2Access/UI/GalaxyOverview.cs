@@ -13,9 +13,12 @@ namespace ES2Access.UI
     /// The engine half of that reading. The shape and the size are the SETUP's own two settings,
     /// which the game keeps as lobby data and shows the player in the game's own words on the lobby
     /// screen (<c>GuiLobbyInfo.GalaxyShape</c>); the same two localisation keys are used here, so the
-    /// gesture says whatever the new-game screen said. The extent and the middle are measured off the
-    /// galaxy's outline, and it is the outline <see cref="ProbeContext"/> already caches - one hull
-    /// per game, so a keypress costs an array read.
+    /// gesture says whatever the new-game screen said. The extent and the middle are measured off
+    /// <see cref="GalaxyFrame.Shape"/> - the outline the galaxy's nodes make, which is the impression a
+    /// sighted player gets from the zoomed-out map - built once per game, so a keypress costs an array
+    /// read. Its width and height are the same numbers <see cref="GalaxyFrame.Edges"/> bounds the
+    /// inspect cursor and the probe bearings with; only the MIDDLE differs, and there the shape's
+    /// balance point is the honest answer, since the middle of the box can be empty sky.
     ///
     /// Nothing at all is the answer whenever a part is missing: a game with no home system yet, or a
     /// galaxy whose middle rounds onto home. The sentence ends on where the middle lies FROM home,
@@ -42,7 +45,7 @@ namespace ES2Access.UI
             try
             {
                 StarSystemNode home = HomeSystemNode();
-                ConvexHull galaxy = ProbeContext.Outline();
+                ConvexHull galaxy = GalaxyFrame.Shape();
                 if (home == null || galaxy == null || galaxy.Count == 0)
                 {
                     return null;

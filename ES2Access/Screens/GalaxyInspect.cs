@@ -2197,6 +2197,13 @@ namespace ES2Access.Screens
         /// what the player has EXPLORED either: the size of the galaxy is chosen at setup and is not a
         /// secret, and an edge that moved as the fog lifted would make the same key refuse on Tuesday
         /// and work on Wednesday.
+        ///
+        /// The box itself comes from <see cref="GalaxyFrame.Edges"/> rather than being swept here,
+        /// because a probe's bearings are measured to the SAME box: the rim a bearing names ("to the
+        /// map edge at 40") is then the rim this cursor refuses at, and the two can never disagree.
+        /// Home is subtracted from the game's own coordinates to reach the pair the cursor is held in -
+        /// exactly what <see cref="GalaxyCoordinates.Offsets"/> does per node, and subtracting one
+        /// number from every node commutes with taking their extremes.
         /// </summary>
         private void MeasureGalaxy()
         {
@@ -2206,49 +2213,20 @@ namespace ES2Access.Screens
             _highY = 0.0;
             try
             {
-                GameNode[] nodes = GameGalaxy.GameNodes();
-                if (nodes == null || nodes.Length == 0)
+                double west;
+                double east;
+                double south;
+                double north;
+                if (!GalaxyFrame.Extent(out west, out east, out south, out north))
                 {
                     return;
                 }
 
-                bool first = true;
-                for (int i = 0; i < nodes.Length; i++)
-                {
-                    if (nodes[i] == null)
-                    {
-                        continue;
-                    }
-
-                    double east;
-                    double north;
-                    GalaxyCoordinates.Offsets(nodes[i].GalaxyPosition, out east, out north);
-                    if (first)
-                    {
-                        _lowX = _highX = east;
-                        _lowY = _highY = north;
-                        first = false;
-                        continue;
-                    }
-
-                    if (east < _lowX)
-                    {
-                        _lowX = east;
-                    }
-                    else if (east > _highX)
-                    {
-                        _highX = east;
-                    }
-
-                    if (north < _lowY)
-                    {
-                        _lowY = north;
-                    }
-                    else if (north > _highY)
-                    {
-                        _highY = north;
-                    }
-                }
+                GalaxyPosition home = GalaxyCoordinates.Origin();
+                _lowX = west - home.X;
+                _highX = east - home.X;
+                _lowY = south - home.Y;
+                _highY = north - home.Y;
             }
             catch (Exception e)
             {

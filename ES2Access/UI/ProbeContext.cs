@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using Amplitude.Unity.Framework;
 using ES2Access.Core.Map;
 using ES2Access.Core.Speech;
@@ -25,8 +24,9 @@ namespace ES2Access.UI
     /// those four are the key and everything else is an array read. <see cref="Recomputes"/> is the
     /// counter that proves it.
     ///
-    /// The galaxy's outline is cached harder still: the systems do not move for the length of a game,
-    /// so the hull is built once per game and survives every fog change under it.
+    /// How far the map goes is cached harder still, and not here: <see cref="GalaxyFrame"/> measures it
+    /// once per game, and a bearing ends where it leaves the FRAME the inspect cursor roams, so the rim
+    /// a bearing names is a rim the player can steer to and be refused at.
     /// </summary>
     public static class ProbeContext
     {
@@ -35,9 +35,6 @@ namespace ES2Access.UI
         public const int Bearings = 16;
 
         private const double Step = 360.0 / Bearings;
-
-        private static ConvexHull _outline;
-        private static object _outlineOf;
 
         private static readonly string[] _lines = new string[Bearings];
         private static Fleet _fleet;
@@ -144,7 +141,7 @@ namespace ES2Access.UI
             double halfWidth
         )
         {
-            ConvexHull outline = Outline();
+            ConvexHull edges = GalaxyFrame.Edges();
             MapPoint origin = new MapPoint(node.GalaxyPosition.X, node.GalaxyPosition.Y);
             MapExplored explored = new Fog(empire, visibility).Explored;
             MapPoint anchor = Anchor();
@@ -153,7 +150,7 @@ namespace ES2Access.UI
                 double bearing = Bearing(i);
                 _lines[i] = ProbeContextText.Line(
                     bearing,
-                    ProbeCorridor.Read(outline, origin, anchor, bearing, halfWidth, explored)
+                    ProbeCorridor.Read(edges, origin, anchor, bearing, halfWidth, explored)
                 );
             }
         }
@@ -183,37 +180,6 @@ namespace ES2Access.UI
             {
                 _lines[i] = ModStrings.Get(CompassDirections.KeyForBearing16(Bearing(i)));
             }
-        }
-
-        /// <summary>
-        /// The outline of the galaxy, from every star system on the map whether or not the player has
-        /// seen it.
-        ///
-        /// The rim a probe stops at is the map's, not the fog's: how big the galaxy is was chosen at
-        /// setup and is no secret, and an edge that crept outwards as the fog lifted would make the
-        /// same bearing answer one distance this turn and another the next.
-        ///
-        /// Public because it is the ONE outline of the galaxy: anything else that has to measure the
-        /// map as a whole (<see cref="GalaxyOverview"/>) asks here rather than building a second hull
-        /// over the same eighty-odd systems and risking a different answer.
-        /// </summary>
-        public static ConvexHull Outline()
-        {
-            object game = Gui.Game;
-            if (_outline != null && ReferenceEquals(game, _outlineOf))
-            {
-                return _outline;
-            }
-
-            List<MapPoint> places = new List<MapPoint>();
-            foreach (StarSystemNode system in GameGalaxy.StarSystemNodes())
-            {
-                places.Add(new MapPoint(system.GalaxyPosition.X, system.GalaxyPosition.Y));
-            }
-
-            _outline = ConvexHull.Build(places.ToArray());
-            _outlineOf = game;
-            return _outline;
         }
 
         /// <summary>The one question the corridor asks of the game, bound to the empire asking it - a

@@ -119,7 +119,12 @@ namespace ES2Access.Core.Map
     public static class ProbeCorridor
     {
         /// <summary>The reading down <paramref name="bearing"/>, with the map's rim taken from the
-        /// outline the galaxy's own systems make.</summary>
+        /// outline handed in. The outline is whatever the caller calls the edge of the world - in the
+        /// game it is the four corners of the box the galaxy's nodes fill, the same box the inspect
+        /// cursor may roam, because nothing in the flight itself stops a probe (see
+        /// <c>docs/galaxy-map.md</c>) and the frame a player can walk to is the honest one to name.
+        /// A rectangle is a convex outline like any other, so the exit arithmetic is unchanged.
+        /// </summary>
         public static ProbeCorridorReading Read(
             ConvexHull galaxy,
             MapPoint origin,

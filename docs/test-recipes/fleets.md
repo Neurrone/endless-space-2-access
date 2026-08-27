@@ -142,6 +142,11 @@ bearing, `ui.activate`; oracle
 `DepartmentOfDefense.Probes[i].Direction` against the unit vector (X=east, world-z=north).
 Primus's lanes run NE/SW/NW, so N/E/SE/S/W are lane-free bearings. Anchor-migration and
 at-star cases: set `Probe.GalaxyPosition` from `/eval`, restore by `/loadsave`.
+**The "map edge at N" in a bearing's line is oracled against the inspect cursor, not against the
+stars**: `/eval` a `double w,e,s,n; ES2Access.UI.GalaxyFrame.Extent(out w, out e, out s, out n)` and
+subtract `GalaxyCoordinates.Origin()` — the four numbers must be the same box `GalaxyInspect` refuses
+at (`docs/test-recipes/inspect-and-influence.md`, "bounds are x …"), and a bearing out of a
+rim-hugging system must name a rim the cursor can actually be walked to.
 **The mode needs a fleet IN ORBIT, so `[Beginner] test` cannot arm it** — all six of its fleets are
 mid-lane at turn 21 (`Position.IsInOrbit` false on every one, measured 2026-08-19), and the
 direction group is declared only at the node the acting fleet orbits. The fixture is
