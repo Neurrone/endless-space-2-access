@@ -331,11 +331,15 @@ namespace ES2Access.Screens
 
             int pages = Pages(panel);
             int current = Current(panel);
+            AgeTransform box = label.AgeTransform;
             builder.BeginStop(PagesStop);
             for (int i = 0; i < pages; i++)
             {
                 ControlId id = ControlId.Structural(PageKey + i);
-                builder.AddItem(Nodes.Synthetic(id, Page(i)));
+                // One drawn viewer, N paged contents - evidence is the box, identity the index;
+                // per-page widgets do not exist (the popup shows one at a time and rewrites the same
+                // label), so every row stands or falls with the box that would draw it.
+                builder.AddItem(Nodes.Drawn(id, Page(i), box));
                 if (i == current)
                 {
                     builder.SetStart(id);

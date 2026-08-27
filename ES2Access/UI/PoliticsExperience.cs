@@ -181,8 +181,19 @@ namespace ES2Access.UI
             }
         }
 
-        /// <summary>The current-standing notch, but only while the panel is drawing it - which is what
-        /// a stop pointed at it exists by.</summary>
+        /// <summary>
+        /// The current-standing notch, but only while the panel is drawing it.
+        ///
+        /// It used to say that this was "what a stop pointed at it exists by", and that is no longer
+        /// where existence is decided: the one caller that declares a node here
+        /// (<c>LawsScreen.AddCurrentExperience</c>) hands the notch to <see cref="Cells"/> as the
+        /// cell's own widget, so the central gate asks about that same widget every frame and would
+        /// withdraw the node whether or not this answered null. The test stays because two of the
+        /// three callers are CONTENT: <see cref="Note"/> and <see cref="BarText"/> read words off the
+        /// notch, and a law whose party already qualifies must not have the undrawn notch's sentence
+        /// read out of it. So this is a content gate that a walk happens to reach first, not the
+        /// existence decision it once was.
+        /// </summary>
         public static AgeTransform Marker(PanelFeaturePoliticsExperiencePrerequisite feature)
         {
             try

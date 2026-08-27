@@ -150,16 +150,41 @@ namespace ES2Access.Tests.UI
             Assert.Null(Node(r, expected + "c1").Id.Subject);
         }
 
-        // Core cannot ask a widget anything, so every row it declares is synthetic - and the walk that
-        // fed it the rows is where the honesty lives.
+        // Core cannot ask a widget anything, but it does not have to: a caller that hands over the
+        // widget the game draws the row as has answered the question, and the sheet passes it along so
+        // the host's gate can ask it every frame. Identity is a separate question and stays the row's
+        // own object - the trait, the save, the fleet - which is what survives a re-sort.
         [Fact]
-        public void ASheetDeclaresItsRowsSynthetic()
+        public void ASheetDeclaresItsRowsDrawnByTheWidgetTheGameDrawsThemAs()
+        {
+            object row = new object();
+            object widget = new object();
+            GraphBuilder b = new GraphBuilder();
+            GraphSheet sheet = new GraphSheet(b, "military:");
+            sheet.Region("Fleets", new[] { "Name" });
+            sheet.Row(Vt("Alpha"), row, widget);
+            sheet.Finish();
+
+            GraphRender r = b.Build();
+            foreach (GraphNode node in r.Order)
+            {
+                Assert.Same(widget, Assert.IsType<DrawnNode>(node.Declared).DrawnBy);
+            }
+
+            Assert.Same(row, r.Order[0].Id.Subject);
+        }
+
+        // Handed no widget it claims none: a sheet fed rows composed out of the game's data has
+        // nothing any cell of it stands on, and the walk that enumerated the rows is where the honesty
+        // lives.
+        [Fact]
+        public void ASheetWithNoRowWidgetDeclaresItsRowsSynthetic()
         {
             object row = new object();
             GraphBuilder b = new GraphBuilder();
             GraphSheet sheet = new GraphSheet(b, "military:");
             sheet.Region("Fleets", new[] { "Name" });
-            sheet.Row(Vt("Alpha"), row, new object());
+            sheet.Row(Vt("Alpha"), row, null);
             sheet.Finish();
 
             GraphRender r = b.Build();

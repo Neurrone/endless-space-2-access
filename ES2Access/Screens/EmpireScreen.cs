@@ -333,6 +333,13 @@ namespace ES2Access.Screens
             {
                 // Nothing to press and nothing to say: the walk is still stopped, because descending
                 // into the slot would scatter it into an icon, a picture and a number.
+                //
+                // The central gate does NOT cover this and cannot: the cell below is declared on
+                // `widget`, the slot, and that is the widget the gate asks about. What is tested here
+                // is the BUTTON inside it, a different widget with a state of its own - the box draws
+                // an empty slot with no button at all. This is the only place the slot's existence is
+                // decided: the walk stops either way, so nothing further down declares it, and the
+                // node this gate refuses would otherwise be a button whose press target is not drawn.
                 return true;
             }
 

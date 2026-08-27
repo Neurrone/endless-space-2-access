@@ -89,9 +89,13 @@ namespace ES2Access.UI
                 );
                 AgeWidgets.Point(vtable, toggle, filter.Tooltip, widget);
                 ScrollIntoView.Anchor(vtable, widget);
-                builder.AddItem(Nodes.Synthetic(
+                // Keyed by the CATEGORY, since the strip's widgets are a pool the panel rebinds - but
+                // the widget the filter was read off is the tick the game draws, and that is what
+                // vouches for it.
+                builder.AddItem(Nodes.Drawn(
                     ControlId.Structural(keyPrefix + "/filter/" + FilterKey(it, i)),
-                    vtable
+                    vtable,
+                    widget
                 ));
             }
         }

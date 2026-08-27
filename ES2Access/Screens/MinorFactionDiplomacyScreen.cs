@@ -513,7 +513,12 @@ namespace ES2Access.Screens
                     // Every line of this list is cut out of ONE drawn label, so the label is where each
                     // of them is on screen and what a viewport has to be scrolled to.
                     ScrollIntoView.Anchor(vtable, at);
-                    builder.AddItem(Nodes.Synthetic(ControlId.Structural(Keys + "gain/" + index), vtable));
+                    // And that same one label is what every line of it EXISTS by: there is no widget
+                    // per line to ask, the lines are text the label is drawing, so all of them share
+                    // the label as their evidence and stand or fall with it together.
+                    builder.AddItem(
+                        Nodes.Drawn(ControlId.Structural(Keys + "gain/" + index), vtable, at)
+                    );
                 }
             }
 

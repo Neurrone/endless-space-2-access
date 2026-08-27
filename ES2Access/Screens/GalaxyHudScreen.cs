@@ -4842,6 +4842,17 @@ namespace ES2Access.Screens
                 Raw(it)
             );
             PointAt(vtable, it);
+            // SYNTHETIC on purpose, and it is the one node in this file whose nature was measured
+            // rather than reasoned. The button is a real widget and declaring it DRAWN was tried
+            // (2026-08-27): the map's own label prefab keeps the button Visible at alpha 0.5 while its
+            // grandparent StarSystemNameLine sits at alpha 0 and settled, which is what the gate's
+            // chain walk asks about - so the route into a system's page vanished at both ends of the
+            // zoom ladder. Measured across the thirteen camera steps with a colony in view: at step 0
+            // all 13 drawn buttons failed the chain, at step 12 both of them did, and expanding Dusay
+            // through the tree - which flies the camera to step 12 itself - left the expanded system
+            // with no /management node at all (DevProbe.GateDiff: onlyUngated =
+            // galaxy:constellation/446/system/535/management). Being drawn is asked HERE instead, one
+            // step on the button, which is the test that matches how this prefab retires a label.
             builder.AddItem(Nodes.Synthetic(ControlId.Structural(key + "/management"), vtable));
         }
 

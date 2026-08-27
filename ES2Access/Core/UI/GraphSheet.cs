@@ -89,7 +89,7 @@ namespace ES2Access.Core.UI
         private Func<string> _rowName; // the current row's primary label (for vertical edge labels)
         private Func<string> _prevRowName;
         private object _rowRef;        // the current row's domain object (identity keys), or null
-        private object _rowWidget;     // what the game draws the row as (scrolling), or null
+        private object _rowWidget;     // the drawn row: evidence AND scroll anchor, or null
         private ControlId _first;      // the first PRIMARY this sheet emitted
 
         // Where each row of the CURRENT region sits in it. Stamped on every cell of the row as it is
@@ -172,11 +172,14 @@ namespace ES2Access.Core.UI
         /// slides to a genuinely different identity and the differ announces the landing — index keys
         /// would silently rebadge the next row as "the same control". The primary additionally carries it
         /// as its reference (tier-1 follow when the row moves).
-        /// <paramref name="rowWidget"/> is the thing the game DRAWS the row as, and is what every cell
-        /// of it is scrolled into view by (<see cref="NodeVtable.ScrollAnchor"/>). Pass it wherever the
-        /// row is keyed by a MODEL: the row object is then a save, a term, a trait - something with no
-        /// rectangle at all - so the viewport had nothing to follow and the cursor walked off the
-        /// bottom of the list with the list standing still.</summary>
+        /// <paramref name="rowWidget"/> is the thing the game DRAWS the row as, and it answers two
+        /// questions at once: it is what every cell of the row is scrolled into view by
+        /// (<see cref="NodeVtable.ScrollAnchor"/>), and it is the EVIDENCE the row's cells exist by -
+        /// pass it and they are <see cref="DrawnNode"/>s the host's gate can withdraw, omit it and they
+        /// are <see cref="SyntheticNode"/>s nothing can check. Pass it wherever the game draws a row
+        /// widget at all, and always where the row is keyed by a MODEL: the row object is then a save,
+        /// a term, a trait - something with no rectangle at all - so the viewport had nothing to follow
+        /// and the cursor walked off the bottom of the list with the list standing still.</summary>
         public GraphSheet Row(
             NodeVtable primary,
             object rowRef,
@@ -302,14 +305,25 @@ namespace ES2Access.Core.UI
             ControlId id = _rowRef != null && col == 0
                 ? ControlId.For(_rowRef, skey)
                 : ControlId.Structural(skey);
-            // SYNTHETIC, and this is the only nature a sheet can honestly declare: it is handed rows
-            // and cell readers, never a widget, and it has no way to ask the game anything. That is
-            // sound because the walk that enumerated the rows already asked - a sheet read off a
-            // drawn table is filled from the rows the game is DRAWING (TableSheet.Lines keeps only
-            // the visible, non-transparent ones), so a row reaching here exists by construction and
-            // there is nothing left for a gate to catch. A caller feeding this rows it has not
-            // filtered is the one way that stops being true, and the honesty has to live there.
-            _b.AddNode(new SyntheticNode(id, vt));
+            // The row's NATURE is whether the caller handed over the widget the game draws it as. With
+            // one, every cell of the row is DRAWN and stands on that widget: the sheet knows nothing
+            // about widgets and cannot ask it anything, but it does not have to - it passes the thing
+            // along and the host's gate asks. That is the answer for a table read off a drawn one,
+            // where each row is a line the game is holding: the walk that enumerated the rows filtered
+            // them once (TableSheet.Lines keeps the visible, non-transparent ones) and this makes the
+            // same fact checkable every frame instead of once at enumeration.
+            //
+            // Without one it is SYNTHETIC, which is honest rather than lax: a sheet fed rows composed
+            // out of the game's data - a grid the mod laid out, a footer band cut from several labels -
+            // has no single widget any cell of it stands on, and there is nothing for a gate to ask
+            // about. Its honesty lives at the walk that enumerated the rows, as every synthetic node's
+            // does. Types are constructed directly because this assembly has no engine-side door to
+            // come through (<c>UI.Nodes</c>): they are its own.
+            _b.AddNode(
+                _rowWidget != null
+                    ? (NodeDeclaration)new DrawnNode(id, vt, _rowWidget)
+                    : new SyntheticNode(id, vt)
+            );
             if (col == 0 && _first == null) _first = id;
 
             // Left/right to the nearest EMITTED cell (sparse rows skip empty columns), labeled with the

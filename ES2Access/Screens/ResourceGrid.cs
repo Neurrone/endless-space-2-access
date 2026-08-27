@@ -262,7 +262,12 @@ namespace ES2Access.Screens
                 }
 
                 ScrollIntoView.Anchor(vtable, widget);
-                builder.AddItem(Nodes.Synthetic(ControlId.Structural(stop + "/family/" + i), vtable));
+                // Keyed by the column, because the band is a fixed set of slots - but the icon the
+                // heading was read off is drawn, and a grid whose band the game switches off column by
+                // column is exactly what the gate's chain walk is for.
+                builder.AddItem(
+                    Nodes.Drawn(ControlId.Structural(stop + "/family/" + i), vtable, widget)
+                );
             }
 
             if (open)

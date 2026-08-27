@@ -553,5 +553,47 @@ namespace ES2Access.Tests.UI
             Assert.Equal("Beta", GraphAnnouncer.LeafText(g.CurrentNode));
             Assert.Same(_rowB, g.CurrentNode.Id.Subject);
         }
+
+        /// <summary>One row, emitted with or without the widget the game draws it as.</summary>
+        private static GraphRender OneRow(object rowWidget)
+        {
+            GraphBuilder b = new GraphBuilder();
+            GraphSheet s = new GraphSheet(b, "t:");
+            s.Region("Fleets", new[] { "Name", "Ships" });
+            s.Row(Vt("Alpha"), new object(), rowWidget, () => "3");
+            s.Finish();
+            return b.Build();
+        }
+
+        // A sheet handed the row's widget can vouch for every cell of that row, and says so in the
+        // nature it declares - that is what puts the row under the host's existence gate. It is per
+        // CELL, not per row: the metadata cells are the ones a pooled table leaves holding the
+        // previous binding's words.
+        [Fact]
+        public void ARowGivenTheWidgetTheGameDrawsItAsDeclaresItsCellsDrawn()
+        {
+            object widget = new object();
+            GraphRender r = OneRow(widget);
+            Assert.Equal(2, r.Order.Count);
+            foreach (GraphNode node in r.Order)
+            {
+                DrawnNode drawn = Assert.IsType<DrawnNode>(node.Declared);
+                Assert.Same(widget, drawn.DrawnBy);
+            }
+        }
+
+        // And without one it claims nothing it cannot back: a grid the mod laid out has no widget any
+        // cell of it stands on, and a node that pretended otherwise would be gated on somebody else's
+        // rectangle.
+        [Fact]
+        public void ARowWithNoWidgetDeclaresItsCellsSynthetic()
+        {
+            GraphRender r = OneRow(null);
+            Assert.Equal(2, r.Order.Count);
+            foreach (GraphNode node in r.Order)
+            {
+                Assert.IsType<SyntheticNode>(node.Declared);
+            }
+        }
     }
 }

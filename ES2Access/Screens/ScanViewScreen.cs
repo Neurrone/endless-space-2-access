@@ -1602,10 +1602,13 @@ namespace ES2Access.Screens
                 string key = "scan:stats/" + side + "/" + i;
                 builder.SetRegion(key);
                 PlanetStatsCategoryItem it = category;
+                // The category item is the heading: its own Title is what the node says, so the widget
+                // the words were read off is both where the heading is drawn and what it exists by.
                 builder.AddItem(
-                    Nodes.Synthetic(
+                    Nodes.Drawn(
                         ControlId.Structural(key),
-                        GraphBuilder.Label(() => AgeText.Label(it.Title), it.AgeTransform)
+                        GraphBuilder.Label(() => AgeText.Label(it.Title), it.AgeTransform),
+                        it.AgeTransform
                     )
                 );
                 AddStatLines(builder, category.StatLinesTable, key);
@@ -1827,10 +1830,16 @@ namespace ES2Access.Screens
                 // silently, and a section that appears with the count changes the panel's shape).
                 builder.SetRegion(key);
                 ScanViewCaptionGroup it = group;
+                // The group widget draws the heading (its own Title is what is read), so it is the
+                // evidence as well as the rectangle. It catches nothing the count above does not
+                // already: a surplus group the pool retires stays Visible at alpha 1, parked past the
+                // bottom of the table - measured 2026-08-27, both live groups Visible, alpha 1,
+                // painted. The lens's own count is still what keeps those out.
                 builder.AddItem(
-                    Nodes.Synthetic(
+                    Nodes.Drawn(
                         ControlId.Structural(key),
-                        GraphBuilder.Label(() => AgeText.Label(it.Title), it.AgeTransform)
+                        GraphBuilder.Label(() => AgeText.Label(it.Title), it.AgeTransform),
+                        it.AgeTransform
                     )
                 );
                 AddCaptionItems(builder, group.ItemsTable, key, items == null ? 0 : items.Length);
@@ -1893,10 +1902,12 @@ namespace ES2Access.Screens
                 }
 
                 ScanViewCaptionItem it = item;
+                // Same as the heading above: the item widget draws the line and is what it exists by.
                 builder.AddItem(
-                    Nodes.Synthetic(
+                    Nodes.Drawn(
                         ControlId.Structural(key + "/" + i),
-                        GraphBuilder.Label(() => AgeText.Label(it.Title), it.AgeTransform)
+                        GraphBuilder.Label(() => AgeText.Label(it.Title), it.AgeTransform),
+                        it.AgeTransform
                     )
                 );
                 items++;

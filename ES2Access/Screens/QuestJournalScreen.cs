@@ -543,9 +543,12 @@ namespace ES2Access.Screens
             );
             AgeWidgets.Point(vtable, it);
             ScrollIntoView.Anchor(vtable, card.AgeTransform);
-            builder.AddItem(Nodes.Synthetic(
+            // Keyed by the quest, because the journal pools its cards - but the toggle in the corner is
+            // the thing itself, drawn, and what the walk was holding when it said there is a pin here.
+            builder.AddItem(Nodes.Drawn(
                 ControlId.Structural("quests:card/" + quest.Name + "/pin"),
-                vtable
+                vtable,
+                pin.AgeTransform
             ));
         }
 

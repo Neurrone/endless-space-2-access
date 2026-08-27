@@ -183,10 +183,19 @@ namespace ES2Access.UI
         /// a screen whose page the game has not bound throws here, and WHY it threw is the answer
         /// the caller wanted.
         ///
-        /// And unlike every other build it is UNGATED (<see cref="NodeGate"/>): this is the build the
-        /// audits measure, and <c>DevProbe.Ghosts()</c> asks precisely which declared nodes stand on
-        /// something the game is not drawing. Building it through the gate would delete the audit's
-        /// findings rather than the ghosts, and the check would go permanently, silently clean.
+        /// And unlike every other build it is built with NO drop predicate (<see cref="NodeGate"/>):
+        /// this is the build the audits measure, and <c>DevProbe.Ghosts()</c> asks precisely which
+        /// declared nodes stand on something the game is not drawing. Handing the builder the gate
+        /// would delete the audit's findings rather than the ghosts, and the check would go
+        /// permanently, silently clean.
+        ///
+        /// That withholds the BUILDER's half of the gate and only that half. The other half runs
+        /// inside <c>screen.Build</c> itself: <see cref="NodeGate.StillDrawn"/> is asked by
+        /// <see cref="Cells"/> before its widgets are banded into rows (a ghost's stale rectangle has
+        /// to go before the geometry, not after), and it honours <see cref="NodeGate.Enabled"/> there
+        /// exactly as the predicate does here. So a cell that path takes out is missing from this
+        /// render too, and an audit that wants a build with NOTHING gated has to turn the flag off
+        /// around the call.
         /// </summary>
         public GraphRender InspectRender(Screen screen)
         {

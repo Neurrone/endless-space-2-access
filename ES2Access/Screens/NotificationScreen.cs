@@ -2067,7 +2067,10 @@ namespace ES2Access.Screens
                     }
                 }
 
-                table.RowAt(RowNode(row), row.Widget, cells);
+                // The line the popup drew is both halves: what the row is keyed and scrolled by, and
+                // what its cells exist by - these tables are the game's own scrolling lists, and a
+                // line it retires keeps its words.
+                table.RowAt(RowNode(row), row.Widget, cells, row.Widget);
             }
 
             for (int i = 0; sheet.Footer != null && i < sheet.Footer.Count; i++)

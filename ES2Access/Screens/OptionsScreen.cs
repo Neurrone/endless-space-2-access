@@ -581,7 +581,11 @@ namespace ES2Access.Screens
                 {
                     new KeyValuePair<int, NodeVtable>(1, KeyCell(item, false, enabled)),
                     new KeyValuePair<int, NodeVtable>(2, KeyCell(item, true, enabled)),
-                }
+                },
+                // The row the game drew: what the whole row is scrolled to, and what its three cells
+                // exist by - the list is long and filtered, and a row the tab switched off is one the
+                // sheet would otherwise go on offering.
+                AgeTransformOf(item)
             );
         }
 

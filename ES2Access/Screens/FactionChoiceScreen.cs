@@ -314,7 +314,12 @@ namespace ES2Access.Screens
                     // card the game has selected. Which hull row this one stop opens on is the
                     // stop-scoped tool - LandStopOn above - and a position the player left here
                     // still outranks it, which is the order a remembered place should come in.
-                    builder.AddItem(Nodes.Synthetic(ControlId.Structural(HullKey + index), vtable));
+                    // One drawn viewer, N paged contents - evidence is the viewer, identity the index;
+                    // per-hull widgets do not exist (the game shows one at a time; Show(index) pages
+                    // it).
+                    builder.AddItem(
+                        Nodes.Drawn(ControlId.Structural(HullKey + index), vtable, it)
+                    );
                 }
             }
             finally

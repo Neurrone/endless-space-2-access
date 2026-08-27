@@ -602,12 +602,12 @@ namespace ES2Access.Screens
                 ControlId id = ControlId.For(trait ?? (object)toggle, key + TraitKey(trait, line));
                 // A slot the game keys by the TRAIT in it has no widget in its identity, and the
                 // trait is a model: what draws the row is the toggle, and only where the slot is
-                // empty is that also what the row is about.
-                builder.AddItem(
-                    trait != null
-                        ? (NodeDeclaration)Nodes.Synthetic(id, vtable)
-                        : Nodes.Drawn(id, vtable, toggle)
-                );
+                // empty is that also what the row is about. Identity and evidence are two questions,
+                // though, and the row has an answer to both: the trait says WHICH row this is across a
+                // re-sort, and the line the table drew it in says whether it is on the screen at all -
+                // a pooled slot scrolled out of the eighty-pixel window has that line to be asked
+                // about, and the trait has nothing.
+                builder.AddItem(Nodes.Drawn(id, vtable, line));
             }
         }
 
