@@ -104,7 +104,7 @@ The full contract of each is its own doc comment; this is the inventory.
 | `DevProbe.Coverage(wholeTree?)` | What the FOCUSED screen never declared (tooltips AND actions) against everything the engine draws; a COLLAPSED branch reads as uncovered, and `live` roots walk the windows BEHIND the screen too | `ES2Access/Dev/CoverageAudit.cs` |
 | `DevProbe.Ghosts()` | Declared vs painted on the FOCUSED screen, split: `droppedByGate` (the gate already withholds these — informational) and `shippedUnpainted` (in the player's render yet unpainted — defects) | `ES2Access/Dev/GhostAudit.cs` |
 | `DevProbe.GateDiff()` | The focused screen built gated and ungated in one call — what the gate is dropping; blind to the pre-builder Cells/CardActions path (its doc says why) | `ES2Access/Dev/DevProbe.cs` |
-| `NodeGate.Enabled` | The gate's off/on lever — flip via `/eval`, dump, flip, dump, diff: the standard existence-verification primitive; drops log as `NodeGate drop:` (`/log?grep=NodeGate`), deduped; `NodeGate.Forget()` resets | `ES2Access/UI/NodeGate.cs` |
+| `NodeGate.Enabled` | The gate's off/on lever — flip via `/eval`, dump, flip, dump, diff: the standard existence-verification primitive, needing no baseline but proving ONLY surfaces actually opened; drops log as `NodeGate drop:` (`/log?grep=NodeGate`), deduped; `NodeGate.Forget()` resets | `ES2Access/UI/NodeGate.cs` |
 
 `POST /input` is `ModInput.Inject` — actions at the production dispatch point; it touches no
 physical key state, so game-also-sees-the-key bugs need link-by-link probes (`DevProbe.Claims`

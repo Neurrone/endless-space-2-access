@@ -10,6 +10,10 @@ belong in the files above.
 
 ## To build
 
+- **Content-reader migration (2026-08-27; owner-commissioned):** fold the ~150
+  guard-plus-read pairs into blessed drawn-text readers; the self-contained brief is
+  `content-reader-migration-handoff.md` at the repo root (reader shapes need owner approval
+  before mass migration).
 - **Coverage-audit tail (2026-08-24 session; owner-directed):** the last screens with no
   Coverage() run. (1) The battle family — setup, cinematic (`SpaceBattleScreen`), report,
   target selection, ground battle — needs a scratch game engaged with a pirate/major fleet

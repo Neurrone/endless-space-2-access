@@ -94,7 +94,10 @@ of their own and follow the stage-hygiene rules in `docs/dev-loop.md`.
 Briefs state facts with file:line cites or mark them unverified — a wrong premise costs
 the stage a re-derivation; interaction designs are stated conditionally on the game's own
 model ("if the game's model is select-then-act, keep it"), never prescribed ahead of
-measurement. Research subagents get one required doc (`reverse-engineering.md`);
+measurement. A brief for a mass-removal sweep requires an empty-state/branch audit per
+site — `if (x != null && Visible(x))` on a wired prefab field is a branch chooser, not an
+existence gate (the field is always non-null) — and opening the real mutating surfaces is
+mandatory verification, not optional. Research subagents get one required doc (`reverse-engineering.md`);
 implementation subagents get `docs/dev-loop.md` plus the chapters its index maps to the
 task. The main agent globs and pastes verified file lists into research briefs, and
 treats a subagent's negative existence claims as unverified. Brief every subagent to be
