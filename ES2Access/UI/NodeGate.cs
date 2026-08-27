@@ -18,15 +18,34 @@ namespace ES2Access.UI
     ///
     /// <para><b>What is asked, and of what.</b> The node's NATURE decides. A
     /// <see cref="DrawnNode"/> was declared with the widget that vouches for it, and
-    /// <see cref="Withdrawn"/> is asked of that widget and of nothing else - one step, never
-    /// <see cref="AgeWidgets.Painted"/>. Renders rebuild EVERY frame while a screen is focused, many
-    /// screens gate their build on the window merely being shown, and several deliberately build
-    /// during an arrival fade - and the game fades a window ROOT while every child stays at alpha 1.
-    /// An ancestry-walking test would therefore blank a whole screen for the length of every arrival
-    /// animation. One step asks only what the walk itself is responsible for: the row. A
+    /// <see cref="Withdrawn"/> is asked of that widget AND of everything it hangs from. A
     /// <see cref="SyntheticNode"/> is untestable by construction and passes: there is no widget in
     /// its declaration to ask, and honesty about its existence lives at the walk that enumerated
     /// it.</para>
+    ///
+    /// <para><b>Why the whole chain.</b> The engine's flags do not cascade: a window hides a branch by
+    /// flipping the PARENT's <c>Visible</c> or fading the parent to nothing, and every child under it
+    /// keeps <c>Visible == true</c> and <c>Alpha == 1</c>. So a one-step test says yes to a node the
+    /// player cannot see, and ~96 walk-level entry gates had to say no for it, one site at a time. The
+    /// chain is what the RENDERER itself asks: <c>AgeTransform.PrimitiveUpdateGUI</c>
+    /// (<c>firstpass/AgeTransform.cs:1955-1958</c>) early-outs at <c>!visible || Alpha == 0f</c> before
+    /// it draws anything or recurses, and the recursion into children is the only way a child is ever
+    /// reached (<c>:2020-2026</c>, and <c>AgePrimitive.UpdateGUI</c> <c>:317-326</c> for a parent that
+    /// carries a primitive of its own). Because that walk is TOP-DOWN, every ancestor is a gate the
+    /// renderer passed before it reached the widget - which is why this walk does not stop early at
+    /// one that is merely animating.</para>
+    ///
+    /// <para><b>What the walk does NOT do.</b> It never turns an arrival fade into a blank screen,
+    /// because the settled test is applied per step: a window fading itself in is transparent AND
+    /// animating, and counts as drawn. Measured on the four opening styles that fade (2026-08-27): the
+    /// improvements and laws modals each hold <c>MainContainer</c> at alpha 0 with modifiers running
+    /// for several frames while the window root climbs 0 -> 1, the research screen and the senate the
+    /// same on the root alone, and the pause menu is the one that builds its items mid-fade
+    /// (<c>SaveGameMenuItem</c> at alpha 0.92, modifiers running, every ancestor at alpha 1). Across
+    /// every frame of all six traced arrivals, no declared node's chain ever read hidden-or-settled
+    /// that the one-step test did not already read - zero would-be false drops. Cost: the whole
+    /// ancestry pass over the largest measured screen (the star-system page with its cards expanded,
+    /// 90 located widgets, mean chain 6.8 deep) is 0.015 ms against a 1.56 ms render rebuild.</para>
     ///
     /// <para><b>Before the node exists.</b> One walk has to ask the question earlier than this:
     /// <see cref="Cells"/> groups its widgets into rows by their RECTANGLES before it declares
@@ -118,12 +137,18 @@ namespace ES2Access.UI
         /// </summary>
         public static bool StillDrawn(AgeTransform widget, ControlId id = null)
         {
-            if (!Enabled || widget == null || !Withdrawn(widget))
+            if (!Enabled || widget == null)
             {
                 return true;
             }
 
-            Report(_building, id, widget);
+            AgeTransform hider = Hider(widget);
+            if (hider == null)
+            {
+                return true;
+            }
+
+            Report(_building, id, widget, hider);
             return false;
         }
 
@@ -135,42 +160,83 @@ namespace ES2Access.UI
             }
 
             AgeTransform widget = DrawnBy.Of(node);
-            if (widget == null || !Withdrawn(widget))
+            if (widget == null)
             {
                 return false;
             }
 
-            Report(screenKey, node.Id, widget);
+            AgeTransform hider = Hider(widget);
+            if (hider == null)
+            {
+                return false;
+            }
+
+            Report(screenKey, node.Id, widget, hider);
             return true;
         }
 
+        /// <summary>Whether the widget is off the screen AND not on its way onto it - the boolean form
+        /// of <see cref="Hider"/>, for a caller with no report to write.</summary>
+        private static bool Withdrawn(AgeTransform widget)
+        {
+            return Hider(widget) != null;
+        }
+
         /// <summary>
-        /// Whether the widget is off the screen AND not on its way onto it.
+        /// Which widget in the chain took this node off the screen - the node's own, or the ancestor the
+        /// renderer's recursion stops at - and null when the renderer would draw it.
         ///
-        /// Switched off is settled by definition. Transparent is not: the same alpha 0 is both a
-        /// pooled row parked for reuse and the FIRST FRAME of a window fading itself in, and the
-        /// engine tells them apart by whether the widget's modifiers are still running
-        /// (<c>firstpass/AgeTransform.cs:466</c>). The pause menu built its items during its arrival
-        /// fade, so a plain <see cref="AgeWidgets.Paints"/> test dropped <c>ResumeMenuItem</c> for one
-        /// frame - and one frame is enough to displace the cursor for the rest of the screen's life.
-        /// A parked pool ghost has no modifier running and still drops, which is the whole point of
-        /// the gate.
+        /// Each step asks the same two things the renderer asks. Switched off is settled by definition.
+        /// Transparent is not: the same alpha 0 is both a pooled row parked for reuse and the FIRST FRAME
+        /// of a window fading itself in, and the engine tells them apart by whether that widget's
+        /// modifiers are still running (<c>firstpass/AgeTransform.cs:466</c>). The pause menu builds its
+        /// items during its arrival fade, so a plain <see cref="AgeWidgets.Paints"/> test dropped
+        /// <c>ResumeMenuItem</c> for one frame - and one frame is enough to displace the cursor for the
+        /// rest of the screen's life. A parked pool ghost has no modifier running and still drops, which
+        /// is the whole point of the gate.
+        ///
+        /// An animating ancestor counts as drawn and the walk CONTINUES upward rather than stopping: the
+        /// renderer descends, so the ancestors above an animating one are gates it had already passed
+        /// before it reached the animation, and exempting them would be exempting tests the renderer
+        /// applies. This is <see cref="AgeWidgets.Painted"/>'s walk plus that one exemption -
+        /// deliberately not shared with it, because <see cref="Dev.GhostAudit"/> wants the answer for the
+        /// frame it is asked on and this wants the answer for a node's whole life.
         ///
         /// Reading it throwing is not evidence of a ghost: the node passes.
         /// </summary>
-        private static bool Withdrawn(AgeTransform widget)
+        private static AgeTransform Hider(AgeTransform widget)
         {
             try
             {
-                return !widget.Visible || (widget.Alpha <= 0f && !widget.ModifiersRunning);
+                AgeTransform at = widget;
+                for (int depth = 0; at != null && depth < MaxAncestors; depth++)
+                {
+                    if (!at.Visible || (at.Alpha <= 0f && !at.ModifiersRunning))
+                    {
+                        return at;
+                    }
+
+                    at = at.Parent;
+                }
+
+                return null;
             }
             catch (Exception)
             {
-                return false;
+                return null;
             }
         }
 
-        private static void Report(string screenKey, ControlId id, AgeTransform widget)
+        /// <summary>How far up a parent chain to look before deciding it is not a chain. The deepest
+        /// declared node measured in this game sits 10 widgets from its renderer root.</summary>
+        private const int MaxAncestors = 64;
+
+        private static void Report(
+            string screenKey,
+            ControlId id,
+            AgeTransform widget,
+            AgeTransform hider
+        )
         {
             string node = id == null ? "?" : Convert.ToString(id.StructuralKey);
             if (!Remember(screenKey, node))
@@ -186,7 +252,7 @@ namespace ES2Access.UI
                     + " at="
                     + DrawnBy.Path(widget)
                     + " why="
-                    + Why(widget)
+                    + Why(widget, hider)
             );
         }
 
@@ -206,14 +272,19 @@ namespace ES2Access.UI
             return true;
         }
 
-        /// <summary>Which half of the test said no. The two answers want different fixes: NOT VISIBLE
-        /// is a branch the window switched off and a walk that kept its rows; FADED AND SETTLED is the
-        /// pooled table retiring a surplus row, which keeps its old words as well as its place.</summary>
-        private static string Why(AgeTransform widget)
+        /// <summary>Which half of the test said no, and WHERE. The answers want different fixes: NOT
+        /// VISIBLE is a branch the window switched off and a walk that kept its rows; FADED AND SETTLED
+        /// is the pooled table retiring a surplus row, which keeps its old words as well as its place;
+        /// and either of them on an ANCESTOR is a walk that entered through a root it never gated -
+        /// named, because the ancestor is the widget whose flags have to be looked at.</summary>
+        private static string Why(AgeTransform widget, AgeTransform hider)
         {
             try
             {
-                return widget.Visible ? "faded to nothing and settled" : "not visible";
+                string half = hider.Visible ? "faded to nothing and settled" : "not visible";
+                return ReferenceEquals(widget, hider)
+                    ? half
+                    : "ancestor " + half + " (" + hider.name + ")";
             }
             catch (Exception e)
             {
