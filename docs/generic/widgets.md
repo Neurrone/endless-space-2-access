@@ -9,7 +9,7 @@ the gesture-parity section below.
 
 ## The vocabulary
 
-One node factory per widget kind (see `src/graph-ui/GraphNodes.cs`), all built from the same
+One node factory per widget kind (see `src/engine-example/GraphNodes.cs`), all built from the same
 parts, all text `Func<string>` resolved at speak time.
 
 **A control's kind is decided by its WIRING — what the game runs when it is clicked,
@@ -269,7 +269,7 @@ game closing it underneath must pop the screen cleanly).
 Games funnel confirmations through one shared message-box window (quit?, discard changes?,
 countdown boxes). Make it a single high-layer screen registered once — every flow that dead-ends
 in a confirmation then speaks for free, and a silent confirmation is a soft-lock for a blind
-player. The shape (`src/graph-ui/MessageBoxScreen.cs`):
+player. The shape (`src/engine-example/MessageBoxScreen.cs`):
 
 - **Top layer**, above every ordinary screen; ordinary screens must yield while a modal is
   visible so the hand-off is clean and their cursor survives underneath.
@@ -320,7 +320,7 @@ confirmation window — if the dialog screen exists, the flow needs nothing extr
 
 ## Source exemplars
 
-`src/graph-ui/GraphNodes.cs` (the factories), `Carry.cs` (the keyboard drag),
+`src/engine-example/GraphNodes.cs` (the factories), `Carry.cs` (the keyboard drag),
 `DropListScreen.cs` (popup-as-sub-screen, focus handover, cancel-restore),
 `MessageBoxScreen.cs` (the confirmation-dialog screen). Models to imitate, not copy: they
 name ES2 types.

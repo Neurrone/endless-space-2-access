@@ -94,6 +94,6 @@ form per the evidence-pair method in
 The table itself is game data and lives with the game mod, not here (ES2: `IconTable.cs`, a
 BCL-only token→key map with the alias list, unit-tested against the locale file). The lookup
 shell is small: token → alias → `icon.*` key → string table, plus the warn-once. The
-substitution mechanics live in the adapter's text pipeline (`src/graph-ui/AgeText.cs`, the
+substitution mechanics live in the adapter's text pipeline (`src/engine-example/AgeText.cs`, the
 `SubstituteIcons`/`EngineExpands` region) and the letters-and-digits normalizer in
 `src/graph-ui/TextUtil.cs` (engine, copy verbatim).

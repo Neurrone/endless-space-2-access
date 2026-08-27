@@ -8,7 +8,7 @@ either working with that fact or defeating it.
 
 ## The mod's input layer
 
-`ModInput` + bindings (`src/graph-ui/ModInput.cs`, `InputBinding.cs`, `KeyboardBinding.cs`,
+`ModInput` + bindings (`src/engine-example/ModInput.cs`, `InputBinding.cs`, `KeyboardBinding.cs`,
 `OsKeyboard.cs`, `InputAction.cs`, `UiActions.cs`):
 
 - **Exact-modifier chord matching**: Ctrl+A must not also fire bare A, and releasing a
@@ -84,7 +84,7 @@ time, not at manual test:
 The rule is general, decided once, never per feature: while the mod's layer is active, the
 game must not see key events for mod-claimed keys. Per-feature workarounds (hide the window
 that reacts, special-case one screen) accumulate surprises; the general mechanism is one
-patch site per input path (`src/graph-ui/GameKeyStandDown.cs`, an exemplar to imitate):
+patch site per input path (`src/engine-example/GameKeyStandDown.cs`, an exemplar to imitate):
 
 - Patch the game's **narrowest key-matching predicates**, not its dispatcher or its update
   loop: the shared hotkey matcher (one function every discrete binding passes through), plus
@@ -218,8 +218,8 @@ the chat key, the end-turn key, held arrows over a camera) go on the manual test
 
 ## Source files
 
-Engine (copy verbatim): `src/graph-ui/InputAction.cs`, `InputBinding.cs`,
+Engine (copy verbatim): `src/engine-example/InputAction.cs`, `InputBinding.cs`,
 `KeyboardBinding.cs`, `OsKeyboard.cs`, `UiActions.cs`. Adapter exemplars (imitate, don't
-copy): `src/graph-ui/ModInput.cs` (chords, repeat, stand-down, injection queue),
-`src/graph-ui/GameKeyStandDown.cs` (the suppression patches, the Escape carve-out).
+copy): `src/engine-example/ModInput.cs` (chords, repeat, stand-down, injection queue),
+`src/engine-example/GameKeyStandDown.cs` (the suppression patches, the Escape carve-out).
 Key-rebind capture flows: [widgets.md](widgets.md).

@@ -127,4 +127,4 @@ hot reload (SoC nulls and detaches in `OnDestroy`; ES2 resets in `ModEntry.Stop`
 Engine (game-agnostic): [`src/buffers/`](src/buffers/) — `ReviewBuffer.cs`,
 `ReviewBufferManager.cs` (+ tests in the mod repo). Adapter exemplars: `BufferController.cs`
 (keys → manager → speech policy), `BufferActions.cs`; population lives in the navigator —
-see [`src/graph-ui/GraphNavigator.cs`](src/graph-ui/GraphNavigator.cs).
+see [`src/engine-example/GraphNavigator.cs`](src/engine-example/GraphNavigator.cs).

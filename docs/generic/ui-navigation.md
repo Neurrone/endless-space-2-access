@@ -338,7 +338,7 @@ which no dump reveals. Key such lines on the game's *data* object, never the wid
   null for "nothing to say yet" is the natural signal). Reset it when the screen leaves,
   and keep all of it instance state so it is reload-safe by construction. For a continuous 0..1 value, quantize into steps (quarters), announce upward
   crossings only, only the highest when one frame crosses several, and re-arm when the value
-  drops so a restarted phase reports afresh. Worked sample: `src/graph-ui/LoadingScreen.cs`.
+  drops so a restarted phase reports afresh. Worked sample: `src/engine-example/LoadingScreen.cs`.
   A value that HAS a control needs the same watcher as soon as the game moves it by other
   routes — a wheel, a held key, a click, a page change: a control's live part only speaks while
   the player is standing on it. One pump-scoped watcher on the VALUE, not one announcement per
