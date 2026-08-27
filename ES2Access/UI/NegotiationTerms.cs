@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using ES2Access.Core.Speech;
 using ES2Access.Core.UI;
 using ES2Access.Core.UI.Graph;
+using ES2Access.Core.Util;
 using ES2Access.Screens;
 
 namespace ES2Access.UI
@@ -16,19 +17,23 @@ namespace ES2Access.UI
     ///
     /// <b>A shelf is a real table</b> and is declared as one: the game draws headers over it
     /// (<c>%NegotiationModalWindowTermTypeHeaderTitle</c> / <c>…NameHeaderTitle</c> /
-    /// <c>…CostHeaderTitle</c>), so the columns are its own. One deviation from the drawn order: the type
-    /// is drawn FIRST and is a bare icon, while a sheet's column 0 has to be the row's name - so the name
-    /// leads and the type follows it, and a row still reads type-and-cost as it is walked across.
+    /// <c>…CostHeaderTitle</c>), so the columns are its own, and the headings are declared as a real
+    /// header row over them (<see cref="Headers"/>). One deviation from the drawn order: the type is
+    /// drawn FIRST and is a bare icon, while a sheet's column 0 has to be the row's name - so the name
+    /// leads and the type follows it, and a row still reads type-and-cost as it is walked across. The
+    /// heading band is declared in that same order, so that Up out of a cell reaches the heading of the
+    /// column the player was standing in.
     ///
     /// <b>A row is keyed on the term, not on the line</b>: the tables are pooled and re-bound by index on
     /// every refresh (<c>ReserveChildren</c> / <c>RefreshChildrenIList</c>), so a cursor keyed on the
     /// widget would act on a different term a frame after a filter changed.
     ///
-    /// <b>Enter toggles the term in and out of the deal.</b> It is the row's own click
-    /// (<c>TermLine.OnSelectTermCb</c> :396-402), which the window answers by posting
-    /// <c>OrderChangeDiplomaticContractTermsCollection</c> with Add or Remove - so the same key that puts a
-    /// term in the basket takes it out again, from either side. A term the game will not accept is left
-    /// DRAWN and switched off with its failure sentences on its own tooltip, and reads refusing.
+    /// <b>Enter toggles the term in and out of the deal.</b> It sends the window the same message the
+    /// row's own click sends it (<c>TermLine.OnSelectTermCb</c> :398-403), which the window answers by
+    /// posting <c>OrderChangeDiplomaticContractTermsCollection</c> with Add or Remove - so the same key
+    /// that puts a term in the basket takes it out again, from either side, and the row says which of the
+    /// two it now is. A term the game will not accept is left DRAWN and switched off with its failure
+    /// sentences on its own tooltip, and reads refusing.
     ///
     /// <b>There are hundreds of terms</b> - every resource, every technology, every system - so type-ahead
     /// is the practical way through them. It comes free: every cell of a sheet row matches on the row's
@@ -48,6 +53,88 @@ namespace ES2Access.UI
                 Localized("%NegotiationModalWindowTermTypeHeaderTitle"),
                 Localized("%NegotiationModalWindowTermCostHeaderTitle"),
             };
+        }
+
+        /// <summary>The prefab names of the three headings the game draws over a shelf, in the order
+        /// <see cref="Columns"/> puts them - name first, which is the shelf's own identity column and
+        /// therefore column 0, then the type and the cost. The game DRAWS them type-name-cost; the
+        /// sheet's identity column has to be column 0, so the band is declared in the sheet's order and
+        /// the first two headings read left-to-right in the other one (owner ruling 2026-08-27: the
+        /// alignment between a heading and the cells under it is what a header row is for, and the
+        /// sheet is not to be extended to move an identity column).</summary>
+        private static readonly string[] HeaderNames = { "Name", "Type", "Cost" };
+
+        /// <summary>
+        /// The row of column headings over a shelf, one node per heading the game drew.
+        ///
+        /// The same shape the economy grid's family band has (<c>ResourceGrid.Headings</c>) and the same
+        /// shape a sort band has minus the press: these headings sort nothing, so nothing is wired to
+        /// Enter and a press on one answers with nothing, which is what a click there does. What each
+        /// node is FOR is the sentence the game hung on it - what a Type is, what a Name specifies, what
+        /// the Cost is counted in - which lives on the heading and nowhere else, and would otherwise be
+        /// repeated into the buffer of every cell of the column.
+        ///
+        /// Each is stamped with the column it stands over (<see cref="NodeVtable.Column"/>), which is
+        /// what <c>GraphBuilder.StitchModeBoundaries</c> pairs the seam by: Up out of a cell reaches the
+        /// heading of the column the player was in rather than the first one. Searched by their own
+        /// words, since a heading is not a cell of the rows below it.
+        /// </summary>
+        public static void Headers(
+            GraphBuilder builder,
+            NegotiationTermsPanel panel,
+            string keyPrefix
+        )
+        {
+            AgeTransform band = panel == null
+                ? null
+                : AgeWidgets.ChildNamed(panel.AgeTransform, "TermsHeader", 3);
+            // Flow control: whether a heading band is opened at all.
+            if (band == null || !AgeWidgets.Visible(band))
+            {
+                return;
+            }
+
+            bool open = false;
+            for (int i = 0; i < HeaderNames.Length; i++)
+            {
+                AgeTransform widget = AgeWidgets.ChildNamed(band, HeaderNames[i], 1);
+                if (widget == null)
+                {
+                    continue;
+                }
+
+                AgeTransform it = widget;
+                AgeTooltip tooltip = AgeWidgets.Raw(widget);
+                NodeVtable vtable = new NodeVtable
+                {
+                    ControlType = ControlTypes.Text,
+                    Announcements = new List<NodeAnnouncement>
+                    {
+                        GraphNodes.LabelPart(() => AgeWidgets.TextOf(it)),
+                    },
+                    Sections = GraphNodes.Sections(null, tooltip),
+                    Column = i,
+                    SearchesAsItself = true,
+                };
+                AgeWidgets.PointAt(vtable, widget, tooltip);
+                if (!open)
+                {
+                    builder.StartRow(positions: false);
+                    open = true;
+                }
+
+                ScrollIntoView.Anchor(vtable, widget);
+                builder.AddItem(Nodes.Drawn(
+                    ControlId.For(widget, keyPrefix + "/header/" + HeaderNames[i]),
+                    vtable,
+                    widget
+                ));
+            }
+
+            if (open)
+            {
+                builder.EndRow();
+            }
         }
 
         /// <summary>
@@ -155,7 +242,12 @@ namespace ES2Access.UI
         /// <summary>Every term the shelf is drawing, as rows of <paramref name="sheet"/>. A shelf the
         /// game has emptied contributes no rows, and the caller's empty-state words stand in its
         /// place.</summary>
-        public static int Shelf(GraphSheet sheet, AgeTransform table, string keyPrefix)
+        public static int Shelf(
+            GraphSheet sheet,
+            AgeTransform table,
+            string keyPrefix,
+            NegotiationModalWindow window
+        )
         {
             int count = 0;
             _seen.Clear();
@@ -172,8 +264,9 @@ namespace ES2Access.UI
                 }
 
                 TermLine it = line;
+                NegotiationModalWindow owner = window;
                 sheet.Row(
-                    Primary(it, keyPrefix),
+                    Primary(it, window, () => InContract(owner, it)),
                     Distinct(Key(it, keyPrefix)),
                     widget,
                     () => TypeName(it),
@@ -204,7 +297,8 @@ namespace ES2Access.UI
             GraphSheet sheet,
             AgeTransform table,
             string keyPrefix,
-            TextFieldEditor editor
+            TextFieldEditor editor,
+            NegotiationModalWindow window
         )
         {
             int count = 0;
@@ -242,7 +336,9 @@ namespace ES2Access.UI
                     cells.Add(new KeyValuePair<int, NodeVtable>(3, quantity));
                 }
 
-                sheet.RowAt(Primary(it, keyPrefix), rowKey, cells, widget);
+                // No membership word here: everything in the basket is in the deal by definition, and a
+                // list where every row says "selected" says nothing.
+                sheet.RowAt(Primary(it, window, null), rowKey, cells, widget);
                 count++;
             }
 
@@ -311,40 +407,134 @@ namespace ES2Access.UI
         }
 
         /// <summary>
-        /// The row itself: what the term is, and the click that puts it in the deal or takes it out.
+        /// The row itself: what the term is, whether it is in the deal, and the click that puts it there
+        /// or takes it out again.
         ///
         /// The name is the one the line DRAWS, because the game has already written the quantity and the
         /// cooldown into it (<c>RefreshNameLabel</c> :87-102: "Titanium (12)", "Peace Treaty (5 turns)").
         /// The computer's opinion of the term - a bare "+" or "-" the game paints beside the name when it
         /// is being asked of an AI (<c>RefreshAIFeedback</c> :333-363) - is read as the value it is, and
-        /// only while the game is drawing it.
+        /// only while the game is drawing it; so is the cooldown label beside it, which this build of the
+        /// game leaves unwired on every prefab (measured 2026-08-27: <c>TermLine.CooldownLabel</c> is
+        /// null and nothing in the assembly assigns it) and which therefore contributes nothing until
+        /// some build does draw it.
+        ///
+        /// <b>Enter is the game's own path, not a replayed click.</b> The line's click handler sends
+        /// <c>OnSelectTerm</c> to the window it was bound to (<c>TermLine.OnSelectTermCb</c> :398-403),
+        /// and the window answers by posting <c>OrderChangeDiplomaticContractTermsCollection</c> - Add,
+        /// or Remove where the contract already holds the term (<c>SelectTerm</c> :1275-1282). So the
+        /// message is sent to the same object the line would have sent it to, and one key both adds and
+        /// removes, from either side of the table.
+        ///
+        /// <paramref name="member"/> is null for a row that cannot be out of the deal - every line of the
+        /// basket is in it - and otherwise the membership the row reads.
+        ///
+        /// It is WATCHED rather than said back as the keypress's own answer, which is the one place this
+        /// row differs from an ordinary checkbox: the key posts an ORDER and the contract does not change
+        /// until the server answers it, so a state word read at press time says what the row still was.
+        /// Measured 2026-08-27: Enter on an unselected term answered "not selected" and then, a frame
+        /// later, "selected". The watched part alone says it once, when it is true.
         /// </summary>
-        private static NodeVtable Primary(TermLine line, string keyPrefix)
+        private static NodeVtable Primary(
+            TermLine line,
+            NegotiationModalWindow window,
+            Func<bool> member
+        )
         {
             TermLine it = line;
+            NegotiationModalWindow owner = window;
             AgeTooltip tooltip = line.Tooltip;
             Func<bool> offered = () => AgeWidgets.Offered(it.AgeTransform);
+            List<NodeAnnouncement> parts = new List<NodeAnnouncement>
+            {
+                GraphNodes.LabelPart(() => Words(it.NameLabel)),
+                GraphNodes.DisabledPart(offered),
+                GraphNodes.ValuePart(() => Words(it.AIPreviewLabel)),
+                GraphNodes.ValuePart(() => Words(it.CooldownLabel)),
+            };
+            if (member != null)
+            {
+                Func<bool> membership = member;
+                parts.Insert(
+                    1,
+                    new NodeAnnouncement(
+                        () => SelectionText.Membership(membership()),
+                        live: true,
+                        kind: AnnouncementKinds.Selected
+                    )
+                );
+            }
+
             NodeVtable vtable = new NodeVtable
             {
                 ControlType = ControlTypes.Button,
-                Announcements = new List<NodeAnnouncement>
-                {
-                    GraphNodes.LabelPart(() => Words(it.NameLabel)),
-                    GraphNodes.DisabledPart(offered),
-                    GraphNodes.ValuePart(() => Words(it.AIPreviewLabel)),
-                },
+                Announcements = parts,
                 Sections = GraphNodes.Sections(() => Consequences(it), tooltip),
                 OnActivate = () =>
                 {
                     if (offered())
                     {
-                        AgeWidgets.Press(it.AgeTransform);
+                        SelectTerm(owner, it);
                     }
                 },
             };
             GraphNodes.AddRefusal(vtable, tooltip, offered);
             AgeWidgets.PointAt(vtable, it.AgeTransform);
             return vtable;
+        }
+
+        /// <summary>Put the term in the deal or take it out, by the route the line's own click takes:
+        /// the window is the <c>client</c> every term line is bound to
+        /// (<c>NegotiationModalWindow</c> :753-755 hands it <c>base.gameObject</c>), and the click sends
+        /// it this message.</summary>
+        private static void SelectTerm(NegotiationModalWindow window, TermLine line)
+        {
+            try
+            {
+                if (window != null && line.GuiTerm != null)
+                {
+                    window.gameObject.SendMessage("OnSelectTerm", line.GuiTerm);
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("negotiation: selecting a term threw: " + e);
+            }
+        }
+
+        /// <summary>
+        /// Whether the deal as it stands holds this term - the same question the window asks before
+        /// deciding whether its own click adds or removes (<c>SelectTerm</c> :1277).
+        ///
+        /// A CONTEXTUAL term is not in the contract's term list at all: picking one puts it in the
+        /// window's own <c>SelectedGuiContextualDiplomaticTerm</c> and the basket is built from there
+        /// (<c>OnSelectTerm</c> :1331-1340), so that is where its membership is read.
+        /// </summary>
+        private static bool InContract(NegotiationModalWindow window, TermLine line)
+        {
+            try
+            {
+                IGuiDiplomaticTerm gui = line.GuiTerm;
+                GuiDiplomaticTerm plain = gui as GuiDiplomaticTerm;
+                if (plain != null)
+                {
+                    DiplomaticContract contract = window == null ? null : window.CurrentContract;
+                    return contract != null
+                        && contract.Options != null
+                        && contract.Options.Count > 0
+                        && contract.Options[0].Terms.Contains(plain.Term);
+                }
+
+                GuiContextualDiplomaticTerm contextual = gui as GuiContextualDiplomaticTerm;
+                return contextual != null
+                    && window != null
+                    && window.SelectedGuiContextualDiplomaticTerm != null
+                    && window.SelectedGuiContextualDiplomaticTerm.Name == contextual.Name;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
         }
 
         /// <summary>What the line spells out under itself about signing this term - the upkeep a treaty

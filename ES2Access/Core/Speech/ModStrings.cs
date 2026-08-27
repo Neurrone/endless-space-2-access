@@ -1592,9 +1592,17 @@ namespace ES2Access.Core.Speech
 
         public const string ScreenNegotiation = "screen.negotiation";
 
-        /// <summary>The negotiation table's eight bands. The game titles the pressure gauge and writes
-        /// real column headers over the term tables, but captions none of the bands themselves.</summary>
+        /// <summary>The negotiation table's bands. The game captions most of them itself - the window
+        /// heading, the pressure gauge, both term shelves, the contract and its two contributions - and
+        /// those words are read off the widget with the keys here as the fallback. The two bands the
+        /// game leaves unnamed are the strip between the empires (<see cref="NegotiationRelationship"/>)
+        /// and the row of buttons along the bottom.</summary>
         public const string NegotiationHeader = "negotiation.header";
+
+        /// <summary>The band between the two empire banners: what the diplomatic status is, and the
+        /// three things that status permits. The game draws the status sentence and the ability icons
+        /// and captions neither.</summary>
+        public const string NegotiationRelationship = "negotiation.relationship";
         public const string NegotiationDossier = "negotiation.dossier";
         public const string NegotiationPressure = "negotiation.pressure";
         public const string NegotiationMyTerms = "negotiation.my-terms";
@@ -1611,6 +1619,11 @@ namespace ES2Access.Core.Speech
         /// the computer sends written reasons with its evaluation and the window throws them away, so a
         /// number is the honest reading.</summary>
         public const string NegotiationApprovalValue = "negotiation.approval-value";
+
+        /// <summary>One empire's share of the influence-pressure bar. The gauge is one track split
+        /// between the two of them and the game writes no figure anywhere on it, so each side is named
+        /// by the banner it is drawn under and given the length it holds.</summary>
+        public const string NegotiationPressureShare = "negotiation.pressure-share";
         public const string NegotiationActions = "negotiation.actions";
 
         /// <summary>The stepper a resource term draws beside its name. The game writes the number in the
@@ -2339,6 +2352,7 @@ namespace ES2Access.Core.Speech
             { DiplomacyViewingFrom, "Viewing relations from the perspective of {0}" },
             { ScreenNegotiation, "Negotiation" },
             { NegotiationHeader, "The two empires" },
+            { NegotiationRelationship, "Relationship" },
             { NegotiationDossier, "Empire information" },
             { NegotiationPressure, "Pressure" },
             { NegotiationMyTerms, "Terms you can offer" },
@@ -2351,6 +2365,7 @@ namespace ES2Access.Core.Speech
             { NegotiationContractTheirs, "They give" },
             { NegotiationApproval, "Deal approval" },
             { NegotiationApprovalValue, "{0} percent" },
+            { NegotiationPressureShare, "{0} {1} percent" },
             { NegotiationActions, "Offer" },
             { NegotiationQuantity, "Quantity" },
             { ScreenMinorDiplomacy, "Minor faction diplomacy" },

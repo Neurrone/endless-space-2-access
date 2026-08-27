@@ -283,9 +283,11 @@ ES2Access/Screens/ModdingConfigScreen.cs | 1 | return label == null || !AgeWidge
 ES2Access/Screens/NegotiationScreen.cs | 2 | IList<AgeTransform> children = table == null || !AgeWidgets.Visible(table)
 ES2Access/Screens/NegotiationScreen.cs | 1 | if (AgeWidgets.Visible(window.DealApprovalGroup))
 ES2Access/Screens/NegotiationScreen.cs | 1 | if (blank != null && AgeWidgets.Visible(blank))
+ES2Access/Screens/NegotiationScreen.cs | 1 | if (gauge.NegativeGauge != null && AgeWidgets.Visible(gauge.NegativeGauge))
+ES2Access/Screens/NegotiationScreen.cs | 1 | if (gauge.PositiveGauge != null && AgeWidgets.Visible(gauge.PositiveGauge))
 ES2Access/Screens/NegotiationScreen.cs | 1 | if (none != null && AgeWidgets.Visible(none))
 ES2Access/Screens/NegotiationScreen.cs | 2 | if (panel == null || !AgeWidgets.Visible(panel.AgeTransform))
-ES2Access/Screens/NegotiationScreen.cs | 1 | if (table == null || !AgeWidgets.Visible(table))
+ES2Access/Screens/NegotiationScreen.cs | 1 | if (table != null && AgeWidgets.Visible(table))
 ES2Access/Screens/NegotiationScreen.cs | 1 | return label == null || !AgeWidgets.Visible(label.AgeTransform)
 
 ES2Access/Screens/NotificationScreen.cs | 1 | !Painted(expander.AgeTransform, root)
@@ -531,6 +533,7 @@ ES2Access/UI/Input/GameKeyboardHandover.cs | 1 | if (AgeWidgets.Visible(focused.
 ES2Access/UI/LawCards.cs | 1 | || !AgeWidgets.Visible(card.ForcedLawIcon.AgeTransform)
 
 ES2Access/UI/NegotiationTerms.cs | 1 | && AgeWidgets.Visible(filter.ContextualAlertMarker)
+ES2Access/UI/NegotiationTerms.cs | 1 | if (band == null || !AgeWidgets.Visible(band))
 ES2Access/UI/NegotiationTerms.cs | 2 | if (line == null || line.GuiTerm == null || !AgeWidgets.Visible(widget))
 ES2Access/UI/NegotiationTerms.cs | 1 | return label == null || !AgeWidgets.Visible(label.AgeTransform)
 ES2Access/UI/NegotiationTerms.cs | 1 | return table == null || !AgeWidgets.Visible(table)

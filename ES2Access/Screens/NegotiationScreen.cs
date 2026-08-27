@@ -25,12 +25,12 @@ namespace ES2Access.Screens
     /// game's, as it is on every other modal - but it is why this window cannot be opened and closed freely
     /// while testing.
     ///
-    /// Eight bands, in the order the window draws them:
-    /// the two empires along the top with the status between them; the empire dossier, while the tick box
-    /// beside the title has it open; the pressure gauge, with the button that forces a truce during a war;
-    /// the two shelves of terms, one per empire; the basket the deal is being assembled in; what the
-    /// computer thinks of the deal so far; and the buttons that reset it, ask the computer to fill it in,
-    /// or make the offer.
+    /// Seven stops, in the order the window draws them: the player's own empire under the window's
+    /// heading; the relationship between the two, which is the status and what it permits; the OTHER
+    /// empire, with the tick box that opens their dossier and the dossier itself nested under it; the
+    /// pressure gauge, with the button that forces a truce during a war; the two shelves of terms, one
+    /// per empire; the deal being assembled, ending with what the computer thinks of it; and the buttons
+    /// that reset it, ask the computer to fill it in, or make the offer.
     ///
     /// <b>Two readouts are deliberately less than what is on screen.</b> The deal-approval band draws a
     /// gauge and lights one of five faces; what it does NOT draw is the computer's written reasons, which
@@ -45,13 +45,13 @@ namespace ES2Access.Screens
     /// </summary>
     public sealed class NegotiationScreen : Screen
     {
-        private static readonly object HeaderStop = "negotiation:header";
-        private static readonly object DossierStop = "negotiation:dossier";
+        private static readonly object MyEmpireStop = "negotiation:my-empire";
+        private static readonly object RelationStop = "negotiation:relationship";
+        private static readonly object TheirEmpireStop = "negotiation:their-empire";
         private static readonly object PressureStop = "negotiation:pressure";
         private static readonly object MyTermsStop = "negotiation:my-terms";
         private static readonly object TheirTermsStop = "negotiation:their-terms";
         private static readonly object ContractStop = "negotiation:contract";
-        private static readonly object ApprovalStop = "negotiation:approval";
         private static readonly object ActionsStop = "negotiation:actions";
         private static readonly object DossierRegion = "negotiation:dossier/panel";
 
@@ -176,43 +176,155 @@ namespace ES2Access.Screens
                 return;
             }
 
-            BuildHeader(builder, window);
-            BuildDossier(builder, window);
+            BuildMyEmpire(builder, window);
+            BuildRelationship(builder, window);
+            BuildTheirEmpire(builder, window);
             BuildPressure(builder, window);
             BuildTerms(builder, window, MyTermsStop, window.MyTermsPanel, window.MyAtWarLabel, "mine", ModStrings.NegotiationMyTerms);
             BuildTerms(builder, window, TheirTermsStop, window.HisTermsPanel, window.HisAtWarLabel, "theirs", ModStrings.NegotiationTheirTerms);
             BuildContract(builder, window);
-            BuildApproval(builder, window);
             BuildActions(builder, window);
         }
 
         // ---- the two empires ----
 
-        /// <summary>The strip across the top: the tick box that opens the dossier, then each empire's
-        /// banner (who they are, their alliance or metaplot team, their influence stock and - for the
-        /// other empire - their attitude with the annotations behind it), then the diplomatic status
-        /// between them and the abilities that status carries.</summary>
-        private void BuildHeader(GraphBuilder builder, NegotiationModalWindow window)
+        /// <summary>
+        /// The player's own side of the table: the window's heading, then the banner the game draws for
+        /// this empire - who they are, the alliance or metaplot team they belong to, and the influence
+        /// they have to spend on the deal.
+        ///
+        /// The stop is NAMED by the banner's own name line and the same line is its first row, which is
+        /// the ordinary caption shape: a level the announcer says on the way in, dropped again where the
+        /// row below repeats it (<c>GraphAnnouncer.DuplicatesNext</c>). The heading row above it is there
+        /// for the sentence the game hung on the window title, which a screen's spoken name has no buffer
+        /// to hold (<see cref="Captions.Row"/>), and the stop lands past it on the banner.
+        ///
+        /// The influence stock is a readout though the game made it a button: what its click does is the
+        /// god-mode handler, which is not declared anywhere on this window.
+        /// </summary>
+        private void BuildMyEmpire(GraphBuilder builder, NegotiationModalWindow window)
         {
-            builder.BeginStop(HeaderStop);
-            builder.PushContext(ModStrings.Get(ModStrings.NegotiationHeader));
+            NegotiationEmpireBannerPanel panel = window.MyEmpireBanner;
+            AgeTransform name = Of(panel == null ? null : panel.EmpireTitleLabel);
+            builder.BeginStop(MyEmpireStop);
+            AgeTransform title = Of(window.WindowTitle);
+            Captions.Row(builder, title, Keys + "title", Parent(title));
+            bool named = Captions.Push(builder, name);
             _cells.Clear();
             try
             {
-                AddInfoToggle(window);
-                AddBanner(window.MyEmpireBanner, "my-banner");
-                AddBanner(window.HisEmpireBanner, "his-banner");
-                Cells.AddReadout(_cells, Of(window.DiplomaticStatusLabel), Keys + "status");
-                AddStatusIcon(window);
+                AddBanner(panel, "my");
+            }
+            catch (Exception e)
+            {
+                Log.Warn("negotiation: reading your own banner threw: " + e);
+            }
+
+            Cells.EmitLinear(builder, _cells);
+            if (_cells.Count > 0)
+            {
+                builder.LandStopOn(_cells[0].Id);
+            }
+
+            Captions.Pop(builder, named);
+        }
+
+        /// <summary>The strip between the two banners: what the diplomatic status IS, and the three
+        /// things that status permits. The game draws the status as words and the permissions as bare
+        /// icons and captions the band with nothing, so the mod's word names it.</summary>
+        private void BuildRelationship(GraphBuilder builder, NegotiationModalWindow window)
+        {
+            builder.BeginStop(RelationStop);
+            builder.PushContext(ModStrings.Get(ModStrings.NegotiationRelationship));
+            _cells.Clear();
+            try
+            {
+                AddStatus(window);
                 AddAbilities(window);
             }
             catch (Exception e)
             {
-                Log.Warn("negotiation: reading the header threw: " + e);
+                Log.Warn("negotiation: reading the relationship threw: " + e);
             }
 
             Cells.EmitLinear(builder, _cells);
             builder.PopContext();
+        }
+
+        /// <summary>
+        /// The other empire: their banner, how they feel about the player and why, the tick box that
+        /// opens their dossier, and - while it is ticked - the dossier itself, nested here rather than
+        /// standing as a Tab stop of its own, because it is a panel this box opens and closes.
+        /// </summary>
+        private void BuildTheirEmpire(GraphBuilder builder, NegotiationModalWindow window)
+        {
+            NegotiationEmpireBannerPanel panel = window.HisEmpireBanner;
+            AgeTransform name = Of(panel == null ? null : panel.EmpireTitleLabel);
+            builder.BeginStop(TheirEmpireStop);
+            bool named = Captions.Push(builder, name);
+            _cells.Clear();
+            try
+            {
+                AddAlliance(panel, "his");
+                AddStock(panel, "his");
+                AddAttitude(panel);
+                // The banner first, then the box: the game draws the box in the window's top corner,
+                // clear of both banners, so laying the two out by rectangle would put the box ahead of
+                // the empire it is about and leave the dossier it opens hanging under the attitude.
+                Cells.EmitLinear(builder, _cells);
+                _cells.Clear();
+                AddInfoToggle(window);
+            }
+            catch (Exception e)
+            {
+                Log.Warn("negotiation: reading their banner threw: " + e);
+            }
+
+            Cells.EmitLinear(builder, _cells);
+            BuildDossier(builder, window);
+            Captions.Pop(builder, named);
+        }
+
+        /// <summary>The status line and the empire it is about, as the one sentence the eye reads across
+        /// the top of the window ("In cold war with Leaper (AI) (Cravers)") - the words are drawn on two
+        /// widgets a banner apart, and reading them as two rows makes the player assemble the sentence
+        /// themselves. It stands on the status LABEL, which is the half that carries the meaning, and
+        /// carries the emblem's tooltip, which is the only place the game says what the status lets each
+        /// side do.</summary>
+        private void AddStatus(NegotiationModalWindow window)
+        {
+            AgeTransform label = Of(window.DiplomaticStatusLabel);
+            if (label == null)
+            {
+                return;
+            }
+
+            AgeTransform icon = Of(window.DiplomaticStatusIcon);
+            AgeTooltip tooltip = AgeWidgets.Raw(icon);
+            NegotiationModalWindow it = window;
+            NodeVtable vtable = new NodeVtable
+            {
+                Announcements = new List<NodeAnnouncement>
+                {
+                    GraphNodes.LabelPart(() => Relation(it)),
+                },
+                Sections = GraphNodes.Sections(null, tooltip, TooltipMode.None),
+            };
+            AgeWidgets.PointAt(vtable, icon ?? label, tooltip);
+            Cells.Add(_cells, label, ControlId.For(label, Keys + "status"), vtable);
+        }
+
+        /// <summary>The sentence the two widgets make between them.</summary>
+        private static string Relation(NegotiationModalWindow window)
+        {
+            MessageBuilder message = new MessageBuilder();
+            message.Fragment(Words(window.DiplomaticStatusLabel));
+            message.Fragment(
+                window.HisEmpireBanner == null
+                    ? null
+                    : Words(window.HisEmpireBanner.EmpireTitleLabel)
+            );
+            return message.Build();
         }
 
         private void AddInfoToggle(NegotiationModalWindow window)
@@ -238,65 +350,57 @@ namespace ES2Access.Screens
             Cells.Add(_cells, at, ControlId.For(at, Keys + "empire-info"), vtable);
         }
 
-        /// <summary>One empire's banner as one line: everything the panel draws about them, and the
-        /// annotations the game hangs off the attitude label as reviewable content.</summary>
+        /// <summary>One empire's banner, a drawn line at a time: their name, the alliance or metaplot
+        /// team the game names beside it, and the influence they are bringing to the table. Each is its
+        /// own row because each is a separate fact drawn in a separate place - the one line they used to
+        /// be made the player sit through all of it to hear any of it.</summary>
         private void AddBanner(NegotiationEmpireBannerPanel panel, string key)
         {
-            AgeTransform at = panel == null ? null : panel.AgeTransform;
-            if (at == null)
+            if (panel == null)
             {
                 return;
             }
 
-            NegotiationEmpireBannerPanel it = panel;
-            AgeTransform attitude = Of(panel.AttitudeLabel);
-            AgeTooltip why = AgeWidgets.Raw(attitude);
-            NodeVtable vtable = new NodeVtable
-            {
-                Announcements = new List<NodeAnnouncement>
-                {
-                    GraphNodes.LabelPart(() => Banner(it)),
-                },
-                Sections = GraphNodes.Sections(null, why),
-            };
-            AgeWidgets.PointAt(vtable, attitude ?? at);
-            Cells.Add(_cells, at, ControlId.For(at, Keys + key), vtable);
+            Cells.AddReadout(_cells, Of(panel.EmpireTitleLabel), Keys + key + "-name");
+            AddAlliance(panel, key);
+            AddStock(panel, key);
         }
 
-        private static string Banner(NegotiationEmpireBannerPanel panel)
+        private void AddAlliance(NegotiationEmpireBannerPanel panel, string key)
         {
-            MessageBuilder message = new MessageBuilder();
-            message.ListItem(Words(panel.EmpireTitleLabel));
-            message.ListItem(Words(panel.AllianceNameLabel));
-            message.ListItem(Words(panel.InfluenceStockLabel));
-            message.ListItem(Words(panel.AttitudeLabel));
-            return message.Build();
-        }
-
-        /// <summary>The status icon between the banners, whose tooltip is the only place the game explains
-        /// what the status MEANS. The words beside it are already read as the status line.</summary>
-        private void AddStatusIcon(NegotiationModalWindow window)
-        {
-            AgeTransform at = Of(window.DiplomaticStatusIcon);
-            if (at == null || AgeWidgets.Raw(at) == null)
+            AgeTransform at = Of(panel == null ? null : panel.AllianceNameLabel);
+            if (at != null)
             {
-                return;
+                Cells.AddReadout(_cells, at, Keys + key + "-alliance");
             }
-
-            Cells.Add(
-                _cells,
-                at,
-                ControlId.For(at, Keys + "status-icon"),
-                StatusIcon(at)
-            );
         }
 
-        /// <summary>A figure the game draws as a bare icon and names only on its tooltip: the status icon
-        /// between the banners, and each of the abilities in the strip. The words are the tooltip's own
-        /// sentence where it carries one, and otherwise the name of the thing behind it - an ability's
-        /// dossier is renderer-assembled, so its title is where the name lives (measured: an ability item
-        /// read by the sentence alone came out with no name at all).</summary>
-        private static NodeVtable StatusIcon(AgeTransform at)
+        private void AddStock(NegotiationEmpireBannerPanel panel, string key)
+        {
+            AgeTransform at = Of(panel == null ? null : panel.InfluenceStockLabel);
+            if (at != null)
+            {
+                Cells.AddReadout(_cells, at, Keys + key + "-influence");
+            }
+        }
+
+        /// <summary>How the other empire feels about the player, with the annotations the game hangs off
+        /// the label as the reason - the one place it says WHY.</summary>
+        private void AddAttitude(NegotiationEmpireBannerPanel panel)
+        {
+            AgeTransform at = Of(panel == null ? null : panel.AttitudeLabel);
+            if (at != null)
+            {
+                _cells.Add(Cells.Readout(at, AgeWidgets.Raw(at), Keys + "attitude"));
+            }
+        }
+
+        /// <summary>A figure the game draws as a bare icon and names only on its tooltip: each of the
+        /// abilities in the permissions strip. The words are the tooltip's own sentence where it carries
+        /// one, and otherwise the name of the thing behind it - an ability's dossier is
+        /// renderer-assembled, so its title is where the name lives (measured: an ability item read by
+        /// the sentence alone came out with no name at all).</summary>
+        private static NodeVtable IconOnly(AgeTransform at)
         {
             AgeTooltip tooltip = AgeWidgets.Raw(at);
             Func<string> sentence = CardActions.NameFromTooltip(tooltip);
@@ -362,7 +466,7 @@ namespace ES2Access.Screens
                     _cells,
                     at,
                     ControlId.For(at, Keys + "ability/" + i),
-                    StatusIcon(at)
+                    IconOnly(at)
                 );
             }
         }
@@ -371,7 +475,9 @@ namespace ES2Access.Screens
 
         /// <summary>The sheet of prose about the other empire, while the tick box has it open - the same
         /// panel the introduction popup opens, read by the same shared reader
-        /// (<see cref="EmpireDossier"/>).</summary>
+        /// (<see cref="EmpireDossier"/>). Declared inside the OTHER EMPIRE's stop, immediately below the
+        /// box that opens it: it is a panel this box shows and hides, and a Tab stop that comes and goes
+        /// as a checkbox is ticked moves the whole screen under the player.</summary>
         private void BuildDossier(GraphBuilder builder, NegotiationModalWindow window)
         {
             NegotiationEmpireInfoPanel panel = window.EmpireInfoPanel;
@@ -380,7 +486,6 @@ namespace ES2Access.Screens
                 return;
             }
 
-            builder.BeginStop(DossierStop);
             builder.PushContext(ModStrings.Get(ModStrings.NegotiationDossier));
             EmpireDossier.Build(builder, panel, Keys + "dossier/", DossierRegion);
             builder.PopContext();
@@ -390,10 +495,16 @@ namespace ES2Access.Screens
 
         /// <summary>
         /// The pressure the player has built up against this empire, or - at war - how exhausted the war
-        /// has left them. Both are the same gauge under two titles, and the game writes the per-turn trend
-        /// into the gauge's own tooltip (<c>GetPressureTooltipContent</c> :916-937), so the gauge is a
-        /// readout and the trend comes with it. The markers along it are the thresholds a demand or a
-        /// forced truce needs, each with the game's own sentence about whether it has been reached.
+        /// has left them. Both are the same gauge under two titles.
+        ///
+        /// What the gauge SHOWS is where the split between the two empires sits, and the game writes that
+        /// nowhere in words: it is the length of the bar's left half (<c>DualityGauge.Refresh</c>, driven
+        /// from <c>GetDiplomaticGaugeLevelWith</c> at :828-838), so the two shares are read off the track
+        /// and named by the banners they are drawn under. The per-turn TREND is the second line of the
+        /// gauge's own tooltip (<c>GetPressureTooltipContent</c> :916-937) and is spoken after the
+        /// position, which is the order the eye takes them in. The markers along the bar are the
+        /// thresholds a demand or a forced truce needs, each with the game's own sentence about whether it
+        /// has been reached.
         ///
         /// At war the band also draws the button that forces a truce; it is left drawn while refusing,
         /// with the game's failure appended to its own description (:886-895), and its Enter raises the
@@ -417,16 +528,7 @@ namespace ES2Access.Screens
             _cells.Clear();
             try
             {
-                AgeTransform gauge = window.PressureGauge == null
-                    ? null
-                    : window.PressureGauge.AgeTransform;
-                if (gauge != null)
-                {
-                    _cells.Add(
-                        Cells.Readout(gauge, AgeWidgets.Raw(gauge), Keys + "pressure-gauge")
-                    );
-                }
-
+                AddGauge(window);
                 AddThresholds(window);
                 AddTruce(window);
             }
@@ -437,6 +539,90 @@ namespace ES2Access.Screens
 
             Cells.EmitLinear(builder, _cells);
             Captions.Pop(builder, named);
+        }
+
+        /// <summary>The bar itself: where the split between the two empires stands, then which way it is
+        /// moving.
+        ///
+        /// Its tooltip is not declared as a surface of its own, which is the one place on this screen a
+        /// drawn tooltip is not: both of its lines are already spoken HERE. The first is the description
+        /// the game also hung on the band's title, where it is declared and reviewable, and the second IS
+        /// the trend this node reads as its value - so a section would put the same two lines in the same
+        /// buffer twice. The pointer is still aimed at it, so the words the player sees on hover are the
+        /// words they hear.</summary>
+        private void AddGauge(NegotiationModalWindow window)
+        {
+            AgeTransform gauge = window.PressureGauge == null
+                ? null
+                : window.PressureGauge.AgeTransform;
+            if (gauge == null)
+            {
+                return;
+            }
+
+            AgeTooltip tooltip = AgeWidgets.Raw(gauge);
+            NegotiationModalWindow it = window;
+            NodeVtable vtable = new NodeVtable
+            {
+                Announcements = new List<NodeAnnouncement>
+                {
+                    GraphNodes.LabelPart(() => Split(it)),
+                    GraphNodes.ValuePart(() => Trend(tooltip)),
+                },
+            };
+            AgeWidgets.PointAt(vtable, gauge, tooltip);
+            Cells.Add(_cells, gauge, ControlId.For(gauge, Keys + "pressure-gauge"), vtable);
+        }
+
+        /// <summary>How the bar is split between the two empires, each share named by the banner it is
+        /// drawn under. The left half is the watching empire's (<c>DiplomacyScreen.GetPressureColor</c>
+        /// tints it as the positive side) and the rest of the track is the other empire's.</summary>
+        private static string Split(NegotiationModalWindow window)
+        {
+            try
+            {
+                DualityGauge gauge = window.PressureGauge;
+                AgeTransform mine = gauge == null ? null : gauge.LeftGauge;
+                if (mine == null)
+                {
+                    return null;
+                }
+
+                int ours = (int)Math.Round(mine.PercentRight);
+                MessageBuilder message = new MessageBuilder();
+                message.ListItem(Share(window.MyEmpireBanner, ours));
+                message.ListItem(Share(window.HisEmpireBanner, 100 - ours));
+                return message.Build();
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        private static string Share(NegotiationEmpireBannerPanel panel, int percent)
+        {
+            string name = panel == null ? null : Words(panel.EmpireTitleLabel);
+            return string.IsNullOrEmpty(name)
+                ? null
+                : ModStrings.Format(ModStrings.NegotiationPressureShare, name, percent);
+        }
+
+        /// <summary>The per-turn trend, which the game writes as the LAST line of the gauge's tooltip
+        /// under the description it shares with the band's title.</summary>
+        private static string Trend(AgeTooltip tooltip)
+        {
+            try
+            {
+                Func<IList<string>> lines = AgeWidgets.TooltipLines(tooltip);
+                IList<string> said = lines == null ? null : lines();
+                // Content: which line of the tooltip is the trend. One line is the description alone.
+                return said == null || said.Count < 2 ? null : said[said.Count - 1];
+            }
+            catch (Exception)
+            {
+                return null;
+            }
         }
 
         private void AddThresholds(NegotiationModalWindow window)
@@ -527,7 +713,17 @@ namespace ES2Access.Screens
             }
 
             builder.BeginStop(stop);
-            builder.PushContext(ModStrings.Get(caption));
+            // The game captions each shelf itself ("My terms", "Their terms") and hangs the sentence
+            // saying what it holds on that caption, so the shelf is named by what the game drew and the
+            // mod's word is only the fallback. The caption stands as the stop's first row because it
+            // explains itself, which is the shared rule for every caption over a block (Captions).
+            AgeTransform title = AgeWidgets.ChildNamed(panel.AgeTransform, "Title", 1);
+            bool named = Captions.Push(
+                builder,
+                title,
+                Keys + key + "/title",
+                Captions.Text(title) ?? ModStrings.Get(caption)
+            );
             try
             {
                 AgeTransform blank = Of(empty);
@@ -540,18 +736,19 @@ namespace ES2Access.Screens
                     _cells.Clear();
                     Cells.AddReadout(_cells, blank, Keys + key + "/empty");
                     Cells.EmitLinear(builder, _cells);
-                    builder.PopContext();
+                    Captions.Pop(builder, named);
                     return;
                 }
 
                 builder.SetRegion(Keys + key + "/filters");
-                builder.PushContext(ModStrings.Get(ModStrings.NegotiationFilters));
+                builder.PushContext(ModStrings.Get(ModStrings.ShipDesignFilters));
                 NegotiationTerms.Filters(builder, panel, Keys + key);
                 builder.PopContext();
 
                 GraphSheet sheet = new GraphSheet(builder, Keys + key + "/");
                 sheet.Region(ModStrings.Get(ModStrings.NegotiationTerms), NegotiationTerms.Columns());
-                NegotiationTerms.Shelf(sheet, panel.TermsTable, Keys + key);
+                NegotiationTerms.Headers(builder, panel, Keys + key);
+                NegotiationTerms.Shelf(sheet, panel.TermsTable, Keys + key, window);
                 sheet.Finish();
             }
             catch (Exception e)
@@ -559,18 +756,26 @@ namespace ES2Access.Screens
                 Log.Warn("negotiation: reading a term shelf threw: " + e);
             }
 
-            builder.PopContext();
+            Captions.Pop(builder, named);
         }
 
         // ---- the basket ----
 
         /// <summary>
         /// The deal as it stands: what both empires would do, what the player would give, and what they
-        /// would get (<c>NegotiationContributionPanel.Refresh</c> :77-123). Three regions rather than one
-        /// table, because which side a term is on is the whole meaning of the deal.
+        /// would get (<c>NegotiationContributionPanel.Refresh</c> :77-123), and last of all what the
+        /// computer makes of the whole thing. Three regions rather than one table, because which side a
+        /// term is on is the whole meaning of the deal.
+        ///
+        /// <b>Declared even when the deal is empty</b>, which is how it opens: the game draws the band's
+        /// caption and both contribution captions over the empty tables, so there is something on screen
+        /// to declare - and a Tab stop that only exists once the player has put something in it is a stop
+        /// they cannot find their way back to. The two contribution captions carry the game's own sentence
+        /// about which side is which, so each is a row of its region as well as its name.
         ///
         /// The placeholder lines the panel draws in demand mode - a slot the player still has to fill in -
-        /// are declared while they are drawn, by visibility, the same as anything else here.
+        /// are declared while they are drawn, by visibility, the same as anything else here, and sit in
+        /// the region of the side that would fill them.
         /// </summary>
         private void BuildContract(GraphBuilder builder, NegotiationModalWindow window)
         {
@@ -581,17 +786,31 @@ namespace ES2Access.Screens
                 return;
             }
 
+            AgeTransform root = panel.AgeTransform;
+            AgeTransform title = AgeWidgets.ChildNamed(root, "Title", 1);
             builder.BeginStop(ContractStop);
-            builder.PushContext(ModStrings.Get(ModStrings.NegotiationContract));
+            bool named = Captions.Push(
+                builder,
+                title,
+                Keys + "contract/title",
+                Captions.Text(title) ?? ModStrings.Get(ModStrings.NegotiationContract)
+            );
             try
             {
                 string[] columns = Basket();
                 GraphSheet sheet = new GraphSheet(builder, Keys + "contract/");
-                Region(sheet, panel.SymmetricalTermsTable, columns, ModStrings.NegotiationContractBoth, "both");
-                Region(sheet, panel.MyTermsTable, columns, ModStrings.NegotiationContractMine, "mine");
-                Region(sheet, panel.MyPlaceholderTermsTable, columns, ModStrings.NegotiationContractMine, "mine-slots");
-                Region(sheet, panel.HisTermsTable, columns, ModStrings.NegotiationContractTheirs, "theirs");
-                Region(sheet, panel.HisPlaceholderTermsTable, columns, ModStrings.NegotiationContractTheirs, "theirs-slots");
+                sheet.Region(ModStrings.Get(ModStrings.NegotiationContractBoth), columns);
+                Rows(sheet, window, panel.SymmetricalTermsTable, "both");
+
+                Side(sheet, root, "MyContributionGroup", ModStrings.NegotiationContractMine, columns);
+                Rows(sheet, window, panel.MyTermsTable, "mine");
+                Rows(sheet, window, panel.MyPlaceholderTermsTable, "mine-slots");
+
+                Side(sheet, root, "HisContributionGroup", ModStrings.NegotiationContractTheirs, columns);
+                Rows(sheet, window, panel.HisTermsTable, "theirs");
+                Rows(sheet, window, panel.HisPlaceholderTermsTable, "theirs-slots");
+
+                AddApproval(sheet, window);
                 sheet.Finish();
             }
             catch (Exception e)
@@ -599,25 +818,45 @@ namespace ES2Access.Screens
                 Log.Warn("negotiation: reading the deal threw: " + e);
             }
 
-            builder.PopContext();
+            Captions.Pop(builder, named);
         }
 
-        private void Region(
+        /// <summary>One side of the deal, opened under the caption the game draws over it. The caption is
+        /// also the region's first LINE, because the game hung its own sentence on it saying which way the
+        /// terms below go - and a sheet line rather than a loose row, so the rows above and below it stay
+        /// on one up-and-down chain.</summary>
+        private void Side(
             GraphSheet sheet,
-            AgeTransform table,
-            string[] columns,
-            string caption,
-            string key
+            AgeTransform root,
+            string group,
+            string fallback,
+            string[] columns
         )
         {
-            // Flow control: the basket column below is walked term by term.
-            if (table == null || !AgeWidgets.Visible(table))
+            AgeTransform box = AgeWidgets.ChildNamed(root, group, 1);
+            AgeTransform caption = box == null ? null : AgeWidgets.ChildNamed(box, "Title", 1);
+            sheet.Region(Captions.Text(caption) ?? ModStrings.Get(fallback), columns);
+            if (caption == null || !AgeWidgets.Draws(AgeWidgets.Raw(caption)))
             {
                 return;
             }
 
-            sheet.Region(ModStrings.Get(caption), columns);
-            NegotiationTerms.Basket(sheet, table, Keys + "contract/" + key, _editor);
+            Cell cell = Cells.Readout(caption, AgeWidgets.Raw(caption), Keys + "contract/" + group);
+            sheet.Line(cell.Vtable, caption);
+        }
+
+        private void Rows(
+            GraphSheet sheet,
+            NegotiationModalWindow window,
+            AgeTransform table,
+            string key
+        )
+        {
+            // Flow control: the basket column below is walked term by term.
+            if (table != null && AgeWidgets.Visible(table))
+            {
+                NegotiationTerms.Basket(sheet, table, Keys + "contract/" + key, _editor, window);
+            }
         }
 
         /// <summary>The basket's columns: the shelf's three - name, type, cost - plus the stepper a
@@ -637,15 +876,18 @@ namespace ES2Access.Screens
         // ---- what the computer thinks ----
 
         /// <summary>
-        /// The deal-approval band, drawn only while the other empire is run by the computer (:666-673).
+        /// The deal-approval band, drawn only while the other empire is run by the computer (:666-673) -
+        /// the LAST line of the deal, which is where the game draws it and what it is about.
         ///
-        /// What it says is WHERE THE GAUGE STANDS, because that is what the band draws: a bar from
-        /// dislike to approval and one lit face out of five. The written reasons the computer sends with
-        /// its evaluation are assembled into a local variable and dropped on the floor (:994-1006), so
-        /// there is nothing there to read out - and reading it anyway would tell a screen-reader player
-        /// something the screen does not say.
+        /// What it says is WHERE THE GAUGE STANDS, because that is what the band draws. The written
+        /// reasons the computer sends with its evaluation are assembled into a local variable and dropped
+        /// on the floor (:994-1006), so there is nothing there to read out - and reading it anyway would
+        /// tell a screen-reader player something the screen does not say. Neither is the row of five faces
+        /// beside the bar read as words: measured 2026-08-27, the five are bare images with no label and
+        /// no tooltip between them, so the game has no name for any of them and this mod does not invent
+        /// five.
         /// </summary>
-        private void BuildApproval(GraphBuilder builder, NegotiationModalWindow window)
+        private void AddApproval(GraphSheet sheet, NegotiationModalWindow window)
         {
             AgeTransform group = window.DealApprovalGroup;
             if (group == null)
@@ -653,50 +895,58 @@ namespace ES2Access.Screens
                 return;
             }
 
-            builder.BeginStop(ApprovalStop);
-            _cells.Clear();
-            try
-            {
-                NegotiationModalWindow it = window;
-                NodeVtable vtable = GraphNodes.Readout(
-                    () => ModStrings.Get(ModStrings.NegotiationApproval),
-                    () => Approval(it),
-                    null,
-                    window.DealApprovalTooltip
-                );
-                AgeWidgets.PointAt(vtable, group);
-                Cells.Add(
-                    _cells,
-                    group,
-                    ControlId.For(group, Keys + "approval"),
-                    vtable
-                );
-            }
-            catch (Exception e)
-            {
-                Log.Warn("negotiation: reading the deal approval threw: " + e);
-            }
-
-            Cells.EmitLinear(builder, _cells);
+            NegotiationModalWindow it = window;
+            NodeVtable vtable = GraphNodes.Readout(
+                () => ModStrings.Get(ModStrings.NegotiationApproval),
+                () => Approval(it),
+                null,
+                window.DealApprovalTooltip
+            );
+            AgeWidgets.PointAt(vtable, group);
+            sheet.Region(null);
+            sheet.Line(vtable, group);
         }
 
-        /// <summary>Where the approval gauge stands, as the number the gauge itself is set from.</summary>
+        /// <summary>
+        /// Where the approval gauge stands, as the number the gauge itself is set from.
+        ///
+        /// The bar is drawn out from its own centre: the evaluation runs from -1 to 1, and the game turns
+        /// it into a half that reaches right of the middle for approval or left of it for dislike
+        /// (<c>BiDirectionalGauge.RefreshMainGauge</c>). Below one percent either way it draws NEITHER
+        /// half - the band is a bare track with no lit face - and that is read as the empty it is, rather
+        /// than as the midpoint the track happens to be parked at.
+        /// </summary>
         private static string Approval(NegotiationModalWindow window)
         {
             try
             {
                 BiDirectionalGauge gauge = window.DealApprovalGauge;
-                if (gauge == null || gauge.MainGauge == null)
+                if (gauge == null)
                 {
                     return null;
                 }
 
-                // The bar runs from -1 to 1 and is drawn as a fraction of its track; the track's own
-                // percentage is the position the player is looking at.
-                float left = gauge.MainGauge.PercentLeft;
-                float right = gauge.MainGauge.PercentRight;
-                int percent = (int)Math.Round(right > left ? right : left);
-                return ModStrings.Format(ModStrings.NegotiationApprovalValue, percent);
+                // Content: which figure the band reads as - the drawn half's distance from the centre,
+                // doubled because each half owns half the track.
+                if (gauge.PositiveGauge != null && AgeWidgets.Visible(gauge.PositiveGauge))
+                {
+                    return ModStrings.Format(
+                        ModStrings.NegotiationApprovalValue,
+                        (int)Math.Round((gauge.PositiveGauge.PercentRight - 50f) * 2f)
+                    );
+                }
+
+                // Content: the same question for the other half - which of the two the game drew is
+                // which sign the figure carries.
+                if (gauge.NegativeGauge != null && AgeWidgets.Visible(gauge.NegativeGauge))
+                {
+                    return ModStrings.Format(
+                        ModStrings.NegotiationApprovalValue,
+                        -(int)Math.Round((50f - gauge.NegativeGauge.PercentLeft) * 2f)
+                    );
+                }
+
+                return ModStrings.Get(ModStrings.NavCellEmpty);
             }
             catch (Exception)
             {
@@ -876,15 +1126,34 @@ namespace ES2Access.Screens
             }
         }
 
-        /// <summary>The heading the window writes over itself. It writes the raw key into the label
-        /// (:646), so it is localized here rather than read off the widget.</summary>
+        /// <summary>The heading the window writes over itself, read off the label the game drew it in -
+        /// with the localization of its own key as the fallback, because the window writes the raw key
+        /// into the label (:646) and a build that never refreshed it would read back the key.</summary>
         private static string Title(NegotiationModalWindow window)
         {
             try
             {
-                return window == null
-                    ? null
-                    : AgeText.Clean(Gui.Localize("%NegotiationModalWindowTitle"));
+                if (window == null)
+                {
+                    return null;
+                }
+
+                string drawn = AgeWidgets.TextOf(Of(window.WindowTitle));
+                return string.IsNullOrEmpty(drawn) || drawn.StartsWith("%")
+                    ? AgeText.Clean(Gui.Localize("%NegotiationModalWindowTitle"))
+                    : drawn;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        private static AgeTransform Parent(AgeTransform widget)
+        {
+            try
+            {
+                return widget == null ? null : widget.Parent;
             }
             catch (Exception)
             {
