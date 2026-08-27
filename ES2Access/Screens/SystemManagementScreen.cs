@@ -696,8 +696,8 @@ namespace ES2Access.Screens
         /// sets the class, the target and the failure sentences), so the card's line
         /// (<see cref="AddDeposits"/>) says which resource and how much of it, and this is where the
         /// rest of it is read. The pooled table's retired items keep the PREVIOUS planet's wrapper on
-        /// their tooltip, so each item is asked the engine's own drawing test first - the same gate
-        /// the line reader uses.
+        /// their tooltip, so each item is asked the gate's own drawing test at ADMISSION - the one
+        /// place early enough to stop a ghost winning the dedupe.
         /// </summary>
         private static void AddDepositDossiers(
             List<TooltipChildren.Dossier> found,
@@ -715,12 +715,14 @@ namespace ES2Access.Screens
             IList<AgeTransform> children = group.Children;
             for (int i = 0; children != null && i < children.Count; i++)
             {
-                // Kept although the dossier now carries this widget: the collector DEDUPES by
-                // tooltip (<see cref="TooltipChildren.Add"/>), so a retired row still holding the
-                // previous binding's deposit would swallow the drawn row that shares it, and the
-                // gate would then drop the one node the pair had left.
-                AgeTransform child = AgeWidgets.DrawnChild(children, i);
-                if (child == null)
+                // Admission, not the gate: the collector DEDUPES by tooltip
+                // (<see cref="TooltipChildren.Add"/>), so a retired row still holding the previous
+                // binding's deposit would swallow the drawn row that shares it, and the gate - which
+                // only ever sees finished nodes - would then drop the one node the pair had left. The
+                // gate's OWN test is asked, under the same flag, rather than a second opinion; the
+                // shared door cannot ask it for every caller (<see cref="TooltipChildren.Admitted"/>).
+                AgeTransform child = children[i];
+                if (child == null || !NodeGate.StillDrawn(child))
                 {
                     continue;
                 }
@@ -775,7 +777,7 @@ namespace ES2Access.Screens
         /// and the reduction prerequisites - rides along as the node's tooltip; the card's buffer keeps
         /// naming the anomalies as it always did.
         ///
-        /// Painted is the gate: the table pools its items.
+        /// The table pools its items, so admission is what keeps a retired row out of the numbering.
         /// </summary>
         private static void AddAnomalyHints(
             List<CardActions.CardAction> found,
@@ -792,9 +794,6 @@ namespace ES2Access.Screens
             IList<AgeTransform> items = table.Children;
             for (int i = 0; items != null && i < items.Count; i++)
             {
-                // Whether the game is still drawing this row is not asked here: the node carries the
-                // row itself, and a retired one is dropped where every node's existence is decided
-                // (<see cref="ES2Access.Core.UI.Graph.DrawnNode"/>, <see cref="NodeGate"/>).
                 AgeTransform row = items[i];
                 PlanetAnomalyItem item = row == null ? null : row.GetComponent<PlanetAnomalyItem>();
                 if (item == null || item.HintButton == null)
@@ -804,7 +803,11 @@ namespace ES2Access.Screens
 
                 PlanetAnomalyItem it = item;
                 AgeTransform hint = item.HintButton.AgeTransform;
-                found.Add(
+                // Through the collector's admission filter like every other entry: this list is
+                // NUMBERED, and the table below is pooled, so a hand-built row cannot be allowed to
+                // skip the one test that keeps a retired one out of the count.
+                CardActions.Add(
+                    found,
                     new CardActions.CardAction
                     {
                         Widget = row,
@@ -826,7 +829,7 @@ namespace ES2Access.Screens
         /// their own component rather than by position; the rest of the table stays a line of the card's
         /// (<see cref="PlanetDetails"/>).
         ///
-        /// Painted is the gate, as on the anomalies table above: this table is pooled too
+        /// Admission is the gate, as on the anomalies table above: this table is pooled too
         /// (<c>PlanetLabel_SystemManagement.RefreshPlanetCuriosities</c> :1297 <c>ReserveChildren</c>),
         /// so a card showing fewer curiosities than the one read before it keeps the surplus items
         /// <c>Visible</c> at alpha 0 - and a retired item has had its tooltip unbound, so it has no
@@ -848,9 +851,8 @@ namespace ES2Access.Screens
             IList<AgeTransform> items = table.Children;
             for (int i = 0; items != null && i < items.Count; i++)
             {
-                // Drawn-ness is the gate's question, not this walk's: the node carries the item it was
-                // read off, so a curiosity the pool has retired is dropped there
-                // (<see cref="ES2Access.Core.UI.Graph.DrawnNode"/>).
+                // Drawn-ness is the collector's question, not this walk's: a curiosity the pool has
+                // retired never enters the numbered list (<see cref="CardActions.AddRefusable"/>).
                 AgeTransform item = items[i];
                 if (item != null && SkipCuriosities(item))
                 {
@@ -877,10 +879,10 @@ namespace ES2Access.Screens
         /// box, which speaks through <c>MessageBoxScreen</c> like every other one. Ticked, it is
         /// already scheduled and the click unschedules it with no confirmation at all (:1587).
         ///
-        /// The strip is POOLED (<c>RefreshOutpostActions</c> :988 <c>ReserveChildren</c>), so each tick
-        /// is asked the drawing test rather than the visibility flag a retired one keeps: an outpost
-        /// offering fewer actions than the one read before it would otherwise declare the surplus
-        /// ticks, still wearing the other outpost's name.
+        /// The strip is POOLED (<c>RefreshOutpostActions</c> :988 <c>ReserveChildren</c>), so a tick is
+        /// admitted on the drawing test rather than on the visibility flag a retired row keeps: an
+        /// outpost offering fewer actions than the one read before it would otherwise declare the
+        /// surplus ticks, still wearing the other outpost's name - and renumber the real ones.
         /// </summary>
         private static List<CardActions.CardAction> OutpostActions(
             PlanetLabel_SystemManagement label
@@ -900,14 +902,11 @@ namespace ES2Access.Screens
                 IList<AgeTransform> items = table == null ? null : table.Children;
                 for (int i = 0; items != null && i < items.Count; i++)
                 {
-                    // Kept: the collected actions are NUMBERED by their place in this list and the
-                    // number is each node's structural key (CardActions.Emit), so a row the pool has
-                    // retired - faded as a ROW while its tick stays at alpha 1 - must never take a
-                    // place in it. The gate would drop the ghost's node and renumber the rest.
+                    // A row the pool has retired - faded as a ROW while its tick stays at alpha 1 -
+                    // is dropped by the collector's own admission filter, which walks the tick's
+                    // ancestry and so sees the faded row above it (CardActions.AddToggle).
                     OutpostActionItem item =
-                        items[i] == null || !AgeWidgets.Painted(items[i])
-                            ? null
-                            : items[i].GetComponent<OutpostActionItem>();
+                        items[i] == null ? null : items[i].GetComponent<OutpostActionItem>();
                     if (item == null)
                     {
                         continue;

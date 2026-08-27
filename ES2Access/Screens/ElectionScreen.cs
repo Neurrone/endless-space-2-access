@@ -319,11 +319,10 @@ namespace ES2Access.Screens
             // One line for a panel whose children are all primitives: the caption the game draws
             // ("Next Hissho Observance:") and the festival's name are read together, and the line's
             // own tooltip carries the constructible's dossier.
+            // Whether the empire has festivals at all is AddReadout's own drawn test, asked of this
+            // same panel.
             AgeTransform festival = window.HisshosFestivalPanel;
-            if (festival != null && AgeWidgets.Visible(festival))
-            {
-                AddReadout(_cells, festival, "election:festival", Raw(window.NextFestivalLine));
-            }
+            AddReadout(_cells, festival, "election:festival", Raw(window.NextFestivalLine));
 
             AddStepMarks(_cells, window);
             Cells.EmitLinear(builder, _cells);

@@ -444,7 +444,6 @@ namespace ES2Access.Screens
                 widget == null ? null : widget.GetComponent<PoliticalSupportLine>();
             if (
                 line == null
-                || !AgeWidgets.Visible(widget)
                 // The table is pooled (PoliticalAssemblyPanel.cs:300 ReserveChildren) and retires a
                 // surplus row by FADING it, which leaves both its visibility flag and its last
                 // binding's party in place.

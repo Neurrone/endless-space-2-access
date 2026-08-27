@@ -18,6 +18,9 @@ namespace ES2Access.UI
     /// The gate is the game's own: a widget it has hidden or switched off is not offered at all
     /// (<see cref="Drawn"/>), and whether the offered one would ACT is asked per frame on the node,
     /// because a button can start refusing while the player is standing on it.
+    ///
+    /// Every collector here goes through <see cref="Admitted"/> first, because these nodes are keyed
+    /// by their PLACE in the collected list - the one shape the node gate cannot fix after the fact.
     /// </summary>
     public static class CardActions
     {
@@ -99,11 +102,7 @@ namespace ES2Access.UI
             Func<string> label
         )
         {
-            // The collected actions are NUMBERED by their place in this list and the number is each
-            // node's structural key (Emit below), so a widget the card is not drawing must never
-            // enter it - the gate, which sees finished nodes, would drop one node and renumber the
-            // rest.
-            if (widget == null || !AgeWidgets.Visible(widget))
+            if (!Admitted(widget))
             {
                 return;
             }
@@ -136,9 +135,7 @@ namespace ES2Access.UI
         )
         {
             AgeTransform at = AgeWidgets.Transform(toggle);
-            // Same numbering as AddRefusable: a tick the card is not drawing must not take a place in
-            // the list the keys are counted off.
-            if (at == null || !AgeWidgets.Visible(at))
+            if (!Admitted(at))
             {
                 return;
             }
@@ -298,17 +295,50 @@ namespace ES2Access.UI
             }
         }
 
+        /// <summary>
+        /// Whether this widget may take a place in a collected list - the ADMISSION filter every
+        /// collector here goes through.
+        ///
+        /// The collected actions are NUMBERED by their place in the list and the number is each node's
+        /// structural key (<see cref="Emit"/>), so a widget the game is no longer drawing must never
+        /// enter it: the gate, which only ever sees finished nodes, would drop that one node and leave
+        /// every action after it renamed. So the gate's own test is asked HERE instead
+        /// (<see cref="NodeGate.StillDrawn"/> - the same test under the same flag, never a second
+        /// opinion), which is also what the screens' own emptiness questions want to read: a card whose
+        /// every button is a ghost answers <c>Count == 0</c> and gets no group.
+        ///
+        /// A widget that IS drawn and merely refused stays admitted - that is
+        /// <see cref="AddRefusable"/>'s whole point, and refusal is the node's wording
+        /// (<see cref="AgeWidgets.Offered"/>), not its existence.
+        /// </summary>
+        private static bool Admitted(AgeTransform widget)
+        {
+            return widget != null && NodeGate.StillDrawn(widget);
+        }
+
+        /// <summary>Append an action the caller assembled itself - one whose label, tooltip and
+        /// availability none of the <c>Add…</c> shapes above fit - through the same admission filter
+        /// they pass, so that a hand-built entry cannot renumber the rest either.</summary>
+        public static void Add(List<CardAction> found, CardAction action)
+        {
+            if (Admitted(action.Widget))
+            {
+                found.Add(action);
+            }
+        }
+
         /// <summary>The transform of a button the game is really drawing and would really dispatch -
-        /// null for one it has hidden or switched off.</summary>
+        /// null for one it has hidden, switched off, or retired.</summary>
         private static AgeTransform Drawn(AgeTransform widget)
         {
             try
             {
-                // Candidate choice as well as the same numbering: the caller picks among several
-                // widgets by which one this answers for.
+                // Candidate choice as well as admission: the caller picks among several widgets by
+                // which one this answers for.
                 return widget != null
                     && AgeWidgets.Visible(widget)
                     && AgeWidgets.Operable(widget)
+                    && Admitted(widget)
                     ? widget
                     : null;
             }

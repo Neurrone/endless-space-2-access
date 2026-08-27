@@ -346,16 +346,12 @@ namespace ES2Access.UI
         ///
         /// The sentence's first line is the name, and the mode is <see cref="TooltipMode.None"/> so
         /// the same words are not announced twice; the whole sentence is still in the node's buffer.
-        /// PAINTED is the gate, because these badges are prefab decoration the game fades rather than
-        /// hides - and it stays asked here even though the node now carries this widget, for a reason
-        /// the gate can never cover: this collector DEDUPES by tooltip, and the dedupe happens while
-        /// the dossiers are being COLLECTED, before any node exists. A ghost admitted here swallows the
-        /// drawn sibling that shares its sentence, and the gate then drops the one node the pair had
-        /// left.
+        /// Whether the game is drawing this badge is <see cref="Admitted"/>'s question, asked below on
+        /// the widget the node will stand on.
         /// </summary>
         public static void AddPlain(List<Dossier> into, AgeTransform widget)
         {
-            if (into != null && AgeWidgets.Painted(widget))
+            if (into != null && widget != null)
             {
                 AddPlain(into, AgeWidgets.Raw(widget), widget);
             }
@@ -372,6 +368,7 @@ namespace ES2Access.UI
                 || tooltip == null
                 || AgeWidgets.Readable(tooltip) == null
                 || !AgeWidgets.Draws(tooltip)
+                || !Admitted(anchor)
             )
             {
                 return;
@@ -445,6 +442,31 @@ namespace ES2Access.UI
             {
                 Add(into, found[i], null, null, null, widget);
             }
+        }
+
+        /// <summary>
+        /// Whether this dossier may take a place in a collected list - the ADMISSION filter, asked of
+        /// the widget the node will STAND on (<see cref="Dossier.Carrier"/>) so that it is the gate's
+        /// own question about the gate's own widget, under the same flag.
+        ///
+        /// Asked at a collector rather than left to the gate for a reason the gate can never cover:
+        /// a collector DEDUPES by tooltip while the dossiers are being COLLECTED, before any node
+        /// exists. A retired widget still holding the previous binding's tooltip swallows the drawn
+        /// row that shares it, and the gate then drops the one node the pair had left.
+        ///
+        /// Deliberately NOT applied at <see cref="Add"/>, the shared door: a caller there may be
+        /// collecting off a strip the game keeps at alpha 0 on purpose and reveals only under the
+        /// mouse (the technology wheel's unlock icons, <c>ResearchScreen.Unlocks</c>), and that
+        /// caller's own COUNT decides whether its dot is a branch at all. Filtering those at the door
+        /// turned every such dot into a leaf. The question belongs to the collector that knows what
+        /// its widgets mean - here, and <c>SystemManagementScreen.AddDepositDossiers</c>.
+        ///
+        /// A dossier with no carrier is <see cref="Nodes.Synthetic"/> by construction and has nothing
+        /// on the screen to ask about, so it passes.
+        /// </summary>
+        private static bool Admitted(AgeTransform carrier)
+        {
+            return NodeGate.StillDrawn(carrier);
         }
 
         /// <summary>Whether a tooltip earns a node of its own: the renderer assembles its words, the

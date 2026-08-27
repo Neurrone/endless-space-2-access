@@ -1473,10 +1473,7 @@ namespace ES2Access.Screens
         /// opens with - the two "show me where that is" buttons, the bubble's own destroy.</summary>
         private static void AddDrawnButton(List<Cell> cells, AgeTransform widget, string key)
         {
-            if (AgeWidgets.Visible(widget))
-            {
-                AddDrawnButton(cells, widget, ControlId.For(widget, "hud:empire/" + key));
-            }
+            AddDrawnButton(cells, widget, ControlId.For(widget, "hud:empire/" + key));
         }
 
         private static void AddDrawnButton(List<Cell> cells, AgeTransform widget, ControlId id)

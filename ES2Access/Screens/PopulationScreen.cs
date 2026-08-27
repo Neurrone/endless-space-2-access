@@ -479,7 +479,7 @@ namespace ES2Access.Screens
             PopulationModalWindow window
         )
         {
-            if (caption == null || !AgeWidgets.Visible(caption))
+            if (caption == null)
             {
                 return;
             }
@@ -710,7 +710,7 @@ namespace ES2Access.Screens
 
         private static void AddReaction(GraphBuilder builder, AgeTransform widget, int index)
         {
-            if (widget == null || !AgeWidgets.Visible(widget))
+            if (widget == null)
             {
                 return;
             }

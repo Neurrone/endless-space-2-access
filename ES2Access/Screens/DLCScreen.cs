@@ -217,13 +217,10 @@ namespace ES2Access.Screens
             _cells.Clear();
             try
             {
-                AgeTransform empty = window.NoItemsLabel;
-                if (AgeWidgets.Visible(empty))
-                {
-                    // A line rather than an empty stop: the player has to be able to land on the answer,
-                    // and the game has already written it.
-                    Cells.AddReadout(_cells, empty, "dlc:empty");
-                }
+                // A line rather than an empty stop: the player has to be able to land on the answer,
+                // and the game has already written it. Whether the game is drawing that answer is the
+                // gate's question, which AddReadout asks of this same widget.
+                Cells.AddReadout(_cells, window.NoItemsLabel, "dlc:empty");
 
                 AgeTransform table = window.DLCItemsTable;
                 IList<AgeTransform> children = table == null ? null : table.Children;

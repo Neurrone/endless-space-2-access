@@ -49,7 +49,6 @@ ES2Access/Screens/CutsceneScreen.cs | 1 | string line = AgeWidgets.Visible(widge
 
 ES2Access/Screens/DLCScreen.cs | 1 | if (AgeWidgets.Visible(AgeWidgets.Transform(item.ActivateToggle)))
 ES2Access/Screens/DLCScreen.cs | 1 | if (AgeWidgets.Visible(activate))
-ES2Access/Screens/DLCScreen.cs | 1 | if (AgeWidgets.Visible(empty))
 ES2Access/Screens/DLCScreen.cs | 1 | if (item == null || !AgeWidgets.Painted(widget))
 ES2Access/Screens/DLCScreen.cs | 1 | if (toggle != null && toggle.State && AgeWidgets.Visible(children[i]))
 ES2Access/Screens/DLCScreen.cs | 1 | if (toggle == null || !AgeWidgets.Visible(widget))
@@ -87,7 +86,6 @@ ES2Access/Screens/ElectionScreen.cs | 1 | if (bar == null || !AgeWidgets.Visible
 ES2Access/Screens/ElectionScreen.cs | 1 | if (card == null || !AgeWidgets.Visible(child) || card.GuiLaw == null)
 ES2Access/Screens/ElectionScreen.cs | 1 | if (card == null || !AgeWidgets.Visible(child) || card.GuiPolitics == null)
 ES2Access/Screens/ElectionScreen.cs | 1 | if (child == null || !AgeWidgets.Visible(child) || Holds(child, bars))
-ES2Access/Screens/ElectionScreen.cs | 1 | if (festival != null && AgeWidgets.Visible(festival))
 ES2Access/Screens/ElectionScreen.cs | 1 | if (group == null || !AgeWidgets.Visible(group))
 ES2Access/Screens/ElectionScreen.cs | 1 | if (line == null || !AgeWidgets.Visible(child))
 ES2Access/Screens/ElectionScreen.cs | 1 | if (name == null || !AgeWidgets.Visible(name))
@@ -182,7 +180,6 @@ ES2Access/Screens/GlobalHud.cs | 1 | if (AgeWidgets.Visible(global))
 ES2Access/Screens/GlobalHud.cs | 1 | if (AgeWidgets.Visible(item))
 ES2Access/Screens/GlobalHud.cs | 1 | if (AgeWidgets.Visible(line))
 ES2Access/Screens/GlobalHud.cs | 1 | if (AgeWidgets.Visible(ready))
-ES2Access/Screens/GlobalHud.cs | 1 | if (AgeWidgets.Visible(widget))
 ES2Access/Screens/GlobalHud.cs | 1 | if (buyout == null || !AgeWidgets.Visible(buyout.AgeTransform))
 ES2Access/Screens/GlobalHud.cs | 1 | if (item == null || !AgeWidgets.Visible(item))
 ES2Access/Screens/GlobalHud.cs | 1 | if (label == null || !AgeWidgets.Visible(label.AgeTransform))
@@ -338,11 +335,10 @@ ES2Access/Screens/PlanetOverviewScreen.cs | 1 | return card != null && AgeWidget
 ES2Access/Screens/PlanetOverviewScreen.cs | 1 | return panel != null && AgeWidgets.Visible(panel.AgeTransform) ? panel : null;
 
 ES2Access/Screens/PopulationScreen.cs | 1 | if (AgeWidgets.Visible(row.AssimilatedGroup))
-ES2Access/Screens/PopulationScreen.cs | 1 | if (caption == null || !AgeWidgets.Visible(caption))
 ES2Access/Screens/PopulationScreen.cs | 3 | if (group == null || !AgeWidgets.Visible(group))
 ES2Access/Screens/PopulationScreen.cs | 1 | if (row == null || row.GuiPopulation == null || !AgeWidgets.Visible(widget))
 ES2Access/Screens/PopulationScreen.cs | 1 | if (toggle != null && AgeWidgets.Visible(toggle))
-ES2Access/Screens/PopulationScreen.cs | 2 | if (widget == null || !AgeWidgets.Visible(widget))
+ES2Access/Screens/PopulationScreen.cs | 1 | if (widget == null || !AgeWidgets.Visible(widget))
 ES2Access/Screens/PopulationScreen.cs | 1 | return AgeWidgets.Visible(row.ReadyForAssimilationIcon)
 ES2Access/Screens/PopulationScreen.cs | 1 | return label == null || !AgeWidgets.Visible(label.AgeTransform)
 ES2Access/Screens/PopulationScreen.cs | 1 | return row.PopulationGroup == null || !AgeWidgets.Visible(row.PopulationGroup)
@@ -433,7 +429,6 @@ ES2Access/Screens/SenateScreen.cs | 1 | return cost == null || !AgeWidgets.Visib
 ES2Access/Screens/SenateScreen.cs | 1 | || !AgeWidgets.Paints(widget)
 ES2Access/Screens/SenateScreen.cs | 1 | || !AgeWidgets.Visible(arc.PopulationBoostLabel.AgeTransform)
 ES2Access/Screens/SenateScreen.cs | 1 | || !AgeWidgets.Visible(card.HeroExperienceGroup)
-ES2Access/Screens/SenateScreen.cs | 1 | || !AgeWidgets.Visible(widget)
 
 ES2Access/Screens/SettingRows.cs | 1 | return AgeWidgets.Visible(widget) && widget.Alpha > 0f;
 
@@ -458,7 +453,6 @@ ES2Access/Screens/SystemManagementScreen.cs | 1 | if (table == null || !AgeWidge
 ES2Access/Screens/SystemManagementScreen.cs | 3 | if (table == null || !AgeWidgets.Visible(table))
 ES2Access/Screens/SystemManagementScreen.cs | 6 | if (widget == null || !AgeWidgets.Visible(widget))
 ES2Access/Screens/SystemManagementScreen.cs | 1 | if (widget == null || tooltip == null || !AgeWidgets.Visible(widget))
-ES2Access/Screens/SystemManagementScreen.cs | 1 | items[i] == null || !AgeWidgets.Painted(items[i])
 ES2Access/Screens/SystemManagementScreen.cs | 1 | return item.DurationGroup != null && item.DurationGroup.Visible
 ES2Access/Screens/SystemManagementScreen.cs | 1 | return label != null && AgeWidgets.Visible(label.AgeTransform)
 ES2Access/Screens/SystemManagementScreen.cs | 1 | || !AgeWidgets.Visible(panel.MothershipGroup)
@@ -510,8 +504,6 @@ ES2Access/UI/Captions.cs | 1 | AgeTooltip tooltip = AgeWidgets.Visible(widget) ?
 ES2Access/UI/Captions.cs | 1 | return widget == null || !AgeWidgets.Visible(widget)
 
 ES2Access/UI/CardActions.cs | 1 | && AgeWidgets.Visible(widget)
-ES2Access/UI/CardActions.cs | 1 | if (at == null || !AgeWidgets.Visible(at))
-ES2Access/UI/CardActions.cs | 1 | if (widget == null || !AgeWidgets.Visible(widget))
 
 ES2Access/UI/Cells.cs | 1 | if (widget == null || !AgeWidgets.Visible(widget))
 
@@ -601,13 +593,11 @@ ES2Access/UI/SystemPanels.cs | 3 | if (panel == null || !AgeWidgets.Visible(pane
 
 ES2Access/UI/TableSheet.cs | 1 | && child.Alpha > 0f
 ES2Access/UI/TableSheet.cs | 1 | && child.Visible
-ES2Access/UI/TableSheet.cs | 1 | if (funnel == null || !AgeWidgets.Visible(funnel.AgeTransform))
 ES2Access/UI/TableSheet.cs | 1 | if (header != null && AgeWidgets.Visible(child))
 ES2Access/UI/TableSheet.cs | 1 | if (paintedOnly && widget.Alpha <= 0f)
 ES2Access/UI/TableSheet.cs | 1 | if (widget == null || depth > MaxCellDepth || !widget.Visible)
 ES2Access/UI/TableSheet.cs | 1 | if (widget == null || depth > limit || !widget.Visible)
 
-ES2Access/UI/TooltipChildren.cs | 1 | if (into != null && AgeWidgets.Painted(widget))
 ES2Access/UI/TooltipChildren.cs | 1 | if (into == null || widget == null || !AgeWidgets.Painted(widget))
 ES2Access/UI/TooltipChildren.cs | 1 | if (into == null || widget == null || !AgeWidgets.Visible(widget))
 ES2Access/UI/TooltipChildren.cs | 1 | if (widget == null || !AgeWidgets.Visible(widget))

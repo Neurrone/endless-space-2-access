@@ -343,8 +343,10 @@ namespace ES2Access.UI
             int column
         )
         {
+            // Whether the game is drawing the funnel is the gate's question, asked of the same widget
+            // the node below stands on.
             AgeControlToggle funnel = header.FilterToggle;
-            if (funnel == null || !AgeWidgets.Visible(funnel.AgeTransform))
+            if (funnel == null)
             {
                 return;
             }
