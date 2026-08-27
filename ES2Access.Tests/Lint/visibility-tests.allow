@@ -283,6 +283,7 @@ ES2Access/Screens/ModdingConfigScreen.cs | 1 | return label == null || !AgeWidge
 ES2Access/Screens/NegotiationScreen.cs | 2 | IList<AgeTransform> children = table == null || !AgeWidgets.Visible(table)
 ES2Access/Screens/NegotiationScreen.cs | 1 | if (AgeWidgets.Visible(window.DealApprovalGroup))
 ES2Access/Screens/NegotiationScreen.cs | 1 | if (blank != null && AgeWidgets.Visible(blank))
+ES2Access/Screens/NegotiationScreen.cs | 1 | if (face != null && face.Alpha > face.FadeOnDisableFactor + 0.001f)
 ES2Access/Screens/NegotiationScreen.cs | 1 | if (gauge.NegativeGauge != null && AgeWidgets.Visible(gauge.NegativeGauge))
 ES2Access/Screens/NegotiationScreen.cs | 1 | if (gauge.PositiveGauge != null && AgeWidgets.Visible(gauge.PositiveGauge))
 ES2Access/Screens/NegotiationScreen.cs | 1 | if (none != null && AgeWidgets.Visible(none))

@@ -650,7 +650,7 @@
   "negotiation.approval": "Deal approval",
   "negotiation.approval-value": "{0} percent",
   "negotiation.pressure-share": "{0} {1} percent",
-  "negotiation.threshold-at": "at {0} percent",
+  "negotiation.threshold-at": "{0} percent",
   "negotiation.actions": "Offer",
   "negotiation.quantity": "Quantity",
   "screen.minor-diplomacy": "Minor faction diplomacy",

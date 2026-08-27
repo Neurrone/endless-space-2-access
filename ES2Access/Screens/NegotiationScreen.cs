@@ -45,6 +45,7 @@ namespace ES2Access.Screens
     /// </summary>
     public sealed class NegotiationScreen : Screen
     {
+        private static readonly object TitleStop = "negotiation:title";
         private static readonly object MyEmpireStop = "negotiation:my-empire";
         private static readonly object RelationStop = "negotiation:relationship";
         private static readonly object TheirEmpireStop = "negotiation:their-empire";
@@ -176,6 +177,7 @@ namespace ES2Access.Screens
                 return;
             }
 
+            BuildTitle(builder, window);
             BuildMyEmpire(builder, window);
             BuildRelationship(builder, window);
             BuildTheirEmpire(builder, window);
@@ -189,15 +191,46 @@ namespace ES2Access.Screens
         // ---- the two empires ----
 
         /// <summary>
-        /// The player's own side of the table: the window's heading, then the banner the game draws for
-        /// this empire - who they are, the alliance or metaplot team they belong to, and the influence
-        /// they have to spend on the deal.
+        /// The heading the window writes across its top, as a Tab stop of its own and the first one
+        /// (owner ruling 2026-08-27).
+        ///
+        /// It is a stop rather than a row of the banner's because it belongs to the WINDOW and not to
+        /// either empire: riding the player's own banner put the screen's name inside "Your empire",
+        /// which is a level it is not under. Its whole reason for existing as a node at all is the
+        /// sentence the game hung on it - a screen's spoken name is a phrase with no review buffer
+        /// behind it, so an explanation has nowhere else to live (<see cref="Captions.Row"/>).
+        /// </summary>
+        private void BuildTitle(GraphBuilder builder, NegotiationModalWindow window)
+        {
+            AgeTransform title = Of(window.WindowTitle);
+            if (title == null)
+            {
+                return;
+            }
+
+            builder.BeginStop(TitleStop);
+            _cells.Clear();
+            _cells.Add(Cells.Readout(title, Explanation(title), Keys + "title"));
+            Cells.EmitLinear(builder, _cells);
+        }
+
+        /// <summary>The sentence hung on the heading, wherever the prefab hung it - on the label or on
+        /// the title box around it (ES2 facts, "A block caption's WORD and its EXPLANATION sit on
+        /// different widgets").</summary>
+        private static AgeTooltip Explanation(AgeTransform title)
+        {
+            AgeTooltip own = AgeWidgets.Raw(title);
+            return own ?? AgeWidgets.Raw(Parent(title));
+        }
+
+        /// <summary>
+        /// The player's own side of the table: the banner the game draws for this empire - who they are,
+        /// the alliance or metaplot team they belong to, and the influence they have to spend on the
+        /// deal.
         ///
         /// The stop is NAMED by the banner's own name line and the same line is its first row, which is
         /// the ordinary caption shape: a level the announcer says on the way in, dropped again where the
-        /// row below repeats it (<c>GraphAnnouncer.DuplicatesNext</c>). The heading row above it is there
-        /// for the sentence the game hung on the window title, which a screen's spoken name has no buffer
-        /// to hold (<see cref="Captions.Row"/>), and the stop lands past it on the banner.
+        /// row below repeats it (<c>GraphAnnouncer.DuplicatesNext</c>).
         ///
         /// The influence stock is a readout though the game made it a button: what its click does is the
         /// god-mode handler, which is not declared anywhere on this window.
@@ -207,8 +240,6 @@ namespace ES2Access.Screens
             NegotiationEmpireBannerPanel panel = window.MyEmpireBanner;
             AgeTransform name = Of(panel == null ? null : panel.EmpireTitleLabel);
             builder.BeginStop(MyEmpireStop);
-            AgeTransform title = Of(window.WindowTitle);
-            Captions.Row(builder, title, Keys + "title", Parent(title));
             bool named = Captions.Push(builder, name);
             _cells.Clear();
             try
@@ -682,8 +713,17 @@ namespace ES2Access.Screens
                 {
                     Announcements = new List<NodeAnnouncement>
                     {
+                        // The PLACE first and the sentence after it (owner ruling 2026-08-27): the two
+                        // markers say much the same thing at length and differ only in where they sit,
+                        // so a player comparing them against the bar hears the number that separates
+                        // them before the paragraph they share.
+                        //
+                        // The sentence stays a LABEL part rather than becoming a value: a label is
+                        // spoken and deliberately left OUT of the review buffer (NodeBuffer), and the
+                        // tooltip section below is already the place those same words are reviewed. Made
+                        // a value, it read out twice on the buffer key.
+                        GraphNodes.LabelPart(() => Notch(notch)),
                         GraphNodes.LabelPart(CardActions.NameFromTooltip(tooltip)),
-                        GraphNodes.ValuePart(() => Notch(notch)),
                         GraphNodes.DisabledPart(() => AgeWidgets.Enabled(at)),
                     },
                     Sections = GraphNodes.Sections(null, tooltip, TooltipMode.None),
@@ -929,8 +969,8 @@ namespace ES2Access.Screens
             NegotiationModalWindow it = window;
             NodeVtable vtable = GraphNodes.Readout(
                 () => ModStrings.Get(ModStrings.NegotiationApproval),
-                () => Approval(it),
-                null,
+                () => Face(it),
+                () => Detail(it),
                 window.DealApprovalTooltip
             );
             AgeWidgets.PointAt(vtable, group);
@@ -939,15 +979,64 @@ namespace ES2Access.Screens
         }
 
         /// <summary>
-        /// Where the approval gauge stands, as the number the gauge itself is set from.
+        /// WHICH FACE the band has lit, as a place among the five it draws.
         ///
-        /// The bar is drawn out from its own centre: the evaluation runs from -1 to 1, and the game turns
-        /// it into a half that reaches right of the middle for approval or left of it for dislike
-        /// (<c>BiDirectionalGauge.RefreshMainGauge</c>). Below one percent either way it draws NEITHER
-        /// half - the band is a bare track with no lit face - and that is read as the empty it is, rather
-        /// than as the midpoint the track happens to be parked at.
+        /// The band is a scale of five faces with a bar running out from its centre, and the thing the
+        /// game decides and paints is the FACE: <c>RefreshDealApproval</c> :985-992 turns the evaluation
+        /// into a bracket 0..4 and lights that one, leaving the other four at their faded alpha. The bar's
+        /// exact reach inside a bracket is a nuance the game names nowhere.
+        ///
+        /// So the percentage is no longer what this says (owner-reported 2026-08-27: "it reads -35%
+        /// approval - this doesn't sound right"), and measurement bears him out: at evaluation -0.348 the
+        /// bar reaches a third of the way to the left, and the face the game lights is the MIDDLE one.
+        /// A player told "-35 percent" hears something far worse than what is drawn.
+        ///
+        /// Read off the ALPHA the game wrote rather than recomputed from the evaluation, so this says the
+        /// face that is actually lit; the fade factor is the widget's own, not a constant.
+        ///
+        /// <b>The place is said with the shared position words and no scale word of the mod's own.</b>
+        /// Swept 2026-08-27: the game has no name for any of the five - no <c>GuiElement</c> among 10,446
+        /// matches a smiley, the string "smiley" appears nowhere in any of the ten localizations, and
+        /// <c>%NegotiationModalWindowDealApprovalDescription</c> is the only DealApproval key in the game.
+        /// Naming them would be five words this mod invented, so the words are the owner's to supply and
+        /// until he does the position stands in.
         /// </summary>
-        private static string Approval(NegotiationModalWindow window)
+        private static string Face(NegotiationModalWindow window)
+        {
+            try
+            {
+                AgeTransform[] faces = window.AIEvaluationSmileys;
+                if (faces == null || faces.Length == 0)
+                {
+                    return null;
+                }
+
+                for (int i = 0; i < faces.Length; i++)
+                {
+                    AgeTransform face = faces[i];
+                    // Content: which face reads as the lit one. Alpha is what the game writes to say so.
+                    if (face != null && face.Alpha > face.FadeOnDisableFactor + 0.001f)
+                    {
+                        return ModStrings.Format(ModStrings.Fraction, i + 1, faces.Length);
+                    }
+                }
+
+                // Nothing lit: the game draws no opinion at all - an empty contract, or a one-sided
+                // Declaration, which it refuses to evaluate on screen however strongly it feels
+                // (:980 sends both of those to StopAIEvaluationFeedback).
+                return ModStrings.Get(ModStrings.NavCellEmpty);
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>The figure behind the face, kept for review and out of the spoken line: the bar is
+        /// drawn out from its own centre, so its reach is the evaluation as a signed percentage
+        /// (<c>BiDirectionalGauge.RefreshMainGauge</c>), which is worth having on the buffer key and is
+        /// not what the screen says.</summary>
+        private static IList<string> Detail(NegotiationModalWindow window)
         {
             try
             {
@@ -957,32 +1046,34 @@ namespace ES2Access.Screens
                     return null;
                 }
 
-                // Content: which figure the band reads as - the drawn half's distance from the centre,
-                // doubled because each half owns half the track.
+                // Content: which figure the buffer line carries - the drawn half's distance from the
+                // centre, doubled because each half owns half the track.
                 if (gauge.PositiveGauge != null && AgeWidgets.Visible(gauge.PositiveGauge))
                 {
-                    return ModStrings.Format(
-                        ModStrings.NegotiationApprovalValue,
-                        (int)Math.Round((gauge.PositiveGauge.PercentRight - 50f) * 2f)
-                    );
+                    return Line((int)Math.Round((gauge.PositiveGauge.PercentRight - 50f) * 2f));
                 }
 
                 // Content: the same question for the other half - which of the two the game drew is
                 // which sign the figure carries.
                 if (gauge.NegativeGauge != null && AgeWidgets.Visible(gauge.NegativeGauge))
                 {
-                    return ModStrings.Format(
-                        ModStrings.NegotiationApprovalValue,
-                        -(int)Math.Round((50f - gauge.NegativeGauge.PercentLeft) * 2f)
-                    );
+                    return Line(-(int)Math.Round((50f - gauge.NegativeGauge.PercentLeft) * 2f));
                 }
 
-                return ModStrings.Get(ModStrings.NavCellEmpty);
+                return null;
             }
             catch (Exception)
             {
                 return null;
             }
+        }
+
+        private static IList<string> Line(int percent)
+        {
+            return new List<string>
+            {
+                ModStrings.Format(ModStrings.NegotiationApprovalValue, percent),
+            };
         }
 
         // ---- the buttons ----
@@ -1065,7 +1156,7 @@ namespace ES2Access.Screens
                 if (AgeWidgets.Visible(window.DealApprovalGroup))
                 {
                     message.ListItem(ModStrings.Get(ModStrings.NegotiationApproval));
-                    message.Fragment(Approval(window));
+                    message.Fragment(Face(window));
                 }
 
                 message.ListItem(Words(window.OfferCostLabel));

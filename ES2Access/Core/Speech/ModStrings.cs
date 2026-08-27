@@ -2367,7 +2367,7 @@ namespace ES2Access.Core.Speech
             { NegotiationApproval, "Deal approval" },
             { NegotiationApprovalValue, "{0} percent" },
             { NegotiationPressureShare, "{0} {1} percent" },
-            { NegotiationThresholdAt, "at {0} percent" },
+            { NegotiationThresholdAt, "{0} percent" },
             { NegotiationActions, "Offer" },
             { NegotiationQuantity, "Quantity" },
             { ScreenMinorDiplomacy, "Minor faction diplomacy" },

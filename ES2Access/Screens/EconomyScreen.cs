@@ -1256,11 +1256,14 @@ namespace ES2Access.Screens
 
             if (owner != null)
             {
-                MarketplaceTradableItemsPanel it = owner;
-                cell.Vtable.OnAdjust = (sign, large) => Step(it, sign);
                 cell.Vtable.StateText = QuantityText;
-                // The arrows work the stepper here rather than a caret, which is the whole of the
-                // difference between this box and every other one - so the role word says so.
+                // A NUMBER is typed here rather than free text, so the role word says so - but the
+                // arrows are NOT wired to the game's stepper buttons. Left and right on a focused cell
+                // navigate, and the value is changed by opening the edit and typing it (owner ruling
+                // 2026-08-27, first made on the negotiation basket and swept here: arrows that move a
+                // value the player only meant to walk past are a value changed by accident). A SLIDER
+                // keeps its arrows, because a slider has no edit to go inside and they are the only
+                // gesture it has.
                 cell.Vtable.ControlType = ControlTypes.NumericEditField;
             }
 
@@ -1361,11 +1364,8 @@ namespace ES2Access.Screens
 
             if (owner != null)
             {
-                MarketplaceTaxesPanel it = owner;
-                cell.Vtable.OnAdjust = (sign, large) =>
-                    AgeWidgets.Press(
-                        sign < 0 ? it.DecreaseTaxRateButton : it.IncreaseTaxRateButton
-                    );
+                // Same ruling as the quantity box above and the negotiation basket's: the arrows are the
+                // player walking, not the player setting, and the rate is typed into the edit.
                 cell.Vtable.StateText = () => SettingRows.FieldText(field);
                 cell.Vtable.ControlType = ControlTypes.NumericEditField;
             }
