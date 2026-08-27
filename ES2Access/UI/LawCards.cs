@@ -123,7 +123,14 @@ namespace ES2Access.UI
             IList<AgeTransform> children = table == null ? null : table.Children;
             for (int i = 0; children != null && i < children.Count; i++)
             {
-                AgeTransform widget = children[i];
+                // THIS POOL PARKS WITHOUT UNBINDING, so a stale card is not a card the player has.
+                // The engine's refill (<c>ReserveChildren</c> / <c>RefreshChildrenIList</c>,
+                // firstpass/AgeTransform.cs :2404-2414) only ever GROWS the pool and retires the
+                // surplus by setting Alpha 0 - it never calls the card's own unbind - so a parked card
+                // still holds the law it last showed. The gate would withhold the NODE, but the cells
+                // below also feed the banding walk that decides which cards share a row, and a stale
+                // rectangle merges rows the player hears. Drawn-ness is the only honest test.
+                AgeTransform widget = AgeWidgets.DrawnChild(children, i);
                 LawCard card = widget == null ? null : widget.GetComponent<LawCard>();
                 if (card == null)
                 {

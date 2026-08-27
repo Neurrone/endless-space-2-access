@@ -487,7 +487,11 @@ namespace ES2Access.Screens
                 : table.Children;
             for (int i = 0; children != null && i < children.Count; i++)
             {
-                AgeTransform at = children[i];
+                // Pooled by ReserveChildren/RefreshChildrenIList like every table on this window, and
+                // that pair parks a surplus item at alpha 0 WITHOUT unbinding it - so a permission the
+                // current status no longer carries is a faded item still wearing the last status's
+                // tooltip. Only drawn-ness separates the two (<see cref="AgeWidgets.DrawnChild"/>).
+                AgeTransform at = AgeWidgets.DrawnChild(children, i);
                 if (at == null || AgeWidgets.Raw(at) == null)
                 {
                     continue;
@@ -695,7 +699,10 @@ namespace ES2Access.Screens
                 : table.Children;
             for (int i = 0; children != null && i < children.Count; i++)
             {
-                AgeTransform at = children[i];
+                // Same pool, same retirement: the band is rebuilt with a different number of markers
+                // when a war starts or ends (:844-848 reserves truce thresholds, :878-881 demand ones),
+                // and the surplus is parked at alpha 0 with its old tooltip still on it.
+                AgeTransform at = AgeWidgets.DrawnChild(children, i);
                 if (at == null)
                 {
                     continue;

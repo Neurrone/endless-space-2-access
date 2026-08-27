@@ -171,7 +171,9 @@ namespace ES2Access.UI
             bool open = false;
             for (int i = 0; children != null && i < children.Count; i++)
             {
-                AgeTransform widget = children[i];
+                // The strip is a pool like the shelf below it, so a category the panel has stopped
+                // offering is a faded tick rather than a removed one, and only the fade says so.
+                AgeTransform widget = AgeWidgets.DrawnChild(children, i);
                 TermTypeFilter filter = widget == null
                     ? null
                     : widget.GetComponent<TermTypeFilter>();
@@ -289,11 +291,24 @@ namespace ES2Access.UI
             IList<AgeTransform> children = table == null ? null : table.Children;
             for (int i = 0; children != null && i < children.Count; i++)
             {
-                AgeTransform widget = children[i];
+                // Which rows the sheet HAS - the row keys, their count and the "3 of 9" every cell is
+                // stamped with are all settled here, before a cell is declared.
+                //
+                // RETIREMENT ON THIS TABLE IS THE FADE, NOT THE BINDING. The panel sizes its pool with
+                // ReserveChildren, which only ever GROWS it, and then RefreshChildrenIList
+                // (firstpass/AgeTransform.cs :2404-2414) sets every child past the list's end to
+                // Alpha 0 without calling the refresh delegate on it - so a surplus line keeps the term
+                // it was last bound to and stays Visible. TermLine.Unbind (:69-77) would clear GuiTerm,
+                // but the panel only calls it when the whole panel is torn down. Measured 2026-08-27 on
+                // a shelf of five: the table held nine bound children, rows 5-8 being stale duplicates
+                // of rows 1-4, and asking Visible declared all nine. The gate then withheld the four
+                // unpainted ones, which is the gate working - but the count had already promised nine
+                // rows, so the table said "5 of 9" and Down off row 5 reached nothing
+                // (owner-reported). DrawnChild is the blessed way through a pooled table's children
+                // and asks the one question that separates a live row from a retired one.
+                AgeTransform widget = AgeWidgets.DrawnChild(children, i);
                 TermLine line = widget == null ? null : widget.GetComponent<TermLine>();
-                // Which rows the sheet HAS - the row keys and their count are settled here, before any
-                // cell is declared, and the pool keeps retired lines around.
-                if (line == null || line.GuiTerm == null || !AgeWidgets.Visible(widget))
+                if (line == null || line.GuiTerm == null)
                 {
                     continue;
                 }
@@ -340,13 +355,15 @@ namespace ES2Access.UI
             IList<AgeTransform> children = table == null ? null : table.Children;
             for (int i = 0; children != null && i < children.Count; i++)
             {
-                AgeTransform widget = children[i];
+                // Which rows the sheet HAS, by the same reading the shelf uses: the basket is pooled by
+                // the same ReserveChildren/RefreshChildrenIList pair, so a line it has finished with is
+                // a faded one and only the fade says so. This table happened to be caught with its
+                // surplus line unbound as well, which is belt and braces rather than the rule.
+                AgeTransform widget = AgeWidgets.DrawnChild(children, i);
                 ContributionTermLine line = widget == null
                     ? null
                     : widget.GetComponent<ContributionTermLine>();
-                // Which rows the sheet HAS - the row keys and their count are settled here, before any
-                // cell is declared, and the pool keeps retired lines around.
-                if (line == null || line.GuiTerm == null || !AgeWidgets.Visible(widget))
+                if (line == null || line.GuiTerm == null)
                 {
                     continue;
                 }

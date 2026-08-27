@@ -175,8 +175,18 @@ namespace ES2Access.Screens
                 IList<AgeTransform> children = table == null ? null : table.Children;
                 for (int i = 0; children != null && i < children.Count; i++)
                 {
-                    ControlId id = AddCard(_cells, children[i], i);
-                    if (id != null && Picked(window, children[i]))
+                    // THIS POOL PARKS WITHOUT UNBINDING - the same trap as the academy's own card
+                    // table, and the same consequence: the card keeps the hero it last showed, the
+                    // node is keyed by that hero rather than by the widget, and so the gate has
+                    // nothing to withhold. Drawn-ness is the test.
+                    AgeTransform card = AgeWidgets.DrawnChild(children, i);
+                    if (card == null)
+                    {
+                        continue;
+                    }
+
+                    ControlId id = AddCard(_cells, card, i);
+                    if (id != null && Picked(window, card))
                     {
                         start = id;
                     }

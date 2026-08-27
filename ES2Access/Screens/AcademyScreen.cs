@@ -551,8 +551,20 @@ namespace ES2Access.Screens
                 IList<AgeTransform> children = table == null ? null : table.Children;
                 for (int i = 0; children != null && i < children.Count; i++)
                 {
-                    ControlId id = AddCard(children[i], i);
-                    if (id != null && Picked(window, children[i]))
+                    // THIS POOL PARKS WITHOUT UNBINDING. The engine retires a surplus card by fading
+                    // it to nothing (firstpass/AgeTransform.cs :2404-2414) and never calls the card's
+                    // Unbind, so its GuiHero is the hero it last showed - a stale binding is not
+                    // membership. And these nodes are keyed by the HERO rather than by the widget, so
+                    // the gate cannot backstop the mistake the way it does for a widget-keyed row: a
+                    // parked card's ghost hero would reach the player whole.
+                    AgeTransform card = AgeWidgets.DrawnChild(children, i);
+                    if (card == null)
+                    {
+                        continue;
+                    }
+
+                    ControlId id = AddCard(card, i);
+                    if (id != null && Picked(window, card))
                     {
                         start = id;
                     }
