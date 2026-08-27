@@ -376,6 +376,10 @@ namespace ES2Access.Screens
             IList<AgeTransform> lines = table == null ? null : table.Children;
             for (int i = 0; lines != null && i < lines.Count; i++)
             {
+                // Kept although each cell now carries its line: what this block SAYS turns on the
+                // count below - a block with nothing drawn in it reads the game's own word for
+                // having no effects - and a ghost counted here would answer that question wrongly
+                // and only be taken out afterwards.
                 AgeTransform line = AgeWidgets.DrawnChild(lines, i);
                 if (line != null)
                 {
@@ -630,12 +634,9 @@ namespace ES2Access.Screens
             {
                 // Pooled (PopulationModalWindow.cs:420 ReserveChildren): a population with fewer
                 // traits than the one shown before it leaves the surplus items faded to nothing and
-                // still Visible, holding the other population's words.
-                AgeTransform item = AgeWidgets.DrawnChild(items, i);
-                if (item != null)
-                {
-                    Cells.AddReadout(_cells, item, "population:trait/" + i);
-                }
+                // still Visible, holding the other population's words. Each cell carries its item, so
+                // those are taken out before the cells are banded (<see cref="Cells"/>).
+                Cells.AddReadout(_cells, items[i], "population:trait/" + i);
             }
 
             Cells.EmitLinear(builder, _cells);

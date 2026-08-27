@@ -278,6 +278,12 @@ namespace ES2Access.UI
                 }
 
                 ScrollIntoView.Anchor(vtable, at);
+                // Keyed by its place on the card (the prefab names most of these nowhere), so the id
+                // names no object at all - and the widget the button IS is written down beside it as
+                // the thing whose paint state the node exists on
+                // (<see cref="Core.UI.Graph.NodeVtable.Carrier"/>). Set here rather than by the
+                // screens, which hold the same widget and would each have to remember.
+                vtable.Carrier = at;
                 builder.AddItem(ControlId.Structural(keyPrefix + "/action/" + i), vtable);
             }
         }

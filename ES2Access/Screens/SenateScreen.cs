@@ -233,7 +233,10 @@ namespace ES2Access.Screens
                 return false;
             }
 
-            if (action.ElectionActionDefinition == null || !AgeWidgets.Painted(widget))
+            // Not asked whether the row is drawn: the cell carries this widget, so a retired one is
+            // taken out before the cells are banded and again at the gate
+            // (<see cref="ES2Access.UI.Cells"/>, <see cref="ES2Access.UI.NodeGate"/>).
+            if (action.ElectionActionDefinition == null)
             {
                 return true;
             }

@@ -297,11 +297,11 @@ namespace ES2Access.Screens
 
                 for (int j = 0; j < lines.Count; j++)
                 {
-                    AgeTransform line = AgeWidgets.DrawnChild(lines, j);
-                    if (line != null)
-                    {
-                        Line(line, keyPrefix + i + "/" + j);
-                    }
+                    // Whether the line is drawn is the cells' question: each carries its line, and a
+                    // retired one is taken out before they are banded (<see cref="Cells"/>). The step
+                    // ABOVE stays asked here - a faded container is an ancestor, which the one-step
+                    // gate cannot see.
+                    Line(lines[j], keyPrefix + i + "/" + j);
                 }
             }
         }
@@ -565,12 +565,9 @@ namespace ES2Access.Screens
             {
                 // Pooled (MinorFactionDiplomacyModalWindow.cs:430 ReserveChildren): a faction with
                 // fewer modifiers than the one looked at before leaves the surplus lines faded to
-                // nothing and still Visible, holding the other faction's words.
-                AgeTransform line = AgeWidgets.DrawnChild(children, i);
-                if (line != null)
-                {
-                    Cells.AddReadout(_cells, line, Keys + "modifier/" + i);
-                }
+                // nothing and still Visible, holding the other faction's words. Each cell carries its
+                // line, and those are taken out before the cells are banded (<see cref="Cells"/>).
+                Cells.AddReadout(_cells, children[i], Keys + "modifier/" + i);
             }
 
             Cells.AddReadout(

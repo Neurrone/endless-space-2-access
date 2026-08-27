@@ -106,12 +106,15 @@ namespace ES2Access.UI
         /// <summary>
         /// Every card a table is drawing, as cells in the rows the game laid them out in.
         ///
-        /// Drawing is asked as <see cref="AgeWidgets.Painted"/> rather than as visibility, because the
-        /// laws window's grid is a POOL: it grows to the largest filter the player has ever looked at (37
-        /// cards for "All") and the engine retires the cards a narrower filter does not need by fading
-        /// them to nothing, leaving them visible, unbound and parked outside the grid. Measured on the
-        /// "Available" filter: 5 drawn cards followed by 32 dead "Empty law slot" stops. The senate's own
-        /// six slots are all painted and are unaffected.
+        /// Which of them the game is DRAWING is not asked here. The laws window's grid is a POOL: it
+        /// grows to the largest filter the player has ever looked at (37 cards for "All") and the
+        /// engine retires the cards a narrower filter does not need by fading them to nothing, leaving
+        /// them visible, unbound and parked outside the grid (measured on the "Available" filter: 5
+        /// drawn cards followed by 32 dead "Empty law slot" stops). Each cell carries the card it was
+        /// read off, so a retired one is taken out before the cells are banded - which is where it has
+        /// to happen, since a dead card parked outside the grid would otherwise band with the live
+        /// ones (<see cref="Cells"/>, <see cref="NodeGate.CarrierDrawn"/>). The senate's own six slots
+        /// are all painted and are unaffected either way.
         /// </summary>
         public static void Cards(List<Cell> cells, AgeTransform table, string keyPrefix)
         {
@@ -120,7 +123,7 @@ namespace ES2Access.UI
             {
                 AgeTransform widget = children[i];
                 LawCard card = widget == null ? null : widget.GetComponent<LawCard>();
-                if (card == null || !AgeWidgets.Painted(widget))
+                if (card == null)
                 {
                     continue;
                 }

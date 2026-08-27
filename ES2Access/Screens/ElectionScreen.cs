@@ -683,8 +683,9 @@ namespace ES2Access.Screens
                 AgeTransform child = children[i];
                 SystemRepresentativeItem item = Component<SystemRepresentativeItem>(child);
                 // A pooled table retires a surplus item by parking it at alpha 0 with Visible still
-                // true, and the parked item keeps the previous binding's wrapper and count.
-                if (item == null || !AgeWidgets.Painted(child))
+                // true, and the parked item keeps the previous binding's wrapper and count. The cell
+                // carries the item, so that one is taken out with the rest (<see cref="Cells"/>).
+                if (item == null)
                 {
                     continue;
                 }
@@ -734,9 +735,10 @@ namespace ES2Access.Screens
             for (int i = 0; children != null && i < children.Count; i++)
             {
                 AgeTransform child = children[i];
+                // Drawn-ness is not asked here: the cell carries the bar, and a retired one is taken
+                // out before the cells are banded (<see cref="Cells"/>).
                 if (
                     Component<PoliticsCumulativeSupportGauge>(child) == null
-                    || !AgeWidgets.Painted(child)
                     || parties == null
                     || i >= parties.Count
                 )
@@ -1132,7 +1134,9 @@ namespace ES2Access.Screens
             {
                 AgeTransform child = children[j];
                 PoliticsMiniature badge = Component<PoliticsMiniature>(child);
-                if (badge == null || !AgeWidgets.Painted(child))
+                // The badge's own drawn-ness is the cells' question - each carries its badge - while
+                // the group above stays asked here, an ancestor the one-step gate cannot see.
+                if (badge == null)
                 {
                     continue;
                 }

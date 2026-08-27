@@ -419,6 +419,29 @@ namespace ES2Access.Core.UI.Graph
         /// reader casts it back to the engine's tooltip type.
         /// </summary>
         public Func<object> PointsAt;
+
+        /// <summary>
+        /// Optional. THE WIDGET WHOSE PAINT STATE VOUCHES FOR THIS CONTENT - what the host asks
+        /// "is the game still drawing this" of, before the node is allowed to exist at all.
+        ///
+        /// Identity and evidence are two questions, and this is the second one written down.
+        /// <see cref="ControlId.Reference"/> answers WHICH THING a node is, so that focus follows it
+        /// across rebuilds; content the game POOLS deliberately has none, because the recycled widget
+        /// it was read off is the wrong thing to follow (a row keyed by its widget would carry the
+        /// cursor to whatever the pool binds there next). That same recycled widget is nonetheless
+        /// exactly the right thing to ask whether the content is still on the screen. With one slot
+        /// the two answers stop competing: the id keys the content structurally, and the carrier
+        /// carries the widget.
+        ///
+        /// Set by the shared EMITTERS, which hold the widget while they read it, never by a screen at
+        /// a call site - the same rule the pointer and the scroll anchor follow, and for the same
+        /// reason: a declaration the screens each have to remember is one some screen will not.
+        ///
+        /// Typed as <see cref="object"/> because this assembly knows nothing of the game's toolkit;
+        /// the core stores it and never interprets it. Null - the ordinary case - leaves the id's own
+        /// reference to answer, and a node with neither is read off the model and is not gated.
+        /// </summary>
+        public object Carrier;
     }
 
     /// <summary>

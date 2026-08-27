@@ -708,6 +708,10 @@ namespace ES2Access.Screens
             IList<AgeTransform> children = group.Children;
             for (int i = 0; children != null && i < children.Count; i++)
             {
+                // Kept although the dossier now carries this widget: the collector DEDUPES by
+                // tooltip (<see cref="TooltipChildren.Add"/>), so a retired row still holding the
+                // previous binding's deposit would swallow the drawn row that shares it, and the
+                // gate would then drop the one node the pair had left.
                 AgeTransform child = AgeWidgets.DrawnChild(children, i);
                 if (child == null)
                 {
@@ -780,9 +784,12 @@ namespace ES2Access.Screens
             IList<AgeTransform> items = table.Children;
             for (int i = 0; items != null && i < items.Count; i++)
             {
+                // Whether the game is still drawing this row is not asked here: the node carries the
+                // row itself, and a retired one is dropped where every node's existence is decided
+                // (<see cref="ES2Access.Core.UI.Graph.NodeVtable.Carrier"/>, <see cref="NodeGate"/>).
                 AgeTransform row = items[i];
-                PlanetAnomalyItem item = row.GetComponent<PlanetAnomalyItem>();
-                if (item == null || item.HintButton == null || !AgeWidgets.Painted(row))
+                PlanetAnomalyItem item = row == null ? null : row.GetComponent<PlanetAnomalyItem>();
+                if (item == null || item.HintButton == null)
                 {
                     continue;
                 }
@@ -832,8 +839,11 @@ namespace ES2Access.Screens
             IList<AgeTransform> items = table.Children;
             for (int i = 0; items != null && i < items.Count; i++)
             {
+                // Drawn-ness is the gate's question, not this walk's: the node carries the item it was
+                // read off, so a curiosity the pool has retired is dropped there
+                // (<see cref="ES2Access.Core.UI.Graph.NodeVtable.Carrier"/>).
                 AgeTransform item = items[i];
-                if (item != null && AgeWidgets.Painted(item) && SkipCuriosities(item))
+                if (item != null && SkipCuriosities(item))
                 {
                     CardActions.AddRefusable(found, item, CardActions.TitleOf(item));
                 }
@@ -879,6 +889,9 @@ namespace ES2Access.Screens
                 IList<AgeTransform> items = table == null ? null : table.Children;
                 for (int i = 0; items != null && i < items.Count; i++)
                 {
+                    // Kept: the node this row becomes carries the TICK INSIDE it, and the pool
+                    // retires a row by fading the ROW while its children stay at alpha 1 - the
+                    // one-step gate is looking at the wrong widget to see that.
                     OutpostActionItem item =
                         items[i] == null || !AgeWidgets.Painted(items[i])
                             ? null

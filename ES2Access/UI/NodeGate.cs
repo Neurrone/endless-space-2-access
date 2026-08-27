@@ -25,6 +25,12 @@ namespace ES2Access.UI
     ///
     /// A node with no carrier passes ungated (<see cref="NodeCarrier"/>).
     ///
+    /// <para><b>Before the node exists.</b> One walk has to ask the question earlier than this:
+    /// <see cref="Cells"/> groups its widgets into rows by their RECTANGLES before it declares
+    /// anything, and a ghost's stale rectangle merges or splits the bands the player hears counted.
+    /// That walk asks <see cref="CarrierDrawn"/>, which is this same test under the same flag - not a
+    /// second copy of it.</para>
+    ///
     /// <para><b>The flag.</b> <see cref="Enabled"/> is a runtime switch, default ON, flipped from the
     /// dev REPL without a rebuild. It is kept past the measurement battery it was built for, because
     /// turning it off and on around one dump is how a screen's drops are MEASURED: the difference
@@ -52,6 +58,11 @@ namespace ES2Access.UI
 
         private static readonly HashSet<string> _reported = new HashSet<string>();
 
+        /// <summary>Whose render is being built, so a drop taken BEFORE the builder sees the node
+        /// (<see cref="CarrierDrawn"/>) is reported under the same screen key the builder's own drops
+        /// are. Written where the render's predicate is fetched, which is once per build.</summary>
+        private static string _building = "";
+
         // One delegate per screen so a build does not allocate a closure per frame.
         private static readonly Dictionary<string, Func<ControlId, NodeVtable, bool>> _predicates =
             new Dictionary<string, Func<ControlId, NodeVtable, bool>>();
@@ -61,6 +72,7 @@ namespace ES2Access.UI
         public static Func<ControlId, NodeVtable, bool> For(string screenKey)
         {
             string key = screenKey ?? "";
+            _building = key;
             Func<ControlId, NodeVtable, bool> predicate;
             if (!_predicates.TryGetValue(key, out predicate))
             {
@@ -76,6 +88,31 @@ namespace ES2Access.UI
         public static void Forget()
         {
             _reported.Clear();
+        }
+
+        /// <summary>
+        /// The same question the gate asks, for the ONE walk that has to ask it before a node exists.
+        ///
+        /// A cell list is grouped into rows GEOMETRICALLY (<see cref="AgeLayout.Rows"/>) before
+        /// anything is declared, so a retired ghost's stale rectangle merges or splits the bands the
+        /// player then hears counted - the gate, which only ever sees finished nodes, cannot undo
+        /// that. So <see cref="Cells"/> asks here instead, with the gate's own <see cref="Withdrawn"/>
+        /// rather than a second opinion: two tests that could disagree would band by one rule and
+        /// declare by another.
+        ///
+        /// Honours <see cref="Enabled"/> like every other drop, so flipping the flag around a dump
+        /// measures the banding path exactly as it measures the gate, and reports through the same
+        /// log line. A null widget is nothing to ask, and passes.
+        /// </summary>
+        public static bool CarrierDrawn(AgeTransform carrier, ControlId id = null)
+        {
+            if (!Enabled || carrier == null || !Withdrawn(carrier))
+            {
+                return true;
+            }
+
+            Report(_building, id, carrier);
+            return false;
         }
 
         private static bool Drops(string screenKey, ControlId id, NodeVtable vtable)

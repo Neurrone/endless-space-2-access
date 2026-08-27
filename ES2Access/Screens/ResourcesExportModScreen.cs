@@ -582,7 +582,9 @@ namespace ES2Access.Screens
 
         /// <summary>How many rows the list is drawing. Counted off the widgets rather than off the
         /// manifests, which the window keeps to itself - and only ever on the frame the count is about
-        /// to be spoken.</summary>
+        /// to be spoken. The drawing test stays asked here, and is not left to the node gate: this is
+        /// a NUMBER the player hears, not a node's existence, and a ghost counted in it would be
+        /// spoken before anything had a chance to drop it.</summary>
         private static int Listed(GameResourcesExportScreen window)
         {
             AgeTransform table = window.ResourcesTable;

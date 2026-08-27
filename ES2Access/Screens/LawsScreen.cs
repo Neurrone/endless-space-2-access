@@ -390,8 +390,10 @@ namespace ES2Access.Screens
         /// The table is POOLED: a law with fewer effects than the one selected before it leaves the
         /// surplus lines parked at alpha 0 still holding the previous law's words
         /// (<c>GuiEffectMapper.UnloadEffects</c>), and they are still <c>Visible</c>. Measured on
-        /// "Mine's Bigger Decree", whose one effect was read as three. So both walks ask the engine's
-        /// own drawing test (<see cref="AgeWidgets.Paints"/>) rather than the visibility flag.</summary>
+        /// "Mine's Bigger Decree", whose one effect was read as three. The BAND walk asks the engine's
+        /// own drawing test for that (<see cref="AgeWidgets.DrawnChild"/>), because a band is an
+        /// ancestor and the one-step gate below cannot see it; a retired LINE is taken out with the
+        /// rest of the cells, before they are banded (<see cref="Cells"/>).</summary>
         private void AddEffects(GraphBuilder builder, PanelFeatureEffects effects)
         {
             AgeTransform group = effects == null ? null : effects.AgeTransform;
@@ -422,11 +424,9 @@ namespace ES2Access.Screens
                 IList<AgeTransform> lines = band.Children;
                 for (int j = 0; lines != null && j < lines.Count; j++)
                 {
-                    AgeTransform line = AgeWidgets.DrawnChild(lines, j);
-                    if (line != null)
-                    {
-                        Cells.AddReadout(_cells, line, "laws:effect/" + i + "/" + j);
-                    }
+                    // The line's own drawn-ness is the cells' question now: each carries its line,
+                    // and a retired one is taken out before they are banded (<see cref="Cells"/>).
+                    Cells.AddReadout(_cells, lines[j], "laws:effect/" + i + "/" + j);
                 }
             }
 

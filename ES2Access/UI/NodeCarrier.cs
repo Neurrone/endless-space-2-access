@@ -9,9 +9,10 @@ namespace ES2Access.UI
     /// <summary>
     /// The one answer to "which widget is this node standing on".
     ///
-    /// A graph node carries two object-typed handles the engine can read: the game object its id was
-    /// derived from (<see cref="ControlId.Reference"/>) and the tooltip its pointer is aimed at
-    /// (<see cref="NodeVtable.PointsAt"/>). The carrier is the first, and ONLY the first, as a widget
+    /// A graph node carries three object-typed handles the engine can read: the widget it was
+    /// DECLARED to stand on (<see cref="NodeVtable.Carrier"/>), the game object its id was derived
+    /// from (<see cref="ControlId.Reference"/>) and the tooltip its pointer is aimed at
+    /// (<see cref="NodeVtable.PointsAt"/>). The carrier is the first two, in that order, as a widget
     /// where it is one - what a node POINTS AT is a hover target, not a place the node stands
     /// (<see cref="Of"/>).
     ///
@@ -69,16 +70,28 @@ namespace ES2Access.UI
         /// <summary>
         /// The widget a node stands on, or null when it stands on the model alone.
         ///
-        /// ONLY the id's own reference answers. Where a node's pointer aims is deliberately NOT a
-        /// fallback: on every table prefab in this game the per-row tooltip is an invisible
-        /// <c>TooltipArea</c> stretched over the row - switched off as a widget, alive as a hover
-        /// target - so asking it "are you painting" answers no for a row the game is drawing. A
-        /// <see cref="Core.UI.GraphSheet"/> keys its cells by the DOMAIN OBJECT, which is exactly the
-        /// carrier-less case, and the aim fall-through turned that into a false drop of all 15 save
-        /// names in the load/save modal, 6 fleet-selection rows, 4 military rows and 2 empire rows.
+        /// Two handles answer, in this order. FIRST the carrier the node was DECLARED with
+        /// (<see cref="NodeVtable.Carrier"/>), which the shared emitters set from the widget they
+        /// were reading: content the game pools is keyed structurally on purpose, so its id names no
+        /// object, and without the slot every one of those nodes was ungated. SECOND the id's own
+        /// reference, which is the answer wherever a node's identity IS the widget.
+        ///
+        /// Where a node's pointer aims is deliberately NOT a fallback: on every table prefab in this
+        /// game the per-row tooltip is an invisible <c>TooltipArea</c> stretched over the row -
+        /// switched off as a widget, alive as a hover target - so asking it "are you painting"
+        /// answers no for a row the game is drawing. A <see cref="Core.UI.GraphSheet"/> keys its
+        /// cells by the DOMAIN OBJECT, which is exactly the carrier-less case, and the aim
+        /// fall-through turned that into a false drop of all 15 save names in the load/save modal, 6
+        /// fleet-selection rows, 4 military rows and 2 empire rows.
         /// </summary>
         public static AgeTransform Of(ControlId id, NodeVtable vtable)
         {
+            AgeTransform declared = vtable == null ? null : WidgetOf(vtable.Carrier);
+            if (declared != null)
+            {
+                return declared;
+            }
+
             return id == null ? null : WidgetOf(id.Reference);
         }
 

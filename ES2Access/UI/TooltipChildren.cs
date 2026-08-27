@@ -54,6 +54,17 @@ namespace ES2Access.UI
             /// was holding, so the inner tooltip draws nothing (measured 2026-08-22).</summary>
             public AgeTransform Anchor;
 
+            /// <summary>The widget the CALLER read this dossier off, where it named one - what the
+            /// node's existence is then gated on
+            /// (<see cref="Core.UI.Graph.NodeVtable.Carrier"/>), since a dossier node is keyed by its
+            /// place under the owner and its id names nothing.
+            ///
+            /// Deliberately not <see cref="Anchor"/>, which falls back to the tooltip's OWN transform:
+            /// this game's table prefabs stretch a switched-off <c>TooltipArea</c> over a row they are
+            /// drawing perfectly well, so asking that transform "are you painting" answers no for
+            /// live content. Only a widget the walk itself was holding answers.</summary>
+            public AgeTransform Carrier;
+
             /// <summary>The tooltip the pointer asks for, where that is not <see cref="Tooltip"/>.
             /// </summary>
             public AgeTooltip Aim;
@@ -157,6 +168,11 @@ namespace ES2Access.UI
             NodeVtable vtable = new NodeVtable
             {
                 Announcements = new List<NodeAnnouncement> { GraphNodes.LabelPart(it.Name) },
+                // A dossier node is keyed by its place under its owner, so its id names nothing for
+                // the existence gate to ask; the widget the caller read it off is what answers
+                // (<see cref="Dossier.Carrier"/>). Written here, at the one place a dossier becomes a
+                // node, rather than at the walks that collect them.
+                Carrier = it.Carrier,
             };
 
             if (it.Lines != null && it.Tooltip != null)
@@ -256,13 +272,18 @@ namespace ES2Access.UI
         /// <paramref name="live"/> the caller's answer to "which widget carries this NOW" where the
         /// game moves the dossier between widgets (<see cref="Dossier.LiveAim"/>). The tooltip passed
         /// in is still what decides whether the dossier earns a node at all, because that is a
-        /// question about the frame the node is declared in.</summary>
+        /// question about the frame the node is declared in.
+        /// <paramref name="carrier"/> is for the caller whose drawn HOST is not what the pointer goes
+        /// to - a strip scanned for the dossiers inside it (<see cref="AddInside"/>), where the host
+        /// is the strip item and the pointer belongs on the tooltip's own widget; it defaults to the
+        /// anchor, which is the answer everywhere else.</summary>
         public static void Add(
             List<Dossier> into,
             AgeTooltip tooltip,
             AgeTransform anchor = null,
             Func<IList<string>> lines = null,
-            Func<AgeTooltip> live = null
+            Func<AgeTooltip> live = null,
+            AgeTransform carrier = null
         )
         {
             if (into == null || !Qualifies(tooltip))
@@ -294,6 +315,7 @@ namespace ES2Access.UI
                     Name = () => AgeWidgets.TooltipTitle(Now(now, tip)),
                     Tooltip = tip,
                     Anchor = anchor ?? tooltip.AgeTransform,
+                    Carrier = carrier ?? anchor,
                     Lines = lines,
                     LiveAim = live,
                 }
@@ -313,7 +335,10 @@ namespace ES2Access.UI
         /// The sentence's first line is the name, and the mode is <see cref="TooltipMode.None"/> so
         /// the same words are not announced twice; the whole sentence is still in the node's buffer.
         /// PAINTED is the gate, because these badges are prefab decoration the game fades rather than
-        /// hides.
+        /// hides - and it stays asked here even though the node now carries this widget, for two
+        /// reasons the gate cannot cover: the game fades a badge's GROUP as readily as the badge, and
+        /// this collector DEDUPES by tooltip, so a ghost admitted here can swallow the drawn sibling
+        /// that shares its sentence.
         /// </summary>
         public static void AddPlain(List<Dossier> into, AgeTransform widget)
         {
@@ -354,13 +379,16 @@ namespace ES2Access.UI
                     Name = CardActions.NameFromTooltip(tip),
                     Tooltip = tip,
                     Anchor = anchor,
+                    Carrier = anchor,
                     Mode = TooltipMode.None,
                 }
             );
         }
 
         /// <summary>Every plain-text explanation hanging INSIDE a widget, one node each, in the order
-        /// the prefab lays them out - for a row that draws a strip of wordless badges.</summary>
+        /// the prefab lays them out - for a row that draws a strip of wordless badges. The paint test
+        /// on the CONTAINER stays: it prunes the whole strip, and a strip faded as one leaves every
+        /// badge inside it at alpha 1, which is precisely what the one-step gate cannot see.</summary>
         public static void AddPlainInside(List<Dossier> into, AgeTransform widget, int maxDepth = 4)
         {
             if (into == null || widget == null || !AgeWidgets.Painted(widget))
@@ -383,7 +411,9 @@ namespace ES2Access.UI
         }
 
         /// <summary>Every dossier drawn INSIDE a widget, in the prefab's own order - for a card whose
-        /// figures each carry one.</summary>
+        /// figures each carry one. The widget scanned is what each of them stands on
+        /// (<see cref="Dossier.Carrier"/>): it is the thing the game draws or retires as a whole, and
+        /// a tooltip found under it hangs off decoration whose own paint state says nothing.</summary>
         public static void AddInside(List<Dossier> into, AgeTransform widget, int maxDepth = 4)
         {
             if (into == null || widget == null || !AgeWidgets.Visible(widget))
@@ -400,7 +430,7 @@ namespace ES2Access.UI
             );
             for (int i = 0; i < found.Count; i++)
             {
-                Add(into, found[i]);
+                Add(into, found[i], null, null, null, widget);
             }
         }
 
