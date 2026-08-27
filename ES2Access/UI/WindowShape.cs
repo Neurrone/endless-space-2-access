@@ -147,7 +147,7 @@ namespace ES2Access.UI
             try
             {
                 AgeTransform at = AgeWidgets.Transform(Wired(window, CloseHandler));
-                if (at == null || !AgeWidgets.Visible(at))
+                if (at == null)
                 {
                     return;
                 }
@@ -240,6 +240,9 @@ namespace ES2Access.UI
             string path
         )
         {
+            // Flow control, not existence: the readout below stands on this same widget and the gate
+            // would drop it anyway - but a branch the window switched off must not be DESCENDED into,
+            // because its children each keep Visible == true of their own and would be read as lines.
             if (widget == null || depth > maxDepth || !widget.Visible)
             {
                 return;
@@ -333,7 +336,7 @@ namespace ES2Access.UI
                 (button != null && !string.IsNullOrEmpty(button.OnActivateMethod))
                 || (toggle != null && !string.IsNullOrEmpty(toggle.OnSwitchMethod));
             AgeTransform widget = control.AgeTransform;
-            if (!wired || !AgeWidgets.Visible(widget))
+            if (!wired)
             {
                 return;
             }

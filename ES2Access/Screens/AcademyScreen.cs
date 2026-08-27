@@ -435,6 +435,7 @@ namespace ES2Access.Screens
             for (int i = 0; children != null && i < children.Count; i++)
             {
                 AgeTransform child = children[i];
+                // Content: which child's tooltip becomes the fallback sentence.
                 AgeTooltip found = child == null || !AgeWidgets.Visible(child)
                     ? null
                     : AgeWidgets.Readable(AgeWidgets.Raw(child));
@@ -476,6 +477,8 @@ namespace ES2Access.Screens
         {
             try
             {
+                // Different widget: the line stands on the HOST group and this asks about the value
+                // label inside it, which the gate's walk up the ancestry never reaches.
                 return label == null || !AgeWidgets.Visible(label.AgeTransform)
                     ? null
                     : label.AgeTransform;
@@ -607,7 +610,7 @@ namespace ES2Access.Screens
             string actionKey
         )
         {
-            if (widget == null || !AgeWidgets.Visible(widget))
+            if (widget == null)
             {
                 return;
             }
@@ -639,7 +642,7 @@ namespace ES2Access.Screens
         {
             HeroDetailedCard card = Card(widget);
             Hero hero = HeroCards.Hero(card);
-            if (hero == null || !Drawn(widget))
+            if (hero == null)
             {
                 return null;
             }
@@ -798,6 +801,8 @@ namespace ES2Access.Screens
         private void BuildActions(GraphBuilder builder, global::AcademyScreen window)
         {
             AgeTransform band = window.HeroButtonsGroup;
+            // Flow control: a stop and a context would be opened around nothing, and every button in
+            // the band would be read for its caption first.
             if (band == null || !AgeWidgets.Visible(band))
             {
                 return;
@@ -813,7 +818,7 @@ namespace ES2Access.Screens
                 {
                     AgeTransform child = children[i];
                     AgeControlButton button = child == null ? null : AgeWidgets.Button(child);
-                    if (button == null || !AgeWidgets.Visible(child))
+                    if (button == null)
                     {
                         continue;
                     }
@@ -867,20 +872,6 @@ namespace ES2Access.Screens
             catch (Exception)
             {
                 return null;
-            }
-        }
-
-        /// <summary>A card the game has stopped using is left in the pool transparent rather than hidden,
-        /// so alpha is half the question.</summary>
-        private static bool Drawn(AgeTransform widget)
-        {
-            try
-            {
-                return AgeWidgets.Visible(widget) && widget.Alpha > 0f;
-            }
-            catch (Exception)
-            {
-                return false;
             }
         }
 

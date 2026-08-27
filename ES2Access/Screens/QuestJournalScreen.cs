@@ -229,6 +229,7 @@ namespace ES2Access.Screens
             string keyPrefix
         )
         {
+            // Flow control: the generic scrape below descends the whole panel.
             if (content == null || !AgeWidgets.Visible(content))
             {
                 return;
@@ -273,6 +274,7 @@ namespace ES2Access.Screens
             int drawn = 0;
             for (int i = 0; children != null && i < children.Count; i++)
             {
+                // A COUNT of drawn children, which decides whether a caption counts as a level.
                 if (children[i] == null || !AgeWidgets.Visible(children[i]))
                 {
                     continue;
@@ -310,6 +312,8 @@ namespace ES2Access.Screens
             int depth
         )
         {
+            // Flow control: a branch the window switched off must not be DESCENDED into, because its
+            // children each keep Visible of their own and would be scraped as lines.
             if (widget == null || depth > MaxScrapeDepth || !AgeWidgets.Visible(widget))
             {
                 return;
@@ -344,6 +348,7 @@ namespace ES2Access.Screens
             for (int i = 0; children != null && i < children.Count; i++)
             {
                 AgeTransform child = children[i];
+                // Shape: whether this level is a GROUP or a leaf for the scraper.
                 if (child == null || !AgeWidgets.Visible(child))
                 {
                     continue;
@@ -352,6 +357,7 @@ namespace ES2Access.Screens
                 IList<AgeTransform> grandchildren = child.Children;
                 for (int j = 0; grandchildren != null && j < grandchildren.Count; j++)
                 {
+                    // Shape again: the same classification one level down.
                     if (grandchildren[j] != null && AgeWidgets.Visible(grandchildren[j]))
                     {
                         return true;
@@ -376,6 +382,7 @@ namespace ES2Access.Screens
         private void BuildFilters(GraphBuilder builder, NarrativeScreen window)
         {
             AgeTransform table = window.QuestSelectionTogglesTable;
+            // Flow control: the filter strip below is walked toggle by toggle.
             if (table == null || !AgeWidgets.Visible(table))
             {
                 return;
@@ -399,7 +406,7 @@ namespace ES2Access.Screens
         )
         {
             AgeControlToggle toggle = widget == null ? null : widget.AgeControl as AgeControlToggle;
-            if (toggle == null || !AgeWidgets.Visible(widget))
+            if (toggle == null)
             {
                 return;
             }
@@ -449,6 +456,8 @@ namespace ES2Access.Screens
             for (int i = 0; i < cards.Count; i++)
             {
                 QuestCard card = cards[i] == null ? null : cards[i].GetComponent<QuestCard>();
+                // Synthetic guard: a card is a GROUP keyed on the quest and declares no evidence, so
+                // this is the whole of its existence test.
                 if (card == null || card.GuiQuest == null || !AgeWidgets.Visible(cards[i]))
                 {
                     continue;
@@ -507,6 +516,8 @@ namespace ES2Access.Screens
 
             ControlId id = ControlId.Structural("quests:card/" + quest.Name);
             ScrollIntoView.Anchor(vtable, it.AgeTransform);
+            // Synthetic: the card stands for the QUEST, and the enumeration in BuildList - which asks
+            // each pooled card whether it is drawn - is what says the quest is on the list.
             builder.BeginGroup(Nodes.Synthetic(id, vtable));
             if (builder.IsExpanded(id))
             {
@@ -527,6 +538,7 @@ namespace ES2Access.Screens
         private static void AddPin(GraphBuilder builder, QuestCard card, Quest quest)
         {
             AgeControlToggle pin = card.PinToggle;
+            // The pin node is keyed on the quest and declares no evidence either.
             if (pin == null || !AgeWidgets.Visible(pin.AgeTransform))
             {
                 return;
@@ -561,6 +573,7 @@ namespace ES2Access.Screens
             try
             {
                 AgeControlToggle pin = card.PinToggle;
+                // Content: which STRING says whether the quest is pinned.
                 return pin != null && AgeWidgets.Visible(pin.AgeTransform) && pin.State
                     ? ModStrings.Get(ModStrings.QuestsPinned)
                     : null;
@@ -708,6 +721,7 @@ namespace ES2Access.Screens
             if (
                 panel == null
                 || !panel.Shown
+                // Flow control: five readings under it each walk a widget of their own.
                 || !AgeWidgets.Visible(panel.AgeTransform)
                 || window.SelectedQuest == null
             )
@@ -737,7 +751,7 @@ namespace ES2Access.Screens
         private static void AddMinorFaction(GraphBuilder builder, NarrativeScreen window)
         {
             AgeTransform widget = window.MinorFactionButton;
-            if (widget == null || !AgeWidgets.Visible(widget))
+            if (widget == null)
             {
                 return;
             }
@@ -769,7 +783,7 @@ namespace ES2Access.Screens
         private static void AddLore(GraphBuilder builder, NarrativeScreenSelectedQuestPanel panel)
         {
             QuestLoreGroup lore = panel.Lore;
-            if (lore == null || !AgeWidgets.Visible(lore.AgeTransform))
+            if (lore == null)
             {
                 return;
             }
@@ -834,6 +848,7 @@ namespace ES2Access.Screens
 
         private static bool Drawn(AgePrimitiveLabel label)
         {
+            // Content: which lore paragraphs are included.
             return label != null && AgeWidgets.Visible(label.AgeTransform);
         }
 
@@ -855,17 +870,13 @@ namespace ES2Access.Screens
         )
         {
             AgeTransform pending = panel.PendingObjectiveChoiceGroup;
-            if (pending != null && AgeWidgets.Visible(pending))
+            if (pending != null)
             {
                 AddReadout(builder, pending, "quests:pending-choice");
             }
 
             QuestObjectiveTitle objective = panel.Objective;
-            if (
-                objective == null
-                || !objective.Shown
-                || !AgeWidgets.Visible(objective.AgeTransform)
-            )
+            if (objective == null || !objective.Shown)
             {
                 return;
             }
@@ -873,6 +884,7 @@ namespace ES2Access.Screens
             AgeControlButton marker = objective.ShowLocationButton;
             bool offered =
                 marker != null
+                // Shape: whether the objective row carries its marker button, not whether it exists.
                 && AgeWidgets.Visible(marker.AgeTransform)
                 && AgeWidgets.Operable(marker.AgeTransform);
             AgePrimitiveLabel title = objective.ObjectiveTitle;
@@ -920,6 +932,7 @@ namespace ES2Access.Screens
         )
         {
             AgeTransform group = panel.RewardGroup;
+            // Flow control: the rewards list below is walked item by item.
             if (group == null || !AgeWidgets.Visible(group))
             {
                 return;
@@ -930,6 +943,7 @@ namespace ES2Access.Screens
             QuestRewardsTable rewards = panel.Rewards;
             AgeTransform table = null;
             string keyPrefix = null;
+            // Source choice: which of two tables supplies the rewards, not whether a node exists.
             if (rewards != null && AgeWidgets.Visible(rewards.AgeTransform))
             {
                 table = rewards.RewardsTable;
@@ -938,6 +952,7 @@ namespace ES2Access.Screens
             else
             {
                 QuestPodiumTable podium = panel.Podium;
+                // Source choice again, other branch.
                 if (podium != null && AgeWidgets.Visible(podium.AgeTransform))
                 {
                     table = podium.PodiumLineTable;
@@ -972,6 +987,7 @@ namespace ES2Access.Screens
                 AgeTransform item = AgeWidgets.DrawnChild(items, i);
                 if (
                     item != null
+                    // A COUNT of drawn items, which decides whether a caption counts as a level.
                     && AgeWidgets.Visible(item)
                     && !string.IsNullOrEmpty(AgeWidgets.TextOf(item))
                 )
@@ -1007,7 +1023,7 @@ namespace ES2Access.Screens
         /// nothing to say is not a control.</summary>
         private static void AddReadout(GraphBuilder builder, AgeTransform widget, string key)
         {
-            if (widget == null || !AgeWidgets.Visible(widget))
+            if (widget == null)
             {
                 return;
             }
@@ -1053,6 +1069,7 @@ namespace ES2Access.Screens
             for (int i = 0; children != null && i < children.Count; i++)
             {
                 AgeTooltip child =
+                    // Content: which child tooltip explains a line.
                     children[i] == null || !AgeWidgets.Visible(children[i])
                         ? null
                         : AgeWidgets.Raw(children[i]);

@@ -62,6 +62,15 @@ namespace ES2Access.Screens
     /// (<c>BattleScanViewWindow</c>, verified by class only; a manual test is handed over for it). The
     /// hacking dashboard and its banners are not modelled: the game switches all three off outright for
     /// an installation without that content (<c>ScanOverlayWindow.OnGameCreated</c>), which is this one.
+    ///
+    /// <b>Why every drawn test in this file stays.</b> A lens row stands for a GAME ENTITY - a node, a
+    /// planet, a lane, a hero - and not for the label the renderer happens to be drawing it with, so
+    /// almost every declaration here is <see cref="UI.Nodes.Synthetic"/> and the central gate has
+    /// nothing to ask of it. The honesty about whether an entity is on the screen therefore lives in
+    /// these walks: each asks the label it read the entity off whether the renderer is drawing it
+    /// (<c>Painted</c> for the layers the lens FADES, <c>Visible</c> for the ones it switches), and a
+    /// walk that stopped asking would announce whatever the label held for the last camera position.
+    /// The rest of the tests here choose which words a row says, which is content and never existence.
     /// </summary>
     public sealed class ScanViewScreen : Screen
     {
@@ -421,6 +430,8 @@ namespace ES2Access.Screens
                 AgeWidgets.PointAt(vtable, label.AgeTransform);
             }
 
+            // Synthetic: a lens row stands for the GAME NODE, not for the map label drawing it - the
+            // walk over the drawn labels above is what says this node is on the screen.
             builder.AddItem(Nodes.Synthetic(id, vtable));
         }
 
@@ -609,11 +620,14 @@ namespace ES2Access.Screens
             ControlId id = ControlId.For(node, "scan:node/" + node.GUID);
             if (Circles(label) == 0)
             {
+                // Synthetic: the row stands for the GAME NODE; BuildNodes above, which asks each map
+                // label whether it is drawn, is the honesty about its being there.
                 builder.AddItem(Nodes.Synthetic(id, vtable));
                 return;
             }
 
             vtable.ControlType = ControlTypes.Group;
+            // Synthetic for the same reason as the leaf above.
             builder.BeginGroup(Nodes.Synthetic(id, vtable));
             AddCircles(builder, label);
             builder.EndGroup();
@@ -740,6 +754,8 @@ namespace ES2Access.Screens
                     Sections = GraphNodes.Sections(GraphNodes.TooltipSection(tooltip)),
                 };
                 AgeWidgets.PointAt(vtable, widget);
+                // Synthetic: the circle stands for the PLANET; CircleWidgets above, which asks the
+                // table whether it is painted, is what says the circle is drawn.
                 builder.AddItem(Nodes.Synthetic(
                     ControlId.For(planet, "scan:node/planet/" + planet.GUID),
                     vtable
@@ -842,6 +858,7 @@ namespace ES2Access.Screens
                     return;
                 }
 
+                // Synthetic: mod-authored - the lens draws lines on the map and no list of them.
                 builder.BeginGroup(Nodes.Synthetic(
                     ControlId.Structural("scan:routes"),
                     GraphNodes.Group(() => ModStrings.Get(ModStrings.ScanTradeRoutesGroup))
@@ -900,6 +917,8 @@ namespace ES2Access.Screens
         private static void AddLane(GraphBuilder builder, TradeLanes.Lane lane)
         {
             TradeLanes.Lane it = lane;
+            // Synthetic: a lane is read out of the trade model; the collection above is what says
+            // which lanes the lens is showing.
             builder.AddItem(Nodes.Synthetic(
                 ControlId.Structural("scan:routes/" + lane.Start + "-" + lane.End),
                 GraphNodes.Readout(
@@ -991,12 +1010,14 @@ namespace ES2Access.Screens
                 };
                 AgeWidgets.PointAt(vtable, window.NodeInfoGroup);
 
+                // Synthetic: the group stands for the SYSTEM the overview is about, and its lines are
+                // read out of the panel rather than off one widget.
                 builder.BeginGroup(Nodes.Synthetic(id, vtable));
                 ScanViewSystemOverviewFidsiLabel[] labels = Fidsi(window);
                 for (int i = 0; i < labels.Length; i++)
                 {
                     ScanViewSystemOverviewFidsiLabel label = labels[i];
-                    if (label == null || !AgeWidgets.Visible(label.AgeTransform))
+                    if (label == null)
                     {
                         continue;
                     }
@@ -1155,6 +1176,8 @@ namespace ES2Access.Screens
                         OnActivate = () => GalaxyViewLevels.OpenPlanet(planet),
                     };
                     AgeWidgets.PointAt(vtable, label.AgeTransform);
+                    // Synthetic: the row stands for the PLANET; the walk over the drawn planet labels
+                    // above is what says it is on the screen.
                     builder.AddItem(Nodes.Synthetic(
                         ControlId.For(planet, "scan:planet/" + planet.GUID),
                         vtable
@@ -1224,6 +1247,8 @@ namespace ES2Access.Screens
             };
             AgeWidgets.PointAt(vtable, it.AgeTransform);
             ScrollIntoView.Anchor(vtable, it.AgeTransform);
+            // Synthetic: the row is composed from the hero the panel is bound to; HeroPanelDrawn()
+            // above, which asks the panel whether it is painted, is the honesty about it.
             builder.AddItem(Nodes.Synthetic(ControlId.Structural("scan:hero"), vtable));
         }
 
@@ -1581,6 +1606,8 @@ namespace ES2Access.Screens
                 };
                 AgeWidgets.PointAt(vtable, item.AgeTransform);
                 ScrollIntoView.Anchor(vtable, item.AgeTransform);
+                // Synthetic: Remain() above, which asks each pooled item whether it is painted, is
+                // what says this remains entry is really drawn.
                 builder.AddItem(Nodes.Synthetic(ControlId.Structural("scan:remains/" + i), vtable));
             }
         }
@@ -1638,6 +1665,8 @@ namespace ES2Access.Screens
                 };
                 AgeWidgets.PointAt(vtable, line.AgeTransform);
                 ScrollIntoView.Anchor(vtable, line.AgeTransform);
+                // Synthetic: the loop above, which asks each pooled line whether it is drawn, is what
+                // says this stat line is there.
                 builder.AddItem(Nodes.Synthetic(ControlId.Structural(key + "/" + i), vtable));
             }
         }
@@ -1712,6 +1741,8 @@ namespace ES2Access.Screens
             for (int i = 0; lines != null && i < lines.Count; i++)
             {
                 string line = lines[i];
+                // Synthetic: these are LINES scraped out of a panel, not controls - there is no one
+                // widget any of them is drawn by.
                 builder.AddItem(
                     Nodes.Synthetic(
                         ControlId.Structural(key + "/" + i),
@@ -1744,6 +1775,7 @@ namespace ES2Access.Screens
                 window == null
                 || !window.Shown
                 || panel == null
+                // Flow control: the caption groups below are walked group by group.
                 || !AgeWidgets.Visible(panel.AgeTransform)
             )
             {
@@ -1754,7 +1786,7 @@ namespace ES2Access.Screens
             {
                 AgeControlToggle toggle = panel.CaptionsToggle;
                 AgeTransform widget = AgeWidgets.Transform(toggle);
-                if (widget == null || !AgeWidgets.Visible(widget))
+                if (widget == null)
                 {
                     return;
                 }

@@ -566,6 +566,8 @@ namespace ES2Access.Screens
         /// </summary>
         private static void AddCardRows(List<Cell> cells, AgeTransform row)
         {
+            // Flow control and banding: the row is DESCENDED into below, and the rects that band its
+            // items into lines are read before any node exists for the gate to drop.
             if (row == null || !AgeWidgets.Painted(row))
             {
                 return;
@@ -580,6 +582,7 @@ namespace ES2Access.Screens
             IList<AgeTransform> items = Children(row);
             for (int i = 0; items != null && i < items.Count; i++)
             {
+                // Same: the item's rect is banding input, read before it becomes a cell.
                 if (items[i] != null && AgeWidgets.Painted(items[i]))
                 {
                     // Named under the table they came out of: two tables pool their rows from

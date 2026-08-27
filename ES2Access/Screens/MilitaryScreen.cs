@@ -356,7 +356,7 @@ namespace ES2Access.Screens
 
             AgeTransform value =
                 box.JuggernautCountValue == null ? null : box.JuggernautCountValue.AgeTransform;
-            if (AgeWidgets.Visible(value))
+            if (value != null)
             {
                 cells.Add(
                     Cells.Readout(value, AgeWidgets.Raw(widget), keyPrefix + "juggernaut-count")
@@ -562,6 +562,7 @@ namespace ES2Access.Screens
         private void BuildFleetActions(GraphBuilder builder, global::MilitaryScreen window)
         {
             AgeTransform band = window.FleetButtonsGroup;
+            // Flow control: a stop and a context would be opened around nothing.
             if (band == null || !AgeWidgets.Visible(band))
             {
                 return;
@@ -580,7 +581,7 @@ namespace ES2Access.Screens
         private void AddButton(AgeControlButton button, string key)
         {
             AgeTransform widget = AgeWidgets.Transform(button);
-            if (widget == null || !AgeWidgets.Visible(widget))
+            if (widget == null)
             {
                 return;
             }
@@ -608,6 +609,7 @@ namespace ES2Access.Screens
         private void BuildShips(GraphBuilder builder, global::MilitaryScreen window)
         {
             MilitaryShipsListPanel panel = window.ShipsListPanel;
+            // Flow control: the shared garrison reader walks the whole panel, row by row.
             if (panel == null || !AgeWidgets.Visible(panel.AgeTransform))
             {
                 return;
@@ -631,6 +633,7 @@ namespace ES2Access.Screens
         private void BuildDesigns(GraphBuilder builder, global::MilitaryScreen window)
         {
             ShipDesignsListPanel panel = window.ShipDesignsPanel;
+            // Flow control: every design under the panel would be read for its name and details.
             if (panel == null || !AgeWidgets.Visible(panel.AgeTransform))
             {
                 return;
@@ -701,7 +704,7 @@ namespace ES2Access.Screens
         {
             ShipDesignItem item =
                 widget == null ? null : widget.GetComponent<ShipDesignItem>();
-            if (item == null || !AgeWidgets.Visible(widget) || item.GuiShipDesign == null)
+            if (item == null || item.GuiShipDesign == null)
             {
                 return;
             }
@@ -752,7 +755,8 @@ namespace ES2Access.Screens
             {
                 AgeTransform icon =
                     item.RoleIcon == null ? null : item.RoleIcon.AgeTransform;
-                if (icon == null || !AgeWidgets.Visible(icon))
+                // Content: which icons contribute a line to the design's reading.
+            if (icon == null || !AgeWidgets.Visible(icon))
                 {
                     return lines;
                 }
@@ -783,6 +787,7 @@ namespace ES2Access.Screens
         private void BuildOverview(GraphBuilder builder, global::MilitaryScreen window)
         {
             ShipDesignOverviewPanel panel = window.ShipDesignOverviewPanel;
+            // Flow control: the readouts under it are found by a named search and read one by one.
             if (panel == null || !AgeWidgets.Visible(panel.AgeTransform))
             {
                 return;
@@ -836,7 +841,7 @@ namespace ES2Access.Screens
         )
         {
             AgeTransform widget = label == null ? null : label.AgeTransform;
-            if (widget == null || !AgeWidgets.Visible(widget))
+            if (widget == null)
             {
                 return;
             }

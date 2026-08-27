@@ -123,7 +123,7 @@ namespace ES2Access.Screens
                 AgeTransform child = children[i];
                 GuiTableFilterItem item =
                     child == null ? null : child.GetComponent<GuiTableFilterItem>();
-                if (item == null || item.Toggle == null || !AgeWidgets.Visible(child))
+                if (item == null || item.Toggle == null)
                 {
                     continue;
                 }

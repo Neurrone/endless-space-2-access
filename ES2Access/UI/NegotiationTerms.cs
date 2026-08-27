@@ -72,7 +72,7 @@ namespace ES2Access.UI
                 TermTypeFilter filter = widget == null
                     ? null
                     : widget.GetComponent<TermTypeFilter>();
-                if (filter == null || !AgeWidgets.Visible(widget))
+                if (filter == null)
                 {
                     continue;
                 }
@@ -107,6 +107,7 @@ namespace ES2Access.UI
         {
             try
             {
+                // Content: which STRING names the filter.
                 string drawn = filter.Label != null && AgeWidgets.Visible(filter.Label.AgeTransform)
                     ? AgeText.Label(filter.Label)
                     : null;
@@ -126,6 +127,7 @@ namespace ES2Access.UI
             try
             {
                 return filter.ContextualAlertMarker != null
+                    // Content: whether the badge contributes a line.
                     && AgeWidgets.Visible(filter.ContextualAlertMarker)
                     ? new List<string> { ModStrings.Get(ModStrings.DiplomacyNewOptions) }
                     : null;
@@ -161,6 +163,8 @@ namespace ES2Access.UI
             {
                 AgeTransform widget = children[i];
                 TermLine line = widget == null ? null : widget.GetComponent<TermLine>();
+                // Which rows the sheet HAS - the row keys and their count are settled here, before any
+                // cell is declared, and the pool keeps retired lines around.
                 if (line == null || line.GuiTerm == null || !AgeWidgets.Visible(widget))
                 {
                     continue;
@@ -210,6 +214,8 @@ namespace ES2Access.UI
                 ContributionTermLine line = widget == null
                     ? null
                     : widget.GetComponent<ContributionTermLine>();
+                // Which rows the sheet HAS - the row keys and their count are settled here, before any
+                // cell is declared, and the pool keeps retired lines around.
                 if (line == null || line.GuiTerm == null || !AgeWidgets.Visible(widget))
                 {
                     continue;
@@ -250,6 +256,8 @@ namespace ES2Access.UI
             if (
                 field == null
                 || line.QuantityGroup == null
+                // Whether the row HAS a stepper cell - a column of the sheet, decided before the row is
+                // built.
                 || !AgeWidgets.Visible(line.QuantityGroup)
             )
             {
@@ -341,6 +349,7 @@ namespace ES2Access.UI
             try
             {
                 AgeTransform table = line.ConsequencesTable;
+                // Content: which drawn lines feed a tooltip section.
                 return table == null || !AgeWidgets.Visible(table)
                     ? null
                     : AgeWidgets.DrawnLines(table);
@@ -403,6 +412,7 @@ namespace ES2Access.UI
         {
             try
             {
+                // Content: which STRING is returned.
                 return label == null || !AgeWidgets.Visible(label.AgeTransform)
                     ? null
                     : AgeText.Label(label);

@@ -93,6 +93,8 @@ namespace ES2Access.UI
                 }
             }
 
+            // Synthetic: mod-authored - the zoom ladder is the mod's own control over the camera,
+            // and the game draws nothing for it.
             builder.AddItem(Nodes.Synthetic(
                 id,
                 GraphNodes.Slider(() => ModStrings.Get(ModStrings.Zoom), Text, Step)

@@ -98,6 +98,8 @@ namespace ES2Access.UI
             for (int i = 0; children != null && i < children.Count; i++)
             {
                 AgeTransform child = children[i];
+                // Flow control: a hidden band's children each read visible of their own, so a walk that
+                // descended into one would collect lines the player cannot see.
                 if (child != null && child.Visible)
                 {
                     Read(child, lines, tooltip, depth + 1);
@@ -127,6 +129,7 @@ namespace ES2Access.UI
             {
                 return panel != null
                     && panel.Shown
+                    // Flow control: the whole dossier below is read by descending this panel.
                     && AgeWidgets.Visible(panel.AgeTransform);
             }
             catch (Exception)

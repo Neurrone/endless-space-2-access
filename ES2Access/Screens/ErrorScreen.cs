@@ -104,7 +104,7 @@ namespace ES2Access.Screens
 
             AgePrimitiveLabel message = window.ErrorMessage;
             AgeTransform widget = message == null ? null : message.AgeTransform;
-            if (widget != null && AgeWidgets.Visible(widget))
+            if (widget != null)
             {
                 AgePrimitiveLabel it = message;
                 ControlId id = ControlId.For(message, "error:message");

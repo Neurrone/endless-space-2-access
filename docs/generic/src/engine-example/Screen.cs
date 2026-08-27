@@ -287,6 +287,7 @@ namespace ES2Access.Screens
         /// is not drawing is not this screen's key at all.</summary>
         protected static bool Page(AgeTransform button)
         {
+            // Input dispatch, not node existence: whether this screen answers the key at all.
             if (button == null || !AgeWidgets.Visible(button))
             {
                 return false;

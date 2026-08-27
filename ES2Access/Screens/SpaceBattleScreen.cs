@@ -591,7 +591,7 @@ namespace ES2Access.Screens
         {
             AgeControlToggle skip = window.SkipButton;
             AgeTransform widget = AgeWidgets.Transform(skip);
-            if (skip == null || !AgeWidgets.Visible(widget))
+            if (skip == null)
             {
                 return;
             }
@@ -622,6 +622,8 @@ namespace ES2Access.Screens
         {
             GuiRadioGroup group = window.CameraRadioGroup;
             AgeTransform table = group == null ? null : group.TogglesTable;
+            // Flow control: the cameras are found by a component scrape, not worth running for a bar
+            // the battle view is not drawing.
             if (table == null || !AgeWidgets.Visible(table))
             {
                 return;
@@ -632,7 +634,7 @@ namespace ES2Access.Screens
             {
                 AgeControlToggle toggle = toggles[i];
                 AgeTransform widget = AgeWidgets.Transform(toggle);
-                if (toggle == null || !AgeWidgets.Visible(widget))
+                if (toggle == null)
                 {
                     continue;
                 }
@@ -679,7 +681,7 @@ namespace ES2Access.Screens
         {
             AgeControlToggle scan = window.ScanToggle;
             AgeTransform widget = AgeWidgets.Transform(scan);
-            if (scan == null || !AgeWidgets.Visible(widget))
+            if (scan == null)
             {
                 return;
             }

@@ -187,7 +187,6 @@ namespace ES2Access.Screens
                     card == null
                     || card.GuiSpecialization == null
                     || card.SelectionToggle == null
-                    || !AgeWidgets.Visible(widget)
                 )
                 {
                     continue;
@@ -227,6 +226,7 @@ namespace ES2Access.Screens
             try
             {
                 AddLines(lines, card.Description);
+                // Content: whether the cost lines belong in the card's reading.
                 if (AgeWidgets.Visible(card.CostLine))
                 {
                     AddLines(lines, card.Cost);
@@ -244,6 +244,7 @@ namespace ES2Access.Screens
 
         private static void AddLines(List<string> into, AgePrimitiveLabel label)
         {
+            // Content: which drawn lines are gathered into the card's reading.
             if (label == null || !AgeWidgets.Visible(label.AgeTransform))
             {
                 return;
@@ -268,6 +269,7 @@ namespace ES2Access.Screens
         )
         {
             AgeTransform group = window.EmpireResourcesGroup;
+            // Flow control: the resource strip below is walked item by item.
             if (!AgeWidgets.Visible(group))
             {
                 return;
@@ -302,7 +304,7 @@ namespace ES2Access.Screens
         private static void AddResource(List<Cell> cells, AgeTransform widget, int index)
         {
             ResourceItem item = widget == null ? null : widget.GetComponent<ResourceItem>();
-            if (item == null || !AgeWidgets.Visible(widget))
+            if (item == null)
             {
                 return;
             }
@@ -342,6 +344,7 @@ namespace ES2Access.Screens
         {
             string held = AgeText.Label(stock);
             string rate =
+                // Content: whether the rate figure joins the stock in one phrase.
                 net != null && AgeWidgets.Visible(net.AgeTransform) ? AgeText.Label(net) : null;
             if (string.IsNullOrEmpty(rate))
             {

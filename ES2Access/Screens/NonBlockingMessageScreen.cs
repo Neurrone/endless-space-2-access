@@ -102,7 +102,7 @@ namespace ES2Access.Screens
             }
 
             AgePrimitiveLabel message = window.MessageLabel;
-            if (message != null && AgeWidgets.Visible(message.AgeTransform))
+            if (message != null)
             {
                 ControlId id = ControlId.For(message, "non-blocking:question");
                 builder.AddNode(Nodes.Drawn(
@@ -144,7 +144,7 @@ namespace ES2Access.Screens
         )
         {
             AgeTransform widget = button == null ? null : button.AgeTransform;
-            if (widget == null || !AgeWidgets.Visible(widget))
+            if (widget == null)
             {
                 return;
             }

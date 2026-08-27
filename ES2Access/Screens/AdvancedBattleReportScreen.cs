@@ -185,6 +185,8 @@ namespace ES2Access.Screens
         )
         {
             AgeTransform container = window.AdvancedReportPhaseItemContainer;
+            // Flow control: everything below is a component scrape and a COUNT of phases, both of
+            // which run before any node exists for the gate to see.
             if (container == null || !AgeWidgets.Visible(container))
             {
                 return;
@@ -199,6 +201,8 @@ namespace ES2Access.Screens
             for (int i = 0; i < items.Length; i++)
             {
                 AdvancedReportPhaseItem phase = items[i];
+                // Which phases become the sheet's COLUMNS - a count and a header list, decided before
+                // any cell is declared.
                 if (phase == null || !AgeWidgets.Visible(phase.AgeTransform))
                 {
                     continue;
@@ -250,6 +254,7 @@ namespace ES2Access.Screens
                 {
                     AdvancedReportPhaseFlotillaStatItem stat =
                         index < cells[column].Length ? cells[column][index] : null;
+                    // Which columns this ROW has, read before the sheet builds it.
                     if (stat == null || !AgeWidgets.Visible(stat.AgeTransform))
                     {
                         // A phase the battle never reached: the game disables the panel and draws no
@@ -279,6 +284,7 @@ namespace ES2Access.Screens
             try
             {
                 AgeTransform container = phase.FlotillaStatItemContainer;
+                // Flow control: a phase panel the battle never reached is not scraped for its items.
                 return container == null || !AgeWidgets.Visible(container)
                     ? new AdvancedReportPhaseFlotillaStatItem[0]
                     : container.GetComponentsInChildren<AdvancedReportPhaseFlotillaStatItem>(true);
@@ -388,6 +394,8 @@ namespace ES2Access.Screens
             string prefix
         )
         {
+            // Flow control: the roster under a panel the report is not drawing is a walk of its own,
+            // and a region and a context would be opened around nothing.
             if (panel == null || !AgeWidgets.Visible(panel))
             {
                 return;
@@ -448,6 +456,8 @@ namespace ES2Access.Screens
             string prefix
         )
         {
+            // Flow control: same - the four readings below each walk something, and a region and a
+            // context would be opened around nothing.
             if (gauge == null || !AgeWidgets.Visible(gauge.AgeTransform))
             {
                 return;
@@ -473,6 +483,8 @@ namespace ES2Access.Screens
 
         private static void Bars(GraphBuilder builder, AgeTransform table, string prefix)
         {
+            // Flow control: the cells are found by a component scrape, not worth running for a gauge
+            // the report is not drawing.
             if (table == null || !AgeWidgets.Visible(table))
             {
                 return;
@@ -482,7 +494,7 @@ namespace ES2Access.Screens
             for (int i = 0; i < cells.Length; i++)
             {
                 DamageGaugeCell cell = cells[i];
-                if (cell == null || !AgeWidgets.Visible(cell.AgeTransform))
+                if (cell == null)
                 {
                     continue;
                 }
@@ -504,7 +516,7 @@ namespace ES2Access.Screens
         /// of its own - the same wrapper underneath, so the same sentence.</summary>
         private static void Missed(GraphBuilder builder, AgeTransform group, string key)
         {
-            if (group == null || !AgeWidgets.Visible(group))
+            if (group == null)
             {
                 return;
             }
@@ -525,7 +537,7 @@ namespace ES2Access.Screens
         )
         {
             AgeTransform widget = total == null ? null : total.AgeTransform;
-            if (widget == null || !AgeWidgets.Visible(widget))
+            if (widget == null)
             {
                 return;
             }
@@ -633,6 +645,8 @@ namespace ES2Access.Screens
                     if (
                         button != null
                         && button.OnActivateMethod == BackHandler
+                        // Candidate choice, not existence: several buttons share this handler and the
+                        // drawn one is the live one. The gate can only drop a node, never pick.
                         && AgeWidgets.Visible(button.AgeTransform)
                     )
                     {
@@ -659,7 +673,7 @@ namespace ES2Access.Screens
         )
         {
             AgeTransform widget = AgeWidgets.Transform(toggle);
-            if (toggle == null || !AgeWidgets.Visible(widget))
+            if (toggle == null)
             {
                 return;
             }
@@ -695,11 +709,7 @@ namespace ES2Access.Screens
         private static void Note(GraphBuilder builder, AgePrimitiveLabel label, string key)
         {
             AgeTransform widget = label == null ? null : label.AgeTransform;
-            if (
-                widget == null
-                || !AgeWidgets.Visible(widget)
-                || string.IsNullOrEmpty(AgeText.Label(label))
-            )
+            if (widget == null || string.IsNullOrEmpty(AgeText.Label(label)))
             {
                 return;
             }
@@ -728,11 +738,7 @@ namespace ES2Access.Screens
         )
         {
             AgeTransform widget = label == null ? null : label.AgeTransform;
-            if (
-                widget == null
-                || !AgeWidgets.Visible(widget)
-                || string.IsNullOrEmpty(AgeText.Label(label))
-            )
+            if (widget == null || string.IsNullOrEmpty(AgeText.Label(label)))
             {
                 return;
             }
@@ -758,7 +764,7 @@ namespace ES2Access.Screens
             string prefix
         )
         {
-            if (panel == null || !AgeWidgets.Visible(panel.AgeTransform))
+            if (panel == null)
             {
                 return;
             }
@@ -766,7 +772,7 @@ namespace ES2Access.Screens
             Note(builder, panel.MainLeaderName, prefix + "/leader");
             AgePrimitiveImage portrait = panel.MainHeroPortrait;
             AgeTransform widget = portrait == null ? null : portrait.AgeTransform;
-            if (widget == null || !AgeWidgets.Visible(widget))
+            if (widget == null)
             {
                 return;
             }

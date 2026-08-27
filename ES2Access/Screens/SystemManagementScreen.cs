@@ -603,11 +603,14 @@ namespace ES2Access.Screens
                 && dossiers.Count == 0
             )
             {
+                // Synthetic: the card stands for the PLANET, and the walk over the drawn planet
+                // labels is what says the system is showing it.
                 builder.AddItem(Nodes.Synthetic(id, vtable));
                 return;
             }
 
             vtable.ControlType = ControlTypes.Group;
+            // Synthetic for the same reason as the leaf above.
             builder.BeginGroup(Nodes.Synthetic(id, vtable));
             if (builder.IsExpanded(id))
             {
@@ -889,9 +892,10 @@ namespace ES2Access.Screens
                 IList<AgeTransform> items = table == null ? null : table.Children;
                 for (int i = 0; items != null && i < items.Count; i++)
                 {
-                    // Kept: the node this row becomes carries the TICK INSIDE it, and the pool
-                    // retires a row by fading the ROW while its children stay at alpha 1 - the
-                    // one-step gate is looking at the wrong widget to see that.
+                    // Kept: the collected actions are NUMBERED by their place in this list and the
+                    // number is each node's structural key (CardActions.Emit), so a row the pool has
+                    // retired - faded as a ROW while its tick stays at alpha 1 - must never take a
+                    // place in it. The gate would drop the ghost's node and renumber the rest.
                     OutpostActionItem item =
                         items[i] == null || !AgeWidgets.Painted(items[i])
                             ? null
@@ -1526,12 +1530,15 @@ namespace ES2Access.Screens
             List<TooltipChildren.Dossier> nested = SlotDossiers(label, colony, slot, unit);
             if (nested.Count == 0)
             {
+                // Synthetic: a slot is read out of the colony's own model - the ring draws a marker
+                // per unit and nothing per empty slot - so the enumeration is the honesty here.
                 builder.AddItem(Nodes.Synthetic(ControlId.Structural(key), vtable));
                 return;
             }
 
             ControlId id = ControlId.Structural(key);
             vtable.ControlType = ControlTypes.Group;
+            // Synthetic for the same reason as the leaf above.
             builder.BeginGroup(Nodes.Synthetic(id, vtable));
             if (builder.IsExpanded(id))
             {

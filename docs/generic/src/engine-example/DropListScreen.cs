@@ -143,6 +143,7 @@ namespace ES2Access.Screens
 
                 // The page the list belongs to closing under us takes the list with it, whatever page
                 // that was: a widget nobody can see any more is not a list the player is standing in.
+                // Input routing, not node existence: whether the open list is still the thing keys go to.
                 if (!AgeWidgets.Visible(request.List.AgeTransform))
                 {
                     return false;
@@ -388,6 +389,8 @@ namespace ES2Access.Screens
                 vtable.OnBlurVisual = AgeWidgets.ReleasePointer;
                 vtable.PointsAt = () => AgeWidgets.Raw(under);
 
+                // Synthetic where the list has no drawn entry to stand on: the engine builds a drop
+                // list's rows on demand, and the mod.s own row then answers for a model entry.
                 builder.AddItem(
                     entry != null
                         ? (NodeDeclaration)Nodes.Drawn(

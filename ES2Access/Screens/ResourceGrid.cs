@@ -91,6 +91,8 @@ namespace ES2Access.Screens
             _columns.Clear();
             _lines.Clear();
             IList<AgeTransform> children = headers == null ? null : headers.Children;
+            // Banding input: the lattice's heading row and every column under it are laid out from
+            // these rectangles, before a cell exists for the gate to drop.
             bool band = children != null && AgeWidgets.Visible(headers);
             for (int i = 0; children != null && i < children.Count; i++)
             {

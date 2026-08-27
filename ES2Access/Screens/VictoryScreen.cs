@@ -143,7 +143,7 @@ namespace ES2Access.Screens
         private void Tab(AgeTransform widget, int index)
         {
             AgeControlToggle toggle = Toggle(widget);
-            if (toggle == null || !AgeWidgets.Visible(widget))
+            if (toggle == null)
             {
                 return;
             }
@@ -174,6 +174,8 @@ namespace ES2Access.Screens
                 for (int i = 0; panels != null && i < panels.Length; i++)
                 {
                     AgeTransform widget = Transform(panels[i]);
+                    // Flow control: the shape reading descends the whole panel, and the window keeps
+                    // one panel per tab with the rest switched off.
                     if (AgeWidgets.Visible(widget))
                     {
                         WindowShape.Readouts(_cells, widget, "victory:panel/" + i);

@@ -24,6 +24,12 @@ namespace ES2Access.UI
     ///
     /// Cost: every reader here is called only while a system is focused (a spoken part) or while its
     /// buffer is being filled, never in the per-frame walk over the galaxy's systems.
+    ///
+    /// Every visibility test in this file is a CONTENT test and none of them decides whether a node
+    /// exists: nothing here calls <c>AddItem</c> or <c>Cells.Add</c>. They answer "did the label draw
+    /// this line, so should the reading say it" - the label leaves the previous binding's words in a
+    /// row it has switched off, so "what is drawn" is the only honest source. The clickable pieces are
+    /// gated where they become nodes instead (<see cref="CardActions.AddRefusable"/>).
     /// </summary>
     public static class SystemLabelReadout
     {

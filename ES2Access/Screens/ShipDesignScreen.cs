@@ -150,7 +150,7 @@ namespace ES2Access.Screens
         {
             AgeTransform name =
                 window.TitleShipDesignName == null ? null : window.TitleShipDesignName.AgeTransform;
-            if (name == null || !AgeWidgets.Visible(name))
+            if (name == null)
             {
                 return;
             }
@@ -213,7 +213,7 @@ namespace ES2Access.Screens
             for (int i = 0; i < children.Count; i++)
             {
                 AgeTransform child = children[i];
-                if (child == null || !AgeWidgets.Visible(child))
+                if (child == null)
                 {
                     continue;
                 }

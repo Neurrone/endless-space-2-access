@@ -162,6 +162,7 @@ namespace ES2Access.UI
             List<TooltipChildren.Dossier> found = new List<TooltipChildren.Dossier>(8);
             try
             {
+                // Content: which cards contribute dossiers to a reading.
                 if (card == null || !card.HasTooltips || !AgeWidgets.Visible(card.AgeTransform))
                 {
                     return found;
@@ -474,7 +475,7 @@ namespace ES2Access.UI
         {
             AgeControlButton button = Wired(card, handler);
             AgeTransform widget = AgeWidgets.Transform(button);
-            if (widget == null || !AgeWidgets.Visible(widget) || !AgeWidgets.Operable(widget))
+            if (widget == null || !AgeWidgets.Operable(widget))
             {
                 return;
             }
@@ -508,6 +509,7 @@ namespace ES2Access.UI
 
         private static bool Drawn(AgeTransform widget)
         {
+            // Content: which lines are gathered into a card's reading.
             return widget != null && AgeWidgets.Visible(widget);
         }
 

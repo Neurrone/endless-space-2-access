@@ -377,6 +377,8 @@ namespace ES2Access.UI
                 }
 
                 InGameChatPanel panel = window.InGameChatPanel;
+                // Input routing as well as flow control: this answer says whether the panel is the thing
+                // keys go to, and the cluster below declares its controls by descending it.
                 return panel != null && AgeWidgets.Visible(panel.AgeTransform) ? panel : null;
             }
             catch (Exception)

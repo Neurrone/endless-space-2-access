@@ -261,7 +261,7 @@ namespace ES2Access.Screens
         private void AddButton(AgeControlButton button, string key)
         {
             AgeTransform widget = AgeWidgets.Transform(button);
-            if (button == null || !AgeWidgets.Visible(widget))
+            if (button == null)
             {
                 return;
             }

@@ -475,11 +475,13 @@ namespace ES2Access.UI
             return tooltips.Count == 0 ? null : tooltips[tooltips.Count - 1];
         }
 
-        /// <summary>The drawn control at <paramref name="widget"/>, if there is one to declare - a
-        /// widget the game is not drawing, or one with no button on it, contributes nothing.</summary>
+        /// <summary>The control at <paramref name="widget"/>, if there is one to declare - a widget with
+        /// no button on it contributes nothing. A widget the game is not drawing contributes nothing
+        /// either: the gate's own question, asked HERE (<see cref="Kept"/>) rather than only at the
+        /// banding.</summary>
         public static void AddControl(List<Cell> cells, AgeTransform widget, string key)
         {
-            if (widget == null || !AgeWidgets.Visible(widget))
+            if (widget == null)
             {
                 return;
             }
@@ -487,7 +489,8 @@ namespace ES2Access.UI
             AgeControlButton button = AgeWidgets.Button(widget);
             if (button != null)
             {
-                cells.Add(
+                Kept(
+                    cells,
                     Control(widget, button, AgeWidgets.Raw(widget), AgeWidgets.TextOf(widget), key)
                 );
             }
@@ -497,13 +500,35 @@ namespace ES2Access.UI
         /// game has emptied contributes nothing rather than an unnamed node.</summary>
         public static void AddReadout(List<Cell> cells, AgeTransform widget, string key)
         {
-            if (
-                widget != null
-                && AgeWidgets.Visible(widget)
-                && !string.IsNullOrEmpty(AgeWidgets.TextOf(widget))
-            )
+            // The emptiness test is CONTENT, not existence: a band the game drew and left blank has
+            // nothing to name a node after. Whether the game is drawing it is the gate's question,
+            // asked of this same widget by Kept.
+            if (widget != null && !string.IsNullOrEmpty(AgeWidgets.TextOf(widget)))
             {
-                cells.Add(Readout(widget, AgeWidgets.Raw(widget), key));
+                Kept(cells, Readout(widget, AgeWidgets.Raw(widget), key));
+            }
+        }
+
+        /// <summary>
+        /// Append the cell, unless the game is not drawing what it stands on.
+        ///
+        /// <see cref="Drawing"/> takes ghosts out before the BANDING, which is where a stale rectangle
+        /// does its damage. That is one step too late for a collector: a screen that asks "did this
+        /// panel contribute anything" reads <c>cells.Count</c>, and a ghost in the list answers yes -
+        /// so a caption, a context or a stop the screen opens only for a panel with content appears
+        /// over nothing (measured on the recipe window's effects block, whose caption arrived alone).
+        /// So the gate's own test is asked HERE too, at the one door every collector goes through,
+        /// under the same flag as everywhere else.
+        ///
+        /// <see cref="Add"/> deliberately does NOT come through here: it answers with the cell it
+        /// appended, and nine callers reach back for <c>cells[cells.Count - 1]</c> to hang a card's
+        /// dossiers on it. Those walks keep their own drawn test.
+        /// </summary>
+        private static void Kept(List<Cell> cells, Cell cell)
+        {
+            if (NodeGate.StillDrawn(cell.Widget, cell.Id))
+            {
+                cells.Add(cell);
             }
         }
 
@@ -538,6 +563,9 @@ namespace ES2Access.UI
         )
         {
             AgeTransform widget = label == null ? null : label.AgeTransform;
+            // Kept: the cell stands on `laid` - the row or group the figure was drawn in - and the
+            // LABEL is a descendant of it, so the gate's ancestry walk never asks the label's own
+            // flags. A figure the game switched off inside a row it still draws is only visible here.
             if (widget == null || !AgeWidgets.Visible(widget))
             {
                 return;
@@ -573,9 +601,7 @@ namespace ES2Access.UI
                 named ? (TooltipMode?)null : TooltipMode.None
             );
             AgeWidgets.PointAt(vtable, owner);
-            cells.Add(
-                new Cell { Widget = laid, Id = ControlId.For(laid, key), Vtable = vtable }
-            );
+            Kept(cells, new Cell { Widget = laid, Id = ControlId.For(laid, key), Vtable = vtable });
         }
 
         /// <summary>A line the player reads rather than works: whatever words the game drew in it, and

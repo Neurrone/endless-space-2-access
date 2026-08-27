@@ -141,7 +141,7 @@ namespace ES2Access.Screens
                 AgeTransform power = window.AcademyPowerGauge == null
                     ? null
                     : window.AcademyPowerGauge.AgeTransform;
-                if (power != null && AgeWidgets.Visible(power))
+                if (power != null)
                 {
                     _cells.Add(Cells.Readout(power, AgeWidgets.Raw(power), Keys + "power"));
                 }
@@ -161,6 +161,7 @@ namespace ES2Access.Screens
         private void BuildAcademy(GraphBuilder builder, AcademyDiplomacyModalWindow window)
         {
             SidePanel panel = window.AcademyInfoSidePanel;
+            // Flow control: the side-panel reading below descends the whole panel.
             if (panel == null || !AgeWidgets.Visible(panel.AgeTransform))
             {
                 return;

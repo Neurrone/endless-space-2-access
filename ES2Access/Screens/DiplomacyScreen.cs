@@ -353,11 +353,7 @@ namespace ES2Access.Screens
         {
             AgeTransform widget =
                 window.CenterEmpireTitle == null ? null : window.CenterEmpireTitle.AgeTransform;
-            if (
-                widget == null
-                || !AgeWidgets.Visible(widget)
-                || string.IsNullOrEmpty(AgeWidgets.TextOf(widget))
-            )
+            if (widget == null || string.IsNullOrEmpty(AgeWidgets.TextOf(widget)))
             {
                 return;
             }
@@ -392,7 +388,7 @@ namespace ES2Access.Screens
         {
             EmpireSector sector = widget == null ? null : widget.GetComponent<EmpireSector>();
             LeaderCard card = sector == null ? null : sector.LeaderCard;
-            if (card == null || sector.InspectedGuiEmpire == null || !AgeWidgets.Visible(widget))
+            if (card == null || sector.InspectedGuiEmpire == null)
             {
                 return;
             }
@@ -589,6 +585,7 @@ namespace ES2Access.Screens
             try
             {
                 return sector.ContextualAlertMarker != null
+                    // Content: whether the badge's words join the empire's reading.
                     && AgeWidgets.Visible(sector.ContextualAlertMarker)
                     ? ModStrings.Get(ModStrings.DiplomacyNewOptions)
                     : null;
@@ -629,6 +626,7 @@ namespace ES2Access.Screens
                 if (
                     card.WatchingGuiEmpire == null
                     || card.InspectedGuiEmpire == null
+                    // Content: whether the treaty lines join the card's reading.
                     || !AgeWidgets.Visible(card.DiplomaticAbilitiesGroup)
                 )
                 {
@@ -696,7 +694,7 @@ namespace ES2Access.Screens
         {
             AgeControlToggle toggle = window.SwapModeToggle;
             AgeTransform at = AgeWidgets.Transform(toggle);
-            if (at == null || !AgeWidgets.Visible(at))
+            if (at == null)
             {
                 return;
             }
@@ -718,7 +716,7 @@ namespace ES2Access.Screens
         /// writes on it, because the button itself is a bare icon.</summary>
         private void AddScreenButton(AgeTransform widget, string key)
         {
-            if (widget == null || !AgeWidgets.Visible(widget))
+            if (widget == null)
             {
                 return;
             }
@@ -743,6 +741,8 @@ namespace ES2Access.Screens
         private void BuildMetaplot(GraphBuilder builder, global::DiplomacyScreen window)
         {
             AgeTransform panel = window.MetaplotTeamsPanel;
+            // Flow control: a stop would be opened around nothing, and the side-panel reading descends
+            // the whole board.
             if (panel == null || !AgeWidgets.Visible(panel))
             {
                 return;
@@ -773,6 +773,7 @@ namespace ES2Access.Screens
             AgePrimitiveLabel second
         )
         {
+            // Content: whether this pair of words joins the sentence being built.
             if (group == null || !AgeWidgets.Visible(group))
             {
                 return;
@@ -808,6 +809,7 @@ namespace ES2Access.Screens
         {
             try
             {
+                // Content: which STRING is returned.
                 return label == null || !AgeWidgets.Visible(label.AgeTransform)
                     ? null
                     : AgeText.Label(label);

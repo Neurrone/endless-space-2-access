@@ -176,6 +176,8 @@ namespace ES2Access.Screens
             ResourceGrid grid
         )
         {
+            // Flow control: a stop and a region would be opened around nothing, and the grid below
+            // reads a whole lattice of cells.
             if (group == null || !AgeWidgets.Visible(group))
             {
                 return;
@@ -247,6 +249,8 @@ namespace ES2Access.Screens
         private void BuildProject(GraphBuilder builder, RecipeCreationModalWindow window)
         {
             AgeTransform group = window.RecipeContentGroup;
+            // Flow control: a stop and a caption context would be opened around nothing, and the slot
+            // strip below is walked slot by slot.
             if (group == null || !AgeWidgets.Visible(group))
             {
                 return;
@@ -274,6 +278,7 @@ namespace ES2Access.Screens
                     2
                 );
                 string label =
+                    // Content: which STRING captions the level the slots sit in.
                     caption == null || !AgeWidgets.Visible(caption)
                         ? null
                         : AgeWidgets.TextOf(caption);
@@ -408,6 +413,7 @@ namespace ES2Access.Screens
         {
             try
             {
+                // Flow control: the effect lines are walked one by one, each read for its text.
                 if (
                     mapper == null
                     || (gate != null && !AgeWidgets.Visible(gate.AgeTransform))
@@ -422,7 +428,7 @@ namespace ES2Access.Screens
                 for (int i = 0; lines != null && i < lines.Count; i++)
                 {
                     AgeTransform line = lines[i];
-                    if (line != null && SettingRows.Drawn(line))
+                    if (line != null)
                     {
                         Cells.AddReadout(cells, line, keyPrefix + i);
                     }

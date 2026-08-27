@@ -24,6 +24,7 @@ namespace ES2Access.UI.ModOptions
         /// structural id for it.</summary>
         public static void Add(GraphBuilder builder, string key)
         {
+            // Synthetic: mod-authored - the mod's own settings entry, which the game draws nothing for.
             builder.AddItem(Nodes.Synthetic(
                 ControlId.Structural(key),
                 GraphNodes.Button(

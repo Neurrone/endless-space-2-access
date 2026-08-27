@@ -1691,6 +1691,8 @@ namespace ES2Access.Screens
             // The panel carries no caption of its own (below), so the word is the mod's: without it
             // Tab lands on a quest title with nothing saying which corner of the screen it came from.
             builder.PushContext(ModStrings.Get(ModStrings.HudQuestPanel));
+            // Synthetic: the row stands for the pinned QUEST, read off the panel's binding rather than
+            // off any one widget it draws.
             builder.AddItem(Nodes.Synthetic(ControlId.For(panel.PinnedQuest, "hud:quest"), vtable));
             AddQuestButton(
                 builder,
@@ -1727,6 +1729,8 @@ namespace ES2Access.Screens
                 AgeWidgets.Raw(widget)
             );
             AgeWidgets.PointAt(vtable, widget);
+            // Synthetic: mod-authored - the quest strip's own button, which the HUD draws nothing
+            // separate for.
             builder.AddItem(Nodes.Synthetic(ControlId.Structural(key), vtable));
         }
 
@@ -1989,6 +1993,8 @@ namespace ES2Access.Screens
                         () => ModStrings.Get(ModStrings.HudDismissAllNotifications),
                         DismissAllNotifications
                     );
+                    // Synthetic where the strip draws no triangle to stand on: the row is then the mod's
+                    // own, over the notification list the service keeps.
                     builder.AddItem(
                         triangle == null
                             ? (NodeDeclaration)Nodes.Synthetic(
@@ -2124,6 +2130,8 @@ namespace ES2Access.Screens
                             vtable.OnContextual = () => Dismiss(it);
                             GoToLocation(vtable, it);
                             NodeHints.Add(vtable, ModStrings.HintDismiss, UiActions.Contextual);
+                            // Synthetic: the turn log is the mod's own record of notifications that have
+                            // been and gone - the HUD draws nothing for a dismissed one.
                             builder.AddItem(Nodes.Synthetic(
                                 ControlId.For(it, "hud:turn-log/" + turn + "/" + within),
                                 vtable
@@ -2142,6 +2150,7 @@ namespace ES2Access.Screens
                 // exist at all while the log is empty (above), so there is never a button offering to
                 // clear nothing.
                 builder.SetRegion("hud:turn-log/dismiss-all");
+                // Synthetic: mod-authored - a command over the mod's own log.
                 builder.AddItem(Nodes.Synthetic(
                     ControlId.Structural("hud:turn-log/dismiss-all"),
                     GraphNodes.Button(
@@ -2481,6 +2490,10 @@ namespace ES2Access.Screens
         /// </summary>
         private void AddPendingNotifications(List<Cell> found, AgeTransform button)
         {
+            // Kept although the cell carries this widget: the gate counts an ANIMATING alpha as drawn,
+            // which is right for a window fading itself in and wrong here - this control is faded both
+            // ways by the game as its own state, so its own disappearance would keep it declared for
+            // the length of the fade. PAINTED is the stricter test it needs.
             if (!AgeWidgets.Painted(button))
             {
                 return;

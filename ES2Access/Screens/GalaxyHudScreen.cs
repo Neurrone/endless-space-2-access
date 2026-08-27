@@ -3557,6 +3557,7 @@ namespace ES2Access.Screens
             };
 
             Seed(builder, id);
+            // Synthetic: a constellation is a place the mod assembled from the galaxy's own model - nothing on the map is drawn as one.
             builder.BeginGroup(Nodes.Synthetic(id, vtable));
             if (builder.IsExpanded(id))
             {
@@ -3598,6 +3599,7 @@ namespace ES2Access.Screens
             );
             ControlId id = ControlId.Structural(UnexploredKey);
             Seed(builder, id);
+            // Synthetic: the same, for the places the empire has not explored.
             builder.BeginGroup(Nodes.Synthetic(id, vtable));
             if (builder.IsExpanded(id))
             {
@@ -3854,6 +3856,7 @@ namespace ES2Access.Screens
             ControlId id = ControlId.For(it, place);
             if (fleets.Count == 0)
             {
+                // Synthetic: a system is a place in the galaxy model, and the walk that listed it is what says it is there.
                 builder.AddItem(Nodes.Synthetic(id, vtable));
                 return;
             }
@@ -3864,6 +3867,7 @@ namespace ES2Access.Screens
             HashSet<ControlId> expansion = builder.Expansion;
             ControlId group = id;
             vtable.OnCollapse = () => Collapse(expansion, group, it);
+            // Synthetic for the same reason as the leaf above.
             builder.BeginGroup(Nodes.Synthetic(id, vtable));
             if (builder.IsExpanded(id))
             {
@@ -4072,6 +4076,7 @@ namespace ES2Access.Screens
             HashSet<ControlId> expansion = builder.Expansion;
             ControlId group = id;
             vtable.OnCollapse = () => Collapse(expansion, group, it);
+            // Synthetic: a place on the map, assembled from the galaxy model rather than drawn as one thing.
             builder.BeginGroup(Nodes.Synthetic(id, vtable));
             // Only what is open costs anything: a galaxy of closed systems declares one node each.
             if (builder.IsExpanded(id))
@@ -5127,6 +5132,7 @@ namespace ES2Access.Screens
             List<QuestMarkers.Marker> here = MarkersAt(node, empire);
             for (int i = 0; i < here.Count; i++)
             {
+                // Synthetic: a quest marker is a game fact the map draws as a pin over the world, not as a control.
                 builder.AddItem(Nodes.Synthetic(MarkerId(node, here[i]), MarkerNode(here[i])));
             }
         }
@@ -5141,6 +5147,7 @@ namespace ES2Access.Screens
             {
                 if (!all[i].Node.IsValid)
                 {
+                    // Synthetic: the same, for a marker whose place the galaxy no longer holds.
                     builder.AddItem(Nodes.Synthetic(MarkerRowId(all[i]), MarkerNode(all[i])));
                 }
             }
@@ -5523,11 +5530,13 @@ namespace ES2Access.Screens
                         NodeVtable readout = OrbitalReadout(card, system, looking);
                         if (actions.Count == 0 && dossiers.Count == 0)
                         {
+                            // Synthetic: an orbital is read out of the system's model; the card is only what the reading came from.
                             builder.AddItem(Nodes.Synthetic(id, readout));
                             continue;
                         }
 
                         readout.ControlType = ControlTypes.Group;
+                            // Synthetic for the same reason as the leaf above.
                         builder.BeginGroup(Nodes.Synthetic(id, readout));
                         if (builder.IsExpanded(id))
                         {
@@ -5589,11 +5598,13 @@ namespace ES2Access.Screens
                     );
                     if (pages.Count == 0)
                     {
+                        // Synthetic: a page of a system's data sheet is a level the mod invented over the game's own panels.
                         builder.AddItem(Nodes.Synthetic(id, vtable));
                         continue;
                     }
 
                     vtable.ControlType = ControlTypes.Group;
+                    // Synthetic for the same reason as the leaf above.
                     builder.BeginGroup(Nodes.Synthetic(id, vtable));
                     if (builder.IsExpanded(id))
                     {
@@ -7416,6 +7427,8 @@ namespace ES2Access.Screens
                     // click it stands for would have done nothing (<see cref="LaneClick"/>): one
                     // derivation of where this lane leads, used by both keys.
                     vtable.OnActivate = () => LaneClick(target, aim, travel);
+                    // Synthetic: a lane is a link in the galaxy model - the map draws it as a line
+                    // between two places, never as a control.
                     builder.AddItem(Nodes.Synthetic(id, vtable));
                 }
             }
@@ -7491,6 +7504,7 @@ namespace ES2Access.Screens
                 }
 
                 ControlId id = ControlId.Structural(place + "/launch");
+                // Synthetic: mod-authored - the probe launcher is the mod's own way of aiming a launch the map only offers to a mouse.
                 builder.BeginGroup(Nodes.Synthetic(
                     id,
                     GraphNodes.Group(() => ProbeContext.GroupLabel(fleet, node))
@@ -7501,6 +7515,7 @@ namespace ES2Access.Screens
                     {
                         int index = i;
                         double bearing = ProbeContext.Bearing(i);
+                        // Synthetic: mod-authored, one bearing per direction the launch can take.
                         builder.AddItem(Nodes.Synthetic(
                             ControlId.Structural(place + "/launch/" + i),
                             GraphNodes.Button(
@@ -8191,10 +8206,12 @@ namespace ES2Access.Screens
             ControlId id = ControlId.Structural(key);
             if (badges == null || badges.Count == 0)
             {
+                // Synthetic: the row stands for a thing in the galaxy model; the enumeration above is the honesty about it.
                 builder.AddItem(Nodes.Synthetic(id, vtable));
                 return;
             }
 
+            // Synthetic for the same reason as the leaf above.
             builder.BeginGroup(Nodes.Synthetic(id, vtable));
             if (builder.IsExpanded(id))
             {
@@ -8609,6 +8626,7 @@ namespace ES2Access.Screens
                         PointAt(vtable, lozenge);
                     }
 
+                    // Synthetic: a ship in a hangar is read out of the fleet model, which the map draws nothing for.
                     builder.AddItem(Nodes.Synthetic(
                         ControlId.Structural(place + "/hangar/" + held.GUID),
                         vtable
@@ -9120,6 +9138,7 @@ namespace ES2Access.Screens
         {
             for (int i = 0; i < _drifting.Count; i++)
             {
+                // Synthetic: a drifting probe is a game fact the map draws as a mote, not as a control.
                 builder.AddItem(Nodes.Synthetic(ProbeId(_drifting[i]), ProbeNode(_drifting[i])));
             }
         }
@@ -9310,6 +9329,7 @@ namespace ES2Access.Screens
                     it == null ? null : it.AgeTransform,
                     it == null ? null : it.Tooltip
                 );
+                // Synthetic: a shot in flight is read out of the battle, not off any widget.
                 builder.AddItem(Nodes.Synthetic(ProjectileId(shot), vtable));
             }
         }
@@ -9445,10 +9465,12 @@ namespace ES2Access.Screens
                 string key = PinKey(request);
                 ControlId id = PinId(request);
                 vtable.ControlType = ControlTypes.Group;
+                // Synthetic: an ally's pinned request is read out of the coordination model.
                 builder.BeginGroup(Nodes.Synthetic(id, vtable));
                 if (builder.IsExpanded(id))
                 {
                     CoordinationRequest dismissed = request;
+                    // Synthetic: mod-authored - the command that puts one of those requests away.
                     builder.AddItem(Nodes.Synthetic(
                         ControlId.Structural(key + "/dismiss"),
                         GraphNodes.Button(

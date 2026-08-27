@@ -188,7 +188,7 @@ namespace ES2Access.Screens
         private void AddCard(List<Cell> cells, AgeControlToggle card, int index)
         {
             AgeTransform widget = AgeWidgets.Transform(card);
-            if (card == null || !AgeWidgets.Visible(widget))
+            if (card == null)
             {
                 return;
             }
@@ -269,7 +269,7 @@ namespace ES2Access.Screens
 
         private static void AddButton(List<Cell> cells, AgeTransform widget)
         {
-            if (widget == null || !AgeWidgets.Visible(widget))
+            if (widget == null)
             {
                 return;
             }

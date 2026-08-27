@@ -392,6 +392,7 @@ namespace ES2Access.Screens
                         builder.EndGroup();
                     }
 
+                    // Synthetic: mod-authored - the mod's own grouping over the game's settings rows.
                     builder.BeginGroup(
                         Nodes.Synthetic(GroupId(key, rows[i]), GroupVtable(rows[i], group)),
                         group.Expanded

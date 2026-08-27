@@ -205,6 +205,9 @@ namespace ES2Access.Screens
                 for (int i = 0; children != null && i < children.Count; i++)
                 {
                     AgeTransform tile = children[i];
+                    // The surviving tiles are NUMBERED by their place in this list, and the number is
+                    // the node's structural key - so a tile the grid is not drawing must never enter
+                    // it, or every tile after it is renamed.
                     if (tile != null && AgeWidgets.Visible(tile) && Item(tile) != null)
                     {
                         _tiles.Add(tile);
@@ -272,7 +275,7 @@ namespace ES2Access.Screens
             _cells.Clear();
 
             AgeTransform hero = window.HeroGroup;
-            if (hero != null && AgeWidgets.Visible(hero))
+            if (hero != null)
             {
                 AgeTooltip tooltip = window.HeroTooltip;
                 AddReadout(_cells, hero, "improvements:hero", tooltip);
@@ -296,7 +299,7 @@ namespace ES2Access.Screens
 
         private static void AddButton(List<Cell> cells, AgeTransform widget)
         {
-            if (widget == null || !AgeWidgets.Visible(widget))
+            if (widget == null)
             {
                 return;
             }
@@ -358,7 +361,7 @@ namespace ES2Access.Screens
             AgeTooltip tooltip = null
         )
         {
-            if (widget == null || !AgeWidgets.Visible(widget))
+            if (widget == null)
             {
                 return;
             }

@@ -41,6 +41,11 @@ namespace ES2Access.Screens
         /// nothing, so an eighth empire went on being declared, and read, after the count had come back
         /// down to seven. Only the widget's own alpha is asked about: the game fades a read-only
         /// setting to half, and half is still drawn.
+        ///
+        /// No longer the EXISTENCE gate for the rows below - every one of them stands on the widget it
+        /// was read off, and <see cref="NodeGate"/> asks this question of that widget and of its whole
+        /// ancestry. What is left here is banding input and the content readings other screens make of
+        /// it.
         /// </summary>
         public static bool Drawn(AgeTransform widget)
         {
@@ -66,7 +71,7 @@ namespace ES2Access.Screens
         )
         {
             AgeTransform widget = item == null ? null : item.AgeTransform;
-            if (widget == null || !Drawn(widget))
+            if (widget == null)
             {
                 return;
             }
@@ -264,7 +269,7 @@ namespace ES2Access.Screens
         public static void AddButton(GraphBuilder builder, AgeControlButton button, string key)
         {
             AgeTransform widget = AgeWidgets.Transform(button);
-            if (button == null || !Drawn(widget))
+            if (button == null)
             {
                 return;
             }
@@ -300,6 +305,9 @@ namespace ES2Access.Screens
             List<AgeTransform> drawn = new List<AgeTransform>();
             for (int i = 0; widgets != null && i < widgets.Count; i++)
             {
+                // Banding input: the band's rows come out of these RECTANGLES, and a retired button's
+                // stale rectangle splits one drawn row into two. The gate, which only sees finished
+                // nodes, is too late for that - so the ghost never reaches the layout.
                 if (Drawn(widgets[i]) && AgeWidgets.Button(widgets[i]) != null)
                 {
                     drawn.Add(widgets[i]);
@@ -393,8 +401,8 @@ namespace ES2Access.Screens
         }
 
         /// <summary>The same field as a <see cref="Cell"/>, for a screen that gathers its controls and
-        /// emits them in the rows the game drew them in rather than one at a time. Null for a field the
-        /// game is not drawing.</summary>
+        /// emits them in the rows the game drew them in rather than one at a time. Null where there is
+        /// no field, no identity or no editor to work it with.</summary>
         public static Cell TextFieldCell(
             AgeControlTextArea field,
             Func<string> label,
@@ -407,7 +415,7 @@ namespace ES2Access.Screens
         )
         {
             AgeTransform widget = AgeWidgets.Transform(field);
-            if (field == null || id == null || editor == null || !Drawn(widget))
+            if (field == null || id == null || editor == null)
             {
                 return null;
             }
@@ -464,7 +472,7 @@ namespace ES2Access.Screens
         /// the review buffer.</summary>
         public static void AddReadout(GraphBuilder builder, AgeTransform widget, string key)
         {
-            if (widget == null || !Drawn(widget))
+            if (widget == null)
             {
                 return;
             }
@@ -563,7 +571,7 @@ namespace ES2Access.Screens
         )
         {
             AgeTransform widget = AgeWidgets.Transform(list);
-            if (list == null || !Drawn(widget))
+            if (list == null)
             {
                 return;
             }

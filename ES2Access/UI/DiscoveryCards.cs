@@ -78,6 +78,7 @@ namespace ES2Access.UI
         private static void AddLabel(List<string> fields, AgePrimitiveLabel label)
         {
             AgeTransform widget = Transform(label);
+            // Content: which fields contribute a line to the card's reading.
             if (AgeWidgets.Visible(widget))
             {
                 fields.Add(AgeText.Label(label));
@@ -107,6 +108,7 @@ namespace ES2Access.UI
         /// previous world's findings are still written on.</summary>
         private static void AddItems(List<string> fields, AgeTransform table)
         {
+            // Content: the same, for a whole table of them.
             if (!AgeWidgets.Visible(table))
             {
                 return;
@@ -115,6 +117,7 @@ namespace ES2Access.UI
             IList<AgeTransform> items = Children(table);
             for (int i = 0; items != null && i < items.Count; i++)
             {
+                // Content: which items contribute a line.
                 if (items[i] != null && AgeWidgets.Visible(items[i]))
                 {
                     fields.Add(AgeWidgets.ItemText(items[i]));

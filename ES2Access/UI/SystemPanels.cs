@@ -65,6 +65,7 @@ namespace ES2Access.UI
         {
             try
             {
+                // Flow control: the band and the grid below are each walked item by item.
                 if (panel == null || !AgeWidgets.Visible(panel.AgeTransform))
                 {
                     return;
@@ -72,6 +73,7 @@ namespace ES2Access.UI
 
                 Bar.Clear();
                 AgeTransform filters = panel.ConstructibleFiltersTable;
+                // Flow control: the filter strip below is walked toggle by toggle.
                 if (filters != null && AgeWidgets.Visible(filters))
                 {
                     ConstructibleFilter[] all = filters.GetComponentsInChildren<ConstructibleFilter>(true);
@@ -130,7 +132,7 @@ namespace ES2Access.UI
         /// </summary>
         private static void AddFilter(List<Cell> cells, ConstructibleFilter filter, string keyPrefix)
         {
-            if (filter == null || !AgeWidgets.Visible(filter.AgeTransform))
+            if (filter == null)
             {
                 return;
             }
@@ -168,7 +170,7 @@ namespace ES2Access.UI
             string keyPrefix
         )
         {
-            if (item == null || !AgeWidgets.Visible(item.AgeTransform))
+            if (item == null)
             {
                 return;
             }
@@ -490,6 +492,8 @@ namespace ES2Access.UI
         {
             try
             {
+                // Flow control: the queue below is walked line by line, and each line is read for its
+                // progress and its buyout buttons.
                 if (panel == null || !AgeWidgets.Visible(panel.AgeTransform))
                 {
                     return;
@@ -527,6 +531,8 @@ namespace ES2Access.UI
         private static bool Queued(ConstructionLine line)
         {
             return line != null
+                // Synthetic guard: a queue line is keyed on its Construction and declares no evidence,
+                // so this is the whole of its existence test.
                 && AgeWidgets.Visible(line.AgeTransform)
                 && line.Construction != null;
         }
@@ -571,11 +577,14 @@ namespace ES2Access.UI
             List<CardActions.CardAction> buyouts = BuyoutButtons(line);
             if (buyouts.Count == 0)
             {
+                // Synthetic: the row stands for the CONSTRUCTION in the queue, and Queued() above -
+                // which asks the pooled line whether it is drawn - is what says it is still there.
                 builder.AddItem(Nodes.Synthetic(id, vtable));
                 return;
             }
 
             vtable.ControlType = ControlTypes.Group;
+            // Synthetic for the same reason as the leaf above.
             builder.BeginGroup(Nodes.Synthetic(id, vtable));
             if (builder.IsExpanded(id))
             {
@@ -639,6 +648,8 @@ namespace ES2Access.UI
                 for (int i = 0; buyouts != null && i < buyouts.Length; i++)
                 {
                     BuyoutButton buyout = buyouts[i];
+                    // The collected actions are NUMBERED by their place in the list CardActions.Emit
+                    // builds, and the number is each node's structural key.
                     if (buyout == null || !AgeWidgets.Visible(buyout.AgeTransform))
                     {
                         continue;
@@ -750,6 +761,7 @@ namespace ES2Access.UI
                 message.ListItem(
                     ModStrings.Format(ModStrings.SystemQueuePosition, AgeText.Label(line.Rank))
                 );
+                // Content: whether the progress figure joins the line's phrase.
                 if (line.Progress != null && line.Progress.Visible)
                 {
                     message.ListItem(
@@ -760,6 +772,7 @@ namespace ES2Access.UI
                     );
                 }
 
+                // Content: whether the remaining-turns figure joins it.
                 if (line.RemainingTurnLabel != null && line.RemainingTurnLabel.Visible)
                 {
                     message.ListItem(
@@ -797,6 +810,7 @@ namespace ES2Access.UI
         {
             try
             {
+                // Flow control: the shared ship reader walks the whole panel.
                 if (panel == null || !AgeWidgets.Visible(panel.AgeTransform))
                 {
                     return;
@@ -827,6 +841,7 @@ namespace ES2Access.UI
                 {
                     if (Grid.Count == 0)
                     {
+                        // Synthetic: mod-authored - the mod's own line saying the list is empty.
                         builder.AddItem(Nodes.Synthetic(
                             ControlId.Structural(keys + "/empty"),
                             GraphNodes.Readout(

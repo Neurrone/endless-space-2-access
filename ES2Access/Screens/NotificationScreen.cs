@@ -1863,6 +1863,8 @@ namespace ES2Access.Screens
 
         private static void Collect(AgeTransform widget, List<AgeTransform> lines, int depth)
         {
+            // Flow control: this is the scraper's recursion stop as well as a line's own test - a
+            // hidden branch's children each keep Visible of their own and would be read out of it.
             if (widget == null || depth > MaxAncestors || !widget.Visible)
             {
                 return;
@@ -1894,6 +1896,8 @@ namespace ES2Access.Screens
         /// <summary>Whether the game wrote anything the player can see inside this.</summary>
         private static bool Draws(AgeTransform widget, int depth)
         {
+            // Flow control: the same recursion stop, for the boolean 'does this subtree draw
+            // anything' the row shape is decided from.
             if (widget == null || depth > MaxCellDepth || !widget.Visible)
             {
                 return false;
@@ -1943,6 +1947,7 @@ namespace ES2Access.Screens
             for (int i = 0; children != null && i < children.Count; i++)
             {
                 AgeTransform child = children[i];
+                // Shape: which children count as a row's column pieces, not whether the row exists.
                 if (child == null || !child.Visible || !Draws(child, 0))
                 {
                     continue;
@@ -2242,6 +2247,7 @@ namespace ES2Access.Screens
             int depth
         )
         {
+            // Content: which labels are collected into a cell's text.
             if (widget == null || depth > MaxCellDepth || !widget.Visible)
             {
                 return;
@@ -4491,6 +4497,7 @@ namespace ES2Access.Screens
 
         private static void Labels(AgeTransform widget, List<AgePrimitiveLabel> into, int depth)
         {
+            // Content: which labels are collected at all.
             if (widget == null || depth > MaxAncestors || !widget.Visible)
             {
                 return;
@@ -4960,6 +4967,8 @@ namespace ES2Access.Screens
                 AgeTransform at = widget;
                 for (int depth = 0; at != null && depth < MaxAncestors; depth++)
                 {
+                    // Infrastructure: this file's own ancestor-walking Visible, the primitive the readings
+                    // above are built out of.
                     if (!at.Visible)
                     {
                         return false;
@@ -5015,6 +5024,8 @@ namespace ES2Access.Screens
                     depth++
                 )
                 {
+                    // Painted with an explicit stop at root, so the WINDOW's own arrival fade is not read as
+                    // a blank popup - which is more than any one-widget test can express.
                     if (!AgeWidgets.Paints(at))
                     {
                         return false;

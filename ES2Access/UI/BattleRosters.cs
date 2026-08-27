@@ -49,6 +49,7 @@ namespace ES2Access.UI
         /// </summary>
         public static void Roster(GraphBuilder builder, AgeTransform root, string prefix)
         {
+            // Flow control: the whole roster below is collected by component scrapes over this root.
             if (builder == null || root == null || !AgeWidgets.Visible(root))
             {
                 return;
@@ -79,7 +80,7 @@ namespace ES2Access.UI
         public static void Ship(GraphBuilder builder, BattleShipItem item, string key)
         {
             AgeTransform widget = item == null ? null : item.AgeTransform;
-            if (widget == null || !AgeWidgets.Visible(widget))
+            if (widget == null)
             {
                 return;
             }
@@ -158,6 +159,9 @@ namespace ES2Access.UI
             for (int i = 0; i < garrisons.Length; i++)
             {
                 BattleGarrisonPanel panel = garrisons[i];
+                // The collected entries are SORTED by rectangle and read in that order, so a panel the
+                // report is not drawing must never enter the list - its stale rectangle would reorder
+                // the ones that are.
                 if (panel == null || !AgeWidgets.Visible(panel.AgeTransform))
                 {
                     continue;
@@ -188,6 +192,7 @@ namespace ES2Access.UI
             for (int i = 0; i < flotillas.Length; i++)
             {
                 BattleFlotillasPanel panel = flotillas[i];
+                // Same ordering: an undrawn panel would take a place in the sorted reading.
                 if (panel == null || !AgeWidgets.Visible(panel.AgeTransform))
                 {
                     continue;
@@ -211,6 +216,8 @@ namespace ES2Access.UI
         )
         {
             AgeTransform header = panel.GarrisonTitleGroup;
+            // Different widget as well as ordering: the entry stands on the PANEL and this asks about
+            // the header group inside it.
             if (header != null && AgeWidgets.Visible(header))
             {
                 BattleFlotillasPanel it = panel;
@@ -238,6 +245,7 @@ namespace ES2Access.UI
             for (int i = 0; i < lines.Length; i++)
             {
                 FlotillaLine line = lines[i];
+                // Same ordering as the panels above.
                 if (line == null || !AgeWidgets.Visible(line.AgeTransform))
                 {
                     continue;
@@ -347,12 +355,14 @@ namespace ES2Access.UI
         )
         {
             MessageBuilder name = new MessageBuilder().ListItem(AgeText.Label(title));
+            // Content: whether the command-points figure joins the name.
             if (commandPoints != null && AgeWidgets.Visible(commandPointsGroup))
             {
                 name.ListItem(AgeText.Clean(CommandPointsTitleKey))
                     .ListItem(AgeText.Label(commandPoints));
             }
 
+            // Content: whether the invisibility word joins it.
             if (AgeWidgets.Visible(invisibility))
             {
                 name.ListItem(CardActions.FirstLine(AgeWidgets.Raw(invisibility)));
@@ -374,6 +384,7 @@ namespace ES2Access.UI
                 return new MessageBuilder()
                     .ListItem(named ?? index)
                     .ListItem(
+                        // Content: which STRING names an empty flotilla.
                         AgeWidgets.Visible(Widget(line.EmptyLabel))
                             ? AgeText.Label(line.EmptyLabel)
                             : null
@@ -407,6 +418,7 @@ namespace ES2Access.UI
             AgeTransform widget = Widget(label);
             if (
                 label == null
+                // Same ordering: an undrawn note would take a place in the sorted reading.
                 || !AgeWidgets.Visible(widget)
                 || string.IsNullOrEmpty(AgeText.Label(label))
             )

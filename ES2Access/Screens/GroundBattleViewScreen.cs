@@ -410,7 +410,7 @@ namespace ES2Access.Screens
         /// sentence it explains itself with, which is what a sighted player reads on hover.</summary>
         private void Command(AgeTransform widget, string titleKey, string key)
         {
-            if (widget == null || !AgeWidgets.Visible(widget))
+            if (widget == null)
             {
                 return;
             }
@@ -436,6 +436,8 @@ namespace ES2Access.Screens
             AgeTransform widget = label == null ? null : label.AgeTransform;
             AgeControl control = AgeWidgets.ParentControl(widget);
             AgeTransform button = control == null ? widget : control.AgeTransform;
+            // Different widget: the node stands on the BUTTON around the label, and this asks about the
+            // label inside it - which the gate's walk up the ancestry never reaches.
             if (widget == null || !AgeWidgets.Visible(widget))
             {
                 return;
@@ -456,12 +458,15 @@ namespace ES2Access.Screens
             Cells.Add(_cells, button, ControlId.For(label, key), vtable);
         }
 
+        /// <summary>What a label SAYS while it is drawn - a string, not a node.</summary>
         private static string Visible(AgePrimitiveLabel label)
         {
             AgeTransform widget = label == null ? null : label.AgeTransform;
             return AgeWidgets.Visible(widget) ? AgeText.Label(label) : null;
         }
 
+        /// <summary>Whether a phase's whole band is being drawn - flow control for the readings under
+        /// it, each of which walks a panel of its own.</summary>
         private static bool Shown(AgeTransform group)
         {
             return group != null && AgeWidgets.Visible(group);

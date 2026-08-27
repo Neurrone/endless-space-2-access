@@ -347,10 +347,11 @@ namespace ES2Access.UI
         /// The sentence's first line is the name, and the mode is <see cref="TooltipMode.None"/> so
         /// the same words are not announced twice; the whole sentence is still in the node's buffer.
         /// PAINTED is the gate, because these badges are prefab decoration the game fades rather than
-        /// hides - and it stays asked here even though the node now carries this widget, for two
-        /// reasons the gate cannot cover: the game fades a badge's GROUP as readily as the badge, and
-        /// this collector DEDUPES by tooltip, so a ghost admitted here can swallow the drawn sibling
-        /// that shares its sentence.
+        /// hides - and it stays asked here even though the node now carries this widget, for a reason
+        /// the gate can never cover: this collector DEDUPES by tooltip, and the dedupe happens while
+        /// the dossiers are being COLLECTED, before any node exists. A ghost admitted here swallows the
+        /// drawn sibling that shares its sentence, and the gate then drops the one node the pair had
+        /// left.
         /// </summary>
         public static void AddPlain(List<Dossier> into, AgeTransform widget)
         {
@@ -399,8 +400,8 @@ namespace ES2Access.UI
 
         /// <summary>Every plain-text explanation hanging INSIDE a widget, one node each, in the order
         /// the prefab lays them out - for a row that draws a strip of wordless badges. The paint test
-        /// on the CONTAINER stays: it prunes the whole strip, and a strip faded as one leaves every
-        /// badge inside it at alpha 1, which is precisely what the one-step gate cannot see.</summary>
+        /// on the CONTAINER stays as flow control: it prunes the whole strip before its tooltips are
+        /// resolved, and the dedupe below happens at collection, where no gate can reach.</summary>
         public static void AddPlainInside(List<Dossier> into, AgeTransform widget, int maxDepth = 4)
         {
             if (into == null || widget == null || !AgeWidgets.Painted(widget))

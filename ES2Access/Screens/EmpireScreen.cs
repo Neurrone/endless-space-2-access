@@ -406,6 +406,7 @@ namespace ES2Access.Screens
             try
             {
                 return ModStrings.Get(
+                    // Content: which of two words the action is called by.
                     AgeWidgets.Visible(slot.RemoveRelicsImage)
                         ? ModStrings.EmpireRelicSlotRemove
                         : ModStrings.EmpireRelicSlotAssign
@@ -423,6 +424,7 @@ namespace ES2Access.Screens
         {
             try
             {
+                // Content: whether the assigned-relics figure is said at all.
                 return AgeWidgets.Visible(slot.AssignRelicsGroup)
                     ? AgeText.Label(slot.AssignedRelicsLabel)
                     : null;
@@ -477,7 +479,7 @@ namespace ES2Access.Screens
         private static void AddTab(List<Cell> cells, AgeControlToggle toggle, int index)
         {
             AgeTransform widget = AgeWidgets.Transform(toggle);
-            if (widget == null || !AgeWidgets.Visible(widget))
+            if (widget == null)
             {
                 return;
             }
@@ -502,6 +504,7 @@ namespace ES2Access.Screens
         {
             StarSystemsManagementPanel panel = window.StarSystemsManagementPanel;
             GuiTable table = panel == null ? null : panel.GuiTable;
+            // Flow control: the shared table reading walks every line and cell of it.
             if (table == null || !AgeWidgets.Visible(panel.AgeTransform))
             {
                 return;
@@ -710,6 +713,7 @@ namespace ES2Access.Screens
             try
             {
                 StarSystemPlanetCardsPanel cards = panel.StarSystemPlanetCardsPanel;
+                // Flow control: each of these four readings descends a panel of its own.
                 if (cards != null && AgeWidgets.Visible(cards.AgeTransform))
                 {
                     builder.BeginStop(PlanetsStop);
@@ -720,6 +724,8 @@ namespace ES2Access.Screens
 
                 StarSystemConstructiblePanel constructibles =
                     Child<StarSystemConstructiblePanel>(panel.ConstructiblePanelContainer);
+                // Flow control: a stop and a context would be opened around nothing, and the shared
+                // reading walks the whole panel.
                 if (constructibles != null && AgeWidgets.Visible(constructibles.AgeTransform))
                 {
                     builder.BeginStop(ConstructiblesStop);
@@ -729,6 +735,7 @@ namespace ES2Access.Screens
                 }
 
                 StarSystemQueuePanel queue = Child<StarSystemQueuePanel>(panel.QueuePanelContainer);
+                // Flow control: same, for the construction queue.
                 if (queue != null && AgeWidgets.Visible(queue.AgeTransform))
                 {
                     builder.BeginStop(QueueStop);
@@ -738,6 +745,7 @@ namespace ES2Access.Screens
                 }
 
                 StarSystemHangarPanel hangar = Child<StarSystemHangarPanel>(panel.HangarPanelContainer);
+                // Flow control: same, for the hangar.
                 if (hangar != null && AgeWidgets.Visible(hangar.AgeTransform))
                 {
                     builder.BeginStop(HangarStop);
@@ -782,6 +790,9 @@ namespace ES2Access.Screens
                 PlanetCard[] all = panel.GetComponentsInChildren<PlanetCard>(true);
                 for (int i = 0; i < all.Length; i++)
                 {
+                    // The kept cards are SORTED by rectangle below and read in that order, so a card
+                    // the panel is not drawing must not be in the list - its stale rectangle would
+                    // reorder the ones that are.
                     if (all[i] != null && AgeWidgets.Visible(all[i].AgeTransform) && all[i].Planet != null)
                     {
                         _cards.Add(all[i]);
@@ -840,11 +851,14 @@ namespace ES2Access.Screens
             List<Population> populations = Populations(card);
             if (buttons.Count == 0 && populations.Count == 0)
             {
+                // Synthetic: the card stands for the PLANET, and the walk that found the planet is
+                // what vouches for it.
                 builder.AddItem(Nodes.Synthetic(id, vtable));
                 return;
             }
 
             vtable.ControlType = ControlTypes.Group;
+            // Synthetic for the same reason as the leaf above: the card stands for the planet.
             builder.BeginGroup(Nodes.Synthetic(id, vtable));
             if (builder.IsExpanded(id))
             {
@@ -884,6 +898,7 @@ namespace ES2Access.Screens
         private static void AddCuriosities(List<CardActions.CardAction> found, PlanetCard card)
         {
             AgeTransform table = card.CuriosityItemsTable;
+            // Flow control: the items under it are read for their wrapper titles one by one.
             if (table == null || !AgeWidgets.Visible(table))
             {
                 return;
@@ -893,6 +908,9 @@ namespace ES2Access.Screens
             for (int i = 0; items != null && i < items.Count; i++)
             {
                 AgeTransform item = items[i];
+                // The collected actions are NUMBERED by their place in the list CardActions.Emit
+                // builds, and the number is each node's structural key - so an item the card is not
+                // drawing must never enter it.
                 if (
                     item != null
                     && AgeWidgets.Visible(item)
@@ -982,6 +1000,7 @@ namespace ES2Access.Screens
             try
             {
                 PlanetPopulationEnumerator enumerator = card.PlanetCardPopulationEnumerator;
+                // Which POPULATIONS the card is showing - a model list, not a node.
                 if (enumerator == null || !AgeWidgets.Visible(enumerator.AgeTransform))
                 {
                     return found;
@@ -1050,6 +1069,8 @@ namespace ES2Access.Screens
                     vtable.OnPickUp = () => Pick(source, held);
                 }
 
+                // Synthetic: a population unit is a game fact read off the colony, and the marker ring
+                // the walk enumerated is what says it is there.
                 builder.AddItem(Nodes.Synthetic(
                     ControlId.For(population, keyPrefix + "/population/" + i),
                     vtable
@@ -1562,7 +1583,7 @@ namespace ES2Access.Screens
         {
             VictoryConditionSector sector =
                 widget == null ? null : widget.GetComponent<VictoryConditionSector>();
-            if (sector == null || !AgeWidgets.Visible(widget))
+            if (sector == null)
             {
                 return;
             }
@@ -1626,6 +1647,8 @@ namespace ES2Access.Screens
             try
             {
                 AgeTransform container = sector.EmpirePerformanceContainer;
+                // Shape, not existence: an empty answer makes the sector a plain readout instead of an
+                // expandable group, so a hidden rim must not read as a group with nothing in it.
                 return container == null || !AgeWidgets.Visible(container)
                     ? null
                     : container.Children;
@@ -1650,7 +1673,7 @@ namespace ES2Access.Screens
         {
             EmpirePerformanceHex hex =
                 widget == null ? null : widget.GetComponent<EmpirePerformanceHex>();
-            if (hex == null || !AgeWidgets.Visible(widget))
+            if (hex == null)
             {
                 return;
             }
@@ -1730,6 +1753,7 @@ namespace ES2Access.Screens
             {
                 return window != null
                     && window.VictoryAndPerformancePanel != null
+                    // Flow control: whether the Victory tab's whole subtree is walked at all.
                     && AgeWidgets.Visible(window.VictoryAndPerformancePanel.AgeTransform);
             }
             catch (Exception)
@@ -1756,6 +1780,7 @@ namespace ES2Access.Screens
 
         private static void AddWidgetLines(List<string> lines, AgeTransform widget)
         {
+            // Content: which drawn lines are gathered into a reading.
             if (widget == null || !AgeWidgets.Visible(widget))
             {
                 return;

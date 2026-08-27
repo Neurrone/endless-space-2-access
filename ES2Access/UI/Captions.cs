@@ -110,6 +110,9 @@ namespace ES2Access.UI
         /// drawing the widget at all, so a caption the game has put away is no row.</summary>
         private static AgeTooltip Explanation(AgeTransform widget)
         {
+            // Asked of the caption AND of the block around it, so this decides WHICH of two widgets
+            // supplies the sentence - and the block is not the widget the row stands on, which is
+            // where the gate's ancestry walk would have covered it.
             AgeTooltip tooltip = AgeWidgets.Visible(widget) ? AgeWidgets.Raw(widget) : null;
             return tooltip != null && AgeWidgets.Draws(tooltip) ? tooltip : null;
         }
@@ -127,6 +130,7 @@ namespace ES2Access.UI
         /// <summary>What the caption says, or null where the game is not drawing it.</summary>
         public static string Text(AgeTransform widget)
         {
+            // Content: which STRING names the block.
             return widget == null || !AgeWidgets.Visible(widget)
                 ? null
                 : AgeWidgets.TextOf(widget);

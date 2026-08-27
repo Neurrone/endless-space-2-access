@@ -303,6 +303,8 @@ namespace ES2Access.Screens
                 if (
                     panel == null
                     || panel.FleetActionsTable == null
+                    // Flow control: the actions are found by a component scrape and each read for its
+                    // badges before anything is declared.
                     || !AgeWidgets.Visible(panel.AgeTransform)
                 )
                 {
@@ -356,7 +358,12 @@ namespace ES2Access.Screens
         /// </summary>
         private static void AddAction(List<Cell> cells, FleetActionItem item, GalaxyHudScreen page)
         {
-            if (item == null || !AgeWidgets.Visible(item.AgeTransform) || item.AgeTransform.Alpha == 0f)
+            // Kept as flow control: the caller scrapes every FleetActionItem under the panel with
+            // includeInactive, and the fixture holds about thirty of them against a handful the game
+            // is drawing. Without this each of the rest would build a whole vtable, its tooltips and
+            // its badges every frame for the gate to throw away (measured: 30 distinct
+            // fleets:action/* drops in one walk).
+            if (item == null || !AgeWidgets.Paints(item.AgeTransform))
             {
                 return;
             }
@@ -370,6 +377,7 @@ namespace ES2Access.Screens
             Func<string> badge = () => BadgeText(it);
 
             NodeVtable vtable;
+            // Which SHAPE the node takes - a tick or a button - not whether it exists.
             if (item.Toggle != null && item.Toggle.Visible)
             {
                 vtable = GraphNodes.Checkbox(
@@ -562,6 +570,7 @@ namespace ES2Access.Screens
             try
             {
                 FleetsManagementPanel panel = window.FleetsManagementPanel;
+                // Flow control: the whole management reading walks the panel.
                 if (panel == null || !AgeWidgets.Visible(panel.AgeTransform))
                 {
                     return;
@@ -622,6 +631,8 @@ namespace ES2Access.Screens
             FleetsManagementPanel panel
         )
         {
+            // Which BRANCH the strip is: the game draws the banner INSTEAD of the buttons, so this
+            // chooses between two readings rather than gating one node.
             if (panel.OtherEmpireBanner != null && AgeWidgets.Visible(panel.OtherEmpireBanner))
             {
                 AgePrimitiveLabel content = panel.OtherEmpireContent;
@@ -649,7 +660,7 @@ namespace ES2Access.Screens
         )
         {
             AgeTransform widget = AgeWidgets.Transform(button);
-            if (button == null || !AgeWidgets.Visible(widget))
+            if (button == null)
             {
                 return;
             }
@@ -881,6 +892,7 @@ namespace ES2Access.Screens
         /// name, or the system a hangar belongs to.</summary>
         private static string LineName(FleetLine line)
         {
+            // Content: which drawn label supplies the line's name.
             if (line.FleetNameLabel != null && line.FleetNameLabel.AgeTransform.Visible)
             {
                 return AgeText.Label(line.FleetNameLabel);
@@ -928,6 +940,7 @@ namespace ES2Access.Screens
             string captionKey
         )
         {
+            // Content: whether this stat fragment joins the line's phrase.
             if (group == null || !group.Visible)
             {
                 return;
@@ -964,6 +977,7 @@ namespace ES2Access.Screens
             {
                 if (
                     window.HeroAndShipsPanel == null
+                    // Flow control: both readings under it walk panels of their own.
                     || !AgeWidgets.Visible(window.HeroAndShipsPanel.AgeTransform)
                 )
                 {
@@ -1026,6 +1040,7 @@ namespace ES2Access.Screens
         private static void AddHero(List<Cell> cells, global::FleetsScreen window)
         {
             FleetHeroPanel panel = window.FleetHeroPanel;
+            // Flow control: the hero's ship row under it is a walk of its own.
             if (panel == null || !AgeWidgets.Visible(panel.AgeTransform))
             {
                 return;
@@ -1035,7 +1050,6 @@ namespace ES2Access.Screens
             if (
                 panel.GuiHero != null
                 && panel.HeroPortraitIcon != null
-                && AgeWidgets.Visible(panel.HeroPortraitIcon.AgeTransform)
             )
             {
                 NodeVtable portrait = GraphNodes.Readout(
@@ -1112,6 +1126,7 @@ namespace ES2Access.Screens
         {
             for (int i = 0; widgets != null && i < widgets.Length; i++)
             {
+                // Candidate choice: the first drawn of several alternatives, which the gate cannot make.
                 if (widgets[i] != null && AgeWidgets.Visible(widgets[i]))
                 {
                     return widgets[i];
@@ -1135,6 +1150,7 @@ namespace ES2Access.Screens
             ShipsManagementPanel panel
         )
         {
+            // Flow control: the shared ship reader walks the whole panel.
             if (panel == null || !AgeWidgets.Visible(panel.AgeTransform))
             {
                 return null;
@@ -1142,6 +1158,7 @@ namespace ES2Access.Screens
 
             ShipRows.Ships(cells, panel, "fleets:ships", true);
             ControlId landing = cells.Count == 0 ? null : cells[0].Id;
+            // Which BRANCH again: the banner is drawn INSTEAD of the toolbar.
             if (panel.OtherEmpireBanner != null && AgeWidgets.Visible(panel.OtherEmpireBanner))
             {
                 AgePrimitiveLabel content = panel.OtherEmpireContent;

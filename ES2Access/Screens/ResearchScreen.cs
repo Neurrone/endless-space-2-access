@@ -233,6 +233,8 @@ namespace ES2Access.Screens
                 ResearchKeySidePanel key = window.ResearchKeySidePanel;
 
                 builder.BeginStop(StatusStop);
+                // Flow control: a region and a context would be opened around nothing, and each panel
+                // reading walks a panel of its own.
                 if (status != null && AgeWidgets.Visible(status.AgeTransform))
                 {
                     builder.SetRegion(QueueRegion);
@@ -241,6 +243,7 @@ namespace ES2Access.Screens
                     builder.PopContext();
                 }
 
+                // Flow control: same as the status panel above.
                 if (key != null && AgeWidgets.Visible(key.AgeTransform))
                 {
                     builder.SetRegion(KeyRegion);
@@ -272,7 +275,7 @@ namespace ES2Access.Screens
             AgeTransform empty = Widget(panel.EmptyResearchQueueLabel);
             AddDrawnLine(builder, QueueTitle(Group(panel.EmptyResearchQueueLabel), empty), "research:queue-title", null);
 
-            if (AgeWidgets.Visible(empty))
+            if (empty != null)
             {
                 AddDrawnLine(builder, empty, "research:queue-empty", null);
                 return;
@@ -304,6 +307,8 @@ namespace ES2Access.Screens
         {
             return item != null
                 && item.GuiTechnology != null
+                // Which items the queue really holds - the answer also decides whether the panel reads
+                // as an empty queue, and the pool keeps retired items around.
                 && AgeWidgets.Visible(item.AgeTransform);
         }
 
@@ -347,6 +352,8 @@ namespace ES2Access.Screens
             }
 
             AgeWidgets.Point(vtable, item.Button, item.Tooltip, item.AgeTransform);
+            // Synthetic: the row stands for the queued TECHNOLOGY, and Queued() above - which asks the
+            // pooled item whether it is drawn - is the honesty about whether it is still queued.
             builder.AddItem(Nodes.Synthetic(
                 ControlId.For(technology, "research:queue/" + technology.Name),
                 vtable
@@ -514,6 +521,7 @@ namespace ES2Access.Screens
             AddSwitch(builder, panel.DisplayKeyToggle, "research:key");
 
             AgeTransform content = panel.ContentGroup;
+            // Flow control: every row under the group is read for its heading text.
             IList<AgeTransform> rows = content == null || !AgeWidgets.Visible(content)
                 ? null
                 : content.Children;
@@ -555,6 +563,7 @@ namespace ES2Access.Screens
         private static string Heading(AgeTransform row)
         {
             if (
+                // Shape: whether this row counts as a section HEADING, not whether it exists.
                 row == null
                 || !AgeWidgets.Visible(row)
                 || row.GetComponent<AgePrimitiveLabel>() == null
@@ -571,7 +580,7 @@ namespace ES2Access.Screens
         private static void AddSwitch(GraphBuilder builder, AgeControlToggle toggle, string key)
         {
             AgeTransform widget = AgeWidgets.Transform(toggle);
-            if (widget == null || !AgeWidgets.Visible(widget))
+            if (widget == null)
             {
                 return;
             }
@@ -601,7 +610,7 @@ namespace ES2Access.Screens
             AgeTooltip tooltip
         )
         {
-            if (widget == null || !AgeWidgets.Visible(widget))
+            if (widget == null)
             {
                 return;
             }
@@ -638,6 +647,7 @@ namespace ES2Access.Screens
                     child != null
                     && !ReferenceEquals(child, empty)
                     && child.GetComponent<AgePrimitiveLabel>() != null
+                    // Candidate choice: the first drawn labelled child is the one that names the band.
                     && AgeWidgets.Visible(child)
                 )
                 {
@@ -866,6 +876,8 @@ namespace ES2Access.Screens
                     }
 
                     ControlId id = QuadrantId(i);
+                    // Synthetic: the wheel's quadrants are a level the mod invented over the game's own
+                    // layout; the scrape above is what says how many there are.
                     builder.BeginGroup(Nodes.Synthetic(id, QuadrantVtable(builder, quadrant, id)));
                     if (builder.IsExpanded(id))
                     {
@@ -895,6 +907,8 @@ namespace ES2Access.Screens
                 }
 
                 ControlId id = StageId(index, i);
+                // Synthetic: the same invented level one step down, enumerated from the stages the
+                // quadrant holds.
                 builder.BeginGroup(Nodes.Synthetic(id, StageVtable(builder, quadrant, stage, id)));
                 if (builder.IsExpanded(id))
                 {
@@ -925,6 +939,8 @@ namespace ES2Access.Screens
                 List<TooltipChildren.Dossier> unlocks = Unlocks(item);
                 if (unlocks.Count == 0)
                 {
+                    // Synthetic: a technology node stands for the technology, and Technologies()
+                    // above is the walk that says which of them the wheel is showing.
                     builder.AddItem(Nodes.Synthetic(id, TechnologyVtable(item)));
                     continue;
                 }
@@ -1108,6 +1124,8 @@ namespace ES2Access.Screens
             {
                 TechnologyStageItem ring = stage as TechnologyStageItem;
                 DeedItem2 marker = ring == null ? null : ring.DeedItem;
+                // Synthetic guard: the deed is read out of the quest behind the marker, so the node
+                // declares no evidence and the gate has nothing to ask.
                 if (marker == null || !AgeWidgets.Visible(marker.AgeTransform))
                 {
                     return;
@@ -1137,6 +1155,8 @@ namespace ES2Access.Screens
                     AgeWidgets.PointAt(vtable, tooltip.AgeTransform);
                 }
 
+                // Synthetic: a deed is read out of the quest behind the marker, which the wheel
+                // draws as a dot with no words of its own.
                 builder.AddItem(Nodes.Synthetic(
                     ControlId.Structural("research:deed/" + quadrant + "/" + index),
                     vtable
@@ -1223,6 +1243,7 @@ namespace ES2Access.Screens
         {
             try
             {
+                // Content: whether the affinity section belongs in the card's buffer.
                 return item.AffinityGroup != null && AgeWidgets.Visible(item.AffinityGroup)
                     ? GraphNodes.TooltipSection(item.AffinityTooltip, TooltipMode.None)
                     : null;
@@ -1601,6 +1622,7 @@ namespace ES2Access.Screens
                 for (int i = 0; children != null && i < children.Count; i++)
                 {
                     AgeTransform child = children[i];
+                    // Content: which link arcs contribute a line.
                     if (child == null || !child.Visible)
                     {
                         continue;

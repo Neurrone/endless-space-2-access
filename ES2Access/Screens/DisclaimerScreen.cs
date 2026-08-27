@@ -90,7 +90,7 @@ namespace ES2Access.Screens
         {
             AgePrimitiveLabel label = Content(window);
             AgeTransform widget = label == null ? null : label.AgeTransform;
-            if (widget == null || !AgeWidgets.Visible(widget))
+            if (widget == null)
             {
                 return;
             }

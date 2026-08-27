@@ -122,6 +122,8 @@ namespace ES2Access.Screens
         private void Winners(VictoryAchievedModalWindow window)
         {
             AgeTransform list = window.WinnerList;
+            // Flow control: the list under a group the window did not draw is still full of rows, each
+            // of which would be read for its text before the gate could drop it.
             if (!AgeWidgets.Visible(window.WinnerListGroup) || list == null)
             {
                 return;

@@ -128,7 +128,7 @@ namespace ES2Access.Screens
                 AgeTransform gauge = window.PiratePowerGauge == null
                     ? null
                     : window.PiratePowerGauge.AgeTransform;
-                if (gauge != null && AgeWidgets.Visible(gauge))
+                if (gauge != null)
                 {
                     _cells.Add(Cells.Readout(gauge, AgeWidgets.Raw(gauge), Keys + "power"));
                 }
@@ -157,6 +157,8 @@ namespace ES2Access.Screens
         private void BuildStanding(GraphBuilder builder, PirateDiplomacyModalWindow window)
         {
             AgeTransform group = window.StandingGroup;
+            // Flow control: a stop and a context would be opened around nothing, and the icon below is
+            // found by a named search through the group.
             if (group == null || !AgeWidgets.Visible(group))
             {
                 return;
@@ -169,7 +171,7 @@ namespace ES2Access.Screens
             {
                 AgeTransform icon = AgeWidgets.ChildNamed(group, "StandingIcon", 3);
                 AgeTooltip what = AgeWidgets.Raw(icon);
-                if (icon != null && AgeWidgets.Visible(icon) && what != null)
+                if (icon != null && what != null)
                 {
                     // A bare icon: the sentence on it is the only name it has, so it is the label - and
                     // then the tooltip must not be announced again as well.
@@ -207,6 +209,8 @@ namespace ES2Access.Screens
         private void BuildNextFleet(GraphBuilder builder, PirateDiplomacyModalWindow window)
         {
             AgeTransform group = window.NextFleetGroup;
+            // Flow control: a stop and a context would be opened around nothing, and every reading
+            // under it walks a widget of its own.
             if (group == null || !AgeWidgets.Visible(group))
             {
                 return;
@@ -259,19 +263,21 @@ namespace ES2Access.Screens
         private void Thresholds(PirateDiplomacyModalWindow window)
         {
             AgeTransform none = window.NoReinforcementsLabel;
-            if (none != null && AgeWidgets.Visible(none))
+            if (none != null)
             {
                 Cells.AddReadout(_cells, none, Keys + "no-reinforcements");
             }
 
             AgeTransform table = window.ReinforcementsThresholdsTable;
+            // Flow control: the rows of a table the window is not drawing are each still marked
+            // visible, and reading one costs a text walk.
             IList<AgeTransform> children = table == null || !AgeWidgets.Visible(table)
                 ? null
                 : table.Children;
             for (int i = 0; children != null && i < children.Count; i++)
             {
                 AgeTransform at = children[i];
-                if (at == null || !AgeWidgets.Visible(at))
+                if (at == null)
                 {
                     continue;
                 }
@@ -297,7 +303,7 @@ namespace ES2Access.Screens
         private void AddToggle(AgeControlToggle toggle)
         {
             AgeTransform at = AgeWidgets.Transform(toggle);
-            if (at == null || !AgeWidgets.Visible(at))
+            if (at == null)
             {
                 return;
             }
@@ -322,6 +328,7 @@ namespace ES2Access.Screens
         {
             GuiPanel panel = window.NextFleetInfoPanel;
             AgeTransform at = panel == null ? null : panel.AgeTransform;
+            // Flow control: the slide-out panel's whole reading, including a tile per ship.
             if (at == null || !panel.Shown || !AgeWidgets.Visible(at))
             {
                 return;
@@ -335,13 +342,14 @@ namespace ES2Access.Screens
             );
             Line(window.NextFleetMovementLabel, "%ShipStatMovementTitle", "movement");
             AgeTransform ships = window.NextFleetEstimatedShipsTable;
+            // Flow control: same as the thresholds table above.
             IList<AgeTransform> children = ships == null || !AgeWidgets.Visible(ships)
                 ? null
                 : ships.Children;
             for (int i = 0; children != null && i < children.Count; i++)
             {
                 AgeTransform tile = children[i];
-                if (tile == null || !AgeWidgets.Visible(tile))
+                if (tile == null)
                 {
                     continue;
                 }

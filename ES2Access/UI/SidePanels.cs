@@ -79,6 +79,8 @@ namespace ES2Access.UI
                 SidePanel[] panels = window.GetComponentsInChildren<SidePanel>(true);
                 for (int i = 0; i < panels.Length; i++)
                 {
+                    // Which panels the page reads, in drawn order - a collection made before anything
+                    // is declared.
                     if (panels[i] != null && AgeWidgets.Visible(panels[i].AgeTransform))
                     {
                         into.Add(panels[i]);
@@ -139,6 +141,7 @@ namespace ES2Access.UI
                 );
                 AgePrimitiveLabel label =
                     field == null ? null : field.GetValue(panel) as AgePrimitiveLabel;
+                // Content: which drawn label names the panel.
                 return label != null && AgeWidgets.Visible(label.AgeTransform) ? label : null;
             }
             catch (Exception)
@@ -275,6 +278,8 @@ namespace ES2Access.UI
             if (
                 widget == null
                 || depth > MaxScrapeDepth
+                // Flow control: a branch the panel switched off must not be DESCENDED into - its children
+                // each keep Visible of their own and would be scraped as cells.
                 || !AgeWidgets.Visible(widget)
                 || ReferenceEquals(widget, skip)
             )
@@ -434,7 +439,7 @@ namespace ES2Access.UI
 
             AgeTransform caption =
                 effects.TitleLabel == null ? null : effects.TitleLabel.AgeTransform;
-            if (caption != null && AgeWidgets.Visible(caption))
+            if (caption != null)
             {
                 cells.Add(
                     Cells.Readout(caption, AgeWidgets.Raw(caption), PathKey(keyPrefix, caption, panel))

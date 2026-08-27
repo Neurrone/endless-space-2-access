@@ -594,6 +594,9 @@ namespace ES2Access.Screens
             string prefix
         )
         {
+            // Flow control: a side the popup is not drawing must not be WALKED - the troop table below
+            // is a component scrape per frame, and every row it finds would be declared and then
+            // dropped one at a time.
             if (panel == null || !AgeWidgets.Visible(panel.AgeTransform))
             {
                 return;
@@ -639,7 +642,7 @@ namespace ES2Access.Screens
         private static void Troop(GraphBuilder builder, TroopCell cell, string key)
         {
             AgeTransform widget = cell == null ? null : cell.AgeTransform;
-            if (widget == null || !AgeWidgets.Visible(widget))
+            if (widget == null)
             {
                 return;
             }
@@ -694,6 +697,8 @@ namespace ES2Access.Screens
         {
             GroundBattleContenderReportPanel report =
                 panel as GroundBattleContenderReportPanel;
+            // Flow control: the gauge below is walked block by block, and a report the popup is not
+            // drawing has nothing worth walking.
             if (report == null || !AgeWidgets.Visible(report.AgeTransform))
             {
                 return;
@@ -708,11 +713,7 @@ namespace ES2Access.Screens
                 List<Cell> cells = new List<Cell>();
                 AgeTransform caption =
                     report.DamageIcon == null ? null : report.DamageIcon.AgeTransform;
-                if (
-                    caption != null
-                    && AgeWidgets.Visible(caption)
-                    && !string.IsNullOrEmpty(AgeWidgets.TextOf(caption))
-                )
+                if (caption != null && !string.IsNullOrEmpty(AgeWidgets.TextOf(caption)))
                 {
                     cells.Add(
                         Cells.Readout(caption, AgeWidgets.Raw(caption), prefix + "/damage")
@@ -740,7 +741,7 @@ namespace ES2Access.Screens
         /// its name is the one the game keeps on the wrapper behind the explanation.</summary>
         private static void Source(List<Cell> cells, AgeTransform widget, string key)
         {
-            if (widget == null || !AgeWidgets.Visible(widget))
+            if (widget == null)
             {
                 return;
             }
@@ -838,7 +839,7 @@ namespace ES2Access.Screens
             string prefix
         )
         {
-            if (panel == null || !AgeWidgets.Visible(panel.AgeTransform))
+            if (panel == null)
             {
                 return;
             }
@@ -848,7 +849,7 @@ namespace ES2Access.Screens
                 Note(builder, panel.MainLeaderName, prefix + "/leader");
                 AgePrimitiveImage portrait = panel.MainHeroPortrait;
                 AgeTransform widget = portrait == null ? null : portrait.AgeTransform;
-                if (widget == null || !AgeWidgets.Visible(widget))
+                if (widget == null)
                 {
                     return;
                 }
@@ -882,7 +883,7 @@ namespace ES2Access.Screens
         )
         {
             AgeTransform widget = label == null ? null : label.AgeTransform;
-            if (widget == null || !AgeWidgets.Visible(widget))
+            if (widget == null)
             {
                 return;
             }
@@ -912,6 +913,8 @@ namespace ES2Access.Screens
         private static void Plan(GraphBuilder builder, BattleSetupNotificationWindow window)
         {
             AgeTransform group = window.PlayGroup;
+            // Synthetic guard: the carousel is one node standing for three widgets, so it declares no
+            // evidence and the gate has nothing to ask - this is the whole of its existence test.
             if (group == null || !AgeWidgets.Visible(group))
             {
                 return;
@@ -929,6 +932,8 @@ namespace ES2Access.Screens
                 tooltip
             );
             AgeWidgets.PointAt(vtable, group);
+            // Synthetic: one node standing for a card and two arrows, so there is no single widget
+            // that draws it; the group above is only what it is anchored to.
             builder.AddItem(Nodes.Synthetic(ControlId.Structural("battle-setup/plan"), vtable));
         }
 
@@ -942,7 +947,7 @@ namespace ES2Access.Screens
         )
         {
             AgeTransform widget = card == null ? null : card.AgeTransform;
-            if (widget == null || !AgeWidgets.Visible(widget))
+            if (widget == null)
             {
                 return;
             }
@@ -981,6 +986,8 @@ namespace ES2Access.Screens
         private static void Strategies(GraphBuilder builder, AccordionSlider slider, string prefix)
         {
             AgeTransform table = slider == null ? null : slider.CardTable;
+            // Flow control: the cards are found by a component scrape, which is not worth running for
+            // a table the accordion has closed.
             if (table == null || !AgeWidgets.Visible(table))
             {
                 return;
@@ -995,7 +1002,7 @@ namespace ES2Access.Screens
                 {
                     GroundBattlePlayCard card = cards[i];
                     AgeTransform widget = card == null ? null : card.AgeTransform;
-                    if (widget == null || !AgeWidgets.Visible(widget) || card.Toggle == null)
+                    if (widget == null || card.Toggle == null)
                     {
                         continue;
                     }
@@ -1099,6 +1106,8 @@ namespace ES2Access.Screens
                 vtable.OnFocusVisual = AgeWidgets.ReleasePointer;
             }
 
+            // Synthetic: the balance is computed from the battle, which the popup draws only as an
+            // arc with no figure on it.
             builder.AddItem(Nodes.Synthetic(ControlId.Structural(key), vtable));
         }
 
@@ -1149,6 +1158,8 @@ namespace ES2Access.Screens
 
             AgeTransform group =
                 window.BattlePowerGauge == null ? null : window.BattlePowerGauge.AgeTransform;
+            // Synthetic guard: the line is composed from the battle rather than read off the gauge, so
+            // it declares no evidence and the gate has nothing to ask.
             if (group == null || !AgeWidgets.Visible(group))
             {
                 return;
@@ -1172,6 +1183,8 @@ namespace ES2Access.Screens
                 Sections = GraphNodes.Sections(null, tooltip),
             };
             AgeWidgets.PointAt(vtable, group);
+            // Synthetic: the two manpower figures come out of the battle, not off the gauge - the
+            // gauge is what the line is anchored to.
             builder.AddItem(Nodes.Synthetic(ControlId.Structural(key), vtable));
         }
 
@@ -1279,7 +1292,7 @@ namespace ES2Access.Screens
         /// itemised breakdown the game hangs on it.</summary>
         private static void Rewards(GraphBuilder builder, PlayerBattleGroupReportPanel panel)
         {
-            if (panel == null || !AgeWidgets.Visible(panel.AgeTransform))
+            if (panel == null)
             {
                 return;
             }
@@ -1315,6 +1328,8 @@ namespace ES2Access.Screens
         /// looted - as the row each of them looks like.</summary>
         private static void Lines(GraphBuilder builder, AgeTransform table, string prefix)
         {
+            // Flow control: the rows under a table the popup switched off are each still marked
+            // visible, and reading every one of them to find out costs a text walk apiece.
             if (table == null || !AgeWidgets.Visible(table))
             {
                 return;
@@ -1326,7 +1341,7 @@ namespace ES2Access.Screens
                 for (int i = 0; children != null && i < children.Count; i++)
                 {
                     AgeTransform line = children[i];
-                    if (line == null || !AgeWidgets.Visible(line))
+                    if (line == null)
                     {
                         continue;
                     }
@@ -1383,11 +1398,7 @@ namespace ES2Access.Screens
         )
         {
             AgeTransform widget = label == null ? null : label.AgeTransform;
-            if (
-                widget == null
-                || !AgeWidgets.Visible(widget)
-                || string.IsNullOrEmpty(AgeText.Label(label))
-            )
+            if (widget == null || string.IsNullOrEmpty(AgeText.Label(label)))
             {
                 return;
             }
@@ -1440,11 +1451,7 @@ namespace ES2Access.Screens
         private static void Level(GraphBuilder builder, AgePrimitiveLabel label, string key)
         {
             AgeTransform widget = label == null ? null : label.AgeTransform;
-            if (
-                widget == null
-                || !AgeWidgets.Visible(widget)
-                || string.IsNullOrEmpty(AgeText.Label(label))
-            )
+            if (widget == null || string.IsNullOrEmpty(AgeText.Label(label)))
             {
                 return;
             }
@@ -1469,6 +1476,8 @@ namespace ES2Access.Screens
         /// with, in the order it laid them out.</summary>
         private static void Populations(GraphBuilder builder, AgeTransform table, string prefix)
         {
+            // Flow control: same as the report tables - a table the popup is not drawing is not walked
+            // cell by cell.
             if (table == null || !AgeWidgets.Visible(table))
             {
                 return;
@@ -1499,7 +1508,8 @@ namespace ES2Access.Screens
         ///
         /// The table is POOLED - the popup reserves a cell per species and keeps the rest around with
         /// their last species still written on them - so a cell is a cell only while the table is
-        /// drawing it, which is the engine's own one-step test rather than the visibility flag.</summary>
+        /// drawing it. That is the gate's own question now: the cell stands on this widget, and a
+        /// retired one is taken out before the cells are banded.</summary>
         private static void People(
             List<Cell> cells,
             AgeTransform table,
@@ -1507,11 +1517,7 @@ namespace ES2Access.Screens
             string key
         )
         {
-            if (
-                widget == null
-                || !AgeWidgets.Visible(widget)
-                || !AgeWidgets.Paints(widget)
-            )
+            if (widget == null)
             {
                 return;
             }
@@ -1540,11 +1546,7 @@ namespace ES2Access.Screens
         /// saying a siege will go on.</summary>
         private static void Readout(GraphBuilder builder, AgeTransform widget, string key)
         {
-            if (
-                widget == null
-                || !AgeWidgets.Visible(widget)
-                || string.IsNullOrEmpty(AgeWidgets.TextOf(widget))
-            )
+            if (widget == null || string.IsNullOrEmpty(AgeWidgets.TextOf(widget)))
             {
                 return;
             }
@@ -1567,6 +1569,8 @@ namespace ES2Access.Screens
         )
         {
             AgeTransform widget = line ?? (value == null ? null : value.AgeTransform);
+            // Different widget: where a ROW was passed the node stands on the label inside it, and this
+            // asks about the row instead. Also the widget the title is read off (RowTitle).
             if (widget == null || !AgeWidgets.Visible(widget) || value == null)
             {
                 return;
@@ -1669,7 +1673,7 @@ namespace ES2Access.Screens
             string key
         )
         {
-            if (widget == null || !AgeWidgets.Visible(widget))
+            if (widget == null)
             {
                 return;
             }
@@ -1704,7 +1708,7 @@ namespace ES2Access.Screens
         )
         {
             AgeTransform widget = AgeWidgets.Transform(toggle);
-            if (toggle == null || !AgeWidgets.Visible(widget))
+            if (toggle == null)
             {
                 return;
             }
@@ -1736,7 +1740,7 @@ namespace ES2Access.Screens
             string key
         )
         {
-            if (gauge == null || !AgeWidgets.Visible(gauge) || ratio == null)
+            if (gauge == null || ratio == null)
             {
                 return;
             }

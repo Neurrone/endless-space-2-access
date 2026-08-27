@@ -269,6 +269,8 @@ namespace ES2Access.UI
             bool labelled = false;
             try
             {
+                // Both bools decide whether a STOP is opened at all and which bands fill it - flow, not
+                // one node's existence.
                 bool characteristics = AgeWidgets.Visible(panel.CharacteristicsTable);
                 AgeTransform costs = panel.CostsTable;
                 bool costed = costs != null && AgeWidgets.Visible(costs);
@@ -299,7 +301,7 @@ namespace ES2Access.UI
                     panel.ArksVisualNoticeLabel == null
                         ? null
                         : panel.ArksVisualNoticeLabel.AgeTransform;
-                if (notice != null && AgeWidgets.Visible(notice))
+                if (notice != null)
                 {
                     builder.SetRegion(prefix + "/info/notice");
                     SettingRows.AddReadout(builder, notice, prefix + "/info/notice");
@@ -378,6 +380,7 @@ namespace ES2Access.UI
                 }
             }
 
+            // Flow control: the side-panel reading below descends the whole panel.
             if (stocked == null || !AgeWidgets.Visible(stocked))
             {
                 return;
@@ -470,7 +473,7 @@ namespace ES2Access.UI
             AgeTransform list = AgeWidgets.Transform(panel.HullDropList);
             AgeTransform group = list == null ? null : list.Parent;
             AgeTransform caption = group == null ? null : FirstLabel(group);
-            if (list != null && AgeWidgets.Visible(list))
+            if (list != null)
             {
                 SettingRows.AddCombo(
                     builder,
@@ -494,6 +497,7 @@ namespace ES2Access.UI
             string prefix
         )
         {
+            // Flow control: the caption below is found by a walk and a readout added per bonus.
             if (panel.BonusesGroup == null || !AgeWidgets.Visible(panel.BonusesGroup))
             {
                 return;
@@ -541,7 +545,7 @@ namespace ES2Access.UI
         private static void AddBonus(GraphBuilder builder, AgePrimitiveLabel label, string key)
         {
             AgeTransform widget = label == null ? null : label.AgeTransform;
-            if (widget != null && AgeWidgets.Visible(widget))
+            if (widget != null)
             {
                 SettingRows.AddReadout(builder, widget, key);
             }
@@ -589,7 +593,10 @@ namespace ES2Access.UI
             string key
         )
         {
-            if (!AgeWidgets.Visible(widget))
+            // Kept: these cells are counted (with the three other stat lists) to decide whether the
+            // statistics stop and its caption are opened at all, so a cell for a figure the panel is
+            // not drawing would put a caption over nothing.
+            if (widget == null || !AgeWidgets.Visible(widget))
             {
                 return;
             }
@@ -648,6 +655,8 @@ namespace ES2Access.UI
             bool labelled = false;
             try
             {
+                // Flow control: a stop and a caption context would be opened around nothing, and the
+                // whole module list would be walked.
                 if (panel.ModulesGroup == null || !AgeWidgets.Visible(panel.ModulesGroup))
                 {
                     return;
@@ -715,6 +724,7 @@ namespace ES2Access.UI
         {
             GuiRadioGroup group = panel.ModuleCategoriesGroup;
             AgeTransform table = group == null ? null : group.TogglesTable;
+            // Flow control: the toggles are found by a component scrape.
             if (table == null || !AgeWidgets.Visible(table))
             {
                 return;
@@ -725,7 +735,7 @@ namespace ES2Access.UI
             {
                 AgeControlToggle toggle = toggles[i];
                 AgeTransform widget = AgeWidgets.Transform(toggle);
-                if (toggle == null || !AgeWidgets.Visible(widget))
+                if (toggle == null)
                 {
                     continue;
                 }
@@ -782,7 +792,7 @@ namespace ES2Access.UI
         {
             AgeControlToggle toggle = panel.ShowObsoleteModulesToggle;
             AgeTransform widget = AgeWidgets.Transform(toggle);
-            if (toggle == null || !AgeWidgets.Visible(widget))
+            if (toggle == null)
             {
                 return;
             }
@@ -827,7 +837,7 @@ namespace ES2Access.UI
             int index
         )
         {
-            if (item == null || item.GuiEditionModule == null || !AgeWidgets.Visible(item.AgeTransform))
+            if (item == null || item.GuiEditionModule == null)
             {
                 return;
             }
@@ -942,6 +952,8 @@ namespace ES2Access.UI
             try
             {
                 AgeTransform table = panel.StatisticsTable;
+                // Flow control: a stop and a caption context would be opened around nothing, and the
+                // whole statistics band would be walked.
                 if (table == null || !AgeWidgets.Visible(table))
                 {
                     return;
@@ -1312,6 +1324,8 @@ namespace ES2Access.UI
         {
             AgeControlToggle toggle = panel.ShowDetailedStatsToggle;
             AgeTransform widget = AgeWidgets.Transform(toggle);
+            // Kept for the same count as Stat above: this cell is one of the four lists the
+            // statistics stop is opened from.
             if (toggle == null || !AgeWidgets.Visible(widget))
             {
                 return;
@@ -1356,6 +1370,7 @@ namespace ES2Access.UI
             try
             {
                 AgeTransform container = panel.ShipDesignSlotItemsContainer;
+                // Flow control: the slots are found by a component scrape and each read for its module.
                 if (container == null || !AgeWidgets.Visible(container))
                 {
                     return;
@@ -1443,6 +1458,9 @@ namespace ES2Access.UI
             int index
         )
         {
+            // Kept: cells.Count decides whether the slots stop is opened at all, and the drop target
+            // the mod draws at the end of it is declared from that same decision - so a slot the
+            // panel is not drawing must not make the list look non-empty.
             if (slot == null || slot.GuiSlot == null || !AgeWidgets.Visible(slot.AgeTransform))
             {
                 return;
@@ -2121,6 +2139,7 @@ namespace ES2Access.UI
                 for (int i = 0; children != null && i < children.Count; i++)
                 {
                     AgeTransform child = children[i];
+                    // Content: which child supplies a band's caption.
                     if (child == null || !AgeWidgets.Visible(child))
                     {
                         continue;

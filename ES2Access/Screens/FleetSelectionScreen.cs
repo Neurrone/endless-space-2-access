@@ -136,11 +136,7 @@ namespace ES2Access.Screens
                 for (int i = 0; children != null && i < children.Count; i++)
                 {
                     AgeTransform child = children[i];
-                    if (
-                        child != null
-                        && AgeWidgets.Visible(child)
-                        && AgeWidgets.Button(child) != null
-                    )
+                    if (child != null && AgeWidgets.Button(child) != null)
                     {
                         buttons.Add(child);
                     }

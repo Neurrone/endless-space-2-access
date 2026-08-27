@@ -189,7 +189,7 @@ namespace ES2Access.Screens
         private void BuildClose(GraphBuilder builder, ContextualPromptWindow window)
         {
             AgeTransform close = window.CloseButton;
-            AgeControlButton button = AgeWidgets.Visible(close) ? AgeWidgets.Button(close) : null;
+            AgeControlButton button = AgeWidgets.Button(close);
             if (button == null)
             {
                 return;
@@ -224,9 +224,7 @@ namespace ES2Access.Screens
         {
             try
             {
-                return label == null || !AgeWidgets.Visible(label.AgeTransform)
-                    ? null
-                    : label.AgeTransform;
+                return label == null ? null : label.AgeTransform;
             }
             catch (Exception)
             {

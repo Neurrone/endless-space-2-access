@@ -113,6 +113,7 @@ namespace ES2Access.Screens
         /// </summary>
         private void BuildPanel(GraphBuilder builder, AgeTransform panel, int index)
         {
+            // Flow control: the side-panel reading below descends the whole panel.
             if (panel == null || !AgeWidgets.Visible(panel))
             {
                 return;
@@ -149,6 +150,7 @@ namespace ES2Access.Screens
         private void BuildShips(GraphBuilder builder, AcademyModalWindow window)
         {
             AgeTransform container = window.NamedShipGroupContainer;
+            // Flow control: the side-panel reading below descends the whole container.
             bool drawn = container != null && AgeWidgets.Visible(container);
             builder.BeginStop(ShipsStop);
             builder.PushContext(ModStrings.Get(ModStrings.AcademyNamedShips));
@@ -355,7 +357,7 @@ namespace ES2Access.Screens
             {
                 AgeControlButton button = Button(window);
                 AgeTransform at = AgeWidgets.Transform(button);
-                if (at == null || !AgeWidgets.Visible(at))
+                if (at == null)
                 {
                     return;
                 }

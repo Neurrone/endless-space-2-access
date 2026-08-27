@@ -392,6 +392,8 @@ namespace ES2Access.Screens
                 string nothing = AgeText.Clean(Gui.Localize("%PanelFeatureNoEffectsTitle"));
                 if (!string.IsNullOrEmpty(nothing) && nothing[0] != '%')
                 {
+                    // Synthetic: mod-authored - the game's own "no effects" wording, put where the panel
+                    // drew nothing at all.
                     builder.AddItem(Nodes.Synthetic(
                         ControlId.Structural(keyPrefix + "/none"),
                         new NodeVtable

@@ -62,6 +62,7 @@ namespace ES2Access.UI
                 if (
                     group == null
                     || group.Parent == null
+                    // Content: whether the tick-scale lines are built at all.
                     || !AgeWidgets.Paints(group)
                 )
                 {

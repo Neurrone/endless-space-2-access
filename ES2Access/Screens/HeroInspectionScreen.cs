@@ -846,6 +846,8 @@ namespace ES2Access.Screens
                         tree.SkillTreeDefinition,
                         Keys + "tree/branch/" + i
                     );
+                    // Synthetic: a branch stands for the skill-tree DEFINITION the hero was built from,
+                    // and the enumeration above is what says the panel is drawing it.
                     builder.BeginGroup(Nodes.Synthetic(id, BranchVtable(panel, tree, i)));
                     BuildStages(builder, panel, tree, i);
                     builder.EndGroup();
@@ -938,6 +940,7 @@ namespace ES2Access.Screens
                     () => AgeWidgets.Operable(it.AgeTransform)
                 );
                 vtable.Announcements.Add(GraphNodes.ValuePart(() => StageRequirement(it), false));
+                // Synthetic: a stage stands for the tree's own stage definition, enumerated above.
                 builder.BeginGroup(Nodes.Synthetic(
                     ControlId.For(
                         stage.SkillTreeStage,
@@ -1025,6 +1028,8 @@ namespace ES2Access.Screens
                     continue;
                 }
 
+                // Synthetic: a skill stands for its DEFINITION, and the loop above - which skips the
+                // ones the panel is not drawing - is the honesty about it.
                 builder.AddItem(Nodes.Synthetic(
                     ControlId.For(
                         skill.HeroSkillDefinition,

@@ -143,7 +143,7 @@ namespace ES2Access.Screens
         private void BuildHeading(GraphBuilder builder, StarSystemPopulationModalWindow window)
         {
             AgeTransform title = Named(Root(window), "TitleLabel");
-            if (title == null || !AgeWidgets.Visible(title))
+            if (title == null)
             {
                 return;
             }
@@ -193,7 +193,7 @@ namespace ES2Access.Screens
         private static void AddParty(List<Cell> cells, AgeTransform widget, int index)
         {
             PoliticalImpactToggle party = Party(widget);
-            if (party == null || !Drawn(widget) || !AgeWidgets.Operable(widget))
+            if (party == null || !AgeWidgets.Operable(widget))
             {
                 return;
             }
@@ -250,7 +250,7 @@ namespace ES2Access.Screens
                 panel.NoPoliticsSelectedLabel == null
                     ? null
                     : panel.NoPoliticsSelectedLabel.AgeTransform;
-            if (empty != null && AgeWidgets.Visible(empty))
+            if (empty != null)
             {
                 AddReadout(_cells, empty, "politics:no-party");
             }
@@ -258,6 +258,7 @@ namespace ES2Access.Screens
             Cells.EmitLinear(builder, _cells);
 
             GuiTable table = panel.PopulationGuiTable;
+            // Flow control: the shared table reading walks every line and cell of it.
             if (table == null || !AgeWidgets.Visible(table.AgeTransform))
             {
                 return;
@@ -270,7 +271,7 @@ namespace ES2Access.Screens
         private static void AddCheckbox(List<Cell> cells, AgeControlToggle toggle)
         {
             AgeTransform widget = AgeWidgets.Transform(toggle);
-            if (widget == null || !AgeWidgets.Visible(widget))
+            if (widget == null)
             {
                 return;
             }
@@ -446,7 +447,7 @@ namespace ES2Access.Screens
         private static void AddButton(List<Cell> cells, AgeTransform widget, string keyPrefix)
         {
             AgeControlButton button = widget == null ? null : AgeWidgets.Button(widget);
-            if (button == null || !AgeWidgets.Visible(widget))
+            if (button == null)
             {
                 return;
             }
@@ -475,20 +476,6 @@ namespace ES2Access.Screens
             };
             AgeWidgets.PointAt(vtable, widget);
             Cells.Add(cells, widget, ControlId.For(widget, key), vtable);
-        }
-
-        /// <summary>Drawn as the game draws these: a party the window is not showing is left ENABLED
-        /// nowhere but transparent everywhere, so alpha is half the question.</summary>
-        private static bool Drawn(AgeTransform widget)
-        {
-            try
-            {
-                return AgeWidgets.Visible(widget) && widget.Alpha > 0f;
-            }
-            catch (Exception)
-            {
-                return false;
-            }
         }
 
         private static PoliticalImpactToggle Party(AgeTransform widget)

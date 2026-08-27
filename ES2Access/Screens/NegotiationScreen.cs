@@ -219,7 +219,7 @@ namespace ES2Access.Screens
         {
             AgeControlToggle toggle = window.EmpireInfoToggle;
             AgeTransform at = AgeWidgets.Transform(toggle);
-            if (at == null || !AgeWidgets.Visible(at))
+            if (at == null)
             {
                 return;
             }
@@ -243,7 +243,7 @@ namespace ES2Access.Screens
         private void AddBanner(NegotiationEmpireBannerPanel panel, string key)
         {
             AgeTransform at = panel == null ? null : panel.AgeTransform;
-            if (at == null || !AgeWidgets.Visible(at))
+            if (at == null)
             {
                 return;
             }
@@ -278,7 +278,7 @@ namespace ES2Access.Screens
         private void AddStatusIcon(NegotiationModalWindow window)
         {
             AgeTransform at = Of(window.DiplomaticStatusIcon);
-            if (at == null || !AgeWidgets.Visible(at) || AgeWidgets.Raw(at) == null)
+            if (at == null || AgeWidgets.Raw(at) == null)
             {
                 return;
             }
@@ -334,20 +334,22 @@ namespace ES2Access.Screens
         private void AddAbilities(NegotiationModalWindow window)
         {
             AgeTransform none = window.NoDiplomaticAbilitiesLabel;
-            if (none != null && AgeWidgets.Visible(none))
+            if (none != null)
             {
                 Cells.AddReadout(_cells, none, Keys + "no-abilities");
                 return;
             }
 
             AgeTransform table = window.DiplomaticAbilitiesTable;
+            // Flow control: the rows of a table the window is not drawing are each still marked
+            // visible, and reading one costs a text walk.
             IList<AgeTransform> children = table == null || !AgeWidgets.Visible(table)
                 ? null
                 : table.Children;
             for (int i = 0; children != null && i < children.Count; i++)
             {
                 AgeTransform at = children[i];
-                if (at == null || !AgeWidgets.Visible(at) || AgeWidgets.Raw(at) == null)
+                if (at == null || AgeWidgets.Raw(at) == null)
                 {
                     continue;
                 }
@@ -414,7 +416,7 @@ namespace ES2Access.Screens
                 AgeTransform gauge = window.PressureGauge == null
                     ? null
                     : window.PressureGauge.AgeTransform;
-                if (gauge != null && AgeWidgets.Visible(gauge))
+                if (gauge != null)
                 {
                     _cells.Add(
                         Cells.Readout(gauge, AgeWidgets.Raw(gauge), Keys + "pressure-gauge")
@@ -436,13 +438,15 @@ namespace ES2Access.Screens
         private void AddThresholds(NegotiationModalWindow window)
         {
             AgeTransform table = window.PressureThresholdTable;
+            // Flow control: the rows of a table the window is not drawing are each still marked
+            // visible, and reading one costs a text walk.
             IList<AgeTransform> children = table == null || !AgeWidgets.Visible(table)
                 ? null
                 : table.Children;
             for (int i = 0; children != null && i < children.Count; i++)
             {
                 AgeTransform at = children[i];
-                if (at == null || !AgeWidgets.Visible(at))
+                if (at == null)
                 {
                     continue;
                 }
@@ -476,7 +480,7 @@ namespace ES2Access.Screens
         private void AddTruce(NegotiationModalWindow window)
         {
             AgeTransform at = window.TruceButton;
-            if (at == null || !AgeWidgets.Visible(at))
+            if (at == null)
             {
                 return;
             }
@@ -512,6 +516,7 @@ namespace ES2Access.Screens
             string caption
         )
         {
+            // Flow control: the shelf below is walked term by term.
             if (panel == null || !AgeWidgets.Visible(panel.AgeTransform))
             {
                 return;
@@ -522,7 +527,7 @@ namespace ES2Access.Screens
             try
             {
                 AgeTransform blank = Of(empty);
-                if (blank != null && AgeWidgets.Visible(blank))
+                if (blank != null)
                 {
                     _cells.Clear();
                     Cells.AddReadout(_cells, blank, Keys + key + "/empty");
@@ -562,6 +567,7 @@ namespace ES2Access.Screens
         private void BuildContract(GraphBuilder builder, NegotiationModalWindow window)
         {
             NegotiationContributionPanel panel = window.ContributionPanel;
+            // Flow control: the contract basket below is walked term by term.
             if (panel == null || !AgeWidgets.Visible(panel.AgeTransform))
             {
                 return;
@@ -596,6 +602,7 @@ namespace ES2Access.Screens
             string key
         )
         {
+            // Flow control: the basket column below is walked term by term.
             if (table == null || !AgeWidgets.Visible(table))
             {
                 return;
@@ -633,7 +640,7 @@ namespace ES2Access.Screens
         private void BuildApproval(GraphBuilder builder, NegotiationModalWindow window)
         {
             AgeTransform group = window.DealApprovalGroup;
-            if (group == null || !AgeWidgets.Visible(group))
+            if (group == null)
             {
                 return;
             }
@@ -723,7 +730,7 @@ namespace ES2Access.Screens
 
         private void AddButton(AgeTransform widget, string key)
         {
-            if (widget == null || !AgeWidgets.Visible(widget))
+            if (widget == null)
             {
                 return;
             }
@@ -765,6 +772,7 @@ namespace ES2Access.Screens
                 }
 
                 MessageBuilder message = new MessageBuilder();
+                // Content: whether the approval fragment joins a spoken sentence. No node here.
                 if (AgeWidgets.Visible(window.DealApprovalGroup))
                 {
                     message.ListItem(ModStrings.Get(ModStrings.NegotiationApproval));
@@ -825,6 +833,7 @@ namespace ES2Access.Screens
         {
             try
             {
+                // Content: which STRING is returned.
                 return label == null || !AgeWidgets.Visible(label.AgeTransform)
                     ? null
                     : AgeText.Label(label);

@@ -94,6 +94,7 @@ namespace ES2Access.Screens
                 return panel != null
                     && panel.Planet != null
                     && panel.Shown
+                    // Input routing, not node existence: whether the popup is the thing keys go to.
                     && AgeWidgets.Visible(panel.AgeTransform)
                     && AgeWidgets.Operable(panel.AgeTransform);
             }
@@ -179,7 +180,7 @@ namespace ES2Access.Screens
             PlanetConstructiblePanel panel
         )
         {
-            if (item == null || !AgeWidgets.Visible(item.AgeTransform))
+            if (item == null)
             {
                 return;
             }

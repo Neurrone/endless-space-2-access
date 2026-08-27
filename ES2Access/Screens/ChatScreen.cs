@@ -179,7 +179,7 @@ namespace ES2Access.Screens
 
                 AgeControlButton button = panel.NotificationButton;
                 AgeTransform widget = AgeWidgets.Transform(button);
-                if (!AgeWidgets.Visible(widget))
+                if (button == null)
                 {
                     return;
                 }

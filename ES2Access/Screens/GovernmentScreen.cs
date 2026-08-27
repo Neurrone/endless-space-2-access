@@ -115,11 +115,7 @@ namespace ES2Access.Screens
             builder.BeginStop(HeadingStop);
             _cells.Clear();
             AgeTransform title = AgeWidgets.ChildNamed(window.AgeTransform, "TitleGroup", 2);
-            if (
-                title != null
-                && AgeWidgets.Visible(title)
-                && !string.IsNullOrEmpty(AgeWidgets.TextOf(title))
-            )
+            if (title != null && !string.IsNullOrEmpty(AgeWidgets.TextOf(title)))
             {
                 _cells.Add(Cells.Readout(title, "government:title"));
             }
@@ -194,6 +190,8 @@ namespace ES2Access.Screens
             }
         }
 
+        /// <summary>Which of the two title widgets the window is DRAWING - the caption a context is
+        /// named by, not a node.</summary>
         private static AgeTransform Shown(AgeTransform widget)
         {
             return widget != null && AgeWidgets.Visible(widget) ? widget : null;
@@ -210,7 +208,7 @@ namespace ES2Access.Screens
         private void AddCard(List<Cell> cells, GovernmentItem item, string key)
         {
             AgeTransform widget = item == null ? null : item.AgeTransform;
-            if (widget == null || !AgeWidgets.Visible(widget))
+            if (widget == null)
             {
                 return;
             }
@@ -286,6 +284,8 @@ namespace ES2Access.Screens
         /// other groups is a band of separate lines.</summary>
         private static void Lines(AgeTransform widget, List<string> into, int depth)
         {
+            // Content: this walk produces LINES of a card's reading, never nodes - and it descends, so
+            // a hidden band whose children each read visible would be read out of it.
             if (widget == null || !AgeWidgets.Visible(widget))
             {
                 return;
@@ -336,6 +336,7 @@ namespace ES2Access.Screens
             List<AgeTransform> visible = new List<AgeTransform>();
             for (int i = 0; children != null && i < children.Count; i++)
             {
+                // Which children the layout bands into rows - geometry feeding a content reading.
                 if (children[i] != null && AgeWidgets.Visible(children[i]))
                 {
                     visible.Add(children[i]);
@@ -403,7 +404,7 @@ namespace ES2Access.Screens
         /// box's own tooltip - which is where the game keeps the word it did not write.</summary>
         private static void AddTotal(List<Cell> cells, AgeTransform widget, string key)
         {
-            if (widget == null || !AgeWidgets.Visible(widget))
+            if (widget == null)
             {
                 return;
             }

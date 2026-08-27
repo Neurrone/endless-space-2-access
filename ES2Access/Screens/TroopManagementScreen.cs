@@ -161,6 +161,7 @@ namespace ES2Access.Screens
         private void BuildComposition(GraphBuilder builder, GroundTroopManagementModalWindow window)
         {
             AgeTransform table = window.RepartitersTable;
+            // Flow control: every row under the table is read before anything is declared.
             if (table == null || !AgeWidgets.Visible(table))
             {
                 return;
@@ -174,6 +175,9 @@ namespace ES2Access.Screens
             {
                 GroundTroopRepartiter row =
                     rows[i] == null ? null : rows[i].GetComponent<GroundTroopRepartiter>();
+                // Different widget: the nodes under it stand on the pieces INSIDE the row, and this asks
+                // about the row - which the gate's walk up the ancestry does reach, but reading a
+                // retired row's pieces first costs a text walk apiece.
                 if (row == null || !AgeWidgets.Visible(row.AgeTransform))
                 {
                     continue;
@@ -200,7 +204,7 @@ namespace ES2Access.Screens
         private void AddRatio(GroundTroopRepartiter row, string name, int index)
         {
             AgeTransform widget = row.RatioLabel == null ? null : row.RatioLabel.AgeTransform;
-            if (widget == null || !AgeWidgets.Visible(widget))
+            if (widget == null)
             {
                 return;
             }
@@ -247,7 +251,7 @@ namespace ES2Access.Screens
         private void AddLock(GroundTroopRepartiter row, int index)
         {
             AgeTransform widget = AgeWidgets.Transform(row.LockToggle);
-            if (widget == null || !AgeWidgets.Visible(widget))
+            if (widget == null)
             {
                 return;
             }
@@ -280,6 +284,7 @@ namespace ES2Access.Screens
         private void BuildTypes(GraphBuilder builder, GroundTroopManagementModalWindow window)
         {
             AgeTransform table = window.DescriptionsTable;
+            // Flow control: every row under the table is read before anything is declared.
             if (table == null || !AgeWidgets.Visible(table))
             {
                 return;
@@ -293,6 +298,9 @@ namespace ES2Access.Screens
             {
                 GroundTroopDescription row =
                     rows[i] == null ? null : rows[i].GetComponent<GroundTroopDescription>();
+                // Different widget: the nodes under it stand on the pieces INSIDE the row, and this asks
+                // about the row - which the gate's walk up the ancestry does reach, but reading a
+                // retired row's pieces first costs a text walk apiece.
                 if (row == null || !AgeWidgets.Visible(row.AgeTransform))
                 {
                     continue;
@@ -320,7 +328,7 @@ namespace ES2Access.Screens
         private void AddTypeName(GroundTroopDescription row, int index)
         {
             AgeTransform widget = row.NameLabel == null ? null : row.NameLabel.AgeTransform;
-            if (widget == null || !AgeWidgets.Visible(widget))
+            if (widget == null)
             {
                 return;
             }
@@ -328,6 +336,7 @@ namespace ES2Access.Screens
             GroundTroopDescription it = row;
             AgeTransform hint = AgeWidgets.Transform(row.HintButton);
             AgeTooltip tooltip = hint == null ? null : AgeWidgets.Raw(hint);
+            // Availability wording, not existence: whether the row says it is refusing.
             Func<bool> unlocked = () => hint == null || !AgeWidgets.Visible(hint);
             NodeVtable vtable = new NodeVtable
             {
@@ -351,7 +360,8 @@ namespace ES2Access.Screens
                     ModStrings.HintMissingTechnology,
                     UiActions.SelectToggle,
                     0,
-                    () => AgeWidgets.Visible(locate)
+                    // Availability wording again: whether the hint sentence applies right now.
+                () => AgeWidgets.Visible(locate)
                 );
             }
 
@@ -398,6 +408,7 @@ namespace ES2Access.Screens
         private void BuildEvolution(GraphBuilder builder, GroundTroopManagementModalWindow window)
         {
             AgeTransform table = window.UpgradeListsTable;
+            // Flow control: every row under the table is read before anything is declared.
             if (table == null || !AgeWidgets.Visible(table))
             {
                 return;
@@ -418,6 +429,7 @@ namespace ES2Access.Screens
             {
                 GroundTroopUpgradeList list =
                     rows[i] == null ? null : rows[i].GetComponent<GroundTroopUpgradeList>();
+                // Flow control: each list is walked upgrade by upgrade.
                 if (list == null || !AgeWidgets.Visible(list.AgeTransform))
                 {
                     continue;
@@ -444,6 +456,7 @@ namespace ES2Access.Screens
             {
                 GroundTroopUpgradeList list =
                     rows[i] == null ? null : rows[i].GetComponent<GroundTroopUpgradeList>();
+                // A COUNT: how many lists are drawn decides whether the page opens one region or several.
                 if (list != null && AgeWidgets.Visible(list.AgeTransform))
                 {
                     count++;
@@ -484,13 +497,14 @@ namespace ES2Access.Screens
         /// </summary>
         private void AddUpgrade(GroundTroopUpgrade upgrade, string key)
         {
-            if (upgrade == null || !AgeWidgets.Visible(upgrade.AgeTransform))
+            if (upgrade == null)
             {
                 return;
             }
 
             GroundTroopUpgrade it = upgrade;
             AgeTransform toggle = AgeWidgets.Transform(upgrade.Toggle);
+            // Which SHAPE the card takes - a tick or a plain readout - not whether it exists.
             bool picks = toggle != null && AgeWidgets.Visible(toggle);
             Func<bool> enabled = () =>
                 AgeWidgets.Offered(it.HeaderGroup)
@@ -552,11 +566,13 @@ namespace ES2Access.Screens
         {
             try
             {
-                if (AgeWidgets.Visible(upgrade.UnlockedGroup))
+                // Content: which of the drawn groups the words come from.
+            if (AgeWidgets.Visible(upgrade.UnlockedGroup))
                 {
                     return AgeWidgets.TextOf(upgrade.UnlockedGroup);
                 }
 
+                // Content: the same choice, other branch.
                 if (AgeWidgets.Visible(upgrade.TechnologyGroup))
                 {
                     return AgeText.Label(upgrade.TechnologyName);
@@ -654,12 +670,14 @@ namespace ES2Access.Screens
                     return AgeWidgets.Raw(AgeWidgets.Transform(upgrade.Toggle));
                 }
 
-                if (AgeWidgets.Visible(upgrade.UnlockedGroup))
+                // Content: which of the drawn groups the words come from.
+            if (AgeWidgets.Visible(upgrade.UnlockedGroup))
                 {
                     return AgeWidgets.Raw(upgrade.UnlockedGroup);
                 }
 
-                return AgeWidgets.Visible(upgrade.TechnologyGroup)
+                // Content: the same choice, other branch.
+            return AgeWidgets.Visible(upgrade.TechnologyGroup)
                     ? AgeWidgets.Raw(upgrade.TechnologyGroup)
                     : AgeWidgets.Raw(upgrade.AgeTransform);
             }
@@ -680,12 +698,14 @@ namespace ES2Access.Screens
                     return AgeWidgets.Transform(upgrade.Toggle);
                 }
 
-                if (AgeWidgets.Visible(upgrade.UnlockedGroup))
+                // Content: which of the drawn groups the words come from.
+            if (AgeWidgets.Visible(upgrade.UnlockedGroup))
                 {
                     return upgrade.UnlockedGroup;
                 }
 
-                return AgeWidgets.Visible(upgrade.TechnologyGroup)
+                // Content: the same choice, other branch.
+            return AgeWidgets.Visible(upgrade.TechnologyGroup)
                     ? upgrade.TechnologyGroup
                     : upgrade.AgeTransform;
             }
@@ -730,6 +750,7 @@ namespace ES2Access.Screens
         /// the same reason (the symbol beside the number is a picture).</summary>
         private void AddResources(List<Cell> cells, AgeTransform group, string keyPrefix)
         {
+            // Flow control: the resource strip below is walked item by item.
             if (group == null || !AgeWidgets.Visible(group))
             {
                 return;
@@ -778,7 +799,7 @@ namespace ES2Access.Screens
         private static void AddResource(List<Cell> cells, AgeTransform widget, string key)
         {
             ResourceItem item = widget == null ? null : widget.GetComponent<ResourceItem>();
-            if (item == null || !AgeWidgets.Visible(widget))
+            if (item == null)
             {
                 return;
             }

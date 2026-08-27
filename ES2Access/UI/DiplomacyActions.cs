@@ -148,7 +148,7 @@ namespace ES2Access.UI
                 builder.AddItem(Nodes.Drawn(ControlId.For(at, keyPrefix + "/action/" + i), vtable, at));
 
                 AgeTransform extra = AgeWidgets.Transform(row.Extra);
-                if (extra == null || !AgeWidgets.Visible(extra))
+                if (extra == null)
                 {
                     continue;
                 }
@@ -203,7 +203,7 @@ namespace ES2Access.UI
         )
         {
             AgeTransform at = Of(label);
-            if (at == null || !AgeWidgets.Visible(at))
+            if (at == null)
             {
                 return;
             }
@@ -240,6 +240,7 @@ namespace ES2Access.UI
             for (int i = 0; i < lines.Length; i++)
             {
                 AgeTransform at = lines[i];
+                // Content: which drawn lines are gathered into an action's details.
                 if (at == null || !AgeWidgets.Visible(at))
                 {
                     continue;
@@ -259,6 +260,8 @@ namespace ES2Access.UI
         {
             try
             {
+                // The kept rows are NUMBERED by their place in the list and the number is each node's
+                // key, so a row the window is not drawing must never enter it.
                 return item != null && AgeWidgets.Visible(item.AgeTransform);
             }
             catch (Exception)

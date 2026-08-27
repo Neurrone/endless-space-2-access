@@ -99,6 +99,10 @@ namespace ES2Access.UI
             Func<string> label
         )
         {
+            // The collected actions are NUMBERED by their place in this list and the number is each
+            // node's structural key (Emit below), so a widget the card is not drawing must never
+            // enter it - the gate, which sees finished nodes, would drop one node and renumber the
+            // rest.
             if (widget == null || !AgeWidgets.Visible(widget))
             {
                 return;
@@ -132,6 +136,8 @@ namespace ES2Access.UI
         )
         {
             AgeTransform at = AgeWidgets.Transform(toggle);
+            // Same numbering as AddRefusable: a tick the card is not drawing must not take a place in
+            // the list the keys are counted off.
             if (at == null || !AgeWidgets.Visible(at))
             {
                 return;
@@ -298,6 +304,8 @@ namespace ES2Access.UI
         {
             try
             {
+                // Candidate choice as well as the same numbering: the caller picks among several
+                // widgets by which one this answers for.
                 return widget != null
                     && AgeWidgets.Visible(widget)
                     && AgeWidgets.Operable(widget)

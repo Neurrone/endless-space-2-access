@@ -108,6 +108,8 @@ namespace ES2Access.Screens
             }
 
             GuiTable table = Table(window);
+            // Both bools decide whether a STOP is opened at all and which of two readings fills it -
+            // flow, not one node's existence.
             bool rows = table != null && AgeWidgets.Visible(Lines(table));
             // The column headings are drawn over an EMPTY journal exactly as they are over a full one -
             // they still sort, and each still explains what its column holds - so the band follows what
@@ -288,6 +290,8 @@ namespace ES2Access.Screens
                     AgeControlButton button = buttons[i];
                     if (
                         button.OnActivateMethod == handler
+                        // Candidate choice, not existence: several buttons share a handler and the drawn
+                        // one is the live one. The gate can only drop a node, never pick.
                         && AgeWidgets.Visible(button.AgeTransform)
                     )
                     {

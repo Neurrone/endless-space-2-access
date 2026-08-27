@@ -125,7 +125,7 @@ namespace ES2Access.UI
             bool carryable
         )
         {
-            if (ship == null || !AgeWidgets.Visible(ship.AgeTransform) || ship.GuiShip == null)
+            if (ship == null || ship.GuiShip == null)
             {
                 return;
             }
@@ -272,6 +272,7 @@ namespace ES2Access.UI
                     if (
                         item == null
                         || item.GuiShip == null
+                        // Content: which ship names are gathered into a phrase.
                         || !AgeWidgets.Visible(item.AgeTransform)
                         || !selected.Contains(item.GuiShip.Ship)
                     )
@@ -299,7 +300,7 @@ namespace ES2Access.UI
         )
         {
             AgeTransform widget = AgeWidgets.Transform(button);
-            if (button == null || !AgeWidgets.Visible(widget))
+            if (button == null)
             {
                 return;
             }

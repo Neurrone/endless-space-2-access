@@ -198,7 +198,7 @@ namespace ES2Access.Screens
         {
             HeroDetailedCard card = Card(widget);
             Hero hero = HeroCards.Hero(card);
-            if (hero == null || !Drawn(widget))
+            if (hero == null)
             {
                 return null;
             }
@@ -279,7 +279,7 @@ namespace ES2Access.Screens
         private static void AddButton(List<Cell> cells, AgeTransform widget)
         {
             AgeControlButton button = widget == null ? null : AgeWidgets.Button(widget);
-            if (button == null || !AgeWidgets.Visible(widget))
+            if (button == null)
             {
                 return;
             }
@@ -326,20 +326,6 @@ namespace ES2Access.Screens
             catch (Exception) { }
 
             return null;
-        }
-
-        /// <summary>A card the game has stopped using is left in the pool transparent rather than hidden,
-        /// so alpha is half the question.</summary>
-        private static bool Drawn(AgeTransform widget)
-        {
-            try
-            {
-                return AgeWidgets.Visible(widget) && widget.Alpha > 0f;
-            }
-            catch (Exception)
-            {
-                return false;
-            }
         }
 
         private static HeroDetailedCard Card(AgeTransform widget)

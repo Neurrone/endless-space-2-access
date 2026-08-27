@@ -1135,7 +1135,7 @@ namespace ES2Access.Screens
                 AgeTransform child = children[j];
                 PoliticsMiniature badge = Component<PoliticsMiniature>(child);
                 // The badge's own drawn-ness is the cells' question - each carries its badge - while
-                // the group above stays asked here, an ancestor the one-step gate cannot see.
+                // the group above stays asked as FLOW CONTROL: the strip is walked badge by badge.
                 if (badge == null)
                 {
                     continue;

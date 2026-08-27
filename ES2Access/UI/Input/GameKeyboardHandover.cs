@@ -204,6 +204,8 @@ namespace ES2Access.UI.Input
                     return;
                 }
 
+                // Input-focus recovery, not node existence: whether to take the keyboard back from a
+                // control the game is no longer drawing.
                 if (AgeWidgets.Visible(focused.AgeTransform))
                 {
                     return;

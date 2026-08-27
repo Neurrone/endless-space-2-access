@@ -200,6 +200,8 @@ namespace ES2Access.Screens
             try
             {
                 Leader(builder, window.EnemyBattleGroupInfoPanel, "advanced-play/theirs");
+                // Flow control: the history table is walked card by card, and the switch that hides
+                // the deck hides the whole of it.
                 if (AgeWidgets.Visible(window.EnemyDeckGroup))
                 {
                     History(builder, window.EnemyPlaySelectionTable, "advanced-play/their-plan");
@@ -228,7 +230,7 @@ namespace ES2Access.Screens
             {
                 AgeTransform widget = children[i];
                 BattlePlayCard card = Card(widget);
-                if (card == null || !AgeWidgets.Visible(widget) || card.Toggle == null)
+                if (card == null || card.Toggle == null)
                 {
                     continue;
                 }
@@ -263,7 +265,7 @@ namespace ES2Access.Screens
             {
                 AgeTransform widget = children[i];
                 BattlePlayCard card = Card(widget);
-                if (card == null || !AgeWidgets.Visible(widget))
+                if (card == null)
                 {
                     continue;
                 }
@@ -309,6 +311,8 @@ namespace ES2Access.Screens
         )
         {
             AgeTransform widget = Widget(panel);
+            // Flow control: the roster reading is a walk of its own, not run for a panel the switch
+            // has put away.
             if (AgeWidgets.Visible(widget))
             {
                 BattleRosters.Roster(builder, widget, prefix);
@@ -337,6 +341,7 @@ namespace ES2Access.Screens
             AgeTransform[] panels = window.StatsPanels;
             for (int i = 0; panels != null && i < panels.Length; i++)
             {
+                // Flow control: the shape reading below descends the whole panel collecting lines.
                 if (AgeWidgets.Visible(panels[i]))
                 {
                     WindowShape.Readouts(_cells, panels[i], "advanced-play:stat-panel/" + i);
@@ -355,6 +360,8 @@ namespace ES2Access.Screens
         private static void Balance(GraphBuilder builder, AdvancedEncounterPlayModalWindow window)
         {
             AgeTransform gauge = Widget(window.BattlePowerGauge);
+            // Synthetic guard: the line is computed from the window rather than read off the gauge, so
+            // it declares no evidence and the gate has nothing to ask.
             if (!AgeWidgets.Visible(gauge))
             {
                 return;
@@ -376,6 +383,8 @@ namespace ES2Access.Screens
                 Sections = GraphNodes.Sections(null, AgeWidgets.Raw(gauge)),
             };
             AgeWidgets.PointAt(vtable, gauge);
+            // Synthetic: the line is computed from the window, not read off the gauge - the gauge is
+            // only what it is anchored to.
             builder.AddItem(Nodes.Synthetic(ControlId.Structural("advanced-play/balance"), vtable));
         }
 
@@ -446,7 +455,7 @@ namespace ES2Access.Screens
         private void Choice(AgeControlToggle toggle, string key)
         {
             AgeTransform widget = AgeWidgets.Transform(toggle);
-            if (toggle == null || !AgeWidgets.Visible(widget))
+            if (toggle == null)
             {
                 return;
             }
@@ -475,7 +484,7 @@ namespace ES2Access.Screens
         )
         {
             AgeTransform widget = AgeWidgets.Transform(toggle);
-            if (toggle == null || !AgeWidgets.Visible(widget))
+            if (toggle == null)
             {
                 return;
             }
@@ -498,7 +507,7 @@ namespace ES2Access.Screens
         /// run.</summary>
         private void Command(AgeTransform widget, string titleKey, string key)
         {
-            if (widget == null || !AgeWidgets.Visible(widget))
+            if (widget == null)
             {
                 return;
             }
@@ -525,7 +534,7 @@ namespace ES2Access.Screens
             AgeTransform gauge = window.TimerGauge;
             NotificationBattleSetup notification = window.NotificationBattleSetup;
             if (
-                !AgeWidgets.Visible(gauge)
+                gauge == null
                 || notification == null
                 || OptionalText.Phrase(TimeLeftKey, 0) == null
             )
@@ -582,6 +591,8 @@ namespace ES2Access.Screens
                     if (
                         button != null
                         && button.OnActivateMethod == method
+                        // Candidate choice, not existence: several buttons share a handler and the drawn
+                        // one is the live one. The gate can only drop a node, never pick.
                         && AgeWidgets.Visible(button.AgeTransform)
                     )
                     {
@@ -602,7 +613,7 @@ namespace ES2Access.Screens
         /// </summary>
         private static void Leader(GraphBuilder builder, BattleGroupInfoPanel panel, string prefix)
         {
-            if (panel == null || !AgeWidgets.Visible(panel.AgeTransform))
+            if (panel == null)
             {
                 return;
             }
@@ -610,7 +621,7 @@ namespace ES2Access.Screens
             Note(builder, panel.MainLeaderName, prefix + "/leader");
             AgePrimitiveImage portrait = panel.MainHeroPortrait;
             AgeTransform widget = portrait == null ? null : portrait.AgeTransform;
-            if (!AgeWidgets.Visible(widget))
+            if (widget == null)
             {
                 return;
             }
@@ -634,7 +645,7 @@ namespace ES2Access.Screens
         private static void Note(GraphBuilder builder, AgePrimitiveLabel label, string key)
         {
             AgeTransform widget = label == null ? null : label.AgeTransform;
-            if (!AgeWidgets.Visible(widget) || string.IsNullOrEmpty(AgeText.Label(label)))
+            if (widget == null || string.IsNullOrEmpty(AgeText.Label(label)))
             {
                 return;
             }

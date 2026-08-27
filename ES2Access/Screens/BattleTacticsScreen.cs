@@ -160,6 +160,8 @@ namespace ES2Access.Screens
         private void BuildAvailable(GraphBuilder builder, PlayCardDeckModalWindow window)
         {
             AgeTransform table = window.AvailablePlayCardsTable;
+            // Flow control: a stop and a context would be opened around nothing, and every card under
+            // the table would be read for its name and effects before the gate could drop it.
             if (table == null || !AgeWidgets.Visible(table))
             {
                 return;
@@ -190,6 +192,8 @@ namespace ES2Access.Screens
         private void BuildDeck(GraphBuilder builder, PlayCardDeckModalWindow window)
         {
             AgeTransform table = window.MyDeckPlayCardsTable;
+            // Synthetic guard as well as flow control: the drop target below is a place the mod
+            // invented, so it declares no evidence and the gate has nothing to ask of it.
             if (table == null || !AgeWidgets.Visible(table))
             {
                 return;
@@ -263,6 +267,8 @@ namespace ES2Access.Screens
             };
 
             builder.StartRow();
+            // Synthetic: mod-authored - the game draws no place to drop a tactic out of the set, so
+            // there is no widget to ask about (see the class comment).
             builder.AddItem(Nodes.Synthetic(ControlId.Structural("tactics:remove-target"), vtable));
             builder.EndRow();
         }
@@ -290,7 +296,7 @@ namespace ES2Access.Screens
             AgeTransform group = window.EmpireResourcesGroup;
             AgePrimitiveLabel label = window.EmpireInfluenceLabel;
             AgeTransform amount = label == null ? null : label.AgeTransform;
-            if (group == null || !AgeWidgets.Visible(group))
+            if (group == null)
             {
                 return;
             }
@@ -444,6 +450,9 @@ namespace ES2Access.Screens
             {
                 BattlePlayCard card =
                     widget == null ? null : widget.GetComponent<BattlePlayCard>();
+                // The drawn test stays: this answer also feeds Filled(), the COUNT the drop rule reads
+                // to decide whether the last tactic may leave the set - a slot the window is not
+                // drawing must not be counted as one holding a tactic.
                 return card != null
                     && card.IsBound
                     && card.GuiBattlePlaySlot != null
@@ -512,6 +521,7 @@ namespace ES2Access.Screens
                 IList<AgeTransform> rows = ranges == null ? null : ranges.Children;
                 for (int i = 0; rows != null && i < rows.Count; i++)
                 {
+                    // Content: which range rows contribute a line to the card's reading.
                     if (AgeWidgets.Visible(rows[i]))
                     {
                         Add(lines, CardActions.FirstLine(AgeWidgets.Raw(rows[i])));
@@ -520,6 +530,7 @@ namespace ES2Access.Screens
 
                 AgeTransform family =
                     card.FamilyIcon == null ? null : card.FamilyIcon.AgeTransform;
+                // Content: whether the family icon's words join them.
                 if (family != null && AgeWidgets.Visible(family))
                 {
                     IList<string> words = AgeWidgets.TooltipLines(AgeWidgets.Raw(family))();

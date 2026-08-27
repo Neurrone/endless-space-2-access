@@ -343,7 +343,7 @@ namespace ES2Access.Screens
 
         private static void AddTab(List<Cell> cells, AgeTransform widget, int index)
         {
-            if (widget == null || !AgeWidgets.Visible(widget))
+            if (widget == null)
             {
                 return;
             }
@@ -398,6 +398,7 @@ namespace ES2Access.Screens
         /// empire (<c>EconomyPanel.Refresh</c> :160-175) and it moves what is under it.</summary>
         private void BuildEconomy(GraphBuilder builder, EconomyPanel panel)
         {
+            // Flow control: the four boxes under it are each collected and walked.
             if (panel == null || !AgeWidgets.Visible(panel.AgeTransform))
             {
                 return;
@@ -538,6 +539,7 @@ namespace ES2Access.Screens
             ResourceGrid grid
         )
         {
+            // Flow control: the grid below reads a whole lattice of cells.
             if (panel == null || !AgeWidgets.Visible(panel.AgeTransform))
             {
                 return;
@@ -796,6 +798,8 @@ namespace ES2Access.Screens
         /// </summary>
         private void BuildRecipes(GraphBuilder builder, RecipesPanel panel, AgeTransform band)
         {
+            // Flow control: a stop and a heading context would be opened around nothing, and every
+            // project line under the panel would be read first.
             if (panel == null || !AgeWidgets.Visible(panel.AgeTransform))
             {
                 return;
@@ -832,7 +836,7 @@ namespace ES2Access.Screens
         private static void AddRecipeLine(List<Cell> cells, AgeTransform widget, int index)
         {
             RecipeLine line = widget == null ? null : widget.GetComponent<RecipeLine>();
-            if (line == null || !AgeWidgets.Visible(widget))
+            if (line == null)
             {
                 return;
             }
@@ -872,6 +876,7 @@ namespace ES2Access.Screens
             try
             {
                 return line.ClickToCreateRecipeTitleLabel == null
+                    // Content: which STRING the line is valued by.
                     || !AgeWidgets.Visible(line.ClickToCreateRecipeTitleLabel.AgeTransform)
                     ? null
                     : AgeText.Label(line.ClickToCreateRecipeTitleLabel);
@@ -989,6 +994,7 @@ namespace ES2Access.Screens
             BuildSections(builder, BuyTabsStop, panel, "economy:buy-section/");
 
             GuiTable table = panel.BuyableItemsGuiTable;
+            // Flow control: the shared table reading walks every line and cell of it.
             if (table != null && AgeWidgets.Visible(table.AgeTransform))
             {
                 builder.BeginStop(BuyRowsStop);
@@ -1011,6 +1017,8 @@ namespace ES2Access.Screens
             BuildSections(builder, SellTabsStop, panel, "economy:sell-section/");
 
             AgeTransform table = panel.SalableItemsTable;
+            // Flow control: a stop and a context would be opened around nothing, and every item under
+            // the table would be read first.
             if (table != null && AgeWidgets.Visible(table))
             {
                 builder.BeginStop(SellRowsStop);
@@ -1045,6 +1053,7 @@ namespace ES2Access.Screens
         {
             AgeTransform table = panel.MarketTabRadiosTable;
             IList<AgeTransform> children = table == null ? null : table.Children;
+            // Flow control: same - a stop would be opened around nothing and every radio read first.
             if (children == null || !AgeWidgets.Visible(table))
             {
                 return;
@@ -1057,7 +1066,7 @@ namespace ES2Access.Screens
                 AgeTransform widget = children[i];
                 MarketTabRadio radio =
                     widget == null ? null : widget.GetComponent<MarketTabRadio>();
-                if (radio == null || !AgeWidgets.Visible(widget) || radio.Toggle == null)
+                if (radio == null || radio.Toggle == null)
                 {
                     continue;
                 }
@@ -1446,6 +1455,8 @@ namespace ES2Access.Screens
 
                 string text = said;
                 builder.StartRow();
+                // Synthetic: composed from the empire's own event record, which the panel draws
+                // nowhere - the enumeration above is what says these are real.
                 builder.AddItem(Nodes.Synthetic(
                     ControlId.Structural("economy:event/" + i),
                     new NodeVtable
@@ -1547,6 +1558,7 @@ namespace ES2Access.Screens
 
                 string text = said;
                 builder.StartRow();
+                // Synthetic: composed from the trading company's own offer list, drawn nowhere.
                 builder.AddItem(Nodes.Synthetic(
                     ControlId.Structural("economy:ad/" + i),
                     new NodeVtable
@@ -1685,6 +1697,9 @@ namespace ES2Access.Screens
 
         private static void Band(List<AgeTransform> bands, AgeTransform widget)
         {
+            // Which bands enter the page's dispatch list, in drawn order - a collection made before
+            // anything is declared, and this tests the wrapping GROUP rather than the panel each
+            // builder gates on for itself.
             if (widget != null && AgeWidgets.Visible(widget) && !bands.Contains(widget))
             {
                 bands.Add(widget);
@@ -1707,6 +1722,7 @@ namespace ES2Access.Screens
 
         private static void Board(List<GuiPanel> boards, GuiPanel panel)
         {
+            // Which boards enter the marketplace's dispatch list - the same collection question.
             if (panel != null && AgeWidgets.Visible(panel.AgeTransform))
             {
                 boards.Add(panel);
@@ -1749,6 +1765,7 @@ namespace ES2Access.Screens
         {
             try
             {
+                // Flow control: whether the marketplace tab's whole subtree is walked at all.
                 return window != null
                     && window.MarketplacePanel != null
                     && AgeWidgets.Visible(window.MarketplacePanel.AgeTransform);

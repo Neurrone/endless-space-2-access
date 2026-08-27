@@ -391,9 +391,9 @@ namespace ES2Access.Screens
         /// surplus lines parked at alpha 0 still holding the previous law's words
         /// (<c>GuiEffectMapper.UnloadEffects</c>), and they are still <c>Visible</c>. Measured on
         /// "Mine's Bigger Decree", whose one effect was read as three. The BAND walk asks the engine's
-        /// own drawing test for that (<see cref="AgeWidgets.DrawnChild"/>), because a band is an
-        /// ancestor and the one-step gate below cannot see it; a retired LINE is taken out with the
-        /// rest of the cells, before they are banded (<see cref="Cells"/>).</summary>
+        /// own drawing test for that (<see cref="AgeWidgets.DrawnChild"/>), which keeps a retired band
+        /// from being walked line by line at all; a retired LINE is taken out with the rest of the
+        /// cells, before they are banded (<see cref="Cells"/>).</summary>
         private void AddEffects(GraphBuilder builder, PanelFeatureEffects effects)
         {
             AgeTransform group = effects == null ? null : effects.AgeTransform;

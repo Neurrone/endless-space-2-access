@@ -48,12 +48,14 @@ namespace ES2Access.UI
                 MessageBuilder message = new MessageBuilder();
                 AgeTransform left = gauge.LeftGauge;
                 AgeTransform right = gauge.RightGauge;
+                // Content: which half of the gauge contributes its figure to the phrase.
                 if (left != null && left.Visible)
                 {
                     message.ListItem(AgeText.Clean(ProjectileTitle));
                     message.Fragment(Percent(50f - left.PercentLeft));
                 }
 
+                // Content: the same for the other half.
                 if (right != null && right.Visible)
                 {
                     message.ListItem(AgeText.Clean(EnergyTitle));
@@ -81,7 +83,7 @@ namespace ES2Access.UI
         public static void Add(List<Cell> cells, RepartitionHorizontalGauge gauge, string key)
         {
             AgeTransform widget = gauge == null ? null : gauge.AgeTransform;
-            if (widget == null || !AgeWidgets.Visible(widget) || string.IsNullOrEmpty(Text(gauge)))
+            if (widget == null || string.IsNullOrEmpty(Text(gauge)))
             {
                 return;
             }

@@ -181,6 +181,7 @@ namespace ES2Access.Screens
         {
             AgePrimitiveLabel label = window.CutsceneSubtitle;
             AgeTransform widget = label == null ? null : label.AgeTransform;
+            // Content: a line NARRATED as it is drawn. No node is made here for the gate to see.
             string line = AgeWidgets.Visible(widget) ? AgeText.Label(label) : null;
             if (string.IsNullOrEmpty(line))
             {
@@ -230,6 +231,7 @@ namespace ES2Access.Screens
         {
             try
             {
+                // Content: which planet the narration names. No node is made here either.
                 return card == null || !AgeWidgets.Visible(card.AgeTransform) ? null : card.Planet;
             }
             catch (Exception)
