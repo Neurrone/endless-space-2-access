@@ -1374,6 +1374,24 @@ namespace ES2Access.UI
             PointAt(vtable, TooltipOwner(tooltip) ?? widget);
         }
 
+        /// <summary>Which tooltip a node's pointer goes to, as the node itself declares it
+        /// (<see cref="NodeVtable.PointsAt"/>, written by the pointing helpers above from the same
+        /// argument they aim). Never re-derived from the widget tree: the deepest tooltip inside a
+        /// card is often decoration, and a second opinion that picked it reported a defect on screens
+        /// whose pointing was right all along.</summary>
+        public static AgeTooltip AimOf(NodeVtable vtable)
+        {
+            Func<object> at = vtable == null ? null : vtable.PointsAt;
+            try
+            {
+                return at == null ? null : at() as AgeTooltip;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
         /// <summary>The widget a tooltip is hung on, which is the one the game draws it for.</summary>
         public static AgeTransform TooltipOwner(AgeTooltip tooltip)
         {

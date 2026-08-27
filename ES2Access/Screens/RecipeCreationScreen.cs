@@ -367,7 +367,7 @@ namespace ES2Access.Screens
             GraphNodes.AddRefusal(vtable, tooltip, offered);
 
             AgeWidgets.PointAt(vtable, widget);
-            Cells.Add(cells, widget, ControlId.Referenced(widget, "recipe:slot/" + index), vtable);
+            Cells.Add(cells, widget, ControlId.For(widget, "recipe:slot/" + index), vtable);
         }
 
         /// <summary>What the project would do, off the lines the game writes into its effects box - each

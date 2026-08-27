@@ -719,7 +719,7 @@ namespace ES2Access.Screens
             Cells.Add(
                 _cells,
                 widget,
-                ControlId.Referenced(item, Keys + "design/" + item.GetInstanceID()),
+                ControlId.For(item, Keys + "design/" + item.GetInstanceID()),
                 vtable
             );
         }
@@ -849,7 +849,7 @@ namespace ES2Access.Screens
                 Sections = GraphNodes.Sections(null, tooltip),
             };
             AgeWidgets.PointAt(vtable, widget);
-            Cells.Add(_cells, widget, ControlId.Referenced(widget, Keys + key), vtable);
+            Cells.Add(_cells, widget, ControlId.For(widget, Keys + key), vtable);
         }
 
         // ---- reading the window ----

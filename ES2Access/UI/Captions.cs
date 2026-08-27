@@ -102,7 +102,7 @@ namespace ES2Access.UI
             }
 
             Cell cell = Cells.Readout(widget, tooltip, key.ToString());
-            builder.AddItem(cell.Id, cell.Vtable);
+            builder.AddItem(Nodes.Drawn(cell.Id, cell.Vtable, cell.Widget));
             return true;
         }
 

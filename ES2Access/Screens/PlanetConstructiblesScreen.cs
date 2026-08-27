@@ -147,7 +147,7 @@ namespace ES2Access.Screens
                 for (int i = 0; i < row.Count; i++)
                 {
                     builder.StartRow();
-                    builder.AddItem(row[i].Id, row[i].Vtable);
+                    builder.AddItem(Nodes.Drawn(row[i].Id, row[i].Vtable, row[i].Widget));
                     builder.EndRow();
                 }
             }
@@ -217,7 +217,7 @@ namespace ES2Access.Screens
                 new Cell
                 {
                     Widget = item.AgeTransform,
-                    Id = ControlId.Referenced(
+                    Id = ControlId.For(
                         item,
                         "planet-constructible/" + constructible.Name
                     ),

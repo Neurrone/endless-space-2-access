@@ -145,7 +145,7 @@ namespace ES2Access.UI
                 );
                 GraphNodes.AddRefusal(vtable, tooltip, offered);
                 AgeWidgets.Point(vtable, button, tooltip, at);
-                builder.AddItem(ControlId.Referenced(at, keyPrefix + "/action/" + i), vtable);
+                builder.AddItem(Nodes.Drawn(ControlId.For(at, keyPrefix + "/action/" + i), vtable, at));
 
                 AgeTransform extra = AgeWidgets.Transform(row.Extra);
                 if (extra == null || !AgeWidgets.Visible(extra))
@@ -161,10 +161,11 @@ namespace ES2Access.UI
                     AgeWidgets.Raw(extra)
                 );
                 AgeWidgets.Point(child, second, AgeWidgets.Raw(extra), extra);
-                builder.AddItem(
-                    ControlId.Referenced(extra, keyPrefix + "/action/" + i + "/extra"),
-                    child
-                );
+                builder.AddItem(Nodes.Drawn(
+                    ControlId.For(extra, keyPrefix + "/action/" + i + "/extra"),
+                    child,
+                    extra
+                ));
             }
         }
 
@@ -215,7 +216,7 @@ namespace ES2Access.UI
                 AgeWidgets.Raw(at)
             );
             AgeWidgets.PointAt(vtable, at);
-            Cells.Add(cells, at, ControlId.Referenced(at, key), vtable);
+            Cells.Add(cells, at, ControlId.For(at, key), vtable);
         }
 
         /// <summary>What the row is called: the title the game wrote on it, falling back to the first

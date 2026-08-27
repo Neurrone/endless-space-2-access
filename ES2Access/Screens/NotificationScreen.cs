@@ -535,7 +535,7 @@ namespace ES2Access.Screens
                 AgeTooltip explains =
                     explaining.Count == 0 ? null : explaining[explaining.Count - 1];
                 AgeTransform hover = explains == null ? null : Holder(explains);
-                builder.AddNode(
+                builder.AddNode(Nodes.Drawn(
                     lead,
                     new NodeVtable
                     {
@@ -556,8 +556,9 @@ namespace ES2Access.Screens
                                 : () => PointerFocus.MoveTo(hover, explains),
                         OnBlurVisual = ReleasePointer,
                         PointsAt = () => hover == null ? null : explains,
-                    }
-                );
+                    },
+                    label
+                ));
             }
 
             if (body != null)
@@ -1100,11 +1101,11 @@ namespace ES2Access.Screens
             vtable.PointsAt = () => hover == null ? null : tooltip;
 
             AgeTransform named = group ?? it[0].Widget;
-            ControlId id = ControlId.Referenced(
+            ControlId id = ControlId.For(
                 named,
                 "notification:body/" + index + "/" + named.name
             );
-            builder.AddItem(id, vtable);
+            builder.AddItem(Nodes.Drawn(id, vtable, named));
             return id;
         }
 
@@ -2668,7 +2669,7 @@ namespace ES2Access.Screens
 
         private static ControlId WordsId(AgePrimitiveLabel label)
         {
-            return ControlId.Referenced(label, "notification:words");
+            return ControlId.For(label, "notification:words");
         }
 
         /// <summary>
@@ -2821,7 +2822,7 @@ namespace ES2Access.Screens
             ControlId id = IdOf(it);
             if (it.Dossiers == null || it.Dossiers.Count == 0)
             {
-                builder.AddItem(id, vtable);
+                builder.AddItem(Nodes.Drawn(id, vtable, it.Widget));
                 return;
             }
 
@@ -2829,7 +2830,7 @@ namespace ES2Access.Screens
             // was - its name, its role, its state, its click and the chord that confirms it - and the
             // pages it draws no words for become nodes under it. The popup declares no actions of its
             // own on a card, so the region handed back is simply the one in force.
-            builder.BeginGroup(id, vtable);
+            builder.BeginGroup(Nodes.Drawn(id, vtable, it.Widget));
             if (builder.IsExpanded(id))
             {
                 TooltipChildren.Emit(builder, "notification:" + it.Key, it.Dossiers, builder.Region);
@@ -2903,7 +2904,7 @@ namespace ES2Access.Screens
 
         private static ControlId IdOf(Control control)
         {
-            return ControlId.Referenced(control.Widget, "notification:" + control.Key);
+            return ControlId.For(control.Widget, "notification:" + control.Key);
         }
 
         /// <summary>Whether a toggle is one of a set the game lets the player pick exactly one of -

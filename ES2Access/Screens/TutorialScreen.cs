@@ -335,7 +335,7 @@ namespace ES2Access.Screens
             for (int i = 0; i < pages; i++)
             {
                 ControlId id = ControlId.Structural(PageKey + i);
-                builder.AddItem(id, Page(i));
+                builder.AddItem(Nodes.Synthetic(id, Page(i)));
                 if (i == current)
                 {
                     builder.SetStart(id);
@@ -434,7 +434,7 @@ namespace ES2Access.Screens
                 vtable.OnFocusVisual = () =>
                     PointerFocus.MoveTo(it.Button, it.Widget.AgeTooltip, it.Widget);
                 vtable.OnBlurVisual = ReleasePointer;
-                builder.AddItem(ControlId.Referenced(it.Widget, prefix + it.Key), vtable);
+                builder.AddItem(Nodes.Drawn(ControlId.For(it.Widget, prefix + it.Key), vtable, it.Widget));
             }
         }
 

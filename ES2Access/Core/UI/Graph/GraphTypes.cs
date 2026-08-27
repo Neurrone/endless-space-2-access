@@ -359,7 +359,7 @@ namespace ES2Access.Core.UI.Graph
         /// What to bring into view when focus lands here, for a control whose own identity carries no
         /// backing object.
         ///
-        /// Scrolling follows the node's <c>ControlId.Reference</c>, and a table gives that reference
+        /// Scrolling follows the node's <c>ControlId.Subject</c>, and a table gives that reference
         /// to the row's PRIMARY cell alone - identity is per cell, and every cell answering to the
         /// same object would make a moved row resolve to whichever cell was reached first. So a cell
         /// in another column names the row here instead: same scrolling, untouched identity. Null
@@ -420,28 +420,91 @@ namespace ES2Access.Core.UI.Graph
         /// </summary>
         public Func<object> PointsAt;
 
-        /// <summary>
-        /// Optional. THE WIDGET WHOSE PAINT STATE VOUCHES FOR THIS CONTENT - what the host asks
-        /// "is the game still drawing this" of, before the node is allowed to exist at all.
-        ///
-        /// Identity and evidence are two questions, and this is the second one written down.
-        /// <see cref="ControlId.Reference"/> answers WHICH THING a node is, so that focus follows it
-        /// across rebuilds; content the game POOLS deliberately has none, because the recycled widget
-        /// it was read off is the wrong thing to follow (a row keyed by its widget would carry the
-        /// cursor to whatever the pool binds there next). That same recycled widget is nonetheless
-        /// exactly the right thing to ask whether the content is still on the screen. With one slot
-        /// the two answers stop competing: the id keys the content structurally, and the carrier
-        /// carries the widget.
-        ///
-        /// Set by the shared EMITTERS, which hold the widget while they read it, never by a screen at
-        /// a call site - the same rule the pointer and the scroll anchor follow, and for the same
-        /// reason: a declaration the screens each have to remember is one some screen will not.
-        ///
-        /// Typed as <see cref="object"/> because this assembly knows nothing of the game's toolkit;
-        /// the core stores it and never interprets it. Null - the ordinary case - leaves the id's own
-        /// reference to answer, and a node with neither is read off the model and is not gated.
-        /// </summary>
-        public object Carrier;
+    }
+
+    /// <summary>
+    /// A control offered to the graph: its identity, its behaviors — and, by which SUBCLASS it is,
+    /// whether there is anything on the screen whose paint state can vouch for it.
+    ///
+    /// Identity and evidence are two different questions and this type is where they stop competing.
+    /// <see cref="ControlId.Subject"/> answers WHICH THING a node is, so that focus follows it across
+    /// rebuilds. Whether the game is still drawing the thing is a separate question with only two
+    /// honest answers, and a nullable slot could not tell them apart: "here is the widget, ask it"
+    /// and "nothing here can be asked" both read as a field that may be empty, so a walk that simply
+    /// forgot to say looked exactly like a walk that had nothing to say. So the two answers are two
+    /// TYPES — <see cref="DrawnNode"/> carries the widget and cannot be built without one,
+    /// <see cref="SyntheticNode"/> has no evidence member at all — and every declaration site says
+    /// which it is because the compiler will not let it stay silent.
+    ///
+    /// The base knows nothing about evidence: it is what the graph machinery needs to make a node,
+    /// and no more.
+    /// </summary>
+    public abstract class NodeDeclaration
+    {
+        /// <summary>The control's identity. Never null.</summary>
+        public ControlId Id { get; private set; }
+
+        /// <summary>The control's behaviors. Never null; must carry at least one announcement.</summary>
+        public NodeVtable Vtable { get; private set; }
+
+        internal NodeDeclaration(ControlId id, NodeVtable vtable)
+        {
+            if (id == null) throw new ArgumentNullException("id");
+            if (vtable == null) throw new ArgumentNullException("vtable");
+            Id = id;
+            Vtable = vtable;
+        }
+    }
+
+    /// <summary>
+    /// A control the GAME is drawing, declared with the widget that proves it.
+    ///
+    /// <see cref="DrawnBy"/> is the thing the host asks "are you still on the screen" before the node
+    /// is allowed to exist at all. It is required, not optional: content the game POOLS is keyed
+    /// structurally on purpose (a row keyed by its recycled widget would carry the cursor to whatever
+    /// the pool binds there next), so those nodes' ids name no object — and the recycled widget is
+    /// nonetheless exactly the right thing to ask about paint state. Before this was a type, such a
+    /// node could be declared with neither answer and was silently ungated; four walks announced
+    /// retired rows that way, and each was found by a bug report.
+    ///
+    /// Typed as <see cref="object"/> because this assembly knows nothing of the game's toolkit; the
+    /// core stores it and never interprets it.
+    /// </summary>
+    public sealed class DrawnNode : NodeDeclaration
+    {
+        /// <summary>The widget whose paint state vouches for this content. Never null.</summary>
+        public object DrawnBy { get; private set; }
+
+        public DrawnNode(ControlId id, NodeVtable vtable, object drawnBy)
+            : base(id, vtable)
+        {
+            if (drawnBy == null) throw new ArgumentNullException("drawnBy");
+            DrawnBy = drawnBy;
+        }
+    }
+
+    /// <summary>
+    /// A control with nothing on the screen to ask about: untestable by construction, and therefore
+    /// never dropped.
+    ///
+    /// Two origins are legitimate, and only two:
+    ///
+    /// <para><b>Synthesized from game facts.</b> A place on the map, a fleet in a repository, a row
+    /// read out of a model — content the mod assembled from the game's own data rather than off a
+    /// drawn widget. Nothing paints it as a unit, so honesty about whether it still exists lives at
+    /// the ENUMERATION site: the walk that lists these must list only what is really there.</para>
+    ///
+    /// <para><b>Mod-authored UI.</b> The settings screens, the turn log, a window's own structural
+    /// extras — controls this mod invented, which the game draws nothing for.</para>
+    ///
+    /// Anything else — a node read off a widget the walk was holding — is a
+    /// <see cref="DrawnNode"/>, and declaring it here instead is a misdeclaration the engine's own
+    /// door reports.
+    /// </summary>
+    public sealed class SyntheticNode : NodeDeclaration
+    {
+        public SyntheticNode(ControlId id, NodeVtable vtable)
+            : base(id, vtable) { }
     }
 
     /// <summary>
@@ -488,8 +551,21 @@ namespace ES2Access.Core.UI.Graph
     /// parent chain, tab-stop and region membership, expandability).</summary>
     public sealed class GraphNode
     {
-        public ControlId Id;
-        public NodeVtable Vtable;
+        /// <summary>What the screen offered, with its nature intact - the one place a built node's
+        /// evidence (or its declared absence) can still be asked for, by the gate that acted on it and
+        /// by the audits that check the gate.</summary>
+        public NodeDeclaration Declared;
+
+        public ControlId Id
+        {
+            get { return Declared == null ? null : Declared.Id; }
+        }
+
+        public NodeVtable Vtable
+        {
+            get { return Declared == null ? null : Declared.Vtable; }
+        }
+
         public readonly Dictionary<GraphDir, Transition> Transitions = new Dictionary<GraphDir, Transition>();
 
         /// <summary>The node's structural parent within THIS render, or null at screen level. The parent

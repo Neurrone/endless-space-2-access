@@ -587,7 +587,7 @@ namespace ES2Access.Screens
             AgeWidgets.PointAt(vtable, status ?? label.AgeTransform);
 
             string key = "system:planet/" + planet.GUID;
-            ControlId id = ControlId.Referenced(planet, key);
+            ControlId id = ControlId.For(planet, key);
             List<CardActions.CardAction> rename = new List<CardActions.CardAction>(1);
             CardActions.AddNamedByMod(rename, label.PlanetRenameButton, ModStrings.SystemRenamePlanet);
             List<CardActions.CardAction> buttons = PlanetButtons(label);
@@ -603,12 +603,12 @@ namespace ES2Access.Screens
                 && dossiers.Count == 0
             )
             {
-                builder.AddItem(id, vtable);
+                builder.AddItem(Nodes.Synthetic(id, vtable));
                 return;
             }
 
             vtable.ControlType = ControlTypes.Group;
-            builder.BeginGroup(id, vtable);
+            builder.BeginGroup(Nodes.Synthetic(id, vtable));
             if (builder.IsExpanded(id))
             {
                 // Down the card, in the order it is drawn: the rename button beside the title, the
@@ -786,7 +786,7 @@ namespace ES2Access.Screens
             {
                 // Whether the game is still drawing this row is not asked here: the node carries the
                 // row itself, and a retired one is dropped where every node's existence is decided
-                // (<see cref="ES2Access.Core.UI.Graph.NodeVtable.Carrier"/>, <see cref="NodeGate"/>).
+                // (<see cref="ES2Access.Core.UI.Graph.DrawnNode"/>, <see cref="NodeGate"/>).
                 AgeTransform row = items[i];
                 PlanetAnomalyItem item = row == null ? null : row.GetComponent<PlanetAnomalyItem>();
                 if (item == null || item.HintButton == null)
@@ -841,7 +841,7 @@ namespace ES2Access.Screens
             {
                 // Drawn-ness is the gate's question, not this walk's: the node carries the item it was
                 // read off, so a curiosity the pool has retired is dropped there
-                // (<see cref="ES2Access.Core.UI.Graph.NodeVtable.Carrier"/>).
+                // (<see cref="ES2Access.Core.UI.Graph.DrawnNode"/>).
                 AgeTransform item = items[i];
                 if (item != null && SkipCuriosities(item))
                 {
@@ -1526,13 +1526,13 @@ namespace ES2Access.Screens
             List<TooltipChildren.Dossier> nested = SlotDossiers(label, colony, slot, unit);
             if (nested.Count == 0)
             {
-                builder.AddItem(ControlId.Structural(key), vtable);
+                builder.AddItem(Nodes.Synthetic(ControlId.Structural(key), vtable));
                 return;
             }
 
             ControlId id = ControlId.Structural(key);
             vtable.ControlType = ControlTypes.Group;
-            builder.BeginGroup(id, vtable);
+            builder.BeginGroup(Nodes.Synthetic(id, vtable));
             if (builder.IsExpanded(id))
             {
                 TooltipChildren.Emit(builder, key, nested, TooltipChildren.Actions(builder, key));
@@ -1883,7 +1883,7 @@ namespace ES2Access.Screens
                         new Cell
                         {
                             Widget = slot,
-                            Id = ControlId.Referenced(
+                            Id = ControlId.For(
                                 population,
                                 keyPrefix + "spaceport/population/" + found.Count
                             ),
@@ -2289,7 +2289,7 @@ namespace ES2Access.Screens
                     tooltip
                 );
                 AgeWidgets.Point(vtable, it);
-                Add(_cells, AgeWidgets.Transform(rename), ControlId.Referenced(rename, "system:colony/rename"), vtable);
+                Add(_cells, AgeWidgets.Transform(rename), ControlId.For(rename, "system:colony/rename"), vtable);
             }
 
             AddInfoIcons(_cells, panel);
@@ -2330,7 +2330,7 @@ namespace ES2Access.Screens
                     tooltip
                 );
                 AgeWidgets.PointAt(vtable, it);
-                Add(_cells, it, ControlId.Referenced(it, "system:colony/improvements"), vtable);
+                Add(_cells, it, ControlId.For(it, "system:colony/improvements"), vtable);
             }
 
             AddDecolonizeGhost(_cells, panel);
@@ -2384,7 +2384,7 @@ namespace ES2Access.Screens
                 ship
             );
             AgeWidgets.Point(vtable, open, ship, label);
-            Add(cells, label, ControlId.Referenced(label, "system:colony/mothership"), vtable);
+            Add(cells, label, ControlId.For(label, "system:colony/mothership"), vtable);
 
             AgeControlButton detach = panel.DetachButton;
             AgeTransform widget = AgeWidgets.Transform(detach);
@@ -2402,7 +2402,7 @@ namespace ES2Access.Screens
                 tooltip
             );
             AgeWidgets.Point(button, it);
-            Add(cells, widget, ControlId.Referenced(detach, "system:colony/detach"), button);
+            Add(cells, widget, ControlId.For(detach, "system:colony/detach"), button);
         }
 
         /// <summary>
@@ -2448,7 +2448,7 @@ namespace ES2Access.Screens
                 new Cell
                 {
                     Widget = widget,
-                    Id = ControlId.Referenced(widget, "system:colony/icon/" + key),
+                    Id = ControlId.For(widget, "system:colony/icon/" + key),
                     Vtable = vtable,
                 }
             );
@@ -2571,7 +2571,7 @@ namespace ES2Access.Screens
             // what actually happened, when it happens.
             vtable.StateText = null;
             AgeWidgets.Point(vtable, it);
-            Add(cells, widget, ControlId.Referenced(toggle, "system:colony/decolonize"), vtable);
+            Add(cells, widget, ControlId.For(toggle, "system:colony/decolonize"), vtable);
         }
 
         /// <summary>
@@ -2683,7 +2683,7 @@ namespace ES2Access.Screens
                         new Cell
                         {
                             Widget = widget,
-                            Id = ControlId.Referenced(
+                            Id = ControlId.For(
                                 item,
                                 "system:colony/resource/" + resource.Name
                             ),
@@ -2794,7 +2794,7 @@ namespace ES2Access.Screens
             // to report: the list that opens says where it starts.
             vtable.StateText = null;
             AgeWidgets.PointAt(vtable, widget);
-            Add(cells, widget, ControlId.Referenced(list, "system:colony/policy"), vtable);
+            Add(cells, widget, ControlId.For(list, "system:colony/policy"), vtable);
         }
 
         private static void Send(GameObject target, string method, Component fallback)
@@ -3178,7 +3178,7 @@ namespace ES2Access.Screens
                 new Cell
                 {
                     Widget = widget,
-                    Id = ControlId.Referenced(widget, keyPrefix + widget.name),
+                    Id = ControlId.For(widget, keyPrefix + widget.name),
                     Vtable = vtable,
                 }
             );
@@ -3212,7 +3212,7 @@ namespace ES2Access.Screens
             return new Cell
             {
                 Widget = widget,
-                Id = ControlId.Referenced(widget, keyPrefix + widget.name + "/governor-portrait"),
+                Id = ControlId.For(widget, keyPrefix + widget.name + "/governor-portrait"),
                 Vtable = vtable,
             };
         }
@@ -3242,7 +3242,7 @@ namespace ES2Access.Screens
             return new Cell
             {
                 Widget = widget,
-                Id = ControlId.Referenced(widget, keyPrefix + widget.name + "/governor-level"),
+                Id = ControlId.For(widget, keyPrefix + widget.name + "/governor-level"),
                 Vtable = vtable,
             };
         }
@@ -3288,7 +3288,7 @@ namespace ES2Access.Screens
             return new Cell
             {
                 Widget = widget,
-                Id = ControlId.Referenced(widget, keyPrefix + widget.name + "/population"),
+                Id = ControlId.For(widget, keyPrefix + widget.name + "/population"),
                 Vtable = vtable,
             };
         }
@@ -3321,7 +3321,7 @@ namespace ES2Access.Screens
             return new Cell
             {
                 Widget = widget,
-                Id = ControlId.Referenced(widget, keyPrefix + widget.name + "/growth-source"),
+                Id = ControlId.For(widget, keyPrefix + widget.name + "/growth-source"),
                 Vtable = vtable,
             };
         }
@@ -3350,7 +3350,7 @@ namespace ES2Access.Screens
             return new Cell
             {
                 Widget = widget,
-                Id = ControlId.Referenced(widget, keyPrefix + widget.name + "/representative"),
+                Id = ControlId.For(widget, keyPrefix + widget.name + "/representative"),
                 Vtable = vtable,
             };
         }
@@ -3392,7 +3392,7 @@ namespace ES2Access.Screens
             return new Cell
             {
                 Widget = widget,
-                Id = ControlId.Referenced(widget, keyPrefix + widget.name + "/approval"),
+                Id = ControlId.For(widget, keyPrefix + widget.name + "/approval"),
                 Vtable = vtable,
             };
         }
@@ -3448,7 +3448,7 @@ namespace ES2Access.Screens
             return new Cell
             {
                 Widget = widget,
-                Id = ControlId.Referenced(widget, keyPrefix + widget.name + "/growth"),
+                Id = ControlId.For(widget, keyPrefix + widget.name + "/growth"),
                 Vtable = vtable,
             };
         }
@@ -3484,7 +3484,7 @@ namespace ES2Access.Screens
             return new Cell
             {
                 Widget = widget,
-                Id = ControlId.Referenced(widget, keyPrefix + widget.name + "/outposts"),
+                Id = ControlId.For(widget, keyPrefix + widget.name + "/outposts"),
                 Vtable = vtable,
             };
         }
@@ -3560,7 +3560,7 @@ namespace ES2Access.Screens
             return new Cell
             {
                 Widget = widget,
-                Id = ControlId.Referenced(widget, keyPrefix + widget.name + "/sensitivity"),
+                Id = ControlId.For(widget, keyPrefix + widget.name + "/sensitivity"),
                 Vtable = vtable,
             };
         }
@@ -3726,7 +3726,7 @@ namespace ES2Access.Screens
                 AgeWidgets.Raw(widget)
             );
             AgeWidgets.Point(vtable, it);
-            Add(cells, widget, ControlId.Referenced(button, key), vtable);
+            Add(cells, widget, ControlId.For(button, key), vtable);
         }
 
         // ---- shared ----
@@ -3769,7 +3769,7 @@ namespace ES2Access.Screens
             }
 
             AgeWidgets.PointAt(vtable, widget, tip);
-            Add(cells, widget, ControlId.Referenced(widget, key), vtable);
+            Add(cells, widget, ControlId.For(widget, key), vtable);
         }
 
         private static void AddWidgetLines(

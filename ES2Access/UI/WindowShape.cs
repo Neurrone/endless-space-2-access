@@ -165,7 +165,7 @@ namespace ES2Access.UI
                     string.IsNullOrEmpty(caption) ? TooltipMode.None : (TooltipMode?)null
                 );
                 AgeWidgets.PointAt(vtable, at);
-                builder.AddItem(ControlId.Referenced(at, keyPrefix + "close"), vtable);
+                builder.AddItem(Nodes.Drawn(ControlId.For(at, keyPrefix + "close"), vtable, at));
             }
             catch (Exception e)
             {
@@ -379,7 +379,7 @@ namespace ES2Access.UI
                     tooltip
                 );
             AgeWidgets.Point(vtable, it, tooltip, widget);
-            Cells.Add(cells, widget, ControlId.Referenced(toggle, key), vtable);
+            Cells.Add(cells, widget, ControlId.For(toggle, key), vtable);
         }
 
         /// <summary>Whether this toggle is one of a set the game lets the player pick exactly one of

@@ -124,10 +124,11 @@ namespace ES2Access.Screens
             }
 
             AgePrimitiveLabel heading = _labels[0];
-            builder.AddItem(
-                ControlId.Referenced(heading, "tutorial-selection:heading"),
-                GraphNodes.Readout(() => AgeText.Label(heading), () => null, null, null)
-            );
+            builder.AddItem(Nodes.Drawn(
+                ControlId.For(heading, "tutorial-selection:heading"),
+                GraphNodes.Readout(() => AgeText.Label(heading), () => null, null, null),
+                heading
+            ));
         }
 
         /// <summary>The words of that heading, for the screen's spoken name.</summary>
@@ -210,7 +211,7 @@ namespace ES2Access.Screens
             );
 
             AgeWidgets.Point(vtable, card);
-            Add(cells, widget, ControlId.Referenced(card, "tutorial-selection:choice/" + index), vtable);
+            Add(cells, widget, ControlId.For(card, "tutorial-selection:choice/" + index), vtable);
         }
 
         /// <summary>The heading drawn across the top of a card - the topmost of the words on it.
@@ -286,7 +287,7 @@ namespace ES2Access.Screens
                 () => AgeWidgets.Operable(it)
             );
             AgeWidgets.Point(vtable, button);
-            Add(cells, widget, ControlId.Referenced(widget, "tutorial-selection:button/" + Name(widget)), vtable);
+            Add(cells, widget, ControlId.For(widget, "tutorial-selection:button/" + Name(widget)), vtable);
         }
 
         // ---- shared ----
@@ -377,7 +378,7 @@ namespace ES2Access.Screens
             {
                 foreach (Cell cell in row)
                 {
-                    builder.AddItem(cell.Id, cell.Vtable);
+                    builder.AddItem(Nodes.Drawn(cell.Id, cell.Vtable, cell.Widget));
                 }
             }
         }

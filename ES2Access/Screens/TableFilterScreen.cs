@@ -136,7 +136,7 @@ namespace ES2Access.Screens
                     () => AgeWidgets.Operable(child)
                 );
                 AgeWidgets.Point(vtable, it.Toggle);
-                builder.AddItem(ControlId.Referenced(item, key + i), vtable);
+                builder.AddItem(Nodes.Drawn(ControlId.For(item, key + i), vtable, item));
             }
         }
 

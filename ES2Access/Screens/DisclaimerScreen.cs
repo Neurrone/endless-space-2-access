@@ -103,7 +103,7 @@ namespace ES2Access.Screens
                 null
             );
             AgeWidgets.PointAt(vtable, widget);
-            builder.AddItem(ControlId.Referenced(label, "disclaimer:statement"), vtable);
+            builder.AddItem(Nodes.Drawn(ControlId.For(label, "disclaimer:statement"), vtable, label));
         }
 
         private static AgePrimitiveLabel Content(DisclaimerModalWindow window)

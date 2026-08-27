@@ -207,13 +207,14 @@ namespace ES2Access.UI
                         OnFocusVisual = () => PointerFocus.MoveTo(null, tooltip, under),
                         OnBlurVisual = AgeWidgets.ReleasePointer,
                     };
-                    builder.AddItem(
-                        ControlId.Referenced(
+                    builder.AddItem(Nodes.Drawn(
+                        ControlId.For(
                             it[0].Widget,
                             keyPrefix + index + "." + part + "/" + it[0].Widget.name
                         ),
-                        vtable
-                    );
+                        vtable,
+                        it[0].Widget
+                    ));
                 }
 
                 builder.EndRow();

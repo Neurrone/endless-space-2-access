@@ -29,7 +29,7 @@ namespace ES2Access.Tests.UI
         {
             GraphState state = new GraphState();
             KeyGraph g = new KeyGraph(Renderer(b =>
-                b.AddItem(Id("a"), Vt("A")).AddItem(Id("b"), Vt("B"))), state);
+                b.AddItem(new SyntheticNode(Id("a"), Vt("A"))).AddItem(new SyntheticNode(Id("b"), Vt("B")))), state);
             Assert.True(g.Rerender());
             Assert.Equal("a", Focused(g));
         }
@@ -40,7 +40,7 @@ namespace ES2Access.Tests.UI
             GraphState state = new GraphState();
             KeyGraph g = new KeyGraph(Renderer(b =>
             {
-                b.AddNode(Id("a"), Vt("A")).AddNode(Id("b"), Vt("B"));
+                b.AddNode(new SyntheticNode(Id("a"), Vt("A"))).AddNode(new SyntheticNode(Id("b"), Vt("B")));
                 b.Connect(Id("a"), GraphDir.Right, Id("b"), "Ships");
             }), state);
             g.Rerender();
@@ -56,7 +56,7 @@ namespace ES2Access.Tests.UI
         {
             GraphState state = new GraphState();
             KeyGraph g = new KeyGraph(Renderer(b =>
-                b.AddItem(Id("a"), Vt("A")).AddItem(Id("b"), Vt("B"))), state);
+                b.AddItem(new SyntheticNode(Id("a"), Vt("A"))).AddItem(new SyntheticNode(Id("b"), Vt("B")))), state);
             g.Rerender();
             MoveResult r = g.Move(GraphDir.Up);
             Assert.False(r.Moved);
@@ -69,7 +69,7 @@ namespace ES2Access.Tests.UI
         {
             GraphState state = new GraphState();
             KeyGraph g = new KeyGraph(Renderer(b =>
-                b.AddItem(Id("a"), Vt("A")).AddItem(Id("b"), Vt("B")).AddItem(Id("c"), Vt("C"))), state);
+                b.AddItem(new SyntheticNode(Id("a"), Vt("A"))).AddItem(new SyntheticNode(Id("b"), Vt("B"))).AddItem(new SyntheticNode(Id("c"), Vt("C")))), state);
             g.Rerender();
             Assert.True(g.MoveToEdge(GraphDir.Down).Moved);
             Assert.Equal("c", Focused(g));
@@ -81,8 +81,8 @@ namespace ES2Access.Tests.UI
         {
             return new KeyGraph(Renderer(b =>
             {
-                b.BeginStop("s1").AddItem(Id("a1"), Vt("A1")).AddItem(Id("a2"), Vt("A2"));
-                b.BeginStop("s2").AddItem(Id("b1"), Vt("B1")).AddItem(Id("b2"), Vt("B2"));
+                b.BeginStop("s1").AddItem(new SyntheticNode(Id("a1"), Vt("A1"))).AddItem(new SyntheticNode(Id("a2"), Vt("A2")));
+                b.BeginStop("s2").AddItem(new SyntheticNode(Id("b1"), Vt("B1"))).AddItem(new SyntheticNode(Id("b2"), Vt("B2")));
             }), state);
         }
 
@@ -136,7 +136,7 @@ namespace ES2Access.Tests.UI
         {
             GraphState state = new GraphState();
             KeyGraph g = new KeyGraph(Renderer(b =>
-                b.BeginStop("s1").AddItem(Id("a1"), Vt("A1")).AddItem(Id("a2"), Vt("A2"))), state);
+                b.BeginStop("s1").AddItem(new SyntheticNode(Id("a1"), Vt("A1"))).AddItem(new SyntheticNode(Id("a2"), Vt("A2")))), state);
             g.Rerender();
             g.Move(GraphDir.Down);
             Assert.Equal("a2", Focused(g));
@@ -166,9 +166,9 @@ namespace ES2Access.Tests.UI
             GraphState state = new GraphState();
             KeyGraph g = new KeyGraph(Renderer(b =>
             {
-                b.AddItem(Id("a"), Vt("A", Part(null, AnnouncementKinds.Selected)));
-                b.AddItem(Id("b"), Vt("B", Part("selected", AnnouncementKinds.Selected)));
-                b.AddItem(Id("c"), Vt("C", Part(null, AnnouncementKinds.Selected)));
+                b.AddItem(new SyntheticNode(Id("a"), Vt("A", Part(null, AnnouncementKinds.Selected))));
+                b.AddItem(new SyntheticNode(Id("b"), Vt("B", Part("selected", AnnouncementKinds.Selected))));
+                b.AddItem(new SyntheticNode(Id("c"), Vt("C", Part(null, AnnouncementKinds.Selected))));
             }), state);
             g.Rerender();
             Assert.Equal("b", Focused(g));
@@ -183,10 +183,10 @@ namespace ES2Access.Tests.UI
             GraphState state = new GraphState();
             KeyGraph g = new KeyGraph(Renderer(b =>
             {
-                b.AddNode(Id("text"), Vt("Some words"));
+                b.AddNode(new SyntheticNode(Id("text"), Vt("Some words")));
                 b.SetStart(Id("text"));
-                b.AddItem(Id("dot1"), Vt("Page 1", Part("selected", AnnouncementKinds.Selected)));
-                b.AddItem(Id("dot2"), Vt("Page 2", Part(null, AnnouncementKinds.Selected)));
+                b.AddItem(new SyntheticNode(Id("dot1"), Vt("Page 1", Part("selected", AnnouncementKinds.Selected))));
+                b.AddItem(new SyntheticNode(Id("dot2"), Vt("Page 2", Part(null, AnnouncementKinds.Selected))));
             }), state);
             g.Rerender();
             Assert.Equal("text", Focused(g));
@@ -199,15 +199,15 @@ namespace ES2Access.Tests.UI
         {
             return new KeyGraph(Renderer(b =>
             {
-                b.BeginStop("elsewhere").AddItem(Id("away"), Vt("Away"));
+                b.BeginStop("elsewhere").AddItem(new SyntheticNode(Id("away"), Vt("Away")));
                 b.BeginStop("table");
-                b.AddItem(Id("head1"), Vt("Name", Part("selected", AnnouncementKinds.Selected)));
-                b.AddItem(Id("head2"), Vt("Ships", Part(null, AnnouncementKinds.Selected)));
-                b.AddItem(Id("row1"), Vt("Alpha", Part(null, AnnouncementKinds.Selected)));
-                b.AddItem(
+                b.AddItem(new SyntheticNode(Id("head1"), Vt("Name", Part("selected", AnnouncementKinds.Selected))));
+                b.AddItem(new SyntheticNode(Id("head2"), Vt("Ships", Part(null, AnnouncementKinds.Selected))));
+                b.AddItem(new SyntheticNode(Id("row1"), Vt("Alpha", Part(null, AnnouncementKinds.Selected))));
+                b.AddItem(new SyntheticNode(
                     Id("row2"),
                     Vt("Beta", Part(rowSelected ? "selected" : null, AnnouncementKinds.Selected))
-                );
+                ));
                 b.LandStopOn(Id("row1"));
             }), state);
         }
@@ -240,8 +240,8 @@ namespace ES2Access.Tests.UI
             GraphState state = new GraphState();
             KeyGraph g = new KeyGraph(Renderer(b =>
             {
-                b.SetRegion("r1").AddItem(Id("a1"), Vt("A1")).AddItem(Id("a2"), Vt("A2"));
-                b.SetRegion("r2").AddItem(Id("b1"), Vt("B1")).AddItem(Id("b2"), Vt("B2"));
+                b.SetRegion("r1").AddItem(new SyntheticNode(Id("a1"), Vt("A1"))).AddItem(new SyntheticNode(Id("a2"), Vt("A2")));
+                b.SetRegion("r2").AddItem(new SyntheticNode(Id("b1"), Vt("B1"))).AddItem(new SyntheticNode(Id("b2"), Vt("B2")));
             }), state);
             g.Rerender();
             Assert.True(g.MoveRegion(1).Moved);
@@ -257,8 +257,8 @@ namespace ES2Access.Tests.UI
             GraphState state = new GraphState();
             KeyGraph g = new KeyGraph(Renderer(b =>
             {
-                b.SetRegion("r1").AddItem(Id("a1"), Vt("A1"));
-                b.BeginStop("s2").SetRegion("r2").AddItem(Id("b1"), Vt("B1"));
+                b.SetRegion("r1").AddItem(new SyntheticNode(Id("a1"), Vt("A1")));
+                b.BeginStop("s2").SetRegion("r2").AddItem(new SyntheticNode(Id("b1"), Vt("B1")));
             }), state);
             g.Rerender();
             Assert.False(g.MoveRegion(1).Moved);
@@ -276,8 +276,8 @@ namespace ES2Access.Tests.UI
             GraphState state = new GraphState();
             KeyGraph g = new KeyGraph(Renderer(b =>
             {
-                b.BeginStop("s1").AddItem(Id("a1"), Vt("A1"));
-                b.BeginStop("s2").AddItem(Id("b1"), Vt("B1"));
+                b.BeginStop("s1").AddItem(new SyntheticNode(Id("a1"), Vt("A1")));
+                b.BeginStop("s2").AddItem(new SyntheticNode(Id("b1"), Vt("B1")));
             }), state);
             g.Rerender();
 
@@ -295,15 +295,15 @@ namespace ES2Access.Tests.UI
         {
             return new KeyGraph(Renderer(b =>
             {
-                b.AddItem(Id("top"), Vt("Top"));
-                b.BeginGroup(Id("g"), Vt("Group"));
+                b.AddItem(new SyntheticNode(Id("top"), Vt("Top")));
+                b.BeginGroup(new SyntheticNode(Id("g"), Vt("Group")));
                 if (withChildren)
                 {
-                    b.AddItem(Id("c1"), Vt("Child 1"));
-                    b.AddItem(Id("c2"), Vt("Child 2"));
+                    b.AddItem(new SyntheticNode(Id("c1"), Vt("Child 1")));
+                    b.AddItem(new SyntheticNode(Id("c2"), Vt("Child 2")));
                 }
                 b.EndGroup();
-                b.AddItem(Id("bottom"), Vt("Bottom"));
+                b.AddItem(new SyntheticNode(Id("bottom"), Vt("Bottom")));
             }, state), state);
         }
 
@@ -333,20 +333,20 @@ namespace ES2Access.Tests.UI
         {
             return new KeyGraph(Renderer(b =>
             {
-                b.AddItem(Id("top"), Vt("Top"));
-                b.BeginGroup(Id("g"), Vt("Group"));
+                b.AddItem(new SyntheticNode(Id("top"), Vt("Top")));
+                b.BeginGroup(new SyntheticNode(Id("g"), Vt("Group")));
                 if (settled[0])
                 {
                     if (keepChildren)
                     {
-                        b.AddItem(Id("open"), Vt("Open system"));
+                        b.AddItem(new SyntheticNode(Id("open"), Vt("Open system")));
                     }
                 }
 
                 if (!settled[0] || keepChildren)
                 {
-                    b.AddItem(Id("c1"), Vt("Child 1"));
-                    b.AddItem(Id("c2"), Vt("Child 2"));
+                    b.AddItem(new SyntheticNode(Id("c1"), Vt("Child 1")));
+                    b.AddItem(new SyntheticNode(Id("c2"), Vt("Child 2")));
                 }
 
                 b.EndGroup();
@@ -560,10 +560,10 @@ namespace ES2Access.Tests.UI
                 Renderer(
                     b =>
                     {
-                        b.BeginGroup(Id("g"), Vt("Group"));
+                        b.BeginGroup(new SyntheticNode(Id("g"), Vt("Group")));
                         b.PushContext("Tooltips");
-                        b.AddItem(Id("t1"), Vt("Dossier 1"));
-                        b.AddItem(Id("t2"), Vt("Dossier 2"));
+                        b.AddItem(new SyntheticNode(Id("t1"), Vt("Dossier 1")));
+                        b.AddItem(new SyntheticNode(Id("t2"), Vt("Dossier 2")));
                         b.PopContext();
                         b.EndGroup();
                     },
@@ -598,9 +598,9 @@ namespace ES2Access.Tests.UI
                 Renderer(
                     b =>
                     {
-                        b.BeginGroup(Id("outer"), Vt("Outer"));
-                        b.BeginGroup(Id("inner"), Vt("Inner"));
-                        b.AddItem(Id("deep"), Vt("Deep"));
+                        b.BeginGroup(new SyntheticNode(Id("outer"), Vt("Outer")));
+                        b.BeginGroup(new SyntheticNode(Id("inner"), Vt("Inner")));
+                        b.AddItem(new SyntheticNode(Id("deep"), Vt("Deep")));
                         b.EndGroup();
                         b.EndGroup();
                     },
@@ -622,20 +622,20 @@ namespace ES2Access.Tests.UI
         {
             return new KeyGraph(Renderer(b =>
             {
-                b.AddItem(Id("top"), Vt("Top"));
-                b.BeginGroup(Id("g"), Vt("Group"));
-                b.AddItem(Id("c1"), Vt("Child 1"));
+                b.AddItem(new SyntheticNode(Id("top"), Vt("Top")));
+                b.BeginGroup(new SyntheticNode(Id("g"), Vt("Group")));
+                b.AddItem(new SyntheticNode(Id("c1"), Vt("Child 1")));
                 NodeVtable lane = Vt("Lane");
                 lane.OnFollow = () => followed.Add("followed");
                 if (expandable)
                 {
-                    b.BeginGroup(Id("lane"), lane);
-                    b.AddItem(Id("far"), Vt("Far"));
+                    b.BeginGroup(new SyntheticNode(Id("lane"), lane));
+                    b.AddItem(new SyntheticNode(Id("far"), Vt("Far")));
                     b.EndGroup();
                 }
                 else
                 {
-                    b.AddItem(Id("lane"), lane);
+                    b.AddItem(new SyntheticNode(Id("lane"), lane));
                 }
                 b.EndGroup();
             }, state), state);
@@ -702,15 +702,15 @@ namespace ES2Access.Tests.UI
             return new KeyGraph(Renderer(b =>
             {
                 b.BeginStop("s1");
-                b.AddItem(Id("a1"), Vt("A1"));
-                b.BeginGroup(Id("g"), Vt("Group"));
-                b.AddItem(Id("c1"), Vt("Child 1"));
-                b.AddItem(Id("c2"), Vt("Child 2"));
+                b.AddItem(new SyntheticNode(Id("a1"), Vt("A1")));
+                b.BeginGroup(new SyntheticNode(Id("g"), Vt("Group")));
+                b.AddItem(new SyntheticNode(Id("c1"), Vt("Child 1")));
+                b.AddItem(new SyntheticNode(Id("c2"), Vt("Child 2")));
                 b.EndGroup();
-                b.AddItem(Id("a2"), Vt("A2"));
+                b.AddItem(new SyntheticNode(Id("a2"), Vt("A2")));
                 b.BeginStop("s2");
-                b.AddItem(Id("b1"), Vt("B1"));
-                b.AddItem(Id("b2"), Vt("B2"));
+                b.AddItem(new SyntheticNode(Id("b1"), Vt("B1")));
+                b.AddItem(new SyntheticNode(Id("b2"), Vt("B2")));
             }, state), state);
         }
 
@@ -757,10 +757,10 @@ namespace ES2Access.Tests.UI
             KeyGraph g = new KeyGraph(Renderer(b =>
             {
                 b.BeginStop("s1");
-                b.BeginGroup(Id("g"), Vt("Group"));
-                b.AddItem(Id("c1"), Vt("Child"));
+                b.BeginGroup(new SyntheticNode(Id("g"), Vt("Group")));
+                b.AddItem(new SyntheticNode(Id("c1"), Vt("Child")));
                 b.EndGroup();
-                b.BeginStop("s2").AddItem(Id("z"), Vt("Z"));
+                b.BeginStop("s2").AddItem(new SyntheticNode(Id("z"), Vt("Z")));
             }, state), state);
             g.Rerender();
             Assert.Equal("g", Focused(g));
@@ -804,8 +804,8 @@ namespace ES2Access.Tests.UI
             KeyGraph g = new KeyGraph(() =>
             {
                 GraphBuilder b = new GraphBuilder(state.Expanded);
-                b.BeginGroup(Id("g"), header, expanded);
-                b.AddItem(Id("c1"), Vt("Child"));
+                b.BeginGroup(new SyntheticNode(Id("g"), header), expanded);
+                b.AddItem(new SyntheticNode(Id("c1"), Vt("Child")));
                 b.EndGroup();
                 return b.Build();
             }, state);
@@ -827,8 +827,8 @@ namespace ES2Access.Tests.UI
             KeyGraph g = new KeyGraph(() =>
             {
                 GraphBuilder b = new GraphBuilder();
-                b.AddItem(Id("other"), Vt("Other"));
-                b.AddItem(ControlId.Referenced(thing, key), Vt("Thing"));
+                b.AddItem(new SyntheticNode(Id("other"), Vt("Other")));
+                b.AddItem(new SyntheticNode(ControlId.For(thing, key), Vt("Thing")));
                 return b.Build();
             }, state);
             g.Rerender();
@@ -848,8 +848,8 @@ namespace ES2Access.Tests.UI
             KeyGraph g = new KeyGraph(() =>
             {
                 GraphBuilder b = new GraphBuilder();
-                b.AddItem(Id("other"), Vt("Other"));
-                b.AddItem(ControlId.Referenced(thing, "slot1"), Vt("Thing"));
+                b.AddItem(new SyntheticNode(Id("other"), Vt("Other")));
+                b.AddItem(new SyntheticNode(ControlId.For(thing, "slot1"), Vt("Thing")));
                 return b.Build();
             }, state);
             g.Rerender();
@@ -858,7 +858,7 @@ namespace ES2Access.Tests.UI
             thing = new object(); // same logical control, fresh instance
             g.Rerender();
             Assert.Equal("slot1", Focused(g));
-            Assert.Same(thing, g.CurrentNode.Id.Reference);
+            Assert.Same(thing, g.CurrentNode.Id.Subject);
         }
 
         [Fact]
@@ -876,8 +876,8 @@ namespace ES2Access.Tests.UI
             KeyGraph g = new KeyGraph(() =>
             {
                 GraphBuilder b = new GraphBuilder();
-                b.AddItem(ControlId.Referenced(thing, "here"), Vt("Here"));
-                b.AddItem(ControlId.Referenced(thing, "there"), Vt("There"));
+                b.AddItem(new SyntheticNode(ControlId.For(thing, "here"), Vt("Here")));
+                b.AddItem(new SyntheticNode(ControlId.For(thing, "there"), Vt("There")));
                 return b.Build();
             }, state);
             g.Rerender();
@@ -896,10 +896,10 @@ namespace ES2Access.Tests.UI
             KeyGraph g = new KeyGraph(() =>
             {
                 GraphBuilder b = new GraphBuilder();
-                b.AddItem(Id("a"), Vt("A"));
-                b.AddItem(Id("b"), Vt("B"));
-                if (withC) b.AddItem(Id("c"), Vt("C"));
-                b.AddItem(Id("d"), Vt("D"));
+                b.AddItem(new SyntheticNode(Id("a"), Vt("A")));
+                b.AddItem(new SyntheticNode(Id("b"), Vt("B")));
+                if (withC) b.AddItem(new SyntheticNode(Id("c"), Vt("C")));
+                b.AddItem(new SyntheticNode(Id("d"), Vt("D")));
                 return b.Build();
             }, state);
             g.Rerender();
@@ -920,8 +920,8 @@ namespace ES2Access.Tests.UI
             KeyGraph g = new KeyGraph(() =>
             {
                 GraphBuilder b = new GraphBuilder();
-                if (second) b.AddItem(Id("x"), Vt("X")).AddItem(Id("y"), Vt("Y"));
-                else b.AddItem(Id("a"), Vt("A")).AddItem(Id("b"), Vt("B"));
+                if (second) b.AddItem(new SyntheticNode(Id("x"), Vt("X"))).AddItem(new SyntheticNode(Id("y"), Vt("Y")));
+                else b.AddItem(new SyntheticNode(Id("a"), Vt("A"))).AddItem(new SyntheticNode(Id("b"), Vt("B")));
                 return b.Build();
             }, state);
             g.Rerender();
@@ -938,7 +938,7 @@ namespace ES2Access.Tests.UI
         {
             GraphState state = new GraphState();
             KeyGraph g = new KeyGraph(Renderer(b =>
-                b.AddItem(Id("a"), Vt("A")).AddItem(Id("b"), Vt("B"))), state);
+                b.AddItem(new SyntheticNode(Id("a"), Vt("A"))).AddItem(new SyntheticNode(Id("b"), Vt("B")))), state);
             g.Rerender();
             state.NextSuggestedMove = Id("b");
             g.Rerender();
@@ -962,8 +962,8 @@ namespace ES2Access.Tests.UI
         public void ComputeOrderVisitsAGridInReadingOrder()
         {
             GraphBuilder b = new GraphBuilder();
-            b.StartRow("g").AddItem(Id("a"), Vt("A")).AddItem(Id("b"), Vt("B")).EndRow();
-            b.StartRow("g").AddItem(Id("c"), Vt("C")).AddItem(Id("d"), Vt("D")).EndRow();
+            b.StartRow("g").AddItem(new SyntheticNode(Id("a"), Vt("A"))).AddItem(new SyntheticNode(Id("b"), Vt("B"))).EndRow();
+            b.StartRow("g").AddItem(new SyntheticNode(Id("c"), Vt("C"))).AddItem(new SyntheticNode(Id("d"), Vt("D"))).EndRow();
             GraphRender r = b.Build();
             List<ControlId> order = KeyGraph.ComputeOrder(r);
             Assert.Equal(new[] { "a", "b", "c", "d" }, order.ConvertAll(id => (string)id.StructuralKey));
@@ -973,8 +973,8 @@ namespace ES2Access.Tests.UI
         public void ComputeOrderAppendsNodesTheWalkCannotReach()
         {
             GraphBuilder b = new GraphBuilder();
-            b.BeginStop("s1").AddItem(Id("a"), Vt("A"));
-            b.BeginStop("s2").AddItem(Id("z"), Vt("Z"));
+            b.BeginStop("s1").AddItem(new SyntheticNode(Id("a"), Vt("A")));
+            b.BeginStop("s2").AddItem(new SyntheticNode(Id("z"), Vt("Z")));
             List<ControlId> order = KeyGraph.ComputeOrder(b.Build());
             Assert.Equal(new[] { "a", "z" }, order.ConvertAll(id => (string)id.StructuralKey));
         }
@@ -992,7 +992,7 @@ namespace ES2Access.Tests.UI
             rich.OnTooltip = () => tooltip++;
 
             KeyGraph g = new KeyGraph(Renderer(b =>
-                b.AddItem(Id("a"), rich).AddItem(Id("b"), Vt("Plain"))), state);
+                b.AddItem(new SyntheticNode(Id("a"), rich)).AddItem(new SyntheticNode(Id("b"), Vt("Plain")))), state);
             g.Rerender();
             Assert.True(g.Activate());
             Assert.True(g.Secondary());
@@ -1024,7 +1024,7 @@ namespace ES2Access.Tests.UI
             plain.OnActivate = () => activated++;
 
             KeyGraph g = new KeyGraph(Renderer(b =>
-                b.AddItem(Id("a"), row).AddItem(Id("b"), plain)), state);
+                b.AddItem(new SyntheticNode(Id("a"), row)).AddItem(new SyntheticNode(Id("b"), plain))), state);
             g.Rerender();
             Assert.True(g.Contextual());
             Assert.Equal(0, activated);
@@ -1056,7 +1056,7 @@ namespace ES2Access.Tests.UI
             button.OnActivate = () => activated++;
 
             KeyGraph g = new KeyGraph(Renderer(b =>
-                b.AddItem(Id("a"), row).AddItem(Id("b"), button).AddItem(Id("c"), Vt("Label"))), state);
+                b.AddItem(new SyntheticNode(Id("a"), row)).AddItem(new SyntheticNode(Id("b"), button)).AddItem(new SyntheticNode(Id("c"), Vt("Label")))), state);
             g.Rerender();
             Assert.True(g.Alternate());
             Assert.True(g.SelectToggle());
@@ -1104,7 +1104,7 @@ namespace ES2Access.Tests.UI
             other.OnContextual = () => contextual++;
 
             KeyGraph g = new KeyGraph(Renderer(b =>
-                b.AddItem(Id("a"), tile).AddItem(Id("b"), other)), state);
+                b.AddItem(new SyntheticNode(Id("a"), tile)).AddItem(new SyntheticNode(Id("b"), other))), state);
             g.Rerender();
             Assert.True(g.DoubleClick());
             Assert.Equal(1, doubled);
@@ -1128,7 +1128,7 @@ namespace ES2Access.Tests.UI
 
             KeyGraph g = new KeyGraph(Renderer(b =>
             {
-                b.StartRow().AddItem(Id("s"), slider).AddItem(Id("n"), Vt("Next")).EndRow();
+                b.StartRow().AddItem(new SyntheticNode(Id("s"), slider)).AddItem(new SyntheticNode(Id("n"), Vt("Next"))).EndRow();
             }), state);
             g.Rerender();
 
@@ -1150,8 +1150,8 @@ namespace ES2Access.Tests.UI
             KeyGraph g = new KeyGraph(() =>
             {
                 GraphBuilder b = new GraphBuilder();
-                b.AddItem(Id("a"), Vt("A"));
-                b.AddItem(ControlId.Referenced(thing, "b"), Vt("B"));
+                b.AddItem(new SyntheticNode(Id("a"), Vt("A")));
+                b.AddItem(new SyntheticNode(ControlId.For(thing, "b"), Vt("B")));
                 return b.Build();
             }, state);
             g.Rerender();

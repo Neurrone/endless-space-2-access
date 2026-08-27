@@ -262,7 +262,7 @@ namespace ES2Access.Screens
                 }
 
                 ScrollIntoView.Anchor(vtable, widget);
-                builder.AddItem(ControlId.Structural(stop + "/family/" + i), vtable);
+                builder.AddItem(Nodes.Synthetic(ControlId.Structural(stop + "/family/" + i), vtable));
             }
 
             if (open)

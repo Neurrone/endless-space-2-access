@@ -374,7 +374,7 @@ namespace ES2Access.Screens
                 }
             };
             AgeWidgets.Point(vtable, it, tooltip, at);
-            Cells.Add(cells, at, ControlId.Referenced(toggle, "economy:tab/" + index), vtable);
+            Cells.Add(cells, at, ControlId.For(toggle, "economy:tab/" + index), vtable);
         }
 
         private static AgeControlToggle Toggle(AgeTransform widget)
@@ -862,7 +862,7 @@ namespace ES2Access.Screens
             GraphNodes.AddRefusal(vtable, tooltip, offered);
 
             AgeWidgets.PointAt(vtable, widget);
-            Cells.Add(cells, widget, ControlId.Referenced(widget, "economy:recipe/" + index), vtable);
+            Cells.Add(cells, widget, ControlId.For(widget, "economy:recipe/" + index), vtable);
         }
 
         /// <summary>The invitation the game writes on an empty slot the empire could fill, and nothing on
@@ -1083,7 +1083,7 @@ namespace ES2Access.Screens
                 Cells.Add(
                     _cells,
                     widget,
-                    ControlId.Referenced(widget, keyPrefix + i),
+                    ControlId.For(widget, keyPrefix + i),
                     vtable
                 );
             }
@@ -1127,7 +1127,7 @@ namespace ES2Access.Screens
             vtable.Announcements.Add(GraphNodes.ValuePart(() => AgeText.Label(it.StockLabel)));
             MarketGestures(vtable, () => AgeWidgets.Toggle(it.SelectionToggle), offered);
             AgeWidgets.Point(vtable, it.SelectionToggle, tooltip, widget);
-            Cells.Add(cells, widget, ControlId.Referenced(widget, "economy:salable/" + index), vtable);
+            Cells.Add(cells, widget, ControlId.For(widget, "economy:salable/" + index), vtable);
         }
 
         /// <summary>
@@ -1237,7 +1237,7 @@ namespace ES2Access.Screens
                 null,
                 null,
                 null,
-                ControlId.Referenced(field, keyPrefix + "quantity"),
+                ControlId.For(field, keyPrefix + "quantity"),
                 _editor
             );
             if (cell == null)
@@ -1342,7 +1342,7 @@ namespace ES2Access.Screens
                 null,
                 null,
                 null,
-                ControlId.Referenced(field, keyPrefix + "rate"),
+                ControlId.For(field, keyPrefix + "rate"),
                 _editor
             );
             if (cell == null)
@@ -1446,7 +1446,7 @@ namespace ES2Access.Screens
 
                 string text = said;
                 builder.StartRow();
-                builder.AddItem(
+                builder.AddItem(Nodes.Synthetic(
                     ControlId.Structural("economy:event/" + i),
                     new NodeVtable
                     {
@@ -1455,7 +1455,7 @@ namespace ES2Access.Screens
                             GraphNodes.LabelPart(() => text),
                         },
                     }
-                );
+                ));
                 builder.EndRow();
             }
 
@@ -1547,7 +1547,7 @@ namespace ES2Access.Screens
 
                 string text = said;
                 builder.StartRow();
-                builder.AddItem(
+                builder.AddItem(Nodes.Synthetic(
                     ControlId.Structural("economy:ad/" + i),
                     new NodeVtable
                     {
@@ -1556,7 +1556,7 @@ namespace ES2Access.Screens
                             GraphNodes.LabelPart(() => text),
                         },
                     }
-                );
+                ));
                 builder.EndRow();
             }
 
@@ -1731,7 +1731,7 @@ namespace ES2Access.Screens
                 builder.StartRow(rowKey);
                 foreach (Cell cell in row)
                 {
-                    builder.AddItem(cell.Id, cell.Vtable);
+                    builder.AddItem(Nodes.Drawn(cell.Id, cell.Vtable, cell.Widget));
                 }
 
                 builder.EndRow();

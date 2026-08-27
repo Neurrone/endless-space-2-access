@@ -185,7 +185,7 @@ namespace ES2Access.Screens
                     Cells.Add(
                         _cells,
                         icon,
-                        ControlId.Referenced(icon, Keys + "standing-icon"),
+                        ControlId.For(icon, Keys + "standing-icon"),
                         vtable
                     );
                 }
@@ -290,7 +290,7 @@ namespace ES2Access.Screens
                     Sections = GraphNodes.Sections(null, tooltip),
                 };
                 AgeWidgets.PointAt(vtable, at);
-                Cells.Add(_cells, at, ControlId.Referenced(at, Keys + "threshold/" + i), vtable);
+                Cells.Add(_cells, at, ControlId.For(at, Keys + "threshold/" + i), vtable);
             }
         }
 
@@ -313,7 +313,7 @@ namespace ES2Access.Screens
                 TooltipMode.None
             );
             AgeWidgets.Point(vtable, it, tooltip, at);
-            Cells.Add(_cells, at, ControlId.Referenced(at, Keys + "fleet-detail"), vtable);
+            Cells.Add(_cells, at, ControlId.For(at, Keys + "fleet-detail"), vtable);
         }
 
         /// <summary>The panel the tick box slides out, while it is out: the fleet's command points and
@@ -356,7 +356,7 @@ namespace ES2Access.Screens
                     Sections = GraphNodes.Sections(null, tooltip),
                 };
                 AgeWidgets.PointAt(vtable, tile);
-                Cells.Add(_cells, tile, ControlId.Referenced(tile, Keys + "ship/" + i), vtable);
+                Cells.Add(_cells, tile, ControlId.For(tile, Keys + "ship/" + i), vtable);
             }
         }
 

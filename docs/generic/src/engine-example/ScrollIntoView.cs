@@ -135,7 +135,7 @@ namespace ES2Access.UI
         /// <summary>
         /// Write down WHERE a node is drawn, for a node whose own identity is not a widget.
         ///
-        /// Scrolling follows the node's <c>ControlId.Reference</c>, which is a widget on most of the
+        /// Scrolling follows the node's <c>ControlId.Subject</c>, which is a widget on most of the
         /// mod's controls and is exactly nothing on the ones keyed by a string or by a piece of the
         /// game's data - a list of add-ons keyed by content name, a table of traits keyed by the trait.
         /// Those are the long lists, so they are the ones a viewport actually clips, and until the

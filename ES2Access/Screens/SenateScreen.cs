@@ -266,7 +266,7 @@ namespace ES2Access.Screens
             Cells.Add(
                 cells,
                 widget,
-                ControlId.Referenced(
+                ControlId.For(
                     widget,
                     keyPrefix + "election-action/" + action.ElectionActionDefinition.Name
                 ),
@@ -463,10 +463,11 @@ namespace ES2Access.Screens
                 Sections = GraphNodes.Sections(null, tooltip),
             };
             AgeWidgets.Point(vtable, line.HoverArea, tooltip, widget);
-            builder.AddItem(
-                ControlId.Referenced(widget, "senate:assembly/party/" + index),
-                vtable
-            );
+            builder.AddItem(Nodes.Drawn(
+                ControlId.For(widget, "senate:assembly/party/" + index),
+                vtable,
+                widget
+            ));
         }
 
         /// <summary>The count the panel draws under the party rows, taken with the caption beside it -
@@ -540,7 +541,7 @@ namespace ES2Access.Screens
                 ),
             };
             AgeWidgets.PointAt(vtable, widget);
-            Cells.Add(cells, widget, ControlId.Referenced(widget, "senate:senator/" + index), vtable);
+            Cells.Add(cells, widget, ControlId.For(widget, "senate:senator/" + index), vtable);
         }
 
         /// <summary>Which party holds the slot. A slot with no party in it draws a bare picture and no
@@ -722,7 +723,7 @@ namespace ES2Access.Screens
                 Sections = GraphNodes.Sections(null, tooltip),
             };
             AgeWidgets.PointAt(vtable, TooltipOwner(tooltip) ?? count);
-            Cells.Add(cells, count, ControlId.Referenced(count, "senate:census/total"), vtable);
+            Cells.Add(cells, count, ControlId.For(count, "senate:census/total"), vtable);
         }
 
         /// <summary>One slice of the ring: who they are, how many of them there are, and - where the
@@ -761,7 +762,7 @@ namespace ES2Access.Screens
             Cells.Add(
                 cells,
                 labels,
-                ControlId.Referenced(widget, "senate:census/arc/" + index),
+                ControlId.For(widget, "senate:census/arc/" + index),
                 vtable
             );
 

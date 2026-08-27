@@ -31,7 +31,7 @@ namespace ES2Access.Core.UI.Graph
         private readonly HashSet<ControlId> _expansion; // persistent expanded-group set (null = all explicit)
 
         // The existence gate — see the constructor.
-        private readonly Func<ControlId, NodeVtable, bool> _drops;
+        private readonly Func<NodeDeclaration, bool> _drops;
 
         /// <summary>Build every expandable group OPEN, whatever the expansion set or the caller says.
         ///
@@ -48,14 +48,14 @@ namespace ES2Access.Core.UI.Graph
         /// header takes its whole subtree with it.
         ///
         /// It is a delegate rather than a rule of this class because the question is "is the game
-        /// drawing this", which only the engine side can answer; the node's two object-typed handles
-        /// (<see cref="ControlId.Reference"/>, <see cref="NodeVtable.PointsAt"/>) are all it is given,
-        /// and this assembly knows nothing of the game's toolkit. Null (what every test and every
-        /// read-only inspection build passes) means no gate at all.
+        /// drawing this", which only the engine side can answer; the whole declaration is what it is
+        /// given — its NATURE (<see cref="DrawnNode"/> / <see cref="SyntheticNode"/>) is what says
+        /// whether there is anything to ask, and this assembly knows nothing of the game's toolkit.
+        /// Null (what every test and every read-only inspection build passes) means no gate at all.
         /// </summary>
         public GraphBuilder(
             HashSet<ControlId> expansion = null,
-            Func<ControlId, NodeVtable, bool> drops = null
+            Func<NodeDeclaration, bool> drops = null
         )
         {
             _expansion = expansion;
@@ -223,9 +223,13 @@ namespace ES2Access.Core.UI.Graph
             if (!string.IsNullOrEmpty(role)) anns.Add(NodeAnnouncement.Static(role));
             GraphNode node = new GraphNode
             {
-                // Stable synthetic identity (label-pathed) so cross-render chain diffs match up.
-                Id = ControlId.Structural("ctx:" + (parent != null ? parent.Id.StructuralKey : "") + "/" + label),
-                Vtable = new NodeVtable { Announcements = anns },
+                // A level of presentation the MOD invented: nothing is drawn for it, so it is
+                // synthetic by construction. Stable synthetic identity (label-pathed) so cross-render
+                // chain diffs match up.
+                Declared = new SyntheticNode(
+                    ControlId.Structural("ctx:" + (parent != null ? parent.Id.StructuralKey : "") + "/" + label),
+                    new NodeVtable { Announcements = anns }
+                ),
                 Parent = parent,
                 Focusable = false,
                 SuppressChildPositions = !positions,
@@ -250,10 +254,11 @@ namespace ES2Access.Core.UI.Graph
         /// <paramref name="defaultExpanded"/>. The engine's tree operations (Right/Left) expand/collapse
         /// via the vtable's OnExpand/OnCollapse overrides when set, else by mutating the persistent set.
         /// </summary>
-        public GraphBuilder BeginGroup(ControlId id, NodeVtable vtable, bool? expanded = null,
+        public GraphBuilder BeginGroup(NodeDeclaration node, bool? expanded = null,
             bool defaultExpanded = false)
         {
-            if (id == null) throw new ArgumentNullException("id");
+            if (node == null) throw new ArgumentNullException("node");
+            ControlId id = node.Id;
             if (_currentRow != null) throw new InvalidOperationException("Cannot begin a group inside an open row");
             bool isExpanded = ExpandAll
                 || (expanded ?? (_expansion != null ? _expansion.Contains(id) : defaultExpanded));
@@ -262,7 +267,7 @@ namespace ES2Access.Core.UI.Graph
             bool dropped = false;
             if (!Suppressed)
             {
-                header = MakeNode(id, vtable);
+                header = MakeNode(node);
                 dropped = header == null;
                 if (header != null)
                 {
@@ -357,10 +362,10 @@ namespace ES2Access.Core.UI.Graph
 
         /// <summary>Add a control — into the open row, or as its own single-item row. A no-op inside a
         /// collapsed group's subtree, and for a control the existence gate dropped.</summary>
-        public GraphBuilder AddItem(ControlId id, NodeVtable vtable)
+        public GraphBuilder AddItem(NodeDeclaration declaration)
         {
             if (Suppressed) return this;
-            GraphNode node = MakeNode(id, vtable);
+            GraphNode node = MakeNode(declaration);
             if (node == null)
             {
                 if (_currentRow != null) _currentRow.Dropped = true;
@@ -381,22 +386,21 @@ namespace ES2Access.Core.UI.Graph
             return this;
         }
 
-        /// <summary>Add a read-only line (label only; no actions).
+        /// <summary>A read-only line (label only; no actions), as a vtable the caller declares under
+        /// whichever nature it can vouch for.
         /// <paramref name="scrollAnchor"/> is what the line is DRAWN as, where the id does not name it:
         /// a line keyed by a string has no rectangle, so the panel it sits in had nothing to follow and
         /// a jump to the end of a long one left the cursor below the viewport
         /// (<see cref="NodeVtable.ScrollAnchor"/>). Object-typed because this assembly knows nothing of
-        /// the game's toolkit.</summary>
-        public GraphBuilder AddLabel(ControlId id, Func<string> label, object scrollAnchor = null)
+        /// the game's toolkit — and NOT evidence: what a line is drawn as is a rectangle to scroll to,
+        /// not a claim that the line is that widget.</summary>
+        public static NodeVtable Label(Func<string> label, object scrollAnchor = null)
         {
-            return AddItem(
-                id,
-                new NodeVtable
-                {
-                    Announcements = new[] { new NodeAnnouncement(label) },
-                    ScrollAnchor = scrollAnchor,
-                }
-            );
+            return new NodeVtable
+            {
+                Announcements = new[] { new NodeAnnouncement(label) },
+                ScrollAnchor = scrollAnchor,
+            };
         }
 
         // ---- raw mode ----
@@ -404,10 +408,10 @@ namespace ES2Access.Core.UI.Graph
         /// <summary>Add a node with no automatic wiring (raw mode; wire with <see cref="Connect"/>).
         /// A no-op inside a collapsed group's subtree, and for a node the existence gate dropped
         /// (edges naming it are dropped at build, as they are for any undeclared node).</summary>
-        public GraphBuilder AddNode(ControlId id, NodeVtable vtable)
+        public GraphBuilder AddNode(NodeDeclaration declaration)
         {
             if (Suppressed) return this;
-            GraphNode node = MakeNode(id, vtable);
+            GraphNode node = MakeNode(declaration);
             if (node != null) _rawNodes.Add(node);
             return this;
         }
@@ -426,17 +430,18 @@ namespace ES2Access.Core.UI.Graph
         // collapsed group. The gate is asked AFTER the well-formedness checks (a malformed declaration
         // is a bug whether or not the game is drawing it) and BEFORE the id is claimed (a dropped node
         // never existed, so it cannot collide with anything).
-        private GraphNode MakeNode(ControlId id, NodeVtable vtable)
+        private GraphNode MakeNode(NodeDeclaration declaration)
         {
-            if (id == null) throw new ArgumentNullException("id");
-            if (vtable == null || vtable.Announcements == null || vtable.Announcements.Count == 0)
-                throw new ArgumentException("A control must have at least one announcement", "vtable");
-            if (_drops != null && _drops(id, vtable)) return null;
+            if (declaration == null) throw new ArgumentNullException("declaration");
+            ControlId id = declaration.Id;
+            NodeVtable vtable = declaration.Vtable;
+            if (vtable.Announcements == null || vtable.Announcements.Count == 0)
+                throw new ArgumentException("A control must have at least one announcement", "declaration");
+            if (_drops != null && _drops(declaration)) return null;
             if (!_ids.Add(id)) throw new InvalidOperationException("Duplicate control id: " + id);
             GraphNode node = new GraphNode
             {
-                Id = id,
-                Vtable = vtable,
+                Declared = declaration,
                 Parent = CurrentParent,
                 StopKey = _stopKey,
                 RegionKey = _regionKey,

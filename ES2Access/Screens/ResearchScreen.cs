@@ -347,10 +347,10 @@ namespace ES2Access.Screens
             }
 
             AgeWidgets.Point(vtable, item.Button, item.Tooltip, item.AgeTransform);
-            builder.AddItem(
-                ControlId.Referenced(technology, "research:queue/" + technology.Name),
+            builder.AddItem(Nodes.Synthetic(
+                ControlId.For(technology, "research:queue/" + technology.Name),
                 vtable
-            );
+            ));
         }
 
         /// <summary>
@@ -589,7 +589,7 @@ namespace ES2Access.Screens
             // a watched box reports every one of them. Nothing but the player ever changes these.
             Settle(vtable);
             AgeWidgets.Point(vtable, it);
-            builder.AddItem(ControlId.Referenced(toggle, key), vtable);
+            builder.AddItem(Nodes.Drawn(ControlId.For(toggle, key), vtable, toggle));
         }
 
         /// <summary>A line the game draws and the player only reads: a caption and a number, a
@@ -623,7 +623,7 @@ namespace ES2Access.Screens
                 Sections = GraphNodes.Sections(null, tip),
             };
             AgeWidgets.PointAt(vtable, widget);
-            builder.AddItem(ControlId.Referenced(widget, key), vtable);
+            builder.AddItem(Nodes.Drawn(ControlId.For(widget, key), vtable, widget));
         }
 
         /// <summary>The caption the game writes over the queue, which it draws as a plain label
@@ -760,10 +760,10 @@ namespace ES2Access.Screens
             // Keyed on nothing the wheel names: a row and a dot that named the same technology would
             // be one control to the cursor, and pressing Enter here would teleport the player back
             // into this list the moment the dot they landed on rebuilt.
-            builder.AddItem(
+            builder.AddItem(Nodes.Synthetic(
                 ControlId.Structural("research:suggested/" + technology.Name),
                 vtable
-            );
+            ));
         }
 
         /// <summary>The game's own word for a technology it is putting forward - the one it writes on
@@ -866,7 +866,7 @@ namespace ES2Access.Screens
                     }
 
                     ControlId id = QuadrantId(i);
-                    builder.BeginGroup(id, QuadrantVtable(builder, quadrant, id));
+                    builder.BeginGroup(Nodes.Synthetic(id, QuadrantVtable(builder, quadrant, id)));
                     if (builder.IsExpanded(id))
                     {
                         BuildStages(builder, quadrant, i);
@@ -895,7 +895,7 @@ namespace ES2Access.Screens
                 }
 
                 ControlId id = StageId(index, i);
-                builder.BeginGroup(id, StageVtable(builder, quadrant, stage, id));
+                builder.BeginGroup(Nodes.Synthetic(id, StageVtable(builder, quadrant, stage, id)));
                 if (builder.IsExpanded(id))
                 {
                     // A stage unlocks things of its own, the same way a dot does, so the ring's
@@ -925,7 +925,7 @@ namespace ES2Access.Screens
                 List<TooltipChildren.Dossier> unlocks = Unlocks(item);
                 if (unlocks.Count == 0)
                 {
-                    builder.AddItem(id, TechnologyVtable(item));
+                    builder.AddItem(Nodes.Synthetic(id, TechnologyVtable(item)));
                     continue;
                 }
 
@@ -933,7 +933,7 @@ namespace ES2Access.Screens
                 // state, its own click and its own dossier, and each thing it unlocks becomes a node
                 // under it carrying the game's full page about that thing - which the wheel shows a
                 // mouse by revealing a strip of icons under the dot on hover and nowhere else.
-                builder.BeginGroup(id, TechnologyVtable(item));
+                builder.BeginGroup(Nodes.Synthetic(id, TechnologyVtable(item)));
                 if (builder.IsExpanded(id))
                 {
                     TooltipChildren.Emit(
@@ -1137,10 +1137,10 @@ namespace ES2Access.Screens
                     AgeWidgets.PointAt(vtable, tooltip.AgeTransform);
                 }
 
-                builder.AddItem(
+                builder.AddItem(Nodes.Synthetic(
                     ControlId.Structural("research:deed/" + quadrant + "/" + index),
                     vtable
-                );
+                ));
             }
             catch (Exception e)
             {
@@ -2392,7 +2392,7 @@ namespace ES2Access.Screens
         /// </summary>
         private static ControlId TechnologyId(TechnologyItem2 item)
         {
-            return ControlId.Referenced(
+            return ControlId.For(
                 item.GuiTechnology.TechnologyDefinition,
                 "research:technology/" + item.GuiTechnology.Name
             );

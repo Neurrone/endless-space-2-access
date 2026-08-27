@@ -444,7 +444,7 @@ namespace ES2Access.Screens
                 };
 
                 AgeWidgets.PointAt(vtable, item, tooltip);
-                Add(cells, item, ControlId.Referenced(item, "planet:fidsi/" + name), vtable);
+                Add(cells, item, ControlId.For(item, "planet:fidsi/" + name), vtable);
             }
         }
 
@@ -511,7 +511,7 @@ namespace ES2Access.Screens
             Add(
                 cells,
                 widget,
-                ControlId.Referenced(widget, "planet:population/" + index),
+                ControlId.For(widget, "planet:population/" + index),
                 vtable
             );
         }
@@ -633,7 +633,7 @@ namespace ES2Access.Screens
             };
 
             AgeWidgets.PointAt(vtable, row, tooltip);
-            Add(cells, row, ControlId.Referenced(row, "planet:row/" + key), vtable);
+            Add(cells, row, ControlId.For(row, "planet:row/" + key), vtable);
         }
 
         /// <summary>The tooltip that explains what the row SAYS: the row's own where it has one - the
@@ -732,7 +732,7 @@ namespace ES2Access.Screens
             {
                 for (int i = 0; i < row.Count; i++)
                 {
-                    builder.AddItem(row[i].Id, row[i].Vtable);
+                    builder.AddItem(Nodes.Drawn(row[i].Id, row[i].Vtable, row[i].Widget));
                 }
             }
         }
@@ -766,7 +766,7 @@ namespace ES2Access.Screens
             };
 
             AgeWidgets.PointAt(vtable, widget, tooltip);
-            Add(cells, widget, ControlId.Referenced(widget, key), vtable);
+            Add(cells, widget, ControlId.For(widget, key), vtable);
         }
 
         /// <summary>A button the page draws. <paramref name="nameKey"/> is for one the game leaves
@@ -801,7 +801,7 @@ namespace ES2Access.Screens
                 tooltip
             );
             AgeWidgets.Point(vtable, button);
-            Add(cells, widget, ControlId.Referenced(widget, key), vtable);
+            Add(cells, widget, ControlId.For(widget, key), vtable);
         }
 
         /// <summary>What the button draws, or the mod's word for one that draws nothing.</summary>

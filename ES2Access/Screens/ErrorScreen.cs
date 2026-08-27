@@ -107,8 +107,8 @@ namespace ES2Access.Screens
             if (widget != null && AgeWidgets.Visible(widget))
             {
                 AgePrimitiveLabel it = message;
-                ControlId id = ControlId.Referenced(message, "error:message");
-                builder.AddNode(
+                ControlId id = ControlId.For(message, "error:message");
+                builder.AddNode(Nodes.Drawn(
                     id,
                     new NodeVtable
                     {
@@ -120,8 +120,9 @@ namespace ES2Access.Screens
                         },
                         Sections = GraphNodes.Sections(() => Report(window), null),
                         OnFocusVisual = AgeWidgets.ReleasePointer,
-                    }
-                );
+                    },
+                    message
+                ));
                 builder.SetStart(id);
             }
 

@@ -186,7 +186,7 @@ namespace ES2Access.UI
             Cells.Add(
                 cells,
                 ship.AgeTransform,
-                ControlId.Referenced(ship, keyPrefix + "/ship/" + ship.GetInstanceID()),
+                ControlId.For(ship, keyPrefix + "/ship/" + ship.GetInstanceID()),
                 vtable
             );
 
@@ -316,7 +316,7 @@ namespace ES2Access.UI
             GraphNodes.AddRefusal(vtable, tooltip, enabled);
 
             AgeWidgets.Point(vtable, it);
-            Cells.Add(cells, widget, ControlId.Referenced(button, keyPrefix + "/" + key), vtable);
+            Cells.Add(cells, widget, ControlId.For(button, keyPrefix + "/" + key), vtable);
         }
     }
 }

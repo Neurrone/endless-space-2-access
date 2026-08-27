@@ -218,7 +218,7 @@ namespace ES2Access.Screens
             Cells.Add(
                 _cells,
                 widget,
-                ControlId.Referenced(widget, "troops:ratio/" + index),
+                ControlId.For(widget, "troops:ratio/" + index),
                 vtable
             );
         }
@@ -267,7 +267,7 @@ namespace ES2Access.Screens
             Cells.Add(
                 _cells,
                 widget,
-                ControlId.Referenced(widget, "troops:lock/" + index),
+                ControlId.For(widget, "troops:lock/" + index),
                 vtable
             );
         }
@@ -359,7 +359,7 @@ namespace ES2Access.Screens
             Cells.Add(
                 _cells,
                 widget,
-                ControlId.Referenced(widget, "troops:type-name/" + index),
+                ControlId.For(widget, "troops:type-name/" + index),
                 vtable
             );
         }
@@ -541,7 +541,7 @@ namespace ES2Access.Screens
             Cells.Add(
                 _cells,
                 upgrade.AgeTransform,
-                ControlId.Referenced(upgrade.AgeTransform, key),
+                ControlId.For(upgrade.AgeTransform, key),
                 vtable
             );
         }
@@ -794,7 +794,7 @@ namespace ES2Access.Screens
                 named ? tooltip : null
             );
             AgeWidgets.PointAt(vtable, widget);
-            Cells.Add(cells, widget, ControlId.Referenced(widget, key), vtable);
+            Cells.Add(cells, widget, ControlId.For(widget, key), vtable);
         }
 
         // ---- the bottom row ----
@@ -843,7 +843,7 @@ namespace ES2Access.Screens
             for (int i = 0; i < cells.Count; i++)
             {
                 builder.StartRow();
-                builder.AddItem(cells[i].Id, cells[i].Vtable);
+                builder.AddItem(Nodes.Drawn(cells[i].Id, cells[i].Vtable, cells[i].Widget));
                 builder.EndRow();
             }
         }

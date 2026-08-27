@@ -488,14 +488,15 @@ namespace ES2Access.Screens
                 }
 
                 DamageGaugeCell it = cell;
-                builder.AddItem(
-                    ControlId.Referenced(cell, prefix + "/" + i),
+                builder.AddItem(Nodes.Drawn(
+                    ControlId.For(cell, prefix + "/" + i),
                     Bar(
                         cell.AgeTransform,
                         () => Title(it.DamageData),
                         () => Description(it.DamageData)
-                    )
-                );
+                    ),
+                    cell
+                ));
             }
         }
 
@@ -509,10 +510,11 @@ namespace ES2Access.Screens
             }
 
             AgeTooltip tooltip = AgeWidgets.Raw(group);
-            builder.AddItem(
-                ControlId.Referenced(group, key),
-                Bar(group, () => Title(Data(tooltip)), () => Description(Data(tooltip)))
-            );
+            builder.AddItem(Nodes.Drawn(
+                ControlId.For(group, key),
+                Bar(group, () => Title(Data(tooltip)), () => Description(Data(tooltip))),
+                group
+            ));
         }
 
         private static void Total(
@@ -539,7 +541,7 @@ namespace ES2Access.Screens
                 Sections = GraphNodes.Sections(null, null),
             };
             AgeWidgets.PointAt(vtable, widget);
-            builder.AddItem(ControlId.Referenced(total, key), vtable);
+            builder.AddItem(Nodes.Drawn(ControlId.For(total, key), vtable, total));
         }
 
         /// <summary>One bar of a damage gauge: the game's own sentence for it, and the tactical advice it
@@ -672,7 +674,7 @@ namespace ES2Access.Screens
                 tooltip
             );
             AgeWidgets.Point(vtable, it, tooltip, widget);
-            Cells.Add(cells, widget, ControlId.Referenced(toggle, key), vtable);
+            Cells.Add(cells, widget, ControlId.For(toggle, key), vtable);
         }
 
         /// <summary>What a control is called: the words the game drew on it, else the game's own title
@@ -713,7 +715,7 @@ namespace ES2Access.Screens
                 Sections = GraphNodes.Sections(null, tooltip),
             };
             AgeWidgets.PointAt(vtable, widget);
-            builder.AddItem(ControlId.Referenced(label, key), vtable);
+            builder.AddItem(Nodes.Drawn(ControlId.For(label, key), vtable, label));
         }
 
         /// <summary>A figure the game wrote as its own sentence ("18 &gt;&gt; 11 CP"), under the game's
@@ -746,7 +748,7 @@ namespace ES2Access.Screens
                 Sections = GraphNodes.Sections(null, AgeWidgets.Raw(widget)),
             };
             AgeWidgets.PointAt(vtable, widget);
-            builder.AddItem(ControlId.Referenced(label, key), vtable);
+            builder.AddItem(Nodes.Drawn(ControlId.For(label, key), vtable, label));
         }
 
         /// <summary>Who is leading this side, and the hero commanding it where there is one.</summary>
@@ -780,7 +782,7 @@ namespace ES2Access.Screens
                 Sections = GraphNodes.Sections(null, tooltip),
             };
             AgeWidgets.PointAt(vtable, widget);
-            builder.AddItem(ControlId.Referenced(portrait, prefix + "/hero"), vtable);
+            builder.AddItem(Nodes.Drawn(ControlId.For(portrait, prefix + "/hero"), vtable, portrait));
         }
 
         private static AgeTransform Widget(GuiPanel panel)

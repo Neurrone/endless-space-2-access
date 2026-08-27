@@ -228,10 +228,11 @@ namespace ES2Access.Screens
 
             vtable.OnFocusVisual = () => PointerFocus.MoveToToggle(pick, tooltip, it);
             vtable.OnBlurVisual = AgeWidgets.ReleasePointer;
-            builder.AddItem(
-                ControlId.Referenced(card, "faction-choice:card/" + index),
-                vtable
-            );
+            builder.AddItem(Nodes.Drawn(
+                ControlId.For(card, "faction-choice:card/" + index),
+                vtable,
+                card
+            ));
         }
 
         /// <summary>The row of custom-faction buttons under the grid - its own stop, the way a panel's
@@ -313,7 +314,7 @@ namespace ES2Access.Screens
                     // card the game has selected. Which hull row this one stop opens on is the
                     // stop-scoped tool - LandStopOn above - and a position the player left here
                     // still outranks it, which is the order a remembered place should come in.
-                    builder.AddItem(ControlId.Structural(HullKey + index), vtable);
+                    builder.AddItem(Nodes.Synthetic(ControlId.Structural(HullKey + index), vtable));
                 }
             }
             finally
@@ -575,7 +576,7 @@ namespace ES2Access.Screens
             AgeWidgets.PointAt(vtable, Transform(title));
 
             builder.BeginStop(DescriptionStop);
-            builder.AddItem(ControlId.Referenced(text, "faction-choice:description"), vtable);
+            builder.AddItem(Nodes.Drawn(ControlId.For(text, "faction-choice:description"), vtable, text));
         }
 
         // ---- the bottom row ----

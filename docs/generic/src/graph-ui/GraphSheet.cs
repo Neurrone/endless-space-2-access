@@ -300,9 +300,16 @@ namespace ES2Access.Core.UI
             // primary also carries the reference for tier-1 follow); positional only for static lines.
             string skey = RowKey() + "c" + col;
             ControlId id = _rowRef != null && col == 0
-                ? ControlId.Referenced(_rowRef, skey)
+                ? ControlId.For(_rowRef, skey)
                 : ControlId.Structural(skey);
-            _b.AddNode(id, vt);
+            // SYNTHETIC, and this is the only nature a sheet can honestly declare: it is handed rows
+            // and cell readers, never a widget, and it has no way to ask the game anything. That is
+            // sound because the walk that enumerated the rows already asked - a sheet read off a
+            // drawn table is filled from the rows the game is DRAWING (TableSheet.Lines keeps only
+            // the visible, non-transparent ones), so a row reaching here exists by construction and
+            // there is nothing left for a gate to catch. A caller feeding this rows it has not
+            // filtered is the one way that stops being true, and the honesty has to live there.
+            _b.AddNode(new SyntheticNode(id, vt));
             if (col == 0 && _first == null) _first = id;
 
             // Left/right to the nearest EMITTED cell (sparse rows skip empty columns), labeled with the

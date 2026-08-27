@@ -513,7 +513,7 @@ namespace ES2Access.Screens
                     // Every line of this list is cut out of ONE drawn label, so the label is where each
                     // of them is on screen and what a viewport has to be scrolled to.
                     ScrollIntoView.Anchor(vtable, at);
-                    builder.AddItem(ControlId.Structural(Keys + "gain/" + index), vtable);
+                    builder.AddItem(Nodes.Synthetic(ControlId.Structural(Keys + "gain/" + index), vtable));
                 }
             }
 

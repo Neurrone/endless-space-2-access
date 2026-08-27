@@ -357,7 +357,7 @@ namespace ES2Access.Screens
             Cells.Add(
                 cells,
                 widget,
-                ControlId.Referenced(
+                ControlId.For(
                     slot,
                     keyPrefix
                         + "relic-slot/"
@@ -484,7 +484,7 @@ namespace ES2Access.Screens
             );
             vtable.OnActivate = () => AgeWidgets.Toggle(it);
             AgeWidgets.Point(vtable, it);
-            Cells.Add(cells, widget, ControlId.Referenced(widget, "empire:tab/" + index), vtable);
+            Cells.Add(cells, widget, ControlId.For(widget, "empire:tab/" + index), vtable);
         }
 
         // ---- the systems tab ----
@@ -828,17 +828,17 @@ namespace ES2Access.Screens
             AgeWidgets.PointAt(vtable, card.AgeTransform);
 
             string key = "empire:planet/" + card.Planet.GUID;
-            ControlId id = ControlId.Referenced(card.Planet, key);
+            ControlId id = ControlId.For(card.Planet, key);
             List<CardActions.CardAction> buttons = CardButtons(card);
             List<Population> populations = Populations(card);
             if (buttons.Count == 0 && populations.Count == 0)
             {
-                builder.AddItem(id, vtable);
+                builder.AddItem(Nodes.Synthetic(id, vtable));
                 return;
             }
 
             vtable.ControlType = ControlTypes.Group;
-            builder.BeginGroup(id, vtable);
+            builder.BeginGroup(Nodes.Synthetic(id, vtable));
             if (builder.IsExpanded(id))
             {
                 AddPopulations(builder, key, card, populations, CanCarry(card));
@@ -1043,10 +1043,10 @@ namespace ES2Access.Screens
                     vtable.OnPickUp = () => Pick(source, held);
                 }
 
-                builder.AddItem(
-                    ControlId.Referenced(population, keyPrefix + "/population/" + i),
+                builder.AddItem(Nodes.Synthetic(
+                    ControlId.For(population, keyPrefix + "/population/" + i),
                     vtable
-                );
+                ));
             }
         }
 
@@ -1577,16 +1577,16 @@ namespace ES2Access.Screens
             AgeWidgets.PointAt(vtable, Widget(sector.VictoryObjectives) ?? widget);
 
             string key = "empire:victory/" + index;
-            ControlId id = ControlId.Referenced(widget, key);
+            ControlId id = ControlId.For(widget, key);
             IList<AgeTransform> hexes = Hexes(sector);
             if (hexes == null || hexes.Count == 0)
             {
-                builder.AddItem(id, vtable);
+                builder.AddItem(Nodes.Drawn(id, vtable, widget));
                 return;
             }
 
             vtable.ControlType = ControlTypes.Group;
-            builder.BeginGroup(id, vtable);
+            builder.BeginGroup(Nodes.Drawn(id, vtable, widget));
             if (builder.IsExpanded(id))
             {
                 for (int i = 0; i < hexes.Count; i++)
@@ -1657,10 +1657,11 @@ namespace ES2Access.Screens
                 AgeWidgets.Raw(widget)
             );
             AgeWidgets.PointAt(vtable, widget);
-            builder.AddItem(
-                ControlId.Referenced(widget, keyPrefix + "/hex/" + index),
-                vtable
-            );
+            builder.AddItem(Nodes.Drawn(
+                ControlId.For(widget, keyPrefix + "/hex/" + index),
+                vtable,
+                widget
+            ));
         }
 
         /// <summary>The tracker's own title. The hex holds no reference to what it is drawing once it is

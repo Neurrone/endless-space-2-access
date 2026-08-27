@@ -45,8 +45,8 @@ namespace ES2Access.Tests.UI
         {
             GraphAnnouncer.PositionText = (i, n) => i + " of " + n;
             GraphBuilder b = new GraphBuilder();
-            b.AddItem(Id("a"), Vt("Before"));
-            b.AddItem(
+            b.AddItem(new SyntheticNode(Id("a"), Vt("Before")));
+            b.AddItem(new SyntheticNode(
                 Id("t"),
                 new NodeVtable
                 {
@@ -57,8 +57,8 @@ namespace ES2Access.Tests.UI
                     },
                     Sections = sections,
                 }
-            );
-            b.AddItem(Id("c"), Vt("After"));
+            ));
+            b.AddItem(new SyntheticNode(Id("c"), Vt("After")));
             return GraphAnnouncer.LeafText(Node(b.Build(), "t"));
         }
 
@@ -255,7 +255,7 @@ namespace ES2Access.Tests.UI
         {
             GraphAnnouncer.PositionText = (i, n) => i + " of " + n;
             GraphBuilder b = new GraphBuilder();
-            b.AddItem(
+            b.AddItem(new SyntheticNode(
                 Id("t"),
                 new NodeVtable
                 {
@@ -266,7 +266,7 @@ namespace ES2Access.Tests.UI
                     },
                     Sections = new[] { Section(TooltipMode.Announce, "A faction of exiles") },
                 }
-            );
+            ));
             Assert.Equal(
                 "Vaulters, The content pack is not activated, A faction of exiles",
                 GraphAnnouncer.LeafText(Node(b.Build(), "t"))
@@ -278,7 +278,7 @@ namespace ES2Access.Tests.UI
         {
             GraphAnnouncer.ExpandedStateText = expanded => expanded ? "expanded" : "collapsed";
             GraphBuilder b = new GraphBuilder();
-            b.BeginGroup(Id("g"), new NodeVtable
+            b.BeginGroup(new SyntheticNode(Id("g"), new NodeVtable
             {
                 ControlType = Type("button", "button"),
                 Announcements = new List<NodeAnnouncement>
@@ -286,7 +286,7 @@ namespace ES2Access.Tests.UI
                     Part("New Game", AnnouncementKinds.Label),
                 },
                 Sections = new[] { Section(TooltipMode.Announce, "Start a new game") },
-            });
+            }));
             b.EndGroup();
             Assert.Equal(
                 "New Game, button, collapsed, Start a new game",
@@ -299,7 +299,7 @@ namespace ES2Access.Tests.UI
         {
             GraphAnnouncer.ExpandedStateText = expanded => expanded ? "expanded" : "collapsed";
             GraphBuilder b = new GraphBuilder();
-            b.BeginGroup(Id("g"), Vt("Options"));
+            b.BeginGroup(new SyntheticNode(Id("g"), Vt("Options")));
             b.EndGroup();
             Assert.Equal("Options, collapsed", GraphAnnouncer.LeafText(Node(b.Build(), "g")));
         }

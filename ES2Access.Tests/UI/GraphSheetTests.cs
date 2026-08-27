@@ -346,8 +346,8 @@ namespace ES2Access.Tests.UI
         private GraphRender ProseOverTable(bool prose)
         {
             GraphBuilder b = new GraphBuilder();
-            b.StartRow().AddItem(Id("next"), Vt("Next")).AddItem(Id("prev"), Vt("Previous")).EndRow();
-            if (prose) b.AddNode(Id("words"), Vt("Something happened."));
+            b.StartRow().AddItem(new SyntheticNode(Id("next"), Vt("Next"))).AddItem(new SyntheticNode(Id("prev"), Vt("Previous"))).EndRow();
+            if (prose) b.AddNode(new SyntheticNode(Id("words"), Vt("Something happened.")));
 
             GraphSheet s = new GraphSheet(b, "t:");
             s.Region("Report", new[] { "Name", "Ships", "Move" });
@@ -356,7 +356,7 @@ namespace ES2Access.Tests.UI
             s.Row(Vt("Beta"), _rowB, null, () => "2", () => "4");
             s.Finish();
 
-            b.StartRow().AddItem(Id("done"), Vt("Done")).EndRow();
+            b.StartRow().AddItem(new SyntheticNode(Id("done"), Vt("Done"))).EndRow();
             return b.Build();
         }
 
@@ -421,7 +421,7 @@ namespace ES2Access.Tests.UI
             s.Row(Vt("Beta"), _rowB, null);
             s.Finish();
             Assert.Equal("t:row" + _rowA.GetHashCode() + "c0", s.FirstRow.StructuralKey);
-            Assert.Same(_rowA, s.FirstRow.Reference);
+            Assert.Same(_rowA, s.FirstRow.Subject);
 
             b.SetStart(s.FirstRow);
             Assert.Equal(s.FirstRow.StructuralKey, b.Build().StartKey.StructuralKey);
@@ -551,7 +551,7 @@ namespace ES2Access.Tests.UI
             swapped = true;
             g.Rerender();
             Assert.Equal("Beta", GraphAnnouncer.LeafText(g.CurrentNode));
-            Assert.Same(_rowB, g.CurrentNode.Id.Reference);
+            Assert.Same(_rowB, g.CurrentNode.Id.Subject);
         }
     }
 }

@@ -292,7 +292,7 @@ namespace ES2Access.Screens
                 // A page whose whole content is a list the search came back empty for. Declared as a
                 // line rather than left as an empty stop: the player has to be able to land on the
                 // answer, and "nothing here" is the answer.
-                builder.AddItem(
+                builder.AddItem(Nodes.Synthetic(
                     ControlId.Structural("join-game:empty"),
                     GraphNodes.Readout(
                         () => null,
@@ -300,7 +300,7 @@ namespace ES2Access.Screens
                         null,
                         null
                     )
-                );
+                ));
             }
             else
             {

@@ -399,7 +399,7 @@ namespace ES2Access.Screens
             Cells.Add(
                 cells,
                 item.AgeTransform,
-                ControlId.Referenced(item, "fleets:action/" + item.name),
+                ControlId.For(item, "fleets:action/" + item.name),
                 vtable
             );
 
@@ -665,7 +665,7 @@ namespace ES2Access.Screens
             );
             GraphNodes.AddRefusal(vtable, tooltip, enabled);
             AgeWidgets.Point(vtable, it);
-            Cells.Add(cells, widget, ControlId.Referenced(button, "fleets:mgmt/" + key), vtable);
+            Cells.Add(cells, widget, ControlId.For(button, "fleets:mgmt/" + key), vtable);
         }
 
         /// <summary>
@@ -759,7 +759,7 @@ namespace ES2Access.Screens
                 Cells.Add(
                     cells,
                     line.AgeTransform,
-                    ControlId.Referenced(garrison, "fleets:line/" + garrison.GUID),
+                    ControlId.For(garrison, "fleets:line/" + garrison.GUID),
                     vtable
                 );
                 AddLineBadge(cells, line, "fleets:line/" + garrison.GUID);

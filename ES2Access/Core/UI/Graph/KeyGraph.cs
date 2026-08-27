@@ -95,10 +95,10 @@ namespace ES2Access.Core.UI.Graph
             if (old != null)
             {
                 // Tier 1: the same backing object, even if its structural key changed (it moved).
-                if (old.Reference != null)
+                if (old.Subject != null)
                 {
                     foreach (KeyValuePair<ControlId, GraphNode> kv in render.Nodes)
-                        if (kv.Value.Id.ReferenceMatches(old.Reference)) { resolved = kv.Value.Id; break; }
+                        if (kv.Value.Id.SubjectMatches(old.Subject)) { resolved = kv.Value.Id; break; }
                 }
 
                 // Tier 2: the same structural key, even if the backing object was rebuilt.
@@ -339,7 +339,7 @@ namespace ES2Access.Core.UI.Graph
         {
             if (reference == null || _current == null) return false;
             foreach (KeyValuePair<ControlId, GraphNode> kv in _current.Nodes)
-                if (kv.Value.Id.ReferenceMatches(reference))
+                if (kv.Value.Id.SubjectMatches(reference))
                 {
                     bool changed = _state.CurKey == null || !_state.CurKey.Equals(kv.Value.Id);
                     SetCurrent(kv.Value);

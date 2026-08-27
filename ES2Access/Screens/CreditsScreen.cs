@@ -89,7 +89,7 @@ namespace ES2Access.Screens
                 false
             );
             builder.BeginStop(RollStop);
-            builder.AddItem(ControlId.Referenced(content, "credits:roll"), vtable);
+            builder.AddItem(Nodes.Drawn(ControlId.For(content, "credits:roll"), vtable, content));
         }
 
         /// <summary>Every line of the roll, in the order the screen laid them out.</summary>

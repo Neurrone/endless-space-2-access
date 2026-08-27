@@ -488,7 +488,7 @@ namespace ES2Access.UI
                 tooltip
             );
             AgeWidgets.Point(vtable, it);
-            Cells.Add(cells, widget, ControlId.Referenced(button, keyPrefix + "/" + key), vtable);
+            Cells.Add(cells, widget, ControlId.For(button, keyPrefix + "/" + key), vtable);
         }
 
         /// <summary>A tooltip only where the card is keeping its tooltips at all: <c>HasTooltips</c> off

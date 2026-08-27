@@ -16,19 +16,22 @@ namespace ES2Access.UI
     /// decision is taken away from the walks: <see cref="GraphBuilder"/> asks this of every node it is
     /// about to make, and a walk that declares a retired row simply has that row dropped.
     ///
-    /// The test is <see cref="Withdrawn"/> on the carrier ALONE - one step, never
+    /// <para><b>What is asked, and of what.</b> The node's NATURE decides. A
+    /// <see cref="DrawnNode"/> was declared with the widget that vouches for it, and
+    /// <see cref="Withdrawn"/> is asked of that widget and of nothing else - one step, never
     /// <see cref="AgeWidgets.Painted"/>. Renders rebuild EVERY frame while a screen is focused, many
     /// screens gate their build on the window merely being shown, and several deliberately build
     /// during an arrival fade - and the game fades a window ROOT while every child stays at alpha 1.
     /// An ancestry-walking test would therefore blank a whole screen for the length of every arrival
-    /// animation. One step asks only what the walk itself is responsible for: the row.
-    ///
-    /// A node with no carrier passes ungated (<see cref="NodeCarrier"/>).
+    /// animation. One step asks only what the walk itself is responsible for: the row. A
+    /// <see cref="SyntheticNode"/> is untestable by construction and passes: there is no widget in
+    /// its declaration to ask, and honesty about its existence lives at the walk that enumerated
+    /// it.</para>
     ///
     /// <para><b>Before the node exists.</b> One walk has to ask the question earlier than this:
     /// <see cref="Cells"/> groups its widgets into rows by their RECTANGLES before it declares
     /// anything, and a ghost's stale rectangle merges or splits the bands the player hears counted.
-    /// That walk asks <see cref="CarrierDrawn"/>, which is this same test under the same flag - not a
+    /// That walk asks <see cref="StillDrawn"/>, which is this same test under the same flag - not a
     /// second copy of it.</para>
     ///
     /// <para><b>The flag.</b> <see cref="Enabled"/> is a runtime switch, default ON, flipped from the
@@ -42,7 +45,8 @@ namespace ES2Access.UI
     /// <para><b>The log.</b> Every drop is reported once per screen+node, under the stable prefix
     /// <c>NodeGate drop:</c>, so a future leak surfaces in <c>GET /log?grep=NodeGate</c> instead of in
     /// a bug report. Deduped because the render rebuilds per frame; a permanent drop would otherwise
-    /// be thousands of identical lines.</para>
+    /// be thousands of identical lines. A misdeclaration (<see cref="Nodes.Synthetic"/>) reports the
+    /// same way, under <c>NodeGate misdeclared:</c>.</para>
     /// </summary>
     public static class NodeGate
     {
@@ -59,28 +63,36 @@ namespace ES2Access.UI
         private static readonly HashSet<string> _reported = new HashSet<string>();
 
         /// <summary>Whose render is being built, so a drop taken BEFORE the builder sees the node
-        /// (<see cref="CarrierDrawn"/>) is reported under the same screen key the builder's own drops
-        /// are. Written where the render's predicate is fetched, which is once per build.</summary>
+        /// (<see cref="StillDrawn"/>) - or a misdeclaration caught at the declaration door - is
+        /// reported under the same screen key the builder's own drops are. Written where the render's
+        /// predicate is fetched, which is once per build.</summary>
         private static string _building = "";
 
         // One delegate per screen so a build does not allocate a closure per frame.
-        private static readonly Dictionary<string, Func<ControlId, NodeVtable, bool>> _predicates =
-            new Dictionary<string, Func<ControlId, NodeVtable, bool>>();
+        private static readonly Dictionary<string, Func<NodeDeclaration, bool>> _predicates =
+            new Dictionary<string, Func<NodeDeclaration, bool>>();
 
         /// <summary>The drop predicate to build a screen's render with. Held per screen key because the
         /// key is what makes a drop report readable.</summary>
-        public static Func<ControlId, NodeVtable, bool> For(string screenKey)
+        public static Func<NodeDeclaration, bool> For(string screenKey)
         {
             string key = screenKey ?? "";
             _building = key;
-            Func<ControlId, NodeVtable, bool> predicate;
+            Func<NodeDeclaration, bool> predicate;
             if (!_predicates.TryGetValue(key, out predicate))
             {
-                predicate = (id, vtable) => Drops(key, id, vtable);
+                predicate = node => Drops(key, node);
                 _predicates.Add(key, predicate);
             }
 
             return predicate;
+        }
+
+        /// <summary>Whose render is being built - the screen key a report outside the builder's own
+        /// call is filed under.</summary>
+        public static string Building
+        {
+            get { return _building; }
         }
 
         /// <summary>Forget which drops have been reported - for a REPL session that wants the next
@@ -104,36 +116,36 @@ namespace ES2Access.UI
         /// measures the banding path exactly as it measures the gate, and reports through the same
         /// log line. A null widget is nothing to ask, and passes.
         /// </summary>
-        public static bool CarrierDrawn(AgeTransform carrier, ControlId id = null)
+        public static bool StillDrawn(AgeTransform widget, ControlId id = null)
         {
-            if (!Enabled || carrier == null || !Withdrawn(carrier))
+            if (!Enabled || widget == null || !Withdrawn(widget))
             {
                 return true;
             }
 
-            Report(_building, id, carrier);
+            Report(_building, id, widget);
             return false;
         }
 
-        private static bool Drops(string screenKey, ControlId id, NodeVtable vtable)
+        private static bool Drops(string screenKey, NodeDeclaration node)
         {
             if (!Enabled)
             {
                 return false;
             }
 
-            AgeTransform carrier = NodeCarrier.Of(id, vtable);
-            if (carrier == null || !Withdrawn(carrier))
+            AgeTransform widget = DrawnBy.Of(node);
+            if (widget == null || !Withdrawn(widget))
             {
                 return false;
             }
 
-            Report(screenKey, id, carrier);
+            Report(screenKey, node.Id, widget);
             return true;
         }
 
         /// <summary>
-        /// Whether the carrier is off the screen AND not on its way onto it.
+        /// Whether the widget is off the screen AND not on its way onto it.
         ///
         /// Switched off is settled by definition. Transparent is not: the same alpha 0 is both a
         /// pooled row parked for reuse and the FIRST FRAME of a window fading itself in, and the
@@ -146,11 +158,11 @@ namespace ES2Access.UI
         ///
         /// Reading it throwing is not evidence of a ghost: the node passes.
         /// </summary>
-        private static bool Withdrawn(AgeTransform carrier)
+        private static bool Withdrawn(AgeTransform widget)
         {
             try
             {
-                return !carrier.Visible || (carrier.Alpha <= 0f && !carrier.ModifiersRunning);
+                return !widget.Visible || (widget.Alpha <= 0f && !widget.ModifiersRunning);
             }
             catch (Exception)
             {
@@ -158,17 +170,12 @@ namespace ES2Access.UI
             }
         }
 
-        private static void Report(string screenKey, ControlId id, AgeTransform carrier)
+        private static void Report(string screenKey, ControlId id, AgeTransform widget)
         {
             string node = id == null ? "?" : Convert.ToString(id.StructuralKey);
-            if (!_reported.Add(screenKey + " # " + node))
+            if (!Remember(screenKey, node))
             {
                 return;
-            }
-
-            if (_reported.Count > MaxRemembered)
-            {
-                _reported.Clear();
             }
 
             Log.Info(
@@ -177,20 +184,36 @@ namespace ES2Access.UI
                     + " node="
                     + node
                     + " at="
-                    + NodeCarrier.Path(carrier)
+                    + DrawnBy.Path(widget)
                     + " why="
-                    + Why(carrier)
+                    + Why(widget)
             );
+        }
+
+        /// <summary>Whether this screen+node pair is being reported for the first time.</summary>
+        internal static bool Remember(string screenKey, string node)
+        {
+            if (!_reported.Add(screenKey + " # " + node))
+            {
+                return false;
+            }
+
+            if (_reported.Count > MaxRemembered)
+            {
+                _reported.Clear();
+            }
+
+            return true;
         }
 
         /// <summary>Which half of the test said no. The two answers want different fixes: NOT VISIBLE
         /// is a branch the window switched off and a walk that kept its rows; FADED AND SETTLED is the
         /// pooled table retiring a surplus row, which keeps its old words as well as its place.</summary>
-        private static string Why(AgeTransform carrier)
+        private static string Why(AgeTransform widget)
         {
             try
             {
-                return carrier.Visible ? "faded to nothing and settled" : "not visible";
+                return widget.Visible ? "faded to nothing and settled" : "not visible";
             }
             catch (Exception e)
             {

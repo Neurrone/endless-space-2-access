@@ -97,7 +97,7 @@ namespace ES2Access.UI
             AgeTooltip tooltip = Scratch.Count == 0 ? null : Scratch[Scratch.Count - 1];
             NodeVtable vtable = GraphNodes.Readout(() => null, () => Text(it), null, tooltip);
             AgeWidgets.PointAt(vtable, widget, tooltip);
-            Cells.Add(cells, widget, ControlId.Referenced(widget, key), vtable);
+            Cells.Add(cells, widget, ControlId.For(widget, key), vtable);
         }
 
         // Reused rather than allocated per call: these bars are declared on every build. Safe as one

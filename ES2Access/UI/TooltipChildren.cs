@@ -56,7 +56,7 @@ namespace ES2Access.UI
 
             /// <summary>The widget the CALLER read this dossier off, where it named one - what the
             /// node's existence is then gated on
-            /// (<see cref="Core.UI.Graph.NodeVtable.Carrier"/>), since a dossier node is keyed by its
+            /// (<see cref="Core.UI.Graph.DrawnNode"/>), since a dossier node is keyed by its
             /// place under the owner and its id names nothing.
             ///
             /// Deliberately not <see cref="Anchor"/>, which falls back to the tooltip's OWN transform:
@@ -149,7 +149,7 @@ namespace ES2Access.UI
             {
                 for (int i = 0; i < dossiers.Count; i++)
                 {
-                    builder.AddItem(ControlId.Structural(key + "/tooltip/" + i), Node(dossiers[i]));
+                    builder.AddItem(Stands(ControlId.Structural(key + "/tooltip/" + i), dossiers[i]));
                 }
             }
             finally
@@ -157,6 +157,23 @@ namespace ES2Access.UI
                 builder.PopContext();
                 builder.SetRegion(outer);
             }
+        }
+
+        /// <summary>
+        /// One dossier as a declared node, at the one place a dossier becomes one.
+        ///
+        /// A dossier node is keyed by its place under its owner, so its id names nothing: what it
+        /// STANDS on is the widget the caller read it off (<see cref="Dossier.Carrier"/>), and where
+        /// the walk named one the node is drawn by it. A dossier collected with no carrier - one that
+        /// only exists inside another tooltip's drawing, where there is no widget of its own to point
+        /// at - has nothing on the screen to be asked about and says so.
+        /// </summary>
+        private static NodeDeclaration Stands(ControlId id, Dossier dossier)
+        {
+            NodeVtable vtable = Node(dossier);
+            return dossier.Carrier == null
+                ? (NodeDeclaration)Nodes.Synthetic(id, vtable)
+                : Nodes.Drawn(id, vtable, dossier.Carrier);
         }
 
         /// <summary>One dossier as a node. No <c>OnActivate</c>: the engine consumes Enter on a node
@@ -168,11 +185,6 @@ namespace ES2Access.UI
             NodeVtable vtable = new NodeVtable
             {
                 Announcements = new List<NodeAnnouncement> { GraphNodes.LabelPart(it.Name) },
-                // A dossier node is keyed by its place under its owner, so its id names nothing for
-                // the existence gate to ask; the widget the caller read it off is what answers
-                // (<see cref="Dossier.Carrier"/>). Written here, at the one place a dossier becomes a
-                // node, rather than at the walks that collect them.
-                Carrier = it.Carrier,
             };
 
             if (it.Lines != null && it.Tooltip != null)

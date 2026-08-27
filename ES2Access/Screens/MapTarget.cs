@@ -52,7 +52,7 @@ namespace ES2Access.Screens
         ///
         /// A fleet's row is keyed STRUCTURALLY on purpose - the fleet panel's own line is keyed on the
         /// same garrison, and two nodes sharing a backing object would be one control to the cursor
-        /// (<c>GalaxyHudScreen.FleetNode</c>) - so <see cref="Id"/><c>.Reference</c> is null for
+        /// (<c>GalaxyHudScreen.FleetNode</c>) - so <see cref="Id"/><c>.Subject</c> is null for
         /// exactly the rows the camera most needs to name. Without this the landing could neither tell
         /// the camera which fleet it was arriving at nor write down that it had arrived, and the
         /// focus that followed made a second move (owner-reported 2026-08-26).

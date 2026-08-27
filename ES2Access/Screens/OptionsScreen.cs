@@ -203,10 +203,11 @@ namespace ES2Access.Screens
                 vtable.OnBlurVisual = ReleasePointer;
                 vtable.OnActivate = () => Switch(entry);
 
-                builder.AddItem(
-                    ControlId.Referenced(entry, "options:tab/" + CategoryOf(entry)),
-                    vtable
-                );
+                builder.AddItem(Nodes.Drawn(
+                    ControlId.For(entry, "options:tab/" + CategoryOf(entry)),
+                    vtable,
+                    entry
+                ));
             }
         }
 
@@ -392,8 +393,7 @@ namespace ES2Access.Screens
                     }
 
                     builder.BeginGroup(
-                        GroupId(key, rows[i]),
-                        GroupVtable(rows[i], group),
+                        Nodes.Synthetic(GroupId(key, rows[i]), GroupVtable(rows[i], group)),
                         group.Expanded
                     );
                     grouped = true;
@@ -516,7 +516,7 @@ namespace ES2Access.Screens
             OptionItem row = item;
             // Built before the vtable, not after: a text row hands the keyboard over only while the
             // cursor is still on the row that asked, so the editor has to be told which row that is.
-            ControlId id = ControlId.Referenced(row, "options:" + category + "/" + OptionKey(row));
+            ControlId id = ControlId.For(row, "options:" + category + "/" + OptionKey(row));
             NodeVtable vtable = RowVtable(row, id);
             if (vtable == null)
             {
@@ -528,7 +528,7 @@ namespace ES2Access.Screens
                 PointerFocus.MoveTo(null, tooltip, AnchorOf(row.TitleLabel));
             vtable.OnBlurVisual = ReleasePointer;
 
-            builder.AddItem(id, vtable);
+            builder.AddItem(Nodes.Drawn(id, vtable, row));
         }
 
         /// <summary>The three columns of a key-binding table, the name's caption first. The game
@@ -1412,13 +1412,14 @@ namespace ES2Access.Screens
                     PointerFocus.MoveTo(command.Button, tooltip, AnchorOf(caption));
                 vtable.OnBlurVisual = ReleasePointer;
 
-                builder.AddItem(
-                    ControlId.Referenced(
+                builder.AddItem(Nodes.Drawn(
+                    ControlId.For(
                         command.Button,
                         "options:button/" + Distinct(taken, KeyOf(command.Button))
                     ),
-                    vtable
-                );
+                    vtable,
+                    command.Button
+                ));
             }
         }
 

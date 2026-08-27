@@ -418,7 +418,7 @@ namespace ES2Access.Screens
                 tooltip
             );
             AgeWidgets.Point(vtable, control);
-            builder.AddItem(ControlId.Referenced(toggle, "quests:filter/" + index), vtable);
+            builder.AddItem(Nodes.Drawn(ControlId.For(toggle, "quests:filter/" + index), vtable, toggle));
         }
 
         // ---- the strip of cards ----
@@ -507,7 +507,7 @@ namespace ES2Access.Screens
 
             ControlId id = ControlId.Structural("quests:card/" + quest.Name);
             ScrollIntoView.Anchor(vtable, it.AgeTransform);
-            builder.BeginGroup(id, vtable);
+            builder.BeginGroup(Nodes.Synthetic(id, vtable));
             if (builder.IsExpanded(id))
             {
                 AddPin(builder, it, quest);
@@ -543,10 +543,10 @@ namespace ES2Access.Screens
             );
             AgeWidgets.Point(vtable, it);
             ScrollIntoView.Anchor(vtable, card.AgeTransform);
-            builder.AddItem(
+            builder.AddItem(Nodes.Synthetic(
                 ControlId.Structural("quests:card/" + quest.Name + "/pin"),
                 vtable
-            );
+            ));
         }
 
         /// <summary>Whether the game is tracking this quest, read off the toggle the card draws for
@@ -751,7 +751,7 @@ namespace ES2Access.Screens
                 TooltipMode.None
             );
             AgeWidgets.PointAt(vtable, widget);
-            builder.AddItem(ControlId.Referenced(widget, "quests:minor-faction"), vtable);
+            builder.AddItem(Nodes.Drawn(ControlId.For(widget, "quests:minor-faction"), vtable, widget));
         }
 
         /// <summary>
@@ -781,7 +781,7 @@ namespace ES2Access.Screens
                 Sections = GraphNodes.Sections(() => LoreLines(it), null),
             };
             AgeWidgets.PointAt(vtable, lore.AgeTransform);
-            builder.AddItem(ControlId.Referenced(lore, "quests:lore"), vtable);
+            builder.AddItem(Nodes.Drawn(ControlId.For(lore, "quests:lore"), vtable, lore));
         }
 
         /// <summary>Every paragraph the lore group is drawing, as one spoken phrase. Game text joins
@@ -895,7 +895,7 @@ namespace ES2Access.Screens
                 AgeWidgets.PointAt(vtable, hint.AgeTransform);
             }
 
-            builder.AddItem(ControlId.Referenced(objective, "quests:objective"), vtable);
+            builder.AddItem(Nodes.Drawn(ControlId.For(objective, "quests:objective"), vtable, objective));
         }
 
         /// <summary>
@@ -1026,7 +1026,7 @@ namespace ES2Access.Screens
                 Sections = GraphNodes.Sections(null, tooltip),
             };
             AgeWidgets.PointAt(vtable, tooltip == null ? widget : tooltip.AgeTransform);
-            builder.AddItem(ControlId.Referenced(widget, key), vtable);
+            builder.AddItem(Nodes.Drawn(ControlId.For(widget, key), vtable, widget));
         }
 
         /// <summary>

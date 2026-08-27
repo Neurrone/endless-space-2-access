@@ -144,7 +144,7 @@ namespace ES2Access.Screens
                 tooltip
             );
             AgeWidgets.PointAt(vtable, widget);
-            Cells.Add(cells, widget, ControlId.Referenced(widget, "laws:influence"), vtable);
+            Cells.Add(cells, widget, ControlId.For(widget, "laws:influence"), vtable);
         }
 
         private static readonly Amplitude.StaticString InfluenceProperty =
@@ -184,7 +184,7 @@ namespace ES2Access.Screens
             );
             vtable.OnActivate = () => AgeWidgets.Toggle(it.Toggle);
             AgeWidgets.Point(vtable, filter.Toggle);
-            Cells.Add(cells, widget, ControlId.Referenced(widget, "laws:filter/" + index), vtable);
+            Cells.Add(cells, widget, ControlId.For(widget, "laws:filter/" + index), vtable);
         }
 
         private void BuildCards(GraphBuilder builder, LawsManagementModalWindow window)
@@ -276,7 +276,7 @@ namespace ES2Access.Screens
             }
 
             AgeWidgets.Point(vtable, button);
-            Cells.Add(cells, widget, ControlId.Referenced(widget, key), vtable);
+            Cells.Add(cells, widget, ControlId.For(widget, key), vtable);
         }
 
         /// <summary>
@@ -316,7 +316,7 @@ namespace ES2Access.Screens
                 tooltip
             );
             AgeWidgets.PointAt(vtable, widget, tooltip);
-            Cells.Add(cells, widget, ControlId.Referenced(widget, "laws:experience"), vtable);
+            Cells.Add(cells, widget, ControlId.For(widget, "laws:experience"), vtable);
         }
 
         /// <summary>
@@ -352,7 +352,7 @@ namespace ES2Access.Screens
             Cells.Add(
                 cells,
                 marker,
-                ControlId.Referenced(marker, "laws:experience-current"),
+                ControlId.For(marker, "laws:experience-current"),
                 vtable
             );
         }
@@ -380,7 +380,7 @@ namespace ES2Access.Screens
                 ),
             };
             AgeWidgets.PointAt(vtable, widget);
-            Cells.Add(cells, widget, ControlId.Referenced(widget, "laws:description"), vtable);
+            Cells.Add(cells, widget, ControlId.For(widget, "laws:description"), vtable);
         }
 
         /// <summary>The block of effect lines under its caption - one line each, because each is a

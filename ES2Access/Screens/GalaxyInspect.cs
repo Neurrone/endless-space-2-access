@@ -2285,7 +2285,7 @@ namespace ES2Access.Screens
                 }
 
                 IGameEntityWithGalaxyPosition placed =
-                    node.Id == null ? null : node.Id.Reference as IGameEntityWithGalaxyPosition;
+                    node.Id == null ? null : node.Id.Subject as IGameEntityWithGalaxyPosition;
                 if (placed != null)
                 {
                     position = placed.GalaxyPosition;

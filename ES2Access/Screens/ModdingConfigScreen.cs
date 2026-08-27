@@ -392,7 +392,7 @@ namespace ES2Access.Screens
                 AgeWidgets.Raw(widget)
             );
             AgeWidgets.PointAt(vtable, widget);
-            Cells.Add(_cells, widget, ControlId.Referenced(label, key), vtable);
+            Cells.Add(_cells, widget, ControlId.For(label, key), vtable);
         }
 
         private void AddCheckbox(

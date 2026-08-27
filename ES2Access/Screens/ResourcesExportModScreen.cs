@@ -299,7 +299,7 @@ namespace ES2Access.Screens
                 {
                     // Every filter switched off is an empty page, and the player has to be able to
                     // land on the answer rather than on a stop with nothing in it.
-                    builder.AddItem(
+                    builder.AddItem(Nodes.Synthetic(
                         ControlId.Structural("resources-export:empty"),
                         GraphNodes.Readout(
                             () =>
@@ -312,7 +312,7 @@ namespace ES2Access.Screens
                             null,
                             null
                         )
-                    );
+                    ));
                 }
             }
             catch (Exception e)
@@ -356,7 +356,7 @@ namespace ES2Access.Screens
                     () => AgeWidgets.Offered(at)
                 );
                 AgeWidgets.Point(vtable, toggle);
-                builder.AddItem(ControlId.ForObject(widget), vtable);
+                builder.AddItem(Nodes.Drawn(ControlId.ForObject(widget), vtable, widget));
             }
 
             return any;
@@ -464,7 +464,7 @@ namespace ES2Access.Screens
 
                 ResourceExportMaterialItem it = material;
                 ControlId id = ControlId.ForObject(widget);
-                builder.BeginGroup(id, GraphNodes.Group(() => AgeText.FullLabel(it.MaterialNameLabel)));
+                builder.BeginGroup(Nodes.Drawn(id, GraphNodes.Group(() => AgeText.FullLabel(it.MaterialNameLabel)), widget));
                 if (builder.IsExpanded(id))
                 {
                     Textures(builder, material);
@@ -501,7 +501,7 @@ namespace ES2Access.Screens
                     null
                 );
                 AgeWidgets.PointAt(vtable, widget);
-                builder.AddItem(ControlId.ForObject(widget), vtable);
+                builder.AddItem(Nodes.Drawn(ControlId.ForObject(widget), vtable, widget));
             }
         }
 
@@ -577,7 +577,7 @@ namespace ES2Access.Screens
                 AgeWidgets.Raw(widget)
             );
             AgeWidgets.PointAt(vtable, widget);
-            builder.AddItem(ControlId.Referenced(label, key), vtable);
+            builder.AddItem(Nodes.Drawn(ControlId.For(label, key), vtable, label));
         }
 
         /// <summary>How many rows the list is drawing. Counted off the widgets rather than off the

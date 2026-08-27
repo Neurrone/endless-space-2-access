@@ -228,7 +228,7 @@ namespace ES2Access.Screens
                 new NodeSection(() => CardLines(it), TooltipMode.Announce)
             );
             AgeWidgets.Point(vtable, it.Toggle);
-            Cells.Add(cells, widget, ControlId.Referenced(widget, key), vtable);
+            Cells.Add(cells, widget, ControlId.For(widget, key), vtable);
 
             // The card draws its figures under little captions - the approval it asks for, what it
             // costs, what election actions it would allow - and each of those captions carries a
@@ -420,7 +420,7 @@ namespace ES2Access.Screens
                 Sections = GraphNodes.Sections(null, tooltip),
             };
             AgeWidgets.PointAt(vtable, widget);
-            Cells.Add(cells, widget, ControlId.Referenced(widget, key), vtable);
+            Cells.Add(cells, widget, ControlId.For(widget, key), vtable);
         }
 
         private void BuildActions(GraphBuilder builder, GovernmentModalWindow window)

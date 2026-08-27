@@ -222,7 +222,7 @@ namespace ES2Access.Screens
             );
             AgeWidgets.Point(vtable, it.Toggle, refusal, host);
             string key = "hero-select:card/" + index;
-            ControlId id = ControlId.Referenced(hero, key);
+            ControlId id = ControlId.For(hero, key);
             // And the pages the card draws no words for - affinity, class, politics, the masteries -
             // as nodes under it, since one node can point at only one of them.
             Cell cell = Cells.Add(cells, widget, id, vtable);
@@ -295,7 +295,7 @@ namespace ES2Access.Screens
             Cells.Add(
                 cells,
                 widget,
-                ControlId.Referenced(widget, "hero-select:button/" + Name(widget)),
+                ControlId.For(widget, "hero-select:button/" + Name(widget)),
                 vtable
             );
         }

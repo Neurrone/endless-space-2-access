@@ -166,10 +166,11 @@ namespace ES2Access.Screens
                     vtable.OnBlurVisual = ReleasePointer;
                 }
 
-                builder.AddItem(
-                    ControlId.Referenced(entry, "gamemenu:" + entry.name),
-                    vtable
-                );
+                builder.AddItem(Nodes.Drawn(
+                    ControlId.For(entry, "gamemenu:" + entry.name),
+                    vtable,
+                    entry
+                ));
 
                 // The mod's own settings, right where the game's are. Found by what the entry DOES
                 // rather than by what it is called, so a renamed prefab cannot move it.
@@ -218,7 +219,7 @@ namespace ES2Access.Screens
                 tooltip
             );
             AgeWidgets.PointAt(vtable, AgeWidgets.Transform(control), tooltip);
-            builder.AddItem(ControlId.Referenced(control, key), vtable);
+            builder.AddItem(Nodes.Drawn(ControlId.For(control, key), vtable, control));
         }
 
         // ---- a settings panel ----
@@ -255,10 +256,11 @@ namespace ES2Access.Screens
                     AgeTooltip tooltip = TooltipOf(anchor);
                     vtable.OnFocusVisual = () => PointerFocus.MoveTo(anchor, tooltip, anchor);
                     vtable.OnBlurVisual = ReleasePointer;
-                    builder.AddItem(
-                        ControlId.Referenced(row.AgeTransform, key + SettingName(row)),
-                        vtable
-                    );
+                    builder.AddItem(Nodes.Drawn(
+                        ControlId.For(row.AgeTransform, key + SettingName(row)),
+                        vtable,
+                        row.AgeTransform
+                    ));
                 }
 
                 builder.PopContext();

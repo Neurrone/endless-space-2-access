@@ -15,18 +15,18 @@ namespace ES2Access.Tests.UI
     /// </summary>
     public class GraphGateTests
     {
-        /// <summary>Drops the named keys, as the engine's carrier gate would.</summary>
-        private static Func<ControlId, NodeVtable, bool> Drop(params string[] keys)
+        /// <summary>Drops the named keys, as the engine.s existence gate would.</summary>
+        private static Func<NodeDeclaration, bool> Drop(params string[] keys)
         {
             HashSet<string> dropped = new HashSet<string>(keys);
-            return (id, vtable) => dropped.Contains((string)id.StructuralKey);
+            return node => dropped.Contains((string)node.Id.StructuralKey);
         }
 
-        private static GraphRender Declare(Func<ControlId, NodeVtable, bool> drops)
+        private static GraphRender Declare(Func<NodeDeclaration, bool> drops)
         {
             GraphBuilder b = new GraphBuilder(null, drops);
-            b.StartRow("bar").AddItem(Id("a"), Vt("A")).AddItem(Id("b"), Vt("B")).EndRow();
-            b.StartRow("bar").AddItem(Id("c"), Vt("C")).AddItem(Id("d"), Vt("D")).EndRow();
+            b.StartRow("bar").AddItem(new SyntheticNode(Id("a"), Vt("A"))).AddItem(new SyntheticNode(Id("b"), Vt("B"))).EndRow();
+            b.StartRow("bar").AddItem(new SyntheticNode(Id("c"), Vt("C"))).AddItem(new SyntheticNode(Id("d"), Vt("D"))).EndRow();
             return b.Build();
         }
 
@@ -44,7 +44,7 @@ namespace ES2Access.Tests.UI
         [Fact]
         public void APredicateThatSaysNoDropsNothing()
         {
-            GraphRender r = Declare((id, vtable) => false);
+            GraphRender r = Declare(node => false);
             Assert.Equal(4, r.Order.Count);
         }
 
@@ -99,14 +99,14 @@ namespace ES2Access.Tests.UI
         public void ADroppedGroupHeaderTakesItsSubtreeWithIt()
         {
             GraphBuilder b = new GraphBuilder(null, Drop("g"));
-            b.AddItem(Id("before"), Vt("Before"));
-            b.BeginGroup(Id("g"), Vt("Group"), true);
-            b.AddItem(Id("child"), Vt("Child"));
-            b.BeginGroup(Id("inner"), Vt("Inner"), true);
-            b.AddItem(Id("deep"), Vt("Deep"));
+            b.AddItem(new SyntheticNode(Id("before"), Vt("Before")));
+            b.BeginGroup(new SyntheticNode(Id("g"), Vt("Group")), true);
+            b.AddItem(new SyntheticNode(Id("child"), Vt("Child")));
+            b.BeginGroup(new SyntheticNode(Id("inner"), Vt("Inner")), true);
+            b.AddItem(new SyntheticNode(Id("deep"), Vt("Deep")));
             b.EndGroup();
             b.EndGroup();
-            b.AddItem(Id("after"), Vt("After"));
+            b.AddItem(new SyntheticNode(Id("after"), Vt("After")));
 
             GraphRender r = b.Build();
             Assert.Null(Node(r, "g"));
@@ -121,9 +121,9 @@ namespace ES2Access.Tests.UI
         public void AnExpandedGroupKeepsTheChildrenTheGateLeft()
         {
             GraphBuilder b = new GraphBuilder(null, Drop("gone"));
-            b.BeginGroup(Id("g"), Vt("Group"), true);
-            b.AddItem(Id("gone"), Vt("Gone"));
-            b.AddItem(Id("kept"), Vt("Kept"));
+            b.BeginGroup(new SyntheticNode(Id("g"), Vt("Group")), true);
+            b.AddItem(new SyntheticNode(Id("gone"), Vt("Gone")));
+            b.AddItem(new SyntheticNode(Id("kept"), Vt("Kept")));
             b.EndGroup();
 
             GraphRender r = b.Build();
@@ -136,8 +136,8 @@ namespace ES2Access.Tests.UI
         public void ADroppedRawNodeLosesTheEdgesNamingIt()
         {
             GraphBuilder b = new GraphBuilder(null, Drop("gone"));
-            b.AddNode(Id("here"), Vt("Here"));
-            b.AddNode(Id("gone"), Vt("Gone"));
+            b.AddNode(new SyntheticNode(Id("here"), Vt("Here")));
+            b.AddNode(new SyntheticNode(Id("gone"), Vt("Gone")));
             b.Connect(Id("here"), GraphDir.Right, Id("gone"));
 
             GraphRender r = b.Build();
@@ -151,7 +151,7 @@ namespace ES2Access.Tests.UI
         public void AMalformedDeclarationStillThrowsEvenWhenItWouldBeDropped()
         {
             GraphBuilder b = new GraphBuilder(null, Drop("bad"));
-            Assert.Throws<ArgumentException>(() => b.AddItem(Id("bad"), new NodeVtable()));
+            Assert.Throws<ArgumentException>(() => b.AddItem(new SyntheticNode(Id("bad"), new NodeVtable())));
         }
 
         // A dropped node never existed, so it claims no id: the duplicate check is about what the
@@ -160,8 +160,8 @@ namespace ES2Access.Tests.UI
         public void ADroppedIdIsNotClaimed()
         {
             GraphBuilder b = new GraphBuilder(null, Drop("twice"));
-            b.AddItem(Id("twice"), Vt("First"));
-            b.AddItem(Id("twice"), Vt("Second"));
+            b.AddItem(new SyntheticNode(Id("twice"), Vt("First")));
+            b.AddItem(new SyntheticNode(Id("twice"), Vt("Second")));
             Assert.Null(b.Build());
         }
 
@@ -169,9 +169,9 @@ namespace ES2Access.Tests.UI
         public void PositionsAreCountedOverTheSurvivors()
         {
             GraphBuilder b = new GraphBuilder(null, Drop("two"));
-            b.AddItem(Id("one"), Vt("One"));
-            b.AddItem(Id("two"), Vt("Two"));
-            b.AddItem(Id("three"), Vt("Three"));
+            b.AddItem(new SyntheticNode(Id("one"), Vt("One")));
+            b.AddItem(new SyntheticNode(Id("two"), Vt("Two")));
+            b.AddItem(new SyntheticNode(Id("three"), Vt("Three")));
 
             GraphRender r = b.Build();
             Assert.Equal(2, Node(r, "three").PositionIndex);

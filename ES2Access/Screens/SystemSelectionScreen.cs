@@ -198,10 +198,11 @@ namespace ES2Access.Screens
                     AgeWidgets.Raw(button)
                 );
                 AgeWidgets.Point(vtable, AgeWidgets.Button(button));
-                builder.AddItem(
-                    ControlId.Referenced(button, "syssel:button/" + NameOf(button)),
-                    vtable
-                );
+                builder.AddItem(Nodes.Drawn(
+                    ControlId.For(button, "syssel:button/" + NameOf(button)),
+                    vtable,
+                    button
+                ));
             }
         }
 

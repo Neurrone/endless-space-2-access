@@ -439,7 +439,7 @@ namespace ES2Access.Screens
                 builder.StartRow();
                 foreach (Cell cell in row)
                 {
-                    builder.AddItem(cell.Id, cell.Vtable);
+                    builder.AddItem(Nodes.Drawn(cell.Id, cell.Vtable, cell.Widget));
                 }
 
                 builder.EndRow();
@@ -622,7 +622,7 @@ namespace ES2Access.Screens
                 tooltip
             );
             AgeWidgets.Point(vtable, it, tooltip, group);
-            builder.AddItem(ControlId.Referenced(button, "hud:view-title/scan"), vtable);
+            builder.AddItem(Nodes.Drawn(ControlId.For(button, "hud:view-title/scan"), vtable, button));
         }
 
         /// <summary>Whether the page has a lens at all - asked before the stop is begun as well as
@@ -710,7 +710,7 @@ namespace ES2Access.Screens
                         new Cell
                         {
                             Widget = widget,
-                            Id = ControlId.Referenced(
+                            Id = ControlId.For(
                                 toggle,
                                 "hud:empire/screen/" + screen.GetType().Name
                             ),
@@ -827,7 +827,7 @@ namespace ES2Access.Screens
                 new Cell
                 {
                     Widget = area,
-                    Id = ControlId.Referenced(label, "hud:empire/" + key),
+                    Id = ControlId.For(label, "hud:empire/" + key),
                     Vtable = vtable,
                 }
             );
@@ -872,7 +872,7 @@ namespace ES2Access.Screens
                 new Cell
                 {
                     Widget = AgeWidgets.Transform(it),
-                    Id = ControlId.Referenced(it, "hud:empire/research"),
+                    Id = ControlId.For(it, "hud:empire/research"),
                     Vtable = vtable,
                 }
             );
@@ -921,7 +921,7 @@ namespace ES2Access.Screens
                 new Cell
                 {
                     Widget = at,
-                    Id = ControlId.Referenced(buyout, "hud:empire/research-buyout"),
+                    Id = ControlId.For(buyout, "hud:empire/research-buyout"),
                     Vtable = vtable,
                 }
             );
@@ -1015,7 +1015,7 @@ namespace ES2Access.Screens
                         new Cell
                         {
                             Widget = item.AgeTransform,
-                            Id = ControlId.Referenced(item, "hud:empire/resource/" + resource.Name),
+                            Id = ControlId.For(item, "hud:empire/resource/" + resource.Name),
                             Vtable = vtable,
                         }
                     );
@@ -1441,7 +1441,7 @@ namespace ES2Access.Screens
                 new Cell
                 {
                     Widget = it,
-                    Id = ControlId.Referenced(it, "hud:empire/" + key),
+                    Id = ControlId.For(it, "hud:empire/" + key),
                     Vtable = vtable,
                 }
             );
@@ -1453,7 +1453,7 @@ namespace ES2Access.Screens
         {
             if (AgeWidgets.Visible(widget))
             {
-                AddDrawnButton(cells, widget, ControlId.Referenced(widget, "hud:empire/" + key));
+                AddDrawnButton(cells, widget, ControlId.For(widget, "hud:empire/" + key));
             }
         }
 
@@ -1486,7 +1486,7 @@ namespace ES2Access.Screens
             NodeVtable vtable
         )
         {
-            AddCell(cells, widget, ControlId.Referenced(widget, key), vtable);
+            AddCell(cells, widget, ControlId.For(widget, key), vtable);
         }
 
         private static void AddCell(
@@ -1691,7 +1691,7 @@ namespace ES2Access.Screens
             // The panel carries no caption of its own (below), so the word is the mod's: without it
             // Tab lands on a quest title with nothing saying which corner of the screen it came from.
             builder.PushContext(ModStrings.Get(ModStrings.HudQuestPanel));
-            builder.AddItem(ControlId.Referenced(panel.PinnedQuest, "hud:quest"), vtable);
+            builder.AddItem(Nodes.Synthetic(ControlId.For(panel.PinnedQuest, "hud:quest"), vtable));
             AddQuestButton(
                 builder,
                 panel.ShowLocationButton,
@@ -1727,7 +1727,7 @@ namespace ES2Access.Screens
                 AgeWidgets.Raw(widget)
             );
             AgeWidgets.PointAt(vtable, widget);
-            builder.AddItem(ControlId.Structural(key), vtable);
+            builder.AddItem(Nodes.Synthetic(ControlId.Structural(key), vtable));
         }
 
         /// <summary>How the quest is going, in the game's own word for it - "Ongoing", or the count of
@@ -1968,7 +1968,13 @@ namespace ES2Access.Screens
                     // game's own right click is the only way to do it without opening the popup first.
                     NodeHints.Add(vtable, ModStrings.HintDismiss, UiActions.Contextual);
                     vtable.Sections = GraphNodes.Sections(GraphNodes.TooltipDetails(IconTooltip(it, items)), null);
-                    builder.AddItem(ControlId.Referenced(it, "hud:notification/" + count), vtable);
+                    // Synthesized from the game's own notification list, not read off a widget: the
+                    // strip's icons are pooled and the walk holds the NOTIFICATION, so there is
+                    // nothing here whose paint state could vouch for the row. The enumeration is
+                    // where the honesty lives - the service lists the notifications that exist.
+                    builder.AddItem(
+                        Nodes.Synthetic(ControlId.For(it, "hud:notification/" + count), vtable)
+                    );
                     count++;
                 }
 
@@ -1979,14 +1985,21 @@ namespace ES2Access.Screens
                     // it and the coverage audit finds the node standing on it rather than reporting a
                     // drawn control nothing declares.
                     AgeTransform triangle = CloseAllTriangle();
+                    NodeVtable dismissAll = GraphNodes.Button(
+                        () => ModStrings.Get(ModStrings.HudDismissAllNotifications),
+                        DismissAllNotifications
+                    );
                     builder.AddItem(
                         triangle == null
-                            ? ControlId.Structural("hud:notification/dismiss-all")
-                            : ControlId.Referenced(triangle, "hud:notification/dismiss-all"),
-                        GraphNodes.Button(
-                            () => ModStrings.Get(ModStrings.HudDismissAllNotifications),
-                            DismissAllNotifications
-                        )
+                            ? (NodeDeclaration)Nodes.Synthetic(
+                                ControlId.Structural("hud:notification/dismiss-all"),
+                                dismissAll
+                            )
+                            : Nodes.Drawn(
+                                ControlId.For(triangle, "hud:notification/dismiss-all"),
+                                dismissAll,
+                                triangle
+                            )
                     );
                 }
             }
@@ -2111,10 +2124,10 @@ namespace ES2Access.Screens
                             vtable.OnContextual = () => Dismiss(it);
                             GoToLocation(vtable, it);
                             NodeHints.Add(vtable, ModStrings.HintDismiss, UiActions.Contextual);
-                            builder.AddItem(
-                                ControlId.Referenced(it, "hud:turn-log/" + turn + "/" + within),
+                            builder.AddItem(Nodes.Synthetic(
+                                ControlId.For(it, "hud:turn-log/" + turn + "/" + within),
                                 vtable
-                            );
+                            ));
                             within++;
                         }
                     }
@@ -2129,13 +2142,13 @@ namespace ES2Access.Screens
                 // exist at all while the log is empty (above), so there is never a button offering to
                 // clear nothing.
                 builder.SetRegion("hud:turn-log/dismiss-all");
-                builder.AddItem(
+                builder.AddItem(Nodes.Synthetic(
                     ControlId.Structural("hud:turn-log/dismiss-all"),
                     GraphNodes.Button(
                         () => ModStrings.Get(ModStrings.HudDismissAllTurnLog),
                         DismissAllLogged
                     )
-                );
+                ));
             }
             finally
             {
@@ -2362,7 +2375,7 @@ namespace ES2Access.Screens
                     new Cell
                     {
                         Widget = AgeWidgets.Transform(endTurn),
-                        Id = ControlId.Referenced(endTurn, "hud:end-turn"),
+                        Id = ControlId.For(endTurn, "hud:end-turn"),
                         Vtable = vtable,
                     }
                 );
@@ -2391,7 +2404,7 @@ namespace ES2Access.Screens
             builder.BeginStop(TurnStop);
             for (int i = 0; i < found.Count; i++)
             {
-                builder.AddItem(found[i].Id, found[i].Vtable);
+                builder.AddItem(Nodes.Drawn(found[i].Id, found[i].Vtable, found[i].Widget));
             }
         }
 
@@ -2440,7 +2453,7 @@ namespace ES2Access.Screens
                 new Cell
                 {
                     Widget = AgeWidgets.Transform(it),
-                    Id = ControlId.Referenced(it, "hud:" + key),
+                    Id = ControlId.For(it, "hud:" + key),
                     Vtable = vtable,
                 }
             );
@@ -2485,7 +2498,7 @@ namespace ES2Access.Screens
                 new Cell
                 {
                     Widget = at,
-                    Id = ControlId.Referenced(at, "hud:pending-notifications"),
+                    Id = ControlId.For(at, "hud:pending-notifications"),
                     Vtable = vtable,
                 }
             );
@@ -2528,7 +2541,7 @@ namespace ES2Access.Screens
                 new Cell
                 {
                     Widget = widget,
-                    Id = ControlId.Referenced(toggle, "hud:alliance-requests"),
+                    Id = ControlId.For(toggle, "hud:alliance-requests"),
                     Vtable = vtable,
                 }
             );
@@ -2571,7 +2584,7 @@ namespace ES2Access.Screens
                 new Cell
                 {
                     Widget = group,
-                    Id = ControlId.Referenced(group, "hud:sync"),
+                    Id = ControlId.For(group, "hud:sync"),
                     Vtable = vtable,
                 }
             );
@@ -2616,7 +2629,7 @@ namespace ES2Access.Screens
                 new Cell
                 {
                     Widget = ring,
-                    Id = ControlId.Referenced(ring, "hud:players"),
+                    Id = ControlId.For(ring, "hud:players"),
                     Vtable = vtable,
                 }
             );
@@ -2650,7 +2663,7 @@ namespace ES2Access.Screens
                     new Cell
                     {
                         Widget = global,
-                        Id = ControlId.Referenced(global, "hud:global-timer"),
+                        Id = ControlId.For(global, "hud:global-timer"),
                         Vtable = vtable,
                     }
                 );
@@ -2675,7 +2688,7 @@ namespace ES2Access.Screens
                 new Cell
                 {
                     Widget = arc,
-                    Id = ControlId.Referenced(arc, "hud:turn-timer"),
+                    Id = ControlId.For(arc, "hud:turn-timer"),
                     Vtable = turnTimer,
                 }
             );
@@ -2716,7 +2729,7 @@ namespace ES2Access.Screens
                 new Cell
                 {
                     Widget = clock,
-                    Id = ControlId.Referenced(clock, "hud:real-time-clock"),
+                    Id = ControlId.For(clock, "hud:real-time-clock"),
                     Vtable = vtable,
                 }
             );

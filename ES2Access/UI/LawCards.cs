@@ -113,7 +113,7 @@ namespace ES2Access.UI
         /// drawn cards followed by 32 dead "Empty law slot" stops). Each cell carries the card it was
         /// read off, so a retired one is taken out before the cells are banded - which is where it has
         /// to happen, since a dead card parked outside the grid would otherwise band with the live
-        /// ones (<see cref="Cells"/>, <see cref="NodeGate.CarrierDrawn"/>). The senate's own six slots
+        /// ones (<see cref="Cells"/>, <see cref="NodeGate.StillDrawn"/>). The senate's own six slots
         /// are all painted and are unaffected either way.
         /// </summary>
         public static void Cards(List<Cell> cells, AgeTransform table, string keyPrefix)
@@ -131,7 +131,7 @@ namespace ES2Access.UI
                 Cells.Add(
                     cells,
                     widget,
-                    ControlId.Referenced(widget, keyPrefix + i),
+                    ControlId.For(widget, keyPrefix + i),
                     Vtable(card)
                 );
 

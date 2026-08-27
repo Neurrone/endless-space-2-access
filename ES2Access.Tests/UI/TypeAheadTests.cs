@@ -19,11 +19,11 @@ namespace ES2Access.Tests.UI
             return Renderer(b =>
             {
                 b.BeginStop("left");
-                b.AddItem(Id("load"), Vt("Load Game"));
-                b.AddItem(Id("license"), Vt("License"));
-                b.AddItem(Id("dlc"), Vt("DLC"));
+                b.AddItem(new SyntheticNode(Id("load"), Vt("Load Game")));
+                b.AddItem(new SyntheticNode(Id("license"), Vt("License")));
+                b.AddItem(new SyntheticNode(Id("dlc"), Vt("DLC")));
                 b.BeginStop("right");
-                b.AddItem(Id("lore"), Vt("Lore"));
+                b.AddItem(new SyntheticNode(Id("lore"), Vt("Lore")));
             })();
         }
 
@@ -76,11 +76,11 @@ namespace ES2Access.Tests.UI
             {
                 NodeVtable cell = Vt("12");
                 cell.SearchText = () => "Alpha";
-                b.AddItem(Id("cell"), cell);
+                b.AddItem(new SyntheticNode(Id("cell"), cell));
 
                 NodeVtable heading = Vt("Turn");
                 heading.ExcludeFromSearch = true;
-                b.AddItem(Id("heading"), heading);
+                b.AddItem(new SyntheticNode(Id("heading"), heading));
             })();
 
             SearchScope scope = SearchScope.OverStop(render, "stop#0");

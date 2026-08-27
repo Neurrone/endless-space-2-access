@@ -24,14 +24,14 @@ namespace ES2Access.UI.ModOptions
         /// structural id for it.</summary>
         public static void Add(GraphBuilder builder, string key)
         {
-            builder.AddItem(
+            builder.AddItem(Nodes.Synthetic(
                 ControlId.Structural(key),
                 GraphNodes.Button(
                     () => ModStrings.Get(ModStrings.ModSettingsEntry),
                     ModOptions.Open,
                     ModOptions.CanOpen
                 )
-            );
+            ));
         }
     }
 }

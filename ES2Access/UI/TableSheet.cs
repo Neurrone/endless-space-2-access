@@ -310,10 +310,11 @@ namespace ES2Access.UI
                 // one-result-per-row filter would drop every heading past the first from type-ahead.
                 vtable.SearchesAsItself = true;
                 AgeWidgets.PointAt(vtable, widget);
-                builder.AddItem(
-                    ControlId.Referenced(header, _key + "header/" + property + "/" + i),
-                    vtable
-                );
+                builder.AddItem(Nodes.Drawn(
+                    ControlId.For(header, _key + "header/" + property + "/" + i),
+                    vtable,
+                    header
+                ));
                 Filter(builder, owner, header, i, columns[i]);
             }
 
@@ -365,10 +366,11 @@ namespace ES2Access.UI
             vtable.Column = -(column + 1);
             vtable.SearchesAsItself = true;
             AgeWidgets.Point(vtable, funnel);
-            builder.AddItem(
-                ControlId.Referenced(funnel, _key + "filter/" + PropertyOf(header) + "/" + index),
-                vtable
-            );
+            builder.AddItem(Nodes.Drawn(
+                ControlId.For(funnel, _key + "filter/" + PropertyOf(header) + "/" + index),
+                vtable,
+                funnel
+            ));
         }
 
         /// <summary>Tick or untick the funnel the way a click on it does, and tell the menu screen

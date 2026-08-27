@@ -363,7 +363,7 @@ namespace ES2Access.Screens
             }
 
             Cell cell = Cells.Readout(widget, AgeWidgets.Raw(widget), Keys + "center");
-            builder.AddItem(cell.Id, cell.Vtable);
+            builder.AddItem(Nodes.Drawn(cell.Id, cell.Vtable, cell.Widget));
         }
 
         /// <summary>
@@ -442,7 +442,7 @@ namespace ES2Access.Screens
 
                 Hover(host, it, false);
             };
-            builder.AddItem(ControlId.Referenced(sector, Keys + "empire/" + index), vtable);
+            builder.AddItem(Nodes.Drawn(ControlId.For(sector, Keys + "empire/" + index), vtable, sector));
         }
 
         /// <summary>Whether the game raises this card's detail block for a mouse on the wedge - its own
@@ -711,7 +711,7 @@ namespace ES2Access.Screens
                 AgeWidgets.Raw(host)
             );
             AgeWidgets.Point(vtable, it, AgeWidgets.Raw(host), host);
-            Cells.Add(_cells, at, ControlId.Referenced(at, Keys + "swap"), vtable);
+            Cells.Add(_cells, at, ControlId.For(at, Keys + "swap"), vtable);
         }
 
         /// <summary>One of the two "go to that window instead" buttons. Named by the sentence the game
@@ -734,7 +734,7 @@ namespace ES2Access.Screens
             );
             GraphNodes.AddRefusal(vtable, tooltip, () => AgeWidgets.Offered(at));
             AgeWidgets.PointAt(vtable, at);
-            Cells.Add(_cells, at, ControlId.Referenced(at, Keys + key), vtable);
+            Cells.Add(_cells, at, ControlId.For(at, Keys + key), vtable);
         }
 
         /// <summary>The board of teams a metaplot minigame draws over the ring, while one is running.

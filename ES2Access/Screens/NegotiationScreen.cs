@@ -235,7 +235,7 @@ namespace ES2Access.Screens
                 TooltipMode.None
             );
             AgeWidgets.Point(vtable, it, tooltip, at);
-            Cells.Add(_cells, at, ControlId.Referenced(at, Keys + "empire-info"), vtable);
+            Cells.Add(_cells, at, ControlId.For(at, Keys + "empire-info"), vtable);
         }
 
         /// <summary>One empire's banner as one line: everything the panel draws about them, and the
@@ -260,7 +260,7 @@ namespace ES2Access.Screens
                 Sections = GraphNodes.Sections(null, why),
             };
             AgeWidgets.PointAt(vtable, attitude ?? at);
-            Cells.Add(_cells, at, ControlId.Referenced(at, Keys + key), vtable);
+            Cells.Add(_cells, at, ControlId.For(at, Keys + key), vtable);
         }
 
         private static string Banner(NegotiationEmpireBannerPanel panel)
@@ -286,7 +286,7 @@ namespace ES2Access.Screens
             Cells.Add(
                 _cells,
                 at,
-                ControlId.Referenced(at, Keys + "status-icon"),
+                ControlId.For(at, Keys + "status-icon"),
                 StatusIcon(at)
             );
         }
@@ -355,7 +355,7 @@ namespace ES2Access.Screens
                 Cells.Add(
                     _cells,
                     at,
-                    ControlId.Referenced(at, Keys + "ability/" + i),
+                    ControlId.For(at, Keys + "ability/" + i),
                     StatusIcon(at)
                 );
             }
@@ -467,7 +467,7 @@ namespace ES2Access.Screens
                 Cells.Add(
                     _cells,
                     at,
-                    ControlId.Referenced(at, Keys + "threshold/" + i),
+                    ControlId.For(at, Keys + "threshold/" + i),
                     vtable
                 );
             }
@@ -493,7 +493,7 @@ namespace ES2Access.Screens
             );
             GraphNodes.AddRefusal(vtable, tooltip, offered);
             AgeWidgets.PointAt(vtable, at);
-            Cells.Add(_cells, at, ControlId.Referenced(at, Keys + "truce"), vtable);
+            Cells.Add(_cells, at, ControlId.For(at, Keys + "truce"), vtable);
         }
 
         // ---- the two shelves of terms ----
@@ -653,7 +653,7 @@ namespace ES2Access.Screens
                 Cells.Add(
                     _cells,
                     group,
-                    ControlId.Referenced(group, Keys + "approval"),
+                    ControlId.For(group, Keys + "approval"),
                     vtable
                 );
             }
@@ -740,7 +740,7 @@ namespace ES2Access.Screens
             );
             GraphNodes.AddRefusal(vtable, tooltip, offered);
             AgeWidgets.PointAt(vtable, at);
-            Cells.Add(_cells, at, ControlId.Referenced(at, Keys + key), vtable);
+            Cells.Add(_cells, at, ControlId.For(at, Keys + key), vtable);
         }
 
         // ---- what the game changes on its own ----

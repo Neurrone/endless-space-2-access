@@ -48,7 +48,7 @@ namespace ES2Access.Tests.UI
         private static List<string> Buffer(NodeVtable vtable)
         {
             GraphBuilder b = new GraphBuilder();
-            b.AddItem(Id("t"), vtable);
+            b.AddItem(new SyntheticNode(Id("t"), vtable));
             return NodeBuffer.Lines(Node(b.Build(), "t"));
         }
 

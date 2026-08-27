@@ -376,7 +376,7 @@ namespace ES2Access.Screens
                 Sections = GraphNodes.Sections(null, AgeWidgets.Raw(gauge)),
             };
             AgeWidgets.PointAt(vtable, gauge);
-            builder.AddItem(ControlId.Structural("advanced-play/balance"), vtable);
+            builder.AddItem(Nodes.Synthetic(ControlId.Structural("advanced-play/balance"), vtable));
         }
 
         private static string BalanceText(AdvancedEncounterPlayModalWindow window)
@@ -462,7 +462,7 @@ namespace ES2Access.Screens
                 tooltip
             );
             AgeWidgets.Point(vtable, it, tooltip, widget);
-            Cells.Add(_cells, widget, ControlId.Referenced(toggle, key), vtable);
+            Cells.Add(_cells, widget, ControlId.For(toggle, key), vtable);
         }
 
         /// <summary>A box the player ticks, named by the mod where the game names it nowhere and by the
@@ -490,7 +490,7 @@ namespace ES2Access.Screens
                 tooltip
             );
             AgeWidgets.Point(vtable, it, tooltip, widget);
-            Cells.Add(_cells, widget, ControlId.Referenced(toggle, key), vtable);
+            Cells.Add(_cells, widget, ControlId.For(toggle, key), vtable);
         }
 
         /// <summary>A button the window drew as an icon, under the game's own title for it, refusing with
@@ -514,7 +514,7 @@ namespace ES2Access.Screens
             );
             GraphNodes.AddRefusal(vtable, tooltip, enabled);
             AgeWidgets.PointAt(vtable, widget);
-            Cells.Add(_cells, widget, ControlId.Referenced(widget, key), vtable);
+            Cells.Add(_cells, widget, ControlId.For(widget, key), vtable);
         }
 
         /// <summary>How long is left, for a battle the game is timing. Never watched - a countdown that
@@ -626,7 +626,7 @@ namespace ES2Access.Screens
                 Sections = GraphNodes.Sections(null, tooltip),
             };
             AgeWidgets.PointAt(vtable, widget);
-            builder.AddItem(ControlId.Referenced(portrait, prefix + "/hero"), vtable);
+            builder.AddItem(Nodes.Drawn(ControlId.For(portrait, prefix + "/hero"), vtable, portrait));
         }
 
         /// <summary>A line the game wrote and is showing: read as it stands, with whatever it explains
@@ -650,7 +650,7 @@ namespace ES2Access.Screens
                 Sections = GraphNodes.Sections(null, tooltip),
             };
             AgeWidgets.PointAt(vtable, widget);
-            builder.AddItem(ControlId.Referenced(label, key), vtable);
+            builder.AddItem(Nodes.Drawn(ControlId.For(label, key), vtable, label));
         }
 
         /// <summary>What a control is called: the words the game drew on it, else the game's own title for

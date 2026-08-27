@@ -369,7 +369,7 @@ namespace ES2Access.Screens
                     TooltipMode.None
                 );
                 AgeWidgets.PointAt(vtable, at);
-                builder.AddItem(ControlId.Referenced(at, keyPrefix + "switch"), vtable);
+                builder.AddItem(Nodes.Drawn(ControlId.For(at, keyPrefix + "switch"), vtable, at));
             }
             catch (Exception e)
             {

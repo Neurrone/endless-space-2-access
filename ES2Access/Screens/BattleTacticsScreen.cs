@@ -263,7 +263,7 @@ namespace ES2Access.Screens
             };
 
             builder.StartRow();
-            builder.AddItem(ControlId.Structural("tactics:remove-target"), vtable);
+            builder.AddItem(Nodes.Synthetic(ControlId.Structural("tactics:remove-target"), vtable));
             builder.EndRow();
         }
 
@@ -430,7 +430,7 @@ namespace ES2Access.Screens
                 GuiBattlePlaySlot slot = card.GuiBattlePlaySlot;
                 return slot == null || slot.GuiCard == null
                     ? ControlId.Structural(key)
-                    : ControlId.Referenced(slot.GuiCard, key);
+                    : ControlId.For(slot.GuiCard, key);
             }
             catch (Exception)
             {

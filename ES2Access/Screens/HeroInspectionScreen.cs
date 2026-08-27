@@ -511,7 +511,7 @@ namespace ES2Access.Screens
                     Cells.Add(
                         _cells,
                         slot.AgeTransform,
-                        ControlId.Referenced(slot.AgeTransform, Keys + "overview/slot/" + i),
+                        ControlId.For(slot.AgeTransform, Keys + "overview/slot/" + i),
                         vtable
                     );
                 }
@@ -569,17 +569,17 @@ namespace ES2Access.Screens
             vtable.Sections = GraphNodes.Sections(() => HeroCards.Lines(it), tooltip);
             AgeWidgets.Point(vtable, rename, tooltip, card.AgeTransform);
             string key = Keys + "card";
-            ControlId id = ControlId.Referenced(card.AgeTransform, key);
+            ControlId id = ControlId.For(card.AgeTransform, key);
             ScrollIntoView.Anchor(vtable, card.AgeTransform);
             HeroCards.Buttons(_cells, card, key);
             List<TooltipChildren.Dossier> dossiers = HeroCards.Dossiers(card);
             if (_cells.Count == 0 && dossiers.Count == 0)
             {
-                builder.AddItem(id, vtable);
+                builder.AddItem(Nodes.Drawn(id, vtable, card.AgeTransform));
                 return;
             }
 
-            builder.BeginGroup(id, vtable);
+            builder.BeginGroup(Nodes.Drawn(id, vtable, card.AgeTransform));
             if (builder.IsExpanded(id))
             {
                 object outer = TooltipChildren.Actions(builder, key);
@@ -656,7 +656,7 @@ namespace ES2Access.Screens
                     Cells.Add(
                         _cells,
                         icon,
-                        ControlId.Referenced(icon, Keys + "overview/branch/" + i),
+                        ControlId.For(icon, Keys + "overview/branch/" + i),
                         vtable
                     );
                 }
@@ -668,7 +668,7 @@ namespace ES2Access.Screens
 
             for (int i = 0; i < _cells.Count; i++)
             {
-                builder.AddItem(_cells[i].Id, _cells[i].Vtable);
+                builder.AddItem(Nodes.Drawn(_cells[i].Id, _cells[i].Vtable, _cells[i].Widget));
             }
 
             if (named)
@@ -758,7 +758,7 @@ namespace ES2Access.Screens
             // (measured, after a Reset).
             for (int i = 0; i < _cells.Count; i++)
             {
-                builder.AddItem(_cells[i].Id, _cells[i].Vtable);
+                builder.AddItem(Nodes.Drawn(_cells[i].Id, _cells[i].Vtable, _cells[i].Widget));
             }
         }
 
@@ -842,11 +842,11 @@ namespace ES2Access.Screens
                         continue;
                     }
 
-                    ControlId id = ControlId.Referenced(
+                    ControlId id = ControlId.For(
                         tree.SkillTreeDefinition,
                         Keys + "tree/branch/" + i
                     );
-                    builder.BeginGroup(id, BranchVtable(panel, tree, i));
+                    builder.BeginGroup(Nodes.Synthetic(id, BranchVtable(panel, tree, i)));
                     BuildStages(builder, panel, tree, i);
                     builder.EndGroup();
                 }
@@ -938,13 +938,13 @@ namespace ES2Access.Screens
                     () => AgeWidgets.Operable(it.AgeTransform)
                 );
                 vtable.Announcements.Add(GraphNodes.ValuePart(() => StageRequirement(it), false));
-                builder.BeginGroup(
-                    ControlId.Referenced(
+                builder.BeginGroup(Nodes.Synthetic(
+                    ControlId.For(
                         stage.SkillTreeStage,
                         Keys + "tree/branch/" + branch + "/ring/" + i
                     ),
                     vtable
-                );
+                ));
                 BuildSkills(builder, panel, stage, branch, i);
                 builder.EndGroup();
             }
@@ -1025,13 +1025,13 @@ namespace ES2Access.Screens
                     continue;
                 }
 
-                builder.AddItem(
-                    ControlId.Referenced(
+                builder.AddItem(Nodes.Synthetic(
+                    ControlId.For(
                         skill.HeroSkillDefinition,
                         Keys + "tree/branch/" + branch + "/ring/" + ring + "/skill/" + i
                     ),
                     SkillVtable(panel, skill)
-                );
+                ));
             }
         }
 
@@ -1357,7 +1357,7 @@ namespace ES2Access.Screens
                     tooltip
                 );
                 AgeWidgets.PointAt(vtable, row);
-                Cells.Add(_cells, row, ControlId.Referenced(row, Keys + key + "/row/" + i), vtable);
+                Cells.Add(_cells, row, ControlId.For(row, Keys + key + "/row/" + i), vtable);
             }
         }
 
@@ -1464,7 +1464,7 @@ namespace ES2Access.Screens
                 Cells.Add(
                     _cells,
                     relic.AgeTransform,
-                    ControlId.Referenced(relic.AgeTransform, Keys + "tree/relic/row/" + i),
+                    ControlId.For(relic.AgeTransform, Keys + "tree/relic/row/" + i),
                     vtable
                 );
             }
@@ -1652,7 +1652,7 @@ namespace ES2Access.Screens
                 tooltip
             );
             AgeWidgets.PointAt(vtable, tooltip == null ? row : tooltip.AgeTransform);
-            Cells.Add(_cells, row, ControlId.Referenced(row, Keys + key), vtable);
+            Cells.Add(_cells, row, ControlId.For(row, Keys + key), vtable);
         }
 
         /// <summary>
@@ -1714,7 +1714,7 @@ namespace ES2Access.Screens
                 Sections = GraphNodes.Sections(null, tooltip ?? AgeWidgets.Raw(widget)),
             };
             AgeWidgets.PointAt(vtable, widget);
-            Cells.Add(_cells, widget, ControlId.Referenced(widget, Keys + key), vtable);
+            Cells.Add(_cells, widget, ControlId.For(widget, Keys + key), vtable);
         }
 
         /// <summary>The caption a box draws over a table buried some way inside it - the scroll view the

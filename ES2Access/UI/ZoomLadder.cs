@@ -93,10 +93,10 @@ namespace ES2Access.UI
                 }
             }
 
-            builder.AddItem(
+            builder.AddItem(Nodes.Synthetic(
                 id,
                 GraphNodes.Slider(() => ModStrings.Get(ModStrings.Zoom), Text, Step)
-            );
+            ));
         }
 
         /// <summary>Counts the wait down, and ends it the moment the rung moves - so the value speaks

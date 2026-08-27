@@ -122,7 +122,7 @@ namespace ES2Access.UI
         /// grouped by RECTANGLE (<see cref="AgeLayout.Rows"/>), and a retired cell's stale rectangle
         /// is still somewhere - it merges two drawn bands into one or splits one into two, and the
         /// player hears the wrong "n of m" for cells that are all perfectly real. So the gate's own
-        /// test is asked here first (<see cref="NodeGate.CarrierDrawn"/>, the same method under the
+        /// test is asked here first (<see cref="NodeGate.StillDrawn"/>, the same method under the
         /// same flag), and the banding never sees the ghost at all.
         ///
         /// The list is copied only when there IS a ghost: these walks run per frame, and the ordinary
@@ -133,7 +133,7 @@ namespace ES2Access.UI
             List<Cell> drawn = null;
             for (int i = 0; i < cells.Count; i++)
             {
-                if (NodeGate.CarrierDrawn(cells[i].Widget, cells[i].Id))
+                if (NodeGate.StillDrawn(cells[i].Widget, cells[i].Id))
                 {
                     if (drawn != null)
                     {
@@ -212,14 +212,13 @@ namespace ES2Access.UI
             // through, rather than being remembered by the screens that key their rows by a name or a
             // position instead of by the widget (ScrollIntoView.Anchor).
             ScrollIntoView.Anchor(cell.Vtable, cell.Widget);
-            Carry(cell);
             if (cell.Dossiers == null || cell.Dossiers.Count == 0 || string.IsNullOrEmpty(cell.Key))
             {
-                builder.AddItem(cell.Id, cell.Vtable);
+                builder.AddItem(Stands(cell));
                 return;
             }
 
-            builder.BeginGroup(cell.Id, cell.Vtable);
+            builder.BeginGroup(Stands(cell));
             if (builder.IsExpanded(cell.Id))
             {
                 TooltipChildren.Emit(builder, cell.Key, cell.Dossiers, builder.Region);
@@ -228,18 +227,15 @@ namespace ES2Access.UI
             builder.EndGroup();
         }
 
-        /// <summary>The widget a cell was read off, written onto its node as the thing whose paint
-        /// state the node exists on (<see cref="ES2Access.Core.UI.Graph.NodeVtable.Carrier"/>). A cell
-        /// keyed by that same widget already answers through its id; the ones this is FOR are the
-        /// cells a screen keys by a position or a name, whose ids name nothing and which were
-        /// therefore ungated. Written at the two places a cell becomes a node, for the same reason the
-        /// scroll anchor is: a screen would have to remember, and one would not.</summary>
-        private static void Carry(Cell cell)
+        /// <summary>A cell as a node the GAME is drawing, standing on the widget it was read off
+        /// (<see cref="ES2Access.Core.UI.Graph.DrawnNode"/>). Every cell has one - a cell IS a widget
+        /// the walk was holding - so this is the whole answer for the family, including the cells a
+        /// screen keys by a position or a name, whose ids name nothing and which were ungated before
+        /// the nature was a type. Declared at the two places a cell becomes a node, for the same
+        /// reason the scroll anchor is: a screen would have to remember, and one would not.</summary>
+        private static DrawnNode Stands(Cell cell)
         {
-            if (cell.Vtable != null && cell.Vtable.Carrier == null)
-            {
-                cell.Vtable.Carrier = cell.Widget;
-            }
+            return new DrawnNode(cell.Id, cell.Vtable, cell.Widget);
         }
 
         /// <summary>
@@ -296,8 +292,7 @@ namespace ES2Access.UI
             foreach (Cell cell in cells)
             {
                 ScrollIntoView.Anchor(cell.Vtable, cell.Widget);
-                Carry(cell);
-                builder.AddItem(cell.Id, cell.Vtable);
+                builder.AddItem(Stands(cell));
             }
 
             builder.EndRow();
@@ -392,7 +387,7 @@ namespace ES2Access.UI
             return new Cell
             {
                 Widget = widget,
-                Id = ControlId.Referenced(widget, key),
+                Id = ControlId.For(widget, key),
                 Vtable = vtable,
             };
         }
@@ -423,7 +418,7 @@ namespace ES2Access.UI
             return new Cell
             {
                 Widget = widget,
-                Id = ControlId.Referenced(widget, key),
+                Id = ControlId.For(widget, key),
                 Vtable = vtable,
             };
         }
@@ -458,7 +453,7 @@ namespace ES2Access.UI
             return new Cell
             {
                 Widget = widget,
-                Id = ControlId.Referenced(widget, key),
+                Id = ControlId.For(widget, key),
                 Vtable = vtable,
             };
         }
@@ -579,7 +574,7 @@ namespace ES2Access.UI
             );
             AgeWidgets.PointAt(vtable, owner);
             cells.Add(
-                new Cell { Widget = laid, Id = ControlId.Referenced(laid, key), Vtable = vtable }
+                new Cell { Widget = laid, Id = ControlId.For(laid, key), Vtable = vtable }
             );
         }
 
@@ -604,7 +599,7 @@ namespace ES2Access.UI
             return new Cell
             {
                 Widget = widget,
-                Id = ControlId.Referenced(widget, key),
+                Id = ControlId.For(widget, key),
                 Vtable = vtable,
             };
         }

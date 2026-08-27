@@ -389,7 +389,7 @@ namespace ES2Access.Screens
                     tooltip,
                     null,
                     null,
-                    ControlId.Referenced(field, key),
+                    ControlId.For(field, key),
                     _editor
                 );
                 return;
@@ -431,7 +431,7 @@ namespace ES2Access.Screens
             );
             vtable.Sections = SettingRows.RowSections(band, AgeWidgets.Raw(band));
             AgeWidgets.Point(vtable, it);
-            builder.AddItem(ControlId.Referenced(toggle, key), vtable);
+            builder.AddItem(Nodes.Drawn(ControlId.For(toggle, key), vtable, toggle));
         }
 
         // ---- the traits ----
@@ -456,7 +456,7 @@ namespace ES2Access.Screens
             );
             vtable.Sections = SettingRows.RowSections(band, AgeWidgets.Raw(band));
             AgeWidgets.Point(vtable, it);
-            builder.AddItem(ControlId.Referenced(toggle, key), vtable);
+            builder.AddItem(Nodes.Drawn(ControlId.For(toggle, key), vtable, toggle));
         }
 
         /// <summary>The traits on offer: the family filters the game lists down the side, then the
@@ -599,9 +599,14 @@ namespace ES2Access.Screens
                 // cursor sat on the same slot, which by then held a different trait, and the next
                 // Enter picked whatever had moved under it. The trait is what the player was on.
                 object trait = DataOf(line);
+                ControlId id = ControlId.For(trait ?? (object)toggle, key + TraitKey(trait, line));
+                // A slot the game keys by the TRAIT in it has no widget in its identity, and the
+                // trait is a model: what draws the row is the toggle, and only where the slot is
+                // empty is that also what the row is about.
                 builder.AddItem(
-                    ControlId.Referenced(trait ?? (object)toggle, key + TraitKey(trait, line)),
-                    vtable
+                    trait != null
+                        ? (NodeDeclaration)Nodes.Synthetic(id, vtable)
+                        : Nodes.Drawn(id, vtable, toggle)
                 );
             }
         }

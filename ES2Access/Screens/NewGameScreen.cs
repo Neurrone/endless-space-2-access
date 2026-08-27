@@ -406,7 +406,7 @@ namespace ES2Access.Screens
                 // watcher; re-reading the newest one under focus as well would say it twice.
                 false
             );
-            builder.AddItem(ControlId.Referenced(lines, "newgame:chat/lines"), vtable);
+            builder.AddItem(Nodes.Drawn(ControlId.For(lines, "newgame:chat/lines"), vtable, lines));
         }
 
         // ---- the player's own empire ----
@@ -610,7 +610,7 @@ namespace ES2Access.Screens
 
             NodeVtable vtable = GraphNodes.Readout(() => null, text, null, null);
             AgeWidgets.PointAt(vtable, widget);
-            builder.AddItem(ControlId.Referenced(widget, key), vtable);
+            builder.AddItem(Nodes.Drawn(ControlId.For(widget, key), vtable, widget));
         }
 
         /// <summary>A button the game drew as a symbol that its own tooltip does not name, so the mod
@@ -636,7 +636,7 @@ namespace ES2Access.Screens
                 AgeWidgets.Raw(widget)
             );
             AgeWidgets.Point(vtable, it);
-            builder.AddItem(ControlId.Referenced(button, key), vtable);
+            builder.AddItem(Nodes.Drawn(ControlId.For(button, key), vtable, button));
         }
 
         /// <summary>The host's lock on a free slot. Named by the mod: the toggle draws no words and its
@@ -663,7 +663,7 @@ namespace ES2Access.Screens
                 AgeWidgets.Raw(widget)
             );
             AgeWidgets.Point(vtable, it);
-            builder.AddItem(ControlId.Referenced(toggle, key), vtable);
+            builder.AddItem(Nodes.Drawn(ControlId.For(toggle, key), vtable, toggle));
         }
 
         // ---- the bottom row ----
@@ -742,7 +742,7 @@ namespace ES2Access.Screens
                 tooltip
             );
             AgeWidgets.PointAt(vtable, group);
-            builder.AddItem(ControlId.Referenced(toggle, key), vtable);
+            builder.AddItem(Nodes.Drawn(ControlId.For(toggle, key), vtable, toggle));
         }
 
         /// <summary>Whatever a panel nobody has modelled draws, a line per group of words. The

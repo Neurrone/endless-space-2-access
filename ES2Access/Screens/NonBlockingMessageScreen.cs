@@ -104,8 +104,8 @@ namespace ES2Access.Screens
             AgePrimitiveLabel message = window.MessageLabel;
             if (message != null && AgeWidgets.Visible(message.AgeTransform))
             {
-                ControlId id = ControlId.Referenced(message, "non-blocking:question");
-                builder.AddNode(
+                ControlId id = ControlId.For(message, "non-blocking:question");
+                builder.AddNode(Nodes.Drawn(
                     id,
                     new NodeVtable
                     {
@@ -117,8 +117,9 @@ namespace ES2Access.Screens
                         },
                         Sections = GraphNodes.Sections(PromptLines, null),
                         OnFocusVisual = AgeWidgets.ReleasePointer,
-                    }
-                );
+                    },
+                    message
+                ));
                 builder.SetStart(id);
             }
 
@@ -171,7 +172,7 @@ namespace ES2Access.Screens
             }
 
             AgeWidgets.Point(vtable, it, tooltip, widget);
-            Cells.Add(answers, widget, ControlId.Referenced(button, "non-blocking:" + key), vtable);
+            Cells.Add(answers, widget, ControlId.For(button, "non-blocking:" + key), vtable);
         }
 
         /// <summary>Press the button the way the engine presses it - replaying the object and method its

@@ -89,10 +89,10 @@ namespace ES2Access.UI
                 );
                 AgeWidgets.Point(vtable, toggle, filter.Tooltip, widget);
                 ScrollIntoView.Anchor(vtable, widget);
-                builder.AddItem(
+                builder.AddItem(Nodes.Synthetic(
                     ControlId.Structural(keyPrefix + "/filter/" + FilterKey(it, i)),
                     vtable
-                );
+                ));
             }
         }
 

@@ -213,7 +213,7 @@ namespace ES2Access.Screens
                 Cells.Add(
                     cells,
                     toggle,
-                    ControlId.Referenced(widget, "population:people/" + index),
+                    ControlId.For(widget, "population:people/" + index),
                     vtable
                 );
                 AddBadges(cells, row, "population:people/" + index);
@@ -392,7 +392,7 @@ namespace ES2Access.Screens
                 string nothing = AgeText.Clean(Gui.Localize("%PanelFeatureNoEffectsTitle"));
                 if (!string.IsNullOrEmpty(nothing) && nothing[0] != '%')
                 {
-                    builder.AddItem(
+                    builder.AddItem(Nodes.Synthetic(
                         ControlId.Structural(keyPrefix + "/none"),
                         new NodeVtable
                         {
@@ -401,7 +401,7 @@ namespace ES2Access.Screens
                                 GraphNodes.LabelPart(() => nothing),
                             },
                         }
-                    );
+                    ));
                 }
             }
 
@@ -485,10 +485,11 @@ namespace ES2Access.Screens
                 Sections = GraphNodes.Sections(null, tooltip),
             };
             AgeWidgets.PointAt(vtable, own != null ? caption : group, tooltip);
-            builder.AddItem(
-                ControlId.Referenced(caption, "population:collection-status"),
-                vtable
-            );
+            builder.AddItem(Nodes.Drawn(
+                ControlId.For(caption, "population:collection-status"),
+                vtable,
+                caption
+            ));
         }
 
         /// <summary>One collection threshold: the number of them it takes, and whether the empire has
@@ -538,7 +539,7 @@ namespace ES2Access.Screens
             Cells.Add(
                 cells,
                 circle,
-                ControlId.Referenced(widget, "population:threshold/" + index),
+                ControlId.For(widget, "population:threshold/" + index),
                 vtable
             );
         }
@@ -713,10 +714,11 @@ namespace ES2Access.Screens
                 Sections = GraphNodes.Sections(null, tooltip),
             };
             AgeWidgets.PointAt(vtable, widget);
-            builder.AddItem(
-                ControlId.Referenced(widget, "population:reaction/" + index),
-                vtable
-            );
+            builder.AddItem(Nodes.Drawn(
+                ControlId.For(widget, "population:reaction/" + index),
+                vtable,
+                widget
+            ));
         }
 
         private static string PartyName(PoliticsFilterSector sector)
@@ -770,7 +772,7 @@ namespace ES2Access.Screens
                 ),
             };
             AgeWidgets.PointAt(vtable, widget);
-            Cells.Add(cells, widget, ControlId.Referenced(widget, key), vtable);
+            Cells.Add(cells, widget, ControlId.For(widget, key), vtable);
         }
 
         private static AgeTransform Widget(AgePrimitiveLabel label)

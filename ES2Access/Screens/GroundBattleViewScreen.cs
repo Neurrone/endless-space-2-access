@@ -426,7 +426,7 @@ namespace ES2Access.Screens
                 named == null ? TooltipMode.None : (TooltipMode?)null
             );
             AgeWidgets.PointAt(vtable, widget);
-            Cells.Add(_cells, widget, ControlId.Referenced(widget, key), vtable);
+            Cells.Add(_cells, widget, ControlId.For(widget, key), vtable);
         }
 
         /// <summary>The reset button, which is also the only place the speed multiplier is written: the
@@ -453,7 +453,7 @@ namespace ES2Access.Screens
             );
             vtable.Announcements.Add(GraphNodes.ValuePart(() => AgeText.Label(it), false));
             AgeWidgets.PointAt(vtable, button);
-            Cells.Add(_cells, button, ControlId.Referenced(label, key), vtable);
+            Cells.Add(_cells, button, ControlId.For(label, key), vtable);
         }
 
         private static string Visible(AgePrimitiveLabel label)

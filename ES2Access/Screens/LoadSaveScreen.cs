@@ -275,7 +275,7 @@ namespace ES2Access.Screens
                 return null;
             }
 
-            ControlId id = ControlId.Referenced(field, "loadsave:name");
+            ControlId id = ControlId.For(field, "loadsave:name");
             Cell cell = SettingRows.TextFieldCell(
                 field,
                 () => ModStrings.Get(ModStrings.LoadSaveSaveName),
@@ -293,7 +293,7 @@ namespace ES2Access.Screens
             // The other single-item row at this level: paired with the cloud toggle it would count as
             // "2 of 2" of nothing either control is a member of.
             cell.Vtable.SpeaksOwnPosition = true;
-            builder.AddItem(id, cell.Vtable);
+            builder.AddItem(Nodes.Drawn(id, cell.Vtable, field));
             return id;
         }
 
@@ -329,10 +329,11 @@ namespace ES2Access.Screens
                 vtable.OnFocusVisual = () => PointerFocus.MoveTo(command, tooltip);
                 vtable.OnBlurVisual = ReleasePointer;
 
-                builder.AddItem(
-                    ControlId.Referenced(command, "loadsave:command/" + KeyOf(command)),
-                    vtable
-                );
+                builder.AddItem(Nodes.Drawn(
+                    ControlId.For(command, "loadsave:command/" + KeyOf(command)),
+                    vtable,
+                    command
+                ));
             }
         }
 
@@ -517,7 +518,7 @@ namespace ES2Access.Screens
             // would be counting two unrelated controls that happen to share a Tab stop, not members
             // of a list either belongs to.
             vtable.SpeaksOwnPosition = true;
-            builder.AddItem(ControlId.Referenced(control, "loadsave:cloud"), vtable);
+            builder.AddItem(Nodes.Drawn(ControlId.For(control, "loadsave:cloud"), vtable, control));
         }
 
         /// <summary>The words next to the cloud tick, which the game writes beside it rather than on

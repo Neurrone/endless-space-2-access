@@ -98,7 +98,7 @@ namespace ES2Access.UI
                 Sections = GraphNodes.Sections(null, tooltip),
             };
             AgeWidgets.PointAt(vtable, widget);
-            builder.AddItem(ControlId.Referenced(item, key), vtable);
+            builder.AddItem(Nodes.Drawn(ControlId.For(item, key), vtable, item));
         }
 
         /// <summary>How hurt a ship is, in the game's own stat string with the game's own word in front
@@ -173,7 +173,8 @@ namespace ES2Access.UI
                             Fleet(
                                 builder,
                                 it,
-                                ControlId.Referenced(it, key),
+                                ControlId.For(it, key),
+                                it,
                                 () => FleetName(it),
                                 it.BattleShipItemsTable,
                                 key
@@ -218,10 +219,11 @@ namespace ES2Access.UI
                     {
                         Widget = header,
                         Emit = builder =>
-                            builder.AddItem(
-                                ControlId.Referenced(it, prefix + "/name"),
-                                Line(() => FleetName(it))
-                            ),
+                            builder.AddItem(Nodes.Drawn(
+                                ControlId.For(it, prefix + "/name"),
+                                Line(() => FleetName(it)),
+                                it
+                            )),
                     }
                 );
             }
@@ -251,7 +253,8 @@ namespace ES2Access.UI
                             Fleet(
                                 builder,
                                 null,
-                                ControlId.Referenced(it, key),
+                                ControlId.For(it, key),
+                                it,
                                 () => FlotillaName(it),
                                 it.BattleShipItemsTable,
                                 key
@@ -266,6 +269,7 @@ namespace ES2Access.UI
             GraphBuilder builder,
             BattleGarrisonPanel panel,
             ControlId id,
+            object drawnBy,
             Func<string> name,
             AgeTransform ships,
             string prefix
@@ -274,9 +278,9 @@ namespace ES2Access.UI
             AgeTooltip tooltip = panel == null
                 ? null
                 : AgeWidgets.Raw(panel.GarrisonTitleGroup);
-            builder.BeginGroup(
+            builder.BeginGroup(Nodes.Drawn(
                 id,
-                GraphNodes.Group(name, null, tooltip),
+                GraphNodes.Group(name, null, tooltip), drawnBy),
                 null,
                 ShipsOpen
             );
@@ -416,10 +420,11 @@ namespace ES2Access.UI
                 {
                     Widget = widget,
                     Emit = builder =>
-                        builder.AddItem(
-                            ControlId.Referenced(it, key),
-                            Line(() => AgeText.Label(it))
-                        ),
+                        builder.AddItem(Nodes.Drawn(
+                            ControlId.For(it, key),
+                            Line(() => AgeText.Label(it)),
+                            it
+                        )),
                 }
             );
         }

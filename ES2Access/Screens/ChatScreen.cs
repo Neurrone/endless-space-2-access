@@ -196,7 +196,7 @@ namespace ES2Access.Screens
                 AgeWidgets.Point(vtable, it, tooltip, widget);
                 builder.BeginStop(AlertStop);
                 builder.StartRow();
-                builder.AddItem(ControlId.Referenced(button, "chat:new-messages"), vtable);
+                builder.AddItem(Nodes.Drawn(ControlId.For(button, "chat:new-messages"), vtable, button));
                 builder.EndRow();
             }
             catch (Exception e)
@@ -259,7 +259,7 @@ namespace ES2Access.Screens
                     };
                     // Keyed on its place in the history, which never changes, with the message riding
                     // along so the cursor keeps the line it is on even if the collection is rebuilt.
-                    builder.AddItem(ControlId.Referenced(message, "chat:message/" + i), vtable);
+                    builder.AddItem(Nodes.Synthetic(ControlId.For(message, "chat:message/" + i), vtable));
                 }
             }
             catch (Exception e)
@@ -303,7 +303,7 @@ namespace ES2Access.Screens
 
                 AgeControlTextField box = field;
                 InGameChatPanel it = panel;
-                ControlId row = ControlId.Referenced(field, FieldKey);
+                ControlId row = ControlId.For(field, FieldKey);
                 TextFieldEditor editor = _editor;
                 TextEditOptions how = new TextEditOptions
                 {
@@ -318,7 +318,7 @@ namespace ES2Access.Screens
                 );
                 vtable.OnFocusVisual = AgeWidgets.ReleasePointer;
                 ControlId id = row;
-                builder.AddItem(id, vtable);
+                builder.AddItem(Nodes.Drawn(id, vtable, field));
                 // The page opens ON the box - focus lands on it, not inside it (owner ruling
                 // 2026-08-14): the box is what the player came for, the newest message is one Up
                 // away, and typing is Enter.
@@ -356,7 +356,7 @@ namespace ES2Access.Screens
                     // Keyed by position in the bar: the two tabs are separate objects, but a structural
                     // key is what identity is compared on, so a shared one would collide and empty the
                     // whole page.
-                    builder.AddItem(ControlId.Referenced(tab, "chat:tab/" + i), vtable);
+                    builder.AddItem(Nodes.Drawn(ControlId.For(tab, "chat:tab/" + i), vtable, tab));
                 }
             }
             catch (Exception e)

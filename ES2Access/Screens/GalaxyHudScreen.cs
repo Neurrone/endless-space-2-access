@@ -1479,7 +1479,7 @@ namespace ES2Access.Screens
 
             for (GraphNode walk = node; walk != null; walk = walk.Parent)
             {
-                StarSystemNode system = walk.Id == null ? null : walk.Id.Reference as StarSystemNode;
+                StarSystemNode system = walk.Id == null ? null : walk.Id.Subject as StarSystemNode;
                 if (system != null)
                 {
                     place = system;
@@ -1491,7 +1491,7 @@ namespace ES2Access.Screens
             for (GraphNode walk = node; walk != null; walk = walk.Parent)
             {
                 IGameEntityWithGalaxyPosition thing =
-                    walk.Id == null ? null : walk.Id.Reference as IGameEntityWithGalaxyPosition;
+                    walk.Id == null ? null : walk.Id.Subject as IGameEntityWithGalaxyPosition;
                 if (thing != null)
                 {
                     place = thing;
@@ -1506,7 +1506,7 @@ namespace ES2Access.Screens
         /// The thing a row on this stop stands for, where the map draws that thing out on the map
         /// rather than at a star: a probe under way, an obliterator missile in flight, an ally's pin,
         /// and a fleet away from any berth - the four kinds whose rows this page keys STRUCTURALLY,
-        /// so that <c>ControlId.Reference</c> is null for exactly the rows the camera most needs to
+        /// so that <c>ControlId.Subject</c> is null for exactly the rows the camera most needs to
         /// name (<see cref="PositionOf"/> walks these same lists for the same reason).
         ///
         /// Resolved through the page's own indexes - the very lists the rows are declared from - and
@@ -2073,7 +2073,7 @@ namespace ES2Access.Screens
                 // the record says so - or the slide went to a bare point, and the record is left not
                 // believed (the slide counted itself: <see cref="GalaxyViewLevels.Moves"/>). Saying so
                 // is what keeps the landed node's own focus from sliding the camera a second time.
-                object landed = target.Id == null ? null : target.Id.Reference;
+                object landed = target.Id == null ? null : target.Id.Subject;
                 if (landed is IGameEntityWithGalaxyPosition)
                 {
                     Remember(landed, false);
@@ -2790,7 +2790,7 @@ namespace ES2Access.Screens
                 for (int i = 0; i < _systems.Count; i++)
                 {
                     StarSystemNode node = _systems[i];
-                    ControlId id = ControlId.Referenced(node, SystemKey(node, empire));
+                    ControlId id = ControlId.For(node, SystemKey(node, empire));
                     if (!declared.Contains(id))
                     {
                         hidden.Add(
@@ -2909,7 +2909,7 @@ namespace ES2Access.Screens
             }
 
             string systemKey = SystemKey(node, empire);
-            ControlId system = ControlId.Referenced(node, systemKey);
+            ControlId system = ControlId.For(node, systemKey);
             ControlId group = GroupId(node);
             Index(FleetPresence.FleetsAt(node), system, group, systemKey, sites, declared);
             List<EnRoute> flying = EnRouteOn(node, LanesOf(node, empire));
@@ -3196,7 +3196,7 @@ namespace ES2Access.Screens
         /// backing out have already established that from the map's own perception rules.</summary>
         private static ControlId RootId(StarSystemNode node)
         {
-            return ControlId.Referenced(node, SystemKey(node));
+            return ControlId.For(node, SystemKey(node));
         }
 
         /// <summary>The group a system's node hangs under - its constellation's, or the one the
@@ -3557,7 +3557,7 @@ namespace ES2Access.Screens
             };
 
             Seed(builder, id);
-            builder.BeginGroup(id, vtable);
+            builder.BeginGroup(Nodes.Synthetic(id, vtable));
             if (builder.IsExpanded(id))
             {
                 List<StarSystemNode> members = _members[group.Members];
@@ -3598,7 +3598,7 @@ namespace ES2Access.Screens
             );
             ControlId id = ControlId.Structural(UnexploredKey);
             Seed(builder, id);
-            builder.BeginGroup(id, vtable);
+            builder.BeginGroup(Nodes.Synthetic(id, vtable));
             if (builder.IsExpanded(id))
             {
                 for (int i = 0; i < _unexplored.Count; i++)
@@ -3851,10 +3851,10 @@ namespace ES2Access.Screens
             vtable.OnContextual = () => ZoomOut(it);
 
             string place = SystemKey(node, empire);
-            ControlId id = ControlId.Referenced(it, place);
+            ControlId id = ControlId.For(it, place);
             if (fleets.Count == 0)
             {
-                builder.AddItem(id, vtable);
+                builder.AddItem(Nodes.Synthetic(id, vtable));
                 return;
             }
 
@@ -3864,7 +3864,7 @@ namespace ES2Access.Screens
             HashSet<ControlId> expansion = builder.Expansion;
             ControlId group = id;
             vtable.OnCollapse = () => Collapse(expansion, group, it);
-            builder.BeginGroup(id, vtable);
+            builder.BeginGroup(Nodes.Synthetic(id, vtable));
             if (builder.IsExpanded(id))
             {
                 AddFleets(builder, place, fleets);
@@ -4064,7 +4064,7 @@ namespace ES2Access.Screens
             // Right means "tell me what is inside this", and what is inside it is whatever the map is
             // drawing there: the circles when the camera is out, the orbital cards when it is in...
             string place = SystemKey(node, empire);
-            ControlId id = ControlId.Referenced(it, place);
+            ControlId id = ControlId.For(it, place);
             // ...and opening one no longer moves the camera itself: Right opens the branch AND steps
             // inside it, and the first child's own focus is what brings the camera in, through the one
             // rule (<see cref="OnFocusVisual"/>). So expansion is left to the engine and only the
@@ -4072,7 +4072,7 @@ namespace ES2Access.Screens
             HashSet<ControlId> expansion = builder.Expansion;
             ControlId group = id;
             vtable.OnCollapse = () => Collapse(expansion, group, it);
-            builder.BeginGroup(id, vtable);
+            builder.BeginGroup(Nodes.Synthetic(id, vtable));
             // Only what is open costs anything: a galaxy of closed systems declares one node each.
             if (builder.IsExpanded(id))
             {
@@ -4842,7 +4842,7 @@ namespace ES2Access.Screens
                 Raw(it)
             );
             PointAt(vtable, it);
-            builder.AddItem(ControlId.Structural(key + "/management"), vtable);
+            builder.AddItem(Nodes.Synthetic(ControlId.Structural(key + "/management"), vtable));
         }
 
         /// <summary>The map's own way into a system's page: the label's button while the game is willing
@@ -5116,7 +5116,7 @@ namespace ES2Access.Screens
             List<QuestMarkers.Marker> here = MarkersAt(node, empire);
             for (int i = 0; i < here.Count; i++)
             {
-                builder.AddItem(MarkerId(node, here[i]), MarkerNode(here[i]));
+                builder.AddItem(Nodes.Synthetic(MarkerId(node, here[i]), MarkerNode(here[i])));
             }
         }
 
@@ -5130,7 +5130,7 @@ namespace ES2Access.Screens
             {
                 if (!all[i].Node.IsValid)
                 {
-                    builder.AddItem(MarkerRowId(all[i]), MarkerNode(all[i]));
+                    builder.AddItem(Nodes.Synthetic(MarkerRowId(all[i]), MarkerNode(all[i])));
                 }
             }
         }
@@ -5494,7 +5494,7 @@ namespace ES2Access.Screens
                     // The planet's ONE node, so it carries the planet itself and rides along with it
                     // across a rebuild. There is no second copy to collide with any more: a lane leading
                     // here rebases onto this system rather than re-declaring its insides.
-                    ControlId id = ControlId.Referenced(planet, key);
+                    ControlId id = ControlId.For(planet, key);
                     if (card != null)
                     {
                         // The card carries a row of buttons the game draws under it, so where the game
@@ -5512,12 +5512,12 @@ namespace ES2Access.Screens
                         NodeVtable readout = OrbitalReadout(card, system, looking);
                         if (actions.Count == 0 && dossiers.Count == 0)
                         {
-                            builder.AddItem(id, readout);
+                            builder.AddItem(Nodes.Synthetic(id, readout));
                             continue;
                         }
 
                         readout.ControlType = ControlTypes.Group;
-                        builder.BeginGroup(id, readout);
+                        builder.BeginGroup(Nodes.Synthetic(id, readout));
                         if (builder.IsExpanded(id))
                         {
                             object outerRegion = TooltipChildren.Actions(builder, key);
@@ -5578,12 +5578,12 @@ namespace ES2Access.Screens
                     );
                     if (pages.Count == 0)
                     {
-                        builder.AddItem(id, vtable);
+                        builder.AddItem(Nodes.Synthetic(id, vtable));
                         continue;
                     }
 
                     vtable.ControlType = ControlTypes.Group;
-                    builder.BeginGroup(id, vtable);
+                    builder.BeginGroup(Nodes.Synthetic(id, vtable));
                     if (builder.IsExpanded(id))
                     {
                         TooltipChildren.Emit(
@@ -7183,7 +7183,7 @@ namespace ES2Access.Screens
         {
             return orbit < 0 || orbit >= node.Planets.Count
                 ? null
-                : ControlId.Referenced(node.Planets[orbit], SystemKey(node) + "/planet/" + orbit);
+                : ControlId.For(node.Planets[orbit], SystemKey(node) + "/planet/" + orbit);
         }
 
         /// <summary>A starlane's own node, keyed exactly as <see cref="AddStarlanes"/> keys it - on
@@ -7405,7 +7405,7 @@ namespace ES2Access.Screens
                     // click it stands for would have done nothing (<see cref="LaneClick"/>): one
                     // derivation of where this lane leads, used by both keys.
                     vtable.OnActivate = () => LaneClick(target, aim, travel);
-                    builder.AddItem(id, vtable);
+                    builder.AddItem(Nodes.Synthetic(id, vtable));
                 }
             }
             catch (Exception e)
@@ -7480,23 +7480,23 @@ namespace ES2Access.Screens
                 }
 
                 ControlId id = ControlId.Structural(place + "/launch");
-                builder.BeginGroup(
+                builder.BeginGroup(Nodes.Synthetic(
                     id,
                     GraphNodes.Group(() => ProbeContext.GroupLabel(fleet, node))
-                );
+                ));
                 if (builder.IsExpanded(id))
                 {
                     for (int i = 0; i < ProbeContext.Bearings; i++)
                     {
                         int index = i;
                         double bearing = ProbeContext.Bearing(i);
-                        builder.AddItem(
+                        builder.AddItem(Nodes.Synthetic(
                             ControlId.Structural(place + "/launch/" + i),
                             GraphNodes.Button(
                                 () => ProbeContext.Line(fleet, node, index),
                                 () => CursorTargeting.ConfirmTowards(bearing)
                             )
-                        );
+                        ));
                     }
                 }
 
@@ -8180,11 +8180,11 @@ namespace ES2Access.Screens
             ControlId id = ControlId.Structural(key);
             if (badges == null || badges.Count == 0)
             {
-                builder.AddItem(id, vtable);
+                builder.AddItem(Nodes.Synthetic(id, vtable));
                 return;
             }
 
-            builder.BeginGroup(id, vtable);
+            builder.BeginGroup(Nodes.Synthetic(id, vtable));
             if (builder.IsExpanded(id))
             {
                 TooltipChildren.Emit(builder, key, badges, builder.Region);
@@ -8598,10 +8598,10 @@ namespace ES2Access.Screens
                         PointAt(vtable, lozenge);
                     }
 
-                    builder.AddItem(
+                    builder.AddItem(Nodes.Synthetic(
                         ControlId.Structural(place + "/hangar/" + held.GUID),
                         vtable
-                    );
+                    ));
                 }
             }
             catch (Exception e)
@@ -9109,7 +9109,7 @@ namespace ES2Access.Screens
         {
             for (int i = 0; i < _drifting.Count; i++)
             {
-                builder.AddItem(ProbeId(_drifting[i]), ProbeNode(_drifting[i]));
+                builder.AddItem(Nodes.Synthetic(ProbeId(_drifting[i]), ProbeNode(_drifting[i])));
             }
         }
 
@@ -9299,7 +9299,7 @@ namespace ES2Access.Screens
                     it == null ? null : it.AgeTransform,
                     it == null ? null : it.Tooltip
                 );
-                builder.AddItem(ProjectileId(shot), vtable);
+                builder.AddItem(Nodes.Synthetic(ProjectileId(shot), vtable));
             }
         }
 
@@ -9375,7 +9375,7 @@ namespace ES2Access.Screens
         /// declaration cannot drift apart.</summary>
         internal static ControlId ConstellationId(Constellation constellation)
         {
-            return ControlId.Referenced(constellation, ConstellationKey + constellation.GUID);
+            return ControlId.For(constellation, ConstellationKey + constellation.GUID);
         }
 
         /// <summary>The same, for an ally's pin.</summary>
@@ -9434,17 +9434,17 @@ namespace ES2Access.Screens
                 string key = PinKey(request);
                 ControlId id = PinId(request);
                 vtable.ControlType = ControlTypes.Group;
-                builder.BeginGroup(id, vtable);
+                builder.BeginGroup(Nodes.Synthetic(id, vtable));
                 if (builder.IsExpanded(id))
                 {
                     CoordinationRequest dismissed = request;
-                    builder.AddItem(
+                    builder.AddItem(Nodes.Synthetic(
                         ControlId.Structural(key + "/dismiss"),
                         GraphNodes.Button(
                             () => PinDismissName(dismissed),
                             () => DismissPin(dismissed)
                         )
-                    );
+                    ));
                 }
 
                 builder.EndGroup();

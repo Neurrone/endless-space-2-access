@@ -208,7 +208,7 @@ namespace ES2Access.Screens
                 // Declared by the same reader as every other text box the game draws, so that the box
                 // this mod invented least reads exactly like the ones it did not: an edit field, the
                 // name that is in it, and the keyboard handed over only when it is activated.
-                ControlId id = ControlId.Referenced(field, "rename:field");
+                ControlId id = ControlId.For(field, "rename:field");
                 Cell cell = SettingRows.TextFieldCell(
                     field,
                     null,
@@ -220,7 +220,7 @@ namespace ES2Access.Screens
                 );
                 if (cell != null)
                 {
-                    builder.AddItem(cell.Id, cell.Vtable);
+                    builder.AddItem(Nodes.Drawn(cell.Id, cell.Vtable, cell.Widget));
                     builder.SetStart(cell.Id);
                 }
             }
@@ -275,7 +275,7 @@ namespace ES2Access.Screens
                 AgeWidgets.Raw(widget)
             );
             AgeWidgets.Point(vtable, press);
-            Cells.Add(_buttons, widget, ControlId.Referenced(button, key), vtable);
+            Cells.Add(_buttons, widget, ControlId.For(button, key), vtable);
         }
 
         private static RenameModalWindow Window()

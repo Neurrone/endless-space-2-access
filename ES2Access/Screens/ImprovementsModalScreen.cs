@@ -246,7 +246,7 @@ namespace ES2Access.Screens
             // What the tile draws over its picture, and the number the whole window is about.
             vtable.Announcements.Add(GraphNodes.ValuePart(() => AgeText.Label(upkeep)));
             AgeWidgets.PointAt(vtable, tile);
-            Add(cells, tile, ControlId.Referenced(tile, "improvements:tile/" + index), vtable);
+            Add(cells, tile, ControlId.For(tile, "improvements:tile/" + index), vtable);
         }
 
         private static ImprovementItem Item(AgeTransform tile)
@@ -319,7 +319,7 @@ namespace ES2Access.Screens
             Add(
                 cells,
                 widget,
-                ControlId.Referenced(widget, "improvements:button/" + Name(widget)),
+                ControlId.For(widget, "improvements:button/" + Name(widget)),
                 vtable
             );
         }
@@ -377,7 +377,7 @@ namespace ES2Access.Screens
             // The hero dossier hangs on a CHILD of the group (HeroLine), so the pointer aims at the
             // tooltip's own transform, not at the widget the node is read off.
             AgeWidgets.PointAt(vtable, widget, its);
-            Add(cells, widget, ControlId.Referenced(widget, key), vtable);
+            Add(cells, widget, ControlId.For(widget, key), vtable);
         }
 
         private static ImprovementsManagementModalWindow Window()

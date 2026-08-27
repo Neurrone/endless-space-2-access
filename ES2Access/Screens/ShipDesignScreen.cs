@@ -167,7 +167,7 @@ namespace ES2Access.Screens
             };
             AgeWidgets.PointAt(vtable, name);
             builder.BeginStop(HeadingStop);
-            builder.AddItem(ControlId.Referenced(name, Keys + "/title"), vtable);
+            builder.AddItem(Nodes.Drawn(ControlId.For(name, Keys + "/title"), vtable, name));
         }
 
         private static string HeadingText(AgeTransform title, AgeTransform name)

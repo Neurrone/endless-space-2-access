@@ -33,8 +33,8 @@ namespace ES2Access.Tests.UI
         {
             GraphBuilder b = new GraphBuilder();
             b.PushContext("Settings", "list");
-            b.AddItem(Id("a"), Vt("Item A"));
-            b.AddItem(Id("b"), Vt("Item B"));
+            b.AddItem(new SyntheticNode(Id("a"), Vt("Item A")));
+            b.AddItem(new SyntheticNode(Id("b"), Vt("Item B")));
             b.PopContext();
             return b.Build();
         }
@@ -64,8 +64,8 @@ namespace ES2Access.Tests.UI
         public void DescendingOntoAGroupsOwnChildReadsOnlyTheChild()
         {
             GraphBuilder b = new GraphBuilder();
-            b.BeginGroup(Id("g"), Vt("Group"), true);
-            b.AddItem(Id("c1"), Vt("Child 1"));
+            b.BeginGroup(new SyntheticNode(Id("g"), Vt("Group")), true);
+            b.AddItem(new SyntheticNode(Id("c1"), Vt("Child 1")));
             b.EndGroup();
             GraphRender r = b.Build();
             Assert.Equal("Child 1", GraphAnnouncer.Compose(Node(r, "g"), Node(r, "c1")));
@@ -75,8 +75,8 @@ namespace ES2Access.Tests.UI
         public void AscendingReadsJustTheLandingNode()
         {
             GraphBuilder b = new GraphBuilder();
-            b.BeginGroup(Id("g"), Vt("Group"), true);
-            b.AddItem(Id("c1"), Vt("Child 1"));
+            b.BeginGroup(new SyntheticNode(Id("g"), Vt("Group")), true);
+            b.AddItem(new SyntheticNode(Id("c1"), Vt("Child 1")));
             b.EndGroup();
             GraphRender r = b.Build();
             Assert.Equal("Group", GraphAnnouncer.Compose(Node(r, "c1"), Node(r, "g")));
@@ -87,7 +87,7 @@ namespace ES2Access.Tests.UI
         {
             GraphBuilder b = new GraphBuilder();
             b.PushContext("Game difficulty");
-            b.AddItem(Id("a"), Vt("Game difficulty", Part("combo box", AnnouncementKinds.Role)));
+            b.AddItem(new SyntheticNode(Id("a"), Vt("Game difficulty", Part("combo box", AnnouncementKinds.Role))));
             b.PopContext();
             GraphRender r = b.Build();
             Assert.Equal("Game difficulty, combo box", GraphAnnouncer.ComposeFull(Node(r, "a")));
@@ -98,7 +98,7 @@ namespace ES2Access.Tests.UI
         {
             GraphBuilder b = new GraphBuilder();
             b.PushContext("Game difficulty");
-            b.AddItem(Id("a"), Vt("Normal"));
+            b.AddItem(new SyntheticNode(Id("a"), Vt("Normal")));
             b.PopContext();
             GraphRender r = b.Build();
             Assert.Equal("Game difficulty, Normal", GraphAnnouncer.ComposeFull(Node(r, "a")));
@@ -126,7 +126,7 @@ namespace ES2Access.Tests.UI
                 },
             };
             GraphBuilder b = new GraphBuilder();
-            b.AddItem(Id("a"), vt);
+            b.AddItem(new SyntheticNode(Id("a"), vt));
             Assert.Equal("Auto explore, toggle, on", GraphAnnouncer.LeafText(Node(b.Build(), "a")));
         }
 
@@ -144,7 +144,7 @@ namespace ES2Access.Tests.UI
                 },
             };
             GraphBuilder b = new GraphBuilder();
-            b.AddItem(Id("a"), vt);
+            b.AddItem(new SyntheticNode(Id("a"), vt));
             Assert.Equal("Colonize, menu button", GraphAnnouncer.LeafText(Node(b.Build(), "a")));
         }
 
@@ -163,7 +163,7 @@ namespace ES2Access.Tests.UI
                 },
             };
             GraphBuilder b = new GraphBuilder();
-            b.AddItem(Id("a"), vt);
+            b.AddItem(new SyntheticNode(Id("a"), vt));
             Assert.Equal("Colonize, button, first extra, second extra",
                 GraphAnnouncer.LeafText(Node(b.Build(), "a")));
         }
@@ -189,7 +189,7 @@ namespace ES2Access.Tests.UI
                 OnDrop = held => DropResult.Done(),
             };
             GraphBuilder b = new GraphBuilder();
-            b.AddItem(Id("a"), vt);
+            b.AddItem(new SyntheticNode(Id("a"), vt));
             GraphNode node = Node(b.Build(), "a");
 
             Assert.Equal("Explorer, button, A ship, draggable", GraphAnnouncer.LeafText(node));
@@ -205,7 +205,7 @@ namespace ES2Access.Tests.UI
         {
             GraphAnnouncer.Carry = new CarryState();
             GraphBuilder b = new GraphBuilder();
-            b.AddItem(Id("a"), Vt("Colonize"));
+            b.AddItem(new SyntheticNode(Id("a"), Vt("Colonize")));
             Assert.Equal("Colonize", GraphAnnouncer.LeafText(Node(b.Build(), "a")));
         }
 
@@ -213,7 +213,7 @@ namespace ES2Access.Tests.UI
         public void EmptyPartsAreSilent()
         {
             GraphBuilder b = new GraphBuilder();
-            b.AddItem(Id("a"), new NodeVtable
+            b.AddItem(new SyntheticNode(Id("a"), new NodeVtable
             {
                 Announcements = new[]
                 {
@@ -222,7 +222,7 @@ namespace ES2Access.Tests.UI
                     NodeAnnouncement.Static(""),
                     NodeAnnouncement.Static("Tail"),
                 },
-            });
+            }));
             Assert.Equal("Label, Tail", GraphAnnouncer.LeafText(Node(b.Build(), "a")));
         }
 
@@ -238,7 +238,7 @@ namespace ES2Access.Tests.UI
                 Announcements = new[] { Part("Colonize", AnnouncementKinds.Label) },
             };
             GraphBuilder b = new GraphBuilder();
-            b.AddItem(Id("a"), vt);
+            b.AddItem(new SyntheticNode(Id("a"), vt));
             Assert.Equal("Colonize", GraphAnnouncer.LeafText(Node(b.Build(), "a")));
         }
 
@@ -253,11 +253,11 @@ namespace ES2Access.Tests.UI
                 return true;
             };
             GraphBuilder b = new GraphBuilder();
-            b.AddItem(Id("a"), new NodeVtable
+            b.AddItem(new SyntheticNode(Id("a"), new NodeVtable
             {
                 ControlType = button,
                 Announcements = new[] { Part("Colonize", AnnouncementKinds.Label) },
-            });
+            }));
             GraphAnnouncer.LeafText(Node(b.Build(), "a"));
             Assert.Equal(new[] { "button", "button" }, seen); // the common role part and the label
         }
@@ -269,7 +269,7 @@ namespace ES2Access.Tests.UI
         {
             GraphAnnouncer.ExpandedStateText = expanded => expanded ? "expanded" : "collapsed";
             GraphBuilder b = new GraphBuilder();
-            b.BeginGroup(Id("g"), Vt("Group"));
+            b.BeginGroup(new SyntheticNode(Id("g"), Vt("Group")));
             b.EndGroup();
             Assert.Equal("Group, collapsed", GraphAnnouncer.LeafText(Node(b.Build(), "g")));
         }
@@ -281,7 +281,7 @@ namespace ES2Access.Tests.UI
             NodeVtable vt = Vt("Group, open");
             vt.SpeaksOwnExpansion = true;
             GraphBuilder b = new GraphBuilder();
-            b.BeginGroup(Id("g"), vt);
+            b.BeginGroup(new SyntheticNode(Id("g"), vt));
             b.EndGroup();
             Assert.Equal("Group, open", GraphAnnouncer.LeafText(Node(b.Build(), "g")));
         }
@@ -291,7 +291,7 @@ namespace ES2Access.Tests.UI
         {
             GraphAnnouncer.PositionText = (i, n) => i + " of " + n;
             GraphBuilder b = new GraphBuilder();
-            b.AddItem(Id("a"), Vt("A")).AddItem(Id("b"), Vt("B")).AddItem(Id("c"), Vt("C"));
+            b.AddItem(new SyntheticNode(Id("a"), Vt("A"))).AddItem(new SyntheticNode(Id("b"), Vt("B"))).AddItem(new SyntheticNode(Id("c"), Vt("C")));
             GraphRender r = b.Build();
             Assert.Equal("B, 2 of 3", GraphAnnouncer.LeafText(Node(r, "b")));
         }
@@ -301,7 +301,7 @@ namespace ES2Access.Tests.UI
         {
             GraphAnnouncer.PositionText = (i, n) => i + " of " + n;
             GraphBuilder b = new GraphBuilder();
-            b.AddItem(Id("a"), Vt("A"));
+            b.AddItem(new SyntheticNode(Id("a"), Vt("A")));
             Assert.Equal("A", GraphAnnouncer.LeafText(Node(b.Build(), "a")));
         }
 
@@ -310,8 +310,8 @@ namespace ES2Access.Tests.UI
         {
             GraphAnnouncer.PositionText = (i, n) => i + " of " + n;
             GraphBuilder b = new GraphBuilder();
-            b.BeginGroup(Id("g"), Vt("G"), true);
-            b.AddItem(Id("only"), Vt("Only"));
+            b.BeginGroup(new SyntheticNode(Id("g"), Vt("G")), true);
+            b.AddItem(new SyntheticNode(Id("only"), Vt("Only")));
             b.EndGroup();
             Assert.Equal("Only, 1 of 1", GraphAnnouncer.LeafText(Node(b.Build(), "only")));
         }
@@ -322,7 +322,7 @@ namespace ES2Access.Tests.UI
             GraphAnnouncer.PositionText = (i, n) => i + " of " + n;
             GraphBuilder b = new GraphBuilder();
             b.PushContext("Log", null, false);
-            b.AddItem(Id("a"), Vt("A")).AddItem(Id("b"), Vt("B"));
+            b.AddItem(new SyntheticNode(Id("a"), Vt("A"))).AddItem(new SyntheticNode(Id("b"), Vt("B")));
             b.PopContext();
             Assert.Equal("B", GraphAnnouncer.LeafText(Node(b.Build(), "b")));
         }
@@ -334,7 +334,7 @@ namespace ES2Access.Tests.UI
             NodeVtable vt = Vt("B, second of two");
             vt.SpeaksOwnPosition = true;
             GraphBuilder b = new GraphBuilder();
-            b.AddItem(Id("a"), Vt("A")).AddItem(Id("b"), vt);
+            b.AddItem(new SyntheticNode(Id("a"), Vt("A"))).AddItem(new SyntheticNode(Id("b"), vt));
             Assert.Equal("B, second of two", GraphAnnouncer.LeafText(Node(b.Build(), "b")));
         }
 
@@ -344,7 +344,7 @@ namespace ES2Access.Tests.UI
             GraphAnnouncer.PositionText = (i, n) => i + " of " + n;
             GraphAnnouncer.PartFilter = (type, part) => part.Kind != AnnouncementKinds.Position;
             GraphBuilder b = new GraphBuilder();
-            b.AddItem(Id("a"), Vt("A")).AddItem(Id("b"), Vt("B"));
+            b.AddItem(new SyntheticNode(Id("a"), Vt("A"))).AddItem(new SyntheticNode(Id("b"), Vt("B")));
             Assert.Equal("B", GraphAnnouncer.LeafText(Node(b.Build(), "b")));
         }
 

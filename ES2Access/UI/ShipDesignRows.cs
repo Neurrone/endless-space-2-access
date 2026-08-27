@@ -452,7 +452,7 @@ namespace ES2Access.UI
                 NameFieldGainFocus,
                 panel.NameTextField == null
                     ? null
-                    : ControlId.Referenced(panel.NameTextField, prefix + "/info/name"),
+                    : ControlId.For(panel.NameTextField, prefix + "/info/name"),
                 editor
             );
         }
@@ -611,7 +611,7 @@ namespace ES2Access.UI
             }
 
             AgeWidgets.PointAt(vtable, widget);
-            Cells.Add(cells, widget, ControlId.Referenced(widget, key), vtable);
+            Cells.Add(cells, widget, ControlId.For(widget, key), vtable);
         }
 
         // ---- the module list ----
@@ -745,7 +745,7 @@ namespace ES2Access.UI
                 Cells.Add(
                     cells,
                     widget,
-                    ControlId.Referenced(toggle, prefix + "/modules/category/" + i),
+                    ControlId.For(toggle, prefix + "/modules/category/" + i),
                     vtable
                 );
             }
@@ -800,7 +800,7 @@ namespace ES2Access.UI
             Cells.Add(
                 cells,
                 widget,
-                ControlId.Referenced(toggle, prefix + "/modules/obsolete"),
+                ControlId.For(toggle, prefix + "/modules/obsolete"),
                 vtable
             );
         }
@@ -854,7 +854,7 @@ namespace ES2Access.UI
             Cells.Add(
                 cells,
                 item.AgeTransform,
-                ControlId.Referenced(item.GuiEditionModule, prefix + "/module/" + index),
+                ControlId.For(item.GuiEditionModule, prefix + "/module/" + index),
                 vtable
             );
         }
@@ -1327,7 +1327,7 @@ namespace ES2Access.UI
                 tooltip
             );
             AgeWidgets.Point(vtable, it);
-            Cells.Add(cells, widget, ControlId.Referenced(toggle, keyPrefix + "detailed"), vtable);
+            Cells.Add(cells, widget, ControlId.For(toggle, keyPrefix + "detailed"), vtable);
         }
 
         // ---- the ship's own module slots ----
@@ -1506,7 +1506,7 @@ namespace ES2Access.UI
             Cells.Add(
                 cells,
                 slot.AgeTransform,
-                ControlId.Referenced(slot.GuiSlot, prefix + "/slot/" + index),
+                ControlId.For(slot.GuiSlot, prefix + "/slot/" + index),
                 vtable
             );
             cells[cells.Count - 1].Order = SlotTypes(slot);
@@ -1953,13 +1953,14 @@ namespace ES2Access.UI
                 DropAccepts = held => Removable(owner, held),
             };
 
-            builder.AddItem(
-                ControlId.Referenced(
+            builder.AddItem(Nodes.Drawn(
+                ControlId.For(
                     panel.ShipDesignSlotItemsContainer,
                     prefix + "/slot/remove-target"
                 ),
-                vtable
-            );
+                vtable,
+                panel.ShipDesignSlotItemsContainer
+            ));
         }
 
         private static bool Editable(ShipDesignEditionPanel panel)
@@ -2047,7 +2048,7 @@ namespace ES2Access.UI
         {
             for (int i = 0; i < cells.Count; i++)
             {
-                builder.AddItem(cells[i].Id, cells[i].Vtable);
+                builder.AddItem(Nodes.Drawn(cells[i].Id, cells[i].Vtable, cells[i].Widget));
             }
         }
 

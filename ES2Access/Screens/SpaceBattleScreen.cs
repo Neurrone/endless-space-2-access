@@ -612,7 +612,7 @@ namespace ES2Access.Screens
             }
 
             AgeWidgets.Point(vtable, it, tooltip, widget);
-            Cells.Add(_cells, widget, ControlId.Referenced(skip, "battle:skip"), vtable);
+            Cells.Add(_cells, widget, ControlId.For(skip, "battle:skip"), vtable);
         }
 
         /// <summary>The three camera modes, which are a radio group in the game and read as one. They
@@ -652,7 +652,7 @@ namespace ES2Access.Screens
                 Cells.Add(
                     _cells,
                     widget,
-                    ControlId.Referenced(toggle, "battle:camera/" + i),
+                    ControlId.For(toggle, "battle:camera/" + i),
                     vtable
                 );
             }
@@ -694,7 +694,7 @@ namespace ES2Access.Screens
                 tooltip
             );
             AgeWidgets.Point(vtable, it, tooltip, widget);
-            Cells.Add(_cells, widget, ControlId.Referenced(scan, "battle:scan"), vtable);
+            Cells.Add(_cells, widget, ControlId.For(scan, "battle:scan"), vtable);
         }
 
         private static GalaxyEncounter.GalaxyEncounterState State(GalaxyEncounter encounter)

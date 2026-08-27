@@ -135,8 +135,8 @@ namespace ES2Access.Screens
             AgePrimitiveLabel message = window.MessageLabel;
             if (message != null)
             {
-                ControlId id = ControlId.Referenced(message, "messagebox:question");
-                builder.AddNode(
+                ControlId id = ControlId.For(message, "messagebox:question");
+                builder.AddNode(Nodes.Drawn(
                     id,
                     new NodeVtable
                     {
@@ -150,8 +150,9 @@ namespace ES2Access.Screens
                         },
                         Sections = GraphNodes.Sections(PromptLines, null),
                         OnFocusVisual = ReleasePointer,
-                    }
-                );
+                    },
+                    message
+                ));
                 builder.SetStart(id);
             }
 
@@ -174,10 +175,11 @@ namespace ES2Access.Screens
 
                 vtable.OnFocusVisual = () => PointerFocus.MoveTo(choice.Button, tooltip);
                 vtable.OnBlurVisual = ReleasePointer;
-                builder.AddItem(
-                    ControlId.Referenced(choice.Button, "messagebox:" + choice.Key),
-                    vtable
-                );
+                builder.AddItem(Nodes.Drawn(
+                    ControlId.For(choice.Button, "messagebox:" + choice.Key),
+                    vtable,
+                    choice.Button
+                ));
             }
         }
 

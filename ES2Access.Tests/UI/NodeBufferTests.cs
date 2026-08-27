@@ -38,9 +38,9 @@ namespace ES2Access.Tests.UI
         {
             GraphAnnouncer.PositionText = (i, n) => i + " of " + n;
             GraphBuilder b = new GraphBuilder();
-            b.AddItem(Id("a"), Vt("Before"));
-            b.AddItem(Id("t"), vtable);
-            b.AddItem(Id("c"), Vt("After"));
+            b.AddItem(new SyntheticNode(Id("a"), Vt("Before")));
+            b.AddItem(new SyntheticNode(Id("t"), vtable));
+            b.AddItem(new SyntheticNode(Id("c"), Vt("After")));
             return NodeBuffer.Lines(Node(b.Build(), "t"));
         }
 
@@ -224,7 +224,7 @@ namespace ES2Access.Tests.UI
         {
             GraphAnnouncer.ExpandedStateText = expanded => expanded ? "expanded" : "collapsed";
             GraphBuilder b = new GraphBuilder();
-            b.BeginGroup(
+            b.BeginGroup(new SyntheticNode(
                 Id("g"),
                 new NodeVtable
                 {
@@ -234,7 +234,7 @@ namespace ES2Access.Tests.UI
                     },
                     Sections = new[] { Section(TooltipMode.Announce, "Load a saved game") },
                 }
-            );
+            ));
             b.EndGroup();
             Assert.Equal(
                 new[] { "Load Game", "collapsed", "Load a saved game" },

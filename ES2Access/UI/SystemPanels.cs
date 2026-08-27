@@ -156,7 +156,7 @@ namespace ES2Access.UI
             Cells.Add(
                 cells,
                 filter.AgeTransform,
-                ControlId.Referenced(filter, keyPrefix + "filter/" + filter.name),
+                ControlId.For(filter, keyPrefix + "filter/" + filter.name),
                 vtable
             );
         }
@@ -210,7 +210,7 @@ namespace ES2Access.UI
             Cells.Add(
                 cells,
                 item.AgeTransform,
-                ControlId.Referenced(item, keyPrefix + "constructible/" + constructible.Name),
+                ControlId.For(item, keyPrefix + "constructible/" + constructible.Name),
                 vtable
             );
 
@@ -567,16 +567,16 @@ namespace ES2Access.UI
 
             AgeWidgets.PointAt(vtable, line.AgeTransform);
             string key = keyPrefix + "queue/" + line.Construction.GUID;
-            ControlId id = ControlId.Referenced(line.Construction, key);
+            ControlId id = ControlId.For(line.Construction, key);
             List<CardActions.CardAction> buyouts = BuyoutButtons(line);
             if (buyouts.Count == 0)
             {
-                builder.AddItem(id, vtable);
+                builder.AddItem(Nodes.Synthetic(id, vtable));
                 return;
             }
 
             vtable.ControlType = ControlTypes.Group;
-            builder.BeginGroup(id, vtable);
+            builder.BeginGroup(Nodes.Synthetic(id, vtable));
             if (builder.IsExpanded(id))
             {
                 CardActions.Emit(builder, key, buyouts);
@@ -827,7 +827,7 @@ namespace ES2Access.UI
                 {
                     if (Grid.Count == 0)
                     {
-                        builder.AddItem(
+                        builder.AddItem(Nodes.Synthetic(
                             ControlId.Structural(keys + "/empty"),
                             GraphNodes.Readout(
                                 () => ModStrings.Get(ModStrings.SystemHangarEmpty),
@@ -835,7 +835,7 @@ namespace ES2Access.UI
                                 null,
                                 null
                             )
-                        );
+                        ));
                     }
                     else
                     {

@@ -390,9 +390,12 @@ namespace ES2Access.Screens
 
                 builder.AddItem(
                     entry != null
-                        ? ControlId.Referenced(entry, key + index)
-                        : ControlId.Structural(key + index),
-                    vtable
+                        ? (NodeDeclaration)Nodes.Drawn(
+                            ControlId.For(entry, key + index),
+                            vtable,
+                            entry
+                        )
+                        : Nodes.Synthetic(ControlId.Structural(key + index), vtable)
                 );
             }
         }

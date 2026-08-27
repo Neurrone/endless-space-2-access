@@ -319,7 +319,7 @@ namespace ES2Access.Screens
                 AgeWidgets.Raw(it.AgeTransform)
             );
             AgeWidgets.Point(vtable, button, AgeWidgets.Raw(it.AgeTransform), it.AgeTransform);
-            builder.AddItem(ControlId.Referenced(header, "scan:title/lens"), vtable);
+            builder.AddItem(Nodes.Drawn(ControlId.For(header, "scan:title/lens"), vtable, header));
         }
 
 
@@ -381,7 +381,7 @@ namespace ES2Access.Screens
         {
             ScanViewDiplomacyLabel it = label;
             GameNode node = label.GameNode;
-            ControlId id = ControlId.Referenced(node, "scan:diplomacy/" + node.GUID);
+            ControlId id = ControlId.For(node, "scan:diplomacy/" + node.GUID);
             AgeControlToggle swap = label.SwapToggle;
             AgeTransform line = AgeWidgets.Transform(swap);
             bool switchable =
@@ -421,7 +421,7 @@ namespace ES2Access.Screens
                 AgeWidgets.PointAt(vtable, label.AgeTransform);
             }
 
-            builder.AddItem(id, vtable);
+            builder.AddItem(Nodes.Synthetic(id, vtable));
         }
 
         /// <summary>
@@ -606,15 +606,15 @@ namespace ES2Access.Screens
             };
             AgeWidgets.PointAt(vtable, label.AgeTransform, trade);
 
-            ControlId id = ControlId.Referenced(node, "scan:node/" + node.GUID);
+            ControlId id = ControlId.For(node, "scan:node/" + node.GUID);
             if (Circles(label) == 0)
             {
-                builder.AddItem(id, vtable);
+                builder.AddItem(Nodes.Synthetic(id, vtable));
                 return;
             }
 
             vtable.ControlType = ControlTypes.Group;
-            builder.BeginGroup(id, vtable);
+            builder.BeginGroup(Nodes.Synthetic(id, vtable));
             AddCircles(builder, label);
             builder.EndGroup();
         }
@@ -740,10 +740,10 @@ namespace ES2Access.Screens
                     Sections = GraphNodes.Sections(GraphNodes.TooltipSection(tooltip)),
                 };
                 AgeWidgets.PointAt(vtable, widget);
-                builder.AddItem(
-                    ControlId.Referenced(planet, "scan:node/planet/" + planet.GUID),
+                builder.AddItem(Nodes.Synthetic(
+                    ControlId.For(planet, "scan:node/planet/" + planet.GUID),
                     vtable
-                );
+                ));
             }
         }
 
@@ -842,10 +842,10 @@ namespace ES2Access.Screens
                     return;
                 }
 
-                builder.BeginGroup(
+                builder.BeginGroup(Nodes.Synthetic(
                     ControlId.Structural("scan:routes"),
                     GraphNodes.Group(() => ModStrings.Get(ModStrings.ScanTradeRoutesGroup))
-                );
+                ));
                 for (int i = 0; i < _lanes.Count; i++)
                 {
                     AddLane(builder, _lanes[i]);
@@ -900,7 +900,7 @@ namespace ES2Access.Screens
         private static void AddLane(GraphBuilder builder, TradeLanes.Lane lane)
         {
             TradeLanes.Lane it = lane;
-            builder.AddItem(
+            builder.AddItem(Nodes.Synthetic(
                 ControlId.Structural("scan:routes/" + lane.Start + "-" + lane.End),
                 GraphNodes.Readout(
                     () => LaneName(it),
@@ -908,7 +908,7 @@ namespace ES2Access.Screens
                     null,
                     null
                 )
-            );
+            ));
         }
 
         /// <summary>What the lane runs between, in the game's own names for the two places. A node the
@@ -991,7 +991,7 @@ namespace ES2Access.Screens
                 };
                 AgeWidgets.PointAt(vtable, window.NodeInfoGroup);
 
-                builder.BeginGroup(id, vtable);
+                builder.BeginGroup(Nodes.Synthetic(id, vtable));
                 ScanViewSystemOverviewFidsiLabel[] labels = Fidsi(window);
                 for (int i = 0; i < labels.Length; i++)
                 {
@@ -1001,9 +1001,12 @@ namespace ES2Access.Screens
                         continue;
                     }
 
-                    builder.AddLabel(
-                        ControlId.Referenced(label, "scan:system/output/" + i),
-                        () => AgeText.Label(label.ValueLabel)
+                    builder.AddItem(
+                        Nodes.Drawn(
+                            ControlId.For(label, "scan:system/output/" + i),
+                            GraphBuilder.Label(() => AgeText.Label(label.ValueLabel)),
+                            label
+                        )
                     );
                 }
 
@@ -1072,7 +1075,7 @@ namespace ES2Access.Screens
                 AgeWidgets.Raw(widget)
             );
             AgeWidgets.PointAt(vtable, widget);
-            builder.AddItem(ControlId.Referenced(toggle, "scan:system/info"), vtable);
+            builder.AddItem(Nodes.Drawn(ControlId.For(toggle, "scan:system/info"), vtable, toggle));
         }
 
         // ---- the system management lens ----
@@ -1152,10 +1155,10 @@ namespace ES2Access.Screens
                         OnActivate = () => GalaxyViewLevels.OpenPlanet(planet),
                     };
                     AgeWidgets.PointAt(vtable, label.AgeTransform);
-                    builder.AddItem(
-                        ControlId.Referenced(planet, "scan:planet/" + planet.GUID),
+                    builder.AddItem(Nodes.Synthetic(
+                        ControlId.For(planet, "scan:planet/" + planet.GUID),
                         vtable
-                    );
+                    ));
                 }
 
                 builder.SetRegion(null);
@@ -1221,7 +1224,7 @@ namespace ES2Access.Screens
             };
             AgeWidgets.PointAt(vtable, it.AgeTransform);
             ScrollIntoView.Anchor(vtable, it.AgeTransform);
-            builder.AddItem(ControlId.Structural("scan:hero"), vtable);
+            builder.AddItem(Nodes.Synthetic(ControlId.Structural("scan:hero"), vtable));
         }
 
         /// <summary>The panel's own caption, which is the first thing it draws.</summary>
@@ -1578,7 +1581,7 @@ namespace ES2Access.Screens
                 };
                 AgeWidgets.PointAt(vtable, item.AgeTransform);
                 ScrollIntoView.Anchor(vtable, item.AgeTransform);
-                builder.AddItem(ControlId.Structural("scan:remains/" + i), vtable);
+                builder.AddItem(Nodes.Synthetic(ControlId.Structural("scan:remains/" + i), vtable));
             }
         }
 
@@ -1599,10 +1602,11 @@ namespace ES2Access.Screens
                 string key = "scan:stats/" + side + "/" + i;
                 builder.SetRegion(key);
                 PlanetStatsCategoryItem it = category;
-                builder.AddLabel(
-                    ControlId.Structural(key),
-                    () => AgeText.Label(it.Title),
-                    it.AgeTransform
+                builder.AddItem(
+                    Nodes.Synthetic(
+                        ControlId.Structural(key),
+                        GraphBuilder.Label(() => AgeText.Label(it.Title), it.AgeTransform)
+                    )
                 );
                 AddStatLines(builder, category.StatLinesTable, key);
             }
@@ -1631,7 +1635,7 @@ namespace ES2Access.Screens
                 };
                 AgeWidgets.PointAt(vtable, line.AgeTransform);
                 ScrollIntoView.Anchor(vtable, line.AgeTransform);
-                builder.AddItem(ControlId.Structural(key + "/" + i), vtable);
+                builder.AddItem(Nodes.Synthetic(ControlId.Structural(key + "/" + i), vtable));
             }
         }
 
@@ -1705,7 +1709,12 @@ namespace ES2Access.Screens
             for (int i = 0; lines != null && i < lines.Count; i++)
             {
                 string line = lines[i];
-                builder.AddLabel(ControlId.Structural(key + "/" + i), () => line);
+                builder.AddItem(
+                    Nodes.Synthetic(
+                        ControlId.Structural(key + "/" + i),
+                        GraphBuilder.Label(() => line)
+                    )
+                );
             }
         }
 
@@ -1756,7 +1765,7 @@ namespace ES2Access.Screens
                     AgeWidgets.Raw(widget)
                 );
                 AgeWidgets.PointAt(vtable, widget);
-                builder.AddItem(ControlId.Referenced(toggle, "scan:legend/show"), vtable);
+                builder.AddItem(Nodes.Drawn(ControlId.For(toggle, "scan:legend/show"), vtable, toggle));
 
                 if (!toggle.State)
                 {
@@ -1818,10 +1827,11 @@ namespace ES2Access.Screens
                 // silently, and a section that appears with the count changes the panel's shape).
                 builder.SetRegion(key);
                 ScanViewCaptionGroup it = group;
-                builder.AddLabel(
-                    ControlId.Structural(key),
-                    () => AgeText.Label(it.Title),
-                    it.AgeTransform
+                builder.AddItem(
+                    Nodes.Synthetic(
+                        ControlId.Structural(key),
+                        GraphBuilder.Label(() => AgeText.Label(it.Title), it.AgeTransform)
+                    )
                 );
                 AddCaptionItems(builder, group.ItemsTable, key, items == null ? 0 : items.Length);
                 groups++;
@@ -1883,10 +1893,11 @@ namespace ES2Access.Screens
                 }
 
                 ScanViewCaptionItem it = item;
-                builder.AddLabel(
-                    ControlId.Structural(key + "/" + i),
-                    () => AgeText.Label(it.Title),
-                    it.AgeTransform
+                builder.AddItem(
+                    Nodes.Synthetic(
+                        ControlId.Structural(key + "/" + i),
+                        GraphBuilder.Label(() => AgeText.Label(it.Title), it.AgeTransform)
+                    )
                 );
                 items++;
             }

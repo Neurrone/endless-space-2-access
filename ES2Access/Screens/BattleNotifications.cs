@@ -657,7 +657,7 @@ namespace ES2Access.Screens
                 Sections = GraphNodes.Sections(null, tooltip),
             };
             AgeWidgets.PointAt(vtable, widget);
-            builder.AddItem(ControlId.Referenced(cell, key), vtable);
+            builder.AddItem(Nodes.Drawn(ControlId.For(cell, key), vtable, cell));
         }
 
         private static string TroopName(TroopCell cell)
@@ -767,7 +767,7 @@ namespace ES2Access.Screens
                 Sections = GraphNodes.Sections(null, tooltip),
             };
             AgeWidgets.PointAt(vtable, widget);
-            Cells.Add(cells, widget, ControlId.Referenced(widget, key), vtable);
+            Cells.Add(cells, widget, ControlId.For(widget, key), vtable);
         }
 
         /// <summary>
@@ -864,7 +864,7 @@ namespace ES2Access.Screens
                     Sections = GraphNodes.Sections(null, tooltip),
                 };
                 AgeWidgets.PointAt(vtable, widget);
-                builder.AddItem(ControlId.Referenced(portrait, prefix + "/hero"), vtable);
+                builder.AddItem(Nodes.Drawn(ControlId.For(portrait, prefix + "/hero"), vtable, portrait));
             }
             catch (Exception e)
             {
@@ -898,7 +898,7 @@ namespace ES2Access.Screens
                 Sections = GraphNodes.Sections(null, tooltip),
             };
             AgeWidgets.PointAt(vtable, group ?? widget);
-            builder.AddItem(ControlId.Referenced(label, "battle/arena"), vtable);
+            builder.AddItem(Nodes.Drawn(ControlId.For(label, "battle/arena"), vtable, label));
         }
 
         /// <summary>
@@ -929,7 +929,7 @@ namespace ES2Access.Screens
                 tooltip
             );
             AgeWidgets.PointAt(vtable, group);
-            builder.AddItem(ControlId.Structural("battle-setup/plan"), vtable);
+            builder.AddItem(Nodes.Synthetic(ControlId.Structural("battle-setup/plan"), vtable));
         }
 
         /// <summary>One side's plan on the report, where it is a card the game drew rather than a
@@ -958,7 +958,7 @@ namespace ES2Access.Screens
                 Sections = GraphNodes.Sections(null, card.Tooltip),
             };
             AgeWidgets.PointAt(vtable, widget);
-            builder.AddItem(ControlId.Referenced(card, key), vtable);
+            builder.AddItem(Nodes.Drawn(ControlId.For(card, key), vtable, card));
         }
 
         private static BattlePlayCard Card(AgeTransform container)
@@ -1020,10 +1020,11 @@ namespace ES2Access.Screens
                     }
 
                     AgeWidgets.Point(vtable, it.Toggle, tooltip, widget);
-                    builder.AddItem(
-                        ControlId.Referenced(card, prefix + "/" + i),
-                        vtable
-                    );
+                    builder.AddItem(Nodes.Drawn(
+                        ControlId.For(card, prefix + "/" + i),
+                        vtable,
+                        card
+                    ));
                 }
             }
             catch (Exception e)
@@ -1098,7 +1099,7 @@ namespace ES2Access.Screens
                 vtable.OnFocusVisual = AgeWidgets.ReleasePointer;
             }
 
-            builder.AddItem(ControlId.Structural(key), vtable);
+            builder.AddItem(Nodes.Synthetic(ControlId.Structural(key), vtable));
         }
 
         /// <summary>The two military-power figures the game's own helper computes for the arcs.</summary>
@@ -1171,7 +1172,7 @@ namespace ES2Access.Screens
                 Sections = GraphNodes.Sections(null, tooltip),
             };
             AgeWidgets.PointAt(vtable, group);
-            builder.AddItem(ControlId.Structural(key), vtable);
+            builder.AddItem(Nodes.Synthetic(ControlId.Structural(key), vtable));
         }
 
         /// <summary>
@@ -1347,7 +1348,7 @@ namespace ES2Access.Screens
                         Sections = GraphNodes.Sections(null, tooltip),
                     };
                     AgeWidgets.PointAt(vtable, line);
-                    builder.AddItem(ControlId.Referenced(line, prefix + "/" + i), vtable);
+                    builder.AddItem(Nodes.Drawn(ControlId.For(line, prefix + "/" + i), vtable, line));
                 }
             }
             catch (Exception e)
@@ -1402,7 +1403,7 @@ namespace ES2Access.Screens
                 Sections = GraphNodes.Sections(details, tooltip, null, detailsMode),
             };
             AgeWidgets.PointAt(vtable, widget, tooltip);
-            builder.AddItem(ControlId.Referenced(label, key), vtable);
+            builder.AddItem(Nodes.Drawn(ControlId.For(label, key), vtable, label));
         }
 
         /// <summary>
@@ -1461,7 +1462,7 @@ namespace ES2Access.Screens
                 Sections = GraphNodes.Sections(null, tooltip),
             };
             AgeWidgets.PointAt(vtable, widget, tooltip);
-            builder.AddItem(ControlId.Referenced(label, key), vtable);
+            builder.AddItem(Nodes.Drawn(ControlId.For(label, key), vtable, label));
         }
 
         /// <summary>Who lives in the captured system - one cell per species the popup filled the table
@@ -1532,7 +1533,7 @@ namespace ES2Access.Screens
             );
             vtable.Announcements.Insert(1, GraphNodes.ValuePart(() => AgeText.Label(count)));
             AgeWidgets.PointAt(vtable, widget, tooltip);
-            Cells.Add(cells, widget, ControlId.Referenced(unit, key), vtable);
+            Cells.Add(cells, widget, ControlId.For(unit, key), vtable);
         }
 
         /// <summary>The same for a band the game fills with words rather than a single label - the line
@@ -1549,7 +1550,7 @@ namespace ES2Access.Screens
             }
 
             Cell cell = Cells.Readout(widget, AgeWidgets.Raw(widget), key);
-            builder.AddItem(cell.Id, cell.Vtable);
+            builder.AddItem(Nodes.Drawn(cell.Id, cell.Vtable, cell.Widget));
         }
 
         /// <summary>A number the game drew beside a picture, under the game's own name for what the
@@ -1585,7 +1586,7 @@ namespace ES2Access.Screens
                 Sections = GraphNodes.Sections(null, tooltip),
             };
             AgeWidgets.PointAt(vtable, widget);
-            builder.AddItem(ControlId.Referenced(value, key), vtable);
+            builder.AddItem(Nodes.Drawn(ControlId.For(value, key), vtable, value));
         }
 
         /// <summary>
@@ -1689,7 +1690,7 @@ namespace ES2Access.Screens
             }
 
             AgeWidgets.PointAt(vtable, widget);
-            Cells.Add(cells, widget, ControlId.Referenced(widget, key), vtable);
+            Cells.Add(cells, widget, ControlId.For(widget, key), vtable);
         }
 
         /// <summary>A box the player ticks, under the game's own title. The watch box is the one control
@@ -1718,7 +1719,7 @@ namespace ES2Access.Screens
                 tooltip
             );
             AgeWidgets.Point(vtable, it, tooltip, widget);
-            Cells.Add(cells, widget, ControlId.Referenced(toggle, key), vtable);
+            Cells.Add(cells, widget, ControlId.For(toggle, key), vtable);
         }
 
         /// <summary>

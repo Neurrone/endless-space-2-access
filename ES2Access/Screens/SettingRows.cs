@@ -75,7 +75,7 @@ namespace ES2Access.Screens
             Func<string> label = () => AgeText.Label(it.SettingTitle);
             Func<bool> enabled = () => AgeWidgets.Operable(it.AgeTransform);
             AgeTooltip caption = AgeWidgets.Raw(TransformOf(item.SettingTitle));
-            ControlId id = ControlId.Referenced(item, key);
+            ControlId id = ControlId.For(item, key);
 
             SettingSliderItem slider = item as SettingSliderItem;
             if (slider != null)
@@ -91,7 +91,7 @@ namespace ES2Access.Screens
                 vtable.Sections = RowSections(caption, value);
                 SayValueTooltip(vtable, value);
                 PointAtTooltip(vtable, value);
-                builder.AddItem(id, vtable);
+                builder.AddItem(Nodes.Drawn(id, vtable, item));
                 return;
             }
 
@@ -116,7 +116,7 @@ namespace ES2Access.Screens
                 vtable.Sections = RowSections(caption, value);
                 SayValueTooltip(vtable, value);
                 AgeWidgets.Point(vtable, box.Toggle);
-                builder.AddItem(id, vtable);
+                builder.AddItem(Nodes.Drawn(id, vtable, item));
                 return;
             }
 
@@ -140,7 +140,7 @@ namespace ES2Access.Screens
             // silent about being something the player can do anything with.
             NodeVtable readOnly = GraphNodes.Readout(label, () => null, null, caption);
             PointAtTooltip(readOnly, caption);
-            builder.AddItem(id, readOnly);
+            builder.AddItem(Nodes.Drawn(id, readOnly, item));
         }
 
         /// <summary>The setting's own name, for a row key.</summary>
@@ -282,7 +282,7 @@ namespace ES2Access.Screens
                 wordless ? TooltipMode.None : (TooltipMode?)null
             );
             AgeWidgets.Point(vtable, it);
-            builder.AddItem(ControlId.Referenced(button, key), vtable);
+            builder.AddItem(Nodes.Drawn(ControlId.For(button, key), vtable, button));
         }
 
         /// <summary>A bar of buttons, one node per row, in the order they are drawn - the shape every
@@ -356,7 +356,7 @@ namespace ES2Access.Screens
                 AgeWidgets.Raw(AgeWidgets.Transform(field)),
                 null,
                 null,
-                field == null ? null : ControlId.Referenced(field, key),
+                field == null ? null : ControlId.For(field, key),
                 editor
             );
         }
@@ -388,7 +388,7 @@ namespace ES2Access.Screens
             Cell cell = TextFieldCell(field, label, tooltip, owner, gainFocus, id, editor);
             if (cell != null)
             {
-                builder.AddItem(cell.Id, cell.Vtable);
+                builder.AddItem(Nodes.Drawn(cell.Id, cell.Vtable, cell.Widget));
             }
         }
 
@@ -474,7 +474,7 @@ namespace ES2Access.Screens
             NodeVtable vtable = GraphNodes.Readout(() => null, () => AgeWidgets.TextOf(it), null, null);
             vtable.Sections = RowSections(it, tooltip);
             AgeWidgets.PointAt(vtable, tooltip != null ? TransformOf(tooltip) : it);
-            builder.AddItem(ControlId.Referenced(widget, key), vtable);
+            builder.AddItem(Nodes.Drawn(ControlId.For(widget, key), vtable, widget));
         }
 
         /// <summary>The last tooltip drawn under a readout - the one belonging to the value rather than
@@ -595,7 +595,7 @@ namespace ES2Access.Screens
             vtable.StateText = null;
             vtable.Sections = RowSections(caption, value);
             AgeWidgets.PointAt(vtable, said != null ? TransformOf(said) : widget);
-            builder.AddItem(ControlId.Referenced(list, key), vtable);
+            builder.AddItem(Nodes.Drawn(ControlId.For(list, key), vtable, list));
         }
 
         private static readonly Func<string> Nothing = () => null;

@@ -761,12 +761,12 @@ namespace ES2Access.Dev
                     continue;
                 }
 
-                AgeTransform carrier = Carrier(node);
-                if (carrier == null || !AnyDrawing(carrier))
+                AgeTransform evidence = Evidence(node);
+                if (evidence == null || !AnyDrawing(evidence))
                 {
                     result.Tooltips.Add(
                         Made(
-                            carrier,
+                            evidence,
                             node.Key,
                             "declares a tooltip to review with nothing that draws",
                             null
@@ -785,7 +785,7 @@ namespace ES2Access.Dev
                 {
                     result.Tooltips.Add(
                         Made(
-                            carrier,
+                            evidence,
                             node.Key,
                             "declares a tooltip to review and points at one that draws nothing",
                             null
@@ -858,10 +858,10 @@ namespace ES2Access.Dev
         /// (<see cref="NodeVtable.PointsAt"/>). Never re-derived from the widget tree: the deepest
         /// tooltip inside a card is often decoration, and a second opinion that picked it reported a
         /// defect on screens whose pointing was right all along. The reading itself is
-        /// <see cref="NodeCarrier.AimOf"/> - shared with the gate that acts on it.</summary>
+        /// <see cref="AgeWidgets.AimOf"/> - shared with the gate that acts on it.</summary>
         internal static AgeTooltip AimOf(Declared node)
         {
-            return NodeCarrier.AimOf(node == null || node.Node == null ? null : node.Node.Vtable);
+            return AgeWidgets.AimOf(node == null || node.Node == null ? null : node.Node.Vtable);
         }
 
         /// <summary>
@@ -878,13 +878,13 @@ namespace ES2Access.Dev
         /// UNDER its card and takes no place in the popup's own down-the-page order, so measuring one
         /// against the card drawn beside it would report a walk that jumps around as a defect.
         ///
-        /// The RULE is <see cref="NodeCarrier"/>'s, so that this and the gate acting on the same answer
+        /// The RULE is <see cref="DrawnBy"/>.s, so that this and the gate acting on the same answer
         /// can never disagree. <see cref="Declared.Widget"/> is preferred because it may have been
-        /// enriched since (<see cref="ResolveRowCells"/> lends a table cell its row's widget), which can
-        /// only find a carrier the shared rule does not - the safe direction: the gate lets a
-        /// carrier-less node through, and this still holds it to the paint test.
+        /// enriched since (<see cref="ResolveRowCells"/> lends a table cell its row.s widget), which can
+        /// only find a widget the shared rule does not - the safe direction: the gate lets a node with
+        /// no evidence through, and this still holds it to the paint test.
         /// </summary>
-        internal static AgeTransform Carrier(Declared node)
+        internal static AgeTransform Evidence(Declared node)
         {
             if (node == null)
             {
@@ -896,7 +896,7 @@ namespace ES2Access.Dev
                 return node.Widget;
             }
 
-            return NodeCarrier.Of(node.Id, node.Node == null ? null : node.Node.Vtable);
+            return DrawnBy.Of(node.Node == null ? null : node.Node.Declared);
         }
 
         internal static bool Promises(Declared node)
@@ -1206,7 +1206,7 @@ namespace ES2Access.Dev
                 // control, the row's group, the label the words were read off - so this is a lookup
                 // rather than a search; a table cell is the exception and is resolved by
                 // ResolveRowCells.
-                it.Widget = NodeCarrier.WidgetOf(node.Id.Reference);
+                it.Widget = DrawnBy.WidgetOf(node.Id.Subject);
 
                 try
                 {
@@ -1250,9 +1250,9 @@ namespace ES2Access.Dev
             for (int i = 0; i < declared.Count; i++)
             {
                 // A dossier node is located by what it POINTS at rather than by a widget of its own
-                // (<see cref="Carrier"/>), so it is not one of these: reporting ten of them per opened
+                // (<see cref="Evidence"/>), so it is not one of these: reporting ten of them per opened
                 // card buried the one node that really had nothing behind it.
-                if (Carrier(declared[i]) == null)
+                if (Evidence(declared[i]) == null)
                 {
                     unlocatable.Add(
                         Made(null, declared[i].Key, "no widget behind this node's id", null)
@@ -1824,7 +1824,7 @@ namespace ES2Access.Dev
         /// ends up, as the listener existing. Read once, on arming; a failure to find it reads as
         /// OFF, because a dev feature that cannot prove it is wanted should not run.
         /// </summary>
-        private static bool DevServerUp()
+        internal static bool DevServerUp()
         {
             try
             {

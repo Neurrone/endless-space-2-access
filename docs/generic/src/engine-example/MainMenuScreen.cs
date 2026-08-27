@@ -96,7 +96,7 @@ namespace ES2Access.Screens
                 }
 
                 MainMenuItem entry = item;
-                ControlId id = ControlId.Referenced(item, "mainmenu:" + name);
+                ControlId id = ControlId.For(item, "mainmenu:" + name);
                 NodeVtable vtable = GraphNodes.Button(
                     () => AgeText.Label(entry.TitleLabel),
                     () => Click(name),
@@ -116,14 +116,14 @@ namespace ES2Access.Screens
                 List<MainMenuSubItem> subItems = SubItems(item);
                 if (subItems.Count == 0)
                 {
-                    builder.AddItem(id, vtable);
+                    builder.AddItem(Nodes.Drawn(id, vtable, item));
                     AddModSettingsAfter(builder, name);
                     continue;
                 }
 
                 // The entry is still a button - activating New Game starts a new game - and it also
                 // opens onto its sub-entries, so it is declared as both.
-                builder.BeginGroup(id, vtable);
+                builder.BeginGroup(Nodes.Drawn(id, vtable, item));
                 for (int i = 0; i < subItems.Count; i++)
                 {
                     MainMenuSubItem sub = subItems[i];
@@ -151,10 +151,11 @@ namespace ES2Access.Screens
                         );
                     subVtable.OnBlurVisual = ReleasePointer;
 
-                    builder.AddItem(
-                        ControlId.Referenced(sub, "mainmenu:" + name + "/" + subName),
-                        subVtable
-                    );
+                    builder.AddItem(Nodes.Drawn(
+                        ControlId.For(sub, "mainmenu:" + name + "/" + subName),
+                        subVtable,
+                        sub
+                    ));
                 }
 
                 builder.EndGroup();
@@ -206,7 +207,7 @@ namespace ES2Access.Screens
                 AgeWidgets.Raw(at)
             );
             AgeWidgets.Point(vtable, it);
-            builder.AddItem(ControlId.Referenced(banner, "mainmenu:news"), vtable);
+            builder.AddItem(Nodes.Drawn(ControlId.For(banner, "mainmenu:news"), vtable, banner));
         }
 
         private static G2GFeedBannerPanel Banner(GameMainMenu window)

@@ -328,7 +328,7 @@ namespace ES2Access.Screens
             Cells.Add(
                 cells,
                 widget,
-                ControlId.Referenced(item, "juggernaut:resource/" + located.Name),
+                ControlId.For(item, "juggernaut:resource/" + located.Name),
                 vtable
             );
         }

@@ -285,7 +285,7 @@ namespace ES2Access.Screens
                 AgeWidgets.Raw(host)
             );
             AgeWidgets.Point(vtable, it);
-            Cells.Add(cells, widget, ControlId.Referenced(toggle, "politics:show-all"), vtable);
+            Cells.Add(cells, widget, ControlId.For(toggle, "politics:show-all"), vtable);
         }
 
         /// <summary>What the panel calls its table, which is what the player hears as they enter it.
@@ -459,7 +459,7 @@ namespace ES2Access.Screens
                 AgeWidgets.Raw(it)
             );
             AgeWidgets.Point(vtable, button);
-            Cells.Add(cells, widget, ControlId.Referenced(widget, keyPrefix + Name(widget)), vtable);
+            Cells.Add(cells, widget, ControlId.For(widget, keyPrefix + Name(widget)), vtable);
         }
 
         private static void AddReadout(List<Cell> cells, AgeTransform widget, string key)
@@ -474,7 +474,7 @@ namespace ES2Access.Screens
                 Sections = GraphNodes.Sections(null, AgeWidgets.Raw(it)),
             };
             AgeWidgets.PointAt(vtable, widget);
-            Cells.Add(cells, widget, ControlId.Referenced(widget, key), vtable);
+            Cells.Add(cells, widget, ControlId.For(widget, key), vtable);
         }
 
         /// <summary>Drawn as the game draws these: a party the window is not showing is left ENABLED

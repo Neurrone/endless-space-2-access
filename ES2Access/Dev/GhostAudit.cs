@@ -110,9 +110,9 @@ namespace ES2Access.Dev
             // A node read off the MODEL rather than off a widget - a place on the map, a notification
             // the game owns, a dossier keyed structurally - has nothing to ask this question of, and
             // guessing about one would drown the findings that are real. The aim is asked as well as
-            // the widget (<see cref="NotificationAudit.Carrier"/>), so a node located only by what its
+            // the widget (<see cref="NotificationAudit.Evidence"/>), so a node located only by what its
             // pointer points at is still checked.
-            AgeTransform widget = NotificationAudit.Carrier(node);
+            AgeTransform widget = NotificationAudit.Evidence(node);
             if (widget == null)
             {
                 result.Synthetic++;
@@ -128,7 +128,7 @@ namespace ES2Access.Dev
             Finding finding = new Finding();
             finding.Key = node.Key;
             finding.Region = node.Region;
-            finding.Path = NodeCarrier.Path(widget);
+            finding.Path = DrawnBy.Path(widget);
             finding.Why = Why(widget);
             finding.Says = NotificationAudit.Excerpt(node.Announcement);
             finding.Own =

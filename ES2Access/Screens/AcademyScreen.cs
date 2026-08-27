@@ -469,7 +469,7 @@ namespace ES2Access.Screens
                 Sections = GraphNodes.Sections(null, tooltip),
             };
             AgeWidgets.PointAt(vtable, host);
-            Cells.Add(cells, host, ControlId.Referenced(host, key), vtable);
+            Cells.Add(cells, host, ControlId.For(host, key), vtable);
         }
 
         private static AgeTransform Label(AgePrimitiveLabel label)
@@ -627,7 +627,7 @@ namespace ES2Access.Screens
                 AgeWidgets.Point(vtable, button);
             }
 
-            Cells.Add(_cells, widget, ControlId.Referenced(widget, Keys + key), vtable);
+            Cells.Add(_cells, widget, ControlId.For(widget, Keys + key), vtable);
         }
 
         /// <summary>One hero's card. Enter is the card's own toggle, which is what the mouse clicks: the
@@ -668,7 +668,7 @@ namespace ES2Access.Screens
                 Show(who);
             };
             string key = Keys + "card/" + index;
-            ControlId id = ControlId.Referenced(hero, key);
+            ControlId id = ControlId.For(hero, key);
             Cell cell = Cells.Add(_cells, widget, id, vtable);
             cell.Dossiers = HeroCards.Dossiers(card);
             cell.Key = key;
@@ -845,7 +845,7 @@ namespace ES2Access.Screens
             Cells.Add(
                 _cells,
                 widget,
-                ControlId.Referenced(widget, Keys + "button/" + widget.name),
+                ControlId.For(widget, Keys + "button/" + widget.name),
                 vtable
             );
         }

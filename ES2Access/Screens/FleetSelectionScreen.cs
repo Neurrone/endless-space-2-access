@@ -170,10 +170,11 @@ namespace ES2Access.Screens
                     tooltip
                 );
                 AgeWidgets.Point(vtable, AgeWidgets.Button(button));
-                builder.AddItem(
-                    ControlId.Referenced(button, "fleetsel:button/" + NameOf(button)),
-                    vtable
-                );
+                builder.AddItem(Nodes.Drawn(
+                    ControlId.For(button, "fleetsel:button/" + NameOf(button)),
+                    vtable,
+                    button
+                ));
             }
         }
 

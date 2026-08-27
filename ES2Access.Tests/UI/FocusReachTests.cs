@@ -49,8 +49,8 @@ namespace ES2Access.Tests.UI
             // "galaxy:system/5" is a raw string prefix of "galaxy:system/548/..." and must not claim it.
             GraphRender render = Renderer(b =>
             {
-                b.AddItem(Id("galaxy:system/5"), Vt("Xiu"));
-                b.AddItem(Id("galaxy:system/548"), Vt("Bao"));
+                b.AddItem(new SyntheticNode(Id("galaxy:system/5"), Vt("Xiu")));
+                b.AddItem(new SyntheticNode(Id("galaxy:system/548"), Vt("Bao")));
             })();
 
             GraphNode found = KeyGraph.DeepestDeclaredAncestor(
@@ -68,8 +68,8 @@ namespace ES2Access.Tests.UI
             GraphRender render = Renderer(
                 b =>
                 {
-                    b.BeginGroup(Id("s"), Vt("System"));
-                    b.AddItem(Id("s/planet/0"), Vt("Planet"));
+                    b.BeginGroup(new SyntheticNode(Id("s"), Vt("System")));
+                    b.AddItem(new SyntheticNode(Id("s/planet/0"), Vt("Planet")));
                     b.EndGroup();
                 },
                 state
@@ -84,7 +84,7 @@ namespace ES2Access.Tests.UI
         [Fact]
         public void NothingLeadingToItAnswersNull()
         {
-            GraphRender render = Renderer(b => b.AddItem(Id("a"), Vt("A")))();
+            GraphRender render = Renderer(b => b.AddItem(new SyntheticNode(Id("a"), Vt("A"))))();
             Assert.Null(KeyGraph.DeepestDeclaredAncestor(render, Id("b/c/d")));
         }
 
@@ -98,11 +98,11 @@ namespace ES2Access.Tests.UI
                 Renderer(
                     b =>
                     {
-                        b.AddItem(Id("top"), Vt("Top"));
-                        b.BeginGroup(Id("c"), Vt("Constellation"));
-                        b.BeginGroup(Id("c/system/1"), Vt("System"));
-                        b.BeginGroup(Id("c/system/1/planet/0"), Vt("Planet"));
-                        b.AddItem(Id("c/system/1/planet/0/action/0"), Vt("Colonize"));
+                        b.AddItem(new SyntheticNode(Id("top"), Vt("Top")));
+                        b.BeginGroup(new SyntheticNode(Id("c"), Vt("Constellation")));
+                        b.BeginGroup(new SyntheticNode(Id("c/system/1"), Vt("System")));
+                        b.BeginGroup(new SyntheticNode(Id("c/system/1/planet/0"), Vt("Planet")));
+                        b.AddItem(new SyntheticNode(Id("c/system/1/planet/0/action/0"), Vt("Colonize")));
                         b.EndGroup();
                         b.EndGroup();
                         b.EndGroup();
@@ -154,8 +154,8 @@ namespace ES2Access.Tests.UI
                         opened++;
                         state.Expanded.Add(Id("s"));
                     };
-                    b.BeginGroup(Id("s"), header);
-                    b.AddItem(Id("s/planet/0"), Vt("Planet"));
+                    b.BeginGroup(new SyntheticNode(Id("s"), header));
+                    b.AddItem(new SyntheticNode(Id("s/planet/0"), Vt("Planet")));
                     b.EndGroup();
                     return b.Build();
                 },
@@ -180,8 +180,8 @@ namespace ES2Access.Tests.UI
                 Renderer(
                     b =>
                     {
-                        b.BeginGroup(Id("s"), Vt("System"));
-                        b.AddItem(Id("s/planet/0"), Vt("Planet"));
+                        b.BeginGroup(new SyntheticNode(Id("s"), Vt("System")));
+                        b.AddItem(new SyntheticNode(Id("s/planet/0"), Vt("Planet")));
                         b.EndGroup();
                     },
                     state
