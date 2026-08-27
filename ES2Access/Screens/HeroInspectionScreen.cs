@@ -1752,12 +1752,29 @@ namespace ES2Access.Screens
             // the group's would have thrown away the richer half. This is the same split
             // <see cref="Captions"/> records for block captions - the word and its explanation on
             // different widgets - met here one level further in.
-            vtable.Sections = GraphNodes.SectionsFor(
-                vtable,
-                Explanations(widget, tooltip),
-                null
-            );
+            IList<AgeTooltip> explanations = Explanations(widget, tooltip);
+            vtable.Sections = GraphNodes.SectionsFor(explanations);
+            // AND THE POINTER, which is a separate promise from the sections and has to be made
+            // separately. Declaring a tooltip only says the words are reviewable; what makes the GAME
+            // draw its own tooltip is the pointer being moved onto the widget
+            // (<see cref="AgeWidgets.PointAt"/> wires OnFocusVisual/OnBlurVisual, where the vtable-taking
+            // SectionsFor writes PointsAt and nothing else). Declaring the sections through that
+            // overload alone therefore left these lines reviewable but visually silent - the drawn
+            // tooltip a sighted player had always seen stopped appearing (owner-reported 2026-08-28,
+            // TooltipPipe reading "aimed=- want=- win=hidden").
+            //
+            // Aimed at the OUTER sentence - the caption on the group - because that is the one a mouse
+            // resting anywhere on the line raises, and the group encloses the label the node stands on.
+            AgeWidgets.PointAt(vtable, widget, Outermost(explanations));
             Cells.Add(_cells, widget, ControlId.For(widget, Keys + key), vtable);
+        }
+
+        /// <summary>The last of the sentences, which is the outermost - what the pointer is aimed at.
+        /// Null for a line the game hung nothing on at all, and then the aim falls back to the line's own
+        /// widget so anything hoverable under it still lights up.</summary>
+        private static AgeTooltip Outermost(IList<AgeTooltip> found)
+        {
+            return found == null || found.Count == 0 ? null : found[found.Count - 1];
         }
 
         /// <summary>
@@ -1765,9 +1782,8 @@ namespace ES2Access.Screens
         /// it (or the label's own where it names none), then the CAPTION the prefab hung on the group
         /// around the label, where that is a different tooltip.
         ///
-        /// Ordered so the pointer ends up on the group's, which is the outermost of the two and the one
-        /// a mouse resting on the line would raise; <see cref="GraphNodes.SectionsFor"/> aims at the last
-        /// entry.
+        /// Ordered so the LAST is the group's, which is the one the pointer is aimed at
+        /// (<see cref="Outermost"/>) - a mouse resting anywhere on the line raises that one.
         /// </summary>
         private static IList<AgeTooltip> Explanations(AgeTransform widget, AgeTooltip supplied)
         {
