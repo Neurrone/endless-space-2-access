@@ -86,6 +86,8 @@ namespace ES2Access.UI
         {
             try
             {
+                // Content: whether the badge word is part of the card's reading at all. The card's
+                // own node stands on the card, not on this corner icon.
                 if (
                     card.ForcedLawIcon == null
                     || !AgeWidgets.Visible(card.ForcedLawIcon.AgeTransform)

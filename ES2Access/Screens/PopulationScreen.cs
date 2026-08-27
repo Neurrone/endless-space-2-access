@@ -192,6 +192,8 @@ namespace ES2Access.Screens
         {
             PopulationAffinityFilter row =
                 widget == null ? null : widget.GetComponent<PopulationAffinityFilter>();
+            // Banding input: the cells below are laid into rows by their rectangles, and Cells.Add does
+            // not ask the gate - a row the list is not drawing would band with the ones it is.
             if (row == null || row.GuiPopulation == null || !AgeWidgets.Visible(widget))
             {
                 return;
@@ -199,6 +201,8 @@ namespace ES2Access.Screens
 
             PopulationAffinityFilter it = row;
             AgeTransform toggle = AgeWidgets.Transform(row.Toggle);
+            // Banding input again, and the badge below hangs on the cell this adds
+            // (AddBadges reaches back for cells[cells.Count - 1]).
             if (toggle != null && AgeWidgets.Visible(toggle))
             {
                 NodeVtable vtable = GraphNodes.Radio(
@@ -258,6 +262,8 @@ namespace ES2Access.Screens
         {
             try
             {
+                // Content: which of the two markers the row is called by, or neither. The pictures are
+                // the whole of what the game says here - it hangs no words on either.
                 if (AgeWidgets.Visible(row.AssimilatedGroup))
                 {
                     return ModStrings.Get(ModStrings.PopulationAssimilated);
@@ -277,6 +283,8 @@ namespace ES2Access.Screens
         {
             try
             {
+                // Content: whether the head count is part of the row's reading. The row's own cell
+                // stands on the toggle, which the list draws either way.
                 return row.PopulationGroup == null || !AgeWidgets.Visible(row.PopulationGroup)
                     ? null
                     : AgeText.Label(row.PopulationCountLabel);
@@ -356,6 +364,8 @@ namespace ES2Access.Screens
             bool sayEmpty = false
         )
         {
+            // Flow control: a region, a caption and the block's whole subtree are read below, so a block
+            // the window is not drawing would open a region over nothing.
             if (group == null || !AgeWidgets.Visible(group))
             {
                 return;
@@ -429,6 +439,7 @@ namespace ES2Access.Screens
         private void AddThresholds(GraphBuilder builder, PopulationModalWindow window)
         {
             AgeTransform group = AgeWidgets.ChildNamed(window.AgeTransform, "CollectionUnlockGroup", 5);
+            // Flow control: the region, the caption and every threshold under it are read below.
             if (group == null || !AgeWidgets.Visible(group))
             {
                 return;
@@ -504,6 +515,8 @@ namespace ES2Access.Screens
             int count
         )
         {
+            // Banding input: Cells.Add takes the threshold without asking the gate, and the circles are
+            // worked into a row by where they are drawn along the track.
             if (widget == null || !AgeWidgets.Visible(widget))
             {
                 return;
@@ -603,6 +616,8 @@ namespace ES2Access.Screens
         private void BuildPolitics(GraphBuilder builder, PopulationModalWindow window)
         {
             AgeTransform group = AgeWidgets.ChildNamed(window.AgeTransform, "PoliticalAffinityGroup", 3);
+            // Flow control: a Tab stop of its own and three regions are opened below, and the sectors,
+            // the traits and the legend are each walked inside it.
             if (group == null || !AgeWidgets.Visible(group))
             {
                 return;
@@ -681,6 +696,8 @@ namespace ES2Access.Screens
         {
             _dossiers.Clear();
             AgeTransform table = window.PoliticsLabelsTable;
+            // Flow control: which children are scraped for dossiers - they become a region of the row
+            // above rather than nodes of their own, so no gate ever asks about them.
             IList<AgeTransform> items =
                 table == null || !AgeWidgets.Visible(table) ? null : table.Children;
             for (int i = 0; items != null && i < items.Count; i++)
@@ -781,6 +798,8 @@ namespace ES2Access.Screens
         {
             try
             {
+                // Availability: a null answer is how the callers hear "the window drew no such block" -
+                // Block skips a whole subtree on it, and Caption names no region.
                 return label == null || !AgeWidgets.Visible(label.AgeTransform)
                     ? null
                     : label.AgeTransform;

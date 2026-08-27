@@ -4297,6 +4297,8 @@ namespace ES2Access.Screens
             for (int i = 0; items != null && i < items.Count; i++)
             {
                 AgeTransform item = items[i];
+                // Content: which icon carries this deposit's sentence. The table pools its items, and a
+                // retired one is faded rather than hidden while it still holds the last binding.
                 if (!AgeWidgets.Painted(item))
                 {
                     continue;
@@ -5755,6 +5757,9 @@ namespace ES2Access.Screens
         )
         {
             AgeTransform table = card == null ? null : card.PlanetAnomaliesTable;
+            // Content: whether the card's own icons can carry these dossiers, or whether every one of
+            // them falls back to a carrier of the mod's. The table pools its items and fades a retired
+            // one, so PAINTED rather than the visibility flag.
             IList<AgeTransform> items = AgeWidgets.Painted(table) ? table.Children : null;
             for (int i = 0; i < planet.Anomalies.Count; i++)
             {
@@ -5777,6 +5782,8 @@ namespace ES2Access.Screens
             }
 
             AgeTransform item = items[index];
+            // Content: whether the Nth anomaly's dossier comes off the card's own icon. A retired item
+            // is faded rather than hidden and still holds the previous world's anomaly.
             if (!AgeWidgets.Painted(item))
             {
                 return null;
@@ -5832,6 +5839,8 @@ namespace ES2Access.Screens
         )
         {
             AgeTransform group = card == null ? null : card.ResourceDepositsGroup;
+            // Content, as at the anomalies: whether the card's own icons can carry these dossiers at
+            // all, PAINTED because the group pools its items and fades the surplus.
             IList<AgeTransform> items = AgeWidgets.Painted(group) ? group.Children : null;
             ColonizedPlanet colony = planet.ColonizedPlanet;
             bool ours = colony != null && colony.Empire == empire;
@@ -5854,6 +5863,8 @@ namespace ES2Access.Screens
             }
 
             AgeTransform item = items[index];
+            // Content: whether the Nth deposit's dossier comes off the card's own icon, same pooling
+            // and same reason as the anomalies above.
             if (!AgeWidgets.Painted(item))
             {
                 return null;

@@ -150,6 +150,7 @@ namespace ES2Access.Screens
                 for (int i = 0; children != null && i < children.Count; i++)
                 {
                     AgeControlToggle toggle = children[i].GetComponent<AgeControlToggle>();
+                    // Content: which of the tab words names the window's current selection.
                     if (toggle != null && toggle.State && AgeWidgets.Visible(children[i]))
                     {
                         return AgeWidgets.TextOf(children[i]);
@@ -188,6 +189,8 @@ namespace ES2Access.Screens
         private void Tab(AgeTransform widget, int index)
         {
             AgeControlToggle toggle = widget == null ? null : widget.GetComponent<AgeControlToggle>();
+            // Banding input: Cells.Add does not ask the gate (it answers with the cell it appended),
+            // so a tab the window is not drawing would still bring its rectangle to the banding.
             if (toggle == null || !AgeWidgets.Visible(widget))
             {
                 return;
@@ -269,6 +272,8 @@ namespace ES2Access.Screens
             Cells.Add(_cells, widget, ControlId.Structural(key), vtable);
 
             AgeTransform activate = AgeWidgets.Transform(item.ActivateToggle);
+            // Banding input, as at the tabs: Cells.Add takes the tick without asking the gate, and its
+            // rectangle is what puts it in a row beside the store button below.
             if (AgeWidgets.Visible(activate))
             {
                 AgeControlToggle box = item.ActivateToggle;
@@ -297,6 +302,8 @@ namespace ES2Access.Screens
         {
             try
             {
+                // Content: which of the two words the item is called owned by, or neither. The controls
+                // asked about are the tick and the store button, not the item row the node stands on.
                 if (AgeWidgets.Visible(AgeWidgets.Transform(item.ActivateToggle)))
                 {
                     return ModStrings.Get(ModStrings.DlcOwned);

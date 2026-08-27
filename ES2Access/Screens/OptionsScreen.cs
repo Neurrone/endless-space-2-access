@@ -264,6 +264,8 @@ namespace ES2Access.Screens
                     OptionsTabToggle tab in group.TogglesTable.GetChildren<OptionsTabToggle>(false)
                 )
                 {
+                    // Flow control: the kept tabs are what the screen walks, and the page under the
+                    // ticked one is read from this list rather than from the table.
                     if (tab != null && tab.Toggle != null && Visible(tab.Toggle.AgeTransform))
                     {
                         tabs.Add(tab);
@@ -1665,6 +1667,8 @@ namespace ES2Access.Screens
             {
                 foreach (OptionItem item in panel.OptionsTable.GetChildren<OptionItem>(false))
                 {
+                    // Flow control: every row kept here is read control by control below, and the count
+                    // is what tells the page whether it has anything in it at all.
                     if (item != null && Visible(AgeTransformOf(item)))
                     {
                         rows.Add(item);

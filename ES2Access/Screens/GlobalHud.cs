@@ -573,6 +573,8 @@ namespace ES2Access.Screens
         {
             GameOverlayWindow window = OverlayWindow();
             TopTitlePanel panel = window == null ? null : window.TopTitlePanel;
+            // Flow control: a stop, a lens and a zoom ladder are opened under it, and the answer tells
+            // the caller whether a stop was declared at all.
             if (panel == null || !panel.Shown || !AgeWidgets.Visible(panel.AgeTransform))
             {
                 return false;
@@ -684,6 +686,8 @@ namespace ES2Access.Screens
                 )
                 {
                     AgeTransform widget = toggle.AgeTransform;
+                    // Banding input: AddCell appends straight to the list, so the gate never sees these
+                    // until the strip has already been worked into rows by their rectangles.
                     if (toggle.Screen == null || !AgeWidgets.Visible(widget))
                     {
                         continue;
@@ -809,6 +813,8 @@ namespace ES2Access.Screens
             Func<float> net
         )
         {
+            // Banding input: AddCell appends without the gate's question, and the banner's readouts are
+            // worked into one row by where they are drawn.
             if (label == null || !AgeWidgets.Visible(label.AgeTransform))
             {
                 return;
@@ -991,6 +997,8 @@ namespace ES2Access.Screens
                 foreach (ResourceItem item in panel.ResourceItemsTable.GetChildren<ResourceItem>(false))
                 {
                     GuiLocatedResource resource = item.GuiLocatedResource;
+                    // Banding input: same door as the rest of the banner - AddCell takes the item
+                    // without asking the gate, and its rectangle is what puts it on the strip's row.
                     if (resource == null || !AgeWidgets.Visible(item.AgeTransform))
                     {
                         continue;
@@ -1122,6 +1130,8 @@ namespace ES2Access.Screens
 
             AgePrimitiveLabel status = panel.AssimilationStatusLabel;
             AgeTransform line = status == null ? null : status.AgeTransform;
+            // Content: which of the two the panel is drawing - the status sentence or the ready icon,
+            // never both - and banding input either way, because AddCell does not ask the gate.
             if (AgeWidgets.Visible(line))
             {
                 AgePrimitiveLabel it = status;
@@ -1136,6 +1146,7 @@ namespace ES2Access.Screens
             {
                 AgeTransform ready =
                     panel.ReadyIcon == null ? null : panel.ReadyIcon.AgeTransform;
+                // The other half of that choice, and the same banding reason.
                 if (AgeWidgets.Visible(ready))
                 {
                     AgeTooltip tooltip = AgeWidgets.Raw(ready);
@@ -1173,6 +1184,8 @@ namespace ES2Access.Screens
             for (int i = 0; items != null && i < items.Count; i++)
             {
                 AgeTransform item = items[i];
+                // Banding input: AddCell takes each bubble without asking the gate, and the bubbles are
+                // worked into a row by where they are drawn.
                 if (item == null || !AgeWidgets.Visible(item))
                 {
                     continue;
@@ -1235,6 +1248,7 @@ namespace ES2Access.Screens
             }
 
             AgeTransform item = panel.PirateMarkItem;
+            // Banding input: AddCell appends the mark without the gate's question.
             if (AgeWidgets.Visible(item))
             {
                 AgeTransform it = item;
@@ -1282,6 +1296,8 @@ namespace ES2Access.Screens
                     segments[i] == null ? null : segments[i].GetComponent<HonorGaugeSegment>();
                 AgeControlButton button = segment == null ? null : segment.ActionButton;
                 AgeTransform action = AgeWidgets.Transform(button);
+                // Banding input: AddCell takes each segment's action without asking the gate, and the
+                // gauge's segments are banded by where they are drawn along it.
                 if (!AgeWidgets.Visible(action))
                 {
                     continue;
@@ -1380,6 +1396,7 @@ namespace ES2Access.Screens
         {
             try
             {
+                // Flow control: each caller reads a whole panel's worth of cells under this answer.
                 return panel != null && panel.Shown && AgeWidgets.Visible(panel.AgeTransform);
             }
             catch (Exception)
@@ -1398,6 +1415,8 @@ namespace ES2Access.Screens
             AgePrimitiveLabel value
         )
         {
+            // Banding input: AddCell appends without the gate's question, and the banner passes every
+            // one of its value groups through here whether or not this empire has that currency.
             if (!AgeWidgets.Visible(area))
             {
                 return;
@@ -1422,12 +1441,15 @@ namespace ES2Access.Screens
             AgeTransform under
         )
         {
+            // Banding input, as at AddValue: AddCell appends without the gate's question.
             if (!AgeWidgets.Visible(group))
             {
                 return;
             }
 
             AgeTransform it = group;
+            // Content: which widget's tooltip the line is read with - the panel hangs it under the group
+            // on some pages and on the group itself on others.
             AgeTransform area = AgeWidgets.Visible(under) ? under : group;
             AgeTooltip tooltip = AgeWidgets.Raw(area);
             NodeVtable vtable = GraphNodes.Readout(
@@ -1459,6 +1481,8 @@ namespace ES2Access.Screens
 
         private static void AddDrawnButton(List<Cell> cells, AgeTransform widget, ControlId id)
         {
+            // Banding input: AddCell appends without the gate's question, and these bare icons band
+            // with the line they sit beside.
             if (!AgeWidgets.Visible(widget))
             {
                 return;
@@ -1579,6 +1603,8 @@ namespace ES2Access.Screens
                 for (int i = 0; children != null && i < children.Count; i++)
                 {
                     AgeTransform child = children[i];
+                    // Content: WHICH child is the panel's one button. A panel keeps children it is not
+                    // drawing, and the first of those with a button on it is not the one.
                     if (
                         child != null
                         && AgeWidgets.Visible(child)
@@ -1612,6 +1638,8 @@ namespace ES2Access.Screens
 
         private static string Turns(AgePrimitiveLabel label)
         {
+            // Content: whether the turn count is part of the reading - the panel leaves the label
+            // written and stops drawing it.
             return label == null || !AgeWidgets.Visible(label.AgeTransform)
                 ? null
                 : AgeText.Label(label);
@@ -1716,6 +1744,8 @@ namespace ES2Access.Screens
         )
         {
             AgeTransform widget = AgeWidgets.Transform(button);
+            // Synthetic guard: the node declared below carries no widget, so this test is the whole of
+            // its existence check - nothing downstream will ask again.
             if (widget == null || !AgeWidgets.Visible(widget) || !AgeWidgets.Operable(widget))
             {
                 return;
@@ -1878,6 +1908,8 @@ namespace ES2Access.Screens
                 }
 
                 PinnedQuestPanel panel = window.PinnedQuestPanel;
+                // Flow control: a null answer is how the caller hears that the quest strip is not on
+                // the page, and skips its whole context.
                 return panel != null
                     && panel.PinnedQuest != null
                     && AgeWidgets.Visible(panel.AgeTransform)
@@ -2362,6 +2394,8 @@ namespace ES2Access.Screens
         public void Turn(GraphBuilder builder)
         {
             EndTurnWindow window = TurnWindow();
+            // Flow control: everything the turn offers is read under this, and a stop with nothing in
+            // it is a Tab press that lands nowhere.
             if (window == null || !AgeWidgets.Visible(window.AgeTransform))
             {
                 return;
@@ -2370,6 +2404,8 @@ namespace ES2Access.Screens
             List<Cell> found = new List<Cell>();
             EndTurnWindow it = window;
             AgeControlButton endTurn = window.EndTurnButton;
+            // Banding input: AddCell appends without the gate's question, and the corner's controls are
+            // worked into rows by where they are drawn.
             if (AgeWidgets.Visible(AgeWidgets.Transform(endTurn)))
             {
                 NodeVtable vtable = GraphNodes.Button(
@@ -2430,6 +2466,7 @@ namespace ES2Access.Screens
             Action<AgeControlButton> activate = null
         )
         {
+            // Banding input: same corner, same door - AddCell takes the button without asking the gate.
             if (!AgeWidgets.Visible(AgeWidgets.Transform(button)))
             {
                 return;
@@ -2532,6 +2569,8 @@ namespace ES2Access.Screens
         private void AddRequestToggle(List<Cell> found, AgeControlToggle toggle)
         {
             AgeTransform widget = AgeWidgets.Transform(toggle);
+            // Banding input: AddCell appends without the gate's question, and the toggle bands with the
+            // rest of the corner.
             if (!AgeWidgets.Visible(widget))
             {
                 return;
@@ -2580,6 +2619,8 @@ namespace ES2Access.Screens
         private void AddSync(List<Cell> found, EndTurnWindow window)
         {
             AgeTransform group = window.SyncGroup;
+            // Banding input: AddCell appends without the gate's question, and the game draws this group
+            // only for the host on a checksum mismatch.
             if (!AgeWidgets.Visible(group))
             {
                 return;
@@ -2623,6 +2664,8 @@ namespace ES2Access.Screens
         private void AddPlayers(List<Cell> found, EndTurnWindow window)
         {
             AgeTransform ring = window.CompetitorsCircularTable;
+            // Banding input, and a different widget: the ring is what a single-player game does not
+            // draw, while the one cell below stands on it and is read for every player's line.
             if (!AgeWidgets.Visible(ring))
             {
                 return;
@@ -2663,6 +2706,8 @@ namespace ES2Access.Screens
             AgeTransform global = window.GlobalTimerLabel == null
                 ? null
                 : window.GlobalTimerLabel.AgeTransform;
+            // Banding input: AddCell appends without the gate's question, and the game draws the timers
+            // only in a game that runs one.
             if (AgeWidgets.Visible(global))
             {
                 NodeVtable vtable = GraphNodes.Readout(
@@ -2725,6 +2770,7 @@ namespace ES2Access.Screens
             AgeTransform clock = window.RealTimeClockLabel == null
                 ? null
                 : window.RealTimeClockLabel.AgeTransform;
+            // Banding input: same door as the timers - AddCell takes the clock without asking the gate.
             if (!AgeWidgets.Visible(clock))
             {
                 return;
@@ -2770,6 +2816,8 @@ namespace ES2Access.Screens
             try
             {
                 AgeTransform ring = window == null ? null : window.CompetitorsCircularTable;
+                // Spoken count: this figure is said as "N still playing", and -1 is how the caller
+                // hears that there is no ring to count - which is every single-player game.
                 if (!AgeWidgets.Visible(ring))
                 {
                     return -1;
@@ -2821,6 +2869,8 @@ namespace ES2Access.Screens
             try
             {
                 AgeTransform ring = window == null ? null : window.CompetitorsCircularTable;
+                // Content: which lines the players' row is reviewed with. Lines, not nodes - the ring
+                // declares one cell and these are what it says.
                 if (!AgeWidgets.Visible(ring))
                 {
                     return lines;
@@ -2984,6 +3034,8 @@ namespace ES2Access.Screens
         public static bool EndTurnByKey()
         {
             EndTurnWindow window = TurnWindow();
+            // Flow control: false is how the caller hears that the key was not this page's business,
+            // which is what leaves the press alone.
             if (window == null || !AgeWidgets.Visible(window.AgeTransform))
             {
                 return false;

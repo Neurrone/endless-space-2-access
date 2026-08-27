@@ -313,6 +313,8 @@ namespace ES2Access.Screens
             try
             {
                 AgeTransform cost = Widget(action.CostLabel);
+                // Content: whether the price is part of the row's reading. The row's node stands on
+                // the action, which the game draws either way.
                 return cost == null || !AgeWidgets.Visible(cost)
                     ? null
                     : AgeText.Label(action.CostLabel);
@@ -391,6 +393,8 @@ namespace ES2Access.Screens
 
         private static void Board(List<GuiPanel> boards, GuiPanel panel)
         {
+            // Flow control: each board kept here is walked panel by panel below, and the list is SORTED
+            // by rectangle first - a board the screen is not drawing would reorder the ones it is.
             if (panel != null && AgeWidgets.Visible(panel.AgeTransform))
             {
                 boards.Add(panel);
@@ -515,6 +519,8 @@ namespace ES2Access.Screens
         private static void AddSenatorCard(List<Cell> cells, AgeTransform widget, int index)
         {
             SenatorCard card = widget == null ? null : widget.GetComponent<SenatorCard>();
+            // Banding input: Cells.Add takes the card without asking the gate, and the senator cards are
+            // laid into rows by their rectangles - a card the panel is not drawing would band with them.
             if (card == null || !AgeWidgets.Visible(widget))
             {
                 return;
@@ -593,6 +599,8 @@ namespace ES2Access.Screens
         {
             try
             {
+                // Content: whether the level is said at all. The ring is a group inside the card, and
+                // the card's node stands on the card.
                 if (
                     card.HeroExperienceGroup == null
                     || !AgeWidgets.Visible(card.HeroExperienceGroup)
@@ -705,6 +713,8 @@ namespace ES2Access.Screens
             AgeTransform count =
                 panel.TotalCountLabel == null ? null : panel.TotalCountLabel.AgeTransform;
             AgeTransform caption = AgeWidgets.ChildNamed(panel.AgeTransform, "TotalCountTitle", 3);
+            // Banding input: Cells.Add takes the total without asking the gate, and its rectangle in the
+            // middle of the ring is what keeps it off the slices' rows.
             if (count == null || !AgeWidgets.Visible(count))
             {
                 return;
@@ -733,12 +743,16 @@ namespace ES2Access.Screens
         {
             PopulationCensusArc arc =
                 widget == null ? null : widget.GetComponent<PopulationCensusArc>();
+            // Different widget: the cell below stands on the arc's LABELS, so the gate never asks the
+            // arc itself - and a slice the ring has stopped drawing still holds its labels.
             if (arc == null || arc.GuiPopulation == null || !AgeWidgets.Visible(widget))
             {
                 return;
             }
 
             AgeTransform labels = arc.LabelsContainer;
+            // Banding input: Cells.Add takes the labels without asking the gate, and it is their
+            // rectangle down the side of the ring that works the slices into rows.
             if (labels == null || !AgeWidgets.Visible(labels))
             {
                 return;
@@ -792,6 +806,8 @@ namespace ES2Access.Screens
         {
             try
             {
+                // Content: whether the boost is part of the slice's reading. The slice's cell stands on
+                // the labels container above this one.
                 return arc.PopulationBoostLabel == null
                     || !AgeWidgets.Visible(arc.PopulationBoostLabel.AgeTransform)
                     ? null

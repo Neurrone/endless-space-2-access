@@ -459,6 +459,10 @@ namespace ES2Access.UI
                     AgeTransform child = children[i];
                     GuiTableHeader header =
                         child == null ? null : child.GetComponent<GuiTableHeader>();
+                    // Flow control and pairing input: the count decides whether a heading band is
+                    // opened at all, and this list's ORDER is what pairs each caption to a column
+                    // number (BandColumns) - a heading the table is not drawing would shift every
+                    // column after it.
                     if (header != null && AgeWidgets.Visible(child))
                     {
                         _headers.Add(header);

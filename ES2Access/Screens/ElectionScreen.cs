@@ -349,6 +349,8 @@ namespace ES2Access.Screens
             {
                 AgeControlToggle mark = marks[i];
                 AgeTransform widget = AgeWidgets.Transform(mark);
+                // Banding input: Cells.Add takes each mark without asking the gate, and the marks are
+                // worked into one row by where they are drawn along the track.
                 if (widget == null || !AgeWidgets.Visible(widget))
                 {
                     continue;
@@ -429,6 +431,7 @@ namespace ES2Access.Screens
 
             builder.BeginStop(BeforeActionsStop);
             _cells.Clear();
+            // Flow control: the caption and every action toggle under it are read one by one.
             if (AgeWidgets.Visible(panel.ElectionActionsGroup))
             {
                 // A caption the game draws over SEVERAL controls is a node of its own.
@@ -445,12 +448,15 @@ namespace ES2Access.Screens
 
             builder.BeginStop(BeforeLawsStop);
             _cells.Clear();
+            // Flow control: the show/hide pair and the card table below are each walked inside it.
             if (AgeWidgets.Visible(panel.PoliticsLawsGroup))
             {
                 // Exactly one of the two is drawn (ElectionBeforePanel.cs:341-346), so declaring both
                 // by visibility is what puts "Show ... laws" or "Hide" on the page and never both.
                 AddButton(_cells, Widget(panel.ShowPoliticsLawsButton), "show-laws");
                 AddButton(_cells, Widget(panel.HidePoliticsLawsButton), "hide-laws");
+                // Flow control: whether the card table is walked at all - the scroll view is what the
+                // Hide button collapses, and the cards inside it stay drawn under a collapsed one.
                 if (AgeWidgets.Visible(Widget(panel.PoliticsLawsScrollView)))
                 {
                     AddLawCards(_cells, panel.PoliticsLawsTable, "election:before/law");
@@ -461,6 +467,7 @@ namespace ES2Access.Screens
 
             builder.BeginStop(BeforeResourcesStop);
             _cells.Clear();
+            // Flow control: the four readouts under it are each read in turn.
             if (AgeWidgets.Visible(panel.EmpireResourcesGroup))
             {
                 AddReadout(
@@ -501,6 +508,8 @@ namespace ES2Access.Screens
             {
                 AgeTransform child = children[i];
                 CandidateCard card = Component<CandidateCard>(child);
+                // Banding input: the candidate cells are laid into rows by their rectangles, and
+                // Cells.Add takes them without asking the gate.
                 if (card == null || !AgeWidgets.Visible(child) || card.GuiPolitics == null)
                 {
                     continue;
@@ -543,6 +552,7 @@ namespace ES2Access.Screens
             {
                 AgeTransform child = children[i];
                 ElectionActionToggle item = Component<ElectionActionToggle>(child);
+                // Banding input: same table, same reason - the action cells are banded by rectangle.
                 if (
                     item == null
                     || !AgeWidgets.Visible(child)
@@ -646,6 +656,8 @@ namespace ES2Access.Screens
         private static ControlId AddSystemName(List<Cell> cells, ElectionLocalPanel panel)
         {
             AgeTransform name = Widget(panel.StarSystemNameLabel);
+            // Availability: a null answer tells the caller there is no head to open the system's row
+            // on, and Cells.Add below would take the name without asking the gate.
             if (name == null || !AgeWidgets.Visible(name))
             {
                 return null;
@@ -784,6 +796,8 @@ namespace ES2Access.Screens
         {
             AgeTransform gauge = panel.SystemRepresentativesGauge;
             AgeTransform bar = gauge == null ? null : gauge.Parent;
+            // Banding input: Cells.Add takes the bar without asking the gate, and its rectangle is what
+            // keeps the counted line off the rows of party figures beside it.
             if (bar == null || !AgeWidgets.Visible(bar) || counts.Total <= 0)
             {
                 return;
@@ -939,6 +953,8 @@ namespace ES2Access.Screens
                 "election:no-new-laws",
                 Raw(panel.NoNewLawsLabel)
             );
+            // Flow control: whether the card table is walked at all - the cards stay drawn inside a
+            // group or a scroll view the panel has switched off.
             if (
                 AgeWidgets.Visible(panel.UnlockedLawsGroup)
                 && AgeWidgets.Visible(Widget(panel.UnlockedLawScrollView))
@@ -963,6 +979,7 @@ namespace ES2Access.Screens
                 "election:no-outcomes",
                 Raw(panel.NoActionOutcomesLabel)
             );
+            // Flow control: the caption and every outcome line under it are read one by one.
             if (AgeWidgets.Visible(panel.ElectionActionOutcomesGroup))
             {
                 AddReadout(
@@ -1075,6 +1092,8 @@ namespace ES2Access.Screens
         private static WinnerSenatorCard Winner(AgeTransform child)
         {
             WinnerSenatorCard card = Component<WinnerSenatorCard>(child);
+            // Spoken count and flow control: AddWinners counts the answers to say "1 of N" on every
+            // winner's row, and walks only the cards this answered for.
             return card != null && AgeWidgets.Visible(child) && card.Senator != null ? card : null;
         }
 
@@ -1095,6 +1114,8 @@ namespace ES2Access.Screens
             AgePrimitiveLabel tier = card.PoliticsExperienceLabel;
             AgeTransform tierWidget = Widget(tier);
             AgeTransform whole = widget;
+            // Content, both times: whether the tier is part of the card's reading, and whether the
+            // sentence explaining it is offered as a section. The card's own cell stands on the card.
             NodeVtable vtable = GraphNodes.Readout(
                 () => name != null ? AgeText.Label(name) : AgeWidgets.TextOf(whole),
                 () => AgeWidgets.Painted(tierWidget) ? AgeText.Label(tier) : null,
@@ -1167,6 +1188,8 @@ namespace ES2Access.Screens
             {
                 AgeTransform child = children[i];
                 ElectionActionOutcomeLine line = Component<ElectionActionOutcomeLine>(child);
+                // Banding input: the outcome cells are banded by rectangle, and Cells.Add takes them
+                // without asking the gate.
                 if (line == null || !AgeWidgets.Visible(child))
                 {
                     continue;
@@ -1209,6 +1232,8 @@ namespace ES2Access.Screens
         private static bool Trends(GraphBuilder builder, ElectionLocalPanel panel)
         {
             AgeTransform group = panel.PoliticsSupportGroup;
+            // Flow control: a region and every trend bar under it are read below, and the answer tells
+            // the caller whether the region was opened at all.
             if (group == null || !AgeWidgets.Visible(group))
             {
                 return false;
@@ -1238,6 +1263,8 @@ namespace ES2Access.Screens
             for (int i = 0; children != null && i < children.Count; i++)
             {
                 AgeTransform child = children[i];
+                // Content: which of the group's children is the word the bars are announced under - a
+                // caption, not a node.
                 if (child == null || !AgeWidgets.Visible(child) || Holds(child, bars))
                 {
                     continue;
@@ -1289,6 +1316,8 @@ namespace ES2Access.Screens
             {
                 AgeTransform child = children[i];
                 LawCard card = Component<LawCard>(child);
+                // Banding input: the law cells are laid into rows by their rectangles, and Cells.Add
+                // takes them without asking the gate.
                 if (card == null || !AgeWidgets.Visible(child) || card.GuiLaw == null)
                 {
                     continue;
@@ -1312,6 +1341,8 @@ namespace ES2Access.Screens
         /// (<c>ElectionLocalPanel.cs:254-255</c>): unavailable rather than absent.</summary>
         private static void AddButton(List<Cell> cells, AgeTransform widget, string name)
         {
+            // Banding input: Cells.Add takes the button without asking the gate, and its rectangle is
+            // what puts it in a row with whatever the panel drew beside it.
             if (widget == null || !AgeWidgets.Visible(widget))
             {
                 return;
@@ -1393,6 +1424,8 @@ namespace ES2Access.Screens
             AgeTooltip tooltip = null
         )
         {
+            // Banding input, as at AddButton: Cells.Add takes the readout without asking the gate, and
+            // the panels pass PAIRS of labels here where the game draws only one of them.
             if (widget == null || !AgeWidgets.Visible(widget))
             {
                 return;
@@ -1522,6 +1555,8 @@ namespace ES2Access.Screens
                 for (int i = 0; panels != null && i < panels.Length; i++)
                 {
                     ElectionPanel panel = panels[i];
+                    // Flow control: which of the election's steps the whole build walks - the window
+                    // keeps every panel and shows one.
                     if (
                         panel != null
                         && !panel.Showing

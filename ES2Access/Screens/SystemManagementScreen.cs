@@ -663,6 +663,8 @@ namespace ES2Access.Screens
                     label.FidsiEnumerator == null ? null : label.FidsiEnumerator.AgeTransform
                 );
                 AddDepositDossiers(found, label);
+                // Content: which dossiers the card offers. These become a region of the card's own
+                // node, not nodes the gate ever sees.
                 if (AgeWidgets.Visible(label.ImprovementStatus))
                 {
                     TooltipChildren.Add(
@@ -703,6 +705,8 @@ namespace ES2Access.Screens
         )
         {
             AgeTransform group = label.ResourceDepositsGroup;
+            // Content: whether the deposits contribute dossiers at all - they become a region of the
+            // card's node rather than nodes of their own.
             if (group == null || !AgeWidgets.Visible(group))
             {
                 return;
@@ -779,6 +783,7 @@ namespace ES2Access.Screens
         )
         {
             AgeTransform table = label.PlanetAnomaliesTable;
+            // Flow control: whether the pooled table below is walked item by item at all.
             if (table == null || !AgeWidgets.Visible(table))
             {
                 return;
@@ -834,6 +839,7 @@ namespace ES2Access.Screens
         )
         {
             AgeTransform table = label.PlanetCuriositiesTable;
+            // Flow control: same, for the curiosities table.
             if (table == null || !AgeWidgets.Visible(table))
             {
                 return;
@@ -883,6 +889,8 @@ namespace ES2Access.Screens
             List<CardActions.CardAction> found = new List<CardActions.CardAction>(4);
             try
             {
+                // Flow control: whether the outpost's action list is collected at all - the actions
+                // below are NUMBERED by their place in it.
                 if (label.OutpostGroup == null || !AgeWidgets.Visible(label.OutpostGroup))
                 {
                     return found;
@@ -1000,6 +1008,7 @@ namespace ES2Access.Screens
         private static void AddDeposits(List<string> lines, PlanetLabel_SystemManagement label)
         {
             AgeTransform group = label.ResourceDepositsGroup;
+            // Content: which lines the card is read with. Lines, not nodes - nothing here is declared.
             if (group == null || !AgeWidgets.Visible(group))
             {
                 return;
@@ -1051,6 +1060,7 @@ namespace ES2Access.Screens
         private static void AddDepletion(List<string> lines, PlanetLabel_SystemManagement label)
         {
             PlanetDepletionStatusItem item = label.PlanetDepletionStatusItem;
+            // Content: whether the depletion state is one of the card's lines.
             if (item == null || !AgeWidgets.Visible(item.AgeTransform))
             {
                 return;
@@ -1070,6 +1080,8 @@ namespace ES2Access.Screens
         /// </summary>
         private static void AddOutpost(List<string> lines, PlanetLabel_SystemManagement label)
         {
+            // Content: whether the outpost's progress is among the card's lines - a colonized system
+            // draws none of it.
             if (label.OutpostGroup == null || !AgeWidgets.Visible(label.OutpostGroup))
             {
                 return;
@@ -2126,6 +2138,8 @@ namespace ES2Access.Screens
                 window.GetComponentsInChildren<PlanetLabel_SystemManagement>(true);
             for (int i = 0; i < labels.Length; i++)
             {
+                // Flow control: the kept cards are sorted by rectangle and walked in that order, so a
+                // card the window is not drawing would reorder the ones it is.
                 if (labels[i] != null && AgeWidgets.Visible(labels[i].AgeTransform))
                 {
                     into.Add(labels[i]);
@@ -2285,6 +2299,8 @@ namespace ES2Access.Screens
             AddSystemPaging(_cells);
 
             AgeControlButton rename = panel.RenameButton;
+            // Banding input: Cells.Add takes the button without asking the gate, and its rectangle is
+            // what puts it on the same row as the system's name.
             if (rename != null && AgeWidgets.Visible(AgeWidgets.Transform(rename)))
             {
                 AgeControlButton it = rename;
@@ -2326,6 +2342,7 @@ namespace ES2Access.Screens
             );
 
             AgeTransform improvements = ImprovementsButton(panel);
+            // Banding input: same door, same reason - the cell is banded by where it is drawn.
             if (improvements != null && AgeWidgets.Visible(improvements))
             {
                 AgeTransform it = improvements;
@@ -2370,6 +2387,8 @@ namespace ES2Access.Screens
         private static void AddMothership(List<Cell> cells, ColonyInfoSidePanel panel)
         {
             AgePrimitiveLabel name = panel.MothershipNameLabel;
+            // Different widget and banding input: the cell below stands on the NAME label, which the
+            // panel leaves drawn inside a mothership group it has switched off.
             if (
                 panel.MothershipGroup == null
                 || !AgeWidgets.Visible(panel.MothershipGroup)
@@ -2395,6 +2414,8 @@ namespace ES2Access.Screens
 
             AgeControlButton detach = panel.DetachButton;
             AgeTransform widget = AgeWidgets.Transform(detach);
+            // Banding input: Cells.Add takes the button without asking the gate, and it bands with the
+            // mothership's name above.
             if (widget == null || !AgeWidgets.Visible(widget))
             {
                 return;
@@ -2434,6 +2455,8 @@ namespace ES2Access.Screens
         private static void AddInfoIcon(List<Cell> cells, AgePrimitiveImage icon, string key)
         {
             AgeTransform widget = icon == null ? null : icon.AgeTransform;
+            // Banding input: the three status icons are worked into one row by their rectangles, and
+            // Cells.Add takes them without asking the gate.
             if (widget == null || !AgeWidgets.Visible(widget))
             {
                 return;
@@ -2484,6 +2507,8 @@ namespace ES2Access.Screens
             string key
         )
         {
+            // Flow control: whether the pooled table below is walked line by line at all. A table
+            // fading IN still has content, which is why the chain test rather than Paints is asked here.
             if (table == null || !AgeWidgets.Visible(table))
             {
                 return;
@@ -2525,6 +2550,8 @@ namespace ES2Access.Screens
         private static void AddCitadelManpower(List<Cell> cells, ColonyInfoSidePanel panel)
         {
             AgeTransform group = panel.CitadelManpowerGroup;
+            // Banding input: Cells.Add takes the group without asking the gate, and its rectangle is
+            // what puts the citadel's pool beside the system's own.
             if (group == null || !AgeWidgets.Visible(group))
             {
                 return;
@@ -2557,6 +2584,8 @@ namespace ES2Access.Screens
         {
             AgeControlToggle toggle = panel.DecolonizeGhostToggle;
             AgeTransform widget = AgeWidgets.Transform(toggle);
+            // Banding input: Cells.Add takes the tick without asking the gate, and it bands with
+            // whatever the panel drew on its row.
             if (widget == null || !AgeWidgets.Visible(widget))
             {
                 return;
@@ -2593,6 +2622,8 @@ namespace ES2Access.Screens
         private static void AddMilitaryStatus(List<Cell> cells, ColonyInfoSidePanel panel)
         {
             AgeTransform group = panel.SystemMilitaryStatusGroup;
+            // Banding input: Cells.Add takes the banner without asking the gate, and the panel draws it
+            // only while a status is running.
             if (group == null || !AgeWidgets.Visible(group))
             {
                 return;
@@ -2620,6 +2651,7 @@ namespace ES2Access.Screens
         private static void AddOwnership(List<Cell> cells, ColonyInfoSidePanel panel)
         {
             AgeTransform group = panel.OwnershipGroup;
+            // Banding input: Cells.Add takes the group without asking the gate.
             if (group == null || !AgeWidgets.Visible(group))
             {
                 return;
@@ -2653,6 +2685,8 @@ namespace ES2Access.Screens
         {
             ResourcesPanel banner = panel.ResourcesBanner;
             AgeTransform table = banner == null ? null : banner.ResourceItemsTable;
+            // Flow control, and a different widget than the cells: the BANNER is what the panel hides,
+            // while the items inside it keep their own flags and are what the cells stand on.
             if (table == null || !AgeWidgets.Visible(banner.AgeTransform))
             {
                 return;
@@ -2668,6 +2702,8 @@ namespace ES2Access.Screens
                         widget == null ? null : widget.GetComponent<ResourceItem>();
                     GuiLocatedResource resource =
                         item == null ? null : item.GuiLocatedResource;
+                    // Banding input: Cells.Add takes each item without asking the gate, and the items
+                    // are worked into the banner's row by where they are drawn.
                     if (resource == null || !AgeWidgets.Visible(widget))
                     {
                         continue;
@@ -2713,6 +2749,8 @@ namespace ES2Access.Screens
         private static void AddWreckedMotherships(List<Cell> cells, ColonyInfoSidePanel panel)
         {
             AgeTransform group = panel.MothershipsGroup;
+            // Banding input: Cells.Add takes the group without asking the gate, and the panel draws it
+            // only where there is at least one wreck.
             if (group == null || !AgeWidgets.Visible(group))
             {
                 return;
@@ -2740,6 +2778,7 @@ namespace ES2Access.Screens
         {
             FidsiEnumerator fidsi = panel.FidsiEnumerator;
             AgeTransform group = fidsi == null ? null : fidsi.FidsiGroup;
+            // Flow control: the five outputs under the group are read one property at a time.
             if (group == null || fidsi.FidsiProperties == null || !AgeWidgets.Visible(group))
             {
                 return;
@@ -2773,6 +2812,8 @@ namespace ES2Access.Screens
         {
             AgeControlDropList list = panel.PolicyDroplist;
             AgeTransform group = panel.PolicyGroup;
+            // Banding input, and a different widget: the cell stands on the drop list, while the GROUP
+            // is what the panel hides - the list inside keeps its own flag.
             if (list == null || group == null || !AgeWidgets.Visible(group))
             {
                 return;
@@ -2881,6 +2922,9 @@ namespace ES2Access.Screens
                 panel.ContentGroup == null ? null : panel.ContentGroup.Children;
             for (int i = 0; children != null && i < children.Count; i++)
             {
+                // Flow control: each block kept here is read as a section of its own below, and the
+                // list is walked in drawn order - a block the panel is not drawing would open one over
+                // nothing.
                 if (children[i] != null && AgeWidgets.Visible(children[i]))
                 {
                     _blocks.Add(children[i]);
@@ -3142,6 +3186,8 @@ namespace ES2Access.Screens
             }
 
             GovernorSymbolCell(cells, panel.AffinityIcon, panel.AffinityTooltip, keyPrefix);
+            // Banding input: the cell is appended straight to the list, so the gate never sees it until
+            // the bands are already drawn - and the governor's symbols share one row.
             if (
                 panel.ExperienceGauge != null
                 && AgeWidgets.Visible(panel.ExperienceGauge.AgeTransform)
@@ -3166,6 +3212,7 @@ namespace ES2Access.Screens
         )
         {
             AgeTransform widget = icon == null ? null : icon.AgeTransform;
+            // Banding input: same row, same reason - the cell is appended without the gate's question.
             if (widget == null || tooltip == null || !AgeWidgets.Visible(widget))
             {
                 return;
@@ -3520,6 +3567,8 @@ namespace ES2Access.Screens
         {
             try
             {
+                // Content: a label the panel is not drawing says nothing, so the reading it feeds
+                // leaves the phrase out instead of speaking a stale one.
                 return label != null && AgeWidgets.Visible(label.AgeTransform)
                     ? AgeText.Label(label)
                     : null;
@@ -3717,6 +3766,7 @@ namespace ES2Access.Screens
         )
         {
             AgeTransform widget = AgeWidgets.Transform(button);
+            // Banding input: Add below is Cells.Add, which takes the button without asking the gate.
             if (widget == null || !AgeWidgets.Visible(widget))
             {
                 return;
@@ -3759,6 +3809,8 @@ namespace ES2Access.Screens
             AgeTooltip tooltip = null
         )
         {
+            // Banding input, as at the buttons: Add below is Cells.Add, and the panel passes labels
+            // here that it draws only in some of the colony's states.
             if (widget == null || !AgeWidgets.Visible(widget))
             {
                 return;
