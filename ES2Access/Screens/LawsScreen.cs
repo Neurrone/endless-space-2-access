@@ -413,12 +413,8 @@ namespace ES2Access.Screens
             IList<AgeTransform> bands = group.Children;
             for (int i = 0; bands != null && i < bands.Count; i++)
             {
-                AgeTransform band = bands[i];
-                if (
-                    band == null
-                    || ReferenceEquals(band, caption)
-                    || !AgeWidgets.Paints(band)
-                )
+                AgeTransform band = AgeWidgets.DrawnChild(bands, i);
+                if (band == null || ReferenceEquals(band, caption))
                 {
                     continue;
                 }
@@ -426,9 +422,10 @@ namespace ES2Access.Screens
                 IList<AgeTransform> lines = band.Children;
                 for (int j = 0; lines != null && j < lines.Count; j++)
                 {
-                    if (AgeWidgets.Paints(lines[j]))
+                    AgeTransform line = AgeWidgets.DrawnChild(lines, j);
+                    if (line != null)
                     {
-                        Cells.AddReadout(_cells, lines[j], "laws:effect/" + i + "/" + j);
+                        Cells.AddReadout(_cells, line, "laws:effect/" + i + "/" + j);
                     }
                 }
             }

@@ -85,16 +85,14 @@ namespace ES2Access.UI
                 List<AgeTransform> children = table.Children;
                 for (int i = 0; i < children.Count; i++)
                 {
-                    AgeTransform child = children[i];
-                    // Hidden features are skipped rather than read, and that is load-bearing rather
+                    // Undrawn features are skipped rather than read, and that is load-bearing rather
                     // than tidy: the window POOLS its features instead of destroying them, so a
                     // tooltip that once showed six still has four hanging off it holding the text of
-                    // whatever was hovered before.
-                    if (
-                        child != null
-                        && child.Visible
-                        && (table.StrictVisibility || child.Alpha > 0f)
-                    )
+                    // whatever was hovered before. StrictVisibility is no exemption - it tells the
+                    // ARRANGER to keep counting a faded child's slot, and the renderer skips it all
+                    // the same (<see cref="AgeWidgets.DrawnChild"/>).
+                    AgeTransform child = AgeWidgets.DrawnChild(children, i);
+                    if (child != null)
                     {
                         readings.Add(TooltipFeatures.Read(child));
                     }

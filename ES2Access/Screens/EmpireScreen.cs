@@ -984,8 +984,11 @@ namespace ES2Access.Screens
                 IList<AgeTransform> markers = container.Children;
                 for (int i = 0; markers != null && i < markers.Count; i++)
                 {
-                    AgeTransform marker = markers[i];
-                    if (marker == null || !marker.Visible)
+                    // The ring retires a marker by HIDING it rather than by fading it
+                    // (PopulationEnumerator.HideAllPopulationMarkers), which the shared child test
+                    // covers as well: it asks the visibility flag first.
+                    AgeTransform marker = AgeWidgets.DrawnChild(markers, i);
+                    if (marker == null)
                     {
                         continue;
                     }

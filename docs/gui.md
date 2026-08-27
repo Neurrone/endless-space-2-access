@@ -446,10 +446,12 @@ widget, exactly as the game's own mouse flows do.
   (:1090-1103) sets `PlanetCuriositiesTable.Visible = remaining.Count > 0` and RETURNS before
   refreshing the children, so a planet whose last curiosity was just expedited keeps a child at
   `Visible true, Alpha 1` inside a hidden table (measured on Ita II the turn its expedition
-  landed). The table's own visibility is the first gate and painted-ness the second — together
-  they are exactly what the engine's own `AgeTransform.GetVisibleChildrenCount` counts
-  (`Visible && (StrictVisibility || Alpha > 0)`, :2549-2561), which is the free oracle for any
-  count a mod speaks off such a table. The same alpha-0 retirement shows up outside tables too:
+  landed). The table's own visibility is the first gate and painted-ness the second: the mod's row
+  test is `Visible && Alpha > 0` on the child alone (`AgeWidgets.Paints`, asked per child by
+  `AgeWidgets.DrawnChild`), which is the RENDERER's own early-out. The ARRANGER's
+  `AgeTransform.GetVisibleChildrenCount` (:2549-2561) counts
+  `Visible && (StrictVisibility || Alpha > 0)` instead — so it is a free oracle only for a table
+  whose `StrictVisibility` is off, and on a strict one it counts faded rows the game is not drawing. The same alpha-0 retirement shows up outside tables too:
   `GuiEffectMapper.UnloadEffects` retires effect lines that way.
 - **A `GuiTable` line is a POOL SLOT, not a row.** `LineNNN` names (and positions) are reassigned
   whenever the table refreshes or re-sorts, so a cursor keyed on either sits on a different thing

@@ -208,8 +208,8 @@ namespace ES2Access.Dev
             List<AgeTransform> children = widget.Children;
             for (int i = 0; children != null && i < children.Count; i++)
             {
-                AgeTransform child = children[i];
-                if (AgeWidgets.Paints(child))
+                AgeTransform child = AgeWidgets.DrawnChild(children, i);
+                if (child != null)
                 {
                     Walk(child, declared, result, depth + 1, budget);
                 }

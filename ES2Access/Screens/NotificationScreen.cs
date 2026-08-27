@@ -1876,9 +1876,10 @@ namespace ES2Access.Screens
             List<AgeTransform> children = widget.Children;
             for (int i = 0; children != null && i < children.Count; i++)
             {
-                if (AgeWidgets.Paints(children[i]))
+                AgeTransform child = AgeWidgets.DrawnChild(children, i);
+                if (child != null)
                 {
-                    Collect(children[i], lines, depth + 1);
+                    Collect(child, lines, depth + 1);
                 }
             }
         }
@@ -1905,7 +1906,8 @@ namespace ES2Access.Screens
             List<AgeTransform> children = widget.Children;
             for (int i = 0; children != null && i < children.Count; i++)
             {
-                if (AgeWidgets.Paints(children[i]) && Draws(children[i], depth + 1))
+                AgeTransform child = AgeWidgets.DrawnChild(children, i);
+                if (child != null && Draws(child, depth + 1))
                 {
                     return true;
                 }
@@ -2487,8 +2489,8 @@ namespace ES2Access.Screens
             List<AgeTransform> children = table.Children;
             for (int i = 0; children != null && i < children.Count; i++)
             {
-                AgeTransform child = children[i];
-                if (AgeWidgets.Paints(child) && Visible(child) && Draws(child, 0))
+                AgeTransform child = AgeWidgets.DrawnChild(children, i);
+                if (child != null && Visible(child) && Draws(child, 0))
                 {
                     rows.Add(child);
                 }
@@ -4499,9 +4501,10 @@ namespace ES2Access.Screens
             List<AgeTransform> children = widget.Children;
             for (int i = 0; children != null && i < children.Count; i++)
             {
-                if (AgeWidgets.Paints(children[i]))
+                AgeTransform child = AgeWidgets.DrawnChild(children, i);
+                if (child != null)
                 {
-                    Labels(children[i], into, depth + 1);
+                    Labels(child, into, depth + 1);
                 }
             }
         }

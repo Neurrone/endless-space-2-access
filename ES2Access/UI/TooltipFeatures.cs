@@ -338,14 +338,15 @@ namespace ES2Access.UI
                 entries.Add(new Entry { Widget = widget, Text = text, Icon = label == null });
             }
 
-            // The engine's own test for "the player can see this child", asked the way the engine
-            // asks it: transparent counts as hidden unless the parent has declared otherwise.
+            // The engine's own test for "the player can see this child"
+            // (<see cref="AgeWidgets.DrawnChild"/>). StrictVisibility is no exemption: it tells the
+            // ARRANGER to keep counting a faded child's slot, and the renderer skips it all the same.
             List<AgeTransform> shown = new List<AgeTransform>();
             List<AgeTransform> children = widget.Children;
             for (int i = 0; i < children.Count; i++)
             {
-                AgeTransform child = children[i];
-                if (child != null && child.Visible && (widget.StrictVisibility || child.Alpha > 0f))
+                AgeTransform child = AgeWidgets.DrawnChild(children, i);
+                if (child != null)
                 {
                     shown.Add(child);
                 }
@@ -1384,13 +1385,14 @@ namespace ES2Access.UI
             List<AgeTransform> blocks = table == null ? null : table.Children;
             for (int i = 0; blocks != null && i < blocks.Count; i++)
             {
-                if (!AgeWidgets.Paints(blocks[i]))
+                AgeTransform drawnBlock = AgeWidgets.DrawnChild(blocks, i);
+                if (drawnBlock == null)
                 {
                     continue;
                 }
 
                 PanelFeatureEffectsSetsItem block =
-                    blocks[i].GetComponent<PanelFeatureEffectsSetsItem>();
+                    drawnBlock.GetComponent<PanelFeatureEffectsSetsItem>();
                 if (block == null)
                 {
                     continue;
@@ -1406,11 +1408,12 @@ namespace ES2Access.UI
                     // The table retires a line it no longer needs by fading it out rather than hiding
                     // it (GuiEffectMapper.UnloadEffects), so a block that shrank still holds the
                     // previous binding's words in a child that is still Visible.
-                    if (AgeWidgets.Paints(drawn[line]))
+                    AgeTransform effect = AgeWidgets.DrawnChild(drawn, line);
+                    if (effect != null)
                     {
                         TooltipText.AddLines(
                             lines,
-                            AgeText.Label(drawn[line].GetComponent<AgePrimitiveLabel>())
+                            AgeText.Label(effect.GetComponent<AgePrimitiveLabel>())
                         );
                     }
                 }
@@ -1457,11 +1460,12 @@ namespace ES2Access.UI
             List<AgeTransform> drawn = table == null ? null : table.Children;
             for (int i = 0; drawn != null && i < drawn.Count; i++)
             {
-                if (AgeWidgets.Paints(drawn[i]))
+                AgeTransform effect = AgeWidgets.DrawnChild(drawn, i);
+                if (effect != null)
                 {
                     TooltipText.AddLines(
                         lines,
-                        AgeText.Label(drawn[i].GetComponent<AgePrimitiveLabel>())
+                        AgeText.Label(effect.GetComponent<AgePrimitiveLabel>())
                     );
                 }
             }

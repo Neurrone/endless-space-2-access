@@ -113,9 +113,11 @@ button, quests and the journal, the tutorial popup, and the end of a game. Index
   "Damage Report" the screen draws nothing of. The popup's ARRIVAL animates the window's own
   transform 0 → 1 while every child stays at alpha 1 (measured: a `POST /wait` on
   `Shown && Alpha <= 0` fires, one on `Shown && IsReady && !Painted(root)` never does over 154
-  frames). So the gate is the ENGINE's own child test —
-  `child.Visible && (parent.StrictVisibility || child.Alpha > 0)`, `AgeWidgets.Paints` — applied
-  descending from the window root and never to the root itself. `NotificationWindow.IsReady` is
+  frames). So the gate is the ENGINE's own child test — `child.Visible && child.Alpha > 0`
+  (`AgeWidgets.Paints`, asked per child by `AgeWidgets.DrawnChild`) — applied descending from the
+  window root and never to the root itself. `StrictVisibility` is NOT an exemption in it: that flag
+  tells the ARRANGER to keep counting a faded child's slot, and the renderer skips the child all the
+  same. `NotificationWindow.IsReady` is
   already past the fade, so the arrival announcement is not at risk either way.
 - **The report family's breakdown toggle is REAL** (supersedes an earlier "vestigial" reading, which
   was an ask-the-wrong-component error). `ReportPanel.GetComponents<AgeModifier>()` really does answer

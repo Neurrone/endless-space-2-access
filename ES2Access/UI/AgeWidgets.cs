@@ -33,8 +33,17 @@ namespace ES2Access.UI
             }
         }
 
-        /// <summary>A control inside a group the window has collapsed is still marked visible itself,
-        /// so the chain above it is what says whether the player can see it.</summary>
+        /// <summary>
+        /// Whether a ROOT is switched on - a screen's window, a panel, the group a walk is about to
+        /// descend into. A control inside a group the window has collapsed is still marked visible
+        /// itself, so the chain above it is what says whether the player can see it.
+        ///
+        /// Roots ONLY. Asked of a CHILD it is the wrong question twice over: it ignores alpha, so it
+        /// says yes to a pooled table's retired row, and it walks the ancestry a walk descending from a
+        /// trusted root has already vouched for - which reads a whole window as blank for the length of
+        /// its arrival fade. A walk asks <see cref="DrawnChild"/> of the children it is stepping
+        /// through, and this of the root it started from.
+        /// </summary>
         public static bool Visible(AgeTransform widget)
         {
             try
@@ -127,6 +136,35 @@ namespace ES2Access.UI
             {
                 return false;
             }
+        }
+
+        /// <summary>
+        /// The child at <paramref name="index"/> of a container the walk already TRUSTS, or null where
+        /// the renderer is not drawing it - the one blessed way to step through
+        /// <c>AgeTransform.Children</c>.
+        ///
+        /// The test is <see cref="Paints"/>, one step, because that is the question a child raises: a
+        /// pooled table retires a surplus row by fading it to nothing while leaving it
+        /// <c>Visible</c> and still holding the previous binding's words, and a walk that asked
+        /// <see cref="Visible"/> instead declared four separate ghosts before this existed. The
+        /// ancestry is deliberately not re-asked: the walk entered through a root it gated on
+        /// <see cref="Visible"/>, and re-asking it blanks every window that fades itself in on arrival
+        /// while its children stay at alpha 1. Entry gates on ROOTS therefore stay
+        /// <see cref="Visible"/>; everything below them comes through here.
+        ///
+        /// The INDEX is the caller's, not a compacted one, so a node keyed by its position in the
+        /// drawn tree keeps that key whether or not the pool is holding ghosts either side of it; and
+        /// the caller binds <c>Children</c> once and walks it, so nothing is allocated per frame.
+        /// </summary>
+        public static AgeTransform DrawnChild(IList<AgeTransform> children, int index)
+        {
+            if (children == null || index < 0 || index >= children.Count)
+            {
+                return null;
+            }
+
+            AgeTransform child = children[index];
+            return Paints(child) ? child : null;
         }
 
         public static bool Enabled(AgeTransform widget)

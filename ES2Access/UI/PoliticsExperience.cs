@@ -71,8 +71,8 @@ namespace ES2Access.UI
                 IList<AgeTransform> ticks = group.Children;
                 for (int i = 0; ticks != null && i < ticks.Count; i++)
                 {
-                    AgeTransform tick = ticks[i];
-                    if (!AgeWidgets.Paints(tick))
+                    AgeTransform tick = AgeWidgets.DrawnChild(ticks, i);
+                    if (tick == null)
                     {
                         continue;
                     }

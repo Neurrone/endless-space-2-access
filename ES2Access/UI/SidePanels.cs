@@ -305,22 +305,20 @@ namespace ES2Access.UI
                     IList<AgeTransform> children = widget.Children;
                     for (int i = 0; children != null && i < children.Count; i++)
                     {
-                        // The engine's own drawing test rather than the visibility flag, and asked of
-                        // the CHILD rather than of the widget the walk already trusts - the same rule
-                        // and the same reason as <see cref="Effects"/>. Every strip in these panels is
-                        // POOLED: a colony's population strip keeps a row per population the panel has
-                        // EVER shown and retires the surplus by fading it, so a walk gated on
-                        // visibility declared two rows of a system the player had left as buttons
-                        // saying nothing but their stale counts. Asking the child leaves a panel that
-                        // is itself fading IN readable while it arrives.
-                        if (!AgeWidgets.Paints(children[i]))
+                        // Every strip in these panels is POOLED: a colony's population strip keeps a
+                        // row per population the panel has EVER shown and retires the surplus by
+                        // fading it, so a walk gated on visibility declared two rows of a system the
+                        // player had left as buttons saying nothing but their stale counts
+                        // (<see cref="AgeWidgets.DrawnChild"/>, the same rule as <see cref="Effects"/>).
+                        AgeTransform child = AgeWidgets.DrawnChild(children, i);
+                        if (child == null)
                         {
                             continue;
                         }
 
                         Collect(
                             cells,
-                            children[i],
+                            child,
                             keyPrefix,
                             depth + 1,
                             panel,
@@ -380,7 +378,7 @@ namespace ES2Access.UI
 
         /// <summary>Whether anything inside this widget is itself a container - which is what makes the
         /// widget a band of separate lines rather than one line drawn out of pieces. Counted off the
-        /// engine's own drawing test (<see cref="AgeWidgets.Paints"/>) so that it agrees with the walk
+        /// engine's own drawing test (<see cref="AgeWidgets.DrawnChild"/>) so that it agrees with the walk
         /// it gates: a strip whose only remaining children are POOLED rows the game retired by fading
         /// them is not a band, it is a strip that draws nothing.</summary>
         private static bool HasGroupChild(AgeTransform widget)
@@ -388,8 +386,8 @@ namespace ES2Access.UI
             IList<AgeTransform> children = widget.Children;
             for (int i = 0; children != null && i < children.Count; i++)
             {
-                AgeTransform child = children[i];
-                if (!AgeWidgets.Paints(child))
+                AgeTransform child = AgeWidgets.DrawnChild(children, i);
+                if (child == null)
                 {
                     continue;
                 }
@@ -397,7 +395,7 @@ namespace ES2Access.UI
                 IList<AgeTransform> grandchildren = child.Children;
                 for (int j = 0; grandchildren != null && j < grandchildren.Count; j++)
                 {
-                    if (AgeWidgets.Paints(grandchildren[j]))
+                    if (AgeWidgets.DrawnChild(grandchildren, j) != null)
                     {
                         return true;
                     }
@@ -419,7 +417,7 @@ namespace ES2Access.UI
         /// The table is POOLED: a panel re-bound to something with fewer effects retires the surplus
         /// lines by FADING them (<c>GuiEffectMapper.UnloadEffects</c>), which leaves them Visible and
         /// still holding the previous binding's words, so both walks ask the engine's own drawing test
-        /// (<see cref="AgeWidgets.Paints"/>) instead of the visibility flag.
+        /// (<see cref="AgeWidgets.DrawnChild"/>) instead of the visibility flag.
         /// </summary>
         private static bool Effects(
             List<Cell> cells,
@@ -446,12 +444,8 @@ namespace ES2Access.UI
             IList<AgeTransform> children = widget.Children;
             for (int i = 0; children != null && i < children.Count; i++)
             {
-                AgeTransform table = children[i];
-                if (
-                    table == null
-                    || ReferenceEquals(table, caption)
-                    || !AgeWidgets.Paints(table)
-                )
+                AgeTransform table = AgeWidgets.DrawnChild(children, i);
+                if (table == null || ReferenceEquals(table, caption))
                 {
                     continue;
                 }
@@ -459,12 +453,8 @@ namespace ES2Access.UI
                 IList<AgeTransform> lines = table.Children;
                 for (int j = 0; lines != null && j < lines.Count; j++)
                 {
-                    AgeTransform line = lines[j];
-                    if (
-                        line == null
-                        || !AgeWidgets.Paints(line)
-                        || string.IsNullOrEmpty(AgeWidgets.TextOf(line))
-                    )
+                    AgeTransform line = AgeWidgets.DrawnChild(lines, j);
+                    if (line == null || string.IsNullOrEmpty(AgeWidgets.TextOf(line)))
                     {
                         continue;
                     }

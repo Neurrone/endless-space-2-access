@@ -708,8 +708,8 @@ namespace ES2Access.Screens
             IList<AgeTransform> children = group.Children;
             for (int i = 0; children != null && i < children.Count; i++)
             {
-                AgeTransform child = children[i];
-                if (!AgeWidgets.Paints(child))
+                AgeTransform child = AgeWidgets.DrawnChild(children, i);
+                if (child == null)
                 {
                     continue;
                 }
@@ -991,8 +991,8 @@ namespace ES2Access.Screens
             IList<AgeTransform> children = group.Children;
             for (int i = 0; children != null && i < children.Count; i++)
             {
-                AgeTransform child = children[i];
-                if (!AgeWidgets.Paints(child))
+                AgeTransform child = AgeWidgets.DrawnChild(children, i);
+                if (child == null)
                 {
                     continue;
                 }
@@ -1312,7 +1312,7 @@ namespace ES2Access.Screens
             int drawn = 0;
             for (int i = 0; markers != null && i < markers.Count; i++)
             {
-                if (markers[i] != null && markers[i].Visible)
+                if (AgeWidgets.DrawnChild(markers, i) != null)
                 {
                     drawn++;
                 }
@@ -1332,14 +1332,15 @@ namespace ES2Access.Screens
             int seen = 0;
             for (int i = 0; markers != null && i < markers.Count; i++)
             {
-                if (markers[i] == null || !markers[i].Visible)
+                AgeTransform marker = AgeWidgets.DrawnChild(markers, i);
+                if (marker == null)
                 {
                     continue;
                 }
 
                 if (seen == index)
                 {
-                    return markers[i];
+                    return marker;
                 }
 
                 seen++;

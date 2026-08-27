@@ -966,10 +966,11 @@ namespace ES2Access.Screens
             IList<AgeTransform> items = table == null ? null : table.Children;
             for (int i = 0; items != null && i < items.Count; i++)
             {
+                AgeTransform item = AgeWidgets.DrawnChild(items, i);
                 if (
-                    AgeWidgets.Paints(items[i])
-                    && AgeWidgets.Visible(items[i])
-                    && !string.IsNullOrEmpty(AgeWidgets.TextOf(items[i]))
+                    item != null
+                    && AgeWidgets.Visible(item)
+                    && !string.IsNullOrEmpty(AgeWidgets.TextOf(item))
                 )
                 {
                     return true;
@@ -988,9 +989,10 @@ namespace ES2Access.Screens
             IList<AgeTransform> items = table == null ? null : table.Children;
             for (int i = 0; items != null && i < items.Count; i++)
             {
-                if (AgeWidgets.Paints(items[i]))
+                AgeTransform item = AgeWidgets.DrawnChild(items, i);
+                if (item != null)
                 {
-                    AddReadout(builder, items[i], keyPrefix + i);
+                    AddReadout(builder, item, keyPrefix + i);
                 }
             }
         }

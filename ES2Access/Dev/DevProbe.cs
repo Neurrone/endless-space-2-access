@@ -1337,8 +1337,8 @@ namespace ES2Access.Dev
             List<AgeTransform> children = widget.Children;
             for (int i = 0; i < children.Count; i++)
             {
-                AgeTransform child = children[i];
-                if (child != null && child.Visible && (widget.StrictVisibility || child.Alpha > 0f))
+                AgeTransform child = AgeWidgets.DrawnChild(children, i);
+                if (child != null)
                 {
                     Gather(child, found, depth + 1);
                 }

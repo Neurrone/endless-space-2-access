@@ -25,8 +25,10 @@ namespace ES2Access.UI
     ///
     /// A node with no carrier passes ungated (<see cref="NodeCarrier"/>).
     ///
-    /// <para><b>The flag.</b> <see cref="Enabled"/> is a runtime switch, default OFF, flipped from the
-    /// dev REPL without a rebuild. Like every static in this assembly it is re-initialised by a hot
+    /// <para><b>The flag.</b> <see cref="Enabled"/> is a runtime switch, default ON, flipped from the
+    /// dev REPL without a rebuild. It is kept past the measurement battery it was built for, because
+    /// turning it off and on around one dump is how a screen's drops are MEASURED: the difference
+    /// between the two renders is exactly what the gate is taking away. Like every static in this assembly it is re-initialised by a hot
     /// reload (the mod is loaded from bytes into a fresh assembly each time), so a flip does not
     /// survive <c>POST /reload</c> - and neither does <see cref="_reported"/>, which is why the drop
     /// log needs no teardown of its own.</para>
@@ -38,9 +40,10 @@ namespace ES2Access.UI
     /// </summary>
     public static class NodeGate
     {
-        /// <summary>Whether the gate drops anything at all. OFF until the live measurement battery has
-        /// run; flip it from the REPL to measure.</summary>
-        public static bool Enabled;
+        /// <summary>Whether the gate drops anything at all. ON: the measurement battery has run. Flip it
+        /// off from the REPL and dump, flip it back and dump again, and the diff is this screen's
+        /// drops.</summary>
+        public static bool Enabled = true;
 
         /// <summary>Screen+node pairs already reported, so a per-frame rebuild logs a drop once. Capped
         /// rather than pruned: it exists to keep the log readable, and forgetting a whole session's
