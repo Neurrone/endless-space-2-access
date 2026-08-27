@@ -236,6 +236,10 @@ namespace ES2Access.Screens
             }
 
             builder.SetRegion(region);
+            // One counter per PANEL, because that is the scope its keys are unique in: the prefix
+            // already separates the panels from each other, and clearing here is what stops one
+            // panel's repeats from numbering the next one's.
+            _seen.Clear();
             AgeTransform caption = Caption(content);
             if (caption == null)
             {
@@ -332,12 +336,47 @@ namespace ES2Access.Screens
                     return;
                 }
 
-                AddReadout(builder, widget, keyPrefix + widget.name + "/" + depth);
+                AddReadout(builder, widget, Distinct(keyPrefix + widget.name + "/" + depth));
             }
             catch (Exception e)
             {
                 Log.Warn("quests: reading a panel threw: " + e);
             }
+        }
+
+        /// <summary>
+        /// The occurrence counter <see cref="Distinct"/> keeps for one scrape. Static and cleared per
+        /// scrape rather than allocated in it: these panels are re-read every frame.
+        /// </summary>
+        private static readonly Dictionary<string, int> _seen = new Dictionary<string, int>();
+
+        /// <summary>
+        /// A scraped line's key, made unique within the scrape.
+        ///
+        /// The key names the WIDGET and the depth it was found at, and for one event that is unique -
+        /// but the panel draws one band per active event, and two events running at once draw the same
+        /// prefab twice. Measured on the owner's game 2026-08-27, which had two: <c>DurationValue</c>,
+        /// <c>Title</c> and <c>Viewport</c> each collided, <see cref="GraphBuilder"/> threw
+        /// <c>Duplicate control id</c>, the catch below swallowed it, and the panel stopped declaring at
+        /// the first clash - so the second event was simply not there.
+        ///
+        /// An occurrence ORDINAL is appended only to a repeat, the same shape
+        /// <c>NegotiationTerms.Distinct</c> established: the lines that are unique - which is most of
+        /// them - keep the key they always had, so a cursor resting on one survives a rebuild, and only
+        /// the repeats pay. Numbering every line by position instead would move every key each time a
+        /// quest was added or completed.
+        /// </summary>
+        private static string Distinct(string key)
+        {
+            int seen;
+            if (!_seen.TryGetValue(key, out seen))
+            {
+                _seen[key] = 1;
+                return key;
+            }
+
+            _seen[key] = seen + 1;
+            return key + "/" + seen;
         }
 
         /// <summary>Whether anything inside this widget is itself a container - which is what makes the

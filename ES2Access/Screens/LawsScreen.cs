@@ -27,8 +27,9 @@ namespace ES2Access.Screens
     /// needs and what it costs. All of it is read as the pane's own lines, and the paragraph is walkable
     /// line by line in the review buffer.
     ///
-    /// There is no screen name: the window's heading is declared where it is drawn and focus lands on
-    /// it, which says what has just opened, once.
+    /// The screen is named by the heading the window draws, and that heading is ALSO declared where it
+    /// is drawn - focus lands on it, so the page says what has just opened without the name having to
+    /// carry it alone.
     /// </summary>
     public sealed class LawsScreen : Screen
     {
@@ -51,6 +52,76 @@ namespace ES2Access.Screens
         public override string Key
         {
             get { return "screen.laws"; }
+        }
+
+        /// <summary>The heading the window writes over itself ("Pass Laws"), so the page announces itself
+        /// by the game's own word rather than by nothing at all - it answered null before, and a screen
+        /// with no name gives the player nothing to hear on arrival.</summary>
+        public override string ScreenName
+        {
+            get
+            {
+                string drawn = AgeWidgets.TextOf(Title(Window()));
+                return string.IsNullOrEmpty(drawn) ? null : drawn;
+            }
+        }
+
+        /// <summary>
+        /// Escape here is the game's own close, and the mod takes the key so its Back does the same.
+        ///
+        /// The button the window draws in the corner is wired to <c>OnCancelCb</c>, and
+        /// <c>GuiModalWindow.OnCancelCb</c> (:102-105) is <c>HandleInput(InputAction.Exit)</c> - so
+        /// pressing it IS the game's Escape, and nothing about the window's own exit is re-implemented.
+        /// Claimed only while that button is drawn.
+        /// </summary>
+        public override bool ConsumesBack
+        {
+            get { return CloseButton(Window()) != null; }
+        }
+
+        public override bool Back()
+        {
+            AgeTransform close = CloseButton(Window());
+            if (close == null)
+            {
+                return false;
+            }
+
+            AgeWidgets.Press(close);
+            return true;
+        }
+
+        /// <summary>
+        /// The exit the window draws, and the heading it writes over itself.
+        ///
+        /// Both are found by NAME because the window class exposes a field for neither. The depth is
+        /// what the earlier reading got wrong: the close button was looked for two levels down and sits
+        /// deeper than that, so the search answered null every frame and the button was silently never
+        /// declared - a modal with no way out in its own graph (owner-reported 2026-08-27). Measured
+        /// 2026-08-28 rather than guessed, with headroom for a prefab that nests one level further.
+        /// </summary>
+        private static AgeTransform CloseButton(LawsManagementModalWindow window)
+        {
+            return Named(window, "CloseButton", 8);
+        }
+
+        private static AgeTransform Title(LawsManagementModalWindow window)
+        {
+            return Named(window, "Title", 3);
+        }
+
+        private static AgeTransform Named(LawsManagementModalWindow window, string name, int depth)
+        {
+            try
+            {
+                return window == null
+                    ? null
+                    : AgeWidgets.ChildNamed(window.AgeTransform, name, depth);
+            }
+            catch (Exception)
+            {
+                return null;
+            }
         }
 
         /// <summary>Over the senate that opens it, above the government window it is never up with, and
@@ -77,12 +148,6 @@ namespace ES2Access.Screens
             {
                 return false;
             }
-        }
-
-        /// <summary>Escape is the game's: the window closes itself, which is what Close does.</summary>
-        public override bool Back()
-        {
-            return false;
         }
 
         public override void Build(GraphBuilder builder)
@@ -115,7 +180,7 @@ namespace ES2Access.Screens
             _cells.Clear();
             Cells.AddReadout(
                 _cells,
-                AgeWidgets.ChildNamed(window.AgeTransform, "Title", 3),
+                Title(window),
                 "laws:title"
             );
             Cells.AddReadout(_cells, Widget(window.VotedLawSlotsLabel), "laws:slots-left");
@@ -442,11 +507,7 @@ namespace ES2Access.Screens
         private void BuildActions(GraphBuilder builder, LawsManagementModalWindow window)
         {
             _cells.Clear();
-            Cells.AddControl(
-                _cells,
-                AgeWidgets.ChildNamed(window.AgeTransform, "CloseButton", 2),
-                "laws:close"
-            );
+            Cells.AddControl(_cells, CloseButton(window), "laws:close");
             if (_cells.Count > 0)
             {
                 builder.BeginStop(ActionsStop);

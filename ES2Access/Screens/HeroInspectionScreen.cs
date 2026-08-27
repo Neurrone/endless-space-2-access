@@ -141,13 +141,66 @@ namespace ES2Access.Screens
             }
         }
 
-        /// <summary>Escape is the game's, and it does two different things with it: back to the overview
-        /// from a side page, and close from the overview - behind its own confirmation once either side
-        /// page has been touched.</summary>
+        /// <summary>
+        /// Escape does two different things here - back to the overview from a side page, and close from
+        /// the overview, behind its own confirmation once either side page has been touched - and the mod
+        /// takes the key so that its own Back does all of them.
+        ///
+        /// Taking it costs the game nothing, because <see cref="Back"/> hands the key straight back to
+        /// the window through the very control the game wired to Escape. Claimed only while that control
+        /// is there to press: a window drawing no close button keeps its own Escape.
+        /// </summary>
         public override bool ConsumesBack
         {
-            get { return false; }
+            get { return CloseButton(Window()) != null; }
         }
+
+        /// <summary>
+        /// The window's own Escape, replayed as a press of the button the game wired it to.
+        ///
+        /// The close button's handler is <c>OnCancelCb</c>, and <c>GuiModalWindow.OnCancelCb</c>
+        /// (:102-105) is nothing but <c>HandleInput(InputAction.Exit)</c> - so this ONE press is the
+        /// whole of the game's Escape branch (<c>HeroInspectionModalWindow.HandleInput</c> :101-123):
+        /// a side page switches back to the overview, the overview hides the window, and a page the
+        /// player has edited raises the game's own lose-changes confirmation first. None of that is
+        /// re-implemented here, which is the point - the branch reads private state (the ship design
+        /// panel) and answers its confirmation with a private callback, and a copy would drift.
+        ///
+        /// Pressing the control rather than calling <c>HandleInput</c> directly is deliberate: the
+        /// direct call is what wedged the screen stack once before (test-recipes, "Resetting game
+        /// state").
+        /// </summary>
+        public override bool Back()
+        {
+            AgeTransform close = CloseButton(Window());
+            if (close == null)
+            {
+                return false;
+            }
+
+            AgeWidgets.Press(close);
+            return true;
+        }
+
+        /// <summary>The button the game draws in the corner and wires its own cancel to. Found by name
+        /// because the window class exposes no field for it.</summary>
+        private static AgeTransform CloseButton(HeroInspectionModalWindow window)
+        {
+            try
+            {
+                return window == null
+                    ? null
+                    : AgeWidgets.ChildNamed(window.AgeTransform, "CloseButton", CloseButtonDepth);
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>How far down the close button sits - measured 2026-08-28, it is inside the window's
+        /// own frame rather than at its root.</summary>
+        private const int CloseButtonDepth = 10;
 
         /// <summary>False while the ship page's name box has been asked for and the keyboard has not
         /// changed hands yet: what the player types next belongs in the box, not in a search.</summary>
@@ -1716,10 +1769,61 @@ namespace ES2Access.Screens
             NodeVtable vtable = new NodeVtable
             {
                 Announcements = new List<NodeAnnouncement> { GraphNodes.LabelPart(said) },
-                Sections = GraphNodes.Sections(null, tooltip ?? AgeWidgets.Raw(widget)),
             };
-            AgeWidgets.PointAt(vtable, widget);
+            // BOTH sentences, because the prefab hangs two different ones on two different widgets and
+            // the node stands on the inner of them. The overview draws each fact as a GROUP holding an
+            // icon and a label: the CAPTION ("The hull of this Ship") sits on the group, while the value's
+            // own dossier - the size class's rules, the role's targeting table - sits on the label, and
+            // for the name there is no second one at all. Reading only the label's therefore left every
+            // caption on this box painted and unsaid (measured 2026-08-28: four of them), and reading only
+            // the group's would have thrown away the richer half. This is the same split
+            // <see cref="Captions"/> records for block captions - the word and its explanation on
+            // different widgets - met here one level further in.
+            vtable.Sections = GraphNodes.SectionsFor(
+                vtable,
+                Explanations(widget, tooltip),
+                null
+            );
             Cells.Add(_cells, widget, ControlId.For(widget, Keys + key), vtable);
+        }
+
+        /// <summary>
+        /// The sentences one of these lines has to offer, innermost first: the one the panel names for
+        /// it (or the label's own where it names none), then the CAPTION the prefab hung on the group
+        /// around the label, where that is a different tooltip.
+        ///
+        /// Ordered so the pointer ends up on the group's, which is the outermost of the two and the one
+        /// a mouse resting on the line would raise; <see cref="GraphNodes.SectionsFor"/> aims at the last
+        /// entry.
+        /// </summary>
+        private static IList<AgeTooltip> Explanations(AgeTransform widget, AgeTooltip supplied)
+        {
+            List<AgeTooltip> found = new List<AgeTooltip>(2);
+            AgeTooltip own = supplied ?? AgeWidgets.Raw(widget);
+            if (own != null)
+            {
+                found.Add(own);
+            }
+
+            AgeTooltip caption = AgeWidgets.Raw(Parent(widget));
+            if (caption != null && !AgeWidgets.SameTooltip(caption, own))
+            {
+                found.Add(caption);
+            }
+
+            return found;
+        }
+
+        private static AgeTransform Parent(AgeTransform widget)
+        {
+            try
+            {
+                return widget == null ? null : widget.Parent;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
         }
 
         /// <summary>The caption a box draws over a table buried some way inside it - the scroll view the
