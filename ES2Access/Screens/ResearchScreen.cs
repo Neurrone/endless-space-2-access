@@ -994,7 +994,11 @@ namespace ES2Access.Screens
                     AgeTransform icon = icons[i];
                     if (icon != null && icon.Visible)
                     {
-                        TooltipChildren.Add(found, AgeWidgets.Raw(icon), icon);
+                        // Carrier-less, so the node is Synthetic and no chain test is asked: see
+                        // StageUnlocks below for the measurement and the reason it is the same here -
+                        // the dot's strip hangs under DetailedGroup, which the wheel switches off
+                        // except while the dot is hovered.
+                        TooltipChildren.AddRevealed(found, AgeWidgets.Raw(icon), icon);
                     }
                 }
             }
@@ -1028,21 +1032,21 @@ namespace ES2Access.Screens
         /// the wheel is zoomed out) while leaving every icon bound, visible and drawable - measured:
         /// aiming at an icon of a hidden container still draws its whole dossier.
         ///
-        /// That is not the whole of the gate, and this comment used to say it was. What
-        /// <see cref="TooltipChildren.Add"/>'s tooltip overload settles is whether the dossier EARNS a
-        /// node; the node's EXISTENCE is settled afterwards like every other node's, because
-        /// <c>TooltipChildren.Stands</c> declares a dossier that named a carrier as
-        /// <see cref="UI.Nodes.Drawn"/> on that carrier - and here the carrier IS the icon, since
-        /// <c>Add</c>'s carrier defaults to the anchor it was handed. So <see cref="UI.NodeGate"/> walks
-        /// the icon's ancestry and drops all of them. Measured on the live wheel 2026-08-27 with Display
-        /// Unlocks ticked and at BOTH states of the Zoom In toggle: <c>TechnologyUnlocksContainer</c>
-        /// reads <c>Visible=False, Alpha=0</c> while its icons read <c>Visible=True, Alpha=1</c>;
-        /// <c>DevProbe.GateDiff()</c> with Military I expanded named all seven
+        /// So these are collected through <see cref="TooltipChildren.AddRevealed"/>, which names no
+        /// carrier and leaves the node <see cref="UI.Nodes.Synthetic"/>: the icon is still what the
+        /// pointer is aimed at, and this walk - "which icons has the wheel bound?" - is what vouches
+        /// for the nodes, the way it does for every other synthetic node. The renderer is not the
+        /// source of truth for a strip whose whole design is to be invisible until a mouse arrives.
+        ///
+        /// Measured on the live wheel 2026-08-27 with Display Unlocks ticked and at BOTH states of the
+        /// Zoom In toggle: <c>TechnologyUnlocksContainer</c> reads <c>Visible=False, Alpha=0</c> while
+        /// its icons read <c>Visible=True, Alpha=1</c>, and aiming at an icon of that hidden container
+        /// still draws its whole dossier. Declared with a carrier, <see cref="UI.NodeGate"/> walked the
+        /// icon's ancestry and dropped every one of them: <c>DevProbe.GateDiff()</c> with Military I
+        /// expanded named all seven
         /// <c>research:stage-unlock/TechnologyStageDefinitionMilitary1/tooltip/N</c> under
-        /// <c>onlyUngated</c>, and the drop log gives the reason as
-        /// <c>ancestor not visible (TechnologyUnlocksContainer)</c>. These dossiers are therefore not
-        /// reachable at present. Whether the answer is a carrier-less declaration here or an exemption
-        /// in the gate is an open decision, not something this comment should keep calling settled.
+        /// <c>onlyUngated</c>, with the drop log reading
+        /// <c>ancestor not visible (TechnologyUnlocksContainer)</c>.
         ///
         /// The hub in the middle of the wheel is a <c>VictoryTechnologyStageItem</c>, which has no
         /// strip at all: the cast answers null and the stage declares no unlocks.
@@ -1060,7 +1064,7 @@ namespace ES2Access.Screens
                     AgeTransform icon = icons[i];
                     if (icon != null && icon.Visible)
                     {
-                        TooltipChildren.Add(found, AgeWidgets.Raw(icon), icon);
+                        TooltipChildren.AddRevealed(found, AgeWidgets.Raw(icon), icon);
                     }
                 }
             }

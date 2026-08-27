@@ -32,7 +32,8 @@ mutes voicing but `/speech` still captures.
 - `GET /speech?since=N&wait=MS` — spoken ring buffer (resets on reload); `wait` long-polls
 - `GET /gui/graph?edges=1&buffers=1` — the focused screen's whole accessible tree
 - `GET /gui/graph?screen=KEY` — what an UNFOCUSED registered screen would offer, built without
-  focusing it; an inactive one answers `screen inactive: …`, a bogus key 400s with the key list
+  focusing it, GATED like the player's own render (`ungated=1` answers the raw declared tree
+  instead); an inactive one answers `screen inactive: …`, a bogus key 400s with the key list
 - `POST /input` — body = one action key (`ui.down`, `buffer.lineDown`…); its key-claim counterpart is
   `/eval ES2Access.Dev.DevProbe.Claims("Escape")` — the latch only lives for the frame an injection
   is consumed (no key was held), so catch it with `POST /wait` on the probe's own text, never a
@@ -101,7 +102,9 @@ The full contract of each is its own doc comment; this is the inventory.
 | `DevProbe.TooltipParity()` | The promised/misaimed/uncovered tooltip self-check on the FOCUSED screen, eight buckets (four findings, four context), aim read off `NodeVtable.PointsAt` rather than re-derived | `ES2Access/Dev/TooltipAudit.cs` |
 | `DevProbe.NotificationParity()` | The notification family's self-check on whichever popup is up — painted-but-unsaid, spoken-but-undrawn, mis-banded, promised/lost tooltips, figures spoken with no caption; also runs by itself on every popup (`/log?grep=parity`) | `ES2Access/Dev/NotificationAudit.cs` |
 | `DevProbe.Coverage(wholeTree?)` | What the FOCUSED screen never declared (tooltips AND actions) against everything the engine draws; a COLLAPSED branch reads as uncovered, and `live` roots walk the windows BEHIND the screen too | `ES2Access/Dev/CoverageAudit.cs` |
-| `DevProbe.Ghosts()` | The other direction — nodes the FOCUSED screen OFFERS that the game is not painting (a pooled table's retired rows); a screen mid-transition reports all of them | `ES2Access/Dev/GhostAudit.cs` |
+| `DevProbe.Ghosts()` | Declared vs painted on the FOCUSED screen, split: `droppedByGate` (the gate already withholds these — informational) and `shippedUnpainted` (in the player's render yet unpainted — defects) | `ES2Access/Dev/GhostAudit.cs` |
+| `DevProbe.GateDiff()` | The focused screen built gated and ungated in one call — what the gate is dropping; blind to the pre-builder Cells/CardActions path (its doc says why) | `ES2Access/Dev/DevProbe.cs` |
+| `NodeGate.Enabled` | The gate's off/on lever — flip via `/eval`, dump, flip, dump, diff: the standard existence-verification primitive; drops log as `NodeGate drop:` (`/log?grep=NodeGate`), deduped; `NodeGate.Forget()` resets | `ES2Access/UI/NodeGate.cs` |
 
 `POST /input` is `ModInput.Inject` — actions at the production dispatch point; it touches no
 physical key state, so game-also-sees-the-key bugs need link-by-link probes (`DevProbe.Claims`

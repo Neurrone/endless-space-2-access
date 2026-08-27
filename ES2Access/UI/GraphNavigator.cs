@@ -196,8 +196,31 @@ namespace ES2Access.UI
         /// exactly as the predicate does here. So a cell that path takes out is missing from this
         /// render too, and an audit that wants a build with NOTHING gated has to turn the flag off
         /// around the call.
+        ///
+        /// A caller who wants the build the PLAYER gets asks
+        /// <see cref="InspectRender(Screen, bool)"/> with <c>gated: true</c> instead.
         /// </summary>
         public GraphRender InspectRender(Screen screen)
+        {
+            return InspectRender(screen, false);
+        }
+
+        /// <summary>
+        /// The same read-only render for an unfocused screen, built with the drop predicate the PLAYER
+        /// would get (<paramref name="gated"/>) or without it.
+        ///
+        /// Two callers want opposite things from the same build and both are right. An audit asks
+        /// which declared nodes stand on something the game is not drawing, and has to see them; a
+        /// reader asking "what does this screen offer" wants what the screen offers, which is what
+        /// survives the gate. So the audits keep <see cref="InspectRender(Screen)"/>, ungated by
+        /// contract, and the dev server's by-key dump asks for the gated build by default.
+        ///
+        /// Either way the build says whose it is (<see cref="NodeGate.BuildingIs"/>), so the drops
+        /// taken inside <c>screen.Build</c> itself - <see cref="NodeGate.StillDrawn"/>, which honours
+        /// <see cref="NodeGate.Enabled"/> whatever this argument says - are logged against this screen
+        /// rather than against whichever one last built with a predicate.
+        /// </summary>
+        public GraphRender InspectRender(Screen screen, bool gated)
         {
             if (screen == null)
             {
@@ -210,7 +233,10 @@ namespace ES2Access.UI
                 state = new GraphState();
             }
 
-            GraphBuilder builder = new GraphBuilder(state.Expanded);
+            GraphBuilder builder = gated
+                ? new GraphBuilder(state.Expanded, NodeGate.For(screen.Key))
+                : new GraphBuilder(state.Expanded);
+            NodeGate.BuildingIs(screen.Key);
             screen.Build(builder);
             screen.BuildShared(builder);
             return builder.Build();

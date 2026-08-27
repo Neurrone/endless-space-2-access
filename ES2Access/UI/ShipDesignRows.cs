@@ -473,7 +473,12 @@ namespace ES2Access.UI
             AgeTransform list = AgeWidgets.Transform(panel.HullDropList);
             AgeTransform group = list == null ? null : list.Parent;
             AgeTransform caption = group == null ? null : FirstLabel(group);
-            if (list != null)
+            // Flow control: which branch is built - the drop list is a wired prefab field, always
+            // non-null; its VISIBILITY is what says the chooser is the drawn one. Without this the
+            // hull NAME the panel draws once a hull is picked was never declared, and the combo it
+            // stood in for was then dropped by the gate for not being drawn - so the line went silent
+            // instead of reading the hull.
+            if (list != null && AgeWidgets.Visible(list))
             {
                 SettingRows.AddCombo(
                     builder,

@@ -352,10 +352,14 @@ namespace ES2Access.Screens
             foreach (AgeControlButton button in Buttons(window))
             {
                 AgeTransform transform = TransformOf(button);
+                // Banding input, not existence: what follows asks which BAND the button sits in and
+                // then orders and counts the row aloud, and a button of the skin that is not in use
+                // keeps its old rectangle - so it would join a band and shift the count whether or not
+                // the gate later dropped its node.
                 if (
                     button == null
                     || transform == null
-                    || !OnScreen(transform)
+                    || !Visible(transform)
                     || AgeLayout.Band(transform, table) != 1
                 )
                 {
@@ -648,47 +652,16 @@ namespace ES2Access.Screens
 
         private static bool Visible(AgeControl control)
         {
-            AgeTransform transform = TransformOf(control);
-            try
-            {
-                return transform != null && transform.Visible;
-            }
-            catch (Exception)
-            {
-                return false;
-            }
+            return Visible(TransformOf(control));
         }
 
         /// <summary>Whether a widget is really drawn: its own visibility and every ancestor's. The
         /// window swaps skins by hiding whole containers, so a control in the skin that is not in use
         /// reports itself perfectly visible while nothing of it is on screen.</summary>
-        private static bool OnScreen(AgeTransform transform)
+        private static bool Visible(AgeTransform transform)
         {
-            try
-            {
-                int depth = 0;
-                for (
-                    AgeTransform node = transform;
-                    node != null && depth++ < MaxAncestors;
-                    node = node.Parent
-                )
-                {
-                    if (!node.Visible)
-                    {
-                        return false;
-                    }
-                }
-
-                return true;
-            }
-            catch (Exception)
-            {
-                return false;
-            }
+            return AgeWidgets.Visible(transform);
         }
-
-        /// <summary>How far up a parent chain to look before deciding it is not a chain.</summary>
-        private const int MaxAncestors = 64;
 
         private static float LeftEdge(AgeTransform transform)
         {

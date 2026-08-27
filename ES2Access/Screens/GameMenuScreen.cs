@@ -923,18 +923,11 @@ namespace ES2Access.Screens
             }
         }
 
+        /// <summary>Whether a control is really on screen: its own visibility and every ancestor's -
+        /// the menu hides whole containers to swap between its in-game and main-menu skins.</summary>
         private static bool Visible(AgeControlToggle toggle)
         {
-            try
-            {
-                return toggle != null
-                    && toggle.AgeTransform != null
-                    && toggle.AgeTransform.Visible;
-            }
-            catch (Exception)
-            {
-                return false;
-            }
+            return AgeWidgets.Visible(AgeWidgets.Transform(toggle));
         }
 
         private static bool Enabled(GameMenuItem item)

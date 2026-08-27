@@ -298,6 +298,36 @@ namespace ES2Access.UI
             AgeTransform carrier = null
         )
         {
+            Collect(into, tooltip, anchor, lines, live, carrier ?? anchor);
+        }
+
+        /// <summary>
+        /// A dossier the surface keeps OFF the screen until a mouse asks for it - collected with no
+        /// carrier, so <see cref="Stands"/> declares it <see cref="Nodes.Synthetic"/> and the gate has
+        /// nothing to ask.
+        ///
+        /// The pointer still goes to <paramref name="anchor"/>: the dossier is drawn from that widget
+        /// and aiming anywhere else draws another thing. What is withheld is only the CLAIM that the
+        /// widget vouches for the node's existence, which for a reveal-on-hover strip it does not - the
+        /// keyboard player is precisely the one who never triggers the reveal, so the strip is hidden
+        /// at every moment this mod would be asked about it, and a chain test would delete the content
+        /// the mod exists to hand over. What says these nodes are real is the WALK that enumerated the
+        /// strip's bound icons, the same guarantee every other synthetic node rests on.
+        /// </summary>
+        public static void AddRevealed(List<Dossier> into, AgeTooltip tooltip, AgeTransform anchor)
+        {
+            Collect(into, tooltip, anchor, null, null, null);
+        }
+
+        private static void Collect(
+            List<Dossier> into,
+            AgeTooltip tooltip,
+            AgeTransform anchor,
+            Func<IList<string>> lines,
+            Func<AgeTooltip> live,
+            AgeTransform carrier
+        )
+        {
             if (into == null || !Qualifies(tooltip))
             {
                 return;
@@ -327,7 +357,7 @@ namespace ES2Access.UI
                     Name = () => AgeWidgets.TooltipTitle(Now(now, tip)),
                     Tooltip = tip,
                     Anchor = anchor ?? tooltip.AgeTransform,
-                    Carrier = carrier ?? anchor,
+                    Carrier = carrier,
                     Lines = lines,
                     LiveAim = live,
                 }

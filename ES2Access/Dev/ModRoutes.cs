@@ -25,9 +25,10 @@ namespace ES2Access.Dev
     ///   GET  /gui/age?window=&amp;depth=&amp;visibleOnly=&amp;fields=
     ///                           the live AGE hierarchy read as accessible meaning (see AgeDump);
     ///                           fields= answers flat text with only those fields per widget
-    ///   GET  /gui/graph?edges=1&amp;buffers=1&amp;screen=KEY
+    ///   GET  /gui/graph?edges=1&amp;buffers=1&amp;screen=KEY&amp;ungated=1
     ///                           the focused screen's whole accessible tree, or with screen=, what
-    ///                           another registered screen would offer (see GraphDump)
+    ///                           another registered screen would offer (see GraphDump); ungated=1
+    ///                           answers screen='s raw declared tree, before NodeGate
     ///   POST /input             body = an action key; run it as a keypress would (see ModInput)
     ///   POST /type              body = characters; type them at the focused screen (the type-ahead
     ///                           search), and report what it made of them
@@ -71,7 +72,7 @@ namespace ES2Access.Dev
             _host.RegisterRoute("GET", "/status", Status);
             _host.RegisterRoute("GET", "/speech", Speech, "since", "wait");
             _host.RegisterRoute("GET", "/gui/age", Age, "window", "depth", "visibleOnly", "fields");
-            _host.RegisterRoute("GET", "/gui/graph", Graph, "edges", "buffers", "screen");
+            _host.RegisterRoute("GET", "/gui/graph", Graph, "edges", "buffers", "screen", "ungated");
             _host.RegisterRoute("POST", "/input", Input);
             _host.RegisterRoute("POST", "/type", Type);
             _host.RegisterRoute("POST", "/key", Key, "hold", "gap", "text");
@@ -231,14 +232,32 @@ namespace ES2Access.Dev
 
         /// <summary>The focused screen's accessible tree in one answer - or, with <c>screen=</c>, what
         /// another registered screen would offer without going there. Text, not JSON: every line of it
-        /// is a sentence meant to be read.</summary>
+        /// is a sentence meant to be read.
+        ///
+        /// Both answer what the PLAYER gets, the gate included. <c>ungated=1</c> asks the by-key dump
+        /// for the raw declared tree instead, and the difference between the two is that screen's
+        /// drops. It goes with <c>screen=</c> only: the focused screen's own off/on measurement is
+        /// <c>DevProbe.GateDiff()</c>, which flips the flag around both halves rather than withholding
+        /// one builder's predicate.</summary>
         private DevResponse Graph(DevRequest request)
         {
             bool edges = request.QueryInt("edges", 0) != 0;
             bool buffers = request.QueryInt("buffers", 0) != 0;
+            bool ungated = request.QueryInt("ungated", 0) != 0;
             string wanted = request.QueryValue("screen");
             if (string.IsNullOrEmpty(wanted))
             {
+                if (ungated)
+                {
+                    return DevResponse.Json(
+                        400,
+                        DevJson.Error(
+                            "ungated= applies to screen= only; for the focused screen use "
+                                + "/eval ES2Access.Dev.DevProbe.GateDiff()"
+                        )
+                    );
+                }
+
                 return Plain((string)_host.MainThread.Run(() => GraphDump.Dump(edges, buffers)));
             }
 
@@ -262,7 +281,7 @@ namespace ES2Access.Dev
                         );
                     }
 
-                    return Plain(GraphDump.DumpScreen(screen, edges, buffers));
+                    return Plain(GraphDump.DumpScreen(screen, edges, buffers, ungated));
                 });
         }
 

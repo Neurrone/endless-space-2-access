@@ -762,26 +762,14 @@ namespace ES2Access.Screens
 
         private static bool Visible(AgeControl control)
         {
-            try
-            {
-                return control != null && Visible(control.AgeTransform);
-            }
-            catch (Exception)
-            {
-                return false;
-            }
+            return Visible(AgeWidgets.Transform(control));
         }
 
+        /// <summary>Whether a widget is really on screen: its own visibility and every ancestor's -
+        /// the popup hides whole containers as it minimizes and expands.</summary>
         private static bool Visible(AgeTransform widget)
         {
-            try
-            {
-                return widget != null && widget.Visible;
-            }
-            catch (Exception)
-            {
-                return false;
-            }
+            return AgeWidgets.Visible(widget);
         }
 
         private static bool Enabled(AgeTransform widget)

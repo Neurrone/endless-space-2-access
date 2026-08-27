@@ -334,7 +334,11 @@ namespace ES2Access.Screens
         private void AddAbilities(NegotiationModalWindow window)
         {
             AgeTransform none = window.NoDiplomaticAbilitiesLabel;
-            if (none != null)
+            // Flow control: which branch is built - the empty-state label is a wired prefab field,
+            // always non-null; its VISIBILITY is what says the empty state is the drawn one.
+            // Without this the "no abilities" line stood in for the strip of abilities the status
+            // was drawing.
+            if (none != null && AgeWidgets.Visible(none))
             {
                 Cells.AddReadout(_cells, none, Keys + "no-abilities");
                 return;
@@ -527,7 +531,11 @@ namespace ES2Access.Screens
             try
             {
                 AgeTransform blank = Of(empty);
-                if (blank != null)
+                // Flow control: which branch is built - the empty-state label is a wired prefab
+                // field, always non-null; its VISIBILITY is what says the empty state is the drawn
+                // one. Without this the at-war sentence stood in for a shelf the game was drawing
+                // in full, and the filters, the terms and the basket they fill were never declared.
+                if (blank != null && AgeWidgets.Visible(blank))
                 {
                     _cells.Clear();
                     Cells.AddReadout(_cells, blank, Keys + key + "/empty");

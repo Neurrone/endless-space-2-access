@@ -367,16 +367,11 @@ namespace ES2Access.Screens
             }
         }
 
+        /// <summary>Whether a widget is really on screen: its own visibility and every ancestor's -
+        /// the menu shows and hides whole containers as it swaps between its pages.</summary>
         private static bool Visible(AgeTransform transform)
         {
-            try
-            {
-                return transform != null && transform.Visible;
-            }
-            catch (Exception)
-            {
-                return false;
-            }
+            return AgeWidgets.Visible(transform);
         }
 
         private static bool Enabled(AgeTransform transform)

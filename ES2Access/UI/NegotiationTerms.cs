@@ -158,6 +158,7 @@ namespace ES2Access.UI
         public static int Shelf(GraphSheet sheet, AgeTransform table, string keyPrefix)
         {
             int count = 0;
+            _seen.Clear();
             IList<AgeTransform> children = table == null ? null : table.Children;
             for (int i = 0; children != null && i < children.Count; i++)
             {
@@ -173,7 +174,7 @@ namespace ES2Access.UI
                 TermLine it = line;
                 sheet.Row(
                     Primary(it, keyPrefix),
-                    Key(it, keyPrefix),
+                    Distinct(Key(it, keyPrefix)),
                     widget,
                     () => TypeName(it),
                     () => Words(it.CostLabel)
@@ -207,6 +208,7 @@ namespace ES2Access.UI
         )
         {
             int count = 0;
+            _seen.Clear();
             IList<AgeTransform> children = table == null ? null : table.Children;
             for (int i = 0; children != null && i < children.Count; i++)
             {
@@ -222,6 +224,9 @@ namespace ES2Access.UI
                 }
 
                 ContributionTermLine it = line;
+                // Settled once and used for both the row and the stepper's edit request: the two are
+                // the same row, so a repeat that needed disambiguating needs it in both places.
+                string rowKey = Distinct(Key(it, keyPrefix));
                 List<KeyValuePair<int, NodeVtable>> cells =
                     new List<KeyValuePair<int, NodeVtable>>(3);
                 TermLine row = it;
@@ -231,13 +236,13 @@ namespace ES2Access.UI
                 cells.Add(
                     new KeyValuePair<int, NodeVtable>(2, Text(() => Words(row.CostLabel)))
                 );
-                NodeVtable quantity = Quantity(it, keyPrefix, editor);
+                NodeVtable quantity = Quantity(it, rowKey, editor);
                 if (quantity != null)
                 {
                     cells.Add(new KeyValuePair<int, NodeVtable>(3, quantity));
                 }
 
-                sheet.RowAt(Primary(it, keyPrefix), Key(it, keyPrefix), cells, widget);
+                sheet.RowAt(Primary(it, keyPrefix), rowKey, cells, widget);
                 count++;
             }
 
@@ -248,7 +253,7 @@ namespace ES2Access.UI
         /// quantified (a treaty is in or out).</summary>
         private static NodeVtable Quantity(
             ContributionTermLine line,
-            string keyPrefix,
+            string rowKey,
             TextFieldEditor editor
         )
         {
@@ -271,7 +276,7 @@ namespace ES2Access.UI
             NodeVtable vtable = GraphNodes.EditField(
                 () => ModStrings.Get(ModStrings.NegotiationQuantity),
                 () => TextFieldEditor.Typing(box) ? null : AgeWidgets.TextOf(host),
-                () => Edit(editor, box, keyPrefix, it),
+                () => Edit(editor, box, rowKey),
                 enabled,
                 AgeWidgets.Raw(host)
             );
@@ -291,16 +296,17 @@ namespace ES2Access.UI
             return vtable;
         }
 
+        /// <summary>The edit is requested under the ROW's own settled key rather than re-derived from the
+        /// term, so a repeated term's two steppers are two requests and not one.</summary>
         private static void Edit(
             TextFieldEditor editor,
             AgeControlTextField field,
-            string keyPrefix,
-            ContributionTermLine line
+            string rowKey
         )
         {
             if (editor != null)
             {
-                editor.Request(field, null, null, RowId(line, keyPrefix + "/quantity"));
+                editor.Request(field, null, null, ControlId.Structural(rowKey + "/quantity"));
             }
         }
 
@@ -376,6 +382,43 @@ namespace ES2Access.UI
             }
         }
 
+        /// <summary>
+        /// The occurrence counter <see cref="Distinct"/> keeps for one table's walk. Static and cleared
+        /// per walk rather than allocated in it: a shelf is rebuilt every frame.
+        /// </summary>
+        private static readonly Dictionary<string, int> _seen = new Dictionary<string, int>();
+
+        /// <summary>
+        /// The row's identity, made unique within the table it is drawn in.
+        ///
+        /// <see cref="Key"/> names the TERM, and that is what a row should be keyed by - but a shelf can
+        /// draw the same definition twice. Measured on the live table 2026-08-27: a peacetime shelf drew
+        /// 14 lines of which two were <c>ResourceDealAdvanced/ReceiverOnly</c> (Empire Dust and
+        /// Superspuds, which the definition and the application method cannot tell apart), the second
+        /// threw <c>Duplicate control id</c> out of <see cref="GraphSheet"/>, the caller's own catch
+        /// swallowed it, and 14 drawn lines reached the player as 8 declared rows.
+        ///
+        /// So the term key stays the key and an occurrence ORDINAL is appended only to a repeat. The
+        /// ordinal is taken among the rows sharing that key rather than from the line's place in the
+        /// table, because the shelf is FILTERED: picking a category rebinds every line, so a line's index
+        /// moves while its term does not, and keying by index outright would walk the cursor onto a
+        /// different term on every refilter and make type-ahead land on a slot instead of a thing. This
+        /// way the terms that are unique - which is nearly all of them - keep the identity they always
+        /// had, and only the repeats pay.
+        /// </summary>
+        private static string Distinct(string key)
+        {
+            int seen;
+            if (!_seen.TryGetValue(key, out seen))
+            {
+                _seen[key] = 1;
+                return key;
+            }
+
+            _seen[key] = seen + 1;
+            return key + "/" + seen;
+        }
+
         /// <summary>The row's identity: the TERM's own name, never the pooled line's.</summary>
         private static string Key(TermLine line, string keyPrefix)
         {
@@ -392,11 +435,6 @@ namespace ES2Access.UI
             {
                 return keyPrefix + "/term/?";
             }
-        }
-
-        private static ControlId RowId(TermLine line, string keyPrefix)
-        {
-            return ControlId.Structural(Key(line, keyPrefix));
         }
 
         private static NodeVtable Text(Func<string> value)

@@ -97,8 +97,18 @@ namespace ES2Access.Dev
         /// A screen the game is not showing is entitled to answer nothing: its IsActive is false and
         /// its Build may find no bound window and throw. Both are reported as the body - "screen
         /// inactive" is the honest answer to the question asked, not a server error.
+        ///
+        /// Gated like the player's own render unless <paramref name="ungated"/>, because the question
+        /// asked here is what the screen OFFERS, and a node the gate drops is not offered. The raw
+        /// declared tree - what the walk said before <see cref="NodeGate"/> answered - is the explicit
+        /// request, and the difference between the two answers is that screen's drops.
         /// </summary>
-        public static string DumpScreen(Screen screen, bool wantEdges, bool wantBuffers)
+        public static string DumpScreen(
+            Screen screen,
+            bool wantEdges,
+            bool wantBuffers,
+            bool ungated
+        )
         {
             Sink sink = new Sink();
             GraphNavigator navigator = ModEntry.Navigator;
@@ -116,12 +126,13 @@ namespace ES2Access.Dev
                     + " | "
                     + (Name(screen) ?? "(unnamed)")
                     + (focused ? "" : active ? " | active, not focused" : " | not active")
+                    + (ungated ? " | ungated" : "")
             );
 
             GraphRender render;
             try
             {
-                render = navigator.InspectRender(screen);
+                render = navigator.InspectRender(screen, !ungated);
             }
             catch (Exception e)
             {

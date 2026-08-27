@@ -421,18 +421,11 @@ namespace ES2Access.Screens
             }
         }
 
+        /// <summary>Whether a button is really on screen: its own visibility and every ancestor's -
+        /// the box hides whole containers to lay out the two-, three- and four-button shapes.</summary>
         private static bool Visible(AgeControlButton button)
         {
-            try
-            {
-                return button != null
-                    && button.AgeTransform != null
-                    && button.AgeTransform.Visible;
-            }
-            catch (Exception)
-            {
-                return false;
-            }
+            return AgeWidgets.Visible(AgeWidgets.Transform(button));
         }
 
         private static bool Enabled(AgeControlButton button)

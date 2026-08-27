@@ -71,7 +71,9 @@ namespace ES2Access.UI
     {
         /// <summary>Whether the gate drops anything at all. ON: the measurement battery has run. Flip it
         /// off from the REPL and dump, flip it back and dump again, and the diff is this screen's
-        /// drops.</summary>
+        /// drops. That is the flag's WHOLE job - a dev verification lever, never a feature switch:
+        /// production code must neither read nor write it (the gate-lever lint enforces the
+        /// allowlist; dev probes that flip it restore it in a finally).</summary>
         public static bool Enabled = true;
 
         /// <summary>Screen+node pairs already reported, so a per-frame rebuild logs a drop once. Capped
@@ -83,8 +85,8 @@ namespace ES2Access.UI
 
         /// <summary>Whose render is being built, so a drop taken BEFORE the builder sees the node
         /// (<see cref="StillDrawn"/>) - or a misdeclaration caught at the declaration door - is
-        /// reported under the same screen key the builder's own drops are. Written where the render's
-        /// predicate is fetched, which is once per build.</summary>
+        /// reported under the same screen key the builder's own drops are. Written by
+        /// <see cref="BuildingIs"/> at the top of every build.</summary>
         private static string _building = "";
 
         // One delegate per screen so a build does not allocate a closure per frame.
@@ -95,8 +97,7 @@ namespace ES2Access.UI
         /// key is what makes a drop report readable.</summary>
         public static Func<NodeDeclaration, bool> For(string screenKey)
         {
-            string key = screenKey ?? "";
-            _building = key;
+            string key = BuildingIs(screenKey);
             Func<NodeDeclaration, bool> predicate;
             if (!_predicates.TryGetValue(key, out predicate))
             {
@@ -112,6 +113,22 @@ namespace ES2Access.UI
         public static string Building
         {
             get { return _building; }
+        }
+
+        /// <summary>
+        /// Say whose render is about to be built, and answer the key as it will be filed.
+        ///
+        /// Every build says this, not only a gated one. The drops taken BEFORE the builder sees a node
+        /// (<see cref="StillDrawn"/>, from <see cref="Cells"/> and <see cref="CardActions"/>) and the
+        /// misdeclarations caught at the declaration door have no node to read a screen off, so they
+        /// read this - and a build that fetches no predicate used to leave it holding whatever screen
+        /// last built WITH one. The by-key dump and the audits build exactly that way, which filed
+        /// their drops under the focused screen: 466 of 891 logged lines named the wrong screen.
+        /// </summary>
+        public static string BuildingIs(string screenKey)
+        {
+            _building = screenKey ?? "";
+            return _building;
         }
 
         /// <summary>Forget which drops have been reported - for a REPL session that wants the next

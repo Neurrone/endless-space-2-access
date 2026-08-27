@@ -57,9 +57,6 @@ namespace ES2Access.Screens
         /// </summary>
         private const string DefaultValueFormat = "######0";
 
-        /// <summary>How far up a parent chain to look before deciding it is not a chain.</summary>
-        private const int MaxAncestors = 64;
-
         public override string Key
         {
             get { return "screen.options"; }
@@ -1439,7 +1436,11 @@ namespace ES2Access.Screens
             for (int i = 0; i < buttons.Count; i++)
             {
                 AgeControlButton button = buttons[i];
-                if (button == null || !OnScreen(button.AgeTransform))
+                // Banding input, not existence: the list below is SORTED by left edge and counted
+                // aloud, and a button of the skin that is not in use keeps its old rectangle - so a
+                // gate that dropped its node afterwards would still have let it reorder and miscount
+                // the buttons the player does hear.
+                if (button == null || !Visible(button.AgeTransform))
                 {
                     continue;
                 }
@@ -1875,18 +1876,6 @@ namespace ES2Access.Screens
             }
         }
 
-        private static bool Visible(AgeTransform transform)
-        {
-            try
-            {
-                return transform != null && transform.Visible;
-            }
-            catch (Exception)
-            {
-                return false;
-            }
-        }
-
         /// <summary>
         /// Whether a widget is really on screen: its own visibility and every ancestor's.
         ///
@@ -1895,29 +1884,9 @@ namespace ES2Access.Screens
         /// therefore reports itself perfectly visible while nothing of it is drawn, which is how the
         /// Controls page came to offer "Reset to Defaults" twice.
         /// </summary>
-        private static bool OnScreen(AgeTransform transform)
+        private static bool Visible(AgeTransform transform)
         {
-            try
-            {
-                int depth = 0;
-                for (
-                    AgeTransform node = transform;
-                    node != null && depth++ < MaxAncestors;
-                    node = node.Parent
-                )
-                {
-                    if (!node.Visible)
-                    {
-                        return false;
-                    }
-                }
-
-                return true;
-            }
-            catch (Exception)
-            {
-                return false;
-            }
+            return AgeWidgets.Visible(transform);
         }
 
         private static float LeftEdge(AgeTransform transform)
