@@ -648,7 +648,6 @@
   "negotiation.contract-mine": "You give",
   "negotiation.contract-theirs": "They give",
   "negotiation.approval": "Deal approval",
-  "negotiation.approval-value": "{0} percent",
   "negotiation.pressure-share": "{0} {1} percent",
   "negotiation.threshold-at": "{0} percent",
   "negotiation.actions": "Offer",

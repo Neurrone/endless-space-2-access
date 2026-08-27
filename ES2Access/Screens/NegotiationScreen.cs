@@ -970,7 +970,7 @@ namespace ES2Access.Screens
             NodeVtable vtable = GraphNodes.Readout(
                 () => ModStrings.Get(ModStrings.NegotiationApproval),
                 () => Face(it),
-                () => Detail(it),
+                null,
                 window.DealApprovalTooltip
             );
             AgeWidgets.PointAt(vtable, group);
@@ -1032,49 +1032,6 @@ namespace ES2Access.Screens
             }
         }
 
-        /// <summary>The figure behind the face, kept for review and out of the spoken line: the bar is
-        /// drawn out from its own centre, so its reach is the evaluation as a signed percentage
-        /// (<c>BiDirectionalGauge.RefreshMainGauge</c>), which is worth having on the buffer key and is
-        /// not what the screen says.</summary>
-        private static IList<string> Detail(NegotiationModalWindow window)
-        {
-            try
-            {
-                BiDirectionalGauge gauge = window.DealApprovalGauge;
-                if (gauge == null)
-                {
-                    return null;
-                }
-
-                // Content: which figure the buffer line carries - the drawn half's distance from the
-                // centre, doubled because each half owns half the track.
-                if (gauge.PositiveGauge != null && AgeWidgets.Visible(gauge.PositiveGauge))
-                {
-                    return Line((int)Math.Round((gauge.PositiveGauge.PercentRight - 50f) * 2f));
-                }
-
-                // Content: the same question for the other half - which of the two the game drew is
-                // which sign the figure carries.
-                if (gauge.NegativeGauge != null && AgeWidgets.Visible(gauge.NegativeGauge))
-                {
-                    return Line(-(int)Math.Round((50f - gauge.NegativeGauge.PercentLeft) * 2f));
-                }
-
-                return null;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        private static IList<string> Line(int percent)
-        {
-            return new List<string>
-            {
-                ModStrings.Format(ModStrings.NegotiationApprovalValue, percent),
-            };
-        }
 
         // ---- the buttons ----
 

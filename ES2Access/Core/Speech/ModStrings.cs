@@ -1615,7 +1615,6 @@ namespace ES2Access.Core.Speech
         /// <summary>Where the deal-approval bar STANDS, which is what that band draws and all it draws:
         /// the computer sends written reasons with its evaluation and the window throws them away, so a
         /// number is the honest reading.</summary>
-        public const string NegotiationApprovalValue = "negotiation.approval-value";
 
         /// <summary>One empire's share of the influence-pressure bar. The gauge is one track split
         /// between the two of them and the game writes no figure anywhere on it, so each side is named
@@ -2365,7 +2364,6 @@ namespace ES2Access.Core.Speech
             { NegotiationContractMine, "You give" },
             { NegotiationContractTheirs, "They give" },
             { NegotiationApproval, "Deal approval" },
-            { NegotiationApprovalValue, "{0} percent" },
             { NegotiationPressureShare, "{0} {1} percent" },
             { NegotiationThresholdAt, "{0} percent" },
             { NegotiationActions, "Offer" },
