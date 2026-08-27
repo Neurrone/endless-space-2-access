@@ -377,6 +377,18 @@ widget, exactly as the game's own mouse flows do.
   overrides Exit to mean something other than "dismiss" silently changes what its Cancel button
   does — and the game's tooltip on that button goes on saying the old thing. Read the override
   before trusting either the key or the button.
+- **A window's drawn dismissal is wired to ONE OF TWO handler names, and which one is not in the
+  class.** These prefabs wire their cross or Close button to either `OnCloseCb` or `OnCancelCb`, and
+  no window class exposes the button as a field, so the only way to find it is by the handler its
+  `AgeControlButton.OnActivateMethod` names. Measured 2026-08-28: the diplomacy and academy modals
+  and the negotiation window wire `OnCloseCb`; `HeroInspectionModalWindow` and
+  `LawsManagementModalWindow` wire `OnCancelCb`. A lookup that asks for only the first finds nothing
+  on the latter two, which is how both shipped with no way out in their own graph. Both names end in
+  the same place — `OnCancelCb` is `HandleInput(InputAction.Exit)` (above), and an `OnCloseCb` hides
+  the window — so PRESSING the control is the whole of that window's Escape, confirmation branches
+  included, and is the safe way to replay it (calling `HandleInput` directly wedged the screen stack
+  once: `test-recipes/fixtures.md`, "Resetting game state"). `NarrativeScreen` (the quest journal) is
+  the one surface of the family that draws no dismissal control at all.
 - **`ContextualPromptWindow` has NO keyboard dismissal of its own**: it declares no `HandleInput`, and
   `ScanOverlayWindow` — which is up whenever the prompt is — swallows Exit, so the game's only ways
   out are the cross, a right click and a click away. A mod screen over it has to supply the close
@@ -434,7 +446,8 @@ widget, exactly as the game's own mouse flows do.
   3. The scan view's pool parks stale children fully visible outside the table's extents.
 
   Ask about alpha too — but only `== 0`, since a read-only setting is faded to 0.5 and is still
-  drawn. Every per-row read gates on painted-ness. A retired row also keeps its old RECT, which is
+  drawn. Every per-row read gates on painted-ness (`AgeWidgets.DrawnChild` is the blessed way through
+  a pooled table's `Children`). A retired row also keeps its old RECT, which is
   how the planet card's climate table (`PlanetGameplayTypeTable` — the one table on that card whose
   `Load` does NOT set `StrictVisibility`) put the previous planet's biodiversity line on top of the
   curiosity line and banded the two into one drawn row: a faded row is a layout hazard as well as a
@@ -453,6 +466,23 @@ widget, exactly as the game's own mouse flows do.
   `Visible && (StrictVisibility || Alpha > 0)` instead — so it is a free oracle only for a table
   whose `StrictVisibility` is off, and on a strict one it counts faded rows the game is not drawing. The same alpha-0 retirement shows up outside tables too:
   `GuiEffectMapper.UnloadEffects` retires effect lines that way.
+- **A POOL PARKS WITHOUT UNBINDING: a stale binding is not membership.** `ReserveChildren` only ever
+  GROWS a pool (firstpass/AgeTransform.cs:2319-2329), and `RefreshChildrenIList` (:2404-2414) sets
+  every child past the list's end to `Alpha = 0` WITHOUT calling the refresh delegate on it — and
+  never calls the item's own `Unbind`. So a parked child still holds the object it last showed, and
+  `GuiTerm != null` / `GuiHero != null` answers TRUE for a row the game finished with. Only
+  drawn-ness separates a live row from a retired one. Measured 2026-08-28: a negotiation shelf of
+  five terms sat in a table of nine bound children, rows 5-8 being stale duplicates of rows 1-4, so a
+  walk asking `Visible` declared all nine and the table announced "5 of 9" with four rows that could
+  not be reached; the laws modal reproduces it on demand — switching its filter from All (37 cards)
+  back to Available (6) strands 31 bound ghosts. `TermLine.Unbind` and friends DO clear the binding,
+  but the panels call them only at whole-panel teardown.
+- **A scroll view scrolls by moving the TABLE's transform, not by the virtual area's offset.**
+  Measured 2026-08-28 on the negotiation term shelf: focusing a row below the fold left
+  `AgeControlScrollView.VirtualArea.PixelOffsetTop` at 0 throughout while the table's own `y` moved
+  from 349 to 297 (two rows) to bring the focused row inside the viewport. Read the scroll state off
+  the table's rect against the viewport's, never off the offset — and a bare `AgeTransform` scroll
+  view with no `AgeControlScrollView` component at all still scrolls this way.
 - **A `GuiTable` line is a POOL SLOT, not a row.** `LineNNN` names (and positions) are reassigned
   whenever the table refreshes or re-sorts, so a cursor keyed on either sits on a different thing
   a frame later — measured: picking a trait in the custom-faction editor left the next Enter
@@ -564,6 +594,27 @@ Measured behaviour of the drawing pipeline:
   answers with whichever the walk reaches first — on the minor window that was the faction banner,
   which named the relation panel "Niris". **Mod policy**: resolve such a caption from the UNIQUE label
   name and take its `Parent`, never by the group's own name.
+- **One drawn LINE can carry two tooltips, one enclosing the other, and the engine draws whichever
+  is innermost under the pointer.** The same `…Group [caption tooltip] / Icon + …Label [value
+  tooltip]` shape as the bullet above, but with a sentence on BOTH halves: measured 2026-08-28 on
+  `HeroInspectionModalWindow`'s ship overview, where `SizeGroup` carries `%ShipStatSizeDescription`
+  ("The size of this Ship") and the `SizeLabel` inside it carries `%ShipSizeSmallDescription` (the
+  size class's rules and hull weakness); `HullGroup`/`HullLabel` and `RoleGroup`/`RoleLabel` the
+  same, while `NameGroup` has only the caption. Because there is one tooltip window
+  (see below), a node can RAISE only whichever of the two it points at — declaring both on one node
+  promises words the game will never draw. **Mod policy** (owner ruling 2026-08-28): a line with two
+  hover targets converts to the nested-entry pattern BY DEFAULT — the line keeps the outer caption
+  and each inner dossier becomes a `TooltipChildren` entry aimed at its own widget, which is the
+  shape a technology's unlocks already use (`ResearchScreen.Unlocks`). The finder is the parity
+  audit's `unread` bucket; conversions are reported to the owner rather than assumed.
+- **A tooltip is TWO promises through two doors, and a node that makes one without the other is
+  silent in a way nothing observable reports.** `NodeVtable.PointsAt` declares WHICH dossier the node
+  shows — the reviewable half, and what the parity audit judges an aim by — while
+  `NodeVtable.OnFocusVisual` is what moves the pointer, and moving the pointer is the only thing that
+  makes the game draw its own tooltip. Wire the first alone and the words read back perfectly while
+  the picture never appears (owner-reported 2026-08-28; `DevProbe.TooltipPipe` shows it as
+  `aimed=- want=- win=hidden`). The standard door now wires both, the `unraised` parity bucket names
+  any node that still does not, and a bare `PointsAt` assignment is lint-listed.
 - **A failed tooltip request is PARKED for 999 seconds, and only a change of hovered transform
   lifts it.** `GuiTooltipController.Update` (Amplitude.Unity.Gui/GuiTooltipController.cs:214-224):
   when the hover delay elapses and `ReadTooltipInformation()` says no — which it does when the

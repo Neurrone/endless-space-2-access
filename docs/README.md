@@ -6,7 +6,7 @@ One line per file: what it holds, and therefore where new content of that kind l
 
 | File | Charter |
 |---|---|
-| `dev-loop.md` | ONLY the loop: dev-server routes, the verification helpers, REPL gotchas, screen-agnostic verification patterns. Stays under ~300 lines |
+| `dev-loop.md` | ONLY the loop: dev-server routes, the verification helpers, REPL gotchas, screen-agnostic verification patterns. Stays under ~350 lines |
 | `interaction.md` | The ES2 interaction language — layer numbers, the key map, claim rules. Every new layer or key binding lands here |
 | `roadmap.md` | Work remaining, owner rulings pending, and a pointer index of what shipped. Screen-status changes and future-feature prep land here |
 | `test-recipes/` | Per-screen recipes and fixture limits, one file per screen family — see `test-recipes/README.md` |

@@ -123,3 +123,27 @@ Index and charter: `README.md`.
   the game's `%AcademyRelationPointsTitle` "Academy Relation points" rather than by the last-resort
   first-line rule. Its state label is left uncaptioned: the game keeps no title for it and the state
   word says what it is.
+- **A one-sided contract is a `Declaration`, and the game deliberately draws NO approval for one.**
+  `NegotiationModalWindow.RefreshDealApproval` (:980) only paints the deal-approval band when the
+  contract holds terms AND `GetPropositionMethod() != Declaration`; otherwise it takes
+  `StopAIEvaluationFeedback(reset: true)`, which hides both gauge halves and fades all five faces.
+  Measured 2026-08-27 on a live cold war: two resource gifts from the player alone read
+  `method=Declaration` with `EmpireWhichReceivesAIEvaluation.Evaluation == -0.0921` — the evaluation
+  EXISTS and the screen shows nothing, and 409 frames of waiting never drew it. Putting a term on the
+  other side flipped it to `method=Negotiation` and the bar appeared at once. So "the approval band
+  is blank" is the game's own answer for an empty contract and for a one-sided demand or gift, not a
+  missing reading; speaking the evaluation there would tell a screen-reader player something no
+  sighted player can see.
+- **The approval band names nothing.** The five faces (`AIEvaluationSmileys`, prefab-named
+  `SmileyVeryAngry` … `SmileyVeryHappy`) are bare images: no label, no tooltip, and no `GuiElement`
+  — swept 2026-08-27 across all 10,446 of them and across all ten localizations, where the string
+  "smiley" appears nowhere and `%NegotiationModalWindowDealApprovalDescription` is the only
+  `DealApproval` key in the game. What the game DOES compute is the bracket: `RefreshDealApproval`
+  :985-992 turns the evaluation into an index 0-4 and lights that face by writing `Alpha = 1f`,
+  leaving the rest at their own `FadeOnDisableFactor`. Reading the lit face is therefore reading what
+  is drawn; naming the five is not available without inventing words.
+- **A hero ship's hull tooltip can carry an unrelated glossary sentence, and it is the GAME's text.**
+  Measured 2026-08-27: `ShipDesignOverviewPanel.HullTooltip` on the hero inspection page had
+  `Content` = "Role: Support / Corporate\nThe term used by the Sower director to describe the way the
+  Academy is managed." — a definition of a word, on a hull. The tooltip is attached to `HullLabel`,
+  so nothing about the mod's aim is wrong; the game wrote that content. Read as drawn.

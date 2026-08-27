@@ -99,7 +99,7 @@ The full contract of each is its own doc comment; this is the inventory.
 | `DevProbe.Claims("Escape,Return")` | What the input layer claims FROM the game, side-effect-free, per named key (the latch, `claimsBack`, `layerLive`, `leftToGame`) | `ES2Access/Dev/DevProbe.cs` |
 | `DevProbe.EndEdit(commit)` / `ArmCommit()` | Fallback levers for a text edit's endings when `POST /key` cannot run (locked desktop, unfocused game); real key events stay the primary route | `ES2Access/Dev/DevProbe.cs` |
 | `DevProbe.Notifications()` | The notification engine's live state in one answer — mapping count + owning assembly, patch owners per hooked method, the turn subscription, last-seen table size, and the influence sweep's `ground*` counters | `ES2Access/Dev/DevProbe.cs` |
-| `DevProbe.TooltipParity()` | The promised/misaimed/uncovered tooltip self-check on the FOCUSED screen, eight buckets (four findings, four context), aim read off `NodeVtable.PointsAt` rather than re-derived | `ES2Access/Dev/TooltipAudit.cs` |
+| `DevProbe.TooltipParity()` | The promised/misaimed/unraised/uncovered tooltip self-check on the FOCUSED screen, nine buckets (five findings, four context), aim read off `NodeVtable.PointsAt` rather than re-derived; `unraised` is the one that asks whether the pointer is ever MOVED there | `ES2Access/Dev/TooltipAudit.cs` |
 | `DevProbe.NotificationParity()` | The notification family's self-check on whichever popup is up — painted-but-unsaid, spoken-but-undrawn, mis-banded, promised/lost tooltips, figures spoken with no caption; also runs by itself on every popup (`/log?grep=parity`) | `ES2Access/Dev/NotificationAudit.cs` |
 | `DevProbe.Coverage(wholeTree?)` | What the FOCUSED screen never declared (tooltips AND actions) against everything the engine draws; a COLLAPSED branch reads as uncovered, and `live` roots walk the windows BEHIND the screen too | `ES2Access/Dev/CoverageAudit.cs` |
 | `DevProbe.Ghosts()` | Declared vs painted on the FOCUSED screen, split: `droppedByGate` (the gate already withholds these — informational) and `shippedUnpainted` (in the player's render yet unpainted — defects) | `ES2Access/Dev/GhostAudit.cs` |
@@ -214,7 +214,11 @@ buckets and what each means are in `ES2Access/Dev/TooltipAudit.cs`. Reading a ru
 `Screen.RootTransform`, so `"root": null` means declaration-side buckets only, not a clean screen;
 COUNTS on a culling surface depend on camera position, so compare buckets, not totals; and a run
 taken while a MODAL is focused inherits the screen BEHIND it — subtract findings by root path
-before judging, or a clean modal reads as a disaster.
+before judging, or a clean modal reads as a disaster. A COLLAPSED branch reads as `unread` (the blind
+spot `Coverage` shares) — expand and re-run before believing one. `unraised` is the only bucket about
+the OTHER promise: a tooltip is DECLARED (`PointsAt`) and RAISED (`OnFocusVisual` moving the
+pointer), and one without the other reviews perfectly and never draws — contract at
+`GraphNodes.SectionsFor`, which now makes both.
 
 **A card's tooltip is rarely on the card.** Aim at `tooltip.AgeTransform`, never at the row that
 contains it, and READ the component's own Tooltip field, never `widget.AgeTooltip` — both fail
@@ -309,8 +313,9 @@ never two launches; the loop is UNSAFE while another stage edits the same trees.
 ADDITIVE announcement change, null the injected dependency that produces the new part
 (`GraphAnnouncer.Carry = null`) and dump instead of stashing.
 `GET /gui/graph?screen=KEY&buffers=1` reaches screens whose window exists without a game
-(`screen.game-menu`, `screen.rename`); an INACTIVE screen's by-key dump holds only the shared HUD
-stops plus stale content — open the screen first.
+(`screen.game-menu`, `screen.rename`); the dump is GATED, so an inactive screen's own content is
+withheld, leaving the shared HUD stops — or, for a window the game is not drawing at all,
+`declared no controls`, which `ungated=1` does NOT lift (measured on `screen.main-menu`). Open it first.
 
 **Sighting a surface the fixture never draws** — the tiered forced-show ladder — is
 `docs/test-recipes/fixtures.md`.

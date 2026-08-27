@@ -43,19 +43,23 @@ menu (`Gui.GuiService.ShowWindow(Gui.GuiService.GetWindow<GameMenuModalWindow>()
 is the same thing Escape does), then `/input ui.down` five times from Save Game and
 `/input ui.activate` — "Mod settings, button, 6 of 9", then "Mod settings" + "Scanner, tab,
 selected, …, 1 of 2". On the MAIN MENU the entry sits after Options as 8 of 9; the whole main-menu route
-is untested live from an in-game fixture, but the placement is checkable without leaving the game
-with `GET /gui/graph?screen=screen.main-menu`, which reads the live window (not prefab content)
-even while the screen is inactive — and it is the check that caught the node being declared in
-the wrong branch, since the main menu's Options entry is a GROUP with a flyout while the pause
-menu's is a flat button.
+is untested live from an in-game fixture, and **is no longer checkable from inside a running game**:
+`GET /gui/graph?screen=screen.main-menu` now answers `screen inactive: it declared no controls`, and
+`&ungated=1` answers the same (measured 2026-08-28) — the main-menu window is not drawn from in
+game, so there is nothing for the by-key build to declare. That check is what once caught the node
+being declared in the wrong branch, since the main menu's Options entry is a GROUP with a flyout
+while the pause menu's is a flat button; redo it from an OUT-GAME session, where the screen is
+active.
 
 **From there, one route serves every tab and both buttons bars.** The window opens on the Scanner
 tab; `ui.down` on the tabs stop reaches Controls. `ui.next` from the tabs stop reaches
 `options:rows`, `ui.next` again `options:buttons` (`ui.home` = Cancel, `ui.end` = Apply; on the
 Controls tab a third button, Reset to Defaults, sits between them at
 `options:button/ResetButton/OnModResetCb`). Pause menu → Options is 5 of 9, Mod settings 6 of 9.
-`/input ui.back` does NOT close a game-owned window: Escape is left to the game and an injected
-action presses no key — use the window's own Cancel button. Cancel with changes raises the game's
+`/input ui.back` does NOT close THIS window: the options screen leaves Escape to the game and an
+injected action presses no key — use the window's own Cancel button. (That is this window's answer,
+not a general rule: the seven modals listed in `interaction.md` DO consume Back and press their own
+close control, so `ui.back` closes those.) Cancel with changes raises the game's
 own confirmation (`ui.end` then `ui.activate` confirms) and lands back on the pause menu.
 
 ## Reading it

@@ -65,6 +65,13 @@ namespace ES2Access.Dev
     /// The painted half needs <see cref="Screen.RootTransform"/>; with none, the check is
     /// declaration-side only.
     ///
+    /// <b>A COLLAPSED branch reads as <c>unread</c></b> - the same blind spot
+    /// <see cref="CoverageAudit"/> records for its own buckets. A group's child nodes are not
+    /// declared while it is collapsed, so every dossier hanging under one looks like a tooltip no
+    /// node carries. Expand the group and re-run before believing an <c>unread</c> finding: measured
+    /// repeatedly on the hero card and on the ship-overview fact lines, where expanding cleared the
+    /// finding and collapsing brought it straight back.
+    ///
     /// Main-thread only, dev-only, and never on the player's path: nothing here speaks, focuses,
     /// moves the pointer or changes what the game is showing.
     /// </summary>

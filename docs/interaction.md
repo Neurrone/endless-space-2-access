@@ -376,17 +376,27 @@ plotted, the prompt closed for the program picker) — the SCREEN takes the key 
 node (`Screen.Contextual`, a new hook: the screen is offered the contextual key first, for a mode
 the game imposed on the whole page), so it works anywhere and sending fleets / undoing a zoom wait
 for as long as the mode is up. Escape stays the game's except under `TakeSystemCursor`, the one mode
-the game left with no Escape route: there the mod claims Escape (`ConsumesBack` true only then) and
+the game left with no Escape route: there the mod claims Escape (`ConsumesBack` true only then on
+THIS screen) and
 runs that cursor's own right-click cancel, so Escape cannot raise the pause menu over a map still
 waiting for a target (owner-ruled deviation, 2026-08-12).
 
-**Escape is the game's, except over a surface the mod invented.** A screen answers
+**Escape is the game's — the mod claims it over a surface the mod invented, and over a game window
+whose own dismissal control it can press instead.** The second is the 2026-08-28 ruling: seven
+game-owned modals (hero inspection, laws, ship design, the academy modal, and the academy, minor-faction
+and pirate diplomacy windows) answer `ConsumesBack` with "does this window draw a close control",
+and their `Back()` presses that control — so the key is handed straight back to the game through
+the gesture it already answers, confirmations and page switches included, rather than being taken
+from it (`WindowShape.CloseControl`/`PressClose`; the two handler names are an ES2 fact, `gui.md`).
+The negotiation table is the deliberate exception — its close POSTS AN ORDER — and the quest
+journal draws no such control, so both leave Escape alone. A screen answers
 `ConsumesBack` (asked BEFORE the press), and `ModInput` latches EVERY consumed key until the
 player lets go — the rationale for both is `docs/generic/input.md` (the back-key rules and
 the liveness self-race law). `ConsumesBack` is NOT a copy of `Back()`: `DropListScreen`
 handles Escape and still needs the engine to see it. Probe live with
-`ES2Access.Dev.DevProbe.Claims("Escape")` — `claims` true only where a mod-owned surface is
-focused, the latch shown when the surface has already gone. That probe, not
+`ES2Access.Dev.DevProbe.Claims("Escape")` — `claims` true where a mod-owned surface is focused AND
+on the seven game windows above whenever they are drawing their close control, the latch shown when
+the surface has already gone. That probe, not
 `/input ui.back`, is what proves the key does not fall through. It cannot tell a MODIFIED binding
 from its plain one (it is asked per `KeyCode`), so a removed chord is proved by `POST /input` with
 the action key instead: an unregistered action 400s and lists the ones that exist.
@@ -757,9 +767,17 @@ screen's action (saving, renaming are the Save/Confirm buttons; a game that will
 a value refuses at its own button); Escape — or ANY loss of the keyboard
 that is not Return: a click elsewhere, a right click — cancels, restoring the pre-edit text
 and saying "Cancelled", before a second Escape closes the surface. The chat box is the one
-exemption: its Enter sends, through the game. Role words: "editable",
-and "numeric editable" for the stepper boxes whose Left/Right adjust announces the new value
-(owner rulings 2026-08-17; the cancel-restore is wholly mod-authored — the engine has no
+exemption: its Enter sends, through the game. **A FOCUSED edit field never adjusts its value on
+Left/Right — the arrows navigate, and the number is changed by opening the edit and typing it**
+(owner ruling 2026-08-27: "left / right when my focus is on it increments it, even though this should
+only happen when I'm editing it"). That covers every numeric editable — the negotiation basket's
+quantity, the marketplace's tradable-item quantity and its tax rate — none of which is wired to the
+game's own plus/minus buttons any more; where the game draws those buttons they are declared as
+their own nodes, so the stepper is still one keypress away. A SLIDER is the exception and keeps
+arrow-adjust: it has no edit to go inside, and the arrows are the only gesture it has. Role words: "editable",
+and "numeric editable" for the boxes a NUMBER is typed into rather than free text — the word says
+which kind of thing the field takes, and no longer promises an arrow step
+(owner rulings 2026-08-17 and 2026-08-27; the cancel-restore is wholly mod-authored — the engine has no
 cancel semantics of its own, and the hand-over waits for the activating key's release).
 
 ## The mod's Controls tab

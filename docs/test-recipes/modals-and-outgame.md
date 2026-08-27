@@ -450,6 +450,40 @@ history. The alliance tab and the new-message button stay unreachable in single 
 own hand (no alliance; a Global line on the Global tab never raises the button) — the solo-MP lobby
 above is still the only fixture for those.
 
+## The negotiation table
+
+The treaty modal, opened from the diplomacy ring by clicking a MET empire (or from a
+relation-change popup's link). Nothing opens it in `[Beginner] test`: it needs a met major, which
+that save has none of, so every reading below was taken on the owner's live game and the fixture
+block is real.
+
+**The hazard that shapes every visit: closing an unsigned negotiation POSTS AN ORDER.**
+`UnBindActiveContract` posts `OrderChangeDiplomaticContractState(Inactive)`, so this is one of the
+few windows a stage may not open and close freely to look at. On the owner's own game, do not open
+it at all unless he has it open; when he does, drive it with `/input` and leave the contract exactly
+as found. Escape stays the GAME'S here for the same reason — the mod does not consume Back on this
+screen, unlike every other modal of the family (ES2 facts, gui.md).
+
+**What to verify, and where each reading comes from.** The stops are the window's own bands:
+`negotiation:title`, `my-empire`, `relationship`, `their-empire` (the dossier is a REGION nested in
+it, opened by the Empire Information tick box, not a stop of its own), `pressure`, `my-terms`,
+`their-terms`, `contract` (whose LAST row is the deal approval, not a stop of its own) and
+`actions`. Each shelf is a header row (Name/Type/Cost) over a `GraphSheet`, with the six category
+filters as ONE horizontal row entered at whichever is in force. Enter on a term row sends the
+window's own `OnSelectTerm` and the row says selected/not selected; the basket row that appears
+carries the quantity stepper (Enter opens the edit — the arrows do NOT adjust it, `interaction.md`).
+
+**The gotcha that looks like a bug and is not:** the deal approval reads the empty word for an empty
+contract AND for a one-sided gift or demand, because the game refuses to draw an approval for a
+`Declaration`-type contract even though it has computed one (ES2 facts,
+`heroes-and-diplomacy.md`). Put a term on BOTH sides to make the band appear before calling it a
+defect. The pressure band's two threshold markers carry no words of their own — their place along
+the bar is read off `GaugeThresholdItem`'s `PercentLeft`, which is the game's own number.
+
+**The shelves are pooled and fade-retire**, so a shelf of five terms can sit in a table of nine bound
+children; the count must match the DRAWN rows, and "N of 9 with four unreachable" is the symptom of
+a walk that asked `Visible` instead of drawn-ness (gui.md).
+
 ## The load/save modal's usage hint
 
 `LoadSaveModalWindow` with `LoadSaveMode = LoadFromGame` gives "Ctrl+Alt+Enter to load" on all

@@ -346,7 +346,8 @@ know about.
 **Diplomacy, the academy pair and the sweep** are largely forced-show work: bind what the window
 needs, set `Visible=true`, read, then `Unbind` and hide, and re-diff the graph dump to prove nothing
 was left behind. A forced show proves STRUCTURE, not content. **Never press** any diplomacy action,
-any negotiation button (closing an unsigned negotiation still posts an order — ES2 facts), or
+any negotiation button (closing an unsigned negotiation still posts an order — ES2 facts; the
+negotiation table's own recipe is **The negotiation table** in `modals-and-outgame.md`), or
 anything on the pirate page while there are no pirate systems (its `Refresh` throws). **The
 `AcademyModalWindow` Bind wedge**: a half-bind survives the probe and leaves the window unusable —
 recover with `Unbind` plus a re-issued `POST /loadsave`, and never force-show a DLC modal without
