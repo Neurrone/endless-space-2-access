@@ -436,11 +436,10 @@ belong in the files above.
   (the game names them nowhere); "Sent {0} to {1} by spaceport" (the empire page's
   population shipment); and the scan labels' 2px RelationBar (own/allied/enemy/pirate/
   minor) — currently unread, needs five words or a colour mapping.
-- Marketplace SELL rows: the game's middle-click subtracts the click quantity from the
-  pending sell order (`SalableItem.OnMiddleClickCb` :71-77) and no convention chord exists
-  for a middle click. Options: check whether the panel's own minus button is already a
-  declared control (then this is covered and needs only a recipe line), or model the
-  quantity as a Left/Right adjustable node the way the zoom ladder is. (Gesture audit,
+- Marketplace SELL rows: the middle-click subtract is covered — the panel's ± buttons are
+  declared nodes ("Click: removes 1 unit" / "adds 1 unit", verified live 2026-08-28) and
+  the quantity is an edit field (the 2026-08-27 ruling: no Left/Right adjust outside the
+  edit). Remaining: the recipe line for the marketplace family. (Gesture audit,
   2026-08-14.)
 - Coordination-pin drag (ally pings on the map): the game's drag moves the pin to an
   arbitrary world point; a keyboard drop can only land on a NAMED map object — a semantic

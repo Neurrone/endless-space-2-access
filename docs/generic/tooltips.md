@@ -140,13 +140,16 @@ Rules that came out of shipping this, all hit in practice:
   its words — the declaration itself stays unconditional (above), which is exactly why a
   mis-aimed pointer strands content the player can never reach and nothing in the speech
   says so.
-- **A row can carry more than one tooltip** (the heading's explanation and the value's
-  description): announce the value's — the last-drawn — by the short/long rule; a long one
-  anywhere in the row goes to the buffer; put every tooltip in the row into
-  the row's buffer **in drawn order** (the heading's explanation first, then the value's
-  dossier), so review follows the screen. That is the rule for a caption-plus-value pair;
-  a row carrying several INDEPENDENT explanations makes them nodes instead — one per
-  tooltip-bearing widget, never merged into one buffer. Before picking which one to POINT AT, drop the
+- **A row can carry more than one tooltip** (the heading's explanation on the row's
+  group, the value's description on the label inside it). The engine draws whichever
+  tooltip is INNERMOST under the pointer, so those are two distinct hover surfaces — and
+  the model gives them two nodes: the row keeps the outer caption (announced with the
+  value, aimed so focus raises what a mouse resting on the line raises), and the inner
+  dossier becomes a NESTED child entry aimed at its own label, so focusing it draws and
+  reads exactly that card. Never fuse the two into one buffer — a single node can only
+  ever raise one of its tooltips, and the other half becomes words promised but never
+  shown. A row carrying several INDEPENDENT explanations follows the same rule — one node
+  per tooltip-bearing widget. Before picking which one to POINT AT, drop the
   tooltips the engine could never draw anything for (no class, no content, no target —
   and note "never draws" and "draws" are different tests: a class-ONLY tooltip survives
   this filter yet still renders nothing, so never judge an aim with the collector's test):

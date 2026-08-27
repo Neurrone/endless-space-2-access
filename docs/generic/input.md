@@ -93,7 +93,14 @@ patch site per input path (`src/engine-example/GameKeyStandDown.cs`, an exemplar
   stand-down (a typing player's keys pass through untouched), and leaves mouse input alone.
 - **Escape is the standing carve-out — for the game's own surfaces.** Screens deliberately
   delegate it — dialog cancel, menu close, popup dismiss are the game's own routes and
-  better than reimplementations — so Escape is never claimed there. Make the carve-out one
+  better than reimplementations — so Escape is never claimed there. One refinement earned
+  later: where the game's window DRAWS its own dismissal control, the mod's Back key may
+  instead be claimed and answered by PRESSING that wired control — the game's whole close
+  branch runs exactly as a mouse click would, confirmations included, and one shared
+  lookup should serve both the declared close node and the key so the two can never
+  disagree. Claim it only while the control is drawn, and hold out deliberately where
+  closing has side effects (a window that posts an order on close) or where the window
+  draws no control at all — there Escape stays purely the game's. Make the carve-out one
   named constant in the input layer, not a note in each patch. **But a surface the game
   cannot see — a mod-owned menu or panel — must DENY the game the key**, or closing the
   menu also raises the game's pause screen. The denial is a predicate asked *before* the
