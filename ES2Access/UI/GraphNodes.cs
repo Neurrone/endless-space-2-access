@@ -421,14 +421,25 @@ namespace ES2Access.UI
         /// named after where it has no drawn caption, which must then not be announced twice.
         /// </summary>
         /// <summary>
-        /// The same, declaring the AIM at the same time: the node points at the last tooltip in the
-        /// list, which is the one every caller here already aimed at by hand.
+        /// The same, making BOTH tooltip promises at once: the node points at the last tooltip in the
+        /// list, and the pointer is moved there on focus so the game actually draws it.
         ///
-        /// Written down on the vtable (<see cref="NodeVtable.PointsAt"/>) rather than left implicit
-        /// in the pointing closure, so that anything asking "which of this row's tooltips does it
-        /// show" reads the answer instead of guessing it from the widget tree. A pointing helper
-        /// called afterwards overwrites it with whatever IT aims at - last call wins, for the aim and
-        /// the visual alike - which is how a screen that points somewhere else stays honest.
+        /// <b>A tooltip is two promises through two doors, and this door makes them together.</b>
+        /// Declaring a section says the words are REVIEWABLE; moving the pointer
+        /// (<see cref="NodeVtable.OnFocusVisual"/>, wired by <see cref="AgeWidgets.PointAt"/>) is what
+        /// makes the game RAISE its own tooltip, because the game draws tooltips on hover and nothing
+        /// else. This overload used to write <see cref="NodeVtable.PointsAt"/> alone, and that gap is
+        /// how a screen came to declare four tooltips that read correctly and never appeared
+        /// (owner-reported 2026-08-28, <c>TooltipPipe</c> reading "aimed=- want=- win=hidden"). One
+        /// call now settles both, so the gap cannot be reached from here again.
+        ///
+        /// The AIMLESS CASE is explicit rather than accidental: a tooltip with no transform of its own
+        /// is one that exists only inside another tooltip's drawing (<see cref="TooltipChildren"/>'s
+        /// carrier-less dossiers), and there is no widget to put a pointer on. It keeps the
+        /// declaration and gets no pointer, which is the honest answer rather than an aim at nothing.
+        ///
+        /// A pointing helper called afterwards overwrites all of it with whatever IT aims at - last
+        /// call wins - which is how a screen that points somewhere else stays honest.
         /// </summary>
         public static IList<NodeSection> SectionsFor(
             NodeVtable vtable,
@@ -440,7 +451,15 @@ namespace ES2Access.UI
             if (vtable != null && tooltips != null && tooltips.Count > 0)
             {
                 AgeTooltip last = tooltips[tooltips.Count - 1];
-                vtable.PointsAt = () => last;
+                AgeTransform owner = AgeWidgets.TooltipOwner(last);
+                if (owner != null)
+                {
+                    AgeWidgets.PointAt(vtable, owner, last);
+                }
+                else
+                {
+                    vtable.PointsAt = () => last;
+                }
             }
 
             return SectionsFor(tooltips, details, lastMode);

@@ -47,9 +47,11 @@ namespace ES2Access.Dev
     /// a defect in the GAME, which will draw nothing there whatever the mod does.
     ///
     /// THE BUCKETS, which is what a reader of <c>/eval DevProbe.TooltipParity()</c> is looking at.
-    /// Four of them are the findings that count (<see cref="Result.Findings"/>): <c>promised</c> - a
+    /// Five of them are the findings that count (<see cref="Result.Findings"/>): <c>promised</c> - a
     /// node claims a dossier nothing near it would draw; <c>misaimed</c> - it points at one that
-    /// draws nothing, judged by <see cref="NodeVtable.PointsAt"/>; <c>uncovered</c> - the game would
+    /// draws nothing, judged by <see cref="NodeVtable.PointsAt"/>; <c>unraised</c> - it points at one
+    /// and never moves the pointer there, so the words review and the game draws nothing;
+    /// <c>uncovered</c> - the game would
     /// draw a tooltip on a CONTROL that no node stands on; <c>unread</c> - a node covers it but
     /// carries none of its words. The other four are context rather than defects:
     /// <c>decoration</c> - the same gap on a widget the player cannot work, a weaker claim because
@@ -96,6 +98,22 @@ namespace ES2Access.Dev
             /// <summary>Declares a dossier and points at a tooltip that draws nothing.</summary>
             public readonly List<Breach> Misaimed = new List<Breach>();
 
+            /// <summary>
+            /// Points at a tooltip and never moves the pointer to it - the node names which dossier it
+            /// shows, and focusing it raises nothing, so the words are reviewable and the picture never
+            /// appears.
+            ///
+            /// A tooltip is two promises through two doors (<see cref="GraphNodes.SectionsFor"/>):
+            /// <see cref="NodeVtable.PointsAt"/> declares WHICH, and
+            /// <see cref="NodeVtable.OnFocusVisual"/> is what makes the game draw it. Every other
+            /// bucket here reads the declaration side; this one is the only one that asks whether the
+            /// raising half was wired, which is why it is the only one that could have caught the
+            /// hero page's four silent lines (owner-reported 2026-08-28).
+            ///
+            /// Read straight off the vtable, so it needs no drawing and no pointer moved to answer.
+            /// </summary>
+            public readonly List<Breach> Unraised = new List<Breach>();
+
             /// <summary>The game would draw a tooltip on a CONTROL here and no node covers it.
             /// </summary>
             public readonly List<Breach> Uncovered = new List<Breach>();
@@ -128,7 +146,14 @@ namespace ES2Access.Dev
 
             public int Findings
             {
-                get { return Promised.Count + Misaimed.Count + Uncovered.Count + Unread.Count; }
+                get
+                {
+                    return Promised.Count
+                        + Misaimed.Count
+                        + Uncovered.Count
+                        + Unread.Count
+                        + Unraised.Count;
+                }
             }
         }
 
@@ -261,11 +286,54 @@ namespace ES2Access.Dev
 
         // ---- the declaration side ----
 
+        /// <summary>
+        /// THE RAISING HALF. A node that names which tooltip it shows and never moves the pointer to
+        /// it is one whose words review correctly and whose picture never appears - the defect no
+        /// other bucket here can see, because every other one reads the declaration side and this is
+        /// the only question about the other door.
+        ///
+        /// Asked of the vtable alone: <see cref="NodeVtable.PointsAt"/> answering a tooltip while
+        /// <see cref="NodeVtable.OnFocusVisual"/> is unset. That needs nothing drawn and no pointer
+        /// moved, so it answers on an unfocused screen and on a node the player has never visited.
+        ///
+        /// A node that aims at NOTHING is not a finding: plenty of nodes carry no tooltip at all, and
+        /// the tooltip-less half of the screen is not this check's business.
+        /// </summary>
+        private static void Unraised(Declared node, Result result)
+        {
+            try
+            {
+                NodeVtable vtable = node.Node == null ? null : node.Node.Vtable;
+                if (
+                    vtable == null
+                    || vtable.OnFocusVisual != null
+                    || AgeWidgets.AimOf(vtable) == null
+                )
+                {
+                    return;
+                }
+
+                result.Unraised.Add(
+                    NotificationAudit.Made(
+                        node.Widget,
+                        node.Key,
+                        "points at a tooltip and never moves the pointer to it - it can be reviewed but the game will not draw it",
+                        null
+                    )
+                );
+            }
+            catch (Exception)
+            {
+                // A vtable whose aim closure throws is the aim check's business, not this one's.
+            }
+        }
+
         private static void CheckDeclarations(List<Declared> declared, Result result)
         {
             for (int i = 0; i < declared.Count; i++)
             {
                 Declared node = declared[i];
+                Unraised(node, result);
                 if (!NotificationAudit.Promises(node))
                 {
                     continue;
@@ -606,6 +674,7 @@ namespace ES2Access.Dev
                 json.WriteValue(result.HiddenTooltips);
                 NotificationAudit.WriteBreaches(json, "promised", result.Promised);
                 NotificationAudit.WriteBreaches(json, "misaimed", result.Misaimed);
+                NotificationAudit.WriteBreaches(json, "unraised", result.Unraised);
                 NotificationAudit.WriteBreaches(json, "uncovered", result.Uncovered);
                 NotificationAudit.WriteBreaches(json, "decoration", result.Decoration);
                 NotificationAudit.WriteBreaches(json, "unread", result.Unread);

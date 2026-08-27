@@ -1752,55 +1752,37 @@ namespace ES2Access.Screens
             // the group's would have thrown away the richer half. This is the same split
             // <see cref="Captions"/> records for block captions - the word and its explanation on
             // different widgets - met here one level further in.
-            IList<AgeTooltip> explanations = Explanations(widget, tooltip);
-            vtable.Sections = GraphNodes.SectionsFor(explanations);
-            // AND THE POINTER, which is a separate promise from the sections and has to be made
-            // separately. Declaring a tooltip only says the words are reviewable; what makes the GAME
-            // draw its own tooltip is the pointer being moved onto the widget
-            // (<see cref="AgeWidgets.PointAt"/> wires OnFocusVisual/OnBlurVisual, where the vtable-taking
-            // SectionsFor writes PointsAt and nothing else). Declaring the sections through that
-            // overload alone therefore left these lines reviewable but visually silent - the drawn
-            // tooltip a sighted player had always seen stopped appearing (owner-reported 2026-08-28,
-            // TooltipPipe reading "aimed=- want=- win=hidden").
+            // TWO HOVER TARGETS, TWO NODES. The overview draws each fact as a GROUP holding an icon and
+            // a label, and the game hangs a different tooltip on each: the CAPTION ("The hull of this
+            // Ship") on the group, and the value's own dossier - the size class's rules, the role's
+            // targeting table - on the label inside it. Only one tooltip can be on screen at a time, so
+            // a node that declared both could only ever raise whichever it pointed at, and the other
+            // half was words the player was promised and never shown.
             //
-            // Aimed at the OUTER sentence - the caption on the group - because that is the one a mouse
-            // resting anywhere on the line raises, and the group encloses the label the node stands on.
-            AgeWidgets.PointAt(vtable, widget, Outermost(explanations));
-            Cells.Add(_cells, widget, ControlId.For(widget, Keys + key), vtable);
-        }
-
-        /// <summary>The last of the sentences, which is the outermost - what the pointer is aimed at.
-        /// Null for a line the game hung nothing on at all, and then the aim falls back to the line's own
-        /// widget so anything hoverable under it still lights up.</summary>
-        private static AgeTooltip Outermost(IList<AgeTooltip> found)
-        {
-            return found == null || found.Count == 0 ? null : found[found.Count - 1];
-        }
-
-        /// <summary>
-        /// The sentences one of these lines has to offer, innermost first: the one the panel names for
-        /// it (or the label's own where it names none), then the CAPTION the prefab hung on the group
-        /// around the label, where that is a different tooltip.
-        ///
-        /// Ordered so the LAST is the group's, which is the one the pointer is aimed at
-        /// (<see cref="Outermost"/>) - a mouse resting anywhere on the line raises that one.
-        /// </summary>
-        private static IList<AgeTooltip> Explanations(AgeTransform widget, AgeTooltip supplied)
-        {
-            List<AgeTooltip> found = new List<AgeTooltip>(2);
-            AgeTooltip own = supplied ?? AgeWidgets.Raw(widget);
-            if (own != null)
-            {
-                found.Add(own);
-            }
-
+            // So the line keeps the caption - it is what a mouse resting anywhere on the line raises,
+            // and the group encloses everything - and the inner dossier becomes a nested entry under it
+            // aimed at the label, exactly as a technology's dot carries one entry per thing it unlocks
+            // (<see cref="TooltipChildren"/>, and <c>ResearchScreen.Unlocks</c> for the precedent).
+            // Focusing the entry puts the pointer on the label, so the game draws that card and no
+            // other.
+            AgeTooltip inner = tooltip ?? AgeWidgets.Raw(widget);
             AgeTooltip caption = AgeWidgets.Raw(Parent(widget));
-            if (caption != null && !AgeWidgets.SameTooltip(caption, own))
+            bool nests = inner != null && caption != null && !AgeWidgets.SameTooltip(inner, caption);
+            vtable.Sections = GraphNodes.Sections(null, caption ?? inner);
+            AgeWidgets.PointAt(vtable, widget, caption ?? inner);
+            Cell cell = Cells.Add(_cells, widget, ControlId.For(widget, Keys + key), vtable);
+            if (!nests)
             {
-                found.Add(caption);
+                return;
             }
 
-            return found;
+            List<TooltipChildren.Dossier> nested = new List<TooltipChildren.Dossier>(1);
+            TooltipChildren.AddPlain(nested, inner, widget);
+            if (nested.Count > 0)
+            {
+                cell.Dossiers = nested;
+                cell.Key = Keys + key;
+            }
         }
 
         private static AgeTransform Parent(AgeTransform widget)
