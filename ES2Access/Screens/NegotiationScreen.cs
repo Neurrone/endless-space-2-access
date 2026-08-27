@@ -625,6 +625,35 @@ namespace ES2Access.Screens
             }
         }
 
+        /// <summary>
+        /// WHERE a threshold marker sits along the bar, on the same 0-to-100 track the gauge's own two
+        /// shares are read off - so "at 80 percent" is a place the player can compare their 42 against.
+        ///
+        /// The game puts the marker there by writing the number straight onto the widget
+        /// (<c>GaugeThresholdItem.Bind</c> :29 sets <c>PercentLeft</c> from
+        /// <c>GaugeThresholdData.Value</c>, which is the threshold rescaled onto the track), so this is
+        /// the game's own figure rather than the rectangle measured back out of it. Checked against the
+        /// drawing anyway, 2026-08-27: the two markers read 80 and 100, and their rectangles sit at
+        /// x 668 and 828 on a track from x 40 to x 840 - 80% and 100% of it.
+        ///
+        /// Without it the two markers were two sentences and a refusal, with nothing to tell them apart
+        /// or to measure the bar against (owner-reported).
+        /// </summary>
+        private static string Notch(AgeTransform widget)
+        {
+            try
+            {
+                return ModStrings.Format(
+                    ModStrings.NegotiationThresholdAt,
+                    (int)Math.Round(widget.PercentLeft)
+                );
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
         private void AddThresholds(NegotiationModalWindow window)
         {
             AgeTransform table = window.PressureThresholdTable;
@@ -648,11 +677,13 @@ namespace ES2Access.Screens
                 AgeTooltip tooltip = item != null && item.Tooltip != null
                     ? item.Tooltip
                     : AgeWidgets.Raw(at);
+                AgeTransform notch = at;
                 NodeVtable vtable = new NodeVtable
                 {
                     Announcements = new List<NodeAnnouncement>
                     {
                         GraphNodes.LabelPart(CardActions.NameFromTooltip(tooltip)),
+                        GraphNodes.ValuePart(() => Notch(notch)),
                         GraphNodes.DisabledPart(() => AgeWidgets.Enabled(at)),
                     },
                     Sections = GraphNodes.Sections(null, tooltip, TooltipMode.None),

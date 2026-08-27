@@ -135,9 +135,41 @@ namespace ES2Access.Screens
             _field = field;
             _owner = owner;
             _gainFocus = gainFocus;
-            _row = row;
+            _row = row ?? CurrentRow();
             _options = options;
             Voice.Say(ModStrings.Get(ModStrings.EditStarted), true);
+        }
+
+        /// <summary>
+        /// The node the request came from, for a caller that cannot name its own id.
+        ///
+        /// <see cref="Update"/> abandons a pending request the moment the cursor is not on
+        /// <see cref="_row"/> any more, so the id handed in has to be the id of the NODE the player
+        /// activated - not merely of the thing it stands for. A caller that builds its own cells knows
+        /// both and they are the same string; a caller whose cells are built by
+        /// <see cref="Core.UI.GraphSheet"/> knows neither, because a sheet keys its cells itself and
+        /// says so (its <c>FirstRow</c> is the one id it hands back). Passing a hand-made key there
+        /// matched nothing, so every such edit was cancelled on the frame after it was asked for: the
+        /// player heard "editing" and then typed into a field the game had never been given (measured
+        /// on the negotiation basket's quantity box; owner-reported as "typing into the field doesn't
+        /// work at all").
+        ///
+        /// The request is raised from the node's own activation, so the focused node IS the row. Read
+        /// here rather than at the call site so that the answer and the test that consumes it come from
+        /// one place.
+        /// </summary>
+        private static ControlId CurrentRow()
+        {
+            try
+            {
+                GraphNavigator navigator = ModEntry.Navigator;
+                GraphNode node = navigator == null ? null : navigator.CurrentNode;
+                return node == null ? null : node.Id;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
         }
 
         /// <summary>Whether an editor has been asked for and the keyboard has not changed hands yet.

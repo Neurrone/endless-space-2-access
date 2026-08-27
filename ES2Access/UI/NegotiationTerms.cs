@@ -144,6 +144,13 @@ namespace ES2Access.UI
         /// They are RADIOS because that is what the panel makes them: ticking one resets every other
         /// (<c>OnToggleFilter</c> :477-497). Most are drawn as bare icons, so a filter is named by the
         /// game's own title for its category rather than by what the widget draws.
+        ///
+        /// <b>ONE row, walked with left and right</b>, because that is what the game draws: six icons
+        /// side by side in a strip, one of which is in force. A node per row made six Down presses out
+        /// of a strip the eye takes in at once (owner-reported 2026-08-27). And the strip is ENTERED at
+        /// the filter currently in force rather than at its first: arriving on "All" while the shelf is
+        /// showing resources says the wrong thing about what the player is looking at, and the landing
+        /// is the one place a one-of-N group can say which one it is without a word per member.
         /// </summary>
         public static void Filters(
             GraphBuilder builder,
@@ -153,6 +160,15 @@ namespace ES2Access.UI
         {
             AgeTransform table = panel == null ? null : panel.TermFiltersTable;
             IList<AgeTransform> children = table == null ? null : table.Children;
+            // Flow control: whether a row is opened at all - an empty row is a build error, and the
+            // strip is a pool the panel may have drawn nothing in.
+            if (children == null || children.Count == 0)
+            {
+                return;
+            }
+
+            ControlId landing = null;
+            bool open = false;
             for (int i = 0; children != null && i < children.Count; i++)
             {
                 AgeTransform widget = children[i];
@@ -179,11 +195,30 @@ namespace ES2Access.UI
                 // Keyed by the CATEGORY, since the strip's widgets are a pool the panel rebinds - but
                 // the widget the filter was read off is the tick the game draws, and that is what
                 // vouches for it.
-                builder.AddItem(Nodes.Drawn(
-                    ControlId.Structural(keyPrefix + "/filter/" + FilterKey(it, i)),
-                    vtable,
-                    widget
-                ));
+                ControlId id = ControlId.Structural(keyPrefix + "/filter/" + FilterKey(it, i));
+                if (!open)
+                {
+                    builder.StartRow();
+                    open = true;
+                }
+
+                builder.AddItem(Nodes.Drawn(id, vtable, widget));
+                // Which one the strip is entered at. Asked of the tick the game drew rather than
+                // remembered, so a filter the game itself changed is where the player arrives.
+                if (landing == null && toggle != null && toggle.State)
+                {
+                    landing = id;
+                }
+            }
+
+            if (open)
+            {
+                builder.EndRow();
+            }
+
+            if (landing != null)
+            {
+                builder.LandStopOn(landing);
             }
         }
 
@@ -283,15 +318,14 @@ namespace ES2Access.UI
         /// stepper a resource term is haggled with, and the consequences the term spells out under itself.
         ///
         /// The stepper is ONE cell, not three: the game draws a minus button, a number in a text box and a
-        /// plus button, and they are one value between them. Left and right replay the game's own buttons -
-        /// which read the PHYSICAL Shift for "all the way to the end" and the physical Control for five at
-        /// a time, so Shift+Left/Right is the game's own min and max with nothing here reimplementing it.
-        /// Enter opens the game's editor on the box, because a stock of thousands is not something to step
-        /// to. Each change is committed to the contract half a second later, by the game's own debounce
-        /// (<c>UpdateQuantityCoroutine</c> :333-350), so holding a key does not post an order per frame.
-        ///
-        /// Control+Left/Right - the game's five-at-a-time step - is NOT bound: those are the review-buffer
-        /// chords. A player who wants five presses right five times.
+        /// plus button, and they are one value between them. Enter opens the game's editor on the box and
+        /// the figure is TYPED - a stock of thousands is not something to step to, and the game's own
+        /// buttons step by one, five or the whole stock only for a mouse holding a physical modifier.
+        /// Left and right on the focused cell walk the row's columns like every other cell in the mod;
+        /// they are not wired to the buttons (owner ruling 2026-08-27, reversing the shipped stepper:
+        /// arrows that move a value the player only meant to walk past are a value changed by accident).
+        /// Whatever the edit commits is written to the contract half a second later, by the game's own
+        /// debounce (<c>UpdateQuantityCoroutine</c> :333-350).
         /// </summary>
         public static int Basket(
             GraphSheet sheet,
@@ -330,7 +364,7 @@ namespace ES2Access.UI
                 cells.Add(
                     new KeyValuePair<int, NodeVtable>(2, Text(() => Words(row.CostLabel)))
                 );
-                NodeVtable quantity = Quantity(it, rowKey, editor);
+                NodeVtable quantity = Quantity(it, editor);
                 if (quantity != null)
                 {
                     cells.Add(new KeyValuePair<int, NodeVtable>(3, quantity));
@@ -345,13 +379,9 @@ namespace ES2Access.UI
             return count;
         }
 
-        /// <summary>The stepper cell of a basket line, or nothing at all for a term that is not
+        /// <summary>The quantity cell of a basket line, or nothing at all for a term that is not
         /// quantified (a treaty is in or out).</summary>
-        private static NodeVtable Quantity(
-            ContributionTermLine line,
-            string rowKey,
-            TextFieldEditor editor
-        )
+        private static NodeVtable Quantity(ContributionTermLine line, TextFieldEditor editor)
         {
             AgeControlTextField field = line.QuantityTextField;
             if (
@@ -365,44 +395,40 @@ namespace ES2Access.UI
                 return null;
             }
 
-            ContributionTermLine it = line;
             AgeControlTextField box = field;
             AgeTransform host = AgeWidgets.Transform(field);
             Func<bool> enabled = () => AgeWidgets.Operable(line.QuantityGroup);
             NodeVtable vtable = GraphNodes.EditField(
                 () => ModStrings.Get(ModStrings.NegotiationQuantity),
                 () => TextFieldEditor.Typing(box) ? null : AgeWidgets.TextOf(host),
-                () => Edit(editor, box, rowKey),
+                () => Edit(editor, box),
                 enabled,
                 AgeWidgets.Raw(host)
             );
-            // The arrows work the stepper here rather than a caret, which is the whole of the
-            // difference between this box and every other one - so the role word says so.
+            // It is a NUMBER the player types, not free text - so the role word says so. What it is NOT
+            // is an adjustable: left and right on a FOCUSED cell walk the row's columns, the same as on
+            // every other cell of every other table in the mod, and the number is changed by opening the
+            // edit and typing it (owner-reported 2026-08-27: "left / right when my focus is on it
+            // increments it, even though this should only happen when I'm editing it"). The game's own
+            // plus and minus buttons step by one, five or the whole stock depending on a modifier the
+            // keyboard cannot reach from here, and typing the figure outright is both shorter and the
+            // only way to reach a stock of thousands.
             vtable.ControlType = ControlTypes.NumericEditField;
-            vtable.OnAdjust = (sign, large) =>
-            {
-                if (!enabled())
-                {
-                    return;
-                }
-
-                AgeWidgets.Press(sign < 0 ? it.QuantityMinusButton : it.QuantityPlusButton);
-            };
             AgeWidgets.PointAt(vtable, host);
             return vtable;
         }
 
-        /// <summary>The edit is requested under the ROW's own settled key rather than re-derived from the
-        /// term, so a repeated term's two steppers are two requests and not one.</summary>
-        private static void Edit(
-            TextFieldEditor editor,
-            AgeControlTextField field,
-            string rowKey
-        )
+        /// <summary>The edit is requested against the NODE the player activated, which the sheet keyed
+        /// and this does not know: a hand-made id here names no node, and the editor - which abandons a
+        /// request the cursor has walked away from - read that as having walked away immediately and
+        /// cancelled every edit on the frame it was asked for. Null is the editor being told to ask the
+        /// cursor (<c>TextFieldEditor.CurrentRow</c>), and the cursor is on this cell because this is its
+        /// own activation.</summary>
+        private static void Edit(TextFieldEditor editor, AgeControlTextField field)
         {
             if (editor != null)
             {
-                editor.Request(field, null, null, ControlId.Structural(rowKey + "/quantity"));
+                editor.Request(field, null, null, null);
             }
         }
 

@@ -1594,10 +1594,8 @@ namespace ES2Access.Core.Speech
 
         /// <summary>The negotiation table's bands. The game captions most of them itself - the window
         /// heading, the pressure gauge, both term shelves, the contract and its two contributions - and
-        /// those words are read off the widget with the keys here as the fallback. The two bands the
-        /// game leaves unnamed are the strip between the empires (<see cref="NegotiationRelationship"/>)
-        /// and the row of buttons along the bottom.</summary>
-        public const string NegotiationHeader = "negotiation.header";
+        /// those words are read off the widget with the keys below as the fallback. The bands the game
+        /// leaves unnamed name themselves from here.</summary>
 
         /// <summary>The band between the two empire banners: what the diplomatic status is, and the
         /// three things that status permits. The game draws the status sentence and the ability icons
@@ -1607,7 +1605,6 @@ namespace ES2Access.Core.Speech
         public const string NegotiationPressure = "negotiation.pressure";
         public const string NegotiationMyTerms = "negotiation.my-terms";
         public const string NegotiationTheirTerms = "negotiation.their-terms";
-        public const string NegotiationFilters = "negotiation.filters";
         public const string NegotiationTerms = "negotiation.terms";
         public const string NegotiationContract = "negotiation.contract";
         public const string NegotiationContractBoth = "negotiation.contract-both";
@@ -1624,6 +1621,12 @@ namespace ES2Access.Core.Speech
         /// between the two of them and the game writes no figure anywhere on it, so each side is named
         /// by the banner it is drawn under and given the length it holds.</summary>
         public const string NegotiationPressureShare = "negotiation.pressure-share";
+
+        /// <summary>Where a threshold notch sits along the pressure bar. The game draws the marker at a
+        /// place on the track and says only whether it has been reached, so without the place the two
+        /// markers are two sentences with nothing to tell them apart or measure the bar against
+        /// (owner-reported 2026-08-27: "the thresholds for pressure make no sense currently").</summary>
+        public const string NegotiationThresholdAt = "negotiation.threshold-at";
         public const string NegotiationActions = "negotiation.actions";
 
         /// <summary>The stepper a resource term draws beside its name. The game writes the number in the
@@ -2351,13 +2354,11 @@ namespace ES2Access.Core.Speech
             { DiplomacyNotYourRing, "You can only negotiate from your own empire's ring" },
             { DiplomacyViewingFrom, "Viewing relations from the perspective of {0}" },
             { ScreenNegotiation, "Negotiation" },
-            { NegotiationHeader, "The two empires" },
             { NegotiationRelationship, "Relationship" },
             { NegotiationDossier, "Empire information" },
             { NegotiationPressure, "Pressure" },
             { NegotiationMyTerms, "Terms you can offer" },
             { NegotiationTheirTerms, "Terms you can ask for" },
-            { NegotiationFilters, "Categories" },
             { NegotiationTerms, "Terms" },
             { NegotiationContract, "The deal" },
             { NegotiationContractBoth, "Both empires" },
@@ -2366,6 +2367,7 @@ namespace ES2Access.Core.Speech
             { NegotiationApproval, "Deal approval" },
             { NegotiationApprovalValue, "{0} percent" },
             { NegotiationPressureShare, "{0} {1} percent" },
+            { NegotiationThresholdAt, "at {0} percent" },
             { NegotiationActions, "Offer" },
             { NegotiationQuantity, "Quantity" },
             { ScreenMinorDiplomacy, "Minor faction diplomacy" },
