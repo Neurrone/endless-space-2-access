@@ -10,8 +10,8 @@ docs/generic/src/bootstrap/ES2Access.Tests.csproj | ES2Access.Tests/ES2Access.Te
 docs/generic/src/bootstrap/GamePaths.props.template | GamePaths.props.template
 docs/generic/src/bootstrap/run-game.ps1 | run-game.ps1
 docs/generic/src/bootstrap/wait-game.ps1 | wait-game.ps1
-docs/generic/src/buffers/BufferActions.cs | ES2Access/UI/Input/BufferActions.cs
-docs/generic/src/buffers/BufferController.cs | ES2Access/UI/BufferController.cs
+docs/generic/src/engine-example/BufferActions.cs | ES2Access/UI/Input/BufferActions.cs
+docs/generic/src/engine-example/BufferController.cs | ES2Access/UI/BufferController.cs
 docs/generic/src/buffers/ReviewBuffer.cs | ES2Access/Core/UI/Buffers/ReviewBuffer.cs
 docs/generic/src/buffers/ReviewBufferManager.cs | ES2Access/Core/UI/Buffers/ReviewBufferManager.cs
 docs/generic/src/dev-server/AgeDump.cs | ES2Access/Dev/AgeDump.cs
@@ -66,7 +66,7 @@ docs/generic/src/hot-reload/ModLoader.cs | ES2Access.Loader/ModLoader.cs
 docs/generic/src/localization/LocaleFileTests.cs | ES2Access.Tests/Speech/LocaleFileTests.cs
 docs/generic/src/localization/MessageBuilder.cs | ES2Access/Core/Speech/MessageBuilder.cs
 docs/generic/src/localization/MessageBuilderTests.cs | ES2Access.Tests/Speech/MessageBuilderTests.cs
-docs/generic/src/localization/ModLocale.cs | ES2Access/Localization/ModLocale.cs
+docs/generic/src/engine-example/ModLocale.cs | ES2Access/Localization/ModLocale.cs
 docs/generic/src/speech/NativeLoader.cs | ES2Access/Core/Native/NativeLoader.cs
 docs/generic/src/speech/PrismNative.cs | ES2Access/Core/Speech/PrismNative.cs
 docs/generic/src/speech/PrismSpeech.cs | ES2Access/Core/Speech/PrismSpeech.cs

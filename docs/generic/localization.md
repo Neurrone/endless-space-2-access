@@ -103,7 +103,7 @@ speculatively.
 
 [`src/localization/ModStrings.cs`](src/localization/ModStrings.cs),
 [`MessageBuilder.cs`](src/localization/MessageBuilder.cs),
-[`ModLocale.cs`](src/localization/ModLocale.cs) (adapt the game-language lookup),
+[`ModLocale.cs`](src/engine-example/ModLocale.cs) (adapt the game-language lookup),
 [`english.json`](src/localization/english.json),
 [`LocaleFileTests.cs`](src/localization/LocaleFileTests.cs) (the validator),
 [`MessageBuilderTests.cs`](src/localization/MessageBuilderTests.cs) (including the
