@@ -273,6 +273,35 @@ namespace ES2Access.Tests.Map
         }
 
         [Fact]
+        public void TheFourCornersOfAMapBoxAreACorridorLikeAnyOtherOutline()
+        {
+            // The galaxy's roamable frame is a bounding BOX handed in as its four corners, so the
+            // corridor arithmetic has to answer a lopsided rectangle - from the middle, from a place
+            // sitting on the rim, and from a corner - with no exit maths of its own.
+            ConvexHull box = Hull(-95, -64, 92, -64, 92, 66, -95, 66);
+
+            Assert.Equal(92.0, box.ExitDistance(new MapPoint(0, 0), 1, 0), 9);
+            Assert.Equal(95.0, box.ExitDistance(new MapPoint(0, 0), -1, 0), 9);
+            Assert.Equal(66.0, box.ExitDistance(new MapPoint(0, 0), 0, 1), 9);
+            Assert.Equal(64.0, box.ExitDistance(new MapPoint(0, 0), 0, -1), 9);
+
+            // A star on the south rim: nothing at all due south, the full height due north.
+            Assert.Equal(0.0, box.ExitDistance(new MapPoint(-14, -64), 0, -1), 9);
+            Assert.Equal(130.0, box.ExitDistance(new MapPoint(-14, -64), 0, 1), 9);
+            Assert.Equal(106.0, box.ExitDistance(new MapPoint(-14, -64), 1, 0), 9);
+
+            // A corner: out along the diagonal is the box's own diagonal, and every outward heading
+            // from it is zero.
+            Assert.Equal(
+                System.Math.Sqrt(187 * 187 + 130 * 130),
+                box.ExitDistance(new MapPoint(-95, -64), 187, 130),
+                9
+            );
+            Assert.Equal(0.0, box.ExitDistance(new MapPoint(-95, -64), -1, 0), 9);
+            Assert.Equal(0.0, box.ExitDistance(new MapPoint(-95, -64), -1, -1), 9);
+        }
+
+        [Fact]
         public void AnOutlineWithNoInsideHasNoCorridor()
         {
             Assert.Equal(0.0, Hull(0, 0, 10, 0).ExitDistance(new MapPoint(5, 0), 1, 0), 9);

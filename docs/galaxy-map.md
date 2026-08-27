@@ -249,7 +249,9 @@ outposts and the influence/colonizability facts live in `planets.md`; fleets and
   fog, so there is no unexplored/remembered distinction to resolve for a point. `GalaxyBounds` on the
   same service is NOT the galaxy's extent — it is that field's rect, scaled 2.5× (`VisibilityController
   .GalaxyBoundsScaleFactor`), so anything wanting "where does the galaxy stop" measures
-  `Galaxy.GameNodes` instead (`[Beginner] test`: x `[-164.0, 22.8]`, y `[-41.5, 88.3]` from home).
+  `Galaxy.GameNodes` instead (`[Beginner] test`: x `[-164.0, 22.8]`, y `[-41.5, 88.3]` from home) —
+  as the BOX for anything bounding a move and as the convex HULL for anything describing the shape
+  (`GalaxyFrame`; the split and why is under "Probes, targeting modes and the scan view").
   **The game has no UI word for the fog**: "the fog of war" occurs exactly once in the whole English
   corpus, in one quest objective's tooltip, and "miasma" occurs nowhere at all — so a mod that says
   it says it in its own words. The mod's word is **"unexplored"** (`galaxy.inspect.fog*`), naming the
@@ -332,6 +334,24 @@ outposts and the influence/colonizability facts live in `planets.md`; fleets and
   nearest-star anchor MIGRATES mid-flight. `VisibleEntityLabel` draws at
   `WorldToScreenPoint(Entity.GalaxyPosition)` gated on camera culling + `Visibility >= 3`, so the
   drawn position licenses direction-and-distance words.
+- **NOTHING clamps a probe's flight to the galaxy** (measured 2026-08-27, whole chain read).
+  `ProbeLaunchingCursor.OnCursorClick` (:141) posts a normalised DIRECTION and no target;
+  `DepartmentOfTransportation.MoveProbe` (:44) sets the next position to `pos + dir × speed` with no
+  bounds test of any kind; `MoveToProbeAction.ClientFinalize` (:94) only decrements the lifetime. So a
+  probe genuinely flies `speed × lifetime` units down any bearing and lifts fog wherever it gets to —
+  the fog field is `IVisibilityService.GalaxyBounds`, 2.5× the galaxy (see "Fog of war is a per-POINT
+  question" above), so there is real fog out past every star. **The mod therefore has to CHOOSE where
+  the map ends, and the choice is the bounding BOX of `Galaxy.GameNodes`** — the frame the inspect
+  cursor already roams. A hull round the stars was the earlier answer and was wrong twice over: it is
+  not the game's rule (there is no rule), and it disagreed with the cursor, so a bearing could say
+  "fully explored to the map edge at 0" for a system the hull put on its rim while the cursor happily
+  walked west from that same system for another eighty units. One frame, two shapes over the same
+  nodes (`ES2Access/UI/GalaxyFrame.cs`): the BOX bounds anything that MOVES (probe bearings, the
+  inspect cursor), the CONVEX HULL describes (the `Ctrl+M` overview's centroid — "where the bulk is",
+  which a box's middle can put in empty sky; its width and height are the box's by construction).
+  **Specials count as galaxy by decision** — a special node is a named place with coordinates and a
+  row in the tree, so a frame drawn round stars alone would strand places the player can steer to
+  outside the map.
 - **Arming a targeting mode from the fleet-actions stop closes the fleet panel and seats the
   cursor back in the acting fleet's system branch** — the last node if the branch is open,
   the system node if closed. That is reconciliation's doing, not a landing, and it only holds
