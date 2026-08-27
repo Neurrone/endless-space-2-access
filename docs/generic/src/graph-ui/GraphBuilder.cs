@@ -22,10 +22,16 @@ namespace ES2Access.Core.UI.Graph
     /// only emit while it's expanded — expansion state lives in the persistent set the builder is
     /// constructed with (<see cref="GraphState.Expanded"/>), so screens hold no tree state of their own.
     /// Nesting recurses; a collapsed ancestor suppresses everything beneath it.
+    ///
+    /// <para>Orthogonal to all of it: the EXISTENCE gate the builder may be constructed with, which
+    /// takes the "is the game really drawing this" decision away from every screen's walk.</para>
     /// </summary>
     public sealed class GraphBuilder
     {
         private readonly HashSet<ControlId> _expansion; // persistent expanded-group set (null = all explicit)
+
+        // The existence gate — see the constructor.
+        private readonly Func<ControlId, NodeVtable, bool> _drops;
 
         /// <summary>Build every expandable group OPEN, whatever the expansion set or the caller says.
         ///
@@ -35,9 +41,25 @@ namespace ES2Access.Core.UI.Graph
         /// for the build the player is NAVIGATING: that build is the tree as they left it.</summary>
         public bool ExpandAll;
 
-        public GraphBuilder(HashSet<ControlId> expansion = null)
+        /// <summary>
+        /// <paramref name="drops"/> is the EXISTENCE gate: asked of every node this builder is about to
+        /// make, and a node it answers true for is never declared — the same no-op a collapsed group's
+        /// subtree gets, so an emptied row is suppressed rather than a failure and a dropped group
+        /// header takes its whole subtree with it.
+        ///
+        /// It is a delegate rather than a rule of this class because the question is "is the game
+        /// drawing this", which only the engine side can answer; the node's two object-typed handles
+        /// (<see cref="ControlId.Reference"/>, <see cref="NodeVtable.PointsAt"/>) are all it is given,
+        /// and this assembly knows nothing of the game's toolkit. Null (what every test and every
+        /// read-only inspection build passes) means no gate at all.
+        /// </summary>
+        public GraphBuilder(
+            HashSet<ControlId> expansion = null,
+            Func<ControlId, NodeVtable, bool> drops = null
+        )
         {
             _expansion = expansion;
+            _drops = drops;
         }
 
         private sealed class Row
@@ -46,6 +68,10 @@ namespace ES2Access.Core.UI.Graph
             public object Key;
             public object StopKey;
             public bool Positions = true;
+
+            // The gate took at least one of this row's cells — so an empty row here is the gate's
+            // doing, not a screen declaring nothing.
+            public bool Dropped;
         }
 
         private sealed class RawEdge
@@ -233,21 +259,29 @@ namespace ES2Access.Core.UI.Graph
                 || (expanded ?? (_expansion != null ? _expansion.Contains(id) : defaultExpanded));
 
             GraphNode header = null;
+            bool dropped = false;
             if (!Suppressed)
             {
                 header = MakeNode(id, vtable);
-                header.Expandable = true;
-                header.Expanded = isExpanded;
-                Row row = new Row { StopKey = _stopKey };
-                row.Items.Add(header);
-                _rows.Add(row);
-                _rowOf[header] = row;
+                dropped = header == null;
+                if (header != null)
+                {
+                    header.Expandable = true;
+                    header.Expanded = isExpanded;
+                    Row row = new Row { StopKey = _stopKey };
+                    row.Items.Add(header);
+                    _rows.Add(row);
+                    _rowOf[header] = row;
+                }
             }
             _parents.Add(new ParentFrame
             {
                 // Suppressed subtree: keep chaining from the outer parent so the stack stays coherent.
                 Node = header ?? CurrentParent,
-                Suppressed = Suppressed || !isExpanded,
+                // A header the gate dropped takes its subtree with it: the section's own widget is not
+                // being drawn, so nothing hanging under it is either, and children left behind would
+                // hang off whatever parent happened to be outside.
+                Suppressed = Suppressed || dropped || !isExpanded,
             });
             return this;
         }
@@ -311,7 +345,10 @@ namespace ES2Access.Core.UI.Graph
         public GraphBuilder EndRow()
         {
             if (_currentRow == null) throw new InvalidOperationException("No row to end");
-            if (_currentRow.Items.Count == 0 && !Suppressed)
+            // An empty row is still a screen bug — unless the gate emptied it, which is the gate
+            // working. The throw is caught by blanking the WHOLE render, so a row of pooled cells all
+            // retired at once would otherwise silently take the screen down with it.
+            if (_currentRow.Items.Count == 0 && !Suppressed && !_currentRow.Dropped)
                 throw new InvalidOperationException("Row cannot be empty");
             if (_currentRow.Items.Count > 0) _rows.Add(_currentRow);
             _currentRow = null;
@@ -319,11 +356,16 @@ namespace ES2Access.Core.UI.Graph
         }
 
         /// <summary>Add a control — into the open row, or as its own single-item row. A no-op inside a
-        /// collapsed group's subtree.</summary>
+        /// collapsed group's subtree, and for a control the existence gate dropped.</summary>
         public GraphBuilder AddItem(ControlId id, NodeVtable vtable)
         {
             if (Suppressed) return this;
             GraphNode node = MakeNode(id, vtable);
+            if (node == null)
+            {
+                if (_currentRow != null) _currentRow.Dropped = true;
+                return this;
+            }
             if (_currentRow != null)
             {
                 _currentRow.Items.Add(node);
@@ -360,11 +402,13 @@ namespace ES2Access.Core.UI.Graph
         // ---- raw mode ----
 
         /// <summary>Add a node with no automatic wiring (raw mode; wire with <see cref="Connect"/>).
-        /// A no-op inside a collapsed group's subtree.</summary>
+        /// A no-op inside a collapsed group's subtree, and for a node the existence gate dropped
+        /// (edges naming it are dropped at build, as they are for any undeclared node).</summary>
         public GraphBuilder AddNode(ControlId id, NodeVtable vtable)
         {
             if (Suppressed) return this;
-            _rawNodes.Add(MakeNode(id, vtable));
+            GraphNode node = MakeNode(id, vtable);
+            if (node != null) _rawNodes.Add(node);
             return this;
         }
 
@@ -378,11 +422,16 @@ namespace ES2Access.Core.UI.Graph
             return this;
         }
 
+        // Null when the existence gate dropped this node; every caller then behaves as it does inside a
+        // collapsed group. The gate is asked AFTER the well-formedness checks (a malformed declaration
+        // is a bug whether or not the game is drawing it) and BEFORE the id is claimed (a dropped node
+        // never existed, so it cannot collide with anything).
         private GraphNode MakeNode(ControlId id, NodeVtable vtable)
         {
             if (id == null) throw new ArgumentNullException("id");
             if (vtable == null || vtable.Announcements == null || vtable.Announcements.Count == 0)
                 throw new ArgumentException("A control must have at least one announcement", "vtable");
+            if (_drops != null && _drops(id, vtable)) return null;
             if (!_ids.Add(id)) throw new InvalidOperationException("Duplicate control id: " + id);
             GraphNode node = new GraphNode
             {

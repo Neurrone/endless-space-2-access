@@ -1340,7 +1340,11 @@ namespace ES2Access.UI
 
         /// <summary>The rows the table is showing. A table POOLS its lines rather than destroying them,
         /// and the surplus is left transparent rather than hidden - so a row is only real when the game
-        /// has something bound to it.</summary>
+        /// has something bound to it AND the game is drawing it. <c>StrictVisibility</c> buys a faded
+        /// row no exemption here: that flag only tells the ARRANGER to keep counting the row's slot
+        /// (<c>GetVisibleChildrenCount</c>), while the renderer skips an alpha 0 child either way
+        /// (<c>firstpass/AgeTransform.cs:1955</c>) - and the exemption once let a strict table's
+        /// retired rows be read aloud.</summary>
         public List<GuiTableLine> Lines(GuiTable table)
         {
             List<GuiTableLine> lines = new List<GuiTableLine>();
@@ -1356,7 +1360,7 @@ namespace ES2Access.UI
                     if (
                         line != null
                         && child.Visible
-                        && (host.StrictVisibility || child.Alpha > 0f)
+                        && child.Alpha > 0f
                         && _rowRef(line) != null
                     )
                     {

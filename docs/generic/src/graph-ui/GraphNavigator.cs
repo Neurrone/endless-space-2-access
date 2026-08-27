@@ -176,13 +176,17 @@ namespace ES2Access.UI
         /// <summary>
         /// The same read-only render for a screen that is NOT the focused one - what the dev server
         /// answers when asked what some other registered screen would offer. The screen's own
-        /// expansion state is used when it has one, so asking about the focused screen this way
-        /// gives exactly what <see cref="InspectRender()"/> gives; a screen the navigator has never
-        /// been attached to is built against a throwaway state, which nothing else can see.
+        /// expansion state is used when it has one; a screen the navigator has never been attached
+        /// to is built against a throwaway state, which nothing else can see.
         ///
         /// Unlike <see cref="InspectRender()"/> this lets a failure through instead of logging it:
         /// a screen whose page the game has not bound throws here, and WHY it threw is the answer
         /// the caller wanted.
+        ///
+        /// And unlike every other build it is UNGATED (<see cref="NodeGate"/>): this is the build the
+        /// audits measure, and <c>DevProbe.Ghosts()</c> asks precisely which declared nodes stand on
+        /// something the game is not drawing. Building it through the gate would delete the audit's
+        /// findings rather than the ghosts, and the check would go permanently, silently clean.
         /// </summary>
         public GraphRender InspectRender(Screen screen)
         {
@@ -1103,7 +1107,7 @@ namespace ES2Access.UI
         {
             try
             {
-                GraphBuilder builder = new GraphBuilder(state.Expanded);
+                GraphBuilder builder = new GraphBuilder(state.Expanded, NodeGate.For(screen.Key));
                 screen.Build(builder);
                 screen.BuildShared(builder);
                 return builder.Build();
@@ -1996,7 +2000,7 @@ namespace ES2Access.UI
             try
             {
                 int start = Environment.TickCount;
-                GraphBuilder builder = new GraphBuilder(_state.Expanded);
+                GraphBuilder builder = new GraphBuilder(_state.Expanded, NodeGate.For(_screen.Key));
                 builder.ExpandAll = true;
                 _screen.Build(builder);
                 _screen.BuildShared(builder);

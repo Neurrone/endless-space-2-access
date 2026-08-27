@@ -16,7 +16,7 @@ namespace ES2Access.UI
     /// decision is taken away from the walks: <see cref="GraphBuilder"/> asks this of every node it is
     /// about to make, and a walk that declares a retired row simply has that row dropped.
     ///
-    /// The test is <see cref="AgeWidgets.Paints"/> on the carrier ALONE - one step, never
+    /// The test is <see cref="Withdrawn"/> on the carrier ALONE - one step, never
     /// <see cref="AgeWidgets.Painted"/>. Renders rebuild EVERY frame while a screen is focused, many
     /// screens gate their build on the window merely being shown, and several deliberately build
     /// during an arrival fade - and the game fades a window ROOT while every child stays at alpha 1.
@@ -83,13 +83,39 @@ namespace ES2Access.UI
             }
 
             AgeTransform carrier = NodeCarrier.Of(id, vtable);
-            if (carrier == null || AgeWidgets.Paints(carrier))
+            if (carrier == null || !Withdrawn(carrier))
             {
                 return false;
             }
 
             Report(screenKey, id, carrier);
             return true;
+        }
+
+        /// <summary>
+        /// Whether the carrier is off the screen AND not on its way onto it.
+        ///
+        /// Switched off is settled by definition. Transparent is not: the same alpha 0 is both a
+        /// pooled row parked for reuse and the FIRST FRAME of a window fading itself in, and the
+        /// engine tells them apart by whether the widget's modifiers are still running
+        /// (<c>firstpass/AgeTransform.cs:466</c>). The pause menu built its items during its arrival
+        /// fade, so a plain <see cref="AgeWidgets.Paints"/> test dropped <c>ResumeMenuItem</c> for one
+        /// frame - and one frame is enough to displace the cursor for the rest of the screen's life.
+        /// A parked pool ghost has no modifier running and still drops, which is the whole point of
+        /// the gate.
+        ///
+        /// Reading it throwing is not evidence of a ghost: the node passes.
+        /// </summary>
+        private static bool Withdrawn(AgeTransform carrier)
+        {
+            try
+            {
+                return !carrier.Visible || (carrier.Alpha <= 0f && !carrier.ModifiersRunning);
+            }
+            catch (Exception)
+            {
+                return false;
+            }
         }
 
         private static void Report(string screenKey, ControlId id, AgeTransform carrier)
@@ -117,14 +143,14 @@ namespace ES2Access.UI
             );
         }
 
-        /// <summary>Which half of the one-step test said no. The two answers want different fixes: NOT
-        /// VISIBLE is a branch the window switched off and a walk that kept its rows; FADED is the
+        /// <summary>Which half of the test said no. The two answers want different fixes: NOT VISIBLE
+        /// is a branch the window switched off and a walk that kept its rows; FADED AND SETTLED is the
         /// pooled table retiring a surplus row, which keeps its old words as well as its place.</summary>
         private static string Why(AgeTransform carrier)
         {
             try
             {
-                return carrier.Visible ? "faded to nothing" : "not visible";
+                return carrier.Visible ? "faded to nothing and settled" : "not visible";
             }
             catch (Exception e)
             {

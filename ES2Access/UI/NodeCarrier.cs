@@ -11,9 +11,9 @@ namespace ES2Access.UI
     ///
     /// A graph node carries two object-typed handles the engine can read: the game object its id was
     /// derived from (<see cref="ControlId.Reference"/>) and the tooltip its pointer is aimed at
-    /// (<see cref="NodeVtable.PointsAt"/>). The carrier is the first as a widget where it is one, else
-    /// the second's <c>AgeTransform</c> - a dossier node (<see cref="TooltipChildren"/>) is keyed
-    /// structurally and located only by what it points at.
+    /// (<see cref="NodeVtable.PointsAt"/>). The carrier is the first, and ONLY the first, as a widget
+    /// where it is one - what a node POINTS AT is a hover target, not a place the node stands
+    /// (<see cref="Of"/>).
     ///
     /// <see cref="NodeVtable.ScrollAnchor"/> is NEVER read here. It says what a line is DRAWN AS so a
     /// panel has a rectangle to scroll to; it is not a claim that the node is that widget, and a
@@ -66,17 +66,20 @@ namespace ES2Access.UI
             }
         }
 
-        /// <summary>The widget a node stands on, or null when it stands on the model alone.</summary>
+        /// <summary>
+        /// The widget a node stands on, or null when it stands on the model alone.
+        ///
+        /// ONLY the id's own reference answers. Where a node's pointer aims is deliberately NOT a
+        /// fallback: on every table prefab in this game the per-row tooltip is an invisible
+        /// <c>TooltipArea</c> stretched over the row - switched off as a widget, alive as a hover
+        /// target - so asking it "are you painting" answers no for a row the game is drawing. A
+        /// <see cref="Core.UI.GraphSheet"/> keys its cells by the DOMAIN OBJECT, which is exactly the
+        /// carrier-less case, and the aim fall-through turned that into a false drop of all 15 save
+        /// names in the load/save modal, 6 fleet-selection rows, 4 military rows and 2 empire rows.
+        /// </summary>
         public static AgeTransform Of(ControlId id, NodeVtable vtable)
         {
-            AgeTransform widget = id == null ? null : WidgetOf(id.Reference);
-            if (widget != null)
-            {
-                return widget;
-            }
-
-            AgeTooltip aimed = AimOf(vtable);
-            return aimed == null ? null : aimed.AgeTransform;
+            return id == null ? null : WidgetOf(id.Reference);
         }
 
         /// <summary>Where a carrier sits, named from the root down - the half of a drop report or a
