@@ -181,10 +181,22 @@ namespace ES2Access.UI
                 // One button for whichever diplomacy this system is: a minor civilization's, the
                 // Academy's, or another empire's. The game draws one control for all three and says
                 // which in its tooltip, so the node is named once and the sentence tells them apart.
+                //
+                // KEPT WHILE FADED, and measured rather than reasoned (2026-08-27, Osulo - the fixture's
+                // one minor-civilization system - stepped through all thirteen camera rungs with the
+                // label drawn at every one of them): the prefab leaves this button Visible and fades it
+                // to alpha 0, settled, at rungs 0, 1 and 12, and holds it at alpha 1 at rungs 2 to 11.
+                // So the chain test took the node away at BOTH ends of the ladder - and rung 12 is the
+                // one the map parks at coming into a system and the one the fixture's own galaxy
+                // overview sits on. Measured on the graph: 8 children under the system at rung 6 with
+                // "Diplomacy, button, 1 of 8" among them, 7 and no Diplomacy at rungs 0 and 12. Pressing
+                // it does not need it drawn - the press is the control's own handler, sent directly
+                // (<see cref="AgeWidgets.Press"/>) - so the route stays real wherever the camera is.
                 CardActions.AddRefusable(
                     found,
                     label.DiplomacyButton,
-                    Mod(ModStrings.GalaxySystemDiplomacy)
+                    Mod(ModStrings.GalaxySystemDiplomacy),
+                    true
                 );
                 CardActions.AddRefusable(
                     found,

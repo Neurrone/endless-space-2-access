@@ -1022,14 +1022,27 @@ namespace ES2Access.Screens
         /// their effects in a line each, and these nodes carry each one's FULL dossier - description,
         /// effects, cost, upkeep, political impact.
         ///
-        /// The gate is the ICON's own <c>Visible</c> flag rather than the chain-walking one, because
-        /// the wheel hides the strip's CONTAINER at every zoom but the outermost
+        /// The test asked HERE is the ICON's own <c>Visible</c> flag rather than a chain-walking one,
+        /// because the wheel hides the strip's CONTAINER at every zoom but the outermost
         /// (<c>TechnologyStageItem.Blend</c> ties it to the stage-name group, which only appears when
         /// the wheel is zoomed out) while leaving every icon bound, visible and drawable - measured:
-        /// aiming at an icon of a hidden container still draws its whole dossier. Asking the chain
-        /// would drop every stage's unlocks at the zoom this screen actually parks the camera at, so
-        /// the tooltip is resolved here and handed to the overload of <see cref="TooltipChildren.Add"/>
-        /// that takes it, which asks the caller instead of the chain.
+        /// aiming at an icon of a hidden container still draws its whole dossier.
+        ///
+        /// That is not the whole of the gate, and this comment used to say it was. What
+        /// <see cref="TooltipChildren.Add"/>'s tooltip overload settles is whether the dossier EARNS a
+        /// node; the node's EXISTENCE is settled afterwards like every other node's, because
+        /// <c>TooltipChildren.Stands</c> declares a dossier that named a carrier as
+        /// <see cref="UI.Nodes.Drawn"/> on that carrier - and here the carrier IS the icon, since
+        /// <c>Add</c>'s carrier defaults to the anchor it was handed. So <see cref="UI.NodeGate"/> walks
+        /// the icon's ancestry and drops all of them. Measured on the live wheel 2026-08-27 with Display
+        /// Unlocks ticked and at BOTH states of the Zoom In toggle: <c>TechnologyUnlocksContainer</c>
+        /// reads <c>Visible=False, Alpha=0</c> while its icons read <c>Visible=True, Alpha=1</c>;
+        /// <c>DevProbe.GateDiff()</c> with Military I expanded named all seven
+        /// <c>research:stage-unlock/TechnologyStageDefinitionMilitary1/tooltip/N</c> under
+        /// <c>onlyUngated</c>, and the drop log gives the reason as
+        /// <c>ancestor not visible (TechnologyUnlocksContainer)</c>. These dossiers are therefore not
+        /// reachable at present. Whether the answer is a carrier-less declaration here or an exemption
+        /// in the gate is an open decision, not something this comment should keep calling settled.
         ///
         /// The hub in the middle of the wheel is a <c>VictoryTechnologyStageItem</c>, which has no
         /// strip at all: the cast answers null and the stage declares no unlocks.

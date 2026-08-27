@@ -46,6 +46,13 @@ namespace ES2Access.UI
             /// <c>AgeTooltip</c> is null and the node would carry no dossier and point at nothing.
             /// Null asks the widget for its own, which is every other case.</summary>
             public AgeTooltip Tooltip;
+
+            /// <summary>Set where the surface FADES this button out at some camera distances while going
+            /// on offering what it does - the node is then declared while the button is only Visible
+            /// (<see cref="AddRefusable"/>'s <paramref name="keptWhileFaded"/>) and emitted
+            /// <see cref="Nodes.Synthetic"/>, because there is no widget being drawn for the gate to ask
+            /// about. The walk that set it is what vouches for the node.</summary>
+            public bool KeptWhileFaded;
         }
 
         /// <summary>A button named by a phrase of this mod's - for a control the game draws as a
@@ -95,14 +102,28 @@ namespace ES2Access.UI
         /// offered only while the game would dispatch it, rather than disappearing the moment the
         /// answer is no: which currencies this thing could be bought with, and why not today, is
         /// exactly what the player came to the line to find out.
+        ///
+        /// <paramref name="keptWhileFaded"/> is for the one surface that FADES a button out with the
+        /// camera instead of taking it away - the map's system label - and it swaps the drawn test for
+        /// the one-step <c>Visible</c> flag, which is the flag that prefab retires a button by. The node
+        /// is then <see cref="Nodes.Synthetic"/> (<see cref="Emit"/>): nothing is being drawn for the
+        /// gate to ask about, and what vouches for the node is the caller's own measurement.
         /// </summary>
         public static void AddRefusable(
             List<CardAction> found,
             AgeTransform widget,
-            Func<string> label
+            Func<string> label,
+            bool keptWhileFaded = false
         )
         {
-            if (!Admitted(widget))
+            // Flow control AND a synthetic node's own existence test: where the caller has measured
+            // that this surface parks a button by fading it, the chain would take the node away at the
+            // camera distances the player sits at, so the flag the prefab actually flips is asked
+            // instead (<see cref="SystemLabelReadout.Actions"/> has the measurement).
+            bool admitted = keptWhileFaded
+                ? widget != null && AgeWidgets.Visible(widget)
+                : Admitted(widget);
+            if (!admitted)
             {
                 return;
             }
@@ -114,6 +135,7 @@ namespace ES2Access.UI
                     Widget = at,
                     Label = label,
                     Offered = () => AgeWidgets.Offered(at),
+                    KeptWhileFaded = keptWhileFaded,
                 }
             );
         }
@@ -285,12 +307,16 @@ namespace ES2Access.UI
                 // names no object at all - and the widget the button IS is what the node STANDS on
                 // (<see cref="Core.UI.Graph.DrawnNode"/>). Declared here rather than by the screens,
                 // which hold the same widget and would each have to remember.
+                //
+                // SYNTHETIC for the one shape whose surface fades a button out instead of taking it
+                // away (<see cref="CardAction.KeptWhileFaded"/>): there is no drawn widget for the gate
+                // to ask about, and the admission above - the one-step flag that prefab really retires
+                // by - is the node's existence test.
+                ControlId id = ControlId.Structural(keyPrefix + "/action/" + i);
                 builder.AddItem(
-                    new DrawnNode(
-                        ControlId.Structural(keyPrefix + "/action/" + i),
-                        vtable,
-                        at
-                    )
+                    action.KeptWhileFaded
+                        ? (NodeDeclaration)Nodes.Synthetic(id, vtable)
+                        : new DrawnNode(id, vtable, at)
                 );
             }
         }

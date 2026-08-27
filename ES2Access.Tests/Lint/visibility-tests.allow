@@ -504,6 +504,7 @@ ES2Access/UI/Captions.cs | 1 | AgeTooltip tooltip = AgeWidgets.Visible(widget) ?
 ES2Access/UI/Captions.cs | 1 | return widget == null || !AgeWidgets.Visible(widget)
 
 ES2Access/UI/CardActions.cs | 1 | && AgeWidgets.Visible(widget)
+ES2Access/UI/CardActions.cs | 1 | ? widget != null && AgeWidgets.Visible(widget)
 
 ES2Access/UI/Cells.cs | 1 | if (widget == null || !AgeWidgets.Visible(widget))
 
