@@ -48,18 +48,34 @@ button, quests and the journal, the tutorial popup, and the end of a game. Index
   reads back from the pump gets the settled answer: `CurrentGuiNotification == n` (the popup that is
   up this instant) or `n.AlreadyRead` (written by `ShowGuiNotification` :532 and never unwritten, so
   a popup shown and closed inside one frame is still caught). **Mod policy**
-  (`ModNotifications.Arrived`/`Shown`): every notification the player's empire is given is announced
-  by its title on arrival — the game's own as well as the mod's — UNLESS the game showed its popup,
-  which `NotificationScreen` already reads out.
-- **A notification that queues behind an open popup is not lost: the next Dismiss or Minimize opens
-  it.** `NotificationWindow.OnDismissCb` (:199-202) and `OnMinimizeCb` (:219-222, which Escape and
-  right-click both reach, :93-97) pass `showNextUnread: true`, and `GetNextUnreadGuiNotification`
+  (`ModNotifications.Arrived`/`PopsUp`): every notification the player's empire is given is announced
+  by its title on arrival — the game's own as well as the mod's — UNLESS a popup of its own is
+  coming, which `NotificationScreen` reads out instead.
+- **A notification that queues behind an open popup is not passed over — the next Dismiss or Minimize
+  opens it — so the popup question is about a notification's whole life, not about the frame it
+  landed on.** `NotificationWindow.OnDismissCb` (:199-202) and `OnMinimizeCb` (:219-222, which Escape
+  and right-click both reach, :93-97) pass `showNextUnread: true`, and `GetNextUnreadGuiNotification`
   (:494-509) answers the first unread notification with `AutoPopUp || ForceAutoPopup`. Measured
   2026-08-28: raising a second notification while a popup was up left it queued and silent from the
-  game, and dismissing the popup opened it. So an arrival of that kind is heard TWICE — its title
-  when it lands, its popup when the player reaches it — which is the accepted cost of never leaving
-  an arrival silent, since nothing at arrival time can tell that case from the one where the popup
-  never comes.
+  game, and closing that popup opened it. **Mod policy** (owner ruling 2026-08-28): a notification
+  that will pop its own window up must not be heard twice, however long the wait — so of the five
+  conditions above, only the type's own `AutoPopUp || ForceAutoPopup` is asked, because it is the one
+  that outlives the arriving frame; the other four are momentary and would answer "no popup" about a
+  notification merely waiting its turn. The accepted cost, named in the same ruling: where popping is
+  PAUSED and the notification `CanBeDelayed`, `ShowGuiNotification` refuses and nothing asks again,
+  so that arrival is silent and its popup never comes.
+- **The SCAN table's notifications never pop up, whatever their `AutoPopUp` setting says.** The
+  hacking family is bound into a second dictionary (`BuildGameEventToScanNotificationMapping`
+  :172-192) and inserted into a second list (:786-788), and both roads to a popup are shut to it: the
+  auto-pop call at :800 is gated on `flag`, a mapping in the NON-scan table, and the queue drain
+  reads only `GetPlayerEmpireGuiNotifications` (:496) — which is `guiNotificationsByEmpireIndex[player]`,
+  measured 2026-08-28 by reflection to be the main list and NOT the scan one. They fire the same
+  `Add` event as everything else, since :790-792 sits outside the flag/flag2 branch. **Mod policy**
+  (owner ruling 2026-08-28, `ModNotifications.Standing`): membership of the player's own list is part
+  of the popup prediction, so this family is announced on arrival like any other news that draws no
+  window. Without it the prediction would have trusted a per-type setting that reads true by default
+  and silenced the family outright — news with no popup and no announcement. Code-traced plus the
+  list-identity measurement; no fixture raises a hacking event, so the family has never been heard.
 - **`CollectionChangeAction.Refresh` is two events under one name** — a stackable notification rebound
   to a newer event (:762-772), whose `Add` was already announced, and the `CurrentGuiNotification`
   setter reporting that some popup just went up or down (:41-48). Mod policy: `Refresh` is never

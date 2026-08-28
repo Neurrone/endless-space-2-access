@@ -42,8 +42,9 @@ namespace ES2Access.UI
     /// for, its own as well as the mod's: the strip answers a sighted player with an icon that has
     /// just appeared, and a player who cannot see the strip was told nothing at all. A notification
     /// the game DOES pop up is left alone here, because the popup is a screen of the mod's
-    /// (<c>NotificationScreen</c>) and its arrival already reads the same title out. Which of the two
-    /// happened is asked of the game, never re-derived - <see cref="Shown"/> says why.
+    /// (<c>NotificationScreen</c>) and its arrival already reads the same title out - and that stays
+    /// true of one whose popup is merely WAITING behind another, which is why <see cref="PopsUp"/>
+    /// asks about the notification's whole life rather than about the frame it landed on.
     /// </summary>
     public static class ModNotifications
     {
@@ -181,7 +182,7 @@ namespace ES2Access.UI
 
             for (int i = 0; i < _said.Count; i++)
             {
-                if (Shown(_said[i].Notification))
+                if (PopsUp(_said[i].Notification))
                 {
                     continue;
                 }
@@ -193,26 +194,49 @@ namespace ES2Access.UI
         }
 
         /// <summary>
-        /// Whether the popup took this arrival, which is the whole gate: a notification the game put
-        /// on the screen is read out by <c>NotificationScreen</c> as the screen arrives, and saying
-        /// the title here as well would be the mod stammering.
+        /// Whether this arrival gets a popup of its own, which is the whole gate: a notification the
+        /// game puts on the screen is read out by <c>NotificationScreen</c> as the screen arrives, and
+        /// saying the title here as well would be the mod stammering.
         ///
-        /// It is ASKED of the game rather than re-derived. The popup decision has five conditions
-        /// (<c>GuiNotificationManager.RecordEventForEmpire</c> :800-803: a non-scan mapping, the
-        /// player's empire, <c>CanShowNotifications</c>, no popup already up, and the type's own
-        /// <c>AutoPopUp</c> or the tutorial's <c>ForceAutoPopup</c>), and <c>ShowGuiNotification</c>
-        /// (:511-535) then refuses again if popping is paused and the notification can be delayed -
-        /// so a copy of the rule in the mod would be a second implementation to keep in step, and the
-        /// pause is invisible from the arrival alone. The answer is available because that whole
-        /// decision runs SYNCHRONOUSLY, ten lines after the collection-changed event this records
-        /// from: by the time the pump reaches <see cref="Tick"/> it has already happened either way.
+        /// The question is about the notification's WHOLE life, not about this instant, and that is
+        /// the owner's ruling (2026-08-28): a notification that will pop its window up must not be
+        /// heard twice, however long the wait. A notification arriving while another popup is up is
+        /// only DELAYED, not passed over - the game's own Dismiss and Minimize both ask for the next
+        /// unread one (<c>NotificationWindow</c> :199-202, :219-222, which Escape and right-click
+        /// reach as well; <c>GuiNotificationManager.GetNextUnreadGuiNotification</c> :494-509 picks
+        /// the first unread with the same flag) - so its title would be said on arrival and again by
+        /// its popup a moment later.
         ///
-        /// Two questions, because they fail in opposite directions: <c>CurrentGuiNotification</c> is
-        /// the popup that is up this instant and answers nothing once it is closed, while
-        /// <c>AlreadyRead</c> is written by <c>ShowGuiNotification</c> (:532) and stays written - a
-        /// notification shown and closed inside one frame is still caught.
+        /// Which is why the prediction rests on the type's own flag ALONE: it is the one condition of
+        /// the five at <c>RecordEventForEmpire</c> :800-803 that outlives the arriving frame. The
+        /// other four are momentary - a popup already up, notifications switched off - and asking
+        /// them would answer "no popup" about a notification that is merely waiting its turn.
+        ///
+        /// The known cost, accepted in the same ruling: where popping is PAUSED and the notification
+        /// can be delayed, <c>ShowGuiNotification</c> (:511-535) refuses and nothing later asks
+        /// again, so such an arrival is silent and its popup never comes. That silence is the price
+        /// of never repeating a title, and the pause is invisible from the arrival in any case.
+        ///
+        /// Asked FIRST, though, is whether a popup has already happened, in two questions that fail in
+        /// opposite directions: <c>CurrentGuiNotification</c> is the popup up this instant and answers
+        /// nothing once it is closed, while <c>AlreadyRead</c> is written by
+        /// <c>ShowGuiNotification</c> (:532) and stays written, so a popup shown and closed inside one
+        /// frame is still caught. Evidence of a popup that HAS happened beats any prediction about one
+        /// that has not, and it is also what answers for a notification the game shows for a reason of
+        /// its own with the type's flag off.
+        ///
+        /// And between the two: the SCAN table's notifications never pop up, whatever their flag says
+        /// (owner ruling 2026-08-28). They are the hacking family, bound into a second dictionary
+        /// (<c>GuiNotificationManager.BuildGameEventToScanNotificationMapping</c> :172-192) and kept
+        /// in a list of their own, and both roads to a popup are shut to them: the auto-pop call at
+        /// :800 is gated on a mapping in the NON-scan table, and the drain that empties the queue
+        /// reads only <c>GetPlayerEmpireGuiNotifications</c> (:496). Their per-type
+        /// <c>AutoPopUp</c> setting is an ordinary one and reads true by default all the same, so
+        /// without this the whole family would go quiet - news with no popup and no announcement,
+        /// which is the one outcome this class exists to prevent. Membership of the player's own list
+        /// is the test, because that is the list the game's own drain looks in.
         /// </summary>
-        private static bool Shown(GuiNotification notification)
+        private static bool PopsUp(GuiNotification notification)
         {
             if (notification == null)
             {
@@ -227,13 +251,48 @@ namespace ES2Access.UI
                     return true;
                 }
 
-                return notification.AlreadyRead;
+                if (notification.AlreadyRead)
+                {
+                    return true;
+                }
+
+                // A manager we cannot reach cannot prove the scan table either way, and the ruling
+                // that must not break is the one about saying a title twice - so an unanswerable
+                // membership question falls through to the flag rather than to speech.
+                if (manager != null && !Standing(manager, notification))
+                {
+                    return false;
+                }
+
+                return notification.AutoPopUp || notification.ForceAutoPopup;
             }
             catch (Exception e)
             {
                 Log.Warn("notifications: asking whether a notification popped up threw: " + e);
                 return false;
             }
+        }
+
+        /// <summary>Whether the notification is in the player empire's own list - the one the game
+        /// pops popups from and drains the queue out of. A scan notification is not: it is held in a
+        /// second list of its own, and is the reason this question is asked at all
+        /// (<see cref="PopsUp"/>). Identity, never equality: two notifications of one type about one
+        /// subject are still two.</summary>
+        private static bool Standing(
+            GuiNotificationManager manager,
+            GuiNotification notification
+        )
+        {
+            List<GuiNotification> standing = manager.GetPlayerEmpireGuiNotifications();
+            for (int i = 0; standing != null && i < standing.Count; i++)
+            {
+                if (ReferenceEquals(standing[i], notification))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         /// <summary>
@@ -401,7 +460,7 @@ namespace ES2Access.UI
 
         /// <summary>
         /// Runs inside the game's own dispatch: records the line and returns. Speaking - and the
-        /// question of whether to - is the pump's (<see cref="Tick"/>, <see cref="Shown"/>).
+        /// question of whether to - is the pump's (<see cref="Tick"/>, <see cref="PopsUp"/>).
         ///
         /// EVERY notification the player's empire is given is recorded, the game's own as well as the
         /// mod's, because news that opens no window is otherwise news nobody hears: the strip shows an
