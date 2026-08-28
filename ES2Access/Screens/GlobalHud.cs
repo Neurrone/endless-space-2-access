@@ -2437,14 +2437,22 @@ namespace ES2Access.Screens
                 );
             }
 
-            AddTurnButton(found, window.ApplyMovementsButton, "apply-movements", ModStrings.GalaxyApplyMovements, null);
+            AddTurnButton(
+                found,
+                window.ApplyMovementsButton,
+                "apply-movements",
+                ModStrings.GalaxyApplyMovements,
+                null,
+                chordAction: UiActions.ApplyMovements
+            );
             AddTurnButton(
                 found,
                 window.NextIdleFleetButton,
                 "next-idle-fleet",
                 ModStrings.GalaxyNextIdleFleet,
                 IdleFleetsText,
-                NextIdleFleet
+                NextIdleFleet,
+                UiActions.NextIdleFleet
             );
             AddTurnButton(found, window.GameMenuButton, "game-menu", ModStrings.GalaxyGameMenu, null);
             AddPendingNotifications(found, window.PendingNotificationButton);
@@ -2467,14 +2475,18 @@ namespace ES2Access.Screens
         /// <summary><paramref name="activate"/> is for the one button whose click the mod does better
         /// than a press of it would (<see cref="NextIdleFleet"/>); everything else on the turn cluster
         /// presses the game's own control, which is what keeps a button the mod knows nothing about
-        /// working.</summary>
+        /// working. <paramref name="chordAction"/> ends the name with the chord that presses the
+        /// button from anywhere, the way <see cref="EndTurnLabel"/> does for end turn - a key nothing
+        /// names is a key nobody finds - and follows a rebind because it is read from the live
+        /// binding on every render.</summary>
         private void AddTurnButton(
             List<Cell> found,
             AgeControlButton button,
             string key,
             string nameKey,
             Func<string> value,
-            Action<AgeControlButton> activate = null
+            Action<AgeControlButton> activate = null,
+            string chordAction = null
         )
         {
             // Banding input: same corner, same door - AddCell takes the button without asking the gate.
@@ -2485,8 +2497,12 @@ namespace ES2Access.Screens
 
             AgeControlButton it = button;
             Action<AgeControlButton> act = activate;
+            string chord = chordAction;
             NodeVtable vtable = GraphNodes.Button(
-                () => ModStrings.Get(nameKey),
+                () =>
+                    chord == null
+                        ? ModStrings.Get(nameKey)
+                        : ChordNames.Label(ModStrings.Get(nameKey), chord),
                 () =>
                 {
                     if (act == null)
