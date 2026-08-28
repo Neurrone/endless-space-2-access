@@ -153,10 +153,11 @@ Index and charter: `README.md`.
     a card has the SAME dossier hanging on three widgets — collecting a card's tooltips by
     walking it (`SettingRows.RowSections`) buffers the dossier three times.
   - **`ExperienceTooltip` is content-backed** (`%SenatePoliticsExperienceDescription`, :116-119),
-    so the shared short/long rule would ANNOUNCE that definition on every landing on a winner.
-    Mod policy: the card names which tooltip speaks — the party dossier is Indicate mode
-    (buffer-only, hover-drawn), the experience sentence is declared `TooltipMode.None`,
-    because it explains a word rather than the card.
+    so the shared kind rule ANNOUNCES that definition on landing on a winner — which is the
+    blanket ruling (2026-08-28, `gui.md` §Tooltips): the card declares all three tooltips at
+    their natural modes, the class-backed dossiers buffer-only, the content-backed experience
+    sentence spoken whole. The earlier per-card muting of that sentence went with every other
+    caller-chosen mode.
   - **The vote-redirection badges exist only where both halves hold**: `redirectedVotes.Count > 0`
     AND `GuiGovernment.CanRedirectVotes(empire)` (`WinnerSenatorCard.cs:85-92`). They are pooled
     children of `AdditionalPoliticsContainer` (`ReserveChildren`/`RefreshChildrenIList` :88-89),

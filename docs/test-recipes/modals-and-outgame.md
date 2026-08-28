@@ -192,7 +192,8 @@ relation state the band buys and the relation points it starts at, composed thro
 "{0} ({1})". The state comes off the band's OWN sentence key
 (`%DiplomaticRelationStateMinorCordialDescription` → `…Title`) and the threshold off the segment's
 position on the bar, so neither half is hard-coded and a patch that re-cuts the bands moves both.
-The sentence stays in the buffer (`TooltipMode.None`) rather than being said after the name.
+The sentence is announced after the name (the 2026-08-28 kind ruling removed the muting that
+once held it to the buffer; it stays reviewable there too).
 Beside them, the relation POINTS row is captioned **"Relationship"** (`minor.relationship`, a mod
 phrase — owner ruling 2026-08-22, replacing the gloss sentence the shared last resort had been
 using as the row's name; the sentence is now an ordinary tooltip). The Academy's relation-state row

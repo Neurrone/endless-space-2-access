@@ -114,8 +114,10 @@ Index and charter: `README.md`.
   at war. Each carries a Content-only tooltip whose key is
   `%DiplomaticRelationStateMinor<State>Description`, and the game's own title for the state is that
   key with `Description` swapped for `Title` (`%DiplomaticRelationStateMinorCordialTitle` =
-  "CORDIAL"). Nothing in the game names them as bands, so the mod names each by its own sentence's
-  first line. The Academy window has the identical field and the same gap.
+  "CORDIAL"). Nothing in the game names them as bands, so the mod composes each name as "CORDIAL (25)" —
+  the state's own Title key plus the segment's measured threshold
+  (`test-recipes/modals-and-outgame.md`), the sentence announced after it under the kind
+  rule. The Academy window has the identical field and the same gap.
 - **The Academy's trend label carries a COMPUTED tooltip, not the gloss.**
   `AcademyDiplomacyModalWindow` :343-368 writes the eight per-turn contributions into
   `RelationTrendLabel`'s own tooltip, so the "outermost first, own last" tooltip walk finds a

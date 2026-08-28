@@ -71,6 +71,20 @@ renderer-assembled → indicate). One shared helper reads the marker and picks t
 screens never choose. The human judgment moves up a level — approving the *rule* — and
 every future screen inherits it.
 
+**And make "screens never choose" structural, not advisory.** An advisory rule accretes
+per-site conventions: audited here after a year of screens, it had grown three competing
+local shapes (announce-whole, first-line-only, muted-by-hand) plus ~13 sites
+double-speaking a name and its tooltip — every one written in good faith around a
+legitimate local need the pipeline did not serve. The fix is three layers, each covering
+what the previous one cannot see: (1) no declaration door takes a mode — delete the
+parameter, make the mode type's constructor private to the door, so the wrong class is
+inexpressible; (2) what the type system cannot track — tooltip TEXT read into an
+announcement as a plain string, which is how every bypass is born — is held by an
+allowlist lint (current legitimate readers pinned, any new read fails the build with the
+rule in its message); (3) a runtime parity bucket flags a focused node whose spoken text
+violates its tooltip's derived class (content-backed words missing from the announcement,
+class-backed words present in it), catching what compiler and static pattern both miss.
+
 Rules that came out of shipping this, all hit in practice:
 
 - **Never gate the mode's machinery on rendered content existing.** A render-composed
@@ -156,7 +170,12 @@ Rules that came out of shipping this, all hit in practice:
   prefabs hang empty ones on decoration, and a last-one-wins aim lands on them while the
   real tooltip beside them is never shown — invisible in speech, dump and buffer alike. "Last-drawn speaks" is the caption-then-value
   rule, not a universal: where the row is a card's own tooltip plus a badge's, the
-  important one is the card's — the screen names which tooltip speaks. And a tooltip whose
+  important one is the card's — the screen names which tooltip is the row's OWN. But
+  "which one is mine" decides only the row's own voice, never the others' existence: a
+  non-primary content-backed tooltip that falls silent under last-is-mine is words the
+  player was shown and never told (measured: five nodes lost their second sentence to
+  exactly this the day the structural rule landed) — it surfaces as a nested child entry
+  instead, same as any second hover surface. And a tooltip whose
   words are the row's own always-drawn text is not a second thing to say or buffer — the
   game reused the printed paragraph as its hover copy; skip it; when only its FIRST LINE
   repeats the label and more follows, buffer it whole instead — the label is not the
@@ -193,6 +212,16 @@ Rules that came out of shipping this, all hit in practice:
   contributes, and both read in the control type's kind order — "unavailable, ⟨reason⟩,
   ⟨tooltip sentence⟩". Suppressing derivation because a screen added a part would silently
   drop words only the derivation speaks.
+- **Dedupe in the pipeline, once — never mute per site.** The last-resort naming (a
+  wordless widget named from its tooltip's first line) plus announce-whole would speak that
+  line twice, and every call site made to solve this locally picks a different wrong answer:
+  the audit that preceded the structural rule found ~15 sites muting the tooltip outright
+  (silencing the REST of its words too), ~13 that forgot and double-spoke, and one
+  screen-wide muting helper. The one right answer lives at speak time in the announcement
+  pipeline: the tooltip part drops any line an already-spoken part says (trimmed,
+  case-insensitive — the same comparison the buffer's head-dedupe uses), so a name is never
+  repeated by its own tooltip and nothing else is lost. With the dedupe in place, every
+  per-site mute is deletable — which is what lets the mode parameter be deleted at all.
 - **Captions for bare numbers come from the game's registries — the tooltip is not the name.**
   A widget whose drawn text is a bare value is named from the caption the game keeps
   elsewhere (a `%…Title` key, the element/property title, a sibling caption), asked before
@@ -213,6 +242,16 @@ draws, so the only readings are the parent's drawn lines or the provider behind 
 widget (never the replaced panel); and the inner things become NODES (a "Tooltips" region
 under their owner) when the owner rules them navigable — extra buffer lines are the default,
 not the ceiling.
+
+A nested entry is NAMED by its hover target: the words drawn where a mouse would rest to
+raise that inner tooltip ("Role" on a fact line whose dossier hangs off the label), so the
+ear meets the same word the eye does. One ladder at the one nesting door, never per screen:
+the hover target's own drawn words, then its anchor's, then the tooltip's title field, then
+the sentence's first line — with a guard on the drawn-text rungs that a string with no
+letters is not a name (a spot that draws only a figure otherwise names its entry "0/11",
+and two figures collide; measured the day the ladder shipped). The entry then announces
+name plus content by the ordinary kind rule — whole for content-backed, name alone with
+the card in the buffer for renderer-assembled.
 
 Icons written inline in tooltip text are their own subject:
 [icons-and-symbols.md](icons-and-symbols.md).
