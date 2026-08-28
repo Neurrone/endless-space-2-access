@@ -1024,6 +1024,8 @@
   "action.ui.endTurn.description": "End the turn from anywhere the turn controls are drawn.",
   "action.ui.nextIdleFleet.title": "Go to the next idle fleet",
   "action.ui.nextIdleFleet.description": "Go to the next fleet with nothing to do, from anywhere the turn controls are drawn.",
+  "action.ui.applyMovements.title": "Apply movements",
+  "action.ui.applyMovements.description": "Order every fleet that was told to move to make its move, from anywhere the turn controls are drawn.",
   "action.ui.goToLocation.title": "Show on the map",
   "action.ui.goToLocation.description": "Go to where the thing under the cursor happened.",
   "action.ui.clear.title": "Clear",

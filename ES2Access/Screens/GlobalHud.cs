@@ -3114,6 +3114,50 @@ namespace ES2Access.Screens
             return true;
         }
 
+        /// <summary>
+        /// Order everything that was told to move to make its move, from anywhere the turn controls are
+        /// drawn (`docs/interaction.md`, Control+Alt+A). The act is the button's own click and nothing
+        /// more - <c>EndTurnWindow.OnApplyMovementsCb</c> :1356-1361 posts one
+        /// <c>OrderMoveIdleFleets</c> and touches no cursor, no selection and no camera - so the key
+        /// replays the press rather than doing anything of its own.
+        ///
+        /// A refusal speaks the BUTTON's own reading out of the graph, for the reason the two keys
+        /// beside it do: a player pressing this from the far side of the page cannot see the button
+        /// greyed out. Success says nothing, exactly as pressing the button says nothing.
+        ///
+        /// False means the key was not this page's business (no turn controls drawn), which is what
+        /// leaves the press alone.
+        /// </summary>
+        public static bool ApplyMovementsByKey()
+        {
+            EndTurnWindow window = TurnWindow();
+            // Flow control: false is how the caller hears that the key was not this page's business.
+            if (window == null || !AgeWidgets.Visible(window.AgeTransform))
+            {
+                return false;
+            }
+
+            // Flow control, and availability: the key is only this page's business where the button is
+            // drawn at all, and the refusal below reads that same button's own switched-off state.
+            AgeTransform button = AgeWidgets.Transform(window.ApplyMovementsButton);
+            if (button == null || !AgeWidgets.Visible(button))
+            {
+                return false;
+            }
+
+            // The game switches this button off unless the turn can be ended AND something is actually
+            // waiting to move (`EndTurnWindow.UpdateApplyMovementsButton` :1006-1016), which is the same
+            // question the node beside it answers, so the key and the button can never disagree.
+            if (!AgeWidgets.Enabled(button))
+            {
+                SpeakTurnRefusal("hud:apply-movements");
+                return true;
+            }
+
+            AgeWidgets.Press(window.ApplyMovementsButton);
+            return true;
+        }
+
         /// <summary>What one of the turn corner's controls says about itself right now, read out of the
         /// graph rather than composed again here - the refusal the player would have heard by walking to
         /// it.</summary>

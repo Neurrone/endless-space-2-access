@@ -402,6 +402,8 @@ namespace ES2Access
                     return GlobalHud.EndTurnByKey();
                 case UiActions.NextIdleFleet:
                     return GlobalHud.NextIdleFleetByKey();
+                case UiActions.ApplyMovements:
+                    return GlobalHud.ApplyMovementsByKey();
                 default:
                     return false;
             }
@@ -714,6 +716,20 @@ namespace ES2Access
             input
                 .Register(UiActions.NextIdleFleet)
                 .Bind(KeyCode.F, ctrl: true, alt: true)
+                .ClaimedWhile(TurnStopDeclared);
+            // Move everything that was told to move - the third of the turn corner's every-turn buttons,
+            // and the third the game gives no key for: its closed set of 70 `InputAction` names holds no
+            // apply-movements action at all (the only one carrying the word is `ForceFreeMovement`, which
+            // is Control+Mouse1), and `EndTurnWindow.ApplyMovementsButton` is a plain button.
+            // Control+Alt+A is free: bare A is bound, but only as the battle camera's own secondary
+            // (`EncounterCameraLeft:LeftArrow,A`), and the matcher is exact-modifier, so a chord carrying
+            // Control and Alt never reaches it.
+            //
+            // Same shape as the two beside it, and the act is the button's own click - the node here
+            // wires no activate override, because posting the order is all a press does.
+            input
+                .Register(UiActions.ApplyMovements)
+                .Bind(KeyCode.A, ctrl: true, alt: true)
                 .ClaimedWhile(TurnStopDeclared);
 
             // GO TO WHERE THIS HAPPENED: the game's own show-location button, from the keyboard

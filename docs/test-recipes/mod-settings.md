@@ -115,14 +115,14 @@ survives, because it is read from the file at `ModEntry.Start`:
 
 **Reading it.** Both windows read the same way. `/input ui.next` into `options:rows` lands on the
 first row's name cell — on the GAME's tab "Controls, table, Confirm, Enter, ⟨description⟩", on the
-MOD's "Controls, table, Move up, Up Arrow, Move the cursor to the control above., 1 of 59" (measured
+MOD's "Controls, table, Move up, Up Arrow, Move the cursor to the control above., 1 of 60" (measured
 2026-08-28) — and then
 `ui.right` / `ui.left` cross the columns ("Primary key, Enter, button" / "Secondary key, empty,
 button" / back onto "Action, Confirm, …"), `ui.down` stays in the column and names the row it landed
 in ("Cancel, empty, button, 2 of ⟨n⟩"). Cell ids are `options:⟨panel⟩/keys/row⟨hash⟩c⟨0|1|2⟩`.
-**The MOD table's row count is 59** — one per `action.*.title` key in the locale, and the same figure the
-physical-key measurements below read back ("48 of 59"). The figure read 57 until 2026-08-28, when the
-idle-fleet chord was added and the line was found two actions stale; re-check it with
+**The MOD table's row count is 60** — one per `action.*.title` key in the locale, and the same figure the
+physical-key measurements below read back ("49 of 60"). The figure read 57 until 2026-08-28, when the
+idle-fleet and apply-movements chords were added and the line was found two actions stale; re-check it with
 `grep -c '"action\..*\.title"' ES2Access/locale/english.json` whenever an action is added.
 
 **Driving a clear.** `/input ui.clear` on a key cell — the cell announces its new "empty" as a live
@@ -315,7 +315,7 @@ All of this needs `POST /key` and therefore the game FOREGROUNDED; `hold=250&gap
 the new key combination."), `F1` ("F1", then the overlap box - "Confirmation", "While the mod's … the
 game's Empire Screen will not fire."), then `DownArrow DownArrow` to Confirm ("Cancel, button, 2 of
 3", "Confirm, button, 3 of 3") and `Return`. What must happen: "F1", "Mod settings", "Controls,
-table, F1, button, 48 of 59" - the window still SHOWN, the cursor on the cell, Apply lit. The
+table, F1, button, 49 of 60" - the window still SHOWN, the cursor on the cell, Apply lit. The
 regression to watch for is an `Escape` pressed while that box is up: it must be the box's CANCEL
 (the row reads its old chord back, the window stays shown, Apply unlit) and must NOT hide the
 settings window. Before the registration fix it silently re-aimed the box at the window's
@@ -334,7 +334,7 @@ applying takes the line out again.
 
 **Type-ahead and scrolling on both tabs.** `POST /type` reaches the mod's type-ahead on
 either tab: on Controls, "next result in custom category " answers 3 results and lands on
-"Move to next result in custom category 1, …, 48 of 59"; on the Scanner tab with a slot open,
+"Move to next result in custom category 1, …, 49 of 60"; on the Scanner tab with a slot open,
 "amianthoid" answers ONE result (the merged twin column, `slot0Selectluxury:Luxury15`). Every landing
 must SCROLL: read `ModOptions.PanelOf(w, "Controls").OptionsTable.GetGlobalPosition().y` against
 `…OptionsScrollView.Viewport` (y 170, height 468) before and after, and confirm with `crop-shot.ps1`

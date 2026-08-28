@@ -276,6 +276,19 @@ takes, the galaxy page's single-camera-move version included (`GlobalHud.NextIdl
 refusal speaks that BUTTON's own readout ("Next idle fleet, button, 0 idle fleets, unavailable, …"),
 for the same reason the end-turn refusal does. The button's NAME does not carry the chord: that
 costing-every-landing exception stays the five it was granted for.
+**Ctrl+Alt+A APPLIES THE MOVEMENTS** (owner-approved 2026-08-28; `UiActions.ApplyMovements`,
+`GlobalHud.ApplyMovementsByKey`) — the third of the turn corner's every-turn buttons, and the third
+the game gives no key for: its closed set of 70 `InputAction` names holds no apply-movements action
+at all (the only one carrying the word is `ForceFreeMovement`, Control+Mouse1). Control+Alt+A is
+free — bare A IS bound, but only as the battle camera's own secondary
+(`EncounterCameraLeft:LeftArrow,A`), and the matcher is exact-modifier, so a chord carrying Control
+and Alt never reaches it. Claimed on `TurnStopDeclared` like the two beside it, the handler asks
+again, and the act is simply the button's own click: `EndTurnWindow.OnApplyMovementsCb` posts one
+`OrderMoveIdleFleets` and touches no cursor, selection or camera, so the key replays the press
+rather than doing anything of its own. Silent on success (the arrivals announce themselves through
+the notification watchers), and a refusal reads that button's own node ("Apply movements, button,
+unavailable, …"). **The three turn-corner chords are deliberately adjacent** in `BindKeys`, so they
+are adjacent rows of the Controls tab too (30, 31, 32 of 60).
 **Alt+Left/Right turn the PAGE** (`UiActions.PagePrev/PageNext` → `Screen.PagePrev/PageNext`,
 non-repeating): the previous/next system on the star-system page, planet on the planet page,
 notification on a popup, hero on the academy page — the game's own arrow pair, pressed from anywhere

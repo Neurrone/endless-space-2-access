@@ -251,6 +251,16 @@ and ship transfer. Index and charter: `README.md`.
   Scrap,Sell,SpecializeJuggernaut}Title`. The fleet-line COLUMNS are named by
   `%FleetListTable{CommandPoints,MovementPoints,Health}Title`, whose values are icon tokens
   (`[commandPoint]`), so `AgeText.Clean` turns them into "Command Point", "Movement", "Health".
+- **"Apply movements" is one ORDER and no camera work.** `EndTurnWindow.ApplyMovementsButton`'s click
+  (`OnApplyMovementsCb` :1356-1361) posts a single `OrderMoveIdleFleets(playerEmpire.Index)` and
+  touches no cursor, no selection and no view level — measured: the mod's landing pipeline never
+  fires for it, and nothing is spoken by the press itself. What the player then hears is the
+  notification watchers reporting the consequences ("1st Patriots Navy, Patrol arrived at Osulo",
+  "Niris colony sighted at Osulo"). The button is switched on by `UpdateApplyMovementsButton`
+  (:1006-1016) on TWO conditions — `CanEndTurn()` **and**
+  `DepartmentOfTransportation.GetNumberOfMovableFleets() > 0` — which is the state probe for both
+  "is there anything to apply" and the refusal case (`[Beginner] test` turn 21 has 4 movable fleets,
+  so both halves are exercisable there; applying takes it to 0).
 - **`EndTurnWindow.SelectIdleFleet` only works for a fleet with a docking slot.** It looks the slot
   up in `IVisibleDockingSlotRepositoryService` to aim the camera (:1387-1409); a fleet under way has
   none, so it falls through to `fleetsScreen.SelectIdleFleet`, which — with the window not shown,

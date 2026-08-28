@@ -173,6 +173,11 @@ namespace ES2Access.Core.Speech
                 "action.ui.nextIdleFleet.description",
                 "Go to the next fleet with nothing to do, from anywhere the turn controls are drawn."
             },
+            { "action.ui.applyMovements.title", "Apply movements" },
+            {
+                "action.ui.applyMovements.description",
+                "Order every fleet that was told to move to make its move, from anywhere the turn controls are drawn."
+            },
             { "action.ui.goToLocation.title", "Show on the map" },
             {
                 "action.ui.goToLocation.description",

@@ -81,5 +81,10 @@ namespace ES2Access.UI.Input
         /// turn controls. The game binds no key of its own to that button, so without this the only
         /// way to it is walking to the turn stop and pressing it.</summary>
         public const string NextIdleFleet = "ui.nextIdleFleet";
+
+        /// <summary>Order every fleet that was told to move to make its move, from anywhere the game is
+        /// drawing the turn controls. The game binds no key of its own to that button either, so
+        /// without this the only way to it is walking to the turn stop and pressing it.</summary>
+        public const string ApplyMovements = "ui.applyMovements";
     }
 }

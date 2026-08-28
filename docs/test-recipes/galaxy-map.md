@@ -771,6 +771,25 @@ page. "The chord reaches the mod and not the game" is a MANUAL-TEST line, not an
   **Encounter check (on a battle screen):** `E` is `EncounterCameraElevationUp` and the encounter
   cameras poll their bindings PRIVATELY — those matchers are not covered by `GameKeyStandDown`
   (:49-52). Fixture-blocked: no battle exists on `[Beginner] test`, and it needs `POST /key` anyway.
+- **Ctrl+Alt+F and Ctrl+Alt+A** (2026-08-28), the other two turn-corner chords. Both MEASURED from a
+  PHYSICAL `POST /key`, both branches each. Ctrl+Alt+F: with idle fleets it lands on the next one
+  ("1st Patriots Navy, …, Docked at Dusay, …, 9 of 9") with a single camera move and the fleet
+  selected; with none it reads its node ("Next idle fleet, button, 0 idle fleets, unavailable, …,
+  3 of 6"). Ctrl+Alt+A on `[Beginner] test` turn 21 (4 movable fleets): the press is SILENT and the
+  order lands — `DepartmentOfTransportation.GetNumberOfMovableFleets()` 4 → 0,
+  `ApplyMovementsButton.Enable` true → false, the idle-fleet button switching ON as the moved fleets
+  become idle — and the arrivals then announce themselves through the notification watchers; pressed
+  again with the button off it reads its node ("Apply movements, button, unavailable, …, 2 of 6").
+  **Both mutate or move, so verify only against a save you can reload**, and re-issue
+  `POST /loadsave` afterwards — applying the movements is not undoable.
+  **Two traps worth knowing.** An UNFOCUSED game stops ticking, so `POST /key` answers 200 with an
+  empty `speech` array and the presses sit in the OS queue until focus returns, arriving all at once
+  later — a plain `DownArrow` that moves no cursor is the cheap check that no key is getting through,
+  and the `SwitchToThisWindow` + `AttachThreadInput` + `SetFocus` refocus (dev-loop, "Holding a
+  PHYSICAL modifier") revives it. And the fleet ARRIVALS this key causes pop an EXPANDED tutorial
+  page on this fixture, which takes the focus — the next Ctrl+Alt+A is then correctly inert and
+  silent (`TurnStopDeclared` false), which is the claim gate working and not a lost press: minimize
+  the popup and press again.
 - **Alt+Left/Right on each of the four pages.** MEASURED: the STAR-SYSTEM page turns (Dusay → Heka →
   Dusay, the game's own cycle wraps with two colonies); the PLANET page turns and wraps ("Dusay II,
   Inhospitable" / "Dusay I, Inhospitable" / "Raia, Colonized"), one clean utterance per press; the
