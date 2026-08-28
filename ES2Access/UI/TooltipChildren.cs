@@ -46,6 +46,12 @@ namespace ES2Access.UI
             /// words that widget draws (<see cref="HoverName"/>).</summary>
             public Func<string> Name;
 
+            /// <summary>This dossier's naming ladder, rung by rung (<see cref="Ladder"/>) - what a
+            /// SIBLING entry reads to find out whether the two of them answer to the same word
+            /// (<see cref="SiblingNameRule"/>). Null for a dossier a caller built by hand, whose
+            /// <see cref="Name"/> is then its whole answer.</summary>
+            public Func<int, string> Rungs;
+
             /// <summary>The tooltip whose words the node carries. Null for a dossier that only
             /// exists INSIDE another tooltip's drawing, which reads through <see cref="Lines"/>
             /// instead.</summary>
@@ -387,10 +393,12 @@ namespace ES2Access.UI
 
             AgeTooltip tip = tooltip;
             AgeTransform under = anchor ?? tooltip.AgeTransform;
+            Func<int, string> ladder = Ladder(live, tip, under);
             into.Add(
                 new Dossier
                 {
-                    Name = HoverName(live, tip, under),
+                    Name = Named(into, into.Count, ladder),
+                    Rungs = ladder,
                     Tooltip = tip,
                     Anchor = under,
                     Carrier = carrier,
@@ -405,15 +413,10 @@ namespace ES2Access.UI
         ///
         /// A nested dossier is a hover the keyboard cannot make, so the name has to be the thing the
         /// player would have pointed at - "Role", "Food", the badge beside the row - and the game has
-        /// already written that on the screen. The ladder is what is left when it has not:
-        ///
-        /// - the HOVER TARGET's own drawn words (the tooltip's own widget, read one level down so a
-        ///   badge whose caption is a child label answers and a whole card does not),
-        /// - the ANCHOR's, for a dossier drawn from a widget of its own that carries no words,
-        /// - the wrapper's title (<see cref="AgeWidgets.TooltipTitle"/>), which is where this game
-        ///   keeps the name it would have written for a picture,
-        /// - the sentence's own first line, which is what a wordless badge with a plain-text
-        ///   explanation had before any of this.
+        /// already written that on the screen. The ladder (<see cref="Ladder"/>) is what is left when
+        /// it has not, and the first rung that answers is the name - unless a SIBLING entry answers
+        /// the same word, which is what sends this one further down its own ladder
+        /// (<see cref="SiblingNameRule"/>, <see cref="Named"/>).
         ///
         /// Asked afresh every read, and through <see cref="Now"/>, for the same reason the pointer is:
         /// a widget the game has since re-pointed names another thing entirely.
@@ -424,31 +427,105 @@ namespace ES2Access.UI
             AgeTransform anchor
         )
         {
+            Func<int, string> ladder = Ladder(live, declared, anchor);
+            return () => SiblingNameRule.First(ladder, NameRungs);
+        }
+
+        /// <summary>How many rungs <see cref="Ladder"/> has.</summary>
+        private const int NameRungs = 4;
+
+        /// <summary>
+        /// The naming ladder itself, one rung at a time so that a rung nobody needs is never read:
+        ///
+        /// 0. the HOVER TARGET's own drawn words (the tooltip's own widget, read one level down so a
+        ///    badge whose caption is a child label answers and a whole card does not),
+        /// 1. the ANCHOR's, for a dossier drawn from a widget of its own that carries no words,
+        /// 2. the wrapper's title (<see cref="AgeWidgets.TooltipTitle"/>), which is where this game
+        ///    keeps the name it would have written for a picture,
+        /// 3. the sentence's own first line, which is what a wordless badge with a plain-text
+        ///    explanation had before any of this.
+        /// </summary>
+        private static Func<int, string> Ladder(
+            Func<AgeTooltip> live,
+            AgeTooltip declared,
+            AgeTransform anchor
+        )
+        {
             Func<AgeTooltip> now = live;
             AgeTooltip it = declared;
             AgeTransform under = anchor;
-            return () =>
+            return rung =>
             {
                 AgeTooltip tip = Now(now, it);
-                string drawn = Drawn(AgeWidgets.TooltipOwner(tip));
-                if (!string.IsNullOrEmpty(drawn))
+                switch (rung)
                 {
-                    return drawn;
+                    case 0:
+                        return Drawn(AgeWidgets.TooltipOwner(tip));
+                    case 1:
+                        return Drawn(under);
+                    case 2:
+                        return AgeWidgets.TooltipTitle(tip);
+                    case 3:
+                        return CardActions.FirstLine(tip);
+                    default:
+                        return null;
                 }
-
-                drawn = Drawn(under);
-                if (!string.IsNullOrEmpty(drawn))
-                {
-                    return drawn;
-                }
-
-                string title = AgeWidgets.TooltipTitle(tip);
-                return string.IsNullOrEmpty(title) ? CardActions.FirstLine(tip) : title;
             };
         }
 
+        /// <summary>
+        /// The name of the entry that is about to take place <paramref name="index"/> in
+        /// <paramref name="siblings"/> - the ladder read against the set it will be heard in.
+        ///
+        /// The set is the LIST the collectors fill, held by reference and read at resolution rather
+        /// than copied: the entries after this one do not exist yet when it is collected, and every
+        /// name here is a live read anyway (a pooled widget the game has re-pointed names another
+        /// thing entirely, and so does the sibling it is being compared with). A list that has since
+        /// been rebuilt shorter than this entry's place has nothing to compare against and the entry
+        /// answers to its own ladder alone.
+        /// </summary>
+        private static Func<string> Named(
+            List<Dossier> siblings,
+            int index,
+            Func<int, string> ladder
+        )
+        {
+            List<Dossier> set = siblings;
+            int mine = index;
+            Func<int, string> own = ladder;
+            return () =>
+                set.Count > mine
+                    ? SiblingNameRule.Name(Ladders(set), mine, NameRungs)
+                    : SiblingNameRule.First(own, NameRungs);
+        }
+
+        /// <summary>Every entry of a sibling set as a ladder. A dossier a caller built by hand carries
+        /// none, and its <see cref="Dossier.Name"/> stands as its whole ladder - so it can still be
+        /// collided WITH, which is what makes the rule a property of the set rather than of the
+        /// collectors.</summary>
+        private static IList<Func<int, string>> Ladders(List<Dossier> set)
+        {
+            List<Func<int, string>> ladders = new List<Func<int, string>>(set.Count);
+            for (int i = 0; i < set.Count; i++)
+            {
+                Dossier it = set[i];
+                ladders.Add(it.Rungs ?? Sole(it.Name));
+            }
+
+            return ladders;
+        }
+
+        /// <summary>A name with no ladder behind it, as a one-rung ladder.</summary>
+        private static Func<int, string> Sole(Func<string> name)
+        {
+            Func<string> only = name;
+            return rung => rung == 0 && only != null ? only() : null;
+        }
+
         /// <summary>The same ladder for a caller building a <see cref="Dossier"/> by hand, so that a
-        /// dossier declared anywhere is named the way one collected here is.</summary>
+        /// dossier declared anywhere is named the way one collected here is. No sibling set: a caller
+        /// that hands its entry to a collected list gets the collision rule from the list it joins.
+        /// </summary>
         public static Func<string> NameOf(AgeTooltip tooltip, AgeTransform anchor)
         {
             return HoverName(null, tooltip, anchor);
@@ -603,10 +680,12 @@ namespace ES2Access.UI
             }
 
             AgeTooltip tip = tooltip;
+            Func<int, string> ladder = Ladder(null, tip, anchor);
             into.Add(
                 new Dossier
                 {
-                    Name = HoverName(null, tip, anchor),
+                    Name = Named(into, into.Count, ladder),
+                    Rungs = ladder,
                     Tooltip = tip,
                     Anchor = anchor,
                     Carrier = anchor,
