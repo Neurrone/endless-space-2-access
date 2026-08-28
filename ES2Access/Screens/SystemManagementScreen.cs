@@ -3316,7 +3316,6 @@ namespace ES2Access.Screens
                 tooltip
             );
             vtable.Announcements.Insert(1, GraphNodes.ValuePart(() => AgeText.Label(count)));
-            AgeWidgets.PointAt(vtable, widget, tooltip);
             return new Cell
             {
                 Widget = widget,

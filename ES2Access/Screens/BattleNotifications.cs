@@ -1510,8 +1510,7 @@ namespace ES2Access.Screens
             PopulationCount it = unit;
             List<AgeTooltip> tooltips = new List<AgeTooltip>(2);
             AgeWidgets.Tooltips(widget, tooltips);
-            List<AgeTooltip> own = new List<AgeTooltip>(2);
-            List<TooltipChildren.Dossier> dossiers = TooltipChildren.Split(tooltips, own);
+            TooltipChildren.Carried carried = TooltipChildren.Split(tooltips);
             NodeVtable vtable = new NodeVtable
             {
                 ControlType = ControlTypes.Text,
@@ -1524,10 +1523,10 @@ namespace ES2Access.Screens
             // Read rather than worked: the report's cells carry the game's own click handler but the
             // popup leaves the button switched off (measured 2026-08-28: interactable false), so there
             // is nothing here to do and the row is what it looks like - a readout.
-            vtable.Sections = GraphNodes.SectionsFor(vtable, own);
+            vtable.Sections = GraphNodes.SectionsFor(vtable, carried.Own);
             Cell cell = Cells.Add(cells, widget, ControlId.For(unit, key), vtable);
-            cell.Dossiers = dossiers;
-            cell.Key = dossiers == null ? null : key;
+            cell.Dossiers = carried.Children;
+            cell.Key = carried.Children == null ? null : key;
         }
 
         /// <summary>What the invasion levelled, a row per improvement.</summary>
@@ -1591,8 +1590,7 @@ namespace ES2Access.Screens
             // row is not pointing at can never draw, so it becomes a child entry rather than a promise.
             // A row carrying only its own tooltip - which is every row this prefab has been seen to
             // build - keeps it and comes out of here unchanged.
-            List<AgeTooltip> own = new List<AgeTooltip>(2);
-            List<TooltipChildren.Dossier> dossiers = TooltipChildren.Split(tooltips, own);
+            TooltipChildren.Carried carried = TooltipChildren.Split(tooltips);
             NodeVtable vtable = new NodeVtable
             {
                 ControlType = ControlTypes.Text,
@@ -1601,10 +1599,10 @@ namespace ES2Access.Screens
                     GraphNodes.LabelPart(() => RuinName(at, it)),
                 },
             };
-            vtable.Sections = GraphNodes.SectionsFor(vtable, own);
+            vtable.Sections = GraphNodes.SectionsFor(vtable, carried.Own);
             Cell cell = Cells.Add(cells, widget, ControlId.For(item, key), vtable);
-            cell.Dossiers = dossiers;
-            cell.Key = dossiers == null ? null : key;
+            cell.Dossiers = carried.Children;
+            cell.Key = carried.Children == null ? null : key;
         }
 
         private static string RuinName(AgeTransform widget, DestroyedImprovementItem item)
@@ -1831,7 +1829,6 @@ namespace ES2Access.Screens
                 tooltip
             );
             vtable.Announcements.Insert(1, GraphNodes.ValuePart(() => AgeText.Label(count)));
-            AgeWidgets.PointAt(vtable, widget, tooltip);
             Cells.Add(cells, widget, ControlId.For(unit, key), vtable);
         }
 

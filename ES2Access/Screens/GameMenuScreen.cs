@@ -218,7 +218,6 @@ namespace ES2Access.Screens
                 () => Enabled(control),
                 tooltip
             );
-            AgeWidgets.PointAt(vtable, AgeWidgets.Transform(control), tooltip);
             builder.AddItem(Nodes.Drawn(ControlId.For(control, key), vtable, control));
         }
 

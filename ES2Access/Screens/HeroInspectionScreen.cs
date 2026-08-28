@@ -1682,7 +1682,6 @@ namespace ES2Access.Screens
                 null,
                 tooltip
             );
-            AgeWidgets.PointAt(vtable, tooltip == null ? row : tooltip.AgeTransform);
             Cells.Add(_cells, row, ControlId.For(row, Keys + key), vtable);
         }
 

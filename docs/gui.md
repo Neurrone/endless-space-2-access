@@ -661,7 +661,12 @@ Measured behaviour of the drawing pipeline:
   panel features the `Politics` class is made of are three properties of `GuiPolitics` (`Title`,
   `CategoryTitle`/`Description`, `PoliticsAffectingEvents`), and the parties come off the same
   `IPoliticalOpinionProvider` the drawn block reads — and its node points at the PARENT tooltip so the
-  picture stays the page the player is reading (`UI/PoliticsDossier.cs`).
+  picture stays the page the player is reading (`UI/PoliticsDossier.cs`). **Owner ruling
+  (2026-08-28): a depth-two dossier exists in the mod only where a sighted player can reach it
+  normally.** One the game's own replacement makes unreachable — this case — is deliberately not
+  modeled from surfaces that only meet it inside a drawn card; the provider route serves the
+  surfaces where the same dossier hangs on a screen widget at depth one, which is where a sighted
+  player actually reads it.
 - **An alpha-0 widget is not hit-testable for the mouse** (`AgeTransform.cs:3448`), so a subtree
   the game reveals on hover carries tooltips a mouse can reach only after the reveal — but
   `PointerFocus.LateTick` writes `OverrolledTransform` DIRECTLY, so the mod can point at one

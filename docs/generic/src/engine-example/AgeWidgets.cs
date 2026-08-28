@@ -1436,6 +1436,26 @@ namespace ES2Access.UI
             PointAt(vtable, TooltipOwner(tooltip) ?? widget);
         }
 
+        /// <summary>
+        /// The same for a tooltip the game hangs on NO widget of its own - a field of a window the game
+        /// fills at bind time - which is therefore not findable from the widget it is drawn under.
+        ///
+        /// <see cref="PointAt(NodeVtable, AgeTransform, AgeTooltip)"/> asks the widget for its OWN
+        /// tooltip, which for this shape answers something else or nothing; this one aims at the tooltip
+        /// it was handed and puts the pointer on <paramref name="anchor"/>, which is the widget the game
+        /// drew the tooltip's own words and picture in. Reached through
+        /// <see cref="GraphNodes.Aim"/>, which is what decides that a tooltip is of this shape - a
+        /// caller never chooses between the two.
+        /// </summary>
+        public static void PointUnder(NodeVtable vtable, AgeTransform anchor, AgeTooltip tooltip)
+        {
+            AgeTransform under = anchor;
+            AgeTooltip tip = tooltip;
+            vtable.OnFocusVisual = () => PointerFocus.MoveTo(Button(under), tip, under);
+            vtable.OnBlurVisual = ReleasePointer;
+            vtable.PointsAt = () => tip;
+        }
+
         /// <summary>Which tooltip a node's pointer goes to, as the node itself declares it
         /// (<see cref="NodeVtable.PointsAt"/>, written by the pointing helpers above from the same
         /// argument they aim). Never re-derived from the widget tree: the deepest tooltip inside a

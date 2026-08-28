@@ -263,16 +263,14 @@ namespace ES2Access.UI
 
                 if (toggle != null)
                 {
+                    // Over the door's own aim, which this re-states with the TOGGLE added so the card
+                    // lights up under the cursor the way a mouse would light it.
                     AgeWidgets.Point(vtable, toggle, tooltip, at);
                 }
-                else
-                {
-                    // At the widget the tooltip is really ON - for a row whose dossier hangs on an
-                    // icon inside it, pointing at the row draws nothing at all. Identical to pointing
-                    // at the widget wherever the widget is where the tooltip hangs, which is every
-                    // other card button.
-                    AgeWidgets.PointAt(vtable, at, tooltip);
-                }
+
+                // A plain button needs nothing here: the factory aims at the widget the tooltip is
+                // really ON, which is what this used to say - for a row whose dossier hangs on an icon
+                // inside it, pointing at the row draws nothing at all.
 
                 if (vtable.OnSelectToggle == null && AgeWidgets.Hinted(at))
                 {

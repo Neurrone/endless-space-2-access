@@ -47,11 +47,13 @@ namespace ES2Access.Dev
     /// a defect in the GAME, which will draw nothing there whatever the mod does.
     ///
     /// THE BUCKETS, which is what a reader of <c>/eval DevProbe.TooltipParity()</c> is looking at.
-    /// Six of them are the findings that count (<see cref="Result.Findings"/>): <c>promised</c> - a
+    /// Seven of them are the findings that count (<see cref="Result.Findings"/>): <c>promised</c> - a
     /// node claims a dossier nothing near it would draw; <c>misaimed</c> - it points at one that
     /// draws nothing, judged by <see cref="NodeVtable.PointsAt"/>; <c>unraised</c> - it points at one
     /// and never moves the pointer there, so the words review and the game draws nothing;
-    /// <c>uncovered</c> - the game would
+    /// <c>unaimed</c> - it declares a tooltip's words and aims at nothing at all, which is the shape
+    /// that fell through every other bucket and let a screen answer <c>clean</c> with a live defect on
+    /// it; <c>uncovered</c> - the game would
     /// draw a tooltip on a CONTROL that no node stands on; <c>unread</c> - a node covers it but
     /// carries none of its words; <c>misclassed</c> - the tooltip reaches the player the wrong way
     /// round for its kind, a content-backed one announcing nothing or a class-backed one announcing
@@ -122,6 +124,27 @@ namespace ES2Access.Dev
             /// </summary>
             public readonly List<Breach> Unraised = new List<Breach>();
 
+            /// <summary>
+            /// Declares a tooltip's words and aims at NOTHING - neither
+            /// <see cref="NodeVtable.PointsAt"/> nor a focus visual that would move the pointer.
+            ///
+            /// The sibling of <see cref="Unraised"/>, and the one that could see what it could not: a
+            /// node that never aimed has no aim for the aim buckets to judge and no promise for the
+            /// raising bucket to check, so it fell through every finding here and read as a node with
+            /// no tooltip at all. That is exactly how the load/save window's Steam-Cloud box shipped
+            /// with a tooltip nothing drew while this check answered <c>clean:true, nodes:134</c>
+            /// (owner-reported 2026-08-28).
+            ///
+            /// Unreachable through the door: every tooltip-taking factory and
+            /// <see cref="GraphNodes.SectionsFor"/> aim as they declare (<see cref="GraphNodes.Aim"/>).
+            /// What is left for this bucket to guard is the hand-built vtable - a screen composing
+            /// sections itself - and the one case the door reports rather than fixes, a tooltip with no
+            /// widget of its own declared with no anchor.
+            ///
+            /// The comparison is <see cref="TooltipAimRule.Unraisable"/>, proved off the engine.
+            /// </summary>
+            public readonly List<Breach> Unaimed = new List<Breach>();
+
             /// <summary>The game would draw a tooltip on a CONTROL here and no node covers it.
             /// </summary>
             public readonly List<Breach> Uncovered = new List<Breach>();
@@ -187,6 +210,7 @@ namespace ES2Access.Dev
                         + Uncovered.Count
                         + Unread.Count
                         + Unraised.Count
+                        + Unaimed.Count
                         + Misclassed.Count;
                 }
             }
@@ -364,6 +388,47 @@ namespace ES2Access.Dev
         }
 
         /// <summary>
+        /// THE OTHER HALF OF THE RAISING QUESTION: a node that wrote a tooltip's words down and aims at
+        /// nothing at all. <see cref="Result.Unaimed"/> says what it is and why nothing else here could
+        /// see it.
+        ///
+        /// Asked of the vtable alone, like <see cref="Unraised"/>, and of the SECTIONS rather than of a
+        /// tooltip found by re-walking the tree: the question is what the node undertook to hold, and
+        /// only its own declaration answers that.
+        /// </summary>
+        private static void Unaimed(Declared node, Result result)
+        {
+            try
+            {
+                NodeVtable vtable = node.Node == null ? null : node.Node.Vtable;
+                if (
+                    vtable == null
+                    || !TooltipAimRule.Unraisable(
+                        vtable.Sections,
+                        AgeWidgets.AimOf(vtable) != null,
+                        vtable.OnFocusVisual != null
+                    )
+                )
+                {
+                    return;
+                }
+
+                result.Unaimed.Add(
+                    NotificationAudit.Made(
+                        node.Widget,
+                        node.Key,
+                        "declares a tooltip's words and aims at nothing - nothing moves the pointer there, so the buffer promises what the game will never draw",
+                        null
+                    )
+                );
+            }
+            catch (Exception)
+            {
+                // A vtable whose aim closure throws is the aim check's business, not this one's.
+            }
+        }
+
+        /// <summary>
         /// THE CLASS BOUNDARY, read back off a real node: <see cref="Result.Misclassed"/> says what it
         /// is and what it cannot see.
         ///
@@ -518,6 +583,7 @@ namespace ES2Access.Dev
             {
                 Declared node = declared[i];
                 Unraised(node, result);
+                Unaimed(node, result);
                 Misclassed(node, result);
                 if (!NotificationAudit.Promises(node))
                 {
@@ -846,6 +912,7 @@ namespace ES2Access.Dev
                 NotificationAudit.WriteBreaches(json, "promised", result.Promised);
                 NotificationAudit.WriteBreaches(json, "misaimed", result.Misaimed);
                 NotificationAudit.WriteBreaches(json, "unraised", result.Unraised);
+                NotificationAudit.WriteBreaches(json, "unaimed", result.Unaimed);
                 NotificationAudit.WriteBreaches(json, "uncovered", result.Uncovered);
                 NotificationAudit.WriteBreaches(json, "decoration", result.Decoration);
                 NotificationAudit.WriteBreaches(json, "unread", result.Unread);

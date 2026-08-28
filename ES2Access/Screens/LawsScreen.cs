@@ -368,7 +368,6 @@ namespace ES2Access.Screens
                 () => PoliticsExperience.Scale(it),
                 tooltip
             );
-            AgeWidgets.PointAt(vtable, widget, tooltip);
             Cells.Add(cells, widget, ControlId.For(widget, "laws:experience"), vtable);
         }
 
@@ -401,7 +400,6 @@ namespace ES2Access.Screens
                 null,
                 note
             );
-            AgeWidgets.PointAt(vtable, marker, note);
             Cells.Add(
                 cells,
                 marker,

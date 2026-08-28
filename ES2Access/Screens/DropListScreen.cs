@@ -349,10 +349,15 @@ namespace ES2Access.Screens
                 // game wrote onto the item are said; the dossier it assembles when it draws the entry
                 // is reviewed. The fallback below is the string table's own line, which is plain text
                 // the game wrote and so is said with it.
+                // ONE tooltip, structurally: TooltipReach.ListEntry resolves the item's own and
+                // nothing else (no walk up, down or sideways), so there is never a second one here to
+                // be declared and never raised. The aim is written below rather than taken from the
+                // door, because a list entry is drawn by the engine on demand and the pointer belongs
+                // on the ENTRY - the same widget the game's own highlight follows.
                 Scratch.Clear();
                 AgeWidgets.EffectiveTooltips(entry, Scratch, TooltipReach.ListEntry);
                 vtable.Sections = Scratch.Count > 0
-                    ? GraphNodes.SectionsFor(Scratch)
+                    ? GraphNodes.Sections(null, Scratch[0])
                     : GraphNodes.Sections(
                         NodeSection.Composed(() => AgeText.Lines(EntryDetail(list, index)))
                     );

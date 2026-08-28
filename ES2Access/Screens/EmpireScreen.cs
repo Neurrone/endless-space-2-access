@@ -353,42 +353,39 @@ namespace ES2Access.Screens
                 offered,
                 tooltip
             );
-            // BOTH tooltips the slot carries. The name comes off the FIDSI group.s sentence, so that
-            // sentence has to be reachable - it used to be read for the name and then declared nowhere,
-            // and everything after its first line was unreachable. The slot.s OWN is the one the pointer
-            // goes to, so it is last and it is the one announced.
-            List<AgeTooltip> carried = new List<AgeTooltip>(2);
+            // BOTH tooltips the slot carries, through the nesting sink. The name comes off the FIDSI
+            // group.s sentence, so that sentence has to be reachable - it used to be read for the name
+            // and then declared nowhere, and everything after its first line was unreachable. The
+            // slot.s OWN is the one the pointer goes to, so it is last and it is the one the slot
+            // announces; the group.s becomes a child entry of its own, because a second tooltip a node
+            // is not pointing at is a second hover target and one row means a row of NODES.
+            List<AgeTooltip> found = new List<AgeTooltip>(2);
             if (
                 it.FIDSIGroupTooltip != null
                 && !AgeWidgets.SameTooltip(it.FIDSIGroupTooltip, tooltip)
             )
             {
-                carried.Add(it.FIDSIGroupTooltip);
+                found.Add(it.FIDSIGroupTooltip);
             }
 
-            carried.Add(tooltip);
-            vtable.Sections = GraphNodes.SectionsFor(carried);
+            found.Add(tooltip);
+            TooltipChildren.Carried carried = TooltipChildren.Split(found);
+            vtable.Sections = GraphNodes.SectionsFor(vtable, carried.Own);
             vtable.Announcements.Add(GraphNodes.ValuePart(() => RelicSlotAction(it)));
             vtable.Announcements.Add(GraphNodes.ValuePart(() => RelicsAssigned(it)));
             GraphNodes.AddRefusal(vtable, tooltip, offered);
+            // Kept over the door's aim, which it re-states with the slot's BUTTON added so the slot
+            // lights up under the cursor.
             AgeWidgets.Point(vtable, slot.button, tooltip, button);
             // The name and the position, because there are FOUR of these in one box and a key that named
             // only the panel is the same for all four - which throws Duplicate control id and empties the
             // WHOLE page. (Measured: that is how this was found. The clones happen to carry per-slot names
             // in this prefab, and the index is what makes the key safe if a later one does not.)
-            Cells.Add(
-                cells,
-                widget,
-                ControlId.For(
-                    slot,
-                    keyPrefix
-                        + "relic-slot/"
-                        + widget.name
-                        + "/"
-                        + AgeWidgets.IndexInParent(widget)
-                ),
-                vtable
-            );
+            string key =
+                keyPrefix + "relic-slot/" + widget.name + "/" + AgeWidgets.IndexInParent(widget);
+            Cell cell = Cells.Add(cells, widget, ControlId.For(slot, key), vtable);
+            cell.Dossiers = carried.Children;
+            cell.Key = carried.Children == null ? null : key;
             return true;
         }
 

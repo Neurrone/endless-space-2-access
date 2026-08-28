@@ -522,34 +522,54 @@ namespace ES2Access.Screens
                 // rather than on the label. Read the same way a drawn row's explanation is: carried in
                 // the buffer, indicated or spoken by its own kind, and pointed AT on focus so the game
                 // draws it at all.
-                List<AgeTooltip> explaining = WordsTooltips(label, Words(window));
-                AgeTooltip explains =
-                    explaining.Count == 0 ? null : explaining[explaining.Count - 1];
+                // Through the nesting sink: the words block is drawn inside wrappers that carry
+                // explanations of their own, and only the OUTERMOST is the one this node points at.
+                // Every other one used to be a reviewed section on this node - a second hover target
+                // read as part of the first - and is now an entry of its own, which is the standing
+                // ruling about two hover targets. A popup with one explanation (which is every one
+                // measured so far) declares exactly what it declared before.
+                TooltipChildren.Carried carried =
+                    TooltipChildren.Split(WordsTooltips(label, Words(window)));
+                AgeTooltip explains = carried.Own;
                 AgeTransform hover = explains == null ? null : Holder(explains);
-                builder.AddNode(Nodes.Drawn(
-                    lead,
-                    new NodeVtable
+                NodeVtable saying = new NodeVtable
+                {
+                    // No role word: the text is not a control the player works, it is what they
+                    // were interrupted to read.
+                    Announcements = new List<NodeAnnouncement>
                     {
-                        // No role word: the text is not a control the player works, it is what they
-                        // were interrupted to read.
-                        Announcements = new List<NodeAnnouncement>
-                        {
-                            GraphNodes.LabelPart(() => Words(Current())),
-                        },
-                        Sections = GraphNodes.SectionsFor(explaining, () => Content(Current())),
-
-                        // Where the words explain nothing, nothing is hovered: there is no control
-                        // under the cursor to light up, and no tooltip of a neighbouring one to leave
-                        // hanging over the popup.
-                        OnFocusVisual =
-                            hover == null
-                                ? ReleasePointer
-                                : () => PointerFocus.MoveTo(hover, explains),
-                        OnBlurVisual = ReleasePointer,
-                        PointsAt = () => hover == null ? null : explains,
+                        GraphNodes.LabelPart(() => Words(Current())),
                     },
-                    label
-                ));
+                    Sections = GraphNodes.Sections(() => Content(Current()), explains),
+
+                    // Where the words explain nothing, nothing is hovered: there is no control
+                    // under the cursor to light up, and no tooltip of a neighbouring one to leave
+                    // hanging over the popup. Aimed here rather than by the door because the
+                    // explanation hangs on a WRAPPER of the words and the pointer belongs on the
+                    // holder the popup drew it in (<see cref="Holder"/>).
+                    OnFocusVisual =
+                        hover == null ? ReleasePointer : () => PointerFocus.MoveTo(hover, explains),
+                    OnBlurVisual = ReleasePointer,
+                    PointsAt = () => hover == null ? null : explains,
+                };
+                DrawnNode said = Nodes.Drawn(lead, saying, label);
+                if (carried.Children == null)
+                {
+                    builder.AddNode(said);
+                }
+                else
+                {
+                    // The one shape that has to change: a block with entries under it is a group, and
+                    // a group is a row. The plain case above stays a raw node so that the words go on
+                    // taking no place in a count.
+                    builder.BeginGroup(said);
+                    if (builder.IsExpanded(lead))
+                    {
+                        TooltipChildren.Emit(builder, WordsKey, carried.Children, builder.Region);
+                    }
+
+                    builder.EndGroup();
+                }
             }
 
             if (body != null)
@@ -2667,9 +2687,12 @@ namespace ES2Access.Screens
             }
         }
 
+        /// <summary>What the words block and anything hanging under it are keyed by.</summary>
+        private const string WordsKey = "notification:words";
+
         private static ControlId WordsId(AgePrimitiveLabel label)
         {
-            return ControlId.For(label, "notification:words");
+            return ControlId.For(label, WordsKey);
         }
 
         /// <summary>

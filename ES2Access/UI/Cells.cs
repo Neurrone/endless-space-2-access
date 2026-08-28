@@ -382,7 +382,11 @@ namespace ES2Access.UI
                 () => AgeWidgets.Offered(at),
                 tooltip
             );
-            AgeWidgets.PointAt(vtable, widget);
+            // The factory has already aimed at the tooltip's own widget, which is where the game draws
+            // it; this adds the one thing it cannot say - the BUTTON, so a bare-icon cell lights up
+            // under the cursor - and keeps that highlight for a cell carrying no tooltip at all. It is
+            // the same call the clickable multi-tooltip line below makes, for the same reasons.
+            AgeWidgets.Point(vtable, button, tooltip, widget);
             return new Cell
             {
                 Widget = widget,
@@ -403,7 +407,7 @@ namespace ES2Access.UI
         /// </summary>
         public static Cell Readout(AgeTransform widget, string key)
         {
-            List<AgeTooltip> tooltips = Gathered(widget);
+            TooltipChildren.Carried carried = TooltipChildren.Split(Gathered(widget));
             AgeTransform at = widget;
             NodeVtable vtable = new NodeVtable
             {
@@ -411,10 +415,9 @@ namespace ES2Access.UI
                 {
                     GraphNodes.LabelPart(() => AgeWidgets.TextOf(at)),
                 },
-                Sections = GraphNodes.SectionsFor(tooltips),
             };
-            AgeWidgets.PointAt(vtable, widget, Last(tooltips));
-            return Owning(widget, key, vtable, tooltips);
+            vtable.Sections = GraphNodes.SectionsFor(vtable, carried.Own);
+            return Owning(widget, key, vtable, carried);
         }
 
         /// <summary>The same for a line the game made CLICKABLE. The words it is called by are its own
@@ -427,8 +430,8 @@ namespace ES2Access.UI
             string key
         )
         {
-            List<AgeTooltip> tooltips = Gathered(widget);
-            AgeTooltip last = Last(tooltips);
+            TooltipChildren.Carried carried = TooltipChildren.Split(Gathered(widget));
+            AgeTooltip last = carried.Own;
             AgeControlButton it = button;
             AgeTransform at = widget;
             bool named = !string.IsNullOrEmpty(text);
@@ -438,14 +441,17 @@ namespace ES2Access.UI
                 () => AgeWidgets.Press(it),
                 () => AgeWidgets.Offered(at)
             );
-            vtable.Sections = GraphNodes.SectionsFor(tooltips);
+            vtable.Sections = GraphNodes.SectionsFor(vtable, last);
+            // Kept over the door's own aim, which it re-states with one thing added: the BUTTON the
+            // game drew this line as, so the line lights up under the cursor the way a mouse would
+            // light it. The tooltip aimed at is the same one either way.
             AgeWidgets.Point(vtable, button, last, widget);
-            return Owning(widget, key, vtable, tooltips);
+            return Owning(widget, key, vtable, carried);
         }
 
         /// <summary>
-        /// A cell built from a line the game drew out of several pieces, owning whichever of those
-        /// pieces explains itself in the game's own PLAIN words (<see cref="TooltipChildren.Others"/>).
+        /// A cell built from a line the game drew out of several pieces, owning every piece that
+        /// explains itself as a node of its own (<see cref="TooltipChildren.Split"/>).
         ///
         /// The line announces the one tooltip a hover on it would raise - the last one drawn, which is
         /// where its pointer goes. Everything else it carries used to be reviewable and never said, and
@@ -457,17 +463,16 @@ namespace ES2Access.UI
             AgeTransform widget,
             string key,
             NodeVtable vtable,
-            IList<AgeTooltip> tooltips
+            TooltipChildren.Carried carried
         )
         {
-            List<TooltipChildren.Dossier> others = TooltipChildren.Others(tooltips);
             return new Cell
             {
                 Widget = widget,
                 Id = ControlId.For(widget, key),
                 Vtable = vtable,
-                Dossiers = others,
-                Key = others == null ? null : key,
+                Dossiers = carried.Children,
+                Key = carried.Children == null ? null : key,
             };
         }
 
@@ -481,11 +486,6 @@ namespace ES2Access.UI
             Scratch.Clear();
             AgeWidgets.Tooltips(widget, Scratch);
             return Scratch;
-        }
-
-        private static AgeTooltip Last(List<AgeTooltip> tooltips)
-        {
-            return tooltips.Count == 0 ? null : tooltips[tooltips.Count - 1];
         }
 
         /// <summary>The control at <paramref name="widget"/>, if there is one to declare - a widget with
@@ -591,9 +591,9 @@ namespace ES2Access.UI
                 Scratch,
                 TooltipReach.Own | TooltipReach.Parents | TooltipReach.Siblings
             );
-            AgeTooltip tip = Last(Scratch);
+            TooltipChildren.Carried carried = TooltipChildren.Split(Scratch);
+            AgeTooltip tip = carried.Own;
             AgeTransform group = widget.Parent;
-            AgeTransform owner = AgeWidgets.TooltipOwner(tip) ?? widget;
             AgeTransform laid = row ?? group ?? widget;
             string caption = AgeText.Clean(titleKey);
             bool named = !string.IsNullOrEmpty(caption) && caption[0] != '%';
@@ -608,9 +608,8 @@ namespace ES2Access.UI
                     GraphNodes.ValuePart(() => AgeWidgets.TextOf(at)),
                 },
             };
-            vtable.Sections = GraphNodes.SectionsFor(vtable, Scratch);
-            AgeWidgets.PointAt(vtable, owner);
-            Kept(cells, Owning(laid, key, vtable, Scratch));
+            vtable.Sections = GraphNodes.SectionsFor(vtable, tip);
+            Kept(cells, Owning(laid, key, vtable, carried));
         }
 
         /// <summary>A line the player reads rather than works: whatever words the game drew in it, and
@@ -628,9 +627,8 @@ namespace ES2Access.UI
                 {
                     GraphNodes.LabelPart(() => AgeWidgets.TextOf(at)),
                 },
-                Sections = GraphNodes.Sections(null, tooltip),
             };
-            AgeWidgets.PointAt(vtable, widget, tooltip);
+            vtable.Sections = GraphNodes.SectionsFor(vtable, tooltip);
             return new Cell
             {
                 Widget = widget,

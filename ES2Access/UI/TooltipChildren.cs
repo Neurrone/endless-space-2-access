@@ -198,10 +198,13 @@ namespace ES2Access.UI
             }
             else
             {
-                vtable.Sections = GraphNodes.SectionsFor(
-                    vtable,
-                    new List<AgeTooltip>(1) { it.Tooltip }
-                );
+                // Sections without the door's aim, and the ONLY place in the mod that asks for that:
+                // a nested dossier is aimed below, at the widget the game will draw THIS one from,
+                // which for a dossier inside another tooltip's drawing is the parent's carrier and not
+                // its own transform (pointing inside a drawn tooltip releases the data the inner
+                // widget was holding). The door aims at a tooltip's own widget by rule, so it cannot
+                // express this one - and every other kind of node is better off with the rule.
+                vtable.Sections = GraphNodes.Sections(null, it.Tooltip);
             }
 
             AgeTooltip aim = it.Aim ?? it.Tooltip;
@@ -405,83 +408,69 @@ namespace ES2Access.UI
             return HoverName(null, tooltip, anchor);
         }
 
-        /// <summary>
-        /// The tooltips a line carries BESIDES the one it points at, as nodes of their own - for a
-        /// line the game drew out of several pieces, each with an explanation of its own.
-        ///
-        /// A node announces the ONE tooltip a hover on it would raise, which is the last one drawn
-        /// (<c>GraphNodes.SectionsFor</c>). That is right, and it used to leave the icon's own sentence
-        /// - "The faction of your empire", "The personality of this minor civilization determines how
-        /// it reacts to your actions" - reviewable and never said. A sentence the game wrote is not a
-        /// footnote: the piece that carries it becomes a node, named the way every other nested entry
-        /// is (<see cref="HoverName"/>), and says its sentence when the player steps onto it. Which is
-        /// the standing ruling about two hover targets - one row means a row of NODES.
-        ///
-        /// Only the ones the game wrote as PLAIN TEXT (<see cref="AddPlain"/>'s own test): a
-        /// renderer-assembled dossier on a piece of a line has no words until it is drawn, and the
-        /// pointer is on the line's own tooltip, so a node for it would promise words nothing raises.
-        /// Null when there are none, which is the ordinary line.
-        /// </summary>
-        public static List<Dossier> Others(IList<AgeTooltip> tooltips)
+        /// <summary>What a line the game drew out of several pieces carries: the ONE tooltip the line
+        /// itself points at, and the pieces that explain themselves separately, each as a node of its
+        /// own. <see cref="Split"/> is the only thing that makes one.</summary>
+        public struct Carried
         {
-            List<Dossier> found = null;
-            for (int i = 0; tooltips != null && i + 1 < tooltips.Count; i++)
-            {
-                AgeTooltip tooltip = tooltips[i];
-                List<Dossier> into = found ?? new List<Dossier>(1);
-                AddPlain(into, tooltip, AgeWidgets.TooltipOwner(tooltip));
-                if (into.Count > 0)
-                {
-                    found = into;
-                }
-            }
+            /// <summary>The line's own tooltip - the last one drawn, which is the one a hover on the
+            /// line would raise. Null for a line that carries none.</summary>
+            public AgeTooltip Own;
 
-            return found;
+            /// <summary>One per other piece, in drawn order. Null where the line has none, which is the
+            /// ordinary line. The caller MUST emit these (<see cref="Emit"/>, or
+            /// <c>Cells.Cell.Dossiers</c>): they are the only place those tooltips still reach the
+            /// player from.</summary>
+            public List<Dossier> Children;
         }
 
         /// <summary>
-        /// The renderer-assembled dossiers a line carries BESIDES the one it points at, as nodes of
-        /// their own - and, in <paramref name="keeps"/>, the tooltips the LINE goes on carrying.
+        /// THE NESTING SINK: the tooltips a line carries, split into the one it points at and a child
+        /// entry for every other one.
         ///
-        /// <see cref="Others"/> is this for the ones the game wrote as PLAIN TEXT, and it leaves those
-        /// on the line as well, because a sentence reads back out of a review buffer whether or not
-        /// anything ever drew it. A renderer-assembled dossier does not: its words exist only while the
-        /// game is DRAWING it, the pointer is on the line's own tooltip, and a non-last dossier is
-        /// therefore a reviewed section that can never fill - promised on arrival and empty forever
-        /// (measured on the ground report's species count, 2026-08-28: the Amoeba dossier was declared,
-        /// unreachable and silent). So this one MOVES it: the dossier comes off the line's sections and
-        /// becomes a child entry that aims the pointer at its own carrier, which is the standing ruling
-        /// about two hover targets - one row means a row of NODES.
+        /// A node announces and raises the ONE tooltip a hover on it would raise, which is the last one
+        /// drawn. Everything else the line carries used to be a reviewed section, and that is wrong two
+        /// different ways. A renderer-assembled dossier the pointer never visits has no words at all -
+        /// declared on the row it was a promise that could never fill (measured on the ground report's
+        /// species count, 2026-08-28: the Amoeba dossier was declared, unreachable and silent). And a
+        /// sentence the game wrote as plain text is not a footnote: buried in the line's buffer it
+        /// merges into a paragraph the player cannot step through. Both are the standing ruling about
+        /// two hover targets - one row means a row of NODES - so both go the same way here, named the
+        /// way every nested entry is (<see cref="HoverName"/>) and aimed at their own carrier.
         ///
-        /// A tooltip that does not earn a node (<see cref="Qualifies"/>) stays on the line, so a caller
-        /// hands this everything it gathered and loses nothing. The LAST tooltip is always the line's:
-        /// it is the one a hover would raise, and that is what the line announces.
+        /// A piece that earns no node earns nothing: it has no words of its own
+        /// (<see cref="AgeWidgets.Draws"/> answering no), or the game is not drawing the widget it
+        /// hangs on, or the line already carries the same tooltip. Keeping it as a reviewed section
+        /// would promise a buffer entry that stays empty, which is the defect this sink exists to
+        /// remove rather than move.
         /// </summary>
-        public static List<Dossier> Split(IList<AgeTooltip> tooltips, List<AgeTooltip> keeps)
+        public static Carried Split(IList<AgeTooltip> tooltips)
         {
-            List<Dossier> found = null;
-            for (int i = 0; tooltips != null && i < tooltips.Count; i++)
+            Carried carried = new Carried();
+            int last = tooltips == null ? -1 : tooltips.Count - 1;
+            for (int i = 0; i <= last; i++)
             {
                 AgeTooltip tooltip = tooltips[i];
-                if (i + 1 < tooltips.Count)
+                if (i == last)
                 {
-                    List<Dossier> into = found ?? new List<Dossier>(1);
-                    int before = into.Count;
-                    Add(into, tooltip, AgeWidgets.TooltipOwner(tooltip));
-                    if (into.Count > before)
-                    {
-                        found = into;
-                        continue;
-                    }
+                    carried.Own = tooltip;
+                    break;
                 }
 
-                if (keeps != null)
+                List<Dossier> into = carried.Children ?? new List<Dossier>(1);
+                AgeTransform on = AgeWidgets.TooltipOwner(tooltip);
+                // Both kinds through one sink: a renderer-assembled dossier first, then the plain
+                // sentence, because only one of the two tests can pass for a given tooltip and asking
+                // both is what makes "every other tooltip becomes an entry" true of either kind.
+                Add(into, tooltip, on);
+                AddPlain(into, tooltip, on);
+                if (into.Count > 0)
                 {
-                    keeps.Add(tooltip);
+                    carried.Children = into;
                 }
             }
 
-            return found;
+            return carried;
         }
 
         /// <summary>

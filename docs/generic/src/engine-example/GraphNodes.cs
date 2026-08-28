@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using ES2Access.Core.Speech;
 using ES2Access.Core.UI.Graph;
+using ES2Access.Core.Util;
 
 namespace ES2Access.UI
 {
@@ -399,6 +400,11 @@ namespace ES2Access.UI
         /// game HAS and draws NOWHERE, <see cref="SpokenSections"/> is the door that says them. The
         /// TOOLTIP's own loudness is never asked at either: that is the tooltip's own class to answer
         /// (<see cref="ModeFor"/>).
+        ///
+        /// This builds the REVIEWABLE half alone, because it has no vtable to aim: a screen composing
+        /// sections by hand owes the node the other half too, and
+        /// <see cref="SectionsFor(NodeVtable, AgeTooltip, Func{IList{string}}, AgeTransform)"/> is the
+        /// same call with the vtable, making both. Every factory in this file goes through that one.
         /// </summary>
         public static IList<NodeSection> Sections(Func<IList<string>> details, AgeTooltip tooltip)
         {
@@ -441,99 +447,112 @@ namespace ES2Access.UI
         }
 
         /// <summary>
-        /// The declared sections of a line the game built out of several pieces, each carrying its own
-        /// explanation - an icon that says what the row IS beside a label that says what its value
-        /// MEANS. Every tooltip in <paramref name="tooltips"/> is written down, in the order they were
-        /// drawn: the line is the only place any of them is reachable from.
-        ///
-        /// <paramref name="details"/> is what the line draws beyond its readout, and reads first.
-        /// </summary>
-        /// <summary>
-        /// The same, making BOTH tooltip promises at once: the node points at the last tooltip in the
-        /// list, and the pointer is moved there on focus so the game actually draws it.
+        /// A control's ONE tooltip, declared and AIMED in one call - the sections it reviews and
+        /// announces, plus the pointer that makes the game draw it.
         ///
         /// <b>A tooltip is two promises through two doors, and this door makes them together.</b>
         /// Declaring a section says the words are REVIEWABLE; moving the pointer
-        /// (<see cref="NodeVtable.OnFocusVisual"/>, wired by <see cref="AgeWidgets.PointAt"/>) is what
-        /// makes the game RAISE its own tooltip, because the game draws tooltips on hover and nothing
-        /// else. This overload used to write <see cref="NodeVtable.PointsAt"/> alone, and that gap is
-        /// how a screen came to declare four tooltips that read correctly and never appeared
-        /// (owner-reported 2026-08-28, <c>TooltipPipe</c> reading "aimed=- want=- win=hidden"). One
-        /// call now settles both, so the gap cannot be reached from here again.
+        /// (<see cref="NodeVtable.OnFocusVisual"/>, wired by <see cref="Aim"/>) is what makes the game
+        /// RAISE its own tooltip, because the game draws tooltips on hover and nothing else. Wiring one
+        /// alone is how a screen came to declare four tooltips that read correctly and never appeared,
+        /// and how the load/save window's Steam-Cloud box read its state and drew nothing (both
+        /// owner-reported 2026-08-28). Every factory below goes through the same call, so the gap is
+        /// not reachable from any door in this file.
         ///
-        /// The AIMLESS CASE is explicit rather than accidental: a tooltip with no transform of its own
-        /// is one that exists only inside another tooltip's drawing (<see cref="TooltipChildren"/>'s
-        /// carrier-less dossiers), and there is no widget to put a pointer on. It keeps the
-        /// declaration and gets no pointer, which is the honest answer rather than an aim at nothing.
+        /// SEVERAL tooltips on one line do not come here: they go through the nesting sink
+        /// (<c>TooltipChildren.Split</c>), which answers with the one the line points at and turns
+        /// every other one into a child entry of its own. This door cannot take a list, because a
+        /// tooltip declared on a line the pointer never visits is a promise nothing can keep.
         ///
-        /// A pointing helper called afterwards overwrites all of it with whatever IT aims at - last
-        /// call wins - which is how a screen that points somewhere else stays honest.
+        /// <paramref name="anchor"/> is required for - and refused outside - the one tooltip shape that
+        /// has no widget of its own; see <see cref="Aim"/>.
         /// </summary>
         public static IList<NodeSection> SectionsFor(
             NodeVtable vtable,
-            IList<AgeTooltip> tooltips,
-            Func<IList<string>> details = null
+            AgeTooltip tooltip,
+            Func<IList<string>> details = null,
+            AgeTransform anchor = null
         )
         {
-            if (vtable != null && tooltips != null && tooltips.Count > 0)
-            {
-                AgeTooltip last = tooltips[tooltips.Count - 1];
-                AgeTransform owner = AgeWidgets.TooltipOwner(last);
-                if (owner != null)
-                {
-                    AgeWidgets.PointAt(vtable, owner, last);
-                }
-                else
-                {
-                    vtable.PointsAt = () => last;
-                }
-            }
-
-            return SectionsFor(tooltips, details);
+            Aim(vtable, tooltip, anchor);
+            return Sections(details, tooltip);
         }
 
         /// <summary>
-        /// The same without the pointer - for a caller that aims it itself.
+        /// THE RAISING HALF, on its own, for a node whose sections are already built - and the one
+        /// place in the mod that decides what a declared tooltip is aimed at.
         ///
-        /// The LAST tooltip is the control's own: it is the one the pointer goes to, so it is the one
-        /// a hover would raise, so it is the only one that can be announced. The rest are
-        /// <see cref="ReviewedTooltipSection"/> - written down in drawn order, reachable in the
-        /// buffer, silent on arrival. That split is computed here rather than asked of the caller,
-        /// because "which of these is mine" is a fact about the row and "how loud is it" never was.
+        /// The aim is the tooltip's OWN transform, always: the game draws a tooltip for the widget it
+        /// hangs on and for no other, so pointing at the row that contains it draws nothing (measured
+        /// repeatedly - a card's tooltip is rarely on the card). There is nothing here for a caller to
+        /// choose; what a caller may have to supply is the one FACT the door cannot read off the
+        /// tooltip:
+        ///
+        /// <paramref name="anchor"/> - the widget a tooltip with NO transform of its own is drawn
+        /// under. The game keeps some of these on a FIELD of a window (the planet card's improvement
+        /// box), filled at bind time, and nothing in the widget tree leads back to them. It is REQUIRED
+        /// there and REFUSED everywhere else, with a throw, because an anchor passed for a tooltip that
+        /// owns a transform is a second opinion about where the game draws - which is the misuse the
+        /// old per-site pointing calls made possible.
+        ///
+        /// A tooltip that owns no transform and is given no anchor keeps the declaration and gets no
+        /// pointer. That is the honest answer rather than an aim at nothing, and it is REPORTED: a log
+        /// line here, and the audit's <c>unraised</c> bucket on the node itself. It does not throw
+        /// because <c>AgeTransform</c> is Awake-cached and answers null on a prefab, and taking a whole
+        /// page down over one silent tooltip trades a small defect for a big one.
+        ///
+        /// Composes with everything else hung on <see cref="NodeVtable.OnFocusVisual"/> the way the
+        /// pointing helpers always have - last call wins - so a screen with a visual of its own sets it
+        /// after the door, and a screen that wants the door's aim writes nothing at all.
         /// </summary>
-        public static IList<NodeSection> SectionsFor(
-            IList<AgeTooltip> tooltips,
-            Func<IList<string>> details = null
-        )
+        public static void Aim(NodeVtable vtable, AgeTooltip tooltip, AgeTransform anchor = null)
         {
-            List<NodeSection> list = new List<NodeSection>(2);
-            NodeSection drawn = NodeSection.Buffer(details);
-            if (drawn != null)
+            if (vtable == null)
             {
-                list.Add(drawn);
+                return;
             }
 
-            for (int i = 0; tooltips != null && i < tooltips.Count; i++)
+            if (tooltip == null)
             {
-                if (i < tooltips.Count - 1)
+                if (anchor != null)
                 {
-                    NodeSection other = ReviewedTooltipSection(tooltips[i]);
-                    if (other != null)
-                    {
-                        list.Add(other);
-                    }
-
-                    continue;
+                    throw new ArgumentException(
+                        "An anchor with no tooltip to draw under it",
+                        "anchor"
+                    );
                 }
 
-                IList<NodeSection> tip = HintSections(tooltips[i]);
-                for (int j = 0; tip != null && j < tip.Count; j++)
-                {
-                    list.Add(tip[j]);
-                }
+                return;
             }
 
-            return list.Count == 0 ? null : list;
+            AgeTransform own = AgeWidgets.TooltipOwner(tooltip);
+            if (own != null)
+            {
+                if (anchor != null)
+                {
+                    throw new ArgumentException(
+                        "This tooltip hangs on a widget of its own - that widget is where the game "
+                            + "draws it, and the door finds it. An anchor here can only aim elsewhere.",
+                        "anchor"
+                    );
+                }
+
+                AgeWidgets.PointAt(vtable, own);
+                return;
+            }
+
+            if (anchor == null)
+            {
+                Log.Warn(
+                    "nodes: a tooltip with no widget of its own was declared with no anchor - it "
+                        + "will review and never draw"
+                );
+                AgeTooltip it = tooltip;
+                vtable.PointsAt = () => it;
+                return;
+            }
+
+            AgeWidgets.PointUnder(vtable, anchor, tooltip);
         }
 
         /// <summary>The same, for a screen that has already built its sections (a row with a heading
@@ -634,13 +653,15 @@ namespace ES2Access.UI
             Func<IList<string>> details = null
         )
         {
-            return new NodeVtable
+            NodeVtable vtable = new NodeVtable
             {
                 ControlType = ControlTypes.Button,
                 Announcements = Parts(label, enabled),
                 Sections = Sections(details, tooltip),
                 OnActivate = Guarded(activate, enabled),
             };
+            Aim(vtable, tooltip);
+            return vtable;
         }
 
         /// <summary>
@@ -666,7 +687,7 @@ namespace ES2Access.UI
             bool watchValue = true
         )
         {
-            return new NodeVtable
+            NodeVtable vtable = new NodeVtable
             {
                 Announcements = new List<NodeAnnouncement>
                 {
@@ -675,6 +696,8 @@ namespace ES2Access.UI
                 },
                 Sections = Sections(details, tooltip),
             };
+            Aim(vtable, tooltip);
+            return vtable;
         }
 
         /// <summary>A setting the player turns on and off. Its state is both announced live - so a
@@ -708,7 +731,7 @@ namespace ES2Access.UI
             }
 
             parts.Add(ValuePart(stateText));
-            return new NodeVtable
+            NodeVtable vtable = new NodeVtable
             {
                 ControlType = ControlTypes.Checkbox,
                 Announcements = parts,
@@ -716,6 +739,8 @@ namespace ES2Access.UI
                 StateText = ActedState(stateText, enabled),
                 OnActivate = Guarded(toggle, enabled),
             };
+            Aim(vtable, tooltip);
+            return vtable;
         }
 
         /// <summary>
@@ -741,7 +766,7 @@ namespace ES2Access.UI
 
             List<NodeAnnouncement> parts = Parts(label, enabled);
             parts.Insert(1, SelectedPart(selected));
-            return new NodeVtable
+            NodeVtable vtable = new NodeVtable
             {
                 ControlType = ControlTypes.RadioButton,
                 Announcements = parts,
@@ -749,6 +774,8 @@ namespace ES2Access.UI
                 StateText = ActedState(chosen, enabled),
                 OnActivate = Guarded(choose, enabled),
             };
+            Aim(vtable, tooltip);
+            return vtable;
         }
 
         /// <summary>
@@ -788,7 +815,7 @@ namespace ES2Access.UI
                     kind: AnnouncementKinds.Selected
                 )
             );
-            return new NodeVtable
+            NodeVtable vtable = new NodeVtable
             {
                 ControlType = ControlTypes.RadioButton,
                 Announcements = parts,
@@ -799,6 +826,8 @@ namespace ES2Access.UI
                 ),
                 OnActivate = Guarded(choose, enabled),
             };
+            Aim(vtable, tooltip);
+            return vtable;
         }
 
         /// <summary>
@@ -821,13 +850,15 @@ namespace ES2Access.UI
         {
             List<NodeAnnouncement> parts = Parts(label, enabled);
             parts.Add(ValuePart(value));
-            return new NodeVtable
+            NodeVtable vtable = new NodeVtable
             {
                 ControlType = ControlTypes.EditField,
                 Announcements = parts,
                 Sections = Sections(details, tooltip),
                 OnActivate = Guarded(edit, enabled),
             };
+            Aim(vtable, tooltip);
+            return vtable;
         }
 
         /// <summary>A value the player moves along a range with left and right, and by a coarse step
@@ -845,7 +876,7 @@ namespace ES2Access.UI
         {
             List<NodeAnnouncement> parts = Parts(label, enabled);
             parts.Add(ValuePart(valueText));
-            return new NodeVtable
+            NodeVtable vtable = new NodeVtable
             {
                 ControlType = ControlTypes.Slider,
                 Announcements = parts,
@@ -867,6 +898,8 @@ namespace ES2Access.UI
                     }
                 },
             };
+            Aim(vtable, tooltip);
+            return vtable;
         }
 
         /// <summary>A setting chosen from a list the control opens. Activating it is the screen's
@@ -882,7 +915,7 @@ namespace ES2Access.UI
         {
             List<NodeAnnouncement> parts = Parts(label, enabled);
             parts.Add(ValuePart(valueText));
-            return new NodeVtable
+            NodeVtable vtable = new NodeVtable
             {
                 ControlType = ControlTypes.ComboBox,
                 Announcements = parts,
@@ -890,6 +923,8 @@ namespace ES2Access.UI
                 StateText = ActedState(valueText, enabled),
                 OnActivate = Guarded(open, enabled),
             };
+            Aim(vtable, tooltip);
+            return vtable;
         }
 
         /// <summary>One page of a screen. Only the showing tab says it is selected, and saying
@@ -908,12 +943,14 @@ namespace ES2Access.UI
         {
             List<NodeAnnouncement> parts = Parts(label, enabled);
             parts.Add(SelectedPart(selected));
-            return new NodeVtable
+            NodeVtable vtable = new NodeVtable
             {
                 ControlType = ControlTypes.Tab,
                 Announcements = parts,
                 Sections = Sections(details, tooltip),
             };
+            Aim(vtable, tooltip);
+            return vtable;
         }
 
         /// <summary>One entry of a list the player has opened to pick from. It carries no role word:
@@ -931,12 +968,14 @@ namespace ES2Access.UI
         {
             List<NodeAnnouncement> parts = Parts(label, enabled);
             parts.Insert(1, SelectedPart(selected));
-            return new NodeVtable
+            NodeVtable vtable = new NodeVtable
             {
                 Announcements = parts,
                 Sections = Sections(details, tooltip),
                 OnActivate = Guarded(choose, enabled),
             };
+            Aim(vtable, tooltip);
+            return vtable;
         }
 
         /// <summary>One action in a menu the player has opened. Unlike a value list's entry it names
@@ -1005,12 +1044,14 @@ namespace ES2Access.UI
             Func<IList<string>> details = null
         )
         {
-            return new NodeVtable
+            NodeVtable vtable = new NodeVtable
             {
                 ControlType = ControlTypes.Group,
                 Announcements = Parts(label, enabled),
                 Sections = Sections(details, tooltip),
             };
+            Aim(vtable, tooltip);
+            return vtable;
         }
 
         // The readout every control here is built from: what it is called and whether it is refusing.

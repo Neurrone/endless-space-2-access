@@ -756,11 +756,12 @@ namespace ES2Access.Screens
                 GraphNodes.DisabledPart(enabled),
             };
 
-            return new NodeVtable
-            {
-                Announcements = parts,
-                Sections = GraphNodes.Sections(null, tooltip),
-            };
+            NodeVtable vtable = new NodeVtable { Announcements = parts };
+            // Through the door, so the row DECLARES which tooltip it shows even though the caller
+            // re-points it: every other kind of row here comes from a factory that says so, and a row
+            // that named none read to the parity audit as a row with no tooltip at all.
+            vtable.Sections = GraphNodes.SectionsFor(vtable, tooltip);
+            return vtable;
         }
 
         // ---- working the settings ----
