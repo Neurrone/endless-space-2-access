@@ -484,6 +484,12 @@ namespace ES2Access.Screens
                 () => Enabled(TransformOf(control)),
                 window.CloudToggleTooltip
             );
+            // Declared AND aimed: the box's sentence read perfectly in the buffer and the game drew
+            // nothing at all, because nothing here ever moved the pointer onto the tick
+            // (owner-reported 2026-08-28; TooltipPipe read "over=ColumnLocalizedTitle want=- win=hidden"
+            // with the cursor on this node). The tooltip hangs on the GROUP the game drew the tick and
+            // its words in, so that is what it is drawn under.
+            AgeWidgets.Point(vtable, control, window.CloudToggleTooltip, group);
             // The only checkbox at this level of the window: "1 of 2" with the name field below it
             // would be counting two unrelated controls that happen to share a Tab stop, not members
             // of a list either belongs to.

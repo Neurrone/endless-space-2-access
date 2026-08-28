@@ -285,15 +285,6 @@ namespace ES2Access.Screens
             get { return RootOf(Current()); }
         }
 
-        /// <summary>What every node this screen declares is keyed under, so the tooltip audit can
-        /// tell the popup's content from the shared heads-up display stops - a minimised tutorial bar
-        /// sitting up there was once reported as three things the popup says and nothing draws.
-        /// </summary>
-        public override string NodePrefix
-        {
-            get { return "notification:"; }
-        }
-
         /// <summary>Escape belongs to the game: the popup is an input handler and its own exit route
         /// is what turns the key into Minimize.</summary>
         public override bool Back()

@@ -20,6 +20,12 @@ namespace ES2Access.UI
     /// screen: the same prefab caption carries a sentence on one window and nothing on the next, and
     /// a screen that hard-codes the answer is wrong on half of them.
     ///
+    /// A block the game filled with NOTHING is not a third case (owner ruling 2026-08-28): the caption
+    /// still names it, so the block a player steps into has the same shape however the game's data came
+    /// out. Where the caption carries the count itself - "Improvements Destroyed: 0" - the caller gives
+    /// the named block that figure as its one row (<c>BattleNotifications.Wreckage</c>), which is the
+    /// only thing there is to put in it that the game wrote.
+    ///
     /// Hand this the caption's GROUP, not the label inside it. ES2's prefabs routinely draw the word
     /// on a label and hang the sentence on the wrapper around it (ES2 facts, "A block caption's WORD
     /// and its EXPLANATION sit on different widgets"), and <see cref="AgeWidgets.TextOf"/> descends -

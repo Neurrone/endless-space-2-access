@@ -115,6 +115,9 @@ namespace ES2Access.Core.Speech
         public const string NavKeyBindingSecondaryColumn = "nav.key-binding-secondary-column";
         public const string NavKeyBindingShadowed = "nav.key-binding-shadowed";
 
+        // A block's truthful answer when it holds nothing - generic on purpose (owner, 2026-08-28).
+        public const string None = "none";
+
         // The review buffers - the text the player walks line by line.
         public const string BufferUi = "buffer.ui";
         public const string BufferEmpty = "buffer.empty";
@@ -1747,6 +1750,7 @@ namespace ES2Access.Core.Speech
                 NavKeyBindingShadowed,
                 "While the mod's {0} is active, the game's {1} will not fire."
             },
+            { None, "None" },
             { BufferUi, "UI" },
             { BufferEmpty, "Buffer empty" },
             { BufferLine, "{0}. {1}" },

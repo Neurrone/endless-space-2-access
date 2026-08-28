@@ -31,7 +31,7 @@ namespace ES2Access.Core.UI.Graph
     /// same reduction the audits match painted text with: markup, punctuation and case are differences
     /// that must not hide the words.
     /// </summary>
-    public static class TooltipClassRule
+    public static class TooltipKindRule
     {
         /// <summary>How many letters and digits a line needs before its presence in a readout is
         /// evidence of anything. A resource caption ("Food", "12/20") turns up inside unrelated

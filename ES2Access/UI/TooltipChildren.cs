@@ -440,6 +440,51 @@ namespace ES2Access.UI
         }
 
         /// <summary>
+        /// The renderer-assembled dossiers a line carries BESIDES the one it points at, as nodes of
+        /// their own - and, in <paramref name="keeps"/>, the tooltips the LINE goes on carrying.
+        ///
+        /// <see cref="Others"/> is this for the ones the game wrote as PLAIN TEXT, and it leaves those
+        /// on the line as well, because a sentence reads back out of a review buffer whether or not
+        /// anything ever drew it. A renderer-assembled dossier does not: its words exist only while the
+        /// game is DRAWING it, the pointer is on the line's own tooltip, and a non-last dossier is
+        /// therefore a reviewed section that can never fill - promised on arrival and empty forever
+        /// (measured on the ground report's species count, 2026-08-28: the Amoeba dossier was declared,
+        /// unreachable and silent). So this one MOVES it: the dossier comes off the line's sections and
+        /// becomes a child entry that aims the pointer at its own carrier, which is the standing ruling
+        /// about two hover targets - one row means a row of NODES.
+        ///
+        /// A tooltip that does not earn a node (<see cref="Qualifies"/>) stays on the line, so a caller
+        /// hands this everything it gathered and loses nothing. The LAST tooltip is always the line's:
+        /// it is the one a hover would raise, and that is what the line announces.
+        /// </summary>
+        public static List<Dossier> Split(IList<AgeTooltip> tooltips, List<AgeTooltip> keeps)
+        {
+            List<Dossier> found = null;
+            for (int i = 0; tooltips != null && i < tooltips.Count; i++)
+            {
+                AgeTooltip tooltip = tooltips[i];
+                if (i + 1 < tooltips.Count)
+                {
+                    List<Dossier> into = found ?? new List<Dossier>(1);
+                    int before = into.Count;
+                    Add(into, tooltip, AgeWidgets.TooltipOwner(tooltip));
+                    if (into.Count > before)
+                    {
+                        found = into;
+                        continue;
+                    }
+                }
+
+                if (keeps != null)
+                {
+                    keeps.Add(tooltip);
+                }
+            }
+
+            return found;
+        }
+
+        /// <summary>
         /// The words a widget draws ON ITSELF - one level down, so the label inside a badge counts and
         /// the rest of the card the badge sits on does not.
         ///

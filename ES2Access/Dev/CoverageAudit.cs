@@ -115,9 +115,10 @@ namespace ES2Access.Dev
                 string source;
                 List<AgeTransform> roots = Roots(screen, wholeTree, out source);
 
-                // The prefix filter is right only when the walk is the screen's OWN window: over the
-                // live tree the heads-up display is drawn too, and its nodes - declared under another
-                // key prefix - are exactly what covers it.
+                // Narrowing to the screen's own stops is right only when the walk is the screen's OWN
+                // window: over the live tree the heads-up display is drawn too, and its nodes -
+                // contributed into every page rather than declared by this one - are exactly what
+                // covers it.
                 TooltipAudit.Result tooltips = TooltipAudit.Check(screen, roots, source == "screen");
 
                 Result result = new Result();

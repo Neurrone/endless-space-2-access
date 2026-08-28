@@ -176,19 +176,6 @@ namespace ES2Access.Screens
             }
         }
 
-        /// <summary>
-        /// What every node id this screen declares begins with, so the audit can tell the screen's
-        /// own content from the shared heads-up display stops that are declared into every screen.
-        ///
-        /// Null - the default - means "everything in my render is mine to answer for", which is the
-        /// right answer for a screen whose keys have no single prefix; it costs the audit some noise
-        /// from the HUD rather than any wrong answer.
-        /// </summary>
-        public virtual string NodePrefix
-        {
-            get { return null; }
-        }
-
         /// <summary>Keep the cursor position after the screen closes, for a page the player leaves
         /// and comes straight back to.</summary>
         public virtual bool KeepStateOnPop

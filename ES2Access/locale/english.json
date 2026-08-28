@@ -43,6 +43,7 @@
   "nav.key-binding-primary-column": "Primary key",
   "nav.key-binding-secondary-column": "Secondary key",
   "nav.key-binding-shadowed": "While the mod's {0} is active, the game's {1} will not fire.",
+  "none": "None",
   "buffer.ui": "UI",
   "buffer.empty": "Buffer empty",
   "buffer.line": "{0}. {1}",

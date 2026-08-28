@@ -90,7 +90,6 @@ namespace ES2Access.Dev
             public string Screen;
             public string ScreenName;
             public string Root;
-            public string Prefix;
             public int Nodes;
 
             /// <summary>The declaration side, kept so a caller checking a SECOND thing about the same
@@ -233,22 +232,22 @@ namespace ES2Access.Dev
         /// half the check unrun on a screen that has no window of its own. A caller handing the trees
         /// in explicitly - the whole live GUI, for a screen whose content is the world - gets the
         /// painted half on a screen that could never have it, and must then pass
-        /// <paramref name="byPrefix"/> false: the live tree holds the heads-up display too, and the
-        /// screen's own key prefix would throw away exactly the nodes that cover it.
+        /// <paramref name="ownOnly"/> false: the live tree holds the heads-up display too, and
+        /// narrowing to the screen's own stops would throw away exactly the nodes that cover it.
+        ///
+        /// <paramref name="ownOnly"/> is answered structurally, off the STOP each node was declared
+        /// into (<see cref="NotificationAudit.DeclaredNodes"/>), not off how its key is spelled: a
+        /// screen that keys its frame one way and its body another - every notification popup - kept
+        /// only its frame under the spelling test.
         /// </summary>
-        internal static Result Check(Screen screen, IList<AgeTransform> roots, bool byPrefix)
+        internal static Result Check(Screen screen, IList<AgeTransform> roots, bool ownOnly)
         {
             Result result = new Result();
             result.Screen = screen.Key;
             result.ScreenName = Named(screen);
-            result.Prefix = Prefix(screen);
 
             List<Breach> unlocatable = new List<Breach>();
-            List<Declared> declared = NotificationAudit.DeclaredNodes(
-                screen,
-                byPrefix ? result.Prefix : null,
-                unlocatable
-            );
+            List<Declared> declared = NotificationAudit.DeclaredNodes(screen, unlocatable, ownOnly);
             result.Nodes = declared.Count;
             result.DeclaredNodes = declared;
 
@@ -397,7 +396,7 @@ namespace ES2Access.Dev
                 AgeTooltip written = AgeWidgets.Readable(aim);
                 if (written != null && TooltipParts.Part(sections) == null)
                 {
-                    string missing = TooltipClassRule.Unspoken(
+                    string missing = TooltipKindRule.Unspoken(
                         AgeText.Lines(AgeText.Tooltip(written)),
                         readout
                     );
@@ -452,7 +451,7 @@ namespace ES2Access.Dev
             List<string> otherwise = Otherwise(node.Node);
             if (written == null && AgeWidgets.Draws(aim))
             {
-                string leak = TooltipClassRule.Leaked(
+                string leak = TooltipKindRule.Leaked(
                     AgeWidgets.TooltipLines(aim)(),
                     readout,
                     otherwise
@@ -475,7 +474,7 @@ namespace ES2Access.Dev
                     continue;
                 }
 
-                string leak = TooltipClassRule.Leaked(section.Lines(), readout, otherwise);
+                string leak = TooltipKindRule.Leaked(section.Lines(), readout, otherwise);
                 if (leak != null)
                 {
                     return leak;
@@ -813,18 +812,6 @@ namespace ES2Access.Dev
             }
         }
 
-        private static string Prefix(Screen screen)
-        {
-            try
-            {
-                return screen.NodePrefix;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
         private static string Named(Screen screen)
         {
             try
@@ -848,8 +835,6 @@ namespace ES2Access.Dev
                 json.WriteValue(result.ScreenName);
                 json.WritePropertyName("root");
                 json.WriteValue(result.Root);
-                json.WritePropertyName("prefix");
-                json.WriteValue(result.Prefix);
                 json.WritePropertyName("clean");
                 json.WriteValue(result.Findings == 0);
                 json.WritePropertyName("nodes");

@@ -10426,12 +10426,5 @@ namespace ES2Access.Screens
                 return null;
             }
         }
-
-        /// <summary>What every node this screen declares is keyed under, so the tooltip
-        /// audit can tell its content from the shared heads-up display stops.</summary>
-        public override string NodePrefix
-        {
-            get { return "galaxy:"; }
-        }
     }
 }

@@ -71,7 +71,6 @@ namespace ES2Access.Dev
         {
             public string Screen;
             public string ScreenName;
-            public string Prefix;
 
             public int Nodes;
             public int Located;
@@ -134,7 +133,6 @@ namespace ES2Access.Dev
                 Result result = new Result();
                 result.Screen = screen.Key;
                 result.ScreenName = Named(screen);
-                result.Prefix = Prefix(screen);
 
                 List<Breach> unlocatable = new List<Breach>();
 
@@ -142,7 +140,7 @@ namespace ES2Access.Dev
                 // heads-up display contributes stops to every screen and a ghost up there is just as
                 // unreachable. Each finding carries whether it is the screen's own, so a run taken on
                 // a screen drawn over another can be read by subtracting the ones that are not.
-                List<Declared> declared = NotificationAudit.DeclaredNodes(screen, null, unlocatable);
+                List<Declared> declared = NotificationAudit.DeclaredNodes(screen, unlocatable);
                 result.Nodes = declared.Count;
                 result.Unlocatable = unlocatable.Count;
                 result.Shipped = Shipped();
@@ -186,9 +184,10 @@ namespace ES2Access.Dev
             finding.Path = DrawnBy.Path(widget);
             finding.Why = Why(widget);
             finding.Says = NotificationAudit.Excerpt(node.Announcement);
-            finding.Own =
-                string.IsNullOrEmpty(result.Prefix)
-                || (node.Key != null && node.Key.StartsWith(result.Prefix));
+            // Whose node it is, asked of the stop it was declared into rather than of how its key is
+            // spelled: a screen that keys its frame one way and its body another - every notification
+            // popup - had its whole body counted as somebody else's.
+            finding.Own = !node.Contributed;
             try
             {
                 finding.Rect = AgeWidgets.Clipped(widget).GetGlobalPosition();
@@ -271,18 +270,6 @@ namespace ES2Access.Dev
             }
         }
 
-        private static string Prefix(Screen screen)
-        {
-            try
-            {
-                return screen.NodePrefix;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
         private static string Write(Result result)
         {
             return DevJson.Write(json =>
@@ -292,8 +279,6 @@ namespace ES2Access.Dev
                 json.WriteValue(result.Screen);
                 json.WritePropertyName("title");
                 json.WriteValue(result.ScreenName);
-                json.WritePropertyName("prefix");
-                json.WriteValue(result.Prefix);
 
                 json.WritePropertyName("counts");
                 json.WriteStartObject();

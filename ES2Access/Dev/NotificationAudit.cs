@@ -148,6 +148,11 @@ namespace ES2Access.Dev
             public string Announcement;
             public List<string> Buffer = new List<string>();
 
+            /// <summary>The node came from the stops every page is given rather than from the page
+            /// itself - the structural answer to "whose node is this", asked of the stop it was
+            /// declared into (<see cref="NotificationAudit.Contributed"/>).</summary>
+            public bool Contributed;
+
             /// <summary>Arrival line, buffer and every CROSSING into this node together: everything
             /// arriving on it, reaching it from a neighbour, or reading it, would say. The third is
             /// not an extra - a table's column captions are spoken only as edges, so a spoken side
@@ -212,8 +217,11 @@ namespace ES2Access.Dev
         /// second of ready frames is a finding rather than an animation.</summary>
         private const int MaxUnpaintedWaits = 60;
 
-        /// <summary>What every id the notification screen declares begins with, which is how a node it
-        /// declared is told from one another screen contributed to the same render.</summary>
+        /// <summary>What the SHARED half of every popup is keyed under - the rails, the words, the
+        /// regions the strips are sorted into. Not a scope test: each variant keys its own body by a
+        /// prefix of its own ("ground-report/", "battle-setup/", …), so asking this of a node answers
+        /// "is this the frame or the content", never "is this ours" (which
+        /// <see cref="DeclaredNodes"/> answers structurally).</summary>
         private const string Prefix = "notification:";
 
         private static int _unpaintedWaits;
@@ -316,7 +324,7 @@ namespace ES2Access.Dev
             result.PaintedTooltips = painted.Tips.Count;
 
             NotificationScreen screen = TheScreen();
-            List<Declared> declared = DeclaredNodes(screen, Prefix, result.Unlocatable);
+            List<Declared> declared = DeclaredNodes(screen, result.Unlocatable, true);
             result.Nodes = declared.Count;
 
             // Arriving on the popup says its title before any node speaks, so the title is declared
@@ -1162,11 +1170,16 @@ namespace ES2Access.Dev
         /// render, each node's full arrival line, each node's buffer, and each edge the player can
         /// cross INTO it. Nothing is composed here, so a difference between this and what a player
         /// hears is a difference in the navigator rather than in this file.
+        ///
+        /// <paramref name="ownOnly"/> narrows the answer to what this SCREEN declared, dropping the
+        /// stops every page is given on top of its own (<see cref="Screens.Screen.BuildShared"/>).
+        /// Every node carries the same answer as <see cref="Declared.Contributed"/> either way, for a
+        /// caller that wants the whole render and still needs to know whose each node is.
         /// </summary>
         internal static List<Declared> DeclaredNodes(
             Screens.Screen screen,
-            string prefix,
-            List<Breach> unlocatable
+            List<Breach> unlocatable,
+            bool ownOnly = false
         )
         {
             List<Declared> declared = new List<Declared>();
@@ -1193,10 +1206,15 @@ namespace ES2Access.Dev
                 // The screen's render is not only its own: the heads-up display contributes stops to
                 // whatever screen has focus, and a minimised tutorial bar sitting up there was
                 // reported as three things the popup says and nothing draws. Only what the screen
-                // itself declared is measured against what the screen paints - which is what the
-                // screen's own key prefix says (<see cref="Screens.Screen.NodePrefix"/>). A screen
-                // with no prefix of its own asks for everything, HUD included.
-                if (!string.IsNullOrEmpty(prefix) && (it.Key == null || !it.Key.StartsWith(prefix)))
+                // itself declared is measured against what the screen paints - asked of the STOP a
+                // node was declared into, which is where the contribution happens, rather than of how
+                // its key is spelled. A key prefix cannot answer it: the notification screen keys its
+                // frame "notification:" and hands each popup variant its own prefix for the body, so
+                // the spelling test threw away the whole popup and audited the six rails (measured
+                // 2026-08-28 on the ground-battle report: nodes 6, every body string reported as
+                // painted-but-unsaid).
+                it.Contributed = Contributed(node);
+                if (ownOnly && it.Contributed)
                 {
                     continue;
                 }
@@ -1261,6 +1279,19 @@ namespace ES2Access.Dev
             }
 
             return declared;
+        }
+
+        /// <summary>Whether a node came from the contributions every page is given rather than from the
+        /// page itself (<see cref="Screens.Screen.BuildShared"/>): the bar a collapsed tutorial leaves
+        /// over whatever is on screen, and the chat panel's new-message button. Both are declared into
+        /// stops of their own, which is what makes "whose node is this" a structural question with an
+        /// exact answer - and the same answer on a page that declares the bar among its own stops.
+        /// </summary>
+        private static bool Contributed(GraphNode node)
+        {
+            object stop = node.StopKey;
+            return stop != null
+                && (stop.Equals(GlobalHud.TutorialStop) || stop.Equals(ChatScreen.AlertStop));
         }
 
         /// <summary>

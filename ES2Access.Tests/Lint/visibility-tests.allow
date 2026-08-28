@@ -29,7 +29,7 @@ ES2Access/Screens/AdvancedEncounterPlayScreen.cs | 1 | if (AgeWidgets.Visible(wi
 ES2Access/Screens/BattleNotifications.cs | 2 | if (group == null || !AgeWidgets.Visible(group))
 ES2Access/Screens/BattleNotifications.cs | 1 | if (panel == null || !AgeWidgets.Visible(panel.AgeTransform))
 ES2Access/Screens/BattleNotifications.cs | 1 | if (report == null || !AgeWidgets.Visible(report.AgeTransform))
-ES2Access/Screens/BattleNotifications.cs | 3 | if (table == null || !AgeWidgets.Visible(table))
+ES2Access/Screens/BattleNotifications.cs | 5 | if (table == null || !AgeWidgets.Visible(table))
 ES2Access/Screens/BattleNotifications.cs | 1 | if (widget == null || !AgeWidgets.Visible(widget) || value == null)
 
 ES2Access/Screens/BattleTacticsScreen.cs | 1 | && AgeWidgets.Visible(widget)

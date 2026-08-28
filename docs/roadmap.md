@@ -74,15 +74,6 @@ belong in the files above.
 - Regression walk owed: the research/construction table popups (the other sheet-reading
   family) after the wrapper-descent change to `Columns` — additive-by-construction argument
   only so far; walk one the next time a session has one pending.
-- **The notification audits are blind to every notification BODY** (found 2026-08-25):
-  `NotificationAudit.DeclaredNodes` filters declarations by `NotificationScreen.NodePrefix`
-  (`"notification:"`, `NotificationAudit.cs:1099`, `NotificationScreen.cs:292`), but body keys
-  are `ground-setup/…`, `battle-setup/…`, `battle-report/…`, `ground-report/…` — so on a battle
-  popup both audits see `nodes:5` (chrome only), report long-declared content (`BattleTitle`) as
-  "painted but nothing says it", and the per-popup log warning fires on every one. Fix: prefix
-  the body keys, or let the audit take the body's key prefixes from the variant. Until then the
-  four-invariant and tooltip audits prove NOTHING on notification popups — use direct
-  `DevProbe.Tooltip()` probes.
 - **Foreign-system info (2026-08-25 session, landed at parity) — remaining live checks
   only.** The old premise here was wrong: the game shows the side panels for NOBODY on a
   peaceful foreign system (sighted included; the peaceful surface is the label's hover

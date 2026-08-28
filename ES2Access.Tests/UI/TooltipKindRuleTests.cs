@@ -14,7 +14,7 @@ namespace ES2Access.Tests.UI
     /// This half does not: it is two string comparisons, and every rule that makes them fair - the
     /// dedupe's alibi, a caption's coincidences, a control naming itself - lives here.
     /// </summary>
-    public class TooltipClassRuleTests
+    public class TooltipKindRuleTests
     {
         private static IList<string> Lines(params string[] lines)
         {
@@ -25,7 +25,7 @@ namespace ES2Access.Tests.UI
         public void ATooltipTheReadoutSaysIsAccountedFor()
         {
             Assert.Null(
-                TooltipClassRule.Unspoken(
+                TooltipKindRule.Unspoken(
                     Lines("Ends the turn", "and starts the next"),
                     "End Turn, button, Ends the turn and starts the next"
                 )
@@ -37,7 +37,7 @@ namespace ES2Access.Tests.UI
         {
             Assert.Equal(
                 "and starts the next",
-                TooltipClassRule.Unspoken(
+                TooltipKindRule.Unspoken(
                     Lines("Ends the turn", "and starts the next"),
                     "End Turn, button, Ends the turn"
                 )
@@ -50,7 +50,7 @@ namespace ES2Access.Tests.UI
         public void ALineTheLabelSpeaksIsNotMissing()
         {
             Assert.Null(
-                TooltipClassRule.Unspoken(
+                TooltipKindRule.Unspoken(
                     Lines("Empire Summary", "Click to consult your empire"),
                     "Empire Summary, button, Click to consult your empire"
                 )
@@ -64,7 +64,7 @@ namespace ES2Access.Tests.UI
         {
             Assert.Equal(
                 "Click to consult your empire",
-                TooltipClassRule.Unspoken(
+                TooltipKindRule.Unspoken(
                     Lines("Empire Summary", "Click to consult your empire"),
                     "Empire Summary, button"
                 )
@@ -75,7 +75,7 @@ namespace ES2Access.Tests.UI
         public void PunctuationCaseAndMarkupAreNotDifferences()
         {
             Assert.Null(
-                TooltipClassRule.Unspoken(
+                TooltipKindRule.Unspoken(
                     Lines("Over-colonization penalty"),
                     "over colonization Penalty"
                 )
@@ -85,14 +85,14 @@ namespace ES2Access.Tests.UI
         [Fact]
         public void ALineWithNoWordsInItIsNotOwedAReading()
         {
-            Assert.Null(TooltipClassRule.Unspoken(Lines("---", "  ", ""), "Anything"));
+            Assert.Null(TooltipKindRule.Unspoken(Lines("---", "  ", ""), "Anything"));
         }
 
         [Fact]
         public void NoLinesAtAllIsNothingToAnswerFor()
         {
-            Assert.Null(TooltipClassRule.Unspoken(null, "Anything"));
-            Assert.Null(TooltipClassRule.Leaked(null, "Anything", null));
+            Assert.Null(TooltipKindRule.Unspoken(null, "Anything"));
+            Assert.Null(TooltipKindRule.Leaked(null, "Anything", null));
         }
 
         [Fact]
@@ -100,7 +100,7 @@ namespace ES2Access.Tests.UI
         {
             Assert.Equal(
                 "Produces 12 food per turn on this planet",
-                TooltipClassRule.Leaked(
+                TooltipKindRule.Leaked(
                     Lines("Food", "Produces 12 food per turn on this planet"),
                     "Food, Produces 12 food per turn on this planet",
                     Lines("Food")
@@ -112,7 +112,7 @@ namespace ES2Access.Tests.UI
         public void ACaptionIsTooShortToBeEvidence()
         {
             Assert.Null(
-                TooltipClassRule.Leaked(Lines("Food", "12/20"), "Food, 12/20, slider", null)
+                TooltipKindRule.Leaked(Lines("Food", "12/20"), "Food, 12/20, slider", null)
             );
         }
 
@@ -122,7 +122,7 @@ namespace ES2Access.Tests.UI
         public void AControlNamingItselfIsNotALeak()
         {
             Assert.Null(
-                TooltipClassRule.Leaked(
+                TooltipKindRule.Leaked(
                     Lines("Colonization Ships"),
                     "Colonization Ships, button",
                     Lines("Colonization Ships")
@@ -134,7 +134,7 @@ namespace ES2Access.Tests.UI
         public void WordsTheReadoutNeverSaysAreNoLeak()
         {
             Assert.Null(
-                TooltipClassRule.Leaked(
+                TooltipKindRule.Leaked(
                     Lines("Produces 12 food per turn on this planet"),
                     "Food, slider, 12 of 20",
                     null

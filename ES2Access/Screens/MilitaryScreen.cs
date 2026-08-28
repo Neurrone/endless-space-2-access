@@ -963,12 +963,5 @@ namespace ES2Access.Screens
         {
             get { return RootOf(Window()); }
         }
-
-        /// <summary>What every node this screen declares is keyed under, so the audit can
-        /// tell its content from the shared heads-up display stops.</summary>
-        public override string NodePrefix
-        {
-            get { return "military:"; }
-        }
     }
 }
