@@ -246,7 +246,7 @@ Where each hint can be heard is the recipe file of the screen that draws it
 
 ## Place keys, page keys, end turn
 
-**Six keys name a PLACE and one ends the turn** (owner-approved 2026-08-22; `ModEntry.BindKeys`,
+**Six keys name a PLACE, one ends the turn and one goes to the next idle fleet** (owner-approved 2026-08-22, the idle-fleet chord 2026-08-28; `ModEntry.BindKeys`,
 `ModEntry.HudKey`, `GraphNavigator.FocusStop`): **Ctrl+H** the empire banners (`hud:empire`),
 **Ctrl+N** the notifications (`hud:notifications`), **Ctrl+T** the turn log (`hud:turn-log`),
 **Ctrl+E** the turn controls (`hud:turn`), **Ctrl+G** the galaxy map's own stop (`galaxy:systems`),
@@ -264,6 +264,18 @@ readout ("End turn (Ctrl+Alt+E), button, Turn N, unavailable"; the game's reason
 node's buffer), because a player pressing it from the far side of the page cannot see the button
 grey out. The keys are free in this game and the letters
 cost nothing (`docs/gui.md`).
+**Ctrl+Alt+F GOES TO THE NEXT IDLE FLEET** (owner-approved 2026-08-28; `UiActions.NextIdleFleet`,
+`GlobalHud.NextIdleFleetByKey`), the turn corner's other every-turn button and the one the game gives
+no key of its own: its closed set of ~70 bindings holds no idle-fleet action, and
+`EndTurnWindow.NextIdleFleetButton` is a plain button. The chord is free — the game binds bare F to
+nothing and Ctrl+F to Search, and its matcher is exact-modifier, so a chord also carrying Alt never
+reaches Search. Claimed exactly while the turn stop is declared (`TurnStopDeclared`, the end-turn
+chord's own condition) and the handler asks again. The act is the same route the button's own Enter
+takes, the galaxy page's single-camera-move version included (`GlobalHud.NextIdleFleet` →
+`GalaxyHudScreen.GoToNextIdleFleet`); success is silent and the arrival announces itself, and a
+refusal speaks that BUTTON's own readout ("Next idle fleet, button, 0 idle fleets, unavailable, …"),
+for the same reason the end-turn refusal does. The button's NAME does not carry the chord: that
+costing-every-landing exception stays the five it was granted for.
 **Alt+Left/Right turn the PAGE** (`UiActions.PagePrev/PageNext` → `Screen.PagePrev/PageNext`,
 non-repeating): the previous/next system on the star-system page, planet on the planet page,
 notification on a popup, hero on the academy page — the game's own arrow pair, pressed from anywhere

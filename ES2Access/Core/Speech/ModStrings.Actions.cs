@@ -168,6 +168,11 @@ namespace ES2Access.Core.Speech
                 "action.ui.endTurn.description",
                 "End the turn from anywhere the turn controls are drawn."
             },
+            { "action.ui.nextIdleFleet.title", "Go to the next idle fleet" },
+            {
+                "action.ui.nextIdleFleet.description",
+                "Go to the next fleet with nothing to do, from anywhere the turn controls are drawn."
+            },
             { "action.ui.goToLocation.title", "Show on the map" },
             {
                 "action.ui.goToLocation.description",

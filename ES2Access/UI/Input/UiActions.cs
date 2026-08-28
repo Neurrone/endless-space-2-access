@@ -76,5 +76,10 @@ namespace ES2Access.UI.Input
         /// to it. The game's own end-turn shortcut key is not reachable for a mod user - the mod claims
         /// the keypad Enter it sits on for Activate.</summary>
         public const string EndTurn = "ui.endTurn";
+
+        /// <summary>Go to the next fleet with nothing to do, from anywhere the game is drawing the
+        /// turn controls. The game binds no key of its own to that button, so without this the only
+        /// way to it is walking to the turn stop and pressing it.</summary>
+        public const string NextIdleFleet = "ui.nextIdleFleet";
     }
 }

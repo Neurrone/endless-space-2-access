@@ -501,7 +501,7 @@ widget, exactly as the game's own mouse flows do.
   funnel toggles actually exist (measured 2026-08-24).
 - **A table cell in a non-primary column has no backing object.** The mod's `GraphSheet` gives the
   row's reference to column 0 alone (identity is per cell), and scrolling followed that reference —
-  so `ui.end` down the KEY column of the 57-row Controls table left the table unscrolled
+  so `ui.end` down the KEY column of the Controls table (57 rows at the time) left the table unscrolled
   (`OptionsTable` global y stayed 170 with the landed row far below the 468px viewport). Fixed
   generally: a non-primary cell carries the row as its `NodeVtable.ScrollAnchor`.
 - **AGE clicks PROPAGATE.** `propagateInteraction` defaults true (`AgeControl.cs:19`) and

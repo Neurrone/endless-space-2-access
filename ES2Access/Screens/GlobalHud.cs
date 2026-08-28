@@ -3043,7 +3043,7 @@ namespace ES2Access.Screens
 
             if (!CanEndTurn(window))
             {
-                SpeakEndTurnRefusal();
+                SpeakTurnRefusal("hud:end-turn");
                 return true;
             }
 
@@ -3069,14 +3069,60 @@ namespace ES2Access.Screens
             return true;
         }
 
-        /// <summary>What the end-turn control says about itself right now, read out of the graph rather
-        /// than composed again here - the refusal the player would have heard by walking to it.</summary>
-        private static void SpeakEndTurnRefusal()
+        /// <summary>
+        /// Go to the next fleet with nothing to do, from anywhere the turn controls are drawn
+        /// (`docs/interaction.md`, Control+Alt+F). The act is the one the mod already does better than a
+        /// press of the button would (<see cref="NextIdleFleet"/>), so the key and the button's own Enter
+        /// are the same route - including the galaxy page's single-camera-move version of it.
+        ///
+        /// A refusal speaks the BUTTON's own reading out of the graph - its name, how many fleets are
+        /// idle and "unavailable" - for the reason the end-turn key does it: the player pressing this from
+        /// the far side of the page cannot see the button greyed out, and a global key silent both when it
+        /// works and when it refuses is unreadable. Success says nothing, exactly as pressing the button
+        /// says nothing; the arrival announces itself.
+        ///
+        /// False means the key was not this page's business (no turn controls drawn), which is what
+        /// leaves the press alone.
+        /// </summary>
+        public static bool NextIdleFleetByKey()
+        {
+            EndTurnWindow window = TurnWindow();
+            // Flow control: false is how the caller hears that the key was not this page's business.
+            if (window == null || !AgeWidgets.Visible(window.AgeTransform))
+            {
+                return false;
+            }
+
+            // Flow control, and availability: the key is only this page's business where the button is
+            // drawn at all, and the refusal below reads that same button's own switched-off state.
+            AgeTransform button = AgeWidgets.Transform(window.NextIdleFleetButton);
+            if (button == null || !AgeWidgets.Visible(button))
+            {
+                return false;
+            }
+
+            // The game switches this button off exactly while nothing is idle
+            // (`EndTurnWindow.UpdateIdleFleetsCollectionAndButton` :1038), which is the same question the
+            // node beside it answers, so the key and the button can never disagree.
+            if (!AgeWidgets.Enabled(button))
+            {
+                SpeakTurnRefusal("hud:next-idle-fleet");
+                return true;
+            }
+
+            NextIdleFleet(window.NextIdleFleetButton);
+            return true;
+        }
+
+        /// <summary>What one of the turn corner's controls says about itself right now, read out of the
+        /// graph rather than composed again here - the refusal the player would have heard by walking to
+        /// it.</summary>
+        private static void SpeakTurnRefusal(string structuralKey)
         {
             GraphNavigator navigator = ModEntry.Navigator;
             GraphRender render = navigator == null ? null : navigator.Render;
             GraphNode node =
-                render == null ? null : render.NodeAt(ControlId.Structural("hud:end-turn"));
+                render == null ? null : render.NodeAt(ControlId.Structural(structuralKey));
             if (node != null)
             {
                 Voice.Say(GraphAnnouncer.LeafText(node), true);
@@ -3162,7 +3208,7 @@ namespace ES2Access.Screens
         /// alone. On the galaxy page it costs a second camera move, which is what the page's own route
         /// takes out (<see cref="GalaxyHudScreen.GoToNextIdleFleet"/>).
         /// </summary>
-        private void NextIdleFleet(AgeControlButton button)
+        private static void NextIdleFleet(AgeControlButton button)
         {
             GraphNavigator navigator = ModEntry.Navigator;
             GalaxyHudScreen galaxy = navigator == null ? null : navigator.Screen as GalaxyHudScreen;

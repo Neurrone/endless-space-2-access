@@ -1022,6 +1022,8 @@
   "action.ui.summarizeMap.description": "Say what the galaxy is: its shape and size, how far across it is, and where its middle lies from home.",
   "action.ui.endTurn.title": "End the turn",
   "action.ui.endTurn.description": "End the turn from anywhere the turn controls are drawn.",
+  "action.ui.nextIdleFleet.title": "Go to the next idle fleet",
+  "action.ui.nextIdleFleet.description": "Go to the next fleet with nothing to do, from anywhere the turn controls are drawn.",
   "action.ui.goToLocation.title": "Show on the map",
   "action.ui.goToLocation.description": "Go to where the thing under the cursor happened.",
   "action.ui.clear.title": "Clear",

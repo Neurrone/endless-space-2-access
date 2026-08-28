@@ -397,6 +397,8 @@ namespace ES2Access
                     return SummarizeMap();
                 case UiActions.EndTurn:
                     return GlobalHud.EndTurnByKey();
+                case UiActions.NextIdleFleet:
+                    return GlobalHud.NextIdleFleetByKey();
                 default:
                     return false;
             }
@@ -697,6 +699,18 @@ namespace ES2Access
             input
                 .Register(UiActions.EndTurn)
                 .Bind(KeyCode.E, ctrl: true, alt: true)
+                .ClaimedWhile(TurnStopDeclared);
+            // Go to the next fleet with nothing to do - the other thing the turn corner is pressed for
+            // every turn, and the one the game gives no key of its own: its ~70 bindings hold no idle
+            // fleet action at all and `EndTurnWindow.NextIdleFleetButton` is a plain button. Control+Alt+F
+            // is free: the game's closed set binds bare F to nothing, Control+F to Search, and its
+            // matcher is exact-modifier, so a chord carrying Alt as well never reaches Search.
+            //
+            // Same shape as ending the turn beside it: live wherever the turn controls are drawn, and
+            // when the button is refusing, the key speaks that button's own reading rather than nothing.
+            input
+                .Register(UiActions.NextIdleFleet)
+                .Bind(KeyCode.F, ctrl: true, alt: true)
                 .ClaimedWhile(TurnStopDeclared);
 
             // GO TO WHERE THIS HAPPENED: the game's own show-location button, from the keyboard
