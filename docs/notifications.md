@@ -37,6 +37,34 @@ button, quests and the journal, the tutorial popup, and the end of a game. Index
   its own dedupe. Loading a save raises NO sighting burst.
 - **The turn number the player reads is `Game.Turn + 1`**; `FleetRoute.DisplayedTurn()` is
   the one shared answer — never a fresh copy of the sum.
+- **Whether an arrival opens a popup is decided AFTER the arrival event, in the same call — so it can
+  be asked rather than re-derived.** `RecordEventForEmpire` fires
+  `PlayerEmpireNotificationsCollectionChanged(Add)` at :790-792 and only then, at :800-803, asks five
+  questions before `ToggleGuiNotification`: a non-scan mapping, the player's empire,
+  `CanShowNotifications`, `CurrentGuiNotification == null`, and `AutoPopUp || ForceAutoPopup`.
+  `ShowGuiNotification` (:511-535) then refuses AGAIN when popping is paused and the notification
+  `CanBeDelayed` — a condition invisible from the arrival alone, which is why a copy of the rule in
+  the mod would drift. All of it is synchronous, so a handler that only RECORDS at the event and
+  reads back from the pump gets the settled answer: `CurrentGuiNotification == n` (the popup that is
+  up this instant) or `n.AlreadyRead` (written by `ShowGuiNotification` :532 and never unwritten, so
+  a popup shown and closed inside one frame is still caught). **Mod policy**
+  (`ModNotifications.Arrived`/`Shown`): every notification the player's empire is given is announced
+  by its title on arrival — the game's own as well as the mod's — UNLESS the game showed its popup,
+  which `NotificationScreen` already reads out.
+- **A notification that queues behind an open popup is not lost: the next Dismiss or Minimize opens
+  it.** `NotificationWindow.OnDismissCb` (:199-202) and `OnMinimizeCb` (:219-222, which Escape and
+  right-click both reach, :93-97) pass `showNextUnread: true`, and `GetNextUnreadGuiNotification`
+  (:494-509) answers the first unread notification with `AutoPopUp || ForceAutoPopup`. Measured
+  2026-08-28: raising a second notification while a popup was up left it queued and silent from the
+  game, and dismissing the popup opened it. So an arrival of that kind is heard TWICE — its title
+  when it lands, its popup when the player reaches it — which is the accepted cost of never leaving
+  an arrival silent, since nothing at arrival time can tell that case from the one where the popup
+  never comes.
+- **`CollectionChangeAction.Refresh` is two events under one name** — a stackable notification rebound
+  to a newer event (:762-772), whose `Add` was already announced, and the `CurrentGuiNotification`
+  setter reporting that some popup just went up or down (:41-48). Mod policy: `Refresh` is never
+  spoken; one would repeat the news and the other would read the title of every popup the player
+  opens.
 
 ## What a notification popup draws
 

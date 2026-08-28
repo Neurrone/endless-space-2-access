@@ -37,6 +37,13 @@ namespace ES2Access.UI
     /// inside the game's own event dispatch and only records the line, which the pump then speaks
     /// (the mod's rule - hooks never speak). Queued, never interrupting: this is news the player did
     /// not ask for and it arrives while they are reading something they did.
+    ///
+    /// What is spoken is EVERY notification the player's empire is given and the game shows no popup
+    /// for, its own as well as the mod's: the strip answers a sighted player with an icon that has
+    /// just appeared, and a player who cannot see the strip was told nothing at all. A notification
+    /// the game DOES pop up is left alone here, because the popup is a screen of the mod's
+    /// (<c>NotificationScreen</c>) and its arrival already reads the same title out. Which of the two
+    /// happened is asked of the game, never re-derived - <see cref="Shown"/> says why.
     /// </summary>
     public static class ModNotifications
     {
@@ -76,7 +83,15 @@ namespace ES2Access.UI
 
         private static GuiNotificationManager _manager;
         private static IDictionary _map;
-        private static readonly List<string> _said = new List<string>(4);
+        private static readonly List<Arrival> _said = new List<Arrival>(4);
+
+        /// <summary>One notification that landed since the last frame, with the line it would be
+        /// announced by, read at arrival time while the notification is certainly still bound.</summary>
+        private struct Arrival
+        {
+            public GuiNotification Notification;
+            public string Line;
+        }
 
         /// <summary>Whether the mappings are in place right now - what a probe asks, and what the
         /// test for a clean teardown reads.</summary>
@@ -145,7 +160,8 @@ namespace ES2Access.UI
 
         /// <summary>
         /// Keep the mappings and the arrival subscription pointed at whatever manager the game
-        /// currently has, then speak whatever landed since the last frame.
+        /// currently has, then speak whatever landed since the last frame and did NOT open a window
+        /// of its own.
         /// </summary>
         public static void Tick()
         {
@@ -165,10 +181,59 @@ namespace ES2Access.UI
 
             for (int i = 0; i < _said.Count; i++)
             {
-                Voice.Say(_said[i], false);
+                if (Shown(_said[i].Notification))
+                {
+                    continue;
+                }
+
+                Voice.Say(_said[i].Line, false);
             }
 
             _said.Clear();
+        }
+
+        /// <summary>
+        /// Whether the popup took this arrival, which is the whole gate: a notification the game put
+        /// on the screen is read out by <c>NotificationScreen</c> as the screen arrives, and saying
+        /// the title here as well would be the mod stammering.
+        ///
+        /// It is ASKED of the game rather than re-derived. The popup decision has five conditions
+        /// (<c>GuiNotificationManager.RecordEventForEmpire</c> :800-803: a non-scan mapping, the
+        /// player's empire, <c>CanShowNotifications</c>, no popup already up, and the type's own
+        /// <c>AutoPopUp</c> or the tutorial's <c>ForceAutoPopup</c>), and <c>ShowGuiNotification</c>
+        /// (:511-535) then refuses again if popping is paused and the notification can be delayed -
+        /// so a copy of the rule in the mod would be a second implementation to keep in step, and the
+        /// pause is invisible from the arrival alone. The answer is available because that whole
+        /// decision runs SYNCHRONOUSLY, ten lines after the collection-changed event this records
+        /// from: by the time the pump reaches <see cref="Tick"/> it has already happened either way.
+        ///
+        /// Two questions, because they fail in opposite directions: <c>CurrentGuiNotification</c> is
+        /// the popup that is up this instant and answers nothing once it is closed, while
+        /// <c>AlreadyRead</c> is written by <c>ShowGuiNotification</c> (:532) and stays written - a
+        /// notification shown and closed inside one frame is still caught.
+        /// </summary>
+        private static bool Shown(GuiNotification notification)
+        {
+            if (notification == null)
+            {
+                return false;
+            }
+
+            try
+            {
+                GuiNotificationManager manager = _manager ?? Manager();
+                if (manager != null && ReferenceEquals(manager.CurrentGuiNotification, notification))
+                {
+                    return true;
+                }
+
+                return notification.AlreadyRead;
+            }
+            catch (Exception e)
+            {
+                Log.Warn("notifications: asking whether a notification popped up threw: " + e);
+                return false;
+            }
         }
 
         /// <summary>
@@ -334,8 +399,22 @@ namespace ES2Access.UI
             }
         }
 
-        /// <summary>Runs inside the game's own dispatch: records the line and returns. Speaking is
-        /// the pump's (<see cref="Tick"/>).</summary>
+        /// <summary>
+        /// Runs inside the game's own dispatch: records the line and returns. Speaking - and the
+        /// question of whether to - is the pump's (<see cref="Tick"/>, <see cref="Shown"/>).
+        ///
+        /// EVERY notification the player's empire is given is recorded, the game's own as well as the
+        /// mod's, because news that opens no window is otherwise news nobody hears: the strip shows an
+        /// icon, and that is all. The event fires for the player's empire only
+        /// (<c>GuiNotificationManager</c> :790-792) and after <c>Load()</c> (:781), so the title is
+        /// both the player's business and ready to read at this point.
+        ///
+        /// <c>Add</c> only. A <c>Refresh</c> is two different things wearing one name - a stackable
+        /// notification rebound to a newer event (:762-772), whose <c>Add</c> was already announced,
+        /// and the manager's own <c>CurrentGuiNotification</c> setter announcing that some popup is
+        /// now up or now down (:41-48) - so a <c>Refresh</c> that spoke would repeat the news for one
+        /// and read the title of every popup the player opens for the other.
+        /// </summary>
         private static void Arrived(object sender, CollectionChangeEventArgs e)
         {
             try
@@ -345,21 +424,26 @@ namespace ES2Access.UI
                     return;
                 }
 
-                ModNotification arrived = e.Element as ModNotification;
+                GuiNotification arrived = e.Element as GuiNotification;
                 if (arrived == null)
                 {
                     return;
                 }
 
-                string line = arrived.GetTitle();
+                // The game's own titles are drawn strings and carry the markup drawn strings carry;
+                // the mod's own are already plain, and Clean leaves those alone.
+                string line = AgeText.Clean(arrived.GetTitle());
                 if (!string.IsNullOrEmpty(line))
                 {
-                    _said.Add(line);
+                    Arrival arrival = new Arrival();
+                    arrival.Notification = arrived;
+                    arrival.Line = line;
+                    _said.Add(arrival);
                 }
             }
             catch (Exception error)
             {
-                Log.Warn("notifications: noticing a mod notification threw: " + error);
+                Log.Warn("notifications: noticing a notification threw: " + error);
             }
         }
 
