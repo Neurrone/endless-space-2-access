@@ -1672,6 +1672,21 @@ namespace ES2Access.Screens
             }
         }
 
+        /// <summary>The star a fleet is parked at, asked of the fleet's own position rather than
+        /// guessed from the map (<c>FleetPosition.GetOrbit</c>) - null for a fleet that is not in
+        /// orbit at one.</summary>
+        private static StarSystemNode Orbited(Fleet fleet)
+        {
+            try
+            {
+                return fleet == null ? null : fleet.Position.GetOrbit() as StarSystemNode;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
         /// <summary>
         /// Show the player a place - the ONE call on this page that moves the camera for the cursor,
         /// and the one record of where the camera has been sent.
@@ -2048,6 +2063,24 @@ namespace ES2Access.Screens
             Fleet carried = drawn as Fleet;
             if (carried != null && !Flying(carried))
             {
+                // A DOCKED fleet is its STAR's place (<see cref="Place"/>), so its landing asks the
+                // camera for exactly what walking onto the row asks for - and the record then says the
+                // camera is already there, which is what leaves the row's own focus nothing to do.
+                //
+                // Sliding onto the BERTH instead (the point the target carries, because that is where
+                // the ship is DRAWN and where the inspect cell must open) put the camera somewhere the
+                // row's focus moved it off again a beat later: the delayed second move the owner
+                // reported from the military page's second click, and the same one every other way in
+                // makes - the idle-fleet button, the named-ship panel, the fleet list - because all of
+                // them end here. The berth stays the target's point; only the CAMERA is the star's.
+                StarSystemNode berthed =
+                    target.System != null ? target.System : Orbited(carried);
+                if (berthed != null)
+                {
+                    FollowPlace(berthed, true, true);
+                    return;
+                }
+
                 drawn = null;
             }
 

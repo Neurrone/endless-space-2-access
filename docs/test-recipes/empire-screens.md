@@ -260,6 +260,9 @@ Tab twice, `ui.doubleClick` → "Ship Design: Settler", close with
 raises the Architects tutorial — minimize it. The star-system HANGAR is empty in `unlocked` ("No ships
 in the hangar"), so the second host for that gesture is the selected-fleet panel, reached with the
 `GalaxyFleet` select route in ES2 facts.
+A FLEET ROW's second click (`MilitaryScreen.OnLineDoubleClick`) shows the fleet on the map instead,
+and what the camera then does — one move, and the docked-fleet case that used to make three — is
+`test-recipes/fleets.md`, **A docked fleet's landing**.
 A force-shown fleet-selection window must never have a row SELECTED — `ProcessSelection` NREs on a
 null `CheckValidity`. Create raises the Architects tutorial page in this save, so minimize it
 afterwards. Restore the camera when done.

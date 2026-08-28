@@ -255,8 +255,38 @@ banners, a list long enough to scroll, the range-outcome sentence with two or mo
 DROP itself — the cursor draws exactly one fleet line and each fleet owns exactly one ship, so every
 reachable transfer would destroy a fleet.
 
+## A docked fleet's landing
+
+**A DOCKED fleet's landing frames its STAR, not its berth** (2026-08-28; `GalaxyHudScreen.Camera`).
+The map draws a parked fleet in the star's own berth, so the row's PLACE is the star
+(`GalaxyHudScreen.Place`) while the landing's POINT is the berth (`MapTarget.Point(…, Berth(fleet),
+fleet)`, which is what the inspect cell still opens on). Those two disagreeing is what made every way
+in to a docked fleet move the camera twice — a slide onto the berth, then the row's own focus snapping
+to the star a beat later, the owner-reported "re-centres on the system 1-2 s afterwards". The camera
+half now asks for exactly what walking onto the row asks for, and the record then leaves the focus
+nothing to do. A FLYING fleet is untouched: it is drawn out on the map and stays its own place.
+
+**Measuring it** needs a fleet in orbit, so the fixture is `[Midgame] quests fleets` (`[Beginner]
+test`'s six fleets are all under way — `GetDockingSlotWithFleet` answers null for every one). Minimize
+the tutorial, put the camera somewhere else
+(`ES2Access.UI.GalaxyViewLevels.CenterOn(new UnityEngine.Vector3(55f,0f,-40f), 0f)`),
+`Gui.GuiService.ShowWindow<MilitaryScreen>()`, minimize the tutorial page it raises, Tab to a fleet
+row and `POST /input ui.doubleClick`. Sample `DevProbe.Camera()` densely — the excursion lasts under a
+second and polling every ~2 s misses it. Measured after: one continuous move `(55, -40)` →
+`(68.48, -22.85)` and then bit-identical for 100 frames, landing announced as *"Galactic Map, Serpens,
+group, expanded, Dusay, 0, 0, group, Home System, colonized, 2 Fleets, expanded, 1 of 1, 1st Heroes
+Navy, 0, 0, button, Settler, Docked at Dusay, 5 movement points, collapsed, 8 of 9"*. Before, the same
+route went star → berth `(66.74, -21.21)` → back to `(68.48, -22.85)` about 20 frames later.
+**The second double click is the one to measure**: the first selection of a fleet in that save raises
+the 6-page `Tutorial_Fleets` popup, which takes the focus and stops the mod landing at all.
+
 ## Fixture-blocked
 
+- A docked fleet with NO berth (the hangar case): `GetDockingSlotWithFleet` answers null for it and
+  no fixture has one — `[Beginner] test` has no fleet in orbit at all and both of `[Midgame] quests
+  fleets`' are berthed. The camera path does not depend on the berth either way
+  (`FleetPosition.GetOrbit` answers the star without consulting the docking-slot repository), so the
+  landing is the same single move; unmeasured, not unreasoned (**A docked fleet's landing**).
 - Every foreign-fleet behaviour: the ship-count gate, foreign selection and the
   foreign-route gate (**Foreign fleets**); the two probes there stand in.
 - A fleet IN ORBIT, and a free mover with an unperceived destination (**Fleets in the tree**).

@@ -269,6 +269,20 @@ and ship transfer. Index and charter: `README.md`.
   a screen change the mod hears as an ordinary re-entry of the galaxy, and the cursor it re-seats on
   arrival is the only thing that tells the player where the game has taken them.
 
+- **A DOCKED fleet stands at TWO points, and the game's own "show me this fleet" sites disagree about
+  which.** The BERTH is `IVisibleDockingSlotRepositoryService.GetDockingSlotWithFleet(fleet)
+  .transform.position` — where the ship model is drawn, beside the star; the STAR is
+  `fleet.GalaxyPosition`, and `fleet.Position.GetOrbit()` hands the `StarSystemNode` back directly
+  (measured on `[Midgame] quests fleets`: both fleets at berth `(66.7, 0, -21.2)`, star
+  `(68.884, -22.450)` — 2.6 galaxy units apart). The sites split: `MilitaryScreen.OnLineDoubleClick`
+  (:511-560) selects the BERTH and then frames the STAR (`RequestGalaxyOverviewViewLevel
+  (SelectedFleet)`), `NamedShipInfoPanel` (:184-236) does the same with the garrison's game node, while
+  `EndTurnWindow.SelectIdleFleet` (:1387-1409) frames the BERTH and selects it. **Selecting a berth
+  moves no camera at all** — measured by suppressing the mod's own landing over the military page's
+  second click: the only camera move left was the single damped `CenterOnPoint` on the star.
+  So the game itself makes ONE move per site; a second move is the MOD's landing, and the mod
+  reconciles the two points its own way (`docs/test-recipes/fleets.md`, **A docked fleet's landing**).
+
 ## The fleet panel, selection and ship transfer
 
 - **Full deselect needs BOTH** `ChangeCursor(typeof(GalaxyCursor), cursor)` AND `Select(null)` on
