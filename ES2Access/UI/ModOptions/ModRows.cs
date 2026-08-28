@@ -255,9 +255,14 @@ namespace ES2Access.UI.ModOptions
                     return null;
                 }
 
-                // The clone came off the window's Cancel and would still call it.
-                button.OnActivateObject = null;
-                button.OnActivateMethod = string.Empty;
+                // The clone came off the window's Cancel and would still call it. Emptying the aim
+                // is not enough: those two fields ARE the mouse, the only way a click reaches a
+                // button at all (AgeControlButton.HandleMouseUpOrDown), so a row with nothing in
+                // them is a row the mouse cannot press. They are re-aimed instead, at the row's own
+                // receiver, which runs the very thing the key on this row runs.
+                row.gameObject.AddComponent<ModRowClick>();
+                button.OnActivateObject = row.gameObject;
+                button.OnActivateMethod = ModRowClick.Method;
 
                 // The clone came out of the BUTTON BAR, where it is pinned to the bar's own corners.
                 // In a rows table it has to behave like a row: full width, stacked by the table.
@@ -350,6 +355,34 @@ namespace ES2Access.UI.ModOptions
             if (item.TitleLabel != null)
             {
                 item.TitleLabel.Text = title;
+            }
+        }
+
+        /// <summary>
+        /// WHAT A DRAWN ROW DOES - the one act behind both ways of asking for it.
+        ///
+        /// A header flips, a button row runs what it was built with, and anything else is not one of
+        /// the mod's drawn rows and does nothing. The mouse comes here through
+        /// <see cref="ModRowClick"/> and the keyboard through the options screen's own nodes, so the
+        /// two cannot drift apart: whichever one the player used, this is the call that ran.
+        ///
+        /// What the act CAUSES is the act's own business - a cleared slot says so through the pump
+        /// like it always did, and a flipped header says its new state only to the player standing on
+        /// it, because nothing about a mouse click asks to be read out.
+        /// </summary>
+        public static void Activate(OptionItem item)
+        {
+            ModGroupRow group = GroupOf(item);
+            if (group != null)
+            {
+                group.Expand(!group.Expanded);
+                return;
+            }
+
+            Action action = ActionOf(item);
+            if (action != null)
+            {
+                action();
             }
         }
 
@@ -553,6 +586,42 @@ namespace ES2Access.UI.ModOptions
 
         private readonly Func<string> _read;
         private readonly Action<string> _write;
+    }
+
+    /// <summary>
+    /// THE MOUSE HALF OF A DRAWN ROW: the click, delivered to what the row does.
+    ///
+    /// An AGE button dispatches one way and one way only - <c>SendMessage</c> to a named method on a
+    /// named GameObject (<c>AgeControlButton.HandleMouseUpOrDown</c> :342-345) - so a row the mod
+    /// drew needs a component of its own to be sent to. It sits on the ROW, not on the window,
+    /// because that is what makes it live exactly as long as the row does: emptying the panel
+    /// destroys the row and this with it, and the mod's whole window is destroyed on teardown, so no
+    /// receiver of the mod's is left standing for a later load to send to.
+    ///
+    /// It holds nothing. The row's identity is the <c>OptionItem</c> beside it on the same object,
+    /// which is the key everything about the row is stashed under.
+    /// </summary>
+    public sealed class ModRowClick : MonoBehaviour
+    {
+        /// <summary>The method name the button is aimed at. Kept beside the method it names, since
+        /// the two only agree by hand.</summary>
+        public const string Method = "OnModRowClicked";
+
+        /// <summary>Public because the button reaches it by SendMessage, and named to match
+        /// <see cref="Method"/>. The argument is the GameObject every AGE button sends - this row -
+        /// and the row is already known from the component beside this one.</summary>
+        public void OnModRowClicked(GameObject sender)
+        {
+            try
+            {
+                ModRows.Activate(GetComponent<OptionItem>());
+            }
+            catch (Exception e)
+            {
+                // Runs inside the engine's own mouse dispatch: never throw into it.
+                Log.Warn("mod options: a click on a drawn row threw: " + e);
+            }
+        }
     }
 
     /// <summary>What a header row stands for: whether its block is open, and how to open or shut it.

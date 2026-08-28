@@ -95,6 +95,14 @@ changes raises the game's own "Are you sure you want to quit without saving?" bo
 `keys.<action> = <action>:Ctrl+K,` for exactly the actions that moved, and moving one back to its
 default takes its line out again (the file goes to 0 bytes when nothing is moved).
 
+**Mouse clicks on mod-drawn rows.** The Scanner tab's category headers and Clear buttons are
+Cancel-button clones re-aimed at a per-row `ModRowClick` receiver, so a mouse click and `ui.activate`
+converge on the same `ModRows.Activate` (a mouse group-toggle is silent by design; a mouse Clear
+speaks because the line belongs to `ScannerEditor.Clear` itself). Wiring probe from `/eval`: the
+row's `AgeControlButton.OnActivateObject` is the row, `OnActivateMethod` is `OnModRowClicked`, and
+`SendMessage`-ing that pair flips `ScannerRows.Expanded(n)` (verified 2026-08-28); the physical
+mouse-pick itself is manual-only.
+
 ## Reload-restore
 
 **Reload-restore.** `POST /reload` destroys the clone (teardown by name) and rebuilds it on the

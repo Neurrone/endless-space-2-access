@@ -456,6 +456,7 @@ namespace ES2Access.Screens
         ///
         /// Three ways in, all the same act. Right opens it and steps into it; Left shuts it; Enter
         /// flips it where the player stands, which is what the drawn button does under the mouse -
+        /// literally the same call (<see cref="ModRows.Activate"/>), so the two cannot come apart -
         /// and its new state is spoken through <see cref="NodeVtable.StateText"/>, because the cursor
         /// has not moved and nothing else would say it.
         /// </summary>
@@ -471,7 +472,7 @@ namespace ES2Access.Screens
             );
             vtable.OnExpand = () => group.Expand(true);
             vtable.OnCollapse = () => group.Expand(false);
-            vtable.OnActivate = () => group.Expand(!group.Expanded);
+            vtable.OnActivate = () => ModRows.Activate(row);
             vtable.StateText = () =>
                 GraphAnnouncer.ExpandedStateText == null
                     ? null
@@ -659,11 +660,11 @@ namespace ES2Access.Screens
             AgeTooltip tooltip = item.Tooltip;
 
             // A row the MOD drew and wired: the game has no button row, so one of its own buttons is
-            // cloned into the table and what it does is kept beside it (ModRows).
-            Action pressed = ModRows.ActionOf(item);
-            if (pressed != null)
+            // cloned into the table and what it does is kept beside it (ModRows). Pressing it here
+            // is the same call the mouse makes on it, so neither way in can drift from the other.
+            if (ModRows.ActionOf(item) != null)
             {
-                return GraphNodes.Button(label, pressed, enabled, tooltip);
+                return GraphNodes.Button(label, () => ModRows.Activate(item), enabled, tooltip);
             }
 
             OptionCheckboxItem checkbox = item as OptionCheckboxItem;
