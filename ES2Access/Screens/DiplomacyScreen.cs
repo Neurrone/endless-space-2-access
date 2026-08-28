@@ -727,8 +727,7 @@ namespace ES2Access.Screens
                 CardActions.NameFromTooltip(tooltip),
                 () => AgeWidgets.Press(at),
                 () => AgeWidgets.Offered(at),
-                tooltip,
-                TooltipMode.None
+                tooltip
             );
             GraphNodes.AddRefusal(vtable, tooltip, () => AgeWidgets.Offered(at));
             AgeWidgets.PointAt(vtable, at);

@@ -414,9 +414,9 @@ namespace ES2Access.Screens
         /// which is the same 0-100 scale the relation points are on (measured 2026-08-22: segments at
         /// 0/66/133/200 across a 266-wide gauge, and 33 points reading CORDIAL).
         ///
-        /// The sentence itself stays in the buffer and out of the announcement
-        /// (<see cref="TooltipMode.None"/>): it was the name until the states arrived, and saying it
-        /// after the name would say the band twice.
+        /// The sentence itself reads by its own kind, like every other tooltip: it was the name until
+        /// the states arrived, and the readout.s own dedupe is what keeps the band from being said
+        /// twice where the name still comes off the sentence.
         /// </summary>
         private void Bands(GraphBuilder builder, MinorFactionDiplomacyModalWindow window)
         {
@@ -444,10 +444,9 @@ namespace ES2Access.Screens
                         Name =
                             band != null
                                 ? (Func<string>)(() => band)
-                                : CardActions.NameFromTooltip(tip),
+                                : TooltipChildren.NameOf(tip, at),
                         Tooltip = tip,
                         Anchor = at,
-                        Mode = TooltipMode.None,
                     }
                 );
             }

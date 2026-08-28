@@ -94,9 +94,11 @@ namespace ES2Access.UI
                 {
                     GraphNodes.LabelPart(() => AgeText.Label(it.Title)),
                     GraphNodes.ValuePart(() => Health(it), false),
-                    GraphNodes.ValuePart(() => Outcome(it), false),
                 },
-                Sections = GraphNodes.Sections(null, tooltip),
+                // The outcome sentence is the game.s own, kept in a field the roster never draws, so
+                // the row says it as it is read - declared as a section rather than composed into the
+                // readout by hand, so the same words reach the review buffer exactly once.
+                Sections = GraphNodes.SpokenSections(() => OutcomeLines(it), tooltip),
             };
             AgeWidgets.PointAt(vtable, widget);
             builder.AddItem(Nodes.Drawn(ControlId.For(item, key), vtable, item));
@@ -135,6 +137,18 @@ namespace ES2Access.UI
         /// sentence the game wrote about it. So a status is present exactly when the game chose to write
         /// one, and the mod invents nothing for the rest.
         /// </summary>
+        private static IList<string> OutcomeLines(BattleShipItem item)
+        {
+            string said = Outcome(item);
+            List<string> lines = new List<string>(1);
+            if (!string.IsNullOrEmpty(said))
+            {
+                lines.Add(said);
+            }
+
+            return lines;
+        }
+
         private static string Outcome(BattleShipItem item)
         {
             try

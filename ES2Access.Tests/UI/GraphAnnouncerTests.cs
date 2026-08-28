@@ -183,7 +183,7 @@ namespace ES2Access.Tests.UI
             {
                 ControlType = button,
                 Announcements = new[] { Part("Explorer", AnnouncementKinds.Label) },
-                Sections = new[] { new NodeSection(() => new[] { "A ship" }, TooltipMode.Announce) },
+                Sections = new[] { NodeSection.Composed(() => new[] { "A ship" }) },
                 OnPickUp = () => new CarryItem(new object(), "Explorer", "ship"),
                 DropKind = "ship",
                 OnDrop = held => DropResult.Done(),

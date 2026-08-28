@@ -224,7 +224,7 @@ namespace ES2Access.Screens
                 () => AgeWidgets.Toggle(pick),
                 () => AgeWidgets.Operable(it)
             );
-            vtable.Sections = SettingRows.RowSections(it, tooltip, TooltipMode.Announce);
+            vtable.Sections = SettingRows.RowSections(it, tooltip);
 
             vtable.OnFocusVisual = () => PointerFocus.MoveToToggle(pick, tooltip, it);
             vtable.OnBlurVisual = AgeWidgets.ReleasePointer;
@@ -571,12 +571,13 @@ namespace ES2Access.Screens
             // paragraph itself. The game draws this text permanently rather than behind a hover, and
             // text the game always shows is text the player always hears; the buffer keeps the same
             // words as separate lines to walk. The tooltip on the heading ("The background story for
-            // this faction") is a caption for something the row already is, so it stays in the buffer.
+            // this faction") is DECLARED here rather than dropped - it is the row.s own, and it reads
+            // by its own kind like every other.
             NodeVtable vtable = GraphNodes.Readout(
                 () => AgeText.Label(heading),
                 () => AgeText.Label(lore),
                 () => Lore(heading, lore),
-                null
+                AgeWidgets.Raw(Transform(title))
             );
             AgeWidgets.PointAt(vtable, Transform(title));
 

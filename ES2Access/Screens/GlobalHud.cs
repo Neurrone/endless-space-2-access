@@ -729,19 +729,29 @@ namespace ES2Access.Screens
             }
         }
 
-        /// <summary>One icon's explanations as sections: the FIRST speaks and every later one is
-        /// reviewable. The order is the drawn one the resolver answers in - the control's own tooltip,
-        /// then the badges inside it - so the button says what it opens and the badge's sentence is a
-        /// buffer line away rather than nowhere at all.</summary>
+        /// <summary>One icon.s explanations as sections: the FIRST is the icon.s own and speaks; every
+        /// later one is a badge inside it and is reviewable. The order is the drawn one the resolver
+        /// answers in - the control.s own tooltip, then the badges inside it - so the button says what it
+        /// opens and the badge.s sentence is a buffer line away rather than nowhere at all. Which of
+        /// several tooltips is the icon.s OWN is a fact about the icon; how loudly that one reads is the
+        /// tooltip.s own kind to answer.</summary>
         private static IList<NodeSection> ToggleSections(List<AgeTooltip> tooltips)
         {
             List<NodeSection> sections = new List<NodeSection>(tooltips.Count);
             for (int i = 0; i < tooltips.Count; i++)
             {
-                IList<NodeSection> tip = GraphNodes.HintSections(
-                    tooltips[i],
-                    i == 0 ? null : (TooltipMode?)TooltipMode.None
-                );
+                if (i > 0)
+                {
+                    NodeSection badge = GraphNodes.ReviewedTooltipSection(tooltips[i]);
+                    if (badge != null)
+                    {
+                        sections.Add(badge);
+                    }
+
+                    continue;
+                }
+
+                IList<NodeSection> tip = GraphNodes.HintSections(tooltips[i]);
                 for (int j = 0; tip != null && j < tip.Count; j++)
                 {
                     sections.Add(tip[j]);
@@ -2624,11 +2634,14 @@ namespace ES2Access.Screens
             }
 
             EndTurnWindow it = window;
+            // The sync state exists only as the words on the group's own tooltip, so the tooltip is
+            // what the row declares and the readout says them by the ordinary rule - rather than the
+            // row copying them into a value of its own and the buffer holding them twice.
             NodeVtable vtable = GraphNodes.Readout(
                 () => ModStrings.Get(ModStrings.GalaxySyncState),
-                () => SyncText(it),
+                () => null,
                 null,
-                null
+                it.SyncTooltip
             );
             AgeWidgets.PointAt(vtable, group);
             found.Add(
@@ -2789,20 +2802,6 @@ namespace ES2Access.Screens
                     Vtable = vtable,
                 }
             );
-        }
-
-        /// <summary>What the game says about the synchronization state - the tooltip's sentence, which
-        /// is the only words there are for it.</summary>
-        private static string SyncText(EndTurnWindow window)
-        {
-            try
-            {
-                return OneLine(AgeText.Tooltip(window.SyncTooltip));
-            }
-            catch (Exception)
-            {
-                return null;
-            }
         }
 
         /// <summary>How many players have not ended their turn, counted the way the game counts them:

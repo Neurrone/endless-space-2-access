@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using ES2Access.Core.Speech;
 using ES2Access.Core.UI;
 using ES2Access.Core.UI.Graph;
+using ES2Access.Core.Util;
 
 namespace ES2Access.UI
 {
@@ -24,10 +25,10 @@ namespace ES2Access.UI
     /// region, which is a lone region whose jump is silently consumed - by design.
     ///
     /// A dossier node is NOT a button: Enter on it is consumed and says nothing, because there is
-    /// nothing there to do. Its name is the dossier's own header line, read off the wrapper the game
-    /// hangs on the tooltip (<see cref="AgeWidgets.TooltipTitle"/>) - never a phrase this mod
-    /// invented - and focusing it points the pointer at the dossier's own carrier, so the game draws
-    /// that dossier in place of the parent's and the buffer holds exactly the drawn lines.
+    /// nothing there to do. It is named after the widget a MOUSE would hover to raise it
+    /// (<see cref="HoverName"/>) - never a phrase this mod invented - and focusing it points the
+    /// pointer at the dossier's own carrier, so the game draws that dossier in place of the parent's
+    /// and the buffer holds exactly the drawn lines.
     ///
     /// What EARNS a node here: a tooltip whose words the renderer assembles
     /// (<see cref="TooltipMode.Indicate"/>), that the game would draw at all
@@ -41,7 +42,8 @@ namespace ES2Access.UI
         /// the game draw it.</summary>
         public struct Dossier
         {
-            /// <summary>The header line the dossier draws for itself.</summary>
+            /// <summary>What to call the dossier: the widget a mouse would hover to raise it, in the
+            /// words that widget draws (<see cref="HoverName"/>).</summary>
             public Func<string> Name;
 
             /// <summary>The tooltip whose words the node carries. Null for a dossier that only
@@ -88,13 +90,6 @@ namespace ES2Access.UI
             /// Null where the carrier is fixed for the life of the thing, which is most of them.
             /// </summary>
             public Func<AgeTooltip> LiveAim;
-
-            /// <summary>How the tooltip reaches the player, where the caller knows better than
-            /// <see cref="GraphNodes.ModeFor"/> - which is exactly the case a prefab author's own
-            /// SENTENCE is the node's name: announcing it as well would say the first line twice
-            /// (<see cref="TooltipMode.None"/> leaves it in the buffer, where the rest of it is).
-            /// Null asks the shared rule.</summary>
-            public TooltipMode? Mode;
         }
 
         /// <summary>The region the node's own actions and structural children belong to - declared
@@ -194,10 +189,7 @@ namespace ES2Access.UI
                 // the camera is in): the words come from the reader, the mode from the tooltip, so
                 // the section still counts as a drawn dossier to the pointer and the parity audit.
                 vtable.Sections = GraphNodes.Sections(
-                    new NodeSection(
-                        it.Lines,
-                        it.Mode.HasValue ? it.Mode.Value : GraphNodes.ModeFor(it.Tooltip)
-                    )
+                    GraphNodes.TooltipSection(it.Tooltip, it.Lines)
                 );
             }
             else if (it.Lines != null)
@@ -208,9 +200,7 @@ namespace ES2Access.UI
             {
                 vtable.Sections = GraphNodes.SectionsFor(
                     vtable,
-                    new List<AgeTooltip>(1) { it.Tooltip },
-                    null,
-                    it.Mode
+                    new List<AgeTooltip>(1) { it.Tooltip }
                 );
             }
 
@@ -347,21 +337,139 @@ namespace ES2Access.UI
             }
 
             AgeTooltip tip = tooltip;
-            Func<AgeTooltip> now = live;
+            AgeTransform under = anchor ?? tooltip.AgeTransform;
             into.Add(
                 new Dossier
                 {
-                    // Named off whichever widget is carrying it, for the same reason the pointer is
-                    // aimed there: the header line is the dossier's own, and reading it off a widget
-                    // the game has since re-pointed names another thing entirely.
-                    Name = () => AgeWidgets.TooltipTitle(Now(now, tip)),
+                    Name = HoverName(live, tip, under),
                     Tooltip = tip,
-                    Anchor = anchor ?? tooltip.AgeTransform,
+                    Anchor = under,
                     Carrier = carrier,
                     Lines = lines,
                     LiveAim = live,
                 }
             );
+        }
+
+        /// <summary>
+        /// What a dossier is CALLED: the words drawn on the widget a mouse would hover to raise it.
+        ///
+        /// A nested dossier is a hover the keyboard cannot make, so the name has to be the thing the
+        /// player would have pointed at - "Role", "Food", the badge beside the row - and the game has
+        /// already written that on the screen. The ladder is what is left when it has not:
+        ///
+        /// - the HOVER TARGET's own drawn words (the tooltip's own widget, read one level down so a
+        ///   badge whose caption is a child label answers and a whole card does not),
+        /// - the ANCHOR's, for a dossier drawn from a widget of its own that carries no words,
+        /// - the wrapper's title (<see cref="AgeWidgets.TooltipTitle"/>), which is where this game
+        ///   keeps the name it would have written for a picture,
+        /// - the sentence's own first line, which is what a wordless badge with a plain-text
+        ///   explanation had before any of this.
+        ///
+        /// Asked afresh every read, and through <see cref="Now"/>, for the same reason the pointer is:
+        /// a widget the game has since re-pointed names another thing entirely.
+        /// </summary>
+        private static Func<string> HoverName(
+            Func<AgeTooltip> live,
+            AgeTooltip declared,
+            AgeTransform anchor
+        )
+        {
+            Func<AgeTooltip> now = live;
+            AgeTooltip it = declared;
+            AgeTransform under = anchor;
+            return () =>
+            {
+                AgeTooltip tip = Now(now, it);
+                string drawn = Drawn(AgeWidgets.TooltipOwner(tip));
+                if (!string.IsNullOrEmpty(drawn))
+                {
+                    return drawn;
+                }
+
+                drawn = Drawn(under);
+                if (!string.IsNullOrEmpty(drawn))
+                {
+                    return drawn;
+                }
+
+                string title = AgeWidgets.TooltipTitle(tip);
+                return string.IsNullOrEmpty(title) ? CardActions.FirstLine(tip) : title;
+            };
+        }
+
+        /// <summary>The same ladder for a caller building a <see cref="Dossier"/> by hand, so that a
+        /// dossier declared anywhere is named the way one collected here is.</summary>
+        public static Func<string> NameOf(AgeTooltip tooltip, AgeTransform anchor)
+        {
+            return HoverName(null, tooltip, anchor);
+        }
+
+        /// <summary>
+        /// The tooltips a line carries BESIDES the one it points at, as nodes of their own - for a
+        /// line the game drew out of several pieces, each with an explanation of its own.
+        ///
+        /// A node announces the ONE tooltip a hover on it would raise, which is the last one drawn
+        /// (<c>GraphNodes.SectionsFor</c>). That is right, and it used to leave the icon's own sentence
+        /// - "The faction of your empire", "The personality of this minor civilization determines how
+        /// it reacts to your actions" - reviewable and never said. A sentence the game wrote is not a
+        /// footnote: the piece that carries it becomes a node, named the way every other nested entry
+        /// is (<see cref="HoverName"/>), and says its sentence when the player steps onto it. Which is
+        /// the standing ruling about two hover targets - one row means a row of NODES.
+        ///
+        /// Only the ones the game wrote as PLAIN TEXT (<see cref="AddPlain"/>'s own test): a
+        /// renderer-assembled dossier on a piece of a line has no words until it is drawn, and the
+        /// pointer is on the line's own tooltip, so a node for it would promise words nothing raises.
+        /// Null when there are none, which is the ordinary line.
+        /// </summary>
+        public static List<Dossier> Others(IList<AgeTooltip> tooltips)
+        {
+            List<Dossier> found = null;
+            for (int i = 0; tooltips != null && i + 1 < tooltips.Count; i++)
+            {
+                AgeTooltip tooltip = tooltips[i];
+                List<Dossier> into = found ?? new List<Dossier>(1);
+                AddPlain(into, tooltip, AgeWidgets.TooltipOwner(tooltip));
+                if (into.Count > 0)
+                {
+                    found = into;
+                }
+            }
+
+            return found;
+        }
+
+        /// <summary>
+        /// The words a widget draws ON ITSELF - one level down, so the label inside a badge counts and
+        /// the rest of the card the badge sits on does not.
+        ///
+        /// A figure is not words. A hero's mastery line draws "0/11" and a planet's card draws "50",
+        /// and a dossier named off those is a node the player cannot tell from its four siblings -
+        /// measured live, where two of one card's five figures were both "30". So a drawn string with
+        /// no letter in it is not a name and the ladder falls through to the wrapper's title, which is
+        /// where this game keeps the name it would have written ("Wit", "Planet Food production").
+        /// A name that merely CONTAINS digits is still a name (<see cref="TextUtil.HasLetters"/>).
+        /// </summary>
+        private static string Drawn(AgeTransform widget)
+        {
+            try
+            {
+                // Content read, not existence: a pooled item the game retired is parked at alpha 0
+                // with its previous binding's words still on it, and naming a dossier off those words
+                // calls it by the last thing the widget held. The same test <see cref="AgeWidgets.ItemText"/>
+                // makes for the same reason.
+                if (widget == null || widget.Alpha < 0.01f)
+                {
+                    return null;
+                }
+
+                string drawn = AgeWidgets.PaintedText(widget, 1);
+                return TextUtil.HasLetters(drawn) ? drawn : null;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
         }
 
         /// <summary>
@@ -374,8 +482,10 @@ namespace ES2Access.UI
         /// cannot tell apart or step through (owner ruling: one row means a row of NODES, never one
         /// merged node).
         ///
-        /// The sentence's first line is the name, and the mode is <see cref="TooltipMode.None"/> so
-        /// the same words are not announced twice; the whole sentence is still in the node's buffer.
+        /// The node is named after the badge the player would have hovered (<see cref="HoverName"/>)
+        /// and says the whole sentence, which for a badge the game drew no caption on falls back to
+        /// the sentence's own first line as the name - the line the readout's dedupe then keeps out of
+        /// the sentence, so nothing is said twice and nothing is lost.
         /// Whether the game is drawing this badge is <see cref="Admitted"/>'s question, asked below on
         /// the widget the node will stand on.
         /// </summary>
@@ -416,11 +526,10 @@ namespace ES2Access.UI
             into.Add(
                 new Dossier
                 {
-                    Name = CardActions.NameFromTooltip(tip),
+                    Name = HoverName(null, tip, anchor),
                     Tooltip = tip,
                     Anchor = anchor,
                     Carrier = anchor,
-                    Mode = TooltipMode.None,
                 }
             );
         }

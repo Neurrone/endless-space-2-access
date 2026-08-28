@@ -47,13 +47,15 @@ namespace ES2Access.Dev
     /// a defect in the GAME, which will draw nothing there whatever the mod does.
     ///
     /// THE BUCKETS, which is what a reader of <c>/eval DevProbe.TooltipParity()</c> is looking at.
-    /// Five of them are the findings that count (<see cref="Result.Findings"/>): <c>promised</c> - a
+    /// Six of them are the findings that count (<see cref="Result.Findings"/>): <c>promised</c> - a
     /// node claims a dossier nothing near it would draw; <c>misaimed</c> - it points at one that
     /// draws nothing, judged by <see cref="NodeVtable.PointsAt"/>; <c>unraised</c> - it points at one
     /// and never moves the pointer there, so the words review and the game draws nothing;
     /// <c>uncovered</c> - the game would
     /// draw a tooltip on a CONTROL that no node stands on; <c>unread</c> - a node covers it but
-    /// carries none of its words. The other four are context rather than defects:
+    /// carries none of its words; <c>misclassed</c> - the tooltip reaches the player the wrong way
+    /// round for its kind, a content-backed one announcing nothing or a class-backed one announcing
+    /// its words. The other four are context rather than defects:
     /// <c>decoration</c> - the same gap on a widget the player cannot work, a weaker claim because
     /// some of it is decoration nobody needs; <c>hidden</c> - seen only by the alpha-gate-off pass;
     /// <c>undescribed</c> - the GAME has no description for that tooltip class; and <c>unknown</c> -
@@ -151,6 +153,32 @@ namespace ES2Access.Dev
             /// still judged on the aim, and only one declaring neither ends up here.</summary>
             public readonly List<Breach> Unknown = new List<Breach>();
 
+            /// <summary>
+            /// THE CLASS BOUNDARY. A tooltip's KIND decides how it reaches the player and nothing else
+            /// does (owner ruling 2026-08-28): one the game carries WORDS for is announced whole when
+            /// focus lands; one the game ASSEMBLES on hover is buffer-only. The door derives both from
+            /// the tooltip itself, so no screen can ask for the other - and this bucket is the reading
+            /// back, on real nodes with real tooltips, of whether it came out that way.
+            ///
+            /// Two shapes, both reported here:
+            /// <list type="bullet">
+            /// <item>a node pointing at a CONTENT-backed tooltip whose readout has no tooltip part at
+            /// all, with words of that tooltip the readout never says. The dedupe is allowed for: a
+            /// line the LABEL speaks is in the readout, so the control named after its own tooltip's
+            /// first line is not a finding, and one whose whole one-line tooltip is its name is not
+            /// either.</item>
+            /// <item>a node whose readout contains a line of a CLASS-backed tooltip - its own aim, or
+            /// any buffer-only section it declares. Those words belong in the review buffer alone.</item>
+            /// </list>
+            ///
+            /// What it cannot see, by the nature of the two kinds. A class-backed tooltip HAS no words
+            /// until the tooltip window draws them (<c>DrawnTooltip</c>), so the leak half only ever
+            /// answers for the node whose tooltip the game is drawing right now - focus the node,
+            /// <c>TooltipDelay(0)</c>, then run. The content-backed half needs nothing drawn and
+            /// answers for every node on the screen.
+            /// </summary>
+            public readonly List<Breach> Misclassed = new List<Breach>();
+
             public int Findings
             {
                 get
@@ -159,7 +187,8 @@ namespace ES2Access.Dev
                         + Misaimed.Count
                         + Uncovered.Count
                         + Unread.Count
-                        + Unraised.Count;
+                        + Unraised.Count
+                        + Misclassed.Count;
                 }
             }
         }
@@ -335,12 +364,162 @@ namespace ES2Access.Dev
             }
         }
 
+        /// <summary>
+        /// THE CLASS BOUNDARY, read back off a real node: <see cref="Result.Misclassed"/> says what it
+        /// is and what it cannot see.
+        ///
+        /// Both halves are asked of the node's AIM - the tooltip it declares it shows
+        /// (<see cref="NodeVtable.PointsAt"/>), the same authority every other bucket here judges by -
+        /// and of the sections it declares, never of a tooltip found by re-walking the tree: the
+        /// deepest tooltip inside a card is routinely decoration, and a second opinion about which
+        /// tooltip is the node's reports defects on screens that are right.
+        ///
+        /// The content-backed half fires only where the readout has NO tooltip part at all
+        /// (<see cref="TooltipParts.Part"/> answering null over the node's own sections). That is the
+        /// shape the ruling outlawed - a tooltip the game wrote a sentence for, declared buffer-only -
+        /// and it keeps a node whose part exists but reads its words back some other way (a dossier the
+        /// mod recomposes, a stat block it re-words) out of the bucket, where a line-by-line comparison
+        /// would file every one of them.
+        /// </summary>
+        private static void Misclassed(Declared node, Result result)
+        {
+            try
+            {
+                NodeVtable vtable = node.Node == null ? null : node.Node.Vtable;
+                string readout = node.Announcement;
+                if (vtable == null || string.IsNullOrEmpty(readout))
+                {
+                    return;
+                }
+
+                IList<NodeSection> sections = vtable.Sections;
+                AgeTooltip aim = AgeWidgets.AimOf(vtable);
+                AgeTooltip written = AgeWidgets.Readable(aim);
+                if (written != null && TooltipParts.Part(sections) == null)
+                {
+                    string missing = TooltipClassRule.Unspoken(
+                        AgeText.Lines(AgeText.Tooltip(written)),
+                        readout
+                    );
+                    if (missing != null)
+                    {
+                        result.Misclassed.Add(
+                            NotificationAudit.Made(
+                                node.Widget,
+                                node.Key,
+                                "points at a tooltip the game wrote words for and announces none of it - a content-backed tooltip is announced whole",
+                                NotificationAudit.Excerpt(missing)
+                            )
+                        );
+                        return;
+                    }
+                }
+
+                string leaked = Leaked(node, sections, aim, written, readout);
+                if (leaked != null)
+                {
+                    result.Misclassed.Add(
+                        NotificationAudit.Made(
+                            node.Widget,
+                            node.Key,
+                            "says the words of a tooltip the game assembles on hover - a class-backed tooltip is reviewed, never announced",
+                            NotificationAudit.Excerpt(leaked)
+                        )
+                    );
+                }
+            }
+            catch (Exception)
+            {
+                // A closure that throws while being read is the declaration side's own business: it is
+                // already reported as unlocatable, and a check that rethrew would take the whole run
+                // down over one bad node.
+            }
+        }
+
+        /// <summary>The first line of a class-backed tooltip this node's readout is saying anyway: its
+        /// own aim where the game assembles that one, and every buffer-only section it declares -
+        /// which is where a badge's dossier would show up, the row having pointed elsewhere. Answers
+        /// only while the tooltip window is drawing those words; before that they do not exist to
+        /// compare.</summary>
+        private static string Leaked(
+            Declared node,
+            IList<NodeSection> sections,
+            AgeTooltip aim,
+            AgeTooltip written,
+            string readout
+        )
+        {
+            List<string> otherwise = Otherwise(node.Node);
+            if (written == null && AgeWidgets.Draws(aim))
+            {
+                string leak = TooltipClassRule.Leaked(
+                    AgeWidgets.TooltipLines(aim)(),
+                    readout,
+                    otherwise
+                );
+                if (leak != null)
+                {
+                    return leak;
+                }
+            }
+
+            for (int i = 0; sections != null && i < sections.Count; i++)
+            {
+                NodeSection section = sections[i];
+                if (
+                    section == null
+                    || section.Lines == null
+                    || section.Mode != TooltipMode.Indicate
+                )
+                {
+                    continue;
+                }
+
+                string leak = TooltipClassRule.Leaked(section.Lines(), readout, otherwise);
+                if (leak != null)
+                {
+                    return leak;
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>What the node's readout says APART from its tooltip part - the label, the role
+        /// word, the state. A tooltip line equal to one of these is that part's own words, not a
+        /// tooltip getting into the readout.</summary>
+        private static List<string> Otherwise(GraphNode node)
+        {
+            List<string> texts = new List<string>();
+            List<NodeAnnouncement> parts = GraphAnnouncer.EffectiveAnnouncements(node);
+            for (int i = 0; i < parts.Count; i++)
+            {
+                NodeAnnouncement part = parts[i];
+                if (part == null || part.Text == null || part.Kind == AnnouncementKinds.Tooltip)
+                {
+                    continue;
+                }
+
+                try
+                {
+                    texts.Add(part.Text());
+                }
+                catch (Exception)
+                {
+                    // An unreadable part says nothing, which is exactly how it is treated here.
+                }
+            }
+
+            return texts;
+        }
+
         private static void CheckDeclarations(List<Declared> declared, Result result)
         {
             for (int i = 0; i < declared.Count; i++)
             {
                 Declared node = declared[i];
                 Unraised(node, result);
+                Misclassed(node, result);
                 if (!NotificationAudit.Promises(node))
                 {
                     continue;
@@ -685,6 +864,7 @@ namespace ES2Access.Dev
                 NotificationAudit.WriteBreaches(json, "uncovered", result.Uncovered);
                 NotificationAudit.WriteBreaches(json, "decoration", result.Decoration);
                 NotificationAudit.WriteBreaches(json, "unread", result.Unread);
+                NotificationAudit.WriteBreaches(json, "misclassed", result.Misclassed);
                 NotificationAudit.WriteBreaches(json, "hidden", result.Hidden);
                 NotificationAudit.WriteBreaches(json, "undescribed", result.Undescribed);
                 NotificationAudit.WriteBreaches(json, "unknown", result.Unknown);

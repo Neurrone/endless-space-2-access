@@ -422,8 +422,7 @@ namespace ES2Access.Screens
                 () => named ?? CardActions.FirstLine(tooltip),
                 () => AgeWidgets.Press(it),
                 () => AgeWidgets.Offered(it),
-                tooltip,
-                named == null ? TooltipMode.None : (TooltipMode?)null
+                tooltip
             );
             AgeWidgets.PointAt(vtable, widget);
             Cells.Add(_cells, widget, ControlId.For(widget, key), vtable);
@@ -450,8 +449,7 @@ namespace ES2Access.Screens
                 () => CardActions.FirstLine(tooltip),
                 () => AgeWidgets.Press(pressed),
                 () => AgeWidgets.Offered(pressed),
-                tooltip,
-                TooltipMode.None
+                tooltip
             );
             vtable.Announcements.Add(GraphNodes.ValuePart(() => AgeText.Label(it), false));
             AgeWidgets.PointAt(vtable, button);

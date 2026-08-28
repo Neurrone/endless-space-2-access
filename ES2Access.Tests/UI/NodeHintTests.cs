@@ -62,7 +62,7 @@ namespace ES2Access.Tests.UI
                 },
                 Sections = new List<NodeSection>
                 {
-                    new NodeSection(() => new List<string> { "Two planets" }, TooltipMode.None),
+                    NodeSection.Buffer(() => new List<string> { "Two planets" }),
                 },
             };
         }

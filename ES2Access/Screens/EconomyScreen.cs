@@ -730,8 +730,8 @@ namespace ES2Access.Screens
         /// A resource the empire has not located yet has NO name here. The game draws a question mark
         /// for it and, instead of the resource's own dossier, hangs the one sentence saying it has not
         /// been found (<c>ResourceItem.SetTooltipProperties</c> - the target is set only for a resource
-        /// the empire knows). That sentence is what the item is called, and it is then not announced a
-        /// second time as a tooltip.
+        /// the empire knows). That sentence is what the item is called, and the readout drops that line
+        /// from the tooltip it goes on to announce.
         ///
         /// The cell never says which family it belongs to: the column it sits in is announced as the
         /// edge the player crossed to reach it - or, on a landing that crossed no edge, as the column
@@ -760,11 +760,7 @@ namespace ES2Access.Screens
                     GraphNodes.LabelPart(() => label),
                     GraphNodes.ValuePart(() => StockAndNet(it.StockLabel, it.NetLabel)),
                 },
-                Sections = GraphNodes.Sections(
-                    null,
-                    tooltip,
-                    named ? GraphNodes.ModeFor(tooltip) : TooltipMode.None
-                ),
+                Sections = GraphNodes.Sections(null, tooltip),
             };
             AgeWidgets.PointAt(vtable, widget);
             return vtable;
@@ -1130,8 +1126,7 @@ namespace ES2Access.Screens
                 () => AgeWidgets.Toggle(it.SelectionToggle),
                 offered,
                 null,
-                tooltip,
-                named ? GraphNodes.ModeFor(tooltip) : TooltipMode.None
+                tooltip
             );
             vtable.Announcements.Add(GraphNodes.ValuePart(() => AgeText.Label(it.StockLabel)));
             MarketGestures(vtable, () => AgeWidgets.Toggle(it.SelectionToggle), offered);

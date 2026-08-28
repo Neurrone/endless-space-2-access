@@ -343,7 +343,7 @@ namespace ES2Access.Screens
                 {
                     GraphNodes.ValuePart(() => Sentence(tooltip), false),
                 },
-                Sections = GraphNodes.Sections(null, null),
+                Sections = null,
             };
             AgeWidgets.PointAt(vtable, widget);
             return vtable;
@@ -550,7 +550,7 @@ namespace ES2Access.Screens
                 {
                     GraphNodes.LabelPart(() => Sentence(tooltip) ?? AgeText.Label(it)),
                 },
-                Sections = GraphNodes.Sections(null, null),
+                Sections = null,
             };
             AgeWidgets.PointAt(vtable, widget);
             builder.AddItem(Nodes.Drawn(ControlId.For(total, key), vtable, total));

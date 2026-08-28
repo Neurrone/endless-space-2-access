@@ -53,8 +53,8 @@ namespace ES2Access.Screens
     /// top, each with the empire's rank in that race and three performance figures around its rim. It
     /// reads as one row per sector with the figures as its children, in the order the wheel draws them.
     /// The sentence the game puts on a sector - what the condition asks for and how far along the
-    /// empire is - is INDICATED rather than announced, this page's one deliberate departure from the
-    /// short-tooltip rule: it is a paragraph, and the six rows are walked as a list.
+    /// empire is - is plain text the game wrote, so it is announced whole like every other plain
+    /// tooltip in the mod. This page states no exception: a tooltip's kind is the whole of the rule.
     ///
     /// Escape and F1 stay the game's: the page is the game's own and its own close paths work. It is one
     /// of the icon strip's screens, which the engine draws in an exclusive window stack - opening any
@@ -353,6 +353,21 @@ namespace ES2Access.Screens
                 offered,
                 tooltip
             );
+            // BOTH tooltips the slot carries. The name comes off the FIDSI group.s sentence, so that
+            // sentence has to be reachable - it used to be read for the name and then declared nowhere,
+            // and everything after its first line was unreachable. The slot.s OWN is the one the pointer
+            // goes to, so it is last and it is the one announced.
+            List<AgeTooltip> carried = new List<AgeTooltip>(2);
+            if (
+                it.FIDSIGroupTooltip != null
+                && !AgeWidgets.SameTooltip(it.FIDSIGroupTooltip, tooltip)
+            )
+            {
+                carried.Add(it.FIDSIGroupTooltip);
+            }
+
+            carried.Add(tooltip);
+            vtable.Sections = GraphNodes.SectionsFor(carried);
             vtable.Announcements.Add(GraphNodes.ValuePart(() => RelicSlotAction(it)));
             vtable.Announcements.Add(GraphNodes.ValuePart(() => RelicsAssigned(it)));
             GraphNodes.AddRefusal(vtable, tooltip, offered);
@@ -633,7 +648,6 @@ namespace ES2Access.Screens
                 () => SettingRows.OpenList(it, TableSheet.HeaderName(heading)),
                 () => AgeWidgets.Operable(it.AgeTransform),
                 TableSheet.TooltipOf(widget),
-                null,
                 () => _table.CellFacts(heading, widget)
             );
         }
@@ -1597,10 +1611,10 @@ namespace ES2Access.Screens
                     GraphNodes.LabelPart(() => AgeText.Label(it.VictoryObjectives)),
                     GraphNodes.ValuePart(() => Rank(it)),
                 },
-                // The game writes a paragraph and the progress line into one plain tooltip. Indicated
-                // rather than announced - this page's one departure from the short-tooltip rule - so
-                // that walking the six rows is a list rather than six paragraphs.
-                Sections = GraphNodes.Sections(null, tooltip, TooltipMode.Indicate),
+                // The game writes a paragraph and the progress line into one plain tooltip, and it is
+                // announced whole like every other plain one: the tooltip.s own kind decides, and this
+                // page states no exception to it.
+                Sections = GraphNodes.Sections(null, tooltip),
             };
             AgeWidgets.PointAt(vtable, Widget(sector.VictoryObjectives) ?? widget);
 

@@ -36,7 +36,7 @@ namespace ES2Access.Tests.UI
 
         private static NodeSection Section(TooltipMode mode, params string[] lines)
         {
-            return new NodeSection(Tooltip(lines), mode);
+            return NodeSection.Derived(Tooltip(lines), mode, null);
         }
 
         // A button carrying the given sections, in a list of three so it also reads a position - the
@@ -104,7 +104,6 @@ namespace ES2Access.Tests.UI
                 Readout(Section(TooltipMode.Indicate, "A long stat block", "line two"))
             );
             Assert.Null(TooltipParts.Part(new[] { Section(TooltipMode.Indicate, "A long stat block") }));
-            Assert.Null(TooltipParts.Part(TooltipMode.Indicate, Tooltip("A long stat block")));
         }
 
         /// <summary>Whatever its state: with words, without them, and with the engine's own
@@ -117,11 +116,11 @@ namespace ES2Access.Tests.UI
             Assert.Equal("New Game, button, 2 of 3", Readout(Section(TooltipMode.Indicate, "", "   ")));
             Assert.Equal(
                 "New Game, button, 2 of 3",
-                Readout(new NodeSection(Tooltip(), TooltipMode.Indicate, () => false))
+                Readout(NodeSection.Derived(Tooltip(), TooltipMode.Indicate, () => false))
             );
             Assert.Equal(
                 "New Game, button, 2 of 3",
-                Readout(new NodeSection(Tooltip("A stat block"), TooltipMode.Indicate, () => true))
+                Readout(NodeSection.Derived(Tooltip("A stat block"), TooltipMode.Indicate, () => true))
             );
         }
 
@@ -141,7 +140,7 @@ namespace ES2Access.Tests.UI
             Assert.Null(TooltipParts.Part(null));
             Assert.Null(TooltipParts.Part(new NodeSection[0]));
             Assert.Null(TooltipParts.Part(new NodeSection[] { null }));
-            Assert.Null(TooltipParts.Part(new[] { new NodeSection(null, TooltipMode.Announce) }));
+            Assert.Null(TooltipParts.Part(new[] { NodeSection.Derived(null, TooltipMode.Announce, null) }));
         }
 
         [Fact]
@@ -215,7 +214,7 @@ namespace ES2Access.Tests.UI
         {
             List<string> lines = new List<string> { "Join a multiplayer game" };
             NodeAnnouncement part = TooltipParts.Part(
-                new[] { new NodeSection(() => lines, TooltipMode.Announce) }
+                new[] { NodeSection.Composed(() => lines) }
             );
             Assert.Equal("Join a multiplayer game", part.Text());
 
@@ -302,6 +301,154 @@ namespace ES2Access.Tests.UI
             b.BeginGroup(new SyntheticNode(Id("g"), Vt("Options")));
             b.EndGroup();
             Assert.Equal("Options, collapsed", GraphAnnouncer.LeafText(Node(b.Build(), "g")));
+        }
+
+        // ---- the readout's own dedupe ----
+        //
+        // Half this game's icons are named by the first line of their own tooltip, and the readout is
+        // where the label and the tooltip are both in hand. A line the readout is going to say anyway
+        // comes out of the tooltip part; everything else is still handed over, and the review buffer
+        // (NodeBufferTests) keeps all of it either way.
+
+        [Fact]
+        public void ALineTheLabelAlreadySaysIsDroppedFromTheTooltip()
+        {
+            Assert.Equal(
+                "New Game, button, Skips setup, 2 of 3",
+                Readout(Section(TooltipMode.Announce, "New Game", "Skips setup"))
+            );
+        }
+
+        [Fact]
+        public void TheDedupeIgnoresCaseAndSurroundingSpace()
+        {
+            Assert.Equal(
+                "New Game, button, Skips setup, 2 of 3",
+                Readout(Section(TooltipMode.Announce, "  new game  ", "Skips setup"))
+            );
+        }
+
+        /// <summary>A one-line tooltip that IS the name says nothing: the label already said it, and
+        /// there is nothing left. This is the case ~15 screens used to write out by hand.</summary>
+        [Fact]
+        public void ATooltipThatOnlyRepeatsTheNameSaysNothing()
+        {
+            Assert.Equal("New Game, button, 2 of 3", Readout(Section(TooltipMode.Announce, "New Game")));
+        }
+
+        /// <summary>Every other part of the readout counts, not just the label: a value read off the
+        /// same tooltip is the other way a control comes to say one line twice.</summary>
+        [Fact]
+        public void ALineAnotherPartAlreadySaysIsDroppedToo()
+        {
+            GraphAnnouncer.PositionText = (i, n) => i + " of " + n;
+            GraphBuilder b = new GraphBuilder();
+            b.AddItem(new SyntheticNode(
+                Id("t"),
+                new NodeVtable
+                {
+                    ControlType = Type("button", "button"),
+                    Announcements = new List<NodeAnnouncement>
+                    {
+                        Part("Steam Cloud", AnnouncementKinds.Label),
+                        Part("Not running", AnnouncementKinds.Value),
+                    },
+                    Sections = new[]
+                    {
+                        Section(TooltipMode.Announce, "Steam Cloud", "Not running", "Saves stay local"),
+                    },
+                }
+            ));
+            Assert.Equal(
+                "Steam Cloud, button, Not running, Saves stay local",
+                GraphAnnouncer.LeafText(Node(b.Build(), "t"))
+            );
+        }
+
+        /// <summary>Both sides are resolved at SPEAK time: a label read off the tooltip's first line
+        /// changes when the tooltip does, and a dedupe settled at declare time would go on dropping
+        /// last turn's sentence.</summary>
+        [Fact]
+        public void TheDedupeIsResolvedAtSpeakTimeOnBothSides()
+        {
+            string name = "Colonize";
+            List<string> lines = new List<string> { "Colonize", "This world is barren" };
+            NodeAnnouncement label = new NodeAnnouncement(() => name, kind: AnnouncementKinds.Label);
+            NodeVtable vt = new NodeVtable
+            {
+                Announcements = new List<NodeAnnouncement> { label },
+                Sections = new[] { NodeSection.Derived(() => lines, TooltipMode.Announce, null) },
+            };
+            GraphBuilder b = new GraphBuilder();
+            b.AddItem(new SyntheticNode(Id("t"), vt));
+            GraphNode node = Node(b.Build(), "t");
+            Assert.Equal("Colonize, This world is barren", GraphAnnouncer.LeafText(node));
+
+            name = "This world is barren";
+            lines[1] = "Outpost first";
+            Assert.Equal(
+                "This world is barren, Colonize Outpost first",
+                GraphAnnouncer.LeafText(node)
+            );
+        }
+
+        // ---- composed words and a tooltip are not in competition ----
+
+        /// <summary>A control can have BOTH: words the mod went and got out of the model (a report
+        /// row's outcome sentence) and a tooltip of its own whose kind says it speaks. Neither may
+        /// swallow the other - "the last one wins" is about which TOOLTIP a control points at, and
+        /// composed words are not a tooltip.</summary>
+        [Fact]
+        public void ComposedWordsAndAnAnnouncingTooltipBothSpeakInDeclaredOrder()
+        {
+            Assert.Equal(
+                "New Game, button, A crushing defeat, What the fleet lost, 2 of 3",
+                Readout(
+                    NodeSection.Composed(Tooltip("A crushing defeat")),
+                    Section(TooltipMode.Announce, "What the fleet lost")
+                )
+            );
+        }
+
+        /// <summary>And the competition still holds among the TOOLTIPS: a control points at one, so
+        /// the last of them is the only one heard, whatever else is declared beside them.</summary>
+        [Fact]
+        public void OnlyTheLastTooltipSpeaksEvenBesideComposedWords()
+        {
+            Assert.Equal(
+                "New Game, button, A crushing defeat, The value's own, 2 of 3",
+                Readout(
+                    NodeSection.Composed(Tooltip("A crushing defeat")),
+                    Section(TooltipMode.Announce, "The caption's"),
+                    Section(TooltipMode.Announce, "The value's own")
+                )
+            );
+        }
+
+        /// <summary>Where the two overlap - a sentence the row composed out of the same words its
+        /// tooltip carries - the later section's copy comes out, so the readout says it once.</summary>
+        [Fact]
+        public void ALineAnEarlierSectionAlreadySpokeIsNotSaidAgainByALaterOne()
+        {
+            Assert.Equal(
+                "New Game, button, A crushing defeat, What the fleet lost, 2 of 3",
+                Readout(
+                    NodeSection.Composed(Tooltip("A crushing defeat")),
+                    Section(TooltipMode.Announce, "a crushing defeat", "What the fleet lost")
+                )
+            );
+        }
+
+        /// <summary>The dedupe is the ANNOUNCEMENT's alone. Nothing is taken out of the declaration,
+        /// so the tooltip part built without the rest of the readout still says every line - which is
+        /// what the parity audit and the buffer read.</summary>
+        [Fact]
+        public void ThePartBuiltWithNothingElseInHandStillSaysEveryLine()
+        {
+            NodeAnnouncement part = TooltipParts.Part(
+                new[] { Section(TooltipMode.Announce, "New Game", "Skips setup") }
+            );
+            Assert.Equal("New Game Skips setup", part.Text());
         }
     }
 }

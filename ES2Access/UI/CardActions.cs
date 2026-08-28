@@ -249,7 +249,6 @@ namespace ES2Access.UI
                         offered,
                         tooltip,
                         null,
-                        null,
                         action.Value
                     )
                     : GraphNodes.Button(

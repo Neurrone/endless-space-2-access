@@ -140,13 +140,9 @@ namespace ES2Access.Screens
         private static IList<NodeSection> Details(TechnologyItem2 item)
         {
             List<NodeSection> sections = new List<NodeSection>(4);
-            Add(
-                sections,
-                Shown(item.BottomSuggestionGroup) ? item.BottomSuggestionTooltip : null,
-                TooltipMode.None
-            );
-            Add(sections, item.Tooltip, null);
-            Add(sections, Shown(item.AffinityGroup) ? item.AffinityTooltip : null, TooltipMode.None);
+            Reviewed(sections, Shown(item.BottomSuggestionGroup) ? item.BottomSuggestionTooltip : null);
+            Add(sections, item.Tooltip);
+            Reviewed(sections, Shown(item.AffinityGroup) ? item.AffinityTooltip : null);
 
             AgeTransform unlocks = item.TechnologyUnlocksContainer;
             List<AgeTransform> children = unlocks == null || !Shown(unlocks)
@@ -156,20 +152,27 @@ namespace ES2Access.Screens
             {
                 if (Shown(children[i]))
                 {
-                    Add(sections, AgeWidgets.Raw(children[i]), null);
+                    Add(sections, AgeWidgets.Raw(children[i]));
                 }
             }
 
             return sections.Count == 0 ? null : sections;
         }
 
-        private static void Add(
-            List<NodeSection> sections,
-            AgeTooltip tooltip,
-            TooltipMode? mode
-        )
+        private static void Add(List<NodeSection> sections, AgeTooltip tooltip)
         {
-            NodeSection section = GraphNodes.TooltipSection(tooltip, mode);
+            NodeSection section = GraphNodes.TooltipSection(tooltip);
+            if (section != null)
+            {
+                sections.Add(section);
+            }
+        }
+
+        /// <summary>One of the card.s OTHER tooltips - reviewable, never the one the card announces,
+        /// which is the one the card points at.</summary>
+        private static void Reviewed(List<NodeSection> sections, AgeTooltip tooltip)
+        {
+            NodeSection section = GraphNodes.ReviewedTooltipSection(tooltip);
             if (section != null)
             {
                 sections.Add(section);

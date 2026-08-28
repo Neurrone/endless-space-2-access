@@ -190,8 +190,7 @@ namespace ES2Access.Screens
                     CardActions.NameFromTooltip(tooltip),
                     () => AgeWidgets.Press(it),
                     () => AgeWidgets.Operable(widget),
-                    tooltip,
-                    TooltipMode.None
+                    tooltip
                 );
                 AgeWidgets.Point(vtable, it, tooltip, widget);
                 builder.BeginStop(AlertStop);

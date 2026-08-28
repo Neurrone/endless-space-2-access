@@ -381,8 +381,7 @@ namespace ES2Access.Screens
                     CardActions.NameFromTooltip(tooltip),
                     () => AgeWidgets.Press(at),
                     () => AgeWidgets.Offered(at),
-                    tooltip,
-                    TooltipMode.None
+                    tooltip
                 );
                 AgeWidgets.PointAt(vtable, at);
                 builder.AddItem(Nodes.Drawn(ControlId.For(at, keyPrefix + "switch"), vtable, at));

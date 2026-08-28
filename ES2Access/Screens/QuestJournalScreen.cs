@@ -811,14 +811,13 @@ namespace ES2Access.Screens
 
             AgeTransform it = widget;
             AgeTooltip tooltip = AgeWidgets.Raw(widget);
-            // The button is a wordless image and its tooltip IS its name, so the name is spoken as the
-            // label and the tooltip is not announced a second time - it stays reviewable.
+            // The button is a wordless image and its tooltip IS its name: the label says it, and the
+            // readout drops the line it has already said from the tooltip it goes on to announce.
             NodeVtable vtable = GraphNodes.Button(
                 () => AgeText.Tooltip(tooltip),
                 () => AgeWidgets.Press(it),
                 () => AgeWidgets.Operable(it),
-                tooltip,
-                TooltipMode.None
+                tooltip
             );
             AgeWidgets.PointAt(vtable, widget);
             builder.AddItem(Nodes.Drawn(ControlId.For(widget, "quests:minor-faction"), vtable, widget));

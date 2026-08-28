@@ -982,29 +982,25 @@ namespace ES2Access.Tests.UI
         // ---- behaviors ----
 
         [Fact]
-        public void ActivateSecondaryAndTooltipReportWhetherTheControlHasThem()
+        public void ActivateAndSecondaryReportWhetherTheControlHasThem()
         {
             GraphState state = new GraphState();
-            int activated = 0, secondary = 0, tooltip = 0;
+            int activated = 0, secondary = 0;
             NodeVtable rich = Vt("Rich");
             rich.OnActivate = () => activated++;
             rich.OnSecondary = () => secondary++;
-            rich.OnTooltip = () => tooltip++;
 
             KeyGraph g = new KeyGraph(Renderer(b =>
                 b.AddItem(new SyntheticNode(Id("a"), rich)).AddItem(new SyntheticNode(Id("b"), Vt("Plain")))), state);
             g.Rerender();
             Assert.True(g.Activate());
             Assert.True(g.Secondary());
-            Assert.True(g.Tooltip());
             Assert.Equal(1, activated);
             Assert.Equal(1, secondary);
-            Assert.Equal(1, tooltip);
 
             g.Move(GraphDir.Down);
             Assert.False(g.Activate());
             Assert.False(g.Secondary());
-            Assert.False(g.Tooltip());
         }
 
         /// <summary>

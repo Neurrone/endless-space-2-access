@@ -140,8 +140,7 @@ namespace ES2Access.UI
                 () => Selected(owner, it),
                 () => AgeWidgets.Toggle(it.SelectionToggle),
                 () => AgeWidgets.Operable(it.AgeTransform),
-                tooltip,
-                TooltipMode.None
+                tooltip
             );
 
             // All three gestures are the tile's own click. Which of the game's three selection rules

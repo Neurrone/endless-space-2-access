@@ -357,7 +357,6 @@ namespace ES2Access.Screens
 
                 AgeControlToggle it = mark;
                 AgeTooltip tooltip = AgeWidgets.Raw(widget);
-                TooltipMode? mode = ModeOf(widget);
                 NodeVtable vtable;
                 if (Clickable(mark))
                 {
@@ -367,8 +366,7 @@ namespace ES2Access.Screens
                         () => AgeWidgets.Toggle(it),
                         () => AgeWidgets.Operable(AgeWidgets.Transform(it)),
                         null,
-                        tooltip,
-                        mode
+                        tooltip
                     );
                 }
                 else
@@ -383,7 +381,7 @@ namespace ES2Access.Screens
                             GraphNodes.LabelPart(() => NameOf(widget, tooltip)),
                             GraphNodes.SelectedPart(() => it.State),
                         },
-                        Sections = GraphNodes.Sections(null, tooltip, mode),
+                        Sections = GraphNodes.Sections(null, tooltip),
                     };
                 }
 
@@ -1124,7 +1122,7 @@ namespace ES2Access.Screens
             vtable.Sections = GraphNodes.Sections(
                 GraphNodes.TooltipSection(tooltip),
                 AgeWidgets.Painted(tierWidget)
-                    ? GraphNodes.TooltipSection(card.ExperienceTooltip, TooltipMode.None)
+                    ? GraphNodes.ReviewedTooltipSection(card.ExperienceTooltip)
                     : null
             );
             vtable.Row = row;
@@ -1354,8 +1352,7 @@ namespace ES2Access.Screens
                 () => NameOf(it, tooltip),
                 () => AgeWidgets.Press(it),
                 offered,
-                tooltip,
-                ModeOf(widget)
+                tooltip
             );
             GraphNodes.AddRefusal(vtable, tooltip, offered);
 
@@ -1393,25 +1390,6 @@ namespace ES2Access.Screens
 
             IList<string> lines = AgeText.Lines(AgeText.Tooltip(tooltip));
             return lines.Count > 0 ? lines[0] : null;
-        }
-
-        /// <summary>
-        /// How a wordless control's tooltip reaches the player.
-        ///
-        /// A control that draws no words is NAMED by its tooltip (see <see cref="NameOf"/>), so
-        /// announcing that tooltip as well would say the name twice. It is indicated instead: the
-        /// player hears that there is more and the review buffer holds every word of it, with the first
-        /// line dropped where it only repeats the name. A control that draws its own words is left to
-        /// the ordinary rule.
-        ///
-        /// Whether a control draws words is fixed by the prefab, so this is decided once when the node
-        /// is declared rather than asked every frame.
-        /// </summary>
-        private static TooltipMode? ModeOf(AgeTransform widget)
-        {
-            return string.IsNullOrEmpty(AgeWidgets.TextOf(widget))
-                ? (TooltipMode?)TooltipMode.Indicate
-                : null;
         }
 
         /// <summary>A line the player reads and does not work - what the whole phrase under

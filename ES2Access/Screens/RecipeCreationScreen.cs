@@ -359,8 +359,7 @@ namespace ES2Access.Screens
                 () => named ? AgeWidgets.TooltipTitle(tooltip) : CardActions.FirstLine(tooltip),
                 () => AgeWidgets.Press(button),
                 offered,
-                tooltip,
-                named ? GraphNodes.ModeFor(tooltip) : TooltipMode.None
+                tooltip
             );
             if (named)
             {

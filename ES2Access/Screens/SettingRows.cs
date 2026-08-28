@@ -265,7 +265,8 @@ namespace ES2Access.Screens
         // ---- the other shapes a control takes ----
 
         /// <summary>A button: what it is called, or - for one the game drew as a symbol - what its
-        /// tooltip calls it, in which case the tooltip is not said twice.</summary>
+        /// tooltip calls it, in which case the readout drops that line from the tooltip it
+        /// announces.</summary>
         public static void AddButton(GraphBuilder builder, AgeControlButton button, string key)
         {
             AgeTransform widget = AgeWidgets.Transform(button);
@@ -276,15 +277,11 @@ namespace ES2Access.Screens
 
             AgeControlButton it = button;
             AgeTooltip tooltip = AgeWidgets.Raw(widget);
-            bool wordless = string.IsNullOrEmpty(AgeWidgets.TextOf(widget));
             NodeVtable vtable = GraphNodes.Button(
                 () => ButtonText(it, tooltip),
                 () => AgeWidgets.Press(it),
                 () => AgeWidgets.Operable(AgeWidgets.Transform(it)),
-                tooltip,
-                // A button the game drew as a symbol is NAMED by its tooltip, and the label has just
-                // said it: reviewable, never said twice.
-                wordless ? TooltipMode.None : (TooltipMode?)null
+                tooltip
             );
             AgeWidgets.Point(vtable, it);
             builder.AddItem(Nodes.Drawn(ControlId.For(button, key), vtable, button));
@@ -504,28 +501,24 @@ namespace ES2Access.Screens
         /// and the rest are what the buffer keeps: a faction card's refusal reason beside the
         /// difficulty rating printed on it, a readout's value beside the icon that captions it.
         ///
-        /// The row says which, because only the row knows. The projection's "the last short one
-        /// speaks" rule is right for a caption-then-value PAIR, where the value is the last thing
-        /// drawn; it is wrong for a card, where what comes after the important tooltip is a badge.
+        /// The row says WHICH, because only the row knows; how loudly that one reads is still the
+        /// tooltip.s own kind to answer. The door.s "the last one is the node.s own" rule is right for a
+        /// caption-then-value PAIR, where the value is the last thing drawn; it is wrong for a card,
+        /// where what comes after the important tooltip is a badge.
         /// <paramref name="said"/> null - a row whose own widget carries no tooltip - means none of
         /// them speaks and all of them are reviewable, which is the honest reading of a row that has
         /// nothing at its own level to explain itself with.
         /// </summary>
-        public static IList<NodeSection> RowSections(
-            AgeTransform widget,
-            AgeTooltip said,
-            TooltipMode? mode = null
-        )
+        public static IList<NodeSection> RowSections(AgeTransform widget, AgeTooltip said)
         {
             List<AgeTooltip> found = new List<AgeTooltip>();
             CollectTooltips(widget, found, TooltipDepth);
             List<NodeSection> sections = null;
             for (int i = 0; i < found.Count; i++)
             {
-                NodeSection section = GraphNodes.TooltipSection(
-                    found[i],
-                    said != null && found[i] == said ? mode : (TooltipMode?)TooltipMode.None
-                );
+                NodeSection section = said != null && found[i] == said
+                    ? GraphNodes.TooltipSection(found[i])
+                    : GraphNodes.ReviewedTooltipSection(found[i]);
                 if (section == null)
                 {
                     continue;
@@ -725,10 +718,7 @@ namespace ES2Access.Screens
                     return said;
                 }
 
-                NodeAnnouncement part = TooltipParts.Part(
-                    GraphNodes.ModeFor(it),
-                    GraphNodes.TooltipDetails(it)
-                );
+                NodeAnnouncement part = TooltipParts.Part(GraphNodes.Sections(null, it));
                 return new MessageBuilder()
                     .ListItem(said)
                     .ListItem(part == null || part.Text == null ? null : part.Text())

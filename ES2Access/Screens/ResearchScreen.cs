@@ -1114,7 +1114,10 @@ namespace ES2Access.Screens
             AgeTransform name = stage.StageNameGroup;
             AgeTooltip tooltip = stage.StageTooltip;
             NodeVtable vtable = GraphNodes.Group(() => StageTitle(it), null, tooltip);
-            vtable.Announcements.Add(Value(() => StageLock(it)));
+            // The lock sentence is the game.s own, written on markers the stage draws around its ring
+            // and nowhere the ring itself says: the row went and got it, so the row says it - declared
+            // as a section, so the same words reach the review buffer exactly once.
+            vtable.Sections = GraphNodes.SpokenSections(() => StageLockLines(it), tooltip);
             Hover(vtable, name, tooltip);
             Branch(builder, vtable, id, ResearchCamera.Level.Stage, quadrant, stage);
             return vtable;
@@ -1262,7 +1265,7 @@ namespace ES2Access.Screens
             {
                 // Content: whether the affinity section belongs in the card's buffer.
                 return item.AffinityGroup != null && AgeWidgets.Visible(item.AffinityGroup)
-                    ? GraphNodes.TooltipSection(item.AffinityTooltip, TooltipMode.None)
+                    ? GraphNodes.ReviewedTooltipSection(item.AffinityTooltip)
                     : null;
             }
             catch (Exception)
@@ -2348,6 +2351,18 @@ namespace ES2Access.Screens
 
         /// <summary>While a stage is locked, the game's own sentence about what is holding it -
         /// which it writes on the markers it draws around the ring.</summary>
+        private static IList<string> StageLockLines(BaseTechnologyStageItem stage)
+        {
+            string said = StageLock(stage);
+            List<string> lines = new List<string>(1);
+            if (!string.IsNullOrEmpty(said))
+            {
+                lines.Add(said);
+            }
+
+            return lines;
+        }
+
         private static string StageLock(BaseTechnologyStageItem stage)
         {
             MessageBuilder message = new MessageBuilder();

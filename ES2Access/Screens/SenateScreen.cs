@@ -252,7 +252,6 @@ namespace ES2Access.Screens
                 enabled,
                 tooltip,
                 null,
-                null,
                 () => Cost(it)
             );
             // No refusal part: the game writes none for these rows, and the tooltip's content field holds
@@ -542,7 +541,7 @@ namespace ES2Access.Screens
                     GraphNodes.TooltipSection(it.PortraitTooltip),
                     GraphNodes.TooltipSection(it.PoliticsTooltip),
                     GraphNodes.TooltipSection(it.ExperienceTooltip),
-                    new NodeSection(() => AgeWidgets.DrawnLines(at), TooltipMode.None)
+                    NodeSection.Buffer(() => AgeWidgets.DrawnLines(at))
                 ),
             };
             AgeWidgets.PointAt(vtable, widget);

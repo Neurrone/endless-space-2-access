@@ -515,8 +515,8 @@ namespace ES2Access.Screens
             AddStateIcon(
                 builder,
                 Transform(slot.HostIcon),
-                () => ModStrings.Get(ModStrings.NewGameHost),
-                key + "/host"
+                key + "/host",
+                () => ModStrings.Get(ModStrings.NewGameHost)
             );
             // Faction before the state strip (owner order, 2026-08-21): the game draws the
             // difficulty marks between the name and the faction, but what a slot IS comes before
@@ -582,25 +582,24 @@ namespace ES2Access.Screens
                 }
                 else if (widget == slot.ReadyIconGroup || widget == slot.EliminatedGroup)
                 {
-                    AgeTransform mark = widget;
                     AddStateIcon(
                         builder,
                         widget,
-                        () => AgeText.Tooltip(AgeWidgets.Raw(mark)),
                         key + (widget == slot.ReadyIconGroup ? "/ready" : "/eliminated")
                     );
                 }
             }
         }
 
-        /// <summary>A mark the game draws as a picture and explains in words somewhere else: the words are
-        /// the readout's value, so the line says the one thing the picture is there to say and says it
-        /// once.</summary>
+        /// <summary>A mark the game draws as a picture and explains in words somewhere else - on the
+        /// mark's own tooltip, which is the only words there are for it. Declared as the readout's
+        /// tooltip rather than copied into a value of its own, so the one place those words are written
+        /// down is what both the line and the review buffer read.</summary>
         private static void AddStateIcon(
             GraphBuilder builder,
             AgeTransform widget,
-            Func<string> text,
-            string key
+            string key,
+            Func<string> text = null
         )
         {
             if (widget == null || !SettingRows.Drawn(widget))
@@ -608,7 +607,12 @@ namespace ES2Access.Screens
                 return;
             }
 
-            NodeVtable vtable = GraphNodes.Readout(() => null, text, null, null);
+            NodeVtable vtable = GraphNodes.Readout(
+                () => null,
+                text,
+                null,
+                text == null ? AgeWidgets.Raw(widget) : null
+            );
             AgeWidgets.PointAt(vtable, widget);
             builder.AddItem(Nodes.Drawn(ControlId.For(widget, key), vtable, widget));
         }

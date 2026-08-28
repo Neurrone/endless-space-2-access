@@ -13,8 +13,10 @@ namespace ES2Access.Core.UI.Graph
     /// sentence that explains the control (say it outright) or a stat block assembled at draw time
     /// that the player will want to walk at their own pace (leave it to the review buffer) is
     /// something the tooltip itself already answers, by whether it names a CLASS or carries plain
-    /// Content. A screen only chooses directly in the rare case it has no <c>AgeTooltip</c> to hand
-    /// <c>ModeFor</c> at all - a control this mod invented rather than one the game drew.
+    /// Content. There is no way for a screen to say otherwise: the only sections that carry a mode
+    /// off a tooltip are built at that one door, and a screen that wants a section of its own asks for
+    /// <see cref="NodeSection.Buffer"/> or <see cref="NodeSection.Composed"/> - which are about words
+    /// the mod composed, where there is no tooltip to have a kind.
     ///
     /// Either way the tooltip's full text still feeds the review buffer, so nothing is ever only
     /// available by hearing it go past. Nothing in the readout says the buffer has something in it:
@@ -50,13 +52,23 @@ namespace ES2Access.Core.UI.Graph
     /// The buffer's half of the same declaration is the navigator's (<c>GraphNavigator.BufferLines</c>);
     /// this half is one announcement part, composed from the sections' modes alone:
     ///
-    /// - the LAST <see cref="TooltipMode.Announce"/> section is the one spoken outright. A row can carry
-    ///   more than one tooltip (the heading explains the measure, the value describes itself) and it is
-    ///   the value's - the last one drawn - that the player asked for by landing there.
+    /// - a control points at ONE tooltip, so at most ONE tooltip's lines are spoken: the LAST
+    ///   <see cref="TooltipMode.Announce"/> section that came off a tooltip. A row can carry more than
+    ///   one (the heading explains the measure, the value describes itself) and it is the value's - the
+    ///   last one drawn - that the player asked for by landing there.
+    /// - words the mod COMPOSED (<see cref="NodeSection.Composed"/>) are the control's own rather than
+    ///   any tooltip's, so they are not in that competition: every one of them is spoken, in declared
+    ///   order alongside the tooltip's. A report row that went and got the sentence behind its outcome
+    ///   word AND carries a tooltip must not lose one to the other.
     /// - <see cref="TooltipMode.Indicate"/> and <see cref="TooltipMode.None"/> sections say nothing
     ///   here at all. Both are reviewable and neither is announced: reading them on every pass is what
     ///   buffers exist to avoid, and announcing that they EXIST was a claim the player heard on most
     ///   controls of most screens, which is the same as hearing it on none.
+    /// - a line the READOUT ALREADY SPEAKS is dropped from it. Half this game's icons are named by the
+    ///   first line of their own tooltip, and a control whose label was read off the tooltip used to
+    ///   have to choose between saying that line twice ("Empire Summary, button, Empire Summary Click
+    ///   to consult...") and throwing the whole tooltip away. Neither is the answer: the line the label
+    ///   already said comes out, the rest is announced, and no call site has to know.
     ///
     /// Kept beside the graph types rather than in a game adapter so the wording and these rules are the
     /// same on every screen and testable without the game.
@@ -68,26 +80,56 @@ namespace ES2Access.Core.UI.Graph
         /// to be the one it would give now. Null when nothing in the list wants to be heard.</summary>
         public static NodeAnnouncement Part(IList<NodeSection> sections)
         {
+            return Part(sections, null);
+        }
+
+        /// <summary>
+        /// The same, minus whatever <paramref name="alreadySpoken"/> - the rest of the control's own
+        /// readout - is going to say anyway.
+        ///
+        /// Resolved at speak time on BOTH sides, because both sides are: a label read off the
+        /// tooltip's own first line changes when the tooltip does, and a dedupe settled when the node
+        /// was declared would go on dropping last turn's sentence. Compared the way the review
+        /// buffer's head compare works (trimmed, case-insensitive, whole line), so the two surfaces
+        /// agree about what counts as the same words.
+        /// </summary>
+        public static NodeAnnouncement Part(
+            IList<NodeSection> sections,
+            IList<NodeAnnouncement> alreadySpoken
+        )
+        {
             if (sections == null)
             {
                 return null;
             }
 
             // The modes are structural - they come from the tooltip's own class, decided when the node
-            // was declared - so which section speaks is settled here, once, rather than per readout.
-            Func<IList<string>> spoken = null;
+            // was declared - so which sections speak is settled here, once, rather than per readout.
+            // Two passes, because "the last tooltip is the one this control points at" can only be
+            // answered after every section has been seen.
+            int pointedAt = -1;
             for (int i = 0; i < sections.Count; i++)
             {
-                NodeSection section = sections[i];
-                if (section == null || section.Lines == null)
+                if (Speaks(sections[i]) && sections[i].FromTooltip)
+                {
+                    pointedAt = i;
+                }
+            }
+
+            List<Func<IList<string>>> spoken = null;
+            for (int i = 0; i < sections.Count; i++)
+            {
+                if (!Speaks(sections[i]) || (sections[i].FromTooltip && i != pointedAt))
                 {
                     continue;
                 }
 
-                if (section.Mode == TooltipMode.Announce)
+                if (spoken == null)
                 {
-                    spoken = section.Lines;
+                    spoken = new List<Func<IList<string>>>(2);
                 }
+
+                spoken.Add(sections[i].Lines);
             }
 
             if (spoken == null)
@@ -95,17 +137,68 @@ namespace ES2Access.Core.UI.Graph
                 return null;
             }
 
-            Func<IList<string>> lines = spoken;
-            return new NodeAnnouncement(() => Compose(lines), kind: AnnouncementKinds.Tooltip);
+            List<Func<IList<string>>> lines = spoken;
+            NodeAnnouncement[] said = Snapshot(alreadySpoken);
+            return new NodeAnnouncement(() => Compose(lines, said), kind: AnnouncementKinds.Tooltip);
         }
 
-        /// <summary>The part a single tooltip projects to - for a control this mod invented, which has
-        /// no <c>AgeTooltip</c> to read a mode off.</summary>
-        public static NodeAnnouncement Part(TooltipMode mode, Func<IList<string>> lines)
+        private static bool Speaks(NodeSection section)
         {
-            return lines == null || mode == TooltipMode.None
-                ? null
-                : Part(new[] { new NodeSection(lines, mode) });
+            return section != null
+                && section.Lines != null
+                && section.Mode == TooltipMode.Announce;
+        }
+
+        // The parts as they stood when the node was composed. A copy, because the caller goes on
+        // filling and sorting its own list afterwards and the dedupe is about what the readout SAYS,
+        // which is settled by then.
+        private static NodeAnnouncement[] Snapshot(IList<NodeAnnouncement> parts)
+        {
+            if (parts == null || parts.Count == 0)
+            {
+                return null;
+            }
+
+            NodeAnnouncement[] copy = new NodeAnnouncement[parts.Count];
+            for (int i = 0; i < parts.Count; i++)
+            {
+                copy[i] = parts[i];
+            }
+
+            return copy;
+        }
+
+        // Whether the readout is going to say this line anyway, in the words it would say it in.
+        private static bool AlreadySaid(NodeAnnouncement[] said, string line)
+        {
+            for (int i = 0; said != null && i < said.Length; i++)
+            {
+                NodeAnnouncement part = said[i];
+                if (part == null || part.Text == null)
+                {
+                    continue;
+                }
+
+                string text;
+                try
+                {
+                    text = part.Text();
+                }
+                catch (Exception)
+                {
+                    continue;
+                }
+
+                if (
+                    !TextUtil.IsBlank(text)
+                    && string.Equals(text.Trim(), line, StringComparison.OrdinalIgnoreCase)
+                )
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         // What the player hears: the short tooltip's own words, and nothing about the long one - a
@@ -116,31 +209,66 @@ namespace ES2Access.Core.UI.Graph
         // separator (localization.md - "Permanently deletes the selected custom faction, This
         // faction cannot be edited" was a comma splice the game never wrote; any pause belongs
         // to the game's own punctuation).
-        private static string Compose(Func<IList<string>> lines)
+        //
+        // Two BLOCKS - a sentence the row composed and the tooltip it also carries - are two separate
+        // things to say, so they are separated the way the readout separates everything else; the lines
+        // WITHIN one block stay the prose they were. And a line an earlier block already put in the
+        // readout is not repeated by a later one: a row that composed its sentence out of the same
+        // words its tooltip carries would otherwise say it twice.
+        private static string Compose(List<Func<IList<string>>> sections, NodeAnnouncement[] said)
         {
             MessageBuilder message = new MessageBuilder();
-            IList<string> spoken = lines != null ? lines() : null;
-            if (spoken != null)
+            List<string> earlier = new List<string>();
+            for (int s = 0; sections != null && s < sections.Count; s++)
             {
-                bool first = true;
-                for (int i = 0; i < spoken.Count; i++)
+                IList<string> spoken = Resolve(sections[s]);
+                int start = earlier.Count;
+                for (int i = 0; spoken != null && i < spoken.Count; i++)
                 {
-                    if (!TextUtil.IsBlank(spoken[i]))
+                    if (TextUtil.IsBlank(spoken[i]))
                     {
-                        if (first)
-                        {
-                            message.ListItem(spoken[i].Trim());
-                            first = false;
-                        }
-                        else
-                        {
-                            message.Fragment(spoken[i].Trim());
-                        }
+                        continue;
                     }
+
+                    string line = spoken[i].Trim();
+                    if (AlreadySaid(said, line) || Says(earlier, start, line))
+                    {
+                        continue;
+                    }
+
+                    if (earlier.Count == start)
+                    {
+                        message.ListItem(line);
+                    }
+                    else
+                    {
+                        message.Fragment(line);
+                    }
+
+                    earlier.Add(line);
                 }
             }
 
             return message.Build();
+        }
+
+        private static IList<string> Resolve(Func<IList<string>> lines)
+        {
+            return lines == null ? null : lines();
+        }
+
+        // Whether one of the EARLIER sections already put this line in the readout.
+        private static bool Says(List<string> earlier, int upTo, string line)
+        {
+            for (int i = 0; i < upTo; i++)
+            {
+                if (string.Equals(earlier[i], line, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
     }

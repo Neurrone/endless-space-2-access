@@ -368,9 +368,9 @@ namespace ES2Access.UI
             AgeControlButton it = button;
             AgeTransform at = widget;
             // A control the game draws as a bare icon has no caption of its own; the sentence it
-            // explains itself with on hover is what a sighted player reads, so it is the name here too
-            // - and then the tooltip must not be announced as well, or the control says the same
-            // sentence twice. The buffer still holds all of it.
+            // explains itself with on hover is what a sighted player reads, so it is the name here
+            // too. The readout then drops that line from the tooltip it announces, so the control
+            // never says the same sentence twice and the rest of it is still handed over.
             bool named = !string.IsNullOrEmpty(text);
             string caption = named ? text : CardActions.FirstLine(tooltip);
             NodeVtable vtable = GraphNodes.Button(
@@ -380,8 +380,7 @@ namespace ES2Access.UI
                 // button blocked for a missing technology switched ON so a click can explain itself,
                 // and the government window's validate button is one of them.
                 () => AgeWidgets.Offered(at),
-                tooltip,
-                named ? GraphNodes.ModeFor(tooltip) : TooltipMode.None
+                tooltip
             );
             AgeWidgets.PointAt(vtable, widget);
             return new Cell
@@ -415,17 +414,12 @@ namespace ES2Access.UI
                 Sections = GraphNodes.SectionsFor(tooltips),
             };
             AgeWidgets.PointAt(vtable, widget, Last(tooltips));
-            return new Cell
-            {
-                Widget = widget,
-                Id = ControlId.For(widget, key),
-                Vtable = vtable,
-            };
+            return Owning(widget, key, vtable, tooltips);
         }
 
         /// <summary>The same for a line the game made CLICKABLE. The words it is called by are its own
-        /// caption where it drew one and the sentence the last-drawn tooltip opens with otherwise, which
-        /// is then not announced a second time.</summary>
+        /// caption where it drew one and the sentence the last-drawn tooltip opens with otherwise - a
+        /// line the readout then drops from the tooltip it goes on to announce.</summary>
         public static Cell Control(
             AgeTransform widget,
             AgeControlButton button,
@@ -444,17 +438,36 @@ namespace ES2Access.UI
                 () => AgeWidgets.Press(it),
                 () => AgeWidgets.Offered(at)
             );
-            vtable.Sections = GraphNodes.SectionsFor(
-                tooltips,
-                null,
-                named ? (TooltipMode?)null : TooltipMode.None
-            );
+            vtable.Sections = GraphNodes.SectionsFor(tooltips);
             AgeWidgets.Point(vtable, button, last, widget);
+            return Owning(widget, key, vtable, tooltips);
+        }
+
+        /// <summary>
+        /// A cell built from a line the game drew out of several pieces, owning whichever of those
+        /// pieces explains itself in the game's own PLAIN words (<see cref="TooltipChildren.Others"/>).
+        ///
+        /// The line announces the one tooltip a hover on it would raise - the last one drawn, which is
+        /// where its pointer goes. Everything else it carries used to be reviewable and never said, and
+        /// a sentence the game wrote is not a footnote, so each of those pieces becomes a node of its
+        /// own under the line and says its sentence when the player steps onto it. A line with no such
+        /// piece is the plain leaf it always was; the conversion costs nothing where it does not apply.
+        /// </summary>
+        private static Cell Owning(
+            AgeTransform widget,
+            string key,
+            NodeVtable vtable,
+            IList<AgeTooltip> tooltips
+        )
+        {
+            List<TooltipChildren.Dossier> others = TooltipChildren.Others(tooltips);
             return new Cell
             {
                 Widget = widget,
                 Id = ControlId.For(widget, key),
                 Vtable = vtable,
+                Dossiers = others,
+                Key = others == null ? null : key,
             };
         }
 
@@ -539,7 +552,8 @@ namespace ES2Access.UI
         /// <c>%…Title</c> string), because the only thing on screen is the value: the sentence the game
         /// hangs on the row is a gloss it wrote IN ADDITION to the word, and a node named from it says
         /// what the number means without ever saying what it is. Where the game keeps no title at all,
-        /// that sentence becomes the name as a last resort - and is then not announced a second time.
+        /// that sentence becomes the name as a last resort - a line the readout then drops from the
+        /// tooltip it goes on to announce.
         ///
         /// The explanations are resolved in all three places these panels put them
         /// (<see cref="TooltipReach.Own"/> | <see cref="TooltipReach.Parents"/> |
@@ -594,14 +608,9 @@ namespace ES2Access.UI
                     GraphNodes.ValuePart(() => AgeWidgets.TextOf(at)),
                 },
             };
-            vtable.Sections = GraphNodes.SectionsFor(
-                vtable,
-                Scratch,
-                null,
-                named ? (TooltipMode?)null : TooltipMode.None
-            );
+            vtable.Sections = GraphNodes.SectionsFor(vtable, Scratch);
             AgeWidgets.PointAt(vtable, owner);
-            Kept(cells, new Cell { Widget = laid, Id = ControlId.For(laid, key), Vtable = vtable });
+            Kept(cells, Owning(laid, key, vtable, Scratch));
         }
 
         /// <summary>A line the player reads rather than works: whatever words the game drew in it, and

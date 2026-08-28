@@ -31,7 +31,7 @@ namespace ES2Access.Tests.UI
         private static NodeSection Section(TooltipMode mode, params string[] lines)
         {
             List<string> list = new List<string>(lines);
-            return new NodeSection(() => list, mode);
+            return NodeSection.Derived(() => list, mode, null);
         }
 
         private static List<string> Buffer(NodeVtable vtable)
@@ -251,13 +251,22 @@ namespace ES2Access.Tests.UI
                 new[] { "Difficulty", "Normal", "unavailable", "Still here" },
                 Buffer(
                     Control(
-                        new NodeSection(
-                            () => { throw new InvalidOperationException(); },
-                            TooltipMode.Announce
-                        ),
+                        NodeSection.Composed(() => { throw new InvalidOperationException(); }),
                         Section(TooltipMode.None, "Still here")
                     )
                 )
+            );
+        }
+        /// <summary>The readout's own dedupe (<see cref="TooltipPartTests"/>) takes nothing out of the
+        /// DECLARATION: a line the label already spoke is dropped from what the control says on arrival
+        /// and is still here to walk. Which is the whole reason a call site no longer has to choose
+        /// between saying a line twice and throwing the tooltip away.</summary>
+        [Fact]
+        public void ALineTheReadoutDedupedAwayIsStillReviewable()
+        {
+            Assert.Equal(
+                new[] { "Difficulty", "Normal", "unavailable", "Normal", "How hard the AI plays" },
+                Buffer(Control(Section(TooltipMode.Announce, "Normal", "How hard the AI plays")))
             );
         }
     }

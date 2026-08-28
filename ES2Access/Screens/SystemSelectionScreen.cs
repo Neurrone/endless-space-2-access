@@ -145,7 +145,6 @@ namespace ES2Access.Screens
                 () => SettingRows.OpenList(it, TableSheet.HeaderName(heading)),
                 () => AgeWidgets.Operable(it.AgeTransform),
                 TableSheet.TooltipOf(widget),
-                null,
                 () => _table.CellFacts(heading, widget)
             );
         }

@@ -223,7 +223,7 @@ namespace ES2Access.Screens
             // Drawn on the card rather than offered on a hover, so it is announced outright the way a
             // control's own description is, and the review buffer holds it either way.
             vtable.Sections = GraphNodes.Sections(
-                new NodeSection(() => CardLines(it), TooltipMode.Announce)
+                NodeSection.Composed(() => CardLines(it))
             );
             AgeWidgets.Point(vtable, it.Toggle);
             Cells.Add(cells, widget, ControlId.For(widget, key), vtable);

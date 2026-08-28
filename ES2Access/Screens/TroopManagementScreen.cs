@@ -264,8 +264,7 @@ namespace ES2Access.Screens
                 () => it.LockToggle != null && it.LockToggle.State,
                 () => AgeWidgets.Toggle(it.LockToggle),
                 () => AgeWidgets.Offered(AgeWidgets.Transform(it.LockToggle)),
-                tooltip,
-                TooltipMode.None
+                tooltip
             );
             AgeWidgets.Point(vtable, it.LockToggle, tooltip, widget);
             Cells.Add(
@@ -524,7 +523,6 @@ namespace ES2Access.Screens
                     () => AgeWidgets.Toggle(it.Toggle),
                     enabled,
                     tooltip,
-                    null,
                     details,
                     header
                 );
@@ -812,7 +810,10 @@ namespace ES2Access.Screens
                 () => named ? name : CardActions.FirstLine(tooltip),
                 () => AgeText.Label(it.StockLabel),
                 null,
-                named ? tooltip : null
+                // Declared whether or not the wrapper named it: where it did not, the label is this
+                // tooltip.s own first line and the readout drops that line from what it goes on to
+                // announce - so the rest of the sentence is handed over instead of thrown away.
+                tooltip
             );
             AgeWidgets.PointAt(vtable, widget);
             Cells.Add(cells, widget, ControlId.For(widget, key), vtable);

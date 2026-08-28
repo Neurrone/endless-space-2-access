@@ -391,9 +391,8 @@ namespace ES2Access.Screens
             BattlePlayCard it = card;
             AgeTooltip tooltip = card.Tooltip ?? AgeWidgets.Raw(widget);
             // A slot with no tactic in it has no name of its own anywhere, so the sentence the game
-            // explains it with becomes its name - and is then not announced as a tooltip as well, which
-            // is the same trade every bare-icon control in the mod makes. The buffer still holds all of
-            // it.
+            // explains it with becomes its name - and the readout then drops that line from the tooltip
+            // it announces, which is what every bare-icon control in the mod does.
             bool named = !string.IsNullOrEmpty(Title(card));
             NodeVtable vtable = new NodeVtable
             {
@@ -401,11 +400,7 @@ namespace ES2Access.Screens
                 {
                     GraphNodes.LabelPart(() => DeckSlotName(it, tooltip)),
                 },
-                Sections = GraphNodes.Sections(
-                    null,
-                    tooltip,
-                    named ? GraphNodes.ModeFor(tooltip) : TooltipMode.None
-                ),
+                Sections = GraphNodes.Sections(null, tooltip),
             };
             AgeWidgets.PointAt(vtable, widget);
             Cells.Add(

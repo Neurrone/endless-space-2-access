@@ -199,7 +199,13 @@ namespace ES2Access.Core.UI.Graph
             // tooltip-kind part for something a section cannot express (a drop-list entry's live
             // refusal), and suppressing the derived part when it does would silently take the
             // indication away from exactly the rows that have the most to review.
-            NodeAnnouncement tooltip = TooltipParts.Part(vt.Sections);
+            //
+            // It is composed against the parts already in hand, which is why it is derived HERE and
+            // not by the node: a control the game named nowhere but in its tooltip has its label read
+            // off that tooltip's first line, and the one place both the label and the tooltip exist
+            // together is this list. Passing them over is what lets EVERY such control announce its
+            // whole tooltip without any of them saying its first line twice.
+            NodeAnnouncement tooltip = TooltipParts.Part(vt.Sections, result);
             if (tooltip != null) result.Add(tooltip);
 
             // The drag indication ("draggable" / "drop target"), derived for the same reason and in the

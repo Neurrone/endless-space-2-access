@@ -2761,7 +2761,6 @@ namespace ES2Access.Screens
                     () => Press(it),
                     () => Enabled(it.Widget),
                     explains,
-                    it.TipMode,
                     it.Drawn
                 );
             }
@@ -2773,8 +2772,7 @@ namespace ES2Access.Screens
                     () => Press(it),
                     () => Enabled(it.Widget),
                     it.Drawn,
-                    explains,
-                    it.TipMode
+                    explains
                 );
 
                 // Picking is not doing: the popup wants the choice CONFIRMED, and where it draws no
@@ -2803,7 +2801,6 @@ namespace ES2Access.Screens
                     () => Press(it),
                     () => Enabled(it.Widget),
                     explains,
-                    it.TipMode,
                     it.Drawn
                 );
             }
@@ -2970,12 +2967,6 @@ namespace ES2Access.Screens
             /// </summary>
             public AgeTransform Card;
 
-            /// <summary>How this control's tooltip reads, where the shared rule would otherwise say it
-            /// twice: a control the popup wrote no words on is NAMED by its tooltip's opening sentence
-            /// (<see cref="WordlessName"/>), and a tooltip that then announces itself repeats the name
-            /// it just gave. Null leaves the shared rule alone.</summary>
-            public TooltipMode? TipMode;
-
             /// <summary>The tooltip that explains this control, where the popup's own code is what
             /// knows which one that is - a choice card's reason for refusing sits on the CARD and the
             /// switch that refuses is a piece inside it, a suggestion card's dossier is the one it also
@@ -3094,9 +3085,7 @@ namespace ES2Access.Screens
                         null,
                         null,
                         leads,
-                        false,
-                        null,
-                        Repeats(button.AgeTransform, leads)
+                        false
                     );
                 }
 
@@ -3124,9 +3113,7 @@ namespace ES2Access.Screens
                         expander,
                         null,
                         unfolds,
-                        false,
-                        null,
-                        Repeats(expander.AgeTransform, unfolds)
+                        false
                     );
                 }
 
@@ -3222,8 +3209,7 @@ namespace ES2Access.Screens
             string nameKey,
             string name = null,
             bool radio = false,
-            AgeTooltip tip = null,
-            TooltipMode? mode = null
+            AgeTooltip tip = null
         )
         {
             AgeControl control = toggle == null ? (AgeControl)button : toggle;
@@ -3243,7 +3229,6 @@ namespace ES2Access.Screens
                     Name = name,
                     Radio = radio,
                     Tip = tip,
-                    TipMode = mode,
                 }
             );
         }
@@ -4129,18 +4114,6 @@ namespace ES2Access.Screens
 
             string hinted = CardActions.FirstLine(AgeWidgets.Raw(widget));
             return string.IsNullOrEmpty(hinted) ? OptionalText.Phrase(nameKey) : hinted;
-        }
-
-        /// <summary>How a control's tooltip should read once <see cref="WordlessName"/> has named the
-        /// control out of it: indicated rather than announced, because a tooltip whose opening sentence
-        /// IS the name says the name twice. Null - leave the shared rule alone - wherever the name came
-        /// from somewhere else.</summary>
-        private static TooltipMode? Repeats(AgeTransform widget, string name)
-        {
-            string opening = CardActions.FirstLine(AgeWidgets.Raw(widget));
-            return !string.IsNullOrEmpty(opening) && opening == name
-                ? (TooltipMode?)TooltipMode.Indicate
-                : null;
         }
 
         /// <summary>The clickable control a popup's gateway field stands on - its own, else the one inside

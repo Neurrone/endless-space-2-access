@@ -947,16 +947,6 @@ namespace ES2Access.Core.UI.Graph
             return true;
         }
 
-        /// <summary>Run the focused control's tooltip behavior. False = it has none.</summary>
-        public bool Tooltip()
-        {
-            if (!Rerender()) return false;
-            GraphNode node = CurrentNode;
-            if (node == null || node.Vtable.OnTooltip == null) return false;
-            node.Vtable.OnTooltip();
-            return true;
-        }
-
         /// <summary>If the focused control adjusts horizontally (a slider), adjust and return true;
         /// false = the caller should navigate instead.</summary>
         public bool TryAdjust(int sign, bool large)

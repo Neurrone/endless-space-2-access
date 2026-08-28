@@ -607,6 +607,7 @@ ES2Access/UI/TableSheet.cs | 1 | if (widget == null || depth > limit || !widget.
 ES2Access/UI/TooltipChildren.cs | 1 | if (into == null || widget == null || !AgeWidgets.Painted(widget))
 ES2Access/UI/TooltipChildren.cs | 1 | if (into == null || widget == null || !AgeWidgets.Visible(widget))
 ES2Access/UI/TooltipChildren.cs | 1 | if (widget == null || !AgeWidgets.Visible(widget))
+ES2Access/UI/TooltipChildren.cs | 1 | if (widget == null || widget.Alpha < 0.01f)
 
 ES2Access/UI/TooltipFeatures.cs | 1 | if (label != null && label.Visible)
 ES2Access/UI/TooltipFeatures.cs | 1 | if (mapper == null || mapper.AgeTransform == null || !mapper.AgeTransform.Visible)

@@ -429,7 +429,7 @@ namespace ES2Access.Screens
                     GraphNodes.LabelPart(() => AgeText.FullLabel(it)),
                 },
                 Sections = GraphNodes.Sections(
-                    new NodeSection(() => AgeText.Lines(AgeText.FullLabel(it)), TooltipMode.None)
+                    NodeSection.Buffer(() => AgeText.Lines(AgeText.FullLabel(it)))
                 ),
             };
             AgeWidgets.PointAt(vtable, widget);

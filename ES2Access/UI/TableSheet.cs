@@ -59,13 +59,10 @@ namespace ES2Access.UI
     ///   up-and-down's column with them - and an empty one reads the word for empty under the caption its
     ///   edge already said.
     ///
-    /// Eight hooks are left to the screen, because only the screen knows the answers:
+    /// Seven hooks are left to the screen, because only the screen knows the answers:
     /// <see cref="ReadCell"/> replaces a whole cell where the game drew a CONTROL in it rather than a
     /// figure (the systems table's automation drop list); <see cref="SplitCell"/> reads ONE of the
     /// game's cells as several columns, each with its own Enter (the journal's Details buttons);
-    /// <see cref="CellTooltipReading"/> overrides how loudly a column's tooltip reads where the shared
-    /// <see cref="GraphNodes.ModeFor"/> rule gets it wrong (the save list's Mods dossier - key it on
-    /// <see cref="PropertyOf"/>, the game's own column name, never the translated caption);
     /// <see cref="ReadValue"/> replaces only what a
     /// cell SAYS, for a column that draws no words at all (the politics table's support icons, whose value
     /// is on their own tooltip); <see cref="ActivateCell"/> replaces
@@ -140,11 +137,6 @@ namespace ES2Access.UI
         /// <summary>What a row says BEYOND its columns - lines the game draws inside the row's own name
         /// cell under the name. Null for a table whose rows are only their columns.</summary>
         public delegate IList<string> RowExtras(GuiTableLine line);
-
-        /// <summary>How a column's own tooltip should reach the player, where the shared rule reads it
-        /// wrong. Null - for the column or for the table - leaves <see cref="GraphNodes.ModeFor"/> to
-        /// answer.</summary>
-        public delegate TooltipMode? CellTooltip(GuiTableHeader header, AgeTransform cell);
 
         /// <summary>
         /// How deep inside a cell to look for what it is drawing.
@@ -231,19 +223,6 @@ namespace ES2Access.UI
         /// <summary>See <see cref="RowExtras"/>. Read BEFORE the column facts, which is the order they
         /// are drawn in - the extras sit inside the leftmost cell.</summary>
         public RowExtras RowDetails;
-
-        /// <summary>
-        /// See <see cref="CellTooltip"/>. Unset is the ordinary case.
-        ///
-        /// It exists because <see cref="GraphNodes.ModeFor"/>'s rule reads a tooltip's SHAPE, and its
-        /// premise for announcing a Content-backed one is that Content is "the single sentence the game
-        /// wrote to explain the control". A column can break that premise: the save list's Mods column
-        /// writes a whole multi-sentence dossier into Content - every module the save wants, with its
-        /// version and whether it is installed - which is a review read rather than something to have
-        /// spoken whole every time focus passes over the cell. The rule cannot see that, because the
-        /// dossier is only composed when the row binds, so the column says so here.
-        /// </summary>
-        public CellTooltip CellTooltipReading;
 
         private readonly string _key;
         private readonly RowObject _rowRef;
@@ -663,7 +642,6 @@ namespace ES2Access.UI
                     () => AgeWidgets.Toggle(row.SelectionToggle),
                     enabled,
                     line.Tooltip,
-                    null,
                     () => RowFacts(row)
                 );
                 // A table row is not read as a radio button, though its selection IS one: the row's
@@ -805,11 +783,7 @@ namespace ES2Access.UI
                         GraphNodes.ValuePart(() => Text(heading, it)),
                     },
                     Sections = WithInner(
-                        GraphNodes.Sections(
-                            () => CellFacts(heading, it),
-                            cellTip,
-                            Reading(heading, it)
-                        ),
+                        GraphNodes.Sections(() => CellFacts(heading, it), cellTip),
                         inner
                     ),
                 };
@@ -888,26 +862,6 @@ namespace ES2Access.UI
             }
 
             return all.Count == 0 ? null : all;
-        }
-
-        /// <summary>What this column says about how loudly its tooltip should read - see
-        /// <see cref="CellTooltipReading"/>.</summary>
-        private TooltipMode? Reading(GuiTableHeader header, AgeTransform cell)
-        {
-            if (CellTooltipReading == null)
-            {
-                return null;
-            }
-
-            try
-            {
-                return CellTooltipReading(header, cell);
-            }
-            catch (Exception e)
-            {
-                Log.Warn("table: asking how a column's tooltip should read threw: " + e);
-                return null;
-            }
         }
 
         /// <summary>

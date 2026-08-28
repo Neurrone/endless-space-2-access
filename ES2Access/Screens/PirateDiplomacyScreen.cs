@@ -187,15 +187,15 @@ namespace ES2Access.Screens
                 AgeTooltip what = AgeWidgets.Raw(icon);
                 if (icon != null && what != null)
                 {
-                    // A bare icon: the sentence on it is the only name it has, so it is the label - and
-                    // then the tooltip must not be announced again as well.
+                    // A bare icon: the sentence on it is the only name it has, so it is the label, and
+                    // the readout drops that line from the tooltip it goes on to announce.
                     NodeVtable vtable = new NodeVtable
                     {
                         Announcements = new List<NodeAnnouncement>
                         {
                             GraphNodes.LabelPart(CardActions.NameFromTooltip(what)),
                         },
-                        Sections = GraphNodes.Sections(null, what, TooltipMode.None),
+                        Sections = GraphNodes.Sections(null, what),
                     };
                     AgeWidgets.PointAt(vtable, icon);
                     Cells.Add(
@@ -329,8 +329,7 @@ namespace ES2Access.Screens
                 () => it.State,
                 () => AgeWidgets.Toggle(it),
                 () => AgeWidgets.Offered(at),
-                tooltip,
-                TooltipMode.None
+                tooltip
             );
             AgeWidgets.Point(vtable, it, tooltip, at);
             Cells.Add(_cells, at, ControlId.For(at, Keys + "fleet-detail"), vtable);

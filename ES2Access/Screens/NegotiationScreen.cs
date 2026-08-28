@@ -339,7 +339,7 @@ namespace ES2Access.Screens
                 {
                     GraphNodes.LabelPart(() => Relation(it)),
                 },
-                Sections = GraphNodes.Sections(null, tooltip, TooltipMode.None),
+                Sections = GraphNodes.Sections(null, tooltip),
             };
             AgeWidgets.PointAt(vtable, icon ?? label, tooltip);
             Cells.Add(_cells, label, ControlId.For(label, Keys + "status"), vtable);
@@ -374,8 +374,7 @@ namespace ES2Access.Screens
                 () => it.State,
                 () => AgeWidgets.Toggle(it),
                 () => AgeWidgets.Offered(at),
-                tooltip,
-                TooltipMode.None
+                tooltip
             );
             AgeWidgets.Point(vtable, it, tooltip, at);
             Cells.Add(_cells, at, ControlId.For(at, Keys + "empire-info"), vtable);
@@ -447,20 +446,10 @@ namespace ES2Access.Screens
                             : said;
                     }),
                 },
-                Sections = GraphNodes.Sections(null, tooltip, ModeOf(tooltip)),
+                Sections = GraphNodes.Sections(null, tooltip),
             };
             AgeWidgets.PointAt(vtable, at);
             return vtable;
-        }
-
-        /// <summary>A tooltip whose sentence has become the icon's NAME must not be announced again; one
-        /// the renderer assembles has a name of its own and its content is still worth indicating.
-        /// </summary>
-        private static TooltipMode ModeOf(AgeTooltip tooltip)
-        {
-            return AgeWidgets.Readable(tooltip) != null
-                ? TooltipMode.None
-                : GraphNodes.ModeFor(tooltip);
         }
 
         /// <summary>The strip of diplomatic abilities the status carries, or the game's own label for
@@ -602,8 +591,11 @@ namespace ES2Access.Screens
                 Announcements = new List<NodeAnnouncement>
                 {
                     GraphNodes.LabelPart(() => Split(it)),
-                    GraphNodes.ValuePart(() => Trend(tooltip)),
                 },
+                // The gauge's own tooltip, declared rather than mined for its last line: it is plain
+                // text the game wrote, so it is said whole - the description the band's title shares
+                // and the per-turn trend written under it.
+                Sections = GraphNodes.Sections(null, tooltip),
             };
             AgeWidgets.PointAt(vtable, gauge, tooltip);
             Cells.Add(_cells, gauge, ControlId.For(gauge, Keys + "pressure-gauge"), vtable);
@@ -641,23 +633,6 @@ namespace ES2Access.Screens
             return string.IsNullOrEmpty(name)
                 ? null
                 : ModStrings.Format(ModStrings.NegotiationPressureShare, name, percent);
-        }
-
-        /// <summary>The per-turn trend, which the game writes as the LAST line of the gauge's tooltip
-        /// under the description it shares with the band's title.</summary>
-        private static string Trend(AgeTooltip tooltip)
-        {
-            try
-            {
-                Func<IList<string>> lines = AgeWidgets.TooltipLines(tooltip);
-                IList<string> said = lines == null ? null : lines();
-                // Content: which line of the tooltip is the trend. One line is the description alone.
-                return said == null || said.Count < 2 ? null : said[said.Count - 1];
-            }
-            catch (Exception)
-            {
-                return null;
-            }
         }
 
         /// <summary>
@@ -733,7 +708,7 @@ namespace ES2Access.Screens
                         GraphNodes.LabelPart(CardActions.NameFromTooltip(tooltip)),
                         GraphNodes.DisabledPart(() => AgeWidgets.Enabled(at)),
                     },
-                    Sections = GraphNodes.Sections(null, tooltip, TooltipMode.None),
+                    Sections = GraphNodes.Sections(null, tooltip),
                 };
                 AgeWidgets.PointAt(vtable, at);
                 Cells.Add(
@@ -760,8 +735,7 @@ namespace ES2Access.Screens
                 () => Named(host, tooltip),
                 () => AgeWidgets.Press(host),
                 offered,
-                tooltip,
-                TooltipMode.None
+                tooltip
             );
             GraphNodes.AddRefusal(vtable, tooltip, offered);
             AgeWidgets.PointAt(vtable, at);
@@ -1086,8 +1060,7 @@ namespace ES2Access.Screens
                 () => Named(at, tooltip),
                 () => AgeWidgets.Press(at),
                 offered,
-                tooltip,
-                TooltipMode.None
+                tooltip
             );
             GraphNodes.AddRefusal(vtable, tooltip, offered);
             AgeWidgets.PointAt(vtable, at);

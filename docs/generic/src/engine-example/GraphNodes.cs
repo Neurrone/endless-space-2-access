@@ -251,9 +251,9 @@ namespace ES2Access.UI
         /// that builds its own vtable rather than going through the shared cell helpers used to keep the
         /// instruction in its spoken refusal, and the Academy's blocked Sell button is how that was found.
         /// </summary>
-        public static IList<NodeSection> HintSections(AgeTooltip tooltip, TooltipMode? mode = null)
+        public static IList<NodeSection> HintSections(AgeTooltip tooltip)
         {
-            NodeSection whole = TooltipSection(tooltip, mode);
+            NodeSection whole = TooltipSection(tooltip);
             if (whole == null || whole.Mode != TooltipMode.Announce)
             {
                 return whole == null ? null : new List<NodeSection> { whole };
@@ -267,8 +267,8 @@ namespace ES2Access.UI
 
             return new List<NodeSection>
             {
-                new NodeSection(() => Lines(full(), false), TooltipMode.Announce),
-                new NodeSection(() => Lines(full(), true), TooltipMode.None),
+                NodeSection.Derived(() => Lines(full(), false), TooltipMode.Announce, null),
+                NodeSection.Buffer(() => Lines(full(), true)),
             };
         }
 
@@ -335,16 +335,25 @@ namespace ES2Access.UI
         /// <summary>
         /// A widget's tooltip as a declared SECTION - the single place it is written down, from which
         /// the engine derives both what the focus readout says about it and what the review buffer
-        /// holds. The mode comes from <see cref="ModeFor"/> unless the screen overrides it, which it
-        /// does only where the game drew something the rule cannot see (a wordless icon whose tooltip
-        /// IS its name, already spoken as the label).
+        /// holds. The mode is the TOOLTIP'S OWN (<see cref="ModeFor"/>) and there is no way to ask for
+        /// another: whether a tooltip is a sentence to hear or a stat block to walk is a fact about
+        /// the tooltip, and every call site that used to answer it for itself either repeated a line
+        /// the label had already said (now dropped by the readout's own dedupe) or threw the rest of
+        /// the tooltip away.
         ///
         /// Null when there is no tooltip, so a caller can hand the result straight to
         /// <see cref="Sections"/>.
         /// </summary>
-        public static NodeSection TooltipSection(AgeTooltip tooltip, TooltipMode? mode = null)
+        public static NodeSection TooltipSection(AgeTooltip tooltip)
         {
-            Func<IList<string>> lines = TooltipDetails(tooltip);
+            return TooltipSection(tooltip, TooltipDetails(tooltip));
+        }
+
+        /// <summary>The same for a tooltip whose words the caller reads ITSELF - a dossier the game
+        /// keeps two widgets for, a stat block the mod recomposes - where the tooltip is still what
+        /// says how loudly they reach the player.</summary>
+        public static NodeSection TooltipSection(AgeTooltip tooltip, Func<IList<string>> lines)
+        {
             if (lines == null)
             {
                 return null;
@@ -356,17 +365,28 @@ namespace ES2Access.UI
             // in. Declared here, once, because this is the single door every screen's tooltips come
             // through.
             AgeTooltip it = tooltip;
-            return new NodeSection(
-                lines,
-                mode.HasValue ? mode.Value : ModeFor(tooltip),
-                () => AgeWidgets.Draws(it)
-            );
+            return NodeSection.Derived(lines, ModeFor(tooltip), () => AgeWidgets.Draws(it));
+        }
+
+        /// <summary>
+        /// A tooltip that hangs on this control but is not the one a hover on it would raise - the
+        /// icon that captions a row whose value carries its own dossier, a badge beside the thing the
+        /// row is about. Reviewable, never announced.
+        ///
+        /// Not a mode a caller chose: a control announces the ONE tooltip it points at, and which of
+        /// several that is, is a fact about the row that only the row knows. Everything else it
+        /// carries is still written down, in drawn order, so the buffer holds all of it.
+        /// </summary>
+        public static NodeSection ReviewedTooltipSection(AgeTooltip tooltip)
+        {
+            Func<IList<string>> lines = TooltipDetails(tooltip);
+            return lines == null ? null : NodeSection.Buffer(lines);
         }
 
         /// <summary>The same for a control that carries its tooltip on its transform.</summary>
-        public static NodeSection TooltipSection(AgeTransform transform, TooltipMode? mode = null)
+        public static NodeSection TooltipSection(AgeTransform transform)
         {
-            return transform == null ? null : TooltipSection(transform.AgeTooltip, mode);
+            return transform == null ? null : TooltipSection(transform.AgeTooltip);
         }
 
         /// <summary>
@@ -374,23 +394,33 @@ namespace ES2Access.UI
         /// beyond its readout first, then its tooltip. Null when there is neither, which is a complete
         /// declaration - the buffer still has the control's own name and state.
         ///
-        /// <paramref name="detailsMode"/> is the one thing a caller sometimes has to say about the
-        /// first section, and it is buffer-only by default because the ordinary case is content the
-        /// player can SEE - repeating it into the readout would read the screen back at them. Set it
-        /// to <see cref="TooltipMode.Announce"/> only for words the game HAS and draws NOWHERE (the
-        /// ground report's outcome sentence, which the game keeps in the same GuiElement it took the
-        /// outcome word from): handing those over is the whole reason the row went and got them.
+        /// <paramref name="details"/> is content the player can SEE, so it is reviewable and never
+        /// spoken - repeating it into the readout would read the screen back at them. For words the
+        /// game HAS and draws NOWHERE, <see cref="SpokenSections"/> is the door that says them. The
+        /// TOOLTIP's own loudness is never asked at either: that is the tooltip's own class to answer
+        /// (<see cref="ModeFor"/>).
         /// </summary>
-        public static IList<NodeSection> Sections(
+        public static IList<NodeSection> Sections(Func<IList<string>> details, AgeTooltip tooltip)
+        {
+            return Build(NodeSection.Buffer(details), tooltip);
+        }
+
+        /// <summary>The same for a control whose <paramref name="details"/> are words the game HAS and
+        /// draws NOWHERE - the ground report.s outcome sentence, which the row went and got out of the
+        /// model. Handing those over is the whole reason the row went for them, so they are said as
+        /// the control is read - alongside the tooltip.s own words where its kind says those speak too,
+        /// never instead of them. Never a tooltip.s own lines: those answer for themselves.</summary>
+        public static IList<NodeSection> SpokenSections(
             Func<IList<string>> details,
-            AgeTooltip tooltip,
-            TooltipMode? mode = null,
-            TooltipMode detailsMode = TooltipMode.None
+            AgeTooltip tooltip
         )
         {
-            NodeSection drawn =
-                details == null ? null : new NodeSection(details, detailsMode);
-            IList<NodeSection> tip = HintSections(tooltip, mode);
+            return Build(NodeSection.Composed(details), tooltip);
+        }
+
+        private static IList<NodeSection> Build(NodeSection drawn, AgeTooltip tooltip)
+        {
+            IList<NodeSection> tip = HintSections(tooltip);
             if (drawn == null && tip == null)
             {
                 return null;
@@ -413,12 +443,10 @@ namespace ES2Access.UI
         /// <summary>
         /// The declared sections of a line the game built out of several pieces, each carrying its own
         /// explanation - an icon that says what the row IS beside a label that says what its value
-        /// MEANS. Every tooltip in <paramref name="tooltips"/> reads, in the order they were drawn,
-        /// each by its own short/long mode: the line is the only place any of them is reachable from.
+        /// MEANS. Every tooltip in <paramref name="tooltips"/> is written down, in the order they were
+        /// drawn: the line is the only place any of them is reachable from.
         ///
         /// <paramref name="details"/> is what the line draws beyond its readout, and reads first.
-        /// <paramref name="lastMode"/> overrides the mode of the LAST tooltip - the one the line is
-        /// named after where it has no drawn caption, which must then not be announced twice.
         /// </summary>
         /// <summary>
         /// The same, making BOTH tooltip promises at once: the node points at the last tooltip in the
@@ -444,8 +472,7 @@ namespace ES2Access.UI
         public static IList<NodeSection> SectionsFor(
             NodeVtable vtable,
             IList<AgeTooltip> tooltips,
-            Func<IList<string>> details = null,
-            TooltipMode? lastMode = null
+            Func<IList<string>> details = null
         )
         {
             if (vtable != null && tooltips != null && tooltips.Count > 0)
@@ -462,13 +489,21 @@ namespace ES2Access.UI
                 }
             }
 
-            return SectionsFor(tooltips, details, lastMode);
+            return SectionsFor(tooltips, details);
         }
 
+        /// <summary>
+        /// The same without the pointer - for a caller that aims it itself.
+        ///
+        /// The LAST tooltip is the control's own: it is the one the pointer goes to, so it is the one
+        /// a hover would raise, so it is the only one that can be announced. The rest are
+        /// <see cref="ReviewedTooltipSection"/> - written down in drawn order, reachable in the
+        /// buffer, silent on arrival. That split is computed here rather than asked of the caller,
+        /// because "which of these is mine" is a fact about the row and "how loud is it" never was.
+        /// </summary>
         public static IList<NodeSection> SectionsFor(
             IList<AgeTooltip> tooltips,
-            Func<IList<string>> details = null,
-            TooltipMode? lastMode = null
+            Func<IList<string>> details = null
         )
         {
             List<NodeSection> list = new List<NodeSection>(2);
@@ -480,10 +515,18 @@ namespace ES2Access.UI
 
             for (int i = 0; tooltips != null && i < tooltips.Count; i++)
             {
-                IList<NodeSection> tip = HintSections(
-                    tooltips[i],
-                    i == tooltips.Count - 1 ? lastMode : null
-                );
+                if (i < tooltips.Count - 1)
+                {
+                    NodeSection other = ReviewedTooltipSection(tooltips[i]);
+                    if (other != null)
+                    {
+                        list.Add(other);
+                    }
+
+                    continue;
+                }
+
+                IList<NodeSection> tip = HintSections(tooltips[i]);
                 for (int j = 0; tip != null && j < tip.Count; j++)
                 {
                     list.Add(tip[j]);
@@ -588,7 +631,6 @@ namespace ES2Access.UI
             Action activate,
             Func<bool> enabled = null,
             AgeTooltip tooltip = null,
-            TooltipMode? tooltipMode = null,
             Func<IList<string>> details = null
         )
         {
@@ -596,7 +638,7 @@ namespace ES2Access.UI
             {
                 ControlType = ControlTypes.Button,
                 Announcements = Parts(label, enabled),
-                Sections = Sections(details, tooltip, tooltipMode),
+                Sections = Sections(details, tooltip),
                 OnActivate = Guarded(activate, enabled),
             };
         }
@@ -605,10 +647,10 @@ namespace ES2Access.UI
         /// A line the player reads but does not work: a name and a number.
         ///
         /// No role word - there is no control here to name, and "Empire Dust, 150, 38 per turn" is
-        /// the whole of what the banner says. The tooltip mode is asked for rather than hardcoded:
-        /// these are in practice always the renderer-assembled kind, and saying so by rule means a
-        /// readout whose tooltip the game ever authored as plain content would be read the way plain
-        /// content should be.
+        /// the whole of what the banner says. Its tooltip reads by its own kind like every other: these
+        /// are in practice always the renderer-assembled sort, and leaving it to the rule means a
+        /// readout whose tooltip the game ever authored as plain content is read the way plain content
+        /// should be.
         ///
         /// <paramref name="watchValue"/> is the one thing a caller sometimes has to switch off: a
         /// watched value re-announces itself under the cursor whenever it changes, which is right for a
@@ -650,7 +692,6 @@ namespace ES2Access.UI
             Action toggle,
             Func<bool> enabled = null,
             AgeTooltip tooltip = null,
-            TooltipMode? tooltipMode = null,
             Func<IList<string>> details = null,
             Func<string> value = null
         )
@@ -671,7 +712,7 @@ namespace ES2Access.UI
             {
                 ControlType = ControlTypes.Checkbox,
                 Announcements = parts,
-                Sections = Sections(details, tooltip, tooltipMode),
+                Sections = Sections(details, tooltip),
                 StateText = ActedState(stateText, enabled),
                 OnActivate = Guarded(toggle, enabled),
             };
@@ -692,8 +733,7 @@ namespace ES2Access.UI
             Action choose,
             Func<bool> enabled = null,
             Func<IList<string>> details = null,
-            AgeTooltip tooltip = null,
-            TooltipMode? tooltipMode = null
+            AgeTooltip tooltip = null
         )
         {
             Func<string> chosen = () =>
@@ -705,7 +745,7 @@ namespace ES2Access.UI
             {
                 ControlType = ControlTypes.RadioButton,
                 Announcements = parts,
-                Sections = Sections(details, tooltip, tooltipMode),
+                Sections = Sections(details, tooltip),
                 StateText = ActedState(chosen, enabled),
                 OnActivate = Guarded(choose, enabled),
             };
@@ -735,7 +775,6 @@ namespace ES2Access.UI
             Action choose,
             Func<bool> enabled = null,
             AgeTooltip tooltip = null,
-            TooltipMode? tooltipMode = null,
             Func<IList<string>> details = null
         )
         {
@@ -753,7 +792,7 @@ namespace ES2Access.UI
             {
                 ControlType = ControlTypes.RadioButton,
                 Announcements = parts,
-                Sections = Sections(details, tooltip, tooltipMode),
+                Sections = Sections(details, tooltip),
                 StateText = ActedState(
                     () => SelectionText.Membership(acted != null && acted()),
                     enabled
@@ -777,7 +816,6 @@ namespace ES2Access.UI
             Action edit,
             Func<bool> enabled = null,
             AgeTooltip tooltip = null,
-            TooltipMode? tooltipMode = null,
             Func<IList<string>> details = null
         )
         {
@@ -787,7 +825,7 @@ namespace ES2Access.UI
             {
                 ControlType = ControlTypes.EditField,
                 Announcements = parts,
-                Sections = Sections(details, tooltip, tooltipMode),
+                Sections = Sections(details, tooltip),
                 OnActivate = Guarded(edit, enabled),
             };
         }
@@ -802,7 +840,6 @@ namespace ES2Access.UI
             Action<int, bool> adjust,
             Func<bool> enabled = null,
             AgeTooltip tooltip = null,
-            TooltipMode? tooltipMode = null,
             Func<IList<string>> details = null
         )
         {
@@ -812,7 +849,7 @@ namespace ES2Access.UI
             {
                 ControlType = ControlTypes.Slider,
                 Announcements = parts,
-                Sections = Sections(details, tooltip, tooltipMode),
+                Sections = Sections(details, tooltip),
                 StateText = ActedState(valueText, enabled),
                 // Declared even when the slider is refusing, so left and right stay the slider's
                 // keys rather than quietly turning back into navigation on a control that looks
@@ -840,7 +877,6 @@ namespace ES2Access.UI
             Action open,
             Func<bool> enabled = null,
             AgeTooltip tooltip = null,
-            TooltipMode? tooltipMode = null,
             Func<IList<string>> details = null
         )
         {
@@ -850,7 +886,7 @@ namespace ES2Access.UI
             {
                 ControlType = ControlTypes.ComboBox,
                 Announcements = parts,
-                Sections = Sections(details, tooltip, tooltipMode),
+                Sections = Sections(details, tooltip),
                 StateText = ActedState(valueText, enabled),
                 OnActivate = Guarded(open, enabled),
             };
@@ -867,7 +903,6 @@ namespace ES2Access.UI
             Func<bool> selected,
             Func<bool> enabled = null,
             AgeTooltip tooltip = null,
-            TooltipMode? tooltipMode = null,
             Func<IList<string>> details = null
         )
         {
@@ -877,7 +912,7 @@ namespace ES2Access.UI
             {
                 ControlType = ControlTypes.Tab,
                 Announcements = parts,
-                Sections = Sections(details, tooltip, tooltipMode),
+                Sections = Sections(details, tooltip),
             };
         }
 
@@ -891,8 +926,7 @@ namespace ES2Access.UI
             Action choose,
             Func<bool> enabled = null,
             Func<IList<string>> details = null,
-            AgeTooltip tooltip = null,
-            TooltipMode? tooltipMode = null
+            AgeTooltip tooltip = null
         )
         {
             List<NodeAnnouncement> parts = Parts(label, enabled);
@@ -900,7 +934,7 @@ namespace ES2Access.UI
             return new NodeVtable
             {
                 Announcements = parts,
-                Sections = Sections(details, tooltip, tooltipMode),
+                Sections = Sections(details, tooltip),
                 OnActivate = Guarded(choose, enabled),
             };
         }
@@ -968,7 +1002,6 @@ namespace ES2Access.UI
             Func<string> label,
             Func<bool> enabled = null,
             AgeTooltip tooltip = null,
-            TooltipMode? tooltipMode = null,
             Func<IList<string>> details = null
         )
         {
@@ -976,7 +1009,7 @@ namespace ES2Access.UI
             {
                 ControlType = ControlTypes.Group,
                 Announcements = Parts(label, enabled),
-                Sections = Sections(details, tooltip, tooltipMode),
+                Sections = Sections(details, tooltip),
             };
         }
 

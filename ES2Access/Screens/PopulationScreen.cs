@@ -548,7 +548,7 @@ namespace ES2Access.Screens
                 {
                     GraphNodes.LabelPart(() => words),
                 },
-                Sections = GraphNodes.Sections(null, tooltip, TooltipMode.None),
+                Sections = GraphNodes.Sections(null, tooltip),
             };
             AgeWidgets.PointAt(vtable, circle);
             Cells.Add(
@@ -787,7 +787,7 @@ namespace ES2Access.Screens
                     GraphNodes.LabelPart(() => AgeText.FullLabel(it)),
                 },
                 Sections = GraphNodes.Sections(
-                    new NodeSection(() => AgeText.Lines(AgeText.FullLabel(it)), TooltipMode.None)
+                    NodeSection.Buffer(() => AgeText.Lines(AgeText.FullLabel(it)))
                 ),
             };
             AgeWidgets.PointAt(vtable, widget);

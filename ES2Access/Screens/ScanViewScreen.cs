@@ -408,7 +408,6 @@ namespace ES2Access.Screens
                     () => AgeWidgets.Operable(line),
                     AgeWidgets.Raw(line),
                     null,
-                    null,
                     () => DiplomacyLines(it)
                 );
                 vtable.Announcements.Add(GalaxyCoordinates.Part(node.GalaxyPosition));

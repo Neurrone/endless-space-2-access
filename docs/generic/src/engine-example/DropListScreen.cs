@@ -344,22 +344,17 @@ namespace ES2Access.Screens
                 // TARGET and no string at all, stops reading as a bare name; the string table remains
                 // the fallback for a prefab item that never received the message.
                 //
-                // The MODE is stated rather than derived, and this is the ruling it states: on a
-                // thirteen-faction list the description is a paragraph of lore each, which nobody
-                // wants recited while hunting for a name - but a list that never said an entry had
-                // anything to read left the player no reason to press Ctrl+Down. So every entry
-                // indicates, whether its words are on the item or assembled when the game draws it.
+                // The MODE is not stated here: an entry's description reaches the player the way its
+                // own tooltip's kind says it does, like every other control in the mod. The words the
+                // game wrote onto the item are said; the dossier it assembles when it draws the entry
+                // is reviewed. The fallback below is the string table's own line, which is plain text
+                // the game wrote and so is said with it.
                 Scratch.Clear();
                 AgeWidgets.EffectiveTooltips(entry, Scratch, TooltipReach.ListEntry);
                 vtable.Sections = Scratch.Count > 0
-                    ? GraphNodes.SectionsFor(Scratch, null, TooltipMode.Indicate)
+                    ? GraphNodes.SectionsFor(Scratch)
                     : GraphNodes.Sections(
-                        new NodeSection(
-                            () => AgeText.Lines(EntryDetail(list, index)),
-                            string.IsNullOrEmpty(EntryDetail(list, index))
-                                ? TooltipMode.None
-                                : TooltipMode.Indicate
-                        )
+                        NodeSection.Composed(() => AgeText.Lines(EntryDetail(list, index)))
                     );
                 // An entry the game is refusing says WHY, which the entry's own tooltip carries after
                 // the description (Gui.FormatFailureInfo appends it): "unavailable" alone leaves the
@@ -487,10 +482,10 @@ namespace ES2Access.Screens
             }
         }
 
-        /// <summary>What the entry's tooltip says about it, for the review buffer. Not spoken on
-        /// focus: on a twenty-entry resolution list the description is the entry's own name again,
-        /// and on the lists where it says something the player can read it at their own pace.
-        /// </summary>
+        /// <summary>What the entry's tooltip says about it - the string table's own line, which is
+        /// plain text the game wrote, so it is spoken as the entry is read and reviewable with the
+        /// rest. Where the description is the entry's own name again, the readout's dedupe drops it
+        /// rather than any call site deciding to.</summary>
         private static string EntryDetail(AgeControlDropList list, int index)
         {
             try

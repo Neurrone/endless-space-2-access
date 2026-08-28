@@ -151,8 +151,7 @@ namespace ES2Access.UI
                 () => AgeWidgets.Select(it.Toggle),
                 () => AgeWidgets.Operable(it.AgeTransform),
                 null,
-                tooltip,
-                TooltipMode.None
+                tooltip
             );
             AgeWidgets.PointAt(vtable, filter.AgeTransform);
             Cells.Add(

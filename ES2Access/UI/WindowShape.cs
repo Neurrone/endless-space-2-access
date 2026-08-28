@@ -201,7 +201,7 @@ namespace ES2Access.UI
         ///
         /// Named by whatever the game wrote on it - the caption where the prefab drew one, else the
         /// first line of the sentence it hung on the cross ("Closes this panel"), whose remaining lines
-        /// stay in the review buffer rather than being announced twice.
+        /// the readout goes on to say with that first line dropped.
         /// </summary>
         public static void Close(GraphBuilder builder, GuiWindow window, string keyPrefix)
         {
@@ -222,8 +222,7 @@ namespace ES2Access.UI
                         : () => AgeWidgets.TextOf(it),
                     () => AgeWidgets.Press(it),
                     () => AgeWidgets.Offered(it),
-                    tooltip,
-                    string.IsNullOrEmpty(caption) ? TooltipMode.None : (TooltipMode?)null
+                    tooltip
                 );
                 AgeWidgets.PointAt(vtable, at);
                 builder.AddItem(Nodes.Drawn(ControlId.For(at, keyPrefix + "close"), vtable, at));

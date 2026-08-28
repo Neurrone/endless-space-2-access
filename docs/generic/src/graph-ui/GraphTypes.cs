@@ -107,8 +107,12 @@ namespace ES2Access.Core.UI.Graph
         /// (content the control DRAWS - a planet card's output rows, a chart's series) and
         /// <see cref="TooltipMode.Indicate"/> (a dossier the game assembles on hover) are both
         /// buffer-only, because the readout already named the control and the substance is there to
-        /// be walked.</summary>
-        public TooltipMode Mode;
+        /// be walked.
+        ///
+        /// Read-only from outside, and set from nowhere a screen can reach: for a section read off a
+        /// game tooltip the mode is the TOOLTIP'S OWN KIND (<c>GraphNodes.ModeFor</c>) and a screen
+        /// that could say otherwise is a screen that can get it wrong.</summary>
+        public readonly TooltipMode Mode;
 
         /// <summary>Whether there is really a tooltip here, asked EVERY frame. Only consulted for
         /// <see cref="TooltipMode.Indicate"/>, and null - the default - means "always", which is the
@@ -128,17 +132,66 @@ namespace ES2Access.Core.UI.Graph
         /// most need indicating.</summary>
         public Func<bool> Indicates;
 
-        public NodeSection(Func<IList<string>> lines, TooltipMode mode, Func<bool> indicates = null)
+        /// <summary>Whether these lines came off a TOOLTIP - the thing a hover would raise - rather
+        /// than being words the mod composed about the control itself.
+        ///
+        /// It exists because the two are counted differently when the readout is composed
+        /// (<see cref="TooltipParts"/>): a control points at ONE tooltip, so at most one tooltip's
+        /// lines are spoken, while composed words are the control's own and every one of them is.
+        /// Internal, because it is a fact about which door built the section rather than anything a
+        /// screen decides.</summary>
+        internal readonly bool FromTooltip;
+
+        private NodeSection(
+            Func<IList<string>> lines,
+            TooltipMode mode,
+            Func<bool> indicates,
+            bool fromTooltip
+        )
         {
             Lines = lines;
             Mode = mode;
             Indicates = indicates;
+            FromTooltip = fromTooltip;
         }
 
         /// <summary>Content the control draws: reviewable, never spoken on focus.</summary>
         public static NodeSection Buffer(Func<IList<string>> lines)
         {
-            return lines == null ? null : new NodeSection(lines, TooltipMode.None);
+            return lines == null ? null : new NodeSection(lines, TooltipMode.None, null, false);
+        }
+
+        /// <summary>
+        /// Words the MOD composed for a control the game explains nowhere on the screen - a report's
+        /// outcome sentence read out of the model, a card the prefab draws as a picture - spoken as
+        /// the readout is read.
+        ///
+        /// The one place a section's loudness is a caller's to decide, and it is decidable precisely
+        /// because there is no tooltip behind it to have a kind. Never hand it a tooltip's lines: a
+        /// tooltip's announcement is settled by its own class, at <c>GraphNodes.TooltipSection</c>.
+        /// </summary>
+        public static NodeSection Composed(Func<IList<string>> lines)
+        {
+            return lines == null ? null : new NodeSection(lines, TooltipMode.Announce, null, false);
+        }
+
+        /// <summary>
+        /// A section whose loudness was DERIVED from a tooltip's own class - the door's own
+        /// constructor, and the only way a section that is not <see cref="Buffer"/> or
+        /// <see cref="Composed"/> comes to exist.
+        ///
+        /// Kept out of the public surface so that "which tooltips announce" is answered in one place
+        /// (<c>GraphNodes.ModeFor</c>) rather than per call site: a screen has no way to name a mode
+        /// for a tooltip, which is what makes the wrong reading unrepresentable rather than merely
+        /// discouraged.
+        /// </summary>
+        internal static NodeSection Derived(
+            Func<IList<string>> lines,
+            TooltipMode mode,
+            Func<bool> indicates
+        )
+        {
+            return new NodeSection(lines, mode, indicates, true);
         }
     }
 
@@ -264,10 +317,6 @@ namespace ES2Access.Core.UI.Graph
         /// <see cref="OnDrop"/>, whose refusal carries the game's own reason for a player who presses
         /// anyway. Null = <see cref="DropKind"/> alone answers.</summary>
         public Func<CarryItem, bool> DropAccepts;
-
-        /// <summary>Optional. Read / open the control's tooltip. The action owns the whole behavior
-        /// (speak, or open the drill-in tooltip reader), so the core stays game-agnostic.</summary>
-        public Action OnTooltip;
 
         /// <summary>Optional. Everything the control has to say beyond its readout, as ordered
         /// <see cref="NodeSection"/>s — its tooltips (the heading's explanation, then the value's

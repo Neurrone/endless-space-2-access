@@ -5957,9 +5957,9 @@ namespace ES2Access.Screens
             StarSystemNode it = node;
             Empire looking = empire;
             StarSystemLabel drawn = label;
-            return new NodeSection(
-                () => StarDossierLines(it, looking, drawn),
-                GraphNodes.ModeFor(either)
+            return GraphNodes.TooltipSection(
+                either,
+                () => StarDossierLines(it, looking, drawn)
             );
         }
 
@@ -8108,7 +8108,6 @@ namespace ES2Access.Screens
                 () => Select(it),
                 null,
                 Raw(lozenge),
-                null,
                 // The rest of the journey, turn by turn, for whoever wants to know where this
                 // fleet will be sleeping tonight (<see cref="FleetRoute"/>).
                 () => FleetRoute.CommittedLines(it)

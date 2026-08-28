@@ -681,10 +681,9 @@ namespace ES2Access.Screens
                 // Which of the row's tooltips is the one that SPEAKS, asked the resolver's own way:
                 // it collapses a tooltip the game cloned onto a piece inside the row into one entry,
                 // so the entry that survived may not be the very object the caller passed in.
-                NodeSection section = GraphNodes.TooltipSection(
-                    found[i],
-                    AgeWidgets.SameTooltip(found[i], said) ? null : (TooltipMode?)TooltipMode.None
-                );
+                NodeSection section = AgeWidgets.SameTooltip(found[i], said)
+                    ? GraphNodes.TooltipSection(found[i])
+                    : GraphNodes.ReviewedTooltipSection(found[i]);
                 if (section == null)
                 {
                     continue;

@@ -207,7 +207,7 @@ namespace ES2Access.Screens
             // Declared with its mode rather than read off a tooltip, because there is no tooltip here:
             // this is a control the mod made out of what the game painted on a card.
             vtable.Sections = GraphNodes.Sections(
-                new NodeSection(() => Description(it), TooltipMode.Announce)
+                NodeSection.Composed(() => Description(it))
             );
 
             AgeWidgets.Point(vtable, card);

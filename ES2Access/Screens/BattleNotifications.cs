@@ -377,8 +377,8 @@ namespace ES2Access.Screens
                 // Said outright, as the space report says it: the outcome word alone ("Major Victory")
                 // is a verdict with no size to it, and the sentence behind it is what the popup exists
                 // to tell the player. The space report gets there by having the game write the sentence
-                // onto the title's tooltip; here the row went and got it, so here the row says it.
-                TooltipMode.Announce
+                // onto the title.s tooltip; here the row went and got it, so here the row says it.
+                true
             );
             Note(builder, window.BattleSubTitle, "ground-report/subtitle");
             GroundBalance(builder, window, battle, false, "ground-report/balance");
@@ -1381,12 +1381,14 @@ namespace ES2Access.Screens
         /// <paramref name="explains"/> is for a line whose dossier the WINDOW holds rather than the
         /// label - the ground report keeps each side's strategy tooltip in a field of its own, hung on
         /// the card around the words - so the row carries it and the pointer is aimed at the widget it
-        /// is really on. <paramref name="details"/> is the game's own further words about the line that
-        /// the popup itself never draws anywhere, and <paramref name="detailsMode"/> is whether the row
-        /// hands them over as it is read or leaves them in the review buffer. Announcing is for words
+        /// is really on. <paramref name="details"/> is the game.s own further words about the line that
+        /// the popup itself never draws anywhere, and <paramref name="sayDetails"/> is whether the row
+        /// hands them over as it is read or leaves them in the review buffer. Saying them is for words
         /// that are the POINT of the row - the sentence behind an outcome word, which is what the
         /// player wanted when they landed on it - and the default is the buffer, because a row whose
         /// further words are a second reading of something already on screen would say the screen back.
+        /// It is a fact about the row, not about a tooltip: the tooltip that comes after answers for
+        /// its own loudness by its own kind.
         /// </summary>
         private static void Note(
             GraphBuilder builder,
@@ -1394,7 +1396,7 @@ namespace ES2Access.Screens
             string key,
             AgeTooltip explains = null,
             Func<IList<string>> details = null,
-            TooltipMode detailsMode = TooltipMode.None
+            bool sayDetails = false
         )
         {
             AgeTransform widget = label == null ? null : label.AgeTransform;
@@ -1411,7 +1413,9 @@ namespace ES2Access.Screens
                 {
                     GraphNodes.LabelPart(() => AgeText.Label(it)),
                 },
-                Sections = GraphNodes.Sections(details, tooltip, null, detailsMode),
+                Sections = sayDetails
+                    ? GraphNodes.SpokenSections(details, tooltip)
+                    : GraphNodes.Sections(details, tooltip),
             };
             AgeWidgets.PointAt(vtable, widget, tooltip);
             builder.AddItem(Nodes.Drawn(ControlId.For(label, key), vtable, label));

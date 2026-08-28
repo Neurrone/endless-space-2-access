@@ -56,6 +56,24 @@ namespace ES2Access.Core.Util
             return kept.ToString();
         }
 
+        /// <summary>
+        /// Whether the text contains a LETTER - the test for "are these words, or only a figure".
+        ///
+        /// A widget's drawn text is a name where the game wrote words on it and is not a name where it
+        /// drew a number: "0/11" and "50" name nothing a player can tell from the one beside it, and
+        /// two of a card's five figures were literally both "30". A string with a letter anywhere in it
+        /// passes, so "1st Patriots Navy", "Titanium-70" and "G-War Camps" are names as they should be.
+        ///
+        /// Deliberately not a check on the whole string being letters: a name that CONTAINS digits is
+        /// still a name, and the thing being rejected is the string with no word in it at all.
+        /// </summary>
+        public static bool HasLetters(string text)
+        {
+            for (int i = 0; text != null && i < text.Length; i++)
+                if (char.IsLetter(text[i])) return true;
+            return false;
+        }
+
         /// <summary>Null/empty/all-whitespace test. (<c>string.IsNullOrWhiteSpace</c> is .NET 4.0; the
         /// game's Mono runtime is on the 3.5 profile.)</summary>
         public static bool IsBlank(string s)

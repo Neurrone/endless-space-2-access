@@ -252,9 +252,11 @@ namespace ES2Access.Screens
                     GraphNodes.DisabledPart(operable),
                 },
 
-                // Nothing behind it: the button's one line of tooltip is already the name, its column is
-                // said by the edge the player crossed to get here, and there is nothing else drawn in it.
-                // A cell-wide fact line here would read the OTHER button's sentence as well.
+                // The button's OWN tooltip, and only it: its opening line is already the name, which the
+                // readout then drops from what it announces, and the rest of the sentence is handed over
+                // and reviewable instead of unreachable. A cell-wide fact line here would read the OTHER
+                // button's sentence as well, which is why the cell's tooltips are not gathered.
+                Sections = GraphNodes.Sections(null, tooltip),
                 OnActivate = () =>
                 {
                     if (operable())

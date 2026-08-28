@@ -570,7 +570,7 @@ namespace ES2Access.Screens
                 // The status tooltip first, then the rest of the card, which is the order the card
                 // draws them in.
                 Sections = GraphNodes.Sections(
-                    GraphNodes.TooltipSection(AgeWidgets.Raw(status), TooltipMode.Indicate),
+                    GraphNodes.TooltipSection(AgeWidgets.Raw(status)),
                     NodeSection.Buffer(() => PlanetDetails(it))
                 ),
                 OnActivate = () => GalaxyViewLevels.OpenPlanet(it.Planet),
@@ -1522,7 +1522,7 @@ namespace ES2Access.Screens
                     GraphNodes.ValuePart(() => unit == null ? null : PopulationName(unit)),
                 },
                 Sections = GraphNodes.Sections(
-                    GraphNodes.TooltipSection(carrier, TooltipMode.Indicate)
+                    GraphNodes.TooltipSection(carrier)
                 ),
             };
 
@@ -2440,9 +2440,9 @@ namespace ES2Access.Screens
         ///
         /// The game writes no caption on any of them and hangs no wrapper on their tooltips, so each is
         /// called by the sentence its own tooltip explains it with - the same naming a wordless symbol
-        /// gets everywhere else in this mod. That sentence is therefore not announced a second time:
-        /// it is indicated, which leaves the whole of it - including the list of empires that have
-        /// seen through the cloak, which is the only place that list exists - in the review buffer.
+        /// gets everywhere else in this mod. The readout then drops that opening line from the tooltip
+        /// it announces, so the rest of it - including the list of empires that have seen through the
+        /// cloak, which is the only place that list exists - is handed over as well as reviewable.
         /// </summary>
         private static void AddInfoIcons(List<Cell> cells, ColonyInfoSidePanel panel)
         {
@@ -2469,7 +2469,7 @@ namespace ES2Access.Screens
                     GraphNodes.LabelPart(() => FirstLine(tooltip)),
                 },
                 Sections = GraphNodes.Sections(
-                    GraphNodes.TooltipSection(tooltip, TooltipMode.Indicate)
+                    GraphNodes.TooltipSection(tooltip)
                 ),
             };
             AgeWidgets.PointAt(vtable, widget);
@@ -3432,12 +3432,11 @@ namespace ES2Access.Screens
                     GraphNodes.ValuePart(() => AgeText.Label(it.HappinessValueLabel)),
                     GraphNodes.ValuePart(() => AgeText.Label(it.HappinessStatusLabel)),
                 },
-                // Two tooltips on one row, in the order they are drawn: the icon's one-line gloss on
-                // what Approval is, which is reviewed and not spoken (the row is walked past on the way
-                // to everything below it, and its own words already say what it is), and the row's
-                // renderer-assembled dossier, which is indicated by the ordinary rule.
+                // Two tooltips on one row, in the order they are drawn: the icon.s one-line gloss on
+                // what Approval is, which is the row.s OTHER tooltip and so is reviewed, and the row.s
+                // own dossier, which the row points at and which reads by its own kind.
                 Sections = GraphNodes.Sections(
-                    GraphNodes.TooltipSection(iconTooltip, TooltipMode.None),
+                    GraphNodes.ReviewedTooltipSection(iconTooltip),
                     GraphNodes.TooltipSection(tooltip)
                 ),
             };
@@ -3489,11 +3488,10 @@ namespace ES2Access.Screens
                     GraphNodes.ValuePart(() => Drawn(it.TurnsBeforeNextPop)),
                     GraphNodes.ValuePart(() => Drawn(it.NextPopulationDestinationLabel)),
                 },
-                // The kind tooltip is a single sentence and that sentence is already the row's NAME, so
-                // it is reviewed and not said again; the wait's own tooltip is a second thing the panel
-                // says, and reads by the ordinary rule.
+                // The kind tooltip is the row.s OTHER tooltip - reviewed, never announced - and the
+                // wait.s own is the one the row points at, which reads by its own kind.
                 Sections = GraphNodes.Sections(
-                    GraphNodes.TooltipSection(kind, TooltipMode.None),
+                    GraphNodes.ReviewedTooltipSection(kind),
                     GraphNodes.TooltipSection(when)
                 ),
             };
@@ -3602,12 +3600,11 @@ namespace ES2Access.Screens
                     GraphNodes.LabelPart(() => FirstLine(tooltip)),
                     GraphNodes.ValuePart(() => SensitivityText(it, true)),
                 },
-                // The graph's tooltip opens with the sentence that is already the row's NAME and then
-                // says what the sensitivity is for, so announcing it would read the name twice: it is
-                // indicated instead, which still tells the player there is more here and puts all of it
-                // in the buffer above the bars.
+                // The graph.s tooltip opens with the sentence that is already the row.s NAME and then
+                // says what the sensitivity is for. It reads by its own kind, and the readout drops the
+                // opening line the name has already said.
                 Sections = GraphNodes.Sections(
-                    GraphNodes.TooltipSection(tooltip, TooltipMode.Indicate),
+                    GraphNodes.TooltipSection(tooltip),
                     NodeSection.Buffer(() => SensitivityDetails(it))
                 ),
             };

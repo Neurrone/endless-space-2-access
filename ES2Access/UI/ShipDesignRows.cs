@@ -616,12 +616,6 @@ namespace ES2Access.UI
                 null,
                 tip
             );
-            if (!named)
-            {
-                // The tooltip IS the name here, and a control does not say the same sentence twice.
-                vtable.Sections = GraphNodes.Sections(null, tip, TooltipMode.None);
-            }
-
             AgeWidgets.PointAt(vtable, widget);
             Cells.Add(cells, widget, ControlId.For(widget, key), vtable);
         }

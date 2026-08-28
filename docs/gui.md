@@ -559,6 +559,17 @@ Tooltips come in two tiers (verified against the tooltip pipeline and concrete b
   the providers directly (the `ImageInformationWindow` pattern) — speaking `.Content` alone
   would miss essentially everything in a rich tooltip.
 
+**Mod policy the tiers force (owner ruling 2026-08-28, enforced structurally):** a tooltip's
+announcement class is its tier and nothing else — Simple (Content-backed) is announced whole
+on arrival, deduped against whatever the node's other parts already say; Rich (Class-backed)
+is buffer-only. No length or per-screen conditions, no caller-chosen mode: `GraphNodes.ModeFor`
+derives the class, `NodeSection`'s mode is unnameable outside the door, tooltip-text reads
+outside the door files are lint-gated (`ES2Access.Tests/Lint/tooltip-text-reads.allow`), and
+`TooltipParity`'s `misclassed` bucket flags a live violation. A nested tooltip entry is named
+by its hover target's drawn words (a bare figure is not a name), falling back to the tooltip's
+title, then its first line; a line carrying a second tooltip surfaces it as a nested entry
+rather than silencing it.
+
 Tooltip **positioning**: most tooltips are `AgeTooltipAnchorMode.FREE` — the window is drawn
 at `AgeManager.Cursor` plus an offset and clamped on-screen
 (`GuiTooltipController.ComputeWindowPosition` / `EnsureWholeTooltipIsOnScreen`); the anchor

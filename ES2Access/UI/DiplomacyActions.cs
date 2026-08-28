@@ -140,7 +140,6 @@ namespace ES2Access.UI
                     () => AgeWidgets.Press(button),
                     offered,
                     tooltip,
-                    null,
                     () => Details(lines)
                 );
                 GraphNodes.AddRefusal(vtable, tooltip, offered);

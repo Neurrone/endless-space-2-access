@@ -741,7 +741,6 @@ namespace ES2Access.Screens
                     () => AgeWidgets.Toggle(it.SelectionToggle),
                     () => AgeWidgets.Operable(it.AgeTransform),
                     tooltip,
-                    null,
                     () => FleetRoute.CommittedLines(going)
                 );
                 vtable.OnSelectToggle = () => AgeWidgets.Toggle(it.SelectionToggle);
