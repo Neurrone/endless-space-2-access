@@ -44,6 +44,7 @@ namespace ES2Access.Screens
         private static readonly object YoursRegion = "battle:yours";
         private static readonly object TheirsRegion = "battle:theirs";
         private static readonly object AftermathRegion = "battle:aftermath";
+        private static readonly object PlanRegion = "battle:plan";
         private static readonly object OutcomesRegion = "battle:outcomes";
         private static readonly object ControlsRegion = "battle:controls";
 
@@ -91,6 +92,7 @@ namespace ES2Access.Screens
         private const string YourTroopsKey = "battle.your-troops";
         private const string EnemyTroopsKey = "battle.enemy-troops";
         private const string BalanceKey = "battle.balance";
+        private const string BalanceAllKey = "battle.balance-all";
         private const string GroundBalanceKey = "battle.ground-balance";
         private const string TimeLeftKey = "battle.time-left";
 
@@ -168,9 +170,13 @@ namespace ES2Access.Screens
                 true,
                 "battle-setup/balance"
             );
+
+            // One band from the plan to the end (owner, 2026-08-29): Alt+Down from the balance lands
+            // ON the plan rather than skipping to the controls, and the four buttons after it are not
+            // a section of their own - they are simply the next rows down.
+            builder.SetRegion(PlanRegion);
             Plan(builder, window);
 
-            builder.SetRegion(ControlsRegion);
             List<Cell> controls = new List<Cell>();
             Checkbox(
                 controls,
@@ -884,8 +890,16 @@ namespace ES2Access.Screens
             }
         }
 
-        /// <summary>Where the battle is being fought and what that does to it - the game writes the
-        /// effects as a list of names and explains them on the group's own tooltip.</summary>
+        /// <summary>
+        /// Where the battle is being fought and what that does to it - the game writes the effects as
+        /// a list of names and explains them on the group's own tooltip.
+        ///
+        /// That tooltip is EMPTY while the theater applies no effects, which is most battles, and the
+        /// one sentence saying what this row is about at all ("Effects applied to all the ships in the
+        /// Theater") hangs on the little separator beside the name instead. A second hover surface is a
+        /// child entry, so the separator becomes one and the row keeps pointing at the tooltip a hover
+        /// on the name would raise.
+        /// </summary>
         private static void Arena(
             GraphBuilder builder,
             AgeTransform group,
@@ -910,42 +924,463 @@ namespace ES2Access.Screens
                 Sections = GraphNodes.Sections(null, tooltip),
             };
             AgeWidgets.PointAt(vtable, group ?? widget);
-            builder.AddItem(Nodes.Drawn(ControlId.For(label, "battle/arena"), vtable, label));
+
+            List<TooltipChildren.Dossier> dossiers = new List<TooltipChildren.Dossier>(1);
+            TooltipChildren.AddPlain(dossiers, Separator(group));
+            TooltipChildren.Declare(
+                builder,
+                Nodes.Drawn(ControlId.For(label, ArenaKey), vtable, label),
+                ArenaKey,
+                dossiers
+            );
+        }
+
+        private const string ArenaKey = "battle/arena";
+        private const string SeparatorName = "Separator";
+
+        /// <summary>The separator the arena group draws between its icon and its name - the one thing
+        /// on that row carrying the sentence about what a theater's effects are. Found by the name the
+        /// prefab gives it, because it is decoration with no component of its own to ask for.</summary>
+        private static AgeTransform Separator(AgeTransform group)
+        {
+            try
+            {
+                List<AgeTransform> children = group == null ? null : group.Children;
+                for (int i = 0; children != null && i < children.Count; i++)
+                {
+                    AgeTransform child = children[i];
+                    if (child != null && child.name == SeparatorName)
+                    {
+                        return child;
+                    }
+                }
+
+                return null;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
         }
 
         /// <summary>
-        /// The battle plan, as the carousel the game made it: the card says which plan is in force and
-        /// left and right step to the neighbouring one, which is exactly what the two arrows beside it do.
+        /// The battle plan, as the CLOSED combo box the chooser opens from.
         ///
-        /// Not a list of plans to pick from - the game never draws one - so there is nothing here to
-        /// select; stepping IS choosing, and the card's own tooltip says how often that plan has been
-        /// picked against this opponent.
+        /// What the game draws is a page turner: one card, an arrow either side of it, and nothing at
+        /// all saying how many plans there are or which of them is up. The row says which one is up -
+        /// its name and the effects printed on it - and Enter opens the list of the rest
+        /// (<see cref="BattlePlanScreen"/>), which is the droplist idiom every other one-of-N setting
+        /// in this mod uses.
+        ///
+        /// It is ONE row and not a band of them (owner ruling 2026-08-29, replacing the band shipped
+        /// the day before). Pressing an arrow does not merely SHOW a plan, it chooses it, so a band of
+        /// rows made walking Up through the popup re-choose every plan the cursor crossed. Behind a
+        /// chooser the browsing is something the player asked for and can back out of.
+        ///
+        /// The card's own tooltip - how often this plan has been picked against this opponent - is the
+        /// row's, and the three range diagrams and the family badge drawn on the card are hover
+        /// surfaces of their own, so each is a child entry. All of them read the DRAWN card, which on
+        /// this row is always the plan in force: there is no other plan for this row to misdescribe.
         /// </summary>
         private static void Plan(GraphBuilder builder, BattleSetupNotificationWindow window)
         {
             AgeTransform group = window.PlayGroup;
-            // Synthetic guard: the carousel is one node standing for three widgets, so it declares no
-            // evidence and the gate has nothing to ask - this is the whole of its existence test.
+            // Flow control: the row below stands on the one card the group draws, and a group the
+            // window is not drawing has no card to read.
             if (group == null || !AgeWidgets.Visible(group))
             {
                 return;
             }
 
-            BattlePlayCard card = Card(window.SelectedPlayCardContainer);
-            AgeControlButton previous = window.PreviousPlayButton;
-            AgeControlButton next = window.NextPlayButton;
+            BattlePlayCard card = PlanCard(window);
+            AgeTransform carrier = card == null ? null : card.AgeTransform;
             AgeTooltip tooltip = card == null ? null : card.Tooltip;
-            NodeVtable vtable = GraphNodes.Slider(
+
+            BattleSetupNotificationWindow it = window;
+            BattlePlayCard drawn = card;
+            NodeVtable vtable = GraphNodes.ComboBox(
                 () => AgeText.Clean(PlanTitleKey),
-                () => card == null ? null : AgeText.Label(card.PlayTitle),
-                (sign, large) => AgeWidgets.Press(sign < 0 ? previous : next),
-                () => AgeWidgets.Operable(group),
+                () => PlayName(it, CurrentPlay(it), drawn),
+                () => BattlePlanScreen.Open(it),
+                () => Steppable(it),
                 tooltip
             );
-            AgeWidgets.PointAt(vtable, group);
-            // Synthetic: one node standing for a card and two arrows, so there is no single widget
-            // that draws it; the group above is only what it is anchored to.
-            builder.AddItem(Nodes.Synthetic(ControlId.Structural("battle-setup/plan"), vtable));
+            // Activating this one opens a list rather than changing the plan: the list that opens says
+            // where it starts.
+            vtable.StateText = null;
+            vtable.Announcements.Add(
+                GraphNodes.ValuePart(() => PlanEffects(it, CurrentPlay(it), drawn), false)
+            );
+
+            TooltipChildren.Declare(
+                builder,
+                Drawn(ControlId.Structural(PlanKey), vtable, carrier),
+                PlanKey,
+                PlanDossiers(card, null)
+            );
+        }
+
+        internal const string PlanKey = "battle-setup/plan";
+
+        /// <summary>The one card the setup popup draws, whichever plan it is currently bound to.
+        /// </summary>
+        internal static BattlePlayCard PlanCard(BattleSetupNotificationWindow window)
+        {
+            return window == null ? null : Card(window.SelectedPlayCardContainer);
+        }
+
+        /// <summary>The game's own title for the plan carousel ("Battle Plan") - the closed row's name
+        /// and the chooser's.</summary>
+        internal static string PlanTitle()
+        {
+            return AgeText.Clean(PlanTitleKey);
+        }
+
+        /// <summary>A row standing on the one card the window draws.
+        ///
+        /// Synthetic only where the window has not built its card yet: what stands behind the row is
+        /// then the group's own plan list, a game fact the window's arrows step through, and the
+        /// drawn test above it (the play group the window is showing) has already asked whether the
+        /// carousel is on the screen at all. With a card - which is every frame after the first bind -
+        /// the card is the widget that vouches for the row and the gate asks it.</summary>
+        internal static NodeDeclaration Drawn(ControlId id, NodeVtable vtable, AgeTransform carrier)
+        {
+            return carrier == null
+                ? (NodeDeclaration)Nodes.Synthetic(id, vtable)
+                : Nodes.Drawn(id, vtable, carrier);
+        }
+
+        /// <summary>
+        /// Turn the card to plan <paramref name="index"/> the way clicking its arrow does, if it is not
+        /// showing it already.
+        ///
+        /// The step is the game's own arrow, pressed the way a mouse presses it, taking whichever way
+        /// round the set is shorter - the window's handlers are what wrap the index and re-bind the
+        /// card, and nothing here reproduces them. It is idempotent: a card already on the plan
+        /// presses nothing, and an arrow that answers with nothing stops the run rather than being
+        /// pressed again as a louder way of not moving.
+        ///
+        /// TURNING THE CARD CHOOSES THE PLAN - the game has no confirm step of its own - so the only
+        /// caller that turns it while the player browses is the chooser
+        /// (<see cref="BattlePlanScreen"/>), which knows how to put it back.
+        /// </summary>
+        internal static void Turn(BattleSetupNotificationWindow window, int index)
+        {
+            try
+            {
+                if (window == null || !Steppable(window))
+                {
+                    return;
+                }
+
+                int count = PlayCount(window);
+                int current = CurrentPlay(window);
+                if (count < 2 || current < 0 || index < 0 || index >= count || current == index)
+                {
+                    return;
+                }
+
+                int forwards = (index - current + count) % count;
+                AgeControlButton arrow = forwards * 2 <= count
+                    ? window.NextPlayButton
+                    : window.PreviousPlayButton;
+                for (int step = 0; step < count && CurrentPlay(window) != index; step++)
+                {
+                    int before = CurrentPlay(window);
+                    AgeWidgets.Press(arrow);
+                    if (CurrentPlay(window) == before)
+                    {
+                        // The arrow answered with nothing - the window is not stepping, and pressing
+                        // it again would only be a louder way of not moving.
+                        break;
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("battle: turning to a battle plan threw: " + e);
+            }
+        }
+
+        /// <summary>Whether the plan can still be changed - which the game answers by switching both
+        /// arrows off once this side has committed to the fight.</summary>
+        internal static bool Steppable(BattleSetupNotificationWindow window)
+        {
+            try
+            {
+                return window != null
+                    && (AgeWidgets.Operable(Widget(window.PreviousPlayButton))
+                        || AgeWidgets.Operable(Widget(window.NextPlayButton)));
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        private static AgeTransform Widget(AgeControlButton button)
+        {
+            try
+            {
+                return button == null ? null : button.AgeTransform;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>The side of the battle whose plan this popup is choosing.</summary>
+        private static EncounterGroup PlayerGroup(BattleSetupNotificationWindow window)
+        {
+            return window == null ? null : Group(window.LeftBattleGroupSetupPanel);
+        }
+
+        /// <summary>How many plans this fleet may fight under - the list the window's own arrows step
+        /// through. -1 where the group will not say.</summary>
+        internal static int PlayCount(BattleSetupNotificationWindow window)
+        {
+            try
+            {
+                EncounterGroup group = PlayerGroup(window);
+                return group == null || group.AvailablePlays == null
+                    ? -1
+                    : group.AvailablePlays.Count;
+            }
+            catch (Exception)
+            {
+                return -1;
+            }
+        }
+
+        /// <summary>Which of them is in force, or -1 where the group will not say.</summary>
+        internal static int CurrentPlay(BattleSetupNotificationWindow window)
+        {
+            try
+            {
+                EncounterGroup group = PlayerGroup(window);
+                EncounterGroupSetup setup = group == null ? null : group.Setup;
+                EncounterPlayDefinition chosen = setup == null ? null : setup.PlayDefinition;
+                if (chosen == null || group.AvailablePlays == null)
+                {
+                    return -1;
+                }
+
+                for (int i = 0; i < group.AvailablePlays.Count; i++)
+                {
+                    if (group.AvailablePlays[i] == chosen)
+                    {
+                        return i;
+                    }
+                }
+
+                return -1;
+            }
+            catch (Exception)
+            {
+                return -1;
+            }
+        }
+
+        /// <summary>What a plan is called: the game's own title for it, which is exactly what the card
+        /// prints when the window turns to it - so an unread row and the drawn card say one word.
+        /// The card's own label answers for the plan in force where the list will not.</summary>
+        internal static string PlayName(
+            BattleSetupNotificationWindow window,
+            int index,
+            BattlePlayCard card
+        )
+        {
+            try
+            {
+                EncounterGroup group = PlayerGroup(window);
+                if (group != null && group.AvailablePlays != null
+                    && index < group.AvailablePlays.Count)
+                {
+                    GuiBattlePlayCard wrapper = Gui.GuiWrapperProviderService.GetGuiBattlePlayCard(
+                        group.AvailablePlays[index]
+                    );
+                    string title = wrapper == null ? null : AgeText.Clean(wrapper.Title);
+                    if (!string.IsNullOrEmpty(title))
+                    {
+                        return title;
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                // Fall through to what the card drew.
+            }
+
+            return card == null || CurrentPlay(window) != index
+                ? null
+                : AgeText.Label(card.PlayTitle);
+        }
+
+        /// <summary>
+        /// What the card prints under the plan's name: the effects the plan applies, or the game's own
+        /// word for a plan that applies none.
+        ///
+        /// Always-drawn text, so it is part of what the row says rather than something to review - but
+        /// only for the row whose plan the card is actually showing. The other rows have no card of
+        /// their own and would otherwise all read the effects of whichever plan is in force.
+        /// </summary>
+        internal static string PlanEffects(
+            BattleSetupNotificationWindow window,
+            int index,
+            BattlePlayCard card
+        )
+        {
+            try
+            {
+                if (card == null || CurrentPlay(window) != index)
+                {
+                    return null;
+                }
+
+                GuiEffectMapper mapper = card.FamilyEffectsMapper;
+                AgeTransform table = mapper == null ? null : mapper.EffectLinesTable;
+                // Content read: the card draws EITHER its effect lines or the game's own word for a
+                // plan that has none, and the table is the switch the game throws between them.
+                if (table == null || !AgeWidgets.Visible(table))
+                {
+                    return AgeWidgets.DrawnLabel(card.NoEffectsLabel);
+                }
+
+                MessageBuilder said = new MessageBuilder();
+                List<AgeTransform> lines = table.Children;
+                for (int i = 0; lines != null && i < lines.Count; i++)
+                {
+                    said.ListItem(AgeWidgets.PaintedText(lines[i]));
+                }
+
+                return said.Build();
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// The hover surfaces the card carries besides its own: the badge naming the family of tactic
+        /// the plan belongs to, and one range diagram per flotilla.
+        ///
+        /// The three diagrams say the same three words as each other ("Short Range") and are told apart
+        /// by their position on the card alone, so each entry is named with the flotilla it belongs to
+        /// in the game's own words for both halves - the same joining the tactics deck's rows already
+        /// use. That name CARRIES the diagram's own sentence, so the entry says it once
+        /// (<see cref="TooltipChildren.AddPlain"/>'s named-entry rule): "Flotilla 1: Short Range", not
+        /// "Flotilla 1: Short Range, Short Range" (owner-reported 2026-08-29). The family badge is
+        /// named with the game's title for that family ("Aggressive"), the word it draws the picture
+        /// for and never writes down, and keeps its own different sentence.
+        ///
+        /// <paramref name="turn"/> is the chooser's: inside it every entry belongs to one plan of
+        /// several, and the card has to be showing that plan before the entry says anything. It runs
+        /// where each entry's NAME resolves, which is the one moment between the cursor arriving and
+        /// the landing being spoken. Null everywhere else - the closed row's card is always the plan
+        /// in force and there is nothing to turn.
+        /// </summary>
+        internal static List<TooltipChildren.Dossier> PlanDossiers(
+            BattlePlayCard card,
+            Action turn
+        )
+        {
+            List<TooltipChildren.Dossier> dossiers = new List<TooltipChildren.Dossier>(4);
+            if (card == null)
+            {
+                return dossiers;
+            }
+
+            try
+            {
+                BattlePlayCard it = card;
+                Action turned = turn;
+                AgeTransform badge = card.FamilyIcon == null ? null : card.FamilyIcon.AgeTransform;
+                TooltipChildren.AddPlain(
+                    dossiers,
+                    AgeWidgets.Raw(badge),
+                    badge,
+                    () =>
+                    {
+                        Turned(turned);
+                        return FamilyName(it);
+                    }
+                );
+
+                AgeTransform ranges = card.FlotillaRangeIndicators;
+                List<AgeTransform> indicators = ranges == null ? null : ranges.Children;
+                for (int i = 0; indicators != null && i < indicators.Count; i++)
+                {
+                    AgeTransform indicator = indicators[i];
+                    AgeTooltip tip = AgeWidgets.Raw(indicator);
+                    int flotilla = i;
+                    // Named by the sentence the game wrote for it, beside the flotilla it belongs to
+                    // - a label fallback, see RangeName.
+                    TooltipChildren.AddPlain(
+                        dossiers,
+                        tip,
+                        indicator,
+                        () => RangeName(turned, flotilla, tip)
+                    );
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("battle: reading a plan card's badges threw: " + e);
+            }
+
+            return dossiers;
+        }
+
+        /// <summary>What a range diagram's entry is called, with the card first put on the plan the
+        /// entry belongs to.
+        ///
+        /// A LABEL FALLBACK, not a second reading of the tooltip: the diagram draws no words at all,
+        /// so the only thing that could NAME its entry is the sentence the game wrote for it - the
+        /// same rung the ordinary naming ladder would have reached - joined to the flotilla the card
+        /// says nowhere. The words are not silenced by being read here: they are this entry's own
+        /// section, which the named-entry rule then keeps from saying them a second time
+        /// (<see cref="TooltipChildren.AddPlain"/>).</summary>
+        private static string RangeName(Action turn, int flotilla, AgeTooltip tip)
+        {
+            Turned(turn);
+            return TooltipFeatures.FlotillaRange(flotilla, CardActions.FirstLine(tip));
+        }
+
+        /// <summary>Put the card on the plan whose entry is about to speak, where the caller is the
+        /// chooser and there is one. Failures are the turn's own to log.</summary>
+        private static void Turned(Action turn)
+        {
+            if (turn != null)
+            {
+                turn();
+            }
+        }
+
+        /// <summary>The game's own title for the family of tactic the card's badge draws the picture
+        /// for - the same element the badge takes its sentence from
+        /// (<c>BattlePlayCard.RefreshMainGroup</c>). Null where the game will not say, and the
+        /// ordinary naming ladder answers instead.</summary>
+        private static string FamilyName(BattlePlayCard card)
+        {
+            try
+            {
+                GuiBattlePlaySlot slot = card.GuiBattlePlaySlot;
+                GuiBattlePlayCard wrapper = slot == null ? null : slot.GuiCard;
+                EncounterPlayDefinition definition =
+                    wrapper == null ? null : wrapper.EncounterPlayDefinition;
+                if (definition == null || Amplitude.StaticString.IsNullOrEmpty(definition.FamilyName))
+                {
+                    return null;
+                }
+
+                return AgeText.Clean(Gui.GetLocalizedTitle("Play" + definition.FamilyName));
+            }
+            catch (Exception)
+            {
+                return null;
+            }
         }
 
         /// <summary>One side's plan on the report, where it is a card the game drew rather than a
@@ -1091,7 +1526,7 @@ namespace ES2Access.Screens
                 return;
             }
 
-            if (BattleText.Optional(BalanceKey, 0, 0) == null)
+            if (BattleText.Optional(BalanceKey, string.Empty, 0, string.Empty) == null)
             {
                 return;
             }
@@ -1122,18 +1557,104 @@ namespace ES2Access.Screens
             builder.AddItem(Nodes.Synthetic(ControlId.Structural(key), vtable));
         }
 
-        /// <summary>The two military-power figures the game's own helper computes for the arcs.</summary>
+        /// <summary>
+        /// Which side the arcs say is stronger, and by how much - phrased from the STRONGER side, in
+        /// the two fleets' own names.
+        ///
+        /// The two military-power figures the game's own helper computes are what the arcs are sized
+        /// from, and they are the wrong thing to read out: "Military power 350 against 172" hands the
+        /// listener two numbers and the division, while the picture hands a sighted player the answer.
+        /// So the line says the answer - who leads and by what percentage - and the numbers stay where
+        /// the game put them, which is nowhere. Two equal sides are the player's own first, at 0%; a
+        /// side with nothing left is the one comparison a percentage cannot make and has its own
+        /// sentence.
+        ///
+        /// <paramref name="left"/> is the player's side wherever a caller has one, which is what
+        /// decides the tie.
+        /// </summary>
         internal static string BalanceText(EncounterGroup left, EncounterGroup right, bool setup)
         {
             try
             {
                 float ours = GuiBattleHelpers.GetMilitaryPower(left, setup, true);
                 float theirs = GuiBattleHelpers.GetMilitaryPower(right, setup, true);
+                bool leading = ours >= theirs;
+                string strongName = SideName(leading ? left : right);
+                string weakName = SideName(leading ? right : left);
+                if (string.IsNullOrEmpty(strongName) || string.IsNullOrEmpty(weakName))
+                {
+                    return null;
+                }
+
+                float stronger = leading ? ours : theirs;
+                float weaker = leading ? theirs : ours;
+                if (weaker <= 0f)
+                {
+                    return stronger <= 0f
+                        ? BattleText.Optional(BalanceKey, strongName, 0, weakName)
+                        : BattleText.Optional(BalanceAllKey, strongName, weakName);
+                }
+
                 return BattleText.Optional(
                     BalanceKey,
-                    Mathf.RoundToInt(ours),
-                    Mathf.RoundToInt(theirs)
+                    strongName,
+                    Mathf.RoundToInt((stronger / weaker - 1f) * 100f),
+                    weakName
                 );
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// What one side of a battle is called: the name of the first fleet it brought that is not a
+        /// reinforcement.
+        ///
+        /// The same name the roster header draws over that side (<c>BattleGarrisonPanel.Refresh</c>
+        /// reads it off the very same garrison), taken from the setup rather than off the drawn panel
+        /// so that the cinematic and the advanced-play modal - neither of which draws a roster - name
+        /// the two sides the popups' way. Reinforcements are skipped because the game draws them in a
+        /// table of their own underneath, and the fleet the side is known by is the one at the top.
+        /// </summary>
+        private static string SideName(EncounterGroup group)
+        {
+            try
+            {
+                EncounterGroupSetup setup = group == null ? null : group.Setup;
+                EncounterContender leader = group == null ? null : group.Leader;
+                Empire empire = leader == null ? null : leader.Empire;
+                if (setup == null || setup.ContenderSetups == null || empire == null)
+                {
+                    return null;
+                }
+
+                for (int i = 0; i < setup.ContenderSetups.Count; i++)
+                {
+                    EncounterContenderSetup contender = setup.ContenderSetups[i];
+                    if (contender == null || contender.ContenderIndex != empire.Index)
+                    {
+                        continue;
+                    }
+
+                    for (int j = 0; j < contender.GarrisonSetups.Count; j++)
+                    {
+                        EncounterGarrisonSetup garrison = contender.GarrisonSetups[j];
+                        if (garrison == null || garrison.Reinforcement)
+                        {
+                            continue;
+                        }
+
+                        string named = AgeText.Clean(garrison.GarrisonLocalizedName.ToString());
+                        if (!string.IsNullOrEmpty(named))
+                        {
+                            return named;
+                        }
+                    }
+                }
+
+                return null;
             }
             catch (Exception)
             {

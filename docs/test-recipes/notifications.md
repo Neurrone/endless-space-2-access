@@ -387,6 +387,57 @@ created from `/eval` — it needs two hostile fleets meeting. Everything before 
 read-only; from the setup popup onward the run is destructive, so it goes LAST and ends with
 `POST /loadsave`.
 
+**Space-battle SETUP popup** (verified live 2026-08-29, player vs pirates, one fleet a side). Stop
+order in `notification:content`: title, arena, [yours] fleet header / one row per flotilla,
+[theirs] fleet header group / ships, [aftermath] balance, [plan] the Battle Plan combo row and then
+Advanced / Watch / Retreat / Fight in the SAME band (owner, 2026-08-29: Alt+Down from the balance
+lands on the plan and stops there — the buttons after it are the next rows down, not a section) —
+8 numbered positions with every group shut. The BALANCE line is
+directional and names the two sides ("Balance of power: 1st Conquerors Navy has 103% more military
+power than 8th Greedy Pirates"); the names come from the first non-reinforcement garrison of each
+`EncounterGroup.Setup.ContenderSetups` entry, which is the same string the roster header draws.
+A flotilla the battle left EMPTY is a plain row ("Flotilla 1, Empty" — the game's own `EmptyLabel`),
+not a group: nothing hangs under it, and the lines and their badges carry no game tooltip anywhere
+(measured on `FlotillaLine`, `FlotillaIndexGroup`, `Circle`, `FlotillaIndexLabel`, `EmptyLabel`).
+
+**The PLANS are a DROPLIST, not a band.** Pressing the game's own Previous/Next arrow does not show
+a plan, it CHOOSES it, so the popup carries ONE closed row ("Battle Plan, combo box, ⟨plan⟩,
+⟨effect line⟩") and Enter opens `screen.battle-plan` — a mod-owned child screen, no layer, one
+`GraphNodes.Choice` row per `group.AvailablePlays` entry, landing on the plan in force. **Arrival on
+a chooser row turns the card** (shortest way round, guarded on the row being the focused one), Enter
+ACCEPTS and closes, Escape puts back the plan that was in force when the list opened, and the
+chooser refuses to open at all while the game has the arrows switched off (the closed row then reads
+`unavailable` and swallows Enter — force it with
+`w.Previous/NextPlayButton.AgeTransform.Enable = false`, and put it back). Readback for every step:
+`w.LeftBattleGroupSetupPanel.EncounterGroup.Setup.PlayDefinition` against `AvailablePlays`. Card
+region for the evidence crop: `950,562,210,282` (the title, the three range diagrams and ONE effect
+line change together). The card's effects table is POOLED — `Item001` sits at `Visible=true,
+Alpha=0` holding the previous plan's line, so the row reads it with `AgeWidgets.PaintedText` and the
+crop is the oracle. At most ONE chooser row is expanded at a time, the one the cursor is inside: the
+nested children all read the single drawn card, so a second open row would read this row's card
+under that row's name.
+
+Nested "Tooltips" children, four on the closed row and four on each chooser row: the family badge
+(named with the game's own family title, "Aggressive", and keeping its own different sentence) and
+one per flotilla range diagram. A range child says its line ONCE — "Flotilla 1: Short Range", never
+"Flotilla 1: Short Range, Short Range": the name carries the sentence, so `TooltipChildren.AddPlain`
+takes it back out of the sections (`Unrepeat`).
+Ship rows carry one child each, the role badge named with the game's role title ("Attacker",
+"Exploration") plus the whole different sentence behind it. The arena row carries one, the
+Separator's static "Effects applied to all the ships in the Theater" — `ArenaGroupTooltip` itself is
+class `Simple` with EMPTY content whenever the theater applies no effects.
+`TooltipParity()` is clean here except `Previous/NextPlayButton`, which stay `uncovered`
+(owner-ruled subsumed by the chooser). `NotificationParity()` keeps four accepted residues:
+`battle-setup/balance` `unlocatable` (it is computed, and the game draws only an arc); the same two
+arrow buttons under `tooltips`; `placement` for the two hero portraits and the four bottom-bar
+controls; and `honesty` "says what nothing draws" for every row whose name the mod composes out of
+a key the game draws no words for — "Flotilla N" (`%FlotillaNameTitle` over a line that draws the
+bare number) and the "(Ctrl+L)" on Show Location. The unfocused-plan-row `honesty` entries the
+paged band produced are GONE with the band. **Expand Flotilla N, the enemy garrison, every ship
+row, the arena row and the Battle Plan row before believing either audit** — a collapsed branch
+reads as `unread`/`decoration`.
+**Never activate** Fight, Retreat, the Watch toggle or the auto-popup box.
+
 **Ground-battle SETUP popup** (verified live 2026-08-25, player attacking). Stop order: title,
 balance ("Manpower L against R"), [yours] role / Assigned / Reserve / troop rows / three details
 rows (health, damage, bombing), [theirs] same minus the two multipliers (the game hides them;

@@ -16,7 +16,8 @@ namespace ES2Access.UI
     /// here, and which one a screen gets is the game's decision rather than the screen's.
     ///
     /// A fleet is a GROUP holding its ships: the row says what the fleet is, how many command points it
-    /// is worth and whether it is running cloaked, and the ships are child nodes under it. Ships are
+    /// is worth and whether it is running cloaked, and the ships are child nodes under it - unless it
+    /// has none, in which case it is a plain row saying so (<see cref="Fleet"/>). Ships are
     /// read-only - there is nothing to do to a ship in a battle report, and the setup popup offers no
     /// per-ship choice either - so each is a line rather than a control.
     ///
@@ -76,6 +77,12 @@ namespace ES2Access.UI
         ///
         /// Public because a ship is also drawn on its own - the hero's ship inside a fleet the report
         /// lists flotilla by flotilla - and reads the same wherever it is.
+        ///
+        /// The row has TWO hover surfaces and points at one of them: its own dossier, which names the
+        /// ship and its role, and the little role badge beside the name, whose sentence says what that
+        /// role is FOR ("Primary targets: Protector and then Coordinator ships") and exists nowhere
+        /// else on the popup. The badge is therefore a nested entry of its own, as every second hover
+        /// surface is.
         /// </summary>
         public static void Ship(GraphBuilder builder, BattleShipItem item, string key)
         {
@@ -101,7 +108,55 @@ namespace ES2Access.UI
                 Sections = GraphNodes.SpokenSections(() => OutcomeLines(it), tooltip),
             };
             AgeWidgets.PointAt(vtable, widget);
-            builder.AddItem(Nodes.Drawn(ControlId.For(item, key), vtable, item));
+
+            List<TooltipChildren.Dossier> dossiers = new List<TooltipChildren.Dossier>(1);
+            AgeTransform badge = Role(item);
+            TooltipChildren.AddPlain(
+                dossiers,
+                AgeWidgets.Raw(badge),
+                badge,
+                () => RoleName(it)
+            );
+            TooltipChildren.Declare(
+                builder,
+                Nodes.Drawn(ControlId.For(item, key), vtable, item),
+                key,
+                dossiers
+            );
+        }
+
+        /// <summary>The role badge drawn beside a ship's name, where the game is drawing one - it hides
+        /// the badge outright for a ship whose data names no role.</summary>
+        private static AgeTransform Role(BattleShipItem item)
+        {
+            try
+            {
+                return item.RoleIcon == null ? null : item.RoleIcon.AgeTransform;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>What the role badge is CALLED: the game's own title for the role its picture stands
+        /// for, which is the same element the badge takes its sentence from
+        /// (<c>BattleShipItem.Refresh</c>). Null where the game will not say, and the ordinary naming
+        /// ladder answers instead.</summary>
+        private static string RoleName(BattleShipItem item)
+        {
+            try
+            {
+                GuiBattleShip ship = item.GuiBattleShip;
+                Amplitude.StaticString role = ship == null ? Amplitude.StaticString.Empty : ship.Role;
+                Amplitude.Unity.Gui.GuiElement element =
+                    Amplitude.StaticString.IsNullOrEmpty(role) ? null : Gui.GetGuiElement(role);
+                return element == null ? null : AgeText.Clean(element.Title);
+            }
+            catch (Exception)
+            {
+                return null;
+            }
         }
 
         /// <summary>How hurt a ship is, in the game's own stat string with the game's own word in front
@@ -242,7 +297,10 @@ namespace ES2Access.UI
                         Emit = builder =>
                             builder.AddItem(Nodes.Drawn(
                                 ControlId.For(it, prefix + "/name"),
-                                Line(() => FleetName(it)),
+                                Explained(
+                                    Line(() => FleetName(it)),
+                                    Header(it.GarrisonTitleGroup, it.CommandPointsGroup)
+                                ),
                                 it
                             )),
                     }
@@ -286,7 +344,15 @@ namespace ES2Access.UI
             }
         }
 
-        /// <summary>One fleet or flotilla: the row that names it, and the ships under it.</summary>
+        /// <summary>
+        /// One fleet or flotilla: the row that names it, and the ships under it.
+        ///
+        /// A fleet with NO SHIPS is a plain row and not a group - a flotilla the battle left empty
+        /// says so in the game's own word for it ("Flotilla 1, Empty") and there is nothing inside it
+        /// to go into (owner-reported 2026-08-29; before this it was a group that expanded to
+        /// nothing). The count is taken before the row is declared, which is why the ships are
+        /// collected first.
+        /// </summary>
         private static void Fleet(
             GraphBuilder builder,
             BattleGarrisonPanel panel,
@@ -299,18 +365,28 @@ namespace ES2Access.UI
         {
             AgeTooltip tooltip = panel == null
                 ? null
-                : AgeWidgets.Raw(panel.GarrisonTitleGroup);
-            builder.BeginGroup(Nodes.Drawn(
+                : Header(panel.GarrisonTitleGroup, panel.CommandPointsGroup);
+            BattleShipItem[] items = ships == null
+                ? new BattleShipItem[0]
+                : ships.GetComponentsInChildren<BattleShipItem>(true);
+            // No role word on the empty one either: with nothing inside it there is no group here,
+            // and "Flotilla 1, Empty" is the whole of what the line says.
+            NodeDeclaration row = Nodes.Drawn(
                 id,
-                GraphNodes.Group(name, null, tooltip), drawnBy),
-                null,
-                ShipsOpen
+                items.Length == 0
+                    ? Explained(Line(name), tooltip)
+                    : GraphNodes.Group(name, null, tooltip),
+                drawnBy
             );
+            if (items.Length == 0)
+            {
+                builder.AddItem(row);
+                return;
+            }
+
+            builder.BeginGroup(row, null, ShipsOpen);
             try
             {
-                BattleShipItem[] items = ships == null
-                    ? new BattleShipItem[0]
-                    : ships.GetComponentsInChildren<BattleShipItem>(true);
                 for (int i = 0; i < items.Length; i++)
                 {
                     Ship(builder, items[i], prefix + "/ship/" + i);
@@ -459,6 +535,38 @@ namespace ES2Access.UI
                 Announcements = new List<NodeAnnouncement> { GraphNodes.LabelPart(text) },
                 OnFocusVisual = AgeWidgets.ReleasePointer,
             };
+        }
+
+        /// <summary>The same line with the tooltip that explains it, where the panel drew one - the
+        /// door does the aiming, and a line with nothing to explain it keeps the released pointer it
+        /// had.</summary>
+        private static NodeVtable Explained(NodeVtable vtable, AgeTooltip tooltip)
+        {
+            if (tooltip != null)
+            {
+                vtable.Sections = GraphNodes.SectionsFor(vtable, tooltip);
+            }
+
+            return vtable;
+        }
+
+        /// <summary>
+        /// What explains a fleet's header: the tooltip the panel hung on the title where it has one,
+        /// else the one on the command-points badge beside it.
+        ///
+        /// The badge's sentence ("The total Command Points in this fleet") is the only thing on the
+        /// popup that says what the figure the header row reads out actually IS, and no prefab here
+        /// puts a tooltip on the title group at all - so the header row would otherwise say a number
+        /// with the game's own caption for it and nothing about what it counts.
+        /// </summary>
+        private static AgeTooltip Header(AgeTransform title, AgeTransform commandPoints)
+        {
+            // Different widget: the row stands on the panel and this asks about the badge inside it,
+            // the same badge whose figure the row only names while the game is drawing it
+            // (see Named) - a header explained by a command-points sentence it is not showing would
+            // be describing a figure it did not say.
+            return AgeWidgets.Raw(title)
+                ?? (AgeWidgets.Visible(commandPoints) ? AgeWidgets.Raw(commandPoints) : null);
         }
 
         private static AgePrimitiveLabel Citadel(AgeTransform root)

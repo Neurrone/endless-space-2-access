@@ -96,6 +96,12 @@ namespace ES2Access.UI
             /// Null where the carrier is fixed for the life of the thing, which is most of them.
             /// </summary>
             public Func<AgeTooltip> LiveAim;
+
+            /// <summary>What this entry's NAME already says - the words its sections then leave out
+            /// (<see cref="Unrepeat"/>). Set only by a caller that named the entry out of the very
+            /// sentence it carries; null for every entry whose name and sentence are different
+            /// things, which is nearly all of them.</summary>
+            public Func<string> Unsaid;
         }
 
         /// <summary>The region the node's own actions and structural children belong to - declared
@@ -259,6 +265,8 @@ namespace ES2Access.UI
                 vtable.Sections = GraphNodes.Sections(null, it.Tooltip);
             }
 
+            Unrepeat(vtable.Sections, it.Unsaid);
+
             AgeTooltip aim = it.Aim ?? it.Tooltip;
             AgeTransform anchor = it.Anchor ?? (aim == null ? null : aim.AgeTransform);
             if (it.LiveAim != null)
@@ -289,6 +297,79 @@ namespace ES2Access.UI
             }
 
             return vtable;
+        }
+
+        /// <summary>
+        /// A NAMED ENTRY NEVER SAYS AGAIN WHAT ITS NAME ALREADY SAID: every line the name carries
+        /// whole is taken out of the entry's sections, read afresh at every read as both halves are.
+        ///
+        /// The entries that name themselves off the ladder have had this since the beginning - rung 3
+        /// IS the sentence's first line, and the buffer's head dedupe keeps it out below. A CALLER's
+        /// name falls outside that dedupe because the name is no longer the line: a battle plan's
+        /// range diagram draws no words at all, so its entry is named "Flotilla 1: Short Range" - the
+        /// flotilla the card never writes down, plus the diagram's own sentence - and the sentence
+        /// then arrived a second time, in the same breath (owner-reported 2026-08-29).
+        ///
+        /// Only a line the name carries WHOLE goes, so a name that adds to its sentence keeps every
+        /// word of it: the ship role's "Attacker" over "The role of this ship is..." is two different
+        /// statements and reads as both. The sections are wrapped rather than rebuilt, so a tooltip's
+        /// own loudness, its can-draw gate, which surface it came off and the mouse-instruction split
+        /// all survive untouched.
+        /// </summary>
+        private static void Unrepeat(IList<NodeSection> sections, Func<string> name)
+        {
+            if (sections == null || name == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < sections.Count; i++)
+            {
+                NodeSection section = sections[i];
+                if (section == null || section.Lines == null)
+                {
+                    continue;
+                }
+
+                Func<IList<string>> all = section.Lines;
+                Func<string> said = name;
+                section.Lines = () => Without(all(), said);
+            }
+        }
+
+        private static IList<string> Without(IList<string> lines, Func<string> name)
+        {
+            string said;
+            try
+            {
+                said = name();
+            }
+            catch (Exception)
+            {
+                return lines;
+            }
+
+            if (lines == null || lines.Count == 0 || string.IsNullOrEmpty(said))
+            {
+                return lines;
+            }
+
+            List<string> kept = new List<string>(lines.Count);
+            for (int i = 0; i < lines.Count; i++)
+            {
+                string line = lines[i];
+                if (
+                    !string.IsNullOrEmpty(line)
+                    && said.IndexOf(line, StringComparison.CurrentCultureIgnoreCase) >= 0
+                )
+                {
+                    continue;
+                }
+
+                kept.Add(line);
+            }
+
+            return kept;
         }
 
         /// <summary>Whichever widget is carrying a dossier at this moment, or the one it was declared
@@ -657,8 +738,21 @@ namespace ES2Access.UI
         /// <summary>The same for a sentence the caller has already resolved: the game keeps some of
         /// these on a tooltip FIELD of its own rather than on the widget the sentence is about (the
         /// planet card's improvement box), so there is nothing to read it off.
-        /// <paramref name="anchor"/> is what it is drawn under.</summary>
-        public static void AddPlain(List<Dossier> into, AgeTooltip tooltip, AgeTransform anchor)
+        /// <paramref name="anchor"/> is what it is drawn under.
+        ///
+        /// <paramref name="name"/> is for a badge whose name the game has written somewhere the
+        /// ladder cannot reach - the ship role's own title beside the sentence about it, the flotilla
+        /// a range diagram belongs to - and it OUTRANKS the ladder while it answers, falling back to
+        /// it where it does not. A caller that names its entry takes it out of the sibling rule
+        /// (<see cref="Dossier.Rungs"/>): it has said what this one is called, and the set can still
+        /// collide with the name it gave. Whatever the name says, the SENTENCE no longer says again
+        /// (<see cref="Unrepeat"/>).</summary>
+        public static void AddPlain(
+            List<Dossier> into,
+            AgeTooltip tooltip,
+            AgeTransform anchor,
+            Func<string> name = null
+        )
         {
             if (
                 into == null
@@ -673,7 +767,16 @@ namespace ES2Access.UI
 
             for (int i = 0; i < into.Count; i++)
             {
-                if (AgeWidgets.SameTooltip(into[i].Tooltip, tooltip))
+                // One widget is one entry, always. Two widgets whose sentences are word for word the
+                // same are also one - the game clones a tooltip across the pieces of a line, and a
+                // second node for it would be the same words twice - UNLESS the caller has named this
+                // one, which is it saying that these surfaces are told apart by something other than
+                // their words: a battle plan's three range diagrams all read "Short Range" and are
+                // three different flotillas.
+                if (
+                    (anchor != null && ReferenceEquals(into[i].Anchor, anchor))
+                    || (name == null && AgeWidgets.SameTooltip(into[i].Tooltip, tooltip))
+                )
                 {
                     return;
                 }
@@ -681,16 +784,34 @@ namespace ES2Access.UI
 
             AgeTooltip tip = tooltip;
             Func<int, string> ladder = Ladder(null, tip, anchor);
+            Func<string> climbed = Named(into, into.Count, ladder);
             into.Add(
                 new Dossier
                 {
-                    Name = Named(into, into.Count, ladder),
-                    Rungs = ladder,
+                    Name = name == null ? climbed : Preferred(name, climbed),
+                    Rungs = name == null ? ladder : null,
                     Tooltip = tip,
                     Anchor = anchor,
                     Carrier = anchor,
+                    // The caller's OWN name, not the effective one: where it declines to answer the
+                    // ladder takes over, and a ladder name is already kept out of the sentence by the
+                    // buffer's head dedupe (<see cref="Unrepeat"/>).
+                    Unsaid = name,
                 }
             );
+        }
+
+        /// <summary>The caller's own name for a dossier while it answers, and the naming ladder's
+        /// where it does not - asked afresh every read, as every name here is.</summary>
+        private static Func<string> Preferred(Func<string> given, Func<string> ladder)
+        {
+            Func<string> mine = given;
+            Func<string> fallback = ladder;
+            return () =>
+            {
+                string said = mine();
+                return string.IsNullOrEmpty(said) ? fallback() : said;
+            };
         }
 
         /// <summary>Every plain-text explanation hanging INSIDE a widget, one node each, in the order

@@ -1418,7 +1418,23 @@ namespace ES2Access.Core.Speech
         public const string BattleEnemyDamage = "battle.enemy-damage";
         public const string BattleShowYourFleets = "battle.show-your-fleets";
         public const string BattleShowEnemyFleets = "battle.show-enemy-fleets";
+        /// <summary>
+        /// Which side is stronger and by how much, phrased FROM the stronger side: the fleet that
+        /// leads, the percentage more military power it has, and the fleet it is being compared
+        /// against. The game draws this as two arcs with no figure anywhere on them, and the arcs say
+        /// "one of these is bigger" rather than "350 against 172" - so the sentence says the same
+        /// thing the picture does, which two bare numbers left the listener to work out.
+        ///
+        /// A complete phrase with all three parts, so a language that puts the comparison first or
+        /// inflects the fleet names can. The percentage is what the stronger side has ON TOP of the
+        /// weaker one - two equal fleets are 0% and never a refusal to speak.
+        /// </summary>
         public const string BattleBalance = "battle.balance";
+
+        /// <summary>The same sentence for the one comparison a percentage cannot make: a side with
+        /// no military power left at all, which a report of a battle that wiped a fleet out is full
+        /// of. Dividing by it would answer with infinity, so the wipe-out is its own phrase.</summary>
+        public const string BattleBalanceAll = "battle.balance-all";
 
         /// <summary>The same question on the ground, where the two arcs are sized from manpower
         /// rather than from military power - a different quantity, so a different sentence.</summary>
@@ -2277,7 +2293,8 @@ namespace ES2Access.Core.Speech
             { BattleEnemyDamage, "Damage they caused" },
             { BattleShowYourFleets, "Show your fleets" },
             { BattleShowEnemyFleets, "Show enemy fleets" },
-            { BattleBalance, "Military power {0} against {1}" },
+            { BattleBalance, "Balance of power: {0} has {1}% more military power than {2}" },
+            { BattleBalanceAll, "Balance of power: {0} has all the military power, {1} has none" },
             { BattleGroundBalance, "Manpower {0} against {1}" },
             { BattleTimeLeft, "{0} percent of the time left" },
             { BattleProgress, "Battle {0} percent fought" },

@@ -345,8 +345,9 @@ namespace ES2Access.Screens
             builder.SetRegion(null);
         }
 
-        /// <summary>The two military-power figures the arcs are sized from, which the game writes nowhere
-        /// at all. The same reading the battle popups use, off the game's own helper.</summary>
+        /// <summary>Which side the arcs say is stronger and by how much, in the two fleets' own names -
+        /// the same sentence the battle popups read, off the game's own helper. The figures behind it are
+        /// written nowhere at all.</summary>
         private static void Balance(GraphBuilder builder, AdvancedEncounterPlayModalWindow window)
         {
             AgeTransform gauge = Widget(window.BattlePowerGauge);
