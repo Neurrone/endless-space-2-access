@@ -307,7 +307,12 @@ namespace ES2Access.UI
 
         /// <summary>Into the system the camera is closest to, which is what the wheel does at the closest
         /// step: the map's own click path, so a colony of the player's opens its page and anything else
-        /// is merely zoomed at.</summary>
+        /// is merely zoomed at.
+        ///
+        /// Marked as a ZOOM KEY (<see cref="Screens.GalaxyPick.ByZoomKey"/>): this is the same call a
+        /// click makes, and the page watches it for the map being taken in on a node by somebody else -
+        /// but a zoom the player made by hand is theirs to keep, which is the exclusion
+        /// <see cref="Moves"/> names.</summary>
         private static bool EnterSystem()
         {
             StarSystemNode node = FocusedSystem;
@@ -318,7 +323,16 @@ namespace ES2Access.UI
                 return false;
             }
 
-            galaxy.SelectGameNode(drawn);
+            try
+            {
+                Screens.GalaxyPick.ByZoomKey = true;
+                galaxy.SelectGameNode(drawn);
+            }
+            finally
+            {
+                Screens.GalaxyPick.ByZoomKey = false;
+            }
+
             return true;
         }
 
@@ -725,7 +739,13 @@ namespace ES2Access.UI
         ///
         /// Deliberately not counted: the ZOOM keys, the mouse wheel and the drag. A zoom the player made
         /// by hand is theirs to keep for as long as they go on reading the same place (owner ruling
-        /// 2026-08-23), and counting it here would re-snap the camera on their next arrow key.
+        /// 2026-08-23), and counting it here would re-snap the camera on their next arrow key. Each of
+        /// those leaves the camera over the same PLACE, which is what the exclusion is really about -
+        /// so the wheel's one step that does not (scrolled in past the deepest step, it jumps onto the
+        /// hovered star through the map's own click path) is counted with the click, and so is the
+        /// right-click undo, which puts the camera back at a different place entirely
+        /// (<see cref="Screens.GalaxyPick"/>, which has both and the owner's open question about the
+        /// wheel).
         /// </summary>
         public static int Moves
         {

@@ -457,10 +457,17 @@ with nothing in any dump to show it).
 
 ## The galaxy map's keys and landings
 
-**Six zoom-in fleet actions seat the cursor where their own name says they will**, and **a targeting
+**Nine zoom-in fleet actions seat the cursor where their own name says they will**, and **a targeting
 cursor arming ENDS a live-or-suspended inspect mode** (a modal target picker ends it by popping the
-page). Which six, what suspends rather than forgets a seat, and the expedition sequence to expect are
+page). Which nine, what suspends rather than forgets a seat, and the expedition sequence to expect are
 `docs/test-recipes/fleets.md`, **Ordering a fleet around**.
+
+**A camera move made by the POINTER seats the cursor too, through the arrival seat's own rule** — a
+left click on a star or a wreck, and the wheel scrolled in past the deepest step (owner ruling
+2026-08-29), put the cursor on that system's row while it is reading the map, and re-seat the map
+stop's remembered row silently while it is reading anything else (`GalaxyPick` →
+`GalaxyHudScreen.ArmPickSeat`; the mechanism and what the right-click undo does are
+`docs/galaxy-map.md`). No key of the player's is involved and nothing new is claimed.
 
 **Enter on a NAMED starlane travels when the click would be a structural no-op** (owner ruling
 2026-08-20, a deliberate exception to Enter-is-click-parity): `LaneClick` runs

@@ -554,8 +554,59 @@ outposts and the influence/colonizability facts live in `planets.md`; fleets and
   player's (`GalaxyView.cs:110-166`), force-zooming only for everything else. **Measured on a
   colonized system, though, that branch does NOT leave the galaxy view**: it lands where
   `ZoomInOnNode` does — zoom step 13, galaxy page still focused, orbital cards drawn (2026-08-20).
+  **Re-measured 2026-08-29 and it DID leave**: a replayed click on Dusay (home, `[Beginner] test`
+  turn 21) opened the system's own page — "Zoom level 14 of 15", "Dusay, System management", the mod's
+  stack showing `screen.star-system`. So the branch is state-dependent and neither reading is safe to
+  build on; anything that must know asks the level afterwards. The pointer watch is written not to
+  care (`GalaxyPick`): the page going away drops the pick on the pop, and coming back out of the page
+  is an arrival that seats the cursor anyway.
   So "what the left click does" is not one answer, and a mod that wants the zoom must call
   `ZoomInOnNode` (or `GalaxyViewLevels.ZoomTo`) rather than the click's own entry point.
+- **Every camera move the map makes for a POINTER goes through two calls on `GalaxyView`, and none of
+  them passes through `GuiManager`** (census 2026-08-29, the whole `Assembly-CSharp` call graph of
+  both names). `SelectGameNode(GalaxyNode)` and `ZoomInOnNode(GalaxyNode)` are the doors; the
+  `GameNode` overloads of both funnel into them (`SelectGameNode(GameNode)` → `SelectNode` →
+  `ZoomInOnNode`). What arrives there: a LEFT CLICK on an explored star and on a wrecked mothership
+  (`GalaxyCursor.OnCursorClick` :150, :165), the WHEEL scrolled in past the deepest step over a
+  hovered star (`GalaxyViewCameraController.HandleScrollwheel` :652), and the nine fleet actions whose
+  press only brings the camera in — the five `FleetActionButton*`/`FleetActionToggleReclaimMothership`
+  ones and `EmpireLocalActionTogglePlanetConstruction.OnToggle` (:23-38), which Terraform, Restore and
+  Reduce Anomaly all inherit. Because none of it is a `GuiManager` reveal, `GalaxyLocate` never saw any
+  of it and neither did the moved-count: a mouse click moved the picture out from under the page's
+  record of it, and the record then swallowed every later attempt to come back in. **Mod policy
+  (2026-08-29):** `ES2Access/Screens/GalaxyPick.cs` patches the two doors — every arrival COUNTS a
+  move (`GalaxyViewLevels.Moved`) and the node is remembered for the page to seat the tree cursor on
+  — through the SAME rule an arrival nobody asked for goes through (`GalaxyHudScreen`'s
+  `FollowCentredSystem`/`SeatOnCentredSystem`: one rule, two triggers, differing only in how the
+  system is named — an arrival has to ask the camera, a pick says so itself, `ArmPickSeat`). Passive,
+  as that rule already was: a cursor reading the map follows and the landing announces itself, a
+  cursor reading anything else is left alone and the map stop's remembered row is re-seated silently,
+  and a reveal, a fleet action's seat or a fleet-panel handover all name their own place first and
+  win. Measured 2026-08-29 on `[Beginner] test`: with the cursor on the End Turn button a replayed
+  click on Qarius moved the camera, said nothing and moved no cursor, and the next Ctrl+G landed on
+  Qarius; with the cursor on Dusay's row a replayed `ZoomInOnNode(Qarius)` seated and announced
+  Qarius one frame later. The mod's own movers are all elsewhere by construction
+  (`SnapTo`/`ZoomTo`/`ZoomToStep` drive the LEVEL's `ZoomInOnNode` or the controller; `CenterOn` is
+  `CenterOnPoint`; `PanTo`/`OpenSystem` are `GuiManager` calls) — except the zoom ladder's deepest
+  step in (`GalaxyViewLevels.EnterSystem`, which takes the click's own path on purpose) and it marks
+  itself `GalaxyPick.ByZoomKey`, because a zoom the player made by hand is the one exclusion the count
+  keeps (verified live 2026-08-29: the zoom ladder stepping into Primus left `Moves` at 8, recorded no
+  pick, moved no cursor and said nothing). **The wheel's deepest step is TRACKED — owner ruling
+  2026-08-29** — and the mod stays in sync with it exactly as with a click: it is the one wheel notch
+  that changes WHICH place is shown rather than how close it is, so it belongs with the click and not
+  with the hand zoom. The ordinary wheel steps (`StartZooming`) still count nothing.
+- **The map's right-click undo of a zoom RELOCATES the camera, which is why it is counted while the
+  zoom keys are not.** `GalaxyViewLevel_GalaxyOverview.RestoreZoom` (:147-153) calls
+  `RestoreLastCameraParameters()`, putting the camera back at the position AND step it had before the
+  forced zoom — a different place, not merely a different closeness, so a record still naming the
+  clicked star would be describing a picture nobody is looking at. The hand-zoom exclusions all leave
+  the camera over the same place, which is the whole difference. It is the only caller in the game
+  (`GalaxyCursor.OnCursorClick` :128) and the mod's own `GalaxyViewLevels.RestoreZoom` helper has no
+  callers, so counting it on `HasZoomBeenForced` — the same flag the click tests — counts exactly the
+  right clicks. Measured 2026-08-29 on `[Beginner] test`, which is the evidence for the split: after a
+  click-zoom onto Qarius, `RestoreZoom` put the camera back on PRIMUS (85.0, -1.9 from 64.0, 0.2) with
+  `zoomStep` 12 both before and after — the place changed and the closeness did not. A force made at the closest step restores to where it already is (below), and one of
+  those is counted too: the cost is a single extra re-frame onto whatever the cursor is reading.
 - **The map's right-click undo of a zoom is per-VISIT.** `GalaxyViewLevel_GalaxyOverview.ZoomInOnNode`
   sets `hasZoomBeenForced` and `RestoreZoom` needs it; leaving the overview level and coming back
   (into a system's management page and out again) clears it while the CAMERA stays where the zoom put
@@ -619,7 +670,10 @@ outposts and the influence/colonizability facts live in `planets.md`; fleets and
   suppression only means "not a place to send the cursor" — and from `CenterOn`), and the page's
   record carries the count it was written at: a record from before the last move is not believed.
   Deliberately uncounted: the zoom keys, the wheel and the drag, which is exactly the hand-zoom the
-  ruling keeps. The bug this fixes was owner-reported: select a docked fleet, Escape, arrow onto a
+  ruling keeps — each of them leaving the camera over the same PLACE, which is what the exclusion is
+  really about, and which is why the two pointer moves that do NOT (the wheel's jump onto a hovered
+  star past the deepest step, and the right-click undo) are counted with the click since 2026-08-29,
+  above. The bug this fixes was owner-reported: select a docked fleet, Escape, arrow onto a
   planet, and its curiosity was unreachable for the rest of the visit.
 - **Mod policy (2026-08-26): the cursor being PLACED is what asks the camera, wherever the placement
   comes from.** A screen seating the cursor — a fleet-panel handover, a landing, the answer to a

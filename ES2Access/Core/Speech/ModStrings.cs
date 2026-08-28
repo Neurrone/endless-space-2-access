@@ -1237,6 +1237,9 @@ namespace ES2Access.Core.Speech
         public const string FleetsActionSeatsExpedition = "fleets.action-seats-expedition";
         public const string FleetsActionSeatsProbeSite = "fleets.action-seats-probe-site";
         public const string FleetsActionSeatsWreck = "fleets.action-seats-wreck";
+        public const string FleetsActionSeatsTerraform = "fleets.action-seats-terraform";
+        public const string FleetsActionSeatsRestore = "fleets.action-seats-restore";
+        public const string FleetsActionSeatsReduceAnomaly = "fleets.action-seats-reduce-anomaly";
 
         // The first-visit cutscene. It draws no heading of its own, so the mod says which system is
         // being shown; everything about each planet comes from the card in the game's own words.
@@ -2199,6 +2202,12 @@ namespace ES2Access.Core.Speech
             { FleetsActionSeatsExpedition, "moves focus to the first curiosity in the system" },
             { FleetsActionSeatsProbeSite, "moves focus to the first probe site in the system" },
             { FleetsActionSeatsWreck, "moves focus to the wreck" },
+            { FleetsActionSeatsTerraform, "moves focus to the first planet that can be terraformed" },
+            { FleetsActionSeatsRestore, "moves focus to the first planet that can be restored" },
+            {
+                FleetsActionSeatsReduceAnomaly,
+                "moves focus to the first planet whose anomaly can be reduced"
+            },
             { ScreenSystemDiscovery, "System discovery" },
             { DiscoverySystem, "Discovering {0}" },
             { ScreenRename, "Rename" },

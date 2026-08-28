@@ -98,9 +98,10 @@ into the dark, so a fleet that leaves is instantly un-re-routable (`NextNodeUnkn
 lane also costs 8.3–13.3 against 5–6 movement points, so an ordered fleet always ends the turn
 stranded mid-lane rather than discovering anything.
 
-**The six zoom-in fleet actions name where they put the cursor and then put it there**
-(2026-08-20): Colonize, Super Colonize, Destroy Planet, Expedition, Mining Probe and Reclaim
-Mothership each append a "moves focus to the first …" phrase to their own name and, on activation,
+**The nine zoom-in fleet actions name where they put the cursor and then put it there**
+(2026-08-20; the juggernaut's three added 2026-08-29): Colonize, Super Colonize, Destroy Planet,
+Expedition, Mining Probe, Reclaim Mothership, Terraform, Restore and Reduce Anomaly
+each append a "moves focus to the first …" phrase to their own name and, on activation,
 expand the acting system and seat the cursor on the first matching action row
 (`SeatAfterFleetAction`/`FollowActionSeat`; a positional row id must hold steady 20 frames before the
 seat commits — the orbital card's buttons arrive over several frames, `docs/planets.md`). No match
@@ -108,7 +109,19 @@ seat commits — the orbital card's buttons arrive over several frames, `docs/pl
 not forgotten** (2026-08-20) while the galaxy page is away (the discovery cutscene POPS it — a
 sibling view level) or the view is mid-flight: suspended frames spend no budget and prove nothing;
 the landing knows its OWNER screen, so another surface's arrival, cursor and keys never touch it; the
-player's own navigation ON the requesting screen's graph still cancels. The expected expedition
+player's own navigation ON the requesting screen's graph still cancels. **The juggernaut's three are
+told apart by their action DEFINITION, not by their control class** — Terraform and Restore share
+`EmpireLocalActionTogglePlanetTerraformation`, and restoration's definition DERIVES from
+terraformation's, so the seat tests restoration first (`GalaxyHudScreen.PlanetConstruction`); each
+lands on the planet card's own Terraformation / Restoration / AnomalyReduction button. Pressing one
+whose work is ALREADY under way CANCELS it (a confirmation box) and moves no camera, so the seat
+simply finds nothing and its wait runs out — the same shape Reclaim Mothership has always had. The
+three are FIXTURE-BLOCKED (a Behemoth in orbit, DLC-gated), so what was verified live 2026-08-29 is
+the premise rather than the landing: the game's own restoration definition answers True to
+`is InitiateTerraformationEmpireActionFleetActionDefinition` (which is why restoration is tested
+FIRST) and False to the anomaly one, and all three card buttons exist on a drawn card. Whichever
+fixture ever stages a Behemoth: press each of the three and expect the phrase then the button. The
+expected expedition
 sequence is: press → the discovery video plays (if enabled) and reads its cards → "Galaxy" → the seat
 lands on the first curiosity, once. **A targeting cursor arming ends a live-or-suspended inspect
 mode** with the mode's own exit line spoken ahead of the instruction (`GalaxyInspect.Dismiss` from

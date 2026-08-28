@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Reflection;
@@ -422,6 +422,8 @@ namespace ES2Access.Screens
             // for a reason nobody could remember.
             GalaxyLocate.Forget();
             _locating = null;
+            // And so does a star the map was taken in on: the page that answers a pick is this one.
+            ForgetPick();
             // The inspect cursor is a mode of THIS page: whatever replaced the map is where the player
             // now is, and a square still drawn on a map nobody is looking at would be a mode nothing
             // could end.
@@ -457,6 +459,9 @@ namespace ES2Access.Screens
         public override void CancelLandings()
         {
             ForgetActionSeat();
+            // The same for a star the map was taken in on: the player has moved the cursor themselves,
+            // and where they are now is where they meant to be.
+            ForgetPick();
         }
 
         /// <summary>Whether a landing aimed at this page should be held rather than judged - true while
@@ -919,13 +924,22 @@ namespace ES2Access.Screens
         /// <summary>
         /// Which control INSIDE the fleet's own system a fleet action's button is really asking for.
         ///
-        /// Six of the game's fleet actions order nothing when they are pressed: Colonize, Super
+        /// Nine of the game's fleet actions order nothing when they are pressed: Colonize, Super
         /// Colonize, Destroy Planet, Expedition, Launch Mining Probe and Reclaim Mothership all just
         /// select the fleet's system and fly the camera in (<c>FleetActionButtonColonize.OnClick</c>
-        /// and its four siblings; <c>FleetActionToggleReclaimMothership.OnToggle</c>), because the real
-        /// order is a control the map draws once it is there - a planet's own colonize or destroy
-        /// button, a curiosity in orbit, a probe site, the wreck. <see cref="None"/> is every other
-        /// action: the ones that post an order themselves and the ones that arm a targeting cursor.
+        /// and its four siblings; <c>FleetActionToggleReclaimMothership.OnToggle</c>), and so do the
+        /// juggernaut's three planet-construction toggles - Terraform, Restore and Reduce Anomaly,
+        /// which share one <c>OnToggle</c> on <c>EmpireLocalActionTogglePlanetConstruction</c>
+        /// (:23-38) and are told apart by the action DEFINITION each was loaded with. The reason is
+        /// the same for all nine: the real order is a control the map draws once it is there - a
+        /// planet's own colonize, destroy, terraform, restore or reduce-anomaly button, a curiosity in
+        /// orbit, a probe site, the wreck. <see cref="None"/> is every other action: the ones that
+        /// post an order themselves and the ones that arm a targeting cursor.
+        ///
+        /// A toggle whose work is ALREADY under way cancels it instead of zooming (the same branch in
+        /// both <c>OnToggle</c>s, and for the three juggernaut actions the cancel raises a
+        /// confirmation box). The seat is armed either way, exactly as it already is for Reclaim
+        /// Mothership: the cancel simply leaves a target that is never drawn and the wait runs out.
         /// </summary>
         public enum SeatTarget
         {
@@ -935,6 +949,9 @@ namespace ES2Access.Screens
             Expedition,
             MiningProbe,
             Wreck,
+            Terraform,
+            Restore,
+            ReduceAnomaly,
         }
 
         /// <summary>Which of the six, if any, this action button is - asked of the GAME's own control
@@ -972,10 +989,53 @@ namespace ES2Access.Screens
                 {
                     return SeatTarget.Wreck;
                 }
+
+                if (control is EmpireLocalActionTogglePlanetConstruction)
+                {
+                    return PlanetConstruction(control);
+                }
             }
             catch (Exception e)
             {
                 Log.Warn("galaxy: reading a fleet action's control class threw: " + e);
+            }
+
+            return SeatTarget.None;
+        }
+
+        /// <summary>
+        /// Which of the juggernaut's three planet-construction actions a toggle is, asked of the
+        /// action DEFINITION rather than of the control class - because the class does not answer it.
+        ///
+        /// Terraform and Restore share one control
+        /// (<c>EmpireLocalActionTogglePlanetTerraformation</c>, whose only override is the wording of
+        /// the cancel confirmation), so what tells them apart is the definition each item was loaded
+        /// with - and that is the same question the CARD asks to decide which of its buttons to draw
+        /// (<c>PlanetLabel_SystemOrbital.RefreshTerraformationStatus</c> /
+        /// <c>RefreshRestorationStatus</c> / <c>RefreshAnomalyReductionStatus</c>, each fetching its
+        /// own <c>Initiateâ€¦EmpireActionFleetActionDefinition</c>). Restoration's definition DERIVES
+        /// from terraformation's, so it is tested first or every restore would read as a terraform.
+        ///
+        /// An unrecognised planet-construction action is <see cref="SeatTarget.None"/>: nothing is
+        /// invented about which button it wants, and the camera move it makes is still followed by the
+        /// page's own answer to a picked node (<see cref="GalaxyPick"/>).
+        /// </summary>
+        private static SeatTarget PlanetConstruction(FleetActionControl control)
+        {
+            EntityActionDefinition definition = control.EntityActionDefinition;
+            if (definition is InitiateRestorationEmpireActionFleetActionDefinition)
+            {
+                return SeatTarget.Restore;
+            }
+
+            if (definition is InitiateTerraformationEmpireActionFleetActionDefinition)
+            {
+                return SeatTarget.Terraform;
+            }
+
+            if (definition is InitiateAnomalyReductionEmpireActionFleetActionDefinition)
+            {
+                return SeatTarget.ReduceAnomaly;
             }
 
             return SeatTarget.None;
@@ -997,6 +1057,12 @@ namespace ES2Access.Screens
                     return ModStrings.FleetsActionSeatsProbeSite;
                 case SeatTarget.Wreck:
                     return ModStrings.FleetsActionSeatsWreck;
+                case SeatTarget.Terraform:
+                    return ModStrings.FleetsActionSeatsTerraform;
+                case SeatTarget.Restore:
+                    return ModStrings.FleetsActionSeatsRestore;
+                case SeatTarget.ReduceAnomaly:
+                    return ModStrings.FleetsActionSeatsReduceAnomaly;
             }
 
             return null;
@@ -1025,6 +1091,12 @@ namespace ES2Access.Screens
                 return;
             }
 
+            // The camera move this action just made was seen by the map's own watch a moment ago
+            // (<see cref="GalaxyPick"/>, the same GalaxyView call a click makes). This seat names a
+            // control INSIDE the system, which is the finer answer, so the pick is dropped here rather
+            // than left to be stood down frame by frame - the wait below clears _seatTarget on the very
+            // frame it lands, and a pick still standing would then take the cursor off it.
+            GalaxyPick.Forget();
             _seatSystem = system;
             _seatTarget = seat;
             _seatFrames = SeatWaitFrames;
@@ -1218,6 +1290,16 @@ namespace ES2Access.Screens
                     return AgeWidgets.Transform(card.MiningProbeButton);
                 case SeatTarget.Expedition:
                     return FirstCuriosity(card);
+                // The juggernaut's three. Each card draws its own button for the action it can take
+                // on that world, and the card's IN-PROGRESS button is deliberately not offered here:
+                // the toggle only zooms when there is no action running, and where one IS running the
+                // toggle cancels it and moves no camera at all.
+                case SeatTarget.Terraform:
+                    return AgeWidgets.Transform(card.TerraformationButton);
+                case SeatTarget.Restore:
+                    return AgeWidgets.Transform(card.RestorationButton);
+                case SeatTarget.ReduceAnomaly:
+                    return AgeWidgets.Transform(card.AnomalyReductionButton);
             }
 
             return null;
@@ -1850,6 +1932,25 @@ namespace ES2Access.Screens
         /// written (<see cref="Showing"/>).</summary>
         private int _cameraStamp;
 
+        // ---- the map taken in on a star by a pointer ----
+
+        /// <summary>Drop a pointer's pick and any seat it armed - the page it was meant for has gone
+        /// away, the player has moved the cursor themselves, or something that names a finer place
+        /// inside the system has taken the move over. A seat an ARRIVAL armed is left alone: only a
+        /// pick's own is cancelled here.</summary>
+        private void ForgetPick()
+        {
+            GalaxyPick.Forget();
+            if (_centrePick == null)
+            {
+                return;
+            }
+
+            _centrePick = null;
+            _centreSeat = 0;
+            _centreSettle = 0;
+        }
+
         // ---- where the game has just sent the player ----
 
         /// <summary>The request being worked on, so that a page which needs several frames to find its
@@ -1978,9 +2079,13 @@ namespace ES2Access.Screens
         // anyway.
 
         /// <summary>
-        /// Make the tree's cursor describe the system the map is SHOWING, on an arrival nobody asked
-        /// for (<see cref="GalaxyOverviewEntry"/>): a save being loaded, and coming back out of a
-        /// system's management page.
+        /// Make the tree's cursor describe the system the map is SHOWING, whenever the map came to be
+        /// showing it for a reason of the game's own. ONE rule, two triggers: an arrival nobody asked
+        /// for (<see cref="GalaxyOverviewEntry"/>) - a save being loaded, coming back out of a system's
+        /// management page - and the map being taken in on a star by a POINTER
+        /// (<see cref="GalaxyPick"/>, <see cref="ArmPickSeat"/>) - a click, or the wheel past its
+        /// deepest step. The two differ only in how the system is NAMED: an arrival has to be asked of
+        /// the camera, a pick says so itself.
         ///
         /// PASSIVE where the player is reading something else. A cursor on the HUD is left exactly
         /// where it is and the map stop's remembered position is written instead
@@ -2019,6 +2124,17 @@ namespace ES2Access.Screens
                 GalaxyOverviewEntry.Forget();
             }
 
+            // The OTHER trigger of the same rule (owner ruling 2026-08-29): the map taken in on a star
+            // by a POINTER - a left click, a click on a wreck, or the wheel scrolled in past the
+            // deepest step (<see cref="GalaxyPick"/>). No page change, so no arrival window to sit
+            // inside; and nothing to ask the camera either, because unlike an activation this one
+            // NAMES the system it is sending the camera to. An arrival already being answered wins -
+            // it is the bigger change, and it will have moved the cursor to the same kind of place.
+            if (_centreSeat <= 0)
+            {
+                ArmPickSeat();
+            }
+
             if (_centreSeat <= 0)
             {
                 return;
@@ -2035,6 +2151,7 @@ namespace ES2Access.Screens
             )
             {
                 _centreSeat = 0;
+                _centrePick = null;
                 return;
             }
 
@@ -2050,11 +2167,17 @@ namespace ES2Access.Screens
             // from a save being loaded has not built once - the tutorial popup has the keyboard on the
             // frames that would have built it - and the answer does not need it
             // (<see cref="CentredSystem"/>).
+            // ...unless the trigger already said which system, which a pointer's pick does.
             Vector3 at;
-            StarSystemNode centred = GalaxyViewLevels.CameraSettling
-                || !GalaxyViewLevels.CameraTarget(out at)
-                ? null
-                : CentredSystem(at);
+            StarSystemNode centred = _centrePick;
+            if (centred == null)
+            {
+                centred = GalaxyViewLevels.CameraSettling
+                    || !GalaxyViewLevels.CameraTarget(out at)
+                    ? null
+                    : CentredSystem(at);
+            }
+
             if (centred == null)
             {
                 if (--_centreSeat <= 0)
@@ -2074,6 +2197,7 @@ namespace ES2Access.Screens
             }
 
             _centreSeat = 0;
+            _centrePick = null;
             try
             {
                 SeatOnCentredSystem(centred);
@@ -2083,6 +2207,36 @@ namespace ES2Access.Screens
                 Log.Warn("galaxy: seating the tree on the system the map shows threw: " + e);
             }
         }
+
+        /// <summary>
+        /// Take a pointer's pick, if there is one, and arm the same seat on the system it names.
+        ///
+        /// No settle is waited out: the settle exists to let the camera be PLACED before it is asked
+        /// where it is looking, and nothing is asked of the camera here. Anything the map lets a
+        /// pointer zoom at that is not a star is counted and no more - there is no other row for the
+        /// cursor to stand on.
+        /// </summary>
+        private void ArmPickSeat()
+        {
+            GameNode picked = GalaxyPick.Take();
+            if (picked == null)
+            {
+                return;
+            }
+
+            _centrePick = picked as StarSystemNode;
+            if (_centrePick == null)
+            {
+                return;
+            }
+
+            ArmCentreSeat();
+            _centreSettle = 0;
+        }
+
+        /// <summary>The system a pointer's pick named, while its seat is outstanding - what makes the
+        /// answer below the trigger's own rather than the camera's.</summary>
+        private StarSystemNode _centrePick;
 
         private void SeatOnCentredSystem(StarSystemNode centred)
         {
@@ -9253,7 +9407,7 @@ namespace ES2Access.Screens
         /// drawing, because the mote is subject to a camera cull that has nothing to do with what the
         /// player is allowed to know: the label windows keep only the entities Unity's own
         /// <c>CullingGroup</c> reports inside the world camera's frustum
-        /// (<c>GalaxyEntityCulling</c> → <c>VisibleEntityLabelsWindow.RefreshLabelsCulling</c>), and
+        /// (<c>GalaxyEntityCulling</c> â†’ <c>VisibleEntityLabelsWindow.RefreshLabelsCulling</c>), and
         /// zooming out took every probe row and the whole scanner category away with it. The
         /// information gate is the OTHER test the same window makes -
         /// <c>VisibleEntityLabel.ShowOrHideIfVisibleByEmpire</c>'s <c>Visibility[empire] >= 3</c> -

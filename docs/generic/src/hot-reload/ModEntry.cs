@@ -295,6 +295,10 @@ namespace ES2Access
             // And the arrivals nobody asked for that the three calls above never see: a save being
             // loaded, and coming back out of a system's page.
             GalaxyOverviewEntry.Install();
+            // And the map's own doors, which no "show me this" ever passes through either: a click or
+            // the wheel taking the camera in on a star, which moved the picture out from under the
+            // page's record of it (see GalaxyPick).
+            GalaxyPick.Install();
             // The mod's own notifications ride in the game's list; the strip is left looking exactly
             // as it did, which is what this patch is for (see NotificationStrip). The mappings
             // themselves are re-asserted from the pump, because the manager holding them is built
@@ -1056,6 +1060,7 @@ namespace ES2Access
             Step("research locate patch", ResearchLocate.Remove);
             Step("galaxy locate patch", GalaxyLocate.Remove);
             Step("galaxy overview entry patch", GalaxyOverviewEntry.Remove);
+            Step("galaxy pick patch", GalaxyPick.Remove);
             // Before the patch comes off: the mappings are removed from the game's own dictionary and
             // every mod notification still standing is dismissed, so nothing from this assembly is
             // left in a list the game will keep asking for titles.

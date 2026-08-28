@@ -516,6 +516,50 @@ must NOT change: zoom OUT by hand (the zoom slider or wheel), walk the same syst
 the camera must stay out, and `stamp` must still equal `Moves` (a build that counts the zoom keys
 shows up as an unwanted snap on the first arrow).
 
+**A camera move made by the POINTER** (the click, the wheel's deepest step, the right-click undo —
+`ES2Access/Screens/GalaxyPick.cs`). None of these passes through `GuiManager`, so `/speech` and the
+locate machinery say nothing about them; the instrument is `GalaxyViewLevels.Moves` beside the
+record, exactly as above. The `/eval` stand-ins for a mouse, each the very call the cursor makes:
+
+- a left click on an explored star — `((GalaxyView)Amplitude.Unity.Framework.Services
+  .GetService<Amplitude.Unity.View.IViewService>().CurrentView).SelectGameNode(node)` with a
+  `GameNode`, or with the map's own `GalaxyNode` for the click's exact overload
+  (`Services.GetService<IGalaxyEntityFactoryService>()[node.GUID].GetComponent<GalaxyNode>()`);
+- a click on a wreck — the same view's `ZoomInOnNode(galaxyNode)`;
+- the wheel scrolled in past the deepest step — the SAME `SelectGameNode(GalaxyNode)` call
+  (`GalaxyViewCameraController.HandleScrollwheel` :652), so it is covered and cannot be told apart
+  from a click at this layer;
+- the right-click undo — `(GalaxyViewLevels.Level as GalaxyViewLevel_GalaxyOverview).RestoreZoom()`,
+  which counts only while `GalaxyViewLevels.ZoomForced` is true.
+
+What to assert after each: `Moves` has gone UP, the record's `stamp` is now behind it, and (for the
+two that name a star) the cursor follows within a second — ON the map it lands on that system's row
+announced, OFF the map (a HUD stop, another screen) it must NOT move and the next `ui.focusMap` must
+land on the clicked system, which is the silent half. A reveal, a fleet action's seat or a
+fleet-panel handover all beat a pick. The CONTROL is the mod's own zoom ladder:
+`ES2Access.UI.GalaxyViewLevels.StepZoom(1, false)` at the closest step enters the system through the
+same `SelectGameNode`, and `Moves` must NOT move (it is a zoom key).
+
+MEASURED 2026-08-29 on `[Beginner] test` turn 21, all through `/eval`: `SelectGameNode` on an
+UNDISCOVERED star counts the move and then plays the discovery cutscene, which pops the page and
+drops the pick — the cursor still ends on that system, because coming back is an arrival and the
+arrival seat answers it (Primus). `SelectGameNode` on a COLONY of the player's counts, seats the
+row, and then opens the system's page (Dusay). `ZoomInOnNode` on a plain explored star counts
+(8→9) and seats the row announced (Qarius). `RestoreZoom` counts (12→13), names nowhere and leaves
+the cursor alone. The zoom ladder counted nothing (8→8) and moved nothing. With the cursor on
+`hud:end-turn` a click was silent and `ui.focusMap` then landed on Qarius.
+
+What only a PHYSICAL mouse can prove: that `GalaxyCursor.OnCursorClick` really reaches those calls
+for a click on a star, a wreck and empty space (the exploration ≥ 2 gate and the target ordering are
+the game's, and `/eval` skips them), that the wheel's deepest notch reaches `SelectGameNode`, and
+that a click never lands twice.
+
+**Fixture-blocked at turn 21 of `[Beginner] test`** (checked 2026-08-29, not assumed): the
+docked-fleet single-move regression — all six player fleets read `IsInOrbit == false` and the
+next-idle-fleet button reads "0 idle fleets"; and the three juggernaut seats — Behemoth content is
+DLC-gated (`docs/audit-dlc-mechanics.md`) and every fleet is a single-ship navy, so the card's
+Terraformation/Restoration/AnomalyReduction buttons all exist and all read `Visible=False`.
+
 **Measuring a landing's camera cost.** The sharp instrument is a plain boolean `POST /wait`
 predicate on the game's own gate, which reports `frames` and `elapsedMs`:
 `ES2Access.UI.GalaxyViewLevels.FocusedSystem != null && Gui.GuiService.GetWindow<PlanetLabelsWindow_SystemOrbital>(false).Shown`
