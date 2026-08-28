@@ -347,6 +347,42 @@ with no "unavailable". The fleet ROW's own Enter is untouched and still frames t
 node falls back to pressing the game's button — eleven pages draw the turn stop, and that fallback has
 never been exercised live.
 
+**The tree cursor follows the system the map is SHOWING when the map is arrived at (2026-08-28).** Two
+arrivals, neither of them a "go and look at this", and the mechanism is in `docs/galaxy-map.md`.
+- **A save being loaded.** Test it with the mod loaded BEFORE the save, never after: `POST /reload`
+  after a `POST /loadsave` wipes the arrival the patch captured DURING the load and the case reads as
+  unfixed. Park a wrong answer first — `ui.focusMap`, `POST /type "rigel"`, `ui.back`, `ui.focusEmpire`
+  (cursor on the HUD, map memory on Rigel, camera on Rigel) — then load, minimize the tutorial, and read
+  three things: `ES2Access.ModEntry.Navigator.RememberedStop("galaxy:systems")` must name the centred
+  system (`ControlId(galaxy:constellation/446/system/535, ref=Dusay (535))`), the cursor must still be
+  `hud:empire/…` with the arrival announcement unchanged ("Controls, Empire Summary, button, …, 1 of 8"),
+  and `ui.focusMap` must then say "Galactic Map, Serpens, group, expanded, 1 of 2, Dusay, 0, 0, group,
+  Home System, colonized, …, 6 of 13". BEFORE the fix the same key said "Serpens, group, expanded, 1 of
+  2" and dragged the camera from Dusay to (53.285, -24.86). The expectation is written down first from
+  `GalaxyView.GetLocalEmpireMainSystemPosition()` — (68.884, 0, -22.450) = Dusay on `[Beginner] test`.
+  The map stop's memory is per SCREEN, so `RememberedStop` answers empty unless the galaxy is the
+  focused screen when it is asked.
+- **Coming out of a system's management page.** `Gui.GuiGameWindowService
+  .RequestStarSystemManagementViewLevel(interior.ColonizedStarSystems[0].Node.GUID)` to get in;
+  `ui.pageNext` to page to another system; and the two ways out are NOT the same test —
+  `GetWindow<StarSystemScreen>(false).HandleInput(InputAction.Exit)` (the game's Escape, which the mod's
+  own `Back()` falls through to) puts the camera back where it was, while
+  `ES2Access.UI.GalaxyViewLevels.StepZoom(-1, false)` (the zoom slider) centres the system that was on
+  the page. So the case where the tree disagreed with the picture is: in on Dusay, page to Heka, zoom
+  out — cursor must land on Heka, "Galactic Map, Serpens, group, expanded, 1 of 2, Heka, -1, -9, group,
+  outpost, 2 fleets under way nearby, collapsed, 8 of 13", ONE row announcement, camera (67.756,
+  -31.146) step 12. In and straight out again with the cursor already on that system is the silence
+  half: the same four utterances as before the change (the scan button, "Galaxy", "Zoom level 13 of 15,
+  System Overview", the row), cursor unmoved. The row now comes AFTER the zoom line on this route,
+  which is the arrival hold.
+- **The regressions that prove the hook is not firing for the mod's own camera.** An excursion to
+  another SCREEN and back (`ShowWindow<TechnologyScreen>()`, then `HandleInput(InputAction.Exit)`) with
+  the cursor on a PLANET row must leave it on that planet row — a seat that fired would bounce it up to
+  the star. The inspect cursor's sweep (`galaxy.inspect`, arrows, `ui.back`) moves the camera off the
+  cursor's system and must leave the cursor untouched throughout. And the sharp one: a reveal issued
+  from INSIDE a system's page (`RequestGalaxyOverviewViewLevel(node)` while the management page is up)
+  is the only reveal that re-activates the overview, and must still be ONE announced landing.
+
 **A landing's announcement waits for the camera.** Out of the inspect cell the landing's own
 announcement is the whole utterance, once, and it is composed after the map has caught up:
 `Screen.LandingSuspended` covers `GalaxyViewLevels.CameraSettling` plus a twenty-frame tail, and a

@@ -467,6 +467,42 @@ namespace ES2Access.UI
             return true;
         }
 
+        /// <summary>Where Tab would land in a stop the cursor is not standing in - the position that
+        /// stop remembers, or null where it has never been visited.</summary>
+        public ControlId RememberedStop(object stopKey)
+        {
+            ControlId remembered;
+            return _graph != null
+                && _graph.State.StopMemory.TryGetValue(stopKey, out remembered)
+                ? remembered
+                : null;
+        }
+
+        /// <summary>
+        /// Write down where a stop the cursor is NOT standing in should be entered - a PASSIVE seat:
+        /// nothing moves, nothing is announced, and the player finds the cursor there the first time
+        /// they Tab or jump into that stop.
+        ///
+        /// This is how a screen answers "the game has put the player somewhere" for a player who is
+        /// reading something else. The alternative - <see cref="FocusNode"/> - moves the live cursor,
+        /// which is right for a landing the player ASKED for and wrong for a place that merely became
+        /// true underneath them (the galaxy map's centred system on a save being loaded, where the
+        /// arrival reads the empire's own summary and must go on doing so).
+        ///
+        /// A stop the cursor IS standing in is deliberately not special-cased here: writing the memory
+        /// under a live cursor would leave the two disagreeing until the player left the stop and came
+        /// back. Callers that want the cursor moved say so.
+        /// </summary>
+        public void SeatStop(object stopKey, ControlId id)
+        {
+            if (_graph == null || stopKey == null || id == null)
+            {
+                return;
+            }
+
+            _graph.State.StopMemory[stopKey] = id;
+        }
+
         /// <summary>
         /// Ask for focus to land on a control (a screen choosing where to put the player). Applied on
         /// the next tick.

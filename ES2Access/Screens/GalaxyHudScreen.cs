@@ -378,6 +378,17 @@ namespace ES2Access.Screens
         {
             _hud.Baseline();
             _fleetPanel.Baseline();
+            // Arrived at because the GAME took the player here, rather than because a screen drawn over
+            // the map was closed: the tree has to be told which system the picture is of
+            // (<see cref="FollowCentredSystem"/>). Taken on the push, so an arrival nothing answered
+            // cannot be spent on some later visit.
+            _arrivalWindow = ArrivalWindowFrames;
+            _centreSeat = 0;
+            _centreSettle = 0;
+            if (GalaxyOverviewEntry.Take())
+            {
+                ArmCentreSeat();
+            }
             // A mode already armed when the page is arrived at is not one the player has just armed,
             // and seating them on it would move the cursor for something that happened elsewhere. Its
             // bearings are still remembered, because the mode ENDING under the cursor is the page's to
@@ -489,7 +500,7 @@ namespace ES2Access.Screens
         /// </summary>
         public override bool BetweenViews
         {
-            get { return GalaxyViewLevels.ChangingLevel || _binding > 0; }
+            get { return GalaxyViewLevels.ChangingLevel || _binding > 0 || _centreSeat > 0; }
         }
 
         /// <summary>Frames still to wait for the orbital surface of a system the camera has just been
@@ -593,6 +604,9 @@ namespace ES2Access.Screens
             // Before the camera is followed and before the graph is next built, so that the landing
             // and the branch it opens both happen on the frame the page arrives on.
             FollowTheGame();
+            // After it, because a request that names a place beats a picture that merely became true:
+            // an outstanding "go and look at this" cancels the arrival seat outright.
+            FollowCentredSystem();
             // After it, because the two write the same one landing slot and this one is the player's
             // own key of a moment ago - a probe armed on the same frame the game asked to be shown
             // somewhere is still armed, and the mode is where the player has to be.
@@ -1909,6 +1923,279 @@ namespace ES2Access.Screens
         private bool Declaring()
         {
             return _systems.Count > 0;
+        }
+
+        // ---- the system the picture is of ----
+
+        /// <summary>Frames the arrival seat is given to find its answer, after the settle above: the
+        /// galaxy camera has to be the live one and to have stopped. Also the CAP on how long the
+        /// page's arrival announcement is held for it (<see cref="BetweenViews"/>), which is why it is
+        /// not the minute-long budget a locate gets - an answer that never comes must cost the player
+        /// a moment, not a silence.</summary>
+        private const int CentreSeatFrames = 30;
+
+        /// <summary>How long after the page is pushed an activation still counts as this arrival's.
+        /// The view level is made current before its own activation runs, so the page can be up a
+        /// frame or two before the notice arrives; past that a notice is somebody else's and is
+        /// dropped rather than kept for the next visit.</summary>
+        private const int ArrivalWindowFrames = 20;
+
+        /// <summary>Frames waited before the camera is asked where it is looking. The game places it
+        /// one frame AFTER the page is pushed (measured 2026-08-28: on the frame the page arrives the
+        /// camera still reads the position the map had before the system's page was opened, and from
+        /// the next frame on it reads the new one), so an answer taken on the arrival frame is the
+        /// picture that has just been left. The page's own <see cref="ViewBindFrames"/> is the wait,
+        /// and the announcement is held over it - so an arrival names the system the map is showing
+        /// once, rather than the one it was showing and then this one.</summary>
+        private const int ArrivalSettleFrames = ViewBindFrames;
+
+        private int _centreSeat;
+
+        private int _centreSettle;
+
+        private int _arrivalWindow;
+
+        /// <summary>Start looking for the system the map is showing, and hold what the page is about to
+        /// say until the answer is in.</summary>
+        private void ArmCentreSeat()
+        {
+            // The hold itself is <see cref="BetweenViews"/> reading _centreSeat: the page has not yet
+            // decided which system it is showing, so it has nothing to say, and the hold ends on the
+            // frame the answer arrives - the same frame the seat is asked for, so the arrival announces
+            // the seated row once instead of the row it was restored to and then this one.
+            _centreSeat = CentreSeatFrames;
+            _centreSettle = ArrivalSettleFrames;
+        }
+
+        // A "has the player moved the cursor since the page arrived?" stand-down was tried here and
+        // taken out again (2026-08-28). It cannot be asked at this level: loading a save while the
+        // cursor stands on the map RECONCILES it - the row it was on no longer exists, so the engine
+        // walks it up to a survivor - and that is a cursor move nobody made, indistinguishable from a
+        // keypress. It stood the seat down on exactly the arrival that needs it most. What legitimately
+        // owns the cursor on an arrival is named instead, above: a locate, a fleet-action seat, a fleet
+        // panel let go. The window it would have guarded is the twelve frames of
+        // <see cref="ArrivalSettleFrames"/>, during which the page is holding its own announcement
+        // anyway.
+
+        /// <summary>
+        /// Make the tree's cursor describe the system the map is SHOWING, on an arrival nobody asked
+        /// for (<see cref="GalaxyOverviewEntry"/>): a save being loaded, and coming back out of a
+        /// system's management page.
+        ///
+        /// PASSIVE where the player is reading something else. A cursor on the HUD is left exactly
+        /// where it is and the map stop's remembered position is written instead
+        /// (<see cref="GraphNavigator.SeatStop"/>), so a save loads reading the empire's own summary
+        /// as it always has and the FIRST landing on the map - Ctrl+G, or Tab round to it - is the
+        /// centred system rather than whichever row happens to be declared first. A cursor already
+        /// standing on the map is a different question: the page is arriving, so whatever it is
+        /// standing on is about to be read out, and reading out a system the map is not showing is the
+        /// defect. It follows, and the arrival announces it the ordinary way.
+        ///
+        /// Either way "already right" means the PLACE agrees, not the row: a cursor inside the centred
+        /// system - on one of its planets, its lanes, a fleet parked at it - is reading that system
+        /// and is left alone, which is what keeps an excursion to another screen and back from
+        /// bouncing the cursor up to the star it was under.
+        ///
+        /// The picture is asked of the CAMERA and never of the activation's arguments, which do not
+        /// answer it: the way out of a management page names the system whose page was open and then
+        /// sends the camera to where it was before the page opened (<see cref="GalaxyOverviewEntry"/>
+        /// has the measurements). The nearest declared system to the camera's own target is what a
+        /// sighted player reads as the centre of the picture, the same rule every other place-naming
+        /// on this page uses (<see cref="CentredSystem"/>).
+        /// </summary>
+        private void FollowCentredSystem()
+        {
+            if (_arrivalWindow > 0)
+            {
+                _arrivalWindow--;
+                if (_centreSeat <= 0 && GalaxyOverviewEntry.Take())
+                {
+                    ArmCentreSeat();
+                }
+            }
+            else
+            {
+                // An activation that reached a page which has been up all along is not an arrival.
+                GalaxyOverviewEntry.Forget();
+            }
+
+            if (_centreSeat <= 0)
+            {
+                return;
+            }
+
+            // Everything that names a place of its own beats a picture that merely became true: a
+            // "go and look at this" (which lands announced), the seat one of the zoom-in fleet actions
+            // is owed across the page change, and a fleet panel let go across it.
+            if (
+                _locating != null
+                || GalaxyLocate.Peek() != null
+                || _seatTarget != SeatTarget.None
+                || _releasedAcross != null
+            )
+            {
+                _centreSeat = 0;
+                return;
+            }
+
+            // The camera is placed the frame AFTER the page arrives (<see cref="ArrivalSettleFrames"/>).
+            if (_centreSettle > 0)
+            {
+                _centreSettle--;
+                return;
+            }
+
+            // Only the camera is waited for, and only until it has stopped and can say where it is
+            // looking. What the TREE has declared deliberately is not waited for: a page arrived at
+            // from a save being loaded has not built once - the tutorial popup has the keyboard on the
+            // frames that would have built it - and the answer does not need it
+            // (<see cref="CentredSystem"/>).
+            Vector3 at;
+            StarSystemNode centred = GalaxyViewLevels.CameraSettling
+                || !GalaxyViewLevels.CameraTarget(out at)
+                ? null
+                : CentredSystem(at);
+            if (centred == null)
+            {
+                if (--_centreSeat <= 0)
+                {
+                    Vector3 last;
+                    Log.Warn(
+                        "galaxy: the map was arrived at and never said which system it is showing"
+                            + " (settling="
+                            + GalaxyViewLevels.CameraSettling
+                            + " camera="
+                            + GalaxyViewLevels.CameraTarget(out last)
+                            + ")"
+                    );
+                }
+
+                return;
+            }
+
+            _centreSeat = 0;
+            try
+            {
+                SeatOnCentredSystem(centred);
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: seating the tree on the system the map shows threw: " + e);
+            }
+        }
+
+        private void SeatOnCentredSystem(StarSystemNode centred)
+        {
+            GraphNavigator navigator = ModEntry.Navigator;
+            if (navigator == null)
+            {
+                return;
+            }
+
+            ControlId id = ControlId.For(centred, SystemKey(centred));
+
+            GraphNode standing = navigator.CurrentNode;
+            if (standing != null && IsMapStop(standing.StopKey))
+            {
+                object place;
+                bool inside;
+                if (Place(standing, out place, out inside) && ReferenceEquals(place, centred))
+                {
+                    return;
+                }
+
+                navigator.FocusNode(id);
+                return;
+            }
+
+            // Left alone only where the remembered row is BOTH a reading of this system and a row that
+            // still exists. A save being loaded takes fleets and planets away under a memory that is
+            // still a path into the right system - and a stop whose memory names a row nothing declares
+            // falls back to the FIRST row of the whole stop, which is how a correct-looking memory
+            // still lands the player in another constellation.
+            ControlId remembered = navigator.RememberedStop(SystemStop);
+            GraphRender render = navigator.Render;
+            bool alive = remembered != null && render != null && render.NodeAt(remembered) != null;
+            if (!alive || !Reads(remembered, centred))
+            {
+                navigator.SeatStop(SystemStop, id);
+            }
+        }
+
+        /// <summary>
+        /// The system a point on the map is a picture OF - the nearest one the tree gives a row to.
+        ///
+        /// Asked of the galaxy rather than of <see cref="_systems"/>, and by the same gate that list is
+        /// built by (a colony of the empire's, or a perceived star), because the one arrival that needs
+        /// this most is the one where the page has never been built: a save being loaded pushes the
+        /// page under the tutorial popup, which holds the keyboard, so nothing has declared a row yet
+        /// when the picture is already on the screen.
+        /// </summary>
+        private static StarSystemNode CentredSystem(GalaxyPosition at)
+        {
+            Empire empire = PlayerEmpire();
+            if (empire == null || !GameGalaxy.Present())
+            {
+                return null;
+            }
+
+            StarSystemNode nearest = null;
+            float best = float.PositiveInfinity;
+            foreach (StarSystemNode node in GameGalaxy.StarSystemNodes())
+            {
+                if (!Perceived(node, empire) && !Colonized(node, empire))
+                {
+                    continue;
+                }
+
+                float distance = GalaxyPosition.SqrDistance(node.GalaxyPosition, at);
+                if (distance < best)
+                {
+                    best = distance;
+                    nearest = node;
+                }
+            }
+
+            return nearest;
+        }
+
+        /// <summary>Whether the empire holds this system - the half of the tree's own list that is not
+        /// the perception gate (an outpost of ours in a system we could not otherwise see is still a
+        /// row).</summary>
+        private static bool Colonized(StarSystemNode node, Empire empire)
+        {
+            DepartmentOfTheInterior interior =
+                empire == null ? null : empire.GetAgency<DepartmentOfTheInterior>();
+            if (interior == null)
+            {
+                return false;
+            }
+
+            foreach (ColonizedStarSystem colony in interior.ColonizedStarSystems)
+            {
+                if (ReferenceEquals(colony.Node, node))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>Whether a remembered map position is already a reading of this system - its own row
+        /// or anything the tree files under it. Asked of the KEY because the row it names need not be
+        /// in the render at all: the memory outlives the build, and on a page arrived at cold there is
+        /// no node to walk up from.</summary>
+        private static bool Reads(ControlId remembered, StarSystemNode system)
+        {
+            string key = remembered == null ? null : remembered.StructuralKey as string;
+            if (key == null)
+            {
+                return false;
+            }
+
+            string place = SystemKey(system);
+            return key == place || key.StartsWith(place + "/", StringComparison.Ordinal);
         }
 
         /// <summary>Speak what the landing needs saying beyond the node itself, then send the cursor.

@@ -1118,6 +1118,40 @@ namespace ES2Access.UI
             }
         }
 
+        /// <summary>
+        /// The point on the map the galaxy camera is looking AT - what a sighted player would call the
+        /// centre of the picture.
+        ///
+        /// The camera's own target, not where it was SENT: this is asked of arrivals the mod did not
+        /// make, where there is no record to read and the game's own arguments do not answer it (the
+        /// way out of a system's management page names the system whose page was open while sending
+        /// the camera back to where it was before the page opened). Mid-flight it answers the
+        /// destination, which is the wanted half - the picture the flight is going to leave.
+        ///
+        /// False while the galaxy camera is not the live one (inside a system, on a planet) or while
+        /// the game has no camera at all.
+        /// </summary>
+        public static bool CameraTarget(out Vector3 point)
+        {
+            point = Vector3.zero;
+            try
+            {
+                GalaxyViewCameraController camera = Camera();
+                if (camera == null)
+                {
+                    return false;
+                }
+
+                point = camera.TargetPositionCurrent;
+                return true;
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: reading where the camera is looking threw: " + e);
+                return false;
+            }
+        }
+
         private static GalaxyViewCameraController Camera()
         {
             return Controller() as GalaxyViewCameraController;

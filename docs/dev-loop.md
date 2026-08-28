@@ -171,7 +171,10 @@ the launch guard skips other sessions, but if a launch still fails,
 **Reload loop.** `dotnet build ES2Access/ES2Access.csproj` → `POST /reload` →
 `GET /loader/status` (`staleBuild:false`, `modAssemblyName` incremented). It can answer
 BEFORE a queued reload has run (`staleBuild:true`, old name) — poll again, don't rebuild. Reload
-before a regression walk after a save load (`GraphState` survives the load); `POST /loadsave` as
+before a regression walk after a save load (`GraphState` survives the load) — but NEVER when the
+behaviour under test is something a patch captures DURING the load, because the reload installs the
+patch after the moment it was watching for and the case reads as unfixed; there, reload FIRST and
+leave the load alone. `POST /loadsave` as
 soon as a walk's state is suspect; time a transition with a boolean `/wait` predicate, never a
 logging probe.
 

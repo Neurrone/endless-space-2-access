@@ -292,6 +292,9 @@ namespace ES2Access
             // which between them are where every one of those buttons lands.
             ResearchLocate.Install();
             GalaxyLocate.Install();
+            // And the arrivals nobody asked for that the three calls above never see: a save being
+            // loaded, and coming back out of a system's page.
+            GalaxyOverviewEntry.Install();
             // The mod's own notifications ride in the game's list; the strip is left looking exactly
             // as it did, which is what this patch is for (see NotificationStrip). The mappings
             // themselves are re-asserted from the pump, because the manager holding them is built
@@ -1036,6 +1039,7 @@ namespace ES2Access
             Step("chat hold", ChatHold.Stop);
             Step("research locate patch", ResearchLocate.Remove);
             Step("galaxy locate patch", GalaxyLocate.Remove);
+            Step("galaxy overview entry patch", GalaxyOverviewEntry.Remove);
             // Before the patch comes off: the mappings are removed from the game's own dictionary and
             // every mod notification still standing is dismissed, so nothing from this assembly is
             // left in a list the game will keep asking for titles.

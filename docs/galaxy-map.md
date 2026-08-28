@@ -745,6 +745,42 @@ outposts and the influence/colonizability facts live in `planets.md`; fleets and
   (`ControlBannerToggle`), which is the only place that sentence exists. Mod policy
   (`GlobalHud.AddScreenToggles`): every tooltip inside a toggle is declared in drawn order, the
   button's own speaking and the badges reviewable.
+- **The arrivals at the map that "go and look at this" never sees, and the one call they all make**
+  (2026-08-28). `GuiManager.RequestGalaxyOverviewViewLevel(Vector3)` (:1174-1200) asks for a view-level
+  change ONLY when the current level is not the overview; already on it, it slides the camera with
+  `CenterOnPoint`. So the three calls `GalaxyLocate` patches are the whole of "the game led the player
+  somewhere on a map that was already up", and they are silent about the two ways the map is ARRIVED at
+  with nobody having asked for a place: a save being loaded (`GalaxyView.ActivateAsync`/
+  `ReactivateAsync` :379-392 call the private `ActivateGalaxyViewLevelAsync(DefaultGalaxyViewLevel,
+  false, GetLocalEmpireMainSystemPosition())` — the empire's first colony, Dusay on `[Beginner] test`)
+  and coming back out of a sub-view-level. Both, and every level-changing reveal too, funnel through
+  `GalaxyViewLevel_GalaxyOverview.ActivateAsync(bool active, params object[] parameters)` (:46-111),
+  which is an ITERATOR — a Harmony prefix on it fires synchronously when the enumerator is built, at
+  the call, with the arguments readable. That is the mod's arrival hook (`ES2Access/Screens/
+  GalaxyOverviewEntry.cs`); it stands down on `GalaxyLocate.Suppressed` and on a `GalaxyLocate` request
+  already captured, which is what keeps a reveal made from INSIDE a system's page (the one reveal that
+  really does re-activate the overview) to its one announced landing.
+- **The activation's ENTITY is not where the camera goes, and the two ways out of a system's page
+  disagree about it** (measured 2026-08-28, `[Beginner] test`). `GetCameraInitialTransformation`
+  (:163-188) tests `activationFocusOnLastPosition` FIRST, so with `parameters = [true, entity]` the
+  named entity only reaches `SetFocusedGalaxyEntity` and the camera restores
+  `cameraTargetInitialPosition` — where the galaxy camera was before the page was opened. The game's own
+  Escape out of a system page passes exactly that (`StarSystemScreen.HandleInput` :216-227,
+  `RequestGalaxyViewLevelChange(GalaxyOverview, true, StarSystemNode)`), so paging from Dusay to Heka
+  inside the page and pressing Escape lands the camera back on **Dusay** (68.884, -22.45, step 9) while
+  naming Heka. The mod's own way out — the zoom slider stepping below the page, `GalaxyViewLevels
+  .StepZoom(-1)` → `LeaveLevel` — passes `[false, entity]` instead, and that one really does centre the
+  named system at orbital zoom (**Heka**, 67.356, -31.546, step 12). **Mod policy (2026-08-28): the
+  system a tree cursor is put on comes from the CAMERA's own target and never from the activation's
+  arguments** (`GalaxyHudScreen.CentredSystem`) — one rule that is right for both exits, for the load,
+  and for a camera the game clamped or refused to move.
+- **The galaxy camera is placed one frame AFTER the page is pushed** (measured 2026-08-28, per-frame
+  trace of `TargetPositionCurrent` from the page's own update): on the frame the page arrives the camera
+  still reads the position the map had before the system's page was opened, and from the next frame on
+  it reads the new one and never changes again. Anything asking "what is the map showing" on an arrival
+  therefore has to wait — the mod waits `ViewBindFrames` (12) and holds the page's own arrival
+  announcement over it through `Screen.BetweenViews`, so the arrival names the system the map is showing
+  once rather than the row the page was restored to and then that one.
 - **`GameEntityGUID` is in the GLOBAL namespace** — `/eval` bodies that qualify it under a
   namespace fail to compile, and `RequestStarSystemManagementViewLevel` wants the NODE's GUID
   (`…ColonizedStarSystems[0].Node.GUID`), not the colonized system's, which throws
