@@ -1364,6 +1364,16 @@ namespace ES2Access.Screens
             AgeTransform widget = caption == null ? null : caption.AgeTransform;
             List<Cell> shown = new List<Cell>(rows.Count);
             Cells.Drawn(rows, shown);
+            // A named block is a REGION of its own, not just a spoken caption: the region keys jump
+            // caption to caption here the way they jump between every other drawn-caption block
+            // (owner, 2026-08-28). The outer band is handed back when the block ends.
+            object outer = builder.Region;
+            bool naming = !string.IsNullOrEmpty(Captions.Text(widget));
+            if (naming)
+            {
+                builder.SetRegion(key);
+            }
+
             bool named = Captions.Push(builder, widget, key);
             if (shown.Count > 0)
             {
@@ -1375,6 +1385,10 @@ namespace ES2Access.Screens
             }
 
             Captions.Pop(builder, named);
+            if (naming)
+            {
+                builder.SetRegion(outer);
+            }
         }
 
         /// <summary>
