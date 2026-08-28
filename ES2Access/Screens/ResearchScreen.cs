@@ -977,6 +977,7 @@ namespace ES2Access.Screens
         private static List<TooltipChildren.Dossier> Unlocks(TechnologyItem2 item)
         {
             List<TooltipChildren.Dossier> found = new List<TooltipChildren.Dossier>(3);
+            AddAffinity(found, item);
             try
             {
                 AgeTransform container = item.TechnologyUnlocksContainer;
@@ -1224,10 +1225,7 @@ namespace ES2Access.Screens
                     Value(() => TechnologyState(technology)),
                     Value(() => Relationships(technology)),
                 },
-                Sections = GraphNodes.Sections(
-                    AffinitySection(item),
-                    GraphNodes.TooltipSection(item.Tooltip)
-                ),
+                Sections = GraphNodes.Sections(GraphNodes.TooltipSection(item.Tooltip)),
                 OnActivate = () => Queue(it, false),
                 OnAlternate = () => Queue(it, true),
                 // A technology the game will not take says why, in its own words, and does nothing
@@ -1249,24 +1247,28 @@ namespace ES2Access.Screens
         /// icon's own tooltip, which is the one place those words exist, so that tooltip joins the
         /// dot's own; the group is hidden on every technology with no such unlock, which is the gate.
         ///
-        /// It is a BADGE on the dot, not the dot's own description, so it is reviewable rather than
-        /// spoken (tooltips: where a row carries the card's tooltip and a badge's, the card's is the one
-        /// that speaks and the screen says so). Two thirds of the wheel's 385 technologies carry one -
-        /// measured, 254 - so announcing it would put the same ten words in front of nearly every dot.
-        /// Declared before the dot's own tooltip, which is the order the two are drawn in.
+        /// It is a BADGE on the dot, not the dot's own description: a second hover target on the same
+        /// line, which the dot cannot raise because it points at the technology's own dossier. It was a
+        /// reviewed section here - words the dot promised and the game only ever drew for the dossier -
+        /// and is now an ENTRY of its own, in front of the things the technology unlocks, which is the
+        /// order the wheel draws the two in. Two thirds of the wheel's 385 technologies carry one
+        /// (measured, 254), so this is also what keeps the same ten words out of the front of nearly
+        /// every dot.
         /// </summary>
-        private static NodeSection AffinitySection(TechnologyItem2 item)
+        private static void AddAffinity(List<TooltipChildren.Dossier> into, TechnologyItem2 item)
         {
             try
             {
-                // Content: whether the affinity section belongs in the card's buffer.
-                return item.AffinityGroup != null && AgeWidgets.Visible(item.AffinityGroup)
-                    ? GraphNodes.ReviewedTooltipSection(item.AffinityTooltip)
-                    : null;
+                // Content: whether the affinity badge belongs in the dot's reading at all.
+                if (item.AffinityGroup != null && AgeWidgets.Visible(item.AffinityGroup))
+                {
+                    TooltipChildren.AddPlain(into, item.AffinityTooltip, item.AffinityGroup);
+                    TooltipChildren.Add(into, item.AffinityTooltip, item.AffinityGroup);
+                }
             }
-            catch (Exception)
+            catch (Exception e)
             {
-                return null;
+                Log.Warn("research: reading a dot's affinity badge threw: " + e);
             }
         }
 
@@ -1278,10 +1280,17 @@ namespace ES2Access.Screens
         /// technology that is off screen, so the camera request is what makes the dot exist for the
         /// renderer; the pointer is what makes the game draw its tooltip beside it, which is the only
         /// place a Class-backed tooltip's words ever exist.
+        ///
+        /// It also SAYS which tooltip that is. A node makes two promises about a tooltip - the words are
+        /// reviewable (<c>PointsAt</c>) and focusing raises them (<c>OnFocusVisual</c>) - and this raised
+        /// one without ever naming it, which reads to every parity bucket as a node with no tooltip at
+        /// all. The dot and the recommended row have raised this tooltip since they were written; naming
+        /// it changes nothing the player hears and everything the audit can see.
         /// </summary>
         private void ShowDot(NodeVtable vtable, TechnologyItem2 item)
         {
             TechnologyItem2 it = item;
+            vtable.PointsAt = () => it.Tooltip;
             vtable.OnFocusVisual = () =>
             {
                 Look(ResearchCamera.Aim.Technology, null, null, it);

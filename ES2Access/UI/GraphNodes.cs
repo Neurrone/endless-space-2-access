@@ -266,9 +266,12 @@ namespace ES2Access.UI
                 return new List<NodeSection> { whole };
             }
 
+            // Both halves name the SAME tooltip: this is one hover surface split by loudness, and the
+            // builder's one-tooltip rule counts surfaces so that the split stays legal.
+            AgeTooltip it = tooltip;
             return new List<NodeSection>
             {
-                NodeSection.Derived(() => Lines(full(), false), TooltipMode.Announce, null),
+                NodeSection.Derived(() => Lines(full(), false), TooltipMode.Announce, null, it),
                 NodeSection.Buffer(() => Lines(full(), true)),
             };
         }
@@ -366,7 +369,7 @@ namespace ES2Access.UI
             // in. Declared here, once, because this is the single door every screen's tooltips come
             // through.
             AgeTooltip it = tooltip;
-            return NodeSection.Derived(lines, ModeFor(tooltip), () => AgeWidgets.Draws(it));
+            return NodeSection.Derived(lines, ModeFor(tooltip), () => AgeWidgets.Draws(it), it);
         }
 
         /// <summary>
@@ -553,6 +556,42 @@ namespace ES2Access.UI
             }
 
             AgeWidgets.PointUnder(vtable, anchor, tooltip);
+        }
+
+        /// <summary>
+        /// The sections a shared reading built, with its tooltip swapped for the ONE the screen knows
+        /// the node really shows.
+        ///
+        /// For the caller that re-aims a node a generic reader has already declared: a hero row's name
+        /// column carries the row's own tooltip AND the hero's dossier on the portrait inside it, and
+        /// the screen points at the dossier because that is the page the player came for. Whatever the
+        /// generic reading declared then becomes a second hover surface the node no longer points at -
+        /// a buffer promise nothing will fill - so it goes, and only what the control DRAWS is kept.
+        ///
+        /// Not a way to choose a tooltip's loudness: the replacement reads by its own kind like every
+        /// other, through <see cref="HintSections"/>.
+        /// </summary>
+        public static IList<NodeSection> OnlyTooltip(
+            IList<NodeSection> sections,
+            AgeTooltip tooltip
+        )
+        {
+            List<NodeSection> kept = new List<NodeSection>(sections == null ? 2 : sections.Count + 1);
+            for (int i = 0; sections != null && i < sections.Count; i++)
+            {
+                if (sections[i] != null && !sections[i].FromTooltip)
+                {
+                    kept.Add(sections[i]);
+                }
+            }
+
+            IList<NodeSection> tip = HintSections(tooltip);
+            for (int i = 0; tip != null && i < tip.Count; i++)
+            {
+                kept.Add(tip[i]);
+            }
+
+            return kept.Count == 0 ? null : kept;
         }
 
         /// <summary>The same, for a screen that has already built its sections (a row with a heading

@@ -222,23 +222,48 @@ namespace ES2Access.Screens
                 () => AgeWidgets.Toggle(it.Toggle),
                 () => AgeWidgets.Operable(host)
             );
-            // The card's whole drawn face, then the two tooltips it carries: the dossier the game hangs
-            // on the card as a whole, and - last, so it is the one that speaks - the sentence written
-            // there when this hero cannot take the assignment.
-            vtable.Sections = GraphNodes.Sections(
-                NodeSection.Buffer(() => HeroCards.Lines(it)),
-                GraphNodes.TooltipSection(it == null ? null : it.HeroTooltip),
-                GraphNodes.TooltipSection(refusal)
+            // The card's whole drawn face, then the ONE tooltip a mouse resting on the card raises: the
+            // sentence written on the card's own transform when this hero cannot take the assignment.
+            // Through the sink, because the card names a second one - measured 2026-08-28, and the
+            // measurement is the finding: <c>HeroDetailedCard.HeroTooltip</c> is null on every instance
+            // this install binds (both recruitment cards, both academy cards, the inspection card), so
+            // the section it fed was always null and this only LOOKED like two declarations. Routed
+            // anyway: if a prefab ever wires it, it becomes an entry of its own rather than a promise
+            // the card cannot keep.
+            TooltipChildren.Carried carried = TooltipChildren.Split(
+                new List<AgeTooltip> { it == null ? null : it.HeroTooltip, refusal }
             );
-            AgeWidgets.Point(vtable, it.Toggle, refusal, host);
+            vtable.Sections = GraphNodes.Sections(
+                () => HeroCards.Lines(it),
+                carried.Own
+            );
+            AgeWidgets.Point(vtable, it.Toggle, carried.Own, host);
             string key = "hero-select:card/" + index;
             ControlId id = ControlId.For(hero, key);
             // And the pages the card draws no words for - affinity, class, politics, the masteries -
-            // as nodes under it, since one node can point at only one of them.
+            // as nodes under it, since one node can point at only one of them. The refusal the node
+            // itself declares is named so the sweep leaves it out: it was coming back as the card's
+            // first child as well as its spoken sentence.
             Cell cell = Cells.Add(cells, widget, id, vtable);
-            cell.Dossiers = HeroCards.Dossiers(card);
+            cell.Dossiers = Merge(carried.Children, HeroCards.Dossiers(card, refusal));
             cell.Key = key;
             return id;
+        }
+
+        /// <summary>The sink's entries in front of the card's own sweep, which is the order the two are
+        /// drawn in: the card as a whole before the bands inside it.</summary>
+        private static List<TooltipChildren.Dossier> Merge(
+            List<TooltipChildren.Dossier> first,
+            List<TooltipChildren.Dossier> rest
+        )
+        {
+            if (first == null || first.Count == 0)
+            {
+                return rest;
+            }
+
+            first.AddRange(rest);
+            return first;
         }
 
         /// <summary>Whether this is the card the game has ticked. Asked of the window rather than of the

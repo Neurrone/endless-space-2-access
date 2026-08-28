@@ -142,23 +142,40 @@ namespace ES2Access.Core.UI.Graph
         /// screen decides.</summary>
         internal readonly bool FromTooltip;
 
+        /// <summary>WHICH tooltip these lines came off - the hover surface itself, held as an opaque
+        /// reference because this layer has no idea what a tooltip is.
+        ///
+        /// <see cref="FromTooltip"/> answers "did a tooltip write this", which is what the readout
+        /// needs; this answers "which one", which is what a node's ONE-tooltip rule needs
+        /// (<see cref="OneTooltipRule"/>). The two are different questions because one tooltip can
+        /// legitimately produce SEVERAL sections - a hint-blocked button's description speaks while the
+        /// mouse instruction it ends in is buffer-only - and counting sections would refuse that split
+        /// while letting two genuinely different hover surfaces through.
+        ///
+        /// Null for a section the mod composed, and for a caller that read a tooltip's words without
+        /// naming the tooltip; an unnamed source is never counted, so the rule can only ever
+        /// under-report.</summary>
+        internal readonly object Source;
+
         private NodeSection(
             Func<IList<string>> lines,
             TooltipMode mode,
             Func<bool> indicates,
-            bool fromTooltip
+            bool fromTooltip,
+            object source
         )
         {
             Lines = lines;
             Mode = mode;
             Indicates = indicates;
             FromTooltip = fromTooltip;
+            Source = source;
         }
 
         /// <summary>Content the control draws: reviewable, never spoken on focus.</summary>
         public static NodeSection Buffer(Func<IList<string>> lines)
         {
-            return lines == null ? null : new NodeSection(lines, TooltipMode.None, null, false);
+            return lines == null ? null : new NodeSection(lines, TooltipMode.None, null, false, null);
         }
 
         /// <summary>
@@ -172,7 +189,7 @@ namespace ES2Access.Core.UI.Graph
         /// </summary>
         public static NodeSection Composed(Func<IList<string>> lines)
         {
-            return lines == null ? null : new NodeSection(lines, TooltipMode.Announce, null, false);
+            return lines == null ? null : new NodeSection(lines, TooltipMode.Announce, null, false, null);
         }
 
         /// <summary>
@@ -184,14 +201,18 @@ namespace ES2Access.Core.UI.Graph
         /// (<c>GraphNodes.ModeFor</c>) rather than per call site: a screen has no way to name a mode
         /// for a tooltip, which is what makes the wrong reading unrepresentable rather than merely
         /// discouraged.
+        ///
+        /// <paramref name="source"/> is the tooltip itself (<see cref="Source"/>), so a node can be
+        /// asked how many DIFFERENT hover surfaces it declared rather than how many sections it has.
         /// </summary>
         internal static NodeSection Derived(
             Func<IList<string>> lines,
             TooltipMode mode,
-            Func<bool> indicates
+            Func<bool> indicates,
+            object source = null
         )
         {
-            return new NodeSection(lines, mode, indicates, true);
+            return new NodeSection(lines, mode, indicates, true, source);
         }
     }
 

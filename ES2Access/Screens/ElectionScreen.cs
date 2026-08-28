@@ -1117,6 +1117,13 @@ namespace ES2Access.Screens
                 null,
                 null
             );
+            // The tier's sentence is a SECOND hover surface on the card - the game hangs it on the
+            // experience group while the card points at the party's dossier - so by the standing ruling
+            // it should be an entry of its own. It cannot be, HERE: a winner card is emitted as its own
+            // graph ROW (AddWinners, Cells.EmitRow), and a node inside an open row cannot be a group
+            // (GraphBuilder.BeginGroup refuses one). So it stays the reviewed line it was until the row
+            // shape itself is settled - reported 2026-08-28, unconverted on purpose rather than dropped,
+            // because the sentence is content-backed and dropping it would lose real words.
             vtable.Sections = GraphNodes.Sections(
                 GraphNodes.TooltipSection(tooltip),
                 AgeWidgets.Painted(tierWidget)

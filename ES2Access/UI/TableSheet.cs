@@ -782,9 +782,20 @@ namespace ES2Access.UI
                     {
                         GraphNodes.ValuePart(() => Text(heading, it)),
                     },
-                    Sections = WithInner(
-                        GraphNodes.Sections(() => CellFacts(heading, it), cellTip),
-                        inner
+                    // ONE tooltip: the cell's own, or - where the column supplies that - the dossier
+                    // the pointer is sent to. The rest of what <see cref="Inside"/> found is dropped,
+                    // and dropping it takes nothing away: those are renderer-assembled by
+                    // construction (Inside keeps only the class-backed ones), so their words exist
+                    // solely while the game is drawing THEM, which it only ever does for the one the
+                    // node points at. Measured 2026-08-28 on the load/save window's Content column,
+                    // where four DLCItem dossiers were declared, three could never fill, and the
+                    // cell's buffer read "Content, empty" either way. A sheet cell is not a group, so
+                    // "a second hover surface is a child entry" has nowhere to put one here - which
+                    // is the one place in the mod where that ruling costs a surface rather than
+                    // moving it, and it costs nothing while Inside stays class-backed only.
+                    Sections = GraphNodes.Sections(
+                        () => CellFacts(heading, it),
+                        cellTip ?? aim
                     ),
                 };
                 Action own = ActivateCell == null ? null : ActivateCell(row, it);
@@ -828,40 +839,6 @@ namespace ES2Access.UI
             }
 
             return vtable;
-        }
-
-        /// <summary>The cell's declared sections with the dossiers hanging INSIDE it added after them,
-        /// each read by the mode the shared rule answers for it - which for a renderer-assembled one is
-        /// always "indicate", so nothing new is spoken and the buffer gains what the game draws.
-        /// </summary>
-        private static IList<NodeSection> WithInner(
-            IList<NodeSection> sections,
-            List<AgeTooltip> inner
-        )
-        {
-            if (inner == null || inner.Count == 0)
-            {
-                return sections;
-            }
-
-            List<NodeSection> all = new List<NodeSection>(
-                (sections == null ? 0 : sections.Count) + inner.Count
-            );
-            for (int i = 0; sections != null && i < sections.Count; i++)
-            {
-                all.Add(sections[i]);
-            }
-
-            for (int i = 0; i < inner.Count; i++)
-            {
-                NodeSection section = GraphNodes.TooltipSection(inner[i]);
-                if (section != null)
-                {
-                    all.Add(section);
-                }
-            }
-
-            return all.Count == 0 ? null : all;
         }
 
         /// <summary>

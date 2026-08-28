@@ -429,9 +429,15 @@ namespace ES2Access.Screens
                 () => AgeWidgets.Toggle(it),
                 () => AgeWidgets.Operable(band)
             );
-            vtable.Sections = SettingRows.RowSections(band, AgeWidgets.Raw(band));
+            List<TooltipChildren.Dossier> dossiers = new List<TooltipChildren.Dossier>(1);
+            vtable.Sections = SettingRows.RowSections(band, AgeWidgets.Raw(band), dossiers);
             AgeWidgets.Point(vtable, it);
-            builder.AddItem(Nodes.Drawn(ControlId.For(toggle, key), vtable, toggle));
+            TooltipChildren.Declare(
+                builder,
+                Nodes.Drawn(ControlId.For(toggle, key), vtable, toggle),
+                key,
+                dossiers
+            );
         }
 
         // ---- the traits ----
@@ -454,9 +460,15 @@ namespace ES2Access.Screens
                 () => AgeWidgets.Toggle(it),
                 () => AgeWidgets.Operable(band)
             );
-            vtable.Sections = SettingRows.RowSections(band, AgeWidgets.Raw(band));
+            List<TooltipChildren.Dossier> dossiers = new List<TooltipChildren.Dossier>(1);
+            vtable.Sections = SettingRows.RowSections(band, AgeWidgets.Raw(band), dossiers);
             AgeWidgets.Point(vtable, it);
-            builder.AddItem(Nodes.Drawn(ControlId.For(toggle, key), vtable, toggle));
+            TooltipChildren.Declare(
+                builder,
+                Nodes.Drawn(ControlId.For(toggle, key), vtable, toggle),
+                key,
+                dossiers
+            );
         }
 
         /// <summary>The traits on offer: the family filters the game lists down the side, then the
@@ -587,7 +599,8 @@ namespace ES2Access.Screens
                     () => AgeWidgets.Toggle(it),
                     () => AgeWidgets.Operable(line)
                 );
-                vtable.Sections = SettingRows.RowSections(line, AgeWidgets.Raw(line));
+                List<TooltipChildren.Dossier> dossiers = new List<TooltipChildren.Dossier>(1);
+                vtable.Sections = SettingRows.RowSections(line, AgeWidgets.Raw(line), dossiers);
                 AgeWidgets.Point(vtable, it);
                 // The trait keys the line but has no rectangle, so the slot it is currently drawn in is
                 // what the viewport has to be scrolled to - a hundred and thirty traits through an
@@ -607,7 +620,7 @@ namespace ES2Access.Screens
                 // re-sort, and the line the table drew it in says whether it is on the screen at all -
                 // a pooled slot scrolled out of the eighty-pixel window has that line to be asked
                 // about, and the trait has nothing.
-                builder.AddItem(Nodes.Drawn(id, vtable, line));
+                TooltipChildren.Declare(builder, Nodes.Drawn(id, vtable, line), key + TraitKey(trait, line), dossiers);
             }
         }
 

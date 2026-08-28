@@ -224,15 +224,18 @@ namespace ES2Access.Screens
                 () => AgeWidgets.Toggle(pick),
                 () => AgeWidgets.Operable(it)
             );
-            vtable.Sections = SettingRows.RowSections(it, tooltip);
+            List<TooltipChildren.Dossier> dossiers = new List<TooltipChildren.Dossier>(2);
+            vtable.Sections = SettingRows.RowSections(it, tooltip, dossiers);
 
             vtable.OnFocusVisual = () => PointerFocus.MoveToToggle(pick, tooltip, it);
             vtable.OnBlurVisual = AgeWidgets.ReleasePointer;
-            builder.AddItem(Nodes.Drawn(
-                ControlId.For(card, "faction-choice:card/" + index),
-                vtable,
-                card
-            ));
+            string cardKey = "faction-choice:card/" + index;
+            TooltipChildren.Declare(
+                builder,
+                Nodes.Drawn(ControlId.For(card, cardKey), vtable, card),
+                cardKey,
+                dossiers
+            );
         }
 
         /// <summary>The row of custom-faction buttons under the grid - its own stop, the way a panel's
@@ -277,7 +280,8 @@ namespace ES2Access.Screens
             // so is worth more than an empty band.
             int count = Math.Max(1, HullCount(window));
             AgeTooltip tooltip = SettingRows.LastTooltip(title);
-            IList<NodeSection> sections = SettingRows.RowSections(title, tooltip);
+            List<TooltipChildren.Dossier> dossiers = new List<TooltipChildren.Dossier>(2);
+            IList<NodeSection> sections = SettingRows.RowSections(title, tooltip, dossiers);
 
             builder.BeginStop(HullsStop);
 
@@ -317,8 +321,11 @@ namespace ES2Access.Screens
                     // One drawn viewer, N paged contents - evidence is the viewer, identity the index;
                     // per-hull widgets do not exist (the game shows one at a time; Show(index) pages
                     // it).
-                    builder.AddItem(
-                        Nodes.Drawn(ControlId.Structural(HullKey + index), vtable, it)
+                    TooltipChildren.Declare(
+                        builder,
+                        Nodes.Drawn(ControlId.Structural(HullKey + index), vtable, it),
+                        HullKey + index,
+                        dossiers
                     );
                 }
             }

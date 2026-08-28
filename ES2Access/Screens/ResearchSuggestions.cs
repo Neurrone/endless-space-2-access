@@ -69,6 +69,7 @@ namespace ES2Access.Screens
                         Name = Name(item),
                         Acts = true,
                         Details = Details(item),
+                        Dossiers = Dossiers(item),
 
                         // The technology's own dossier, named rather than looked for: it is the one
                         // the card carries in the buffer and so the one the pointer has to draw, and
@@ -120,29 +121,52 @@ namespace ES2Access.Screens
         }
 
         /// <summary>
-        /// What the card carries in the review buffer, in the order the game drew it.
+        /// What the card carries in the review buffer: the technology's own dossier, and nothing else.
         ///
-        /// The branch's description and the affinity note are sentences the game wrote out, and they are
-        /// reviewed rather than spoken: the branch description is the same paragraph on every card in
-        /// the row - it explains the branch, which the card's own name already gives - and hearing it
-        /// four times while stepping across is the noise the buffer exists to keep out of the way.
-        ///
-        /// The technology's own dossier is the one the player came for, and it is the tooltip the
-        /// pointer is aimed at, so it is the one that gets DRAWN and therefore the one with words to
-        /// read. The unlock icons round the rim each carry a dossier of their own; they are declared
-        /// because they are on the screen, and only one tooltip is drawn at a time, so what they hold is
-        /// what the technology's own dossier already says about them.
-        ///
-        /// A group the game is not drawing is not declared at all - the prefab carries an affinity note
-        /// on every card whether or not the technology has an affinity, and reading one off a hidden
-        /// group would state something about the card that is not on the screen.
+        /// It is the one the player came for and the one the pointer is aimed at, so it is the one the
+        /// game DRAWS and therefore the only one with words to read. Everything else the card explains -
+        /// the branch, the affinity, each unlock round the rim - is a hover surface of its own and
+        /// becomes an entry of its own (<see cref="Dossiers"/>), because a node raises what it points at
+        /// and declaring the rest here promised words nothing would ever fill in.
         /// </summary>
         private static IList<NodeSection> Details(TechnologyItem2 item)
         {
-            List<NodeSection> sections = new List<NodeSection>(4);
-            Reviewed(sections, Shown(item.BottomSuggestionGroup) ? item.BottomSuggestionTooltip : null);
-            Add(sections, item.Tooltip);
-            Reviewed(sections, Shown(item.AffinityGroup) ? item.AffinityTooltip : null);
+            return GraphNodes.Sections(GraphNodes.TooltipSection(item.Tooltip));
+        }
+
+        /// <summary>
+        /// Everything else the card explains, as nodes under it (<see cref="TooltipChildren"/>), in the
+        /// order the card draws them: the branch's description above the disk, the affinity note under
+        /// it, and one per thing the technology would unlock round the rim.
+        ///
+        /// They used to be sections of the card - the branch and the affinity reviewed, the unlocks
+        /// declared like the dossier itself - and neither reading could be kept. The card points at the
+        /// technology's own dossier and the game draws one tooltip at a time, so an unlock's dossier had
+        /// no words for the buffer to hold and a reviewed sentence merged into a paragraph the player
+        /// cannot step through. As entries each is aimed at its own icon and drawn on arrival, which is
+        /// the same shape the wheel's own dots already use (<c>ResearchScreen.Unlocks</c>).
+        ///
+        /// The unlock icons are collected the wheel's way, with no carrier: the strip is a subtree the
+        /// prefab keeps transparent until a mouse is on the card, so a gate asking whether it is painted
+        /// would delete exactly the entries a keyboard player is here for. What says they are real is
+        /// the walk of the container's own drawn children.
+        /// </summary>
+        private static List<TooltipChildren.Dossier> Dossiers(TechnologyItem2 item)
+        {
+            List<TooltipChildren.Dossier> found = new List<TooltipChildren.Dossier>(4);
+            if (Shown(item.BottomSuggestionGroup))
+            {
+                TooltipChildren.AddPlain(
+                    found,
+                    item.BottomSuggestionTooltip,
+                    item.BottomSuggestionGroup
+                );
+            }
+
+            if (Shown(item.AffinityGroup))
+            {
+                TooltipChildren.AddPlain(found, item.AffinityTooltip, item.AffinityGroup);
+            }
 
             AgeTransform unlocks = item.TechnologyUnlocksContainer;
             List<AgeTransform> children = unlocks == null || !Shown(unlocks)
@@ -152,31 +176,15 @@ namespace ES2Access.Screens
             {
                 if (Shown(children[i]))
                 {
-                    Add(sections, AgeWidgets.Raw(children[i]));
+                    TooltipChildren.AddRevealed(
+                        found,
+                        AgeWidgets.Raw(children[i]),
+                        children[i]
+                    );
                 }
             }
 
-            return sections.Count == 0 ? null : sections;
-        }
-
-        private static void Add(List<NodeSection> sections, AgeTooltip tooltip)
-        {
-            NodeSection section = GraphNodes.TooltipSection(tooltip);
-            if (section != null)
-            {
-                sections.Add(section);
-            }
-        }
-
-        /// <summary>One of the card.s OTHER tooltips - reviewable, never the one the card announces,
-        /// which is the one the card points at.</summary>
-        private static void Reviewed(List<NodeSection> sections, AgeTooltip tooltip)
-        {
-            NodeSection section = GraphNodes.ReviewedTooltipSection(tooltip);
-            if (section != null)
-            {
-                sections.Add(section);
-            }
+            return found;
         }
 
         private static bool Shown(AgeTransform widget)

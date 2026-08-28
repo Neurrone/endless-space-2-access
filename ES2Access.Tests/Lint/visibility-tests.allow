@@ -358,7 +358,7 @@ ES2Access/Screens/ResearchScreen.cs | 2 | if (icon != null && icon.Visible)
 ES2Access/Screens/ResearchScreen.cs | 1 | if (key != null && AgeWidgets.Visible(key.AgeTransform))
 ES2Access/Screens/ResearchScreen.cs | 1 | if (marker == null || !AgeWidgets.Visible(marker.AgeTransform))
 ES2Access/Screens/ResearchScreen.cs | 1 | if (status != null && AgeWidgets.Visible(status.AgeTransform))
-ES2Access/Screens/ResearchScreen.cs | 1 | return item.AffinityGroup != null && AgeWidgets.Visible(item.AffinityGroup)
+ES2Access/Screens/ResearchScreen.cs | 1 | if (item.AffinityGroup != null && AgeWidgets.Visible(item.AffinityGroup))
 ES2Access/Screens/ResearchScreen.cs | 1 | || !AgeWidgets.Visible(row)
 
 ES2Access/Screens/ResearchSuggestions.cs | 1 | return widget != null && widget.Visible;

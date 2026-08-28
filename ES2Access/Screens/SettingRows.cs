@@ -81,6 +81,9 @@ namespace ES2Access.Screens
             Func<bool> enabled = () => AgeWidgets.Operable(it.AgeTransform);
             AgeTooltip caption = AgeWidgets.Raw(TransformOf(item.SettingTitle));
             ControlId id = ControlId.For(item, key);
+            // The entries the sink hands back for whichever branch below builds this row: a setting has
+            // two hover targets and the row points at one of them.
+            List<TooltipChildren.Dossier> dossiers = new List<TooltipChildren.Dossier>(1);
 
             SettingSliderItem slider = item as SettingSliderItem;
             if (slider != null)
@@ -93,10 +96,10 @@ namespace ES2Access.Screens
                     (sign, large) => Slide(s, sign, large),
                     enabled
                 );
-                vtable.Sections = RowSections(caption, value);
+                vtable.Sections = RowSections(caption, value, null, dossiers);
                 SayValueTooltip(vtable, value);
                 PointAtTooltip(vtable, value);
-                builder.AddItem(Nodes.Drawn(id, vtable, item));
+                TooltipChildren.Declare(builder, Nodes.Drawn(id, vtable, item), key, dossiers);
                 return;
             }
 
@@ -118,10 +121,10 @@ namespace ES2Access.Screens
                     () => AgeWidgets.Toggle(b.Toggle),
                     enabled
                 );
-                vtable.Sections = RowSections(caption, value);
+                vtable.Sections = RowSections(caption, value, null, dossiers);
                 SayValueTooltip(vtable, value);
                 AgeWidgets.Point(vtable, box.Toggle);
-                builder.AddItem(Nodes.Drawn(id, vtable, item));
+                TooltipChildren.Declare(builder, Nodes.Drawn(id, vtable, item), key, dossiers);
                 return;
             }
 
@@ -393,7 +396,12 @@ namespace ES2Access.Screens
             Cell cell = TextFieldCell(field, label, tooltip, owner, gainFocus, id, editor);
             if (cell != null)
             {
-                builder.AddItem(Nodes.Drawn(cell.Id, cell.Vtable, cell.Widget));
+                TooltipChildren.Declare(
+                    builder,
+                    Nodes.Drawn(cell.Id, cell.Vtable, cell.Widget),
+                    cell.Key,
+                    cell.Dossiers
+                );
             }
         }
 
@@ -435,9 +443,17 @@ namespace ES2Access.Screens
                 () => editing.Request(it, host, handler, row, how),
                 enabled
             );
-            vtable.Sections = RowSections(tooltip, own, () => FieldText(it));
+            List<TooltipChildren.Dossier> dossiers = new List<TooltipChildren.Dossier>(1);
+            vtable.Sections = RowSections(tooltip, own, () => FieldText(it), dossiers);
             AgeWidgets.PointAt(vtable, widget);
-            return new Cell { Widget = widget, Id = row, Vtable = vtable };
+            return new Cell
+            {
+                Widget = widget,
+                Id = row,
+                Vtable = vtable,
+                Dossiers = dossiers,
+                Key = row.StructuralKey as string,
+            };
         }
 
         public static string FieldText(AgeControlTextArea field)
@@ -477,9 +493,15 @@ namespace ES2Access.Screens
             AgeTransform it = widget;
             AgeTooltip tooltip = LastTooltip(widget);
             NodeVtable vtable = GraphNodes.Readout(() => null, () => AgeWidgets.TextOf(it), null, null);
-            vtable.Sections = RowSections(it, tooltip);
+            List<TooltipChildren.Dossier> dossiers = new List<TooltipChildren.Dossier>(2);
+            vtable.Sections = RowSections(it, tooltip, dossiers);
             AgeWidgets.PointAt(vtable, tooltip != null ? TransformOf(tooltip) : it);
-            builder.AddItem(Nodes.Drawn(ControlId.For(widget, key), vtable, widget));
+            TooltipChildren.Declare(
+                builder,
+                Nodes.Drawn(ControlId.For(widget, key), vtable, widget),
+                key,
+                dossiers
+            );
         }
 
         /// <summary>The last tooltip drawn under a readout - the one belonging to the value rather than
@@ -509,30 +531,47 @@ namespace ES2Access.Screens
         /// them speaks and all of them are reviewable, which is the honest reading of a row that has
         /// nothing at its own level to explain itself with.
         /// </summary>
-        public static IList<NodeSection> RowSections(AgeTransform widget, AgeTooltip said)
+        public static IList<NodeSection> RowSections(
+            AgeTransform widget,
+            AgeTooltip said,
+            List<TooltipChildren.Dossier> into
+        )
         {
             List<AgeTooltip> found = new List<AgeTooltip>();
             CollectTooltips(widget, found, TooltipDepth);
-            List<NodeSection> sections = null;
+            // Drawn order, with the one the row POINTS AT last, which is what the sink calls the row's
+            // own. Everything else was a reviewed section - a promise the row could never fill for a
+            // renderer-assembled one and a paragraph the player cannot step through for a written one -
+            // and is now an entry of its own, aimed at the widget a mouse would have pointed at.
+            List<AgeTooltip> ordered = new List<AgeTooltip>(found.Count + 1);
+            AgeTooltip own = null;
             for (int i = 0; i < found.Count; i++)
             {
-                NodeSection section = said != null && found[i] == said
-                    ? GraphNodes.TooltipSection(found[i])
-                    : GraphNodes.ReviewedTooltipSection(found[i]);
-                if (section == null)
+                if (said != null && found[i] == said)
                 {
+                    own = found[i];
                     continue;
                 }
 
-                if (sections == null)
-                {
-                    sections = new List<NodeSection>(found.Count);
-                }
-
-                sections.Add(section);
+                ordered.Add(found[i]);
             }
 
-            return sections;
+            ordered.Add(own);
+            TooltipChildren.Carried carried = TooltipChildren.Split(ordered);
+            Keep(into, carried.Children);
+            return GraphNodes.Sections(GraphNodes.TooltipSection(carried.Own));
+        }
+
+        /// <summary>The sink's entries into the caller's list, where it kept one.</summary>
+        public static void Keep(
+            List<TooltipChildren.Dossier> into,
+            List<TooltipChildren.Dossier> children
+        )
+        {
+            if (into != null && children != null)
+            {
+                into.AddRange(children);
+            }
         }
 
         private static void CollectTooltips(AgeTransform widget, List<AgeTooltip> into, int depth)
@@ -594,9 +633,15 @@ namespace ES2Access.Screens
             // Activating this one opens a list rather than changing the setting: the list that opens
             // says where it starts.
             vtable.StateText = null;
-            vtable.Sections = RowSections(caption, value);
+            List<TooltipChildren.Dossier> dossiers = new List<TooltipChildren.Dossier>(1);
+            vtable.Sections = RowSections(caption, value, null, dossiers);
             AgeWidgets.PointAt(vtable, said != null ? TransformOf(said) : widget);
-            builder.AddItem(Nodes.Drawn(ControlId.For(list, key), vtable, list));
+            TooltipChildren.Declare(
+                builder,
+                Nodes.Drawn(ControlId.For(list, key), vtable, list),
+                key,
+                dossiers
+            );
         }
 
         private static readonly Func<string> Nothing = () => null;
@@ -640,25 +685,47 @@ namespace ES2Access.Screens
         // ---- shared plumbing ----
 
         /// <summary>
-        /// A row's content, declared once: what the row DRAWS (a text field's own text), then the
-        /// setting's own description, then the game's sentence about the value it is currently on -
-        /// drawn order, which is the order the buffer reads them in.
+        /// A row's content, declared once: what the row DRAWS (a text field's own text), then the ONE
+        /// tooltip a hover on the row's value raises.
         ///
-        /// Which of the two tooltips the focus readout says is not decided here and never was a
-        /// screen's business: the projection announces the last one that is short and mentions any
-        /// that is long (<see cref="TooltipParts"/>).
+        /// A setting row has TWO hover targets and always did - the caption beside it explains what the
+        /// setting IS, and the value's own explains what it is SET TO - and the game draws whichever is
+        /// innermost under the pointer. The row points at the value, so the caption's sentence was words
+        /// on the row that no gesture the row offers would ever draw. It becomes an entry of its own
+        /// through the sink, named by the widget a mouse would have pointed at.
+        ///
+        /// Measured 2026-08-28: on this fixture exactly one row in the whole game carries a pair that
+        /// differs - the ship designer's hull list, whose group holds %ShipStatHullDescription while the
+        /// list itself holds the ShipHull dossier. Every settings row on the options page and the pause
+        /// menu has one tooltip or two that are the same object, so they are unchanged.
         /// </summary>
+        /// <param name="own">Which of the pair the row POINTS AT, where that is not the value - the
+        /// pause menu's setting rows aim at the caption on the title, and a row's own tooltip is
+        /// whichever one the pointer will make the game draw, never whichever one reads best.</param>
         public static IList<NodeSection> RowSections(
             AgeTooltip caption,
             AgeTooltip value,
-            Func<string> drawn = null
+            Func<string> drawn,
+            List<TooltipChildren.Dossier> into,
+            AgeTooltip own = null
         )
         {
+            AgeTooltip mine = own ?? value ?? caption;
+            AgeTooltip other = AgeWidgets.SameTooltip(mine, caption) ? value : caption;
+            List<AgeTooltip> gathered = new List<AgeTooltip>(2);
+            if (other != null && !AgeWidgets.SameTooltip(other, mine))
+            {
+                gathered.Add(other);
+            }
+
+            gathered.Add(mine);
+            TooltipChildren.Carried carried = TooltipChildren.Split(gathered);
+            Keep(into, carried.Children);
+
             Func<string> text = drawn;
             return GraphNodes.Sections(
                 text == null ? null : NodeSection.Buffer(() => AgeText.Lines(text())),
-                GraphNodes.TooltipSection(caption),
-                AgeWidgets.SameTooltip(value, caption) ? null : GraphNodes.TooltipSection(value)
+                GraphNodes.TooltipSection(carried.Own)
             );
         }
 

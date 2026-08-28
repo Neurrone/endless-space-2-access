@@ -734,7 +734,15 @@ namespace ES2Access.Screens
         /// answers in - the control.s own tooltip, then the badges inside it - so the button says what it
         /// opens and the badge.s sentence is a buffer line away rather than nowhere at all. Which of
         /// several tooltips is the icon.s OWN is a fact about the icon; how loudly that one reads is the
-        /// tooltip.s own kind to answer.</summary>
+        /// tooltip.s own kind to answer.
+        ///
+        /// The one place in the mod where a badge stays a REVIEWED section rather than becoming an entry
+        /// of its own, and it is a shape constraint rather than a judgement: the strip's icons are laid
+        /// into a graph ROW, and a node inside an open row cannot be a group
+        /// (<c>GraphBuilder.BeginGroup</c> refuses one). The badges are content-backed sentences, so
+        /// dropping them would lose real words rather than an empty promise - which is what the ruling
+        /// asks for everywhere it CAN be applied. Reported 2026-08-28; also unverified live, because no
+        /// screen icon in this fixture carries a second tooltip at all (measured: 0 of 8).</summary>
         private static IList<NodeSection> ToggleSections(List<AgeTooltip> tooltips)
         {
             List<NodeSection> sections = new List<NodeSection>(tooltips.Count);

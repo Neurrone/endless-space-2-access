@@ -155,6 +155,52 @@ namespace ES2Access.UI
         }
 
         /// <summary>
+        /// A node as itself, or - where the sink handed it entries - as the expandable group those hang
+        /// under, in one call.
+        ///
+        /// The shape every caller of <see cref="Split"/> needs and none of them should write twice:
+        /// with no entries the node is exactly the node it always was (so a row that gains nothing
+        /// gains no "collapsed" either), and with entries it is a group whose children are the
+        /// "Tooltips" region. <c>Cells.Declare</c> is the same call for a screen that collects cells;
+        /// this is it for a screen that declares straight into the builder.
+        /// </summary>
+        public static void Declare(
+            GraphBuilder builder,
+            NodeDeclaration node,
+            string key,
+            List<Dossier> dossiers
+        )
+        {
+            if (dossiers == null || dossiers.Count == 0)
+            {
+                builder.AddItem(node);
+                return;
+            }
+
+            if (builder.InRow)
+            {
+                // A node the host is laying into a graph ROW cannot be a group - the builder refuses
+                // one - so the entries have nowhere to go and the node is declared as it stands. Logged
+                // rather than thrown, because it is the HOST's row shape that decides this and taking
+                // the page down over it would trade a lost entry for a lost screen; the log line is what
+                // says which surface wants the row shape looking at.
+                Log.Warn(
+                    "tooltips: a row member owns dossiers and cannot be a group - " + node.Id
+                );
+                builder.AddItem(node);
+                return;
+            }
+
+            builder.BeginGroup(node);
+            if (builder.IsExpanded(node.Id))
+            {
+                Emit(builder, key, dossiers, builder.Region);
+            }
+
+            builder.EndGroup();
+        }
+
+        /// <summary>
         /// One dossier as a declared node, at the one place a dossier becomes one.
         ///
         /// A dossier node is keyed by its place under its owner, so its id names nothing: what it

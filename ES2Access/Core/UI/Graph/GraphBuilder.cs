@@ -340,6 +340,15 @@ namespace ES2Access.Core.UI.Graph
         /// choices - a table's sort-header band, a grid line: "1 of 8" there counts the table's columns,
         /// which is not a place in a list and is not what the player is walking. Such a row says where it
         /// sits as a ROW instead (<see cref="TableRow"/>).</summary>
+        /// <summary>Whether a row is open right now - which is the one state a GROUP cannot be declared
+        /// in (<see cref="BeginGroup"/> refuses one). A caller that declares a node which MAY own
+        /// children asks this rather than finding out by exception: the row shape is the host's own
+        /// choice and the node has no say in it.</summary>
+        public bool InRow
+        {
+            get { return _currentRow != null; }
+        }
+
         public GraphBuilder StartRow(object rowKey = null, bool positions = true)
         {
             if (_currentRow != null) throw new InvalidOperationException("Cannot start a row while another is open");
@@ -437,6 +446,16 @@ namespace ES2Access.Core.UI.Graph
             NodeVtable vtable = declaration.Vtable;
             if (vtable.Announcements == null || vtable.Announcements.Count == 0)
                 throw new ArgumentException("A control must have at least one announcement", "declaration");
+            // One tooltip per node, enforced where a node comes into existence. A node can raise only the
+            // tooltip it aims at, so words declared off a SECOND hover surface are a buffer entry the game
+            // will never draw - the defect is invisible in a transcript and reads as a clean audit. The
+            // surface that lost is not silenced: it becomes a child entry of its own (TooltipChildren), or
+            // it earns nothing. One tooltip split into several sections by loudness stays legal, which is
+            // why this counts SOURCES.
+            if (OneTooltipRule.Breached(vtable.Sections))
+                throw new ArgumentException(
+                    "A node declares one tooltip; a second hover surface is a child entry. " + id,
+                    "declaration");
             if (_drops != null && _drops(declaration)) return null;
             if (!_ids.Add(id)) throw new InvalidOperationException("Duplicate control id: " + id);
             GraphNode node = new GraphNode

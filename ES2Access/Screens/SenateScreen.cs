@@ -532,15 +532,35 @@ namespace ES2Access.Screens
                     GraphNodes.ValuePart(() => AgeWidgets.TextOf(skills)),
                     GraphNodes.DisabledPart(() => AgeWidgets.Operable(at)),
                 },
-                Sections = GraphNodes.Sections(
-                    GraphNodes.TooltipSection(it.PortraitTooltip),
-                    GraphNodes.TooltipSection(it.PoliticsTooltip),
-                    GraphNodes.TooltipSection(it.ExperienceTooltip),
-                    NodeSection.Buffer(() => AgeWidgets.DrawnLines(at))
-                ),
             };
+
+            // Three hover targets and no fourth: measured live 2026-08-28, the card's own transform
+            // carries NO tooltip at all, so a mouse resting on the card raises nothing and the three
+            // sentences belong to the portrait, the party name and the experience gauge INSIDE it. A
+            // node raises only what it points at, so declaring all three on the card promised words the
+            // game would never draw for any of them - and the experience sentence, the one that IS
+            // content-backed, was then announced on every card and buffered twice over, once as its own
+            // section and once inside the card's drawn lines. Through the sink: the card's own (which is
+            // nothing here, and read live so a prefab that gains one is aimed at it) stays on the card,
+            // and each of the three becomes an entry of its own, named by the widget a mouse would have
+            // pointed at and aimed there, so the game draws each in turn.
+            List<AgeTooltip> gathered = new List<AgeTooltip>(4)
+            {
+                it.PortraitTooltip,
+                it.PoliticsTooltip,
+                it.ExperienceTooltip,
+                AgeWidgets.Raw(widget),
+            };
+            TooltipChildren.Carried carried = TooltipChildren.Split(gathered);
+            vtable.Sections = GraphNodes.Sections(
+                () => AgeWidgets.DrawnLines(at),
+                carried.Own
+            );
             AgeWidgets.PointAt(vtable, widget);
-            Cells.Add(cells, widget, ControlId.For(widget, "senate:senator/" + index), vtable);
+            string key = "senate:senator/" + index;
+            Cell cell = Cells.Add(cells, widget, ControlId.For(widget, key), vtable);
+            cell.Dossiers = carried.Children;
+            cell.Key = key;
         }
 
         /// <summary>Which party holds the slot. A slot with no party in it draws a bare picture and no

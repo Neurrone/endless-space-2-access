@@ -3410,20 +3410,25 @@ namespace ES2Access.Screens
                     GraphNodes.ValuePart(() => AgeText.Label(it.HappinessValueLabel)),
                     GraphNodes.ValuePart(() => AgeText.Label(it.HappinessStatusLabel)),
                 },
-                // Two tooltips on one row, in the order they are drawn: the icon.s one-line gloss on
-                // what Approval is, which is the row.s OTHER tooltip and so is reviewed, and the row.s
-                // own dossier, which the row points at and which reads by its own kind.
-                Sections = GraphNodes.Sections(
-                    GraphNodes.ReviewedTooltipSection(iconTooltip),
-                    GraphNodes.TooltipSection(tooltip)
-                ),
             };
+            // Two hover targets on one row, in the order they are drawn: the icon.s one-line gloss on
+            // what Approval is, and the row.s own dossier, which the row points at. The gloss used to be
+            // a reviewed line here - words on a row the pointer never visits, which the game therefore
+            // never draws - and is now an entry of its own, aimed at the icon a mouse would have
+            // pointed at.
+            TooltipChildren.Carried carried = TooltipChildren.Split(
+                new List<AgeTooltip> { iconTooltip, tooltip }
+            );
+            vtable.Sections = GraphNodes.Sections(GraphNodes.TooltipSection(carried.Own));
             AgeWidgets.PointAt(vtable, widget);
+            string approvalKey = keyPrefix + widget.name + "/approval";
             return new Cell
             {
                 Widget = widget,
-                Id = ControlId.For(widget, keyPrefix + widget.name + "/approval"),
+                Id = ControlId.For(widget, approvalKey),
                 Vtable = vtable,
+                Dossiers = carried.Children,
+                Key = approvalKey,
             };
         }
 
@@ -3466,19 +3471,23 @@ namespace ES2Access.Screens
                     GraphNodes.ValuePart(() => Drawn(it.TurnsBeforeNextPop)),
                     GraphNodes.ValuePart(() => Drawn(it.NextPopulationDestinationLabel)),
                 },
-                // The kind tooltip is the row.s OTHER tooltip - reviewed, never announced - and the
-                // wait.s own is the one the row points at, which reads by its own kind.
-                Sections = GraphNodes.Sections(
-                    GraphNodes.ReviewedTooltipSection(kind),
-                    GraphNodes.TooltipSection(when)
-                ),
             };
+            // The kind tooltip is the row.s OTHER hover target and the wait.s own is the one the row
+            // points at, so the kind becomes an entry of its own rather than a reviewed line the row
+            // cannot make the game draw.
+            TooltipChildren.Carried carried = TooltipChildren.Split(
+                new List<AgeTooltip> { kind, when }
+            );
+            vtable.Sections = GraphNodes.Sections(GraphNodes.TooltipSection(carried.Own));
             AgeWidgets.PointAt(vtable, widget);
+            string growthKey = keyPrefix + widget.name + "/growth";
             return new Cell
             {
                 Widget = widget,
-                Id = ControlId.For(widget, keyPrefix + widget.name + "/growth"),
+                Id = ControlId.For(widget, growthKey),
                 Vtable = vtable,
+                Dossiers = carried.Children,
+                Key = growthKey,
             };
         }
 

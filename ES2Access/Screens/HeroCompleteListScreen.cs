@@ -163,14 +163,10 @@ namespace ES2Access.Screens
                 return;
             }
 
-            List<NodeSection> sections = new List<NodeSection>(3);
-            for (int i = 0; vtable.Sections != null && i < vtable.Sections.Count; i++)
-            {
-                sections.Add(vtable.Sections[i]);
-            }
-
-            sections.Add(section);
-            vtable.Sections = sections;
+            // The dossier REPLACES whatever tooltip the generic cell reading found, rather than joining
+            // it: the pointer moves to the dossier on the next line, and a tooltip a node no longer
+            // points at is a buffer promise the game will never draw. What the cell DRAWS is kept.
+            vtable.Sections = GraphNodes.OnlyTooltip(vtable.Sections, dossier);
             AgeWidgets.PointAt(vtable, cell, dossier);
         }
 

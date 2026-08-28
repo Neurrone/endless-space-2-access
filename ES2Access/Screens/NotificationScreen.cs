@@ -1065,13 +1065,12 @@ namespace ES2Access.Screens
             List<AgeTooltip> explaining = group == null
                 ? Single(Explains(it[0].Tooltip, RowText(it)))
                 : Explaining(group, RowText(it));
-            NodeSection[] sections = new NodeSection[explaining.Count];
-            for (int i = 0; i < explaining.Count; i++)
-            {
-                sections[i] = GraphNodes.TooltipSection(explaining[i]);
-            }
-
-            AgeTooltip tooltip = Last(explaining);
+            // Through the sink: the row points at the LAST explanation drawn along it, which is the one
+            // a hover on the line raises, and every other one used to be a section on this row - words
+            // the row promised and the game would only ever draw for the one it points at. Each becomes
+            // an entry of its own, aimed at the piece a mouse would have pointed at.
+            TooltipChildren.Carried carried = TooltipChildren.Split(explaining);
+            AgeTooltip tooltip = carried.Own;
             AgeTransform hover = tooltip == null ? null : Holder(tooltip);
 
             // A table line the game wired a click to is a control the player works, exactly as it is in
@@ -1105,18 +1104,21 @@ namespace ES2Access.Screens
                 vtable.Announcements[1] = GraphNodes.ValuePart(() => RowText(it));
             }
 
-            vtable.Sections = GraphNodes.Sections(sections);
+            vtable.Sections = GraphNodes.Sections(GraphNodes.TooltipSection(tooltip));
             vtable.OnFocusVisual =
                 hover == null ? ReleasePointer : () => PointerFocus.MoveTo(hover, tooltip);
             vtable.OnBlurVisual = ReleasePointer;
             vtable.PointsAt = () => hover == null ? null : tooltip;
 
             AgeTransform named = group ?? it[0].Widget;
-            ControlId id = ControlId.For(
-                named,
-                "notification:body/" + index + "/" + named.name
+            string key = "notification:body/" + index + "/" + named.name;
+            ControlId id = ControlId.For(named, key);
+            TooltipChildren.Declare(
+                builder,
+                Nodes.Drawn(id, vtable, named),
+                key,
+                carried.Children
             );
-            builder.AddItem(Nodes.Drawn(id, vtable, named));
             return id;
         }
 
@@ -2169,12 +2171,12 @@ namespace ES2Access.Screens
             AgeTransform cell = row.Cells[column];
             AgeTransform name = row.Cells[0];
             List<AgeTooltip> tooltips = Tooltips(cell);
-            NodeSection[] sections = new NodeSection[tooltips.Count];
-            for (int i = 0; i < tooltips.Count; i++)
-            {
-                sections[i] = GraphNodes.TooltipSection(tooltips[i]);
-            }
-
+            // ONE tooltip: the last drawn in the column, which is the one the cell points at below. The
+            // others used to be sections of their own and could never fill - the cell raises what it
+            // points at and nothing else - and a sheet cell is not a group, so there is nowhere here to
+            // hand them to. Dropped rather than left as a promise; the shape to watch is a column whose
+            // extra explanation is content-backed, which no popup in the fixture draws.
+            AgeTooltip shown = Last(tooltips);
             NodeVtable vtable = new NodeVtable
             {
                 ControlType = ControlTypes.Text,
@@ -2182,13 +2184,13 @@ namespace ES2Access.Screens
                 {
                     GraphNodes.ValuePart(() => CellText(cell), false),
                 },
-                Sections = GraphNodes.Sections(sections),
+                Sections = GraphNodes.Sections(GraphNodes.TooltipSection(shown)),
                 SearchText = () => CellText(name),
             };
 
             // The tooltip hangs off the picture inside the cell rather than the cell, and pointing at
             // anything else draws nothing.
-            AgeTooltip tooltip = Last(tooltips);
+            AgeTooltip tooltip = shown;
             AgeTransform hover = tooltip == null ? null : Holder(tooltip);
             vtable.OnFocusVisual =
                 hover == null ? ReleasePointer : () => PointerFocus.MoveTo(hover, tooltip);

@@ -631,11 +631,14 @@ namespace ES2Access.Screens
                 {
                     GraphNodes.LabelPart(() => AgeWidgets.TextOf(it)),
                 },
-                Sections = RowSections(it, tooltip),
+                Sections = null,
             };
+            List<TooltipChildren.Dossier> dossiers = new List<TooltipChildren.Dossier>(2);
+            vtable.Sections = RowSections(it, tooltip, dossiers);
 
             AgeWidgets.PointAt(vtable, row, tooltip);
-            Add(cells, row, ControlId.For(row, "planet:row/" + key), vtable);
+            string rowKey = "planet:row/" + key;
+            Add(cells, row, ControlId.For(row, rowKey), vtable, rowKey, dossiers);
         }
 
         /// <summary>The tooltip that explains what the row SAYS: the row's own where it has one - the
@@ -670,33 +673,37 @@ namespace ES2Access.Screens
         /// <summary>Every tooltip drawn in a row as declared sections, in drawn order - and only the
         /// one that explains what the row SAYS speaks, because what follows it on a card is a badge,
         /// not a value.</summary>
-        private static IList<NodeSection> RowSections(AgeTransform row, AgeTooltip said)
+        private static IList<NodeSection> RowSections(
+            AgeTransform row,
+            AgeTooltip said,
+            List<TooltipChildren.Dossier> into
+        )
         {
             List<AgeTooltip> found = new List<AgeTooltip>();
             CollectTooltips(row, found, TooltipDepth);
-            List<NodeSection> sections = null;
+            // Drawn order with the one the row POINTS AT last, which is what the sink calls the row.s
+            // own. Which that is, is asked the resolver.s own way: it collapses a tooltip the game
+            // cloned onto a piece inside the row into one entry, so the entry that survived may not be
+            // the very object the caller passed in. Every other one used to be a reviewed section on
+            // this row - the Type row alone carries two - and is now an entry of its own, aimed at the
+            // piece a mouse would have pointed at, because the row draws only what it points at.
+            List<AgeTooltip> ordered = new List<AgeTooltip>(found.Count + 1);
+            AgeTooltip own = null;
             for (int i = 0; i < found.Count; i++)
             {
-                // Which of the row's tooltips is the one that SPEAKS, asked the resolver's own way:
-                // it collapses a tooltip the game cloned onto a piece inside the row into one entry,
-                // so the entry that survived may not be the very object the caller passed in.
-                NodeSection section = AgeWidgets.SameTooltip(found[i], said)
-                    ? GraphNodes.TooltipSection(found[i])
-                    : GraphNodes.ReviewedTooltipSection(found[i]);
-                if (section == null)
+                if (AgeWidgets.SameTooltip(found[i], said))
                 {
+                    own = found[i];
                     continue;
                 }
 
-                if (sections == null)
-                {
-                    sections = new List<NodeSection>(found.Count);
-                }
-
-                sections.Add(section);
+                ordered.Add(found[i]);
             }
 
-            return sections;
+            ordered.Add(own);
+            TooltipChildren.Carried carried = TooltipChildren.Split(ordered);
+            SettingRows.Keep(into, carried.Children);
+            return GraphNodes.Sections(GraphNodes.TooltipSection(carried.Own));
         }
 
         private static void CollectTooltips(AgeTransform widget, List<AgeTooltip> found, int depth)
@@ -719,6 +726,13 @@ namespace ES2Access.Screens
             public AgeTransform Widget;
             public ControlId Id;
             public NodeVtable Vtable;
+
+            /// <summary>The hover surfaces this row carries beyond the one it points at, as entries
+            /// under it (<see cref="TooltipChildren"/>). Null on the ordinary row, which stays a leaf.</summary>
+            public List<TooltipChildren.Dossier> Dossiers;
+
+            /// <summary>What those entries are keyed under - this row.s own key path.</summary>
+            public string Key;
         }
 
         private static readonly Func<Cell, AgeTransform> CellWidget = cell => cell.Widget;
@@ -733,7 +747,12 @@ namespace ES2Access.Screens
             {
                 for (int i = 0; i < row.Count; i++)
                 {
-                    builder.AddItem(Nodes.Drawn(row[i].Id, row[i].Vtable, row[i].Widget));
+                    TooltipChildren.Declare(
+                        builder,
+                        Nodes.Drawn(row[i].Id, row[i].Vtable, row[i].Widget),
+                        row[i].Key,
+                        row[i].Dossiers
+                    );
                 }
             }
         }
@@ -742,10 +761,21 @@ namespace ES2Access.Screens
             List<Cell> cells,
             AgeTransform widget,
             ControlId id,
-            NodeVtable vtable
+            NodeVtable vtable,
+            string key = null,
+            List<TooltipChildren.Dossier> dossiers = null
         )
         {
-            cells.Add(new Cell { Widget = widget, Id = id, Vtable = vtable });
+            cells.Add(
+                new Cell
+                {
+                    Widget = widget,
+                    Id = id,
+                    Vtable = vtable,
+                    Key = key,
+                    Dossiers = dossiers,
+                }
+            );
         }
 
         private static void AddReadout(List<Cell> cells, AgeTransform widget, string key)
@@ -763,11 +793,13 @@ namespace ES2Access.Screens
                 {
                     GraphNodes.LabelPart(() => AgeWidgets.TextOf(it)),
                 },
-                Sections = RowSections(it, tooltip),
+                Sections = null,
             };
+            List<TooltipChildren.Dossier> dossiers = new List<TooltipChildren.Dossier>(2);
+            vtable.Sections = RowSections(it, tooltip, dossiers);
 
             AgeWidgets.PointAt(vtable, widget, tooltip);
-            Add(cells, widget, ControlId.For(widget, key), vtable);
+            Add(cells, widget, ControlId.For(widget, key), vtable, key, dossiers);
         }
 
         /// <summary>A button the page draws. <paramref name="nameKey"/> is for one the game leaves

@@ -157,7 +157,16 @@ namespace ES2Access.UI
         /// same reason <see cref="Tooltip"/> answers null there: what is left in the fields is the
         /// previous hero's.
         /// </summary>
-        public static List<TooltipChildren.Dossier> Dossiers(HeroDetailedCard card)
+        /// <param name="declared">The tooltip the CALLER put on the card's own node, where that is not
+        /// the card's <c>HeroTooltip</c> - the hero-selection card declares the sentence the game writes
+        /// on the card's own transform when this hero cannot take the assignment. Excluded here for the
+        /// same reason the card's own dossier is: a tooltip the card announces and points at is not also
+        /// a child of itself. Measured 2026-08-28: without it the recruitment card's refusal was both
+        /// the node's spoken sentence and the first entry under it.</param>
+        public static List<TooltipChildren.Dossier> Dossiers(
+            HeroDetailedCard card,
+            AgeTooltip declared = null
+        )
         {
             List<TooltipChildren.Dossier> found = new List<TooltipChildren.Dossier>(8);
             try
@@ -179,7 +188,10 @@ namespace ES2Access.UI
                 for (int i = 0; i < Scratch.Count; i++)
                 {
                     AgeTooltip tooltip = Scratch[i];
-                    if (AgeWidgets.SameTooltip(tooltip, whole))
+                    if (
+                        AgeWidgets.SameTooltip(tooltip, whole)
+                        || AgeWidgets.SameTooltip(tooltip, declared)
+                    )
                     {
                         continue;
                     }

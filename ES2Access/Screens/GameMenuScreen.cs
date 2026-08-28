@@ -250,16 +250,19 @@ namespace ES2Access.Screens
                 foreach (SettingItem item in rows)
                 {
                     SettingItem row = item;
-                    NodeVtable vtable = SettingVtable(panel, row);
+                    List<TooltipChildren.Dossier> dossiers = new List<TooltipChildren.Dossier>(1);
+                    NodeVtable vtable = SettingVtable(panel, row, dossiers);
                     AgeTransform anchor = TitleTransform(row);
                     AgeTooltip tooltip = TooltipOf(anchor);
                     vtable.OnFocusVisual = () => PointerFocus.MoveTo(anchor, tooltip, anchor);
                     vtable.OnBlurVisual = ReleasePointer;
-                    builder.AddItem(Nodes.Drawn(
-                        ControlId.For(row.AgeTransform, key + SettingName(row)),
-                        vtable,
-                        row.AgeTransform
-                    ));
+                    string rowKey = key + SettingName(row);
+                    TooltipChildren.Declare(
+                        builder,
+                        Nodes.Drawn(ControlId.For(row.AgeTransform, rowKey), vtable, row.AgeTransform),
+                        rowKey,
+                        dossiers
+                    );
                 }
 
                 builder.PopContext();
@@ -293,7 +296,11 @@ namespace ES2Access.Screens
         /// text field is read as the value it holds, which is all it ever is here - both only appear in
         /// the read-only panel.
         /// </summary>
-        private static NodeVtable SettingVtable(InGameSettingsPanel panel, SettingItem item)
+        private static NodeVtable SettingVtable(
+            InGameSettingsPanel panel,
+            SettingItem item,
+            List<TooltipChildren.Dossier> dossiers
+        )
         {
             Func<string> label = () => AgeText.Label(item.SettingTitle);
             Func<bool> editable = () => CanModify(item);
@@ -304,7 +311,7 @@ namespace ES2Access.Screens
             {
                 if (!CanModify(item))
                 {
-                    return Value(label, () => Ticked(checkbox), tooltip, item);
+                    return Value(label, () => Ticked(checkbox), tooltip, item, dossiers);
                 }
 
                 return Detailed(
@@ -316,7 +323,8 @@ namespace ES2Access.Screens
                         tooltip
                     ),
                     tooltip,
-                    item
+                    item,
+                    dossiers
                 );
             }
 
@@ -326,7 +334,7 @@ namespace ES2Access.Screens
                 Func<string> chosen = () => AgeText.Label(slider.SelectedSettingItemLabel);
                 if (!CanModify(item))
                 {
-                    return Value(label, chosen, tooltip, item);
+                    return Value(label, chosen, tooltip, item, dossiers);
                 }
 
                 return Detailed(
@@ -338,23 +346,24 @@ namespace ES2Access.Screens
                         tooltip
                     ),
                     tooltip,
-                    item
+                    item,
+                    dossiers
                 );
             }
 
             SettingDropListItem list = item as SettingDropListItem;
             if (list != null && list.DropList != null)
             {
-                return Value(label, () => ListText(list.DropList), tooltip, item);
+                return Value(label, () => ListText(list.DropList), tooltip, item, dossiers);
             }
 
             SettingTextFieldItem field = item as SettingTextFieldItem;
             if (field != null && field.TextField != null)
             {
-                return Value(label, () => AgeText.Label(field.TextField.Label), tooltip, item);
+                return Value(label, () => AgeText.Label(field.TextField.Label), tooltip, item, dossiers);
             }
 
-            return Value(label, null, tooltip, item);
+            return Value(label, null, tooltip, item, dossiers);
         }
 
         /// <summary>A setting that is only being reported: its name and what it is set to, and no word
@@ -363,7 +372,8 @@ namespace ES2Access.Screens
             Func<string> label,
             Func<string> value,
             AgeTooltip tooltip,
-            SettingItem item
+            SettingItem item,
+            List<TooltipChildren.Dossier> dossiers
         )
         {
             List<NodeAnnouncement> parts = new List<NodeAnnouncement>
@@ -375,7 +385,7 @@ namespace ES2Access.Screens
                 parts.Add(GraphNodes.ValuePart(value));
             }
 
-            return Detailed(new NodeVtable { Announcements = parts }, tooltip, item);
+            return Detailed(new NodeVtable { Announcements = parts }, tooltip, item, dossiers);
         }
 
         /// <summary>A setting's content, the same pair every other page declares (SettingRows): what
@@ -383,10 +393,18 @@ namespace ES2Access.Screens
         /// which is the half a player standing on "Normal" actually wants, and which is therefore the
         /// one the readout speaks, and the one said again the moment the player moves the setting
         /// (<see cref="SettingRows.SayValueTooltip"/>).</summary>
-        private static NodeVtable Detailed(NodeVtable vtable, AgeTooltip tooltip, SettingItem item)
+        private static NodeVtable Detailed(
+            NodeVtable vtable,
+            AgeTooltip tooltip,
+            SettingItem item,
+            List<TooltipChildren.Dossier> dossiers
+        )
         {
             AgeTooltip value = CurrentValueTooltip(item);
-            vtable.Sections = SettingRows.RowSections(tooltip, value);
+            // The row points at the TITLE's tooltip (the caller's OnFocusVisual, below), so that is the
+            // row's own and the value's sentence is the second hover surface - an entry of its own
+            // rather than a line the row could never make the game draw.
+            vtable.Sections = SettingRows.RowSections(tooltip, value, null, dossiers, tooltip);
             SettingRows.SayValueTooltip(vtable, value);
             return vtable;
         }

@@ -949,20 +949,33 @@ namespace ES2Access.Screens
                 {
                     GraphNodes.LabelPart(() => AgeText.Label(title)),
                 },
-                // The objective's own hint first, then - for a quest the game will point at - what the
-                // marker button says it does, in the order the two are drawn across the row.
-                Sections = GraphNodes.Sections(
-                    GraphNodes.TooltipSection(hint),
-                    offered ? GraphNodes.TooltipSection(AgeWidgets.Raw(marker.AgeTransform)) : null
-                ),
                 OnActivate = offered ? (Action)(() => AgeWidgets.Press(it)) : null,
             };
+            // The row is the objective and points at the objective's own hint, which is what a mouse
+            // resting anywhere along the line raises. The marker button drawn at its end is a SECOND
+            // hover target with a sentence of its own, so it becomes an entry rather than a section the
+            // row could never make the game draw. Drawn order: the marker after the title, the row's own
+            // last, which is what the sink keeps.
+            List<AgeTooltip> gathered = new List<AgeTooltip>(2);
+            if (offered)
+            {
+                gathered.Add(AgeWidgets.Raw(marker.AgeTransform));
+            }
+
+            gathered.Add(hint);
+            TooltipChildren.Carried carried = TooltipChildren.Split(gathered);
+            vtable.Sections = GraphNodes.Sections(GraphNodes.TooltipSection(carried.Own));
             if (hint != null)
             {
                 AgeWidgets.PointAt(vtable, hint.AgeTransform);
             }
 
-            builder.AddItem(Nodes.Drawn(ControlId.For(objective, "quests:objective"), vtable, objective));
+            TooltipChildren.Declare(
+                builder,
+                Nodes.Drawn(ControlId.For(objective, "quests:objective"), vtable, objective),
+                "quests:objective",
+                carried.Children
+            );
         }
 
         /// <summary>

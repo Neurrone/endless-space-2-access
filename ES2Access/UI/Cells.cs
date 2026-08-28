@@ -218,13 +218,9 @@ namespace ES2Access.UI
                 return;
             }
 
-            builder.BeginGroup(Stands(cell));
-            if (builder.IsExpanded(cell.Id))
-            {
-                TooltipChildren.Emit(builder, cell.Key, cell.Dossiers, builder.Region);
-            }
-
-            builder.EndGroup();
+            // The one call, so a cell laid into a graph ROW (Emit, EmitRow) degrades the same way it
+            // does everywhere else instead of taking the page down: a row member cannot be a group.
+            TooltipChildren.Declare(builder, Stands(cell), cell.Key, cell.Dossiers);
         }
 
         /// <summary>A cell as a node the GAME is drawing, standing on the widget it was read off
@@ -291,8 +287,7 @@ namespace ES2Access.UI
             builder.StartRow(rowKey, positions);
             foreach (Cell cell in cells)
             {
-                ScrollIntoView.Anchor(cell.Vtable, cell.Widget);
-                builder.AddItem(Stands(cell));
+                Declare(builder, cell);
             }
 
             builder.EndRow();
