@@ -1645,11 +1645,7 @@ namespace ES2Access.Screens
 
         private static string Turns(AgePrimitiveLabel label)
         {
-            // Content: whether the turn count is part of the reading - the panel leaves the label
-            // written and stops drawing it.
-            return label == null || !AgeWidgets.Visible(label.AgeTransform)
-                ? null
-                : AgeText.Label(label);
+            return AgeWidgets.DrawnLabel(label);
         }
 
         private static AgeTransform Tip(AgeTooltip tooltip)

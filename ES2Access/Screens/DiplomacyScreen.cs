@@ -808,10 +808,7 @@ namespace ES2Access.Screens
         {
             try
             {
-                // Content: which STRING is returned.
-                return label == null || !AgeWidgets.Visible(label.AgeTransform)
-                    ? null
-                    : AgeText.Label(label);
+                return AgeWidgets.DrawnLabel(label);
             }
             catch (Exception)
             {

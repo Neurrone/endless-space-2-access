@@ -530,14 +530,10 @@ namespace ES2Access.Screens
 
                 AgeTransform family =
                     card.FamilyIcon == null ? null : card.FamilyIcon.AgeTransform;
-                // Content: whether the family icon's words join them.
-                if (family != null && AgeWidgets.Visible(family))
+                IList<string> words = AgeWidgets.DrawnTooltipLines(family);
+                for (int i = 0; i < words.Count; i++)
                 {
-                    IList<string> words = AgeWidgets.TooltipLines(AgeWidgets.Raw(family))();
-                    for (int i = 0; words != null && i < words.Count; i++)
-                    {
-                        Add(lines, words[i]);
-                    }
+                    Add(lines, words[i]);
                 }
             }
             catch (Exception e)

@@ -397,12 +397,7 @@ namespace ES2Access.UI
                     : AgeText.Clean(Gui.Localize(FlotillaNameKey, index));
                 return new MessageBuilder()
                     .ListItem(named ?? index)
-                    .ListItem(
-                        // Content: which STRING names an empty flotilla.
-                        AgeWidgets.Visible(Widget(line.EmptyLabel))
-                            ? AgeText.Label(line.EmptyLabel)
-                            : null
-                    )
+                    .ListItem(AgeWidgets.DrawnLabel(line.EmptyLabel))
                     .Build();
             }
             catch (Exception)

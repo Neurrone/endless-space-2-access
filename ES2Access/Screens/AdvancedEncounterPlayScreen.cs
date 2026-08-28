@@ -310,13 +310,7 @@ namespace ES2Access.Screens
             string prefix
         )
         {
-            AgeTransform widget = Widget(panel);
-            // Flow control: the roster reading is a walk of its own, not run for a panel the switch
-            // has put away.
-            if (AgeWidgets.Visible(widget))
-            {
-                BattleRosters.Roster(builder, widget, prefix);
-            }
+            BattleRosters.Roster(builder, Widget(panel), prefix);
         }
 
         /// <summary>
@@ -341,11 +335,7 @@ namespace ES2Access.Screens
             AgeTransform[] panels = window.StatsPanels;
             for (int i = 0; panels != null && i < panels.Length; i++)
             {
-                // Flow control: the shape reading below descends the whole panel collecting lines.
-                if (AgeWidgets.Visible(panels[i]))
-                {
-                    WindowShape.Readouts(_cells, panels[i], "advanced-play:stat-panel/" + i);
-                }
+                WindowShape.Readouts(_cells, panels[i], "advanced-play:stat-panel/" + i);
             }
 
             Cells.EmitLinear(builder, _cells);

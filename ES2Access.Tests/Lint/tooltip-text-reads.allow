@@ -11,7 +11,6 @@ ES2Access/Screens/AdvancedEncounterPlayScreen.cs | 1 | string hinted = CardActio
 
 ES2Access/Screens/BattleTacticsScreen.cs | 1 | ? CardActions.FirstLine(card.Tooltip ?? AgeWidgets.Raw(card.AgeTransform))
 ES2Access/Screens/BattleTacticsScreen.cs | 1 | Add(lines, CardActions.FirstLine(AgeWidgets.Raw(rows[i])));
-ES2Access/Screens/BattleTacticsScreen.cs | 1 | IList<string> words = AgeWidgets.TooltipLines(AgeWidgets.Raw(family))();
 
 ES2Access/Screens/EconomyScreen.cs | 2 | : CardActions.FirstLine(tooltip);
 ES2Access/Screens/EconomyScreen.cs | 1 | AgeWidgets.TooltipTitle(tooltip) ?? CardActions.FirstLine(tooltip);
@@ -43,7 +42,6 @@ ES2Access/Screens/LoadSaveScreen.cs | 1 | IList<string> lines = AgeText.Lines(Ag
 
 ES2Access/Screens/MenuDestinationScreens.cs | 1 | string.IsNullOrEmpty(name) ? AgeText.Clean(drawn.Tooltip.Content) : name
 
-ES2Access/Screens/MilitaryScreen.cs | 1 | IList<string> role = AgeWidgets.TooltipLines(AgeWidgets.Raw(icon))();
 ES2Access/Screens/MilitaryScreen.cs | 1 | return string.IsNullOrEmpty(title) ? CardActions.FirstLine(tooltip) : title;
 
 ES2Access/Screens/MinorFactionDiplomacyScreen.cs | 1 | string content = tooltip == null ? null : tooltip.Content;

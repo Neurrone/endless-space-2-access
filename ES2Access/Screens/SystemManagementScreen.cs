@@ -784,14 +784,7 @@ namespace ES2Access.Screens
             PlanetLabel_SystemManagement label
         )
         {
-            AgeTransform table = label.PlanetAnomaliesTable;
-            // Flow control: whether the pooled table below is walked item by item at all.
-            if (table == null || !AgeWidgets.Visible(table))
-            {
-                return;
-            }
-
-            IList<AgeTransform> items = table.Children;
+            IList<AgeTransform> items = AgeWidgets.DrawnChildren(label.PlanetAnomaliesTable);
             for (int i = 0; items != null && i < items.Count; i++)
             {
                 AgeTransform row = items[i];
@@ -841,14 +834,7 @@ namespace ES2Access.Screens
             PlanetLabel_SystemManagement label
         )
         {
-            AgeTransform table = label.PlanetCuriositiesTable;
-            // Flow control: same, for the curiosities table.
-            if (table == null || !AgeWidgets.Visible(table))
-            {
-                return;
-            }
-
-            IList<AgeTransform> items = table.Children;
+            IList<AgeTransform> items = AgeWidgets.DrawnChildren(label.PlanetCuriositiesTable);
             for (int i = 0; items != null && i < items.Count; i++)
             {
                 // Drawn-ness is the collector's question, not this walk's: a curiosity the pool has
@@ -2506,14 +2492,7 @@ namespace ES2Access.Screens
             string key
         )
         {
-            // Flow control: whether the pooled table below is walked line by line at all. A table
-            // fading IN still has content, which is why the chain test rather than Paints is asked here.
-            if (table == null || !AgeWidgets.Visible(table))
-            {
-                return;
-            }
-
-            IList<AgeTransform> items = table.Children;
+            IList<AgeTransform> items = AgeWidgets.DrawnChildren(table);
             for (int i = 0; items != null && i < items.Count; i++)
             {
                 AgeTransform item = items[i];
@@ -3564,11 +3543,10 @@ namespace ES2Access.Screens
         {
             try
             {
-                // Content: a label the panel is not drawing says nothing, so the reading it feeds
-                // leaves the phrase out instead of speaking a stale one.
-                return label != null && AgeWidgets.Visible(label.AgeTransform)
-                    ? AgeText.Label(label)
-                    : null;
+                // A drawn-but-blank label answers null here rather than empty: one caller falls back
+                // to the wrapper's title with ?? for an effect line drawn as a bare picture.
+                string drawn = AgeWidgets.DrawnLabel(label);
+                return string.IsNullOrEmpty(drawn) ? null : drawn;
             }
             catch (Exception)
             {

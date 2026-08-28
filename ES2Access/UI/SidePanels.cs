@@ -141,8 +141,7 @@ namespace ES2Access.UI
                 );
                 AgePrimitiveLabel label =
                     field == null ? null : field.GetValue(panel) as AgePrimitiveLabel;
-                // Content: which drawn label names the panel.
-                return label != null && AgeWidgets.Visible(label.AgeTransform) ? label : null;
+                return AgeWidgets.Drawn(label) == null ? null : label;
             }
             catch (Exception)
             {

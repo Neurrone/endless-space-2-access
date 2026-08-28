@@ -652,10 +652,8 @@ namespace ES2Access.Screens
         /// it: the systems are not graph siblings, so no position is stamped for them.</summary>
         private static ControlId AddSystemName(List<Cell> cells, ElectionLocalPanel panel)
         {
-            AgeTransform name = Widget(panel.StarSystemNameLabel);
-            // Availability: a null answer tells the caller there is no head to open the system's row
-            // on, and Cells.Add below would take the name without asking the gate.
-            if (name == null || !AgeWidgets.Visible(name))
+            AgeTransform name = AgeWidgets.Drawn(panel.StarSystemNameLabel);
+            if (name == null)
             {
                 return null;
             }

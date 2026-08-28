@@ -750,14 +750,8 @@ namespace ES2Access.Screens
             {
                 AgeTransform icon =
                     item.RoleIcon == null ? null : item.RoleIcon.AgeTransform;
-                // Content: which icons contribute a line to the design's reading.
-            if (icon == null || !AgeWidgets.Visible(icon))
-                {
-                    return lines;
-                }
-
-                IList<string> role = AgeWidgets.TooltipLines(AgeWidgets.Raw(icon))();
-                for (int i = 0; role != null && i < role.Count; i++)
+                IList<string> role = AgeWidgets.DrawnTooltipLines(icon);
+                for (int i = 0; i < role.Count; i++)
                 {
                     lines.Add(role[i]);
                 }

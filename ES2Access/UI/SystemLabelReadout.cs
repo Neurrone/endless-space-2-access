@@ -39,12 +39,16 @@ namespace ES2Access.UI
         {
             try
             {
-                return label == null || !AgeWidgets.Visible(label.PopulationCountGroup)
+                string drawn =
+                    label == null
+                        ? null
+                        : AgeWidgets.DrawnLabel(
+                            label.PopulationCountGroup,
+                            label.PopulationCountLabel
+                        );
+                return drawn == null
                     ? null
-                    : ModStrings.Format(
-                        ModStrings.GalaxySystemPopulation,
-                        AgeText.Label(label.PopulationCountLabel)
-                    );
+                    : ModStrings.Format(ModStrings.GalaxySystemPopulation, drawn);
             }
             catch (Exception)
             {
@@ -59,12 +63,13 @@ namespace ES2Access.UI
         {
             try
             {
-                return label == null || !AgeWidgets.Visible(label.TraitorCountGroup)
+                string drawn =
+                    label == null
+                        ? null
+                        : AgeWidgets.DrawnLabel(label.TraitorCountGroup, label.TraitorCountLabel);
+                return drawn == null
                     ? null
-                    : ModStrings.Format(
-                        ModStrings.GalaxySystemSleepers,
-                        AgeText.Label(label.TraitorCountLabel)
-                    );
+                    : ModStrings.Format(ModStrings.GalaxySystemSleepers, drawn);
             }
             catch (Exception)
             {
@@ -555,12 +560,10 @@ namespace ES2Access.UI
             string manyKey
         )
         {
-            if (button == null || !AgeWidgets.Visible(button.AgeTransform))
-            {
-                return;
-            }
-
-            string drawn = AgeText.Label(button.ShipCountLabel);
+            string drawn =
+                button == null
+                    ? null
+                    : AgeWidgets.DrawnLabel(button.AgeTransform, button.ShipCountLabel);
             if (string.IsNullOrEmpty(drawn))
             {
                 return;
@@ -678,15 +681,13 @@ namespace ES2Access.UI
                 );
             }
 
-            if (AgeWidgets.Visible(pirates.PiratePowerGroup))
+            string power = AgeWidgets.DrawnLabel(
+                pirates.PiratePowerGroup,
+                pirates.PiratePowerLabel
+            );
+            if (power != null)
             {
-                Add(
-                    lines,
-                    ModStrings.Format(
-                        ModStrings.GalaxySystemPiratePower,
-                        AgeText.Label(pirates.PiratePowerLabel)
-                    )
-                );
+                Add(lines, ModStrings.Format(ModStrings.GalaxySystemPiratePower, power));
             }
         }
 

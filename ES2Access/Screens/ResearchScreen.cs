@@ -520,11 +520,7 @@ namespace ES2Access.Screens
             AddSwitch(builder, panel.DisplayUnlocksToggle, "research:unlocks");
             AddSwitch(builder, panel.DisplayKeyToggle, "research:key");
 
-            AgeTransform content = panel.ContentGroup;
-            // Flow control: every row under the group is read for its heading text.
-            IList<AgeTransform> rows = content == null || !AgeWidgets.Visible(content)
-                ? null
-                : content.Children;
+            IList<AgeTransform> rows = AgeWidgets.DrawnChildren(panel.ContentGroup);
             bool section = false;
             for (int i = 0; rows != null && i < rows.Count; i++)
             {

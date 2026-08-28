@@ -273,6 +273,10 @@ namespace ES2Access.UI
         /// key made two lines the same control and the duplicate emptied the WHOLE page (the builder
         /// throws, the screen declares nothing). A page laid out as clones is the normal case for this
         /// reader, so the key has to be unique by construction.
+        ///
+        /// The reader owns the question about its own ROOT: a panel the window has put away is full of
+        /// the lines it last wrote, so a walk into one reads the previous case's words aloud. Callers
+        /// hand over whichever panel the switch is on and stop asking.
         /// </summary>
         public static void Readouts(
             List<Cell> cells,
@@ -281,6 +285,13 @@ namespace ES2Access.UI
             int maxDepth = 8
         )
         {
+            // Flow control: whether the panel below is walked at all. The one place it is asked, so a
+            // caller hands over whichever panel the switch is on without gating it first.
+            if (root == null || !AgeWidgets.Visible(root))
+            {
+                return;
+            }
+
             try
             {
                 Lines(cells, root, prefix, maxDepth, 0, string.Empty);

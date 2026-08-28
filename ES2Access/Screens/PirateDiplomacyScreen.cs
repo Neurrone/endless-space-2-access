@@ -282,12 +282,9 @@ namespace ES2Access.Screens
                 Cells.AddReadout(_cells, none, Keys + "no-reinforcements");
             }
 
-            AgeTransform table = window.ReinforcementsThresholdsTable;
-            // Flow control: the rows of a table the window is not drawing are each still marked
-            // visible, and reading one costs a text walk.
-            IList<AgeTransform> children = table == null || !AgeWidgets.Visible(table)
-                ? null
-                : table.Children;
+            IList<AgeTransform> children = AgeWidgets.DrawnChildren(
+                window.ReinforcementsThresholdsTable
+            );
             for (int i = 0; children != null && i < children.Count; i++)
             {
                 AgeTransform at = children[i];
@@ -354,11 +351,9 @@ namespace ES2Access.Screens
                 "command-points"
             );
             Line(window.NextFleetMovementLabel, "%ShipStatMovementTitle", "movement");
-            AgeTransform ships = window.NextFleetEstimatedShipsTable;
-            // Flow control: same as the thresholds table above.
-            IList<AgeTransform> children = ships == null || !AgeWidgets.Visible(ships)
-                ? null
-                : ships.Children;
+            IList<AgeTransform> children = AgeWidgets.DrawnChildren(
+                window.NextFleetEstimatedShipsTable
+            );
             for (int i = 0; children != null && i < children.Count; i++)
             {
                 AgeTransform tile = children[i];

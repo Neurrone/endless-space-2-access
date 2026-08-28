@@ -277,11 +277,7 @@ namespace ES2Access.Screens
                     "RecipeIngredients",
                     2
                 );
-                string label =
-                    // Content: which STRING captions the level the slots sit in.
-                    caption == null || !AgeWidgets.Visible(caption)
-                        ? null
-                        : AgeWidgets.TextOf(caption);
+                string label = AgeWidgets.DrawnText(caption);
                 bool captioned = !string.IsNullOrEmpty(label);
                 if (captioned)
                 {

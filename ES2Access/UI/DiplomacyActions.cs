@@ -238,14 +238,7 @@ namespace ES2Access.UI
             List<string> said = new List<string>(lines.Length);
             for (int i = 0; i < lines.Length; i++)
             {
-                AgeTransform at = lines[i];
-                // Content: which drawn lines are gathered into an action's details.
-                if (at == null || !AgeWidgets.Visible(at))
-                {
-                    continue;
-                }
-
-                string text = AgeWidgets.TextOf(at);
+                string text = AgeWidgets.DrawnText(lines[i]);
                 if (!string.IsNullOrEmpty(text))
                 {
                     said.Add(text);

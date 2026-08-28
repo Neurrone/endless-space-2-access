@@ -311,12 +311,7 @@ namespace ES2Access.Screens
         {
             try
             {
-                AgeTransform cost = Widget(action.CostLabel);
-                // Content: whether the price is part of the row's reading. The row's node stands on
-                // the action, which the game draws either way.
-                return cost == null || !AgeWidgets.Visible(cost)
-                    ? null
-                    : AgeText.Label(action.CostLabel);
+                return AgeWidgets.DrawnLabel(action.CostLabel);
             }
             catch (Exception)
             {
@@ -804,12 +799,7 @@ namespace ES2Access.Screens
         {
             try
             {
-                // Content: whether the boost is part of the slice's reading. The slice's cell stands on
-                // the labels container above this one.
-                return arc.PopulationBoostLabel == null
-                    || !AgeWidgets.Visible(arc.PopulationBoostLabel.AgeTransform)
-                    ? null
-                    : AgeText.Label(arc.PopulationBoostLabel);
+                return AgeWidgets.DrawnLabel(arc.PopulationBoostLabel);
             }
             catch (Exception)
             {
@@ -841,18 +831,6 @@ namespace ES2Access.Screens
             if (named)
             {
                 builder.PopContext();
-            }
-        }
-
-        private static AgeTransform Widget(AgePrimitiveLabel label)
-        {
-            try
-            {
-                return label == null ? null : label.AgeTransform;
-            }
-            catch (Exception)
-            {
-                return null;
             }
         }
 

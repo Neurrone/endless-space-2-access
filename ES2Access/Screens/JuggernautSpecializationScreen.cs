@@ -343,9 +343,7 @@ namespace ES2Access.Screens
         private static string StockAndNet(AgePrimitiveLabel stock, AgePrimitiveLabel net)
         {
             string held = AgeText.Label(stock);
-            string rate =
-                // Content: whether the rate figure joins the stock in one phrase.
-                net != null && AgeWidgets.Visible(net.AgeTransform) ? AgeText.Label(net) : null;
+            string rate = AgeWidgets.DrawnLabel(net);
             if (string.IsNullOrEmpty(rate))
             {
                 return held;

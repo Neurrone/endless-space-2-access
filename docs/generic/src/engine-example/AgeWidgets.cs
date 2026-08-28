@@ -167,6 +167,32 @@ namespace ES2Access.UI
             return Paints(child) ? child : null;
         }
 
+        /// <summary>
+        /// The children of a container the game is DRAWING, or null where it is not - the entry gate
+        /// for a walk that then steps through them with <see cref="DrawnChild"/>.
+        ///
+        /// The test is the ancestry <see cref="Visible"/> and deliberately NOT <see cref="Painted"/>:
+        /// a table fading IN still has content, and asking its alpha reads a whole panel as empty for
+        /// the length of its arrival animation. Alpha is the child's question, and
+        /// <see cref="DrawnChild"/> asks it one step at a time.
+        ///
+        /// The test is folded in because a table the window has put away keeps every row it last
+        /// bound, each still marked visible itself - so a walk that entered ungated reads the previous
+        /// binding's rows aloud, and pays a text walk per row to do it. null rather than an empty list
+        /// so the caller's own loop condition is the whole of the gate.
+        /// </summary>
+        public static IList<AgeTransform> DrawnChildren(AgeTransform table)
+        {
+            try
+            {
+                return table == null || !Visible(table) ? null : table.Children;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
         public static bool Enabled(AgeTransform widget)
         {
             try
@@ -395,6 +421,42 @@ namespace ES2Access.UI
                     ? AgeText.Lines(AgeText.Tooltip(it))
                     : DrawnTooltip.Lines(it);
         }
+
+        /// <summary>
+        /// What the player would read on a widget's own tooltip while the game is DRAWING that
+        /// widget - <see cref="TooltipLines"/> resolved and asked, with the two answers a caller
+        /// gathering lines has no use for spelling out: a widget carrying no tooltip, and a widget
+        /// the game is not drawing.
+        ///
+        /// The drawn test is folded in because a tooltip outlives whatever put its widget away: an
+        /// icon the panel has hidden still carries the words it was last bound with, and an
+        /// unguarded read hands the player a sentence about something that is not on the screen.
+        ///
+        /// Never null - these lines are appended to a reading, and an undrawn widget contributes
+        /// nothing rather than a hole the caller has to test for.
+        /// </summary>
+        public static IList<string> DrawnTooltipLines(AgeTransform widget)
+        {
+            try
+            {
+                if (widget == null || !Visible(widget))
+                {
+                    return NoLines;
+                }
+
+                Func<IList<string>> read = TooltipLines(Raw(widget));
+                IList<string> lines = read == null ? null : read();
+                return lines ?? NoLines;
+            }
+            catch (Exception)
+            {
+                return NoLines;
+            }
+        }
+
+        // Fixed-length rather than an empty List, so the one instance every silent answer shares
+        // cannot be added to by a caller that mistakes it for its own.
+        private static readonly IList<string> NoLines = new string[0];
 
         /// <summary>What the game calls the thing a tooltip is about. A control drawn as a bare symbol
         /// and a number - a population unit, a party's seat count - writes no words of its own, and the
@@ -1520,6 +1582,90 @@ namespace ES2Access.UI
             }
 
             return message.Build();
+        }
+
+        /// <summary>
+        /// What a label SAYS while the game is drawing it, and null where it is not.
+        ///
+        /// The drawn test belongs here rather than at the call site because this game hides a label
+        /// without clearing it: an unguarded read answers with the words the label was last bound
+        /// with, so a panel that has moved on speaks the PREVIOUS binding's figure as though it were
+        /// still on the screen.
+        ///
+        /// null IS the not-drawn answer; a drawn blank label answers empty. A caller that only wants
+        /// to know whether there is anything to say may treat the two alike, but one that wraps the
+        /// value in a sentence of its own must test null - the game draws labels it has nothing to
+        /// write into, and formatting an empty one says the sentence with a hole in it.
+        /// </summary>
+        public static string DrawnLabel(AgePrimitiveLabel label)
+        {
+            try
+            {
+                return label == null || !Visible(label.AgeTransform)
+                    ? null
+                    : AgeText.Label(label) ?? string.Empty;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>The same answer for a label the panel shows and hides by the GROUP around it
+        /// rather than by the label itself: the drawn question is asked of <paramref name="gate"/>,
+        /// which is the thing the game switches, while the words come off the label inside it.
+        /// </summary>
+        public static string DrawnLabel(AgeTransform gate, AgePrimitiveLabel label)
+        {
+            try
+            {
+                return label == null || !Visible(gate)
+                    ? null
+                    : AgeText.Label(label) ?? string.Empty;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Every text a widget draws in one phrase - <see cref="TextOf"/> - but only while the game
+        /// is drawing the widget, and null where it is not.
+        ///
+        /// <see cref="TextOf"/> asks each level's own visible flag as it descends, so what the guard
+        /// adds is the ANCESTRY above the widget: a group the window has collapsed leaves the block
+        /// inside it marked visible and still holding its words, and reading one ungated captions a
+        /// region with the previous binding's stale heading. null is the not-drawn answer; a drawn
+        /// widget with nothing written on it answers the empty phrase <see cref="TextOf"/> gives.
+        /// </summary>
+        public static string DrawnText(AgeTransform widget, int maxDepth = 6)
+        {
+            try
+            {
+                return widget == null || !Visible(widget) ? null : TextOf(widget, maxDepth);
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>The widget a label is drawn on while the game is drawing it, else null - the same
+        /// question <see cref="DrawnLabel(AgePrimitiveLabel)"/> answers, for a caller whose answer is
+        /// the WIDGET rather than the words on it and whose null means "the window drew no such
+        /// thing".</summary>
+        public static AgeTransform Drawn(AgePrimitiveLabel label)
+        {
+            try
+            {
+                AgeTransform at = label == null ? null : label.AgeTransform;
+                return Visible(at) ? at : null;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
         }
 
         private static void Collect(

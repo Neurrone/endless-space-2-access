@@ -468,12 +468,9 @@ namespace ES2Access.Screens
                 return;
             }
 
-            AgeTransform table = window.DiplomaticAbilitiesTable;
-            // Flow control: the rows of a table the window is not drawing are each still marked
-            // visible, and reading one costs a text walk.
-            IList<AgeTransform> children = table == null || !AgeWidgets.Visible(table)
-                ? null
-                : table.Children;
+            IList<AgeTransform> children = AgeWidgets.DrawnChildren(
+                window.DiplomaticAbilitiesTable
+            );
             for (int i = 0; children != null && i < children.Count; i++)
             {
                 // Pooled by ReserveChildren/RefreshChildrenIList like every table on this window, and
@@ -666,12 +663,7 @@ namespace ES2Access.Screens
 
         private void AddThresholds(NegotiationModalWindow window)
         {
-            AgeTransform table = window.PressureThresholdTable;
-            // Flow control: the rows of a table the window is not drawing are each still marked
-            // visible, and reading one costs a text walk.
-            IList<AgeTransform> children = table == null || !AgeWidgets.Visible(table)
-                ? null
-                : table.Children;
+            IList<AgeTransform> children = AgeWidgets.DrawnChildren(window.PressureThresholdTable);
             for (int i = 0; children != null && i < children.Count; i++)
             {
                 // Same pool, same retirement: the band is rebuilt with a different number of markers
@@ -1150,10 +1142,7 @@ namespace ES2Access.Screens
         {
             try
             {
-                // Content: which STRING is returned.
-                return label == null || !AgeWidgets.Visible(label.AgeTransform)
-                    ? null
-                    : AgeText.Label(label);
+                return AgeWidgets.DrawnLabel(label);
             }
             catch (Exception)
             {

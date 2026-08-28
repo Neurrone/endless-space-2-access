@@ -130,10 +130,7 @@ namespace ES2Access.UI
         /// <summary>What the caption says, or null where the game is not drawing it.</summary>
         public static string Text(AgeTransform widget)
         {
-            // Content: which STRING names the block.
-            return widget == null || !AgeWidgets.Visible(widget)
-                ? null
-                : AgeWidgets.TextOf(widget);
+            return AgeWidgets.DrawnText(widget);
         }
     }
 }

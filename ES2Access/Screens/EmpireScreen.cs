@@ -439,10 +439,7 @@ namespace ES2Access.Screens
         {
             try
             {
-                // Content: whether the assigned-relics figure is said at all.
-                return AgeWidgets.Visible(slot.AssignRelicsGroup)
-                    ? AgeText.Label(slot.AssignedRelicsLabel)
-                    : null;
+                return AgeWidgets.DrawnLabel(slot.AssignRelicsGroup, slot.AssignedRelicsLabel);
             }
             catch (Exception)
             {
@@ -911,14 +908,7 @@ namespace ES2Access.Screens
         /// </summary>
         private static void AddCuriosities(List<CardActions.CardAction> found, PlanetCard card)
         {
-            AgeTransform table = card.CuriosityItemsTable;
-            // Flow control: the items under it are read for their wrapper titles one by one.
-            if (table == null || !AgeWidgets.Visible(table))
-            {
-                return;
-            }
-
-            IList<AgeTransform> items = table.Children;
+            IList<AgeTransform> items = AgeWidgets.DrawnChildren(card.CuriosityItemsTable);
             for (int i = 0; items != null && i < items.Count; i++)
             {
                 AgeTransform item = items[i];

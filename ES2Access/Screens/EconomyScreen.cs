@@ -871,11 +871,7 @@ namespace ES2Access.Screens
         {
             try
             {
-                return line.ClickToCreateRecipeTitleLabel == null
-                    // Content: which STRING the line is valued by.
-                    || !AgeWidgets.Visible(line.ClickToCreateRecipeTitleLabel.AgeTransform)
-                    ? null
-                    : AgeText.Label(line.ClickToCreateRecipeTitleLabel);
+                return AgeWidgets.DrawnLabel(line.ClickToCreateRecipeTitleLabel);
             }
             catch (Exception)
             {

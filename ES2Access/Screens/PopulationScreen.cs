@@ -283,11 +283,7 @@ namespace ES2Access.Screens
         {
             try
             {
-                // Content: whether the head count is part of the row's reading. The row's own cell
-                // stands on the toggle, which the list draws either way.
-                return row.PopulationGroup == null || !AgeWidgets.Visible(row.PopulationGroup)
-                    ? null
-                    : AgeText.Label(row.PopulationCountLabel);
+                return AgeWidgets.DrawnLabel(row.PopulationGroup, row.PopulationCountLabel);
             }
             catch (Exception)
             {
@@ -695,11 +691,7 @@ namespace ES2Access.Screens
         private void AddLegend(GraphBuilder builder, PopulationModalWindow window)
         {
             _dossiers.Clear();
-            AgeTransform table = window.PoliticsLabelsTable;
-            // Flow control: which children are scraped for dossiers - they become a region of the row
-            // above rather than nodes of their own, so no gate ever asks about them.
-            IList<AgeTransform> items =
-                table == null || !AgeWidgets.Visible(table) ? null : table.Children;
+            IList<AgeTransform> items = AgeWidgets.DrawnChildren(window.PoliticsLabelsTable);
             for (int i = 0; items != null && i < items.Count; i++)
             {
                 TooltipChildren.AddInside(_dossiers, items[i]);
@@ -798,11 +790,7 @@ namespace ES2Access.Screens
         {
             try
             {
-                // Availability: a null answer is how the callers hear "the window drew no such block" -
-                // Block skips a whole subtree on it, and Caption names no region.
-                return label == null || !AgeWidgets.Visible(label.AgeTransform)
-                    ? null
-                    : label.AgeTransform;
+                return AgeWidgets.Drawn(label);
             }
             catch (Exception)
             {

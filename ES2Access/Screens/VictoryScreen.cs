@@ -173,13 +173,7 @@ namespace ES2Access.Screens
                 VictoryScreenPanel[] panels = window.Panels;
                 for (int i = 0; panels != null && i < panels.Length; i++)
                 {
-                    AgeTransform widget = Transform(panels[i]);
-                    // Flow control: the shape reading descends the whole panel, and the window keeps
-                    // one panel per tab with the rest switched off.
-                    if (AgeWidgets.Visible(widget))
-                    {
-                        WindowShape.Readouts(_cells, widget, "victory:panel/" + i);
-                    }
+                    WindowShape.Readouts(_cells, Transform(panels[i]), "victory:panel/" + i);
                 }
             }
             catch (Exception e)

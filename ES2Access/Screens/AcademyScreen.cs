@@ -477,11 +477,7 @@ namespace ES2Access.Screens
         {
             try
             {
-                // Different widget: the line stands on the HOST group and this asks about the value
-                // label inside it, which the gate's walk up the ancestry never reaches.
-                return label == null || !AgeWidgets.Visible(label.AgeTransform)
-                    ? null
-                    : label.AgeTransform;
+                return AgeWidgets.Drawn(label);
             }
             catch (Exception)
             {

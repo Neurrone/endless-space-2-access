@@ -231,10 +231,7 @@ namespace ES2Access.UI
         {
             try
             {
-                // Content: which STRING names the filter.
-                string drawn = filter.Label != null && AgeWidgets.Visible(filter.Label.AgeTransform)
-                    ? AgeText.Label(filter.Label)
-                    : null;
+                string drawn = AgeWidgets.DrawnLabel(filter.Label);
                 return string.IsNullOrEmpty(drawn) ? Title("TermTypeFilter" + filter.Category) : drawn;
             }
             catch (Exception)
@@ -683,10 +680,7 @@ namespace ES2Access.UI
         {
             try
             {
-                // Content: which STRING is returned.
-                return label == null || !AgeWidgets.Visible(label.AgeTransform)
-                    ? null
-                    : AgeText.Label(label);
+                return AgeWidgets.DrawnLabel(label);
             }
             catch (Exception)
             {
