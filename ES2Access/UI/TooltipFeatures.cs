@@ -609,15 +609,28 @@ namespace ES2Access.UI
                     NameText(
                         named,
                         label,
-                        Joined(
-                            Localized(FlotillaNameKey, flotilla + 1),
-                            Localized(FlotillaRangeKey, drawn)
-                        )
+                        FlotillaRange(flotilla, Localized(FlotillaRangeKey, drawn))
                     );
                 }
             }
 
             return named;
+        }
+
+        /// <summary>
+        /// Which flotilla an optimal-range row belongs to, joined to what that row says.
+        ///
+        /// The game draws a battle plan's three ranges one under the other with nothing beside them
+        /// saying which flotilla each is - on the deck's cards (<see cref="PlayDeckNames"/>) and on
+        /// the selected-plan card of the battle-setup popup, whose three range diagrams each carry
+        /// only "Short Range" and are told apart by their POSITION alone. Both read the same way, out
+        /// of the same two game strings, which is why the joining lives here rather than at either
+        /// call site. <paramref name="flotilla"/> is the row's index, counted from zero; the game
+        /// numbers them from one.
+        /// </summary>
+        public static string FlotillaRange(int flotilla, string range)
+        {
+            return Joined(Localized(FlotillaNameKey, flotilla + 1), range);
         }
 
         private const string FlotillaNameKey = "%FlotillaNameTitle";

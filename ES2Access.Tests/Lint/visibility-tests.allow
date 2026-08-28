@@ -29,8 +29,10 @@ ES2Access/Screens/AdvancedEncounterPlayScreen.cs | 1 | if (AgeWidgets.Visible(wi
 ES2Access/Screens/BattleNotifications.cs | 2 | if (group == null || !AgeWidgets.Visible(group))
 ES2Access/Screens/BattleNotifications.cs | 1 | if (panel == null || !AgeWidgets.Visible(panel.AgeTransform))
 ES2Access/Screens/BattleNotifications.cs | 1 | if (report == null || !AgeWidgets.Visible(report.AgeTransform))
-ES2Access/Screens/BattleNotifications.cs | 5 | if (table == null || !AgeWidgets.Visible(table))
+ES2Access/Screens/BattleNotifications.cs | 6 | if (table == null || !AgeWidgets.Visible(table))
 ES2Access/Screens/BattleNotifications.cs | 1 | if (widget == null || !AgeWidgets.Visible(widget) || value == null)
+
+ES2Access/Screens/BattlePlanScreen.cs | 1 | && AgeWidgets.Visible(_window.PlayGroup)
 
 ES2Access/Screens/BattleTacticsScreen.cs | 1 | && AgeWidgets.Visible(widget)
 ES2Access/Screens/BattleTacticsScreen.cs | 1 | if (AgeWidgets.Visible(rows[i]))
@@ -469,6 +471,7 @@ ES2Access/Screens/VictoryAchievedScreen.cs | 1 | if (!AgeWidgets.Visible(window.
 ES2Access/UI/BalanceGauges.cs | 1 | if (left != null && left.Visible)
 ES2Access/UI/BalanceGauges.cs | 1 | if (right != null && right.Visible)
 
+ES2Access/UI/BattleRosters.cs | 1 | ?? (AgeWidgets.Visible(commandPoints) ? AgeWidgets.Raw(commandPoints) : null);
 ES2Access/UI/BattleRosters.cs | 1 | if (AgeWidgets.Visible(invisibility))
 ES2Access/UI/BattleRosters.cs | 1 | if (builder == null || root == null || !AgeWidgets.Visible(root))
 ES2Access/UI/BattleRosters.cs | 1 | if (commandPoints != null && AgeWidgets.Visible(commandPointsGroup))

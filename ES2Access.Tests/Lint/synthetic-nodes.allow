@@ -6,7 +6,7 @@
 
 ES2Access/Screens/AdvancedEncounterPlayScreen.cs | 1 | builder.AddItem(Nodes.Synthetic(ControlId.Structural("advanced-play/balance"), vtable));
 
-ES2Access/Screens/BattleNotifications.cs | 1 | builder.AddItem(Nodes.Synthetic(ControlId.Structural("battle-setup/plan"), vtable));
+ES2Access/Screens/BattleNotifications.cs | 1 | ? (NodeDeclaration)Nodes.Synthetic(id, vtable)
 ES2Access/Screens/BattleNotifications.cs | 2 | builder.AddItem(Nodes.Synthetic(ControlId.Structural(key), vtable));
 
 ES2Access/Screens/BattleTacticsScreen.cs | 1 | builder.AddItem(Nodes.Synthetic(ControlId.Structural("tactics:remove-target"), vtable));

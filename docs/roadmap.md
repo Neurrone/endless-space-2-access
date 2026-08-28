@@ -96,6 +96,19 @@ belong in the files above.
   the star tooltip (same fixture debt as the entry above); the organic route to the
   "orbital window survives zooming out" wedge (staged and covered, never re-triggered
   live).
+- Space-battle balance sentence + plan chooser (2026-08-29: directional balance naming both
+  fleets, the plan carousel as one closed combo row over a chooser child screen, nested
+  plan/ship/arena tooltip children): the SETUP popup is verified live; the other three users of `BalanceText` are
+  code-symmetry only and need a battle fought — the REPORT popup and the cinematic — or a
+  toggle nobody would flip in a live session: the ADVANCED-PLAY modal declares its balance
+  node only while `BattlePowerGauge` is drawn, and the game draws that gauge only under the
+  "Displays stats about military power" stats radio (measured 2026-08-28: with the default
+  trajectory-visuals radio selected the node is absent altogether). Unsighted with it:
+  `battle.balance-all` (the wipe-out phrase, needs a side
+  reduced to zero military power), the first-non-reinforcement-garrison rule on a side with
+  reinforcements or merged fleets (the fixture has one garrison a side), a plan card the game
+  draws `NoEffectsLabel` on, and a plan whose three flotilla ranges differ (only a 3x
+  "Short Range" card's nested names were dumped).
 - Ground-battle setup follow-ups (2026-08-25 stage shipped the screen model): live-check the
   defender-side role wording (`%…DefenderDescription` on YOUR side; needs a battle where the
   player defends) and the `[positiveImpactWhite]` half of the manpower marker strip (needs a

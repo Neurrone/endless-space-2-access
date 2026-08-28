@@ -528,7 +528,8 @@ namespace ES2Access.Screens
             );
         }
 
-        /// <summary>The two military-power figures behind the arcs, as one line.</summary>
+        /// <summary>Which side the arcs say is stronger and by how much, in the two fleets' own names -
+        /// the same sentence the popups read.</summary>
         private static string Balance(GalaxyEncounter encounter)
         {
             Encounter battle = Battle(encounter);
