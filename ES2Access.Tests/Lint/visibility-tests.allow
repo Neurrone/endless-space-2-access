@@ -357,6 +357,7 @@ ES2Access/Screens/RecipeCreationScreen.cs | 1 | || (gate != null && !AgeWidgets.
 ES2Access/Screens/ResearchScreen.cs | 1 | && AgeWidgets.Visible(child)
 ES2Access/Screens/ResearchScreen.cs | 1 | && AgeWidgets.Visible(item.AgeTransform);
 ES2Access/Screens/ResearchScreen.cs | 1 | if (child == null || !child.Visible)
+ES2Access/Screens/ResearchScreen.cs | 1 | if (empty != null && AgeWidgets.Visible(empty))
 ES2Access/Screens/ResearchScreen.cs | 2 | if (icon != null && icon.Visible)
 ES2Access/Screens/ResearchScreen.cs | 1 | if (item.AffinityGroup != null && AgeWidgets.Visible(item.AffinityGroup))
 ES2Access/Screens/ResearchScreen.cs | 1 | if (key != null && AgeWidgets.Visible(key.AgeTransform))
