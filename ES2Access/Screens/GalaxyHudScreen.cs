@@ -492,7 +492,7 @@ namespace ES2Access.Screens
         /// Coming INSIDE is the case that is real, and it is real twice over. Right into a collapsed
         /// system at overview zoom seated the cursor on "Sabel I, group, Medium Mediterranean,
         /// Inhospitable, collapsed, 1 of 9" and the very next frame the same row read "2 of 10" - the
-        /// system had grown an "Open system" button in front of it - with the card's own words still
+        /// system had grown a "Manage system" button in front of it - with the card's own words still
         /// arriving eight frames later. A type-ahead landing on the world Sabel IV inside the same shut
         /// system announced "Sabel IV, Large Gas Temperate, Inhospitable, 1 curiosity, 5 of 10", a
         /// LEAF, and nine frames later the same row was "Sabel IV, group, ..., collapsed, 5 of 10" -
@@ -5317,7 +5317,7 @@ namespace ES2Access.Screens
             AgeTransform it = button;
             StarSystemNode at = node;
             NodeVtable vtable = GraphNodes.Button(
-                () => ModStrings.Get(ModStrings.GalaxyOpenSystem),
+                () => ModStrings.Get(ModStrings.GalaxyManageSystem),
                 () => OpenManagementView(it, at),
                 null,
                 Raw(it)

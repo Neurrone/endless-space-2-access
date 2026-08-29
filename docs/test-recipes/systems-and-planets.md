@@ -95,7 +95,7 @@ reason. Sweep the labels with
 `StarSystemNode.LocalizedName`, the `RequestManagementViewButton` visibility chain, `.Enable`, and
 the gate under test; only the camera's own system and its neighbours read `vis=True`. Expanding a
 system ZOOMS to it, so two systems expanded at once is not an A/B: the one the camera left stops
-drawing its label and loses its `Open system` child.
+drawing its label and loses its `Manage system` child.
 
 ## Orbital and planet cards
 

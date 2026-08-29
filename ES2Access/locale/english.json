@@ -117,7 +117,7 @@
   "galaxy.stock-and-net": "{0}, {1} per turn",
   "galaxy.system-colonized": "colonized",
   "galaxy.system-outpost": "outpost",
-  "galaxy.open-system": "Open system",
+  "galaxy.manage-system": "Manage system",
   "galaxy.shown-on-map": "Shown on the map",
   "galaxy.quest-shown-on-map": "{0}, objective shown on the map",
   "galaxy.starlane": "Starlane {0} to {1}, {2}",

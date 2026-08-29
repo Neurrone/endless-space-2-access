@@ -269,11 +269,11 @@ pair at zoom step 9 centred on Sabel (`crop-shot.ps1 -Rect 545,320,200,110`) is 
 with NO label against the label's star-pole line and its row of planet pips.
 
 **The management child no longer depends on the route (2026-08-27).** All three routes read the drawn
-button: Right-in on Sabel from step 9 → "Open system, button, 1 of 10"; a search-snap in
-(`POST /type "sabel i"`, `ui.back`) → the same node at
-`galaxy:constellation/446/system/476/management`, where that route used to read "1 of 9" with no "Open
-system" permanently; Olvaldi, the foreign home system, grows "Diplomacy, button, 1 of 7". The greyed
-case is declared by `Manageable` rather than by the button: our outpost Ita reads "Open system, button,
+button: Right-in on Sabel from step 9 → "Manage system, button, 1 of 10" (the label was "Open system"
+until 2026-08-29); a search-snap in (`POST /type "sabel i"`, `ui.back`) → the same node at
+`galaxy:constellation/446/system/476/management`, where that route used to read "1 of 9" with no
+management child permanently; Olvaldi, the foreign home system, grows "Diplomacy, button, 1 of 7". The greyed
+case is declared by `Manageable` rather than by the button: our outpost Ita reads "Manage system, button,
 1 of 8" with the button probing `Visible=True, alpha=0.5, Operable=False`, and Enter takes the
 view-level route instead of pressing a dead button. Leo (`No owner`) still declares no management child
 at all — that negative half is the other side of the same check.
@@ -399,7 +399,7 @@ _binding > 0`, and `_binding` is armed only by `FollowPlace`'s inside-snap branc
 (`ES2Access/Screens/GalaxyHudScreen.cs`), `ViewBindFrames = 12` against 8-9 frames measured at
 ~15 fps — `ChangingLevel` read false on every route exercised, so what holds in practice is
 `_binding`. What it buys: `ui.right` on a collapsed owned system from overview zoom (Sabel at step 9)
-announces the SETTLED first child ONCE — "Open system, button, 1 of 10" — where the half-built list
+announces the SETTLED first child ONCE — "Manage system, button, 1 of 10" — where the half-built list
 used to be announced instead ("Sabel I, group, Medium Mediterranean, Inhospitable, collapsed, 1 of 9",
 one `ui.up` later revealing the tenth child that was already there). The row now comes AFTER
 "Zoom level 13 of 15, System Overview" (owner accepted that order 2026-08-27): the row waits and the
@@ -412,7 +412,7 @@ settled row (`POST /type "sabel i"` → "Sabel I, group, Medium Mediterrane., In
 2 of 10"; `"olvaldi ii"` → "Olvaldi II, group, Large Arid, Inhospitable, collapsed, 3 of 7").
 
 **Watching the hold.** The frame trace of one expand: descend at f=35844 ("Sabel I … 1 of 9"), the
-list settles at f=35845 ("2 of 10"), cursor re-seated and spoken at f=35856 ("Open system, button,
+list settles at f=35845 ("2 of 10"), cursor re-seated and spoken at f=35856 ("Manage system, button,
 1 of 10") — so a row that arrives with the OLD count, or two row announcements for one press, is the
 regression to watch for. The map's own half is measured with two `POST /wait` predicates started in
 ONE shell command and their `frames` subtracted: `ES2Access.UI.GalaxyViewLevels.ZoomStep == 12`
@@ -787,7 +787,7 @@ every mod screen, so Ctrl+G reads `suppressed:true` on the research screen exact
 page. "The chord reaches the mod and not the game" is a MANUAL-TEST line, not an injectable one.
 
 - **Tree arrows, one press each way.** MEASURED: on the galaxy stop, `ui.right` on collapsed **Dusay**
-  answers "Open system, button, 1 of 8" — the system's first child, with its position, no
+  answers "Manage system, button, 1 of 8" — the system's first child, with its position, no
   "expanded" word — and the camera goes in (zoomStep 9 → 12, "Zoom level 13 of 15, System
   Overview"). Since the settled descend landed (2026-08-27) the ZOOM line comes first and the child
   line after it, off the settled build — the order and the hold are in **"Go and look at this"**. `ui.left` from that child answers "Dusay, 0, 0, group, Home System, colonized, 1 fleet

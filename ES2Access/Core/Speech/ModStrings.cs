@@ -292,7 +292,7 @@ namespace ES2Access.Core.Speech
         // A system of the player's that is still an OUTPOST rather than a colony - a distinct label on
         // the map, so a distinct word here.
         public const string GalaxySystemOutpost = "galaxy.system-outpost";
-        public const string GalaxyOpenSystem = "galaxy.open-system";
+        public const string GalaxyManageSystem = "galaxy.manage-system";
 
         // The game has taken the camera to a point the map draws nothing at - a quest marker out
         // between the stars, a battle at a place the player cannot see. The camera HAS moved, so
@@ -1852,7 +1852,7 @@ namespace ES2Access.Core.Speech
             { GalaxyStockAndNet, "{0}, {1} per turn" },
             { GalaxySystemColonized, "colonized" },
             { GalaxySystemOutpost, "outpost" },
-            { GalaxyOpenSystem, "Open system" },
+            { GalaxyManageSystem, "Manage system" },
             { GalaxyShownOnMap, "Shown on the map" },
             { GalaxyQuestShownOnMap, "{0}, objective shown on the map" },
             { GalaxyStarlane, "Starlane {0} to {1}, {2}" },
