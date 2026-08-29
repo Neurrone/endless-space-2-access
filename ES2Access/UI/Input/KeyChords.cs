@@ -26,9 +26,53 @@ namespace ES2Access.UI.Input
     /// Control+Shift+Enter - reads out correctly and cannot be re-captured as itself. Anything past
     /// the first non-modifier key is dropped on the way in, which is what the game's own binding
     /// dispatch does with it too.
+    ///
+    /// On macOS the mod's two chord modifiers are Option and Command (<see cref="KeyboardBinding"/>),
+    /// and the game's mask has no Command bit. So there the mod's first modifier is written as the
+    /// game's Alt, and the second travels as the Command key code in the combination's key list,
+    /// which is what the game's capture widget produces for a Command chord anyway (it sorts only
+    /// Control, Shift and Alt out of the list). A Control mask captured on a Mac names a modifier
+    /// no mod chord can hold, and is dropped.
     /// </summary>
     public static class KeyChords
     {
+        /// <summary>The mod's modifiers, by position: the first is Control (Windows) or Option
+        /// (macOS), the second Alt (Windows) or Command (macOS) - declared once, in
+        /// <see cref="KeyboardBinding"/>'s key codes, from which everything here derives.</summary>
+        private enum ChordModifier
+        {
+            None,
+            First,
+            Shift,
+            Second,
+        }
+
+        /// <summary>The game's mask bit for a physical modifier key, or None for one its mask
+        /// cannot spell - there is no Command bit, which is why the second modifier travels as a
+        /// key code in the list on a Mac.</summary>
+        private static GameInput.KeyModifier MaskOf(KeyCode key)
+        {
+            switch (key)
+            {
+                case KeyCode.LeftControl:
+                case KeyCode.RightControl:
+                    return GameInput.KeyModifier.Ctrl;
+                case KeyCode.LeftAlt:
+                case KeyCode.RightAlt:
+                    return GameInput.KeyModifier.Alt;
+                default:
+                    return GameInput.KeyModifier.None;
+            }
+        }
+
+        private static readonly GameInput.KeyModifier FirstMask = MaskOf(
+            KeyboardBinding.FirstModifierLeft
+        );
+
+        private static readonly GameInput.KeyModifier SecondMask = MaskOf(
+            KeyboardBinding.SecondModifierLeft
+        );
+
         /// <summary>The game's shape of one of the mod's chords. Null answers with the game's own
         /// empty combination, never with null: the key-mapping row reads it every refresh.</summary>
         public static KeyCombination ToCombination(KeyboardBinding chord)
@@ -39,20 +83,27 @@ namespace ES2Access.UI.Input
                 return combination;
             }
 
-            GameInput.KeyModifier own = ModifierOf(chord.Key);
-            if (chord.Ctrl && own != GameInput.KeyModifier.Ctrl)
+            ChordModifier own = ModifierOf(chord.Key);
+            if (chord.Ctrl && own != ChordModifier.First)
             {
-                combination.Modifiers |= GameInput.KeyModifier.Ctrl;
+                combination.Modifiers |= FirstMask;
             }
 
-            if (chord.Shift && own != GameInput.KeyModifier.Shift)
+            if (chord.Shift && own != ChordModifier.Shift)
             {
                 combination.Modifiers |= GameInput.KeyModifier.Shift;
             }
 
-            if (chord.Alt && own != GameInput.KeyModifier.Alt)
+            if (chord.Alt && own != ChordModifier.Second)
             {
-                combination.Modifiers |= GameInput.KeyModifier.Alt;
+                if (SecondMask != GameInput.KeyModifier.None)
+                {
+                    combination.Modifiers |= SecondMask;
+                }
+                else
+                {
+                    combination.KeyCodes.Add(KeyboardBinding.SecondModifierLeft);
+                }
             }
 
             combination.KeyCodes.Add(chord.Key);
@@ -69,13 +120,27 @@ namespace ES2Access.UI.Input
             }
 
             List<KeyCode> codes = combination.KeyCodes;
-            bool ctrl = (combination.Modifiers & GameInput.KeyModifier.Ctrl) != 0;
+            bool ctrl = (combination.Modifiers & FirstMask) != 0;
             bool shift = (combination.Modifiers & GameInput.KeyModifier.Shift) != 0;
-            bool alt = (combination.Modifiers & GameInput.KeyModifier.Alt) != 0;
+            bool alt = SecondMask != GameInput.KeyModifier.None
+                && (combination.Modifiers & SecondMask) != 0;
+
+            // Where the second modifier has no mask bit (a Mac's Command), it is a key in the
+            // list, alongside the key it modifies.
+            if (SecondMask == GameInput.KeyModifier.None && codes.Count > 1)
+            {
+                for (int i = 0; i < codes.Count; i++)
+                {
+                    if (ModifierOf(codes[i]) == ChordModifier.Second)
+                    {
+                        alt = true;
+                    }
+                }
+            }
 
             for (int i = 0; i < codes.Count; i++)
             {
-                if (ModifierOf(codes[i]) == GameInput.KeyModifier.None)
+                if (ModifierOf(codes[i]) == ChordModifier.None)
                 {
                     return new KeyboardBinding(codes[i], ctrl, shift, alt);
                 }
@@ -84,40 +149,44 @@ namespace ES2Access.UI.Input
             // Nothing but modifier keys: the player bound the action to a modifier on its own.
             for (int i = 0; i < codes.Count; i++)
             {
-                GameInput.KeyModifier own = ModifierOf(codes[i]);
-                if (own == GameInput.KeyModifier.None)
+                ChordModifier own = ModifierOf(codes[i]);
+                if (own == ChordModifier.None)
                 {
                     continue;
                 }
 
                 return new KeyboardBinding(
                     codes[i],
-                    ctrl || own == GameInput.KeyModifier.Ctrl,
-                    shift || own == GameInput.KeyModifier.Shift,
-                    alt || own == GameInput.KeyModifier.Alt
+                    ctrl || own == ChordModifier.First,
+                    shift || own == ChordModifier.Shift,
+                    alt || own == ChordModifier.Second
                 );
             }
 
             return null;
         }
 
-        /// <summary>Which modifier a key code IS, or none where it is an ordinary key.</summary>
-        private static GameInput.KeyModifier ModifierOf(KeyCode key)
+        /// <summary>Which of the mod's modifiers a key code IS, or none where it is an ordinary key
+        /// - which on a Mac includes the Control keys, since no chord of the mod holds them there.
+        /// Answered from <see cref="KeyboardBinding"/>'s declared modifier keys.</summary>
+        private static ChordModifier ModifierOf(KeyCode key)
         {
-            switch (key)
+            if (key == KeyboardBinding.FirstModifierLeft || key == KeyboardBinding.FirstModifierRight)
             {
-                case KeyCode.LeftControl:
-                case KeyCode.RightControl:
-                    return GameInput.KeyModifier.Ctrl;
-                case KeyCode.LeftShift:
-                case KeyCode.RightShift:
-                    return GameInput.KeyModifier.Shift;
-                case KeyCode.LeftAlt:
-                case KeyCode.RightAlt:
-                    return GameInput.KeyModifier.Alt;
-                default:
-                    return GameInput.KeyModifier.None;
+                return ChordModifier.First;
             }
+
+            if (key == KeyCode.LeftShift || key == KeyCode.RightShift)
+            {
+                return ChordModifier.Shift;
+            }
+
+            if (key == KeyboardBinding.SecondModifierLeft || key == KeyboardBinding.SecondModifierRight)
+            {
+                return ChordModifier.Second;
+            }
+
+            return ChordModifier.None;
         }
     }
 }

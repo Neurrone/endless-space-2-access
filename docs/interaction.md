@@ -86,6 +86,14 @@ alone, which is complete rather than a gap: entering a system swaps the cursor t
 
 ## The key map
 
+**Ctrl and Alt in this file name the mod's FIRST and SECOND chord modifiers, not two fixed
+keys.** On Windows they are Control and Alt; on macOS they are held as Option and Command
+(every `Ctrl+X` below is `Option+X` there, every `Alt+X` is `Cmd+X`, letters unchanged),
+because Control+arrows belong to the macOS desktop and Control+Option is VoiceOver's own
+modifier. The one place the choice is made is `KeyboardBinding` (its doc comment carries the
+full reasoning; the conflict scan and the player-facing spelling are `macos/README.md`). The
+game's own Control bindings stay on real Control on both systems.
+
 **ES2 key map, in one place** (defaults in `ModEntry.BindKeys`; the generic table is
 `docs/generic/input.md`). On top of arrows/Tab/Enter/Backspace/Escape/Home/End, Alt+arrows and
 the Ctrl review chords: **Shift+Left/Right** coarse slider step — and, while the galaxy's inspect
@@ -379,10 +387,13 @@ ancestry (as reachable as before). A landing in flight is cancelled by the playe
 ## Chat keys
 
 **Ctrl+Tab is the GAME's chat key, not a mod binding**: at startup `GameChatKey` moves
-`StartChatting` off Enter/Tab to Ctrl+Tab through the game's own options (ONLY while it still has
+`StartChatting` off Enter/Tab to Ctrl+Tab — Option+Tab on a Mac, the same chord in the mod's
+modifier space (the registry's Ctrl is REAL Control there, which the mod's bare Tab fires under) —
+through the game's own options (ONLY while it still has
 the shipped default; a customised binding is left alone), and whatever chord the binding sits on is
-handed back through the stand-down (`ModInput.LeaveToGame`) — so re-binding chat in the game's
-options keeps working. **Open chat is a PLACE, not a stop**: the key opens the mod's child screen
+handed back through the stand-down (`ModInput.LeaveToGame`), translated into the mod's chord space
+by `KeyChords.FromCombination` — so re-binding chat in the game's
+options keeps working, a Cmd chord included. **Open chat is a PLACE, not a stop**: the key opens the mod's child screen
 over the page (`ChatScreen`, in every session including single player — `ES2Access/Screens/ChatScreen.cs`) with the
 cursor ON the box's node, NOT typing in it — entering the box is Enter on that node, the edit-field
 idiom everywhere else (owner ruling 2026-08-14; the game's own answer to the key, keyboard straight

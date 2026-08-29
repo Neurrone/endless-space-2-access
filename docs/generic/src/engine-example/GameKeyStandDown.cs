@@ -171,10 +171,15 @@ namespace ES2Access.UI.Input
         /// so the dev server can ask it without a keyboard (<c>DevProbe.Chord</c>) - the alternative is
         /// holding a chord down while an HTTP request arrives.
         ///
-        /// The modifiers are read from the combination the game is asking about, which is the only
-        /// place they exist: <see cref="ModInput.ClaimsKey"/> is asked per key. That is what lets a
-        /// chord be handed back while its bare key stays the mod's - Ctrl+Tab reaches the game's chat
-        /// panel while Tab still moves the cursor (<see cref="ModInput.LeaveToGame"/>).
+        /// The combination the game is asking about is translated into the mod's own chord space
+        /// (<see cref="KeyChords.FromCombination"/>) before anything is compared, because the two
+        /// spaces differ on a Mac: the mask's Alt bit is physical Option - the mod's FIRST
+        /// modifier - and a Command chord carries no mask at all, only the Command key code in its
+        /// list. Read raw, a player's Cmd chord would look like its bare key and be suppressed
+        /// silently. The hand-back list speaks mod space too (<see cref="ModInput.LeavesToGame"/>),
+        /// which is what lets a chord be handed back while its bare key stays the mod's - the
+        /// game's chat chord reaches its panel while Tab still moves the cursor
+        /// (<see cref="ModInput.LeaveToGame"/>).
         /// </summary>
         internal static bool Claimed(Amplitude.Unity.Input.KeyCombination keyCombination)
         {
@@ -186,32 +191,18 @@ namespace ES2Access.UI.Input
                     return false;
                 }
 
-                Amplitude.Unity.Input.Input.KeyModifier modifiers = keyCombination.Modifiers;
-                bool ctrl =
-                    (modifiers & Amplitude.Unity.Input.Input.KeyModifier.Ctrl)
-                    != Amplitude.Unity.Input.Input.KeyModifier.None;
-                bool shift =
-                    (modifiers & Amplitude.Unity.Input.Input.KeyModifier.Shift)
-                    != Amplitude.Unity.Input.Input.KeyModifier.None;
-                bool alt =
-                    (modifiers & Amplitude.Unity.Input.Input.KeyModifier.Alt)
-                    != Amplitude.Unity.Input.Input.KeyModifier.None;
-
-                for (int i = 0; i < keyCombination.KeyCodes.Count; i++)
+                KeyboardBinding chord = KeyChords.FromCombination(keyCombination);
+                if (chord == null)
                 {
-                    UnityEngine.KeyCode key = keyCombination.KeyCodes[i];
-                    if (input.LeavesToGame(key, ctrl, shift, alt))
-                    {
-                        continue;
-                    }
-
-                    if (input.ClaimsKey(key))
-                    {
-                        return true;
-                    }
+                    return false;
                 }
 
-                return false;
+                if (input.LeavesToGame(chord.Key, chord.Ctrl, chord.Shift, chord.Alt))
+                {
+                    return false;
+                }
+
+                return input.ClaimsKey(chord.Key);
             }
             catch (Exception e)
             {

@@ -27,6 +27,11 @@ namespace ES2Access.Core.Speech
         public const string KeyCtrl = "key.ctrl";
         public const string KeyShift = "key.shift";
         public const string KeyAlt = "key.alt";
+
+        /// <summary>The same two chord modifiers as the player holds them on a Mac, where the mod's
+        /// first modifier is Option and its second is Command.</summary>
+        public const string KeyOption = "key.option";
+        public const string KeyCmd = "key.cmd";
         public const string KeyEnter = "key.enter";
         public const string KeyBackslash = "key.backslash";
 
@@ -110,6 +115,8 @@ namespace ES2Access.Core.Speech
             { KeyCtrl, "Ctrl" },
             { KeyShift, "Shift" },
             { KeyAlt, "Alt" },
+            { KeyOption, "Option" },
+            { KeyCmd, "Cmd" },
             { KeyEnter, "Enter" },
             { KeyBackslash, "Backslash" },
             { KeyChordJoiner, "+" },

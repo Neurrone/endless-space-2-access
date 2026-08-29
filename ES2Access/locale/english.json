@@ -441,6 +441,8 @@
   "key.ctrl": "Ctrl",
   "key.shift": "Shift",
   "key.alt": "Alt",
+  "key.option": "Option",
+  "key.cmd": "Cmd",
   "key.enter": "Enter",
   "key.backslash": "Backslash",
   "key.chord-joiner": "+",

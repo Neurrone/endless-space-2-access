@@ -80,9 +80,11 @@ namespace ES2Access.UI.Input
 
             string joiner = ModStrings.Get(ModStrings.KeyChordJoiner);
             StringBuilder name = new StringBuilder();
+            // The modifiers' words are declared beside the keys they name (KeyboardBinding):
+            // Option and Cmd on a Mac, Ctrl and Alt everywhere else.
             if (chord.Ctrl)
             {
-                Append(name, ModStrings.Get(ModStrings.KeyCtrl), joiner);
+                Append(name, ModStrings.Get(KeyboardBinding.FirstModifierWord), joiner);
             }
 
             if (chord.Shift)
@@ -92,7 +94,7 @@ namespace ES2Access.UI.Input
 
             if (chord.Alt)
             {
-                Append(name, ModStrings.Get(ModStrings.KeyAlt), joiner);
+                Append(name, ModStrings.Get(KeyboardBinding.SecondModifierWord), joiner);
             }
 
             Append(name, KeyName(chord.Key), joiner);
